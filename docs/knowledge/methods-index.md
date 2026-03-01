@@ -62,7 +62,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | METH-32 | Food Consumption Key Stats | Per-sex BW/FC/FE metrics at highest dose |
 | METH-33 | Two-Gate OM Classification | Organ-specific two-gate (statistical + magnitude) OM assessment |
 | METH-34 | Adaptive Decision Trees | Context-dependent finding assessment via 6 organ-specific decision trees; liver tree includes full Hall 2012 LB panel gate (9 markers, min 5 clean, ALT+AST critical) |
-| METH-35 | Historical Control Data (A-3) | Strain/sex/duration-specific organ weight reference ranges; treated-group mean vs [mean±2SD] → within_hcd (-0.5) or outside_hcd (+0.5) treatment-relatedness modifier |
+| METH-35 | Historical Control Data (A-3) | SQLite-first (NTP DTT IAD, 7 strains, 16 organs, 3 durations) with JSON fallback. Strain/sex/duration-specific organ weight reference ranges; treated-group mean vs [mean±2SD] → within_hcd (-0.5) or outside_hcd (+0.5) treatment-relatedness modifier. SQLite adds percentile_rank, n, study_count, progressive route/vehicle filter relaxation. Implementation: `hcd.py:assess_a3()`, `hcd_database.py:HcdSqliteDB` |
 | METH-36 | B-6 Progression Chain Evaluation | 14 organ-specific non-tumor progression chains (YAML-driven); substring term matching → severity trigger or obligate precursor → escalate finding_class to tr_adverse. Implementation: `progression_chains.py:evaluate_b6()` |
 | METH-37 | GRADE-Style Confidence Scoring | Per-finding evidence confidence (HIGH/MODERATE/LOW) from 5 dimensions: D1 statistical strength, D2 dose-response quality, D3 concordance, D4 HCD, D5 cross-sex consistency. Baseline MODERATE (sum=0), each dim +1/0/-1/skip. Implementation: `confidence.py:compute_all_confidence()` |
 

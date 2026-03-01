@@ -768,7 +768,7 @@ Each mapping entry provides: `normalizedTerm`, `category` (FindingNature), `inha
 **Parameters:** Five documented factors:
 - A-1 Dose-response: strong=2, weak=1, absent=0 (REM-07: OR logic for pattern + significance)
 - A-2 Cross-endpoint concordance: concordant=1, isolated=0
-- A-3 HCD comparison: always 0 (no historical control data available)
+- A-3 HCD comparison: always 0 at syndrome level (frontend). Backend per-finding A-3 is active via `hcd.py:assess_a3()` (SQLite-first, JSON fallback — see METH-35 in methods-index.md)
 - A-6 Statistical significance: significant=1, borderline=0.5, not_significant=0
 - A-7 Clinical observation support: yes=1, no=0
 
@@ -1004,7 +1004,7 @@ For incidence data: uses binomial SE-based tolerance (STAT-11) instead of pooled
 
 **Why this method:** Treatment-relatedness requires converging evidence: statistical significance alone is insufficient (could be chance), dose-response alone is insufficient (could be coincidental trend). The three OR-criteria capture different evidence profiles that are individually compelling.
 
-**Alternatives considered:** Bayesian posterior probability (requires prior distribution for spontaneous rates — not available without historical control database). ECETOC framework (implemented at syndrome level as METRIC-08, not per-endpoint).
+**Alternatives considered:** Bayesian posterior probability (requires prior distribution for spontaneous rates — not available without historical control database). ECETOC framework (implemented at syndrome level as METRIC-08, and per-finding in backend `classification.py:assess_finding()` with A-3 HCD active for OM findings).
 
 **Note:** At the syndrome level, treatment-relatedness uses METRIC-08 (A-factor scoring), which was updated by REM-07 (relaxed dual-significance to OR logic) and REM-17 (factor-by-factor reasoning trace via METH-27).
 
@@ -1119,7 +1119,7 @@ Consequence finding heuristic: structural/compositional + >= 2 correlates → li
 
 **Why this method:** Not all decreases in histopathology incidence are protective. Some are artifacts (degenerative changes that don't occur if animals are healthier), some are secondary to body weight loss, and only a subset represent genuine pharmacological protection. This three-tier system distinguishes them.
 
-**Alternatives considered:** Binary (protective/not) — too simplistic. Historical control comparison (requires database not available).
+**Alternatives considered:** Binary (protective/not) — too simplistic. Historical control comparison (organ weight HCD now available via SQLite for 7 strains; incidence HCD not yet available).
 
 ---
 
@@ -1540,7 +1540,7 @@ Clinical floor boost: S4=15, S3=8, S2=4, S1=0 (applied at signal level, not conf
 |--------|----|----|------|---|
 | A-1 (dose-response) | strong pattern with p < 0.1, OR pairwise p < 0.01 with \|g\| ≥ 0.8 | non-flat pattern | — | flat/insufficient |
 | A-2 (concordance) | — | domains ≥ 2 | — | isolated |
-| A-3 (HCD) | — | — | — | no_hcd (always) |
+| A-3 (HCD) | — | — | — | no_hcd (always at syndrome level; backend per-finding A-3 active via hcd.py) |
 | A-6 (significance) | — | minP < 0.05 | minP < 0.1 | ≥ 0.1 |
 | A-7 (CL support) | — | strengthens | — | no |
 

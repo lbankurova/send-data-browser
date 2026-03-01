@@ -35,7 +35,7 @@ Every place in the analysis engine where scientific logic depends on species or 
 
 7. **Controlled terminology (YAML):** 18 species, hierarchical strain structure per species (SD/Wistar/F344/Long-Evans/Lewis/Zucker/Wistar Han for rat; CD-1/C57BL-6/BALB-C/ICR for mouse; etc.).
 
-8. **A-3 HCD factor (ECETOC):** Always "no_hcd" (hard-coded). HCD matching is implemented locally in `mock-historical-controls.ts` but not integrated into formal ECETOC A-factor scoring.
+8. **A-3 HCD factor (ECETOC):** Fully integrated. SQLite-first (`backend/data/hcd.db`, 7 strains × 16 organs × 3 durations from NTP DTT IAD) with JSON fallback (SD + Wistar Han static ranges). `hcd.py:assess_a3()` scores within_hcd (-0.5) or outside_hcd (+0.5) for OM findings. Strain alias resolution via `strain_aliases` table. Route/vehicle progressive filter relaxation via `hcd_database.py:HcdSqliteDB.query_extended()`.
 
 ### Confirmed absent
 
@@ -43,10 +43,9 @@ Every place in the analysis engine where scientific logic depends on species or 
 - No species-specific magnitude floors
 - No adaptive lab rule thresholds per species (fold-change cutoffs uniform)
 - No clinical observation species gating (chromodacryorrhea listed for XS08 but not gated to rodent-only)
-- No species-specific HCD incidence ranges beyond Crl:CD(SD) rat
+- No species-specific HCD incidence ranges (only organ weight HCD via SQLite/JSON)
 - No strain-specific syndrome rules (only narrative caveats)
 - No species-specific hematology baseline adjustments
-- No A-3 integration with HCD match result
 
 ---
 
@@ -205,19 +204,19 @@ Three well-established mechanisms produce tumors in rodents but are not consider
 
 Strain stratification matters most for three engine components:
 
-1. **A-3 HCD comparison (METRIC-08):** Currently always scores 0 ("no_hcd") because `mock-historical-controls.ts` is the only HCD source and it is hardcoded to Crl:CD(SD). When real HCD is integrated, the lookup key must be `{species, strain, supplier, sex, age_range}`. A-3 cannot score above 0 until strain is surfaced from `DM.STRAIN` or `TS.STSTRAIN` in the study context.
+1. **A-3 HCD comparison (METRIC-08):** Active via SQLite (`backend/data/hcd.db`) for 7 strains (B6C3F1/N, C57BL/6N, CD-1, F344/N, FVB/N, SD, WISTAR HAN) with JSON fallback for SD + Wistar Han. Lookup key: `{strain, sex, organ, duration_category}` with optional route/vehicle progressive relaxation. Strain resolved from `TS.TSPARMCD=STRAIN` via alias table (9 canonical strains, ~30 aliases). Strains with insufficient data for aggregates (BALB/C, LONG-EVANS — <50 individual records each) fall through to `no_hcd`.
 
 2. **CLASS-11 protective signal:** Background incidence rates for spontaneous lesions (used to classify treatment-related decreases as pharmacological vs. background) are currently stubs. These rates differ substantially between strains, especially for SD vs Wistar vs F344 rat.
 
 3. **Magnitude floors and lab rule thresholds:** Currently species-level only. Within-species strain differences in baseline variance could justify strain-specific floors in the future, though this is lower priority than HCD stratification.
 
-**SEND fields:** `DM.STRAIN` (animal-level) and `TS.STSTRAIN` (study-level). Both are in the SEND domain model. The audit confirms both fields reach the study context object in the engine. The 4-tier HCD matching cascade in `mock-historical-controls.ts` already uses strain for Tier 1-2 matching.
+**SEND fields:** `DM.STRAIN` (animal-level) and `TS.STSTRAIN` (study-level). Both are in the SEND domain model. The audit confirms both fields reach the study context object in the engine. Backend HCD matching uses `TS.TSPARMCD=STRAIN` via `hcd.py:get_strain()`, resolved through `strain_aliases` table to canonical keys (9 strains). Frontend `mock-historical-controls.ts` uses a separate 4-tier cascade for display-only HCD.
 
 ---
 
 ### STRAIN-01-SD — Rat, Sprague-Dawley (Crl:CD(SD), HsdBrl:WIST(SD))
 
-**Status:** HCD organ weight ranges available (Phase 1). `shared/hcd-reference-ranges.json` has `Hsd:Sprague Dawley` strain with 10 organs × 2 sexes × 2 durations (Envigo C11963, n=20). Alias resolution via `hcd.py` supports SD, SPRAGUE-DAWLEY, SPRAGUE DAWLEY, Hsd:Sprague Dawley SD.
+**Status:** HCD organ weight ranges available (Phase 2 SQLite + Phase 1 JSON). SQLite: `backend/data/hcd.db` has SD strain with 16 organs × 2 sexes × 3 durations (28-day, 90-day, chronic), n=20-255 per aggregate, from NTP DTT IAD (19K+ individual control records). JSON fallback: `shared/hcd-reference-ranges.json` has `Hsd:Sprague Dawley` with 10 organs × 2 sexes × 2 durations (Envigo C11963, n=20). Alias resolution via `strain_aliases` table: SD, SPRAGUE-DAWLEY, SPRAGUE DAWLEY, HSD:SD, Hsd:Sprague Dawley SD.
 
 **Common suppliers:** Charles River (Crl:CD(SD)), Envigo (HanBrl:WIST(SD)). Supplier-within-strain variation exists; CRL and Envigo SD have documented HCD differences — see Open Questions.
 
@@ -232,13 +231,13 @@ Strain stratification matters most for three engine components:
 | Pituitary adenoma | High background | MI pituitary findings confounded without strain HCD |
 | Chronic progressive nephropathy (CPN) | Increases with age, especially males | Renal endpoints NOAEL may be underestimated if CPN contribution not HCD-compared |
 
-**HCD integration note:** When `mock-historical-controls.ts` is replaced, data must be keyed by `{species: "rat", strain: "SD", supplier, sex, age_weeks}`. The A-3 factor implementation must match on `DM.STRAIN` from study data.
+**HCD integration note:** SQLite HCD (Phase 2) is keyed by `{strain, sex, organ, duration_category}` with optional route/vehicle. Strain matched via alias table from `TS.TSPARMCD=STRAIN`. Supplier-level stratification not yet available (see Open Questions).
 
 ---
 
 ### STRAIN-01-WI — Rat, Wistar (HsdBrl:WH, HanWistar)
 
-**Status:** STUB. No validated HCD in engine. SD background rates used as proxy.
+**Status:** Partial. WISTAR HAN strain has HCD data via SQLite (Phase 2) and JSON (Phase 1+). Conventional Wistar (non-Han) does not have separate HCD entries — aliases resolve "WISTAR" to "WISTAR HAN" which may not be appropriate for all Wistar sub-strains. See Open Questions §5.
 
 #### Background differences from SD
 
@@ -255,7 +254,7 @@ Strain stratification matters most for three engine components:
 
 ### STRAIN-01-F344 — Rat, Fischer 344
 
-**Status:** STUB. No validated HCD in engine. SD background rates used as proxy. High-priority gap: F344 is commonly used in carcinogenicity studies, where background tumor rates make HCD essential.
+**Status:** HCD organ weight ranges available (Phase 2 SQLite). `backend/data/hcd.db` has F344/N strain with 16 organs × 2 sexes × 3 durations (28-day, 90-day, chronic), from NTP DTT IAD (26K+ individual control records — second largest strain after B6C3F1/N). Aliases via `strain_aliases` table: F344, F344/N, F344/NTAC, FISCHER 344, FISCHER344.
 
 **Engine caveat:** `syndrome-interpretation.ts` emits a Fischer 344-specific note when strain includes "FISCHER" or "F344": "Fischer 344 rats have high background mononuclear cell leukemia (~38% males). May inflate adverse effect burden; evaluate causality carefully."
 
@@ -276,7 +275,7 @@ Strain stratification matters most for three engine components:
 
 ### STRAIN-01-HAN — Rat, Han Wistar (HsdBrl:WH)
 
-**Status:** HCD organ weight ranges available (Phase 1+). `shared/hcd-reference-ranges.json` has `Crl:WI(Han)` strain with 7 organs × 2 sexes, 90-day only (NTP TR-587/591/593 composite, n=30). Aliases: WISTAR HAN, WISTAR, WIST, RccHan:WIST, WI(HAN), HANNOVER WISTAR, HAN WISTAR. 28-day data not yet available. NTP panel does not include brain, adrenal, ovaries, epididymides, or pituitary. Kidney and testis are right-side only (NTP convention). Similar to Wistar but with some documented background differences, particularly lower spontaneous kidney disease incidence.
+**Status:** HCD organ weight ranges available (Phase 2 SQLite + Phase 1+ JSON). SQLite: `backend/data/hcd.db` has WISTAR HAN strain with aggregates from NTP DTT IAD (320 individual control records). JSON fallback: `shared/hcd-reference-ranges.json` has `Crl:WI(Han)` strain with 7 organs × 2 sexes, 90-day only (NTP TR-587/591/593 composite, n=30). Aliases via `strain_aliases` table: WISTAR HAN, WISTAR HAN IGS, WISTAR, WIST, RccHan:WIST, WI(HAN), HANNOVER WISTAR, HAN WISTAR. 28-day data limited. NTP panel does not include brain, adrenal, ovaries, epididymides, or pituitary. Kidney and testis are right-side only (NTP convention). Similar to Wistar but with some documented background differences, particularly lower spontaneous kidney disease incidence.
 
 ---
 
@@ -294,13 +293,13 @@ Strain stratification matters most for three engine components:
 
 ### STRAIN-04-CD1 — Mouse, CD-1 (outbred)
 
-**Status:** STUB. Most common regulatory tox mouse strain.
+**Status:** HCD organ weight ranges available (Phase 2 SQLite). `backend/data/hcd.db` has CD-1 strain with aggregates from NTP DTT IAD (90 individual control records). Aliases via `strain_aliases` table: CD-1, CD-1 CRL, ICR. Most common regulatory tox mouse strain.
 
 ---
 
 ### STRAIN-04-B6 — Mouse, C57BL/6 (inbred)
 
-**Status:** STUB. Known to have higher baseline hepatic enzyme variability than CD-1 and different immune activation profile. The immune-mediated hepatitis LR+ 462.4 from LIU-FAN-2026 may be outbred-strain-specific; not confirmed for C57BL/6.
+**Status:** HCD organ weight ranges available (Phase 2 SQLite). `backend/data/hcd.db` has C57BL/6N strain with aggregates from NTP DTT IAD (85 individual control records). Aliases via `strain_aliases` table: C57BL/6N, C57BL/6J, C57BL/6. Known to have higher baseline hepatic enzyme variability than CD-1 and different immune activation profile. The immune-mediated hepatitis LR+ 462.4 from LIU-FAN-2026 may be outbred-strain-specific; not confirmed for C57BL/6.
 
 ---
 
