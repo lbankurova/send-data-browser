@@ -1,8 +1,10 @@
 """Historical Control Data (HCD) reference ranges — A-3 factor for ECETOC.
 
 Phase 1: static JSON ranges from published data (Envigo C11963 SD rat).
-Compares treated-group organ weight means against [mean-2SD, mean+2SD]
-to determine if the finding falls within normal historical variation.
+Phase 2: SQLite database built from NTP DTT IAD (14+ strains, 40+ tissues).
+
+Architecture: SQLite-first, JSON fallback. assess_a3() is the public API —
+callers don't need to know which backend is serving data.
 
 A-3 scoring:
   within_hcd  → -0.5 (reduces treatment-relatedness: within normal variation)
@@ -22,8 +24,9 @@ log = logging.getLogger(__name__)
 
 _JSON_PATH = Path(__file__).resolve().parents[3] / "shared" / "hcd-reference-ranges.json"
 
-# Lazy-loaded singleton
+# Lazy-loaded singletons
 _DB: HcdRangeDB | None = None
+_SQLITE_DB = None  # HcdSqliteDB | None — lazy import to avoid circular deps
 
 
 @dataclass(frozen=True)
@@ -98,8 +101,24 @@ class HcdRangeDB:
         return self._index.get(key)
 
 
+def _load_sqlite_db():
+    """Lazy-load the SQLite HCD database (singleton). Returns HcdSqliteDB or None."""
+    global _SQLITE_DB
+    if _SQLITE_DB is not None:
+        return _SQLITE_DB if _SQLITE_DB.available else None
+    try:
+        from services.analysis.hcd_database import get_sqlite_db
+        _SQLITE_DB = get_sqlite_db()
+        if _SQLITE_DB.available:
+            log.info("HCD SQLite database loaded successfully")
+            return _SQLITE_DB
+    except Exception as e:
+        log.debug("HCD SQLite not available: %s", e)
+    return None
+
+
 def _load_db() -> HcdRangeDB:
-    """Lazy-load the HCD range database (singleton)."""
+    """Lazy-load the JSON HCD range database (singleton fallback)."""
     global _DB
     if _DB is not None:
         return _DB
@@ -182,8 +201,8 @@ def parse_iso8601_duration_to_days(duration_str: str) -> int | None:
 def _duration_to_category(days: int | None) -> str | None:
     """Map study duration in days to HCD duration category.
 
-    Categories: '28-day' (≤42 days), '90-day' (43-180 days)
-    Returns None if duration unknown or out of range.
+    Categories: '28-day' (≤42 days), '90-day' (43-180 days), 'chronic' (>180 days)
+    Returns None if duration unknown.
     """
     if days is None:
         return None
@@ -191,8 +210,7 @@ def _duration_to_category(days: int | None) -> str | None:
         return "28-day"
     if days <= 180:
         return "90-day"
-    # Chronic studies (>180 days) — no HCD data yet in Phase 1
-    return None
+    return "chronic"
 
 
 # ---------------------------------------------------------------------------
@@ -205,31 +223,51 @@ def assess_a3(
     sex: str,
     strain: str | None,
     duration_days: int | None,
+    *,
+    route: str | None = None,
+    vehicle: str | None = None,
 ) -> dict:
     """Assess A-3 factor: is the treated-group mean within HCD range?
 
     Compares the highest-dose group mean against [mean-2SD, mean+2SD] from
-    matching HCD entry.
+    matching HCD entry. Tries SQLite database first (Phase 2), then falls
+    back to static JSON (Phase 1).
 
     Returns dict with:
       result: 'within_hcd' | 'outside_hcd' | 'no_hcd'
       score: -0.5 | +0.5 | 0.0
       detail: human-readable annotation
+    Plus optional extended fields when SQLite is the source:
+      percentile_rank, n, study_count, source
     """
     if treated_group_mean is None:
         return {"result": "no_hcd", "score": 0.0, "detail": "No treated-group mean available"}
-
-    db = _load_db()
-    resolved_strain = db.resolve_strain(strain)
-    if not resolved_strain:
-        return {"result": "no_hcd", "score": 0.0, "detail": f"Strain '{strain}' not in HCD database"}
 
     dur_cat = _duration_to_category(duration_days)
     if not dur_cat:
         return {"result": "no_hcd", "score": 0.0, "detail": f"Duration {duration_days}d outside HCD coverage"}
 
     organ_key = _resolve_specimen(specimen)
-    hcd = db.query(resolved_strain, sex, dur_cat, organ_key)
+
+    # Try SQLite first (Phase 2)
+    sqlite_db = _load_sqlite_db()
+    if sqlite_db is not None:
+        resolved = sqlite_db.resolve_strain(strain)
+        if resolved:
+            hcd = sqlite_db.query_extended(
+                resolved, sex, dur_cat, organ_key,
+                route=route, vehicle=vehicle,
+            )
+            if hcd:
+                return _evaluate_hcd(treated_group_mean, hcd, sqlite_db, resolved, sex, dur_cat, organ_key)
+
+    # Fallback to JSON (Phase 1)
+    json_db = _load_db()
+    resolved_strain = json_db.resolve_strain(strain)
+    if not resolved_strain:
+        return {"result": "no_hcd", "score": 0.0, "detail": f"Strain '{strain}' not in HCD database"}
+
+    hcd = json_db.query(resolved_strain, sex, dur_cat, organ_key)
     if not hcd:
         return {"result": "no_hcd", "score": 0.0, "detail": f"No HCD entry for {organ_key}/{sex}/{dur_cat}"}
 
@@ -242,6 +280,40 @@ def assess_a3(
         f"(ref: {hcd.mean}±{hcd.sd}, n={hcd.n}, {hcd.source})"
     )
     return {"result": result, "score": score, "detail": detail}
+
+
+def _evaluate_hcd(
+    treated_group_mean: float,
+    hcd: dict,
+    sqlite_db,
+    strain: str,
+    sex: str,
+    dur_cat: str,
+    organ_key: str,
+) -> dict:
+    """Evaluate a treated-group mean against an HCD entry (SQLite source)."""
+    within = hcd["lower"] <= treated_group_mean <= hcd["upper"]
+    result_str = "within_hcd" if within else "outside_hcd"
+    score = -0.5 if within else 0.5
+
+    detail = (
+        f"Treated mean {treated_group_mean:.3f} vs HCD [{hcd['lower']:.3f}, {hcd['upper']:.3f}] "
+        f"(ref: {hcd['mean']:.4f}±{hcd['sd']:.4f}, n={hcd['n']}, {hcd['source']})"
+    )
+
+    out = {"result": result_str, "score": score, "detail": detail}
+
+    # Extended fields from SQLite
+    out["n"] = hcd.get("n")
+    out["study_count"] = hcd.get("study_count")
+    out["source"] = hcd.get("source", "sqlite")
+
+    # Percentile rank
+    pct = sqlite_db.percentile_rank(treated_group_mean, strain, sex, dur_cat, organ_key)
+    if pct is not None:
+        out["percentile_rank"] = pct
+
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +331,42 @@ def get_strain(study) -> str | None:
         strain_rows = ts_df[ts_df["TSPARMCD"].str.upper() == "STRAIN"]
         if not strain_rows.empty:
             return str(strain_rows.iloc[0].get("TSVAL", "")).strip().upper() or None
+    except Exception:
+        pass
+    return None
+
+
+def get_route(study) -> str | None:
+    """Get route of administration from TS domain. Returns raw TSVAL or None."""
+    if "ts" not in study.xpt_files:
+        return None
+    try:
+        from services.xpt_processor import read_xpt
+        ts_df, _ = read_xpt(study.xpt_files["ts"])
+        ts_df.columns = [c.upper() for c in ts_df.columns]
+        rows = ts_df[ts_df["TSPARMCD"].str.upper() == "ROUTE"]
+        if not rows.empty:
+            return str(rows.iloc[0].get("TSVAL", "")).strip().upper() or None
+    except Exception:
+        pass
+    return None
+
+
+def get_vehicle(study) -> str | None:
+    """Get treatment vehicle from TS domain. Returns raw TSVAL or None."""
+    if "ts" not in study.xpt_files:
+        return None
+    try:
+        from services.xpt_processor import read_xpt
+        ts_df, _ = read_xpt(study.xpt_files["ts"])
+        ts_df.columns = [c.upper() for c in ts_df.columns]
+        # Try TRTV (treatment vehicle) first, then VCONT (vehicle control)
+        for parmcd in ("TRTV", "VCONT"):
+            rows = ts_df[ts_df["TSPARMCD"].str.upper() == parmcd]
+            if not rows.empty:
+                val = str(rows.iloc[0].get("TSVAL", "")).strip().upper()
+                if val:
+                    return val
     except Exception:
         pass
     return None

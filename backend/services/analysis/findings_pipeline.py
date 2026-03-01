@@ -251,6 +251,8 @@ def process_findings(
     species: str | None = None,
     strain: str | None = None,
     duration_days: int | None = None,
+    route: str | None = None,
+    vehicle: str | None = None,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -269,6 +271,8 @@ def process_findings(
         species: Study species (from TS domain) for organ-specific thresholds.
         strain: Study strain (from TS domain) for HCD matching.
         duration_days: Study dosing duration in days (from TS DOSDUR) for HCD matching.
+        route: Route of administration (from TS domain) for HCD matching.
+        vehicle: Treatment vehicle (from TS domain) for HCD matching.
     """
     if scheduled_map is not None:
         base_findings = attach_scheduled_stats(
@@ -282,6 +286,7 @@ def process_findings(
     # ECETOC per-finding adversity assessment (requires corroboration_status)
     enriched = _assess_all_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
+        route=route, vehicle=vehicle,
     )
     # GRADE-style confidence scoring (requires finding_class, _hcd_assessment, corroboration_status)
     enriched = compute_all_confidence(enriched)
@@ -293,6 +298,8 @@ def _assess_all_findings(
     species: str | None = None,
     strain: str | None = None,
     duration_days: int | None = None,
+    route: str | None = None,
+    vehicle: str | None = None,
 ) -> list[dict]:
     """Run ECETOC per-finding adversity assessment on all findings.
 
@@ -311,6 +318,7 @@ def _assess_all_findings(
         try:
             f["finding_class"] = assess_finding_with_context(
                 f, index, species=species, strain=strain, duration_days=duration_days,
+                route=route, vehicle=vehicle,
             )
         except Exception as e:
             log.warning("assess_finding_with_context failed for %s: %s", finding_key(f), e)

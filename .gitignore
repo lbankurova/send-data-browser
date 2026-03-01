@@ -10,6 +10,10 @@ nul
 __pycache__/
 *.pyc
 
+# HCD ETL data (large Excel downloads + generated SQLite)
+backend/data/hcd.db
+backend/etl/data/
+
 # Only include PointCross study data
 send/*
 !send/PointCross/
