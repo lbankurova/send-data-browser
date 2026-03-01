@@ -43,12 +43,14 @@ export type {
   TermReportEntry,
   SyndromeTermReport,
   SyndromeNearMissInfo,
+  ChainDefinition,
 } from "./cross-domain-syndrome-types";
 
 export {
   SYNDROME_DEFINITIONS,
   DIRECTIONAL_GATES,
   ENDPOINT_CLASS_FLOORS,
+  CHAIN_DEFINITIONS,
 } from "./cross-domain-syndrome-data";
 
 // ─── Normalization & parsing helpers ───────────────────────

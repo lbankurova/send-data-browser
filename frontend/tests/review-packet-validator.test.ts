@@ -133,7 +133,7 @@ function splitSyndromeSections(md: string): SyndromeSection[] {
     : workedMd.length;
   const partDChunk = workedMd.slice(0, partDEnd);
 
-  const re = /^## (XS\d{2}):\s*(.+)$/gm;
+  const re = /^## (X[SC]\d{2}[a-c]?):\s*(.+)$/gm;
   const matches: Array<{
     id: string;
     title: string;
@@ -953,7 +953,7 @@ describe("Scientific logic invariants — post-remediation", () => {
 
   test("Fixture parses detected syndromes", () => {
     const ids = new Set(sections.map((s) => s.id));
-    // PointCross study detects 7 syndromes (XS10 not detected — no EG/VS data)
+    // PointCross study detects 10 syndromes: 7 XS + 3 XC (XS10 not detected — no EG/VS data)
     for (const expected of [
       "XS01",
       "XS04",
@@ -962,10 +962,13 @@ describe("Scientific logic invariants — post-remediation", () => {
       "XS09",
       "XS03",
       "XS07",
+      "XC03a",
+      "XC04c",
+      "XC01a",
     ]) {
       expect(ids.has(expected)).toBe(true);
     }
-    expect(sections.length).toBe(7);
+    expect(sections.length).toBe(10);
   });
 
   test("Every syndrome has evidence rows and an interpretation", () => {

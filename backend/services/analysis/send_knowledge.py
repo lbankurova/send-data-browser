@@ -71,6 +71,26 @@ BIOMARKER_MAP: dict[str, dict] = {
     "RRAG": {"name": "RR Interval", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "down", "category": "ecg"},
     # Vital Signs
     "HR": {"name": "Heart Rate", "organ": "HEART", "system": "cardiovascular", "direction_of_concern": "up", "category": "vital_sign"},
+    # Endocrine — Thyroid
+    "T4": {"name": "Thyroxine", "organ": "THYROID GLAND", "system": "endocrine", "direction_of_concern": "down", "category": "hormone"},
+    "T4FREE": {"name": "Free Thyroxine", "organ": "THYROID GLAND", "system": "endocrine", "direction_of_concern": "down", "category": "hormone"},
+    "T3": {"name": "Triiodothyronine", "organ": "THYROID GLAND", "system": "endocrine", "direction_of_concern": "down", "category": "hormone"},
+    "TSH": {"name": "Thyroid Stimulating Hormone", "organ": "PITUITARY GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    # Endocrine — Adrenal
+    "CORTCST": {"name": "Corticosterone", "organ": "ADRENAL GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    "ACTH": {"name": "Adrenocorticotropic Hormone", "organ": "PITUITARY GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    "EPINEP": {"name": "Epinephrine", "organ": "ADRENAL GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    "NOREPI": {"name": "Norepinephrine", "organ": "ADRENAL GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    "DOPA": {"name": "Dopamine", "organ": "ADRENAL GLAND", "system": "endocrine", "direction_of_concern": "up", "category": "hormone"},
+    # Endocrine — Reproductive
+    "TESTO": {"name": "Testosterone", "organ": "TESTIS", "system": "reproductive", "direction_of_concern": "down", "category": "hormone"},
+    "ESTRA": {"name": "Estradiol", "organ": "OVARY", "system": "reproductive", "direction_of_concern": "down", "category": "hormone"},
+    "FSH": {"name": "Follicle Stimulating Hormone", "organ": "PITUITARY GLAND", "system": "reproductive", "direction_of_concern": "up", "category": "hormone"},
+    "LH": {"name": "Luteinizing Hormone", "organ": "PITUITARY GLAND", "system": "reproductive", "direction_of_concern": "up", "category": "hormone"},
+    "PROG": {"name": "Progesterone", "organ": "OVARY", "system": "reproductive", "direction_of_concern": "down", "category": "hormone"},
+    "INHBB": {"name": "Inhibin B", "organ": "TESTIS", "system": "reproductive", "direction_of_concern": "down", "category": "hormone"},
+    # Hematology — additional
+    "NRBC": {"name": "Nucleated Red Blood Cells", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
 }
 
 # Specimen/organ name → organ system
@@ -124,7 +144,11 @@ ORGAN_SYSTEM_MAP: dict[str, str] = {
     "EYE": "ocular",
     "EYES": "ocular",
     "URINARY BLADDER": "renal",
-    "INJECTION SITE": "local",
+    "INJECTION SITE": "integumentary",
+    "PROSTATE GLAND": "reproductive",
+    "SEMINAL VESICLE": "reproductive",
+    "PERIPHERAL NERVE": "neurological",
+    "NERVE": "neurological",
 }
 
 # Biological significance thresholds

@@ -11,6 +11,7 @@ import type {
   SyndromeDefinition,
   DirectionalGateConfig,
   MagnitudeFloor,
+  ChainDefinition,
 } from "./cross-domain-syndrome-types";
 
 import rawDefs from "../../../shared/syndrome-definitions.json";
@@ -37,4 +38,10 @@ export const DIRECTIONAL_GATES: Record<string, DirectionalGateConfig[]> =
 /** @internal Exported for reference generator. */
 export const ENDPOINT_CLASS_FLOORS: { class: string; floor: MagnitudeFloor; testCodes: string[] }[] =
   rawDefs.endpointClassFloors as unknown as { class: string; floor: MagnitudeFloor; testCodes: string[] }[];
+
+// ─── Cross-organ chain definitions ──────────────────────
+
+/** @internal Exported for reference generator. */
+export const CHAIN_DEFINITIONS: ChainDefinition[] =
+  (rawDefs as unknown as { chains: ChainDefinition[] }).chains ?? [];
 
