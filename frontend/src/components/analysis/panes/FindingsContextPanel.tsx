@@ -1234,6 +1234,15 @@ export function FindingsContextPanel() {
         />
       </CollapsiblePane>
 
+      {/* Recovery insights — immediately after dose detail */}
+      {hasRecovery && selectedFinding && (
+        <div ref={recoveryPaneRef}>
+          <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
+          </CollapsiblePane>
+        </div>
+      )}
+
       <div ref={evidencePaneRef}>
       <CollapsiblePane
         title={hasSibling ? "Evidence:" : "Evidence"}
@@ -1459,15 +1468,6 @@ export function FindingsContextPanel() {
             onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
           />
         </CollapsiblePane>
-      )}
-
-      {/* Recovery insights — after dose detail for proximity to verdict summary */}
-      {hasRecovery && selectedFinding && (
-        <div ref={recoveryPaneRef}>
-          <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
-          </CollapsiblePane>
-        </div>
       )}
 
       {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}

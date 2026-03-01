@@ -1,7 +1,7 @@
 # Topic Hub: Recovery & Phase Detection
 
-**Last updated:** 2026-02-27
-**Overall status:** Fully shipped. Treatment-period pooling (7 in-life domains), 2-method last-dosing-day detection with reviewer override, recovery assessment engine (11 verdict types, 7-tier classification), TK/satellite exclusion, early death dual-pass. 5 test suites (206 assertions). Validation-view surfacing (GAP-19) deferred.
+**Last updated:** 2026-03-01
+**Overall status:** Fully shipped. Treatment-period pooling (7 in-life domains), 2-method last-dosing-day detection with reviewer override, recovery assessment engine (11 verdict types, 7-tier classification), TK/satellite exclusion, early death dual-pass, continuous recovery comparison (control-normalized Hedges' g with drift/n=1/no-control handling). 5 test suites (206 assertions). Validation-view surfacing (GAP-19) deferred.
 
 ---
 
@@ -48,7 +48,7 @@ Builds per-subject metadata including `is_recovery`, `is_satellite`, `is_tk` fla
 
 ### Recovery Assessment Engine (1,130 lines across 2 files)
 
-**`recovery-assessment.ts` (567L)** — Mechanical verdict computation:
+**`recovery-assessment.ts` (567L)** — Mechanical verdict computation (histopath):
 
 Guard chain (ordered): `not_examined` → `insufficient_n` → `anomaly` → `low_power` → `not_observed` → `reversed` → ratio computation
 
@@ -65,6 +65,44 @@ Calls `classifyFindingNature()` from `finding-nature.ts` for duration-aware verd
 Each classification carries confidence (High/Moderate/Low) and a CSS border class for UI rendering. Specimen-level summary aggregates by priority, takes min confidence across findings.
 
 Consumed by: HistopathologyContextPanel RecoveryAssessment pane, Hypotheses tab recovery assessment table, CompareTab recovery comparison, specimen rail recovery label.
+
+### Continuous Recovery Comparison (`temporal.py` + `RecoveryPane.tsx`)
+
+**Backend** (`routers/temporal.py`, recovery-comparison endpoint): Computes control-normalized Hedges' g for each dose × sex × endpoint at both terminal and recovery timepoints. Returns per-row:
+
+| Field group | Fields |
+|-------------|--------|
+| Core | `mean`, `sd`, `p_value`, `effect_size`, `dose_level`, `sex` |
+| Terminal reference | `terminal_effect`, `terminal_day` |
+| Peak context | `peak_effect`, `peak_day` (max |g| across main-arm timepoints) |
+| Control stats | `control_mean`, `control_n`, `control_mean_terminal`, `treated_n`, `treated_mean_terminal` |
+| Edge case flags | `insufficient_n` (n<2), `no_concurrent_control` (no control at recovery) |
+
+Flagged rows (n<2, no-control) are emitted with null stats instead of being skipped, enabling frontend to render appropriate warnings.
+
+**Frontend** (`RecoveryPane.tsx`, 775L): Verdict-first display with 8 continuous verdict types:
+
+| Verdict | Condition |
+|---------|-----------|
+| Resolved | `|g_recovery| < 0.5 AND pct ≥ 80%` |
+| Reversed | `pct ≥ 80%` (or `|g_recovery| < 0.5 AND pct < 80%`) |
+| Reversing | `pct 50–80%` |
+| Partial | `pct 20–50%` |
+| Persistent | `pct < 20%` |
+| Worsening | `pct < 0` (effect grew) |
+| Overcorrected | Sign change + `|g_recovery| ≥ 0.5` |
+| Not assessed | `|g_terminal| < 0.5` (below threshold) |
+
+Additional features:
+- **Control drift warning** (§4.3): Shown when control mean shifted >15% between terminal and recovery
+- **n=1 suppression** (§10.5): "insufficient for classification" with raw value fallback
+- **No-control warning** (§10.4): Amber warning when no concurrent control at recovery
+- **Hover tooltips** (§6.4): Row-level `title` with treated/control means + g at both timepoints
+- **Severity shift annotations** (§9.2): Per-dose histopath annotations (Improving/Progressing/Reducing/Mixed)
+- **Element tooltips** (§12): `title` attributes on verdict badge, desc, p-value, peak annotation
+- **P-values always shown**: No threshold gate — users need them to assess verdict reliability
+- **Peak trajectory** (§5.4): When peak > terminal × 1.5, shows full Peak → Terminal → Recovery trajectory
+- **Pane position**: Immediately after Dose detail pane, before Evidence
 
 ### Recovery Start Day Override (`8e8817b`)
 
@@ -92,6 +130,9 @@ Recovery animals interact with early death exclusion: moribund/found-dead recove
 | `63ae665` | Detect and exclude TK satellite animals from all statistical analyses |
 | `a13998a` | Recovery arm detection + regenerate with correct 4-group structure |
 | `2268ccc` | Recovery duration awareness + context-aware historical controls |
+| `729206d` | Recovery pane spec gap closure — resolved/overcorrected verdicts, peak gate, p-threshold, concordance, trajectory |
+| `e80af5c` | Recovery pane spec gap closure — drift, hover, n=1, no-control, severity shift, tooltips |
+| `563ad7b` | Recovery verdict accuracy — resolve/reverse threshold fix, always show p-value |
 
 ---
 
@@ -148,6 +189,12 @@ Recovery animals interact with early death exclusion: moribund/found-dead recove
 |------|---------|----------|
 | `docs/knowledge/methods-index.md` | CLASS-10 (Recovery Verdict), CLASS-20 (Recovery Classification) | Yes |
 | `docs/knowledge/field-contracts-index.md` | FIELD-06 (recovery status), FIELD-28 (recovery endpoints), FIELD-33 (pooled_n), FIELD-37/38 (classification/confidence), FIELD-41 (typical recovery weeks) | Yes |
+
+### Specifications (active)
+
+| File | Lines | Role | Status |
+|------|-------|------|--------|
+| `docs/incoming/arch-overhaul/recovery-pane-spec.md` | ~490 | Continuous recovery comparison, control normalization, hover tooltips, edge cases | IMPLEMENTED — §15 tracks all items |
 
 ### Specifications (archived — logic implemented)
 
@@ -207,18 +254,19 @@ These files import `phase_filter` functions for treatment-period pooling. They a
 | `lib/recovery-classification.ts` | 563 | 7-tier classification, confidence model — *also in TOPIC-histopathology* |
 | `lib/finding-nature.ts` | 242 | Adaptive/degenerative/proliferative/inflammatory — *shared, also in TOPIC-histopathology* |
 
-#### Frontend — components (1 file, 335 lines)
+#### Frontend — components (1 file, 775 lines)
 
 | File | Lines | Role |
 |------|-------|------|
-| `panes/RecoveryPane.tsx` | 335 | Recovery detail pane in context panel — *also in TOPIC-histopathology* |
+| `panes/RecoveryPane.tsx` | 775 | Recovery detail pane — continuous verdicts, histopath assessment, tooltips, drift/n=1/no-control handling — *also in TOPIC-histopathology* |
 
-#### Frontend — hooks (2 files, 135 lines)
+#### Frontend — hooks & API (3 files, 274 lines)
 
 | File | Lines | Role |
 |------|-------|------|
-| `hooks/useOrganRecovery.ts` | 110 | Fetch + derive recovery assessments for organ — *also in TOPIC-histopathology* |
+| `hooks/useOrganRecovery.ts` | 112 | Fetch + derive recovery assessments for organ — *also in TOPIC-histopathology* |
 | `hooks/useRecoveryComparison.ts` | 25 | Multi-specimen recovery comparison — *also in TOPIC-histopathology* |
+| `lib/temporal-api.ts` | 137 | `RecoveryComparisonResponse` type + fetch function — row type with control stats, edge case flags |
 
 #### Tests (5 suites, 2,791 lines, 206 assertions)
 
@@ -237,10 +285,10 @@ These files import `phase_filter` functions for treatment-period pooling. They a
 | Backend (owned by this hub) | 4 | 1,145 |
 | Backend (cross-referenced, owned by data-pipeline) | 7 | — |
 | Frontend logic | 3 | 1,372 |
-| Frontend components | 1 | 335 |
-| Frontend hooks | 2 | 135 |
+| Frontend components | 1 | 775 |
+| Frontend hooks & API | 3 | 274 |
 | Tests | 5 | 2,791 |
-| **Grand total (owned)** | **15** | **5,778** |
+| **Grand total (owned)** | **16** | **6,357** |
 
 *Frontend recovery-assessment, recovery-classification, finding-nature, RecoveryPane, and hooks are also listed in TOPIC-histopathology (the primary consumer). This hub documents the subsystem's internal architecture and cross-cutting phase detection concerns that span beyond histopathology.*
 

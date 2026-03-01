@@ -102,7 +102,8 @@ Based on `recovery_pct` (the percentage change in the control-normalized effect)
 
 | Recovery % | Verdict | Meaning |
 |---|---|---|
-| Effect at recovery < 0.5 SD of control | **Resolved** | Effect indistinguishable from control |
+| Effect at recovery < 0.5 SD of control AND ≥ 80% recovered | **Resolved** | Effect dropped below threshold and substantially recovered |
+| Effect at recovery < 0.5 SD of control AND < 80% recovered | **Reversed** | Effect below threshold but terminal was borderline |
 | ≥ 80% reduction in effect | **Reversed** | Near-complete recovery |
 | 50–80% reduction | **Reversing** | Strong but incomplete recovery |
 | 20–50% reduction | **Partial** | Some recovery, substantial residual effect |
@@ -198,7 +199,7 @@ Each dose-group row contains, in order:
 2. **Verdict badge:** Resolved / Reversed / Reversing / Partial / Persistent / Worsening — color-coded (green spectrum for recovery, red for worsening, gray for persistent/not assessable)
 3. **Delta summary:** "Δ narrowed X%" or "Δ grew X%" — the control-normalized effect change as a percentage
 4. **Effect size trajectory:** "g: [terminal] → [recovery]" — Hedges' g at each timepoint
-5. **Statistical significance** (when available): p-value for the recovery-vs-terminal comparison, shown only when p < 0.1
+5. **Statistical significance** (when available): p-value for treated vs control at recovery (Welch t-test), shown on all rows
 6. **Peak context annotation** (when triggered): "⚠ Peak g=X.X at Day N" — appears below the main row content
 
 ### 6.3 Sparkline (Optional)
@@ -449,13 +450,13 @@ When both recovery data and finding nature are available, flag discordance:
 | §3.1 | Control-normalized Hedges' g as primary metric | Done | g used throughout, not raw means |
 | §3.2 | Recovery % formula with terminal as denominator | Done | `(|g_terminal| - |g_recovery|) / |g_terminal| × 100` |
 | §3.3 | Histopath incidence display | Done | `affected/examined → affected/examined` |
-| §4.2 | Classification buckets (all 7 verdicts) | Done | resolved/reversed/overcorrected/reversing/partial/persistent/worsening |
+| §4.2 | Classification buckets (all 7 verdicts) | Done | resolved/reversed/overcorrected/reversing/partial/persistent/worsening. "Resolved" requires `|g| < 0.5 AND pct ≥ 80%`; otherwise "Reversed". |
 | §4.3 | Overcorrected verdict (effect changed sign) | Done (729206d) | Sign comparison + `|g_recovery| >= 0.5` gate |
 | §4.3 | Control group drift warning (>15% change) | Done | Backend returns control_mean + control_mean_terminal; frontend computes drift % |
 | §5.1–5.3 | Peak context annotation with absolute floor | Done (729206d) | `|peak| > |terminal| × 1.5 AND |peak| > 1.0 AND |terminal| >= 0.5` |
 | §5.2 | Peak data from backend (BW/LB timecourse scan) | Done | Backend computes peak_effect + peak_day per row |
 | §5.4 | Trajectory summary (Peak → Terminal → Recovery) | Done (729206d) | Segment percentages shown when peak annotation triggered |
-| §6.2 | P-value display threshold p < 0.1 | Done (729206d) | Matches spec §6.2 row 5 |
+| §6.2 | P-value display on all rows | Done | Always shown when available — users need it to assess verdict reliability |
 | §6.4 | Hover detail (raw means, control, delta, g, %) | Done | Row-level `title` with treated/control/g at terminal + recovery |
 | §9.2 | Severity grade shift overrides | Done | Improving/Progressing/Mixed/Reducing annotations per dose in histopath |
 | §9.3, §14.3 | Histopath per-sex (both hooks unconditional) | Done | `useOrganRecovery` called for F and M |
@@ -469,6 +470,7 @@ When both recovery data and finding nature are available, flag discordance:
 | — | TERMBW unification into BW series | Done | Scheduled BW (D1–D85) + terminal BW (D92) treated as one series |
 | — | OM OMSPEC groupby (organs distinguished) | Done | OMTESTCD is always "WEIGHT"; group by OMSPEC instead |
 | — | Day numbers in display | Done | Terminal and recovery days shown with g values |
+| — | Pane position: immediately after Dose detail | Done | Before Evidence/Syndromes — proximity to verdict summary |
 
 ### 15.2 Partially Implemented
 
