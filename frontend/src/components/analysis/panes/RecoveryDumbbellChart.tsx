@@ -1,0 +1,741 @@
+/**
+ * Recovery Dumbbell Chart — side-by-side F/M panels showing
+ * terminal → recovery effect size trajectories per dose group.
+ *
+ * Renders as inline SVG within the RecoveryPane context panel.
+ * Toolbar: show peak, show CI, sync axes, sort.
+ * Footer: J-T trend, power note.
+ */
+import { useMemo, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
+import type { DoseGroup } from "@/types/analysis";
+import {
+  classifyContinuousRecovery,
+  CONT_VERDICT_LABEL,
+  formatGAbs,
+} from "@/lib/recovery-verdict";
+import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { useStatMethods } from "@/hooks/useStatMethods";
+import { DoseLabel } from "@/components/ui/DoseLabel";
+
+// ── Types ────────────────────────────────────────────────
+
+type RecoveryRow = RecoveryComparisonResponse["rows"][number];
+
+
+
+interface RecoveryDumbbellChartProps {
+  rows: RecoveryRow[];
+  doseGroups?: DoseGroup[];
+  terminalDay?: number | null;
+  recoveryDay?: number | null;
+  /** When a dose row is clicked, emit the dose_level for scroll-to-text. */
+  onDoseClick?: (doseLevel: number) => void;
+}
+
+// ── Constants ────────────────────────────────────────────
+
+const ROW_HEIGHT = 22;
+const DOT_R = 2.5;
+const ARROW_SIZE = 5;
+const CONNECTOR_COLOR = "#94A3B8"; // slate-400
+const ZERO_LINE_COLOR = "#CBD5E1"; // slate-300
+
+
+// ── Helpers ──────────────────────────────────────────────
+
+/** Connector visual tier by p-value. Weight encodes significance — no dashes. */
+function connectorStyle(p: number | null): {
+  opacity: number;
+  width: number;
+} {
+  if (p == null) return { opacity: 0.7, width: 0.5 };
+  if (p < 0.05) return { opacity: 1.0, width: 1.5 };
+  if (p < 0.10) return { opacity: 0.8, width: 1 };
+  return { opacity: 0.7, width: 0.5 };
+}
+
+/** Jonckheere-Terpstra trend test for ordered dose-response.
+ *  Given k ordered values (one per dose), counts concordant pairs.
+ *  Returns z-score and p-value. Suppressed when k < 3. */
+function jtTrend(values: number[]): { z: number; p: number } | null {
+  const k = values.length;
+  if (k < 3) return null;
+
+  // J = number of concordant pairs
+  let J = 0;
+  for (let i = 0; i < k; i++) {
+    for (let j = i + 1; j < k; j++) {
+      if (values[j] > values[i]) J++;
+      else if (values[j] === values[i]) J += 0.5;
+    }
+  }
+
+  // Under H0: E(J) = k*(k-1)/4, Var(J) = k*(k-1)*(2k+5)/72
+  const eJ = k * (k - 1) / 4;
+  const varJ = k * (k - 1) * (2 * k + 5) / 72;
+  if (varJ === 0) return null;
+
+  const z = (J - eJ) / Math.sqrt(varJ);
+  // Two-tailed p from normal approximation
+  const p = 2 * (1 - normalCDF(Math.abs(z)));
+  return { z, p };
+}
+
+/** Standard normal CDF approximation (Abramowitz & Stegun). */
+function normalCDF(x: number): number {
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  const ax = Math.abs(x) / Math.sqrt(2);
+  const t = 1.0 / (1.0 + p * ax);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+  return 0.5 * (1.0 + sign * y);
+}
+
+/** Check if a row qualifies for peak marker. */
+function hasPeakQualifier(row: RecoveryRow): boolean {
+  return (
+    row.peak_effect != null &&
+    row.terminal_effect != null &&
+    Math.abs(row.peak_effect) > Math.abs(row.terminal_effect) * 1.5 &&
+    Math.abs(row.peak_effect) > 1.0 &&
+    Math.abs(row.terminal_effect) >= 0.5
+  );
+}
+
+// ── Processed row for rendering ──────────────────────────
+
+interface ChartRow {
+  row: RecoveryRow;
+  doseLabel: string;
+  verdict: ContinuousVerdictType;
+  terminalVal: number | null; // |g| at terminal
+  recoveryVal: number | null; // |g| at recovery
+  peakVal: number | null;     // |g| at peak
+  isEdge: "insufficient_n" | "no_concurrent_control" | "below-threshold" | null;
+}
+
+function buildChartRows(
+  rows: RecoveryRow[],
+  doseGroups: DoseGroup[] | undefined,
+): ChartRow[] {
+  const result: ChartRow[] = rows.map((row) => {
+    const dg = doseGroups?.find((g) => g.dose_level === row.dose_level);
+    const doseLabel =
+      dg && dg.dose_value != null && dg.dose_value > 0
+        ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+        : `Dose ${row.dose_level}`;
+
+    // Edge cases
+    if (row.insufficient_n) {
+      return {
+        row,
+        doseLabel,
+        verdict: "below-threshold" as ContinuousVerdictType,
+        terminalVal: null,
+        recoveryVal: null,
+        peakVal: null,
+        isEdge: "insufficient_n",
+      };
+    }
+    if (row.no_concurrent_control) {
+      return {
+        row,
+        doseLabel,
+        verdict: "below-threshold" as ContinuousVerdictType,
+        terminalVal: null,
+        recoveryVal: null,
+        peakVal: null,
+        isEdge: "no_concurrent_control",
+      };
+    }
+
+    const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
+
+    return {
+      row,
+      doseLabel,
+      verdict: v.verdict,
+      terminalVal: row.terminal_effect != null ? Math.abs(row.terminal_effect) : null,
+      recoveryVal: row.effect_size != null ? Math.abs(row.effect_size) : null,
+      peakVal: row.peak_effect != null ? Math.abs(row.peak_effect) : null,
+      isEdge: v.verdict === "below-threshold" ? "below-threshold" : null,
+    };
+  });
+
+  result.sort((a, b) => a.row.dose_level - b.row.dose_level);
+
+  return result;
+}
+
+// ── SVG Panel ────────────────────────────────────────────
+
+interface PanelProps {
+  chartRows: ChartRow[];
+  xMax: number;
+  xMin: number;
+  sex: string;
+  effectSymbol: string;
+  terminalDay: number | null;
+  hoveredDose: number | null;
+  onHoverDose: (dose: number | null) => void;
+  onClickDose: (dose: number) => void;
+}
+
+const LABEL_HEIGHT = 10;
+const LARGE_EFFECT_THRESHOLD = 0.8;
+const LARGE_EFFECT_COLOR = "#7C3AED"; // violet-600
+
+function DumbbellPanel({
+  chartRows,
+  xMax,
+  xMin,
+  sex,
+  effectSymbol,
+  terminalDay,
+  hoveredDose,
+  onHoverDose,
+  onClickDose,
+}: PanelProps) {
+  const chartWidth = 200;
+  const marginLeft = 2;
+  const marginRight = 6;
+  const plotWidth = chartWidth - marginLeft - marginRight;
+  const bottomMargin = LABEL_HEIGHT + 2;
+  const chartHeight = chartRows.length * ROW_HEIGHT + 4 + bottomMargin;
+
+  // Scale: value → x position
+  const range = xMax - xMin;
+  const scale = (val: number) => {
+    if (range === 0) return marginLeft + plotWidth / 2;
+    return marginLeft + ((val - xMin) / range) * plotWidth;
+  };
+
+  const zeroX = scale(0);
+  const thresholdX = scale(LARGE_EFFECT_THRESHOLD);
+  const MIN_LINE_DIST = 8; // px in viewBox units — suppress marker lines too close to references
+
+  // J-T trend
+  const trendValues = chartRows
+    .filter((cr) => cr.recoveryVal != null && !cr.isEdge)
+    .sort((a, b) => a.row.dose_level - b.row.dose_level)
+    .map((cr) => cr.recoveryVal!);
+  const trend = jtTrend(trendValues);
+
+  return (
+    <div className="flex-1 min-w-0 flex flex-col">
+      {/* Sex header */}
+      <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+        {sex}
+      </div>
+
+      <svg
+        width="100%"
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        className="block"
+        style={{ maxHeight: chartHeight }}
+      >
+        {/* Zero reference line + label below */}
+        <line
+          x1={zeroX}
+          y1={0}
+          x2={zeroX}
+          y2={chartHeight - bottomMargin}
+          stroke={ZERO_LINE_COLOR}
+          strokeWidth={1.5}
+        />
+        <text
+          x={zeroX}
+          y={chartHeight - 2}
+          fontSize={7}
+          fill={ZERO_LINE_COLOR}
+          textAnchor="end"
+        >
+          Control{terminalDay != null ? `, D${terminalDay}` : ""}
+        </text>
+
+        {/* Large effect threshold line + label below */}
+        {LARGE_EFFECT_THRESHOLD <= xMax && (
+          <>
+            <line
+              x1={scale(LARGE_EFFECT_THRESHOLD)}
+              y1={0}
+              x2={scale(LARGE_EFFECT_THRESHOLD)}
+              y2={chartHeight - bottomMargin}
+              stroke={LARGE_EFFECT_COLOR}
+              strokeWidth={0.75}
+              strokeDasharray="3,3"
+              opacity={0.4}
+            />
+            <text
+              x={scale(LARGE_EFFECT_THRESHOLD)}
+              y={chartHeight - 2}
+              fontSize={7}
+              fill={LARGE_EFFECT_COLOR}
+              textAnchor="start"
+              opacity={0.6}
+            >
+              |{effectSymbol}|=0.8
+            </text>
+          </>
+        )}
+
+        {/* Rows */}
+        {chartRows.map((cr, i) => {
+          const cy = i * ROW_HEIGHT + ROW_HEIGHT / 2;
+          const isHovered = hoveredDose === cr.row.dose_level;
+
+          // Edge case: insufficient_n
+          if (cr.isEdge === "insufficient_n") {
+            return (
+              <g key={cr.row.dose_level}>
+                {isHovered && (
+                  <rect
+                    x={0}
+                    y={cy - ROW_HEIGHT / 2}
+                    width={chartWidth}
+                    height={ROW_HEIGHT}
+                    fill="currentColor"
+                    opacity={0.03}
+                  />
+                )}
+                <circle
+                  cx={zeroX}
+                  cy={cy - 4}
+                  r={3}
+                  fill="#D1D5DB"
+                  opacity={0.5}
+                >
+                  <title>n={cr.row.treated_n ?? 1} — insufficient for classification</title>
+                </circle>
+              </g>
+            );
+          }
+
+          // Edge case: no_concurrent_control
+          if (cr.isEdge === "no_concurrent_control") {
+            return (
+              <g key={cr.row.dose_level}>
+                {isHovered && (
+                  <rect
+                    x={0}
+                    y={cy - ROW_HEIGHT / 2}
+                    width={chartWidth}
+                    height={ROW_HEIGHT}
+                    fill="currentColor"
+                    opacity={0.03}
+                  />
+                )}
+                <text
+                  x={zeroX}
+                  y={cy - 4}
+                  fontSize={8}
+                  fill="#D97706"
+                  dominantBaseline="middle"
+                  textAnchor="middle"
+                >
+                  ⚠
+                </text>
+              </g>
+            );
+          }
+
+          // Edge case: below-threshold
+          if (cr.isEdge === "below-threshold") {
+            const tVal = cr.terminalVal ?? 0;
+            const tx = scale(tVal);
+            return (
+              <g
+                key={cr.row.dose_level}
+                onMouseEnter={() => onHoverDose(cr.row.dose_level)}
+                onMouseLeave={() => onHoverDose(null)}
+                onClick={() => onClickDose(cr.row.dose_level)}
+                className="cursor-pointer"
+              >
+                {isHovered && (
+                  <rect
+                    x={0}
+                    y={cy - ROW_HEIGHT / 2}
+                    width={chartWidth}
+                    height={ROW_HEIGHT}
+                    fill="currentColor"
+                    opacity={0.03}
+                  />
+                )}
+                <circle cx={tx} cy={cy - 4} r={3} fill="#E5E7EB">
+                  <title>Not assessed (|{effectSymbol}|={formatGAbs(cr.row.terminal_effect ?? 0)})</title>
+                </circle>
+              </g>
+            );
+          }
+
+          // Normal row
+          const tVal = cr.terminalVal ?? 0;
+          const rVal = cr.recoveryVal ?? 0;
+          const tx = scale(tVal);
+          const rx = scale(rVal);
+          const cs = connectorStyle(cr.row.p_value);
+          const recovering = rVal < tVal; // effect shrinking = recovering
+          const arrowDir = recovering ? -1 : 1; // -1 = left (recovering), 1 = right (worsening)
+
+          // Terminal → recovery tooltip
+          const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
+          const deltaDir = recovering ? "dropped" : "grew";
+          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size);
+          const pctStr = v.pctRecovered != null ? `${Math.abs(Math.round(v.pctRecovered))}%` : "";
+          const recoveryTooltip = `${verdictStr} · Δ ${deltaDir} ${pctStr} (${effectSymbol}: ${formatGAbs(cr.row.terminal_effect ?? 0)} → ${formatGAbs(cr.row.effect_size ?? 0)})`;
+
+          // Peak trajectory tooltip
+          const showPeak = cr.peakVal != null && hasPeakQualifier(cr.row);
+          let peakTooltip = "";
+          if (showPeak) {
+            const peakG = Math.abs(cr.row.peak_effect!);
+            const termG = Math.abs(cr.row.terminal_effect ?? 0);
+            const recG = Math.abs(cr.row.effect_size ?? 0);
+            const pDay = cr.row.peak_day ?? "?";
+            const tDay = cr.row.terminal_day ?? "?";
+            const rDay = cr.row.recovery_day ?? "?";
+            const pctDosing = termG > 0 ? Math.round(((peakG - termG) / peakG) * 100) : 0;
+            const pctRecovery = termG > 0 ? Math.round(((termG - recG) / termG) * 100) : 0;
+            const recDir = recG <= termG ? "resolved" : "worsened";
+            peakTooltip =
+              `Peak (D${pDay}): ${formatGAbs(peakG)}${effectSymbol} → ` +
+              `Terminal (D${tDay}): ${formatGAbs(termG)}${effectSymbol} → ` +
+              `Recovery (D${rDay}): ${formatGAbs(recG)}${effectSymbol}\n` +
+              `╰── ${pctDosing}% resolved during dosing ─╯ ╰── ${Math.abs(pctRecovery)}% ${recDir} during recovery ─╯`;
+          }
+
+          // Marker lines: thin verticals at terminal, recovery, peak positions
+          // Suppressed when too close to zero or |g|=0.8 reference lines
+          const showThreshold = LARGE_EFFECT_THRESHOLD <= xMax;
+          const isTooClose = (px: number) =>
+            Math.abs(px - zeroX) < MIN_LINE_DIST ||
+            (showThreshold && Math.abs(px - thresholdX) < MIN_LINE_DIST);
+          const markerLines: { x: number; color: string }[] = [];
+          if (!isTooClose(tx)) markerLines.push({ x: tx, color: CONNECTOR_COLOR });
+          if (!isTooClose(rx)) markerLines.push({ x: rx, color: CONNECTOR_COLOR });
+          if (showPeak) {
+            const px = scale(cr.peakVal!);
+            if (!isTooClose(px)) markerLines.push({ x: px, color: "#D97706" });
+          }
+
+          return (
+            <g
+              key={cr.row.dose_level}
+              onMouseEnter={() => onHoverDose(cr.row.dose_level)}
+              onMouseLeave={() => onHoverDose(null)}
+              onClick={() => onClickDose(cr.row.dose_level)}
+              className="cursor-pointer"
+            >
+              {/* Row hover highlight */}
+              {isHovered && (
+                <rect
+                  x={0}
+                  y={cy - ROW_HEIGHT / 2}
+                  width={chartWidth}
+                  height={ROW_HEIGHT}
+                  fill="currentColor"
+                  opacity={0.03}
+                />
+              )}
+
+              {/* Per-row marker lines at terminal/recovery/peak positions */}
+              {markerLines.map((ml, mi) => (
+                <line
+                  key={mi}
+                  x1={ml.x}
+                  y1={cy - ROW_HEIGHT / 2}
+                  x2={ml.x}
+                  y2={cy + ROW_HEIGHT / 2}
+                  stroke={ml.color}
+                  strokeWidth={0.5}
+                  opacity={0.15}
+                />
+              ))}
+
+              {/* Peak group — separate tooltip */}
+              {showPeak && (
+                <g>
+                  <title>{peakTooltip}</title>
+                  {/* Invisible wider hit area for dotted line */}
+                  <line
+                    x1={scale(cr.peakVal!)}
+                    y1={cy - 4}
+                    x2={tx}
+                    y2={cy - 4}
+                    stroke="transparent"
+                    strokeWidth={8}
+                  />
+                  {/* Dotted connector from peak to terminal */}
+                  <line
+                    x1={scale(cr.peakVal!)}
+                    y1={cy - 4}
+                    x2={tx}
+                    y2={cy - 4}
+                    stroke="#D97706"
+                    strokeWidth={0.5}
+                    strokeDasharray="2,3"
+                    opacity={0.4}
+                  />
+                  {/* Triangle marker — amber outline, no fill */}
+                  <polygon
+                    points={`${scale(cr.peakVal!)},${cy - 4 - 3.5} ${scale(cr.peakVal!) - 3},${cy - 4 + 2} ${scale(cr.peakVal!) + 3},${cy - 4 + 2}`}
+                    fill="none"
+                    stroke="#D97706"
+                    strokeWidth={1}
+                    opacity={0.6}
+                  />
+                </g>
+              )}
+
+              {/* Terminal → Recovery group — separate tooltip */}
+              <g>
+                <title>{recoveryTooltip}</title>
+                {/* Invisible wider hit area for connector line */}
+                <line
+                  x1={tx}
+                  y1={cy - 4}
+                  x2={rx}
+                  y2={cy - 4}
+                  stroke="transparent"
+                  strokeWidth={8}
+                />
+                {/* Connector line: terminal → recovery */}
+                <line
+                  x1={tx}
+                  y1={cy - 4}
+                  x2={rx}
+                  y2={cy - 4}
+                  stroke={CONNECTOR_COLOR}
+                  strokeWidth={cs.width}
+                  opacity={cs.opacity}
+                />
+
+                {/* Terminal dot (filled) */}
+                <circle
+                  cx={tx}
+                  cy={cy - 4}
+                  r={DOT_R}
+                  fill={CONNECTOR_COLOR}
+                />
+
+                {/* Vertical pipe at recovery g value */}
+                <line
+                  x1={rx}
+                  y1={cy - 4 - DOT_R}
+                  x2={rx}
+                  y2={cy - 4 + DOT_R}
+                  stroke={CONNECTOR_COLOR}
+                  strokeWidth={1.5}
+                  opacity={cs.opacity}
+                />
+
+                {/* Arrow tip at recovery end */}
+                <polygon
+                  points={
+                    arrowDir > 0
+                      ? `${rx - ARROW_SIZE},${cy - 4 - ARROW_SIZE / 2} ${rx},${cy - 4} ${rx - ARROW_SIZE},${cy - 4 + ARROW_SIZE / 2}`
+                      : `${rx + ARROW_SIZE},${cy - 4 - ARROW_SIZE / 2} ${rx},${cy - 4} ${rx + ARROW_SIZE},${cy - 4 + ARROW_SIZE / 2}`
+                  }
+                  fill={CONNECTOR_COLOR}
+                  opacity={cs.opacity}
+                />
+              </g>
+
+            </g>
+          );
+        })}
+
+      </svg>
+
+      {/* Per-panel footer: J-T trend */}
+      {trend && (
+        <div className="text-[9px] text-muted-foreground mt-0.5 px-1">
+          Trend: p={trend.p < 0.001 ? "<0.001" : trend.p.toFixed(3)} (J-T)
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────
+
+export function RecoveryDumbbellChart({
+  rows,
+  doseGroups,
+  terminalDay,
+  recoveryDay,
+  onDoseClick,
+}: RecoveryDumbbellChartProps) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { effectSize } = useStatMethods(studyId);
+  const effectSymbol = getEffectSizeSymbol(effectSize);
+
+  const [hoveredDose, setHoveredDose] = useState<number | null>(null);
+
+  // Split rows by sex (F before M)
+  const sexes = useMemo(() => [...new Set(rows.map((r) => r.sex))].sort(), [rows]);
+
+  const rowsBySex = useMemo(() => {
+    const map: Record<string, RecoveryRow[]> = {};
+    for (const s of sexes) {
+      map[s] = rows.filter((r) => r.sex === s);
+    }
+    return map;
+  }, [rows, sexes]);
+
+  const chartRowsBySex = useMemo(() => {
+    const map: Record<string, ChartRow[]> = {};
+    for (const s of sexes) {
+      map[s] = buildChartRows(rowsBySex[s], doseGroups);
+    }
+    return map;
+  }, [rowsBySex, sexes, doseGroups]);
+
+  // Compute x-axis bounds
+  // Global x-axis scale across both panels — enables M vs F comparison
+  const { xMin, xMax } = useMemo(() => {
+    let mn = 0;
+    let mx = 0;
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) {
+        if (cr.isEdge) continue;
+        const vals = [cr.terminalVal, cr.recoveryVal];
+        if (cr.peakVal != null && hasPeakQualifier(cr.row)) {
+          vals.push(cr.peakVal);
+        }
+        for (const v of vals) {
+          if (v != null) {
+            mn = Math.min(mn, v);
+            mx = Math.max(mx, v);
+          }
+        }
+      }
+    }
+    // Tight to data — only pad right for labels
+    const pad = (mx - mn) * 0.15 || 0.5;
+    return { xMin: mn, xMax: mx + pad };
+  }, [chartRowsBySex, sexes]);
+
+  // Dose labels (shared column from F or first sex)
+  const primarySex = sexes[0] ?? "F";
+  const primaryRows = chartRowsBySex[primarySex] ?? [];
+
+  const handleDoseClick = useCallback(
+    (dose: number) => {
+      onDoseClick?.(dose);
+    },
+    [onDoseClick],
+  );
+
+  if (sexes.length === 0 || primaryRows.length === 0) return null;
+
+  const tDay = terminalDay ?? rows[0]?.terminal_day;
+  const rDay = recoveryDay ?? rows[0]?.recovery_day;
+
+  return (
+    <div className="space-y-1">
+      {/* Legend */}
+      <div className="text-[9px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
+        <span className="inline-flex items-center gap-1">
+          <svg width="8" height="8" viewBox="0 0 8 8">
+            <circle cx="4" cy="4" r="2.5" fill="#94A3B8" />
+          </svg>
+          Terminal{tDay != null ? ` (D${tDay})` : ""}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <svg width="4" height="8" viewBox="0 0 4 8">
+            <line x1="2" y1="1" x2="2" y2="7" stroke="#94A3B8" strokeWidth="1.5" />
+          </svg>
+          Recovery{rDay != null ? ` (D${rDay})` : ""}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <svg width="8" height="8" viewBox="0 0 8 8">
+            <polygon points="4,1 1,7 7,7" fill="none" stroke="#D97706" strokeWidth="1" />
+          </svg>
+          Peak
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="1.5" /></svg>
+          p&lt;0.05
+        </span>
+        <span className="inline-flex items-center gap-1" title="Recovery cohorts typically have smaller group sizes (n=5–10). Non-significant p-values do not rule out biologically meaningful effects.">
+          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="0.5" opacity="0.7" /></svg>
+          p≥0.05 <span className="text-muted-foreground">*</span>
+        </span>
+      </div>
+
+      {/* Chart area: dose labels + panels */}
+      <div className="flex gap-0">
+        {/* Shared dose labels column */}
+        <div className="w-[60px] shrink-0 flex flex-col pt-[14px]">
+          {primaryRows.map((cr) => {
+            // Check for control drift warning
+            const row = cr.row;
+            let driftWarning = false;
+            if (
+              row.control_mean_terminal != null &&
+              row.control_mean != null &&
+              Math.abs(row.control_mean_terminal) > 0.001
+            ) {
+              const drift =
+                Math.abs(row.control_mean! - row.control_mean_terminal) /
+                Math.abs(row.control_mean_terminal) *
+                100;
+              if (drift > 15) driftWarning = true;
+            }
+
+            return (
+              <div
+                key={cr.row.dose_level}
+                className="flex items-center justify-end"
+                style={{ height: ROW_HEIGHT }}
+              >
+                {driftWarning && (
+                  <span className="text-[8px] text-amber-600 mr-0.5" title="Control group shifted >15% between terminal and recovery">
+                    ⚠
+                  </span>
+                )}
+                <DoseLabel
+                  level={cr.row.dose_level}
+                  label={cr.doseLabel}
+                  align="right"
+                  className="text-[9px]"
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Panels */}
+        {sexes.map((sex, idx) => {
+          const sRows = chartRowsBySex[sex] ?? [];
+          return (
+            <div key={sex} className="contents">
+              {idx > 0 && <div className="w-px bg-border/30" />}
+              <DumbbellPanel
+                chartRows={sRows}
+                xMin={xMin}
+                xMax={xMax}
+                effectSymbol={effectSymbol}
+                terminalDay={tDay ?? null}
+                sex={sex}
+                hoveredDose={hoveredDose}
+                onHoverDose={setHoveredDose}
+                onClickDose={handleDoseClick}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+    </div>
+  );
+}

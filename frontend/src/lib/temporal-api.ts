@@ -125,6 +125,18 @@ export interface RecoveryComparisonResponse {
     insufficient_n?: boolean;
     /** True when no concurrent control exists at recovery. */
     no_concurrent_control?: boolean;
+    /** % difference from control at terminal: (treated - control) / control × 100. */
+    pct_diff_terminal?: number | null;
+    /** % difference from control at recovery. */
+    pct_diff_recovery?: number | null;
+    /** Lower 95% CI of mean difference at recovery. */
+    ci_lower?: number | null;
+    /** Upper 95% CI of mean difference at recovery. */
+    ci_upper?: number | null;
+    /** Lower 95% CI of mean difference at terminal. */
+    ci_lower_terminal?: number | null;
+    /** Upper 95% CI of mean difference at terminal. */
+    ci_upper_terminal?: number | null;
   }[];
 }
 
