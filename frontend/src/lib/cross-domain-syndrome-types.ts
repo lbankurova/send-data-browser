@@ -155,3 +155,25 @@ export interface SyndromeNearMissInfo {
   /** Tags of required terms that did NOT match (e.g. ["GGT", "5NT"]) */
   missing: string[];
 }
+
+// ─── Cross-organ chain types ─────────────────────────────
+
+export interface ChainStep {
+  step: number;
+  organ: string;
+  mi_terms: string[];
+  mi_specimen?: string[];
+  om_specimen?: string;
+  om_direction?: "up" | "down" | "any";
+  lb_codes: string[];
+  lb_direction?: "up" | "down";
+  bw_direction?: "down";
+}
+
+export interface ChainDefinition {
+  id: string;
+  name: string;
+  steps: ChainStep[];
+  completeTier: string;
+  partialTier: string;
+}

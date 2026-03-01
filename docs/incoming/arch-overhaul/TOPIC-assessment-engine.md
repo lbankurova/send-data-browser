@@ -1,6 +1,6 @@
 # TOPIC Hub: Assessment Engine — Regulatory Alignment & Roadmap
 
-**Created:** 2026-02-28 | **Updated:** 2026-03-01 (Tiers 1+2+3A+3B shipped, HCD Phase 2 SQLite shipped, Phase 1+ Wistar Han HCD, Briefs 1/2/4/5/6 incorporated)
+**Created:** 2026-02-28 | **Updated:** 2026-03-01 (Tiers 1+2+3A+3B shipped, HCD Phase 2 SQLite shipped, Phase 1+ Wistar Han HCD, Briefs 1/2/3/4/5/6 incorporated)
 **Source material:**
 - `docs/deep-research/reg-standards-for-auto-tox-finding-assessment.md` — Regulatory standards audit (7 domains)
 - `docs/deep-research/github-repos-overlay-tox-assessment.md` — Open-source landscape (27 repos, build vs. leverage)
@@ -17,7 +17,7 @@
 
 ## 1. Executive Summary
 
-The deep-research documents propose a **four-phase assessment engine overhaul** grounded in the ECETOC TR 085 two-step adversity framework, organ-specific regulatory thresholds, GRADE-adapted confidence scoring, and cross-domain concordance detection. The system already implements more of this than the research anticipated — the organ weight normalization engine (Bailey 2004 categories, 4-tier BW effects, ANCOVA decomposition) and the cross-domain syndrome engine (10 syndromes with compound logic) are production-quality.
+The deep-research documents propose a **four-phase assessment engine overhaul** grounded in the ECETOC TR 085 two-step adversity framework, organ-specific regulatory thresholds, GRADE-adapted confidence scoring, and cross-domain concordance detection. The system already implements more of this than the research anticipated — the organ weight normalization engine (Bailey 2004 categories, 4-tier BW effects, ANCOVA decomposition) and the cross-domain syndrome engine (33 syndromes + 5 cross-organ chains with compound logic) are production-quality.
 
 **Tier 1 shipped** (commit `f6c195d`, 2026-02-28): The foundational split-brain problem is resolved. Backend `assess_finding()` implements per-finding ECETOC assessment producing five-category `finding_class` (not_treatment_related / tr_non_adverse / tr_adaptive / tr_adverse / equivocal). Intrinsic adversity dictionary (`shared/adversity-dictionary.json`) auto-classifies necrosis, fibrosis, neoplasia. NOAEL derivation consumes `finding_class` via `_is_loael_driving()`. 1025 tests pass.
 
@@ -27,7 +27,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 
 **HCD Phase 2 shipped** (2026-03-01): SQLite-first HCD architecture from NTP DTT Integrated Animal Data (IAD). ETL pipeline (`etl/hcd_etl.py`) downloads and parses 78 MB organ weight Excel → 78K+ individual control animal records → 188 pre-aggregated entries in `backend/data/hcd.db`. Coverage: 7 strains with aggregates (B6C3F1/N, C57BL/6N, CD-1, F344/N, FVB/N, SD, WISTAR HAN), 16 organs, 3 duration categories (28-day, 90-day, chronic). Query layer (`hcd_database.py::HcdSqliteDB`) provides progressive route/vehicle filter relaxation and percentile ranking. `assess_a3()` tries SQLite first, falls back to JSON. Route/vehicle extracted from TS domain and threaded through entire pipeline. 21 new test assertions, 1093 total pass.
 
-**Bottom line:** The system is ~90% through Phase 0 and ~95% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), Phase 1+ (Wistar Han NTP composite), Tier 3B (B-6 progression chains), Track 4A (per-finding GRADE confidence), and **HCD Phase 2 (SQLite from DTT IAD)** are shipped. The heaviest remaining implementation work is onset-timing modifiers for BW/CL.
+**Bottom line:** The system is ~90% through Phase 0 and ~95% through Phase 1. Research is complete for all six briefs. Tier 2C (Hall 2012 liver panel), Tier 3A (HCD Phase 1, SD rat static ranges), Phase 1+ (Wistar Han NTP composite), Tier 3B (B-6 progression chains), Track 4A (per-finding GRADE confidence), **HCD Phase 2 (SQLite from DTT IAD)**, and **Brief 3 (cross-domain concordance linkage: 23 XC entries + 5 chains)** are shipped. The heaviest remaining implementation work is onset-timing modifiers for BW/CL.
 
 ---
 
@@ -49,7 +49,7 @@ The deep-research documents propose a **four-phase assessment engine overhaul** 
 |---|---|---|---|
 | **ECETOC Step 1 (treatment-relatedness)** | 5/7 factors | A-1 dose-response (0-2pts) ✓, A-2 concordance via `corroboration_status` (0-1pt) ✓, **A-3 HCD ✓** (Phase 2 SQLite: 7 strains, 16 organs, 3 durations + Phase 1 JSON fallback), A-6 statistics (0-1pt) ✓, A-7 clinical obs ✓. A-4 temporal partial (food only), A-5 mechanism missing. | A-3 Phase 2 shipped (SQLite from NTP DTT IAD, 78K+ records). Progressive route/vehicle filter relaxation. Percentile ranking. A-5 requires MOA annotations. A-4: **Brief 5 decided** onset-timing modifier for BW/CL goes into DR quality, not A-4. |
 | **ECETOC Step 2 (adversity)** | ~~7/7 factors~~ | B-2 adaptive: intrinsic adversity dict ✓ + 6 adaptive decision trees ✓ (liver, thyroid, adrenal, thymus/spleen, kidney, gastric), B-3 reversibility ✓, B-4 magnitude ✓, B-5 cross-domain ✓, **B-6 progression chains ✓** (14 organ-specific chains in YAML, `progression_chains.py` engine), B-7 secondary ✓. | None — B-6 shipped. `shared/progression-chains.yaml` (~340L), `progression_chains.py` (~280L). PointCross: 3 escalated, 17 annotated. Adaptive trees shipped — `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L). |
-| **Cross-domain concordance** | DONE (mostly) | 10 syndromes (XS01-XS10), shared definitions, frontend full scoring with compound logic + directional gates + magnitude floors. Backend corroboration_status **now consumed** by NOAEL (via `assess_finding()` A-2 factor) and classification. | Backend corroboration still lacks compound logic/directional gates/magnitude floors (frontend-only). |
+| **Cross-domain concordance** | ~~DONE~~ | 33 syndromes (XS01-XS10 + 23 XC concordance entries: XC01a–XC12c) + 5 cross-organ chains (CHAIN_01–05). Shared definitions, frontend full scoring with compound logic + directional gates + magnitude floors. Backend corroboration_status **now consumed** by NOAEL (via `assess_finding()` A-2 factor) and classification. Backend chain detection (`compute_chain_detection()`) annotates findings with chain_matches. **Brief 3 shipped.** | Backend corroboration still lacks compound logic/directional gates/magnitude floors (frontend-only). |
 | **Per-sex assessment** | DONE | All analyses per-sex. NOAEL provides M/F/Combined. Sex divergence detection and display. Separate narratives when divergent. | Missing: sex-dimorphism mechanism flags (α2u nephropathy, CYP differences). min(M,F) has no exceptions — always conservative. **Brief 1** documents α2u-globulin flag for male rat kidney — ready for implementation. |
 | **Liver hypertrophy decision tree** | ~~DONE~~ | Full Hall 2012 tree in `_tree_liver()`: 9-marker LB panel check (ALT/AST/ALP/GGT/BILI/CHOL/BILEAC/TP/ALB), min 5 clean, ALT+AST critical, any significant change = not clean (catches both ↑ and ↓), per-marker detail in annotations. Config in `organ-weight-thresholds.json`. | None — shipped. Frontend XS01 adaptive check remains as the simpler syndrome-level counterpart (different abstraction layer). |
 
@@ -80,7 +80,7 @@ The research documents (especially the GitHub repos overlay) position the system
 
 1. **Organ weight normalization engine** — Bailey 2004 organ categories, 4-tier BW-effect classification, ANCOVA decomposition with direct/indirect effect separation, Williams' step-down trend test, 12 species/strain brain tier profiles, reproductive organ sub-categorization. The research roadmap puts this as Phase 0 priority; it's already done.
 
-2. **Cross-domain syndrome detection** — 10 syndromes with compound required logic, directional gates, magnitude floors, endpoint class floors. Two-layer architecture (backend presence-based, frontend full scoring). Shared JSON definitions consumed by both Python and TypeScript.
+2. **Cross-domain syndrome detection** — 33 syndromes (10 XS + 23 XC concordance entries) with compound required logic, directional gates, magnitude floors, endpoint class floors. 5 cross-organ chains (liver→thyroid, BM→blood→spleen, stress wasting, testicular cascade, hemolytic multi-organ). Two-layer architecture (backend presence-based + chain detection, frontend full scoring). Shared JSON definitions consumed by both Python and TypeScript. SEND terminology alignment (171 codes) for MI/LB/OM/CL domains. CL (clinical observation) domain matching enabled.
 
 3. **ECETOC framework partial implementation** — `syndrome-ecetoc.ts` (902 lines) implements the two-step structure with factor-by-factor reasoning traces. This is the exact architecture the research proposes.
 
@@ -128,7 +128,7 @@ Three gaps require external data sources, not just code changes:
 | `shared/hcd-reference-ranges.json` | ~94 | JSON fallback: SD rat (Envigo C11963, 10 organs × 2 sexes × 2 durations) + Wistar Han (NTP TR-587/591/593 composite, 7 organs × 2 sexes, 90-day) |
 | `backend/services/analysis/concurrent_findings.py` | ~158 | ConcurrentFindingIndex for cross-finding queries (is_lb_marker_clean: any significant change = not clean) |
 | `backend/services/analysis/adaptive_trees.py` | ~740 | 6 adaptive decision trees (liver/Hall 2012 panel, thyroid, adrenal, thymus/spleen, kidney, gastric) |
-| `backend/services/analysis/corroboration.py` | ~230 | Presence-based cross-domain syndrome matching, quality gate |
+| `backend/services/analysis/corroboration.py` | ~350 | Presence-based cross-domain syndrome matching, quality gate, cross-organ chain detection (`compute_chain_detection()`) |
 | `backend/services/analysis/findings_pipeline.py` | ~330 | Shared enrichment: classification, fold change, corroboration, ConcurrentFindingIndex, assess_finding_with_context (strain + duration + route + vehicle threading) |
 | `backend/services/analysis/findings_om.py` | ~400 | Organ weight domain: 3 metrics, normalization selection, Williams' |
 | `backend/services/analysis/normalization.py` | ~350 | Bailey 2004 organ categories, BW-effect tiers, metric selection |
@@ -143,7 +143,8 @@ Three gaps require external data sources, not just code changes:
 | `backend/generator/view_dataframes.py` | ~800 | Signal scoring, NOAEL summary, target organ summary, view assembly |
 | `backend/generator/generate.py` | ~500 | Pipeline orchestration (5 phases) |
 | `backend/services/analysis/unified_findings.py` | ~254 | On-demand unified findings with deterministic IDs, species/strain/route/vehicle threading |
-| `shared/syndrome-definitions.json` | ~600 | 10 syndrome definitions (XS01-XS10) consumed by Python + TypeScript |
+| `shared/syndrome-definitions.json` | ~2386 | 33 syndrome definitions (XS01-XS10 + XC01a-XC12c) + 5 cross-organ chains (CHAIN_01-05) + directionalGates + endpointClassFloors, consumed by Python + TypeScript |
+| `shared/send-terminology-alignment.json` | ~200 | SEND CT reference: 77 MI NONNEO terms, 29 LB tests, 13 OM organs, 47 CL observations, 20 MISPEC organs |
 | `shared/adversity-dictionary.json` | ~65 | 3-tier intrinsic adversity dictionary (21 terms) |
 | `shared/organ-weight-thresholds.json` | ~116 | 13-organ species-specific thresholds (variation ceiling, adverse floor, strong adverse) |
 | `shared/progression-chains.yaml` | ~340 | 14 organ-specific B-6 progression chain definitions (stages, severity triggers, obligate precursors, species/sex filters, human relevance) |
@@ -153,7 +154,7 @@ Three gaps require external data sources, not just code changes:
 | File | Lines | Role |
 |---|---|---|
 | `frontend/src/lib/syndrome-ecetoc.ts` | ~900 | ECETOC two-step framework: treatment-relatedness + adversity |
-| `frontend/src/lib/cross-domain-syndromes.ts` | ~1180 | Full syndrome scoring: compound logic, directional gates, magnitude floors |
+| `frontend/src/lib/cross-domain-syndromes.ts` | ~1183 | Full syndrome scoring: compound logic, directional gates, magnitude floors. Re-exports ChainDefinition type and CHAIN_DEFINITIONS data. |
 | `frontend/src/lib/syndrome-rules.ts` | ~540 | Histopathology-specific syndromes (14 rules) |
 | `frontend/src/lib/finding-nature.ts` | ~150 | 7 biological nature categories + reversibility |
 | `frontend/src/lib/protective-signal.ts` | ~200 | 3-tier protective signal classification |
@@ -389,7 +390,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 | Cross-study HCD analysis | Solved (sendigR) | Not implemented | **Build** static JSON ranges (Phase 1) then SQLite from DTT IAD (Phase 2). sendigR eliminated — no OM support. |
 | Adversity classification | Complete gap in OSS | **Partial** — ECETOC two-step at syndrome level | **Build** extension to all findings |
 | Biological plausibility scoring | Complete gap in OSS | **Partial** — dose-response quality + concordance | **Build** extension with HCD + MOA |
-| Cross-domain concordance engine | Complete gap in OSS | **Built** — 10 syndromes, dual engine | **Enhance** backend with compound logic |
+| Cross-domain concordance engine | Complete gap in OSS | **Built** — 33 syndromes (10 XS + 23 XC), 5 chains, dual engine, CL domain matching | **Enhance** backend with compound logic |
 | Sex-specific assessment | Complete gap in OSS | **Built** — all analyses per-sex | **Enhance** with mechanism flags |
 | NOAEL determination logic | Complete gap in OSS | **Built** — per-sex + combined + override | **Enhance** with ECETOC adversity input |
 | Finding-level confidence scoring | Complete gap in OSS | **Partial** — ECI 5-dimension | **Build** GRADE-adapted 6-dimension |
@@ -457,7 +458,7 @@ Two-gate OM classification replaces uniform Cohen's d thresholds. Each OM findin
 |---|---|---|---|---|
 | 1 | Organ-specific HCD variability & magnitude thresholds | ✅ IMPLEMENTED | `shared/organ-weight-thresholds.json` (116L), `organ_thresholds.py` (154L), two-gate OM in `classification.py` | Tier 2A ✅ |
 | 2 | Non-liver adaptive response classification rules | ✅ IMPLEMENTED | 6 decision trees in `adaptive_trees.py` (723L), `ConcurrentFindingIndex` (155L) | Tier 2B ✅ |
-| 3 | Cross-domain concordance linkage map | NOT STARTED | Organ-by-organ endpoint linkage table beyond XS01-XS10 | Tier 4C |
+| 3 | Cross-domain concordance linkage map | ✅ IMPLEMENTED | 23 XC concordance entries (XC01a–XC12c) covering endocrine, reproductive, neurological, ocular, dermal systems + 5 cross-organ chains. `shared/syndrome-definitions.json` (+1256L), `shared/send-terminology-alignment.json` (200L), `corroboration.py` chain detection, BIOMARKER_MAP endocrine hormones | Brief 3 ✅ |
 | 4 | NTP CEBS historical control data profiling | ✅ COMPLETE | Phased Option A→B, DTT IAD discovery, sendigR eliminated, SD rat starter ranges compiled | Tier 3A Phase 1 ✅ |
 | 5 | GRADE temporal dimension design decision | ✅ COMPLETE | Decision: merge into B-3 + DR quality, not standalone | Tier 4A |
 | 6 | Non-tumor progression chains (ECETOC B-6) | ✅ IMPLEMENTED | `shared/progression-chains.yaml` (~340L), `progression_chains.py` (~280L), `classification.py` B-6 dispatch | Tier 3B ✅ |

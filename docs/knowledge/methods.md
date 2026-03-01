@@ -544,19 +544,21 @@ Removal by Python object identity (`id(r)`).
 
 ---
 
-### METH-14 — Cross-Domain Syndrome Detection (XS01–XS10)
+### METH-14 — Cross-Domain Syndrome Detection (XS01–XS10, XC01a–XC12c)
 
 **Purpose:** Detect multi-organ toxicological syndromes by matching endpoint patterns across domains against predefined syndrome definitions.
 
-**Implementation:** `detectFromEndpoints(endpoints, sex)` — frontend `cross-domain-syndromes.ts:856`.
+**Implementation:** `detectFromEndpoints(endpoints, sex)` — frontend `cross-domain-syndromes.ts:856`. Backend presence-based matching: `compute_corroboration()` in `corroboration.py`.
 
-**Parameters:** For each syndrome definition:
+**Parameters:** For each of 33 syndrome definitions (10 XS base + 23 XC concordance entries):
 1. Required terms: match via test codes (exact), canonical labels (exact), specimen+finding pairs (MI/MA), or organ+direction (OM)
 2. Supporting terms: match after required logic satisfied
 3. Validation: `domainsCovered.length >= syndrome.minDomains`
 4. Confidence: via CLASS-09 (`assignConfidence`)
 
 Accepts compound Boolean expressions (METH-15) for required logic.
+
+**XC concordance entries (Brief 3):** 23 organ-system-specific entries covering bone marrow lineage (XC01a-c), hemolytic multi-organ (XC02), thyroid (XC03a-b), adrenal (XC04a-c, XC05), reproductive (XC06a-c, XC07a, XC08a-b), CNS (XC09), PNS (XC10), dermal/injection (XC11a-b), ocular (XC12a-c). These extend across MI, LB, OM, CL, and BW domains. CL matching uses `canonicalLabels` (normalized CLSTRESC values like "tremors", "convulsions", "erythema") with `direction: "any"` since clinical observations are presence-based.
 
 **Why this method:** Cross-domain convergence is the strongest evidence of a mechanistic syndrome (e.g., hepatotoxicity = ALT↑ + TBILI↑ + liver necrosis + liver weight↑). Term matching against curated definitions provides consistent, reproducible detection.
 
@@ -906,6 +908,31 @@ When a confirmatory domain is missing, certainty cannot exceed `pattern_only`. W
 **Edge case:** FC increase + BW decrease flags "weight loss despite increased intake" — suggests malabsorption or metabolic toxicity.
 
 **Why per-sex:** Dose groups can differ by sex (different max dose). Aggregating to worst-case loses which sex is affected and at what dose. Per-sex presentation enables reviewers to identify sex-specific sensitivity.
+
+---
+
+### METH-38 — Cross-Organ Chain Detection
+
+**Purpose:** Detect multi-step toxicological cascades that span multiple organs in causal sequence (e.g., hepatic enzyme induction → thyroid follicular cell hypertrophy via T4 depletion and TSH elevation).
+
+**Implementation:** `compute_chain_detection(findings)` — backend `corroboration.py:~280`. Called after `compute_corroboration()` in `findings_pipeline.py:process_findings()`.
+
+**Parameters:** 5 chain definitions in `shared/syndrome-definitions.json` → `chains` key:
+- CHAIN_01: Hepatic Enzyme Induction → Thyroid Axis (4 steps: liver, systemic, pituitary, thyroid)
+- CHAIN_02: Bone Marrow → Blood → Spleen Bidirectional (4 steps: BM, blood, spleen weight, spleen MI)
+- CHAIN_03: Stress Wasting Multi-Organ Cascade (4 steps: adrenal, thymus, body weight, clinical)
+- CHAIN_04: Testicular Reproductive Cascade (4 steps: testis, epididymis, prostate/SV, hormonal)
+- CHAIN_05: Hemolytic Anemia Multi-Organ Response (4 steps: erythroid, marrow, spleen, liver/kidney)
+
+**Algorithm:** For each chain, group treatment-related findings by sex. For each step, check if any finding matches via:
+- MI: specimen contains step's `mi_terms` and finding matches
+- LB: test code in step's `lb_codes` with matching direction
+- OM: specimen matches `om_specimen` with matching direction
+- BW: domain is BW with matching direction
+
+If ≥2 steps matched, annotate all participating findings with `chain_matches` list containing `{chain_id, chain_name, steps_matched, steps_total, tier}`.
+
+**Why this method:** Flat syndrome detection identifies co-occurring signals but cannot express causal ordering. Chain detection adds the temporal/mechanistic dimension: finding A causes B causes C. This is critical for adaptive response classification (e.g., liver enzyme induction → thyroid hypertrophy is adaptive; direct thyroid toxicity is adverse).
 
 ---
 

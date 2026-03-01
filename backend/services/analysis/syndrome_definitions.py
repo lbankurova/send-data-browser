@@ -14,6 +14,7 @@ _raw = json.loads(_DEFS_PATH.read_text(encoding="utf-8"))
 SYNDROME_DEFINITIONS: list[dict] = _raw["syndromes"]
 DIRECTIONAL_GATES: dict[str, list[dict]] = _raw["directionalGates"]
 ENDPOINT_CLASS_FLOORS: list[dict] = _raw["endpointClassFloors"]
+CHAIN_DEFINITIONS: list[dict] = _raw.get("chains", [])
 
 
 def get_syndrome(syndrome_id: str) -> dict | None:

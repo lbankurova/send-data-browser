@@ -9,6 +9,7 @@
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import { getSyndromeTermReport } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
@@ -377,6 +378,18 @@ export function interpretSyndrome(
       rat = syndrome.requiredMet
         ? `Required findings met. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`
         : `Syndrome detected through supporting evidence only. Contradicting evidence from directional gate (${gate.action}): ${gateText}.`;
+    }
+    // REM-24: Also check for opposite-direction matches in term report
+    if (!syndrome.directionalGate?.gateFired) {
+      const report = getSyndromeTermReport(syndrome.id, allEndpoints, syndrome.sexes);
+      if (report && report.oppositeCount > 0) {
+        const opposites = [...report.requiredEntries, ...report.supportingEntries]
+          .filter((e) => e.status === "opposite")
+          .map((e) => e.label);
+        rat = syndrome.requiredMet
+          ? `Required findings met. Contradicting evidence: ${opposites.join(", ")} (opposite-direction match).`
+          : `Syndrome detected through supporting evidence only. Contradicting evidence: ${opposites.join(", ")} (opposite-direction match).`;
+      }
     }
     const capsResult2 = applyCertaintyCaps(syndrome, cert, rat, allEndpoints, histopathData);
     certaintyResult = { certainty: capsResult2.certainty, evidence: [], rationale: capsResult2.rationale, upgradeEvidence: capsResult2.upgradeEvidence ?? null };

@@ -890,6 +890,998 @@
           "role": "supporting"
         }
       ]
+    },
+    {
+      "id": "XC01a",
+      "name": "BM Myeloid Suppression",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": ["NEUT", "ANC"],
+          "canonicalLabels": ["neutrophils", "neutrophil count", "absolute neutrophil count"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "NEUT"
+        },
+        {
+          "testCodes": ["WBC"],
+          "canonicalLabels": ["white blood cells", "leukocytes"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["bone marrow"],
+            "finding": ["decreased cellularity", "hypocellularity", "aplasia", "hypoplasia", "myeloid depletion", "granulocytic hypoplasia"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["spleen"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC01b",
+      "name": "BM Erythroid Suppression",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "RBC AND HGB AND RETIC"
+      },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": ["RBC"],
+          "canonicalLabels": ["erythrocytes", "red blood cells", "red blood cell count"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "RBC"
+        },
+        {
+          "testCodes": ["HGB", "HB"],
+          "canonicalLabels": ["hemoglobin"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "HGB"
+        },
+        {
+          "testCodes": ["RETIC", "RET", "RETI"],
+          "canonicalLabels": ["reticulocytes", "reticulocyte count"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "RETIC"
+        },
+        {
+          "testCodes": ["HCT"],
+          "canonicalLabels": ["hematocrit"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["bone marrow"],
+            "finding": ["decreased cellularity", "hypocellularity", "erythroid hypoplasia", "erythroid depletion"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["spleen"]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["pallor", "hypoactivity", "decreased activity", "tachypnea"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC01c",
+      "name": "BM Megakaryocyte Suppression",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": ["PLAT", "PLT"],
+          "canonicalLabels": ["platelets", "platelet count"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "PLAT"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["bone marrow"],
+            "finding": ["decreased cellularity", "megakaryocyte decreased", "megakaryocytic hypoplasia"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["petechiae", "ecchymoses", "hemorrhage"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC02",
+      "name": "Hemolytic Anemia Multi-Organ",
+      "requiredLogic": { "type": "all" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "testCodes": ["RBC"],
+          "canonicalLabels": ["erythrocytes", "red blood cells"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "RBC"
+        },
+        {
+          "testCodes": ["RETIC", "RET", "RETI"],
+          "canonicalLabels": ["reticulocytes", "reticulocyte count"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "RETIC"
+        },
+        {
+          "testCodes": ["BILI", "TBILI"],
+          "canonicalLabels": ["bilirubin", "total bilirubin"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "TBILI"
+        },
+        {
+          "testCodes": ["MCV"],
+          "canonicalLabels": ["mean corpuscular volume"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["LDH"],
+          "canonicalLabels": ["lactate dehydrogenase"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["HAPTO", "HPT"],
+          "canonicalLabels": ["haptoglobin"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["spleen"],
+            "finding": ["extramedullary hematopoiesis", "congestion", "hemosiderosis", "hemosiderin", "pigmentation"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["bone marrow"],
+            "finding": ["erythroid hyperplasia", "increased cellularity"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["hemosiderosis", "hemosiderin", "pigmentation"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["hemosiderin", "pigmentation", "hemosiderosis"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["spleen"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "SPLEEN_WT"
+        },
+        {
+          "canonicalLabels": ["pallor", "dark urine", "decreased activity", "hypoactivity", "icterus"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC03a",
+      "name": "Thyroid FCHH (Enzyme Induction)",
+      "requiredLogic": { "type": "all" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": ["T4", "THYROX"],
+          "canonicalLabels": ["thyroxine"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "T4"
+        },
+        {
+          "testCodes": ["TSH"],
+          "canonicalLabels": ["thyroid stimulating hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "TSH"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["thyroid"],
+            "finding": ["hypertrophy, follicular cell", "follicular cell hypertrophy", "hyperplasia, follicular cell", "follicular cell hyperplasia", "colloid alteration", "colloid depletion"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["hypertrophy", "hepatocellular hypertrophy", "centrilobular hypertrophy"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "LIVER_HYPERTROPHY"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["thyroid"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["liver"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "LIVER_WT"
+        }
+      ]
+    },
+    {
+      "id": "XC03b",
+      "name": "Thyroid FCHH (Direct)",
+      "requiredLogic": { "type": "all" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "testCodes": ["T4", "THYROX"],
+          "canonicalLabels": ["thyroxine"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "required",
+          "tag": "T4"
+        },
+        {
+          "testCodes": ["TSH"],
+          "canonicalLabels": ["thyroid stimulating hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "required",
+          "tag": "TSH"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["thyroid"],
+            "finding": ["hypertrophy, follicular cell", "follicular cell hypertrophy", "hyperplasia, follicular cell", "follicular cell hyperplasia", "colloid alteration", "colloid depletion"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["thyroid"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC04a",
+      "name": "Adrenal Cortical Hypertrophy (Stress)",
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "ADRENAL_MI AND (ADRENAL_WT OR THYMUS_WT OR BW)"
+      },
+      "minDomains": 2,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["adrenal"],
+            "finding": ["cortical hypertrophy", "hypertrophy, cortical", "hypertrophy, zona fasciculata"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ADRENAL_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["adrenal"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "required",
+          "tag": "ADRENAL_WT"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["thymus"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "required",
+          "tag": "THYMUS_WT"
+        },
+        {
+          "testCodes": ["LYMPH", "LYM"],
+          "canonicalLabels": ["lymphocytes", "lymphocyte count"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["NEUT", "ANC"],
+          "canonicalLabels": ["neutrophils"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["CORT", "CORTCST"],
+          "canonicalLabels": ["corticosterone", "cortisol"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["body weight"],
+          "domain": "BW",
+          "direction": "down",
+          "role": "required",
+          "tag": "BW"
+        },
+        {
+          "canonicalLabels": ["piloerection", "decreased activity", "hypoactivity"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC04b",
+      "name": "Adrenal Cortical Atrophy (HPA Suppression)",
+      "requiredLogic": { "type": "all" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["adrenal"],
+            "finding": ["cortical atrophy", "atrophy, cortical", "atrophy, zona fasciculata"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ADRENAL_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["adrenal"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "required",
+          "tag": "ADRENAL_WT"
+        },
+        {
+          "testCodes": ["ACTH"],
+          "canonicalLabels": ["adrenocorticotropic hormone"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["CORT", "CORTCST"],
+          "canonicalLabels": ["corticosterone", "cortisol"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC04c",
+      "name": "Adrenal Cortical Vacuolation (Steroidogenesis Block)",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["adrenal"],
+            "finding": ["vacuolation, cortical", "cortical vacuolation", "vacuolation, zona fasciculata"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ADRENAL_MI"
+        },
+        {
+          "testCodes": ["CORT", "CORTCST"],
+          "canonicalLabels": ["corticosterone", "cortisol"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["ACTH"],
+          "canonicalLabels": ["adrenocorticotropic hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["K"],
+          "canonicalLabels": ["potassium"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["SODIUM", "NA"],
+          "canonicalLabels": ["sodium"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["adrenal"]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC05",
+      "name": "Adrenal Medullary Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["adrenal"],
+            "finding": ["chromaffin cell hyperplasia", "hyperplasia, chromaffin cell", "hyperplasia, medullary", "pheochromocytoma", "medullary hyperplasia"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ADRENAL_MED_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["adrenal"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC06a",
+      "name": "Testicular Germ Cell Toxicity",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["testis", "testes"],
+            "finding": ["tubular degeneration", "degeneration, tubular", "germ cell depletion", "germ cell necrosis", "spermatid retention", "tubular atrophy", "atrophy, tubular"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "TESTIS_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["testis", "testes"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "TESTIS_WT"
+        },
+        {
+          "testCodes": ["TESTO"],
+          "canonicalLabels": ["testosterone"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["FSH"],
+          "canonicalLabels": ["follicle stimulating hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["INHBB"],
+          "canonicalLabels": ["inhibin b"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC06b",
+      "name": "Leydig Cell Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["testis", "testes"],
+            "finding": ["leydig cell atrophy", "atrophy, leydig cell", "leydig cell hyperplasia", "hyperplasia, leydig cell", "leydig cell hypertrophy", "hypertrophy, leydig cell"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "LEYDIG_MI"
+        },
+        {
+          "testCodes": ["TESTO"],
+          "canonicalLabels": ["testosterone"],
+          "domain": "LB",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["LH"],
+          "canonicalLabels": ["luteinizing hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["testis", "testes"]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC06c",
+      "name": "Male Accessory Sex Organ Atrophy",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["epididymis"],
+            "finding": ["atrophy", "decreased weight"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ASO_MI"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["prostate"],
+            "finding": ["atrophy", "secretory depletion", "acinar atrophy", "atrophy, acinar"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ASO_MI"
+        },
+        {
+          "specimenTerms": {
+            "specimen": ["seminal vesicle"],
+            "finding": ["atrophy", "decreased secretion"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "ASO_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["prostate", "epididymis", "seminal vesicle"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting",
+          "tag": "ASO_WT"
+        },
+        {
+          "testCodes": ["TESTO"],
+          "canonicalLabels": ["testosterone"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC07a",
+      "name": "Ovarian Follicular Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["ovary", "ovaries"],
+            "finding": ["follicular atresia", "atresia", "primordial follicle depletion", "depletion, primordial follicle", "cyst, follicular", "follicular cyst", "corpora lutea, decreased", "decreased corpora lutea"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "OVARY_MI"
+        },
+        {
+          "testCodes": ["ESTRA"],
+          "canonicalLabels": ["estradiol"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["FSH"],
+          "canonicalLabels": ["follicle stimulating hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["LH"],
+          "canonicalLabels": ["luteinizing hormone"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["PROG"],
+          "canonicalLabels": ["progesterone"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["ovary", "ovaries"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["irregular cycling", "prolonged diestrus", "persistent estrus", "persistent diestrus"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC08a",
+      "name": "Uterine Atrophy",
+      "requiredLogic": { "type": "all" },
+      "minDomains": 2,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["uterus"],
+            "finding": ["atrophy", "endometrial atrophy", "atrophy, endometrial"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "UTERUS_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["uterus"]
+          },
+          "domain": "OM",
+          "direction": "down",
+          "role": "required",
+          "tag": "UTERUS_WT"
+        },
+        {
+          "testCodes": ["ESTRA"],
+          "canonicalLabels": ["estradiol"],
+          "domain": "LB",
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["prolonged diestrus", "irregular cycling", "persistent diestrus"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC08b",
+      "name": "Uterine Hyperplasia",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["uterus"],
+            "finding": ["endometrial hyperplasia", "hyperplasia, endometrial", "squamous metaplasia", "metaplasia, squamous"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "UTERUS_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["uterus"]
+          },
+          "domain": "OM",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "testCodes": ["ESTRA"],
+          "canonicalLabels": ["estradiol"],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["persistent estrus", "swollen vulva", "vaginal discharge"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC09",
+      "name": "CNS Neuronal Degeneration",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["brain"],
+            "finding": ["neuronal degeneration", "degeneration, neuronal", "necrosis, neuronal", "neuronal necrosis", "gliosis", "edema", "vacuolation, white matter", "purkinje cell degeneration", "degeneration, purkinje cell", "necrosis, hippocampal"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "CNS_MI"
+        },
+        {
+          "organWeightTerms": {
+            "specimen": ["brain"]
+          },
+          "domain": "OM",
+          "direction": "any",
+          "role": "supporting"
+        },
+        {
+          "canonicalLabels": ["tremors", "convulsions", "seizures", "ataxia", "decreased activity", "hypoactivity", "gait abnormality", "head tilt", "abnormal posture"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC10",
+      "name": "PNS Axonal Degeneration",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["peripheral nerve", "sciatic nerve", "nerve"],
+            "finding": ["axonal degeneration", "degeneration, axonal", "demyelination", "degeneration", "schwann cell hypertrophy", "hypertrophy, schwann cell"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "PNS_MI"
+        },
+        {
+          "canonicalLabels": ["decreased grip strength", "foot splay", "limb weakness", "gait abnormality"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC11a",
+      "name": "Dermal Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["skin"],
+            "finding": ["acanthosis", "epidermal hyperplasia", "hyperplasia, epidermal", "inflammation, dermal", "dermal inflammation", "necrosis, dermal", "ulceration", "ulcer"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "SKIN_MI"
+        },
+        {
+          "canonicalLabels": ["erythema", "edema", "desquamation", "eschar", "scab", "alopecia"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC11b",
+      "name": "Injection Site Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["injection site"],
+            "finding": ["fibrosis", "granuloma", "inflammation", "hemorrhage", "necrosis"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "INJ_MI"
+        },
+        {
+          "canonicalLabels": ["injection site erythema", "injection site induration", "injection site swelling", "injection site mass", "injection site discoloration", "injection site reactions"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC12a",
+      "name": "Retinal Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["eye"],
+            "finding": ["retinal degeneration", "degeneration, retinal", "degeneration, rpe", "retinal atrophy", "atrophy, retinal"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "RETINA_MI"
+        },
+        {
+          "canonicalLabels": ["fundoscopic abnormality", "retinal pigment changes", "vascular attenuation"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC12b",
+      "name": "Lens Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["eye"],
+            "finding": ["cataract", "lens degeneration", "degeneration, lens"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "LENS_MI"
+        },
+        {
+          "canonicalLabels": ["lens opacity", "slit lamp abnormality"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "XC12c",
+      "name": "Corneal Effects",
+      "requiredLogic": { "type": "any" },
+      "minDomains": 1,
+      "terms": [
+        {
+          "specimenTerms": {
+            "specimen": ["eye"],
+            "finding": ["corneal opacity", "opacity, corneal", "corneal edema", "edema, corneal", "corneal mineralization", "mineralization, corneal"]
+          },
+          "domain": "MI",
+          "direction": "any",
+          "role": "required",
+          "tag": "CORNEA_MI"
+        },
+        {
+          "canonicalLabels": ["corneal opacity", "slit lamp abnormality"],
+          "domain": "CL",
+          "direction": "any",
+          "role": "supporting"
+        }
+      ]
     }
   ],
   "directionalGates": {
@@ -938,6 +1930,49 @@
     "XS09": [
       {
         "term": "OM_WT",
+        "expectedDirection": "down",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ],
+    "XC01b": [
+      {
+        "term": "RETIC",
+        "expectedDirection": "down",
+        "action": "reject",
+        "overrideCondition": "MI_MARROW_HYPOCELLULARITY"
+      }
+    ],
+    "XC02": [
+      {
+        "term": "RETIC",
+        "expectedDirection": "up",
+        "action": "reject"
+      },
+      {
+        "term": "SPLEEN_WT",
+        "expectedDirection": "up",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ],
+    "XC04a": [
+      {
+        "term": "ADRENAL_WT",
+        "expectedDirection": "up",
+        "action": "weak_against",
+        "domain": "OM"
+      },
+      {
+        "term": "THYMUS_WT",
+        "expectedDirection": "down",
+        "action": "weak_against",
+        "domain": "OM"
+      }
+    ],
+    "XC06a": [
+      {
+        "term": "TESTIS_WT",
         "expectedDirection": "down",
         "action": "weak_against",
         "domain": "OM"
@@ -1125,6 +2160,227 @@
         "FOOD",
         "FC"
       ]
+    },
+    {
+      "class": "endocrine_hormones",
+      "floor": {
+        "minG": 0.5,
+        "minFcDelta": 0.3
+      },
+      "testCodes": [
+        "T4",
+        "T4FREE",
+        "T3",
+        "TSH",
+        "CORT",
+        "CORTCST",
+        "ACTH",
+        "TESTO",
+        "ESTRA",
+        "FSH",
+        "LH",
+        "PROG",
+        "INHBB"
+      ]
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN_01",
+      "name": "Hepatic Enzyme Induction → Thyroid Axis",
+      "steps": [
+        {
+          "step": 1,
+          "organ": "LIVER",
+          "mi_terms": ["hypertrophy, hepatocellular", "hepatocellular hypertrophy", "centrilobular hypertrophy"],
+          "mi_specimen": ["liver", "hepat"],
+          "om_specimen": "liver",
+          "om_direction": "up",
+          "lb_codes": []
+        },
+        {
+          "step": 2,
+          "organ": "SYSTEMIC",
+          "mi_terms": [],
+          "lb_codes": ["T4", "THYROX"],
+          "lb_direction": "down"
+        },
+        {
+          "step": 3,
+          "organ": "PITUITARY",
+          "mi_terms": ["hypertrophy, thyrotroph", "thyrotroph hypertrophy"],
+          "mi_specimen": ["pituitary"],
+          "lb_codes": ["TSH"],
+          "lb_direction": "up"
+        },
+        {
+          "step": 4,
+          "organ": "THYROID",
+          "mi_terms": ["hypertrophy, follicular cell", "follicular cell hypertrophy", "hyperplasia, follicular cell", "follicular cell hyperplasia", "colloid alteration"],
+          "mi_specimen": ["thyroid"],
+          "om_specimen": "thyroid",
+          "om_direction": "up",
+          "lb_codes": []
+        }
+      ],
+      "completeTier": "tier_1",
+      "partialTier": "tier_2"
+    },
+    {
+      "id": "CHAIN_02",
+      "name": "BM → Blood → Spleen (Hematotoxicity Cascade)",
+      "steps": [
+        {
+          "step": 1,
+          "organ": "BONE_MARROW",
+          "mi_terms": ["hypocellularity", "decreased cellularity", "aplasia"],
+          "mi_specimen": ["bone marrow"],
+          "lb_codes": []
+        },
+        {
+          "step": 2,
+          "organ": "BLOOD",
+          "mi_terms": [],
+          "lb_codes": ["RBC", "WBC", "NEUT", "PLAT", "PLT"],
+          "lb_direction": "down"
+        },
+        {
+          "step": 3,
+          "organ": "SPLEEN",
+          "mi_terms": ["atrophy", "decreased extramedullary", "hypoplasia", "lymphoid depletion"],
+          "mi_specimen": ["spleen"],
+          "om_specimen": "spleen",
+          "om_direction": "down",
+          "lb_codes": []
+        }
+      ],
+      "completeTier": "tier_1",
+      "partialTier": "tier_2"
+    },
+    {
+      "id": "CHAIN_03",
+      "name": "Stress Wasting Cascade",
+      "steps": [
+        {
+          "step": 1,
+          "organ": "SYSTEMIC",
+          "mi_terms": [],
+          "lb_codes": [],
+          "bw_direction": "down"
+        },
+        {
+          "step": 2,
+          "organ": "ADRENAL",
+          "mi_terms": ["cortical hypertrophy", "hypertrophy, cortical", "hypertrophy, zona fasciculata"],
+          "mi_specimen": ["adrenal"],
+          "om_specimen": "adrenal",
+          "om_direction": "up",
+          "lb_codes": []
+        },
+        {
+          "step": 3,
+          "organ": "THYMUS",
+          "mi_terms": ["lymphocyte depletion", "lymphoid depletion", "atrophy"],
+          "mi_specimen": ["thymus"],
+          "om_specimen": "thymus",
+          "om_direction": "down",
+          "lb_codes": []
+        },
+        {
+          "step": 4,
+          "organ": "BLOOD",
+          "mi_terms": [],
+          "lb_codes": ["LYMPH", "LYM"],
+          "lb_direction": "down"
+        }
+      ],
+      "completeTier": "tier_1",
+      "partialTier": "tier_2"
+    },
+    {
+      "id": "CHAIN_04",
+      "name": "Testicular → Reproductive Cascade",
+      "steps": [
+        {
+          "step": 1,
+          "organ": "TESTIS",
+          "mi_terms": ["leydig cell atrophy", "atrophy, leydig cell", "leydig cell hyperplasia", "tubular atrophy", "tubular degeneration"],
+          "mi_specimen": ["testis", "testes"],
+          "lb_codes": []
+        },
+        {
+          "step": 2,
+          "organ": "HORMONAL",
+          "mi_terms": [],
+          "lb_codes": ["TESTO"],
+          "lb_direction": "down"
+        },
+        {
+          "step": 3,
+          "organ": "ACCESSORY_SEX_ORGANS",
+          "mi_terms": ["atrophy", "secretory depletion"],
+          "mi_specimen": ["epididymis", "prostate", "seminal vesicle"],
+          "om_specimen": "prostate",
+          "om_direction": "down",
+          "lb_codes": []
+        },
+        {
+          "step": 4,
+          "organ": "PITUITARY",
+          "mi_terms": ["gonadotroph hypertrophy"],
+          "mi_specimen": ["pituitary"],
+          "lb_codes": ["LH"],
+          "lb_direction": "up"
+        }
+      ],
+      "completeTier": "tier_1",
+      "partialTier": "tier_2"
+    },
+    {
+      "id": "CHAIN_05",
+      "name": "Hemolytic Multi-Organ Cascade",
+      "steps": [
+        {
+          "step": 1,
+          "organ": "BLOOD",
+          "mi_terms": [],
+          "lb_codes": ["RBC"],
+          "lb_direction": "down"
+        },
+        {
+          "step": 2,
+          "organ": "BONE_MARROW",
+          "mi_terms": ["erythroid hyperplasia", "increased cellularity"],
+          "mi_specimen": ["bone marrow"],
+          "lb_codes": ["RETIC", "RET", "RETI"],
+          "lb_direction": "up"
+        },
+        {
+          "step": 3,
+          "organ": "SPLEEN",
+          "mi_terms": ["hemosiderosis", "hemosiderin", "extramedullary hematopoiesis", "congestion", "pigmentation"],
+          "mi_specimen": ["spleen"],
+          "om_specimen": "spleen",
+          "om_direction": "up",
+          "lb_codes": []
+        },
+        {
+          "step": 4,
+          "organ": "LIVER",
+          "mi_terms": ["hemosiderosis", "hemosiderin", "pigmentation"],
+          "mi_specimen": ["liver", "hepat"],
+          "lb_codes": []
+        },
+        {
+          "step": 5,
+          "organ": "KIDNEY",
+          "mi_terms": ["hemosiderin", "pigmentation", "hemosiderosis"],
+          "mi_specimen": ["kidney"],
+          "lb_codes": []
+        }
+      ],
+      "completeTier": "tier_1",
+      "partialTier": "tier_2"
     }
   ]
 }

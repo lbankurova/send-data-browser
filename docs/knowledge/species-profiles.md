@@ -37,6 +37,10 @@ Every place in the analysis engine where scientific logic depends on species or 
 
 8. **A-3 HCD factor (ECETOC):** Fully integrated. SQLite-first (`backend/data/hcd.db`, 7 strains × 16 organs × 3 durations from NTP DTT IAD) with JSON fallback (SD + Wistar Han static ranges). `hcd.py:assess_a3()` scores within_hcd (-0.5) or outside_hcd (+0.5) for OM findings. Strain alias resolution via `strain_aliases` table. Route/vehicle progressive filter relaxation via `hcd_database.py:HcdSqliteDB.query_extended()`.
 
+9. **Endocrine biomarkers in BIOMARKER_MAP:** 17 endocrine hormones added to `send_knowledge.py:BIOMARKER_MAP` (Brief 3, 2026-03-01). Coverage: thyroid (T4, T4FREE, T3, TSH), adrenal (CORTCST, ACTH, EPINEP, NOREPI, DOPA), reproductive (TESTO, ESTRA, FSH, LH, PROG, INHBB), hematology (NRBC). Endocrine endpointClassFloor defined in `syndrome-definitions.json` (minG: 0.5, minFcDelta: 0.3) — hormones have high inter-animal variability requiring relaxed magnitude floors. No species-specific endocrine thresholds yet — floors apply uniformly.
+
+10. **CL (clinical observation) domain matching:** CL findings now participate in cross-domain corroboration via `canonicalLabels` terms in XC syndrome definitions (Brief 3). CL matching is presence-based (`direction: "any"`) since clinical observations signal incidence increase. ~50 CL terms defined across XC02, XC04a-c, XC07a, XC08a-b, XC09, XC10, XC11a-b, XC12a-c (tremors, convulsions, erythema, alopecia, etc.). Not species-gated — same CL terms apply to all species.
+
 ### Confirmed absent
 
 - No REM-11 preferred markers for dog, mouse, monkey, or rabbit (only rat configured)
@@ -46,6 +50,7 @@ Every place in the analysis engine where scientific logic depends on species or 
 - No species-specific HCD incidence ranges (only organ weight HCD via SQLite/JSON)
 - No strain-specific syndrome rules (only narrative caveats)
 - No species-specific hematology baseline adjustments
+- No species-specific endocrine thresholds (hormone magnitude floors uniform across species)
 
 ---
 

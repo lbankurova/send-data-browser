@@ -21,7 +21,7 @@ from services.analysis.classification import (
     compute_max_fold_change,
     assess_finding_with_context,
 )
-from services.analysis.corroboration import compute_corroboration
+from services.analysis.corroboration import compute_corroboration, compute_chain_detection
 from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
@@ -283,6 +283,8 @@ def process_findings(
     enriched = enrich_findings(base_findings)
     # Cross-domain corroboration (requires all enriched findings present)
     enriched = compute_corroboration(enriched)
+    # Cross-organ chain detection (requires all enriched findings present)
+    enriched = compute_chain_detection(enriched)
     # ECETOC per-finding adversity assessment (requires corroboration_status)
     enriched = _assess_all_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,

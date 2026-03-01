@@ -35,7 +35,7 @@ import logging
 import re
 from collections import defaultdict
 
-from services.analysis.syndrome_definitions import SYNDROME_DEFINITIONS
+from services.analysis.syndrome_definitions import SYNDROME_DEFINITIONS, CHAIN_DEFINITIONS
 
 log = logging.getLogger(__name__)
 
@@ -226,5 +226,125 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
             f["corroboration_status"] = "uncorroborated"
         else:
             f["corroboration_status"] = "not_applicable"
+
+    return findings
+
+
+# ---------------------------------------------------------------------------
+# Cross-organ chain detection
+# ---------------------------------------------------------------------------
+
+def _step_matched(step: dict, findings: list[dict]) -> list[dict]:
+    """Return findings that satisfy a chain step's criteria.
+
+    A step can match via MI terms (specimen + finding), LB codes (test_code +
+    direction), OM (specimen + direction), or BW (direction).
+    """
+    matched: list[dict] = []
+    for f in findings:
+        domain = f.get("domain", "").upper()
+
+        # MI matching: specimen prefix + finding word-boundary
+        mi_terms = step.get("mi_terms", [])
+        mi_specimens = step.get("mi_specimen", [])
+        if mi_terms and domain == "MI":
+            f_specimen = _normalize(f.get("specimen") or "")
+            f_finding = _normalize(f.get("finding") or "")
+            specimen_ok = (
+                not mi_specimens
+                or any(f_specimen.startswith(s) for s in mi_specimens)
+            )
+            finding_ok = any(_contains_word(f_finding, _normalize(t)) for t in mi_terms)
+            if specimen_ok and finding_ok:
+                matched.append(f)
+                continue
+
+        # LB matching: test_code in lb_codes + direction
+        lb_codes = step.get("lb_codes", [])
+        if lb_codes and domain == "LB":
+            f_code = (f.get("test_code") or "").upper()
+            if f_code in lb_codes:
+                lb_dir = step.get("lb_direction")
+                if not lb_dir or f.get("direction") == lb_dir:
+                    matched.append(f)
+                    continue
+
+        # OM matching: specimen prefix + direction
+        om_specimen = step.get("om_specimen")
+        if om_specimen and domain == "OM":
+            f_specimen = _normalize(f.get("specimen") or f.get("test_name") or "")
+            if f_specimen.startswith(om_specimen):
+                om_dir = step.get("om_direction")
+                if not om_dir or om_dir == "any" or f.get("direction") == om_dir:
+                    matched.append(f)
+                    continue
+
+        # BW matching: direction only
+        bw_dir = step.get("bw_direction")
+        if bw_dir and domain == "BW":
+            if f.get("direction") == bw_dir:
+                matched.append(f)
+                continue
+
+    return matched
+
+
+def compute_chain_detection(findings: list[dict]) -> list[dict]:
+    """Annotate findings with cross-organ chain matches.
+
+    For each chain definition, groups findings by sex and checks how many
+    steps are satisfied. If >=2 steps match, participating findings get a
+    ``chain_matches`` list entry with chain metadata.
+    """
+    if not CHAIN_DEFINITIONS:
+        return findings
+
+    by_sex: dict[str, list[dict]] = defaultdict(list)
+    for f in findings:
+        by_sex[f.get("sex", "")].append(f)
+
+    for chain in CHAIN_DEFINITIONS:
+        chain_id = chain["id"]
+        chain_name = chain["name"]
+        steps = chain["steps"]
+        total_steps = len(steps)
+
+        for sex, sex_findings in by_sex.items():
+            # Only consider treatment-related findings for chain evidence
+            gated = [f for f in sex_findings if passes_corroboration_gate(f)]
+
+            steps_matched = 0
+            participating: list[dict] = []
+
+            for step in steps:
+                step_hits = _step_matched(step, gated)
+                if step_hits:
+                    steps_matched += 1
+                    participating.extend(step_hits)
+
+            if steps_matched < 2:
+                continue
+
+            tier = chain.get("completeTier", "tier_2") if steps_matched == total_steps else chain.get("partialTier", "tier_3")
+            match_info = {
+                "chain_id": chain_id,
+                "chain_name": chain_name,
+                "steps_matched": steps_matched,
+                "steps_total": total_steps,
+                "tier": tier,
+            }
+
+            # Annotate all participating findings (deduplicated)
+            seen_ids = set()
+            for f in participating:
+                fid = id(f)
+                if fid in seen_ids:
+                    continue
+                seen_ids.add(fid)
+                if "chain_matches" not in f:
+                    f["chain_matches"] = []
+                # Avoid duplicate chain entries on the same finding
+                if not any(cm["chain_id"] == chain_id for cm in f["chain_matches"]):
+                    f["chain_matches"].append(match_info)
 
     return findings

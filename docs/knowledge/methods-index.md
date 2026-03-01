@@ -41,7 +41,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | METH-11 | TK Survivorship Cross-Ref | TK animal survival determination |
 | METH-12 | Rule Suppression | Deduplicate redundant rule signals |
 | METH-13 | Direction Determination | Assign "up"/"down" to findings |
-| METH-14 | Cross-Domain Syndrome Detection | Multi-organ syndrome matching (XS01-XS10) |
+| METH-14 | Cross-Domain Syndrome Detection | Multi-organ syndrome matching (33 syndromes: XS01-XS10 + XC01a-XC12c) |
 | METH-15 | Compound Expression Evaluator | Boolean logic in syndrome definitions |
 | METH-16 | Endpoint Synonym Resolution | Map varied labels to canonical names |
 | METH-17 | Endpoint Aggregation | Collapse multi-row endpoints to single summary |
@@ -65,6 +65,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | METH-35 | Historical Control Data (A-3) | SQLite-first (NTP DTT IAD, 7 strains, 16 organs, 3 durations) with JSON fallback. Strain/sex/duration-specific organ weight reference ranges; treated-group mean vs [mean±2SD] → within_hcd (-0.5) or outside_hcd (+0.5) treatment-relatedness modifier. SQLite adds percentile_rank, n, study_count, progressive route/vehicle filter relaxation. Implementation: `hcd.py:assess_a3()`, `hcd_database.py:HcdSqliteDB` |
 | METH-36 | B-6 Progression Chain Evaluation | 14 organ-specific non-tumor progression chains (YAML-driven); substring term matching → severity trigger or obligate precursor → escalate finding_class to tr_adverse. Implementation: `progression_chains.py:evaluate_b6()` |
 | METH-37 | GRADE-Style Confidence Scoring | Per-finding evidence confidence (HIGH/MODERATE/LOW) from 5 dimensions: D1 statistical strength, D2 dose-response quality, D3 concordance, D4 HCD, D5 cross-sex consistency. Baseline MODERATE (sum=0), each dim +1/0/-1/skip. Implementation: `confidence.py:compute_all_confidence()` |
+| METH-38 | Cross-Organ Chain Detection | 5 multi-step causal cascades (liver→thyroid, BM→blood→spleen, stress wasting, testicular cascade, hemolytic multi-organ). Per-sex step matching across MI/LB/OM/BW domains; ≥2 steps matched → annotate findings with chain_matches. Implementation: `corroboration.py:compute_chain_detection()` |
 
 ## Classification Algorithms (CLASS)
 
