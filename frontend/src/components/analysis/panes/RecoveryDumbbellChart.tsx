@@ -124,9 +124,9 @@ interface ChartRow {
   row: RecoveryRow;
   doseLabel: string;
   verdict: ContinuousVerdictType;
-  terminalVal: number | null; // |g| at terminal
-  recoveryVal: number | null; // |g| at recovery
-  peakVal: number | null;     // |g| at peak
+  terminalVal: number | null; // |g| at terminal (always ≥ 0)
+  recoveryVal: number | null; // |g| at recovery; negative when overcorrected (crossed control)
+  peakVal: number | null;     // |g| at peak (always ≥ 0)
   isEdge: "insufficient_n" | "no_concurrent_control" | null;
 }
 
@@ -167,12 +167,18 @@ function buildChartRows(
 
     const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
 
+    // Chart plots |g|. Overcorrected recovery crosses zero (negative) to show
+    // the effect reversed past control. All other values are absolute.
+    const isOvercorrected = v.verdict === "overcorrected";
+
     return {
       row,
       doseLabel,
       verdict: v.verdict,
       terminalVal: row.terminal_effect != null ? Math.abs(row.terminal_effect) : null,
-      recoveryVal: row.effect_size != null ? Math.abs(row.effect_size) : null,
+      recoveryVal: row.effect_size != null
+        ? (isOvercorrected ? -Math.abs(row.effect_size) : Math.abs(row.effect_size))
+        : null,
       peakVal: row.peak_effect != null ? Math.abs(row.peak_effect) : null,
       isEdge: null,
     };
@@ -225,7 +231,16 @@ function DumbbellPanel({
   };
 
   const zeroX = scale(0);
+
+  // +0.8 threshold (always shown when in range)
   const thresholdX = scale(LARGE_EFFECT_THRESHOLD);
+  const showThresholdLine = LARGE_EFFECT_THRESHOLD >= xMin && LARGE_EFFECT_THRESHOLD <= xMax;
+
+  // -0.8 mirror threshold — only when overcorrection is present in this panel
+  const hasOvercorrection = chartRows.some(cr => !cr.isEdge && cr.recoveryVal != null && cr.recoveryVal < 0);
+  const negThresholdX = scale(-LARGE_EFFECT_THRESHOLD);
+  const showNegThresholdLine = hasOvercorrection && -LARGE_EFFECT_THRESHOLD >= xMin && -LARGE_EFFECT_THRESHOLD <= xMax;
+
   const MIN_LINE_DIST = 8; // px in viewBox units — suppress marker lines too close to references
 
   return (
@@ -251,12 +266,26 @@ function DumbbellPanel({
           strokeWidth={1.5}
         />
 
-        {/* Large effect threshold line */}
-        {LARGE_EFFECT_THRESHOLD <= xMax && (
+        {/* Large effect threshold line (+0.8) */}
+        {showThresholdLine && (
           <line
-            x1={scale(LARGE_EFFECT_THRESHOLD)}
+            x1={thresholdX}
             y1={0}
-            x2={scale(LARGE_EFFECT_THRESHOLD)}
+            x2={thresholdX}
+            y2={chartHeight}
+            stroke={LARGE_EFFECT_COLOR}
+            strokeWidth={0.75}
+            strokeDasharray="3,3"
+            opacity={0.4}
+          />
+        )}
+
+        {/* Mirror threshold line (-0.8) — only when overcorrection present */}
+        {showNegThresholdLine && (
+          <line
+            x1={negThresholdX}
+            y1={0}
+            x2={negThresholdX}
             y2={chartHeight}
             stroke={LARGE_EFFECT_COLOR}
             strokeWidth={0.75}
@@ -331,8 +360,8 @@ function DumbbellPanel({
           const tx = scale(tVal);
           const rx = scale(rVal);
           const cs = connectorStyle(cr.row.p_value);
-          const recovering = rVal < tVal; // effect shrinking = recovering
-          const arrowDir = recovering ? -1 : 1; // -1 = left (recovering), 1 = right (worsening)
+          const recovering = Math.abs(rVal) < Math.abs(tVal); // effect magnitude shrinking = recovering
+          const arrowDir = rx < tx ? -1 : 1; // arrow points in direction of recovery position
 
           // Terminal → recovery tooltip
           const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
@@ -363,10 +392,10 @@ function DumbbellPanel({
 
           // Marker lines: thin verticals at terminal, recovery, peak positions
           // Suppressed when too close to zero or |g|=0.8 reference lines
-          const showThreshold = LARGE_EFFECT_THRESHOLD <= xMax;
           const isTooClose = (px: number) =>
             Math.abs(px - zeroX) < MIN_LINE_DIST ||
-            (showThreshold && Math.abs(px - thresholdX) < MIN_LINE_DIST);
+            (showThresholdLine && Math.abs(px - thresholdX) < MIN_LINE_DIST) ||
+            (showNegThresholdLine && Math.abs(px - negThresholdX) < MIN_LINE_DIST);
           const markerLines: { x: number; color: string }[] = [];
           if (!isTooClose(tx)) markerLines.push({ x: tx, color: CONNECTOR_COLOR });
           if (!isTooClose(rx)) markerLines.push({ x: rx, color: CONNECTOR_COLOR });
@@ -506,18 +535,39 @@ function DumbbellPanel({
 
       {/* HTML labels below chart — CSS pixels, not SVG viewBox units */}
       <div className="relative h-3">
-        <span
-          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
-          style={{ left: `${(zeroX / chartWidth) * 100}%`, transform: "translateX(-100%)" }}
-        >
-          Control{terminalDay != null ? `, D${terminalDay}` : ""}
-        </span>
-        {LARGE_EFFECT_THRESHOLD <= xMax && (
+        {showNegThresholdLine && (
           <span
             className="absolute text-[9px] leading-none whitespace-nowrap"
-            style={{ left: `${(scale(LARGE_EFFECT_THRESHOLD) / chartWidth) * 100}%`, color: LARGE_EFFECT_COLOR, opacity: 0.6 }}
+            style={{
+              left: `${(negThresholdX / chartWidth) * 100}%`,
+              transform: "translateX(-100%)",
+              color: LARGE_EFFECT_COLOR,
+              opacity: 0.6,
+            }}
           >
-            |{effectSymbol}|=0.8
+            −0.8
+          </span>
+        )}
+        <span
+          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
+          style={{
+            left: `${(zeroX / chartWidth) * 100}%`,
+            transform: "translateX(-100%)",
+          }}
+          title={terminalDay != null ? `Control at terminal D${terminalDay}` : "Control"}
+        >
+          C{terminalDay != null ? `: D${terminalDay}` : ""}
+        </span>
+        {showThresholdLine && (
+          <span
+            className="absolute text-[9px] leading-none whitespace-nowrap"
+            style={{
+              left: `${(thresholdX / chartWidth) * 100}%`,
+              color: LARGE_EFFECT_COLOR,
+              opacity: 0.6,
+            }}
+          >
+            0.8
           </span>
         )}
       </div>
@@ -634,12 +684,13 @@ export function RecoveryDumbbellChart({
     return map;
   }, [rowsBySex, sexes, doseGroups]);
 
-  // Compute x-axis bounds
-  // Global x-axis scale across both panels — enables M vs F comparison
-  const { xMin, xMax } = useMemo(() => {
-    let mn = 0;
+  // Global xMax (shared scale for F vs M comparison on the positive/effect side).
+  // Per-sex xMin: only extend left of zero when that panel has overcorrection.
+  const { globalXMax, xMinBySex } = useMemo(() => {
     let mx = 0;
+    const mins: Record<string, number> = {};
     for (const s of sexes) {
+      let mn = 0;
       for (const cr of chartRowsBySex[s] ?? []) {
         if (cr.isEdge) continue;
         const vals = [cr.terminalVal, cr.recoveryVal];
@@ -653,10 +704,18 @@ export function RecoveryDumbbellChart({
           }
         }
       }
+      mins[s] = mn;
     }
-    // Tight to data — only pad right for labels
-    const pad = (mx - mn) * 0.15 || 0.5;
-    return { xMin: mn, xMax: mx + pad };
+    const pad = mx * 0.1 || 0.5;
+    return {
+      globalXMax: mx + pad,
+      xMinBySex: Object.fromEntries(
+        Object.entries(mins).map(([s, mn]) => {
+          const negPad = mn < 0 ? Math.abs(mn) * 0.1 || 0.1 : 0;
+          return [s, mn - negPad];
+        }),
+      ),
+    };
   }, [chartRowsBySex, sexes]);
 
   // Dose labels (shared column from F or first sex)
@@ -757,8 +816,8 @@ export function RecoveryDumbbellChart({
               {idx > 0 && <div className="w-px bg-border/30" />}
               <DumbbellPanel
                 chartRows={sRows}
-                xMin={xMin}
-                xMax={xMax}
+                xMin={xMinBySex[sex] ?? 0}
+                xMax={globalXMax}
                 effectSymbol={effectSymbol}
                 terminalDay={tDay ?? null}
                 sex={sex}
@@ -769,6 +828,8 @@ export function RecoveryDumbbellChart({
             </div>
           );
         })}
+        {/* Keep single-sex panels at half-width to match two-panel scale */}
+        {sexes.length === 1 && <div className="flex-1 min-w-0" />}
       </div>
 
     </div>
