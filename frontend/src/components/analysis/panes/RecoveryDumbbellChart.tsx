@@ -14,11 +14,13 @@ import {
   classifyContinuousRecovery,
   CONT_VERDICT_LABEL,
   formatGAbs,
+  formatPctRecovered,
 } from "@/lib/recovery-verdict";
 import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { DoseLabel } from "@/components/ui/DoseLabel";
+import { getDoseGroupColor } from "@/lib/severity-colors";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -33,6 +35,54 @@ interface RecoveryDumbbellChartProps {
   recoveryDay?: number | null;
   /** When a dose row is clicked, emit the dose_level for scroll-to-text. */
   onDoseClick?: (doseLevel: number) => void;
+}
+
+const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
+  resolved: "text-foreground",
+  reversed: "text-foreground",
+  overcorrected: "text-foreground italic",
+  reversing: "text-foreground",
+  partial: "text-muted-foreground",
+  persistent: "text-foreground font-semibold",
+  worsening: "text-foreground font-semibold",
+};
+
+function formatPCompact(p: number): string {
+  if (p < 0.001) return "<0.001";
+  return p.toFixed(3);
+}
+
+function formatVerdictDesc(
+  terminalG: number | null,
+  recoveryG: number | null,
+  pctRecovered: number | null,
+  pValue: number | null,
+  effectSymbol: string,
+): string {
+  const pStr = pValue != null ? `, p\u2009=\u2009${formatPCompact(pValue)}` : "";
+
+  if (terminalG == null || Math.abs(terminalG) < 0.01) {
+    if (recoveryG != null && Math.abs(recoveryG) >= 0.5) {
+      return `delayed onset (|${effectSymbol}|\u2009=\u2009${formatGAbs(recoveryG)}${pStr})`;
+    }
+    return `no meaningful effect at either timepoint`;
+  }
+
+  const gTrajectory = `${formatGAbs(terminalG)}${effectSymbol} \u2192 ${formatGAbs(recoveryG ?? 0)}${effectSymbol}`;
+  const rG = Math.abs(recoveryG ?? 0);
+  const tG = Math.abs(terminalG);
+  const dir = rG <= tG ? "\u2193" : "\u2191";
+
+  if (pctRecovered != null) {
+    if (Math.abs(pctRecovered) > 999) {
+      return `${dir}\u2009>10\u00d7 (${gTrajectory}${pStr})`;
+    }
+    return `${dir}\u2009${formatPctRecovered(pctRecovered)} (${gTrajectory}${pStr})`;
+  }
+
+  // Worsening without pctRecovered
+  const ratio = tG > 0.01 ? (rG / tG).toFixed(1) : null;
+  return ratio ? `${dir}\u2009${ratio}\u00d7 (${gTrajectory}${pStr})` : `${dir} (${gTrajectory}${pStr})`;
 }
 
 // ── Constants ────────────────────────────────────────────
@@ -57,48 +107,6 @@ function connectorStyle(p: number | null): {
   return { opacity: 0.7, width: 0.5 };
 }
 
-/** Jonckheere-Terpstra trend test for ordered dose-response.
- *  Given k ordered values (one per dose), counts concordant pairs.
- *  Returns z-score and p-value. Suppressed when k < 3. */
-function jtTrend(values: number[]): { z: number; p: number } | null {
-  const k = values.length;
-  if (k < 3) return null;
-
-  // J = number of concordant pairs
-  let J = 0;
-  for (let i = 0; i < k; i++) {
-    for (let j = i + 1; j < k; j++) {
-      if (values[j] > values[i]) J++;
-      else if (values[j] === values[i]) J += 0.5;
-    }
-  }
-
-  // Under H0: E(J) = k*(k-1)/4, Var(J) = k*(k-1)*(2k+5)/72
-  const eJ = k * (k - 1) / 4;
-  const varJ = k * (k - 1) * (2 * k + 5) / 72;
-  if (varJ === 0) return null;
-
-  const z = (J - eJ) / Math.sqrt(varJ);
-  // Two-tailed p from normal approximation
-  const p = 2 * (1 - normalCDF(Math.abs(z)));
-  return { z, p };
-}
-
-/** Standard normal CDF approximation (Abramowitz & Stegun). */
-function normalCDF(x: number): number {
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
-  const sign = x < 0 ? -1 : 1;
-  const ax = Math.abs(x) / Math.sqrt(2);
-  const t = 1.0 / (1.0 + p * ax);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
-  return 0.5 * (1.0 + sign * y);
-}
-
 /** Check if a row qualifies for peak marker. */
 function hasPeakQualifier(row: RecoveryRow): boolean {
   return (
@@ -119,7 +127,7 @@ interface ChartRow {
   terminalVal: number | null; // |g| at terminal
   recoveryVal: number | null; // |g| at recovery
   peakVal: number | null;     // |g| at peak
-  isEdge: "insufficient_n" | "no_concurrent_control" | "below-threshold" | null;
+  isEdge: "insufficient_n" | "no_concurrent_control" | null;
 }
 
 function buildChartRows(
@@ -138,7 +146,7 @@ function buildChartRows(
       return {
         row,
         doseLabel,
-        verdict: "below-threshold" as ContinuousVerdictType,
+        verdict: "resolved" as ContinuousVerdictType,
         terminalVal: null,
         recoveryVal: null,
         peakVal: null,
@@ -149,7 +157,7 @@ function buildChartRows(
       return {
         row,
         doseLabel,
-        verdict: "below-threshold" as ContinuousVerdictType,
+        verdict: "resolved" as ContinuousVerdictType,
         terminalVal: null,
         recoveryVal: null,
         peakVal: null,
@@ -166,7 +174,7 @@ function buildChartRows(
       terminalVal: row.terminal_effect != null ? Math.abs(row.terminal_effect) : null,
       recoveryVal: row.effect_size != null ? Math.abs(row.effect_size) : null,
       peakVal: row.peak_effect != null ? Math.abs(row.peak_effect) : null,
-      isEdge: v.verdict === "below-threshold" ? "below-threshold" : null,
+      isEdge: null,
     };
   });
 
@@ -189,7 +197,6 @@ interface PanelProps {
   onClickDose: (dose: number) => void;
 }
 
-const LABEL_HEIGHT = 10;
 const LARGE_EFFECT_THRESHOLD = 0.8;
 const LARGE_EFFECT_COLOR = "#7C3AED"; // violet-600
 
@@ -208,8 +215,7 @@ function DumbbellPanel({
   const marginLeft = 2;
   const marginRight = 6;
   const plotWidth = chartWidth - marginLeft - marginRight;
-  const bottomMargin = LABEL_HEIGHT + 2;
-  const chartHeight = chartRows.length * ROW_HEIGHT + 4 + bottomMargin;
+  const chartHeight = chartRows.length * ROW_HEIGHT + 4;
 
   // Scale: value → x position
   const range = xMax - xMin;
@@ -222,13 +228,6 @@ function DumbbellPanel({
   const thresholdX = scale(LARGE_EFFECT_THRESHOLD);
   const MIN_LINE_DIST = 8; // px in viewBox units — suppress marker lines too close to references
 
-  // J-T trend
-  const trendValues = chartRows
-    .filter((cr) => cr.recoveryVal != null && !cr.isEdge)
-    .sort((a, b) => a.row.dose_level - b.row.dose_level)
-    .map((cr) => cr.recoveryVal!);
-  const trend = jtTrend(trendValues);
-
   return (
     <div className="flex-1 min-w-0 flex flex-col">
       {/* Sex header */}
@@ -237,54 +236,33 @@ function DumbbellPanel({
       </div>
 
       <svg
-        width="100%"
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block"
-        style={{ maxHeight: chartHeight }}
+        className="block w-full h-auto"
+        preserveAspectRatio="xMinYMin meet"
+        style={{ overflow: "visible" }}
       >
-        {/* Zero reference line + label below */}
+        {/* Zero reference line (control) */}
         <line
           x1={zeroX}
           y1={0}
           x2={zeroX}
-          y2={chartHeight - bottomMargin}
+          y2={chartHeight}
           stroke={ZERO_LINE_COLOR}
           strokeWidth={1.5}
         />
-        <text
-          x={zeroX}
-          y={chartHeight - 2}
-          fontSize={7}
-          fill={ZERO_LINE_COLOR}
-          textAnchor="end"
-        >
-          Control{terminalDay != null ? `, D${terminalDay}` : ""}
-        </text>
 
-        {/* Large effect threshold line + label below */}
+        {/* Large effect threshold line */}
         {LARGE_EFFECT_THRESHOLD <= xMax && (
-          <>
-            <line
-              x1={scale(LARGE_EFFECT_THRESHOLD)}
-              y1={0}
-              x2={scale(LARGE_EFFECT_THRESHOLD)}
-              y2={chartHeight - bottomMargin}
-              stroke={LARGE_EFFECT_COLOR}
-              strokeWidth={0.75}
-              strokeDasharray="3,3"
-              opacity={0.4}
-            />
-            <text
-              x={scale(LARGE_EFFECT_THRESHOLD)}
-              y={chartHeight - 2}
-              fontSize={7}
-              fill={LARGE_EFFECT_COLOR}
-              textAnchor="start"
-              opacity={0.6}
-            >
-              |{effectSymbol}|=0.8
-            </text>
-          </>
+          <line
+            x1={scale(LARGE_EFFECT_THRESHOLD)}
+            y1={0}
+            x2={scale(LARGE_EFFECT_THRESHOLD)}
+            y2={chartHeight}
+            stroke={LARGE_EFFECT_COLOR}
+            strokeWidth={0.75}
+            strokeDasharray="3,3"
+            opacity={0.4}
+          />
         )}
 
         {/* Rows */}
@@ -347,35 +325,6 @@ function DumbbellPanel({
             );
           }
 
-          // Edge case: below-threshold
-          if (cr.isEdge === "below-threshold") {
-            const tVal = cr.terminalVal ?? 0;
-            const tx = scale(tVal);
-            return (
-              <g
-                key={cr.row.dose_level}
-                onMouseEnter={() => onHoverDose(cr.row.dose_level)}
-                onMouseLeave={() => onHoverDose(null)}
-                onClick={() => onClickDose(cr.row.dose_level)}
-                className="cursor-pointer"
-              >
-                {isHovered && (
-                  <rect
-                    x={0}
-                    y={cy - ROW_HEIGHT / 2}
-                    width={chartWidth}
-                    height={ROW_HEIGHT}
-                    fill="currentColor"
-                    opacity={0.03}
-                  />
-                )}
-                <circle cx={tx} cy={cy - 4} r={3} fill="#E5E7EB">
-                  <title>Not assessed (|{effectSymbol}|={formatGAbs(cr.row.terminal_effect ?? 0)})</title>
-                </circle>
-              </g>
-            );
-          }
-
           // Normal row
           const tVal = cr.terminalVal ?? 0;
           const rVal = cr.recoveryVal ?? 0;
@@ -389,7 +338,7 @@ function DumbbellPanel({
           const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
           const deltaDir = recovering ? "dropped" : "grew";
           const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size);
-          const pctStr = v.pctRecovered != null ? `${Math.abs(Math.round(v.pctRecovered))}%` : "";
+          const pctStr = v.pctRecovered != null ? formatPctRecovered(v.pctRecovered) : "";
           const recoveryTooltip = `${verdictStr} · Δ ${deltaDir} ${pctStr} (${effectSymbol}: ${formatGAbs(cr.row.terminal_effect ?? 0)} → ${formatGAbs(cr.row.effect_size ?? 0)})`;
 
           // Peak trajectory tooltip
@@ -555,12 +504,98 @@ function DumbbellPanel({
 
       </svg>
 
-      {/* Per-panel footer: J-T trend */}
-      {trend && (
-        <div className="text-[9px] text-muted-foreground mt-0.5 px-1">
-          Trend: p={trend.p < 0.001 ? "<0.001" : trend.p.toFixed(3)} (J-T)
-        </div>
-      )}
+      {/* HTML labels below chart — CSS pixels, not SVG viewBox units */}
+      <div className="relative h-3">
+        <span
+          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
+          style={{ left: `${(zeroX / chartWidth) * 100}%`, transform: "translateX(-100%)" }}
+        >
+          Control{terminalDay != null ? `, D${terminalDay}` : ""}
+        </span>
+        {LARGE_EFFECT_THRESHOLD <= xMax && (
+          <span
+            className="absolute text-[9px] leading-none whitespace-nowrap"
+            style={{ left: `${(scale(LARGE_EFFECT_THRESHOLD) / chartWidth) * 100}%`, color: LARGE_EFFECT_COLOR, opacity: 0.6 }}
+          >
+            |{effectSymbol}|=0.8
+          </span>
+        )}
+      </div>
+
+      {/* Verdict notes per dose row */}
+      <div className="space-y-0 mt-2">
+        {chartRows.map((cr) => {
+          if (cr.isEdge === "insufficient_n") {
+            return (
+              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
+                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
+                    title={cr.doseLabel}
+                  />
+                  <span className="text-muted-foreground/60">
+                    n={cr.row.treated_n ?? 1} — insufficient
+                  </span>
+                </span>
+              </div>
+            );
+          }
+          if (cr.isEdge === "no_concurrent_control") {
+            return (
+              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
+                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
+                    title={cr.doseLabel}
+                  />
+                  <span className="text-muted-foreground">no concurrent control</span>
+                </span>
+              </div>
+            );
+          }
+          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size);
+
+          // Both below trivial threshold — no meaningful effect
+          const tAbs = cr.row.terminal_effect != null ? Math.abs(cr.row.terminal_effect) : 0;
+          const rAbs = cr.row.effect_size != null ? Math.abs(cr.row.effect_size) : 0;
+          if (tAbs < 0.5 && rAbs < 0.5) {
+            return (
+              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
+                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
+                    title={cr.doseLabel}
+                  />
+                  <span className="text-muted-foreground/60">
+                    No meaningful effect at either timepoint (|{effectSymbol}|&lt;0.5)
+                  </span>
+                </span>
+              </div>
+            );
+          }
+
+          const desc = formatVerdictDesc(cr.row.terminal_effect, cr.row.effect_size, v.pctRecovered, cr.row.p_value, effectSymbol);
+          return (
+            <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
+                  style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
+                  title={cr.doseLabel}
+                />
+                <span className={`inline-block w-[70px] shrink-0 ${CONT_VERDICT_CLASS[cr.verdict]}`}>
+                  {CONT_VERDICT_LABEL[cr.verdict]}:
+                </span>
+                <span className="text-muted-foreground">{desc}</span>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
     </div>
   );
 }
@@ -673,7 +708,7 @@ export function RecoveryDumbbellChart({
       </div>
 
       {/* Chart area: dose labels + panels */}
-      <div className="flex gap-0">
+      <div className="flex gap-1.5">
         {/* Shared dose labels column */}
         <div className="w-[60px] shrink-0 flex flex-col pt-[14px]">
           {primaryRows.map((cr) => {

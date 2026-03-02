@@ -6,12 +6,11 @@
  * Both sexes are shown side-by-side (F before M) when data exists.
  * Continuous domains use verdict-first rows; histopath uses incidence badges.
  */
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
-import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
@@ -25,12 +24,6 @@ import type {
   RecoveryClassification,
   RecoveryContext,
 } from "@/lib/recovery-classification";
-import {
-  classifyContinuousRecovery,
-  CONT_VERDICT_LABEL,
-  formatGAbs,
-} from "@/lib/recovery-verdict";
-import type { ContinuousVerdictType, ContinuousVerdictResult } from "@/lib/recovery-verdict";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
@@ -70,99 +63,6 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
   return <span className={`text-[10px] font-medium ${color}`}>{confidence} confidence</span>;
 }
 
-const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
-  resolved: "text-emerald-700",
-  reversed: "text-emerald-700",
-  overcorrected: "text-blue-700",
-  reversing: "text-emerald-600",
-  partial: "text-muted-foreground",
-  persistent: "text-amber-700",
-  worsening: "text-red-700",
-  "below-threshold": "text-muted-foreground/60",
-};
-
-function formatVerdictDesc(
-  v: ContinuousVerdictResult,
-  terminalG: number | null,
-  recoveryG: number | null,
-  terminalDay: number | null,
-  recoveryDay: number | null,
-): string {
-  const tDay = terminalDay != null ? ` D${terminalDay}` : "";
-  const rDay = recoveryDay != null ? ` D${recoveryDay}` : "";
-  if (v.verdict === "below-threshold") {
-    return terminalG != null ? `terminal |g|\u2009=\u2009${formatGAbs(terminalG)}${tDay}` : "";
-  }
-  const arrow = `${formatGAbs(terminalG!)}g${tDay} \u2192 ${formatGAbs(recoveryG!)}g${rDay}`;
-  switch (v.verdict) {
-    case "resolved":
-      return `effect dropped ${Math.round(v.pctRecovered!)}% \u2014 below threshold (${arrow})`;
-    case "reversed":
-      return `effect dropped ${Math.round(v.pctRecovered!)}% (${arrow})`;
-    case "overcorrected":
-      return `effect reversed direction, now opposite of terminal (${arrow})`;
-    case "reversing":
-    case "partial":
-      return `effect dropped ${Math.round(v.pctRecovered!)}% (${arrow})`;
-    case "persistent":
-      return `effect persists (${arrow})`;
-    case "worsening": {
-      const ratio = Math.abs(terminalG!) > 0.01
-        ? (Math.abs(recoveryG!) / Math.abs(terminalG!)).toFixed(1)
-        : null;
-      return ratio ? `effect grew ${ratio}\u00d7 (${arrow})` : `effect grew (${arrow})`;
-    }
-  }
-}
-
-function formatPCompact(p: number): string {
-  if (p < 0.001) return "<0.001";
-  return p.toFixed(3);
-}
-
-// ── Hover tooltip builder (§6.4) ─────────────────────────
-
-type RecoveryRow = RecoveryComparisonResponse["rows"][number];
-
-function buildRowTooltip(
-  row: RecoveryRow,
-  doseStr: string,
-  v: ContinuousVerdictResult,
-  desc: string,
-): string {
-  const lines: string[] = [`${doseStr} \u00b7 ${row.sex} \u00b7 Recovery`];
-  lines.push("");
-
-  if (row.control_mean_terminal != null && row.control_mean != null) {
-    const tDay = row.terminal_day != null ? ` (D${row.terminal_day})` : "";
-    const rDay = ` (D${row.recovery_day})`;
-    lines.push(`Terminal${tDay}     Recovery${rDay}`);
-    lines.push(
-      `Treated:  ${row.treated_mean_terminal?.toFixed(2) ?? "\u2014"}     Treated:  ${row.mean?.toFixed(2) ?? "\u2014"}`,
-    );
-    lines.push(
-      `Control:  ${row.control_mean_terminal.toFixed(2)}     Control:  ${row.control_mean.toFixed(2)}`,
-    );
-    if (row.terminal_effect != null && row.effect_size != null) {
-      lines.push(
-        `g:        ${formatGAbs(row.terminal_effect)}     g:        ${formatGAbs(row.effect_size)}`,
-      );
-    }
-  } else if (row.terminal_effect != null && row.effect_size != null) {
-    const tDay = row.terminal_day != null ? `D${row.terminal_day}` : "terminal";
-    const rDay = `D${row.recovery_day}`;
-    lines.push(`g at ${tDay}: ${formatGAbs(row.terminal_effect)}`);
-    lines.push(`g at ${rDay}: ${formatGAbs(row.effect_size)}`);
-  }
-
-  if (v.verdict !== "below-threshold") {
-    lines.push("");
-    lines.push(`Recovery: ${desc}`);
-  }
-
-  return lines.join("\n");
-}
-
 // ── Continuous recovery section ──────────────────────────
 
 function ContinuousRecoverySection({
@@ -175,18 +75,6 @@ function ContinuousRecoverySection({
   const { studyId } = useParams<{ studyId: string }>();
   const { data: recovery } = useRecoveryComparison(studyId);
   const { effectSize } = useStatMethods(studyId);
-  const [selectedDose, setSelectedDose] = useState<number | null>(null);
-  const textRowRefs = useRef<Record<number, HTMLDivElement | null>>({});
-
-  const handleDoseClick = useCallback((doseLevel: number) => {
-    setSelectedDose(doseLevel);
-    const el = textRowRefs.current[doseLevel];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      // Clear highlight after 2s
-      setTimeout(() => setSelectedDose(null), 2000);
-    }
-  }, []);
 
   if (!recovery || !recovery.available) {
     return (
@@ -213,10 +101,6 @@ function ContinuousRecoverySection({
     );
   }
 
-  // Group by sex (alphabetical: F before M)
-  const sexes = [...new Set(allRows.map(r => r.sex))].sort();
-  const showSexHeaders = sexes.length > 1;
-
   return (
     <div className="space-y-3">
       <div className="text-[10px] text-muted-foreground flex items-center justify-between">
@@ -230,215 +114,14 @@ function ContinuousRecoverySection({
         </span>
       </div>
 
-      {/* Dumbbell chart — spatial summary above text rows */}
+      {/* Dumbbell chart with verdict notes under each sex panel */}
       <RecoveryDumbbellChart
         rows={allRows}
         doseGroups={doseGroups}
         terminalDay={allRows[0]?.terminal_day}
         recoveryDay={recovery.recovery_day}
-        onDoseClick={handleDoseClick}
       />
 
-      {sexes.map(sex => {
-        const sexRows = allRows
-          .filter(r => r.sex === sex)
-          .sort((a, b) => a.dose_level - b.dose_level);
-
-        // Check for peak annotation: any row where |peak| > |terminal| * 1.5
-        const peakAnnotations = sexRows
-          .filter(r =>
-            r.peak_effect != null && r.terminal_effect != null &&
-            Math.abs(r.peak_effect) > Math.abs(r.terminal_effect) * 1.5 &&
-            Math.abs(r.peak_effect) > 1.0 &&
-            Math.abs(r.terminal_effect) >= 0.5,
-          )
-          .map(r => ({
-            doseLevel: r.dose_level,
-            peakG: r.peak_effect!,
-            peakDay: r.peak_day,
-            terminalG: r.terminal_effect!,
-            terminalDay: r.terminal_day,
-            recoveryG: r.effect_size,
-            recoveryDay: r.recovery_day,
-          }));
-
-        return (
-          <div key={sex}>
-            {showSexHeaders && (
-              <div className="text-[10px] font-semibold text-foreground mb-1">{sex}</div>
-            )}
-
-            <div className="space-y-0.5">
-              {sexRows.map(row => {
-                const dg = doseGroups?.find(g => g.dose_level === row.dose_level);
-                const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
-                  ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
-                  : `Dose ${row.dose_level}`;
-
-                const isHighlighted = selectedDose === row.dose_level;
-                const highlightCls = isHighlighted ? " bg-primary/5 rounded transition-colors" : "";
-
-                {/* §10.5: n=1 suppression */}
-                if (row.insufficient_n) {
-                  return (
-                    <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`}>
-                      <span className="inline-flex items-baseline gap-1.5">
-                        <span className="w-[60px] shrink-0 inline-flex justify-end">
-                          <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
-                        </span>
-                        <span className="text-muted-foreground/60">
-                          n={row.treated_n ?? 1} — insufficient for classification
-                        </span>
-                        {row.mean != null && (
-                          <span className="text-muted-foreground/40 font-mono">
-                            (value: {row.mean.toFixed(2)})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                }
-
-                {/* §10.4: no concurrent control */}
-                if (row.no_concurrent_control) {
-                  return (
-                    <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`}>
-                      <span className="inline-flex items-baseline gap-1.5">
-                        <span className="w-[60px] shrink-0 inline-flex justify-end">
-                          <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
-                        </span>
-                        <span className="text-muted-foreground">
-                          mean: {row.mean?.toFixed(2) ?? "\u2014"}
-                        </span>
-                      </span>
-                      <div className="text-[9px] text-amber-700/70 mt-0.5 ml-5">
-                        No concurrent control at recovery — based on raw change
-                      </div>
-                    </div>
-                  );
-                }
-
-                const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
-                const desc = formatVerdictDesc(v, row.terminal_effect, row.effect_size, row.terminal_day, row.recovery_day);
-                const pStr = row.p_value != null
-                  ? formatPCompact(row.p_value)
-                  : null;
-
-                {/* §6.4: hover tooltip */}
-                const rowTooltip = buildRowTooltip(row, doseStr, v, desc);
-
-                {/* §12: element tooltips */}
-                const verdictTooltip = v.verdict === "below-threshold"
-                  ? "Terminal effect too small to meaningfully evaluate recovery."
-                  : `${CONT_VERDICT_LABEL[v.verdict]}: control-normalized effect ${desc} during recovery period`;
-
-                return (
-                  <div key={row.dose_level} ref={el => { textRowRefs.current[row.dose_level] = el; }} className={`text-[10px] leading-relaxed${highlightCls}`} title={rowTooltip}>
-                    <span className="inline-flex items-baseline gap-1.5">
-                      <span className="w-[60px] shrink-0 inline-flex justify-end">
-                        <DoseLabel level={row.dose_level} label={doseStr} align="right" className="text-[10px]" />
-                      </span>
-                      <span
-                        className={`font-medium ${CONT_VERDICT_CLASS[v.verdict]}`}
-                        title={verdictTooltip}
-                      >
-                        {CONT_VERDICT_LABEL[v.verdict]}
-                      </span>
-                      {v.verdict !== "below-threshold" && (
-                        <span
-                          className="text-muted-foreground"
-                          title="Change in effect size (Hedges' g, SD units from control) between terminal and recovery. Positive = resolving."
-                        >
-                          &mdash; {desc}
-                        </span>
-                      )}
-                      {v.verdict !== "below-threshold" && pStr && (
-                        <span
-                          className="text-muted-foreground"
-                          title="Statistical significance of treated vs control at recovery (Welch t-test)."
-                        >
-                          &middot; p&#x2009;=&#x2009;{pStr}
-                        </span>
-                      )}
-                      {v.verdict === "below-threshold" && desc && (
-                        <span className="text-muted-foreground/60">
-                          ({desc})
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* §4.3: Control drift warning */}
-            {(() => {
-              const withCtrl = sexRows.filter(
-                r => r.control_mean_terminal != null && r.control_mean != null && !r.insufficient_n && !r.no_concurrent_control,
-              );
-              if (withCtrl.length === 0) return null;
-              const row0 = withCtrl[0];
-              const ctrlTerminal = row0.control_mean_terminal!;
-              const ctrlRecovery = row0.control_mean!;
-              if (Math.abs(ctrlTerminal) < 0.001) return null;
-              const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
-              if (driftPct <= 15) return null;
-              return (
-                <div className="text-[9px] text-muted-foreground/70 mt-1">
-                  Control group shifted {Math.round(driftPct)}% between terminal and recovery ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}). Interpretation may be affected.
-                </div>
-              );
-            })()}
-
-            {/* Peak annotation when dosing-phase peak materially exceeded terminal */}
-            {peakAnnotations.length > 0 && (
-              <div
-                className="mt-1.5 text-[9px] text-muted-foreground/70 leading-snug space-y-1"
-                title="Largest effect during dosing phase. Shown when peak materially exceeded terminal value."
-              >
-                {peakAnnotations.map(pa => {
-                  const dg = doseGroups?.find(g => g.dose_level === pa.doseLevel);
-                  const doseStr = dg && dg.dose_value != null && dg.dose_value > 0
-                    ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
-                    : `Dose ${pa.doseLevel}`;
-                  const dayStr = pa.peakDay != null ? ` at Day ${pa.peakDay}` : "";
-
-                  // Trajectory summary when all three data points exist (§5.4)
-                  const hasTrajectory =
-                    pa.recoveryG != null && pa.terminalDay != null && pa.recoveryDay != null;
-                  const dosingPct = hasTrajectory
-                    ? Math.round((Math.abs(pa.peakG) - Math.abs(pa.terminalG)) / Math.abs(pa.peakG) * 100)
-                    : null;
-                  const recoveryPct = hasTrajectory
-                    ? Math.round((Math.abs(pa.terminalG) - Math.abs(pa.recoveryG!)) / Math.abs(pa.terminalG) * 100)
-                    : null;
-
-                  return (
-                    <div key={pa.doseLevel}>
-                      <div>
-                        {doseStr}: peak during dosing was larger (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.peakG)}{dayStr}),
-                        partially resolved before terminal (|g|{"\u2009"}={"\u2009"}{formatGAbs(pa.terminalG)}).
-                      </div>
-                      {hasTrajectory && dosingPct != null && recoveryPct != null && (
-                        <div className="mt-0.5 font-mono">
-                          <span>Peak{pa.peakDay != null ? ` (D${pa.peakDay})` : ""}: {formatGAbs(pa.peakG)}g</span>
-                          <span> {"\u2192"} Terminal{pa.terminalDay != null ? ` (D${pa.terminalDay})` : ""}: {formatGAbs(pa.terminalG)}g</span>
-                          <span> {"\u2192"} Recovery (D{pa.recoveryDay}): {formatGAbs(pa.recoveryG!)}g</span>
-                          <div className="pl-4">
-                            <span>{"\u2570\u2500\u2500"} {dosingPct}% resolved during dosing {"\u2500\u256F"}</span>
-                            {"  "}
-                            <span>{"\u2570\u2500\u2500"} {recoveryPct >= 0 ? `${recoveryPct}% resolved` : `${Math.abs(recoveryPct)}% worsened`} {"\u2500\u256F"}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }

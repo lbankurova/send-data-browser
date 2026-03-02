@@ -15,8 +15,7 @@ export type ContinuousVerdictType =
   | "reversing"
   | "partial"
   | "persistent"
-  | "worsening"
-  | "below-threshold";
+  | "worsening";
 
 export interface ContinuousVerdictResult {
   verdict: ContinuousVerdictType;
@@ -28,12 +27,16 @@ export function classifyContinuousRecovery(
   terminalG: number | null,
   recoveryG: number | null,
 ): ContinuousVerdictResult {
-  // If dosing-phase effect was too small, recovery assessment is not meaningful
-  if (terminalG == null || Math.abs(terminalG) < 0.5) {
-    return { verdict: "below-threshold", pctRecovered: null };
+  // Near-zero terminal: classify based on recovery alone (delayed onset detection)
+  if (terminalG == null || Math.abs(terminalG) < 0.01) {
+    if (recoveryG == null || Math.abs(recoveryG) < 0.5) {
+      return { verdict: "resolved", pctRecovered: null };
+    }
+    return { verdict: "worsening", pctRecovered: null };
   }
+
   if (recoveryG == null) {
-    return { verdict: "below-threshold", pctRecovered: null };
+    return { verdict: "resolved", pctRecovered: null };
   }
 
   // Overcorrected: effect reversed direction past control (§4.3)
@@ -43,8 +46,10 @@ export function classifyContinuousRecovery(
 
   const pct = (Math.abs(terminalG) - Math.abs(recoveryG)) / Math.abs(terminalG) * 100;
 
-  // Resolved: recovery effect below trivial threshold (|g| < 0.5) AND ≥80% recovered
+  // Recovery effect below trivial threshold (|g| < 0.5)
   if (Math.abs(recoveryG) < 0.5) {
+    // Effect grew but both below 0.5 — no meaningful effect at either timepoint
+    if (pct < 0) return { verdict: "resolved", pctRecovered: null };
     return { verdict: pct >= 80 ? "resolved" : "reversed", pctRecovered: pct };
   }
 
@@ -63,8 +68,13 @@ export const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
   partial: "Partial",
   persistent: "Persistent",
   worsening: "Worsening",
-  "below-threshold": "Not assessed",
 };
+
+/** Format |pct| for display, capping extreme values. */
+export function formatPctRecovered(pct: number): string {
+  if (Math.abs(pct) > 999) return ">10\u00d7";
+  return `${Math.abs(Math.round(pct))}%`;
+}
 
 export function formatGAbs(g: number): string {
   return Math.abs(g).toFixed(2);
