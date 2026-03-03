@@ -268,11 +268,11 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open (deliberate architectural debt, not a bug)
 - **Owner hint:** backend-dev (move derivation to pipeline), frontend-dev (rewire consumers)
 
-### GAP-27: Settings recalculating indicator — must-have before Phase 3
+### GAP-27: Settings recalculating indicator — post-Phase 3 UX debt
 - **Files:** All analysis view components, `StudySettingsContext.tsx`
-- **Issue:** When settings change and the backend has a cache miss, `keepPreviousData` shows the previous (now-stale) results with no visual indicator that recalculation is in progress. For the 4 Phase 2 settings this is low-risk (users settle on a config quickly, cache hit rate is high). For Phase 3's 6 new settings, the combinatorial space explodes and cache miss rate increases. Users will toggle "Williams' test" and see stale Dunnett results with no cue that data is loading — worse than a spinner because it's silently wrong data. Need a subtle "recalculating..." indicator on affected cards/tables when `isFetching && isPlaceholderData`.
-- **Blocked on:** Nothing — can implement now, but must ship before Phase 3
-- **Status:** Open (must-have before Phase 3 ships)
+- **Issue:** When settings change and the backend has a cache miss, `keepPreviousData` shows the previous (now-stale) results with no visual indicator that recalculation is in progress. Phase 3 shipped 4 new active settings (Williams pairwise/trend, organ weight method, adversity threshold), increasing the combinatorial space and cache miss rate. Users will toggle "Williams' test" and see stale Dunnett results with no cue that data is loading — worse than a spinner because it's silently wrong data. Need a subtle "recalculating..." indicator on affected cards/tables when `isFetching && isPlaceholderData`.
+- **Blocked on:** Nothing — can implement now
+- **Status:** Open (UX debt — Phase 3 shipped without this indicator)
 - **Owner hint:** frontend-dev
 
 ---

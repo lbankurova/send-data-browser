@@ -21,6 +21,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | STAT-12b | Cohen's d | Standardized mean difference, uncorrected |
 | STAT-12c | Glass's Delta | Standardized mean difference, control SD only |
 | STAT-13 | Welch Pairwise (raw) | Raw p-values for frontend Bonferroni |
+| STAT-14 | Williams' Step-Down Test | Ordered step-down pairwise vs. control with PAVA isotonic regression. Inherent FWER control (no additional multiplicity correction needed). Used for both pairwise (`apply_pairwise_williams`) and trend (`apply_trend_williams`, first step-down p → `trend_p`). Implementation: `williams.py:williams_from_group_stats()` |
 
 ## Algorithmic Methods (METH)
 

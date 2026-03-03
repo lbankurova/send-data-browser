@@ -18,6 +18,7 @@ Full migration guide with file paths and line numbers: `docs/reference/demo-stub
 | Delete study | **Real** | Context menu delete with confirmation, removes all dirs |
 | Treatment arms | **Real** | Dynamic ARMCD detection from TX/DM, treatment arms table in details |
 | Multi-study support | **Real** | ALLOWED_STUDIES empty, all studies in send/ served |
+| Parameterized analysis pipeline | **Real** | 8/10 settings active (Phase 1-3). Transforms: scheduled_only, recovery_pooling, effect_size, multiplicity, pairwise_test (Williams), trend_test (Williams-trend), organ_weight_method, adversity_threshold. 3 still placeholder: Steel, Cuzick, logistic-slope. |
 | Export (CSV/Excel) | **Stub** | alert() placeholder |
 | Share | **Stub** | Disabled menu item, no implementation |
 | Authentication | **Missing** | No auth anywhere, hardcoded "User" identity |
