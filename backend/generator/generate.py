@@ -30,7 +30,6 @@ from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
 from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.phase_filter import compute_last_dosing_day
-from services.analysis.unified_findings import compute_adverse_effects
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -227,15 +226,16 @@ def generate(study_id: str):
 
     _tick("2_end")
 
-    # Phases 2b/4/5 — independent computations, run in parallel
-    _tick("2b345_start")
-    print("Phases 2b/4/5: PK, charts, unified findings (parallel)...")
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    # Phases 2b/4 — independent computations, run in parallel
+    _tick("2b34_start")
+    print("Phases 2b/4: PK, charts (parallel)...")
+    with ThreadPoolExecutor(max_workers=2) as pool:
         fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael)
         fut_chart = pool.submit(generate_target_organ_bar_chart, target_organs)
-        fut_unified = pool.submit(compute_adverse_effects, study)
 
         # Write view outputs while parallel computations run
+        # Pipeline already built unified_findings with IDs, correlations,
+        # summary, and pagination — single code path for all settings.
         print("Writing Phase 2 output files...")
         for view_name, data in views.items():
             _write_json(out_dir / f"{view_name}.json", data)
@@ -259,23 +259,10 @@ def generate(study_id: str):
         f.write(target_organ_html)
     print("  4: wrote static/target_organ_bar.html")
 
-    ae_data = fut_unified.result()
-    ae_findings = ae_data["findings"]
-    unified = {
-        "study_id": study_id,
-        "dose_groups": ae_data["dose_groups"],
-        "findings": ae_findings,
-        "correlations": ae_data["correlations"],
-        "total_findings": len(ae_findings),
-        "page": 1,
-        "page_size": len(ae_findings),
-        "total_pages": 1,
-        "summary": ae_data["summary"],
-    }
-    _write_json(out_dir / "unified_findings.json", unified)
-    print(f"  5: {len(ae_findings)} findings pre-generated")
+    n_unified = len(views["unified_findings"]["findings"])
+    print(f"  5: {n_unified} findings pre-generated")
 
-    _tick("2b345_end")
+    _tick("2b34_end")
 
     elapsed = time.perf_counter() - t_total
     print(f"\n=== Generation complete: {out_dir} ({elapsed:.1f}s) ===")

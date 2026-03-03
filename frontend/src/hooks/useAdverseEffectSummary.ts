@@ -1,11 +1,9 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchAdverseEffectSummary } from "@/lib/analysis-view-api";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
-import { buildSettingsParams } from "@/lib/build-settings-params";
 
 export function useAdverseEffectSummary(studyId: string | undefined) {
-  const { settings } = useStudySettings();
-  const params = buildSettingsParams(settings);
+  const { queryParams: params } = useStudySettings();
   return useQuery({
     queryKey: ["adverse-effect-summary", studyId, params],
     queryFn: () => fetchAdverseEffectSummary(studyId!, params || undefined),

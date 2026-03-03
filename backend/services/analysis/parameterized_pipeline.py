@@ -103,6 +103,10 @@ class ParameterizedAnalysisPipeline:
             "dose_groups": dose_groups,
             "findings": findings,
             "correlations": correlations,
+            "total_findings": len(findings),
+            "page": 1,
+            "page_size": len(findings),
+            "total_pages": 1,
             "summary": summary,
         })
 

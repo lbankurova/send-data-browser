@@ -1,8 +1,9 @@
-import { createContext, useContext, useCallback, useMemo } from "react";
+import { createContext, useContext, useCallback, useMemo, useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
+import { buildSettingsParams } from "@/lib/build-settings-params";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 
 // ── Types ────────────────────────────────────────────────────
@@ -22,7 +23,11 @@ export interface StudySettings {
 }
 
 export interface StudySettingsContextValue {
+  /** Immediate settings — use for UI display (dropdowns, labels). */
   settings: StudySettings;
+  /** Debounced query params string — use for API calls and React Query keys.
+   *  300ms debounce collapses rapid setting toggles into a single refetch. */
+  queryParams: string;
   updateSetting: <K extends keyof StudySettings>(key: K, value: StudySettings[K]) => void;
 }
 
@@ -43,6 +48,7 @@ const DEFAULTS: StudySettings = {
 
 const StudySettingsContext = createContext<StudySettingsContextValue>({
   settings: DEFAULTS,
+  queryParams: "",
   updateSetting: () => {},
 });
 
@@ -124,9 +130,30 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
     [setterMap],
   );
 
+  // Debounced query params: collapses rapid setting changes into one refetch.
+  // Immediate params (for the first render / initial load) skip the delay.
+  const immediateParams = useMemo(() => buildSettingsParams(settings), [settings]);
+  const [queryParams, setQueryParams] = useState(immediateParams);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setQueryParams(immediateParams), 300);
+    return () => clearTimeout(timerRef.current);
+  }, [immediateParams]);
+
+  // On first mount, sync immediately (no 300ms wait for initial load)
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      setQueryParams(immediateParams);
+    }
+  }, [immediateParams]);
+
   const ctxValue = useMemo(
-    () => ({ settings, updateSetting }),
-    [settings, updateSetting],
+    () => ({ settings, queryParams, updateSetting }),
+    [settings, queryParams, updateSetting],
   );
 
   return (
