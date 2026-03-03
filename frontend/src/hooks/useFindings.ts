@@ -1,7 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
-import { buildSettingsParams } from "@/lib/build-settings-params";
 import type { FindingsFilters } from "@/types/analysis";
 
 export function useFindings(
@@ -10,8 +9,7 @@ export function useFindings(
   pageSize: number,
   filters: FindingsFilters,
 ) {
-  const { settings } = useStudySettings();
-  const params = buildSettingsParams(settings);
+  const { queryParams: params } = useStudySettings();
   return useQuery({
     queryKey: ["findings", studyId, page, pageSize, filters, params],
     queryFn: () => fetchFindings(studyId!, page, pageSize, filters, params || undefined),

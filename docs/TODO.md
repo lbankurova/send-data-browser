@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 17 | 4 | Missing capability, no spec exists |
+| Gap | 19 | 5 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **33** | **38** | |
+| **Total open** | **35** | **39** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -152,7 +152,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (12 open)
+## Gaps (14 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -243,12 +243,16 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Owner hint:** backend-dev
 
-### GAP-23: Recovery timeline numbers — preliminary literature-backed lookup implemented
-- **Files:** `frontend/src/lib/recovery-duration-table.ts` (new: 13 organs × 51 findings, 12 continuous endpoints, per-entry severity models, species modifiers), `frontend/src/lib/finding-nature.ts` (organ/species params, range-based display), `frontend/src/lib/recovery-assessment.ts` (uses range high-end for adequacy), `frontend/src/lib/recovery-classification.ts` (range-based qualifier strings)
-- **Issue:** The original organ-agnostic hardcoded values have been replaced with a literature-backed organ×finding×species lookup table sourced from Brief 7 deep research (`docs/deep-research/engine/brief 7/`). The new system provides: (a) organ-specific recovery timelines with asymmetric uncertainty ranges, (b) three severity modulation models (`none`, `modest_scaling`, `threshold_to_poor_recovery`) instead of universal multipliers, (c) species modifiers (rat, mouse, dog, NHP), (d) per-entry confidence ratings. The old keyword table and severity modulation remain as fallback when no organ context is available.
-- **Remaining:** The research data is **preliminary and needs domain-expert verification**. Specific concerns: (1) base week ranges were synthesized from literature by AI — values need cross-checking against primary sources (ICH S2/S4/S6, EPA guidelines, peer-reviewed toxicologic pathology reviews); (2) species modifier ratios are approximate; (3) severity threshold model cutoffs (marked/severe → null) need validation; (4) confidence ratings are self-assessed. See `docs/deep-research/engine/brief 7/recovery_duration_evidence_log_latest.json` for source citations.
-- **Status:** Partially addressed (implementation complete, research verification pending)
-- **Owner hint:** domain expert review (verify lookup table values against primary literature)
+### GAP-23: Recovery timeline numbers — cross-validated v3 lookup table
+- **Files:** `frontend/src/lib/recovery-duration-table.ts` (v3: 14 organs × 56 findings, 20 continuous endpoints, 4 severity models, per-finding species modifiers, uncertainty model), `frontend/src/lib/finding-nature.ts` (organ/species params, null-safe range display), `frontend/src/lib/recovery-assessment.ts` (uses range high-end for adequacy), `frontend/src/lib/recovery-classification.ts` (range-based qualifier strings)
+- **Issue:** v3 three-way merge of literature sources (Brief 7) replaces the preliminary v1 lookup. Key improvements: (a) 21 cross-validation decisions documented in `cross_validation_log.json`, (b) fixed biologically wrong NHP spermatogenesis modifier (1.4→0.8), (c) added `deposit_proportional` severity model for hemosiderosis/pigmentation, (d) nullable `base_weeks` for irreversible findings (kidney mineralization, heart necrosis/fibrosis), (e) nullable species modifiers for non-applicable species (forestomach dog/NHP), (f) 5 new findings (phospholipidosis, focal thyroid hyperplasia, hemorrhage, congestion, pigmentation), (g) `computeUncertaintyBands()` with confidence-based asymmetric bands. ~50 unique literature citations.
+- **Remaining:** Values are **cross-validated but still literature-synthesized** — a domain expert should spot-check against primary sources. See `docs/deep-research/engine/brief 7/recovery_duration_lookup_v3_merged.json` for the authoritative data and `cross_validation_report.md` for merge decisions.
+- **Status:** Substantially addressed (v3 cross-validated, domain-expert spot-check recommended)
+- **Owner hint:** domain expert review (spot-check v3 values against primary literature)
+
+### ~~GAP-25: Parameterize unified_findings / compute_adverse_effects (Settings Propagation Phase 2b)~~
+- **Resolution:** Backend now builds unified_findings as 10th parameterized view in `ParameterizedAnalysisPipeline.run()`. Added `"unified-findings"` to `PARAMETERIZED_VIEWS`. All 3 `/analyses/adverse-effects` endpoints accept `AnalysisSettings`. Frontend: `useFindings`, `useAESummary`, `useFindingContext` are settings-aware; 4 client-side transforms removed from `useFindingsAnalyticsLocal`; derivation pipeline (endpoints, syndromes, coherence, signal scores) stays client-side. Fixed Phase 3 Literal type mismatches in `analysis_settings.py`.
+- **Status:** ~~Resolved~~ (commit `305d413`)
 
 ### GAP-24: Recovery anomaly verdict is too blunt — no delayed-onset discrimination
 - **Files:** `frontend/src/lib/recovery-assessment.ts` (Guard 2, line ~123), `frontend/src/lib/recovery-classification.ts` (PATTERN_ANOMALY + DELAYED_ONSET_POSSIBLE steps)
@@ -256,6 +260,20 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Fix:** Replace binary anomaly guard with a multi-verdict discrimination system. First-principles implementation feasible; literature-backed precursor map and delayed-onset propensity table from Brief 8 deep research (`docs/deep-research/engine/brief 8/`) will make it robust. Sub-verdicts: `delayed_onset`, `delayed_onset_possible`, `possible_spontaneous`, `anomaly_unresolved`.
 - **Status:** First-principles implementation shipped. Classification-level discrimination (not verdict-level) via new `anomaly-discrimination.ts` module. Precursor map (12 relationships), delayed-onset propensity table, 4-step decision tree. 12 new tests. Brief 8 deep research will refine precursor map and propensity data.
 - **Owner hint:** Brief 8 research results → update PRECURSOR_MAP and DELAYED_ONSET_PROPENSITY in `anomaly-discrimination.ts`
+
+### GAP-26: Client-side derivation pipeline — server-side migration trigger
+- **Files:** `frontend/src/hooks/useFindingsAnalyticsLocal.ts` (149 lines), `frontend/src/contexts/FindingsAnalyticsContext.tsx` (55 lines)
+- **Issue:** Phase 2b eliminated 4 client-side transforms but kept the derivation pipeline (endpoint summaries → syndromes → coherence → signal scores → NOAEL). This is presentation-layer logic today — it takes server-provided findings and computes UI-specific aggregations. Defensible as-is. But the spec's original intent was "frontend does zero computation." If a second consumer (API consumer, report generator, export pipeline) ever needs the same derived analytics, the derivation logic should move server-side to avoid re-implementation in a second language.
+- **Trigger condition:** When a second consumer needs derived analytics (endpoint summaries, syndromes, signal scores) outside the React frontend.
+- **Status:** Open (deliberate architectural debt, not a bug)
+- **Owner hint:** backend-dev (move derivation to pipeline), frontend-dev (rewire consumers)
+
+### GAP-27: Settings recalculating indicator — must-have before Phase 3
+- **Files:** All analysis view components, `StudySettingsContext.tsx`
+- **Issue:** When settings change and the backend has a cache miss, `keepPreviousData` shows the previous (now-stale) results with no visual indicator that recalculation is in progress. For the 4 Phase 2 settings this is low-risk (users settle on a config quickly, cache hit rate is high). For Phase 3's 6 new settings, the combinatorial space explodes and cache miss rate increases. Users will toggle "Williams' test" and see stale Dunnett results with no cue that data is loading — worse than a spinner because it's silently wrong data. Need a subtle "recalculating..." indicator on affected cards/tables when `isFetching && isPlaceholderData`.
+- **Blocked on:** Nothing — can implement now, but must ship before Phase 3
+- **Status:** Open (must-have before Phase 3 ships)
+- **Owner hint:** frontend-dev
 
 ---
 
