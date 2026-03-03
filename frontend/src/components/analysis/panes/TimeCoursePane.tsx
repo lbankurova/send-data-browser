@@ -9,6 +9,8 @@ import { useTimeCourseData } from "@/hooks/useTimeCourseData";
 import type { TimeCourseSeriesData } from "@/hooks/useTimeCourseData";
 import { useChartScales } from "@/hooks/useChartScales";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useSessionState } from "@/hooks/useSessionState";
 import { TimeCourseLineChart } from "./TimeCourseLineChart";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -133,11 +135,17 @@ export function TimeCoursePane({
   const isVisible =
     finding.data_type === "continuous" && ALLOWED_DOMAINS.has(finding.domain);
 
+  // Recovery pooling: follow DoseResponseView pattern — dynamic user setting
+  const { data: meta } = useStudyMetadata(studyId ?? "");
+  const hasRecovery = meta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
+  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
+  const includeRecovery = hasRecovery && isVisible && recoveryPooling === "pool";
+
   // Always call hooks unconditionally (Rules of Hooks) — pass undefined to disable fetch
   const { data, isLoading, isError } = useTimeCourseData(
     isVisible ? finding.domain : undefined,
     isVisible ? finding.test_code : undefined,
-    true, // includeRecovery
+    includeRecovery,
   );
   const { data: mortality } = useStudyMortality(studyId);
 

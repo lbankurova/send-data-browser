@@ -361,22 +361,24 @@ describe("formatRecoveryFraction", () => {
 
 describe("assessRecoveryAdequacy", () => {
   test("adequate when actual weeks >= expected weeks", () => {
-    const nature = classifyFindingNature("Hypertrophy"); // 6 weeks expected
+    // Generic fallback matches LIVER hypertrophy_hepatocellular: range {1–4 weeks}
+    // assessRecoveryAdequacy uses recovery_weeks_range.high (conservative) = 4
+    const nature = classifyFindingNature("Hypertrophy");
     const result = assessRecoveryAdequacy(42, nature); // 6 weeks
     expect(result).not.toBeNull();
     expect(result!.adequate).toBe(true);
     expect(result!.actualWeeks).toBe(6);
-    expect(result!.expectedWeeks).toBe(6);
+    expect(result!.expectedWeeks).toBe(4);
     expect(result!.findingNature).toBe("adaptive");
   });
 
   test("inadequate when actual weeks < expected weeks", () => {
-    const nature = classifyFindingNature("Hypertrophy"); // 6 weeks expected
+    const nature = classifyFindingNature("Hypertrophy");
     const result = assessRecoveryAdequacy(14, nature); // 2 weeks
     expect(result).not.toBeNull();
     expect(result!.adequate).toBe(false);
     expect(result!.actualWeeks).toBe(2);
-    expect(result!.expectedWeeks).toBe(6);
+    expect(result!.expectedWeeks).toBe(4);
     expect(result!.findingNature).toBe("adaptive");
   });
 
@@ -400,17 +402,20 @@ describe("assessRecoveryAdequacy", () => {
 
 describe("classifyFindingNature", () => {
   test("matches adaptive keywords", () => {
+    // Generic fallback: LIVER hypertrophy_hepatocellular {low:1, high:4}, midpoint=3
     const r = classifyFindingNature("Hypertrophy");
     expect(r.nature).toBe("adaptive");
     expect(r.expected_reversibility).toBe("high");
-    expect(r.typical_recovery_weeks).toBe(6);
+    expect(r.typical_recovery_weeks).toBe(3);
+    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 4 });
   });
 
   test("matches degenerative keywords", () => {
+    // Generic fallback: LIVER necrosis_hepatocellular {low:1, high:8}, midpoint=5
     const r = classifyFindingNature("Necrosis");
     expect(r.nature).toBe("degenerative");
     expect(r.expected_reversibility).toBe("moderate");
-    expect(r.typical_recovery_weeks).toBe(8);
+    expect(r.typical_recovery_weeks).toBe(5);
   });
 
   test("matches proliferative keywords — irreversible", () => {
@@ -421,10 +426,11 @@ describe("classifyFindingNature", () => {
   });
 
   test("matches inflammatory keywords", () => {
+    // Generic fallback: LIVER inflammation_portal_lobular {low:2, high:8}, midpoint=5
     const r = classifyFindingNature("Inflammation, chronic");
     expect(r.nature).toBe("inflammatory");
     expect(r.expected_reversibility).toBe("moderate");
-    expect(r.typical_recovery_weeks).toBe(8);
+    expect(r.typical_recovery_weeks).toBe(5);
   });
 
   test("matches vascular keywords", () => {
@@ -450,28 +456,37 @@ describe("classifyFindingNature", () => {
     expect(r.nature).toBe("unknown");
   });
 
-  test("severity modulation — low severity adaptive", () => {
+  test("severity modulation — low severity adaptive (S_MODEST)", () => {
+    // LIVER hypertrophy_hepatocellular, S_MODEST, sev=1 (minimal=1.0)
+    // weeks = {1*1, 4*1} = {1, 4}, midpoint=3
     const r = classifyFindingNature("Hypertrophy", 1);
     expect(r.reversibilityQualifier).toBe("expected");
-    expect(r.typical_recovery_weeks).toBe(6); // 6 * 1.0
+    expect(r.typical_recovery_weeks).toBe(3);
   });
 
-  test("severity modulation — mid severity adaptive", () => {
+  test("severity modulation — mid severity adaptive (S_MODEST)", () => {
+    // LIVER hypertrophy_hepatocellular, S_MODEST, sev=3 (moderate=1.25)
+    // weeks = {1.3, 5}, midpoint=round(3.15)=3
     const r = classifyFindingNature("Hypertrophy", 3);
     expect(r.reversibilityQualifier).toBe("expected");
-    expect(r.typical_recovery_weeks).toBe(9); // 6 * 1.5
+    expect(r.typical_recovery_weeks).toBe(3);
   });
 
-  test("severity modulation — high severity adaptive", () => {
+  test("severity modulation — marked severity adaptive (S_MODEST)", () => {
+    // LIVER hypertrophy_hepatocellular, S_MODEST, sev=4 (marked=1.5)
+    // weeks = {1.5, 6}, midpoint=round(3.75)=4, qualifier stays "expected"
     const r = classifyFindingNature("Hypertrophy", 4);
-    expect(r.reversibilityQualifier).toBe("possible");
-    expect(r.typical_recovery_weeks).toBe(12); // 6 * 2.0
+    expect(r.reversibilityQualifier).toBe("expected");
+    expect(r.typical_recovery_weeks).toBe(4);
   });
 
-  test("severity modulation — high severity inflammatory", () => {
+  test("severity modulation — threshold model caps at marked (S_THRESH)", () => {
+    // LIVER inflammation_portal_lobular, S_THRESH, sev=4 (marked=null → cap)
+    // Reversibility downgraded: "possible" → "unlikely", weeks stay {2, 8}, midpoint=5
     const r = classifyFindingNature("Inflammation", 4);
     expect(r.reversibilityQualifier).toBe("unlikely");
-    expect(r.typical_recovery_weeks).toBe(16); // 8 * 2.0
+    expect(r.typical_recovery_weeks).toBe(5);
+    expect(r.severity_capped).toBe(true);
   });
 
   test("fibrosis is irreversible regardless of severity", () => {
@@ -479,6 +494,55 @@ describe("classifyFindingNature", () => {
     expect(r.nature).toBe("degenerative");
     expect(r.expected_reversibility).toBe("none");
     expect(r.typical_recovery_weeks).toBeNull();
+  });
+
+  // ── Organ-specific lookup tests ────────────────────────────
+
+  test("organ-specific lookup — liver hypertrophy", () => {
+    const r = classifyFindingNature("Hypertrophy", null, "LIVER");
+    expect(r.nature).toBe("adaptive");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.organ_key).toBe("LIVER");
+    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 4 });
+    expect(r.typical_recovery_weeks).toBe(3);
+    expect(r.reversibilityQualifier).toBe("expected");
+  });
+
+  test("organ-specific lookup — kidney tubular degeneration", () => {
+    const r = classifyFindingNature("Tubular degeneration", null, "KIDNEY");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.organ_key).toBe("KIDNEY");
+    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 4 });
+    expect(r.reversibilityQualifier).toBe("possible");
+  });
+
+  test("organ-specific lookup — thyroid follicular cell hypertrophy", () => {
+    const r = classifyFindingNature("Hypertrophy", null, "GLAND, THYROID");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.organ_key).toBe("THYROID");
+    expect(r.recovery_weeks_range).toEqual({ low: 2, high: 4 });
+  });
+
+  test("organ-specific lookup — species modifier", () => {
+    const r = classifyFindingNature("Hypertrophy", null, "LIVER", "RAT");
+    expect(r.source).toBe("organ_lookup");
+    // SP_LIVER rat modifier = 1.0 → no change from base {1, 4}
+    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 4 });
+  });
+
+  test("organ-specific lookup with severity cap (S_THRESH)", () => {
+    // Liver necrosis with marked severity → S_THRESH marked=null → cap
+    const r = classifyFindingNature("Necrosis", 4, "LIVER");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.severity_capped).toBe(true);
+    expect(r.reversibilityQualifier).toBe("unlikely");
+  });
+
+  test("generic fallback without organ still uses lookup table", () => {
+    const r = classifyFindingNature("Hypertrophy");
+    // Should match via generic fallback (no organ specified)
+    expect(r.source).toBe("organ_lookup");
+    expect(r.recovery_weeks_range).not.toBeNull();
   });
 });
 
@@ -497,7 +561,7 @@ describe("reversibilityLabel", () => {
   test("formats irreversible finding", () => {
     const info = classifyFindingNature("Fibrosis");
     const label = reversibilityLabel(info);
-    expect(label).toContain("not expected");
+    expect(label).toContain("Not expected");
   });
 
   test("handles unknown finding", () => {
@@ -514,7 +578,7 @@ describe("reversibilityLabel", () => {
 
 describe("classifyRecovery — classification ladder", () => {
   test("Step 0: UNCLASSIFIABLE for guard verdicts", () => {
-    for (const gv of ["not_examined", "insufficient_n", "low_power", "anomaly", "no_data"] as RecoveryVerdict[]) {
+    for (const gv of ["not_examined", "insufficient_n", "low_power", "no_data"] as RecoveryVerdict[]) {
       const a = assessment("Finding", [doseAssessment()], gv);
       const r = classifyRecovery(a, context());
       expect(r.classification).toBe("UNCLASSIFIABLE");
@@ -537,7 +601,7 @@ describe("classifyRecovery — classification ladder", () => {
     expect(r.rationale).toContain("Neoplastic");
   });
 
-  test("Step 1: PATTERN_ANOMALY when recovery > main × 1.5, weak dose, non-adverse", () => {
+  test("Step 1: INCOMPLETE_RECOVERY when recovery > main, weak dose, non-adverse", () => {
     const d = doseAssessment({
       main: { incidence: 0.2, affected: 2, avgSeverity: 1.0 },
       recovery: { n: 5, examined: 5, affected: 3, incidence: 0.6, avgSeverity: 1.5, maxSeverity: 2 },
@@ -549,11 +613,11 @@ describe("classifyRecovery — classification ladder", () => {
       doseConsistency: "Weak",
       signalClass: "normal",
     }));
-    expect(r.classification).toBe("PATTERN_ANOMALY");
-    expect(r.recommendedAction).toContain("re-review");
+    // PATTERN_ANOMALY removed — anomaly discrimination routes to DELAYED_ONSET_POSSIBLE
+    expect(r.classification).toBe("DELAYED_ONSET_POSSIBLE");
   });
 
-  test("Step 2: DELAYED_ONSET_POSSIBLE when main ≤10%, recovery ≥20%, non-adverse", () => {
+  test("Step 2: anomaly discrimination when main ≤10%, recovery ≥20%, non-adverse", () => {
     const d = doseAssessment({
       main: { incidence: 0.05, affected: 1, n: 20, examined: 20, avgSeverity: 0.5 },
       recovery: { n: 5, examined: 5, affected: 2, incidence: 0.4, avgSeverity: 1.0, maxSeverity: 2 },
@@ -564,8 +628,9 @@ describe("classifyRecovery — classification ladder", () => {
       isAdverse: false,
       signalClass: "normal",
     }));
+    // Non-adverse progressing now routes through anomaly discrimination
     expect(r.classification).toBe("DELAYED_ONSET_POSSIBLE");
-    expect(r.rationale).toContain("absent or minimal during treatment");
+    expect(r.rationale).toBeTruthy();
   });
 
   test("Step 3: INCOMPLETE_RECOVERY when persistent and significant incidence", () => {

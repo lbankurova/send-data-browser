@@ -69,6 +69,7 @@ import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import { deriveWeightedNOAEL } from "@/lib/endpoint-confidence";
 import type { WeightedNOAELEndpoint, WeightedNOAELResult } from "@/lib/endpoint-confidence";
 
@@ -1751,7 +1752,8 @@ export function NoaelDeterminationView() {
   }, [organData]);
 
   // Fetch recovery data for all specimens of the selected organ
-  const organRecovery = useOrganRecovery(studyId, organSpecimens);
+  const { data: studyCtxNoael } = useStudyContext(studyId);
+  const organRecovery = useOrganRecovery(studyId, organSpecimens, undefined, studyCtxNoael?.species ?? null);
 
   // Selected organ summary
   const selectedSummary = useMemo(() => {

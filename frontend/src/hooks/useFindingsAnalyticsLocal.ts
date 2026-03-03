@@ -38,8 +38,54 @@ export interface FindingsAnalyticsResult {
   analytics: FindingsAnalytics;
   /** Raw API response — consumers that need UnifiedFinding[] or dose_groups access this. */
   data: FindingsResponse | undefined;
+  /** Findings after all filters (scheduled, recovery pooling, stat methods) are applied. */
+  activeFindings: UnifiedFinding[];
   isLoading: boolean;
   error: Error | null;
+}
+
+/**
+ * Re-derive summary fields (max_effect_size, min_p_adj, max_fold_change)
+ * from swapped pairwise/group_stats so downstream consumers (rail, scatter,
+ * context panel) see consistent values after a stats swap.
+ */
+function rederiveSummaryFields(
+  pairwise: UnifiedFinding["pairwise"],
+  groupStats: UnifiedFinding["group_stats"],
+  direction: UnifiedFinding["direction"],
+  dataType: UnifiedFinding["data_type"],
+): { max_effect_size: number | null; min_p_adj: number | null; max_fold_change: number | null } {
+  // max_effect_size: max |cohens_d| across treated pairwise, signed
+  let maxEffect: number | null = null;
+  let maxAbs = 0;
+  let minP: number | null = null;
+  for (const p of pairwise) {
+    if (p.cohens_d != null) {
+      const abs = Math.abs(p.cohens_d);
+      if (abs > maxAbs) { maxAbs = abs; maxEffect = p.cohens_d; }
+    }
+    if (p.p_value_adj != null && (minP == null || p.p_value_adj < minP)) {
+      minP = p.p_value_adj;
+    }
+  }
+  // max_fold_change: direction-aligned treated/control from group_stats
+  let maxFold: number | null = null;
+  if (dataType === "continuous" && groupStats.length >= 2) {
+    const controlMean = groupStats[0]?.mean;
+    if (controlMean != null && Math.abs(controlMean) > 1e-10) {
+      let bestDev = 0;
+      for (const gs of groupStats.slice(1)) {
+        if (gs.mean == null) continue;
+        const ratio = gs.mean / controlMean;
+        const dev = Math.abs(ratio - 1.0);
+        // Direction-aligned: only consider deviations in expected direction
+        if (direction === "down" && ratio >= 1.0) continue;
+        if (direction === "up" && ratio <= 1.0) continue;
+        if (dev > bestDev) { bestDev = dev; maxFold = Math.round(ratio * 100) / 100; }
+      }
+    }
+  }
+  return { max_effect_size: maxEffect, min_p_adj: minP, max_fold_change: maxFold };
 }
 
 /**
@@ -53,11 +99,15 @@ function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[
   for (const f of findings) {
     if (f.separate_group_stats && f.separate_group_stats.length === 0) continue;
     if (f.separate_group_stats) {
+      const newPairwise = f.separate_pairwise ?? f.pairwise;
+      const newDirection = f.separate_direction ?? f.direction;
+      const derived = rederiveSummaryFields(newPairwise, f.separate_group_stats, newDirection, f.data_type);
       result.push({
         ...f,
         group_stats: f.separate_group_stats,
-        pairwise: f.separate_pairwise ?? f.pairwise,
-        direction: f.separate_direction ?? f.direction,
+        pairwise: newPairwise,
+        direction: newDirection,
+        ...derived,
       });
     } else {
       result.push(f);
@@ -78,11 +128,15 @@ function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
     if (f.scheduled_group_stats && f.scheduled_group_stats.length === 0) continue;
     // Findings with scheduled alternatives: swap stats in a shallow copy
     if (f.scheduled_group_stats) {
+      const newPairwise = f.scheduled_pairwise ?? f.pairwise;
+      const newDirection = f.scheduled_direction ?? f.direction;
+      const derived = rederiveSummaryFields(newPairwise, f.scheduled_group_stats, newDirection, f.data_type);
       result.push({
         ...f,
         group_stats: f.scheduled_group_stats,
-        pairwise: f.scheduled_pairwise ?? f.pairwise,
-        direction: f.scheduled_direction ?? f.direction,
+        pairwise: newPairwise,
+        direction: newDirection,
+        ...derived,
       });
     } else {
       // Longitudinal domains (BW, CL, FW) have no scheduled stats — pass through
@@ -213,5 +267,5 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     normalizationContexts: normContexts,
   }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable, normContexts]);
 
-  return { analytics, data, isLoading, error: error as Error | null };
+  return { analytics, data, activeFindings, isLoading, error: error as Error | null };
 }

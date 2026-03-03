@@ -109,6 +109,21 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
       ? Math.max(...data.timepoints.map((t) => t.day))
       : null);
 
+  // Clip post-terminal timepoints: recovery period is handled by Recovery pane.
+  // When includeRecovery is true, recovery animals are pooled during treatment
+  // but we don't want post-terminal days (D93+) on the chart.
+  if (terminalDay != null) {
+    for (const sex of sexes) {
+      for (const dl of treatedDoseLevels) {
+        const pts = series[sex]?.[dl];
+        if (pts) {
+          series[sex][dl] = pts.filter((p) => p.day <= terminalDay);
+          if (series[sex][dl].length === 0) delete series[sex][dl];
+        }
+      }
+    }
+  }
+
   // doseGroups = treated only (doseLevel > 0)
   const doseGroups = treatedDoseLevels.map((dl) => ({
     doseLevel: dl,

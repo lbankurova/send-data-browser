@@ -38,6 +38,7 @@ import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
@@ -876,7 +877,8 @@ function RecoveryVerdictLine({
 
   // Hooks must be called unconditionally
   const specimens = useMemo(() => (specimen ? [specimen] : []), [specimen]);
-  const organRecovery = useOrganRecovery(studyId, specimens);
+  const { data: studyCtxRecLine } = useStudyContext(studyId);
+  const organRecovery = useOrganRecovery(studyId, specimens, undefined, studyCtxRecLine?.species ?? null);
   const { data: recoveryComp } = useRecoveryComparison(studyId);
 
   if (isHistopath && specimen) {
@@ -947,8 +949,15 @@ function RecoveryVerdictLine({
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  const { selectedFindingId, selectedFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
-  const { analytics, data: findingsData } = useFindingsAnalyticsLocal(studyId);
+  const { selectedFindingId, selectedFinding: rawSelectedFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
+  const { analytics, data: findingsData, activeFindings } = useFindingsAnalyticsLocal(studyId);
+
+  // Use the filtered finding (with recovery pooling / scheduled-only stats swapped)
+  // instead of the raw selection context finding which has original pooled stats.
+  const selectedFinding = useMemo(() => {
+    if (!rawSelectedFinding || !activeFindings.length) return rawSelectedFinding;
+    return activeFindings.find(f => f.id === rawSelectedFinding.id) ?? rawSelectedFinding;
+  }, [rawSelectedFinding, activeFindings]);
   const { data: context, isLoading } = useFindingContext(
     studyId,
     selectedFindingId
@@ -1087,9 +1096,9 @@ export function FindingsContextPanel() {
     if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
       return selectedFinding;
     }
-    // Look up the sibling UnifiedFinding from findingsData
-    return findingsData?.findings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
-  }, [hasSibling, siblingContext, activeSex, selectedFinding, findingsData?.findings]);
+    // Look up the sibling UnifiedFinding from activeFindings (filtered stats)
+    return activeFindings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
+  }, [hasSibling, siblingContext, activeSex, selectedFinding, activeFindings]);
 
   // ── Early returns (after all hooks) ──
 

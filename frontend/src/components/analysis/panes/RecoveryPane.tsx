@@ -9,6 +9,7 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
@@ -135,11 +136,13 @@ function HistopathRecoveryAllSexes({
   specimen: string;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
+  const { data: studyCtx } = useStudyContext(studyId);
   const specimensArr = useMemo(() => [specimen], [specimen]);
 
   // Always call both hooks (React rules — must be unconditional)
-  const recoveryF = useOrganRecovery(studyId, specimensArr, "F");
-  const recoveryM = useOrganRecovery(studyId, specimensArr, "M");
+  const species = studyCtx?.species ?? null;
+  const recoveryF = useOrganRecovery(studyId, specimensArr, "F", species);
+  const recoveryM = useOrganRecovery(studyId, specimensArr, "M", species);
 
   if (recoveryF.isLoading || recoveryM.isLoading) {
     return <Skeleton className="h-16 w-full" />;
@@ -187,7 +190,7 @@ function HistopathRecoveryAllSexes({
     ),
     0,
   );
-  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null);
+  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null, specimen, species);
   const adequacy: RecoveryAdequacy | null = assessRecoveryAdequacy(recoveryDays, nature);
 
   return (
@@ -195,9 +198,9 @@ function HistopathRecoveryAllSexes({
       {/* Recovery duration adequacy line */}
       {adequacy && adequacy.expectedWeeks != null && adequacy.findingNature && (
         <div className="text-[10px] text-muted-foreground">
-          Recovery: {Math.round(adequacy.actualWeeks)} weeks{!adequacy.adequate ? " (too short)" : ""}
+          Recovery: {Math.round(adequacy.actualWeeks)} weeks
           {" | "}Finding nature: {adequacy.findingNature}
-          {" | "}Expected to reverse: within {Math.max(1, adequacy.expectedWeeks - 2)}–{adequacy.expectedWeeks + 2} weeks
+          {" | "}{reversibilityLabel(nature)}
         </div>
       )}
 
@@ -216,6 +219,7 @@ function HistopathRecoveryAllSexes({
           sex={sex}
           finding={finding}
           specimen={specimen}
+          species={species}
           recovery={recovery}
           showSexHeader={showSexHeaders}
         />
@@ -230,12 +234,14 @@ function HistopathMetaSection({
   sex,
   finding,
   specimen,
+  species,
   recovery,
   showSexHeader,
 }: {
   sex: string;
   finding: UnifiedFinding;
   specimen: string;
+  species: string | null;
   recovery: OrganRecoveryResult;
   showSexHeader: boolean;
 }) {
@@ -265,7 +271,7 @@ function HistopathMetaSection({
     ...assessment.assessments.map((a) => a.main.maxSeverity),
     ...assessment.assessments.map((a) => a.recovery.maxSeverity),
   );
-  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null);
+  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null, specimen, species);
 
   // Recovery classification
   const classContext = buildClassificationContext(finding, nature, recoveryDays ?? null);

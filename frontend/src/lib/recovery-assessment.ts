@@ -178,7 +178,11 @@ export function assessRecoveryAdequacy(
 ): RecoveryAdequacy | null {
   if (recoveryDays == null) return null;
   const actualWeeks = recoveryDays / 7;
-  const expectedWeeks = findingNature?.typical_recovery_weeks ?? null;
+  // Use organ-specific range high-end (conservative) when available,
+  // otherwise fall back to legacy midpoint.
+  const expectedWeeks = findingNature?.recovery_weeks_range
+    ? findingNature.recovery_weeks_range.high
+    : findingNature?.typical_recovery_weeks ?? null;
   // Irreversible findings or unknown nature — no adequacy concern
   if (expectedWeeks == null || findingNature?.expected_reversibility === "none") {
     return { adequate: true, actualWeeks, expectedWeeks: null, findingNature: findingNature?.nature ?? null };
@@ -327,6 +331,8 @@ export function deriveRecoveryAssessments(
   subjects: SubjectHistopathEntry[],
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
   recoveryPeriodDays?: number | null,
+  organ?: string | null,
+  species?: string | null,
 ): RecoveryAssessment[] {
   // Split subjects into main and recovery arms (exclude satellite/TK)
   const mainSubjects = subjects.filter((s) => !s.is_recovery && !s.is_satellite);
@@ -382,7 +388,7 @@ export function deriveRecoveryAssessments(
       }
 
       // All guards handled inside computeVerdict (v3); duration awareness in v4
-      const nature = classifyFindingNature(finding);
+      const nature = classifyFindingNature(finding, undefined, organ, species);
       const verdict = computeVerdict(mainStats, recStats, thresholds, recoveryPeriodDays, nature);
 
       assessments.push({
