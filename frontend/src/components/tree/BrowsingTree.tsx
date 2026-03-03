@@ -284,7 +284,7 @@ export function BrowsingTree() {
 
       <div className="py-2">
       <TreeNode
-        label="Preclinical Case"
+        label="SENDEX"
         depth={0}
         icon={<FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />}
         isExpanded={rootExpanded}

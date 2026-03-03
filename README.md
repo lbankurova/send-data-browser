@@ -1,10 +1,10 @@
-# SENDie — SEND Intelligence Explorer
+# SENDEX — SEND Explorer
 
-Decision support framework for preclinical toxicology studies in [CDISC SEND](https://www.cdisc.org/standards/foundational/send) (.xpt) format. Reads study folders, runs a statistical and classification pipeline, and surfaces findings through question-driven analysis views — so toxicologists can focus on weight-of-evidence judgments instead of data wrangling.
+Decision support framework for preclinical toxicology studies in [CDISC SEND](https://www.cdisc.org/standards/foundational/send) (.xpt) format. Reads study folders, runs a statistical and classification pipeline, and surfaces findings through question-driven analysis views.
 
 ## What it does
 
-SENDie structures the analytical workflow around the questions toxicologists already ask: detect treatment-related effects → characterize dose-response → assess causality → evaluate reversibility → determine NOAEL. At each step it pre-computes statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags cross-domain syndromes (24 rules), and scores signals against ECETOC assessment tiers — then puts the evidence in front of the reviewer to interpret.
+SENDEX structures the analytical workflow around the common tasks: detect treatment-related effects → characterize dose-response → assess causality → evaluate reversibility → determine NOAEL. At each step SENDEX pre-computes statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags cross-domain syndromes (24 rules), scores signals against ECETOC assessment tiers, and then puts the evidence in front of the reviewer to interpret.
 
 Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custom study design and FDA data quality checks, with per-record evidence and a triage UI.
 
@@ -12,7 +12,7 @@ Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custo
 
 | View | Question it answers |
 |---|---|
-| Study summary | What happened? Metadata, design, timeline, key signals |
+| Study details | What happened? Metadata, design, timeline, analysis settings |
 | Findings | What's affected? Cross-domain adverse effects, syndrome detection, organ drill-down |
 | Dose-response | Is it treatment-related? Endpoint characterization, statistical method switching, Bradford Hill causality |
 | Histopathology | Are the lesions real? Severity matrices, trends, recovery classification, peer review |

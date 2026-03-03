@@ -11,7 +11,7 @@ Three-panel Datagrok-style layout with tree navigation, React Router-based view 
 ```
 +-------------------------------------------------------------+
 | Header (h-14, border-b, bg-card)                            |
-|  [Database icon]  SEND Data Browser                         |
+|  [Database icon]  SENDEX                                    |
 +----------+-----------------------------+--------------------+
 | Left     | Center                      | Right              |
 | 260px    | flex-1 (min-w-0)            | 280px              |
@@ -208,7 +208,7 @@ The Study Summary view has a dual-mode center panel (Findings mode vs. Heatmap m
 
 ### Header (`components/layout/Header.tsx`)
 
-Fixed-height bar (`h-14`) with the app title "SEND Data Browser" and a `Database` lucide icon. Links to `/` (home). No dynamic state.
+Fixed-height bar (`h-14`) with the app title "SENDEX" and a `Database` lucide icon. Links to `/` (home). No dynamic state.
 
 ### Layout (`components/layout/Layout.tsx`)
 

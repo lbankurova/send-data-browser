@@ -1,4 +1,4 @@
-# Information Architecture — SEND Data Browser
+# Information Architecture — SENDEX
 
 Single-page reference: what each view shows, how views connect, and what data flows between them.
 

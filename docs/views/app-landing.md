@@ -23,7 +23,7 @@ Internal layout: single full-height scrollable column (`h-full overflow-y-auto`)
 
 ```
 +-----------------------------------------------------------+
-|  [Flask icon]  Preclinical Case              * Bullet list |
+|  [Flask icon]  SENDEX                        * Bullet list |
 |                Analyze and validate...       * of features |
 |                                              Learn more -> |
 +-----------------------------------------------------------+  <-- hero, border-b, bg-card
@@ -51,7 +51,7 @@ Container: `border-b bg-card px-8 py-8`
 ### Left block
 `flex shrink-0 items-start gap-4`
 - Flask icon: `FlaskConical`, `h-11 w-11 text-primary`
-- Title: `text-xl font-semibold tracking-tight` -- "Preclinical Case"
+- Title: `text-xl font-semibold tracking-tight` -- "SENDEX"
 - Subtitle: `mt-0.5 text-xs text-muted-foreground` -- "Analyze and validate your SEND data"
 
 ### Right block

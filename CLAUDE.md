@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SEND Data Browser — a web app for exploring pre-clinical regulatory study data (SEND format). Studies are stored as SAS Transport (.xpt) files in `send/` and served through a REST API to a React frontend.
+SENDEX (SEND Explorer) — a web app for exploring pre-clinical regulatory study data (SEND format). Studies are stored as SAS Transport (.xpt) files in `send/` and served through a REST API to a React frontend.
 
 **Documentation assets:** `docs/` — all system specs, view specs, portability guides, and design system docs live here. See `docs/MANIFEST.md` for a full inventory with code dependencies and staleness tracking.
 
