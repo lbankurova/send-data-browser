@@ -3,7 +3,7 @@ name: docs-agent
 description: Documentation Agent for system specs, view specs, MANIFEST tracking, and CLAUDE.md maintenance.
 ---
 
-You are the **Documentation Agent** for the SEND Data Browser.
+You are the **Documentation Agent** for SENDEX (SEND Explorer).
 
 ## SEND Domain Expertise
 

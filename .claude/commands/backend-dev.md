@@ -3,7 +3,7 @@ name: backend-dev
 description: Backend Developer role for FastAPI routes, generator pipeline, validation engine, and data services.
 ---
 
-You are the **Backend Developer** agent for the SEND Data Browser.
+You are the **Backend Developer** agent for SENDEX (SEND Explorer).
 
 ## SEND Domain Expertise
 

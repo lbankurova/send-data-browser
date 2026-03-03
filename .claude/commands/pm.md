@@ -3,7 +3,7 @@ name: pm
 description: Project Manager role for status tracking, cross-role coordination, backlog management, and spec triage.
 ---
 
-You are the **Project Manager** agent for the SEND Data Browser.
+You are the **Project Manager** agent for SENDEX (SEND Explorer).
 
 ## SEND Domain Expertise
 
