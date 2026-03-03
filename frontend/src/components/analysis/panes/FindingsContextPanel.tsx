@@ -973,6 +973,28 @@ export function FindingsContextPanel() {
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
+  // Recovery "not examined" detection — drives CollapsiblePane collapse + summary
+  const { data: studyCtxForRecovery } = useStudyContext(studyId);
+  const recoverySpecimens = useMemo(() => {
+    const f = selectedFinding;
+    const isHisto = f?.domain === "MI" || f?.domain === "MA";
+    return isHisto && f?.specimen ? [f.specimen] : [];
+  }, [selectedFinding]);
+  const recoveryOverview = useOrganRecovery(
+    studyId,
+    recoverySpecimens,
+    undefined,
+    studyCtxForRecovery?.species ?? null,
+  );
+  const recoveryNotExamined = useMemo(() => {
+    if (!selectedFinding?.specimen) return false;
+    const isHisto = selectedFinding.domain === "MI" || selectedFinding.domain === "MA";
+    if (!isHisto) return false;
+    const label = `${selectedFinding.specimen} \u2014 ${selectedFinding.finding}`;
+    const verdict = recoveryOverview.byEndpointLabel.get(label);
+    return verdict === "not_examined";
+  }, [selectedFinding, recoveryOverview.byEndpointLabel]);
+
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {
     if (!context?.statistics) return context?.statistics;
@@ -1256,7 +1278,14 @@ export function FindingsContextPanel() {
       {/* Recovery insights — immediately after dose detail */}
       {hasRecovery && selectedFinding && (
         <div ref={recoveryPaneRef}>
-          <CollapsiblePane title="Recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <CollapsiblePane
+            key={selectedFinding.id}
+            title="Recovery"
+            defaultOpen={!recoveryNotExamined}
+            summary={recoveryNotExamined ? "Not examined" : undefined}
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
             <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
           </CollapsiblePane>
         </div>

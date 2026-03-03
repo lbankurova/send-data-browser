@@ -111,6 +111,7 @@ describe("field-contract-sync", () => {
       "alternatives", "avg_severity",
       // Scheduled/separate metadata
       "scheduled_min_p_adj", "scheduled_max_effect_size", "scheduled_trend_p",
+      "separate_min_p_adj", "separate_max_effect_size", "separate_trend_p",
     ]);
 
     // Parse the Source of Truth Registry table from field-contracts.md

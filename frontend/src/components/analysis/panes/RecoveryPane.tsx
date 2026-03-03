@@ -163,6 +163,19 @@ function HistopathRecoveryAllSexes({
   // Build assessmentsBySex for the chart — extract assessments for the specific finding
   const findingName = finding.finding;
   const label = `${specimen} \u2014 ${findingName}`;
+
+  // Short-circuit: if all sexes show "not_examined" for this finding, show one-liner
+  const allNotExamined = sections.every(({ recovery }) => {
+    const verdict = recovery.byEndpointLabel.get(label);
+    return verdict === "not_examined";
+  });
+  if (allNotExamined) {
+    return (
+      <div className="text-[10px] text-muted-foreground">
+        Tissue not examined in recovery arm.
+      </div>
+    );
+  }
   const assessmentsBySex: Record<string, RecoveryDoseAssessment[]> = {};
   let recoveryDays: number | null = null;
 
