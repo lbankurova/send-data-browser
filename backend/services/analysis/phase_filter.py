@@ -66,7 +66,8 @@ def compute_last_dosing_day(
                     if etcd and tedur and tedur != "nan":
                         tedur_map[etcd] = tedur
 
-            # Walk each arm's epochs, accumulate durations, find treatment end
+            # Walk each arm's epochs, accumulate on-study durations, find treatment end.
+            # Prestudy / acclimation epochs are before Day 1 and don't count.
             treatment_end_days: list[int] = []
             for armcd in ta_df["ARMCD"].astype(str).str.strip().unique():
                 arm_ta = ta_df[ta_df["ARMCD"].astype(str).str.strip() == armcd]
@@ -77,6 +78,10 @@ def compute_last_dosing_day(
                 for _, row in arm_ta.iterrows():
                     etcd = str(row.get("ETCD", "")).strip()
                     epoch = str(row.get("EPOCH", "")).strip().lower()
+
+                    # Skip prestudy / acclimation — before Day 1
+                    if "prestudy" in epoch or "acclim" in epoch or "screen" in epoch:
+                        continue
 
                     dur = _parse_iso_duration_days(tedur_map.get(etcd, ""))
 
