@@ -197,7 +197,18 @@ function TimeCourseContent({
   deaths: DeathRecord[];
 }) {
   const { yDomain, yTicks } = useMemo(() => computeYDomain(data), [data]);
-  const allDays = useMemo(() => collectAllDays(data), [data]);
+  // Merge death days into the hoverable day list so crosshair can land on them
+  const allDays = useMemo(() => {
+    const days = collectAllDays(data);
+    const daySet = new Set(days);
+    for (const d of deaths) {
+      if (d.study_day != null && !daySet.has(d.study_day)) {
+        daySet.add(d.study_day);
+        days.push(d.study_day);
+      }
+    }
+    return days.sort((a, b) => a - b);
+  }, [data, deaths]);
 
   const xDomain: [number, number] = useMemo(
     () => allDays.length > 0 ? [allDays[0], allDays[allDays.length - 1]] : [0, 1],
@@ -337,19 +348,10 @@ function DetailRow({
               const pts = sexSeries?.[doseLevel];
               const pt = pts?.find((p) => p.day === displayDay);
 
-              // Count deaths snapping to this dose/day
-              let deathCount = 0;
-              for (const d of sexDeaths) {
-                if (d.dose_level !== doseLevel) continue;
-                const dPts = sexSeries?.[d.dose_level];
-                if (!dPts) continue;
-                let closest: { day: number } | null = null;
-                for (const tp of dPts) {
-                  if (tp.day <= d.study_day!) closest = tp;
-                  else break;
-                }
-                if (closest && closest.day === displayDay) deathCount++;
-              }
+              // Deaths at exactly this day for this dose group
+              const deathCount = sexDeaths.filter(
+                (d) => d.dose_level === doseLevel && d.study_day === displayDay,
+              ).length;
 
               return (
                 <div key={doseLevel} className="flex items-center gap-1">
@@ -396,6 +398,10 @@ function DetailRow({
                         </span>
                       )}
                     </>
+                  ) : deathCount > 0 ? (
+                    <span className="text-red-600">
+                      {deathCount === 1 ? "death" : `${deathCount} deaths`}
+                    </span>
                   ) : (
                     <span className="text-muted-foreground/40">—</span>
                   )}

@@ -159,19 +159,29 @@ export function TimeCourseLineChart({
         );
       })}
 
-      {/* Death markers — concentric circles on the line at death day */}
+      {/* Death markers — concentric circles at actual death day, y interpolated */}
       {deaths.map((d) => {
         const pts = series[d.dose_level];
-        if (!pts || d.study_day == null) return null;
-        // Find the closest timepoint at or before the death day
-        let closest: TimeCoursePoint | null = null;
+        if (!pts || pts.length === 0 || d.study_day == null) return null;
+        // Find surrounding points for y-interpolation
+        let before: TimeCoursePoint | null = null;
+        let after: TimeCoursePoint | null = null;
         for (const pt of pts) {
-          if (pt.day <= d.study_day) closest = pt;
-          else break;
+          if (pt.day <= d.study_day) before = pt;
+          else { after = pt; break; }
         }
-        if (!closest) return null;
-        const cx = xScale(closest.day);
-        const cy = yScale(closest.g);
+        if (!before && !after) return null;
+        // Interpolate y between the two surrounding points
+        let cy: number;
+        if (!before) {
+          cy = yScale(after!.g);
+        } else if (!after || before.day === d.study_day) {
+          cy = yScale(before.g);
+        } else {
+          const t = (d.study_day - before.day) / (after.day - before.day);
+          cy = yScale(before.g + t * (after.g - before.g));
+        }
+        const cx = xScale(d.study_day);
         const color = getDoseGroupColor(d.dose_level);
         return (
           <g key={d.USUBJID}>
