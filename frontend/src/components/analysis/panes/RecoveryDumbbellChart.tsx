@@ -45,6 +45,7 @@ const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
   partial: "text-muted-foreground",
   persistent: "text-foreground font-semibold",
   worsening: "text-foreground font-semibold",
+  not_assessed: "text-muted-foreground",
 };
 
 function formatPCompact(p: number): string {
@@ -52,13 +53,18 @@ function formatPCompact(p: number): string {
   return p.toFixed(3);
 }
 
-function formatVerdictDesc(
+export function formatVerdictDesc(
   terminalG: number | null,
   recoveryG: number | null,
   pctRecovered: number | null,
   pValue: number | null,
   effectSymbol: string,
 ): string {
+  // Null recovery with non-null terminal — recovery data not available
+  if (recoveryG == null && terminalG != null && Math.abs(terminalG) >= 0.01) {
+    return `recovery data not available (terminal |${effectSymbol}|\u2009=\u2009${formatGAbs(terminalG)})`;
+  }
+
   const pStr = pValue != null ? `, p\u2009=\u2009${formatPCompact(pValue)}` : "";
 
   if (terminalG == null || Math.abs(terminalG) < 0.01) {
@@ -97,7 +103,7 @@ const ZERO_LINE_COLOR = "#CBD5E1"; // slate-300
 // ── Helpers ──────────────────────────────────────────────
 
 /** Connector visual tier by p-value. Weight encodes significance — no dashes. */
-function connectorStyle(p: number | null): {
+export function connectorStyle(p: number | null): {
   opacity: number;
   width: number;
 } {
@@ -108,7 +114,7 @@ function connectorStyle(p: number | null): {
 }
 
 /** Check if a row qualifies for peak marker. */
-function hasPeakQualifier(row: RecoveryRow): boolean {
+export function hasPeakQualifier(row: RecoveryRow): boolean {
   return (
     row.peak_effect != null &&
     row.terminal_effect != null &&
@@ -120,7 +126,7 @@ function hasPeakQualifier(row: RecoveryRow): boolean {
 
 // ── Processed row for rendering ──────────────────────────
 
-interface ChartRow {
+export interface ChartRow {
   row: RecoveryRow;
   doseLabel: string;
   verdict: ContinuousVerdictType;
@@ -130,7 +136,7 @@ interface ChartRow {
   isEdge: "insufficient_n" | "no_concurrent_control" | null;
 }
 
-function buildChartRows(
+export function buildChartRows(
   rows: RecoveryRow[],
   doseGroups: DoseGroup[] | undefined,
 ): ChartRow[] {
@@ -146,7 +152,7 @@ function buildChartRows(
       return {
         row,
         doseLabel,
-        verdict: "resolved" as ContinuousVerdictType,
+        verdict: "not_assessed" as ContinuousVerdictType,
         terminalVal: null,
         recoveryVal: null,
         peakVal: null,
@@ -157,7 +163,7 @@ function buildChartRows(
       return {
         row,
         doseLabel,
-        verdict: "resolved" as ContinuousVerdictType,
+        verdict: "not_assessed" as ContinuousVerdictType,
         terminalVal: null,
         recoveryVal: null,
         peakVal: null,
@@ -380,8 +386,8 @@ function DumbbellPanel({
             const pDay = cr.row.peak_day ?? "?";
             const tDay = cr.row.terminal_day ?? "?";
             const rDay = cr.row.recovery_day ?? "?";
-            const pctDosing = termG > 0 ? Math.round(((peakG - termG) / peakG) * 100) : 0;
-            const pctRecovery = termG > 0 ? Math.round(((termG - recG) / termG) * 100) : 0;
+            const pctDosing = peakG > 0.01 ? Math.round(((peakG - termG) / peakG) * 100) : 0;
+            const pctRecovery = peakG > 0.01 ? Math.round(((termG - recG) / peakG) * 100) : 0;
             const recDir = recG <= termG ? "resolved" : "worsened";
             peakTooltip =
               `Peak (D${pDay}): ${formatGAbs(peakG)}${effectSymbol} → ` +
@@ -650,6 +656,44 @@ function DumbbellPanel({
   );
 }
 
+// ── Axis scaling ─────────────────────────────────────────
+
+/** Compute global xMax and per-sex xMin for the dumbbell chart axis. */
+export function computeAxisBounds(
+  chartRowsBySex: Record<string, ChartRow[]>,
+  sexes: string[],
+): { globalXMax: number; xMinBySex: Record<string, number> } {
+  let mx = 0;
+  const mins: Record<string, number> = {};
+  for (const s of sexes) {
+    let mn = 0;
+    for (const cr of chartRowsBySex[s] ?? []) {
+      if (cr.isEdge) continue;
+      const vals = [cr.terminalVal, cr.recoveryVal];
+      if (cr.peakVal != null && hasPeakQualifier(cr.row)) {
+        vals.push(cr.peakVal);
+      }
+      for (const v of vals) {
+        if (v != null) {
+          mn = Math.min(mn, v);
+          mx = Math.max(mx, v);
+        }
+      }
+    }
+    mins[s] = mn;
+  }
+  const pad = mx * 0.1 || 0.5;
+  return {
+    globalXMax: mx + pad,
+    xMinBySex: Object.fromEntries(
+      Object.entries(mins).map(([s, mn]) => {
+        const negPad = mn < 0 ? Math.abs(mn) * 0.1 || 0.1 : 0;
+        return [s, mn - negPad];
+      }),
+    ),
+  };
+}
+
 // ── Main component ───────────────────────────────────────
 
 export function RecoveryDumbbellChart({
@@ -686,37 +730,10 @@ export function RecoveryDumbbellChart({
 
   // Global xMax (shared scale for F vs M comparison on the positive/effect side).
   // Per-sex xMin: only extend left of zero when that panel has overcorrection.
-  const { globalXMax, xMinBySex } = useMemo(() => {
-    let mx = 0;
-    const mins: Record<string, number> = {};
-    for (const s of sexes) {
-      let mn = 0;
-      for (const cr of chartRowsBySex[s] ?? []) {
-        if (cr.isEdge) continue;
-        const vals = [cr.terminalVal, cr.recoveryVal];
-        if (cr.peakVal != null && hasPeakQualifier(cr.row)) {
-          vals.push(cr.peakVal);
-        }
-        for (const v of vals) {
-          if (v != null) {
-            mn = Math.min(mn, v);
-            mx = Math.max(mx, v);
-          }
-        }
-      }
-      mins[s] = mn;
-    }
-    const pad = mx * 0.1 || 0.5;
-    return {
-      globalXMax: mx + pad,
-      xMinBySex: Object.fromEntries(
-        Object.entries(mins).map(([s, mn]) => {
-          const negPad = mn < 0 ? Math.abs(mn) * 0.1 || 0.1 : 0;
-          return [s, mn - negPad];
-        }),
-      ),
-    };
-  }, [chartRowsBySex, sexes]);
+  const { globalXMax, xMinBySex } = useMemo(
+    () => computeAxisBounds(chartRowsBySex, sexes),
+    [chartRowsBySex, sexes],
+  );
 
   // Dose labels (shared column from F or first sex)
   const primarySex = sexes[0] ?? "F";

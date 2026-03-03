@@ -174,7 +174,7 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"recovered" | "partial" | "not_recovered" | "not_examined" | "mixed"`
 **Scope:** syndrome-level (rolled up from per-endpoint)
-**Source:** `syndrome-interpretation.ts:assessSyndromeRecovery()`
+**Source:** `syndrome-cross-reference.ts:assessSyndromeRecovery()` (re-exported by `syndrome-interpretation.ts`)
 **Consumers:** SyndromeContextPanel, RecoveryPane
 **Methods:** @method CLASS-10, @method CLASS-20
 

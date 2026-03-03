@@ -89,12 +89,13 @@ When severity grades are available, also assess whether the distribution shifted
 
 ### 4.1 Prerequisite Gate
 
-Before classifying recovery, check that the terminal effect is meaningful enough to assess:
+**Removed.** All dose groups with recovery data receive a computed verdict regardless of terminal effect size. The previous gate (`|g_terminal| < 0.5` → Not assessable) has been removed because it suppressed detection of delayed-onset effects (small terminal effect that worsens during recovery).
 
-- If `|g_terminal| < 0.5` AND `|pct_diff_terminal| < organ_threshold / 2` → **Not assessable** (effect at terminal too small to meaningfully evaluate recovery)
-- Otherwise → proceed to classification
+**Near-zero terminal effect handling:** When `|g_terminal| < 0.01` (effectively no terminal effect), the percentage-based recovery formula is not meaningful. Instead, classify based on `g_recovery` alone:
+- `|g_recovery| < 0.5` → Resolved (no meaningful effect at either timepoint)
+- `|g_recovery| ≥ 0.5` → Worsening (effect appeared during recovery — possible delayed onset)
 
-This prevents the system from calling a trivial fluctuation "persistent" or "worsening."
+**Display cap:** When `|recovery_pct| > 999%`, display ">10×" instead of the raw percentage.
 
 ### 4.2 Classification Buckets
 
@@ -435,7 +436,7 @@ When both recovery data and finding nature are available, flag discordance:
 
 ### 14.4 Backwards Compatibility
 
-**Done.** The recovery section handles three degraded states: (1) `insufficient_n` — shows raw value with "insufficient for classification"; (2) `no_concurrent_control` — shows raw mean with amber warning; (3) below-threshold terminal effect — shows "Not assessed" with terminal g value. All states render informative content rather than hiding the row.
+**Done.** The recovery section handles two degraded states: (1) `insufficient_n` — shows raw value with "insufficient for classification"; (2) `no_concurrent_control` — shows raw mean with amber warning. All other rows receive a computed verdict regardless of terminal effect size.
 
 ---
 
@@ -471,12 +472,11 @@ When both recovery data and finding nature are available, flag discordance:
 | — | OM OMSPEC groupby (organs distinguished) | Done | OMTESTCD is always "WEIGHT"; group by OMSPEC instead |
 | — | Day numbers in display | Done | Terminal and recovery days shown with g values |
 | — | Pane position: immediately after Dose detail | Done | Before Evidence/Syndromes — proximity to verdict summary |
+| §4.1 | Prerequisite gate removed | Done | All dose groups get computed verdicts. Near-zero terminal (|g|<0.01) classifies by recovery alone. Display cap >10× for extreme percentages. |
 
 ### 15.2 Partially Implemented
 
-| Spec section | Feature | Current state | Gap |
-|---|---|---|---|
-| §4.1 | Prerequisite gate | `|g_terminal| < 0.5` only | Spec requires AND `|pct_diff_terminal| < organ_threshold/2` — needs control mean + organ threshold. **Defer:** current g-only gate is sufficient. |
+_None — prerequisite gate removed, all spec items implemented._
 
 ### 15.3 Not Implemented (Remaining)
 
@@ -490,3 +490,4 @@ _None — all spec items are either implemented or documented as deliberate depa
 | §6.1 | Table layout with F/M columns | Stacked sections with sex headers | Context panel is narrow (~300px); side-by-side columns would be too cramped |
 | §3.1 | % difference from control as displayed number | Hedges' g as displayed number | g is already the standard throughout the app; adding % diff would require API extension |
 | §6.3 | Sparkline visualization | Not implemented | Deferred — significant UI complexity for context panel width |
+| §6 (dumbbell spec) | 6 toolbar controls (Metric, Show peak, Show CI, Sync axes, Sort by, Export) | Not implementing | Context-panel embedding does not need configuration UI; peak shown automatically |

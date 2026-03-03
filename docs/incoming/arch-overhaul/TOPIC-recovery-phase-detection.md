@@ -146,6 +146,7 @@ Recovery animals interact with early death exclusion: moribund/found-dead recove
 | HC-01 | Dynamic dose group mapping | `dose_groups.py:10` | `ARMCD_TO_DOSE_LEVEL` hardcoded for PointCross. Blocked on multi-study support. |
 | HC-02 | Dynamic recovery arm codes | `dose_groups.py:13` | `RECOVERY_ARMCDS` hardcoded. Should derive from TX domain (TXPARMCD = "RECOVDUR"). |
 | TK-1 | TK × recovery interaction | `pk_integration.py` | TK satellite recovery animals may need special handling — not yet researched. |
+| TC-01 | Dumbbell toolbar controls (Metric, Show peak, Show CI, Sync axes, Sort by, Export) | `recovery-trajectory-dumbbell-spec.md` §6 | Not implementing (design decision) — context-panel chart does not need configuration UI. |
 
 ### Minor gaps
 

@@ -107,7 +107,7 @@ function ContinuousRecoverySection({
         <span>
           {allRows[0]?.terminal_day != null && <>Day {allRows[0].terminal_day} (terminal) → </>}
           {recovery.recovery_day != null && <>Day {recovery.recovery_day} (recovery)</>}
-          {" · "}Effect size: {getEffectSizeLabel(effectSize)} (|{getEffectSizeSymbol(effectSize)}|)
+          {" · "}Effect size: {getEffectSizeLabel(effectSize)} ({getEffectSizeSymbol(effectSize)})
         </span>
         <span title={"Each row is one dose group. Filled dot = effect size at terminal sacrifice. Vertical bar = effect size at recovery. Arrow direction shows whether the effect shrank (recovering, arrow left toward zero) or grew (worsening, arrow right). Line weight encodes statistical significance: thicker = p<0.05, thinner = p\u22650.05. Amber triangles mark peak effects during dosing when they materially exceeded the terminal value."}>
           <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
