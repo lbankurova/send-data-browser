@@ -20,13 +20,16 @@ from services.analysis.organ_thresholds import get_organ_threshold, get_default_
 log = logging.getLogger(__name__)
 
 
-def classify_severity(finding: dict) -> str:
+def classify_severity(
+    finding: dict,
+    threshold: str = "grade-ge-2-or-dose-dep",
+) -> str:
     """Classify a finding as 'adverse', 'warning', or 'normal'.
 
-    Rules (pure function — swappable):
-    - adverse: statistically significant (p_adj < 0.05) AND meaningful effect size
-    - warning: borderline significance OR moderate effect
-    - normal: not significant, small effect
+    Threshold modes (continuous endpoints only — incidence is unchanged):
+    - grade-ge-2-or-dose-dep: default. p < 0.05 AND |d| >= 0.5, or trend-driven.
+    - grade-ge-1: any significant pairwise → adverse (no effect size gate).
+    - grade-ge-2: p < 0.05 AND |d| >= 0.5 → adverse (no trend consideration).
     """
     min_p = finding.get("min_p_adj")
     max_d = finding.get("max_effect_size")
@@ -34,7 +37,27 @@ def classify_severity(finding: dict) -> str:
     data_type = finding.get("data_type", "continuous")
 
     if data_type == "continuous":
-        # Continuous endpoints: use p-value + effect size
+        if threshold == "grade-ge-1":
+            # Any significant pairwise → adverse
+            if min_p is not None and min_p < 0.05:
+                return "adverse"
+            if trend_p is not None and trend_p < 0.05:
+                return "warning"
+            if max_d is not None and abs(max_d) >= 1.0:
+                return "warning"
+            return "normal"
+
+        if threshold == "grade-ge-2":
+            # Significant AND meaningful effect size — no trend consideration
+            if min_p is not None and min_p < 0.05:
+                if max_d is not None and abs(max_d) >= 0.5:
+                    return "adverse"
+                return "warning"
+            if max_d is not None and abs(max_d) >= 1.0:
+                return "warning"
+            return "normal"
+
+        # Default: grade-ge-2-or-dose-dep (original behavior)
         if min_p is not None and min_p < 0.05:
             if max_d is not None and abs(max_d) >= 0.5:
                 return "adverse"
@@ -47,18 +70,14 @@ def classify_severity(finding: dict) -> str:
             return "warning"
         return "normal"
     else:
-        # Incidence endpoints: use p-value + direction
-        # A significant DECREASE from control is not adverse — it may be
-        # a background finding reduced by treatment (potential protective effect).
+        # Incidence endpoints: classification unchanged across thresholds
         direction = finding.get("direction", "none")
         if direction == "down":
-            # Significant decrease: not adverse, but flag as noteworthy
             if min_p is not None and min_p < 0.05:
                 return "warning"
             if trend_p is not None and trend_p < 0.05:
                 return "warning"
             return "normal"
-        # Direction is "up" or "none" — standard classification
         if min_p is not None and min_p < 0.05:
             return "adverse"
         if trend_p is not None and trend_p < 0.05:
