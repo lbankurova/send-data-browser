@@ -26,64 +26,72 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export function fetchStudySignalSummary(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<SignalSummaryRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/study-signal-summary`
+    `/studies/${encodeURIComponent(studyId)}/analysis/study-signal-summary${qs}`
   );
 }
 
 export function fetchTargetOrganSummary(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<TargetOrganRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/target-organ-summary`
+    `/studies/${encodeURIComponent(studyId)}/analysis/target-organ-summary${qs}`
   );
 }
 
-export function fetchRuleResults(studyId: string): Promise<RuleResult[]> {
+export function fetchRuleResults(studyId: string, settingsParams?: string): Promise<RuleResult[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/rule-results`
+    `/studies/${encodeURIComponent(studyId)}/analysis/rule-results${qs}`
   );
 }
 
 export function fetchNoaelSummary(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<NoaelSummaryRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/noael-summary`
+    `/studies/${encodeURIComponent(studyId)}/analysis/noael-summary${qs}`
   );
 }
 
 export function fetchAdverseEffectSummary(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<AdverseEffectSummaryRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/adverse-effect-summary`
+    `/studies/${encodeURIComponent(studyId)}/analysis/adverse-effect-summary${qs}`
   );
 }
 
 export function fetchDoseResponseMetrics(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<DoseResponseRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/dose-response-metrics`
+    `/studies/${encodeURIComponent(studyId)}/analysis/dose-response-metrics${qs}`
   );
 }
 
 export function fetchOrganEvidenceDetail(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<OrganEvidenceRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/organ-evidence-detail`
+    `/studies/${encodeURIComponent(studyId)}/analysis/organ-evidence-detail${qs}`
   );
 }
 
 export function fetchLesionSeveritySummary(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<LesionSeverityRow[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/lesion-severity-summary`
+    `/studies/${encodeURIComponent(studyId)}/analysis/lesion-severity-summary${qs}`
   );
 }
 
@@ -96,10 +104,11 @@ export function fetchProvenanceMessages(
 }
 
 export function fetchFindingDoseTrends(
-  studyId: string
+  studyId: string, settingsParams?: string
 ): Promise<FindingDoseTrend[]> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/finding-dose-trends`
+    `/studies/${encodeURIComponent(studyId)}/analysis/finding-dose-trends${qs}`
   );
 }
 

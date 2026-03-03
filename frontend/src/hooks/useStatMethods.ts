@@ -1,12 +1,13 @@
 /**
- * Reads statistical method preferences from session state.
+ * Reads statistical method preferences from StudySettingsContext.
  *
- * Keys match those already stored by StudyDetailsContextPanel dropdowns.
  * Returns a memoized object to avoid unnecessary re-renders.
+ * The `studyId` parameter is kept for API compatibility but is no longer
+ * used — settings are read from the centralized StudySettingsContext.
  */
 
 import { useMemo } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 
 export interface StatMethods {
@@ -14,18 +15,10 @@ export interface StatMethods {
   multiplicity: MultiplicityMethod;
 }
 
-export function useStatMethods(studyId: string | undefined): StatMethods {
-  const [effectSize] = useSessionState<EffectSizeMethod>(
-    `pcc.${studyId ?? "__none__"}.effectSize`,
-    "hedges-g",
-  );
-  const [multiplicity] = useSessionState<MultiplicityMethod>(
-    `pcc.${studyId ?? "__none__"}.multiplicity`,
-    "dunnett-fwer",
-  );
-
+export function useStatMethods(_studyId: string | undefined): StatMethods {
+  const { settings } = useStudySettings();
   return useMemo(
-    () => ({ effectSize, multiplicity }),
-    [effectSize, multiplicity],
+    () => ({ effectSize: settings.effectSize, multiplicity: settings.multiplicity }),
+    [settings.effectSize, settings.multiplicity],
   );
 }
