@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { derive } from "@/hooks/useTimeCourseData";
+import { computeEffectSize } from "@/lib/stat-method-transforms";
 import type { TimecourseResponse } from "@/types/timecourse";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -15,12 +16,12 @@ function makeResponse(overrides: Partial<TimecourseResponse> = {}): TimecourseRe
   };
 }
 
-function tp(day: number, groups: { dose_level: number; sex: string; mean: number; sd: number; n: number }[]) {
+function tp(day: number, groups: { dose_level: number; sex: string; mean: number; sd: number; n: number; dose_label?: string }[]) {
   return {
     day,
     groups: groups.map((g) => ({
       dose_level: g.dose_level,
-      dose_label: g.dose_level === 0 ? "Control" : `Dose ${g.dose_level}`,
+      dose_label: g.dose_label ?? (g.dose_level === 0 ? "Control" : `Dose ${g.dose_level}`),
       sex: g.sex,
       n: g.n,
       mean: g.mean,
@@ -30,260 +31,392 @@ function tp(day: number, groups: { dose_level: number; sex: string; mean: number
   };
 }
 
-// ── Tests ────────────────────────────────────────────────────
+// ── Effect size computation ─────────────────────────────────
 
-describe("derive — % change from baseline", () => {
-  test("baseline day is 0% change", () => {
+describe("derive — Hedges' g effect size", () => {
+  test("g matches computeEffectSize('hedges-g') for known inputs", () => {
     const data = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
       ],
     });
     const result = derive(data);
-    const pts = result.series["M"][0];
-    expect(pts[0].pctChangeFromBaseline).toBe(0);
+    const pts = result.series["M"][1];
+
+    // Day 1: equal means → g ≈ 0
+    const expected1 = computeEffectSize("hedges-g", 200, 10, 10, 200, 8, 10)!;
+    expect(pts[0].g).toBeCloseTo(expected1, 5);
+    expect(pts[0].g).toBeCloseTo(0, 5);
+
+    // Day 8: treated < control
+    const expected8 = computeEffectSize("hedges-g", 210, 12, 10, 190, 9, 10)!;
+    expect(pts[1].g).toBeCloseTo(expected8, 5);
+
+    // Day 15: treated further below control
+    const expected15 = computeEffectSize("hedges-g", 220, 11, 10, 180, 10, 9)!;
+    expect(pts[2].g).toBeCloseTo(expected15, 5);
   });
 
-  test("computes correct % change", () => {
-    const data = makeResponse({
-      timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 180, sd: 11, n: 10 }]),
-      ],
-    });
-    const result = derive(data);
-    const pts = result.series["M"][0];
-    // Day 8: (210-200)/200 * 100 = 5%
-    expect(pts[1].pctChangeFromBaseline).toBeCloseTo(5.0, 5);
-    // Day 15: (180-200)/200 * 100 = -10%
-    expect(pts[2].pctChangeFromBaseline).toBeCloseTo(-10.0, 5);
-  });
-
-  test("multiple dose groups compute independently", () => {
+  test("multiple treated groups compute independently vs same control", () => {
     const data = makeResponse({
       timepoints: [
         tp(1, [
           { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
           { dose_level: 1, sex: "M", mean: 195, sd: 8, n: 10 },
+          { dose_level: 2, sex: "M", mean: 190, sd: 7, n: 10 },
         ]),
         tp(8, [
           { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
           { dose_level: 1, sex: "M", mean: 175, sd: 9, n: 10 },
+          { dose_level: 2, sex: "M", mean: 160, sd: 8, n: 10 },
         ]),
         tp(15, [
           { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
-          { dose_level: 1, sex: "M", mean: 160, sd: 10, n: 9 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+          { dose_level: 2, sex: "M", mean: 150, sd: 9, n: 9 },
         ]),
       ],
     });
     const result = derive(data);
-    // Dose 0, Day 8: (210-200)/200 * 100 = 5%
-    expect(result.series["M"][0][1].pctChangeFromBaseline).toBeCloseTo(5.0, 5);
-    // Dose 1, Day 8: (175-195)/195 * 100 ≈ -10.256%
-    expect(result.series["M"][1][1].pctChangeFromBaseline).toBeCloseTo(-10.2564, 2);
-    // Dose 1, Day 15: (160-195)/195 * 100 ≈ -17.949%
-    expect(result.series["M"][1][2].pctChangeFromBaseline).toBeCloseTo(-17.9487, 2);
+
+    // Dose 1, Day 8
+    const exp1d8 = computeEffectSize("hedges-g", 210, 12, 10, 175, 9, 10)!;
+    expect(result.series["M"][1][1].g).toBeCloseTo(exp1d8, 5);
+
+    // Dose 2, Day 8
+    const exp2d8 = computeEffectSize("hedges-g", 210, 12, 10, 160, 8, 10)!;
+    expect(result.series["M"][2][1].g).toBeCloseTo(exp2d8, 5);
+
+    // Dose 2 effect should be larger in magnitude than Dose 1
+    expect(Math.abs(result.series["M"][2][1].g)).toBeGreaterThan(
+      Math.abs(result.series["M"][1][1].g),
+    );
   });
 });
 
-describe("derive — SE computation", () => {
-  test("SE = (sd / sqrt(n)) / |baseline| * 100", () => {
+// ── SD-sensitivity ──────────────────────────────────────────
+
+describe("derive — SD-sensitivity", () => {
+  test("same raw difference at different SDs → different g values", () => {
+    // Both have treated-control diff of -20, but different SDs
     const data = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 20, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 220, sd: 15, n: 9 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 5, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 5, n: 10 },
+        ]),
+        // Need a third timepoint to pass the 3-timepoint check in the pane,
+        // but derive() itself doesn't require it
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 5, n: 10 },
+        ]),
       ],
     });
-    const result = derive(data);
-    const pts = result.series["M"][0];
+    const r1 = derive(data);
 
-    // Day 1 (baseline): SE = (10 / sqrt(10)) / 200 * 100
-    const se0 = (10 / Math.sqrt(10)) / 200 * 100;
-    expect(pts[0].se).toBeCloseTo(se0, 5);
-
-    // Day 8: SE = (20 / sqrt(10)) / 200 * 100
-    const se1 = (20 / Math.sqrt(10)) / 200 * 100;
-    expect(pts[1].se).toBeCloseTo(se1, 5);
-
-    // Day 15: SE = (15 / sqrt(9)) / 200 * 100
-    const se2 = (15 / Math.sqrt(9)) / 200 * 100;
-    expect(pts[2].se).toBeCloseTo(se2, 5);
-  });
-
-  test("SE is 0 when n is 0", () => {
-    const data = makeResponse({
+    const data2 = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 20, n: 0 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 220, sd: 15, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 40, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 40, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 40, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 40, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 40, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 40, n: 10 },
+        ]),
       ],
     });
-    const result = derive(data);
-    expect(result.series["M"][0][1].se).toBe(0);
-  });
-});
+    const r2 = derive(data2);
 
-describe("derive — baseline identification", () => {
-  test("baseline is the earliest day per group", () => {
-    const data = makeResponse({
-      timepoints: [
-        tp(3, [{ dose_level: 0, sex: "M", mean: 100, sd: 5, n: 10 }]),
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-      ],
-    });
-    const result = derive(data);
-    const pts = result.series["M"][0];
-    // Sorted by day: Day 1 (mean=200) is baseline, Day 3 pctChange = (100-200)/200*100 = -50%
-    expect(pts[0].day).toBe(1);
-    expect(pts[0].pctChangeFromBaseline).toBe(0);
-    expect(pts[1].day).toBe(3);
-    expect(pts[1].pctChangeFromBaseline).toBeCloseTo(-50.0, 5);
+    // Low SD → larger |g|, high SD → smaller |g|
+    expect(Math.abs(r1.series["M"][1][0].g)).toBeGreaterThan(
+      Math.abs(r2.series["M"][1][0].g),
+    );
   });
 });
 
-describe("derive — zero baseline guard", () => {
-  test("groups with baseline < 0.001 are excluded", () => {
+// ── Control exclusion ───────────────────────────────────────
+
+describe("derive — control exclusion", () => {
+  test("control group (doseLevel=0) is not in series", () => {
     const data = makeResponse({
       timepoints: [
         tp(1, [
           { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
-          { dose_level: 1, sex: "M", mean: 0.0005, sd: 0, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
         ]),
         tp(8, [
           { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
-          { dose_level: 1, sex: "M", mean: 1, sd: 0.5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
         ]),
         tp(15, [
           { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
-          { dose_level: 1, sex: "M", mean: 2, sd: 0.7, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
         ]),
       ],
     });
     const result = derive(data);
-    // Dose 0 should exist (baseline = 200)
-    expect(result.series["M"][0]).toBeDefined();
-    expect(result.series["M"][0].length).toBe(3);
-    // Dose 1 should be excluded (baseline ≈ 0)
-    expect(result.series["M"][1]).toBeUndefined();
+    expect(result.series["M"][0]).toBeUndefined();
+    expect(result.series["M"][1]).toBeDefined();
   });
 
-  test("negative baseline is allowed when |baseline| >= 0.001", () => {
-    const data = makeResponse({
-      timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: -50, sd: 5, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: -55, sd: 6, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: -60, sd: 7, n: 10 }]),
-      ],
-    });
-    const result = derive(data);
-    expect(result.series["M"][0]).toBeDefined();
-    // Day 8: (-55 - (-50)) / (-50) * 100 = (-5)/(-50)*100 = 10%
-    expect(result.series["M"][0][1].pctChangeFromBaseline).toBeCloseTo(10.0, 5);
-  });
-});
-
-describe("derive — sex sorting", () => {
-  test("sexes are sorted alphabetically: F before M", () => {
+  test("control group (doseLevel=0) is not in doseGroups", () => {
     const data = makeResponse({
       timepoints: [
         tp(1, [
-          { dose_level: 0, sex: "M", mean: 300, sd: 10, n: 10 },
-          { dose_level: 0, sex: "F", mean: 200, sd: 8, n: 10 },
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 195, sd: 8, n: 10 },
+          { dose_level: 2, sex: "M", mean: 190, sd: 7, n: 10 },
         ]),
         tp(8, [
-          { dose_level: 0, sex: "M", mean: 310, sd: 12, n: 10 },
-          { dose_level: 0, sex: "F", mean: 210, sd: 9, n: 10 },
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 175, sd: 9, n: 10 },
+          { dose_level: 2, sex: "M", mean: 160, sd: 8, n: 10 },
         ]),
         tp(15, [
-          { dose_level: 0, sex: "M", mean: 320, sd: 11, n: 10 },
-          { dose_level: 0, sex: "F", mean: 220, sd: 10, n: 10 },
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+          { dose_level: 2, sex: "M", mean: 150, sd: 9, n: 9 },
         ]),
       ],
     });
     const result = derive(data);
-    expect(result.sexes).toEqual(["F", "M"]);
+    expect(result.doseGroups.map((d) => d.doseLevel)).toEqual([1, 2]);
+    expect(result.doseGroups.every((d) => d.doseLevel > 0)).toBe(true);
   });
 
-  test("single sex produces single-element array", () => {
+  test("controlLabel is extracted from doseLevel=0", () => {
     const data = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "F", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "F", mean: 210, sd: 12, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "F", mean: 220, sd: 11, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10, dose_label: "Vehicle" },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10, dose_label: "Vehicle" },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10, dose_label: "Vehicle" },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
       ],
     });
     const result = derive(data);
-    expect(result.sexes).toEqual(["F"]);
+    expect(result.controlLabel).toBe("Vehicle");
   });
 });
 
-describe("derive — metadata fields", () => {
+// ── nControl ────────────────────────────────────────────────
+
+describe("derive — nControl", () => {
+  test("nControl reflects control group n at each timepoint", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 9 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 7 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+      ],
+    });
+    const result = derive(data);
+    const pts = result.series["M"][1];
+    expect(pts[0].nControl).toBe(10);
+    expect(pts[1].nControl).toBe(9);
+    expect(pts[2].nControl).toBe(7);
+  });
+});
+
+// ── Edge cases ──────────────────────────────────────────────
+
+describe("derive — edge cases", () => {
+  test("n<2 in treated group → timepoint skipped", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 1 }, // n=1 < 2
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+      ],
+    });
+    const result = derive(data);
+    const pts = result.series["M"][1];
+    // Day 8 skipped (n<2), so only 2 points
+    expect(pts).toHaveLength(2);
+    expect(pts[0].day).toBe(1);
+    expect(pts[1].day).toBe(15);
+  });
+
+  test("n<2 in control group → timepoint skipped", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 1 }, // control n=1 < 2
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+      ],
+    });
+    const result = derive(data);
+    const pts = result.series["M"][1];
+    expect(pts).toHaveLength(2);
+    expect(pts[0].day).toBe(1);
+    expect(pts[1].day).toBe(15);
+  });
+
+  test("pooledSd=0 (both SDs are 0) → timepoint skipped", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 0, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 0, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+      ],
+    });
+    const result = derive(data);
+    const pts = result.series["M"][1];
+    // Day 8 skipped (pooledSd=0), so only 2 points
+    expect(pts).toHaveLength(2);
+    expect(pts[0].day).toBe(1);
+    expect(pts[1].day).toBe(15);
+  });
+
+  test("no control data → no series for treated groups", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [{ dose_level: 1, sex: "M", mean: 200, sd: 10, n: 10 }]),
+        tp(8, [{ dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 }]),
+        tp(15, [{ dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 }]),
+      ],
+    });
+    const result = derive(data);
+    // No control → no derived series
+    expect(result.series["M"][1]).toBeUndefined();
+  });
+});
+
+// ── Metadata ────────────────────────────────────────────────
+
+describe("derive — metadata", () => {
   test("terminal day uses backend terminal_sacrifice_day", () => {
     const data = makeResponse({
       terminal_sacrifice_day: 92,
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(50, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-        tp(92, [{ dose_level: 0, sex: "M", mean: 215, sd: 11, n: 10 }]),
-        tp(106, [{ dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(50, [
+          { dose_level: 0, sex: "M", mean: 250, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 210, sd: 9, n: 10 },
+        ]),
+        tp(92, [
+          { dose_level: 0, sex: "M", mean: 280, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 215, sd: 10, n: 10 },
+        ]),
       ],
     });
     const result = derive(data);
     expect(result.terminalDay).toBe(92);
   });
 
-  test("terminal day falls back to max day when last_dosing_day is absent", () => {
+  test("terminal day falls back to max day when terminal_sacrifice_day is absent", () => {
     const data = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(50, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-        tp(100, [{ dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(50, [
+          { dose_level: 0, sex: "M", mean: 250, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 210, sd: 9, n: 10 },
+        ]),
+        tp(100, [
+          { dose_level: 0, sex: "M", mean: 300, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 220, sd: 10, n: 10 },
+        ]),
       ],
     });
     const result = derive(data);
     expect(result.terminalDay).toBe(100);
   });
 
-  test("dose groups sorted by dose level", () => {
+  test("sexes sorted alphabetically: F before M", () => {
     const data = makeResponse({
       timepoints: [
         tp(1, [
-          { dose_level: 2, sex: "M", mean: 190, sd: 8, n: 10 },
-          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
-          { dose_level: 1, sex: "M", mean: 195, sd: 9, n: 10 },
+          { dose_level: 0, sex: "M", mean: 300, sd: 10, n: 10 },
+          { dose_level: 0, sex: "F", mean: 200, sd: 8, n: 10 },
+          { dose_level: 1, sex: "M", mean: 290, sd: 9, n: 10 },
+          { dose_level: 1, sex: "F", mean: 195, sd: 7, n: 10 },
         ]),
         tp(8, [
-          { dose_level: 2, sex: "M", mean: 170, sd: 9, n: 10 },
-          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
-          { dose_level: 1, sex: "M", mean: 185, sd: 10, n: 10 },
+          { dose_level: 0, sex: "M", mean: 310, sd: 12, n: 10 },
+          { dose_level: 0, sex: "F", mean: 210, sd: 9, n: 10 },
+          { dose_level: 1, sex: "M", mean: 280, sd: 10, n: 10 },
+          { dose_level: 1, sex: "F", mean: 185, sd: 8, n: 10 },
         ]),
         tp(15, [
-          { dose_level: 2, sex: "M", mean: 160, sd: 10, n: 10 },
-          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
-          { dose_level: 1, sex: "M", mean: 175, sd: 11, n: 10 },
+          { dose_level: 0, sex: "M", mean: 320, sd: 11, n: 10 },
+          { dose_level: 0, sex: "F", mean: 220, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 270, sd: 11, n: 10 },
+          { dose_level: 1, sex: "F", mean: 175, sd: 9, n: 10 },
         ]),
       ],
     });
     const result = derive(data);
-    expect(result.doseGroups.map((d) => d.doseLevel)).toEqual([0, 1, 2]);
-  });
-
-  test("totalTimepoints reflects input count", () => {
-    const data = makeResponse({
-      timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 }]),
-        tp(22, [{ dose_level: 0, sex: "M", mean: 230, sd: 13, n: 10 }]),
-      ],
-    });
-    const result = derive(data);
-    expect(result.totalTimepoints).toBe(4);
+    expect(result.sexes).toEqual(["F", "M"]);
   });
 
   test("endpoint, domain, testCode, unit pass through", () => {
@@ -293,9 +426,18 @@ describe("derive — metadata fields", () => {
       domain: "LB",
       unit: "U/L",
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 30, sd: 5, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 35, sd: 6, n: 10 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 40, sd: 7, n: 10 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 30, sd: 5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 30, sd: 4, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 32, sd: 6, n: 10 },
+          { dose_level: 1, sex: "M", mean: 45, sd: 7, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 31, sd: 5, n: 10 },
+          { dose_level: 1, sex: "M", mean: 60, sd: 8, n: 10 },
+        ]),
       ],
     });
     const result = derive(data);
@@ -304,21 +446,50 @@ describe("derive — metadata fields", () => {
     expect(result.testCode).toBe("ALT");
     expect(result.unit).toBe("U/L");
   });
-});
 
-describe("derive — n values pass through", () => {
-  test("n reflects animal count at each timepoint", () => {
+  test("totalTimepoints reflects input count", () => {
     const data = makeResponse({
       timepoints: [
-        tp(1, [{ dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 }]),
-        tp(8, [{ dose_level: 0, sex: "M", mean: 210, sd: 12, n: 9 }]),
-        tp(15, [{ dose_level: 0, sex: "M", mean: 220, sd: 11, n: 7 }]),
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 210, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 220, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+        tp(22, [
+          { dose_level: 0, sex: "M", mean: 230, sd: 13, n: 10 },
+          { dose_level: 1, sex: "M", mean: 170, sd: 11, n: 9 },
+        ]),
       ],
     });
     const result = derive(data);
-    const pts = result.series["M"][0];
-    expect(pts[0].n).toBe(10);
-    expect(pts[1].n).toBe(9);
-    expect(pts[2].n).toBe(7);
+    expect(result.totalTimepoints).toBe(4);
+  });
+
+  test("no controlDrift property on result", () => {
+    const data = makeResponse({
+      timepoints: [
+        tp(1, [
+          { dose_level: 0, sex: "M", mean: 200, sd: 10, n: 10 },
+          { dose_level: 1, sex: "M", mean: 200, sd: 8, n: 10 },
+        ]),
+        tp(8, [
+          { dose_level: 0, sex: "M", mean: 230, sd: 12, n: 10 },
+          { dose_level: 1, sex: "M", mean: 190, sd: 9, n: 10 },
+        ]),
+        tp(15, [
+          { dose_level: 0, sex: "M", mean: 260, sd: 11, n: 10 },
+          { dose_level: 1, sex: "M", mean: 180, sd: 10, n: 9 },
+        ]),
+      ],
+    });
+    const result = derive(data);
+    expect("controlDrift" in result).toBe(false);
   });
 });

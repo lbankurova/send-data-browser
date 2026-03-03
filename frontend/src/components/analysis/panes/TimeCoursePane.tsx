@@ -1,6 +1,6 @@
 /**
- * Time Course collapsible pane — shows % change from baseline as
- * line charts (F left, M right) for continuous endpoints.
+ * Time Course collapsible pane — shows effect size (Hedges' g) vs concurrent
+ * control as line charts (F left, M right) for continuous endpoints.
  * Positioned between Dose Detail and Recovery in FindingsContextPanel.
  */
 import { useMemo, useState } from "react";
@@ -38,21 +38,19 @@ function computeYDomain(data: TimeCourseSeriesData): {
     if (!sexSeries) continue;
     for (const pts of Object.values(sexSeries)) {
       for (const pt of pts) {
-        const lo = pt.pctChangeFromBaseline - pt.se;
-        const hi = pt.pctChangeFromBaseline + pt.se;
-        if (lo < min) min = lo;
-        if (hi > max) max = hi;
+        if (pt.g < min) min = pt.g;
+        if (pt.g > max) max = pt.g;
       }
     }
   }
 
-  // Round to nearest 5% with 2% padding
-  min = Math.floor((min - 2) / 5) * 5;
-  max = Math.ceil((max + 2) / 5) * 5;
-  if (min === max) { min = -5; max = 5; }
+  // Pad by 0.5, round to nearest integer
+  min = Math.floor(min - 0.5);
+  max = Math.ceil(max + 0.5);
+  if (min === max) { min = -2; max = 2; }
 
   const range = max - min;
-  const step = range <= 15 ? 5 : range <= 30 ? 10 : 15;
+  const step = range <= 6 ? 1 : range <= 15 ? 2 : 5;
 
   // Generate ticks anchored at 0, stepping outward
   const ticks: number[] = [0];
@@ -96,21 +94,21 @@ function shortDoseLabel(doseLabel: string, doseGroups?: DoseGroup[]): string {
 // ── Detail row value color ────────────────────────────────
 
 function getValueColor(
-  pctChange: number,
+  g: number,
   direction: "up" | "down" | "none" | null | undefined,
   isActive: boolean,
 ): string {
   if (!isActive) return "#94a3b8"; // muted default
-  const abs = Math.abs(pctChange);
+  const abs = Math.abs(g);
   const isAdverse =
     direction === "down"
-      ? pctChange < 0
+      ? g < 0
       : direction === "up"
-        ? pctChange > 0
+        ? g > 0
         : false;
 
-  if (isAdverse && abs > 5) return "#dc2626"; // red
-  if (isAdverse && abs > 2) return "#d97706"; // amber
+  if (isAdverse && abs > 2.0) return "#dc2626"; // red — extreme
+  if (isAdverse && abs > 0.8) return "#d97706"; // amber — strong
   return "#334155"; // dark
 }
 
@@ -143,6 +141,12 @@ export function TimeCoursePane({
   );
   const { data: mortality } = useStudyMortality(studyId);
 
+  // Treatment-related deaths only (exclude accidentals)
+  const deaths = useMemo(
+    () => mortality?.deaths ?? [],
+    [mortality],
+  );
+
   // Visibility gate: continuous data in allowed domains only
   if (!isVisible) return null;
 
@@ -155,12 +159,7 @@ export function TimeCoursePane({
     );
   }
   if (isError || !data || data.totalTimepoints < 3) return null;
-
-  // Combine deaths + accidentals, both are real n-drops
-  const deaths = useMemo(
-    () => [...(mortality?.deaths ?? []), ...(mortality?.accidentals ?? [])],
-    [mortality],
-  );
+  if (data.doseGroups.length === 0) return null;
 
   return (
     <TimeCourseContent
@@ -226,8 +225,8 @@ function TimeCourseContent({
       <div className="space-y-1.5">
         {/* Subtitle + info icon (matches Recovery pane pattern) */}
         <div className="text-[10px] text-muted-foreground flex items-center justify-between">
-          <span>% change from baseline · Group mean ± SE</span>
-          <span title="Group mean % change from first measurement. Error bars = SE of the mean.">
+          <span>Effect size (g) vs control</span>
+          <span title="Hedges' g effect size: treated vs concurrent control at each timepoint. Pooled SD normalizes for within-group variability.">
             <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
           </span>
         </div>
@@ -275,6 +274,7 @@ function TimeCourseContent({
           isHovering={isHovering}
           direction={finding.direction}
           doseGroupsMeta={doseGroups}
+          deaths={deaths}
         />
       </div>
     </CollapsiblePane>
@@ -289,12 +289,14 @@ function DetailRow({
   isHovering,
   direction,
   doseGroupsMeta,
+  deaths,
 }: {
   data: TimeCourseSeriesData;
   displayDay: number | null;
   isHovering: boolean;
   direction: "up" | "down" | "none" | null | undefined;
   doseGroupsMeta?: DoseGroup[];
+  deaths: DeathRecord[];
 }) {
   if (displayDay == null) return null;
 
@@ -304,7 +306,7 @@ function DetailRow({
   return (
     <div
       className="flex gap-2 text-[9px] leading-[14px] transition-colors duration-150"
-      style={{ minHeight: `${data.doseGroups.length * 14 + 4}px` }}
+      style={{ minHeight: `${(data.doseGroups.length + 1) * 14 + 4}px` }}
     >
       {/* Day label */}
       <div
@@ -320,11 +322,34 @@ function DetailRow({
       {/* Per-sex value columns */}
       {data.sexes.map((sex) => {
         const sexSeries = data.series[sex];
+        const sexDeaths = deaths.filter((d) => d.sex === sex && d.study_day != null);
+
+        // Get nControl from first treated group's point at displayDay
+        const firstTreatedPts = data.doseGroups.length > 0
+          ? sexSeries?.[data.doseGroups[0].doseLevel]
+          : undefined;
+        const firstPt = firstTreatedPts?.find((p) => p.day === displayDay);
+        const nControl = firstPt?.nControl;
+
         return (
           <div key={sex} className="flex-1 min-w-0 space-y-0">
             {data.doseGroups.map(({ doseLevel, doseLabel }) => {
               const pts = sexSeries?.[doseLevel];
               const pt = pts?.find((p) => p.day === displayDay);
+
+              // Count deaths snapping to this dose/day
+              let deathCount = 0;
+              for (const d of sexDeaths) {
+                if (d.dose_level !== doseLevel) continue;
+                const dPts = sexSeries?.[d.dose_level];
+                if (!dPts) continue;
+                let closest: { day: number } | null = null;
+                for (const tp of dPts) {
+                  if (tp.day <= d.study_day!) closest = tp;
+                  else break;
+                }
+                if (closest && closest.day === displayDay) deathCount++;
+              }
 
               return (
                 <div key={doseLevel} className="flex items-center gap-1">
@@ -347,25 +372,29 @@ function DetailRow({
 
                   {pt ? (
                     <>
-                      {/* % value */}
+                      {/* g value */}
                       <span
                         className="font-semibold tabular-nums"
                         style={{
-                          color: getValueColor(pt.pctChangeFromBaseline, direction, isHovering),
+                          color: getValueColor(pt.g, direction, isHovering),
                           transition: "color 0.15s ease",
                         }}
                       >
-                        {pt.pctChangeFromBaseline > 0 ? "+" : ""}
-                        {pt.pctChangeFromBaseline.toFixed(1)}%
-                      </span>
-                      {/* SE */}
-                      <span className="text-muted-foreground/60">
-                        ±{pt.se.toFixed(1)}
+                        g&nbsp;=&nbsp;{pt.g > 0 ? "+" : ""}{pt.g.toFixed(1)}
                       </span>
                       {/* n */}
                       <span className="text-muted-foreground/40">
                         n={pt.n}
                       </span>
+                      {/* Death flag */}
+                      {deathCount > 0 && (
+                        <span
+                          className="text-red-600"
+                          title={`${deathCount} death(s) at this timepoint`}
+                        >
+                          {deathCount === 1 ? "death" : `${deathCount} deaths`}
+                        </span>
+                      )}
                     </>
                   ) : (
                     <span className="text-muted-foreground/40">—</span>
@@ -373,6 +402,11 @@ function DetailRow({
                 </div>
               );
             })}
+
+            {/* Control n */}
+            <div className="text-muted-foreground/60 pl-[7px]">
+              Control n={nControl ?? "—"}
+            </div>
           </div>
         );
       })}

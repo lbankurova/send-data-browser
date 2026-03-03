@@ -1,7 +1,8 @@
 /**
  * Custom SVG line chart for one sex panel in the Time Course pane.
  * Renders gridlines, zero line, terminal marker, dose-group polylines,
- * and synced hover crosshair + dots.
+ * and synced hover crosshair + dots. Y-axis = effect size (Hedges' g)
+ * vs concurrent control.
  */
 import { useCallback } from "react";
 import type { TimeCoursePoint } from "@/hooks/useTimeCourseData";
@@ -142,7 +143,7 @@ export function TimeCourseLineChart({
         const pts = series[doseLevel];
         if (!pts || pts.length < 2) return null;
         const points = pts
-          .map((p) => `${xScale(p.day)},${yScale(p.pctChangeFromBaseline)}`)
+          .map((p) => `${xScale(p.day)},${yScale(p.g)}`)
           .join(" ");
         return (
           <polyline
@@ -170,7 +171,7 @@ export function TimeCourseLineChart({
         }
         if (!closest) return null;
         const cx = xScale(closest.day);
-        const cy = yScale(closest.pctChangeFromBaseline);
+        const cy = yScale(closest.g);
         const color = getDoseGroupColor(d.dose_level);
         return (
           <g key={d.USUBJID}>
@@ -205,7 +206,7 @@ export function TimeCourseLineChart({
             <circle
               key={doseLevel}
               cx={xScale(pt.day)}
-              cy={yScale(pt.pctChangeFromBaseline)}
+              cy={yScale(pt.g)}
               r={2.5}
               fill={getDoseGroupColor(doseLevel)}
               stroke="white"
@@ -216,21 +217,38 @@ export function TimeCourseLineChart({
         })}
 
       {/* Y-axis labels (left panel only) */}
-      {showYAxis &&
-        yTicks.map((tick) => (
+      {showYAxis && (
+        <>
+          {/* "C" label at zero line */}
           <text
-            key={tick}
             x={plotArea.left - 2}
-            y={yScale(tick)}
+            y={yScale(0)}
             textAnchor="end"
             dominantBaseline="central"
             fill="#94a3b8"
             fontSize={6}
+            fontWeight={600}
           >
-            {tick > 0 ? "+" : ""}
-            {tick}%
+            C
           </text>
-        ))}
+          {yTicks
+            .filter((tick) => tick !== 0)
+            .map((tick) => (
+              <text
+                key={tick}
+                x={plotArea.left - 2}
+                y={yScale(tick)}
+                textAnchor="end"
+                dominantBaseline="central"
+                fill="#94a3b8"
+                fontSize={6}
+              >
+                {tick > 0 ? "+" : ""}
+                {tick}
+              </text>
+            ))}
+        </>
+      )}
 
       {/* X-axis labels */}
       {xTicks.map((day) => {
