@@ -48,4 +48,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for pipeline details, module map, and eng
 
 ## License
 
-[GPL v3](LICENSE)
+[MIT](LICENSE)
