@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse
 
 from routers.studies import init_studies, router as studies_router
 from routers.analyses import init_analysis_studies, router as analyses_router
-from routers.analysis_views import router as analysis_views_router
+from routers.analysis_views import init_analysis_views, router as analysis_views_router
 from routers.annotations import router as annotations_router
 from routers.validation import init_validation, router as validation_router
 from routers.temporal import init_temporal, router as temporal_router
@@ -28,13 +28,14 @@ async def lifespan(app: FastAPI):
     print(f"Found {len(studies)} studies: {list(studies.keys())}")
     init_studies(studies)
     init_analysis_studies(studies)
+    init_analysis_views(studies)
     init_validation(studies)
     init_temporal(studies)
     print("Study metadata loaded.")
     yield
 
 
-app = FastAPI(title="SEND Data Browser", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="SENDie — SEND Intelligence Explorer", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

@@ -232,10 +232,16 @@ def attach_separate_stats(
             f["separate_group_stats"] = sep["group_stats"]
             f["separate_pairwise"] = sep["pairwise"]
             f["separate_direction"] = sep.get("direction")
+            f["separate_min_p_adj"] = sep.get("min_p_adj")
+            f["separate_max_effect_size"] = sep.get("max_effect_size")
+            f["separate_trend_p"] = sep.get("trend_p")
         else:
             f["separate_group_stats"] = []
             f["separate_pairwise"] = []
             f["separate_direction"] = None
+            f["separate_min_p_adj"] = None
+            f["separate_max_effect_size"] = None
+            f["separate_trend_p"] = None
     return findings
 
 

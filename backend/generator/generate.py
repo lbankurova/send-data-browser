@@ -18,18 +18,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services.study_discovery import discover_studies
 from generator.domain_stats import compute_all_findings
-from generator.view_dataframes import (
-    build_study_signal_summary,
-    build_target_organ_summary,
-    build_dose_response_metrics,
-    build_organ_evidence_detail,
-    build_lesion_severity_summary,
-    build_adverse_effect_summary,
-    build_noael_summary,
-    build_finding_dose_trends,
-)
-from generator.scores_and_rules import evaluate_rules
 from generator.static_charts import generate_target_organ_bar_chart
+from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
+from services.analysis.analysis_settings import AnalysisSettings
 from services.analysis.subject_context import build_subject_context
 from services.analysis.provenance import generate_provenance_messages
 from services.analysis.mortality import compute_study_mortality
@@ -217,39 +208,37 @@ def generate(study_id: str):
     except Exception as e:
         print(f"  1c WARNING: Subject context failed: {e}")
 
-    # Phase 2: Assemble view-specific data
+    # Phase 2: Assemble view-specific data via parameterized pipeline
     _tick("2_start")
-    print("Phase 2: Assembling view DataFrames...")
-    signal_summary = build_study_signal_summary(findings, dose_groups)
-    target_organs = build_target_organ_summary(findings)
-    dose_response = build_dose_response_metrics(findings, dose_groups)
-    organ_evidence = build_organ_evidence_detail(findings, dose_groups)
-    lesion_severity = build_lesion_severity_summary(findings, dose_groups)
-    adverse_effects = build_adverse_effect_summary(findings, dose_groups)
-    noael = build_noael_summary(findings, dose_groups, mortality=mortality)
-    finding_dose_trends = build_finding_dose_trends(findings, dose_groups)
+    print("Phase 2: Assembling view DataFrames (via pipeline)...")
+    pipeline = ParameterizedAnalysisPipeline(study)
+    views = pipeline.run(
+        AnalysisSettings(),  # defaults
+        mortality=mortality,
+        precomputed_findings=findings,
+        precomputed_dose_groups=dose_groups,
+    )
+
+    # Extract views for downstream consumers
+    noael = views["noael_summary"]
+    target_organs = views["target_organ_summary"]
+    signal_summary = views["study_signal_summary"]
+    rule_results = views["rule_results"]
 
     _tick("2_end")
 
-    # Phases 2b/3/4/5 — independent computations, run in parallel
+    # Phases 2b/4/5 — independent computations, run in parallel
     _tick("2b345_start")
-    print("Phases 2b/3/4/5: PK, rules, charts, unified findings (parallel)...")
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    print("Phases 2b/4/5: PK, charts, unified findings (parallel)...")
+    with ThreadPoolExecutor(max_workers=3) as pool:
         fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael)
-        fut_rules = pool.submit(evaluate_rules, findings, target_organs, noael, dose_groups)
         fut_chart = pool.submit(generate_target_organ_bar_chart, target_organs)
         fut_unified = pool.submit(compute_adverse_effects, study)
 
-        # Write Phase 2 view outputs while parallel computations run
+        # Write view outputs while parallel computations run
         print("Writing Phase 2 output files...")
-        _write_json(out_dir / "study_signal_summary.json", signal_summary)
-        _write_json(out_dir / "target_organ_summary.json", target_organs)
-        _write_json(out_dir / "dose_response_metrics.json", dose_response)
-        _write_json(out_dir / "organ_evidence_detail.json", organ_evidence)
-        _write_json(out_dir / "lesion_severity_summary.json", lesion_severity)
-        _write_json(out_dir / "adverse_effect_summary.json", adverse_effects)
-        _write_json(out_dir / "noael_summary.json", noael)
-        _write_json(out_dir / "finding_dose_trends.json", finding_dose_trends)
+        for view_name, data in views.items():
+            _write_json(out_dir / f"{view_name}.json", data)
 
     # Collect parallel results and write
     pk_integration = fut_pk.result()
@@ -262,8 +251,6 @@ def generate(study_id: str):
     else:
         print("  2b: No PC/PP data available")
 
-    rule_results = fut_rules.result()
-    _write_json(out_dir / "rule_results.json", rule_results)
     print(f"  3: {len(rule_results)} rules emitted")
 
     target_organ_html = fut_chart.result()
