@@ -16,7 +16,7 @@ from fastapi import APIRouter, HTTPException, Query
 from services.study_discovery import StudyInfo
 from services.xpt_processor import ensure_cached, read_xpt
 from services.analysis.dose_groups import build_dose_groups
-from services.analysis.phase_filter import compute_last_dosing_day, filter_treatment_period_records
+from services.analysis.phase_filter import compute_last_dosing_day
 from services.analysis.override_reader import get_last_dosing_day_override
 
 router = APIRouter(prefix="/api", tags=["temporal"])
@@ -156,11 +156,6 @@ async def get_timecourse(
         last_dosing_day = compute_last_dosing_day(study, override=override)
     else:
         last_dosing_day = None
-
-    # Filter recovery-arm records to treatment period only — ensures group stats
-    # (mean, SD, n) match the generator's treatment-period pooling.
-    if include_recovery and "is_recovery" in df.columns:
-        df = filter_treatment_period_records(df, subjects_df, day_col, last_dosing_day)
 
     # Derive terminal sacrifice day: closest actual data day at or after last_dosing_day
     terminal_sacrifice_day = None
