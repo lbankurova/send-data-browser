@@ -11,8 +11,9 @@ import { useParams } from "react-router-dom";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
-import { verdictLabel } from "@/lib/recovery-assessment";
-import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
+import type { RecoveryVerdict, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
+import type { RecoveryAdequacy } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
 import type { FindingNatureInfo } from "@/lib/finding-nature";
 import {
@@ -25,13 +26,12 @@ import type {
   RecoveryContext,
 } from "@/lib/recovery-classification";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
-import { DoseLabel } from "@/components/ui/DoseLabel";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { Info } from "lucide-react";
 import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
+import { IncidenceDumbbellChart } from "./IncidenceDumbbellChart";
 
 // ── Histopath verdict badge ──────────────────────────────
 
@@ -40,7 +40,6 @@ const VERDICT_COLORS: Partial<Record<RecoveryVerdict, string>> = {
   reversing: "text-emerald-600 bg-emerald-50/60",
   persistent: "text-amber-700 bg-amber-50",
   progressing: "text-red-700 bg-red-50",
-  recovery_too_short: "text-blue-700 bg-blue-50",
 };
 
 function VerdictBadge({ verdict }: { verdict: RecoveryVerdict }) {
@@ -158,12 +157,61 @@ function HistopathRecoveryAllSexes({
     );
   }
 
+  // Build assessmentsBySex for the chart — extract assessments for the specific finding
+  const findingName = finding.finding;
+  const label = `${specimen} \u2014 ${findingName}`;
+  const assessmentsBySex: Record<string, RecoveryDoseAssessment[]> = {};
+  let recoveryDays: number | null = null;
+
+  for (const { sex, recovery } of sections) {
+    const assessment = recovery.assessmentByLabel.get(label);
+    if (assessment) {
+      assessmentsBySex[sex] = assessment.assessments;
+    }
+    if (recoveryDays == null) {
+      const rd = recovery.recoveryDaysBySpecimen.get(specimen);
+      if (rd != null) recoveryDays = rd;
+    }
+  }
+
+  const hasChartableData = Object.values(assessmentsBySex).some(
+    (assessments) => assessments.length > 0,
+  );
+
   const showSexHeaders = sections.length > 1;
+
+  // Recovery duration adequacy (study-design-level context)
+  const maxSev = Math.max(
+    ...Object.values(assessmentsBySex).flatMap((a) =>
+      a.flatMap((d) => [d.main.maxSeverity, d.recovery.maxSeverity]),
+    ),
+    0,
+  );
+  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null);
+  const adequacy: RecoveryAdequacy | null = assessRecoveryAdequacy(recoveryDays, nature);
 
   return (
     <div className="space-y-3">
+      {/* Recovery duration adequacy line */}
+      {adequacy && adequacy.expectedWeeks != null && adequacy.findingNature && (
+        <div className="text-[10px] text-muted-foreground">
+          Recovery: {Math.round(adequacy.actualWeeks)} weeks{!adequacy.adequate ? " (too short)" : ""}
+          {" | "}Finding nature: {adequacy.findingNature}
+          {" | "}Expected to reverse: within {Math.max(1, adequacy.expectedWeeks - 2)}–{adequacy.expectedWeeks + 2} weeks
+        </div>
+      )}
+
+      {/* Incidence dumbbell chart (shared across sexes) */}
+      {hasChartableData && (
+        <IncidenceDumbbellChart
+          assessmentsBySex={assessmentsBySex}
+          recoveryDays={recoveryDays}
+        />
+      )}
+
+      {/* Per-sex metadata sections */}
       {sections.map(({ sex, recovery }) => (
-        <HistopathSexSection
+        <HistopathMetaSection
           key={sex}
           sex={sex}
           finding={finding}
@@ -176,9 +224,9 @@ function HistopathRecoveryAllSexes({
   );
 }
 
-// ── Histopath recovery: per-sex rendering ────────────────
+// ── Histopath recovery: per-sex metadata ─────────────────
 
-function HistopathSexSection({
+function HistopathMetaSection({
   sex,
   finding,
   specimen,
@@ -229,7 +277,7 @@ function HistopathSexSection({
         <div className="text-[10px] font-semibold text-foreground">{sex}</div>
       )}
 
-      {/* Verdict */}
+      {/* Overall verdict + recovery days */}
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground">Verdict:</span>
         <VerdictBadge verdict={verdict} />
@@ -239,48 +287,6 @@ function HistopathSexSection({
           </span>
         )}
       </div>
-
-      {/* Per-dose assessments */}
-      {assessment.assessments.length > 0 && (
-        <div className="space-y-0.5">
-          {assessment.assessments.map((da) => {
-            {/* §9.2: severity grade shift annotation */}
-            const incDelta = da.recovery.affected / Math.max(da.recovery.examined, 1)
-              - da.main.affected / Math.max(da.main.examined, 1);
-            const incUnchanged = Math.abs(incDelta) < 0.01;
-            const incDecreased = incDelta < -0.01;
-            const sevDelta = da.recovery.avgSeverity - da.main.avgSeverity;
-            let sevShift: string | null = null;
-            if (da.main.avgSeverity > 0) {
-              if (incUnchanged && sevDelta < -0.5) sevShift = "Severity improving";
-              else if (incUnchanged && sevDelta > 0.5) sevShift = "Severity progressing";
-              else if (incDecreased && sevDelta < 0) sevShift = "Reducing (incidence + severity)";
-              else if (incDecreased && sevDelta > 0.5) sevShift = "Mixed — incidence decreased but severity increased";
-            }
-
-            return (
-              <div key={da.doseLevel} className="flex items-center gap-2 text-[10px]">
-                <span className="w-[60px] shrink-0 inline-flex justify-end">
-                  <DoseLabel
-                    level={da.doseLevel}
-                    label={formatDoseShortLabel(da.doseGroupLabel)}
-                    tooltip={da.doseGroupLabel}
-                    align="right"
-                    className="text-[10px]"
-                  />
-                </span>
-                <VerdictBadge verdict={da.verdict} />
-                <span className="font-mono text-muted-foreground">
-                  {da.main.affected}/{da.main.examined} → {da.recovery.affected}/{da.recovery.examined}
-                </span>
-                {sevShift && (
-                  <span className="text-[9px] text-muted-foreground">{sevShift}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Classification */}
       <ClassificationSection classification={classification} />

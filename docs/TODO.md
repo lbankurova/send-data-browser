@@ -27,16 +27,16 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 1 | 5 | Incorrect behavior that should be fixed |
+| Bug | 2 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 15 | 4 | Missing capability, no spec exists |
+| Gap | 17 | 4 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **30** | **38** | |
+| **Total open** | **33** | **38** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -44,11 +44,17 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Bugs (1 open)
+## Bugs (2 open)
 
 ### BUG-06: Histopath findings table column resize not working
 - **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
 - **Issue:** The observed findings table uses TanStack React Table with `enableColumnResizing: true` and `tableLayout: "fixed"`, but drag-to-resize on column headers does not work. The resize handle div (`.cursor-col-resize`) is present and highlights on hover, but dragging produces no visible column width change. Likely a conflict between `tableLayout: "fixed"` with percentage-free `width` styles and the TanStack resize state, or the `onClick` sort handler on `<th>` interfering with `onMouseDown` on the resize child. The severity matrix table in the same view uses the identical pattern and works — compare the two to find the difference.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### BUG-07: Recovery dumbbell chart broken adaptive rendering on panel resize
+- **Files:** `frontend/src/components/analysis/panes/RecoveryDumbbellChart.tsx`
+- **Issue:** The dumbbell chart SVG does not adapt well when the context panel is resized. The viewBox uses a fixed `chartWidth = 200` with `width: 100%` and `overflow: visible`, but the dose label column, marker positions, bottom labels, and row alignment all break at narrow or wide widths. Specific problems: (1) bottom labels ("Control, D92" / "|g|=0.8") clip or overlap at narrow widths; (2) dose label column `pt-[14px]` static offset misaligns with SVG rows as aspect ratio changes; (3) marker line spacing (`MIN_LINE_DIST = 8` in viewBox units) doesn't account for rendered pixel size. Needs a `ResizeObserver`-based approach or CSS-only responsive layout instead of fixed viewBox scaling.
 - **Status:** Open
 - **Owner hint:** frontend-dev
 
@@ -146,7 +152,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (11 open)
+## Gaps (12 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -229,6 +235,20 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Blocked on:** Study data with FE/EO/RE domains for development and testing (PointCross has none)
 - **Status:** Open (deferred — requires reproductive study data)
 - **Owner hint:** backend-dev (parser), frontend-dev (UI integration)
+
+### GAP-22: Backend test framework (pytest)
+- **Files:** N/A (new infrastructure)
+- **Issue:** No backend tests exist. The TERMBW/BW unification bug (`83d813a`) — where BW terminal_day was D85 instead of D92 because BWTESTCD splits scheduled measurements from terminal sacrifice weight — would have been caught by a simple integration test. Key areas to cover: (1) recovery comparison API — TERMBW unification, OM OMSPEC groupby, terminal_day/peak_effect computation; (2) `dose_groups.py` — main vs recovery arm subject assignment, is_recovery flag, TK satellite detection; (3) `statistics.py` — cohens_d, welch_t_test edge cases (n<2, identical values, NaN); (4) generator pipeline — domain_stats output shape, findings_pipeline classification/fold-change; (5) validation engine — YAML rule loading, check function results, fix tier assignment.
+- **Approach:** pytest with a session-scoped fixture that loads PointCross XPT data once. Mirror the frontend pattern where tests run against real study data.
+- **Status:** Open
+- **Owner hint:** backend-dev
+
+### GAP-23: Recovery timeline numbers lack literature validation
+- **Files:** `frontend/src/lib/finding-nature.ts` (keyword table lines 47–94, severity modulation lines 107–115, ±2 range in `reversibilityLabel` lines 232–242), `docs/incoming/arch-overhaul/recovery-pane-spec.md` (§11.2 nature categories table)
+- **Issue:** The `typical_recovery_weeks` values (6 weeks for adaptive, 8 for inflammatory/necrosis, 10 for degeneration/atrophy, 13 for mineralization, 4 for hemorrhage, 2 for congestion, 16 for decreased spermatogenesis), the severity modulation multipliers (1.0×/1.5×/2.0× for adaptive, etc.), and the `±2` week range formula in `reversibilityLabel()` are all authored without citation to published toxicology literature. The spec table (§11.2) that these derive from also has no references. These numbers directly drive: (a) the "Expected to reverse: within X–Y weeks" display in the Recovery pane, (b) the `assessRecoveryAdequacy()` function that flags study designs as "too short", (c) the `ASSESSMENT_LIMITED_BY_DURATION` classification in `recovery-classification.ts`, and (d) the concordance check that warns when findings persist beyond expected reversibility. If the base weeks, multipliers, or range width are materially wrong, every recovery assessment in the system inherits that error.
+- **Fix:** Literature review to validate or replace. Key questions: (1) Are the base recovery weeks per finding type consistent with published ICH S2/S4/S6 guidance, EPA health effects test guidelines, or peer-reviewed toxicologic pathology reviews? (2) Is severity-based modulation (longer recovery for higher grade) supported? (3) Is the ±2 week fixed window appropriate, or should the uncertainty range scale with the base estimate? (4) Should organ-specific or species-specific modifiers exist (e.g., liver regeneration faster than kidney)? Output: either literature citations that validate current numbers, or corrected values with citations.
+- **Status:** Open
+- **Owner hint:** domain expert review (not an agent task — requires toxicologic pathology literature access)
 
 ---
 

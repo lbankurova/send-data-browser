@@ -8,6 +8,7 @@
  */
 
 import type { RecoveryAssessment } from "./recovery-assessment";
+import { assessRecoveryAdequacy } from "./recovery-assessment";
 import type { FindingNatureInfo } from "./finding-nature";
 
 // ─── Types ────────────────────────────────────────────────
@@ -261,11 +262,12 @@ export function classifyRecovery(
     };
   }
 
-  // Step 2b: ASSESSMENT_LIMITED_BY_DURATION (v4)
-  const hasTooShort = assessment.assessments.some(
-    (d) => d.verdict === "recovery_too_short",
+  // Step 2b: ASSESSMENT_LIMITED_BY_DURATION (v4 — relocated from per-dose verdict)
+  const adequacy = assessRecoveryAdequacy(context.recoveryPeriodDays, context.findingNature ?? null);
+  const hasPersistentOrProgressing = assessment.assessments.some(
+    (d) => d.verdict === "persistent" || d.verdict === "progressing",
   );
-  if (hasTooShort || assessment.overall === "recovery_too_short") {
+  if (adequacy && !adequacy.adequate && hasPersistentOrProgressing) {
     const qualifiers: string[] = [];
     if (context.findingNature?.typical_recovery_weeks != null && context.recoveryPeriodDays != null) {
       const recWeeks = Math.round(context.recoveryPeriodDays / 7);

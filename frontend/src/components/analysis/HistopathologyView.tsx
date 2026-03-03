@@ -1188,9 +1188,6 @@ function OverviewTab({
                 // §4.2: insufficient_n → "† (N<3)" in muted/50
                 if (v === "insufficient_n")
                   return <span className="text-[9px] text-muted-foreground/50" title={tip}>{"\u2020"} (N&lt;3)</span>;
-                // v4: recovery_too_short → "⏱ too short" in blue informational
-                if (v === "recovery_too_short")
-                  return <span className="text-[9px] text-blue-500/70" title={tip}>{"\u23F1"} too short</span>;
                 const arrow = verdictArrow(v);
                 // §4.2: persistent, progressing, anomaly get font-medium emphasis
                 const emphasis = v === "persistent" || v === "progressing" || v === "anomaly";

@@ -25,7 +25,6 @@ export type RecoveryVerdict =
   | "reversing"
   | "persistent"
   | "progressing"
-  | "recovery_too_short" // v4: recovery period shorter than expected reversibility
   | "anomaly"
   | "insufficient_n"
   | "not_examined"     // v3: tissue not examined in recovery arm
@@ -102,7 +101,7 @@ interface ArmStats {
  *  0. recovery.examined === 0              → not_examined
  *  1. recovery.examined < 3               → insufficient_n
  *  2. main incidence=0, recovery>0        → anomaly
- *  3. main.incidence * recovery.examined < 2 → low_power
+ *  3. main.affected>0 AND main.incidence * recovery.examined < 2 → low_power
  *  4. main incidence=0, main affected=0   → not_observed
  *  5. recovery.incidence === 0            → reversed
  *  6-10. Ratio computation
@@ -111,8 +110,8 @@ export function computeVerdict(
   main: ArmStats,
   recovery: ArmStats,
   thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
-  recoveryPeriodDays?: number | null,
-  findingNature?: FindingNatureInfo | null,
+  _recoveryPeriodDays?: number | null,
+  _findingNature?: FindingNatureInfo | null,
 ): RecoveryVerdict {
   // v3 Guard 0: tissue not examined in recovery arm
   if (recovery.examined === 0) return "not_examined";
@@ -123,8 +122,8 @@ export function computeVerdict(
   // Guard 2: anomaly — recovery has findings where main arm had none
   if (main.incidence === 0 && main.affected === 0 && recovery.affected > 0) return "anomaly";
 
-  // v3 Guard 3: low statistical power
-  if (main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
+  // v3 Guard 3: low statistical power (only when main arm actually has findings)
+  if (main.affected > 0 && main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
 
   // Guard 4: main arm had no findings at this dose level
   if (main.incidence === 0 && main.affected === 0) return "not_observed";
@@ -153,36 +152,53 @@ export function computeVerdict(
     verdict = "persistent";
   }
 
-  // v4: Duration awareness — check if recovery period is shorter than expected reversibility
-  if (
-    recoveryPeriodDays != null &&
-    findingNature?.typical_recovery_weeks != null &&
-    findingNature.expected_reversibility !== "none" &&
-    (verdict === "persistent" || verdict === "progressing")
-  ) {
-    const recoveryWeeks = recoveryPeriodDays / 7;
-    if (recoveryWeeks < findingNature.typical_recovery_weeks) {
-      // Partial improvement despite short window → positive signal
-      if (recovery.incidence < main.incidence) {
-        verdict = "reversing";
-      } else {
-        // Can't distinguish persistent from insufficient time
-        verdict = "recovery_too_short";
-      }
-    }
-  }
-
   return verdict;
 }
 
-// v4: Priority order — recovery_too_short inserted between persistent and reversing
+// ─── Recovery adequacy (study-design-level) ──────────────
+
+export interface RecoveryAdequacy {
+  adequate: boolean;
+  actualWeeks: number;
+  expectedWeeks: number | null;
+  findingNature: string | null;   // "adaptive", "degenerative", etc.
+}
+
+/**
+ * Assess whether the study's recovery period is adequate for the finding type.
+ * This is a study-design-level fact, not a per-dose verdict.
+ *
+ * Returns null when recoveryDays is null (no recovery arm info).
+ * Returns adequate=true for irreversible findings or unknown nature
+ * (no adequacy concern).
+ */
+export function assessRecoveryAdequacy(
+  recoveryDays: number | null,
+  findingNature: FindingNatureInfo | null,
+): RecoveryAdequacy | null {
+  if (recoveryDays == null) return null;
+  const actualWeeks = recoveryDays / 7;
+  const expectedWeeks = findingNature?.typical_recovery_weeks ?? null;
+  // Irreversible findings or unknown nature — no adequacy concern
+  if (expectedWeeks == null || findingNature?.expected_reversibility === "none") {
+    return { adequate: true, actualWeeks, expectedWeeks: null, findingNature: findingNature?.nature ?? null };
+  }
+  return {
+    adequate: actualWeeks >= expectedWeeks,
+    actualWeeks,
+    expectedWeeks,
+    findingNature: findingNature?.nature ?? null,
+  };
+}
+
+// ─── Verdict priority ─────────────────────────────────────
+
 const VERDICT_PRIORITY: RecoveryVerdict[] = [
   "anomaly",
   "not_examined",
   "low_power",
   "progressing",
   "persistent",
-  "recovery_too_short",
   "reversing",
   "reversed",
   "insufficient_n",
@@ -208,7 +224,6 @@ const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
   reversing: "\u2198",      // ↘
   persistent: "\u2192",     // →
   progressing: "\u2191",    // ↑
-  recovery_too_short: "\u23F1", // ⏱
   anomaly: "\u26A0",        // ⚠
   not_examined: "\u2205",   // ∅
   low_power: "~",
@@ -225,7 +240,6 @@ export function verdictLabel(verdict: RecoveryVerdict): string {
   const display = verdict === "insufficient_n" ? "insufficient N"
     : verdict === "not_examined" ? "not examined"
     : verdict === "low_power" ? "low power"
-    : verdict === "recovery_too_short" ? "recovery too short"
     : verdict;
   const arrow = VERDICT_ARROWS[verdict];
   return arrow ? `${arrow} ${display}` : display;
@@ -279,21 +293,6 @@ export function buildRecoveryTooltip(
       const mainPct = `${Math.round(a.main.incidence * 100)}%`;
       const expected = (a.main.incidence * a.recovery.examined).toFixed(1);
       lines.push(`  ${a.doseGroupLabel}: ~ low power (main ${mainPct}, expected \u2248${expected} affected in ${a.recovery.examined} examined)`);
-      continue;
-    }
-    if (a.verdict === "recovery_too_short") {
-      const mainPct = `${Math.round(a.main.incidence * 100)}%`;
-      const recPct = `${Math.round(a.recovery.incidence * 100)}%`;
-      lines.push(`  ${a.doseGroupLabel}: ${mainPct} \u2192 ${recPct} \u2014 \u23F1 recovery too short`);
-      if (findingNature?.typical_recovery_weeks != null && recoveryDays != null) {
-        const recLabel = recoveryDays >= 7
-          ? `${Math.round(recoveryDays / 7)} weeks`
-          : `${recoveryDays} days`;
-        const low = Math.max(1, findingNature.typical_recovery_weeks - 2);
-        const high = findingNature.typical_recovery_weeks + 2;
-        lines.push(`    Recovery period (${recLabel}) is shorter than expected reversibility (${low}\u2013${high} weeks).`);
-        lines.push("    Persistence does not confirm irreversibility.");
-      }
       continue;
     }
     const mainFrac = a.main.examined < a.main.n
@@ -544,13 +543,8 @@ export function specimenRecoveryLabel(
 
   // Filter out informational verdicts for standard logic
   const substantive = verdicts.filter(
-    (v) => v !== "insufficient_n" && v !== "not_examined" && v !== "low_power" && v !== "recovery_too_short",
+    (v) => v !== "insufficient_n" && v !== "not_examined" && v !== "low_power",
   );
-  // If all substantive verdicts are recovery_too_short, label as such
-  const allTooShort = verdicts.every(
-    (v) => v === "recovery_too_short" || v === "insufficient_n" || v === "not_examined" || v === "low_power",
-  ) && verdicts.some((v) => v === "recovery_too_short");
-  if (allTooShort) return "assessment limited";
   if (substantive.length === 0) return null;
 
   const unique = new Set(substantive);
