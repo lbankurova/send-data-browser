@@ -14,6 +14,7 @@ import {
   verdictArrow,
   verdictLabel,
   formatRecoveryFraction,
+  assessRecoveryAdequacy,
   DEFAULT_VERDICT_THRESHOLDS,
 } from "@/lib/recovery-assessment";
 import type {
@@ -238,8 +239,8 @@ describe("computeVerdict — duration awareness", () => {
     source: "substring_match",
   };
 
-  test("recovery_too_short when persistent + recovery period < typical weeks + no improvement", () => {
-    // recovery period 2 weeks < typical 6 weeks, incidence same
+  test("persistent verdict unchanged despite short recovery period (duration awareness removed)", () => {
+    // recovery period 2 weeks < typical 6 weeks — duration no longer overrides per-dose verdict
     const v = computeVerdict(
       arm({ incidence: 0.5, affected: 5, avgSeverity: 2.0 }),
       arm({ n: 5, examined: 5, affected: 3, incidence: 0.6, avgSeverity: 1.5, maxSeverity: 2 }),
@@ -247,21 +248,7 @@ describe("computeVerdict — duration awareness", () => {
       14, // 2 weeks
       hypertrophyNature,
     );
-    expect(v).toBe("recovery_too_short");
-  });
-
-  test("reversing when persistent + short recovery + partial improvement", () => {
-    // recovery period 2 weeks < typical 6 weeks, but recovery incidence < main
-    const v = computeVerdict(
-      arm({ incidence: 0.5, affected: 5, avgSeverity: 2.0 }),
-      arm({ n: 5, examined: 5, affected: 2, incidence: 0.4, avgSeverity: 1.5, maxSeverity: 2 }),
-      DEFAULT_VERDICT_THRESHOLDS,
-      14, // 2 weeks
-      hypertrophyNature,
-    );
-    // Without duration: persistent (0.4/0.5=0.8 inc ratio, 1.5/2.0=0.75 sev ratio)
-    // With duration: recovery < main.incidence → reversing
-    expect(v).toBe("reversing");
+    expect(v).toBe("persistent");
   });
 
   test("no duration override when recovery period >= typical weeks", () => {
@@ -314,12 +301,6 @@ describe("worstVerdict", () => {
   test("returns no_data for empty array", () => {
     expect(worstVerdict([])).toBe("no_data");
   });
-
-  test("recovery_too_short is between persistent and reversing", () => {
-    const v = worstVerdict(["recovery_too_short", "reversing"]);
-    expect(v).toBe("recovery_too_short");
-    expect(worstVerdict(["persistent", "recovery_too_short"])).toBe("persistent");
-  });
 });
 
 // ═════════════════════════════════════════════════════════
@@ -329,12 +310,12 @@ describe("worstVerdict", () => {
 describe("verdict display helpers", () => {
   test("verdictPriority returns index for known verdicts", () => {
     expect(verdictPriority("anomaly")).toBe(0);
-    expect(verdictPriority("reversed")).toBe(7);
-    expect(verdictPriority("no_data")).toBe(10);
+    expect(verdictPriority("reversed")).toBe(6);
+    expect(verdictPriority("no_data")).toBe(9);
   });
 
   test("verdictPriority returns max for undefined", () => {
-    expect(verdictPriority(undefined)).toBe(11); // VERDICT_PRIORITY.length
+    expect(verdictPriority(undefined)).toBe(10); // VERDICT_PRIORITY.length (recovery_too_short removed)
   });
 
   test("verdictArrow returns correct symbols", () => {
@@ -342,7 +323,6 @@ describe("verdict display helpers", () => {
     expect(verdictArrow("progressing")).toBe("\u2191");    // ↑
     expect(verdictArrow("persistent")).toBe("\u2192");     // →
     expect(verdictArrow("not_examined")).toBe("\u2205");   // ∅
-    expect(verdictArrow("recovery_too_short")).toBe("\u23F1"); // ⏱
   });
 
   test("verdictLabel formats verdict with arrow and display name", () => {
@@ -350,7 +330,6 @@ describe("verdict display helpers", () => {
     expect(verdictLabel("insufficient_n")).toBe("\u2020 insufficient N");
     expect(verdictLabel("not_examined")).toBe("\u2205 not examined");
     expect(verdictLabel("low_power")).toBe("~ low power");
-    expect(verdictLabel("recovery_too_short")).toBe("\u23F1 recovery too short");
   });
 });
 
@@ -373,6 +352,45 @@ describe("formatRecoveryFraction", () => {
 
   test("zero affected with full examination", () => {
     expect(formatRecoveryFraction(0, 5, 5)).toBe("0/5 (0%)");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// assessRecoveryAdequacy
+// ═════════════════════════════════════════════════════════
+
+describe("assessRecoveryAdequacy", () => {
+  test("adequate when actual weeks >= expected weeks", () => {
+    const nature = classifyFindingNature("Hypertrophy"); // 6 weeks expected
+    const result = assessRecoveryAdequacy(42, nature); // 6 weeks
+    expect(result).not.toBeNull();
+    expect(result!.adequate).toBe(true);
+    expect(result!.actualWeeks).toBe(6);
+    expect(result!.expectedWeeks).toBe(6);
+    expect(result!.findingNature).toBe("adaptive");
+  });
+
+  test("inadequate when actual weeks < expected weeks", () => {
+    const nature = classifyFindingNature("Hypertrophy"); // 6 weeks expected
+    const result = assessRecoveryAdequacy(14, nature); // 2 weeks
+    expect(result).not.toBeNull();
+    expect(result!.adequate).toBe(false);
+    expect(result!.actualWeeks).toBe(2);
+    expect(result!.expectedWeeks).toBe(6);
+    expect(result!.findingNature).toBe("adaptive");
+  });
+
+  test("returns null when recoveryDays is null", () => {
+    const nature = classifyFindingNature("Hypertrophy");
+    expect(assessRecoveryAdequacy(null, nature)).toBeNull();
+  });
+
+  test("adequate for irreversible findings regardless of duration", () => {
+    const nature = classifyFindingNature("Fibrosis"); // expected_reversibility: "none"
+    const result = assessRecoveryAdequacy(7, nature); // 1 week
+    expect(result).not.toBeNull();
+    expect(result!.adequate).toBe(true);
+    expect(result!.expectedWeeks).toBeNull();
   });
 });
 
@@ -676,20 +694,37 @@ describe("classifyRecovery — confidence", () => {
 // ═════════════════════════════════════════════════════════
 
 describe("classifyRecovery — duration-limited classification", () => {
-  test("Step 2b: ASSESSMENT_LIMITED_BY_DURATION for recovery_too_short verdict", () => {
+  test("Step 2b: ASSESSMENT_LIMITED_BY_DURATION when inadequate duration + persistent dose", () => {
+    // Persistent verdict + 2 weeks recovery (< 6 expected for adaptive)
     const d = doseAssessment({
       main: { incidence: 0.5, affected: 5, avgSeverity: 2.0 },
       recovery: { n: 5, examined: 5, affected: 3, incidence: 0.6, avgSeverity: 1.5, maxSeverity: 2 },
-      verdict: "recovery_too_short",
+      verdict: "persistent",
     });
-    const a = assessment("Finding", [d], "recovery_too_short");
+    const a = assessment("Finding", [d], "persistent");
     const r = classifyRecovery(a, context({
       isAdverse: true,
-      recoveryPeriodDays: 14,
+      recoveryPeriodDays: 14, // 2 weeks < 6 expected
       findingNature: classifyFindingNature("Hypertrophy"),
     }));
     expect(r.classification).toBe("ASSESSMENT_LIMITED_BY_DURATION");
     expect(r.rationale.toLowerCase()).toContain("recovery period");
+  });
+
+  test("Step 2b: no ASSESSMENT_LIMITED_BY_DURATION when all doses reversed", () => {
+    // All reversed → short duration doesn't limit assessment
+    const d = doseAssessment({
+      main: { incidence: 0.5, affected: 5, avgSeverity: 2.0 },
+      recovery: { n: 5, examined: 5, affected: 0, incidence: 0, avgSeverity: 0, maxSeverity: 0 },
+      verdict: "reversed",
+    });
+    const a = assessment("Finding", [d], "reversed");
+    const r = classifyRecovery(a, context({
+      isAdverse: true,
+      recoveryPeriodDays: 14, // 2 weeks < 6 expected, but all reversed
+      findingNature: classifyFindingNature("Hypertrophy"),
+    }));
+    expect(r.classification).not.toBe("ASSESSMENT_LIMITED_BY_DURATION");
   });
 });
 
