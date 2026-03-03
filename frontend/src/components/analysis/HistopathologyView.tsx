@@ -4,6 +4,7 @@ import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -2076,9 +2077,40 @@ export function HistopathologyView() {
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection, setSelectedSubject, pendingCompare, setPendingCompare } = useViewSelection();
-  const { data: lesionData, isLoading, error } = useLesionSeveritySummary(studyId);
+  const { data: rawLesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
+  const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+
+  // When scheduled-only is active, swap each row's stats with scheduled variants.
+  // Rows with empty scheduled_group_stats (all subjects were early deaths) are filtered out.
+  // CL domain rows (no scheduled data) pass through unchanged.
+  const lesionData = useMemo(() => {
+    if (!rawLesionData) return undefined;
+    if (!isScheduledOnly) return rawLesionData;
+    const result: LesionSeverityRow[] = [];
+    for (const row of rawLesionData) {
+      if (!row.scheduled_group_stats) {
+        // CL domain — no scheduled stats, pass through
+        result.push(row);
+        continue;
+      }
+      if (row.scheduled_group_stats.length === 0) continue; // all early deaths
+      const sg = row.scheduled_group_stats.find(s => s.dose_level === row.dose_level);
+      if (!sg) continue; // no scheduled data for this dose level
+      const newAvgSev = sg.avg_severity ?? row.avg_severity;
+      result.push({
+        ...row,
+        n: sg.n,
+        affected: sg.affected,
+        incidence: sg.incidence,
+        avg_severity: newAvgSev,
+        severity_status: sg.affected === 0 ? "absent" : (newAvgSev != null ? "graded" : "present_ungraded"),
+        modifier_counts: sg.modifier_counts ?? row.modifier_counts,
+      });
+    }
+    return result;
+  }, [rawLesionData, isScheduledOnly]);
 
   // Read selected specimen from StudySelectionContext
   const selectedSpecimen = studySelection.specimen ?? null;

@@ -31,6 +31,12 @@ import type {
   RecoveryClassificationType,
 } from "@/lib/recovery-classification";
 import {
+  discriminateAnomaly,
+  isPrecursorOf,
+  PRECURSOR_MAP,
+  DELAYED_ONSET_PROPENSITY,
+} from "@/lib/anomaly-discrimination";
+import {
   classifyFindingNature,
   reversibilityLabel,
 } from "@/lib/finding-nature";
@@ -860,5 +866,180 @@ describe("end-to-end recovery pipeline", () => {
     const cls = classifyRecovery(a, context({ findingNature: nature }));
     expect(cls.classification).toBe("UNCLASSIFIABLE");
     expect(cls.rationale).toContain("Neoplastic");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Anomaly discrimination
+// ═════════════════════════════════════════════════════════
+
+describe("anomaly discrimination", () => {
+  // Helper: make an anomaly dose assessment (0 main → >0 recovery)
+  function anomalyDose(overrides: {
+    doseLevel?: number;
+    recoveryAffected?: number;
+    recoveryExamined?: number;
+    recoveryAvgSev?: number;
+    recoveryMaxSev?: number;
+  } = {}): RecoveryDoseAssessment {
+    const recExamined = overrides.recoveryExamined ?? 5;
+    const recAffected = overrides.recoveryAffected ?? 2;
+    return doseAssessment({
+      doseLevel: overrides.doseLevel ?? 1,
+      doseGroupLabel: `Dose ${overrides.doseLevel ?? 1}`,
+      main: { incidence: 0, affected: 0, avgSeverity: 0, maxSeverity: 0 },
+      recovery: {
+        n: recExamined,
+        examined: recExamined,
+        affected: recAffected,
+        incidence: recAffected / recExamined,
+        avgSeverity: overrides.recoveryAvgSev ?? 1.0,
+        maxSeverity: overrides.recoveryMaxSev ?? 1,
+      },
+      verdict: "anomaly",
+    });
+  }
+
+  test("isPrecursorOf: necrosis → fibrosis", () => {
+    expect(isPrecursorOf("Hepatocellular necrosis", "Fibrosis, portal")).toBe(true);
+  });
+
+  test("isPrecursorOf: degeneration → necrosis", () => {
+    expect(isPrecursorOf("Tubular degeneration", "Necrosis, tubular")).toBe(true);
+  });
+
+  test("isPrecursorOf: unrelated findings return false", () => {
+    expect(isPrecursorOf("Congestion", "Fibrosis")).toBe(false);
+    expect(isPrecursorOf("Vacuolation", "Necrosis")).toBe(false);
+  });
+
+  test("precursor in main → delayed_onset", () => {
+    // Fibrosis in recovery with necrosis in main arm
+    const fibrosisAssessment = assessment("Fibrosis", [anomalyDose()], "anomaly");
+    const necrosisAssessment = assessment("Necrosis, hepatocellular", [
+      doseAssessment({
+        main: { incidence: 0.4, affected: 4, avgSeverity: 2.0 },
+        verdict: "reversing",
+      }),
+    ], "reversing");
+
+    const nature = classifyFindingNature("Fibrosis");
+    const result = discriminateAnomaly(
+      fibrosisAssessment,
+      [fibrosisAssessment, necrosisAssessment],
+      context({ findingNature: nature }),
+    );
+
+    expect(result.subtype).toBe("delayed_onset");
+    expect(result.evidence.precursorInMain).toContain("Necrosis, hepatocellular");
+    expect(result.rationale).toContain("Precursor");
+  });
+
+  test("precursor dose-related → high confidence", () => {
+    // Necrosis at 2 dose levels → dose-related precursor
+    const fibrosisAssessment = assessment("Fibrosis", [anomalyDose()], "anomaly");
+    const necrosisAssessment = assessment("Necrosis", [
+      doseAssessment({ doseLevel: 1, main: { incidence: 0.1, affected: 1 }, verdict: "reversing" }),
+      doseAssessment({ doseLevel: 2, main: { incidence: 0.3, affected: 3 }, verdict: "reversing" }),
+    ], "reversing");
+
+    const nature = classifyFindingNature("Fibrosis");
+    const result = discriminateAnomaly(
+      fibrosisAssessment,
+      [fibrosisAssessment, necrosisAssessment],
+      context({ findingNature: nature }),
+    );
+
+    expect(result.subtype).toBe("delayed_onset");
+    expect(result.confidence).toBe("High");
+  });
+
+  test("dose-response in recovery with high propensity → delayed_onset", () => {
+    // Degenerative finding, recovery incidence increases with dose
+    const d1 = anomalyDose({ doseLevel: 1, recoveryAffected: 1 });
+    const d2 = anomalyDose({ doseLevel: 2, recoveryAffected: 3 });
+    const a = assessment("Atrophy, tubular", [d1, d2], "anomaly");
+
+    const nature = classifyFindingNature("Atrophy, tubular");
+    expect(nature.nature).toBe("degenerative");
+
+    const result = discriminateAnomaly(a, [a], context({ findingNature: nature }));
+    expect(result.subtype).toBe("delayed_onset");
+    expect(result.evidence.doseResponseInRecovery).toBe(true);
+  });
+
+  test("dose-response in recovery with low propensity → delayed_onset_possible", () => {
+    // Adaptive finding with dose-response in recovery
+    const d1 = anomalyDose({ doseLevel: 1, recoveryAffected: 1 });
+    const d2 = anomalyDose({ doseLevel: 2, recoveryAffected: 3 });
+    const a = assessment("Hyperplasia", [d1, d2], "anomaly");
+
+    const nature = classifyFindingNature("Hyperplasia");
+    expect(nature.nature).toBe("adaptive");
+
+    const result = discriminateAnomaly(a, [a], context({ findingNature: nature }));
+    expect(result.subtype).toBe("delayed_onset_possible");
+  });
+
+  test("within HCD → possible_spontaneous", () => {
+    const a = assessment("Vacuolation", [anomalyDose({ recoveryAffected: 1 })], "anomaly");
+    const nature = classifyFindingNature("Vacuolation");
+
+    const result = discriminateAnomaly(a, [a], context({
+      findingNature: nature,
+      historicalControlIncidence: 0.15, // 15% HCD, recovery is 1/5=20% ≤ 15%*1.5=22.5%
+    }));
+
+    expect(result.subtype).toBe("possible_spontaneous");
+    expect(result.evidence.withinHistoricalControl).toBe(true);
+  });
+
+  test("single animal, low propensity → possible_spontaneous", () => {
+    const a = assessment("Vacuolation", [anomalyDose({ recoveryAffected: 1 })], "anomaly");
+    const nature = classifyFindingNature("Vacuolation");
+    expect(DELAYED_ONSET_PROPENSITY[nature.nature]).toBe("low");
+
+    const result = discriminateAnomaly(a, [a], context({ findingNature: nature }));
+    expect(result.subtype).toBe("possible_spontaneous");
+    expect(result.evidence.singleAnimalOnly).toBe(true);
+    expect(result.confidence).toBe("Low");
+  });
+
+  test("fallback → anomaly_unresolved", () => {
+    // Multiple animals affected, no precursors, no dose-response, no HCD
+    const a = assessment("Some finding", [anomalyDose({ recoveryAffected: 3 })], "anomaly");
+
+    const result = discriminateAnomaly(a, [a], context({
+      findingNature: undefined,
+    }));
+
+    expect(result.subtype).toBe("anomaly_unresolved");
+    expect(result.recommendedAction).toContain("re-review");
+  });
+
+  test("anomaly via classifyRecovery → routed through discrimination", () => {
+    const a = assessment("Fibrosis", [anomalyDose()], "anomaly");
+    const nature = classifyFindingNature("Fibrosis");
+    const cls = classifyRecovery(a, context({ findingNature: nature }));
+    // Without precursors or dose-response, degenerative anomaly with multiple animals
+    // → anomaly_unresolved → UNCLASSIFIABLE
+    expect(cls.classification).toBe("UNCLASSIFIABLE");
+    expect(cls.inputsUsed).toContain("anomaly_discrimination");
+  });
+
+  test("anomaly with precursor via classifyRecovery → DELAYED_ONSET", () => {
+    const fibrosisA = assessment("Fibrosis", [anomalyDose()], "anomaly");
+    const necrosisA = assessment("Necrosis", [
+      doseAssessment({ main: { incidence: 0.3, affected: 3 }, verdict: "reversing" }),
+    ], "reversing");
+
+    const nature = classifyFindingNature("Fibrosis");
+    const cls = classifyRecovery(fibrosisA, context({
+      findingNature: nature,
+      allAssessments: [fibrosisA, necrosisA],
+    }));
+
+    expect(cls.classification).toBe("DELAYED_ONSET");
+    expect(cls.rationale).toContain("Precursor");
   });
 });

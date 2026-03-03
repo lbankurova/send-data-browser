@@ -255,6 +255,17 @@ export interface LesionSeverityRow {
   n_with_modifiers?: number;
   /** Per-dose distribution counts: {focal: 2, diffuse: 1} */
   modifier_counts?: Record<string, number>;
+  /** Number of early-death subjects excluded (0 for longitudinal domains). */
+  n_excluded?: number;
+  /** Scheduled-sacrifice stats per dose level (early-death subjects excluded). */
+  scheduled_group_stats?: {
+    dose_level: number; n: number; affected: number; incidence: number;
+    avg_severity?: number | null; modifier_counts?: Record<string, number>;
+  }[];
+  /** Scheduled-sacrifice pairwise comparison results. */
+  scheduled_pairwise?: { dose_level: number; p_value: number | null; p_value_adj: number | null; odds_ratio?: number | null; risk_ratio?: number | null }[];
+  /** Direction under scheduled-sacrifice data. */
+  scheduled_direction?: string;
 }
 
 /**

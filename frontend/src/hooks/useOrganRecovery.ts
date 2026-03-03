@@ -65,8 +65,8 @@ export function useOrganRecovery(
     if (specimens.length === 0) return EMPTY_RESULT;
     if (!allSettled) return { ...EMPTY_RESULT, isLoading: true };
 
-    // Build a cache key from the query data identities (include sex filter)
-    const cacheKey = specimens.join("|") + ":" + (sex ?? "all") + ":" + queries.map((q) => q.dataUpdatedAt).join(",");
+    // Build a cache key from the query data identities (include sex + species)
+    const cacheKey = specimens.join("|") + ":" + (sex ?? "all") + ":" + (species ?? "") + ":" + queries.map((q) => q.dataUpdatedAt).join(",");
     if (cacheKey === lastRef.current.key) return lastRef.current.result;
 
     const bySpecimen = new Map<string, RecoveryAssessment[]>();
@@ -109,5 +109,5 @@ export function useOrganRecovery(
     };
     lastRef.current = { key: cacheKey, result };
     return result;
-  }, [specimens, allSettled, queries, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [specimens, allSettled, queries, isLoading, species]); // eslint-disable-line react-hooks/exhaustive-deps
 }

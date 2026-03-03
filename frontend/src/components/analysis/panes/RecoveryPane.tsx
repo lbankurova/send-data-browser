@@ -13,7 +13,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
-import type { RecoveryVerdict, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
+import type { RecoveryVerdict, RecoveryDoseAssessment, RecoveryAssessment } from "@/lib/recovery-assessment";
 import type { RecoveryAdequacy } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
 import type { FindingNatureInfo } from "@/lib/finding-nature";
@@ -196,7 +196,7 @@ function HistopathRecoveryAllSexes({
   return (
     <div className="space-y-3">
       {/* Recovery duration adequacy line */}
-      {adequacy && adequacy.expectedWeeks != null && adequacy.findingNature && (
+      {adequacy && adequacy.findingNature && (
         <div className="text-[10px] text-muted-foreground">
           Recovery: {Math.round(adequacy.actualWeeks)} weeks
           {" | "}Finding nature: {adequacy.findingNature}
@@ -273,8 +273,9 @@ function HistopathMetaSection({
   );
   const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null, specimen, species);
 
-  // Recovery classification
-  const classContext = buildClassificationContext(finding, nature, recoveryDays ?? null);
+  // Recovery classification — pass all specimen assessments for cross-finding precursor check
+  const allAssessments = recovery.bySpecimen.get(specimen) ?? [];
+  const classContext = buildClassificationContext(finding, nature, recoveryDays ?? null, allAssessments);
   const classification = classifyRecovery(assessment, classContext);
 
   return (
@@ -400,6 +401,7 @@ function buildClassificationContext(
   finding: UnifiedFinding,
   nature: FindingNatureInfo,
   recoveryDays: number | null,
+  allAssessments?: RecoveryAssessment[],
 ): RecoveryContext {
   // Determine dose consistency from dose_response_pattern
   const pattern = finding.dose_response_pattern?.toLowerCase() ?? "";
@@ -415,6 +417,7 @@ function buildClassificationContext(
     clinicalClass: null,
     signalClass: finding.severity,
     findingNature: nature,
+    allAssessments,
     historicalControlIncidence: null,
     crossDomainCorroboration: null,
     recoveryPeriodDays: recoveryDays,

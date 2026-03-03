@@ -3,7 +3,7 @@
  * Extracted from NoaelDeterminationView so FindingsRail and NOAEL view can share them.
  */
 
-import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
+import type { AdverseEffectSummaryRow, DoseResponseRow } from "@/types/analysis-views";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 // ─── Public types ──────────────────────────────────────────
@@ -223,6 +223,44 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       max_fold_change: f.max_fold_change ?? null,
     };
   });
+}
+
+// ─── Dose-response row mapping ───────────────────────────
+// Flattens UnifiedFinding[] into per-dose-level DoseResponseRow[]
+// used by DoseResponseView after settings are applied.
+
+export function flattenFindingsToDRRows(
+  findings: UnifiedFinding[],
+  doseGroups: DoseGroup[],
+): DoseResponseRow[] {
+  const rows: DoseResponseRow[] = [];
+  for (const f of findings) {
+    for (const gs of f.group_stats) {
+      const pw = f.pairwise.find(p => p.dose_level === gs.dose_level);
+      const dg = doseGroups.find(d => d.dose_level === gs.dose_level);
+      rows.push({
+        endpoint_label: f.endpoint_label ?? f.finding,
+        domain: f.domain,
+        test_code: f.test_code,
+        organ_system: f.organ_system ?? "unknown",
+        dose_level: gs.dose_level,
+        dose_label: dg?.label ?? `Dose ${gs.dose_level}`,
+        sex: f.sex,
+        mean: gs.mean,
+        sd: gs.sd,
+        n: gs.n,
+        incidence: gs.incidence ?? null,
+        affected: gs.affected ?? null,
+        p_value: pw?.p_value_adj ?? null,
+        effect_size: pw?.cohens_d ?? null,
+        dose_response_pattern: f.dose_response_pattern ?? "flat",
+        trend_p: f.trend_p,
+        // Runtime value is "incidence" (not "categorical") — matches backend JSON
+        data_type: f.data_type as DoseResponseRow["data_type"],
+      });
+    }
+  }
+  return rows;
 }
 
 // @field FIELD-08 — worstSeverity (worst-case across rows)
