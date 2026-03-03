@@ -212,7 +212,10 @@ def apply_settings_transforms(
         apply_effect_size_method(findings, settings.effect_size)
         changed = True
 
-    if settings.multiplicity != "dunnett-fwer":
+    if settings.multiplicity != "dunnett-fwer" and settings.pairwise_test != "williams":
+        # Skip multiplicity correction when Williams is selected — Williams'
+        # step-down inherently controls FWER. Applying Bonferroni on top would
+        # double-correct, producing p-values that don't match Williams' procedure.
         apply_multiplicity_method(findings, settings.multiplicity)
         changed = True
 
