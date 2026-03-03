@@ -72,6 +72,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import { SubjectHeatmap } from "@/components/analysis/SubjectHeatmap";
+import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { HistopathHypothesesTab } from "@/components/analysis/HistopathologyHypothesesTab";
 
 // Re-export helpers for backward compatibility (consumers should import from @/lib/histopathology-helpers directly)
@@ -2081,7 +2082,7 @@ export function HistopathologyView() {
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection, setSelectedSubject, pendingCompare, setPendingCompare } = useViewSelection();
-  const { data: rawLesionData, isLoading, error } = useLesionSeveritySummary(studyId);
+  const { data: rawLesionData, isLoading, isFetching, isPlaceholderData, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
   // Backend now handles scheduled-only filtering via ?scheduled_only=true query param.
@@ -2315,7 +2316,8 @@ export function HistopathologyView() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       {selectedSummary && (
         <>
           {/* Specimen summary strip */}

@@ -26,6 +26,7 @@ import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
+import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
@@ -37,7 +38,7 @@ type Tab = "details" | "insights";
 export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
   const [searchParams] = useSearchParams();
-  const { data: signalData, isLoading, error } = useStudySignalSummary(studyId);
+  const { data: signalData, isLoading, isFetching, isPlaceholderData, error } = useStudySignalSummary(studyId);
   const { data: meta } = useStudyMetadata(studyId!);
   const { data: provenanceData } = useProvenanceMessages(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -131,7 +132,8 @@ export function StudySummaryView() {
   if (!signalData) return null;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       {/* Tab bar */}
       <ViewTabBar
         tabs={[

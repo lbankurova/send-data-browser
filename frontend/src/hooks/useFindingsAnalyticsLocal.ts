@@ -39,11 +39,13 @@ export interface FindingsAnalyticsResult {
   /** Findings pre-transformed by the backend (settings already applied). */
   activeFindings: UnifiedFinding[];
   isLoading: boolean;
+  isFetching: boolean;
+  isPlaceholderData: boolean;
   error: Error | null;
 }
 
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
-  const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
+  const { data, isLoading, isFetching, isPlaceholderData, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
   const { settings } = useStudySettings();
   const statMethods = { effectSize: settings.effectSize, multiplicity: settings.multiplicity };
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
@@ -144,5 +146,5 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     normalizationContexts: normContexts,
   }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable, normContexts]);
 
-  return { analytics, data, activeFindings, isLoading, error: error as Error | null };
+  return { analytics, data, activeFindings, isLoading, isFetching, isPlaceholderData, error: error as Error | null };
 }

@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 19 | 5 | Missing capability, no spec exists |
+| Gap | 18 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **35** | **39** | |
+| **Total open** | **34** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -268,12 +268,8 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open (deliberate architectural debt, not a bug)
 - **Owner hint:** backend-dev (move derivation to pipeline), frontend-dev (rewire consumers)
 
-### GAP-27: Settings recalculating indicator — post-Phase 3 UX debt
-- **Files:** All analysis view components, `StudySettingsContext.tsx`
-- **Issue:** When settings change and the backend has a cache miss, `keepPreviousData` shows the previous (now-stale) results with no visual indicator that recalculation is in progress. Phase 3 shipped 4 new active settings (Williams pairwise/trend, organ weight method, adversity threshold), increasing the combinatorial space and cache miss rate. Users will toggle "Williams' test" and see stale Dunnett results with no cue that data is loading — worse than a spinner because it's silently wrong data. Need a subtle "recalculating..." indicator on affected cards/tables when `isFetching && isPlaceholderData`.
-- **Blocked on:** Nothing — can implement now
-- **Status:** Open (UX debt — Phase 3 shipped without this indicator)
-- **Owner hint:** frontend-dev
+### ~~GAP-27: Settings recalculating indicator — post-Phase 3 UX debt~~ ✓
+- **Status:** Resolved — `RecalculatingBanner` component added to all 5 analysis views. Shows floating "Recalculating…" pill when `isFetching && isPlaceholderData`. `useFindingsAnalyticsLocal` now exposes both flags.
 
 ---
 

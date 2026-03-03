@@ -19,6 +19,7 @@ import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
+import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 
 /** Pick the most-significant finding row: min p-value (primary), max |effect size| (secondary). */
 function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
@@ -136,7 +137,7 @@ export function FindingsView() {
 
   // Shared analytics derivation — single source of truth for all findings consumers
   // (hoisted above handleEndpointSelect so `data` is available for synchronous selection)
-  const { analytics, data, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsLocal(studyId);
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
           signalScores: signalScoreMap, endpointSexes } = analytics;
 
@@ -382,7 +383,8 @@ export function FindingsView() {
 
   return (
     <FindingsAnalyticsProvider value={analytics}>
-    <div ref={containerRef} className="flex h-full flex-col overflow-hidden">
+    <div ref={containerRef} className="relative flex h-full flex-col overflow-hidden">
+      <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       {/* Header */}
       <FilterBar>
         <span className="text-xs font-semibold">Findings</span>
