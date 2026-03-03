@@ -208,6 +208,10 @@ function OverviewTab({
     setSeverityGradedOnly(false);
   }, [specimen]);
 
+  // Study context (species for organ-specific recovery lookup)
+  const { data: studyCtxTab } = useStudyContext(studyId);
+  const speciesTab = studyCtxTab?.species ?? null;
+
   // Subject-level data (always fetch — needed for recovery assessment + subject matrix)
   const { data: subjData, isLoading: subjLoading } = useHistopathSubjects(
     studyId,
@@ -445,8 +449,8 @@ function OverviewTab({
   const recoveryAssessments = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
-    return deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
-  }, [specimenHasRecovery, subjData, findingSummaries]);
+    return deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesTab);
+  }, [specimenHasRecovery, subjData, findingSummaries, specimen, speciesTab]);
 
   // Recovery chart anomaly summary for header icon (§4.4)
   const recoveryChartAnomalies = useMemo(() => {
@@ -1177,7 +1181,7 @@ function OverviewTab({
                 const recAssessment = recoveryAssessments?.find(
                   (a) => a.finding === info.row.original.finding,
                 );
-                const nature = classifyFindingNature(info.row.original.finding);
+                const nature = classifyFindingNature(info.row.original.finding, undefined, specimen, speciesTab);
                 const tip = buildRecoveryTooltip(recAssessment, subjData?.recovery_days, nature.nature !== "unknown" ? nature : null);
                 // v3: not_examined → "∅ not examined" in font-medium
                 if (v === "not_examined")
@@ -2202,9 +2206,10 @@ export function HistopathologyView() {
     if (!subjData?.subjects?.some((s) => s.is_recovery)) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
     if (findingNames.length === 0) return null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
+    const speciesMain = studyCtxMain?.species ?? null;
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, selectedSpecimen, speciesMain);
     return specimenRecoveryLabel(assessments);
-  }, [subjData, findingSummaries]);
+  }, [subjData, findingSummaries, selectedSpecimen, studyCtxMain]);
 
 
 

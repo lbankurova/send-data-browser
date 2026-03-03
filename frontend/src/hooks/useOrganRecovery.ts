@@ -41,6 +41,7 @@ export function useOrganRecovery(
   studyId: string | undefined,
   specimens: string[],
   sex?: string,
+  species?: string | null,
 ): OrganRecoveryResult {
   const queries = useQueries({
     queries: specimens.map((specimen) => ({
@@ -88,7 +89,7 @@ export function useOrganRecovery(
         recoveryDaysBySpecimen.set(specimens[i], data.recovery_days);
       }
 
-      const assessments = deriveRecoveryAssessments(data.findings, subjects, undefined, data.recovery_days);
+      const assessments = deriveRecoveryAssessments(data.findings, subjects, undefined, data.recovery_days, specimens[i], species);
       bySpecimen.set(specimens[i], assessments);
 
       for (const a of assessments) {

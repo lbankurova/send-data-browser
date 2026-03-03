@@ -10,6 +10,8 @@
 import type { RecoveryAssessment } from "./recovery-assessment";
 import { assessRecoveryAdequacy } from "./recovery-assessment";
 import type { FindingNatureInfo } from "./finding-nature";
+import { discriminateAnomaly } from "./anomaly-discrimination";
+import type { AnomalySubtype } from "./anomaly-discrimination";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -17,9 +19,10 @@ export type RecoveryClassificationType =
   | "EXPECTED_REVERSIBILITY"
   | "INCOMPLETE_RECOVERY"
   | "ASSESSMENT_LIMITED_BY_DURATION"
+  | "DELAYED_ONSET"
   | "DELAYED_ONSET_POSSIBLE"
   | "INCIDENTAL_RECOVERY_SIGNAL"
-  | "PATTERN_ANOMALY"
+  | "POSSIBLE_SPONTANEOUS"
   | "UNCLASSIFIABLE";
 
 export interface RecoveryClassification {
@@ -43,6 +46,9 @@ export interface RecoveryContext {
   // Finding nature classification (keyword-based)
   findingNature?: FindingNatureInfo;
 
+  // All assessments for the same specimen — enables cross-finding precursor check
+  allAssessments?: RecoveryAssessment[];
+
   // Future (nullable)
   historicalControlIncidence: number | null;
   crossDomainCorroboration: boolean | null;
@@ -55,9 +61,10 @@ export const CLASSIFICATION_LABELS: Record<RecoveryClassificationType, string> =
   EXPECTED_REVERSIBILITY: "Expected reversibility",
   INCOMPLETE_RECOVERY: "Incomplete recovery",
   ASSESSMENT_LIMITED_BY_DURATION: "Assessment limited by duration",
+  DELAYED_ONSET: "Delayed onset",
   DELAYED_ONSET_POSSIBLE: "Delayed onset possible",
   INCIDENTAL_RECOVERY_SIGNAL: "Incidental recovery signal",
-  PATTERN_ANOMALY: "Pattern anomaly",
+  POSSIBLE_SPONTANEOUS: "Likely spontaneous",
   UNCLASSIFIABLE: "Recovery data inconclusive",
 };
 
@@ -65,20 +72,22 @@ export const CLASSIFICATION_BORDER: Record<RecoveryClassificationType, string> =
   EXPECTED_REVERSIBILITY: "border-l-2 border-l-emerald-400/40",
   INCOMPLETE_RECOVERY: "border-l-2 border-l-amber-400/60",
   ASSESSMENT_LIMITED_BY_DURATION: "border-l-2 border-l-blue-400/40",
+  DELAYED_ONSET: "border-l-2 border-l-amber-400/60",
   DELAYED_ONSET_POSSIBLE: "border-l-2 border-l-amber-400/60",
   INCIDENTAL_RECOVERY_SIGNAL: "border-l-2 border-l-gray-300/40",
-  PATTERN_ANOMALY: "border-l-2 border-l-red-400/40",
+  POSSIBLE_SPONTANEOUS: "border-l-2 border-l-gray-300/40",
   UNCLASSIFIABLE: "border-l-2 border-l-gray-300/40",
 };
 
 /** Safety-conservative precedence: lower = more concerning = checked first. */
 export const CLASSIFICATION_PRIORITY: Record<RecoveryClassificationType, number> = {
-  PATTERN_ANOMALY: 0,
+  DELAYED_ONSET: 0,
   DELAYED_ONSET_POSSIBLE: 1,
   INCOMPLETE_RECOVERY: 2,
   ASSESSMENT_LIMITED_BY_DURATION: 3,
   EXPECTED_REVERSIBILITY: 4,
   INCIDENTAL_RECOVERY_SIGNAL: 5,
+  POSSIBLE_SPONTANEOUS: 5,
   UNCLASSIFIABLE: 6,
 };
 
@@ -104,7 +113,6 @@ const GUARD_VERDICTS = new Set([
   "not_examined",
   "insufficient_n",
   "low_power",
-  "anomaly",
   "no_data",
 ]);
 
@@ -116,8 +124,6 @@ function buildGuardRationale(verdict: string): string {
       return "Too few recovery-arm subjects examined for meaningful comparison.";
     case "low_power":
       return "Main-arm incidence too low for recovery sample size \u2014 comparison is not statistically informative.";
-    case "anomaly":
-      return "Recovery incidence exceeds main-arm incidence \u2014 pattern is biologically implausible and requires pathologist review.";
     case "no_data":
       return "No recovery data available for this finding.";
     default:
@@ -129,12 +135,19 @@ function guardAction(verdict: string): string | undefined {
   switch (verdict) {
     case "not_examined":
       return "Confirm whether recovery-arm tissue was collected and evaluated.";
-    case "anomaly":
-      return "Histopath re-review and data QC recommended.";
     default:
       return undefined;
   }
 }
+
+// ─── Anomaly subtype → classification mapping ───────────
+
+const ANOMALY_SUBTYPE_TO_CLASSIFICATION: Record<AnomalySubtype, RecoveryClassificationType> = {
+  delayed_onset: "DELAYED_ONSET",
+  delayed_onset_possible: "DELAYED_ONSET_POSSIBLE",
+  possible_spontaneous: "POSSIBLE_SPONTANEOUS",
+  anomaly_unresolved: "UNCLASSIFIABLE",
+};
 
 // ─── Classification logic ────────────────────────────────
 
@@ -189,75 +202,18 @@ export function classifyRecovery(
   // Track finding nature if available
   if (context.findingNature) inputsUsed.push("finding_nature");
 
-  // Step 1: PATTERN_ANOMALY
-  const isPatternAnomaly =
-    assessment.assessments.some(
-      (d) =>
-        d.verdict !== "not_observed" &&
-        d.recovery.incidence > d.main.incidence * 1.5 &&
-        d.recovery.affected > d.main.affected,
-    ) &&
-    context.doseConsistency === "Weak" &&
-    !context.isAdverse;
-
-  if (isPatternAnomaly) {
+  // Step 0c: Anomaly discrimination — multi-factor classification
+  if (assessment.overall === "anomaly") {
+    const allAssessments = context.allAssessments ?? [];
+    const disc = discriminateAnomaly(assessment, allAssessments, context);
+    const classification = ANOMALY_SUBTYPE_TO_CLASSIFICATION[disc.subtype];
     return {
-      classification: "PATTERN_ANOMALY",
-      confidence: computeConfidence("PATTERN_ANOMALY", assessment, context, inputsMissing),
-      rationale:
-        "Recovery incidence exceeds treatment-phase incidence without dose-response support. Pattern inconsistent with typical toxicologic progression.",
-      qualifiers: [],
-      recommendedAction: "Histopath re-review and data QC recommended.",
-      inputsUsed,
-      inputsMissing,
-    };
-  }
-
-  // Step 2: DELAYED_ONSET_POSSIBLE
-  const hasDelayedOnsetPattern = assessment.assessments.some(
-    (d) =>
-      d.main.incidence <= 0.10 &&
-      d.recovery.incidence >= 0.20 &&
-      d.recovery.affected >= 2,
-  );
-  let isDelayedOnset = hasDelayedOnsetPattern && !context.isAdverse;
-
-  // Downgrade to INCIDENTAL if historical controls show background rate
-  if (
-    isDelayedOnset &&
-    context.historicalControlIncidence !== null
-  ) {
-    const maxRecoveryInc = Math.max(
-      ...assessment.assessments.map((d) => d.recovery.incidence),
-    );
-    if (maxRecoveryInc <= context.historicalControlIncidence * 1.5) {
-      isDelayedOnset = false; // falls through to later checks
-    }
-  }
-
-  if (isDelayedOnset) {
-    const example = assessment.assessments.find(
-      (d) =>
-        d.main.incidence <= 0.10 &&
-        d.recovery.incidence >= 0.20 &&
-        d.recovery.affected >= 2,
-    );
-    const mainPct = example ? Math.round(example.main.incidence * 100) : 0;
-    const recPct = example ? Math.round(example.recovery.incidence * 100) : 0;
-    const qualifiers: string[] = [];
-    if (context.historicalControlIncidence === null) {
-      qualifiers.push(
-        "Historical control data not available \u2014 cannot assess whether recovery incidence is within background range.",
-      );
-    }
-    return {
-      classification: "DELAYED_ONSET_POSSIBLE",
-      confidence: computeConfidence("DELAYED_ONSET_POSSIBLE", assessment, context, inputsMissing),
-      rationale: `Finding absent or minimal during treatment phase (${mainPct}%) but present during recovery (${recPct}%). May indicate delayed onset of treatment-related effect.`,
-      qualifiers,
-      recommendedAction:
-        "Pathologist assessment required \u2014 evaluate whether finding is treatment-related with delayed manifestation.",
-      inputsUsed,
+      classification,
+      confidence: disc.confidence,
+      rationale: disc.rationale,
+      qualifiers: disc.qualifiers,
+      recommendedAction: disc.recommendedAction,
+      inputsUsed: [...inputsUsed, "anomaly_discrimination"],
       inputsMissing,
     };
   }
@@ -269,13 +225,21 @@ export function classifyRecovery(
   );
   if (adequacy && !adequacy.adequate && hasPersistentOrProgressing) {
     const qualifiers: string[] = [];
-    if (context.findingNature?.typical_recovery_weeks != null && context.recoveryPeriodDays != null) {
+    if (context.recoveryPeriodDays != null && context.findingNature) {
       const recWeeks = Math.round(context.recoveryPeriodDays / 7);
-      const low = Math.max(1, context.findingNature.typical_recovery_weeks - 2);
-      const high = context.findingNature.typical_recovery_weeks + 2;
-      qualifiers.push(
-        `Recovery period (${recWeeks} weeks) is shorter than expected reversibility window for ${context.findingNature.nature} findings (${low}\u2013${high} weeks).`,
-      );
+      // Prefer organ-specific range, fall back to legacy ±2 weeks
+      if (context.findingNature.recovery_weeks_range != null) {
+        const { low, high } = context.findingNature.recovery_weeks_range;
+        qualifiers.push(
+          `Recovery period (${recWeeks} weeks) is shorter than expected reversibility window for ${context.findingNature.nature} findings (${low}\u2013${high} weeks).`,
+        );
+      } else if (context.findingNature.typical_recovery_weeks != null) {
+        const low = Math.max(1, context.findingNature.typical_recovery_weeks - 2);
+        const high = context.findingNature.typical_recovery_weeks + 2;
+        qualifiers.push(
+          `Recovery period (${recWeeks} weeks) is shorter than expected reversibility window for ${context.findingNature.nature} findings (${low}\u2013${high} weeks).`,
+        );
+      }
     }
     qualifiers.push(
       "Persistence at this time point does not confirm irreversibility.",

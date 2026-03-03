@@ -146,8 +146,8 @@ function RecoveryAssessmentPane({
   const concerningCount = recoveryClassifications.filter(
     (c) =>
       c.classification.classification === "INCOMPLETE_RECOVERY" ||
-      c.classification.classification === "DELAYED_ONSET_POSSIBLE" ||
-      c.classification.classification === "PATTERN_ANOMALY",
+      c.classification.classification === "DELAYED_ONSET" ||
+      c.classification.classification === "DELAYED_ONSET_POSSIBLE",
   ).length;
 
   // Sort by classification priority (most concerning first)
@@ -887,7 +887,8 @@ function SpecimenOverviewPane({
   const recoveryClassifications = useMemo(() => {
     if (!specimenHasRecoveryFlag || !subjData?.subjects) return null;
     if (findingNames.length === 0) return null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days);
+    const speciesForRecovery = studyCtxSpec?.species ?? null;
+    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesForRecovery);
 
     // Build per-finding clinical catalog lookup
     const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
@@ -924,7 +925,7 @@ function SpecimenOverviewPane({
       const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
       const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
       const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
-      const findingNature = classifyFindingNature(finding);
+      const findingNature = classifyFindingNature(finding, undefined, specimen, studyCtxSpec?.species);
 
       const signalClass: "adverse" | "warning" | "normal" = isAdverse
         ? "adverse"
@@ -939,6 +940,7 @@ function SpecimenOverviewPane({
         clinicalClass: clinical?.clinicalClass ?? null,
         signalClass,
         findingNature,
+        allAssessments: assessments,
         historicalControlIncidence: null,
         crossDomainCorroboration: null,
         recoveryPeriodDays: subjData?.recovery_days ?? null,
@@ -1607,16 +1609,16 @@ function FindingDetailPane({
     () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
     [subjData],
   );
-  const findingRecovery = useMemo(() => {
-    if (!specimenHasRecovery || !subjData?.subjects) return null;
-    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects, undefined, subjData.recovery_days);
-    return assessments[0] ?? null;
-  }, [specimenHasRecovery, subjData, selection.finding]);
-
   // Hooks for pattern & syndrome (finding-level)
   const { data: trendData } = useFindingDoseTrends(studyId);
   const { data: signalDataFinding } = useStudySignalSummary(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
+
+  const findingRecovery = useMemo(() => {
+    if (!specimenHasRecovery || !subjData?.subjects) return null;
+    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects, undefined, subjData.recovery_days, selection.specimen, studyCtx?.species ?? null);
+    return assessments[0] ?? null;
+  }, [specimenHasRecovery, subjData, selection.finding, selection.specimen, studyCtx]);
   const findingSyndromeMatch = useMemo(() => {
     if (!lesionData.length) return null;
     const organMap = new Map<string, LesionSeverityRow[]>();
@@ -1677,7 +1679,7 @@ function FindingDetailPane({
         ? "warning"
         : "normal";
 
-    const findingNature = classifyFindingNature(selection.finding);
+    const findingNature = classifyFindingNature(selection.finding, undefined, selection.specimen, studyCtx?.species);
 
     return classifyRecovery(findingRecovery, {
       isAdverse,

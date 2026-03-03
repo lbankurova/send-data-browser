@@ -6,6 +6,8 @@
  */
 
 import { normalizeFinding } from "./finding-term-map";
+import { lookupRecoveryDuration } from "./recovery-duration-table";
+import type { LookupConfidence } from "./recovery-duration-table";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -25,8 +27,16 @@ export interface FindingNatureInfo {
   expected_reversibility: "high" | "moderate" | "low" | "none";
   typical_recovery_weeks: number | null;
   reversibilityQualifier: ReversibilityQualifier;
-  source?: "ct_mapped" | "substring_match";
+  source?: "ct_mapped" | "substring_match" | "organ_lookup";
   normalizedTerm?: string;
+  /** Organ-specific recovery range from literature-backed lookup table. */
+  recovery_weeks_range?: { low: number; high: number } | null;
+  /** Confidence of the lookup table entry. */
+  lookup_confidence?: LookupConfidence;
+  /** Organ key matched in the lookup table. */
+  organ_key?: string;
+  /** True when severity exceeded threshold → reversibility downgraded. */
+  severity_capped?: boolean;
 }
 
 // ─── Keyword tables (longest-match priority via ordered scan) ───
@@ -136,11 +146,58 @@ function baseQualifier(nature: FindingNature, reversibility: FindingNatureInfo["
  *
  * When maxSeverity is provided, recovery timeline and qualifier are modulated:
  * higher severity → longer expected recovery and less certainty.
+ *
+ * When organ and/or species are provided, the organ-specific literature-backed
+ * lookup table is consulted first for recovery duration (overrides the generic
+ * keyword-based weeks). The nature classification (adaptive/degenerative/etc.)
+ * still comes from CT/keyword matching — the lookup table only provides duration.
  */
 // @field FIELD-39 — finding nature (adaptive/degenerative/proliferative/etc.)
 // @field FIELD-40 — expected reversibility (high/moderate/low/none)
 // @field FIELD-41 — typical recovery weeks
 export function classifyFindingNature(
+  findingName: string,
+  maxSeverity?: number | null,
+  organ?: string | null,
+  species?: string | null,
+): FindingNatureInfo {
+  // 1. Get nature classification from CT/keyword (unchanged logic)
+  const base = classifyNatureOnly(findingName, maxSeverity);
+
+  // 2. Try organ-specific lookup table for recovery duration
+  const lookup = lookupRecoveryDuration(findingName, { organ, species, maxSeverity });
+  if (lookup) {
+    const expectedRev: FindingNatureInfo["expected_reversibility"] =
+      lookup.reversibility === "expected" ? "high"
+        : lookup.reversibility === "possible" ? "moderate"
+          : lookup.reversibility === "unlikely" ? "low"
+            : "none";
+    // For irreversible findings, typical_recovery_weeks stays null —
+    // the lookup range documents persistence duration, not expected recovery.
+    const midpoint = lookup.reversibility === "none"
+      ? null
+      : Math.round((lookup.weeks.low + lookup.weeks.high) / 2);
+    return {
+      ...base,
+      typical_recovery_weeks: midpoint,
+      expected_reversibility: expectedRev,
+      reversibilityQualifier: lookup.reversibility,
+      source: "organ_lookup",
+      recovery_weeks_range: lookup.weeks,
+      lookup_confidence: lookup.confidence,
+      organ_key: lookup.organ_key ?? undefined,
+      severity_capped: lookup.severity_capped,
+    };
+  }
+
+  return base;
+}
+
+/**
+ * Internal: classify nature + apply legacy severity modulation.
+ * Used when no organ-specific lookup is available.
+ */
+function classifyNatureOnly(
   findingName: string,
   maxSeverity?: number | null,
 ): FindingNatureInfo {
@@ -209,10 +266,10 @@ function modulateBySeverity(info: FindingNatureInfo, maxSeverity: number): Findi
 // ─── Display helpers ──────────────────────────────────────
 
 const REVERSIBILITY_DESCRIPTIONS: Record<FindingNatureInfo["expected_reversibility"], string> = {
-  high: "typically reversible",
-  moderate: "may be reversible",
-  low: "poorly reversible",
-  none: "not expected to reverse",
+  high: "Typically reversible",
+  moderate: "May be reversible",
+  low: "Poorly reversible",
+  none: "Not expected to reverse",
 };
 
 const QUALIFIER_LABELS: Record<ReversibilityQualifier, string> = {
@@ -227,16 +284,39 @@ export { QUALIFIER_LABELS };
 
 /**
  * Build a reversibility description with recovery timeline when available.
- * E.g., "expected to reverse within 4–8 weeks" or "not expected to reverse".
+ * When organ-specific range is available, uses it directly.
+ * Falls back to legacy midpoint ± 2 weeks for keyword-only classifications.
+ * E.g., "expected to reverse within 1–4 weeks" or "not expected to reverse".
  */
 export function reversibilityLabel(info: FindingNatureInfo): string {
+  // Irreversible findings — skip range display (range documents persistence, not recovery)
+  if (info.reversibilityQualifier === "none" || info.expected_reversibility === "none") {
+    return REVERSIBILITY_DESCRIPTIONS.none;
+  }
+
+  // Organ-specific range from lookup table — display directly
+  if (info.recovery_weeks_range != null) {
+    const { low, high } = info.recovery_weeks_range;
+    const qualLabel = info.reversibilityQualifier !== "expected"
+      ? ` (${QUALIFIER_LABELS[info.reversibilityQualifier]})`
+      : "";
+    return `Expected to reverse within ${formatWeeksRange(low)}\u2013${formatWeeksRange(high)} weeks${qualLabel}`;
+  }
+
+  // Legacy path: midpoint ± 2 weeks
   if (info.typical_recovery_weeks != null) {
     const low = Math.max(1, info.typical_recovery_weeks - 2);
     const high = info.typical_recovery_weeks + 2;
     const qualLabel = info.reversibilityQualifier !== "expected"
       ? ` (${QUALIFIER_LABELS[info.reversibilityQualifier]})`
       : "";
-    return `expected to reverse within ${low}\u2013${high} weeks${qualLabel}`;
+    return `Expected to reverse within ${low}\u2013${high} weeks${qualLabel}`;
   }
   return REVERSIBILITY_DESCRIPTIONS[info.expected_reversibility];
+}
+
+/** Format week values — sub-1 shown as "<1", otherwise rounded to 1 decimal. */
+function formatWeeksRange(w: number): string | number {
+  if (w < 1) return "<1";
+  return Math.round(w * 10) / 10;
 }
