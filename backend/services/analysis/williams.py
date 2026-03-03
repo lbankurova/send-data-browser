@@ -5,6 +5,20 @@ Complements the Jonckheere-Terpstra rank-based trend test — Williams' operates
 means and enforces monotonicity via isotonic regression, making it naturally resistant
 to non-monotonic artifacts that can inflate JT significance.
 
+Used in two contexts:
+1. Pre-computation in findings_om.py (stored alongside Dunnett results)
+2. Post-processing transform in parameterized_pipeline.py (Phase 3 settings)
+
+Statistical validity note — ratio-normalized organ weights:
+    When the user selects organ_weight_method="ratio-bw" or "ratio-brain", Williams'
+    test runs on ratio-normalized data (organ_weight / body_weight). Williams' test
+    assumes normal-theory comparisons with pooled within-group variance. Ratio data
+    can exhibit heteroscedasticity and non-normality (especially ratio-to-BW when BW
+    varies across dose groups due to treatment effects). Results on ratio-normalized
+    organ weights should be interpreted with caution. For definitive inference on OM
+    endpoints, ANCOVA with BW as covariate is preferred (available in the ANCOVA
+    results when present).
+
 References:
     Williams DA. Biometrics 1971;27(1):103–117.
     Williams DA. Biometrics 1972;28(2):519–531.

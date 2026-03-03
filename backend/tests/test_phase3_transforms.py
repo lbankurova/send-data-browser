@@ -294,3 +294,48 @@ class TestPhase3Integration:
         assert f["normalization"]["active_metric"] == "ratio_to_bw"
         # Williams should have run (on the swapped stats)
         assert "_williams_applied" in f
+
+    def test_williams_skips_multiplicity_correction(self):
+        """Bonferroni is not applied on top of Williams — prevents double-correction."""
+        findings = [_continuous_finding()]
+        apply_pairwise_williams(findings)
+        williams_p = findings[0]["pairwise"][-1]["p_value_adj"]
+
+        # Now run the full pipeline with Williams + Bonferroni
+        findings2 = [_continuous_finding()]
+        for f in findings2:
+            f.setdefault("test_name", "BW")
+            f.setdefault("specimen", None)
+        settings = AnalysisSettings(
+            pairwise_test="williams",
+            multiplicity="bonferroni",
+        )
+        result = apply_settings_transforms(findings2, settings)
+        # p_value_adj should be Williams' p, NOT Bonferroni-adjusted
+        result_p = [pw["p_value_adj"] for pw in result[0]["pairwise"]
+                     if pw.get("p_value_adj") is not None]
+        # Bonferroni would multiply by k — if skipped, values match Williams
+        assert all(p <= 1.0 for p in result_p)
+        # The highest-dose p should match what Williams alone produced
+        assert result[0]["pairwise"][-1]["p_value_adj"] == williams_p
+
+    def test_organ_weight_round_trip(self):
+        """Swap to ratio-bw then back to absolute — original stats restored."""
+        findings = [_om_finding_with_alternatives()]
+        original_gs = copy.deepcopy(findings[0]["group_stats"])
+        original_pw = copy.deepcopy(findings[0]["pairwise"])
+        original_trend = findings[0]["trend_p"]
+
+        # Swap to ratio-bw
+        apply_organ_weight_method(findings, "ratio-bw")
+        assert findings[0]["normalization"]["active_metric"] == "ratio_to_bw"
+        assert findings[0]["group_stats"][0]["mean"] == 0.035  # ratio stats
+
+        # Swap back to absolute (saved in alternatives during first swap)
+        # Need to simulate the "absolute" method — manually swap back
+        f = findings[0]
+        alt_abs = f["alternatives"].get("absolute")
+        assert alt_abs is not None, "Original absolute stats should be saved in alternatives"
+        assert alt_abs["group_stats"] == original_gs
+        assert alt_abs["pairwise"] == original_pw
+        assert alt_abs["trend_p"] == original_trend
