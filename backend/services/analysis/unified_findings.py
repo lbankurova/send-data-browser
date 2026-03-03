@@ -20,7 +20,8 @@ from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.correlations import compute_correlations
 from services.analysis.mortality import get_early_death_subjects
-from services.analysis.phase_filter import get_terminal_subjects
+from services.analysis.phase_filter import get_terminal_subjects, compute_last_dosing_day
+from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.findings_pipeline import (
     process_findings, build_findings_map,
 )
@@ -124,20 +125,26 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     dose_groups = dg_data["dose_groups"]
     subjects = dg_data["subjects"]
 
-    # Step 1b: Identify early-death subjects for dual-pass
+    # Step 1b: Compute last dosing day for recovery animal treatment-period pooling
+    override = get_last_dosing_day_override(study.study_id)
+    last_dosing_day = compute_last_dosing_day(study, override=override)
+
+    # Step 1c: Identify early-death subjects for dual-pass
     early_death_subjects = get_early_death_subjects(study, subjects)
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
     n_excluded = len(excluded_set) if excluded_set else 0
 
     # Step 2: Compute findings from each domain (pass 1 — all animals)
+    # In-life domains receive last_dosing_day for recovery pooling;
+    # terminal domains (MI, MA, OM, TF) and DS are main-study-only.
     all_findings = []
-    all_findings.extend(compute_lb_findings(study, subjects))
-    all_findings.extend(compute_bw_findings(study, subjects))
+    all_findings.extend(compute_lb_findings(study, subjects, last_dosing_day=last_dosing_day))
+    all_findings.extend(compute_bw_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_om_findings(study, subjects))
     all_findings.extend(compute_mi_findings(study, subjects))
     all_findings.extend(compute_ma_findings(study, subjects))
     all_findings.extend(compute_tf_findings(study, subjects))
-    all_findings.extend(compute_cl_findings(study, subjects))
+    all_findings.extend(compute_cl_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_ds_findings(study, subjects))
 
     # Pass 2 — build scheduled-only map for terminal + LB domains

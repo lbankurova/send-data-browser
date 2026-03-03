@@ -1,15 +1,16 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTimecourseGroup } from "@/hooks/useTimecourse";
+import { computeEffectSize } from "@/lib/stat-method-transforms";
 import type { TimecourseResponse } from "@/types/timecourse";
 
 // ── Public types ──────────────────────────────────────────
 
 export interface TimeCoursePoint {
   day: number;
-  pctChangeFromBaseline: number; // ((mean_dayN − mean_day1) / mean_day1) × 100
-  se: number;                    // (sd / √n) / |baseline| × 100
-  n: number;
+  g: number;         // Hedges' g: signed effect size vs concurrent control
+  n: number;         // treated group n
+  nControl: number;  // control group n at this timepoint
 }
 
 export interface TimeCourseSeriesData {
@@ -19,15 +20,14 @@ export interface TimeCourseSeriesData {
   unit: string;
   terminalDay: number | null;
   sexes: string[];                                    // sorted: ["F","M"]
-  doseGroups: { doseLevel: number; doseLabel: string }[];
-  /** series[sex][doseLevel] = TimeCoursePoint[] */
+  doseGroups: { doseLevel: number; doseLabel: string }[];  // treated only
+  /** series[sex][doseLevel] = TimeCoursePoint[] — treated only */
   series: Record<string, Record<number, TimeCoursePoint[]>>;
+  controlLabel: string;                               // e.g. "Control" or "Vehicle"
   totalTimepoints: number;
 }
 
 // ── Derivation (pure) ─────────────────────────────────────
-
-const MIN_BASELINE = 0.001;
 
 /** @internal Exported for testing only. */
 export function derive(data: TimecourseResponse): TimeCourseSeriesData {
@@ -58,23 +58,47 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
     }
   }
 
-  // Derive % change from baseline per group
+  // Sort all raw arrays by day
+  for (const sex of sexes) {
+    for (const dl of doseLevels) {
+      raw[sex][dl].sort((a, b) => a.day - b.day);
+    }
+  }
+
+  // Build controlByDay lookup per sex: Map<day, { mean, sd, n }>
+  const controlByDay: Record<string, Map<number, { mean: number; sd: number; n: number }>> = {};
+  for (const sex of sexes) {
+    const map = new Map<number, { mean: number; sd: number; n: number }>();
+    const ctrlRaw = raw[sex][0]; // doseLevel 0 = control
+    if (ctrlRaw) {
+      for (const pt of ctrlRaw) {
+        map.set(pt.day, { mean: pt.mean, sd: pt.sd, n: pt.n });
+      }
+    }
+    controlByDay[sex] = map;
+  }
+
+  // Derive Hedges' g effect size vs concurrent control for each treated group
+  const treatedDoseLevels = doseLevels.filter((dl) => dl > 0);
+
   for (const sex of sexes) {
     series[sex] = {};
-    for (const dl of doseLevels) {
-      const points = raw[sex][dl].sort((a, b) => a.day - b.day);
-      if (points.length === 0) continue;
+    for (const dl of treatedDoseLevels) {
+      const points = raw[sex][dl];
+      if (!points || points.length === 0) continue;
 
-      const baseline = points[0].mean;
-      if (Math.abs(baseline) < MIN_BASELINE) continue; // guard div-by-zero
+      const derived: TimeCoursePoint[] = [];
+      for (const pt of points) {
+        const ctrl = controlByDay[sex].get(pt.day);
+        if (!ctrl) continue;
+        const g = computeEffectSize("hedges-g", ctrl.mean, ctrl.sd, ctrl.n, pt.mean, pt.sd, pt.n);
+        if (g == null) continue; // n<2, pooledSd=0, etc.
+        derived.push({ day: pt.day, g, n: pt.n, nControl: ctrl.n });
+      }
 
-      const derived: TimeCoursePoint[] = points.map((pt, i) => {
-        const pctChange = i === 0 ? 0 : ((pt.mean - baseline) / baseline) * 100;
-        const se = pt.n > 0 ? ((pt.sd / Math.sqrt(pt.n)) / Math.abs(baseline)) * 100 : 0;
-        return { day: pt.day, pctChangeFromBaseline: pctChange, se, n: pt.n };
-      });
-
-      series[sex][dl] = derived;
+      if (derived.length > 0) {
+        series[sex][dl] = derived;
+      }
     }
   }
 
@@ -85,10 +109,14 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
       ? Math.max(...data.timepoints.map((t) => t.day))
       : null);
 
-  const doseGroups = doseLevels.map((dl) => ({
+  // doseGroups = treated only (doseLevel > 0)
+  const doseGroups = treatedDoseLevels.map((dl) => ({
     doseLevel: dl,
     doseLabel: doseMap.get(dl) ?? `Dose ${dl}`,
   }));
+
+  // controlLabel from doseLevel 0
+  const controlLabel = doseMap.get(0) ?? "Control";
 
   return {
     endpoint: data.test_name,
@@ -99,6 +127,7 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
     sexes,
     doseGroups,
     series,
+    controlLabel,
     totalTimepoints: data.timepoints.length,
   };
 }
