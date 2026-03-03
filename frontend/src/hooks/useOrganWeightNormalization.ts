@@ -18,6 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useAnnotations } from "@/hooks/useAnnotations";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
+import { buildSettingsParams } from "@/lib/build-settings-params";
 import {
   computeStudyNormalization,
   buildSpeciesStrainKey,
@@ -246,11 +248,13 @@ export function useOrganWeightNormalization(
   effectSizeMethod: EffectSizeMethod = "hedges-g",
 ): UseOrganWeightNormalizationResult {
   // Use useQuery directly so we can control `enabled` per-caller.
-  // Query key matches useFindings(studyId, 1, 10000, ALL_FILTERS) exactly,
+  // Query key matches useFindings(studyId, 1, 10000, ALL_FILTERS, params) exactly,
   // so React Query deduplicates with useFindingsAnalyticsLocal on the findings view.
+  const { settings } = useStudySettings();
+  const params = buildSettingsParams(settings);
   const { data: findingsData, isLoading: findingsLoading } = useQuery({
-    queryKey: ["findings", studyId, 1, 10000, ALL_FILTERS],
-    queryFn: () => fetchFindings(studyId!, 1, 10000, ALL_FILTERS),
+    queryKey: ["findings", studyId, 1, 10000, ALL_FILTERS, params],
+    queryFn: () => fetchFindings(studyId!, 1, 10000, ALL_FILTERS, params || undefined),
     enabled: fetchEnabled && !!studyId,
     staleTime: 5 * 60 * 1000,
   });

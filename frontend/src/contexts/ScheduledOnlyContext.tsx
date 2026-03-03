@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { UnifiedFinding, GroupStat, PairwiseResult } from "@/types/analysis";
 
 interface ScheduledOnlyContextValue {
   /** Set of USUBJIDs currently excluded from terminal stats. */
@@ -27,12 +26,6 @@ interface ScheduledOnlyContextValue {
   setUseScheduledOnly: (v: boolean) => void;
   /** Derived: true when the study has any early-death subjects. */
   hasEarlyDeaths: boolean;
-  /** Return the active group stats based on exclusion state. */
-  getActiveGroupStats: (finding: UnifiedFinding) => GroupStat[];
-  /** Return the active pairwise results based on exclusion state. */
-  getActivePairwise: (finding: UnifiedFinding) => PairwiseResult[];
-  /** Return the active direction based on exclusion state. */
-  getActiveDirection: (finding: UnifiedFinding) => UnifiedFinding["direction"];
 }
 
 const EMPTY_SET = new Set<string>();
@@ -48,9 +41,6 @@ const ScheduledOnlyContext = createContext<ScheduledOnlyContextValue>({
   useScheduledOnly: true,
   setUseScheduledOnly: () => {},
   hasEarlyDeaths: false,
-  getActiveGroupStats: (f) => f.group_stats,
-  getActivePairwise: (f) => f.pairwise,
-  getActiveDirection: (f) => f.direction,
 });
 
 export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
@@ -131,36 +121,6 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
     [trEarlyDeathIds],
   );
 
-  const getActiveGroupStats = useCallback(
-    (finding: UnifiedFinding): GroupStat[] => {
-      if (anyTrExcluded && finding.scheduled_group_stats) {
-        return finding.scheduled_group_stats;
-      }
-      return finding.group_stats;
-    },
-    [anyTrExcluded],
-  );
-
-  const getActivePairwise = useCallback(
-    (finding: UnifiedFinding): PairwiseResult[] => {
-      if (anyTrExcluded && finding.scheduled_pairwise) {
-        return finding.scheduled_pairwise;
-      }
-      return finding.pairwise;
-    },
-    [anyTrExcluded],
-  );
-
-  const getActiveDirection = useCallback(
-    (finding: UnifiedFinding): UnifiedFinding["direction"] => {
-      if (anyTrExcluded && finding.scheduled_direction !== undefined) {
-        return finding.scheduled_direction;
-      }
-      return finding.direction;
-    },
-    [anyTrExcluded],
-  );
-
   return (
     <ScheduledOnlyContext.Provider
       value={{
@@ -173,9 +133,6 @@ export function ScheduledOnlyProvider({ children }: { children: ReactNode }) {
         useScheduledOnly: anyTrExcluded,
         setUseScheduledOnly,
         hasEarlyDeaths,
-        getActiveGroupStats,
-        getActivePairwise,
-        getActiveDirection,
       }}
     >
       {children}

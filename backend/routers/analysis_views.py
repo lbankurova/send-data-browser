@@ -42,11 +42,12 @@ VALID_VIEW_NAMES = {
     "unified-findings",
 }
 
-# The 9 view names that the parameterized pipeline produces
+# The 10 view names that the parameterized pipeline produces
 PARAMETERIZED_VIEWS = {
     "study-signal-summary", "target-organ-summary", "dose-response-metrics",
     "organ-evidence-detail", "lesion-severity-summary", "adverse-effect-summary",
     "noael-summary", "finding-dose-trends", "rule-results",
+    "unified-findings",
 }
 
 # Map URL slugs to file names (slug uses hyphens, files use underscores)

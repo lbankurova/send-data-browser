@@ -19,30 +19,32 @@ export function fetchFindings(
   studyId: string,
   _page: number,
   _pageSize: number,
-  _filters: FindingsFilters
+  _filters: FindingsFilters,
+  settingsParams?: string,
 ): Promise<FindingsResponse> {
-  // Pre-generated: all findings served at once from static JSON.
-  // Filtering and pagination are handled client-side by useFindingsAnalyticsLocal.
-  // Parameters kept for API compatibility but ignored — the pre-generated file
-  // contains all findings in FindingsResponse format.
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analysis/unified-findings`
+    `/studies/${encodeURIComponent(studyId)}/analysis/unified-findings${qs}`
   );
 }
 
 export function fetchFindingContext(
   studyId: string,
-  findingId: string
+  findingId: string,
+  settingsParams?: string,
 ): Promise<FindingContext> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/finding/${encodeURIComponent(findingId)}`
+    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/finding/${encodeURIComponent(findingId)}${qs}`
   );
 }
 
 export function fetchAESummary(
-  studyId: string
+  studyId: string,
+  settingsParams?: string,
 ): Promise<AnalysisSummary> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
-    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/summary`
+    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/summary${qs}`
   );
 }

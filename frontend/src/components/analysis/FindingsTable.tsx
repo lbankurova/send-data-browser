@@ -20,7 +20,6 @@ import {
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { getSignalTier } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -46,7 +45,6 @@ interface FindingsTableProps {
 export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping }: FindingsTableProps) {
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
-  const { getActiveGroupStats, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
@@ -160,17 +158,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           ),
           cell: (info) => {
             const f = info.row.original;
-            const activeStats = getActiveGroupStats(f);
-            const gs = activeStats.find((g) => g.dose_level === dg.dose_level);
+            // group_stats is already the correct variant (backend applied settings)
+            const gs = f.group_stats.find((g) => g.dose_level === dg.dose_level);
             if (!gs) return "\u2014";
-            // Per-dose-group exclusion: compare base N vs scheduled N
-            let excludedInGroup = 0;
-            if (isScheduledOnly && f.scheduled_group_stats) {
-              const baseGs = f.group_stats.find((g) => g.dose_level === dg.dose_level);
-              if (baseGs) excludedInGroup = baseGs.n - gs.n;
-            }
-            const excludedMark = excludedInGroup > 0
-              ? <span className="ml-0.5 text-muted-foreground/50" title={`${excludedInGroup} excluded from this group`}>*</span>
+            // Finding-level exclusion indicator (shown on first dose column only)
+            const hasExclusions = idx === 0 && f.n_excluded != null && f.n_excluded > 0;
+            const excludedMark = hasExclusions
+              ? <span className="ml-0.5 text-muted-foreground/50" title={`${f.n_excluded} subjects excluded`}>*</span>
               : null;
             if (f.data_type === "continuous") {
               return (
