@@ -190,6 +190,10 @@ def apply_settings_transforms(
     """Apply all active settings transforms, then re-derive enrichment if needed.
 
     For default settings, this is a no-op — findings pass through unchanged.
+
+    Order: scheduled_only → recovery_separate → effect_size → multiplicity
+           → organ_weight_method → pairwise_williams → trend_williams
+    Then: rederive_enrichment(findings, threshold=adversity_threshold)
     """
     if settings.is_default():
         return findings
@@ -212,8 +216,22 @@ def apply_settings_transforms(
         apply_multiplicity_method(findings, settings.multiplicity)
         changed = True
 
-    if changed:
-        findings = rederive_enrichment(findings)
+    if settings.organ_weight_method != "absolute":
+        apply_organ_weight_method(findings, settings.organ_weight_method)
+        changed = True
+
+    if settings.pairwise_test == "williams":
+        apply_pairwise_williams(findings)
+        changed = True
+
+    if settings.trend_test == "williams-trend":
+        apply_trend_williams(findings)
+        changed = True
+
+    if changed or settings.adversity_threshold != "grade-ge-2-or-dose-dep":
+        findings = rederive_enrichment(
+            findings, threshold=settings.adversity_threshold,
+        )
 
     return findings
 
@@ -358,17 +376,165 @@ def apply_multiplicity_method(findings: list[dict], method: str):
 
 
 # ---------------------------------------------------------------------------
+# Phase 3 transforms: Williams pairwise, Williams trend, organ weight method
+# ---------------------------------------------------------------------------
+
+_OM_METHOD_MAP = {
+    "ratio-bw": "ratio_to_bw",
+    "ratio-brain": "ratio_to_brain",
+}
+
+
+def apply_organ_weight_method(findings: list[dict], method: str):
+    """For OM-domain findings, swap alternative metric stats into primary slots.
+
+    Maps setting value to alternatives key (e.g. "ratio-bw" → "ratio_to_bw").
+    If the requested metric matches the recommended metric, no-op for that finding.
+    Recomputes min_p_adj and max_effect_size from swapped pairwise.
+    """
+    alt_key = _OM_METHOD_MAP.get(method)
+    if not alt_key:
+        return
+
+    for f in findings:
+        if f.get("domain") != "OM":
+            continue
+
+        alternatives = f.get("alternatives", {})
+        alt_data = alternatives.get(alt_key)
+        if not alt_data:
+            continue
+
+        # Check if requested metric matches what's already primary
+        norm = f.get("normalization", {})
+        if norm.get("active_metric") == alt_key:
+            continue
+
+        # Save current primary into alternatives under the current metric key
+        current_metric = norm.get("active_metric", "absolute")
+        alternatives[current_metric] = {
+            "group_stats": f.get("group_stats", []),
+            "pairwise": f.get("pairwise", []),
+            "trend_p": f.get("trend_p"),
+        }
+
+        # Swap alternative into primary slots
+        f["group_stats"] = alt_data.get("group_stats", f.get("group_stats", []))
+        f["pairwise"] = alt_data.get("pairwise", f.get("pairwise", []))
+        if "trend_p" in alt_data:
+            f["trend_p"] = alt_data["trend_p"]
+
+        # Recompute summary fields from swapped pairwise
+        f["min_p_adj"] = _recompute_min_p_adj(f["pairwise"])
+        f["max_effect_size"] = _recompute_max_effect_size(f["pairwise"])
+
+        # Track active metric
+        if "normalization" not in f:
+            f["normalization"] = {}
+        f["normalization"]["active_metric"] = alt_key
+
+
+def apply_pairwise_williams(findings: list[dict]):
+    """Replace Dunnett pairwise p-values with Williams' step-down p-values.
+
+    For each continuous finding with group_stats, runs Williams' test and
+    maps step-down results to pairwise entries. Preserves cohens_d (effect
+    sizes are measurement-based, not test-dependent). Doses not reached
+    in step-down get p_value = 1.0 (conservative).
+    """
+    from services.analysis.williams import williams_from_group_stats
+
+    for f in findings:
+        if f.get("data_type") != "continuous":
+            continue
+
+        group_stats = f.get("group_stats", [])
+        if len(group_stats) < 2:
+            continue
+
+        result = williams_from_group_stats(group_stats)
+        if result is None:
+            continue
+
+        # Build dose_index → WilliamsResult lookup
+        williams_by_idx = {r.dose_index: r for r in result.step_down_results}
+
+        pairwise = f.get("pairwise", [])
+        for pw in pairwise:
+            dose_level = pw.get("dose_level")
+            if dose_level is None:
+                continue
+            wr = williams_by_idx.get(dose_level)
+            if wr is not None:
+                pw["p_value"] = wr.p_value
+                pw["p_value_adj"] = wr.p_value  # Williams FWER-controlled via step-down
+            else:
+                # Dose not reached in step-down — conservative
+                pw["p_value"] = 1.0
+                pw["p_value_adj"] = 1.0
+
+        # Update summary fields
+        f["min_p_adj"] = _recompute_min_p_adj(pairwise)
+
+        # Store metadata for trend reuse
+        f["_williams_applied"] = {
+            "direction": result.direction,
+            "step_down_results": [
+                {"dose_index": r.dose_index, "p_value": r.p_value, "significant": r.significant}
+                for r in result.step_down_results
+            ],
+        }
+
+
+def apply_trend_williams(findings: list[dict]):
+    """Set trend_p from Williams' step-down results.
+
+    If _williams_applied is present (pairwise already ran Williams), extracts
+    the highest-dose p-value from step-down → trend_p. Otherwise runs
+    williams_from_group_stats() independently, uses first step-down p → trend_p.
+    """
+    from services.analysis.williams import williams_from_group_stats
+
+    for f in findings:
+        if f.get("data_type") != "continuous":
+            continue
+
+        williams_meta = f.get("_williams_applied")
+        if williams_meta:
+            # Reuse: first step-down result is the highest dose
+            steps = williams_meta.get("step_down_results", [])
+            if steps:
+                f["trend_p"] = steps[0]["p_value"]
+            continue
+
+        # Run Williams independently
+        group_stats = f.get("group_stats", [])
+        if len(group_stats) < 2:
+            continue
+
+        result = williams_from_group_stats(group_stats)
+        if result is None or not result.step_down_results:
+            continue
+
+        # First step-down result = highest dose = trend p
+        f["trend_p"] = result.step_down_results[0].p_value
+
+
+# ---------------------------------------------------------------------------
 # Re-enrichment after transforms
 # ---------------------------------------------------------------------------
 
-def rederive_enrichment(findings: list[dict]) -> list[dict]:
+def rederive_enrichment(
+    findings: list[dict],
+    threshold: str = "grade-ge-2-or-dose-dep",
+) -> list[dict]:
     """Re-run full enrichment pipeline after settings transforms.
 
     Same sequence as findings_pipeline.process_findings() but applied to
     already-enriched findings after stats have been swapped/recomputed.
     """
     # Per-finding enrichment (classification, fold change, labels, organ system)
-    findings = enrich_findings(findings)
+    findings = enrich_findings(findings, threshold=threshold)
     # Cross-domain corroboration
     findings = compute_corroboration(findings)
     # Cross-organ chain detection

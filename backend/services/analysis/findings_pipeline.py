@@ -103,14 +103,14 @@ def _with_defaults(f: dict) -> dict:
     return f
 
 
-def _enrich_finding(f: dict) -> dict:
+def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
     """Core enrichment: classification, fold change, incidence, organ system, label.
 
     Pipeline-style: finding in -> enriched finding out.
     Shared between generator (domain_stats) and live API (unified_findings).
     """
     # Classification
-    f["severity"] = classify_severity(f)
+    f["severity"] = classify_severity(f, threshold=threshold)
     dr_result = classify_dose_response(
         f.get("group_stats", []),
         f.get("data_type", "continuous"),
@@ -161,7 +161,10 @@ def _enrich_finding(f: dict) -> dict:
     return f
 
 
-def enrich_findings(findings: list[dict]) -> list[dict]:
+def enrich_findings(
+    findings: list[dict],
+    threshold: str = "grade-ge-2-or-dose-dep",
+) -> list[dict]:
     """Enrich all findings with safe per-finding error handling.
 
     Each finding gets safe defaults via ``_with_defaults()`` before enrichment.
@@ -173,7 +176,7 @@ def enrich_findings(findings: list[dict]) -> list[dict]:
     for f in findings:
         f = _with_defaults(f)
         try:
-            f = _enrich_finding(f)
+            f = _enrich_finding(f, threshold=threshold)
         except Exception as e:
             f["_enrichment_error"] = str(e)
             log.warning("Enrichment failed for %s: %s", finding_key(f), e)

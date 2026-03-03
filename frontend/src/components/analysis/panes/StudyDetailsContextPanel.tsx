@@ -214,7 +214,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "grade-ge-1", label: "Grade \u2265 1" },
               { value: "grade-ge-2", label: "Grade \u2265 2" },
               { value: "grade-ge-2-or-dose-dep", label: "Grade \u2265 2 or dose-dep (default)" },
-              { value: "custom", label: "Custom" },
+              { value: "custom", label: "Custom", disabled: true },
             ]}
             onChange={(v) => updateSetting("adversityThreshold", v)}
           />
@@ -248,7 +248,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             value={pairwiseTest}
             options={[
               { value: "dunnett", label: "Dunnett" },
-              { value: "williams", label: "Williams", disabled: true },
+              { value: "williams", label: "Williams' step-down" },
               { value: "steel", label: "Steel", disabled: true },
             ]}
             onChange={(v) => updateSetting("pairwiseTest", v as "dunnett" | "williams" | "steel")}
@@ -276,11 +276,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           />
         </SettingsRow>
         <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
-          {multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
-            ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
-            : multiplicity === "bonferroni"
-              ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
-              : "Separate correction needed. Incidence: Fisher exact, no correction."}
+          {pairwiseTest === "williams"
+            ? "Williams\u2019 step-down controls FWER inherently. Multiplicity setting has no effect."
+            : multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
+              ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
+              : multiplicity === "bonferroni"
+                ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
+                : "Separate correction needed. Incidence: Fisher exact, no correction."}
         </div>
         <SettingsRow label="Trend test">
           <SettingsSelect
@@ -288,7 +290,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             options={[
               { value: "jonckheere", label: "Jonckheere-Terpstra" },
               { value: "cuzick", label: "Cuzick", disabled: true },
-              { value: "williams-trend", label: "Williams (parametric)", disabled: true },
+              { value: "williams-trend", label: "Williams (parametric)" },
             ]}
             onChange={(v) => updateSetting("trendTest", v as "jonckheere" | "cuzick" | "williams-trend")}
           />

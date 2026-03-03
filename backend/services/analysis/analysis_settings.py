@@ -1,8 +1,10 @@
 """Analysis settings dataclass and FastAPI query parameter parser.
 
-Defines the 10 user-configurable analysis settings. Phase 1 implements
+Defines the 10 user-configurable analysis settings. Phase 1-2 implements
 4 active settings (scheduled_only, recovery_pooling, effect_size, multiplicity).
-The remaining 6 are accepted as parameters but have no effect yet.
+Phase 3 enables 4 more (pairwise_test=williams, trend_test=williams-trend,
+organ_weight_method, adversity_threshold). control_group and incidence_trend
+remain no-op.
 """
 
 import hashlib
@@ -23,8 +25,8 @@ class AnalysisSettings:
     effect_size: Literal["hedges-g", "cohens-d", "glass-delta"] = "hedges-g"
     multiplicity: Literal["dunnett-fwer", "bonferroni"] = "dunnett-fwer"
 
-    # Phase 3 — accepted but no-op
-    control_group: str = "vehicle"
+    # Phase 3 — active
+    control_group: str = "vehicle"  # no-op (PointCross has one control)
     adversity_threshold: str = "grade-ge-2-or-dose-dep"
     pairwise_test: Literal["dunnett", "williams", "steel"] = "dunnett"
     trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = "jonckheere"
