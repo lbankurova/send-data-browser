@@ -15,7 +15,8 @@ export type ContinuousVerdictType =
   | "reversing"
   | "partial"
   | "persistent"
-  | "worsening";
+  | "worsening"
+  | "not_assessed";
 
 export interface ContinuousVerdictResult {
   verdict: ContinuousVerdictType;
@@ -36,7 +37,7 @@ export function classifyContinuousRecovery(
   }
 
   if (recoveryG == null) {
-    return { verdict: "resolved", pctRecovered: null };
+    return { verdict: "not_assessed", pctRecovered: null };
   }
 
   // Overcorrected: effect reversed direction past control (§4.3)
@@ -68,6 +69,7 @@ export const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
   partial: "Partial",
   persistent: "Persistent",
   worsening: "Worsening",
+  not_assessed: "Not assessed",
 };
 
 /** Format |pct| for display, capping extreme values. */
