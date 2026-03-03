@@ -498,7 +498,7 @@ export function AppLandingPage() {
           <div className="flex shrink-0 items-start gap-4">
             <FlaskConical className="h-11 w-11 text-primary" />
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">Preclinical Case</h1>
+              <h1 className="text-xl font-semibold tracking-tight">SENDEX</h1>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Analyze and validate your SEND data
               </p>
