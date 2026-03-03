@@ -101,7 +101,7 @@ interface ArmStats {
  *  0. recovery.examined === 0              → not_examined
  *  1. recovery.examined < 3               → insufficient_n
  *  2. main incidence=0, recovery>0        → anomaly
- *  3. main.affected>0 AND main.incidence * recovery.examined < 2 → low_power
+ *  3. main.incidence * recovery.examined < 2 → low_power
  *  4. main incidence=0, main affected=0   → not_observed
  *  5. recovery.incidence === 0            → reversed
  *  6-10. Ratio computation
@@ -122,8 +122,8 @@ export function computeVerdict(
   // Guard 2: anomaly — recovery has findings where main arm had none
   if (main.incidence === 0 && main.affected === 0 && recovery.affected > 0) return "anomaly";
 
-  // v3 Guard 3: low statistical power (only when main arm actually has findings)
-  if (main.affected > 0 && main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
+  // v3 Guard 3: low statistical power
+  if (main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
 
   // Guard 4: main arm had no findings at this dose level
   if (main.incidence === 0 && main.affected === 0) return "not_observed";
