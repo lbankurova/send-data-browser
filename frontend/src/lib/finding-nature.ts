@@ -174,7 +174,7 @@ export function classifyFindingNature(
             : "none";
     // For irreversible findings, typical_recovery_weeks stays null —
     // the lookup range documents persistence duration, not expected recovery.
-    const midpoint = lookup.reversibility === "none"
+    const midpoint = (lookup.weeks == null || lookup.reversibility === "none")
       ? null
       : Math.round((lookup.weeks.low + lookup.weeks.high) / 2);
     return {

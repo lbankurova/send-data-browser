@@ -41,6 +41,12 @@ import {
   reversibilityLabel,
 } from "@/lib/finding-nature";
 import type { FindingNatureInfo } from "@/lib/finding-nature";
+import {
+  lookupRecoveryDuration,
+  lookupContinuousRecovery,
+  computeUncertaintyBands,
+} from "@/lib/recovery-duration-table";
+import type { LookupConfidence } from "@/lib/recovery-duration-table";
 
 // ─── Test helpers ────────────────────────────────────────
 
@@ -471,8 +477,8 @@ describe("classifyFindingNature", () => {
   });
 
   test("severity modulation — mid severity adaptive (S_MODEST)", () => {
-    // LIVER hypertrophy_hepatocellular, S_MODEST, sev=3 (moderate=1.25)
-    // weeks = {1.3, 5}, midpoint=round(3.15)=3
+    // LIVER hypertrophy_hepatocellular, calibrated sev=3 (moderate=1.3)
+    // weeks = {1*1.3, 4*1.3} = {1.3, 5.2}, midpoint=round(3.25)=3
     const r = classifyFindingNature("Hypertrophy", 3);
     expect(r.reversibilityQualifier).toBe("expected");
     expect(r.typical_recovery_weeks).toBe(3);
@@ -518,7 +524,7 @@ describe("classifyFindingNature", () => {
     const r = classifyFindingNature("Tubular degeneration", null, "KIDNEY");
     expect(r.source).toBe("organ_lookup");
     expect(r.organ_key).toBe("KIDNEY");
-    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 4 });
+    expect(r.recovery_weeks_range).toEqual({ low: 1, high: 8 });
     expect(r.reversibilityQualifier).toBe("possible");
   });
 
@@ -1041,5 +1047,246 @@ describe("anomaly discrimination", () => {
 
     expect(cls.classification).toBe("DELAYED_ONSET");
     expect(cls.rationale).toContain("Precursor");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — null base_weeks (irreversible)
+// ═════════════════════════════════════════════════════════
+
+describe("v3: null base_weeks for irreversible findings", () => {
+  test("kidney mineralization → null weeks, reversibility none", () => {
+    const r = classifyFindingNature("Mineralization", null, "KIDNEY");
+    expect(r.recovery_weeks_range).toBeNull();
+    expect(r.reversibilityQualifier).toBe("none");
+  });
+
+  test("heart cardiomyocyte necrosis → null weeks, reversibility none", () => {
+    const r = classifyFindingNature("Necrosis", null, "HEART");
+    expect(r.recovery_weeks_range).toBeNull();
+    expect(r.reversibilityQualifier).toBe("none");
+  });
+
+  test("heart fibrosis → null weeks, reversibility none", () => {
+    const r = classifyFindingNature("Fibrosis", null, "HEART");
+    expect(r.recovery_weeks_range).toBeNull();
+    expect(r.reversibilityQualifier).toBe("none");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — deposit_proportional severity
+// ═════════════════════════════════════════════════════════
+
+describe("v3: deposit_proportional severity model", () => {
+  test("spleen hemosiderosis severity=3 → weeks scaled by 1.5x", () => {
+    const r = lookupRecoveryDuration("Hemosiderosis", { organ: "SPLEEN", maxSeverity: 3 });
+    expect(r).not.toBeNull();
+    // base {4, 12} * moderate 1.5 = {6, 18}
+    expect(r!.weeks).toEqual({ low: 6, high: 18 });
+    expect(r!.severity_capped).toBe(false);
+  });
+
+  test("spleen hemosiderosis severity=5 → weeks scaled by 2.5x, NOT capped", () => {
+    const r = lookupRecoveryDuration("Hemosiderosis", { organ: "SPLEEN", maxSeverity: 5 });
+    expect(r).not.toBeNull();
+    // base {4, 12} * severe 2.5 = {10, 30}
+    expect(r!.weeks).toEqual({ low: 10, high: 30 });
+    expect(r!.severity_capped).toBe(false);
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — new findings
+// ═════════════════════════════════════════════════════════
+
+describe("v3: new findings", () => {
+  test("liver phospholipidosis → organ_specific source, range {2,8}", () => {
+    const r = classifyFindingNature("Phospholipidosis", null, "LIVER");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.recovery_weeks_range).toEqual({ low: 2, high: 8 });
+  });
+
+  test("GENERAL hemorrhage (no organ) → fallback hits GENERAL, range {0.5,3}", () => {
+    const r = lookupRecoveryDuration("Hemorrhage");
+    expect(r).not.toBeNull();
+    expect(r!.weeks).toEqual({ low: 0.5, high: 3 });
+    expect(r!.organ_key).toBe("GENERAL");
+  });
+
+  test("GENERAL pigmentation with severity → deposit_proportional scaling", () => {
+    const r = lookupRecoveryDuration("Pigmentation", { maxSeverity: 4 });
+    expect(r).not.toBeNull();
+    // base {4, 26} * marked 2.0 = {8, 52}
+    expect(r!.weeks).toEqual({ low: 8, high: 52 });
+    expect(r!.severity_capped).toBe(false);
+  });
+
+  test("thyroid focal hyperplasia — {8, null} high bound → null weeks throughout", () => {
+    // follicular_cell_hyperplasia_focal is the only finding with a null high bound.
+    // Current design: null in either bound → applySeverityModulation returns weeks: null.
+    // The 8-week lower bound is intentionally discarded (system requires both bounds).
+    const r = classifyFindingNature("Focal hyperplasia", null, "GLAND, THYROID");
+    expect(r.source).toBe("organ_lookup");
+    expect(r.organ_key).toBe("THYROID");
+    // Null propagation through the chain
+    expect(r.recovery_weeks_range).toBeNull();
+    expect(r.typical_recovery_weeks).toBeNull();
+    // Reversibility preserved from entry (unlikely → "low")
+    expect(r.reversibilityQualifier).toBe("unlikely");
+    expect(r.expected_reversibility).toBe("low");
+    // Display layer: no crash, renders "Poorly reversible" (not "8–null weeks")
+    const label = reversibilityLabel(r);
+    expect(label).toBe("Poorly reversible");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — critical species modifier fix
+// ═════════════════════════════════════════════════════════
+
+describe("v3: species modifier corrections", () => {
+  test("testis spermatogenesis + cynomolgus → high = 12 * 0.8 = 9.6", () => {
+    const r = lookupRecoveryDuration("Decreased spermatogenesis", {
+      organ: "TESTIS",
+      species: "CYNOMOLGUS",
+    });
+    expect(r).not.toBeNull();
+    // base {6, 12} * nhp 0.8 = {4.8, 9.6}
+    expect(r!.weeks!.high).toBeCloseTo(9.6, 1);
+    expect(r!.weeks!.low).toBeCloseTo(4.8, 1);
+  });
+
+  test("forestomach + dog → species modifier null → base range unmodified", () => {
+    const r = lookupRecoveryDuration("Mucosal hyperplasia forestomach", {
+      organ: "STOMACH",
+      species: "DOG",
+    });
+    expect(r).not.toBeNull();
+    // dog modifier is null → pass through unmodified
+    expect(r!.weeks).toEqual({ low: 2, high: 13 });
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — updated values
+// ═════════════════════════════════════════════════════════
+
+describe("v3: updated values from cross-validation", () => {
+  test("kupffer cell → {1,6}, reversibility expected", () => {
+    const r = lookupRecoveryDuration("Kupffer cell", { organ: "LIVER" });
+    expect(r).not.toBeNull();
+    expect(r!.weeks).toEqual({ low: 1, high: 6 });
+    expect(r!.reversibility).toBe("expected");
+  });
+
+  test("glycogen depletion → low: 0.1", () => {
+    const r = lookupRecoveryDuration("Glycogen depletion", { organ: "LIVER" });
+    expect(r).not.toBeNull();
+    expect(r!.weeks!.low).toBe(0.1);
+  });
+
+  test("seminiferous tubule atrophy → {8,24}", () => {
+    const r = lookupRecoveryDuration("Atrophy", { organ: "TESTIS" });
+    expect(r).not.toBeNull();
+    expect(r!.weeks).toEqual({ low: 8, high: 24 });
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — continuous endpoints
+// ═════════════════════════════════════════════════════════
+
+describe("v3: continuous endpoints", () => {
+  test("ALT_increase exists with {0.5, 2}", () => {
+    const entry = lookupContinuousRecovery("clinical_chemistry", "ALT_increase");
+    expect(entry).not.toBeNull();
+    expect(entry!.base_weeks).toEqual({ low: 0.5, high: 2 });
+  });
+
+  test("AST_increase exists with {0.3, 1}", () => {
+    const entry = lookupContinuousRecovery("clinical_chemistry", "AST_increase");
+    expect(entry).not.toBeNull();
+    expect(entry!.base_weeks).toEqual({ low: 0.3, high: 1 });
+  });
+
+  test("legacy ALT_AST_increase key → returns null", () => {
+    const entry = lookupContinuousRecovery("clinical_chemistry", "ALT_AST_increase");
+    expect(entry).toBeNull();
+  });
+
+  test("legacy BUN_creatinine_increase key → returns null", () => {
+    const entry = lookupContinuousRecovery("clinical_chemistry", "BUN_creatinine_increase");
+    expect(entry).toBeNull();
+  });
+
+  test("kidney_weight_change exists with {2, 6}", () => {
+    const entry = lookupContinuousRecovery("organ_weights", "kidney_weight_change");
+    expect(entry).not.toBeNull();
+    expect(entry!.base_weeks).toEqual({ low: 2, high: 6 });
+  });
+
+  test("RBC species modifiers: dog 1.8, nhp 2.0", () => {
+    const entry = lookupContinuousRecovery("hematology", "rbc_hgb_hct_decrease");
+    expect(entry).not.toBeNull();
+    expect(entry!.species.dog).toBe(1.8);
+    expect(entry!.species.nhp).toBe(2.0);
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — uncertainty model
+// ═════════════════════════════════════════════════════════
+
+describe("v3: uncertainty model", () => {
+  test("high confidence → tight bands", () => {
+    const bands = computeUncertaintyBands({ low: 1, high: 4 }, "high");
+    // low: 1 - 1*0.25 = 0.75 → clamped to 0.75, high: 4 + 4*0.35 = 5.4
+    expect(bands.lower).toBeCloseTo(0.8, 1);
+    expect(bands.upper).toBeCloseTo(5.4, 1);
+  });
+
+  test("low confidence → wide bands", () => {
+    const bands = computeUncertaintyBands({ low: 2, high: 8 }, "low");
+    // low: 2 - 2*0.25 = 1.5, high: 8 + 8*0.75 = 14
+    expect(bands.lower).toBeCloseTo(1.5, 1);
+    expect(bands.upper).toBeCloseTo(14, 1);
+  });
+
+  test("organ-specific tightening (liver hypertrophy)", () => {
+    const bands = computeUncertaintyBands(
+      { low: 1, high: 4 },
+      "moderate",
+      "LIVER",
+      "hypertrophy_hepatocellular",
+    );
+    // Tightened: low 1 - 1*0.2 = 0.8, high: 4 + 4*0.3 = 5.2
+    expect(bands.lower).toBeCloseTo(0.8, 1);
+    expect(bands.upper).toBeCloseTo(5.2, 1);
+  });
+
+  test("max margin cap at 8 weeks", () => {
+    // Very long range → margin should be capped
+    const bands = computeUncertaintyBands({ low: 26, high: 52 }, "low");
+    // high margin: 52 * 0.75 = 39 → capped at 8 → upper = 52 + 8 = 60
+    expect(bands.upper).toBe(60);
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Recovery duration table v3 — null-safety integration
+// ═════════════════════════════════════════════════════════
+
+describe("v3: null-safety integration", () => {
+  test("classifyFindingNature mineralization in KIDNEY → typical_recovery_weeks null", () => {
+    const r = classifyFindingNature("Mineralization", null, "KIDNEY");
+    expect(r.typical_recovery_weeks).toBeNull();
+    expect(r.expected_reversibility).toBe("none");
+  });
+
+  test("reversibilityLabel with null weeks → 'Not expected to reverse'", () => {
+    const r = classifyFindingNature("Mineralization", null, "KIDNEY");
+    const label = reversibilityLabel(r);
+    expect(label).toContain("Not expected");
   });
 });
