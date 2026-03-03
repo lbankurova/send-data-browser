@@ -7,10 +7,10 @@
  * ensures the underlying useFindings() call returns the same cached
  * response — no extra API calls.
  *
- * Scheduled-only aware: when the mortality toggle excludes early-death
- * subjects, the derivation pipeline uses scheduled stats and filters out
- * findings that vanish entirely. This propagates through ALL downstream
- * analytics (endpoint summaries, syndromes, signal scores, etc.).
+ * Phase 2b: Settings transforms (scheduled-only, recovery pooling, effect
+ * size, multiplicity) are now applied server-side. This hook receives
+ * pre-transformed findings and runs only the derivation pipeline
+ * (endpoint summaries, syndromes, coherence, signal scores).
  */
 
 import { useMemo } from "react";
@@ -23,7 +23,7 @@ import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
-import { applyEffectSizeMethod, applyMultiplicityMethod, hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
+import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { FindingsFilters, FindingsResponse, UnifiedFinding } from "@/types/analysis";
 
@@ -36,119 +36,15 @@ export interface FindingsAnalyticsResult {
   analytics: FindingsAnalytics;
   /** Raw API response — consumers that need UnifiedFinding[] or dose_groups access this. */
   data: FindingsResponse | undefined;
-  /** Findings after all filters (scheduled, recovery pooling, stat methods) are applied. */
+  /** Findings pre-transformed by the backend (settings already applied). */
   activeFindings: UnifiedFinding[];
   isLoading: boolean;
   error: Error | null;
 }
 
-/**
- * Re-derive summary fields (max_effect_size, min_p_adj, max_fold_change)
- * from swapped pairwise/group_stats so downstream consumers (rail, scatter,
- * context panel) see consistent values after a stats swap.
- */
-export function rederiveSummaryFields(
-  pairwise: UnifiedFinding["pairwise"],
-  groupStats: UnifiedFinding["group_stats"],
-  direction: UnifiedFinding["direction"],
-  dataType: UnifiedFinding["data_type"],
-): { max_effect_size: number | null; min_p_adj: number | null; max_fold_change: number | null } {
-  // max_effect_size: max |cohens_d| across treated pairwise, signed
-  let maxEffect: number | null = null;
-  let maxAbs = 0;
-  let minP: number | null = null;
-  for (const p of pairwise) {
-    if (p.cohens_d != null) {
-      const abs = Math.abs(p.cohens_d);
-      if (abs > maxAbs) { maxAbs = abs; maxEffect = p.cohens_d; }
-    }
-    if (p.p_value_adj != null && (minP == null || p.p_value_adj < minP)) {
-      minP = p.p_value_adj;
-    }
-  }
-  // max_fold_change: direction-aligned treated/control from group_stats
-  let maxFold: number | null = null;
-  if (dataType === "continuous" && groupStats.length >= 2) {
-    const controlMean = groupStats[0]?.mean;
-    if (controlMean != null && Math.abs(controlMean) > 1e-10) {
-      let bestDev = 0;
-      for (const gs of groupStats.slice(1)) {
-        if (gs.mean == null) continue;
-        const ratio = gs.mean / controlMean;
-        const dev = Math.abs(ratio - 1.0);
-        // Direction-aligned: only consider deviations in expected direction
-        if (direction === "down" && ratio >= 1.0) continue;
-        if (direction === "up" && ratio <= 1.0) continue;
-        if (dev > bestDev) { bestDev = dev; maxFold = Math.round(ratio * 100) / 100; }
-      }
-    }
-  }
-  return { max_effect_size: maxEffect, min_p_adj: minP, max_fold_change: maxFold };
-}
-
-/**
- * When recovery pooling is set to "separate", swap each in-life finding's
- * group_stats with its separate_group_stats (main-only subjects, recovery
- * animals excluded). Findings with empty separate_group_stats vanish.
- * Terminal domains (MI, MA, OM, TF) have no separate variant — pass through.
- */
-export function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
-  const result: UnifiedFinding[] = [];
-  for (const f of findings) {
-    if (f.separate_group_stats && f.separate_group_stats.length === 0) continue;
-    if (f.separate_group_stats) {
-      const newPairwise = f.separate_pairwise ?? f.pairwise;
-      const newDirection = f.separate_direction ?? f.direction;
-      const derived = rederiveSummaryFields(newPairwise, f.separate_group_stats, newDirection, f.data_type);
-      result.push({
-        ...f,
-        group_stats: f.separate_group_stats,
-        pairwise: newPairwise,
-        direction: newDirection,
-        ...derived,
-      });
-    } else {
-      result.push(f);
-    }
-  }
-  return result;
-}
-
-/**
- * When scheduled-only mode is active, swap each finding's group_stats with
- * its scheduled_group_stats and filter out findings that vanish entirely
- * (empty scheduled_group_stats means all subjects were early deaths).
- */
-export function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
-  const result: UnifiedFinding[] = [];
-  for (const f of findings) {
-    // Findings with empty scheduled_group_stats vanish under scheduled-only
-    if (f.scheduled_group_stats && f.scheduled_group_stats.length === 0) continue;
-    // Findings with scheduled alternatives: swap stats in a shallow copy
-    if (f.scheduled_group_stats) {
-      const newPairwise = f.scheduled_pairwise ?? f.pairwise;
-      const newDirection = f.scheduled_direction ?? f.direction;
-      const derived = rederiveSummaryFields(newPairwise, f.scheduled_group_stats, newDirection, f.data_type);
-      result.push({
-        ...f,
-        group_stats: f.scheduled_group_stats,
-        pairwise: newPairwise,
-        direction: newDirection,
-        ...derived,
-      });
-    } else {
-      // Longitudinal domains (BW, CL, FW) have no scheduled stats — pass through
-      result.push(f);
-    }
-  }
-  return result;
-}
-
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
   const { settings } = useStudySettings();
-  const isScheduledOnly = settings.scheduledOnly;
-  const recoveryPooling = settings.recoveryPooling;
   const statMethods = { effectSize: settings.effectSize, multiplicity: settings.multiplicity };
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
 
@@ -156,31 +52,13 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   // Provides NormalizationContext[] for syndrome magnitude floors and B-7 adversity.
   const normalization = useOrganWeightNormalization(studyId, true, statMethods.effectSize);
 
-  // Active findings: swapped when scheduled-only is active
-  const scheduledFindings = useMemo(() => {
-    if (!data?.findings?.length) return [];
-    return isScheduledOnly ? applyScheduledFilter(data.findings) : data.findings;
-  }, [data, isScheduledOnly]);
-
-  // Recovery pooling: swap in-life domain stats to main-only when "separate"
-  const pooledFindings = useMemo(() => {
-    if (!scheduledFindings.length) return [];
-    return recoveryPooling === "separate"
-      ? applyRecoveryPoolingFilter(scheduledFindings)
-      : scheduledFindings;
-  }, [scheduledFindings, recoveryPooling]);
-
-  // Apply statistical method transforms: effect size → multiplicity
-  const activeFindings = useMemo(() => {
-    if (!pooledFindings.length) return [];
-    const afterEffect = applyEffectSizeMethod(pooledFindings, statMethods.effectSize);
-    return applyMultiplicityMethod(afterEffect, statMethods.multiplicity);
-  }, [pooledFindings, statMethods.effectSize, statMethods.multiplicity]);
+  // Findings arrive pre-transformed from backend (settings already applied)
+  const activeFindings = useMemo(() => data?.findings ?? [], [data?.findings]);
 
   // Detect Welch p-value availability for dropdown enablement
   const welchAvailable = useMemo(
-    () => checkWelchPValues(pooledFindings),
-    [pooledFindings],
+    () => checkWelchPValues(activeFindings),
+    [activeFindings],
   );
 
   const endpointSummaries = useMemo(() => {

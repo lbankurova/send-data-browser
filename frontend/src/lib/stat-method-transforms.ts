@@ -1,13 +1,15 @@
 /**
- * Pure statistical method transforms for live method switching.
+ * Statistical method types, labels, and utility functions.
  *
- * Effect size and multiplicity transforms operate on UnifiedFinding[] arrays,
- * matching the applyScheduledFilter() pattern in useFindingsAnalyticsLocal.ts.
- * All downstream derivations (endpoints, syndromes, signal scores, NOAEL)
- * automatically use recomputed values — zero consumer changes needed.
+ * Phase 2b: Effect size and multiplicity transforms are now applied
+ * server-side by the parameterized pipeline. This module retains:
+ * - Type exports (EffectSizeMethod, MultiplicityMethod)
+ * - Label/symbol maps for UI display
+ * - hasWelchPValues() for UI dropdown enablement
+ * - computeEffectSize() for organ weight normalization computations
  */
 
-import type { UnifiedFinding, PairwiseResult } from "@/types/analysis";
+import type { UnifiedFinding } from "@/types/analysis";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -20,6 +22,8 @@ export type MultiplicityMethod = "dunnett-fwer" | "bonferroni";
 /**
  * Compute effect size for a single treated vs control comparison.
  * Returns null if inputs are insufficient (n < 2, sd = 0).
+ *
+ * Used by organ weight normalization (computeStudyNormalization).
  */
 export function computeEffectSize(
   method: EffectSizeMethod,
@@ -64,129 +68,6 @@ export function computeEffectSize(
   const df = controlN + treatedN - 2;
   const j = 1 - 3 / (4 * df - 1);
   return d * j;
-}
-
-/**
- * Apply an effect size method to a findings array.
- *
- * Fast path: "hedges-g" returns input by reference (backend default, no-op).
- * For other methods: recomputes pairwise[].cohens_d and max_effect_size
- * from group_stats for continuous findings. Incidence findings pass through.
- */
-export function applyEffectSizeMethod(
-  findings: UnifiedFinding[],
-  method: EffectSizeMethod,
-): UnifiedFinding[] {
-  // Fast path — hedges-g is the backend default, no recomputation needed
-  if (method === "hedges-g") return findings;
-
-  return findings.map((f) => {
-    // Incidence findings have no effect size — pass through
-    if (f.data_type !== "continuous") return f;
-
-    // Find control stats (dose_level === 0)
-    const controlStat = f.group_stats.find((gs) => gs.dose_level === 0);
-    if (!controlStat || controlStat.mean == null || controlStat.sd == null) {
-      return f;
-    }
-
-    // Recompute pairwise effect sizes
-    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
-      const treatedStat = f.group_stats.find(
-        (gs) => gs.dose_level === pw.dose_level,
-      );
-      if (!treatedStat) return pw;
-
-      const newD = computeEffectSize(
-        method,
-        controlStat.mean,
-        controlStat.sd,
-        controlStat.n,
-        treatedStat.mean,
-        treatedStat.sd,
-        treatedStat.n,
-      );
-
-      return { ...pw, cohens_d: newD };
-    });
-
-    // Recompute max_effect_size preserving sign direction
-    const effectSizes = newPairwise
-      .map((pw) => pw.cohens_d)
-      .filter((d): d is number => d != null);
-
-    let newMaxEffect = f.max_effect_size;
-    if (effectSizes.length > 0) {
-      // Pick the value with the largest absolute magnitude, preserving sign
-      newMaxEffect = effectSizes.reduce((best, cur) =>
-        Math.abs(cur) > Math.abs(best) ? cur : best,
-      );
-    }
-
-    return {
-      ...f,
-      pairwise: newPairwise,
-      max_effect_size: newMaxEffect,
-    };
-  });
-}
-
-// ── Multiplicity Correction ──────────────────────────────────
-
-/**
- * Apply a multiplicity correction method to a findings array.
- *
- * "dunnett-fwer": no-op (return by reference, backend default).
- * "bonferroni": for each continuous finding, apply min(p_value_welch × k, 1.0)
- * where k = number of treated groups. Recomputes p_value_adj and min_p_adj.
- * Incidence findings unchanged.
- *
- * Falls back gracefully if p_value_welch is not present in the data.
- */
-// @field FIELD-50 — p-value (multiplicity-corrected)
-export function applyMultiplicityMethod(
-  findings: UnifiedFinding[],
-  method: MultiplicityMethod,
-): UnifiedFinding[] {
-  if (method === "dunnett-fwer") return findings;
-
-  return findings.map((f) => {
-    if (f.data_type !== "continuous") return f;
-
-    // Count treated groups (pairwise entries)
-    const nComparisons = f.pairwise.length;
-    if (nComparisons === 0) return f;
-
-    // Check if any pairwise has Welch p-values
-    const hasWelch = f.pairwise.some((pw) => pw.p_value_welch != null);
-    if (!hasWelch) return f;
-
-    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
-      const welchP = pw.p_value_welch;
-      if (welchP == null) return pw;
-
-      const corrected = Math.min(welchP * nComparisons, 1.0);
-      return {
-        ...pw,
-        p_value_adj: corrected,
-        // Keep raw p_value as the Welch uncorrected value
-        p_value: welchP,
-      };
-    });
-
-    // Recompute min_p_adj
-    const adjPValues = newPairwise
-      .map((pw) => pw.p_value_adj)
-      .filter((p): p is number => p != null);
-    const newMinPAdj =
-      adjPValues.length > 0 ? Math.min(...adjPValues) : f.min_p_adj;
-
-    return {
-      ...f,
-      pairwise: newPairwise,
-      min_p_adj: newMinPAdj,
-    };
-  });
 }
 
 // ── Labels ───────────────────────────────────────────────────

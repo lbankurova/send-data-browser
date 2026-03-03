@@ -1,14 +1,15 @@
 """API router for analyses endpoints.
 
-All three endpoints now serve from pre-generated unified_findings.json
-instead of computing adverse effects live on every request.
+All three endpoints serve from pre-generated unified_findings.json by default.
+When non-default settings are active, the parameterized pipeline runs on demand
+with file-based caching (same pattern as analysis_views.py).
 """
 
 import json
 import math
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from config import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from models.analysis_schemas import (
@@ -18,6 +19,9 @@ from models.analysis_schemas import (
 )
 from services.study_discovery import StudyInfo
 from services.analysis.context_panes import build_finding_context
+from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
+from services.analysis.analysis_cache import read_cache, write_cache
+from services.analysis.override_reader import get_last_dosing_day_override
 
 router = APIRouter(prefix="/api")
 
@@ -58,6 +62,37 @@ def _load_unified_findings(study_id: str) -> dict:
         return json.load(f)
 
 
+def _load_findings_for_settings(study_id: str, settings: AnalysisSettings) -> dict:
+    """Load unified_findings for the given settings, computing on cache miss."""
+    if settings.is_default():
+        return _load_unified_findings(study_id)
+
+    # Non-default: cache check → pipeline
+    cache_key = settings.settings_hash()
+    cached = read_cache(study_id, cache_key, "unified-findings")
+    if cached is not None:
+        return cached
+
+    # Cache miss: run pipeline
+    from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
+
+    study = _get_study(study_id)
+    mortality_path = GENERATED_DIR / study_id / "study_mortality.json"
+    mortality = json.loads(mortality_path.read_text()) if mortality_path.exists() else None
+    early_deaths = mortality.get("early_death_subjects") if mortality else None
+    ldd_override = get_last_dosing_day_override(study_id)
+
+    pipeline = ParameterizedAnalysisPipeline(study)
+    views = pipeline.run(
+        settings,
+        early_death_subjects=early_deaths,
+        last_dosing_day_override=ldd_override,
+        mortality=mortality,
+    )
+    write_cache(study_id, cache_key, views)
+    return views["unified_findings"]
+
+
 @router.get("/studies/{study_id}/analyses/adverse-effects", response_model=AdverseEffectsResponse)
 def get_adverse_effects(
     study_id: str,
@@ -70,9 +105,10 @@ def get_adverse_effects(
     organ_system: str | None = Query(None, description="Filter by organ system (e.g., hepatic, renal)"),
     endpoint_label: str | None = Query(None, description="Filter by endpoint label (exact match)"),
     dose_response_pattern: str | None = Query(None, description="Filter by dose-response pattern"),
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
 ):
     _get_study(study_id)  # validate study exists
-    data = _load_unified_findings(study_id)
+    data = _load_findings_for_settings(study_id, settings)
 
     findings = data["findings"]
 
@@ -120,9 +156,13 @@ def get_adverse_effects(
 
 
 @router.get("/studies/{study_id}/analyses/adverse-effects/finding/{finding_id}", response_model=FindingContext)
-def get_finding_context(study_id: str, finding_id: str):
+def get_finding_context(
+    study_id: str,
+    finding_id: str,
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
+):
     _get_study(study_id)  # validate study exists
-    data = _load_unified_findings(study_id)
+    data = _load_findings_for_settings(study_id, settings)
 
     # Find the specific finding
     finding = next((f for f in data["findings"] if f.get("id") == finding_id), None)
@@ -140,7 +180,10 @@ def get_finding_context(study_id: str, finding_id: str):
 
 
 @router.get("/studies/{study_id}/analyses/adverse-effects/summary")
-def get_adverse_effects_summary(study_id: str):
+def get_adverse_effects_summary(
+    study_id: str,
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
+):
     _get_study(study_id)  # validate study exists
-    data = _load_unified_findings(study_id)
+    data = _load_findings_for_settings(study_id, settings)
     return data["summary"]

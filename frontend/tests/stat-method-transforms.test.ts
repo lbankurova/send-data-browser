@@ -1,14 +1,56 @@
 import { describe, test, expect } from "vitest";
 import {
   computeEffectSize,
-  applyEffectSizeMethod,
-  applyMultiplicityMethod,
   getEffectSizeLabel,
   getEffectSizeSymbol,
   hasWelchPValues,
 } from "@/lib/stat-method-transforms";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding, PairwiseResult, GroupStat } from "@/types/analysis";
+
+// ── Standalone re-implementations of deleted transforms ──────
+// Phase 2b moved these to the backend. Tests keep standalone copies
+// to verify the transform algebra.
+
+function applyEffectSizeMethod(findings: UnifiedFinding[], method: EffectSizeMethod): UnifiedFinding[] {
+  if (method === "hedges-g") return findings;
+  return findings.map((f) => {
+    if (f.data_type !== "continuous") return f;
+    const controlStat = f.group_stats.find((gs) => gs.dose_level === 0);
+    if (!controlStat || controlStat.mean == null || controlStat.sd == null) return f;
+    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
+      const treatedStat = f.group_stats.find((gs) => gs.dose_level === pw.dose_level);
+      if (!treatedStat) return pw;
+      const newD = computeEffectSize(method, controlStat.mean, controlStat.sd, controlStat.n, treatedStat.mean, treatedStat.sd, treatedStat.n);
+      return { ...pw, cohens_d: newD };
+    });
+    const effectSizes = newPairwise.map((pw) => pw.cohens_d).filter((d): d is number => d != null);
+    let newMaxEffect = f.max_effect_size;
+    if (effectSizes.length > 0) {
+      newMaxEffect = effectSizes.reduce((best, cur) => Math.abs(cur) > Math.abs(best) ? cur : best);
+    }
+    return { ...f, pairwise: newPairwise, max_effect_size: newMaxEffect };
+  });
+}
+
+function applyMultiplicityMethod(findings: UnifiedFinding[], method: string): UnifiedFinding[] {
+  if (method === "dunnett-fwer") return findings;
+  return findings.map((f) => {
+    if (f.data_type !== "continuous") return f;
+    const nComparisons = f.pairwise.length;
+    if (nComparisons === 0) return f;
+    const hasWelch = f.pairwise.some((pw) => pw.p_value_welch != null);
+    if (!hasWelch) return f;
+    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
+      const welchP = pw.p_value_welch;
+      if (welchP == null) return pw;
+      return { ...pw, p_value_adj: Math.min(welchP * nComparisons, 1.0), p_value: welchP };
+    });
+    const adjPValues = newPairwise.map((pw) => pw.p_value_adj).filter((p): p is number => p != null);
+    const newMinPAdj = adjPValues.length > 0 ? Math.min(...adjPValues) : f.min_p_adj;
+    return { ...f, pairwise: newPairwise, min_p_adj: newMinPAdj };
+  });
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 

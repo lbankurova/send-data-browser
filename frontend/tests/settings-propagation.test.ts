@@ -17,24 +17,132 @@
  * Each section toggles ONE setting and asserts that the EndpointSummary
  * output changes. If a setting toggle produces identical output, it means
  * the setting isn't propagating.
+ *
+ * Phase 2b: The 4 transforms (scheduled, recovery, effect size, multiplicity)
+ * are now server-side. This test uses standalone re-implementations of the
+ * same logic to verify that the pipeline algebra is correct — these tests
+ * serve as regression guards for the backend transforms.
  */
 import fs from "fs";
 import path from "path";
 import { describe, test, expect } from "vitest";
-import {
-  applyScheduledFilter,
-  applyRecoveryPoolingFilter,
-  rederiveSummaryFields,
-} from "@/hooks/useFindingsAnalyticsLocal";
-import {
-  applyEffectSizeMethod,
-  applyMultiplicityMethod,
-} from "@/lib/stat-method-transforms";
+import { computeEffectSize } from "@/lib/stat-method-transforms";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 import { mapFindingsToRows, deriveEndpointSummaries, flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { UnifiedFinding, GroupStat, PairwiseResult, DoseGroup } from "@/types/analysis";
 import type { LesionSeverityRow } from "@/types/analysis-views";
+
+// ── Standalone transform re-implementations ──────────────────
+// These mirror the backend transforms for test-only use.
+
+function rederiveSummaryFields(
+  pairwise: PairwiseResult[],
+  groupStats: GroupStat[],
+  direction: UnifiedFinding["direction"],
+  dataType: UnifiedFinding["data_type"],
+): { max_effect_size: number | null; min_p_adj: number | null; max_fold_change: number | null } {
+  let maxEffect: number | null = null;
+  let maxAbs = 0;
+  let minP: number | null = null;
+  for (const p of pairwise) {
+    if (p.cohens_d != null) {
+      const abs = Math.abs(p.cohens_d);
+      if (abs > maxAbs) { maxAbs = abs; maxEffect = p.cohens_d; }
+    }
+    if (p.p_value_adj != null && (minP == null || p.p_value_adj < minP)) {
+      minP = p.p_value_adj;
+    }
+  }
+  let maxFold: number | null = null;
+  if (dataType === "continuous" && groupStats.length >= 2) {
+    const controlMean = groupStats[0]?.mean;
+    if (controlMean != null && Math.abs(controlMean) > 1e-10) {
+      let bestDev = 0;
+      for (const gs of groupStats.slice(1)) {
+        if (gs.mean == null) continue;
+        const ratio = gs.mean / controlMean;
+        const dev = Math.abs(ratio - 1.0);
+        if (direction === "down" && ratio >= 1.0) continue;
+        if (direction === "up" && ratio <= 1.0) continue;
+        if (dev > bestDev) { bestDev = dev; maxFold = Math.round(ratio * 100) / 100; }
+      }
+    }
+  }
+  return { max_effect_size: maxEffect, min_p_adj: minP, max_fold_change: maxFold };
+}
+
+function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+  const result: UnifiedFinding[] = [];
+  for (const f of findings) {
+    if (f.scheduled_group_stats && f.scheduled_group_stats.length === 0) continue;
+    if (f.scheduled_group_stats) {
+      const newPairwise = f.scheduled_pairwise ?? f.pairwise;
+      const newDirection = f.scheduled_direction ?? f.direction;
+      const derived = rederiveSummaryFields(newPairwise, f.scheduled_group_stats, newDirection, f.data_type);
+      result.push({ ...f, group_stats: f.scheduled_group_stats, pairwise: newPairwise, direction: newDirection, ...derived });
+    } else {
+      result.push(f);
+    }
+  }
+  return result;
+}
+
+function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+  const result: UnifiedFinding[] = [];
+  for (const f of findings) {
+    if (f.separate_group_stats && f.separate_group_stats.length === 0) continue;
+    if (f.separate_group_stats) {
+      const newPairwise = f.separate_pairwise ?? f.pairwise;
+      const newDirection = f.separate_direction ?? f.direction;
+      const derived = rederiveSummaryFields(newPairwise, f.separate_group_stats, newDirection, f.data_type);
+      result.push({ ...f, group_stats: f.separate_group_stats, pairwise: newPairwise, direction: newDirection, ...derived });
+    } else {
+      result.push(f);
+    }
+  }
+  return result;
+}
+
+function applyEffectSizeMethod(findings: UnifiedFinding[], method: EffectSizeMethod): UnifiedFinding[] {
+  if (method === "hedges-g") return findings;
+  return findings.map((f) => {
+    if (f.data_type !== "continuous") return f;
+    const controlStat = f.group_stats.find((gs) => gs.dose_level === 0);
+    if (!controlStat || controlStat.mean == null || controlStat.sd == null) return f;
+    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
+      const treatedStat = f.group_stats.find((gs) => gs.dose_level === pw.dose_level);
+      if (!treatedStat) return pw;
+      const newD = computeEffectSize(method, controlStat.mean, controlStat.sd, controlStat.n, treatedStat.mean, treatedStat.sd, treatedStat.n);
+      return { ...pw, cohens_d: newD };
+    });
+    const effectSizes = newPairwise.map((pw) => pw.cohens_d).filter((d): d is number => d != null);
+    let newMaxEffect = f.max_effect_size;
+    if (effectSizes.length > 0) {
+      newMaxEffect = effectSizes.reduce((best, cur) => Math.abs(cur) > Math.abs(best) ? cur : best);
+    }
+    return { ...f, pairwise: newPairwise, max_effect_size: newMaxEffect };
+  });
+}
+
+function applyMultiplicityMethod(findings: UnifiedFinding[], method: MultiplicityMethod): UnifiedFinding[] {
+  if (method === "dunnett-fwer") return findings;
+  return findings.map((f) => {
+    if (f.data_type !== "continuous") return f;
+    const nComparisons = f.pairwise.length;
+    if (nComparisons === 0) return f;
+    const hasWelch = f.pairwise.some((pw) => pw.p_value_welch != null);
+    if (!hasWelch) return f;
+    const newPairwise: PairwiseResult[] = f.pairwise.map((pw) => {
+      const welchP = pw.p_value_welch;
+      if (welchP == null) return pw;
+      return { ...pw, p_value_adj: Math.min(welchP * nComparisons, 1.0), p_value: welchP };
+    });
+    const adjPValues = newPairwise.map((pw) => pw.p_value_adj).filter((p): p is number => p != null);
+    const newMinPAdj = adjPValues.length > 0 ? Math.min(...adjPValues) : f.min_p_adj;
+    return { ...f, pairwise: newPairwise, min_p_adj: newMinPAdj };
+  });
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 

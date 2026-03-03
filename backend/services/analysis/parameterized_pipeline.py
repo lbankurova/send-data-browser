@@ -5,6 +5,7 @@ runs once via compute_all_findings(). Settings are applied as post-processing
 transforms on the enriched findings before view assembly.
 """
 
+import hashlib
 import logging
 import math
 
@@ -19,6 +20,8 @@ from services.analysis.findings_pipeline import (
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
 from services.analysis.corroboration import compute_corroboration, compute_chain_detection
 from services.analysis.confidence import compute_all_confidence
+from services.analysis.correlations import compute_correlations
+from services.analysis.unified_findings import _sanitize_floats
 from generator.domain_stats import compute_all_findings
 from generator.view_dataframes import (
     build_study_signal_summary,
@@ -86,6 +89,23 @@ class ParameterizedAnalysisPipeline:
         noael = build_noael_summary(findings, dose_groups, mortality=mortality)
         rules = evaluate_rules(findings, target_organs, noael, dose_groups)
 
+        # 4. Build unified_findings response (IDs + correlations + summary)
+        for f in findings:
+            specimen_part = f.get("specimen") or ""
+            id_str = f"{f['domain']}_{f['test_code']}_{specimen_part}_{f.get('day', '')}_{f['sex']}"
+            f["id"] = hashlib.md5(id_str.encode()).hexdigest()[:12]
+
+        correlations = compute_correlations(findings)
+        summary = _build_summary(findings, dose_groups)
+
+        unified = _sanitize_floats({
+            "study_id": self.study.study_id,
+            "dose_groups": dose_groups,
+            "findings": findings,
+            "correlations": correlations,
+            "summary": summary,
+        })
+
         return {
             "study_signal_summary": signal_summary,
             "target_organ_summary": target_organs,
@@ -96,7 +116,63 @@ class ParameterizedAnalysisPipeline:
             "noael_summary": noael,
             "finding_dose_trends": build_finding_dose_trends(findings, dose_groups),
             "rule_results": rules,
+            "unified_findings": unified,
         }
+
+
+# ---------------------------------------------------------------------------
+# Unified findings summary
+# ---------------------------------------------------------------------------
+
+def _build_summary(findings: list[dict], dose_groups: list[dict]) -> dict:
+    """Build unified_findings summary from enriched findings."""
+    severity_counts = {"adverse": 0, "warning": 0, "normal": 0}
+    target_organs = set()
+    domains_with_findings = set()
+    treatment_related_count = 0
+
+    for f in findings:
+        sev = f.get("severity", "normal")
+        severity_counts[sev] = severity_counts.get(sev, 0) + 1
+        if f.get("severity") != "normal":
+            domains_with_findings.add(f["domain"])
+        if f.get("treatment_related"):
+            treatment_related_count += 1
+            if f.get("specimen"):
+                target_organs.add(f["specimen"])
+
+    # Suggested NOAEL: highest dose where no adverse findings
+    adverse_dose_levels = set()
+    for f in findings:
+        if f.get("severity") == "adverse":
+            for pw in f.get("pairwise", []):
+                if pw.get("p_value_adj") is not None and pw["p_value_adj"] < 0.05:
+                    adverse_dose_levels.add(pw["dose_level"])
+
+    suggested_noael = None
+    if adverse_dose_levels:
+        min_adverse = min(adverse_dose_levels)
+        if min_adverse > 0:
+            noael_level = min_adverse - 1
+            noael_group = next((d for d in dose_groups if d["dose_level"] == noael_level), None)
+            if noael_group:
+                suggested_noael = {
+                    "dose_level": noael_level,
+                    "label": noael_group["label"],
+                    "dose_value": noael_group["dose_value"],
+                    "dose_unit": noael_group["dose_unit"],
+                }
+
+    return {
+        "total_findings": len(findings),
+        "total_adverse": severity_counts["adverse"],
+        "total_warning": severity_counts["warning"],
+        "total_normal": severity_counts["normal"],
+        "total_treatment_related": treatment_related_count,
+        "target_organs": sorted(target_organs),
+        "domains_with_findings": sorted(domains_with_findings),
+        "suggested_noael": suggested_noael,
+    }
 
 
 # ---------------------------------------------------------------------------

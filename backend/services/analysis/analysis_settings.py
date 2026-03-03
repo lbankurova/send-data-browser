@@ -27,9 +27,9 @@ class AnalysisSettings:
     control_group: str = "vehicle"
     adversity_threshold: str = "grade-ge-2-or-dose-dep"
     pairwise_test: Literal["dunnett", "williams", "steel"] = "dunnett"
-    trend_test: Literal["jonckheere", "cuzick", "williams"] = "jonckheere"
-    incidence_trend: Literal["cochran-armitage", "logistic"] = "cochran-armitage"
-    organ_weight_method: Literal["absolute", "ratio"] = "absolute"
+    trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = "jonckheere"
+    incidence_trend: Literal["cochran-armitage", "logistic-slope"] = "cochran-armitage"
+    organ_weight_method: Literal["absolute", "ratio-bw", "ratio-brain"] = "absolute"
 
     def settings_hash(self) -> str:
         """Deterministic hash for cache keying. Uses sorted JSON -> SHA256."""
@@ -50,9 +50,9 @@ def parse_settings_from_query(
     control_group: str = Query("vehicle"),
     adversity_threshold: str = Query("grade-ge-2-or-dose-dep"),
     pairwise_test: Literal["dunnett", "williams", "steel"] = Query("dunnett"),
-    trend_test: Literal["jonckheere", "cuzick", "williams"] = Query("jonckheere"),
-    incidence_trend: Literal["cochran-armitage", "logistic"] = Query("cochran-armitage"),
-    organ_weight_method: Literal["absolute", "ratio"] = Query("absolute"),
+    trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = Query("jonckheere"),
+    incidence_trend: Literal["cochran-armitage", "logistic-slope"] = Query("cochran-armitage"),
+    organ_weight_method: Literal["absolute", "ratio-bw", "ratio-brain"] = Query("absolute"),
 ) -> AnalysisSettings:
     """FastAPI Depends() parser — reads all 10 query params with defaults."""
     return AnalysisSettings(

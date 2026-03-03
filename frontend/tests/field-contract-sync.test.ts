@@ -85,8 +85,10 @@ describe("field-contract-sync", () => {
   });
 
   test("every doc entry has at least one @field annotation in code", () => {
-    // FIELD-33 is a backend field (dose_groups.py) — exempt from frontend annotation requirement
-    const BACKEND_FIELDS = new Set(["FIELD-33"]);
+    // Backend fields — exempt from frontend annotation requirement
+    // FIELD-33: dose_groups.py
+    // FIELD-50: multiplicity correction moved to backend parameterized pipeline (Phase 2b)
+    const BACKEND_FIELDS = new Set(["FIELD-33", "FIELD-50"]);
 
     const orphaned: string[] = [];
     for (const id of docIds) {
