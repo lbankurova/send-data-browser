@@ -1,0 +1,1149 @@
+{
+  "version": "2.0.0",
+  "brief": "3",
+  "description": "Cross-domain concordance linkage map — merged from two independent research passes. Extends coverage beyond XS01-XS10 syndromes.",
+  "merge_notes": "v2.0 combines granular per-finding entries (compass research) with cross-organ chain formalization, stress discrimination logic, and source catalog (original research). 28 concordance entries + 5 cross-organ chains.",
+  "concordance_tiers": {
+    "tier_1": {
+      "label": "Strongest",
+      "definition": "MI + concordant OM + concordant LB + dose-response",
+      "confidence": "HIGH",
+      "min_domains": 3,
+      "requires_dose_response": true,
+      "example": "Thyroid follicular hypertrophy + thyroid weight increase + T4 decreased + TSH increased + dose-response"
+    },
+    "tier_2": {
+      "label": "Strong",
+      "definition": "Any 2 concordant domains + dose-response",
+      "confidence": "HIGH",
+      "min_domains": 2,
+      "requires_dose_response": true,
+      "example": "Neuronal degeneration + clinical signs (tremors) + dose-response (no LB available)"
+    },
+    "tier_3": {
+      "label": "Supportive",
+      "definition": "1 domain + dose-response + biological plausibility from class knowledge",
+      "confidence": "MEDIUM",
+      "min_domains": 1,
+      "requires_dose_response": true,
+      "example": "Follicular cell hypertrophy at high dose only, no OM or LB data collected"
+    },
+    "tier_4": {
+      "label": "Insufficient",
+      "definition": "Single marginal finding in one domain only",
+      "confidence": "LOW",
+      "min_domains": 1,
+      "requires_dose_response": false,
+      "example": "Minimal gliosis at one dose without clinical signs, brain weight changes, or dose-response"
+    }
+  },
+  "concordance_map": {
+    "BONE_MARROW_HYPOCELLULARITY": {
+      "id": "XC01a",
+      "label": "Bone Marrow Hypocellularity (General)",
+      "extends": "XS04",
+      "mi_findings": [
+        "DECREASED CELLULARITY",
+        "HYPOCELLULARITY",
+        "APLASIA"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "SPLEEN",
+        "mechanism": "compensatory_emh",
+        "notes": "Bone marrow not weighed; spleen weight increase reflects compensatory EMH"
+      },
+      "expected_lb": [
+        {"test": "RBC", "direction": "decreased"},
+        {"test": "HGB", "direction": "decreased"},
+        {"test": "HCT", "direction": "decreased"},
+        {"test": "RETICULOCYTES", "direction": "decreased", "notes": "inappropriately low — nonregenerative; distinguishes production failure from peripheral destruction"},
+        {"test": "WBC", "direction": "decreased"},
+        {"test": "NEUTROPHILS", "direction": "decreased"},
+        {"test": "PLATELETS", "direction": "decreased"}
+      ],
+      "expected_cl": [
+        "PALLOR",
+        "PETECHIAE",
+        "HEMORRHAGE",
+        "HYPOACTIVITY",
+        "MORIBUND"
+      ],
+      "cross_organ_link": {
+        "organ": "SPLEEN",
+        "finding": "EXTRAMEDULLARY HEMATOPOIESIS, INCREASED",
+        "mechanism": "compensatory_hematopoiesis"
+      },
+      "concordance_logic": {
+        "hypocellularity_without_cytopenias": "acute onset (circulating cells from pre-treatment production) or sampling artifact",
+        "cytopenias_without_bm_changes": "peripheral destruction (hemolysis, consumption) rather than production failure — different mechanistic interpretation",
+        "emh_with_anemia": "supports regenerative capability; absence of EMH with severe anemia = concerning for marrow failure"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "timing_notes": "Neutropenia 1-14d; reticulocyte decrease 2-3d; thrombocytopenia 9-14d; anemia delayed (weeks due to RBC lifespan)",
+      "diet_restriction_note": "Diet restriction sufficient to stop weight gain caused 50%, 40%, and 20% decreases in erythroid, myeloid, and megakaryocytic precursors respectively; M:E ratio unaffected",
+      "sources": ["S33", "S_Travlos2006"]
+    },
+    "BONE_MARROW_MYELOID_DEPLETION": {
+      "id": "XC01b",
+      "label": "Bone Marrow Myeloid Depletion",
+      "extends": "XS04",
+      "mi_findings": [
+        "DECREASED CELLULARITY, MYELOID",
+        "GRANULOCYTIC HYPOPLASIA"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "BONE_MARROW",
+        "notes": "Bone marrow not weighed; spleen may increase with compensatory myeloid EMH"
+      },
+      "expected_lb": [
+        {"test": "WBC", "direction": "decreased"},
+        {"test": "NEUTROPHILS", "direction": "decreased", "notes": "most sensitive indicator; temporal lag 2-3 days from BM"},
+        {"test": "MONOCYTES", "direction": "decreased"}
+      ],
+      "expected_cl": [
+        "INJECTION SITE REACTIONS",
+        "DELAYED WOUND HEALING"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S33"]
+    },
+    "BONE_MARROW_ERYTHROID_DEPLETION": {
+      "id": "XC01c",
+      "label": "Bone Marrow Erythroid Depletion",
+      "extends": "XS04",
+      "mi_findings": [
+        "DECREASED CELLULARITY, ERYTHROID",
+        "ERYTHROID HYPOPLASIA"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "SPLEEN",
+        "mechanism": "compensatory_erythroid_emh"
+      },
+      "expected_lb": [
+        {"test": "RBC", "direction": "decreased", "notes": "delayed onset due to RBC lifespan (~60 days rat, ~45 days mouse)"},
+        {"test": "HGB", "direction": "decreased"},
+        {"test": "HCT", "direction": "decreased"},
+        {"test": "RETICULOCYTES", "direction": "decreased", "notes": "earliest and most sensitive indicator of erythroid production failure"}
+      ],
+      "expected_cl": [
+        "PALLOR",
+        "HYPOACTIVITY",
+        "TACHYPNEA"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S33"]
+    },
+    "BONE_MARROW_ERYTHROID_HYPERPLASIA": {
+      "id": "XC01d",
+      "label": "Bone Marrow Erythroid Hyperplasia (Regenerative)",
+      "extends": "XS04",
+      "mi_findings": [
+        "INCREASED CELLULARITY, ERYTHROID",
+        "ERYTHROID HYPERPLASIA"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "SPLEEN",
+        "mechanism": "erythroid_emh"
+      },
+      "expected_lb": [
+        {"test": "RETICULOCYTES", "direction": "increased", "notes": "hallmark of regenerative response"},
+        {"test": "MCV", "direction": "increased", "notes": "macrocytosis from immature reticulocytes"},
+        {"test": "NRBC", "direction": "increased", "notes": "severe regenerative response only"}
+      ],
+      "expected_cl": [
+        "PALLOR",
+        "ICTERUS"
+      ],
+      "cross_organ_link": {
+        "organ": "SPLEEN",
+        "finding": "EXTRAMEDULLARY HEMATOPOIESIS, INCREASED; HEMOSIDEROSIS",
+        "mechanism": "compensatory_and_iron_recycling"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "key_distinction": "Effective hyperplasia: increased reticulocytes + stabilizing RBC. Ineffective: hyperplasia + continued anemia + inadequate reticulocytes = intramedullary precursor death",
+      "sources": ["S33", "S_Ramaiah2013"]
+    },
+    "BONE_MARROW_MEGAKARYOCYTE_DECREASED": {
+      "id": "XC01e",
+      "label": "Bone Marrow Megakaryocyte Depletion",
+      "extends": "XS04",
+      "mi_findings": [
+        "MEGAKARYOCYTE DECREASED",
+        "MEGAKARYOCYTIC HYPOPLASIA"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "SPLEEN",
+        "mechanism": "compensatory_megakaryocytic_emh"
+      },
+      "expected_lb": [
+        {"test": "PLATELETS", "direction": "decreased", "notes": "onset 9-14 days (longest latency of any lineage)"}
+      ],
+      "expected_cl": [
+        "PETECHIAE",
+        "ECCHYMOSES",
+        "HEMORRHAGE"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S33"]
+    },
+    "SPLEEN_EMH": {
+      "id": "XC01f",
+      "label": "Splenic Extramedullary Hematopoiesis",
+      "extends": "XS04",
+      "mi_findings": [
+        "EXTRAMEDULLARY HEMATOPOIESIS, INCREASED"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "SPLEEN"
+      },
+      "expected_lb": [
+        {"test": "RBC", "direction": "decreased", "notes": "if compensatory to anemia"},
+        {"test": "RETICULOCYTES", "direction": "increased", "notes": "if compensatory to anemia"},
+        {"test": "WBC", "direction": "decreased", "notes": "if compensatory to myelotoxicity"}
+      ],
+      "expected_cl": [],
+      "cross_organ_link": {
+        "organ": "BONE_MARROW",
+        "finding": "HYPOCELLULARITY or HYPERPLASIA",
+        "mechanism": "compensatory_hematopoiesis_or_demand_response"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "species_note": "Normal background in rodents (mice > rats, females > males, young > old); compare to concurrent controls. In non-rodents (dogs, primates), always pathological.",
+      "interpretation_note": "EMH is compensatory, not primary toxic effect. EMH without marrow changes or cytopenias: consider primary splenic pathology or early/mild response",
+      "sources": ["S33", "S_Elmore2006"]
+    },
+    "HEMOLYTIC_ANEMIA": {
+      "id": "XC02",
+      "label": "Hemolytic Anemia Cascade",
+      "extends": "XS04",
+      "cross_organ": true,
+      "primary_lb": [
+        {"test": "RBC", "direction": "decreased"},
+        {"test": "HGB", "direction": "decreased"},
+        {"test": "HCT", "direction": "decreased"},
+        {"test": "RETIC", "direction": "increased", "required": true, "note": "distinguishes hemolysis from production failure; 3-5 day lag"},
+        {"test": "MCV", "direction": "increased", "note": "reticulocytes are larger than mature RBCs"},
+        {"test": "TBIL", "direction": "increased", "required": true, "note": "unconjugated — heme catabolism product"},
+        {"test": "LDH", "direction": "increased", "note": "released from lysed erythrocytes"},
+        {"test": "HPT", "direction": "decreased", "note": "haptoglobin consumed by free hemoglobin"}
+      ],
+      "multi_organ_mi": {
+        "SPLEEN": ["CONGESTION", "HEMOSIDEROSIS", "EXTRAMEDULLARY HEMATOPOIESIS"],
+        "BONE MARROW": ["HYPERPLASIA, ERYTHROID"],
+        "LIVER": ["HEMOSIDEROSIS, KUPFFER CELL", "PIGMENT, HEPATOCELLULAR"],
+        "KIDNEY": ["HEMOSIDERIN, TUBULAR", "PIGMENT, TUBULAR"]
+      },
+      "expected_om": {
+        "SPLEEN": {"direction": "increased"}
+      },
+      "expected_cl": ["PALLOR", "DECREASED ACTIVITY", "DARK URINE"],
+      "intravascular_vs_extravascular": {
+        "intravascular": {
+          "hemoglobinemia": true,
+          "hemoglobinuria": true,
+          "LDH": "markedly_increased",
+          "haptoglobin": "severely_depleted",
+          "renal_damage": "possible — hemoglobin casts, tubular necrosis"
+        },
+        "extravascular": {
+          "hemoglobinemia": false,
+          "hemoglobinuria": false,
+          "LDH": "mildly_increased",
+          "haptoglobin": "mildly_decreased",
+          "hepatosplenomegaly": "prominent"
+        }
+      },
+      "blood_smear_findings": {
+        "oxidative": ["Heinz bodies", "eccentrocytes", "methemoglobinemia"],
+        "immune_mediated": ["spherocytes", "agglutination"],
+        "mechanical": ["schistocytes", "keratocytes"]
+      },
+      "strength_definitive": "tier_1",
+      "definitive_requires": ["RBC_decreased", "RETIC_increased", "TBIL_increased"],
+      "strength_probable": "tier_2",
+      "probable_requires": ["RBC_decreased", "RETIC_increased"],
+      "strength_anemia_unspecified": "tier_3",
+      "anemia_unspecified_requires": ["RBC_decreased"],
+      "species_note": "Haptoglobin reliable in dogs; confounded in rats (acute phase protein — rises with inflammation). Cats highly susceptible to oxidative hemolysis.",
+      "sources": ["S33", "S_Reagan1993", "S_Haschek2013"]
+    },
+    "THYROID": {
+      "id": "XC03",
+      "label": "Thyroid Disruption",
+      "extends": null,
+      "mi_findings": [
+        "HYPERTROPHY, FOLLICULAR CELL",
+        "HYPERPLASIA, FOLLICULAR CELL",
+        "COLLOID ALTERATION",
+        "COLLOID DEPLETION"
+      ],
+      "expected_om": {
+        "organ": "THYROID",
+        "direction": "increased",
+        "magnitude": "20-50% subchronic; >100% with potent goitrogens"
+      },
+      "expected_lb": [
+        {"test": "T4", "direction": "decreased", "required": true, "notes": "most sensitive thyroid parameter"},
+        {"test": "FREE_T4", "direction": "decreased"},
+        {"test": "T3", "direction": "decreased_or_unchanged", "notes": "less reliably measured in rats; different protein-binding characteristics"},
+        {"test": "TSH", "direction": "increased", "required": true, "notes": "critical mediator of follicular stimulation"}
+      ],
+      "expected_cl": [],
+      "cross_organ_link": {
+        "LIVER_MEDIATED": {
+          "organ": "LIVER",
+          "mi_findings": ["HYPERTROPHY, HEPATOCELLULAR"],
+          "om": {"direction": "increased", "magnitude": "10-30%"},
+          "lb": [
+            {"test": "ALP", "direction": "increased", "note": "enzyme induction marker"},
+            {"test": "GGT", "direction": "increased"}
+          ],
+          "mechanism": "enzyme_induction_t4_clearance",
+          "key_events": [
+            "hepatic_nuclear_receptor_activation_CAR_PXR_AhR",
+            "UGT_enzyme_induction_UGT1A1_UGT1A6_for_T4_UGT2B2_for_T3",
+            "enhanced_T4_glucuronidation",
+            "increased_biliary_T4_clearance",
+            "decreased_serum_T4",
+            "compensatory_TSH_increase",
+            "thyroid_follicular_cell_hypertrophy",
+            "sustained_TSH_follicular_hyperplasia_chronic",
+            "chronic_hyperplasia_adenoma_carcinoma_2yr_rat"
+          ],
+          "human_relevance": "generally_not_relevant_for_carcinogenesis",
+          "regulatory_note": "UGT-mediated thyroid tumors in rats accepted as not human-relevant by FDA, ECHA CLP, ESTP. Compound-specific MOA demonstration still required.",
+          "caveat": "Not all enzyme inducers that decrease T4 increase TSH — 3-methylcholanthrene and PCBs decrease T4 but do not consistently elevate TSH or stimulate follicular cell proliferation (Hood 1999), suggesting T3 glucuronidation rather than T4 alone may mediate the TSH response"
+        },
+        "DIRECT_THYROID": {
+          "mechanism": "direct_inhibition",
+          "examples": ["TPO_inhibition_PTU_methimazole", "NIS_inhibition_perchlorate", "iodine_deficiency"],
+          "human_relevance": "potentially_relevant",
+          "distinguishing_feature": "thyroid MI without liver MI"
+        }
+      },
+      "c_cell_hyperplasia": {
+        "mi": "HYPERPLASIA, C-CELL",
+        "lb": {"test": "CALCITONIN", "direction": "increased", "note": "rarely measured"},
+        "note": "separate from follicular cell pathway; GLP-1 receptor agonist class effect in rodents"
+      },
+      "species_note": "Rats lack thyroid-binding globulin (TBG), relying on albumin for T4 transport; T4 half-life is 12-24 hours versus 5-9 days in humans. Rats uniquely sensitive to UGT-mediated T4 clearance.",
+      "strength_full_axis": "tier_1",
+      "strength_thyroid_mi_plus_lb": "tier_2",
+      "strength_thyroid_weight_only": "tier_3",
+      "discordance_flag": "thyroid_MI_with_normal_T4_TSH — either early/mild effect, measurement artifact, or non-TSH-mediated mechanism",
+      "lb_measurement_requirements": {
+        "sampling_window": "morning, within defined 2-hour window",
+        "reason": "diurnal variation in T4 and TSH",
+        "stress_note": "stress affects TSH measurement"
+      },
+      "sources": ["S34", "S35", "S45", "S46", "S_Hood1999", "S_Bartsch2018"]
+    },
+    "ADRENAL_CORTICAL_HYPERTROPHY": {
+      "id": "XC04a",
+      "label": "Adrenal Cortical Hypertrophy",
+      "extends": null,
+      "mi_findings": [
+        "HYPERTROPHY, CORTICAL",
+        "HYPERTROPHY, ZONA FASCICULATA"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "ADRENAL"
+      },
+      "expected_lb": [
+        {"test": "CORTICOSTERONE", "direction": "increased", "notes": "rat/mouse primary glucocorticoid"},
+        {"test": "CORTISOL", "direction": "increased", "notes": "dog/primate primary glucocorticoid"},
+        {"test": "ACTH", "direction": "increased", "notes": "if stress-mediated"},
+        {"test": "GLUCOSE", "direction": "increased"},
+        {"test": "NEUTROPHILS", "direction": "increased", "notes": "stress leukogram"},
+        {"test": "LYMPHOCYTES", "direction": "decreased", "notes": "stress leukogram"},
+        {"test": "EOSINOPHILS", "direction": "decreased", "notes": "stress leukogram"}
+      ],
+      "expected_cl": [
+        "BODY WEIGHT DECREASED",
+        "FOOD CONSUMPTION DECREASED",
+        "PILOERECTION"
+      ],
+      "cross_organ_link": {
+        "organ": "THYMUS",
+        "finding": "ATROPHY; LYMPHOCYTE DEPLETION",
+        "mechanism": "glucocorticoid_mediated_lymphocyte_apoptosis"
+      },
+      "stress_discrimination": {
+        "stress_pattern_indicators": [
+          "body_weight_decrease_gt_10pct",
+          "food_consumption_decrease",
+          "thymus_weight_decrease",
+          "thymus_lymphocyte_depletion",
+          "spleen_lymphoid_depletion",
+          "neutrophilia",
+          "lymphopenia",
+          "eosinopenia",
+          "reproductive_organ_weight_decrease"
+        ],
+        "diagnostic_triad": ["thymic_atrophy", "adrenal_hypertrophy", "stress_leukogram"],
+        "stress_threshold": 3,
+        "rule": "When adrenal cortical hypertrophy co-occurs with >=3 stress indicators OR the diagnostic triad, classify as stress-related (secondary) unless specific morphologic features indicate direct toxicity",
+        "thymus_sensitivity_note": "Thymus is the most sensitive organ to glucocorticoid-mediated stress. If spleen/lymph nodes depleted but thymus preserved → suspect primary immunosuppression, NOT stress."
+      },
+      "primary_vs_secondary": "SECONDARY (stress): constellation of BW loss + thymus atrophy + adrenal hypertrophy + stress leukogram. Cannot distinguish from direct effect by histopath alone — both result from increased ACTH.",
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "corticosterone_confound": "Corticosterone measurement in rodents confounded by blood collection stress; dogs preferred for cortisol assessment",
+      "sources": ["S36", "S37"]
+    },
+    "ADRENAL_CORTICAL_ATROPHY": {
+      "id": "XC04b",
+      "label": "Adrenal Cortical Atrophy (Tertiary — HPA Suppression)",
+      "extends": null,
+      "mi_findings": [
+        "ATROPHY, CORTICAL",
+        "ATROPHY, ZONA FASCICULATA"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "ADRENAL"
+      },
+      "expected_lb": [
+        {"test": "CORTISOL", "direction": "decreased"},
+        {"test": "CORTICOSTERONE", "direction": "decreased"},
+        {"test": "ACTH", "direction": "decreased", "notes": "if exogenous corticosteroid → HPA suppression"}
+      ],
+      "expected_cl": [
+        "WEAKNESS",
+        "HYPOACTIVITY"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "notes": "Most commonly tertiary: exogenous glucocorticoid suppresses HPA axis → decreased ACTH → decreased trophic stimulation. Zona glomerulosa relatively preserved (ACTH-independent regulation via renin-angiotensin).",
+      "sources": ["S36"]
+    },
+    "ADRENAL_CORTICAL_VACUOLATION": {
+      "id": "XC04c",
+      "label": "Adrenal Cortical Vacuolation (Primary — Steroidogenesis Block)",
+      "extends": null,
+      "mi_findings": [
+        "VACUOLATION, CORTICAL",
+        "VACUOLATION, ZONA FASCICULATA"
+      ],
+      "expected_om": {
+        "direction": "increased_or_unchanged",
+        "organ": "ADRENAL"
+      },
+      "expected_lb": [
+        {"test": "CORTISOL", "direction": "decreased", "notes": "steroidogenesis block"},
+        {"test": "CORTICOSTERONE", "direction": "decreased"},
+        {"test": "ACTH", "direction": "increased", "notes": "compensatory — loss of feedback"},
+        {"test": "CHOLESTEROL", "direction": "increased", "notes": "precursor accumulation"},
+        {"test": "SODIUM", "direction": "decreased", "notes": "if aldosterone also affected"},
+        {"test": "POTASSIUM", "direction": "increased", "notes": "if aldosterone also affected"}
+      ],
+      "expected_cl": [
+        "WEAKNESS",
+        "COLLAPSE"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "notes": "Pathognomonic for steroidogenesis disruption. Key examples: ketoconazole (CYP11B1/CYP17A1 inhibition), aminoglutethimide, etomidate, mitotane (selective adrenolytic to zona fasciculata/reticularis). Distinguished from stress by ABSENCE of BW loss and stress markers.",
+      "sources": ["S36"]
+    },
+    "ADRENAL_MEDULLARY_HYPERPLASIA": {
+      "id": "XC05",
+      "label": "Adrenal Medullary Effects",
+      "extends": null,
+      "mi_findings": [
+        "HYPERPLASIA, MEDULLARY",
+        "HYPERPLASIA, CHROMAFFIN CELL",
+        "PHEOCHROMOCYTOMA",
+        "DEGENERATION, MEDULLARY"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "ADRENAL",
+        "notes": "if significant medullary expansion"
+      },
+      "expected_lb": [
+        {"test": "CATECHOLAMINES", "direction": "increased", "notes": "epinephrine/norepinephrine; rarely measured in standard studies"}
+      ],
+      "expected_cl": [],
+      "strength_when_all_present": "tier_2",
+      "strength_mi_only": "tier_4",
+      "direction_required": true,
+      "species_note": "Common age-related finding in rats (especially F344 males). Progression: hyperplasia → adenoma → carcinoma. Chronic stress increases incidence.",
+      "sources": ["S36", "S37", "S_BrandliBaiocco2018"]
+    },
+    "TESTES_DEGENERATION": {
+      "id": "XC06a",
+      "label": "Testicular Germ Cell / Tubular Toxicity",
+      "extends": null,
+      "mi_findings": [
+        "DEGENERATION, TUBULAR",
+        "ATROPHY, TUBULAR",
+        "DEPLETION, GERM CELL",
+        "VACUOLATION, SERTOLI CELL",
+        "RETENTION, SPERMATID",
+        "GIANT CELL, MULTINUCLEATED",
+        "NECROSIS, GERM CELL"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "TESTES",
+        "notes": "Insensitive to mild-moderate injury; >50% tubule loss needed for weight change. Germ cells lost through degeneration are replaced by intratubular fluid, maintaining volume."
+      },
+      "expected_lb": [
+        {"test": "TESTOSTERONE", "direction": "decreased", "notes": "only with severe injury or direct Leydig cell toxicity"},
+        {"test": "LH", "direction": "increased", "notes": "compensatory — primary testicular failure"},
+        {"test": "FSH", "direction": "increased", "notes": "with severe germ cell loss — decreased inhibin B from Sertoli cells"},
+        {"test": "INHIBIN_B", "direction": "decreased", "notes": "Sertoli cell product; emerging biomarker"}
+      ],
+      "expected_cl": [],
+      "cross_organ_link": {
+        "organ": "EPIDIDYMIS",
+        "finding": "OLIGOSPERMIA; ASPERMIA",
+        "mechanism": "decreased_sperm_output"
+      },
+      "key_caveat": "MOST testicular toxicity occurs with NORMAL circulating hormones. Direct germ cell and Sertoli cell toxicants produce tubular degeneration and oligospermia WITHOUT altering testosterone, LH, or FSH. Only Leydig cell damage or HPG axis disruption reliably changes hormones. Histopathology is the gold standard — more sensitive than weights, hormones, or fertility.",
+      "sensitivity_hierarchy": "MI > OM > LB for early detection",
+      "stage_specificity": "Stage VII/VIII of spermatogenic cycle in rat is most vulnerable to germ cell loss",
+      "confounders": {
+        "stress": {
+          "mechanism": "GnRH suppression → decreased LH/FSH → decreased testosterone → stage VII/VIII degeneration",
+          "discrimination": "concurrent stress indicators (decreased BW >10%, increased adrenal weight, decreased thymus weight)"
+        },
+        "immaturity": {
+          "threshold_age_rat": "9 weeks at termination",
+          "threshold_age_mouse": "7 weeks at termination",
+          "note": "sexually immature animals have incomplete spermatogenesis mimicking toxicity"
+        }
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S38", "S39", "S40", "S41", "S44", "S_ChapinCreasy2012"]
+    },
+    "TESTES_LEYDIG_CELL_CHANGES": {
+      "id": "XC06b",
+      "label": "Testicular Leydig Cell Effects",
+      "extends": null,
+      "mi_findings": [
+        "HYPERTROPHY, LEYDIG CELL",
+        "HYPERPLASIA, LEYDIG CELL",
+        "ATROPHY, LEYDIG CELL"
+      ],
+      "expected_om": {
+        "direction": "variable",
+        "organ": "TESTES",
+        "notes": "increased with large tumors or extensive hyperplasia; decreased with atrophy"
+      },
+      "expected_lb": [
+        {"test": "TESTOSTERONE", "direction": "variable", "notes": "increased with functional tumors; decreased with atrophy"},
+        {"test": "LH", "direction": "increased", "notes": "if compensatory stimulation"}
+      ],
+      "expected_cl": [],
+      "downstream_cascade": {
+        "on_atrophy": {
+          "mechanism": "decreased testosterone → androgen-dependent tissue effects",
+          "downstream_organs": [
+            {"organ": "EPIDIDYMIS", "expected_om": "decreased", "expected_mi": ["ATROPHY, EPITHELIAL"]},
+            {"organ": "PROSTATE", "expected_om": "decreased", "expected_mi": ["ATROPHY"]},
+            {"organ": "SEMINAL VESICLE", "expected_om": "decreased", "expected_mi": ["ATROPHY"]},
+            {"organ": "PITUITARY", "expected_mi": ["HYPERTROPHY, GONADOTROPH"]}
+          ]
+        }
+      },
+      "strength_when_all_present": "tier_2",
+      "strength_mi_only": "tier_3",
+      "direction_required": false,
+      "species_note": "Focal/multifocal in rats, diffuse in mice. Rat Leydig cell tumor mechanisms may not translate to humans.",
+      "sources": ["S39", "S41"]
+    },
+    "PROSTATE_SEMINAL_VESICLE_ATROPHY": {
+      "id": "XC06c",
+      "label": "Male Accessory Sex Organ Atrophy",
+      "extends": null,
+      "mi_findings": [
+        "ATROPHY, ACINAR",
+        "SECRETORY DEPLETION",
+        "ATROPHY, EPITHELIAL"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "PROSTATE",
+        "notes": "Seminal vesicle weight is most sensitive androgen status indicator; ~40% decrease with androgen deprivation"
+      },
+      "expected_lb": [
+        {"test": "TESTOSTERONE", "direction": "decreased"}
+      ],
+      "expected_cl": [],
+      "cross_organ_link": {
+        "organ": "TESTES",
+        "finding": "DEGENERATION, TUBULAR or NORMAL",
+        "mechanism": "androgen_dependent_secondary_to_testosterone"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "key_caveat": "ASO weight changes can occur WITHOUT testicular weight changes. Stress/feed restriction → decreased GnRH → decreased testosterone → ASO atrophy but testes weight preserved. Always check testes first — if testicular findings present, ASO changes are secondary.",
+      "sources": ["S_Sellers2007", "S_Halpern2016", "S_ChapinCreasy2012"]
+    },
+    "OVARY_FOLLICULAR_CHANGES": {
+      "id": "XC07a",
+      "label": "Ovarian Follicular Effects",
+      "extends": null,
+      "mi_findings": [
+        "ATRESIA, FOLLICULAR, INCREASED",
+        "DEPLETION, PRIMORDIAL FOLLICLE",
+        "CYST, FOLLICULAR",
+        "CORPORA LUTEA, DECREASED"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "OVARY",
+        "notes": "Highly variable with estrous cycle stage (CV 15-40%). Not recommended for routine weighing (Sellers 2007)."
+      },
+      "expected_lb": [
+        {"test": "ESTRADIOL", "direction": "decreased", "notes": "with follicular depletion"},
+        {"test": "PROGESTERONE", "direction": "decreased", "notes": "with decreased corpora lutea"},
+        {"test": "FSH", "direction": "increased", "notes": "with follicular depletion — loss of inhibin feedback"},
+        {"test": "LH", "direction": "increased", "notes": "with primary ovarian failure"}
+      ],
+      "expected_cl": [
+        "PROLONGED DIESTRUS",
+        "PERSISTENT ESTRUS",
+        "IRREGULAR CYCLING"
+      ],
+      "cross_organ_link": {
+        "organ": "UTERUS",
+        "finding": "ATROPHY or HYPERPLASIA",
+        "mechanism": "estrogen_dependent_downstream_effect"
+      },
+      "required_concurrent_data": "vaginal cytology for estrous cycle staging at necropsy",
+      "evaluation_approach": "Dixon et al. 2014: two-tier — qualitative histopathologic assessment followed by quantitative follicle counting when triggered by concerns",
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S_Dixon2014", "S_Regan2005"]
+    },
+    "UTERUS_ATROPHY": {
+      "id": "XC08a",
+      "label": "Uterine Atrophy",
+      "extends": null,
+      "mi_findings": [
+        "ATROPHY, UTERINE",
+        "ATROPHY, ENDOMETRIAL"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "UTERUS",
+        "notes": "2-3 fold variation with estrous cycle (CV 25-60%). Sellers 2007 does NOT recommend routine weighing."
+      },
+      "expected_lb": [
+        {"test": "ESTRADIOL", "direction": "decreased"}
+      ],
+      "expected_cl": [
+        "IRREGULAR CYCLING"
+      ],
+      "cross_organ_link": {
+        "organ": "OVARY",
+        "finding": "FOLLICULAR DEPLETION or DECREASED CORPORA LUTEA",
+        "mechanism": "loss_of_estrogenic_stimulation"
+      },
+      "strength_when_all_present": "tier_2",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "notes": "Almost always secondary to ovarian/hormonal changes. Discordance with ovarian findings suggests exogenous hormonal effects or direct uterine toxicity.",
+      "sources": ["S_Dixon2014", "S_Sellers2007"]
+    },
+    "UTERUS_HYPERPLASIA": {
+      "id": "XC08b",
+      "label": "Uterine Endometrial Hyperplasia",
+      "extends": null,
+      "mi_findings": [
+        "HYPERPLASIA, ENDOMETRIAL",
+        "METAPLASIA, SQUAMOUS, ENDOMETRIAL"
+      ],
+      "expected_om": {
+        "direction": "increased",
+        "organ": "UTERUS"
+      },
+      "expected_lb": [
+        {"test": "ESTRADIOL", "direction": "increased"}
+      ],
+      "expected_cl": [
+        "PERSISTENT ESTRUS",
+        "VAGINAL DISCHARGE",
+        "SWOLLEN VULVA"
+      ],
+      "cross_organ_link": {
+        "organ": "OVARY",
+        "finding": "CYST, FOLLICULAR",
+        "mechanism": "unopposed_estrogen"
+      },
+      "strength_when_all_present": "tier_2",
+      "strength_mi_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S_Dixon2014"]
+    },
+    "CNS_NEURONAL_DEGENERATION": {
+      "id": "XC09",
+      "label": "Central Nervous System Effects",
+      "extends": null,
+      "mi_findings": [
+        "DEGENERATION, NEURONAL",
+        "NECROSIS, NEURONAL",
+        "GLIOSIS",
+        "VACUOLATION, WHITE MATTER",
+        "NECROSIS, HIPPOCAMPAL",
+        "DEGENERATION, PURKINJE CELL",
+        "EDEMA, BRAIN"
+      ],
+      "expected_om": {
+        "direction": "decreased",
+        "organ": "BRAIN",
+        "notes": "Brain weight is highly conserved (CV 3-5%); changes rare but significant when present. Even 5-10% decrease warrants investigation. Most neurotoxic lesions do NOT produce detectable weight changes because they are focal/regional."
+      },
+      "expected_lb": [],
+      "expected_lb_emerging": [
+        {"test": "NfL", "direction": "increased", "notes": "neurofilament light chain; AUC 0.97-0.99 for detecting neural injury in plasma; EU IMI TransBioLine/NeuroDeRisk; not routine"},
+        {"test": "GFAP", "direction": "increased", "notes": "astrocyte-specific; not routine"},
+        {"test": "NSE", "direction": "increased", "notes": "neuronal; not routine"},
+        {"test": "S100B", "direction": "increased", "notes": "not routine"}
+      ],
+      "expected_cl": [
+        "TREMORS",
+        "CONVULSIONS",
+        "DECREASED ACTIVITY",
+        "ABNORMAL POSTURE",
+        "ATAXIA",
+        "HEAD TILT",
+        "SEIZURES",
+        "GAIT ABNORMALITY"
+      ],
+      "concordance_paradigm": "CL_to_MI_primary. No routine LB biomarkers exist for CNS injury in standard studies. Clinical signs are the primary in-life indicator.",
+      "functional_assessment": "FOB or Irwin screen data should be cross-referenced with neuropathology",
+      "temporal_interpretation": {
+        "transient_cl_signs": "pharmacodynamic effect — may not have structural correlate",
+        "progressive_cl_signs": "structural damage likely — expanded neuropathology warranted"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "strength_cl_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S42", "S_Bolon2006", "S_Sellers2007"]
+    },
+    "PNS_AXONAL_DEGENERATION": {
+      "id": "XC10",
+      "label": "Peripheral Nervous System Effects",
+      "extends": null,
+      "mi_findings": [
+        "DEGENERATION, AXONAL",
+        "DEMYELINATION",
+        "DEGENERATION, PERIPHERAL NERVE",
+        "HYPERTROPHY, SCHWANN CELL"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "PERIPHERAL_NERVE",
+        "notes": "Peripheral nerves not weighed"
+      },
+      "expected_lb": [],
+      "expected_lb_emerging": [
+        {"test": "NfL", "direction": "increased", "notes": "sensitive for PNS and CNS; cannot distinguish site of origin"}
+      ],
+      "expected_cl": [
+        "DECREASED GRIP STRENGTH",
+        "FOOT SPLAY",
+        "GAIT ABNORMALITY",
+        "NERVE CONDUCTION VELOCITY DECREASED",
+        "LIMB WEAKNESS"
+      ],
+      "concordance_paradigm": "CL_to_MI_primary",
+      "expanded_evaluation_trigger": "chronic, slowly reversible or irreversible PNS clinical signs",
+      "pharmacodynamic_indicator": "transient, rapidly reversible signs",
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "strength_cl_only": "tier_3",
+      "direction_required": true,
+      "sources": ["S43"]
+    },
+    "EYE_RETINAL": {
+      "id": "XC12a",
+      "label": "Retinal Effects",
+      "extends": null,
+      "mi_findings": [
+        "DEGENERATION, RETINAL",
+        "ATROPHY, RETINAL",
+        "DEGENERATION, RPE"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "EYE",
+        "notes": "Eyes not weighed"
+      },
+      "expected_lb": [],
+      "expected_cl": [
+        "FUNDOSCOPIC ABNORMALITY",
+        "RETINAL PIGMENT CHANGES",
+        "VASCULAR ATTENUATION"
+      ],
+      "expected_cl_special": [
+        {"test": "ERG", "direction": "decreased_amplitude", "notes": "functional retinal assessment; when available"},
+        {"test": "OCT", "finding": "retinal_thinning", "notes": "strong correlation with histopathology (Zimmerman 2021)"}
+      ],
+      "concordance_paradigm": "CL_ophthalmic_exam_to_MI_primary",
+      "drug_class_flags": {
+        "chloroquine": "retinal pigment epithelium degeneration",
+        "tamoxifen": "crystalline maculopathy"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S_WeirCollins2013", "S_Zimmerman2021"]
+    },
+    "EYE_LENS": {
+      "id": "XC12b",
+      "label": "Lens Effects",
+      "extends": null,
+      "mi_findings": [
+        "OPACITY, LENS",
+        "CATARACT",
+        "DEGENERATION, LENS"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "EYE"
+      },
+      "expected_lb": [],
+      "expected_cl": [
+        "LENS OPACITY",
+        "SLIT LAMP ABNORMALITY"
+      ],
+      "concordance_paradigm": "CL_slit_lamp_to_MI_primary",
+      "drug_class_flags": {
+        "corticosteroids": "posterior subcapsular cataract"
+      },
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S_WeirCollins2013"]
+    },
+    "EYE_CORNEAL": {
+      "id": "XC12c",
+      "label": "Corneal Effects",
+      "extends": null,
+      "mi_findings": [
+        "OPACITY, CORNEAL",
+        "MINERALIZATION, CORNEAL",
+        "EDEMA, CORNEAL"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "EYE"
+      },
+      "expected_lb": [],
+      "expected_cl": [
+        "CORNEAL OPACITY",
+        "SLIT LAMP ABNORMALITY"
+      ],
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S_WeirCollins2013"]
+    },
+    "SKIN_DERMAL": {
+      "id": "XC11a",
+      "label": "Dermal / Application Site Effects",
+      "extends": null,
+      "mi_findings": [
+        "INFLAMMATION, DERMAL",
+        "NECROSIS, DERMAL",
+        "HYPERPLASIA, EPIDERMAL",
+        "ACANTHOSIS",
+        "ULCERATION"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "SKIN",
+        "notes": "Skin not weighed"
+      },
+      "expected_lb": [],
+      "expected_lb_if_severe": [
+        {"test": "WBC", "direction": "increased", "notes": "systemic inflammation only"},
+        {"test": "FIBRINOGEN", "direction": "increased", "notes": "acute phase response only"},
+        {"test": "GLOBULINS", "direction": "increased", "notes": "chronic inflammation only"}
+      ],
+      "expected_cl": [
+        "ERYTHEMA",
+        "EDEMA",
+        "ESCHAR",
+        "DESQUAMATION",
+        "ALOPECIA",
+        "SCAB"
+      ],
+      "concordance_paradigm": "CL_draize_to_MI_primary",
+      "draize_note": "Draize scores (0-4 for erythema and edema) may not always correlate with histopathology severity (Chandra 2015)",
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": true,
+      "sources": ["S_Chandra2015", "S_OECD_TG410_411"]
+    },
+    "INJECTION_SITE": {
+      "id": "XC11b",
+      "label": "Injection Site Effects",
+      "extends": null,
+      "mi_findings": [
+        "INFLAMMATION, INJECTION SITE",
+        "GRANULOMA, INJECTION SITE",
+        "FIBROSIS, INJECTION SITE",
+        "NECROSIS, INJECTION SITE",
+        "HEMORRHAGE, INJECTION SITE"
+      ],
+      "expected_om": {
+        "direction": "not_applicable",
+        "organ": "INJECTION_SITE"
+      },
+      "expected_lb": [],
+      "expected_cl": [
+        "INJECTION SITE SWELLING",
+        "INJECTION SITE ERYTHEMA",
+        "INJECTION SITE DISCOLORATION",
+        "INJECTION SITE MASS",
+        "INJECTION SITE INDURATION"
+      ],
+      "route_considerations": {
+        "subcutaneous": "granuloma and fibrosis common; slower absorption",
+        "intramuscular": "myofiber necrosis, inflammation, mineralization",
+        "intravenous": "perivascular inflammation, thrombosis, phlebitis"
+      },
+      "systemic_relevance": "local_only",
+      "noael_note": "Local reactions do NOT determine systemic NOAEL unless secondary systemic effects occur (stress from pain, infection)",
+      "strength_when_all_present": "tier_1",
+      "strength_mi_only": "tier_2",
+      "direction_required": false,
+      "sources": ["S_Sellers2020", "S_Chandra2015"]
+    }
+  },
+  "cross_organ_chains": {
+    "LIVER_THYROID_AXIS": {
+      "id": "CHAIN_01",
+      "label": "Hepatic Enzyme Induction → Thyroid Axis",
+      "organs": ["LIVER", "THYROID", "PITUITARY"],
+      "check_sequence": [
+        {"step": 1, "organ": "LIVER", "mi": "HYPERTROPHY, HEPATOCELLULAR", "om": "liver_weight_increased", "lb": "UGT_activity_increased", "mechanism": "CYP/UGT induction via CAR/PXR/AhR"},
+        {"step": 2, "organ": "SYSTEMIC", "mi": null, "om": null, "lb": "T4_decreased", "mechanism": "increased T4 glucuronidation + biliary excretion"},
+        {"step": 3, "organ": "PITUITARY", "mi": "HYPERTROPHY, THYROTROPH", "om": null, "lb": "TSH_increased", "mechanism": "loss of negative feedback"},
+        {"step": 4, "organ": "THYROID", "mi": "HYPERTROPHY, FOLLICULAR CELL; HYPERPLASIA, FOLLICULAR CELL; COLLOID DEPLETION", "om": "thyroid_weight_increased", "lb": null, "mechanism": "chronic TSH stimulation"}
+      ],
+      "complete_chain_tier": "tier_1",
+      "partial_chain_tier": "tier_2",
+      "partial_chain_note": "thyroid MI without liver MI → suspect direct thyroid mechanism (TPO/NIS inhibition) → different regulatory implication (potentially human-relevant)",
+      "human_relevance_flag": "liver_mediated_generally_not_human_relevant_for_carcinogenesis",
+      "species_relevance": "Rat-specific mechanism. Rats lack TBG, T4 half-life 12-24h vs 5-9d in humans. NOT relevant to human risk per FDA, ECHA, ESTP.",
+      "sources": ["S34", "S45", "S46", "S_Hood1999", "S_McClain1989", "S_Bartsch2018"]
+    },
+    "BM_BLOOD_SPLEEN_AXIS": {
+      "id": "CHAIN_02",
+      "label": "Bone Marrow → Blood → Spleen Compensatory Axis",
+      "organs": ["BONE MARROW", "BLOOD", "SPLEEN"],
+      "forward_direction": {
+        "trigger": "BM suppression",
+        "sequence": [
+          {"step": 1, "organ": "BONE_MARROW", "mi": "HYPOCELLULARITY", "mechanism": "direct myelotoxicity"},
+          {"step": 2, "organ": "BLOOD", "lb": "cytopenias — non-regenerative with inappropriately low reticulocytes", "mechanism": "production deficit"},
+          {"step": 3, "organ": "SPLEEN", "mi": "EXTRAMEDULLARY HEMATOPOIESIS, INCREASED; CONGESTION", "om": "spleen_weight_increased", "mechanism": "compensatory hematopoiesis"}
+        ]
+      },
+      "reverse_direction": {
+        "trigger": "hemolytic anemia or hemorrhage",
+        "sequence": [
+          {"step": 1, "organ": "BLOOD", "lb": "RBC_decreased + RETIC_increased + TBIL_increased", "mechanism": "RBC destruction"},
+          {"step": 2, "organ": "BONE_MARROW", "mi": "HYPERPLASIA, ERYTHROID", "mechanism": "compensatory erythropoiesis"},
+          {"step": 3, "organ": "SPLEEN", "mi": "HEMOSIDEROSIS; EMH; CONGESTION", "om": "spleen_weight_increased", "mechanism": "RBC clearance + iron recycling + compensatory hematopoiesis"}
+        ]
+      },
+      "emh_interpretation": "Three processes induce EMH: (1) marrow damage, (2) myelostimulation exceeding marrow capacity, (3) abnormal circulating hematopoietic factors. EMH without marrow changes or cytopenias → investigate alternative mechanisms.",
+      "complete_chain_tier": "tier_1",
+      "species_note": "Splenic EMH is normal background in rodents (mice > rats). In dogs/primates, always pathological.",
+      "sources": ["S33", "S_Elmore2006"]
+    },
+    "STRESS_WASTING_CASCADE": {
+      "id": "CHAIN_03",
+      "label": "Stress / Wasting Multi-Organ Cascade",
+      "extends": "XS06",
+      "trigger": "severe_toxicity_or_palatability",
+      "organs": ["ADRENAL", "THYMUS", "SPLEEN", "TESTES", "OVARIES", "BLOOD"],
+      "sequence": [
+        {"step": 1, "organ": "SYSTEMIC", "cl": "body_weight_decreased >10-15% from controls; food_consumption_decreased", "mechanism": "primary toxicity or palatability"},
+        {"step": 2, "organ": "HYPOTHALAMUS_PITUITARY", "lb": "ACTH_increased; corticosterone/cortisol_increased", "mechanism": "HPA axis activation"},
+        {"step": 3, "organ": "ADRENAL", "mi": "HYPERTROPHY, CORTICAL", "om": "adrenal_weight_increased", "mechanism": "ACTH stimulation"},
+        {"step": 4, "organ": "THYMUS", "mi": "ATROPHY; LYMPHOCYTE DEPLETION", "om": "thymus_weight_decreased", "mechanism": "glucocorticoid-mediated lymphocyte apoptosis"},
+        {"step": 5, "organ": "SPLEEN", "mi": "LYMPHOID DEPLETION", "om": "spleen_weight_decreased", "mechanism": "glucocorticoid-mediated"},
+        {"step": 6, "organ": "BLOOD", "lb": "neutrophils_increased; lymphocytes_decreased; eosinophils_decreased", "mechanism": "stress leukogram"},
+        {"step": 7, "organ": "MULTIPLE", "mi": "reduced_organ_sizes", "om": "generalized_weight_decreases", "mechanism": "catabolism/inanition"}
+      ],
+      "pattern_check": {
+        "indicators": [
+          {"param": "BW_decrease", "threshold_pct": 10},
+          {"param": "food_consumption_decrease", "threshold": "present"},
+          {"param": "adrenal_weight", "direction": "increased"},
+          {"param": "thymus_weight", "direction": "decreased"},
+          {"param": "spleen_lymphoid_depletion", "threshold": "present"},
+          {"param": "neutrophils", "direction": "increased"},
+          {"param": "lymphocytes", "direction": "decreased"},
+          {"param": "eosinophils", "direction": "decreased"},
+          {"param": "reproductive_organ_weights", "direction": "decreased"}
+        ],
+        "min_indicators": 4,
+        "diagnostic_triad": ["thymic_atrophy", "adrenal_hypertrophy", "stress_leukogram"],
+        "classification_when_met": "stress_mediated_secondary",
+        "flag_text": "Findings at this dose level may reflect stress-mediated secondary effects — requires weight-of-evidence assessment"
+      },
+      "bw_loss_thresholds": {
+        "concern": ">10% decrease vs controls",
+        "significant_secondary_changes": ">15-20% decrease"
+      },
+      "distinguishing_from_primary_immunotoxicity": "If spleen/lymph nodes depleted but thymus preserved → suspect primary immunosuppression, NOT stress. Thymus is most sensitive to glucocorticoid-mediated stress — if thymus sensitivity hierarchy is violated, stress is not the explanation.",
+      "sources": ["S37"]
+    },
+    "TESTICULAR_REPRODUCTIVE_CASCADE": {
+      "id": "CHAIN_04",
+      "label": "Testicular → Androgen-Dependent Organ Cascade",
+      "trigger": "leydig_cell_damage_or_testosterone_decrease",
+      "primary_organ": "TESTES",
+      "downstream_organs": ["EPIDIDYMIS", "PROSTATE", "SEMINAL VESICLE", "PITUITARY"],
+      "check_sequence": [
+        {"step": 1, "organ": "TESTES", "mi": ["ATROPHY, LEYDIG CELL", "DEGENERATION, GERM CELL"], "om": "decreased"},
+        {"step": 2, "domain": "LB", "test": "TESTO", "direction": "decreased"},
+        {"step": 3, "organ": "EPIDIDYMIS", "om": "decreased", "mi": ["OLIGOSPERMIA", "ATROPHY, EPITHELIAL"]},
+        {"step": 4, "organ": "PROSTATE", "om": "decreased", "mi": ["ATROPHY"]},
+        {"step": 5, "organ": "SEMINAL VESICLE", "om": "decreased", "mi": ["ATROPHY"]},
+        {"step": 6, "organ": "PITUITARY", "mi": ["HYPERTROPHY, GONADOTROPH"], "mechanism": "compensatory LH increase"}
+      ],
+      "rule": "When prostate/epididymis/seminal vesicle weight decreases occur, check testes first — likely secondary to testicular toxicity rather than direct effects on accessory organs",
+      "stress_pathway": "Stress/feed restriction → decreased GnRH → decreased LH → decreased testosterone → ASO atrophy WITHOUT testicular weight changes (Halpern 2016). This pattern distinguishes non-specific stress from direct reproductive toxicity.",
+      "sources": ["S39", "S_ChapinCreasy2012", "S_Halpern2016"]
+    },
+    "HEMOLYTIC_MULTI_ORGAN": {
+      "id": "CHAIN_05",
+      "label": "Hemolytic Anemia → Multi-Organ Cascade",
+      "organs": ["BLOOD", "BONE MARROW", "SPLEEN", "LIVER", "KIDNEY"],
+      "sequence": [
+        {"step": 1, "organ": "BLOOD", "mi": null, "om": null, "lb": "RBC_decreased; HGB_decreased; HCT_decreased; reticulocytes_increased; bilirubin_indirect_increased; LDH_increased; haptoglobin_decreased", "mechanism": "RBC destruction — intravascular or extravascular"},
+        {"step": 2, "organ": "BONE_MARROW", "mi": "HYPERPLASIA, ERYTHROID", "om": null, "lb": null, "mechanism": "compensatory erythropoiesis"},
+        {"step": 3, "organ": "SPLEEN", "mi": "HEMOSIDEROSIS; EXTRAMEDULLARY HEMATOPOIESIS; CONGESTION; MACROPHAGE HYPERPLASIA", "om": "spleen_weight_increased_2-3x", "lb": null, "mechanism": "RBC clearance + iron recycling + compensatory hematopoiesis"},
+        {"step": 4, "organ": "LIVER", "mi": "KUPFFER CELL PIGMENT; HEMOSIDEROSIS; KUPFFER CELL HYPERPLASIA", "om": null, "lb": null, "mechanism": "RBC clearance + iron storage"},
+        {"step": 5, "organ": "KIDNEY", "mi": "HEMOGLOBIN CASTS; TUBULAR HEMOSIDERIN; TUBULAR NECROSIS", "om": null, "lb": "hemoglobinuria", "mechanism": "intravascular hemolysis only — severe cases", "notes": "only with severe intravascular hemolysis"}
+      ],
+      "intravascular_vs_extravascular": {
+        "intravascular": {"hemoglobinemia": true, "hemoglobinuria": true, "LDH": "markedly_increased", "haptoglobin": "severely_depleted", "renal_damage": "possible"},
+        "extravascular": {"hemoglobinemia": false, "hemoglobinuria": false, "LDH": "mildly_increased", "haptoglobin": "mildly_decreased", "hepatosplenomegaly": "prominent"}
+      },
+      "blood_smear_findings": {
+        "oxidative": ["Heinz bodies", "eccentrocytes", "methemoglobinemia"],
+        "immune_mediated": ["spherocytes", "agglutination"],
+        "mechanical": ["schistocytes", "keratocytes"]
+      },
+      "species_note": "Haptoglobin reliable in dogs; confounded in rats (acute phase protein). Cats highly susceptible to oxidative hemolysis.",
+      "full_chain_tier": "tier_1",
+      "note": "Most extensive cross-organ chain in standard tox studies — spans 5 organ systems",
+      "sources": ["S33", "S_Reagan1993", "S_Haschek2013"]
+    }
+  },
+  "concordance_modifiers": {
+    "cross_organ_elevation": {
+      "rule": "Cross-organ concordance elevates confidence by one tier",
+      "example": "Isolated thyroid weight increase (tier_3) + liver hypertrophy + decreased T4 = tier_1"
+    },
+    "discordance_reduction": {
+      "rule": "Discordant findings within an organ system reduce confidence",
+      "example": "Thyroid follicular hypertrophy + normal T4/TSH = discordant — should not auto-classify as adverse"
+    },
+    "absence_informative": {
+      "rule": "Absence of an expected concordant finding in another organ is as informative as its presence",
+      "examples": [
+        "Thyroid follicular hypertrophy WITHOUT liver changes → direct thyroid mechanism, not enzyme induction",
+        "Adrenal hypertrophy WITHOUT stress triad → primary adrenal effect, not secondary stress",
+        "Splenic EMH WITHOUT cytopenias or marrow changes → investigate alternative mechanism"
+      ]
+    }
+  },
+  "concordance_paradigms": {
+    "metabolic_visceral": {
+      "organs": ["LIVER", "KIDNEY"],
+      "paradigm": "LB↔MI primary concordance; LB changes often precede or accompany MI",
+      "note": "Already covered by XS01-XS03"
+    },
+    "endocrine": {
+      "organs": ["THYROID", "ADRENAL", "TESTES", "OVARIES"],
+      "paradigm": "LB (hormones) ↔ MI primary concordance; cross-organ cascades common",
+      "note": "Hormone-dependent downstream effects require multi-organ checking"
+    },
+    "cl_driven": {
+      "organs": ["CNS", "PNS", "EYE", "SKIN"],
+      "paradigm": "CL → MI primary concordance; minimal or no routine LB correlates",
+      "note": "Finding scored as 'not_applicable' for LB corroboration is the EXPECTED pattern, not an evidence gap"
+    },
+    "hematopoietic": {
+      "organs": ["BONE_MARROW", "SPLEEN"],
+      "paradigm": "Unique — organ cannot be weighed but has richest LB correlate set through CBC",
+      "note": "Lineage-specific MI↔LB mapping is essential"
+    }
+  },
+  "source_catalog": {
+    "S33": {"citation": "Reagan et al. 2011 (Toxicol Pathol 39:435-448)", "content": "STP/ASVCP BM Working Group: CBC + BM histology as evaluation foundation; 91% concordance with clinical hematotoxicity"},
+    "S34": {"citation": "Capen 1997 (Toxicol Pathol 25:39-48)", "content": "Thyroid MOA framework: enzyme induction → T4 clearance → TSH → follicular changes"},
+    "S35": {"citation": "Huisinga et al. 2021 (Toxicol Pathol)", "content": "6th ESTP Workshop: adversity considerations for thyroid FCHH"},
+    "S36": {"citation": "Rosol et al. 2001 (Toxicol Pathol 29:41-48)", "content": "Adrenal structure, function, mechanisms of toxicity"},
+    "S37": {"citation": "Everds et al. 2013 (Toxicol Pathol 41:560-614)", "content": "Stress responses in tox studies: comprehensive 54-page organ-by-organ review"},
+    "S38": {"citation": "Creasy 1997 (Toxicol Pathol 25:119-131)", "content": "Testicular toxicity evaluation: spermatogenic staging"},
+    "S39": {"citation": "Creasy 2001 (Toxicol Pathol 29:64-76)", "content": "Pathogenesis of male reproductive toxicity: target sites and cascades"},
+    "S40": {"citation": "Lanning et al. 2002 (Toxicol Pathol 30:518-531)", "content": "STP: Evaluation of testicular and epididymal toxicity"},
+    "S41": {"citation": "Creasy et al. 2012 (Toxicol Pathol 40:40S-121S)", "content": "INHAND male reproductive system nomenclature"},
+    "S42": {"citation": "Bolon et al. 2013 (Toxicol Pathol 41:1028-1048)", "content": "STP CNS Sampling Working Group"},
+    "S43": {"citation": "Bolon et al. 2018 (Toxicol Pathol 46:372-402)", "content": "STP PNS Sampling Working Group"},
+    "S44": {"citation": "Catlin et al. 2018 (Toxicol Pathol)", "content": "Differentiating testicular toxicity from sexual immaturity"},
+    "S45": {"citation": "Dellarco et al. 2006", "content": "Thyroid MOA framework for risk assessment"},
+    "S46": {"citation": "OECD GD 150", "content": "Enhanced TH clearance from hepatic enzyme induction as endocrine MOA"},
+    "S_Hood1999": {"citation": "Hood et al. 1999", "content": "PB and PCN increased TSH 65%/95%; 625%/1200% follicular proliferation increases"},
+    "S_Bartsch2018": {"citation": "Bartsch et al. 2018", "content": "Rodent thyroid tumors from UGT induction not human-relevant"},
+    "S_Travlos2006": {"citation": "Travlos 2006 (Toxicol Pathol 34:566-598)", "content": "Histopathology of the bone marrow"},
+    "S_Ramaiah2013": {"citation": "Ramaiah et al. 2013", "content": "Effective vs ineffective erythropoiesis interpretation"},
+    "S_Elmore2006": {"citation": "Elmore 2006", "content": "Splenic EMH interpretation in rodents vs non-rodents"},
+    "S_Reagan1993": {"citation": "Reagan 1993", "content": "Hematotoxicity fundamentals"},
+    "S_Haschek2013": {"citation": "Haschek et al. 2013", "content": "Hemolytic anemia multi-organ cascade"},
+    "S_ChapinCreasy2012": {"citation": "Chapin and Creasy 2012", "content": "Circulating reproductive hormones in tox studies; most testicular toxicity occurs with normal hormones"},
+    "S_Dixon2014": {"citation": "Dixon et al. 2014", "content": "STP/INHAND female reproductive pathology; two-tier ovarian evaluation"},
+    "S_Halpern2016": {"citation": "Halpern et al. 2016", "content": "Stress-mediated ASO atrophy without testicular weight changes"},
+    "S_Regan2005": {"citation": "Regan et al. 2005", "content": "Ovarian follicular evaluation"},
+    "S_Sellers2007": {"citation": "Sellers et al. 2007", "content": "Organ weight recommendations; brain highly conserved; ovary/uterus weighing not recommended"},
+    "S_Sellers2020": {"citation": "Sellers et al. 2020", "content": "Injection site evaluation"},
+    "S_WeirCollins2013": {"citation": "Weir and Collins 2013", "content": "Ocular toxicity evaluation"},
+    "S_Zimmerman2021": {"citation": "Zimmerman et al. 2021", "content": "OCT correlation with histopathology"},
+    "S_Chandra2015": {"citation": "Chandra et al. 2015", "content": "Draize score/histopath correlation discordance"},
+    "S_Bolon2006": {"citation": "Bolon et al. 2006", "content": "CNS neuropathology evaluation"},
+    "S_McClain1989": {"citation": "McClain 1989", "content": "Liver-thyroid axis mechanism"},
+    "S_BrandliBaiocco2018": {"citation": "Brandli-Baiocco et al. 2018", "content": "INHAND adrenal nomenclature"},
+    "S_OECD_TG410_411": {"citation": "OECD TG 410/411", "content": "Dermal toxicity test guidelines"}
+  }
+}

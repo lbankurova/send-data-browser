@@ -1,0 +1,232 @@
+{
+  "organ_thresholds": {
+    "LIVER": {
+      "variation_ceiling_pct": 10,
+      "adaptive_ceiling_pct": 15,
+      "adverse_floor_pct": 15,
+      "strong_adverse_pct": 20,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "8-15", "sd_rat_f": "8-15",
+        "f344_rat_m": "8-14", "f344_rat_f": "8-14",
+        "cd1_mouse_m": "10-18", "cd1_mouse_f": "10-18"
+      },
+      "adaptive_requires": {
+        "histopath_present": ["HYPERTROPHY, HEPATOCELLULAR"],
+        "histopath_absent": ["NECROSIS", "INFLAMMATION", "FIBROSIS", "DEGENERATION", "VACUOLATION", "PIGMENTATION"],
+        "lb_panel_required": ["ALT", "AST", "ALP", "GGT", "BILI", "CHOL", "BILEAC", "TP", "ALB"],
+        "lb_panel_min_clean": 5,
+        "lb_damage_markers_clean": ["ALT", "AST"],
+        "enzyme_fold_max": 5.0
+      },
+      "normalization": "bw_ratio",
+      "sources": ["JMPR 2015", "EFSA", "EU Biocides WG 2018", "Hall 2012 ESTP"],
+      "notes": "Three-tier: <10% variation, 10-15% adaptive if hypertrophy only + clean clin chem, >15% adverse flag. EU Biocides requires complete LB panel to classify as adaptive."
+    },
+    "HEART": {
+      "variation_ceiling_pct": 8,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 8,
+      "strong_adverse_pct": 15,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "5-10", "sd_rat_f": "5-10",
+        "cd1_mouse_m": "6-12", "cd1_mouse_f": "6-12"
+      },
+      "normalization": "absolute",
+      "sources": ["Michael 2007 STP", "Sellers 2007 STP", "Bailey 2004"],
+      "notes": "No adaptive context. Low CV makes small changes meaningful. Myocardial hypertrophy may be macroscopically undetectable — weight may be sole indicator."
+    },
+    "KIDNEY": {
+      "variation_ceiling_pct": 10,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 10,
+      "strong_adverse_pct": 15,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "8-14", "sd_rat_f": "8-14",
+        "cd1_mouse_m": "10-16", "cd1_mouse_f": "10-16"
+      },
+      "special_flags": {
+        "alpha2u_globulin": {
+          "applies_to": ["male_rat"],
+          "human_relevance": false,
+          "source": "EPA 1991"
+        },
+        "cpn_confounder": {
+          "applies_to": ["f344_rat"],
+          "description": "Chronic progressive nephropathy is spontaneous background lesion",
+          "source": "Hard 2004"
+        }
+      },
+      "normalization": "absolute",
+      "sources": ["Bailey 2004", "EPA 1991"],
+      "notes": "Male rat kidney increases require α2u-globulin mechanism check. F344 rats: CPN confounds interpretation. ANCOVA preferred per Bailey 2004."
+    },
+    "ADRENAL": {
+      "variation_ceiling_pct": { "rat": 15, "mouse": 25 },
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": { "rat": 15, "mouse": 25 },
+      "strong_adverse_pct": { "rat": 25, "mouse": 40 },
+      "species_specific": true,
+      "cv_reference": {
+        "sd_rat_m": "5-17", "sd_rat_f": "8-20",
+        "f344_rat_m": "5-15", "f344_rat_f": "8-18",
+        "cd1_mouse_m": "20-51", "cd1_mouse_f": "15-35",
+        "c57bl6_mouse_m": "15-40", "c57bl6_mouse_f": "12-30"
+      },
+      "sex_dimorphism": {
+        "expected": true,
+        "direction": "female > male",
+        "mechanism": "gonadal hormone regulation of adrenal cortex",
+        "source": "Piao 2013"
+      },
+      "normalization": "brain_ratio",
+      "mouse_warning": "Percentage-change thresholds unreliable for mouse adrenals (CV 20-51%). Use ANCOVA or individual-animal HCD comparison.",
+      "sources": ["Marxfeld 2019", "Bailey 2004", "Sellers 2007", "Piao 2013"],
+      "notes": "SPECIES-SPECIFIC thresholds mandatory. Mouse adrenal CV so extreme that fixed % cutoffs are scientifically unsound. Prefer ANCOVA-based assessment for mouse."
+    },
+    "THYROID": {
+      "variation_ceiling_pct": 10,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 10,
+      "strong_adverse_pct": 20,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "10-20", "sd_rat_f": "10-20"
+      },
+      "cross_organ_link": {
+        "liver_thyroid_axis": {
+          "liver_finding": ["HYPERTROPHY, HEPATOCELLULAR", "WEIGHT_INCREASED"],
+          "expected_lb": { "T4": "decreased", "TSH": "increased" },
+          "mechanism": "hepatic_enzyme_induction_t4_clearance",
+          "rodent_specific_relevance": true,
+          "source": "Capen 1997"
+        }
+      },
+      "normalization": "bw_ratio",
+      "sources": ["Bailey 2004", "Sellers 2007", "Capen 1997"],
+      "notes": "Must interpret in context of liver-thyroid axis. Sellers 2007: weigh all species except mice. See Brief 2 for thyroid adaptive classification."
+    },
+    "TESTES": {
+      "variation_ceiling_pct": 10,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 10,
+      "strong_adverse_pct": 15,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "5-12",
+        "cd1_mouse_m": "8-20"
+      },
+      "normalization": "absolute",
+      "sources": ["WHO 2015", "Marxfeld 2019", "Sellers 2007", "Bailey 2004"],
+      "notes": "WHO 2015: <10% within normal distribution. Decreases more concerning than increases. Bailey 2004: absolute weight optimal."
+    },
+    "SPLEEN": {
+      "variation_ceiling_pct": 15,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 15,
+      "strong_adverse_pct": 25,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "12-25", "sd_rat_f": "12-25",
+        "cd1_mouse_m": "15-30", "cd1_mouse_f": "15-30"
+      },
+      "confounders": ["stress", "euthanasia_splenic_congestion", "emh_compensatory"],
+      "sources": ["Michael 2007", "Sellers 2007", "ICH S8"],
+      "notes": "High variability. Primary value as corroboration within XS04/XS09 syndromes. Non-rodent: euthanasia-related congestion confounds."
+    },
+    "THYMUS": {
+      "variation_ceiling_pct": 15,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 15,
+      "strong_adverse_pct": 25,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "15-35", "sd_rat_f": "15-35",
+        "cd1_mouse_m": "18-40", "cd1_mouse_f": "18-40"
+      },
+      "confounders": ["stress_involution", "age_involution", "dissection_technique"],
+      "secondary_check": {
+        "stress_pattern": {
+          "concurrent_bw_decrease": true,
+          "concurrent_corticosterone_increase": true,
+          "concurrent_adrenal_increase": true,
+          "ecetoc_factor": "B-7"
+        }
+      },
+      "sources": ["Michael 2007", "Sellers 2007", "Marxfeld 2019", "ICH S8"],
+      "notes": "Marxfeld 2019: cyclophosphamide effects better detected by thymus than spleen. Stress involution pattern: thymus decrease + adrenal increase + BW decrease = secondary (B-7)."
+    },
+    "BRAIN": {
+      "variation_ceiling_pct": 5,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": "any_significant",
+      "strong_adverse_pct": 5,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_m": "3-5", "sd_rat_f": "3-5",
+        "cd1_mouse_m": "3-6", "cd1_mouse_f": "3-6"
+      },
+      "normalization": "absolute",
+      "sources": ["Bailey 2004", "Sellers 2007"],
+      "notes": "CV 3-5%, most conserved organ weight. Primary utility as denominator for adrenal/ovary organ-to-brain ratios. Treatment-related changes extremely rare."
+    },
+    "OVARIES": {
+      "variation_ceiling_pct": 20,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 20,
+      "strong_adverse_pct": 30,
+      "species_specific": false,
+      "cv_reference": {
+        "sd_rat_f": "15-25",
+        "cd1_mouse_f": "20-40"
+      },
+      "confounders": ["estrous_cycle_stage", "reproductive_senescence"],
+      "normalization": "brain_ratio",
+      "sources": ["Marxfeld 2019", "Bailey 2004", "Sellers 2007"],
+      "notes": "Extremely variable due to estrous cycle. Bailey 2004: organ-to-brain ratio optimal. Reproductive senescence >6 months complicates interpretation."
+    },
+    "EPIDIDYMIDES": {
+      "variation_ceiling_pct": 10,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 10,
+      "strong_adverse_pct": 15,
+      "species_specific": false,
+      "cv_reference": { "sd_rat_m": "6-12", "cd1_mouse_m": "8-15" },
+      "sources": ["Sellers 2007"],
+      "notes": "Relatively consistent. Changes often lag behind testicular changes."
+    },
+    "PROSTATE": {
+      "variation_ceiling_pct": 15,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 15,
+      "strong_adverse_pct": 25,
+      "species_specific": false,
+      "cv_reference": { "sd_rat_m": "10-25", "cd1_mouse_m": "15-30" },
+      "sources": ["Marxfeld 2019"],
+      "notes": "Hormonally regulated. May change secondary to anti-androgen effects."
+    },
+    "UTERUS": {
+      "variation_ceiling_pct": 25,
+      "adaptive_ceiling_pct": null,
+      "adverse_floor_pct": 25,
+      "strong_adverse_pct": 40,
+      "species_specific": false,
+      "cv_reference": { "sd_rat_f": "25-50", "cd1_mouse_f": "30-60" },
+      "confounders": ["estrous_cycle_stage"],
+      "sources": ["Sellers 2007"],
+      "notes": "Most variable organ weight due to estrous cycle stage. Extremely difficult to interpret without cycle stage data."
+    }
+  },
+  "global_config": {
+    "bw_decrease_concern_pct": 10,
+    "bw_decrease_adverse_pct": 20,
+    "default_om_threshold_pct": 15,
+    "concurrent_control_primacy": true,
+    "version": "1.0.0",
+    "last_updated": "2026-02-28",
+    "sources_count": 12,
+    "notes": "Thresholds derived from published regulatory guidance and historical control CV data. Species-specific where data warrant. Mouse adrenal thresholds require ANCOVA-based interpretation due to extreme variability."
+  }
+}

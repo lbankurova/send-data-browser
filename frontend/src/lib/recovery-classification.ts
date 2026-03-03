@@ -218,6 +218,80 @@ export function classifyRecovery(
     };
   }
 
+  // Step 1: Recovery disproportionately higher than main (non-anomaly cases)
+  // For non-anomaly verdicts where recovery exceeds main × 1.5 without dose-response
+  const hasDisproportionateRecovery =
+    assessment.assessments.some(
+      (d) =>
+        d.verdict !== "not_observed" &&
+        d.recovery.incidence > d.main.incidence * 1.5 &&
+        d.recovery.affected > d.main.affected,
+    ) &&
+    context.doseConsistency === "Weak" &&
+    !context.isAdverse;
+
+  if (hasDisproportionateRecovery) {
+    return {
+      classification: "DELAYED_ONSET_POSSIBLE",
+      confidence: computeConfidence("DELAYED_ONSET_POSSIBLE", assessment, context, inputsMissing),
+      rationale:
+        "Recovery incidence exceeds treatment-phase incidence without dose-response support. May indicate delayed onset or incidental finding.",
+      qualifiers: [],
+      recommendedAction: "Pathologist assessment recommended to determine treatment-relatedness.",
+      inputsUsed,
+      inputsMissing,
+    };
+  }
+
+  // Step 2: Delayed onset pattern (low main, high recovery, non-anomaly)
+  const hasDelayedOnsetPattern = assessment.assessments.some(
+    (d) =>
+      d.main.incidence <= 0.10 &&
+      d.recovery.incidence >= 0.20 &&
+      d.recovery.affected >= 2,
+  );
+  let isDelayedOnsetSignal = hasDelayedOnsetPattern && !context.isAdverse;
+
+  // Downgrade if historical controls show background rate
+  if (
+    isDelayedOnsetSignal &&
+    context.historicalControlIncidence !== null
+  ) {
+    const maxRecoveryInc = Math.max(
+      ...assessment.assessments.map((d) => d.recovery.incidence),
+    );
+    if (maxRecoveryInc <= context.historicalControlIncidence * 1.5) {
+      isDelayedOnsetSignal = false;
+    }
+  }
+
+  if (isDelayedOnsetSignal) {
+    const example = assessment.assessments.find(
+      (d) =>
+        d.main.incidence <= 0.10 &&
+        d.recovery.incidence >= 0.20 &&
+        d.recovery.affected >= 2,
+    );
+    const mainPct = example ? Math.round(example.main.incidence * 100) : 0;
+    const recPct = example ? Math.round(example.recovery.incidence * 100) : 0;
+    const qualifiers: string[] = [];
+    if (context.historicalControlIncidence === null) {
+      qualifiers.push(
+        "Historical control data not available \u2014 cannot assess whether recovery incidence is within background range.",
+      );
+    }
+    return {
+      classification: "DELAYED_ONSET_POSSIBLE",
+      confidence: computeConfidence("DELAYED_ONSET_POSSIBLE", assessment, context, inputsMissing),
+      rationale: `Finding absent or minimal during treatment phase (${mainPct}%) but present during recovery (${recPct}%). May indicate delayed onset of treatment-related effect.`,
+      qualifiers,
+      recommendedAction:
+        "Pathologist assessment required \u2014 evaluate whether finding is treatment-related with delayed manifestation.",
+      inputsUsed,
+      inputsMissing,
+    };
+  }
+
   // Step 2b: ASSESSMENT_LIMITED_BY_DURATION (v4 — relocated from per-dose verdict)
   const adequacy = assessRecoveryAdequacy(context.recoveryPeriodDays, context.findingNature ?? null);
   const hasPersistentOrProgressing = assessment.assessments.some(

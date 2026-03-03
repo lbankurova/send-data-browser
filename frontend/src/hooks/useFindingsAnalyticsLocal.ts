@@ -49,7 +49,7 @@ export interface FindingsAnalyticsResult {
  * from swapped pairwise/group_stats so downstream consumers (rail, scatter,
  * context panel) see consistent values after a stats swap.
  */
-function rederiveSummaryFields(
+export function rederiveSummaryFields(
   pairwise: UnifiedFinding["pairwise"],
   groupStats: UnifiedFinding["group_stats"],
   direction: UnifiedFinding["direction"],
@@ -94,7 +94,7 @@ function rederiveSummaryFields(
  * animals excluded). Findings with empty separate_group_stats vanish.
  * Terminal domains (MI, MA, OM, TF) have no separate variant — pass through.
  */
-function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+export function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
   const result: UnifiedFinding[] = [];
   for (const f of findings) {
     if (f.separate_group_stats && f.separate_group_stats.length === 0) continue;
@@ -121,7 +121,7 @@ function applyRecoveryPoolingFilter(findings: UnifiedFinding[]): UnifiedFinding[
  * its scheduled_group_stats and filter out findings that vanish entirely
  * (empty scheduled_group_stats means all subjects were early deaths).
  */
-function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
+export function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding[] {
   const result: UnifiedFinding[] = [];
   for (const f of findings) {
     // Findings with empty scheduled_group_stats vanish under scheduled-only

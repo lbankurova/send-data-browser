@@ -7,7 +7,8 @@ import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
-import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import {
   titleCase,
   formatPValue,
@@ -52,8 +53,12 @@ export function DoseResponseContextPanel({
   const { navigateTo } = useStudySelection();
   const [tierFilter, setTierFilter] = useState<Tier | null>(null);
 
-  // Dose-response metrics for dose-level breakdown table
-  const { data: metricsData } = useDoseResponseMetrics(studyId);
+  // Dose-response metrics for dose-level breakdown table (live pipeline)
+  const { activeFindings, data: findingsData } = useFindingsAnalyticsLocal(studyId);
+  const metricsData = useMemo(() => {
+    if (!activeFindings.length || !findingsData?.dose_groups) return undefined;
+    return flattenFindingsToDRRows(activeFindings, findingsData.dose_groups);
+  }, [activeFindings, findingsData?.dose_groups]);
 
   // Rules for selected endpoint — filter by organ system + domain prefix
   const endpointRules = useMemo(() => {

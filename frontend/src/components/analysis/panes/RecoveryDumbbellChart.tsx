@@ -652,6 +652,30 @@ function DumbbellPanel({
         })}
       </div>
 
+      {/* §4.3: Control group drift warning — text note when control shifted >15% */}
+      {(() => {
+        const withCtrl = chartRows.filter(
+          (cr) =>
+            !cr.isEdge &&
+            cr.row.control_mean_terminal != null &&
+            cr.row.control_mean != null &&
+            Math.abs(cr.row.control_mean_terminal!) > 0.001,
+        );
+        if (withCtrl.length === 0) return null;
+        const row0 = withCtrl[0].row;
+        const ctrlTerminal = row0.control_mean_terminal!;
+        const ctrlRecovery = row0.control_mean!;
+        const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
+        if (driftPct <= 15) return null;
+        return (
+          <div className="text-[9px] text-muted-foreground/70 mt-1">
+            Control group shifted {Math.round(driftPct)}% between terminal and recovery
+            ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}).
+            Interpretation may be affected.
+          </div>
+        );
+      })()}
+
     </div>
   );
 }

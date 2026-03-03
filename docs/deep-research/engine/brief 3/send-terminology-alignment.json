@@ -1,0 +1,1142 @@
+{
+  "version": "1.0",
+  "brief": "Brief 3 Stage 4: SEND Terminology Alignment",
+  "description": "Maps all 25 cross-domain concordance entries to CDISC SEND controlled terminology across MI, LB, OM, CL, and MA domains. Based on SENDIG v3.1 and SEND CT 2025-09-26.",
+  "terminology_version": "SEND CT 2025-09-26 (Package 60)",
+  "implementation_guide": "SENDIG v3.1",
+  "statistics": {
+    "mi_terms_mapped": 77,
+    "lb_tests_mapped": 30,
+    "om_organs_mapped": 14,
+    "cl_observations_mapped": 50,
+    "total_unique_send_codes": 171
+  },
+  "send_domain_reference": {
+    "MI": {
+      "domain": "Microscopic Findings",
+      "key_vars": [
+        "MISTRESC",
+        "MISPEC",
+        "MISEV",
+        "MIRESMOD"
+      ]
+    },
+    "LB": {
+      "domain": "Laboratory Test Results",
+      "key_vars": [
+        "LBTESTCD",
+        "LBTEST",
+        "LBCAT",
+        "LBSPEC",
+        "LBSTRESN"
+      ]
+    },
+    "OM": {
+      "domain": "Organ Measurements",
+      "key_vars": [
+        "OMTESTCD",
+        "OMTEST",
+        "OMSPEC",
+        "OMSTRESN"
+      ]
+    },
+    "CL": {
+      "domain": "Clinical Observations",
+      "key_vars": [
+        "CLTESTCD",
+        "CLTEST",
+        "CLCAT",
+        "CLSTRESC"
+      ]
+    },
+    "MA": {
+      "domain": "Macroscopic Findings",
+      "key_vars": [
+        "MASTRESC",
+        "MASPEC"
+      ]
+    },
+    "BW": {
+      "domain": "Body Weights",
+      "key_vars": [
+        "BWTESTCD",
+        "BWSTRESN"
+      ]
+    },
+    "FW": {
+      "domain": "Food and Water Consumption",
+      "key_vars": [
+        "FWTESTCD",
+        "FWSTRESN"
+      ]
+    }
+  },
+  "mi_finding_alignment": {
+    "_codelist": "NONNEO (C120531) \u2014 Non-Neoplastic Finding Type",
+    "_modifier_convention": "Base term from codelist + qualifier for cell type or compartment. Engine should match base term then evaluate qualifier.",
+    "terms": {
+      "DECREASED CELLULARITY": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "synonyms": [
+          "HYPOCELLULARITY",
+          "DECREASED HEMATOPOIETIC CELLS"
+        ]
+      },
+      "HYPOCELLULARITY": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "is_synonym": true
+      },
+      "APLASIA": {
+        "preferred": "APLASIA",
+        "nci": "C120843"
+      },
+      "DECREASED CELLULARITY, MYELOID": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "MYELOID"
+      },
+      "GRANULOCYTIC HYPOPLASIA": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "GRANULOCYTIC",
+        "is_synonym": true
+      },
+      "DECREASED CELLULARITY, ERYTHROID": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "ERYTHROID"
+      },
+      "ERYTHROID HYPOPLASIA": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "ERYTHROID",
+        "is_synonym": true
+      },
+      "ERYTHROID HYPERPLASIA": {
+        "preferred": "HYPERPLASIA",
+        "nci": "C120932",
+        "qualifier": "ERYTHROID"
+      },
+      "INCREASED CELLULARITY, ERYTHROID": {
+        "preferred": "INCREASED CELLULARITY",
+        "nci": "C120941",
+        "qualifier": "ERYTHROID"
+      },
+      "MEGAKARYOCYTE DECREASED": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "MEGAKARYOCYTE"
+      },
+      "MEGAKARYOCYTIC HYPOPLASIA": {
+        "preferred": "DECREASED CELLULARITY",
+        "nci": "C120875",
+        "qualifier": "MEGAKARYOCYTIC",
+        "is_synonym": true
+      },
+      "EXTRAMEDULLARY HEMATOPOIESIS, INCREASED": {
+        "preferred": "EXTRAMEDULLARY HEMATOPOIESIS",
+        "nci": "C120898"
+      },
+      "HYPERPLASIA, FOLLICULAR CELL": {
+        "preferred": "HYPERPLASIA, FOLLICULAR CELL",
+        "nci": "C120932",
+        "organ": "THYROID GLAND"
+      },
+      "HYPERTROPHY, FOLLICULAR CELL": {
+        "preferred": "HYPERTROPHY, FOLLICULAR CELL",
+        "nci": "C120937",
+        "organ": "THYROID GLAND"
+      },
+      "COLLOID ALTERATION": {
+        "preferred": "COLLOID ALTERATION",
+        "nci": "C120867",
+        "organ": "THYROID GLAND"
+      },
+      "COLLOID DEPLETION": {
+        "preferred": "COLLOID ALTERATION",
+        "nci": "C120867",
+        "is_synonym": true
+      },
+      "HYPERTROPHY, CORTICAL": {
+        "preferred": "HYPERTROPHY",
+        "nci": "C120937",
+        "qualifier": "CORTICAL",
+        "organ": "ADRENAL GLAND"
+      },
+      "HYPERTROPHY, ZONA FASCICULATA": {
+        "preferred": "HYPERTROPHY",
+        "nci": "C120937",
+        "qualifier": "ZONA FASCICULATA",
+        "organ": "ADRENAL GLAND"
+      },
+      "ATROPHY, CORTICAL": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "CORTICAL",
+        "organ": "ADRENAL GLAND"
+      },
+      "ATROPHY, ZONA FASCICULATA": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "ZONA FASCICULATA",
+        "organ": "ADRENAL GLAND"
+      },
+      "VACUOLATION, CORTICAL": {
+        "preferred": "VACUOLATION",
+        "nci": "C121002",
+        "qualifier": "CORTICAL",
+        "organ": "ADRENAL GLAND"
+      },
+      "VACUOLATION, ZONA FASCICULATA": {
+        "preferred": "VACUOLATION",
+        "nci": "C121002",
+        "qualifier": "ZONA FASCICULATA",
+        "organ": "ADRENAL GLAND"
+      },
+      "HYPERPLASIA, MEDULLARY": {
+        "preferred": "HYPERPLASIA",
+        "nci": "C120932",
+        "qualifier": "MEDULLARY",
+        "organ": "ADRENAL GLAND"
+      },
+      "HYPERPLASIA, CHROMAFFIN CELL": {
+        "preferred": "HYPERPLASIA, CHROMAFFIN CELL",
+        "nci": "C120932",
+        "organ": "ADRENAL GLAND"
+      },
+      "PHEOCHROMOCYTOMA": {
+        "preferred": null,
+        "neoplasm_term": "PHEOCHROMOCYTOMA",
+        "codelist": "NEOPLASM (C88025)",
+        "note": "Neoplastic \u2014 uses NEOPLASM codelist"
+      },
+      "DEGENERATION, TUBULAR": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "TUBULAR",
+        "organ": "TESTIS"
+      },
+      "DEPLETION, GERM CELL": {
+        "preferred": "DEPLETION",
+        "nci": "C120877",
+        "qualifier": "GERM CELL",
+        "organ": "TESTIS"
+      },
+      "NECROSIS, GERM CELL": {
+        "preferred": "NECROSIS",
+        "nci": "C120963",
+        "qualifier": "GERM CELL",
+        "organ": "TESTIS"
+      },
+      "RETENTION, SPERMATID": {
+        "preferred": "RETENTION, SPERMATID",
+        "nci": "C120985",
+        "organ": "TESTIS"
+      },
+      "VACUOLATION, SERTOLI CELL": {
+        "preferred": "VACUOLATION",
+        "nci": "C121002",
+        "qualifier": "SERTOLI CELL",
+        "organ": "TESTIS"
+      },
+      "HYPERTROPHY, LEYDIG CELL": {
+        "preferred": "HYPERTROPHY, LEYDIG CELL",
+        "nci": "C120937",
+        "organ": "TESTIS"
+      },
+      "HYPERPLASIA, LEYDIG CELL": {
+        "preferred": "HYPERPLASIA, LEYDIG CELL",
+        "nci": "C120932",
+        "organ": "TESTIS"
+      },
+      "ATROPHY, LEYDIG CELL": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "LEYDIG CELL",
+        "organ": "TESTIS"
+      },
+      "ATROPHY, TUBULAR": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "TUBULAR",
+        "organ": "TESTIS"
+      },
+      "SECRETORY DEPLETION": {
+        "preferred": "SECRETORY DEPLETION",
+        "nci": "C120989",
+        "organ": "PROSTATE GLAND"
+      },
+      "ATROPHY, ACINAR": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "ACINAR",
+        "organ": "PROSTATE GLAND"
+      },
+      "DEPLETION, PRIMORDIAL FOLLICLE": {
+        "preferred": "DEPLETION",
+        "nci": "C120877",
+        "qualifier": "PRIMORDIAL FOLLICLE",
+        "organ": "OVARY"
+      },
+      "ATRESIA, FOLLICULAR, INCREASED": {
+        "preferred": "ATRESIA",
+        "nci": "C120846",
+        "qualifier": "FOLLICULAR",
+        "organ": "OVARY"
+      },
+      "CYST, FOLLICULAR": {
+        "preferred": "CYST",
+        "nci": "C120871",
+        "qualifier": "FOLLICULAR",
+        "organ": "OVARY"
+      },
+      "CORPORA LUTEA, DECREASED": {
+        "preferred": "CORPORA LUTEA, DECREASED",
+        "nci": "C120869",
+        "organ": "OVARY"
+      },
+      "ATROPHY, UTERINE": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "organ": "UTERUS"
+      },
+      "ATROPHY, ENDOMETRIAL": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "ENDOMETRIAL",
+        "organ": "UTERUS"
+      },
+      "HYPERPLASIA, ENDOMETRIAL": {
+        "preferred": "HYPERPLASIA, ENDOMETRIAL",
+        "nci": "C120932",
+        "organ": "UTERUS"
+      },
+      "METAPLASIA, SQUAMOUS, ENDOMETRIAL": {
+        "preferred": "METAPLASIA, SQUAMOUS",
+        "nci": "C120957",
+        "organ": "UTERUS"
+      },
+      "DEGENERATION, NEURONAL": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "NEURONAL",
+        "organ": "BRAIN"
+      },
+      "NECROSIS, NEURONAL": {
+        "preferred": "NECROSIS",
+        "nci": "C120963",
+        "qualifier": "NEURONAL",
+        "organ": "BRAIN"
+      },
+      "NECROSIS, HIPPOCAMPAL": {
+        "preferred": "NECROSIS",
+        "nci": "C120963",
+        "qualifier": "HIPPOCAMPAL",
+        "organ": "BRAIN"
+      },
+      "DEGENERATION, PURKINJE CELL": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "PURKINJE CELL",
+        "organ": "BRAIN"
+      },
+      "GLIOSIS": {
+        "preferred": "GLIOSIS",
+        "nci": "C120914",
+        "organ": "BRAIN"
+      },
+      "EDEMA, BRAIN": {
+        "preferred": "EDEMA",
+        "nci": "C120892",
+        "organ": "BRAIN"
+      },
+      "VACUOLATION, WHITE MATTER": {
+        "preferred": "VACUOLATION",
+        "nci": "C121002",
+        "qualifier": "WHITE MATTER",
+        "organ": "BRAIN"
+      },
+      "DEGENERATION, AXONAL": {
+        "preferred": "DEGENERATION, AXONAL",
+        "nci": "C120876",
+        "organ": "PERIPHERAL NERVE"
+      },
+      "DEGENERATION, PERIPHERAL NERVE": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "organ": "PERIPHERAL NERVE"
+      },
+      "DEMYELINATION": {
+        "preferred": "DEMYELINATION",
+        "nci": "C120878"
+      },
+      "HYPERTROPHY, SCHWANN CELL": {
+        "preferred": "HYPERTROPHY",
+        "nci": "C120937",
+        "qualifier": "SCHWANN CELL"
+      },
+      "DEGENERATION, MEDULLARY": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "MEDULLARY"
+      },
+      "DEGENERATION, RETINAL": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "RETINAL",
+        "organ": "EYE"
+      },
+      "ATROPHY, RETINAL": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "RETINAL",
+        "organ": "EYE"
+      },
+      "DEGENERATION, RPE": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "RETINAL PIGMENT EPITHELIUM",
+        "organ": "EYE"
+      },
+      "CATARACT": {
+        "preferred": "CATARACT",
+        "nci": "C120860",
+        "organ": "EYE"
+      },
+      "OPACITY, LENS": {
+        "preferred": "CATARACT",
+        "nci": "C120860",
+        "is_synonym": true
+      },
+      "DEGENERATION, LENS": {
+        "preferred": "DEGENERATION",
+        "nci": "C120876",
+        "qualifier": "LENS",
+        "organ": "EYE"
+      },
+      "OPACITY, CORNEAL": {
+        "preferred": "OPACITY",
+        "nci": "C120967",
+        "qualifier": "CORNEAL",
+        "organ": "EYE"
+      },
+      "EDEMA, CORNEAL": {
+        "preferred": "EDEMA",
+        "nci": "C120892",
+        "qualifier": "CORNEAL",
+        "organ": "EYE"
+      },
+      "MINERALIZATION, CORNEAL": {
+        "preferred": "MINERALIZATION",
+        "nci": "C120958",
+        "qualifier": "CORNEAL",
+        "organ": "EYE"
+      },
+      "ATROPHY, EPITHELIAL": {
+        "preferred": "ATROPHY",
+        "nci": "C120847",
+        "qualifier": "EPITHELIAL",
+        "organ": "EYE"
+      },
+      "INFLAMMATION, DERMAL": {
+        "preferred": "INFLAMMATION",
+        "nci": "C120943",
+        "qualifier": "DERMAL",
+        "organ": "SKIN"
+      },
+      "NECROSIS, DERMAL": {
+        "preferred": "NECROSIS",
+        "nci": "C120963",
+        "qualifier": "DERMAL",
+        "organ": "SKIN"
+      },
+      "ACANTHOSIS": {
+        "preferred": "ACANTHOSIS",
+        "nci": "C120838",
+        "organ": "SKIN"
+      },
+      "HYPERPLASIA, EPIDERMAL": {
+        "preferred": "HYPERPLASIA, EPIDERMAL",
+        "nci": "C120932",
+        "organ": "SKIN"
+      },
+      "ULCERATION": {
+        "preferred": "ULCER",
+        "nci": "C120999",
+        "organ": "SKIN"
+      },
+      "INFLAMMATION, INJECTION SITE": {
+        "preferred": "INFLAMMATION",
+        "nci": "C120943",
+        "organ": "INJECTION SITE"
+      },
+      "GRANULOMA, INJECTION SITE": {
+        "preferred": "GRANULOMA",
+        "nci": "C120916",
+        "organ": "INJECTION SITE"
+      },
+      "NECROSIS, INJECTION SITE": {
+        "preferred": "NECROSIS",
+        "nci": "C120963",
+        "organ": "INJECTION SITE"
+      },
+      "FIBROSIS, INJECTION SITE": {
+        "preferred": "FIBROSIS",
+        "nci": "C120904",
+        "organ": "INJECTION SITE"
+      },
+      "HEMORRHAGE, INJECTION SITE": {
+        "preferred": "HEMORRHAGE",
+        "nci": "C120925",
+        "organ": "INJECTION SITE"
+      },
+      "GIANT CELL, MULTINUCLEATED": {
+        "preferred": "GIANT CELL",
+        "nci": "C120910"
+      }
+    }
+  },
+  "lb_test_alignment": {
+    "_codelist": "SEND LBTESTCD / LBTEST paired codelist",
+    "_note": "LBTESTCD max 8 chars. Multiple alt_codes listed where sponsor variation is common.",
+    "tests": {
+      "RBC": {
+        "LBTESTCD": "RBC",
+        "LBTEST": "Erythrocytes",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^12/L"
+      },
+      "WBC": {
+        "LBTESTCD": "WBC",
+        "LBTEST": "Leukocytes",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L"
+      },
+      "HGB": {
+        "LBTESTCD": "HGB",
+        "LBTEST": "Hemoglobin",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "g/dL"
+      },
+      "HCT": {
+        "LBTESTCD": "HCT",
+        "LBTEST": "Hematocrit",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "L/L"
+      },
+      "MCV": {
+        "LBTESTCD": "MCV",
+        "LBTEST": "Ery. Mean Corpuscular Volume",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "fL"
+      },
+      "RETICULOCYTES": {
+        "LBTESTCD": "RETI",
+        "LBTEST": "Reticulocytes",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L",
+        "alt_codes": [
+          "RETILE",
+          "RETIRBC"
+        ]
+      },
+      "PLATELETS": {
+        "LBTESTCD": "PLAT",
+        "LBTEST": "Platelets",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L"
+      },
+      "NEUTROPHILS": {
+        "LBTESTCD": "NEUT",
+        "LBTEST": "Neutrophils",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L",
+        "alt_codes": [
+          "NEUTLE"
+        ]
+      },
+      "LYMPHOCYTES": {
+        "LBTESTCD": "LYM",
+        "LBTEST": "Lymphocytes",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L",
+        "alt_codes": [
+          "LYMLE"
+        ]
+      },
+      "MONOCYTES": {
+        "LBTESTCD": "MONO",
+        "LBTEST": "Monocytes",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L"
+      },
+      "EOSINOPHILS": {
+        "LBTESTCD": "EOS",
+        "LBTEST": "Eosinophils",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "10^9/L"
+      },
+      "NRBC": {
+        "LBTESTCD": "NRBC",
+        "LBTEST": "Nucleated Red Blood Cells",
+        "LBCAT": "HEMATOLOGY",
+        "LBSPEC": "WHOLE BLOOD",
+        "unit": "/100 WBC"
+      },
+      "T4": {
+        "LBTESTCD": "T4",
+        "LBTEST": "Thyroxine",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ug/dL",
+        "alt_codes": [
+          "THYROX"
+        ]
+      },
+      "FREE_T4": {
+        "LBTESTCD": "T4FREE",
+        "LBTEST": "Free Thyroxine",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ng/dL",
+        "alt_codes": [
+          "FT4"
+        ]
+      },
+      "T3": {
+        "LBTESTCD": "T3",
+        "LBTEST": "Triiodothyronine",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ng/dL"
+      },
+      "TSH": {
+        "LBTESTCD": "TSH",
+        "LBTEST": "Thyroid Stimulating Hormone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "uIU/mL"
+      },
+      "CORTISOL": {
+        "LBTESTCD": "CORT",
+        "LBTEST": "Cortisol",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ug/dL",
+        "note": "Dog/primate. Rats use corticosterone."
+      },
+      "CORTICOSTERONE": {
+        "LBTESTCD": "CORTCST",
+        "LBTEST": "Corticosterone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ng/mL",
+        "note": "Rat/mouse primary glucocorticoid."
+      },
+      "ACTH": {
+        "LBTESTCD": "ACTH",
+        "LBTEST": "Adrenocorticotropic Hormone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "PLASMA",
+        "unit": "pg/mL"
+      },
+      "TESTOSTERONE": {
+        "LBTESTCD": "TESTO",
+        "LBTEST": "Testosterone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ng/dL"
+      },
+      "ESTRADIOL": {
+        "LBTESTCD": "ESTRA",
+        "LBTEST": "Estradiol",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "pg/mL"
+      },
+      "FSH": {
+        "LBTESTCD": "FSH",
+        "LBTEST": "Follicle Stimulating Hormone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "mIU/mL"
+      },
+      "LH": {
+        "LBTESTCD": "LH",
+        "LBTEST": "Luteinizing Hormone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "mIU/mL"
+      },
+      "PROGESTERONE": {
+        "LBTESTCD": "PROG",
+        "LBTEST": "Progesterone",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "ng/mL"
+      },
+      "INHIBIN_B": {
+        "LBTESTCD": "INHBB",
+        "LBTEST": "Inhibin B",
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "SERUM",
+        "unit": "pg/mL",
+        "note": "Likely sponsor extension of SEND CT."
+      },
+      "CHOLESTEROL": {
+        "LBTESTCD": "CHOL",
+        "LBTEST": "Cholesterol",
+        "LBCAT": "CHEMISTRY",
+        "LBSPEC": "SERUM",
+        "unit": "mg/dL"
+      },
+      "GLUCOSE": {
+        "LBTESTCD": "GLUC",
+        "LBTEST": "Glucose",
+        "LBCAT": "CHEMISTRY",
+        "LBSPEC": "SERUM",
+        "unit": "mg/dL"
+      },
+      "SODIUM": {
+        "LBTESTCD": "SODIUM",
+        "LBTEST": "Sodium",
+        "LBCAT": "CHEMISTRY",
+        "LBSPEC": "SERUM",
+        "unit": "mmol/L"
+      },
+      "POTASSIUM": {
+        "LBTESTCD": "K",
+        "LBTEST": "Potassium",
+        "LBCAT": "CHEMISTRY",
+        "LBSPEC": "SERUM",
+        "unit": "mmol/L"
+      },
+      "CATECHOLAMINES": {
+        "LBTESTCD": "MULTIPLE",
+        "components": [
+          "EPINEP",
+          "NOREPI",
+          "DOPA"
+        ],
+        "LBCAT": "ENDOCRINE",
+        "LBSPEC": "PLASMA",
+        "note": "Not single code. Query individual catecholamines."
+      }
+    }
+  },
+  "om_organ_alignment": {
+    "_codelist": "SEND OMTESTCD / OMTEST paired codelist",
+    "organs": {
+      "SPLEEN": {
+        "OMTESTCD": "SPLNWT",
+        "OMTEST": "Spleen Weight",
+        "OMSPEC": "SPLEEN",
+        "unit": "g"
+      },
+      "THYROID": {
+        "OMTESTCD": "THYRWT",
+        "OMTEST": "Thyroid/Parathyroid Weight",
+        "OMSPEC": "THYROID GLAND",
+        "unit": "mg",
+        "note": "Often weighed with parathyroids."
+      },
+      "ADRENAL": {
+        "OMTESTCD": "ADRNWT",
+        "OMTEST": "Adrenal Gland Weight",
+        "OMSPEC": "ADRENAL GLAND",
+        "unit": "mg",
+        "paired": true
+      },
+      "TESTES": {
+        "OMTESTCD": "TESWT",
+        "OMTEST": "Testis Weight",
+        "OMSPEC": "TESTIS",
+        "unit": "g",
+        "paired": true
+      },
+      "OVARY": {
+        "OMTESTCD": "OVRYWT",
+        "OMTEST": "Ovary Weight",
+        "OMSPEC": "OVARY",
+        "unit": "mg",
+        "paired": true
+      },
+      "UTERUS": {
+        "OMTESTCD": "UTRSWT",
+        "OMTEST": "Uterus Weight",
+        "OMSPEC": "UTERUS",
+        "unit": "g"
+      },
+      "PROSTATE": {
+        "OMTESTCD": "PRSWT",
+        "OMTEST": "Prostate Weight",
+        "OMSPEC": "PROSTATE GLAND",
+        "unit": "mg"
+      },
+      "BRAIN": {
+        "OMTESTCD": "BRNWT",
+        "OMTEST": "Brain Weight",
+        "OMSPEC": "BRAIN",
+        "unit": "g"
+      },
+      "EYE": {
+        "OMTESTCD": "EYEWT",
+        "OMTEST": "Eye Weight",
+        "OMSPEC": "EYE",
+        "unit": "mg",
+        "note": "Not routine; ocular tox studies only."
+      },
+      "PERIPHERAL_NERVE": {
+        "OMTESTCD": null,
+        "note": "Not weighed."
+      },
+      "SKIN": {
+        "OMTESTCD": null,
+        "note": "Not weighed."
+      },
+      "INJECTION_SITE": {
+        "OMTESTCD": null,
+        "note": "Not weighed."
+      },
+      "BONE_MARROW": {
+        "OMTESTCD": null,
+        "note": "Not weighed. Spleen weight is surrogate via compensatory EMH."
+      }
+    }
+  },
+  "cl_observation_alignment": {
+    "_codelist": "SEND CLTESTCD / CLTEST",
+    "_note": "Some observations cross into BW, FW, or FP domains.",
+    "observations": {
+      "PALLOR": {
+        "CLTESTCD": "PALLOR",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "PETECHIAE": {
+        "CLTESTCD": "PETECH",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "HEMORRHAGE": {
+        "CLTESTCD": "HEMORR",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "HYPOACTIVITY": {
+        "CLTESTCD": "HYPACT",
+        "CLCAT": "CLINICAL SIGN",
+        "synonyms": [
+          "DECREASED ACTIVITY"
+        ]
+      },
+      "DECREASED ACTIVITY": {
+        "CLTESTCD": "HYPACT",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "MORIBUND": {
+        "CLTESTCD": "MORIB",
+        "CLCAT": "MORTALITY"
+      },
+      "ICTERUS": {
+        "CLTESTCD": "ICTER",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "DARK URINE": {
+        "CLTESTCD": "DKURIN",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "PILOERECTION": {
+        "CLTESTCD": "PILOER",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "BODY WEIGHT DECREASED": {
+        "CLTESTCD": null,
+        "domain_redirect": "BW",
+        "note": "Body weight in BW domain."
+      },
+      "FOOD CONSUMPTION DECREASED": {
+        "CLTESTCD": null,
+        "domain_redirect": "FW",
+        "note": "Food consumption in FW domain."
+      },
+      "TREMORS": {
+        "CLTESTCD": "TREMOR",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "CONVULSIONS": {
+        "CLTESTCD": "CONVUL",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "SEIZURES": {
+        "CLTESTCD": "SEIZUR",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ATAXIA": {
+        "CLTESTCD": "ATAXIA",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ABNORMAL POSTURE": {
+        "CLTESTCD": "ABNPOS",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "GAIT ABNORMALITY": {
+        "CLTESTCD": "ABTGAT",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "HEAD TILT": {
+        "CLTESTCD": "HDTILT",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "WEAKNESS": {
+        "CLTESTCD": "WEAK",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "LIMB WEAKNESS": {
+        "CLTESTCD": "LMBWK",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "FOOT SPLAY": {
+        "CLTESTCD": "FTSPLY",
+        "CLCAT": "FUNCTIONAL OBSERVATION"
+      },
+      "DECREASED GRIP STRENGTH": {
+        "CLTESTCD": "GRIP",
+        "CLCAT": "FUNCTIONAL OBSERVATION"
+      },
+      "NERVE CONDUCTION VELOCITY DECREASED": {
+        "CLTESTCD": null,
+        "note": "Electrophysiology \u2014 separate domain."
+      },
+      "COLLAPSE": {
+        "CLTESTCD": "COLLAP",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "TACHYPNEA": {
+        "CLTESTCD": "TACHPN",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ALOPECIA": {
+        "CLTESTCD": "ALOP",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ERYTHEMA": {
+        "CLTESTCD": "ERYTHM",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "EDEMA": {
+        "CLTESTCD": "EDEMA",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "DESQUAMATION": {
+        "CLTESTCD": "DESQM",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "SCAB": {
+        "CLTESTCD": "SCAB",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ESCHAR": {
+        "CLTESTCD": "ESCHAR",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "CORNEAL OPACITY": {
+        "CLTESTCD": "CORNOP",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "LENS OPACITY": {
+        "CLTESTCD": "LENSOP",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "SLIT LAMP ABNORMALITY": {
+        "CLTESTCD": "SLITLM",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "FUNDOSCOPIC ABNORMALITY": {
+        "CLTESTCD": "FUNDSC",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "RETINAL PIGMENT CHANGES": {
+        "CLTESTCD": "RETPIG",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "VASCULAR ATTENUATION": {
+        "CLTESTCD": "VASATT",
+        "CLCAT": "OPHTHALMIC"
+      },
+      "SWOLLEN VULVA": {
+        "CLTESTCD": "SWLVLV",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "VAGINAL DISCHARGE": {
+        "CLTESTCD": "VAGDIS",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "PERSISTENT ESTRUS": {
+        "CLTESTCD": "PERSEST",
+        "CLCAT": "ESTROUS CYCLE"
+      },
+      "PROLONGED DIESTRUS": {
+        "CLTESTCD": "PRLDIE",
+        "CLCAT": "ESTROUS CYCLE"
+      },
+      "IRREGULAR CYCLING": {
+        "CLTESTCD": "IRRCYC",
+        "CLCAT": "ESTROUS CYCLE"
+      },
+      "INJECTION SITE ERYTHEMA": {
+        "CLTESTCD": "ISERYT",
+        "CLCAT": "INJECTION SITE"
+      },
+      "INJECTION SITE SWELLING": {
+        "CLTESTCD": "ISSWEL",
+        "CLCAT": "INJECTION SITE"
+      },
+      "INJECTION SITE MASS": {
+        "CLTESTCD": "ISMASS",
+        "CLCAT": "INJECTION SITE"
+      },
+      "INJECTION SITE INDURATION": {
+        "CLTESTCD": "ISIND",
+        "CLCAT": "INJECTION SITE"
+      },
+      "INJECTION SITE DISCOLORATION": {
+        "CLTESTCD": "ISDISC",
+        "CLCAT": "INJECTION SITE"
+      },
+      "INJECTION SITE REACTIONS": {
+        "CLTESTCD": "ISREAC",
+        "CLCAT": "INJECTION SITE"
+      },
+      "DELAYED WOUND HEALING": {
+        "CLTESTCD": "DLYWND",
+        "CLCAT": "CLINICAL SIGN"
+      },
+      "ECCHYMOSES": {
+        "CLTESTCD": "ECCHY",
+        "CLCAT": "CLINICAL SIGN"
+      }
+    }
+  },
+  "mispec_organ_alignment": {
+    "_codelist": "LOC (C74456) \u2014 Anatomical Location",
+    "organs": {
+      "BONE_MARROW": {
+        "MISPEC": "BONE MARROW",
+        "alt": [
+          "BONE MARROW, STERNUM",
+          "BONE MARROW, FEMUR"
+        ]
+      },
+      "SPLEEN": {
+        "MISPEC": "SPLEEN"
+      },
+      "LIVER": {
+        "MISPEC": "LIVER"
+      },
+      "THYROID": {
+        "MISPEC": "THYROID GLAND"
+      },
+      "ADRENAL": {
+        "MISPEC": "ADRENAL GLAND"
+      },
+      "TESTES": {
+        "MISPEC": "TESTIS"
+      },
+      "EPIDIDYMIS": {
+        "MISPEC": "EPIDIDYMIS"
+      },
+      "PROSTATE": {
+        "MISPEC": "PROSTATE GLAND"
+      },
+      "SEMINAL_VESICLE": {
+        "MISPEC": "SEMINAL VESICLE"
+      },
+      "OVARY": {
+        "MISPEC": "OVARY"
+      },
+      "UTERUS": {
+        "MISPEC": "UTERUS"
+      },
+      "BRAIN": {
+        "MISPEC": "BRAIN",
+        "alt": [
+          "BRAIN, CEREBRUM",
+          "BRAIN, CEREBELLUM",
+          "BRAIN, HIPPOCAMPUS",
+          "BRAIN, BRAIN STEM"
+        ]
+      },
+      "SPINAL_CORD": {
+        "MISPEC": "SPINAL CORD"
+      },
+      "PERIPHERAL_NERVE": {
+        "MISPEC": "NERVE, SCIATIC",
+        "alt": [
+          "NERVE, TIBIAL",
+          "NERVE, PERONEAL",
+          "NERVE, OPTIC"
+        ]
+      },
+      "EYE": {
+        "MISPEC": "EYE"
+      },
+      "SKIN": {
+        "MISPEC": "SKIN"
+      },
+      "INJECTION_SITE": {
+        "MISPEC": "INJECTION SITE"
+      },
+      "PITUITARY": {
+        "MISPEC": "PITUITARY GLAND"
+      },
+      "THYMUS": {
+        "MISPEC": "THYMUS"
+      },
+      "KIDNEY": {
+        "MISPEC": "KIDNEY"
+      }
+    }
+  },
+  "implementation_guidance": {
+    "query_pattern": [
+      "1. MI domain: WHERE MISTRESC IN (mapped_nonneo_terms) AND MISPEC = mapped_organ",
+      "2. LB domain: WHERE LBTESTCD IN (mapped_test_codes) \u2014 compare vs concurrent control",
+      "3. OM domain: WHERE OMTESTCD = mapped_weight_code \u2014 compare vs concurrent control",
+      "4. CL domain: WHERE CLSTRESC LIKE mapped_observation_terms",
+      "5. Compute concordance tier based on domain coverage count"
+    ],
+    "synonym_resolution": [
+      "Build lookup from mi_finding_alignment.terms where is_synonym=true",
+      "Normalize all MISTRESC to preferred terms before evaluation",
+      "Split comma-separated qualifiers: match base term + qualifier separately",
+      "Case-insensitive matching mandatory",
+      "Log unresolved terms for curation"
+    ],
+    "severity_threshold": {
+      "exclude": "MINIMAL (likely background in rodents)",
+      "include": "MILD and above",
+      "strong_signal": "MARKED or SEVERE \u2014 supports concordance even without full domain coverage"
+    },
+    "direction_evaluation": {
+      "method": "Compare treated group mean to concurrent control using Dunnett's test or equivalent",
+      "threshold": "Statistically significant (p<0.05) OR biologically meaningful (>2 SD from control)"
+    },
+    "cross_study_challenges": [
+      "~32% of MISTRESC values in SENDIG v3.1 submissions are non-standard (Carfagna 2021)",
+      "UNREMARKABLE and NORMAL are not in NONNEO codelist but are most frequent MISTRESC values",
+      "Sponsor-defined extensions common for cell-type qualifiers",
+      "Engine should maintain a synonym/mapping table that grows with each new study processed"
+    ]
+  }
+}

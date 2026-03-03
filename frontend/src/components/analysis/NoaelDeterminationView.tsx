@@ -11,7 +11,6 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
-import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
@@ -52,7 +51,7 @@ import type {
   SignalSelection,
   StudySummaryFilters as Filters,
 } from "@/types/analysis-views";
-import { deriveOrganSummaries, deriveEndpointSummaries } from "@/lib/derive-summaries";
+import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows } from "@/lib/derive-summaries";
 import type { OrganSummary, EndpointSummary } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
@@ -1698,7 +1697,11 @@ export function NoaelDeterminationView() {
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection } = useViewSelection();
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useEffectiveNoael(studyId);
-  const { data: aeData, isLoading: aeLoading, error: aeError } = useAdverseEffectSummary(studyId);
+  const { activeFindings, isLoading: aeLoading, error: aeError } = useFindingsAnalyticsLocal(studyId);
+  const aeData = useMemo(() => {
+    if (!activeFindings.length) return undefined;
+    return mapFindingsToRows(activeFindings);
+  }, [activeFindings]);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { data: signalData, isLoading: signalLoading } = useStudySignalSummary(studyId);

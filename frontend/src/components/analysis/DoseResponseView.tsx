@@ -20,7 +20,8 @@ import {
   buildVolcanoScatterOption,
 } from "@/components/analysis/charts/dose-response-charts";
 import type { MergedPoint, VolcanoPoint } from "@/components/analysis/charts/dose-response-charts";
-import { useDoseResponseMetrics } from "@/hooks/useDoseResponseMetrics";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
@@ -261,7 +262,11 @@ export function DoseResponseView() {
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
   const statMethods = useStatMethods(studyId);
-  const { data: drData, isLoading, error } = useDoseResponseMetrics(studyId);
+  const { activeFindings, data: findingsData, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const drData = useMemo(() => {
+    if (!activeFindings.length || !findingsData?.dose_groups) return undefined;
+    return flattenFindingsToDRRows(activeFindings, findingsData.dose_groups);
+  }, [activeFindings, findingsData?.dose_groups]);
 
   // State — selectedEndpoint is local for evidence panel display,
   // but also synced to/from StudySelectionContext
