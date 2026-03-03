@@ -6,7 +6,7 @@ import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from 
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,7 +75,10 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const [noteText, setNoteText] = useState<string | null>(null);
   const displayNote = noteText ?? currentNote;
 
-  // Analysis settings via session state
+  // Analysis settings via centralized StudySettingsContext
+  const { settings, updateSetting } = useStudySettings();
+  const { controlGroup, organWeightMethod, adversityThreshold, pairwiseTest, trendTest, incidenceTrend, multiplicity, effectSize, recoveryPooling } = settings;
+
   // Control groups: exclude recovery controls per spec §2A
   const controlGroups = useMemo(() => {
     if (!meta?.dose_groups) return [];
@@ -86,44 +89,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const allControlCount = meta?.dose_groups?.filter((dg) => dg.dose_level === 0).length ?? 0;
   const recoveryControlsExcluded = allControlCount > controlGroups.length;
 
-  const defaultControl = controlGroups.length > 0 ? controlGroups[0].value : "";
-  const [controlGroup, setControlGroup] = useSessionState(
-    `pcc.${studyId}.controlGroup`,
-    defaultControl,
-  );
-  const [organWeightMethod, setOrganWeightMethod] = useSessionState(
-    `pcc.${studyId}.organWeightMethod`,
-    "absolute",
-  );
-  const [adversityThreshold, setAdversityThreshold] = useSessionState(
-    `pcc.${studyId}.adversityThreshold`,
-    "grade-ge-2-or-dose-dep",
-  );
-  const [pairwiseTest, setPairwiseTest] = useSessionState(
-    `pcc.${studyId}.pairwiseTest`,
-    "dunnett",
-  );
-  const [trendTest, setTrendTest] = useSessionState(
-    `pcc.${studyId}.trendTest`,
-    "jonckheere",
-  );
-  const [incidenceTrend, setIncidenceTrend] = useSessionState(
-    `pcc.${studyId}.incidenceTrend`,
-    "cochran-armitage",
-  );
-  const [multiplicity, setMultiplicity] = useSessionState(
-    `pcc.${studyId}.multiplicity`,
-    "dunnett-fwer",
-  );
-  const [effectSize, setEffectSize] = useSessionState(
-    `pcc.${studyId}.effectSize`,
-    "hedges-g",
-  );
   const normalization = useOrganWeightNormalization(studyId, false, effectSize as EffectSizeMethod);
-  const [recoveryPooling, setRecoveryPooling] = useSessionState(
-    `pcc.${studyId}.recoveryPooling`,
-    "pool",
-  );
 
   if (metaLoading) {
     return (
@@ -158,7 +124,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               <SettingsSelect
                 value={controlGroup}
                 options={controlGroups}
-                onChange={setControlGroup}
+                onChange={(v) => updateSetting("controlGroup", v)}
                 confirmMessage="Changing comparator will recalculate all statistics. Continue?"
               />
             </SettingsRow>
@@ -184,7 +150,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "ratio-bw", label: "Ratio to BW" },
               { value: "ratio-brain", label: "Ratio to brain" },
             ]}
-            onChange={setOrganWeightMethod}
+            onChange={(v) => updateSetting("organWeightMethod", v as "absolute" | "ratio-bw" | "ratio-brain")}
           />
         </SettingsRow>
         {/* Normalization measurements + rationale — shown when tier ≥ 2 and data cached */}
@@ -250,7 +216,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "grade-ge-2-or-dose-dep", label: "Grade \u2265 2 or dose-dep (default)" },
               { value: "custom", label: "Custom" },
             ]}
-            onChange={setAdversityThreshold}
+            onChange={(v) => updateSetting("adversityThreshold", v)}
           />
         </SettingsRow>
 
@@ -264,7 +230,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                   { value: "pool", label: "Pool with main study" },
                   { value: "separate", label: "Analyze separately" },
                 ]}
-                onChange={setRecoveryPooling}
+                onChange={(v) => updateSetting("recoveryPooling", v as "pool" | "separate")}
                 confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
               />
             </SettingsRow>
@@ -285,7 +251,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "williams", label: "Williams", disabled: true },
               { value: "steel", label: "Steel", disabled: true },
             ]}
-            onChange={setPairwiseTest}
+            onChange={(v) => updateSetting("pairwiseTest", v as "dunnett" | "williams" | "steel")}
           />
         </SettingsRow>
         <SettingsRow label="Multiplicity">
@@ -306,7 +272,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                     { value: "bh-fdr", label: "BH-FDR", disabled: true },
                   ]
             }
-            onChange={setMultiplicity}
+            onChange={(v) => updateSetting("multiplicity", v as "dunnett-fwer" | "bonferroni")}
           />
         </SettingsRow>
         <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
@@ -324,7 +290,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "cuzick", label: "Cuzick", disabled: true },
               { value: "williams-trend", label: "Williams (parametric)", disabled: true },
             ]}
-            onChange={setTrendTest}
+            onChange={(v) => updateSetting("trendTest", v as "jonckheere" | "cuzick" | "williams-trend")}
           />
         </SettingsRow>
         <SettingsRow label="Incidence trend">
@@ -334,7 +300,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "cochran-armitage", label: "Cochran-Armitage (approx.)" },
               { value: "logistic-slope", label: "Logistic regression", disabled: true },
             ]}
-            onChange={setIncidenceTrend}
+            onChange={(v) => updateSetting("incidenceTrend", v as "cochran-armitage" | "logistic-slope")}
           />
         </SettingsRow>
         <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
@@ -348,7 +314,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               { value: "cohens-d", label: "Cohen's d (uncorrected)" },
               { value: "glass-delta", label: "Glass's delta" },
             ]}
-            onChange={setEffectSize}
+            onChange={(v) => updateSetting("effectSize", v as EffectSizeMethod)}
           />
         </SettingsRow>
         <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">

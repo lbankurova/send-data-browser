@@ -14,6 +14,8 @@ import {
 } from "@/lib/lab-clinical-catalog";
 import type { EndpointSummary, SexEndpointSummary } from "@/lib/derive-summaries";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
+import { TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -250,6 +252,7 @@ export function VerdictPane({
   endpointConfidence,
   onSeeDecomposition,
 }: Props) {
+  const { settings: studySettings } = useStudySettings();
   const verdict = notEvaluated
     ? { label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "", underlineColor: null }
     : computeVerdict(treatmentSummary, analytics, finding);
@@ -344,7 +347,9 @@ export function VerdictPane({
   const effectMag = effectSize != null ? getEffectMagnitudeLabel(effectSize) : null;
 
   const trendP = bestDR?.trend_p ?? bestStats?.trend_p ?? null;
-  const trendTestName = isContinuous ? "Jonckheere-Terpstra" : "Cochran-Armitage";
+  const trendTestName = isContinuous
+    ? (TREND_TEST_LABELS[studySettings.trendTest] ?? "Jonckheere-Terpstra")
+    : (INCIDENCE_TREND_LABELS[studySettings.incidenceTrend] ?? "Cochran-Armitage");
 
   // Fold-change or % change cell
   let pctChange: string | null = null;

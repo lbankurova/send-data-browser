@@ -4,7 +4,8 @@ import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
-import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
+import { MULTIPLICITY_LABELS } from "@/lib/build-settings-params";
 import { Loader2 } from "lucide-react";
 import {
   useReactTable,
@@ -174,6 +175,7 @@ function OverviewTab({
   allLesionData?: LesionSeverityRow[];
   onSpecimenNavigate?: (specimen: string) => void;
 }) {
+  const { settings: studySettingsOverview } = useStudySettings();
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.histopath.sorting", []);
   const [findingColSizing, setFindingColSizing] = useSessionState<ColumnSizingState>("pcc.histopath.columnSizing", {});
   const [heatmapView, setHeatmapView] = useState<"severity" | "incidence">("severity");
@@ -1562,7 +1564,9 @@ function OverviewTab({
         {/* Multiple testing footnote for statistical methods */}
         {(doseDepThreshold === "ca_trend" || doseDepThreshold === "severity_trend" || doseDepThreshold === "fisher_pairwise") && (
           <p className="px-1 py-0.5 text-[9px] italic text-muted-foreground/50">
-            Statistical tests are unadjusted for multiplicity. Significance should be interpreted in context of dose-response pattern and biological plausibility.
+            {studySettingsOverview.multiplicity === "dunnett-fwer"
+              ? "Statistical tests are unadjusted for multiplicity. Significance should be interpreted in context of dose-response pattern and biological plausibility."
+              : `Multiplicity correction: ${MULTIPLICITY_LABELS[studySettingsOverview.multiplicity] ?? studySettingsOverview.multiplicity}. Significance should be interpreted in context of dose-response pattern and biological plausibility.`}
           </p>
         )}
       </div>
@@ -2080,37 +2084,9 @@ export function HistopathologyView() {
   const { data: rawLesionData, isLoading, error } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: trendData } = useFindingDoseTrends(studyId);
-  const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
-
-  // When scheduled-only is active, swap each row's stats with scheduled variants.
-  // Rows with empty scheduled_group_stats (all subjects were early deaths) are filtered out.
-  // CL domain rows (no scheduled data) pass through unchanged.
-  const lesionData = useMemo(() => {
-    if (!rawLesionData) return undefined;
-    if (!isScheduledOnly) return rawLesionData;
-    const result: LesionSeverityRow[] = [];
-    for (const row of rawLesionData) {
-      if (!row.scheduled_group_stats) {
-        // CL domain — no scheduled stats, pass through
-        result.push(row);
-        continue;
-      }
-      if (row.scheduled_group_stats.length === 0) continue; // all early deaths
-      const sg = row.scheduled_group_stats.find(s => s.dose_level === row.dose_level);
-      if (!sg) continue; // no scheduled data for this dose level
-      const newAvgSev = sg.avg_severity ?? row.avg_severity;
-      result.push({
-        ...row,
-        n: sg.n,
-        affected: sg.affected,
-        incidence: sg.incidence,
-        avg_severity: newAvgSev,
-        severity_status: sg.affected === 0 ? "absent" : (newAvgSev != null ? "graded" : "present_ungraded"),
-        modifier_counts: sg.modifier_counts ?? row.modifier_counts,
-      });
-    }
-    return result;
-  }, [rawLesionData, isScheduledOnly]);
+  // Backend now handles scheduled-only filtering via ?scheduled_only=true query param.
+  // The useLesionSeveritySummary hook passes settings, so data arrives pre-filtered.
+  const lesionData = rawLesionData;
 
   // Read selected specimen from StudySelectionContext
   const selectedSpecimen = studySelection.specimen ?? null;

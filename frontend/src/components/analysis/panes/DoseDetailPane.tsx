@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { getPValueColor, formatPValue, getSexColor, getDoseGroupColor } from "@/lib/severity-colors";
 import type { FindingContext, ANCOVAResult } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
+import { PAIRWISE_TEST_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS, MULTIPLICITY_LABELS } from "@/lib/build-settings-params";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -122,11 +124,16 @@ function ConclusionBullets({
 // ─── Component ──────────────────────────────────────────────
 
 export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistics, siblingDoseResponse, siblingSex, ancova, siblingAncova }: Props) {
+  const { settings } = useStudySettings();
   const isContinuous = statistics.data_type === "continuous";
+  const pairwiseLabel = PAIRWISE_TEST_LABELS[settings.pairwiseTest] ?? "Dunnett\u2019s test";
+  const multLabel = MULTIPLICITY_LABELS[settings.multiplicity] ?? "Dunnett FWER";
   const testLabel = isContinuous
-    ? "Pairwise: Dunnett\u2019s test (adjusted)"
+    ? `Pairwise: ${pairwiseLabel} (${multLabel})`
     : "Pairwise: Fisher\u2019s exact test (Bonferroni-adjusted)";
-  const trendTestName = isContinuous ? "Jonckheere-Terpstra" : "Cochran-Armitage";
+  const trendTestName = isContinuous
+    ? (TREND_TEST_LABELS[settings.trendTest] ?? "Jonckheere-Terpstra")
+    : (INCIDENCE_TREND_LABELS[settings.incidenceTrend] ?? "Cochran-Armitage");
   const doseUnit = statistics.rows.find(r => r.dose_unit)?.dose_unit ?? "";
 
   const hasSibling = siblingStatistics != null && siblingSex != null;

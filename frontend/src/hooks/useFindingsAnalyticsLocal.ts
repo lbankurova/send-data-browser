@@ -15,9 +15,7 @@
 
 import { useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
-import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { useSessionState } from "@/hooks/useSessionState";
-import { useStatMethods } from "@/hooks/useStatMethods";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
@@ -148,9 +146,10 @@ export function applyScheduledFilter(findings: UnifiedFinding[]): UnifiedFinding
 
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
-  const { useScheduledOnly: isScheduledOnly } = useScheduledOnly();
-  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
-  const statMethods = useStatMethods(studyId);
+  const { settings } = useStudySettings();
+  const isScheduledOnly = settings.scheduledOnly;
+  const recoveryPooling = settings.recoveryPooling;
+  const statMethods = { effectSize: settings.effectSize, multiplicity: settings.multiplicity };
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
 
   // Organ weight normalization — shared React Query key with findings, zero extra API calls.
