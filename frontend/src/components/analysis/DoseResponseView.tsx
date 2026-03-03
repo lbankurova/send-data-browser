@@ -59,6 +59,7 @@ import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import type { GroupStat, PairwiseResult } from "@/types/analysis";
+import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -262,7 +263,7 @@ export function DoseResponseView() {
   const location = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
   const statMethods = useStatMethods(studyId);
-  const { activeFindings, data: findingsData, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { activeFindings, data: findingsData, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsLocal(studyId);
   const drData = useMemo(() => {
     if (!activeFindings.length || !findingsData?.dose_groups) return undefined;
     return flattenFindingsToDRRows(activeFindings, findingsData.dose_groups);
@@ -627,7 +628,8 @@ export function DoseResponseView() {
   const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor("F") };
 
   return (
-    <div className="flex h-full flex-col bg-muted/5">
+    <div className="relative flex h-full flex-col bg-muted/5">
+        <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
         {/* Summary header with endpoint picker */}
         {selectedSummary ? (
           <div className="sticky top-0 z-10 shrink-0 border-b bg-background px-3 py-1.5">

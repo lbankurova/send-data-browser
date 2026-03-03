@@ -68,6 +68,7 @@ import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { deriveWeightedNOAEL } from "@/lib/endpoint-confidence";
 import type { WeightedNOAELEndpoint, WeightedNOAELResult } from "@/lib/endpoint-confidence";
@@ -1697,7 +1698,7 @@ export function NoaelDeterminationView() {
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection } = useViewSelection();
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useEffectiveNoael(studyId);
-  const { activeFindings, isLoading: aeLoading, error: aeError } = useFindingsAnalyticsLocal(studyId);
+  const { activeFindings, isLoading: aeLoading, isFetching, isPlaceholderData, error: aeError } = useFindingsAnalyticsLocal(studyId);
   const aeData = useMemo(() => {
     if (!activeFindings.length) return undefined;
     return mapFindingsToRows(activeFindings);
@@ -1862,7 +1863,8 @@ export function NoaelDeterminationView() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="relative flex h-full flex-col overflow-hidden">
+      <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       {/* Top section: banner + bars — scrollable, capped at 45% so evidence panel always visible */}
       <div className="max-h-[45%] min-h-0 shrink overflow-y-auto">
         {/* NOAEL Banner */}
