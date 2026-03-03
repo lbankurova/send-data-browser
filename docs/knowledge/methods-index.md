@@ -89,7 +89,7 @@ One-line lookup for all methods in `methods.md`. Scan this first; drill into the
 | CLASS-16 | Endpoint Confidence (Rail) | Adverse signal confidence for findings rail |
 | CLASS-17 | Dose-Proportionality | Log-log PK regression |
 | CLASS-18 | Rule Engine (R01-R19) | 19 signal rules across endpoint/organ/study |
-| CLASS-19 | Finding Nature | Biological nature categories + reversibility |
+| CLASS-19 | Finding Nature | Biological nature categories + organ-specific recovery duration (v3: 14 organs, 56 findings, 4 severity models, species modifiers, uncertainty bands) |
 | CLASS-20 | Recovery Classification | Interpretive categories from CLASS-10 verdicts |
 | CLASS-21 | OPI Classification | Organ weight proportionality to body weight |
 | CLASS-22 | Non-Monotonic Detection | Detect threshold patterns with peak not at highest dose |

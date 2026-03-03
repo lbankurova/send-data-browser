@@ -920,6 +920,7 @@ Not:         [common misreadings that lead to bugs]
 - Never null. Defaults to `"unknown"`.
 - CT-normalized lookup (via `finding-term-map.ts`) takes precedence over substring matching fallback.
 - Proliferative = neoplastic (irreversible). Adaptive = hypertrophy, hyperplasia, vacuolation (reversible). Degenerative = fibrosis, sclerosis, necrosis (moderate to irreversible).
+- Nature classification comes from CT/keyword matching — the organ-specific recovery duration lookup table (v3) does not override nature, only recovery timelines.
 
 **Null means:** N/A — never null.
 
@@ -929,13 +930,14 @@ Not:         [common misreadings that lead to bugs]
 
 **Type:** `"high" | "moderate" | "low" | "none"`
 **Scope:** finding-level (histopathology)
-**Source:** `finding-nature.ts:classifyFindingNature()`, `modulateBySeverity()`
+**Source:** `finding-nature.ts:classifyFindingNature()`, organ-specific lookup table or `modulateBySeverity()` fallback
 **Consumers:** recovery classification (FIELD-37), clinical decision support
 
 **Invariants:**
 - Never null. Defaults to `"moderate"` for unknown nature.
-- Base from keyword table or CT mapping. Severity modulation can only **reduce** expectations, never raise.
-- `"high"` = adaptive in low severity. `"moderate"` = inflammatory/degenerative mild. `"low"` = depositional, highly severe adaptive. `"none"` = proliferative, fibrotic, sclerotic.
+- When organ-specific lookup table matches: mapped from `ReversibilityQualifier` (expected→high, possible→moderate, unlikely→low, none→none).
+- When no organ match: base from keyword table or CT mapping, then severity modulation can only **reduce** expectations, never raise.
+- `"high"` = adaptive in low severity. `"moderate"` = inflammatory/degenerative mild. `"low"` = depositional, highly severe adaptive. `"none"` = proliferative, fibrotic, sclerotic, or irreversible organ-specific findings (kidney mineralization, heart cardiomyocyte necrosis/fibrosis).
 
 **Null means:** N/A — never null.
 
@@ -946,15 +948,52 @@ Not:         [common misreadings that lead to bugs]
 **Type:** `number | null`
 **Unit:** weeks
 **Scope:** finding-level (histopathology)
-**Source:** `finding-nature.ts:classifyFindingNature()`, severity modulation
+**Source:** `finding-nature.ts:classifyFindingNature()` — organ-specific lookup midpoint or legacy severity modulation
 **Consumers:** recovery context, duration assessment
 
 **Invariants:**
-- Always null for findings with `expected_reversibility: "none"` (irreversible).
-- Severity modulation scales base weeks by multiplier (adaptive low=1.0, mid=1.5, high=2.0; degenerative high=2.5).
+- Midpoint of organ-specific range when available: `Math.round((weeks.low + weeks.high) / 2)`.
+- Always null when `lookup.weeks == null` (irreversible findings) or `reversibility === "none"`.
+- Also null for findings with only a lower bound (e.g., thyroid focal hyperplasia `{8, null}`).
+- Legacy path: severity modulation scales keyword-based weeks by `[nature][severityBand]` multiplier.
 - Result is rounded.
 
-**Null means:** No typical recovery timeline exists — cannot predict reversibility duration.
+**Null means:** No typical recovery timeline exists — either irreversible or insufficient data to predict duration.
+
+---
+
+### FIELD-41a — `FindingNatureInfo.recovery_weeks_range`
+
+**Type:** `{ low: number; high: number } | null`
+**Unit:** weeks
+**Scope:** finding-level (histopathology)
+**Source:** `finding-nature.ts:classifyFindingNature()` via `recovery-duration-table.ts:lookupRecoveryDuration()`
+**Consumers:** `reversibilityLabel()` display, duration adequacy assessment
+
+**Invariants:**
+- Non-null only when `source === "organ_lookup"` (organ-specific match found).
+- Null for keyword-only classifications (legacy path uses `typical_recovery_weeks` ± 2 for display).
+- Null for irreversible findings (range documents persistence, not recovery).
+- Severity-modulated: base_weeks × severity multiplier (4 models: none, modest_scaling, threshold_to_poor_recovery, deposit_proportional).
+- Species-adjusted: base × per-finding species modifier (rat/mouse/dog/NHP). Null modifier = pass through unmodified.
+
+**Null means:** No organ-specific recovery range available — either no lookup match, irreversible finding, or keyword-only classification.
+
+---
+
+### FIELD-41b — `FindingNatureInfo.lookup_confidence`
+
+**Type:** `"high" | "moderate" | "low"` (only present when `source === "organ_lookup"`)
+**Scope:** finding-level (histopathology)
+**Source:** `recovery-duration-table.ts` entry confidence rating
+**Consumers:** uncertainty band computation, display annotations
+
+**Invariants:**
+- Only present when organ-specific lookup matched.
+- Reflects literature evidence quality for this specific organ × finding combination.
+- Used by `computeUncertaintyBands()` to determine band width.
+
+**Null means:** No organ-specific lookup was used.
 
 ---
 

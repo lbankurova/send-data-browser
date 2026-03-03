@@ -1,0 +1,3126 @@
+{
+  "recovery_duration_table": {
+    "LIVER": {
+      "hypertrophy_hepatocellular": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.3,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Enzyme-induction hypertrophy reverses faster (1-2wk) than direct toxicant-driven (2-4wk). Hall 2012, Maronpot 2010."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Assumes adaptive enzyme induction/organellar proliferation and removal of stimulus. PPARa-mediated hypertrophy is rodent-specific. Enzyme-induction type reverses in 1-2 weeks; direct hepatotoxicant-driven in 2-4 weeks.",
+        "sources": [
+          "E01",
+          "E02",
+          "Hall_2012",
+          "Maronpot_2010",
+          "Thoolen_2010_INHAND"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "necrosis_hepatocellular": {
+        "base_weeks": {
+          "low": 1,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.25,
+          "moderate": 1.5,
+          "marked": null,
+          "severe": null,
+          "note": "Focal/zonal with intact reticulin: recoverable. Massive/confluent with collapse: fibrosis. Threshold at moderate-marked. Michalopoulos 2007."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.5
+        },
+        "conditions": "Only if injury is focal/zonal and lobular reticulin framework intact. Rat peak hepatocellular proliferation at 24h, dog at 72h, mass restoration converges ~2 weeks for moderate injury (Michalopoulos 2007). Massive/confluent necrosis with reticulin collapse -> fibrosis = irreversible.",
+        "sources": [
+          "E02",
+          "E20",
+          "Michalopoulos_2007",
+          "Mehendale_2005",
+          "Francavilla_1978"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "vacuolation_hepatocellular": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Simple glycogen/hydropic/macrovesicular change usually resolves quickly; phospholipidosis/microvesicular toxic change can persist several weeks.",
+        "sources": [
+          "E03",
+          "E04"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "bile_duct_hyperplasia": {
+        "base_weeks": {
+          "low": 4,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Best recovery when secondary to reversible cholestatic/enzyme-induction signals and without established fibrosis; slower if chronic cholangitic/fibrotic component present.",
+        "sources": [
+          "E06",
+          "E26",
+          "Hailey_2014",
+          "Thoolen_2010_INHAND"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "inflammation_portal_lobular": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Uncomplicated cellular infiltrates may resolve in weeks; necroinflammatory and cholestatic injury recover more slowly.",
+        "sources": [
+          "E02",
+          "E03",
+          "Greaves_2012",
+          "Thoolen_2010_INHAND"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "kupffer_cell_hypertrophy_hyperplasia": {
+        "base_weeks": {
+          "low": 1,
+          "high": 6
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Simple reactive: 1-4 wk. Pigment/phospholipid/particulate-laden: 4-6+ wk.",
+        "sources": [
+          "E04",
+          "E10",
+          "NTP_Atlas",
+          "Thoolen_2010_INHAND"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "glycogen_depletion": {
+        "base_weeks": {
+          "low": 0.1,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Dietary/metabolic: hours to days (Francavilla 1978). Systemic toxicity: 1-2 wk. Current 6wk placeholder is 12-60x overestimate.",
+        "sources": [
+          "E03",
+          "Francavilla_1978",
+          "Hall_2012"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "vacuolation_phospholipidosis": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Clearance depends on compound tissue half-life. Chatman 2009, Lenz 2018 ESTP."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Distinct from simple fatty change. Amphiphilic drugs with long tissue half-lives show weeks-months persistence. Chlorphentermine model: marked improvement at 4d but lamellar bodies persisted (Reasor 1984).",
+        "sources": [
+          "E04",
+          "E05",
+          "Chatman_2009",
+          "Lenz_2018_ESTP",
+          "Reasor_1984"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      }
+    },
+    "KIDNEY": {
+      "tubular_degeneration_necrosis": {
+        "base_weeks": {
+          "low": 1,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.25,
+          "moderate": 1.5,
+          "marked": null,
+          "severe": null,
+          "note": "BM integrity is critical threshold. Cuppage 1967, Frazier 2012 INHAND."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Mild acute: days (Cuppage 1967). Moderate with intact BM: 2-4 wk. Marked with BM destruction: fibrosis. CPN in male rats confounds (Hard & Khan 2004).",
+        "sources": [
+          "E07",
+          "E08",
+          "E09",
+          "Frazier_2012_INHAND",
+          "Hard_Khan_2004"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "tubular_basophilia": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Interpret as reparative regeneration after prior injury. Persistence beyond 8 weeks suggests ongoing injury or chronicity/CPN confounding.",
+        "sources": [
+          "E07",
+          "E10"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "tubular_dilatation": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Reversible when secondary to transient obstruction/injury and preserved nephron architecture; persistent when tied to chronic atrophy/fibrosis.",
+        "sources": [
+          "E08"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "interstitial_inflammation": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Best for mild, nonfibrosing infiltrates; slower/poorer when fibrosis accompanies nephritis.",
+        "sources": [
+          "E08",
+          "E26"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "interstitial_nephritis": {
+        "base_weeks": {
+          "low": 4,
+          "high": 12
+        },
+        "reversibility": "unlikely",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Depends on extent of tubular loss and fibrosis. Mild drug-associated nephritis may improve; chronic fibrosing nephritis often persists.",
+        "sources": [
+          "E08",
+          "E26"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "mineralization": {
+        "base_weeks": {
+          "low": null,
+          "high": null
+        },
+        "reversibility": "none",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Dystrophic/nephrocalcific mineralization is irreversible. Bypass duration calculation. Common in female rats.",
+        "sources": [
+          "E26",
+          "Frazier_2012_INHAND",
+          "Ritskes-Hoitinga_1992"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "cast_formation": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "If secondary to transient proteinuria/debris load and renal function recovers; longer if ongoing tubular injury persists.",
+        "sources": [
+          "E08",
+          "E09"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "THYROID": {
+      "follicular_cell_hypertrophy": {
+        "base_weeks": {
+          "low": 2,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.5
+        },
+        "conditions": "Rat far more sensitive (no TBG, short T4 half-life). Enzyme-induction/TSH-mediated change reverses 2-4wk. Dogs rarely develop this from enzyme inducers.",
+        "sources": [
+          "E06",
+          "Capen_1997",
+          "Huisinga_2021",
+          "Hood_1999"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "follicular_cell_hyperplasia": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.4,
+          "nhp": 1.6
+        },
+        "conditions": "Hyperplasia usually resolves more slowly than pure hypertrophy and may persist beyond 2 weeks in stronger thyroid-axis perturbation.",
+        "sources": [
+          "E06"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "colloid_alteration": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.5
+        },
+        "conditions": "Usually tracks normalization of thyroid-axis signaling and can improve faster than cellular hyperplasia.",
+        "sources": [
+          "E06"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "follicular_cell_hyperplasia_focal": {
+        "base_weeks": {
+          "low": 8,
+          "high": null
+        },
+        "reversibility": "unlikely",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "Autonomy vs TSH-dependence is key. McClain 1989, EPA 1998."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": null,
+          "nhp": null
+        },
+        "conditions": "Rat-specific preneoplastic concern. Hormone-dependent foci may regress; autonomous do not.",
+        "sources": [
+          "McClain_1989",
+          "EPA_1998",
+          "Capen_1997"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "ADRENAL": {
+      "cortical_hypertrophy": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.4
+        },
+        "conditions": "Stress-related: 1-4wk (Everds 2013). Rats more stress-sensitive. Direct toxic: 2-6wk.",
+        "sources": [
+          "E11",
+          "Everds_2013",
+          "Harvey_Sutcliffe_2010",
+          "Rosol_2001"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "cortical_vacuolation": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.4
+        },
+        "conditions": "Lipid depletion/accumulation and adaptive vacuolation generally recover when endocrine drive normalizes; phospholipid-type vacuolation can persist longer.",
+        "sources": [
+          "E04",
+          "E11"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "medullary_hyperplasia": {
+        "base_weeks": {
+          "low": 4,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Diffuse: possible 4-8wk. Focal/nodular: preneoplastic, unlikely to reverse. Rat-specific. Rosol 2001.",
+        "sources": [
+          "E11",
+          "E26",
+          "Rosol_2001",
+          "Korpershoek_2014"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "SPLEEN": {
+      "extramedullary_hematopoiesis_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Reactive EMH usually regresses quickly once marrow demand normalizes; persistent only if ongoing hematopoietic stress remains.",
+        "sources": [
+          "E13",
+          "E14"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "lymphoid_depletion": {
+        "base_weeks": {
+          "low": 2,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.4,
+          "nhp": 1.5
+        },
+        "conditions": "Common stress/immunomodulatory lesion; usually recovers over weeks after stimulus removal.",
+        "sources": [
+          "E11",
+          "E13"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "congestion": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Hemodynamic congestion should reverse rapidly if cause resolves and no secondary tissue injury is present.",
+        "sources": [
+          "E26"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "hemosiderosis": {
+        "base_weeks": {
+          "low": 4,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "deposit_proportional",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.5,
+          "marked": 2.0,
+          "severe": 2.5,
+          "note": "Larger deposits take proportionally longer. But persistence != ongoing toxicity."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "CRITICAL: Hemosiderin is residual marker of prior RBC destruction. Hematology may fully normalize while deposits persist weeks-months. Persistence does NOT indicate ongoing toxicity.",
+        "sources": [
+          "E10"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "THYMUS": {
+      "cortical_atrophy_lymphoid_depletion": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.4,
+          "nhp": 1.5
+        },
+        "conditions": "Stress in young rodents: 1-2wk. Immunotoxicant: 2-4wk. Older animals: 4-8wk. AGE dominates over species. Everds 2013, Pearse 2006.",
+        "sources": [
+          "E11",
+          "E12",
+          "Everds_2013",
+          "Pearse_2006",
+          "Elmore_2006"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "apoptosis_increased": {
+        "base_weeks": {
+          "low": 1,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.4,
+          "nhp": 1.5
+        },
+        "conditions": "If due to acute stress/steroid effect and not ongoing cytotoxic injury.",
+        "sources": [
+          "E11",
+          "E12"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "TESTIS": {
+      "decreased_spermatogenesis": {
+        "base_weeks": {
+          "low": 6,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.7,
+          "dog": 1.2,
+          "nhp": 0.8
+        },
+        "conditions": "Min recovery = 1 spermatogenic cycle: rat ~52d, mouse ~35d, dog ~62d, cyno ~42d. Severe: 2-3 cycles. Sertoli-only + fibrosis = irreversible. Creasy 2001.",
+        "sources": [
+          "E16",
+          "E17",
+          "E18",
+          "Creasy_1997",
+          "Creasy_2001",
+          "Lanning_2002"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "germ_cell_degeneration": {
+        "base_weeks": {
+          "low": 4,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.2,
+          "nhp": 1.4
+        },
+        "conditions": "Recovery faster when injury is limited to meiotic/post-meiotic cells; slower/poorer when spermatogonial stem cells or Sertoli cells are affected.",
+        "sources": [
+          "E16",
+          "E18"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "seminiferous_tubule_atrophy": {
+        "base_weeks": {
+          "low": 8,
+          "high": 24
+        },
+        "reversibility": "unlikely",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.2,
+          "nhp": 1.4
+        },
+        "conditions": "Focal with surviving stem cells: 8-24wk (2-3 cycles). Sertoli cell-only + fibrosis = IRREVERSIBLE. Adult Sertoli cells postmitotic.",
+        "sources": [
+          "E16",
+          "E18"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "leydig_cell_hypertrophy": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.2,
+          "nhp": 1.4
+        },
+        "conditions": "Adaptive endocrine-driven. Rat more LH-sensitive. Rat-specific tumorigenic pathway. 2-6wk if axis normalizes.",
+        "sources": [
+          "E17",
+          "Clegg_1997",
+          "Creasy_2001"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "BONE_MARROW": {
+      "hypocellularity": {
+        "base_weeks": {
+          "low": 1,
+          "high": 6
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Rodents 1-3wk (higher cellularity, faster turnover). Dogs/NHPs 2-6wk. Aplastic with stromal damage may not recover. Reagan 2011.",
+        "sources": [
+          "E15",
+          "Reagan_2011",
+          "Travlos_2006"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "myeloid_depletion": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Neutrophil lineage typically recovers faster than erythroid mass because turnover is faster.",
+        "sources": [
+          "E15"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "erythroid_depletion": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Marrow production can recover quickly, but blood red-cell normalization lags because circulating RBC lifespan is long.",
+        "sources": [
+          "E15",
+          "E24"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "cellularity_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Reactive hypercellularity/lineage rebound usually contracts once the driver resolves.",
+        "sources": [
+          "E14",
+          "E15"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "STOMACH": {
+      "mucosal_hyperplasia_glandular": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.2
+        },
+        "conditions": "Reactive hyperplasia resolves if the irritant or trophic stimulus is removed and dysplasia/neoplasia is absent.",
+        "sources": [
+          "E19"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "mucosal_hyperplasia_forestomach": {
+        "base_weeks": {
+          "low": 2,
+          "high": 13
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": null,
+          "nhp": null
+        },
+        "conditions": "28d tx: 2-4wk. 90d tx: 4-6wk. Chronic: up to 13wk (Ghanayem 1991). Simple/papillary: expected. Basal cell/dysplasia: may persist.",
+        "sources": [
+          "E19",
+          "Ghanayem_1991",
+          "Iverson_1985"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "erosion": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Superficial mucosal injury heals relatively quickly if irritation ceases and ulceration/fibrosis do not develop.",
+        "sources": [
+          "E19"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "ulceration": {
+        "base_weeks": {
+          "low": 2,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Superficial glandular: 2-4wk. Deep to muscularis: 4-12wk, leaves fibrotic scar. Dogs susceptible to NSAID perforation.",
+        "sources": [
+          "E19"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "HEART": {
+      "cardiomyocyte_degeneration_necrosis": {
+        "base_weeks": {
+          "low": null,
+          "high": null
+        },
+        "reversibility": "none",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.1
+        },
+        "conditions": "Adult cardiomyocytes terminally differentiated. Necrosis -> inflammatory infiltrate (2-6wk) -> replacement fibrosis (PERMANENT). Even minimal necrosis = permanent scar. Bypass duration calculation. Berridge 2016 INHAND.",
+        "sources": [
+          "E20",
+          "Berridge_2016_INHAND"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "inflammation": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Inflammatory component: 2-8wk. BUT almost always leaves residual replacement fibrosis. Inflammation resolves; underlying cardiomyocyte loss does not.",
+        "sources": [
+          "E20"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "fibrosis": {
+        "base_weeks": {
+          "low": null,
+          "high": null
+        },
+        "reversibility": "none",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Replacement fibrosis is permanent. Bypass duration calculation.",
+        "sources": [
+          "E20"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      }
+    },
+    "LUNG": {
+      "alveolar_macrophage_accumulation": {
+        "base_weeks": {
+          "low": 1,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Fast early improvement can occur, but complete resolution may take weeks, especially with phospholipidosis or particulate burden.",
+        "sources": [
+          "E04",
+          "E05"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "inflammation": {
+        "base_weeks": {
+          "low": 2,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Acute uncomplicated: 2-6wk. Chronic granulomatous/fibrosing: 4-12+wk. Rats more persistent inflammatory responses. Fibrosis shifts to unlikely.",
+        "sources": [
+          "E04",
+          "E26"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "alveolar_epithelial_hyperplasia": {
+        "base_weeks": {
+          "low": 4,
+          "high": 12
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Reactive hyperplasia may regress if injury ceases; persistence raises concern for chronic remodeling/fibrosis.",
+        "sources": [
+          "E04"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "LYMPH_NODE": {
+      "hyperplasia_follicular_paracortical": {
+        "base_weeks": {
+          "low": 2,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Reactive draining-node hyperplasia generally recedes over weeks once antigenic stimulus/dose-site inflammation resolves.",
+        "sources": [
+          "E13",
+          "E21",
+          "E22",
+          "Elmore_2006",
+          "Haley_2005"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "sinus_histiocytosis": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Usually resolves when particulate/material burden clears; longer if persistent foreign material remains.",
+        "sources": [
+          "E21",
+          "E22"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "atrophy": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Stress in young: 2-4wk. Immunotoxicant: 4-8wk. Age modifier. Architecture disruption -> unlikely.",
+        "sources": [
+          "E11",
+          "E13"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "INJECTION_SITE": {
+      "inflammation": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Typical local reactogenicity or injection trauma improves within days to weeks; 2-4 week recovery groups usually suffice to show reversal.",
+        "sources": [
+          "E21"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "necrosis": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Requires regeneration without deep tissue loss; fibrosis commonly remains after healing.",
+        "sources": [
+          "E21"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "direct"
+      },
+      "fibrosis": {
+        "base_weeks": {
+          "low": 26,
+          "high": 52
+        },
+        "reversibility": "none",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Scar tissue may mature but not return to control-normal histology; treat as non-reversible for verdicting.",
+        "sources": [
+          "E21"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      },
+      "granuloma": {
+        "base_weeks": {
+          "low": 4,
+          "high": 26
+        },
+        "reversibility": "unlikely",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Foreign-material/adjuvant granulomas may persist for months to a year; short-lived sterile granulomas can improve more quickly.",
+        "sources": [
+          "E21"
+        ],
+        "confidence": "high",
+        "evidence_level": "direct"
+      }
+    },
+    "GENERAL": {
+      "hemorrhage": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Larger hemorrhages take longer; residual hemosiderin persists."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Resorbs via macrophage activity: 0.5-2wk. Residual hemosiderin persists beyond. Current 4wk placeholder too long.",
+        "sources": [
+          "E21",
+          "Greaves_2012"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "congestion": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "Hemodynamic; resolves when cause removed."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Passive hemodynamic. Often agonal artifact. Current 2wk placeholder acceptable.",
+        "sources": [
+          "E26"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "pigmentation": {
+        "base_weeks": {
+          "low": 4,
+          "high": 26
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "deposit_proportional",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.5,
+          "marked": 2.0,
+          "severe": 2.5,
+          "note": "Larger deposits take longer. Persistence != ongoing toxicity."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Lipofuscin: persistent. Hemosiderin: 4-12+wk. Drug pigment: compound-dependent. Current 6wk too short for hemosiderin.",
+        "sources": [
+          "E10",
+          "Greaves_2012"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    }
+  },
+  "species_specific_modifiers": {
+    "general_recommendation": "Use organ-process-specific modifiers rather than one global species multiplier.",
+    "organ_process_modifiers": {
+      "liver_adaptive_regeneration": {
+        "rat": 1.0,
+        "mouse": 1.0,
+        "dog": 1.3,
+        "nhp": 1.5,
+        "basis": "Peak DNA synthesis: rat 24h, dog 72h; converges ~2wk"
+      },
+      "liver_necrosis_repair": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.3,
+        "nhp": 1.5,
+        "basis": "Same biology but injury severity matters more"
+      },
+      "testis_spermatogenic_recovery": {
+        "rat": 1.0,
+        "mouse": 0.7,
+        "dog": 1.2,
+        "nhp": 0.8,
+        "basis": "Cycle: mouse 35d, rat 52d, cyno 42d, dog 62d. Most validated modifier."
+      },
+      "thymus_stress_recovery": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.5,
+        "nhp": 2.0,
+        "basis": "Young rodents rapid; age dominates over species"
+      },
+      "bone_marrow_recovery": {
+        "rat": 1.0,
+        "mouse": 0.8,
+        "dog": 1.5,
+        "nhp": 2.0,
+        "basis": "HSC frequency inversely proportional to body weight"
+      },
+      "anemia_rbc_recovery": {
+        "rat": 1.0,
+        "mouse": 0.7,
+        "dog": 1.8,
+        "nhp": 2.0,
+        "basis": "RBC lifespan: mouse 45d, rat 60d, dog 110d. Largest validated difference."
+      },
+      "kidney_acute_tubular_repair": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.1,
+        "nhp": 1.2,
+        "basis": "Similar mechanisms; CPN confounds rat interpretation"
+      },
+      "thyroid_adaptive_recovery": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.3,
+        "nhp": 1.5,
+        "basis": "Rat more sensitive (no TBG, short T4 half-life)"
+      },
+      "generic_reactive_lymphoid": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.1,
+        "nhp": 1.2,
+        "basis": "Similar across species"
+      },
+      "generic_default": {
+        "rat": 1.0,
+        "mouse": 0.9,
+        "dog": 1.5,
+        "nhp": 2.0,
+        "basis": "Allometric scaling. Use only when no organ-specific modifier available."
+      }
+    },
+    "notes": [
+      "Rat liver repair is often faster than dog/NHP because rodent hepatocellular regeneration is rapid and well documented experimentally.",
+      "Testicular recovery tracks spermatogenic cycle length and stem-cell survival; dog and NHP are slower than rat/mouse.",
+      "Rat/mouse thymus and marrow typically rebound faster than large animals, especially for stress and cytostatic effects.",
+      "For kidney, species differences are less about intrinsic repair speed than about background lesions and interpretive confounding (e.g., rat CPN)."
+    ],
+    "sources": [
+      "E02",
+      "E06",
+      "E15",
+      "E16",
+      "E24"
+    ]
+  },
+  "uncertainty_model": {
+    "method": "asymmetric_percentage_based_with_floor_and_cap",
+    "default_low_pct": 25,
+    "default_high_pct": 50,
+    "min_low_weeks": 0.5,
+    "min_high_weeks": 0.5,
+    "max_margin_weeks": 8,
+    "confidence_overrides": {
+      "high": {
+        "low_pct": 25,
+        "high_pct": 35
+      },
+      "moderate": {
+        "low_pct": 25,
+        "high_pct": 50
+      },
+      "low": {
+        "low_pct": 25,
+        "high_pct": 75
+      }
+    },
+    "organ_specific_tightening": {
+      "liver_hypertrophy": {
+        "low_pct": 20,
+        "high_pct": 30
+      },
+      "thymic_stress_atrophy": {
+        "low_pct": 20,
+        "high_pct": 30
+      }
+    },
+    "organ_specific_widening": {
+      "injection_site": {
+        "low_pct": 30,
+        "high_pct": 75
+      },
+      "kidney_with_CPN": {
+        "low_pct": 30,
+        "high_pct": 75
+      }
+    },
+    "rationale": [
+      "Fixed +/-2wk distorts short and understates long lesions.",
+      "Recovery biologically asymmetric.",
+      "Confidence-dependent bands.",
+      "8wk cap prevents unbounded predictions."
+    ],
+    "implementation_note": "For entries with explicit low/high, display range directly. Use model for single-point or low-confidence widening."
+  },
+  "continuous_endpoint_recovery": {
+    "organ_weights": {
+      "liver_weight_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Use only when correlated with adaptive hepatocellular hypertrophy. If weight increase tracks fatty change, cholestasis, or necrosis, use the structural lesion instead.",
+        "sources": [
+          "E01",
+          "E02",
+          "E23"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "thymus_weight_decrease": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.4,
+          "nhp": 1.5
+        },
+        "conditions": "Usually parallels stress-mediated thymic involution and normalizes rapidly after stress/drug withdrawal.",
+        "sources": [
+          "E11",
+          "E12",
+          "E23"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "testis_weight_decrease": {
+        "base_weeks": {
+          "low": 6,
+          "high": 10
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.2,
+          "nhp": 1.4
+        },
+        "conditions": "Weight recovery lags histologic improvement and depends on whether spermatogenesis resumes; no recovery if diffuse tubular atrophy persists.",
+        "sources": [
+          "E16",
+          "E18",
+          "E23"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "kidney_weight_change": {
+        "base_weeks": {
+          "low": 2,
+          "high": 6
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Adaptive/reactive lesion. Scale modestly."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Parallels tubular changes.",
+        "sources": [
+          "Craig_2015"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "adrenal_weight_increase": {
+        "base_weeks": {
+          "low": 2,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Adaptive/reactive lesion. Scale modestly."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.4
+        },
+        "conditions": "Parallels cortical hypertrophy. Everds 2013.",
+        "sources": [
+          "E11",
+          "Everds_2013"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "spleen_weight_change": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible severity-duration relationship."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Parallels EMH/lymphoid resolution.",
+        "sources": [
+          "Suttie_2006"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "clinical_chemistry": {
+      "bilirubin_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "Depends on cholestasis/hemolysis resolution; often slower than aminotransferases.",
+        "sources": [
+          "E06"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      },
+      "ALT_increase": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Persistent elevation = ongoing injury."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "ALT half-life: rat <8h, dog ~60h. Rat normalizes days; dog 1-2wk.",
+        "sources": [
+          "E02",
+          "Travlos_2006"
+        ],
+        "confidence": "high",
+        "evidence_level": "mixed_direct_indirect"
+      },
+      "AST_increase": {
+        "base_weeks": {
+          "low": 0.3,
+          "high": 1
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Shorter half-life than ALT."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.3
+        },
+        "conditions": "AST shorter half-life than ALT. Less liver-specific (also muscle, cardiac).",
+        "sources": [
+          "E02"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "ALP_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Induction enzyme; decline = synthesis reduction."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.5,
+          "nhp": 1.5
+        },
+        "conditions": "EXCEPTION: ALP LAGS structural recovery. Dog C-ALP persists longer. Sellers 2007.",
+        "sources": [
+          "Hall_2012",
+          "Sellers_2007"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "albumin_decrease": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Depends on hepatic synthetic capacity."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.8,
+          "nhp": 2.0
+        },
+        "conditions": "EXCEPTION: albumin LAGS structural repair. Half-life: rat ~1.7d, dog ~8d.",
+        "sources": [
+          "Greaves_2012"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "BUN_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "Reflects GFR and protein catabolism.",
+        "sources": [
+          "E08",
+          "E09"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "creatinine_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 4
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.1,
+          "nhp": 1.2
+        },
+        "conditions": "More specific GFR marker. Persistent elevation = nephron loss.",
+        "sources": [
+          "E08",
+          "E09"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      },
+      "GGT_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Adaptive/reactive lesion. Scale modestly."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.3,
+          "nhp": 1.3
+        },
+        "conditions": "Induction enzyme. Concurrent with ALP.",
+        "sources": [
+          "Greaves_2012"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "hematology": {
+      "neutrophil_wbc_decrease": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Myeloid counts usually recover within days to weeks if marrow progenitors/stroma are preserved.",
+        "sources": [
+          "E15"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "platelet_decrease": {
+        "base_weeks": {
+          "low": 1,
+          "high": 3
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Platelet recovery is relatively fast because platelet lifespan is only days; use slower end in dog/NHP or when marrow lesion is severe.",
+        "sources": [
+          "E14",
+          "E24"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "rbc_hgb_hct_decrease": {
+        "base_weeks": {
+          "low": 4,
+          "high": 8
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "modest_scaling_only_for_recoverable_lesions",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": 1.5,
+          "severe": null,
+          "note": "Use only when lesion remains in same biological class; if marked/severe implies necrosis, fibrosis, stem-cell loss, or architecture collapse, reclassify lesion rather than multiply time."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.7,
+          "dog": 1.8,
+          "nhp": 2.0
+        },
+        "conditions": "RBC lifespan: mouse ~45d, rat ~60d, dog ~110d. Mild (10-15%): rat 2-3wk, dog 4-6wk. Moderate (15-25%): rat 3-5wk, dog 6-10wk. Severe: rat 6-8wk, dog 10-16wk.",
+        "sources": [
+          "E15",
+          "E24",
+          "Derelanko_1987"
+        ],
+        "confidence": "high",
+        "evidence_level": "indirect"
+      },
+      "reticulocyte_increase": {
+        "base_weeks": {
+          "low": 1,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "none",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.0,
+          "marked": 1.0,
+          "severe": 1.0,
+          "note": "No defensible generic time-scaling; severity affects confidence/adversity more than recovery duration."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.8,
+          "dog": 1.5,
+          "nhp": 1.4
+        },
+        "conditions": "Reticulocytosis often normalizes rapidly once the regenerative drive resolves.",
+        "sources": [
+          "E14"
+        ],
+        "confidence": "moderate",
+        "evidence_level": "indirect"
+      }
+    },
+    "body_weight": {
+      "body_weight_decrease": {
+        "base_weeks": {
+          "low": 2,
+          "high": 8
+        },
+        "reversibility": "possible",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Growing animals: 50-70% gap closure in 4wk but may never reach controls. Fastest: palatability. Slowest: organ toxicity.",
+        "sources": [
+          "E11"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    },
+    "coagulation": {
+      "PT_APTT_fibrinogen_change": {
+        "base_weeks": {
+          "low": 0.5,
+          "high": 2
+        },
+        "reversibility": "expected",
+        "severity_modulation": {
+          "model": "threshold_to_poor_recovery",
+          "minimal": 1.0,
+          "mild": 1.0,
+          "moderate": 1.25,
+          "marked": null,
+          "severe": null,
+          "note": "Marked/severe lesions often reflect a change in biology (e.g., scaffold loss, fibrosis, diffuse atrophy) rather than a longer version of the same recoverable lesion."
+        },
+        "species_modifier": {
+          "rat": 1.0,
+          "mouse": 0.9,
+          "dog": 1.2,
+          "nhp": 1.3
+        },
+        "conditions": "Factor VII half-life ~5-6h; PT normalizes rapidly. Intrinsic factors 12-24h. Fibrinogen half-life ~3-5d.",
+        "sources": [
+          "E02"
+        ],
+        "confidence": "low",
+        "evidence_level": "indirect"
+      }
+    }
+  },
+  "validation_of_prior_hardcoded_values": [
+    {
+      "finding_type": "Hyperplasia",
+      "current_weeks": 6.0,
+      "literature_supported_weeks": "2-6 depending organ",
+      "current_correct": "No",
+      "adjustment_needed": "Replace with organ-specific values; thyroid/liver shorter, stomach can be similar",
+      "sources": "E06,E19"
+    },
+    {
+      "finding_type": "Hypertrophy",
+      "current_weeks": 6.0,
+      "literature_supported_weeks": "1-4 liver/adrenal/thyroid; 2-6 Leydig",
+      "current_correct": "No",
+      "adjustment_needed": "Current value systematically high for many adaptive lesions",
+      "sources": "E01,E06,E11,E17"
+    },
+    {
+      "finding_type": "Vacuolation",
+      "current_weeks": 6.0,
+      "literature_supported_weeks": "0.5-2 renal osmotic; 1-4 hepatic simple vacuolation; 2-8 phospholipidosis",
+      "current_correct": "No",
+      "adjustment_needed": "Split by mechanism rather than one bucket",
+      "sources": "E03,E04,E09"
+    },
+    {
+      "finding_type": "Basophilia",
+      "current_weeks": 4.0,
+      "literature_supported_weeks": "1-4 kidney reparative basophilia",
+      "current_correct": "Partly",
+      "adjustment_needed": "Reasonable for renal regeneration only; should not be organ-agnostic",
+      "sources": "E07,E10"
+    },
+    {
+      "finding_type": "Glycogen depletion",
+      "current_weeks": 6.0,
+      "literature_supported_weeks": "0.5-2",
+      "current_correct": "No",
+      "adjustment_needed": "Current value too long",
+      "sources": "E03"
+    },
+    {
+      "finding_type": "Pigmentation",
+      "current_weeks": 6.0,
+      "literature_supported_weeks": "4-12+ or persistent depending pigment",
+      "current_correct": "No",
+      "adjustment_needed": "Too short for residual pigment/hemosiderin",
+      "sources": "E10"
+    },
+    {
+      "finding_type": "Inflammation",
+      "current_weeks": 8.0,
+      "literature_supported_weeks": "2-6 uncomplicated; 4-26 granulomatous/chronic",
+      "current_correct": "No",
+      "adjustment_needed": "Need acute vs chronic/granulomatous split",
+      "sources": "E04,E21"
+    },
+    {
+      "finding_type": "Granuloma",
+      "current_weeks": 8.0,
+      "literature_supported_weeks": "4-26+",
+      "current_correct": "No",
+      "adjustment_needed": "Underestimates foreign-body/adjuvant persistence",
+      "sources": "E21"
+    },
+    {
+      "finding_type": "Necrosis",
+      "current_weeks": 8.0,
+      "literature_supported_weeks": "1-8 liver/kidney if reparable; none in heart",
+      "current_correct": "No",
+      "adjustment_needed": "Must be organ-specific and threshold-based",
+      "sources": "E02,E08,E20"
+    },
+    {
+      "finding_type": "Degeneration",
+      "current_weeks": 10.0,
+      "literature_supported_weeks": "1-4 mild acute tubular/hepatic; 4-12 if severe",
+      "current_correct": "No",
+      "adjustment_needed": "Too long as default, but can be too short when chronic",
+      "sources": "E08,E26"
+    },
+    {
+      "finding_type": "Atrophy",
+      "current_weeks": 10.0,
+      "literature_supported_weeks": "1-3 thymus; 6-16+ testis; 2-6 lymphoid",
+      "current_correct": "No",
+      "adjustment_needed": "Meaningless average",
+      "sources": "E11,E12,E16"
+    },
+    {
+      "finding_type": "Mineralization",
+      "current_weeks": 13.0,
+      "literature_supported_weeks": "persistent / none in many contexts",
+      "current_correct": "No",
+      "adjustment_needed": "Too optimistic",
+      "sources": "E26"
+    },
+    {
+      "finding_type": "Hemorrhage",
+      "current_weeks": 4.0,
+      "literature_supported_weeks": "0.5-2 usually",
+      "current_correct": "Usually no",
+      "adjustment_needed": "Often shorter than current value",
+      "sources": "E21"
+    },
+    {
+      "finding_type": "Congestion",
+      "current_weeks": 2.0,
+      "literature_supported_weeks": "0.5-2",
+      "current_correct": "Mostly",
+      "adjustment_needed": "Current ballpark acceptable but still needs organ/context awareness",
+      "sources": "E26"
+    },
+    {
+      "finding_type": "Decreased spermatogenesis",
+      "current_weeks": 16.0,
+      "literature_supported_weeks": "6-10 rat; 8-12 dog if stem cells survive; none if diffuse atrophy",
+      "current_correct": "Partly",
+      "adjustment_needed": "Too long for reversible endocrine/germ-cell suppression, too short for nonrecovering atrophy",
+      "sources": "E16,E17,E18"
+    },
+    {
+      "finding_type": "Fibrosis",
+      "current_weeks": NaN,
+      "literature_supported_weeks": "irreversible / none",
+      "current_correct": "Yes",
+      "adjustment_needed": "Keep as non-reversible",
+      "sources": "E20,E21"
+    }
+  ],
+  "severity_modulation_recommendation": {
+    "decision": "replace_universal_multipliers_with_lesion_specific_threshold_rules",
+    "why": [
+      "Severity grades quantify extent/complexity of morphologic change; they are not validated linear predictors of time-to-recovery.",
+      "Across organs, marked severity often changes the biology (e.g., stem-cell loss, fibrosis, scaffold loss, permanent cardiomyocyte loss) rather than merely extending recovery time.",
+      "Therefore a single 1.0x/1.5x/2.0x or 2.5x scheme is not defensible."
+    ],
+    "recommended_rules": [
+      "Adaptive hypertrophy/hyperplasia: allow only modest scaling (max ~1.5x) for moderate/marked lesions if the lesion remains clearly adaptive and recoverable.",
+      "Degenerative/necrotic lesions: use a threshold model. Mild-to-moderate lesions may recover; marked/severe lesions often switch to 'unlikely' or 'none' rather than 2.0x-2.5x.",
+      "Heart necrosis/fibrosis: no multiplier; treat as non-reversible.",
+      "Testis: severity interacts with lesion compartment. Germ-cell-only lesions can recover over 1 cycle; diffuse tubular atrophy/stem-cell loss should move to unlikely/none.",
+      "Kidney: mild basophilic regeneration is a healing lesion, not a longer-duration injury. Marked tubular injury with fibrosis should switch class."
+    ],
+    "sources": [
+      "E26",
+      "E08",
+      "E18",
+      "E20"
+    ]
+  },
+  "evidence_log": [
+    {
+      "id": "E01",
+      "source": "Hall et al. 2012, Toxicol Pathol, 'Liver hypertrophy: a review of adaptive (adverse and non-adverse) changes'",
+      "finding_scope": [
+        "LIVER:hypertrophy_hepatocellular",
+        "continuous:organ_weights:liver_weight_increase"
+      ],
+      "species": [
+        "rat",
+        "mouse",
+        "dog",
+        "nhp"
+      ],
+      "evidence_type": "qualitative_review",
+      "directness": "indirect_for_duration_direct_for_reversibility_context",
+      "statement": "Hepatomegaly as a consequence of hepatocellular hypertrophy without histologic or clinical pathology evidence of liver toxicity is considered adaptive and non-adverse.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports expected reversibility for adaptive hepatocellular hypertrophy after removal of stimulus.",
+      "confidence": "high"
+    },
+    {
+      "id": "E02",
+      "source": "Michalopoulos & DeFrances 1997, Science, 'Liver regeneration'; Mehendale 2005, Toxicol Pathol, 'Tissue repair...'; Anand et al. 2003, Toxicology",
+      "finding_scope": [
+        "LIVER:necrosis_hepatocellular",
+        "LIVER:inflammation_portal_lobular"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "mechanistic_review_plus_experimental",
+      "directness": "indirect_for_generic_lookup",
+      "statement": "Rat liver repair is rapid after sublethal toxic injury; in one chloroform model injury peaked at 24 h and returned to normal after 48 h, while delayed repair at higher injury burdens led to progression and death.",
+      "observed_recovery_window_weeks": {
+        "low": 0.3,
+        "high": 1.0
+      },
+      "key_use": "Anchors rat-faster-than-dog liver recovery and supports threshold rather than linear severity scaling.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E03",
+      "source": "NTP Nonneoplastic Lesion Atlas 2024, Liver - Fatty Change",
+      "finding_scope": [
+        "LIVER:vacuolation_hepatocellular",
+        "LIVER:glycogen_depletion"
+      ],
+      "species": [
+        "rat",
+        "mouse"
+      ],
+      "evidence_type": "atlas_consensus",
+      "directness": "direct_for_reversibility_qualifier",
+      "statement": "Macrovesicular fatty change is generally readily reversible; microvesicular change more often reflects toxicity and can be slower/less predictable.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports short recovery windows for simple vacuolation/glycogen-type change, with longer windows for toxic microvesicular injury/phospholipidosis.",
+      "confidence": "high"
+    },
+    {
+      "id": "E04",
+      "source": "Ettlin et al. 2010, Toxicologic Pathology, 'Successful Drug Development Despite Adverse Preclinical Findings Part 2'; Greaves 2012 Respiratory Tract chapter",
+      "finding_scope": [
+        "LUNG:alveolar_macrophage_accumulation",
+        "LIVER:vacuolation_hepatocellular",
+        "ADRENAL:cortical_vacuolation"
+      ],
+      "species": [
+        "rat",
+        "mouse",
+        "dog",
+        "rabbit",
+        "guinea_pig",
+        "hamster"
+      ],
+      "evidence_type": "review_with_examples",
+      "directness": "direct_for_direction_indirect_for_exact_duration",
+      "statement": "Drug-induced phospholipidosis generally resolves after withdrawal but may take considerable time; pulmonary phospholipidosis changes are still visible several weeks after withdrawal across multiple species.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 8
+      },
+      "key_use": "Supports longer 'possible' recovery windows for phospholipid-type vacuolation/macrophage accumulation than for simple hydropic/glycogen change.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E05",
+      "source": "Reasor 1984, Am J Pathol / PubMed snippet; McCloud et al. 1995, Toxicol Appl Pharmacol / PubMed snippet",
+      "finding_scope": [
+        "LUNG:alveolar_macrophage_accumulation"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "Rat alveolar macrophage phospholipidosis is reversible after termination of treatment; after 7 days chlorphentermine treatment there was marked reduction in cellular changes after 4 days recovery, though lamellar bodies persisted.",
+      "observed_recovery_window_weeks": {
+        "low": 0.5,
+        "high": 6
+      },
+      "key_use": "Supports fast early functional/morphologic improvement but slower complete resolution in lung macrophage accumulation.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E06",
+      "source": "Huisinga et al. 2020, Toxicol Pathol, thyroid FCHH workshop; Yano et al. 2025, Food Chem Toxicol snippet; Canzler et al. 2025, Arch Toxicol snippet",
+      "finding_scope": [
+        "THYROID:follicular_cell_hypertrophy",
+        "THYROID:follicular_cell_hyperplasia",
+        "THYROID:colloid_alteration"
+      ],
+      "species": [
+        "rat",
+        "dog",
+        "mouse"
+      ],
+      "evidence_type": "workshop_plus_recovery_examples",
+      "directness": "mixed",
+      "statement": "Follicular cell hypertrophy/hyperplasia are common nonclinical findings; rat recovery examples show substantial reversion within 14 days in some enzyme-induction settings, but increased thyroid weight can still persist after 2 weeks in stronger direct/indirect thyroid toxicant models.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 6
+      },
+      "key_use": "Supports rat thyroid adaptive windows centered on 2-6 weeks and slower windows for hyperplasia than for pure hypertrophy/colloid depletion.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E07",
+      "source": "NTP Nonneoplastic Lesion Atlas 2024, Kidney - Renal Tubule Regeneration",
+      "finding_scope": [
+        "KIDNEY:tubular_basophilia",
+        "KIDNEY:tubular_degeneration_necrosis"
+      ],
+      "species": [
+        "rat",
+        "mouse"
+      ],
+      "evidence_type": "atlas_consensus",
+      "directness": "direct_for_pathogenesis",
+      "statement": "Renal tubular regeneration occurs as a reparative response to previous degeneration/necrosis and is characterized by basophilia, karyomegaly and nuclear crowding.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports interpreting tubular basophilia as a healing lesion rather than a primary chronic lesion.",
+      "confidence": "high"
+    },
+    {
+      "id": "E08",
+      "source": "Cuppage & Tate 1967, Am J Pathol; Haagsma et al. 1980, Br J Exp Pathol snippets",
+      "finding_scope": [
+        "KIDNEY:tubular_degeneration_necrosis",
+        "KIDNEY:tubular_basophilia",
+        "KIDNEY:tubular_dilatation"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "After mercuric chloride injury in rat kidney, tubular epithelium was reconstituted between days 2 and 5; permanent patchy fibrotic lesions can occur after more severe injury.",
+      "observed_recovery_window_weeks": {
+        "low": 0.3,
+        "high": 2
+      },
+      "key_use": "Supports very fast recovery for mild acute tubular injury in rats and a severity threshold beyond which chronic residual lesions remain.",
+      "confidence": "high"
+    },
+    {
+      "id": "E09",
+      "source": "Kiss et al. 2016, Histopathological Evaluation of Contrast-Induced AKI Rodent Models",
+      "finding_scope": [
+        "KIDNEY:tubular_vacuolation",
+        "KIDNEY:tubular_degeneration_necrosis"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "review",
+      "directness": "direct_for_vacuolation",
+      "statement": "Tubular vacuolization is often reversible even after very high contrast media doses; in one rat study the vacuolization almost disappeared 48 hours after iobitridol.",
+      "observed_recovery_window_weeks": {
+        "low": 0.3,
+        "high": 1
+      },
+      "key_use": "Supports short windows for osmotic/hydropic vacuolation distinct from necrosis.",
+      "confidence": "high"
+    },
+    {
+      "id": "E10",
+      "source": "Mengs et al. 2004, 13-week senna rat study with 8-week recovery",
+      "finding_scope": [
+        "KIDNEY:tubular_basophilia",
+        "KIDNEY:pigmentation"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "After 8 weeks recovery, histopathologic kidney abnormalities reversed except for residual brown pigment.",
+      "observed_recovery_window_weeks": {
+        "low": 8,
+        "high": 8
+      },
+      "key_use": "Supports separating reparative basophilia (recoverable) from pigment (can persist).",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E11",
+      "source": "Everds et al. 2013, Toxicol Pathol, stress responses review",
+      "finding_scope": [
+        "THYMUS:cortical_atrophy_lymphoid_depletion",
+        "THYMUS:apoptosis_increased",
+        "SPLEEN:lymphoid_depletion",
+        "ADRENAL:cortical_hypertrophy",
+        "continuous:organ_weights:thymus_weight_decrease"
+      ],
+      "species": [
+        "rat",
+        "mouse",
+        "dog",
+        "nhp"
+      ],
+      "evidence_type": "review",
+      "directness": "direct_for_pathogenesis_indirect_for_duration",
+      "statement": "Routine study stress can produce thymic/splenic lymphoid depletion, altered thymus/spleen/adrenal weights, and altered leukocyte counts.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports rapid reversibility expectations for stress-mediated lymphoid/adrenal findings once stimulus ends.",
+      "confidence": "high"
+    },
+    {
+      "id": "E12",
+      "source": "Branceni et al. 1966, thymic involution and recovery in prednisolone-treated neonatal rats",
+      "finding_scope": [
+        "THYMUS:cortical_atrophy_lymphoid_depletion",
+        "THYMUS:apoptosis_increased"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "After steroid-induced thymic involution in rats, thymic mass, thymocytes and peripheral lymphocytes recovered fully by 3 weeks.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 3
+      },
+      "key_use": "Anchors rat thymic recovery windows around 1-3 weeks for stress/steroid-type involution.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E13",
+      "source": "Zhang et al. 2020, Sepin-1 28-day rat toxicity study with 28-day recovery",
+      "finding_scope": [
+        "SPLEEN:extramedullary_hematopoiesis_increase",
+        "SPLEEN:lymphoid_depletion",
+        "THYMUS:cortical_atrophy_lymphoid_depletion",
+        "LYMPH_NODE:hyperplasia_follicular_paracortical"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "Minimal-to-moderate splenic extramedullary hematopoiesis, minimal splenic lymphoid depletion, minimal-to-mild thymic lymphoid depletion, and minimal-to-mild lymph node hyperplasia were mostly reversible after a 28-day recovery period.",
+      "observed_recovery_window_weeks": {
+        "low": 4,
+        "high": 4
+      },
+      "key_use": "Supports 2-4 week windows for reactive hematolymphoid findings in rats.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E14",
+      "source": "Miyata et al. 2009, Evaluation of Myelotoxicity in Dietary Restricted Rats",
+      "finding_scope": [
+        "SPLEEN:extramedullary_hematopoiesis_increase",
+        "BONE_MARROW:hypocellularity",
+        "continuous:hematology:reticulocytes",
+        "continuous:hematology:platelets"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "After 14 days dosing and 7 days recovery, reticulocyte and platelet rebound plus splenic EMH were observed in 5-FU-treated rats, indicating marrow recovery dynamics within about 1 week.",
+      "observed_recovery_window_weeks": {
+        "low": 1,
+        "high": 2
+      },
+      "key_use": "Supports short marrow rebound windows for proliferative hematopoietic tissues in rats.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E15",
+      "source": "Reagan et al. 2011 best practices for bone marrow; Hu et al. 2016 palbociclib; Graziano et al. 1997 CI-994",
+      "finding_scope": [
+        "BONE_MARROW:hypocellularity",
+        "BONE_MARROW:myeloid_depletion",
+        "BONE_MARROW:erythroid_depletion",
+        "BONE_MARROW:cellularity_increase"
+      ],
+      "species": [
+        "rat",
+        "dog"
+      ],
+      "evidence_type": "review_plus_experimental",
+      "directness": "mixed",
+      "statement": "Bone marrow suppression/hypocellularity can be reversible after withdrawal; in one rat/dog toxicity program all non-testicular changes reversed within 4 weeks in rats and 9 weeks in dogs.",
+      "observed_recovery_window_weeks": {
+        "low": 4,
+        "high": 9
+      },
+      "key_use": "Supports species-dependent rat-faster-than-dog modifiers for marrow lesions.",
+      "confidence": "high"
+    },
+    {
+      "id": "E16",
+      "source": "Vidal et al. 2015, Morphologic manifestations of testicular and epididymal toxicity; Soares et al. 2009 dog spermatogenic cycle",
+      "finding_scope": [
+        "TESTIS:decreased_spermatogenesis",
+        "TESTIS:germ_cell_degeneration",
+        "TESTIS:seminiferous_tubule_atrophy"
+      ],
+      "species": [
+        "rat",
+        "mouse",
+        "dog",
+        "nhp"
+      ],
+      "evidence_type": "review_plus_physiology",
+      "directness": "indirect_for_duration",
+      "statement": "Many spermatogonial injuries can be reversible if surviving stem spermatogonia remain; recovery is constrained by the long duration of spermatogenesis. Total spermatogenesis duration is ~40-54 days in most mammals and toward the upper end in dogs.",
+      "observed_recovery_window_weeks": {
+        "low": 6,
+        "high": 12
+      },
+      "key_use": "Supports lesion windows tied to at least one spermatogenic cycle and slower dog/NHP recovery.",
+      "confidence": "high"
+    },
+    {
+      "id": "E17",
+      "source": "Campion et al. 2012 male reprotoxicity review",
+      "finding_scope": [
+        "TESTIS:decreased_spermatogenesis",
+        "TESTIS:leydig_cell_hypertrophy"
+      ],
+      "species": [
+        "rat"
+      ],
+      "evidence_type": "experimental_review",
+      "directness": "direct_for_timepoints",
+      "statement": "In a Leydig-cell toxicant model, signs of recovering spermatogenesis were present by 3 weeks post-exposure and mature Leydig cells by 5 weeks.",
+      "observed_recovery_window_weeks": {
+        "low": 3,
+        "high": 5
+      },
+      "key_use": "Supports rat recovery windows of several weeks, not days, for endocrine/testicular lesions.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E18",
+      "source": "Graziano et al. 1997, CI-994 rat/dog toxicity",
+      "finding_scope": [
+        "TESTIS:decreased_spermatogenesis",
+        "TESTIS:germ_cell_degeneration",
+        "BONE_MARROW:hypocellularity"
+      ],
+      "species": [
+        "rat",
+        "dog"
+      ],
+      "evidence_type": "experimental",
+      "directness": "direct",
+      "statement": "Testicular degeneration in rats and dogs was the notable lesion that did not fully reverse within 4-week rat and 9-week dog recovery periods, whereas other changes did.",
+      "observed_recovery_window_weeks": {
+        "low": 9,
+        "high": null
+      },
+      "key_use": "Supports classifying marked testicular lesions/atrophy as slower or potentially non-recovering.",
+      "confidence": "high"
+    },
+    {
+      "id": "E19",
+      "source": "Nolte et al. 2016 GI INHAND; Greaves 2012 digestive system chapter",
+      "finding_scope": [
+        "STOMACH:mucosal_hyperplasia",
+        "STOMACH:erosion",
+        "STOMACH:ulceration"
+      ],
+      "species": [
+        "rat",
+        "mouse"
+      ],
+      "evidence_type": "review",
+      "directness": "mixed",
+      "statement": "Florid nonglandular stomach hyperplasia can be completely reversible following withdrawal of the inciting stimulus; in an omeprazole model functional and morphologic gastric changes after 60 days treatment were fully reversible after 42 days withdrawal.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 6
+      },
+      "key_use": "Supports expected reversibility for reactive hyperplasia and multi-week healing for deeper ulcerative change.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E20",
+      "source": "Berridge et al. 2016 INHAND cardiovascular lesions",
+      "finding_scope": [
+        "HEART:cardiomyocyte_degeneration_necrosis",
+        "HEART:fibrosis"
+      ],
+      "species": [
+        "rat",
+        "mouse"
+      ],
+      "evidence_type": "INHAND_consensus",
+      "directness": "direct_for_irreversibility_of_necrosis",
+      "statement": "Cardiomyocytes are terminally differentiated; cardiomyocyte necrosis represents permanent loss of contractile capability.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports 'none' or very limited reversibility for true cardiomyocyte necrosis and fibrosis regardless of grade.",
+      "confidence": "high"
+    },
+    {
+      "id": "E21",
+      "source": "Baldrick 2016 vaccine dose-site reactions; Green 2016 Preclinical Toxicology of Vaccines",
+      "finding_scope": [
+        "INJECTION_SITE:inflammation",
+        "INJECTION_SITE:necrosis",
+        "INJECTION_SITE:fibrosis",
+        "INJECTION_SITE:granuloma",
+        "LYMPH_NODE:hyperplasia_follicular_paracortical",
+        "SPLEEN:hyperplasia"
+      ],
+      "species": [
+        "rat",
+        "rabbit",
+        "monkey"
+      ],
+      "evidence_type": "review",
+      "directness": "direct",
+      "statement": "A non-dose recovery period of 2-4 weeks was sufficient to show reversibility of typical vaccine dose-site effects. Simple injection trauma shows reduced inflammation and healing with regeneration/fibrosis by day 10, but alum-associated macrophage aggregates/focal fibrosis may persist for months to 1 year.",
+      "observed_recovery_window_weeks": {
+        "low": 1,
+        "high": 4
+      },
+      "key_use": "Supports short windows for ordinary injection-site inflammation/necrosis, but long persistence for adjuvant granulomatous change and fibrosis.",
+      "confidence": "high"
+    },
+    {
+      "id": "E22",
+      "source": "Baldrick 2016; vaccine-related lymphoid findings",
+      "finding_scope": [
+        "LYMPH_NODE:hyperplasia_follicular_paracortical",
+        "LYMPH_NODE:sinus_histiocytosis"
+      ],
+      "species": [
+        "rat",
+        "rabbit"
+      ],
+      "evidence_type": "review",
+      "directness": "direct",
+      "statement": "Reactive draining lymph node and splenic changes accompanying vaccination generally reverse within a 2-4 week recovery interval.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 4
+      },
+      "key_use": "Supports expected reversibility for reactive lymph node hyperplasia/histiocytosis when inciting antigen/material is cleared.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E23",
+      "source": "Baldrick 2016 / Green 2016",
+      "finding_scope": [
+        "continuous:organ_weights:thymus_weight_decrease",
+        "continuous:organ_weights:liver_weight_increase",
+        "continuous:organ_weights:testis_weight_decrease"
+      ],
+      "species": [
+        "rat",
+        "rabbit",
+        "monkey"
+      ],
+      "evidence_type": "review",
+      "directness": "indirect",
+      "statement": "Organ-weight recovery generally parallels the underlying lesion: thymus/spleen effects with immune/stress responses recover over weeks, while dose-site granulomatous changes can persist much longer.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports deriving organ-weight timelines from pathology rather than creating separate organ-agnostic constants.",
+      "confidence": "moderate"
+    },
+    {
+      "id": "E24",
+      "source": "Derelanko 1987 rat RBC lifespan; An 2016 physiology model; Heilmann 1993 dog platelet lifespan",
+      "finding_scope": [
+        "continuous:hematology:rbc_hgb_hct",
+        "continuous:hematology:platelets"
+      ],
+      "species": [
+        "rat",
+        "dog",
+        "human"
+      ],
+      "evidence_type": "physiology",
+      "directness": "indirect_for_toxicology_lookup",
+      "statement": "Rat RBC lifespan is ~55-66 days; dog platelet lifespan is ~6 days. These turnover differences support much faster platelet/reticulocyte normalization than RBC mass normalization, and slower dog than rat RBC recovery.",
+      "observed_recovery_window_weeks": {
+        "low": 1,
+        "high": 10
+      },
+      "key_use": "Supports continuous endpoint timelines for hematology and species modifiers.",
+      "confidence": "high"
+    },
+    {
+      "id": "E25",
+      "source": "OECD TG 407 (2008); OECD TG 408; EPA OPPTS 870.3100; ICH M3(R2)",
+      "finding_scope": [
+        "meta:study_design"
+      ],
+      "species": [
+        "rodent",
+        "nonrodent"
+      ],
+      "evidence_type": "guideline",
+      "directness": "direct_for_design_not_for_lesion_biology",
+      "statement": "OECD 407 uses at least 14 days follow-up after 28-day dosing; OECD 408 uses an appropriate recovery period after 90-day dosing; EPA 90-day oral toxicity guidance allows a satellite group observed for reversibility/persistence; ICH M3(R2) frames reversibility as a goal of repeated-dose safety assessment.",
+      "observed_recovery_window_weeks": {
+        "low": 2,
+        "high": 4
+      },
+      "key_use": "Shows that common recovery-group durations are design conventions, not lesion-specific biology, and therefore should not be reused as lookup constants.",
+      "confidence": "high"
+    },
+    {
+      "id": "E26",
+      "source": "Schafer et al. 2018 severity grades; Miller 2017 cell injury review; NTP degeneration atlas",
+      "finding_scope": [
+        "meta:severity_modulation"
+      ],
+      "species": [
+        "general"
+      ],
+      "evidence_type": "consensus_plus_mechanistic_review",
+      "directness": "direct_for_interpretation_indirect_for_numeric_scaling",
+      "statement": "Severity grades describe extent/complexity of morphologic change; severe or prolonged injury can pass a 'point of no return' into irreversible necrosis. No source supports a universal linear week-multiplier across organs.",
+      "observed_recovery_window_weeks": null,
+      "key_use": "Supports replacing flat multipliers with lesion-specific threshold rules.",
+      "confidence": "high"
+    }
+  ],
+  "metadata": {
+    "version": "3.0_three_way_merge",
+    "date": "2026-03-03",
+    "description": "Three-way merge: Claude artifact + uploaded JSON with evidence log + prior merge pass.",
+    "species_covered": [
+      "rat",
+      "mouse",
+      "dog",
+      "nhp"
+    ],
+    "organs_covered": 14,
+    "finding_entries": 56,
+    "key_principles": [
+      "Clinical path recovers BEFORE histopath (exceptions: ALP, albumin)",
+      "Severity: threshold model, not linear multipliers",
+      "Marked/severe degenerative -> reassess reversibility",
+      "Heart necrosis + fibrosis: ALWAYS irreversible",
+      "Mineralization: essentially irreversible",
+      "Hemosiderin persistence != ongoing toxicity",
+      "Renal basophilia = HEALING marker",
+      "Testicular recovery tracks spermatogenic cycle (most validated species modifier)",
+      "Thymic recovery dominated by AGE not species",
+      "RBC/anemia recovery dominated by RBC lifespan (largest species effect)"
+    ]
+  }
+}

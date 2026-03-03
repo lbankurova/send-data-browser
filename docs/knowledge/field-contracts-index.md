@@ -42,9 +42,11 @@ One-line lookup for all computed fields in `field-contracts.md`. Scan this first
 | FIELD-36 | `GroupCard.groupSignal` | Dose group card signal strength |
 | FIELD-37 | `RecoveryClassification.classification` | Interpretive recovery category |
 | FIELD-38 | `RecoveryClassification.confidence` | Recovery classification confidence |
-| FIELD-39 | `FindingNatureInfo.nature` | Biological nature category |
-| FIELD-40 | `FindingNatureInfo.expected_reversibility` | Expected reversibility profile |
-| FIELD-41 | `FindingNatureInfo.typical_recovery_weeks` | Typical recovery timeline |
+| FIELD-39 | `FindingNatureInfo.nature` | Biological nature category (CT/keyword, not overridden by organ lookup) |
+| FIELD-40 | `FindingNatureInfo.expected_reversibility` | Expected reversibility profile (organ lookup or legacy severity modulation) |
+| FIELD-41 | `FindingNatureInfo.typical_recovery_weeks` | Recovery midpoint in weeks (null for irreversible or indeterminate) |
+| FIELD-41a | `FindingNatureInfo.recovery_weeks_range` | Organ-specific {low, high} week range (severity/species adjusted) |
+| FIELD-41b | `FindingNatureInfo.lookup_confidence` | Organ-specific lookup confidence (high/moderate/low) |
 | FIELD-42 | `ProtectiveSignalResult.classification` | Protective signal class |
 | FIELD-43 | `LabClinicalMatch` | Lab-clinical cross-reference match |
 | FIELD-44 | `NoaelNarrative` | NOAEL narrative summary |

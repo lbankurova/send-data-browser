@@ -1335,18 +1335,25 @@ Suppressions (METH-12): R01 → suppress R07; R04 → suppress R01, R03.
 
 ### CLASS-19 — Finding Nature Classification
 
-**Purpose:** Classify histopathology findings into biological nature categories (adaptive, degenerative, proliferative, inflammatory, depositional, vascular) with expected reversibility and typical recovery timelines.
+**Purpose:** Classify histopathology findings into biological nature categories (adaptive, degenerative, proliferative, inflammatory, depositional, vascular) with expected reversibility, organ-specific recovery timelines, and uncertainty bands.
 
-**Implementation:** `classifyFindingNature(findingName, maxSeverity?)` — frontend `finding-nature.ts:140`. Uses `normalizeFinding()` (METH-23) as primary lookup, falls back to keyword substring table at line 47.
+**Implementation:** `classifyFindingNature(findingName, maxSeverity?, organ?, species?)` — frontend `finding-nature.ts:158`. Uses `normalizeFinding()` (METH-23) for nature category, then `lookupRecoveryDuration()` (from `recovery-duration-table.ts`) for organ-specific recovery duration.
 
 **Parameters:**
-- **Two-pass resolution:** (1) CT-normalized lookup via METH-23. If found, map `reversibility.qualifier` to expected_reversibility tier (expected→high, unlikely→low, none→none, unknown→moderate). (2) If no CT match, scan 40+ keyword entries ordered by longest-match priority; proliferative checked first (neoplastic = irreversible, highest priority).
-- **Severity modulation:** When `maxSeverity` is provided, `modulateBySeverity()` adjusts the expected recovery timeline — higher severity grades extend recovery weeks and may downgrade reversibility expectations. The modulation matrix is indexed by `[nature][severityBand]`.
+- **Nature classification (two-pass):** (1) CT-normalized lookup via METH-23. If found, map `reversibility.qualifier` to expected_reversibility tier (expected→high, unlikely→low, none→none, unknown→moderate). (2) If no CT match, scan 40+ keyword entries ordered by longest-match priority; proliferative checked first (neoplastic = irreversible, highest priority).
+- **Organ-specific recovery duration (v3 lookup table):** When `organ` and/or `species` are provided, consults the literature-backed recovery duration table (14 organs, 56 histopathology findings). The lookup table provides: base_weeks range, reversibility qualifier, per-entry severity modulation model, per-finding species modifiers, and confidence rating. If a match is found, the lookup result overrides the generic keyword-based weeks. Nature classification still comes from CT/keyword — the lookup table only provides duration.
+- **Severity modulation (4 models):** `none` (flat 1.0×), `modest_scaling` (graduated up to 1.5× at marked), `threshold_to_poor_recovery` (marked/severe → null multiplier, reversibility downgraded), `deposit_proportional` (graduated through severe=2.5×, for hemosiderosis/pigmentation). Applied to base_weeks before species adjustment.
+- **Species modifiers:** Per-finding inline values (rat, mouse, dog, NHP). Null = species not applicable for this finding (e.g., dog/NHP for forestomach). Key correction in v3: NHP spermatogenesis modifier 0.8 (cynomolgus cycle 42d < rat 52d).
+- **Nullable base_weeks:** Findings with `{null, null}` base_weeks (kidney mineralization, heart cardiomyocyte necrosis, heart fibrosis) return `weeks: null` — irreversible, no meaningful duration.
+- **Legacy severity modulation fallback:** When no organ-specific lookup is available, `modulateBySeverity()` applies the nature-indexed severity matrix (7 natures × 3 bands).
 - **Explicit unknown:** If neither CT nor keyword matches, returns `nature: "unknown"` with `expected_reversibility: "moderate"` (conservative default).
+- **Uncertainty model:** `computeUncertaintyBands(weeks, confidence, organKey?, findingKey?)` provides asymmetric percentage-based bands: high confidence ±25%/+35%, moderate ±25%/+50%, low ±25%/+75%. Organ-specific tightening (liver hypertrophy, thymic stress: ±20%/+30%) and widening (injection site, kidney with CPN: ±30%/+75%). Floor: 0.5 weeks. Max margin cap: 8 weeks. Additive — consumers opt in.
 
-**Why this method:** Pathologists mentally classify findings by biological nature to predict reversibility — adaptive changes (hypertrophy, hyperplasia) are expected to reverse; degenerative changes (fibrosis, necrosis) may not. Automating this classification enables the recovery assessment engine (CLASS-10, CLASS-20) to set appropriate expectations per finding.
+**Data source:** Cross-validated three-way merge of literature sources (Brief 7, version 3.0-merged). 14 organs × 56 histopathology findings + 20 continuous endpoints. See `docs/deep-research/engine/brief 7/recovery_duration_lookup_v3_merged.json` and `cross_validation_report.md`.
 
-**Alternatives considered:** Asking the pathologist to manually classify (defeats the "system computes what it can" principle). Using INHAND classification directly (INHAND terms don't carry reversibility information).
+**Why this method:** Pathologists mentally classify findings by biological nature to predict reversibility — adaptive changes (hypertrophy, hyperplasia) are expected to reverse; degenerative changes (fibrosis, necrosis) may not. Automating this classification enables the recovery assessment engine (CLASS-10, CLASS-20) to set appropriate expectations per finding. The organ-specific lookup table replaces organ-agnostic keyword-based weeks with literature-backed durations that account for tissue-specific biology.
+
+**Alternatives considered:** Asking the pathologist to manually classify (defeats the "system computes what it can" principle). Using INHAND classification directly (INHAND terms don't carry reversibility information). Organ-agnostic keyword-only durations (too imprecise — liver hypertrophy reverses in 1–4 weeks, while testicular atrophy takes 8–24 weeks).
 
 ### CLASS-20 — Recovery Classification (Interpretive Layer)
 
