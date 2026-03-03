@@ -1,15 +1,12 @@
 /**
- * Organ × Finding × Species Recovery Duration Lookup Table.
+ * Organ x Finding x Species Recovery Duration Lookup Table v3.
  *
- * Literature-backed recovery timelines replacing the prior organ-agnostic
- * placeholders. Data sourced from Brief 7 deep research (preliminary —
- * values need domain-expert verification).
- *
- * 13 organs, 51 histopathology findings, 12 continuous endpoints.
+ * Cross-validated three-way merge of literature sources (Brief 7).
+ * 14 organs, 56 histopathology findings, 24 continuous endpoints.
  * Each entry carries its own severity modulation model and species modifiers.
  *
- * @see docs/deep-research/engine/brief 7/recovery_duration_lookup_latest.json
- * @see docs/deep-research/engine/brief 7/recovery_duration_evidence_log_latest.json
+ * @see docs/deep-research/engine/brief 7/recovery_duration_lookup_v3_merged.json
+ * @see docs/deep-research/engine/brief 7/cross_validation_report.md
  */
 
 import type { ReversibilityQualifier } from "./finding-nature";
@@ -19,7 +16,8 @@ import type { ReversibilityQualifier } from "./finding-nature";
 export type SeverityModulationModel =
   | "none"
   | "modest_scaling"
-  | "threshold_to_poor_recovery";
+  | "threshold_to_poor_recovery"
+  | "deposit_proportional";
 
 export type LookupConfidence = "high" | "moderate" | "low";
 
@@ -33,15 +31,15 @@ export interface SeverityModulationEntry {
 }
 
 export interface RecoveryDurationEntry {
-  base_weeks: { low: number; high: number };
+  base_weeks: { low: number | null; high: number | null };
   reversibility: ReversibilityQualifier;
   severity: SeverityModulationEntry;
-  species: { rat: number; mouse: number; dog: number; nhp: number };
+  species: { rat: number | null; mouse: number | null; dog: number | null; nhp: number | null };
   confidence: LookupConfidence;
 }
 
 export interface RecoveryLookupResult {
-  weeks: { low: number; high: number };
+  weeks: { low: number; high: number } | null;
   reversibility: ReversibilityQualifier;
   confidence: LookupConfidence;
   severity_capped: boolean;           // true when marked/severe null → downgraded
@@ -50,125 +48,136 @@ export interface RecoveryLookupResult {
   finding_key: string | null;
 }
 
-// ─── Histopathology lookup table (13 organs, 51 findings) ─
+// ─── Shared severity templates ────────────────────────────
 
 type OrganTable = Record<string, RecoveryDurationEntry>;
 
 const S_NONE: SeverityModulationEntry = { model: "none", minimal: 1, mild: 1, moderate: 1, marked: 1, severe: 1 };
 const S_MODEST: SeverityModulationEntry = { model: "modest_scaling", minimal: 1, mild: 1, moderate: 1.25, marked: 1.5, severe: null };
 const S_THRESH: SeverityModulationEntry = { model: "threshold_to_poor_recovery", minimal: 1, mild: 1, moderate: 1.25, marked: null, severe: null };
+const S_DEPOSIT: SeverityModulationEntry = { model: "deposit_proportional", minimal: 1, mild: 1, moderate: 1.5, marked: 2.0, severe: 2.5 };
 
-const SP_LIVER = { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 };
-const SP_KIDNEY = { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 };
-const SP_ENDOCRINE = { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.4 };
-const SP_HEME = { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 };
-const SP_REPRO = { rat: 1, mouse: 0.8, dog: 1.2, nhp: 1.4 };
-const SP_DEFAULT = { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.4 };
+// ─── Histopathology lookup table (14 organs, 56 findings) ─
 
 const RECOVERY_TABLE: Record<string, OrganTable> = {
   LIVER: {
-    hypertrophy_hepatocellular:        { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_LIVER, confidence: "high" },
-    necrosis_hepatocellular:           { base_weeks: { low: 1, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_LIVER, confidence: "moderate" },
-    vacuolation_hepatocellular:        { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_LIVER, confidence: "moderate" },
-    bile_duct_hyperplasia:             { base_weeks: { low: 4, high: 12 }, reversibility: "possible", severity: S_THRESH, species: SP_LIVER, confidence: "low" },
-    inflammation_portal_lobular:       { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_LIVER, confidence: "moderate" },
-    kupffer_cell_hypertrophy_hyperplasia: { base_weeks: { low: 2, high: 6 }, reversibility: "possible", severity: S_MODEST, species: SP_LIVER, confidence: "low" },
-    glycogen_depletion:                { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_NONE, species: SP_LIVER, confidence: "moderate" },
+    hypertrophy_hepatocellular:        { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: { model: "modest_scaling", minimal: 1, mild: 1, moderate: 1.3, marked: 1.5, severe: null }, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "high" },
+    necrosis_hepatocellular:           { base_weeks: { low: 1, high: 8 },  reversibility: "possible", severity: { model: "threshold_to_poor_recovery", minimal: 1, mild: 1.25, moderate: 1.5, marked: null, severe: null }, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.5 }, confidence: "moderate" },
+    vacuolation_hepatocellular:        { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "moderate" },
+    vacuolation_phospholipidosis:      { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "moderate" },
+    bile_duct_hyperplasia:             { base_weeks: { low: 4, high: 12 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "low" },
+    inflammation_portal_lobular:       { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "moderate" },
+    kupffer_cell_hypertrophy_hyperplasia: { base_weeks: { low: 1, high: 6 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "moderate" },
+    glycogen_depletion:                { base_weeks: { low: 0.1, high: 2 }, reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "high" },
   },
   KIDNEY: {
-    tubular_degeneration_necrosis:     { base_weeks: { low: 1, high: 4 },  reversibility: "possible", severity: S_THRESH, species: SP_KIDNEY, confidence: "high" },
-    tubular_basophilia:                { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_KIDNEY, confidence: "high" },
-    tubular_dilatation:                { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_KIDNEY, confidence: "low" },
-    interstitial_inflammation:         { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: SP_KIDNEY, confidence: "low" },
-    interstitial_nephritis:            { base_weeks: { low: 4, high: 12 }, reversibility: "unlikely", severity: S_THRESH, species: SP_KIDNEY, confidence: "low" },
-    mineralization:                    { base_weeks: { low: 13, high: 26 }, reversibility: "unlikely", severity: S_NONE, species: SP_KIDNEY, confidence: "low" },
-    cast_formation:                    { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_NONE, species: SP_KIDNEY, confidence: "moderate" },
+    tubular_degeneration_necrosis:     { base_weeks: { low: 1, high: 8 },  reversibility: "possible", severity: { model: "threshold_to_poor_recovery", minimal: 1, mild: 1.25, moderate: 1.5, marked: null, severe: null }, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    tubular_basophilia:                { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    tubular_dilatation:                { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "low" },
+    interstitial_inflammation:         { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "low" },
+    interstitial_nephritis:            { base_weeks: { low: 4, high: 12 }, reversibility: "unlikely", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "low" },
+    mineralization:                    { base_weeks: { low: null, high: null }, reversibility: "none", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    cast_formation:                    { base_weeks: { low: 0.5, high: 4 }, reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "moderate" },
   },
   THYROID: {
-    follicular_cell_hypertrophy:       { base_weeks: { low: 2, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_ENDOCRINE, confidence: "moderate" },
-    follicular_cell_hyperplasia:       { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: SP_ENDOCRINE, confidence: "moderate" },
-    colloid_alteration:                { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_NONE, species: SP_ENDOCRINE, confidence: "moderate" },
+    follicular_cell_hypertrophy:       { base_weeks: { low: 2, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.5 }, confidence: "moderate" },
+    follicular_cell_hyperplasia:       { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.4, nhp: 1.6 }, confidence: "moderate" },
+    colloid_alteration:                { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.5 }, confidence: "moderate" },
+    follicular_cell_hyperplasia_focal: { base_weeks: { low: 8, high: null }, reversibility: "unlikely", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: null, nhp: null }, confidence: "moderate" },
   },
   ADRENAL: {
-    cortical_hypertrophy:              { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_ENDOCRINE, confidence: "moderate" },
-    cortical_vacuolation:              { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_ENDOCRINE, confidence: "low" },
-    medullary_hyperplasia:             { base_weeks: { low: 4, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_ENDOCRINE, confidence: "low" },
+    cortical_hypertrophy:              { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.4 }, confidence: "moderate" },
+    cortical_vacuolation:              { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.4 }, confidence: "low" },
+    medullary_hyperplasia:             { base_weeks: { low: 4, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
   },
   SPLEEN: {
-    extramedullary_hematopoiesis_increase: { base_weeks: { low: 1, high: 4 }, reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    lymphoid_depletion:                { base_weeks: { low: 2, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "moderate" },
-    congestion:                        { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_NONE, species: SP_HEME, confidence: "low" },
-    hemosiderosis:                     { base_weeks: { low: 4, high: 12 }, reversibility: "possible", severity: S_NONE, species: SP_HEME, confidence: "low" },
+    extramedullary_hematopoiesis_increase: { base_weeks: { low: 1, high: 4 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "high" },
+    lymphoid_depletion:                { base_weeks: { low: 2, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.4, nhp: 1.5 }, confidence: "moderate" },
+    congestion:                        { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
+    hemosiderosis:                     { base_weeks: { low: 4, high: 12 }, reversibility: "possible", severity: S_DEPOSIT, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
   },
   THYMUS: {
-    cortical_atrophy_lymphoid_depletion: { base_weeks: { low: 1, high: 3 }, reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    apoptosis_increased:               { base_weeks: { low: 1, high: 2 },  reversibility: "expected", severity: S_NONE, species: SP_HEME, confidence: "moderate" },
+    cortical_atrophy_lymphoid_depletion: { base_weeks: { low: 1, high: 4 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.4, nhp: 1.5 }, confidence: "high" },
+    apoptosis_increased:               { base_weeks: { low: 1, high: 2 },  reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.4, nhp: 1.5 }, confidence: "moderate" },
   },
   TESTIS: {
-    decreased_spermatogenesis:         { base_weeks: { low: 6, high: 10 }, reversibility: "possible", severity: S_THRESH, species: SP_REPRO, confidence: "high" },
-    germ_cell_degeneration:            { base_weeks: { low: 4, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_REPRO, confidence: "high" },
-    seminiferous_tubule_atrophy:       { base_weeks: { low: 8, high: 16 }, reversibility: "unlikely", severity: S_THRESH, species: SP_REPRO, confidence: "high" },
-    leydig_cell_hypertrophy:           { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: SP_REPRO, confidence: "moderate" },
+    decreased_spermatogenesis:         { base_weeks: { low: 6, high: 12 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.7, dog: 1.2, nhp: 0.8 }, confidence: "high" },
+    germ_cell_degeneration:            { base_weeks: { low: 4, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.8, dog: 1.2, nhp: 1.4 }, confidence: "high" },
+    seminiferous_tubule_atrophy:       { base_weeks: { low: 8, high: 24 }, reversibility: "unlikely", severity: S_THRESH, species: { rat: 1, mouse: 0.8, dog: 1.2, nhp: 1.4 }, confidence: "high" },
+    leydig_cell_hypertrophy:           { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.2, nhp: 1.4 }, confidence: "moderate" },
   },
   BONE_MARROW: {
-    hypocellularity:                   { base_weeks: { low: 2, high: 4 },  reversibility: "possible", severity: S_THRESH, species: SP_HEME, confidence: "high" },
-    myeloid_depletion:                 { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "moderate" },
-    erythroid_depletion:               { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    cellularity_increase:              { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_NONE, species: SP_HEME, confidence: "moderate" },
+    hypocellularity:                   { base_weeks: { low: 1, high: 6 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "high" },
+    myeloid_depletion:                 { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "moderate" },
+    erythroid_depletion:               { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "high" },
+    cellularity_increase:              { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "moderate" },
   },
   STOMACH: {
-    mucosal_hyperplasia_glandular:     { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: SP_DEFAULT, confidence: "moderate" },
-    mucosal_hyperplasia_forestomach:   { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: SP_DEFAULT, confidence: "moderate" },
-    erosion:                           { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: SP_DEFAULT, confidence: "moderate" },
-    ulceration:                        { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "moderate" },
+    mucosal_hyperplasia_glandular:     { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.2 }, confidence: "moderate" },
+    mucosal_hyperplasia_forestomach:   { base_weeks: { low: 2, high: 13 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: null, nhp: null }, confidence: "moderate" },
+    erosion:                           { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "moderate" },
+    ulceration:                        { base_weeks: { low: 2, high: 12 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "moderate" },
   },
   HEART: {
-    cardiomyocyte_degeneration_necrosis: { base_weeks: { low: 13, high: 52 }, reversibility: "none", severity: S_NONE, species: SP_DEFAULT, confidence: "high" },
-    inflammation:                      { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "low" },
-    fibrosis:                          { base_weeks: { low: 52, high: 52 }, reversibility: "none", severity: S_NONE, species: SP_DEFAULT, confidence: "high" },
+    cardiomyocyte_degeneration_necrosis: { base_weeks: { low: null, high: null }, reversibility: "none", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.1 }, confidence: "high" },
+    inflammation:                      { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
+    fibrosis:                          { base_weeks: { low: null, high: null }, reversibility: "none", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "high" },
   },
   LUNG: {
-    alveolar_macrophage_accumulation:  { base_weeks: { low: 1, high: 8 },  reversibility: "possible", severity: S_MODEST, species: SP_DEFAULT, confidence: "high" },
-    inflammation:                      { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "low" },
-    alveolar_epithelial_hyperplasia:   { base_weeks: { low: 4, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "low" },
+    alveolar_macrophage_accumulation:  { base_weeks: { low: 1, high: 8 },  reversibility: "possible", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    inflammation:                      { base_weeks: { low: 2, high: 12 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
+    alveolar_epithelial_hyperplasia:   { base_weeks: { low: 4, high: 12 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
   },
   LYMPH_NODE: {
-    hyperplasia_follicular_paracortical: { base_weeks: { low: 2, high: 4 }, reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    sinus_histiocytosis:               { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_MODEST, species: SP_HEME, confidence: "moderate" },
-    atrophy:                           { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: SP_HEME, confidence: "low" },
+    hyperplasia_follicular_paracortical: { base_weeks: { low: 2, high: 4 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    sinus_histiocytosis:               { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "moderate" },
+    atrophy:                           { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "low" },
   },
   INJECTION_SITE: {
-    inflammation:                      { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_DEFAULT, confidence: "high" },
-    necrosis:                          { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "moderate" },
-    fibrosis:                          { base_weeks: { low: 26, high: 52 }, reversibility: "none", severity: S_NONE, species: SP_DEFAULT, confidence: "high" },
-    granuloma:                         { base_weeks: { low: 4, high: 26 }, reversibility: "unlikely", severity: S_NONE, species: SP_DEFAULT, confidence: "high" },
+    inflammation:                      { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    necrosis:                          { base_weeks: { low: 2, high: 6 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "moderate" },
+    fibrosis:                          { base_weeks: { low: 26, high: 52 }, reversibility: "none", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+    granuloma:                         { base_weeks: { low: 4, high: 26 }, reversibility: "unlikely", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "high" },
+  },
+  GENERAL: {
+    hemorrhage:                        { base_weeks: { low: 0.5, high: 3 }, reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "moderate" },
+    congestion:                        { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "moderate" },
+    pigmentation:                      { base_weeks: { low: 4, high: 26 }, reversibility: "possible", severity: S_DEPOSIT, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "moderate" },
   },
 };
 
-// ─── Continuous endpoint recovery (12 entries) ────────────
+// ─── Continuous endpoint recovery (24 entries) ────────────
 
 export const CONTINUOUS_RECOVERY: Record<string, Record<string, RecoveryDurationEntry>> = {
   organ_weights: {
-    liver_weight_increase:  { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: SP_LIVER, confidence: "high" },
-    thymus_weight_decrease: { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    testis_weight_decrease: { base_weeks: { low: 6, high: 10 }, reversibility: "possible", severity: S_THRESH, species: SP_REPRO, confidence: "high" },
+    liver_weight_increase:    { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "high" },
+    thymus_weight_decrease:   { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.4, nhp: 1.5 }, confidence: "high" },
+    testis_weight_decrease:   { base_weeks: { low: 6, high: 10 }, reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.8, dog: 1.2, nhp: 1.4 }, confidence: "high" },
+    kidney_weight_change:     { base_weeks: { low: 2, high: 6 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "low" },
+    adrenal_weight_increase:  { base_weeks: { low: 2, high: 4 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.4 }, confidence: "moderate" },
+    spleen_weight_change:     { base_weeks: { low: 1, high: 4 },  reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "moderate" },
   },
   clinical_chemistry: {
-    ALT_AST_increase:       { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_THRESH, species: SP_LIVER, confidence: "moderate" },
-    bilirubin_increase:     { base_weeks: { low: 1, high: 3 },   reversibility: "possible", severity: S_THRESH, species: SP_LIVER, confidence: "low" },
-    BUN_creatinine_increase: { base_weeks: { low: 1, high: 4 },  reversibility: "possible", severity: S_THRESH, species: SP_KIDNEY, confidence: "moderate" },
+    ALT_increase:              { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "high" },
+    AST_increase:              { base_weeks: { low: 0.3, high: 1 }, reversibility: "expected", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.3 }, confidence: "moderate" },
+    ALP_increase:              { base_weeks: { low: 1, high: 3 },   reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "moderate" },
+    albumin_decrease:          { base_weeks: { low: 2, high: 8 },   reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.8, nhp: 2.0 }, confidence: "moderate" },
+    GGT_increase:              { base_weeks: { low: 1, high: 3 },   reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.9, dog: 1.3, nhp: 1.3 }, confidence: "low" },
+    bilirubin_increase:        { base_weeks: { low: 1, high: 3 },   reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.5, nhp: 1.5 }, confidence: "low" },
+    BUN_increase:              { base_weeks: { low: 1, high: 4 },   reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "moderate" },
+    creatinine_increase:       { base_weeks: { low: 1, high: 4 },   reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.1, nhp: 1.2 }, confidence: "moderate" },
   },
   hematology: {
-    neutrophil_wbc_decrease: { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    platelet_decrease:       { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    rbc_hgb_hct_decrease:    { base_weeks: { low: 4, high: 8 },  reversibility: "expected", severity: S_MODEST, species: SP_HEME, confidence: "high" },
-    reticulocyte_increase:   { base_weeks: { low: 1, high: 2 },  reversibility: "expected", severity: S_NONE, species: SP_HEME, confidence: "moderate" },
+    neutrophil_wbc_decrease:   { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "high" },
+    platelet_decrease:         { base_weeks: { low: 1, high: 3 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "high" },
+    rbc_hgb_hct_decrease:      { base_weeks: { low: 4, high: 8 },  reversibility: "expected", severity: S_MODEST, species: { rat: 1, mouse: 0.7, dog: 1.8, nhp: 2.0 }, confidence: "high" },
+    reticulocyte_increase:     { base_weeks: { low: 1, high: 2 },  reversibility: "expected", severity: S_NONE, species: { rat: 1, mouse: 0.8, dog: 1.5, nhp: 1.4 }, confidence: "moderate" },
   },
   body_weight: {
-    body_weight_decrease:    { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: SP_DEFAULT, confidence: "low" },
+    body_weight_decrease:      { base_weeks: { low: 2, high: 8 },  reversibility: "possible", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
   },
   coagulation: {
-    PT_APTT_fibrinogen_change: { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_THRESH, species: SP_DEFAULT, confidence: "low" },
+    PT_APTT_fibrinogen_change: { base_weeks: { low: 0.5, high: 2 }, reversibility: "expected", severity: S_THRESH, species: { rat: 1, mouse: 0.9, dog: 1.2, nhp: 1.3 }, confidence: "low" },
   },
 };
 
@@ -216,6 +225,7 @@ export function specimenToOrganKey(specimen: string): string | null {
 /** Organ-specific synonym overrides for ambiguous finding names. */
 const FINDING_SYNONYMS: Record<string, Record<string, string>> = {
   LIVER: {
+    phospholipidosis: "vacuolation_phospholipidosis",
     vacuolation: "vacuolation_hepatocellular",
     "fatty change": "vacuolation_hepatocellular",
     hypertrophy: "hypertrophy_hepatocellular",
@@ -240,6 +250,7 @@ const FINDING_SYNONYMS: Record<string, Record<string, string>> = {
   THYROID: {
     hypertrophy: "follicular_cell_hypertrophy",
     hyperplasia: "follicular_cell_hyperplasia",
+    "focal hyperplasia": "follicular_cell_hyperplasia_focal",
     colloid: "colloid_alteration",
   },
   ADRENAL: {
@@ -305,6 +316,13 @@ const FINDING_SYNONYMS: Record<string, Record<string, string>> = {
     fibrosis: "fibrosis",
     granuloma: "granuloma",
   },
+  GENERAL: {
+    hemorrhage: "hemorrhage",
+    bleeding: "hemorrhage",
+    congestion: "congestion",
+    pigmentation: "pigmentation",
+    pigment: "pigmentation",
+  },
 };
 
 export function findingToEntryKey(findingName: string, organKey: string): string | null {
@@ -345,9 +363,14 @@ const SEVERITY_GRADE_MAP: Record<number, "minimal" | "mild" | "moderate" | "mark
 export function applySeverityModulation(
   entry: RecoveryDurationEntry,
   maxSeverity: number | null | undefined,
-): { weeks: { low: number; high: number }; reversibility: ReversibilityQualifier; capped: boolean } {
+): { weeks: { low: number; high: number } | null; reversibility: ReversibilityQualifier; capped: boolean } {
+  // Null base_weeks = irreversible finding, no meaningful duration
+  if (entry.base_weeks.low == null || entry.base_weeks.high == null) {
+    return { weeks: null, reversibility: entry.reversibility, capped: false };
+  }
+
   if (maxSeverity == null || maxSeverity < 1) {
-    return { weeks: { ...entry.base_weeks }, reversibility: entry.reversibility, capped: false };
+    return { weeks: { low: entry.base_weeks.low, high: entry.base_weeks.high }, reversibility: entry.reversibility, capped: false };
   }
 
   const grade = SEVERITY_GRADE_MAP[Math.min(Math.round(maxSeverity), 5)] ?? "moderate";
@@ -361,7 +384,7 @@ export function applySeverityModulation(
       entry.reversibility === "expected" ? "unlikely"
         : entry.reversibility === "possible" ? "unlikely"
           : "none";
-    return { weeks: { ...entry.base_weeks }, reversibility: downgraded, capped: true };
+    return { weeks: { low: entry.base_weeks.low, high: entry.base_weeks.high }, reversibility: downgraded, capped: true };
   }
 
   return {
@@ -386,14 +409,17 @@ function normalizeSpecies(species: string): "rat" | "mouse" | "dog" | "nhp" | nu
 }
 
 export function applySpeciesModifier(
-  weeks: { low: number; high: number },
+  weeks: { low: number; high: number } | null,
   entry: RecoveryDurationEntry,
   species: string | null | undefined,
-): { low: number; high: number } {
+): { low: number; high: number } | null {
+  if (weeks == null) return null;
   if (!species) return weeks;
   const key = normalizeSpecies(species);
   if (!key) return weeks;
   const mod = entry.species[key];
+  // null modifier = species not applicable for this finding
+  if (mod == null) return weeks;
   return {
     low: Math.round(weeks.low * mod * 10) / 10,
     high: Math.round(weeks.high * mod * 10) / 10,
@@ -476,13 +502,66 @@ export function lookupContinuousRecovery(
   return cat[endpoint] ?? null;
 }
 
+// ─── Uncertainty model ────────────────────────────────────
+
+const UNCERTAINTY_DEFAULTS: Record<LookupConfidence, { low_pct: number; high_pct: number }> = {
+  high:     { low_pct: 25, high_pct: 35 },
+  moderate: { low_pct: 25, high_pct: 50 },
+  low:      { low_pct: 25, high_pct: 75 },
+};
+
+const UNCERTAINTY_TIGHTENING: Record<string, { low_pct: number; high_pct: number }> = {
+  liver_hypertrophy:    { low_pct: 20, high_pct: 30 },
+  thymic_stress:        { low_pct: 20, high_pct: 30 },
+};
+
+const UNCERTAINTY_WIDENING: Record<string, { low_pct: number; high_pct: number }> = {
+  injection_site:       { low_pct: 30, high_pct: 75 },
+  kidney_with_CPN:      { low_pct: 30, high_pct: 75 },
+};
+
+const UNCERTAINTY_FLOOR = 0.5;
+const UNCERTAINTY_MAX_MARGIN = 8;
+
+export function computeUncertaintyBands(
+  weeks: { low: number; high: number },
+  confidence: LookupConfidence,
+  organKey?: string | null,
+  findingKey?: string | null,
+): { lower: number; upper: number } {
+  // Determine percentage bands
+  let pcts = UNCERTAINTY_DEFAULTS[confidence];
+
+  // Check for organ-specific overrides
+  if (organKey && findingKey) {
+    const lookupKey = `${organKey.toLowerCase()}_${findingKey}`;
+    if (lookupKey.includes("liver") && lookupKey.includes("hypertrophy")) {
+      pcts = UNCERTAINTY_TIGHTENING.liver_hypertrophy;
+    } else if (lookupKey.includes("thymus") || lookupKey.includes("thymic")) {
+      pcts = UNCERTAINTY_TIGHTENING.thymic_stress;
+    } else if (lookupKey.includes("injection_site")) {
+      pcts = UNCERTAINTY_WIDENING.injection_site;
+    } else if (lookupKey.includes("kidney") && lookupKey.includes("cpn")) {
+      pcts = UNCERTAINTY_WIDENING.kidney_with_CPN;
+    }
+  }
+
+  const lowMargin = Math.min(weeks.low * (pcts.low_pct / 100), UNCERTAINTY_MAX_MARGIN);
+  const highMargin = Math.min(weeks.high * (pcts.high_pct / 100), UNCERTAINTY_MAX_MARGIN);
+
+  return {
+    lower: Math.max(UNCERTAINTY_FLOOR, Math.round((weeks.low - lowMargin) * 10) / 10),
+    upper: Math.round((weeks.high + highMargin) * 10) / 10,
+  };
+}
+
 // ─── Metadata ─────────────────────────────────────────────
 
 export const RECOVERY_TABLE_METADATA = {
-  version: "1.0-preliminary",
-  source: "Brief 7 deep research (2026-03)",
+  version: "3.0-merged",
+  source: "Brief 7 three-way merge (2026-03)",
   organs: Object.keys(RECOVERY_TABLE).length,
   histopath_entries: Object.values(RECOVERY_TABLE).reduce((sum, o) => sum + Object.keys(o).length, 0),
   continuous_entries: Object.values(CONTINUOUS_RECOVERY).reduce((sum, c) => sum + Object.keys(c).length, 0),
-  status: "preliminary — values need domain-expert verification",
+  status: "cross-validated three-way merge",
 };
