@@ -9,6 +9,7 @@ export interface TimecourseResponse {
   unit: string;
   timepoints: TimecourseTimepoint[];
   last_dosing_day?: number;
+  terminal_sacrifice_day?: number;
 }
 
 export interface TimecourseTimepoint {

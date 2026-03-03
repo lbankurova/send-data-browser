@@ -19,6 +19,7 @@ import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
+import { TimeCoursePane } from "./TimeCoursePane";
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { ChevronRight } from "lucide-react";
@@ -858,7 +859,6 @@ const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
   reversing: "text-emerald-600",
   persistent: "text-amber-700",
   progressing: "text-red-700",
-  recovery_too_short: "text-blue-700",
 };
 
 // ─── Recovery verdict one-liner for the Verdict section ──
@@ -1233,6 +1233,16 @@ export function FindingsContextPanel() {
           siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
         />
       </CollapsiblePane>
+
+      {/* Time course — between dose detail and recovery */}
+      {selectedFinding && selectedFinding.data_type === "continuous" && (
+        <TimeCoursePane
+          finding={selectedFinding}
+          doseGroups={findingsData?.dose_groups}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        />
+      )}
 
       {/* Recovery insights — immediately after dose detail */}
       {hasRecovery && selectedFinding && (

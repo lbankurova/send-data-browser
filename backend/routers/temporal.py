@@ -157,21 +157,31 @@ async def get_timecourse(
     else:
         last_dosing_day = None
 
+    # Derive terminal sacrifice day: closest actual data day at or after last_dosing_day
+    terminal_sacrifice_day = None
+    if last_dosing_day is not None:
+        actual_days = sorted(df[day_col].dropna().unique())
+        candidates = [d for d in actual_days if d >= last_dosing_day]
+        terminal_sacrifice_day = int(candidates[0]) if candidates else (int(actual_days[-1]) if actual_days else None)
+
     if mode == "subject":
         return _build_subject_response(
             df, test_code, test_name, domain_upper, unit, value_col, day_col,
             include_recovery=include_recovery, last_dosing_day=last_dosing_day,
+            terminal_sacrifice_day=terminal_sacrifice_day,
         )
     else:
         return _build_group_response(
             df, test_code, test_name, domain_upper, unit, value_col, day_col,
             last_dosing_day=last_dosing_day,
+            terminal_sacrifice_day=terminal_sacrifice_day,
         )
 
 
 def _build_group_response(
     df: pd.DataFrame, test_code: str, test_name: str, domain: str, unit: str,
     value_col: str, day_col: str, *, last_dosing_day: int | None = None,
+    terminal_sacrifice_day: int | None = None,
 ) -> dict:
     """Build group-level (mean ± SD) time-course response."""
     timepoints = []
@@ -199,6 +209,8 @@ def _build_group_response(
     }
     if last_dosing_day is not None:
         result["last_dosing_day"] = last_dosing_day
+    if terminal_sacrifice_day is not None:
+        result["terminal_sacrifice_day"] = terminal_sacrifice_day
     return result
 
 
@@ -206,6 +218,7 @@ def _build_subject_response(
     df: pd.DataFrame, test_code: str, test_name: str, domain: str, unit: str,
     value_col: str, day_col: str, *, include_recovery: bool = False,
     last_dosing_day: int | None = None,
+    terminal_sacrifice_day: int | None = None,
 ) -> dict:
     """Build subject-level time-course response."""
     subjects = []
@@ -237,6 +250,8 @@ def _build_subject_response(
     }
     if last_dosing_day is not None:
         result["last_dosing_day"] = last_dosing_day
+    if terminal_sacrifice_day is not None:
+        result["terminal_sacrifice_day"] = terminal_sacrifice_day
     return result
 
 
