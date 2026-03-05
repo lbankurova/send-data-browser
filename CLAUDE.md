@@ -6,18 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SENDEX (SEND Explorer) — a web app for exploring pre-clinical regulatory study data (SEND format). Studies are stored as SAS Transport (.xpt) files in `send/` and served through a REST API to a React frontend.
 
-**Documentation assets:** `docs/` — all system specs, view specs, portability guides, and design system docs live here. See `docs/MANIFEST.md` for a full inventory with code dependencies and staleness tracking.
+**Documentation:** `docs/MANIFEST.md` for full inventory. System specs in `docs/systems/`, view specs in `docs/views/`, portability in `docs/portability/`.
 
-**System specs (authoritative — one doc per subsystem):**
-- `docs/systems/insights-engine.md` — rule engine (R01-R17), signal scoring, synthesis, Signals Panel
-- `docs/systems/validation-engine.md` — YAML rules, check functions, fix tiers, evidence rendering
-- `docs/systems/data-pipeline.md` — XPT loading, per-domain stats, classification, view assembly
-- `docs/systems/navigation-and-layout.md` — three-panel layout, routing, selection contexts, cross-view links
-- `docs/systems/annotations.md` — ToxFinding, PathologyReview, validation annotations, storage
+**Codebase map:** `.planning/codebase/` — architecture, stack, structure, conventions, integrations, testing, concerns.
 
-**View specs:** `docs/views/*.md` — one per view (7 files: landing, study summary, dose-response, histopathology, NOAEL, adverse effects, validation)
-
-**Portability:** `docs/portability/` — frozen reference for Datagrok migration. Not maintained per-commit; refresh on demand when porting begins.
+**Backlog:** `docs/TODO.md` — single source of truth for open issues.
 
 **Colleague handoff:** Drop feature specs in `docs/incoming/` following the template in `docs/incoming/README.md`.
 
@@ -43,7 +36,7 @@ cd C:/pg/pcc/backend && C:/pg/pcc/backend/venv/Scripts/python.exe -m generator.g
 cd C:/pg/pcc/frontend && npm run dev      # Dev server at http://localhost:5173
 cd C:/pg/pcc/frontend && npm run build    # TypeScript check + production build
 cd C:/pg/pcc/frontend && npm run lint     # ESLint
-cd C:/pg/pcc/frontend && npm test         # Vitest pipeline tests (48 assertions)
+cd C:/pg/pcc/frontend && npm test         # Vitest
 ```
 
 ### Windows Shell Notes
@@ -80,39 +73,11 @@ Before committing, run every item in `docs/checklists/COMMIT-CHECKLIST.md`. Ever
 
 After implementing a feature from a spec in `docs/incoming/`, run the full review at `docs/checklists/POST-IMPLEMENTATION-REVIEW.md` before considering the work done. This is mandatory and must be run automatically — the user should not have to ask for it.
 
-## Architecture
+## Architecture Gotchas
 
-### Backend (`backend/`)
-- **Framework**: FastAPI with uvicorn
-- **Entry**: `main.py` — app setup, CORS (allows *), lifespan startup discovers studies
-- **Routers**: `studies.py` (domain browsing), `analyses.py` (dynamic adverse effects), `analysis_views.py` (pre-generated JSON), `validation.py` (validation engine), `annotations.py` (annotations CRUD) — all under `/api`
-- **Validation Engine**: `validation/` package — 14 YAML rules (7 SD + 7 FDA), 2 check types, optional CDISC CORE integration, SENDIG metadata. See `docs/systems/validation-engine.md`.
-- **Services**: `services/study_discovery.py`, `services/xpt_processor.py`, `services/analysis/` (statistical pipeline). `parameterized_pipeline.py` applies post-processing transforms for 8 active settings (scheduled_only, recovery_pooling, effect_size, multiplicity, pairwise_test, trend_test, organ_weight_method, adversity_threshold) via `apply_settings_transforms()`. Shared enrichment lives in `findings_pipeline.py` — both `generator/domain_stats.py` and `unified_findings.py` call `process_findings()` for classification, fold change, and labels.
-- **Generator**: `generator/generate.py` — reads .XPT, writes 8 JSON files + static charts to `generated/{study_id}/`
-- **Config**: `config.py` — paths, skip list, allowed studies filter
+**`analysis_views.py` routing:** Must use `APIRouter(prefix="/api")` with full paths in decorators (not path params in the router prefix — FastAPI/Starlette doesn't route those correctly).
 
-**Valid view names for `/analysis/{view_name}`:** study-signal-summary, target-organ-summary, dose-response-metrics, organ-evidence-detail, lesion-severity-summary, adverse-effect-summary, noael-summary, rule-results
-
-**Important:** The `analysis_views.py` router must use `APIRouter(prefix="/api")` with full paths in decorators (not path params in the router prefix — FastAPI/Starlette doesn't route those correctly).
-
-> Full API endpoint table and module inventory: `docs/reference/claude-md-archive.md`
-
-### Frontend (`frontend/src/`)
-- **Framework**: React 19 + TypeScript (strict mode) + Vite
-- **Styling**: TailwindCSS v4 with custom Datagrok UI color theme in `index.css`
-- **UI Components**: shadcn/ui (Radix UI + CVA) in `components/ui/`
-- **State**: TanStack React Query (5 min stale), React Context for selections
-- **Tables**: TanStack React Table (client-side sorting in analysis views, server-side pagination in domain views)
-- **Layout**: Three-panel Datagrok-style (Left: `BrowsingTree`, Center: route-dependent, Right: `ContextPanel`)
-- **Routes**: React Router 7 in `App.tsx` — 8 routes (landing, study summary, domain browser, adverse effects, dose-response, histopathology, NOAEL determination, validation). Target organs route redirects to parent. All done.
-- **Views**: 5 analysis views use two-panel master-detail layout (rail + evidence panel with tabs). See `docs/views/*.md` for each.
-
-> Full routes table and module inventory: `docs/reference/claude-md-archive.md`
-
-### Dual Syndrome Engines (not duplicated)
-Two files both detect "syndromes" but at different abstraction levels — do not merge:
-- **`syndrome-rules.ts`** (543 lines, 14 rules) — **Histopathology-specific.** Input: `Map<organ, LesionSeverityRow[]>`. Consumed by: HistopathologyView, HistopathologyContextPanel, SpecimenRailMode.
-- **`cross-domain-syndromes.ts`** (972 lines, 9 rules XS01–XS09) — **Cross-domain.** Input: `EndpointSummary[]` spanning LB/BW/MI/MA/OM/CL. Consumed by: FindingsView, FindingsRail, scatter chart, context panels, lab-clinical-catalog, FindingsAnalyticsContext.
+**Dual syndrome engines — do not merge.** Two files both detect "syndromes" at different abstraction levels: `syndrome-rules.ts` (histopathology-specific, input: organ lesion rows) and `cross-domain-syndromes.ts` (cross-domain, input: endpoint summaries spanning LB/BW/MI/MA/OM/CL). Intentionally separate.
 
 ## Design Decisions
 
@@ -151,28 +116,6 @@ See `docs/reference/ui-casing-conventions.md` for the full casing guide with exa
 - **`verbatimModuleSyntax: true`** — always use `import type { Foo }` for type-only imports
 - Strict mode with `noUnusedLocals` and `noUnusedParameters` enabled
 - Path alias: `@/*` maps to `src/*`
-
-## Data
-
-- 16 study folders in `send/` containing ~437 .xpt files
-- Study ID = folder name (or `parent--child--leaf` for nested TOXSCI studies)
-- TS (Trial Summary) domain contains study metadata as TSPARMCD → TSVAL key-value pairs
-- SUPP* domains are supplemental qualifiers for their parent domain
-- Currently only `PointCross` study is served (config.ALLOWED_STUDIES)
-
-## Generated Analysis Data
-
-Pre-generated by `python -m generator.generate PointCross`. Outputs 8 JSON files + 1 HTML chart to `backend/generated/PointCross/`. See `docs/systems/data-pipeline.md` for pipeline details or `docs/reference/claude-md-archive.md` for the full data table.
-
-## Color Schemes
-
-All color functions implemented in `lib/severity-colors.ts`. Hex values in `docs/reference/claude-md-archive.md` and `docs/design-system/datagrok-visual-design-guide.md`.
-
-## Implementation Status
-
-**All 5 build steps complete.** 7 analysis views + HTML Report. Real validation engine (14 YAML rules, 2 check types). All FEAT-01 through FEAT-09 implemented. See `docs/reference/implementation-status.md` for the full real/stub/missing breakdown.
-
-**Data nullability note:** `lesion_severity_summary.json`: `avg_severity` is null for 550/728 rows — always null-guard with `?? 0`.
 
 ## Interactivity Rule
 
