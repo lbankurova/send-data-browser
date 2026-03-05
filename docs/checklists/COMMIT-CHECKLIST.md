@@ -12,7 +12,7 @@ Run every item before committing changes that alter system or view behavior. Eve
 
 - [ ] **4. Incoming specs checked.** Check `docs/incoming/` for feature specs that conflict with your changes. If a conflict exists, ask the user before committing.
 
-- [ ] **5. Issue tracker updated.** Mark resolved items in `docs/incoming/arch-overhaul/spec-cleanup-b66dfd0.md` with strikethrough + commit hash. Update the summary counts and per-view table. Mandatory for every commit — no exceptions.
+- [ ] **5. TODO.md updated.** If your commit resolves an open item in `docs/TODO.md`, mark it done with strikethrough + commit hash. If you discover a new issue, add it.
 
 - [ ] **6. Knowledge docs updated (if analytical logic changed).** Skip if commit only touches UI, docs, or tests without changing analytical logic or field contracts.
   - Statistical test / algorithm / scoring formula changed → update `docs/knowledge/methods.md` (scan `docs/knowledge/methods-index.md` first)
@@ -21,7 +21,7 @@ Run every item before committing changes that alter system or view behavior. Eve
 
 - [ ] **7. UI components verified.** Every UI primitive (selects, dialogs, tooltips, popovers, badges, buttons) uses the project's shadcn/Radix component from `components/ui/`. No raw HTML equivalents where a shadcn component exists.
 
-- [ ] **8. TOPIC hubs updated.** If your commit touches files listed in a TOPIC hub's File Map → Implementation section (`docs/incoming/arch-overhaul/TOPIC-*.md`), check whether the hub's "What Shipped" / "What's NOT Shipped" / line counts / commit table need updating. Skip if the commit doesn't touch any TOPIC-tracked files.
+- [ ] **8. System spec exists.** Does `docs/systems/` have a spec for the subsystem you touched? If yes, update it to reflect your changes. If no, create one from the code. Skip if commit only touches UI styling, docs, or tests.
 
 ---
 

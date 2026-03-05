@@ -33,22 +33,22 @@ Notable recent:
 
 ## Backlog
 
-Single source of truth: `docs/TODO.md` (34 open items)
+Single source of truth: `docs/TODO.md` (63 open items)
 
 Categories:
-- 2 bugs
+- 3 bugs
 - 8 hardcoded values (most deferred to production)
 - 2 spec divergences
-- 5 missing features
-- 14 gaps (mix of deferred and actionable)
+- 4 missing features
+- 46 gaps (mix of deferred and actionable)
 
 ## Context for Agents
 
 - Read `docs/TODO.md` at session start
-- Consult TOPIC hubs before touching covered subsystems (CLAUDE.md rule 7)
 - Check `docs/knowledge/methods-index.md` and `field-contracts-index.md` before writing new logic (CLAUDE.md rule 6)
+- Doc lifecycle (CLAUDE.md rule 7): system specs in `docs/systems/` — create if missing when touching a subsystem
 - Design system changes require explicit user approval (CLAUDE.md rule 1)
 - Run commit checklist before every commit
 
 ---
-*Last updated: 2026-03-05 after GSD harness initialization*
+*Last updated: 2026-03-05 — doc cleanup: archived docs/incoming/, migrated gaps to TODO.md*

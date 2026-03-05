@@ -2,7 +2,7 @@
 
 > **Source:** Extracted from `docs/systems/*.md` during consolidation audit (2026-02-08).
 > **Purpose:** Shared backlog across all agent roles. This is the single source of truth for what needs doing.
-> **Process:** Pick an item → implement or write a spec in `docs/incoming/` → mark done here → update the relevant `docs/systems/*.md`.
+> **Process:** Pick an item → implement → mark done here → update `docs/systems/*.md` (create if missing).
 > **Resolved items:** 31 items archived in `docs/TODO-archived.md`.
 > **DG knowledge gaps:** DG-01 through DG-15 moved to `docs/portability/dg-knowledge-gaps.md`.
 
@@ -27,20 +27,20 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 2 | 5 | Incorrect behavior that should be fixed |
+| Bug | 3 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 18 | 6 | Missing capability, no spec exists |
+| Gap | 46 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **34** | **40** | |
+| **Total open** | **63** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
-HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewer identity, auth, PointCross guard), MF-03–06/08 (validation rules 016/018, CDISC Library, write-back, recovery arms, auth), GAP-01/02/04/05/07–09 (URL state, deep linking, concurrency, audit trail, SENDIG metadata, incremental recompute, SPECIMEN CT), SD-08/10 (FW domain, TypeScript cleanup). See individual entries below for details.
+HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewer identity, auth, PointCross guard), MF-03–06/08 (validation rules 016/018, CDISC Library, write-back, recovery arms, auth), GAP-01/02/04/05/07–09 (URL state, deep linking, concurrency, audit trail, SENDIG metadata, incremental recompute, SPECIMEN CT), GAP-30/34/35 (BMD, INHAND vocab, PWG workflow), SD-08/10 (FW domain, TypeScript cleanup). See individual entries below for details.
 
 ---
 
@@ -57,6 +57,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** The dumbbell chart SVG does not adapt well when the context panel is resized. The viewBox uses a fixed `chartWidth = 200` with `width: 100%` and `overflow: visible`, but the dose label column, marker positions, bottom labels, and row alignment all break at narrow or wide widths. Specific problems: (1) bottom labels ("Control, D92" / "|g|=0.8") clip or overlap at narrow widths; (2) dose label column `pt-[14px]` static offset misaligns with SVG rows as aspect ratio changes; (3) marker line spacing (`MIN_LINE_DIST = 8` in viewBox units) doesn't account for rendered pixel size. Needs a `ResizeObserver`-based approach or CSS-only responsive layout instead of fixed viewBox scaling.
 - **Status:** Open
 - **Owner hint:** frontend-dev
+
+### BUG-08: Validation registry.py get_script() logic error
+- **Files:** `backend/validation/scripts/registry.py`
+- **Issue:** `get_script()` returns first match then None for all subsequent calls due to early return in loop. Not called by router currently, so no runtime impact.
+- **Status:** Open (no runtime impact, fix for correctness)
+- **Owner hint:** backend-dev
 
 ---
 
@@ -271,44 +277,158 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### ~~GAP-27: Settings recalculating indicator — post-Phase 3 UX debt~~ ✓
 - **Status:** Resolved — `RecalculatingBanner` component added to all 5 analysis views. Shows floating "Recalculating…" pill when `isFetching && isPlaceholderData`. `useFindingsAnalyticsLocal` now exposes both flags.
 
+### GAP-28: Production historical control database
+- **Files:** `backend/services/analysis/classification.py`, `frontend/src/lib/syndrome-ecetoc.ts`
+- **Issue:** HCD Phase 2 SQLite backend shipped (78K+ NTP records, 7 strains, 16 organs), but: (a) frontend ECETOC factor A-3 (HCD comparison) not wired to backend HCD data, (b) production needs laboratory-specific HCD API with species/strain/lab filtering, (c) BALB/C and LONG-EVANS strains have <50 records (insufficient).
+- **Status:** Open (backend infrastructure exists, frontend integration + production data needed)
+- **Owner hint:** backend-dev
+
+### GAP-29: Reserved ECETOC factors (5 data-dependent)
+- **Issue:** Five ECETOC factors reserved pending external data: (a) A-4 temporal onset — needs time-course infrastructure beyond FC ordering, (b) A-5 mechanism plausibility — needs MOA database (overlaps GAP-16), (c) B-2 general stress confound — XS08 overlap exists but general cross-syndrome interference not built, (d) B-6 general precursor-to-worse — tumor progression wired but non-tumor adaptive→adverse not built (backend has METH-36 YAML chains for 14 organs), (e) onset-timing modifiers for BW/CL — Brief 5 decided this merges into DR quality.
+- **Status:** Open (deferred — each blocked on specific data/infrastructure)
+- **Owner hint:** backend-dev
+
+### GAP-30: BMD module (benchmark dose)
+- **Issue:** No benchmark dose computation. Requires `pybmds` dependency (~300-500 LOC). Current dose-response characterization uses pattern classification + effect size.
+- **Status:** Open (deferred)
+- **Owner hint:** backend-dev
+
+### GAP-31: Backend compound logic for syndrome corroboration
+- **Files:** `backend/services/analysis/classification.py`
+- **Issue:** Frontend evaluates compound required logic (e.g., "ALP AND (GGT OR 5NT)") for syndrome detection; backend does presence-only. Backend upgrade needed (~300-400 LOC) for parity.
+- **Status:** Open
+- **Owner hint:** backend-dev
+
+### GAP-32: Signal score configurable weights
+- **Files:** `frontend/src/lib/signals-panel-engine.ts`
+- **Issue:** Signal score formula uses fixed weights (patternWeight + syndromeBoost + clinicalFloor + sentinelBoost). User-adjustable weight profiles deferred. Formula only documented in code, not in system spec.
+- **Status:** Open (deferred)
+- **Owner hint:** frontend-dev
+
+### GAP-33: BG/EG/VS on-demand pipeline
+- **Files:** `backend/services/analysis/unified_findings.py`
+- **Issue:** Generator computes all 12 domains; `unified_findings.py` only serves 8 (missing BG, EG, VS). Affects Adverse Effects view completeness for studies with body/eye/vital sign findings.
+- **Status:** Open
+- **Owner hint:** backend-dev
+
+### GAP-34: SEND vocabulary normalization / INHAND harmonization
+- **Issue:** Histopathology terms not normalized to INHAND controlled vocabulary. Requires terminology service + controlled vocabulary database. XL effort.
+- **Status:** Open (deferred — major infrastructure)
+- **Owner hint:** backend-dev
+
+### GAP-35: Full PWG (Peer Working Group) workflow
+- **Issue:** Multi-step agree/disagree/defer review form shipped. Full panel invitation, slide distribution, concordance calculation, and consensus recording deferred. Blocked on multi-user auth (HC-05/06).
+- **Status:** Open (deferred — blocked on auth)
+- **Owner hint:** frontend-dev + backend-dev
+
+### GAP-36: CDISC CORE auto-installation
+- **Files:** `backend/validation/core_runner.py`
+- **Issue:** Requires manual Python 3.12 venv setup, repo clone, dependency install, cache population. Production needs automated installer or Docker image.
+- **Status:** Open (blocks non-PointCross validation)
+- **Owner hint:** backend-dev
+
+### GAP-37: Custom validation rule execution
+- **Files:** `frontend/src/components/analysis/validation/CustomValidationRuleBuilder.tsx`
+- **Issue:** Builder UI saves rule metadata as annotation but backend doesn't evaluate custom rules. Feature is inspection-only.
+- **Status:** Open (feature incomplete)
+- **Owner hint:** backend-dev
+
+### GAP-38: Validation view UI polish (9 items)
+- **Issue:** Batch of minor UX gaps: (a) Mode 2 rule link — hover popover only, spec says clickable to Mode 1, (b) status filter buttons don't toggle off, (c) issue ID link styling implies distinct action but same as row click, (d) fix script dialog doesn't close on backdrop click, (e) domain evidence links are `<button>` not `<a>`, (f) bulk mark-reviewed/accept missing, (g) page size hardcoded to 500, (h) keyboard navigation missing (Escape, arrow keys), (i) cross-view navigation — MI validation issue doesn't open histopathology view.
+- **Status:** Open (low priority individually, moderate as batch)
+- **Owner hint:** frontend-dev
+
+### GAP-39: Dose-response placeholder intents + polish
+- **Issue:** Three Hypotheses tab intents are placeholders: Model fit (needs scipy), Correlation (needs subject-level cross-endpoint data), Outliers (needs subject-level values). Also: no keyboard navigation in grid/rail, no data export, signal score local formula may diverge from backend.
+- **Status:** Open (placeholders blocked on compute/data infrastructure)
+- **Owner hint:** frontend-dev + backend-dev
+
+### GAP-40: Study intelligence gaps
+- **Issue:** (a) User-added timeline annotations — spec drafted, annotation infrastructure ready, view implementation pending. (b) Study design validation issue acknowledgment workflow — data quality shows problems but no confirmation dialog. Related to GAP-19.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-41: Subject profile minor gaps
+- **Issue:** (a) Non-COD tumor cross-references — spec only describes COD cross-refs; unclear if other tumors should show dose-response context. (b) Recovery narrative SE fallback — `cross_animal_flags.py` skips narrative when SE domain lacks recovery element; should fallback to TE/TX-derived start day.
+- **Status:** Open (low priority)
+- **Owner hint:** frontend-dev (a), backend-dev (b)
+
+### GAP-42: OM pattern classifier metric verification
+- **Issue:** Dose-response pattern classifier may still use absolute organ weight values instead of the recommended normalized metric per organ. Needs verification in generator classifier code.
+- **Status:** Open (verification task)
+- **Owner hint:** backend-dev
+
+### GAP-43: MIMETHOD / special stain handling
+- **Issue:** MIMETHOD field extraction from MI domain not implemented. Needed for special stain identification in histopathology.
+- **Status:** Open (deferred)
+- **Owner hint:** backend-dev
+
+### GAP-44: Assessment engine minor gaps
+- **Issue:** (a) Per-sex α2u-globulin mechanism flag for male rat kidney — documented in Brief 1, not implemented. (b) Non-liver adaptive decision trees need concurrent finding validation (`is_lb_marker_clean` counts any change, not just elevation). (c) Expert review package (PDF/HTML structured export) — missing.
+- **Status:** Open (deferred)
+- **Owner hint:** backend-dev
+
+### GAP-45: TK satellite × recovery interaction
+- **Issue:** Unclear if TK satellite recovery animals need special handling in PK integration. Not yet researched.
+- **Status:** Open (research task, low priority)
+- **Owner hint:** backend-dev
+
+### GAP-46: Overview tab (Study Summary)
+- **Issue:** Entire Overview tab NOT STARTED — no components, hooks, or API endpoints (0/8 files). Spec exists (`overview-tab-spec.md`, archived).
+- **Status:** Open
+- **Owner hint:** frontend-dev + backend-dev
+
+### GAP-47: Early death exclusion Phase 2 — frontend integration
+- **Issue:** Backend computes scheduled-only stats but frontend doesn't consume them in 3 views: (a) Dose-Response view has no `useScheduledOnly` integration, (b) Histopathology view has no scheduled-only integration, (c) NOAEL view doesn't consume `scheduled_noael_*` fields. Also: context panel scheduled stats side-by-side display not implemented, per-sex per-dose-group exclusion counts not shown.
+- **Status:** Open (5 items from EDE-2/3/4/5/7)
+- **Owner hint:** frontend-dev
+
+### GAP-48: Insights engine structural gaps
+- **Issue:** Five architectural gaps from the insights engine overhaul spec: (a) no formal rule hierarchy / suppression graph (R01 vs R07 contradiction), (b) Clinical Weighting Layer (`ClinicalRule`, `ClinicalCatalog`) not implemented, (c) Protective Plausibility Gate not implemented, (d) Structured Signal Output (`Signal` interface) not implemented, (e) Scoring Model / Insight Score dashboard not implemented.
+- **Status:** Open (from IEO-1–5)
+- **Owner hint:** backend-dev + frontend-dev
+
+### GAP-49: Multi-domain integration remaining
+- **Issue:** (a) MDI-6: OM-MI organ weight header strip in HistopathologyView (Low). (b) MDI-9: Kaplan-Meier survival curves, scatter death markers, frontend scheduled-only toggle in D-R/Histopath/NOAEL views (Medium). Cross-study analysis (MDI-7) covered by HC-03.
+- **Status:** Open
+- **Owner hint:** frontend-dev + backend-dev
+
+### GAP-50: Findings view spec gaps (21 items)
+- **Issue:** Batch from spec audit: specimen-to-organ mapping for filter presets (FR-3/AER-1, Medium), confidence factors not human-readable (AEI-1, Medium), severity cell clinical override text (AEI-2, Medium), filter bar clinical chip (FHG-1, Medium), correlation rho=-1.00 (FBR-1, Medium). Plus 16 Low items: grouping toggle segmented control, scope indicator source info, keyboard nav, direction colors, label text, filtered count format, foldChangeVsPretest field, dot colors. Detail in archived `spec-cleanup-b66dfd0.md` §1.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-51: Histopathology view spec gaps (28 items)
+- **Issue:** Batch from spec audit. Medium: dose-dep column header inconsistency (H-2), specimen review status verification (HEn-2), laterality indicators (HEn-3), noael_derivation object verification (HE-4), legacy getDoseConsistencyWeight still used (PCP-1/2), stable Y-axis frame on finding switch (RDC-1), scheduled-only integration (EDE-4). Low (21 items): subject heatmap cells, lab signal scroll, shift+click hint, pigmentation dual-category, SINGLE_GROUP weight, CT term map size, HCD library size, multiplicity footnote, glyph/badge formatting, sort dropdown, derivation icons. Detail in archived `spec-cleanup-b66dfd0.md` §3.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-52: Cross-view & shared library gaps (15 items)
+- **Issue:** Batch from spec audit. Medium: "View in context" row action (ARF-1), worst validation failures in Study Summary bar (ARF-2), HCD override simplified heuristic (PS-3), multi-persona disagreement workflow (TF-1). Low (11 items): right-click context menus (S2), filtered count in mode toggle (ARF-3), sort control position (ARF-4), clinical significance tooltips (CSI-1–5), protective signal rail glyphs (PS-1/2/4/5), early death scatter marker style (EDE-1). Detail in archived `spec-cleanup-b66dfd0.md` §8.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-53: Landing page & study summary gaps (10 items)
+- **Issue:** Medium: import textarea non-functional (L-3), portfolio view built but unreachable (SIP-1), worst validation failures bar (ARF-2). Low: study row click 250ms delay (L-1), dead "Learn more" link (L-2), re-validate no feedback (L-4), delete button not debounced (L-5), domain badges not clickable (L-6), InsightsList count text (SS-3), report button no feedback (SS-6), PortfolioSelection type missing (SIP-2). Detail in archived `spec-cleanup-b66dfd0.md` §4/§7.
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-54: NOAEL view interaction gaps
+- **Issue:** Override form "Save" has no success/error feedback (N-2, Medium), adversity matrix cells not clickable despite tooltip (N-3, Low), dose-limiting finding buttons produce no visible result (N-4, Low).
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-55: Dose-response view interaction gaps
+- **Issue:** Time-course "Click a line to view subject profile" is a no-op (DR-3, Medium), evidence chart data points not clickable (DR-4, Low), pairwise rows not clickable (DR-5, Low), InsightsList onEndpointClick not wired (DR-6, Low).
+- **Status:** Open
+- **Owner hint:** frontend-dev
+
 ---
 
-## TOPIC Hub Documentation (0 open — all 10 complete)
+## Archived Documentation
 
-> Subsystems that need retrospective TOPIC hub docs (`docs/incoming/arch-overhaul/TOPIC-*.md`). All hubs created: data-pipeline, organ-measurements, syndrome-engine, histopathology, recovery-phase-detection, noael-determination, study-intelligence, dose-response-view, subject-profile, validation-engine. CLAUDE.md rule 7 requires agents to consult hubs before touching covered subsystems.
-
-### ~~DOC-01: TOPIC hub — Validation Engine~~
-- ~~**Subsystem:** `backend/validation/` package, `ValidationView.tsx`, `ValidationContextPanel.tsx`, 14 YAML rules, CDISC CORE integration~~
-- ~~**Why:** Dual-engine architecture (custom + CORE) with precedence logic is a footgun. Rule cache invalidation subtle. Spec (`validation-unified-spec.md`) diverged from implementation on UI layout (three-tab → domain-rail). ~7,700 LOC across 29 files.~~
-- **Status:** ~~Resolved~~ — `TOPIC-validation-engine.md` created
-- **Owner hint:** docs-agent
-
-### ~~DOC-02: TOPIC hub — Recovery & Phase Detection~~
-- ~~**Subsystem:** `dose_groups.py` (detection), `phase_filter.py`, `recovery-assessment.ts`, `recovery-classification.ts`, `RecoveryPane.tsx`, 12 domain modules (pooling integration)~~
-- ~~**Why:** Pooling asymmetry (in-life domains only, terminal domains skip). TK satellite detection coupled in `dose_groups.py`. Detection waterfall (TA→TE→SE→SETCD/ARMCD) is fragile across studies. 3 specs drove implementation. ~1,800 LOC core + integration across all domain modules.~~
-- **Status:** ~~Resolved~~ — `TOPIC-recovery-phase-detection.md` created
-- **Owner hint:** docs-agent
-
-### ~~DOC-03: TOPIC hub — Subject Profile & Cross-Animal Flags~~
-- ~~**Subsystem:** `SubjectProfilePanel.tsx` (920L, design frozen), `cross_animal_flags.py` (852L), `subject-profile-logic.ts`, tissue battery, tumor linkage, recovery narratives~~
-- ~~**Why:** Design frozen per CLAUDE.md hard rule — agents need clear boundary between "functional bug fix" and "visual change." Tissue battery integration and cross-animal flag display partially wired. `individual-animal-view-spec.md` has unclear compliance status.~~
-- **Status:** ~~Resolved~~ — `TOPIC-subject-profile.md` created
-- **Owner hint:** docs-agent
-
-### ~~DOC-04: TOPIC hub — NOAEL Determination~~
-- ~~**Subsystem:** `NoaelDeterminationView.tsx` (2,003L), `NoaelContextPanel.tsx`, `noael-narrative.ts`, `protective-signal.ts`, signal matrix, adversity matrix~~
-- ~~**Why:** ECI (5 mechanisms) entangled with TOPIC-organ-measurements. B-7 secondary-to-BW assessment conditional on organ type. Weighted NOAEL derivation couples normalization confidence to study-level NOAEL. Narrative is deliberately simple — agent might try to "improve" it.~~
-- **Status:** ~~Resolved~~ — `TOPIC-noael-determination.md` created
-- **Owner hint:** docs-agent
-
-### ~~DOC-05: TOPIC hub — Study Intelligence & Metadata~~
-- ~~**Subsystem:** `StudySummaryView.tsx` (1,205L), `AppLandingPage.tsx`, `study_discovery.py`, species/vehicle profiles, subject context, provenance messages~~
-- ~~**Why:** Species/vehicle profiles are stubs (mock data). Study timeline swimlane spec alignment unclear. 5 specs drove implementation. Treatment arms display is complex (multiple arm types, recovery vs. main). ~2,700 LOC.~~
-- **Status:** ~~Resolved~~ — `TOPIC-study-intelligence.md` created
-- **Owner hint:** docs-agent
-
-### ~~DOC-06: TOPIC hub — Dose-Response View~~
-- ~~**Subsystem:** `DoseResponseView.tsx` (2,843L), `DoseResponseContextPanel.tsx`, endpoint picker removal, stat method coupling, timecourse~~
-- ~~**Why:** Largest single view component. Endpoint picker was replaced by rail integration (major UX change, not documented). Stat method selection now coupled to normalization decisions for OM endpoints. Chart display metric auto-selected per normalization tier. ~2,800 LOC.~~
-- **Status:** ~~Resolved~~ — `TOPIC-dose-response-view.md` created
-- **Owner hint:** docs-agent
+> **TOPIC hubs** (10 files) archived to `C:/pg/archive/pcc/docs/incoming/arch-overhaul/` on 2026-03-05. Gaps extracted to GAP-28 through GAP-45. TOPIC hubs are frozen historical references per CLAUDE.md rule 7.
+>
+> **Spec-cleanup tracker** (`spec-cleanup-b66dfd0.md`) archived same date. 92 open items migrated to GAP-46 through GAP-55 (themed batches). Many items may be resolved in commits after 2026-02-23 — verify against code before starting work. Full detail in archived file.
+>
+> **All specs in `docs/incoming/`** archived same date. System specs (`docs/systems/`) are the durable layer — create when touching a subsystem (commit checklist item 8).

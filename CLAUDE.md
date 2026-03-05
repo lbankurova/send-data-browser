@@ -54,7 +54,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 
 6. **Reuse before reinventing.** Before writing new logic: (a) search codebase for existing hooks/functions/generated JSON; (b) check `docs/knowledge/methods-index.md` and `field-contracts-index.md`; (c) check `species-profiles.md` and `vehicle-profiles.md`. Duplicating existing data is a defect.
 
-7. **Consult TOPIC hubs before touching a subsystem.** Read the relevant `docs/incoming/arch-overhaul/TOPIC-*.md` first. They document what shipped, what intentionally didn't, and departures from specs.
+7. **Doc lifecycle: specs are disposable, system docs are durable.** After implementing from a spec: archive it (`docs/incoming/archive/`), extract durable knowledge into `docs/knowledge/` or `docs/systems/`, and log open gaps in `docs/TODO.md`. System specs (`docs/systems/`) must be updated when their subsystem ships changes — create if missing. TOPIC hubs (`docs/incoming/arch-overhaul/TOPIC-*.md`) are frozen historical references — consult them for context but do not create or update them.
 
 8. **Circuit breaker on repeated failures.** Same root cause fails 5 times → stop, report, ask the user.
 
