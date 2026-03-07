@@ -145,7 +145,6 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
 
   // Group-level hover
   const handleGroupEnter = useCallback((sex: string, doseLevel: number, stats: ReturnType<typeof computeStats>, e: React.MouseEvent) => {
-    if (selectedDose != null) return;
     setHoveredGroup({ sex, doseLevel });
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
@@ -155,13 +154,12 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
         text: `n=${stats.n}  mean=${stats.mean.toFixed(2)}  SD=${stats.sd.toFixed(2)}`,
       });
     }
-  }, [selectedDose]);
+  }, []);
 
   const handleGroupLeave = useCallback(() => {
-    if (selectedDose != null) return;
     setHoveredGroup(null);
     setTooltip(null);
-  }, [selectedDose]);
+  }, []);
 
   // Dot-level hover (dose selected)
   const handleDotEnter = useCallback((sv: SubjectValue, e: React.MouseEvent) => {
@@ -372,8 +370,7 @@ function SexPanel({
         const isSelected = selectedDose === dg.doseLevel;
         const isGroupHovered = hoveredGroup?.sex === sex && hoveredGroup?.doseLevel === dg.doseLevel;
         const isActive = isSelected || isGroupHovered;
-        const isDimmed = (selectedDose != null && !isSelected) ||
-          (hoveredGroup != null && selectedDose == null && !isGroupHovered);
+        const isDimmed = !isActive && (selectedDose != null || hoveredGroup != null);
 
         if (nums.length === 0) {
           return (
