@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 3 | 5 | Incorrect behavior that should be fixed |
+| Bug | 6 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -36,7 +36,7 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **63** | **40** | |
+| **Total open** | **66** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -44,7 +44,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Bugs (2 open)
+## Bugs (5 open)
 
 ### BUG-06: Histopath findings table column resize not working
 - **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
@@ -56,6 +56,29 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `frontend/src/components/analysis/panes/RecoveryDumbbellChart.tsx`
 - **Issue:** The dumbbell chart SVG does not adapt well when the context panel is resized. The viewBox uses a fixed `chartWidth = 200` with `width: 100%` and `overflow: visible`, but the dose label column, marker positions, bottom labels, and row alignment all break at narrow or wide widths. Specific problems: (1) bottom labels ("Control, D92" / "|g|=0.8") clip or overlap at narrow widths; (2) dose label column `pt-[14px]` static offset misaligns with SVG rows as aspect ratio changes; (3) marker line spacing (`MIN_LINE_DIST = 8` in viewBox units) doesn't account for rendered pixel size. Needs a `ResizeObserver`-based approach or CSS-only responsive layout instead of fixed viewBox scaling.
 - **Status:** Open
+- **Owner hint:** frontend-dev
+
+### BUG-10: Findings table — autoscroll broken on rail selection
+- **Files:** `frontend/src/components/analysis/FindingsTable.tsx`, `frontend/src/contexts/FindingSelectionContext.tsx`
+- **Issue:** When clicking a rail card, the findings table should: (a) **Group card** — filter table to all findings in that group (syndrome, organ, etc.). (b) **Endpoint card** — select all findings for that endpoint, with the current finding (matching the volcano scatterplot marker and rail card) marked as current in the table. (c) **Autoscroll** — scroll the table so the current finding row is visible, positioning it to maximize the number of selected/sibling findings also visible (i.e., scroll to show the selection block, not just center the single row). Currently autoscroll does not work — the current finding row is not scrolled into view.
+- **Status:** Open
+- **Priority:** P2 (interaction/usability — breaks rail↔table coordination)
+- **Dependencies:** None
+- **Owner hint:** frontend-dev
+
+### BUG-09: Findings table — Group 2 dose header shows units
+- **Files:** `frontend/src/components/analysis/FindingsTable.tsx:143-148`
+- **Issue:** In the findings table, the Group 2 column header displays units (e.g., "2 mg/kg") while other dose columns show only the numeric value. The `unitLabel` prop is passed only to `idx === 1` (first non-control column) which renders the unit annotation beneath the header — this is intentional. The bug is likely that when `dose_value` is null for Group 2, the fallback `formatDoseShortLabel()` returns a string with units embedded in the label text (e.g., "2 mg/kg" instead of "2"), doubling up the unit display. Fix: strip units from the `formatDoseShortLabel` fallback, or extract only the numeric portion.
+- **Status:** Open
+- **Priority:** P3 (cosmetic)
+- **Dependencies:** None
+- **Owner hint:** frontend-dev
+
+### BUG-11: SVG chart reference line labels overlap at narrow widths
+- **Files:** `frontend/src/components/analysis/panes/RecoveryDumbbellChart.tsx`, `frontend/src/components/analysis/panes/IncidenceDumbbellChart.tsx`, `frontend/src/components/analysis/panes/TimeCourseLineChart.tsx`
+- **Issue:** Axis/reference labels below the SVG charts (e.g., "C: D29", "0.8", "−0.8") overlap when the context panel is narrow or on smaller screens. Labels are positioned with absolute percentages and don't account for collision. Fix: measure label positions after render and hide or truncate labels that would overlap their neighbors.
+- **Status:** Open
+- **Priority:** P3 (cosmetic, nice-to-have)
 - **Owner hint:** frontend-dev
 
 ### BUG-08: Validation registry.py get_script() logic error

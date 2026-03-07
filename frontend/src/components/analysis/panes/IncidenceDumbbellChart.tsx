@@ -6,6 +6,7 @@
  * incidence % on the x-axis instead of |g| effect size.
  */
 import { useMemo, useState, useCallback } from "react";
+import { useContainerWidth } from "@/hooks/useContainerWidth";
 import type { RecoveryDoseAssessment, RecoveryVerdict } from "@/lib/recovery-assessment";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import { getDoseGroupColor } from "@/lib/severity-colors";
@@ -254,7 +255,7 @@ function IncidenceDumbbellPanel({
   onHoverDose,
   onClickDose,
 }: IncidencePanelProps) {
-  const chartWidth = 200;
+  const [containerRef, chartWidth] = useContainerWidth();
   const marginLeft = 2;
   const marginRight = 6;
   const plotWidth = chartWidth - marginLeft - marginRight;
@@ -268,7 +269,7 @@ function IncidenceDumbbellPanel({
   const zeroX = scale(0);
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col">
+    <div ref={containerRef} className="flex-1 min-w-0 flex flex-col">
       {/* Sex header */}
       <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
         {sex}
@@ -276,9 +277,8 @@ function IncidenceDumbbellPanel({
 
       <svg
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block w-full h-auto"
-        preserveAspectRatio="xMinYMin meet"
-        style={{ overflow: "visible" }}
+        className="block w-full"
+        style={{ height: chartHeight, overflow: "visible" }}
       >
         {/* Zero reference line (0%) */}
         <line
