@@ -1396,21 +1396,13 @@ function OverviewTab({
         {findingSummaries.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">No findings for this specimen.</p>
         ) : (
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[10px]" style={{ tableLayout: "fixed" }}>
             <thead className="sticky top-0 z-10 bg-background">
               {findingsTable.getHeaderGroups().map((hg) => (
                 <tr key={hg.id} className="border-b bg-muted/30">
                   {hg.headers.map((header) => {
-                    // Absorber column gets remaining space; all others shrink-to-content.
-                    // Manual resize overrides with an explicit width.
                     const id = header.column.id;
-                    const isAbsorber = id === "relatedOrgans";
-                    const isResized = id in findingColSizing;
-                    const colStyle: React.CSSProperties = isResized
-                      ? { width: header.getSize() }
-                      : isAbsorber
-                        ? { width: "100%" }
-                        : { width: 1, maxWidth: header.column.columnDef.maxSize };
+                    const colStyle: React.CSSProperties = { width: header.getSize() };
                     return (
                       <th
                         key={header.id}
@@ -1459,13 +1451,6 @@ function OverviewTab({
                   >
                     {row.getVisibleCells().map((cell) => {
                       const id = cell.column.id;
-                      const isAbsorber = id === "relatedOrgans";
-                      const isResized = id in findingColSizing;
-                      const colStyle: React.CSSProperties = isResized
-                        ? { width: cell.column.getSize() }
-                        : isAbsorber
-                          ? { width: "100%" }
-                          : { width: 1, maxWidth: cell.column.columnDef.maxSize };
                       return (
                         <td
                           key={cell.id}
@@ -1475,9 +1460,9 @@ function OverviewTab({
                             id === "incidence" && "text-right",
                             id === "isDoseDriven" && "text-center",
                             id === "finding" && "overflow-hidden text-ellipsis",
-                            isAbsorber && "overflow-hidden text-ellipsis",
+                            id === "relatedOrgans" && "overflow-hidden text-ellipsis",
                           )}
-                          style={colStyle}
+                          style={{ width: cell.column.getSize() }}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
