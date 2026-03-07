@@ -246,6 +246,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
       {/* "All" checkbox */}
       <div
         className="flex items-center gap-1 mb-1 cursor-pointer select-none"
+        title="Enable clicking individual dots to open subject profile"
         onClick={handleSelectAll}
       >
         <Checkbox
@@ -253,7 +254,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
           className="size-3 rounded-[2px]"
           tabIndex={-1}
         />
-        <span className="text-[9px] text-muted-foreground">All</span>
+        <span className="text-[9px] text-muted-foreground">Explore subjects</span>
       </div>
 
       {/* Sex headers */}
