@@ -46,11 +46,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ## Bugs (7 open)
 
-### BUG-06: Histopath findings table column resize not working
+### ~~BUG-06: Histopath findings table column resize not working~~ ✅
 - **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
-- **Issue:** The observed findings table uses TanStack React Table with `enableColumnResizing: true` and `tableLayout: "fixed"`, but drag-to-resize on column headers does not work. The resize handle div (`.cursor-col-resize`) is present and highlights on hover, but dragging produces no visible column width change. Likely a conflict between `tableLayout: "fixed"` with percentage-free `width` styles and the TanStack resize state, or the `onClick` sort handler on `<th>` interfering with `onMouseDown` on the resize child. The severity matrix table in the same view uses the identical pattern and works — compare the two to find the difference.
-- **Status:** Open
-- **Owner hint:** frontend-dev
+- **Issue:** Table was missing `table-layout: fixed` — browser auto-layout ignored TanStack resize widths. Also column styles used `width: 1` / `width: 100%` hacks instead of `header.getSize()`.
+- **Status:** ~~Open~~ Fixed
 
 ### BUG-07: Recovery dumbbell chart broken adaptive rendering on panel resize
 - **Files:** `frontend/src/components/analysis/panes/RecoveryDumbbellChart.tsx`
