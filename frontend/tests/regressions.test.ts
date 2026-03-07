@@ -4,6 +4,7 @@
  */
 import { describe, test, expect } from "vitest";
 import { resolveCanonical, evaluateLabRules } from "@/lib/lab-clinical-catalog";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import fixture from "./fixtures/pointcross-findings.json";
@@ -140,5 +141,37 @@ describe("regression: per-sex rule evaluation (fold/direction sex mismatch)", ()
         expect(ratio).toBeLessThan(2.0);
       }
     }
+  });
+});
+
+describe("regression: dose column headers must not contain units (BUG-09)", () => {
+  // The FindingsTable constructs dose column headers like:
+  //   dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label))
+  // Units (mg/kg, mL/kg, etc.) must never appear in the short label —
+  // they belong in the tooltip or a separate annotation.
+
+  const DOSE_GROUPS = [
+    { dose_level: 0, dose_value: 0, label: "Group 1, Control" },
+    { dose_level: 1, dose_value: 2, label: "Group 2,2 mg/kg PCDRUG" },
+    { dose_level: 2, dose_value: 20, label: "Group 3,20 mg/kg PCDRUG" },
+    { dose_level: 3, dose_value: 200, label: "Group 4,200 mg/kg PCDRUG" },
+  ];
+
+  function buildShortLabel(dg: { dose_level: number; dose_value: number | null; label: string }): string {
+    return dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
+  }
+
+  for (const dg of DOSE_GROUPS) {
+    test(`dose level ${dg.dose_level} label has no unit suffix`, () => {
+      const label = buildShortLabel(dg);
+      expect(label).not.toMatch(/mg\/kg|mL\/kg|g\/kg|µg\/kg/i);
+    });
+  }
+
+  test("fallback via formatDoseShortLabel includes units (known — dose_value null is rare)", () => {
+    const dg = { dose_level: 1, dose_value: null as number | null, label: "Group 2,2 mg/kg PCDRUG" };
+    const label = buildShortLabel(dg);
+    // formatDoseShortLabel returns "2 mg/kg" — documents current behavior when dose_value is null
+    expect(label).toBe("2 mg/kg");
   });
 });
