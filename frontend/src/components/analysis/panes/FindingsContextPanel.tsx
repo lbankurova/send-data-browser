@@ -966,6 +966,7 @@ export function FindingsContextPanel() {
   const { data: noaelRows } = useEffectiveNoael(studyId);
   const recoveryPaneRef = useRef<HTMLDivElement>(null);
   const evidencePaneRef = useRef<HTMLDivElement>(null);
+  const distributionPaneRef = useRef<HTMLDivElement>(null);
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
@@ -1277,11 +1278,14 @@ export function FindingsContextPanel() {
 
       {/* Distribution — individual values at terminal */}
       {selectedFinding && (
-        <DistributionPane
-          finding={selectedFinding}
-          expandAll={expandGen}
-          collapseAll={collapseGen}
-        />
+        <div ref={distributionPaneRef}>
+          <DistributionPane
+            finding={selectedFinding}
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+            scrollRef={distributionPaneRef}
+          />
+        </div>
       )}
 
       {/* Recovery insights — immediately after dose detail */}
