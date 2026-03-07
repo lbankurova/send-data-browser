@@ -446,7 +446,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### GAP-53: Landing page & study summary gaps (10 items)
 - **Issue:** Medium: import textarea non-functional (L-3), portfolio view built but unreachable (SIP-1), worst validation failures bar (ARF-2). Low: study row click 250ms delay (L-1), dead "Learn more" link (L-2), re-validate no feedback (L-4), delete button not debounced (L-5), domain badges not clickable (L-6), InsightsList count text (SS-3), report button no feedback (SS-6), PortfolioSelection type missing (SIP-2). Detail in archived `spec-cleanup-b66dfd0.md` §4/§7.
-- **Status:** Open
+- **Status:** Stub — future implementation, not a gap in existing functionality
 - **Owner hint:** frontend-dev
 
 ### GAP-54: NOAEL view interaction gaps
@@ -465,10 +465,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open (low priority — migrate opportunistically)
 - **Owner hint:** frontend-dev
 
-### GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle
-- **Files:** `frontend/src/components/analysis/panes/DistributionPane.tsx:243-287` (reference implementation), `frontend/src/components/ui/` (target location)
-- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Currently inlined as a local `ModeButton` component. Should be extracted as a reusable `PanePillToggle` in `components/ui/`. Reference pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[9px] px-1.5 py-0.5`. Step 1: extract component + document pattern. Step 2: adopt wherever chart/table mode toggles appear in panes. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
-- **Status:** Open
+### ~~GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle~~ ✅
+- **Files:** `frontend/src/components/ui/PanePillToggle.tsx` (extracted component), `frontend/src/components/analysis/panes/DistributionPane.tsx` (first adopter)
+- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Extracted as a generic `PanePillToggle<T>` in `components/ui/`. Pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[9px] px-1.5 py-0.5`. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
+- **Status:** ~~Open~~ Done
 - **Priority:** P3 (design system consistency)
 - **Dependencies:** Related to GAP-56 (PaneTable) — both standardize pane internals
 - **Owner hint:** frontend-dev
