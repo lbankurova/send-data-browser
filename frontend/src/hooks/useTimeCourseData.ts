@@ -133,6 +133,15 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
   // controlLabel from doseLevel 0
   const controlLabel = doseMap.get(0) ?? "Control";
 
+  // Count usable timepoints: days where at least one sex has a derived point
+  const usableDays = new Set<number>();
+  for (const sex of sexes) {
+    for (const dl of treatedDoseLevels) {
+      const pts = series[sex]?.[dl];
+      if (pts) for (const p of pts) usableDays.add(p.day);
+    }
+  }
+
   return {
     endpoint: data.test_name,
     domain: data.domain,
@@ -143,7 +152,7 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
     doseGroups,
     series,
     controlLabel,
-    totalTimepoints: data.timepoints.length,
+    totalTimepoints: usableDays.size,
   };
 }
 
