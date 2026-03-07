@@ -504,7 +504,7 @@ export function FindingsRail({
               onToggleExpand={() => handleCardToggleExpand(card)}
               onEndpointClick={handleEndpointClick}
               registerEndpointRef={registerEndpointRef}
-              multiSyndromeIndex={grouping === "syndrome" ? multiSyndromeIndex : undefined}
+              multiSyndromeIndex={multiSyndromeIndex}
               currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
               excludedEndpoints={excludedEndpoints}
               onRestoreEndpoint={onRestoreEndpoint}
@@ -947,8 +947,10 @@ function CardSection({
       {isExpanded && (
         <div>
           {card.endpoints.map((ep) => {
-            // In syndrome mode, show other syndrome IDs this endpoint belongs to
-            const otherSyndromes = (grouping === "syndrome" && multiSyndromeIndex && currentSyndromeId)
+            // Show syndrome IDs this endpoint belongs to
+            // In syndrome mode: show other syndromes (exclude current group's syndrome)
+            // In other modes: show all syndromes
+            const otherSyndromes = multiSyndromeIndex
               ? (multiSyndromeIndex.get(ep.endpoint_label) ?? []).filter((id) => id !== currentSyndromeId)
               : undefined;
             return (
@@ -1261,8 +1263,8 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         )}
         <span className="font-mono" title={`SEND domain: ${getDomainFullLabel(endpoint.domain)}`}>{endpoint.domain.toUpperCase()}</span>
         {otherSyndromes && otherSyndromes.length > 0 && (
-          <span className="text-[8px] text-muted-foreground/50" title={`Also in syndromes: ${otherSyndromes.join(", ")}`}>
-            {otherSyndromes.map((id) => `+${id}`).join(" ")}
+          <span className="text-[8px] text-muted-foreground/50" title={`Syndromes: ${otherSyndromes.join(", ")}`}>
+            {otherSyndromes.join(" ")}
           </span>
         )}
         {/* Per-sex pattern divergence — right-aligned under line 1 pattern glyph */}
