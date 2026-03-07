@@ -20,42 +20,52 @@ function subj(
 }
 
 describe("findPeakEffectDay", () => {
-  it("finds the day of maximum high-dose vs control gap (acute weight loss)", () => {
-    // Control grows steadily: 200 → 210 → 220 → 230
-    // High-dose drops then recovers: 200 → 190 → 195 → 210
-    // Gap:                             0  → -20  → -25  → -20
-    // Peak effect at Day 15 (gap = -25)
+  it("finds the day of maximum Hedges' g (acute weight loss)", () => {
+    // Two control subjects grow steadily, two high-dose subjects drop then recover.
+    // Hedges' g is most negative at Day 15 (large mean gap, moderate SD).
     const subjects: TimecourseSubject[] = [
       subj(0, [{ day: 1, value: 200 }, { day: 8, value: 210 }, { day: 15, value: 220 }, { day: 22, value: 230 }]),
+      subj(0, [{ day: 1, value: 202 }, { day: 8, value: 212 }, { day: 15, value: 222 }, { day: 22, value: 232 }]),
       subj(100, [{ day: 1, value: 200 }, { day: 8, value: 190 }, { day: 15, value: 195 }, { day: 22, value: 210 }]),
+      subj(100, [{ day: 1, value: 198 }, { day: 8, value: 188 }, { day: 15, value: 193 }, { day: 22, value: 208 }]),
     ];
 
     const result = findPeakEffectDay(subjects);
     expect(result).not.toBeNull();
     expect(result!.day).toBe(15);
-    expect(result!.controlMean).toBeCloseTo(220);
+    expect(result!.controlMean).toBeCloseTo(221);
   });
 
-  it("finds the day of maximum gap for growth suppression without absolute loss", () => {
-    // Control grows: 200 → 220 → 240 → 260
-    // High-dose grows slower: 200 → 210 → 215 → 230
-    // Gap:                      0  → -10  → -25  → -30
-    // Peak effect at Day 22 (gap = -30)
+  it("finds the day of maximum Hedges' g for growth suppression without absolute loss", () => {
+    // Control grows fast, high-dose grows slower. Hedges' g most negative at Day 22.
     const subjects: TimecourseSubject[] = [
       subj(0, [{ day: 1, value: 200 }, { day: 8, value: 220 }, { day: 15, value: 240 }, { day: 22, value: 260 }]),
+      subj(0, [{ day: 1, value: 202 }, { day: 8, value: 222 }, { day: 15, value: 242 }, { day: 22, value: 262 }]),
       subj(100, [{ day: 1, value: 200 }, { day: 8, value: 210 }, { day: 15, value: 215 }, { day: 22, value: 230 }]),
+      subj(100, [{ day: 1, value: 198 }, { day: 8, value: 208 }, { day: 15, value: 213 }, { day: 22, value: 228 }]),
     ];
 
     const result = findPeakEffectDay(subjects);
     expect(result).not.toBeNull();
     expect(result!.day).toBe(22);
-    expect(result!.controlMean).toBeCloseTo(260);
+    expect(result!.controlMean).toBeCloseTo(261);
   });
 
   it("returns null with only one shared timepoint", () => {
     const subjects: TimecourseSubject[] = [
       subj(0, [{ day: 1, value: 200 }]),
+      subj(0, [{ day: 1, value: 202 }]),
       subj(100, [{ day: 1, value: 180 }]),
+      subj(100, [{ day: 1, value: 178 }]),
+    ];
+
+    expect(findPeakEffectDay(subjects)).toBeNull();
+  });
+
+  it("returns null when each group has only 1 subject (cannot compute SD)", () => {
+    const subjects: TimecourseSubject[] = [
+      subj(0, [{ day: 1, value: 200 }, { day: 8, value: 210 }]),
+      subj(100, [{ day: 1, value: 200 }, { day: 8, value: 190 }]),
     ];
 
     expect(findPeakEffectDay(subjects)).toBeNull();
@@ -86,7 +96,9 @@ describe("findPeakEffectDay", () => {
   it("ignores recovery subjects", () => {
     const subjects: TimecourseSubject[] = [
       subj(0, [{ day: 1, value: 200 }, { day: 8, value: 210 }]),
+      subj(0, [{ day: 1, value: 202 }, { day: 8, value: 212 }]),
       subj(100, [{ day: 1, value: 200 }, { day: 8, value: 190 }]),
+      subj(100, [{ day: 1, value: 198 }, { day: 8, value: 188 }]),
       // Recovery subject with different pattern — should be excluded
       subj(100, [{ day: 30, value: 150 }, { day: 37, value: 140 }], { is_recovery: true }),
     ];
@@ -119,13 +131,16 @@ describe("findPeakEffectDay", () => {
     // Mid-dose (50) has a bigger gap, but we only look at highest dose (100)
     const subjects: TimecourseSubject[] = [
       subj(0, [{ day: 1, value: 200 }, { day: 8, value: 220 }]),
+      subj(0, [{ day: 1, value: 202 }, { day: 8, value: 222 }]),
       subj(50, [{ day: 1, value: 200 }, { day: 8, value: 170 }]),  // bigger gap but mid-dose
+      subj(50, [{ day: 1, value: 198 }, { day: 8, value: 168 }]),
       subj(100, [{ day: 1, value: 200 }, { day: 8, value: 200 }]), // smaller gap
+      subj(100, [{ day: 1, value: 198 }, { day: 8, value: 198 }]),
     ];
 
     const result = findPeakEffectDay(subjects);
     expect(result).not.toBeNull();
-    // Gap at day 1: 200-200=0, day 8: 200-220=-20 → peak at day 8
+    // Hedges' g at day 1: ~0, day 8: negative → peak at day 8
     expect(result!.day).toBe(8);
   });
 });
