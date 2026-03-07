@@ -143,9 +143,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
         const fullLabel = dg.dose_value != null && dg.dose_unit
           ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
-        // Extract unit from first dose group that has one
-        // Show unit label on first non-control dose column, not control
-        const unit = idx === 1 ? (doseGroups.find((d) => d.dose_unit)?.dose_unit ?? undefined) : undefined;
         return col.display({
           id: `dose_${dg.dose_level}`,
           header: () => (
@@ -153,7 +150,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               level={dg.dose_level}
               label={shortLabel}
               tooltip={fullLabel}
-              unitLabel={unit}
             />
           ),
           cell: (info) => {

@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 47 | 6 | Missing capability, no spec exists |
+| Gap | 48 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **69** | **40** | |
+| **Total open** | **70** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -66,10 +66,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
 
-### BUG-09: Findings table — Group 2 dose header shows units
+### ~~BUG-09: Findings table — Group 2 dose header shows units~~ ✅
 - **Files:** `frontend/src/components/analysis/FindingsTable.tsx:143-148`
-- **Issue:** In the findings table, the Group 2 column header displays units (e.g., "2 mg/kg") while other dose columns show only the numeric value. The `unitLabel` prop is passed only to `idx === 1` (first non-control column) which renders the unit annotation beneath the header — this is intentional. The bug is likely that when `dose_value` is null for Group 2, the fallback `formatDoseShortLabel()` returns a string with units embedded in the label text (e.g., "2 mg/kg" instead of "2"), doubling up the unit display. Fix: strip units from the `formatDoseShortLabel` fallback, or extract only the numeric portion.
-- **Status:** Open
+- **Issue:** Group 2 dose column header showed "mg/kg" unit annotation below the number via `unitLabel` prop on `DoseHeader`. Root cause: `unitLabel` was injected on `idx === 1` (first non-control column). Units belong in tooltip only.
+- **Status:** ~~Open~~ Fixed
 - **Priority:** P3 (cosmetic)
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
@@ -97,11 +97,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
 
-### BUG-08: Validation registry.py get_script() logic error
+### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅
 - **Files:** `backend/validation/scripts/registry.py`
 - **Issue:** `get_script()` returns first match then None for all subsequent calls due to early return in loop. Not called by router currently, so no runtime impact.
-- **Status:** Open (no runtime impact, fix for correctness)
-- **Owner hint:** backend-dev
+- **Status:** Not a bug — code is correct (loop re-enters from top on each call; `return s` inside `if` is standard find-first pattern)
 
 ---
 
@@ -466,6 +465,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** ~23 tables across `frontend/src/components/analysis/panes/` (FindingsContextPanel, CorrelationsPane, NoaelContextPanel, HistopathologyContextPanel, NormalizationHeatmap, DoseResponseContextPanel, EndpointSyndromePane, SubjectProfilePanel, SyndromeContextPanel, ValidationContextPanel)
 - **Issue:** `PaneTable` component created for consistent context-panel table styling (auto layout, `tabular-nums`, shared `Th`/`Td` primitives). Currently only used by `DoseDetailPane`. Other pane tables should be migrated incrementally when touched.
 - **Status:** Open (low priority — migrate opportunistically)
+- **Owner hint:** frontend-dev
+
+### GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle
+- **Files:** `frontend/src/components/analysis/panes/DistributionPane.tsx:243-287` (reference implementation), `frontend/src/components/ui/` (target location)
+- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Currently inlined as a local `ModeButton` component. Should be extracted as a reusable `PanePillToggle` in `components/ui/`. Reference pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[9px] px-1.5 py-0.5`. Step 1: extract component + document pattern. Step 2: adopt wherever chart/table mode toggles appear in panes. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
+- **Status:** Open
+- **Priority:** P3 (design system consistency)
+- **Dependencies:** Related to GAP-56 (PaneTable) — both standardize pane internals
 - **Owner hint:** frontend-dev
 
 ---
