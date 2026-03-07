@@ -27,16 +27,16 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 8 | 5 | Incorrect behavior that should be fixed |
+| Bug | 9 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 48 | 6 | Missing capability, no spec exists |
+| Gap | 49 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **70** | **40** | |
+| **Total open** | **72** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -45,6 +45,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ---
 
 ## Bugs (7 open)
+
+### ~~BUG-15: Stale sessionStorage values cause 422 on all analysis views~~ ✅
+- **Files:** `frontend/src/hooks/useSessionState.ts`, `frontend/src/contexts/StudySettingsContext.tsx`, `frontend/src/lib/build-settings-params.ts`, `frontend/src/hooks/useRecoveryPooling.ts`, `frontend/src/components/analysis/StudySummaryView.tsx`
+- **Issue:** `useSessionState` read values from sessionStorage with `as T` cast — no runtime validation. When allowed values changed across code versions (e.g., `"pooled"` → `"pool"`), stale stored values bypassed TypeScript and were sent as query params to the backend, causing 422 validation errors. Also: DEFAULTS were duplicated in `StudySettingsContext` and `build-settings-params`.
+- **Fix:** (1) Added optional `validate` param to `useSessionState` for boundary validation. (2) Defined allowed-value `const` arrays as single source of truth (runtime validator + TS type). (3) Consolidated DEFAULTS to one export (`SETTINGS_DEFAULTS`). (4) Added `isOneOf()` helper for string-literal union validation. (5) Wired validation into all constrained `useSessionState` calls.
+- **Status:** ~~Open~~ Fixed
+- **Priority:** P1 (blocks all analysis views when sessionStorage has stale values)
+- **Owner hint:** frontend-dev
 
 ### ~~BUG-06: Histopath findings table column resize not working~~ ✅
 - **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
@@ -93,6 +101,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** The dose detail info pane (e.g., Basophils endpoint) has regressed from a previous working state. Three problems: (1) **Units in header** — remove units from the pane header; instead show units as the first row in the info pane, right-aligned. (2) **Column alignment broken** — columns are misaligned (investigate which commit broke it). (3) **Sex labels** — each dose group should show one label per sex; currently not rendering correctly. A later commit broke this pane — bisect to find the regression.
 - **Status:** ~~Open~~ Fixed (pending commit)
 - **Priority:** P2 (regression — was working, now broken)
+- **Dependencies:** None
+- **Owner hint:** frontend-dev
+
+### BUG-14: Syndrome info pane — duplicate endpoint entries
+- **Files:** `frontend/src/components/analysis/panes/EndpointSyndromePane.tsx`, `frontend/src/lib/cross-domain-syndromes.ts`
+- **Issue:** The syndrome info pane in the endpoint context panel shows duplicate rows for some endpoints. E.g., for Body Weight, "GLAND, MAMMARY — ATROPHY" appears twice. Likely cause: the syndrome engine or pane renderer is not deduplicating by a unique key (possibly same finding from multiple sex groups, or multiple syndrome rules matching the same endpoint, or the endpoint appearing in both the fired syndrome's required and supporting lists). Investigate root cause — fix may be in the data (deduplicate upstream) or the renderer (group/merge rows).
+- **Status:** Open
+- **Priority:** P2 (data correctness — misleading display)
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
 
@@ -463,6 +479,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** ~23 tables across `frontend/src/components/analysis/panes/` (FindingsContextPanel, CorrelationsPane, NoaelContextPanel, HistopathologyContextPanel, NormalizationHeatmap, DoseResponseContextPanel, EndpointSyndromePane, SubjectProfilePanel, SyndromeContextPanel, ValidationContextPanel)
 - **Issue:** `PaneTable` component created for consistent context-panel table styling (auto layout, `tabular-nums`, shared `Th`/`Td` primitives). Currently only used by `DoseDetailPane`. Other pane tables should be migrated incrementally when touched.
 - **Status:** Open (low priority — migrate opportunistically)
+- **Owner hint:** frontend-dev
+
+### GAP-58: Remove hard width limits on resizable panels
+- **Files:** `frontend/src/components/layout/` (or wherever panel resize constraints are defined — likely `ResizablePanelGroup` / CSS min/max-width)
+- **Issue:** The rail, context panel, and navigation tree panels have hard min/max width limits that prevent users from resizing them freely. Remove these constraints so panels can be dragged to any width the user wants. Panels should still have sensible default widths but no artificial caps.
+- **Status:** Open
+- **Priority:** P3 (usability — user preference)
+- **Dependencies:** BUG-07 and BUG-11 (SVG chart rendering at narrow widths) are related — fixing those first means narrow panels won't break charts
 - **Owner hint:** frontend-dev
 
 ### ~~GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle~~ ✅

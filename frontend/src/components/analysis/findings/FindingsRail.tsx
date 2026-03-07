@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect, forwardRef } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import {
   ChevronDown,
   ChevronRight,
@@ -104,8 +104,14 @@ export function FindingsRail({
 
   // ── Local state ────────────────────────────────────────
   // Grouping & sort persist across view navigations (user preference)
-  const [grouping, setGrouping] = useSessionState<GroupingMode>("pcc.findings.rail.grouping", "syndrome");
-  const [sortMode, setSortMode] = useSessionState<SortMode>("pcc.findings.rail.sort", "signal");
+  const [grouping, setGrouping] = useSessionState<GroupingMode>(
+    "pcc.findings.rail.grouping", "syndrome",
+    isOneOf(["organ", "domain", "pattern", "finding", "syndrome"] as const),
+  );
+  const [sortMode, setSortMode] = useSessionState<SortMode>(
+    "pcc.findings.rail.sort", "signal",
+    isOneOf(["signal", "pvalue", "effect", "az"] as const),
+  );
   // Filters & expanded state are study-specific — reset on study change
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [railFilters, setRailFilters] = useState<RailFilters>(EMPTY_RAIL_FILTERS);

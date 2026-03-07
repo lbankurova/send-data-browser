@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Pencil } from "lucide-react";
 import {
@@ -1717,7 +1717,10 @@ export function NoaelDeterminationView() {
 
   // Read organ from StudySelectionContext
   const selectedOrgan = studySelection.organSystem ?? null;
-  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.noael.tab", "overview");
+  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>(
+    "pcc.noael.tab", "overview",
+    isOneOf(["overview", "matrix", "signal-matrix", "metrics", "rules"] as const),
+  );
   const [selection, setSelection] = useState<NoaelSelection | null>(null);
   const [localSignalSel, setLocalSignalSel] = useState<SignalSelection | null>(null);
   const { filters: globalFilters, setFilters: setGlobalFilters } = useGlobalFilters();

@@ -1,17 +1,5 @@
+import { SETTINGS_DEFAULTS } from "@/contexts/StudySettingsContext";
 import type { StudySettings } from "@/contexts/StudySettingsContext";
-
-const DEFAULTS: StudySettings = {
-  scheduledOnly: false,
-  recoveryPooling: "pool",
-  effectSize: "hedges-g",
-  multiplicity: "dunnett-fwer",
-  controlGroup: "vehicle",
-  adversityThreshold: "grade-ge-2-or-dose-dep",
-  pairwiseTest: "dunnett",
-  trendTest: "jonckheere",
-  incidenceTrend: "cochran-armitage",
-  organWeightMethod: "absolute",
-};
 
 // camelCase → snake_case mapping for backend query params
 const KEY_MAP: Record<keyof StudySettings, string> = {
@@ -32,7 +20,7 @@ export function buildSettingsParams(settings: StudySettings): string {
   const params = new URLSearchParams();
   for (const [key, snakeKey] of Object.entries(KEY_MAP)) {
     const value = settings[key as keyof StudySettings];
-    const defaultValue = DEFAULTS[key as keyof StudySettings];
+    const defaultValue = SETTINGS_DEFAULTS[key as keyof StudySettings];
     if (value !== defaultValue) {
       params.set(snakeKey, String(value));
     }

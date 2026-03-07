@@ -2,24 +2,35 @@ import { createContext, useContext, useCallback, useMemo, useState, useEffect, u
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { buildSettingsParams } from "@/lib/build-settings-params";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 
-// ── Types ────────────────────────────────────────────────────
+// ── Allowed values (single source of truth) ──────────────────
+// These const arrays define both the runtime validator AND the TS type.
+
+export const RECOVERY_POOLING_VALUES = ["pool", "separate"] as const;
+export const EFFECT_SIZE_VALUES = ["hedges-g", "cohens-d", "glass-delta"] as const;
+export const MULTIPLICITY_VALUES = ["dunnett-fwer", "bonferroni"] as const;
+export const PAIRWISE_TEST_VALUES = ["dunnett", "williams", "steel"] as const;
+export const TREND_TEST_VALUES = ["jonckheere", "cuzick", "williams-trend"] as const;
+export const INCIDENCE_TREND_VALUES = ["cochran-armitage", "logistic-slope"] as const;
+export const ORGAN_WEIGHT_METHOD_VALUES = ["absolute", "ratio-bw", "ratio-brain"] as const;
+
+// ── Types (derived from the arrays) ──────────────────────────
 
 export interface StudySettings {
   scheduledOnly: boolean;
-  recoveryPooling: "pool" | "separate";
+  recoveryPooling: typeof RECOVERY_POOLING_VALUES[number];
   effectSize: EffectSizeMethod;
   multiplicity: MultiplicityMethod;
   // Phase 3 placeholders (accepted, no-op on backend yet)
   controlGroup: string;
   adversityThreshold: string;
-  pairwiseTest: "dunnett" | "williams" | "steel";
-  trendTest: "jonckheere" | "cuzick" | "williams-trend";
-  incidenceTrend: "cochran-armitage" | "logistic-slope";
-  organWeightMethod: "absolute" | "ratio-bw" | "ratio-brain";
+  pairwiseTest: typeof PAIRWISE_TEST_VALUES[number];
+  trendTest: typeof TREND_TEST_VALUES[number];
+  incidenceTrend: typeof INCIDENCE_TREND_VALUES[number];
+  organWeightMethod: typeof ORGAN_WEIGHT_METHOD_VALUES[number];
 }
 
 export interface StudySettingsContextValue {
@@ -33,7 +44,7 @@ export interface StudySettingsContextValue {
 
 // ── Context ──────────────────────────────────────────────────
 
-const DEFAULTS: StudySettings = {
+export const SETTINGS_DEFAULTS: StudySettings = {
   scheduledOnly: false,
   recoveryPooling: "pool",
   effectSize: "hedges-g",
@@ -47,7 +58,7 @@ const DEFAULTS: StudySettings = {
 };
 
 const StudySettingsContext = createContext<StudySettingsContextValue>({
-  settings: DEFAULTS,
+  settings: SETTINGS_DEFAULTS,
   queryParams: "",
   updateSetting: () => {},
 });
@@ -61,33 +72,41 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
   // scheduledOnly comes from ScheduledOnlyContext (must be above in tree)
   const { useScheduledOnly: scheduledOnly } = useScheduledOnly();
 
-  // Session-persisted settings — each keyed by studyId
-  const [recoveryPooling, setRecoveryPooling] = useSessionState<"pool" | "separate">(
-    `pcc.${studyId}.recoveryPooling`, "pool",
+  // Session-persisted settings — each keyed by studyId.
+  // Validators reject stale sessionStorage values from previous code versions.
+  const [recoveryPooling, setRecoveryPooling] = useSessionState(
+    `pcc.${studyId}.recoveryPooling`, SETTINGS_DEFAULTS.recoveryPooling,
+    isOneOf(RECOVERY_POOLING_VALUES),
   );
-  const [effectSize, setEffectSize] = useSessionState<EffectSizeMethod>(
-    `pcc.${studyId}.effectSize`, "hedges-g",
+  const [effectSize, setEffectSize] = useSessionState(
+    `pcc.${studyId}.effectSize`, SETTINGS_DEFAULTS.effectSize,
+    isOneOf(EFFECT_SIZE_VALUES),
   );
-  const [multiplicity, setMultiplicity] = useSessionState<MultiplicityMethod>(
-    `pcc.${studyId}.multiplicity`, "dunnett-fwer",
+  const [multiplicity, setMultiplicity] = useSessionState(
+    `pcc.${studyId}.multiplicity`, SETTINGS_DEFAULTS.multiplicity,
+    isOneOf(MULTIPLICITY_VALUES),
   );
   const [controlGroup, setControlGroup] = useSessionState<string>(
-    `pcc.${studyId}.controlGroup`, "vehicle",
+    `pcc.${studyId}.controlGroup`, SETTINGS_DEFAULTS.controlGroup,
   );
   const [adversityThreshold, setAdversityThreshold] = useSessionState<string>(
-    `pcc.${studyId}.adversityThreshold`, "grade-ge-2-or-dose-dep",
+    `pcc.${studyId}.adversityThreshold`, SETTINGS_DEFAULTS.adversityThreshold,
   );
-  const [pairwiseTest, setPairwiseTest] = useSessionState<"dunnett" | "williams" | "steel">(
-    `pcc.${studyId}.pairwiseTest`, "dunnett",
+  const [pairwiseTest, setPairwiseTest] = useSessionState(
+    `pcc.${studyId}.pairwiseTest`, SETTINGS_DEFAULTS.pairwiseTest,
+    isOneOf(PAIRWISE_TEST_VALUES),
   );
-  const [trendTest, setTrendTest] = useSessionState<"jonckheere" | "cuzick" | "williams-trend">(
-    `pcc.${studyId}.trendTest`, "jonckheere",
+  const [trendTest, setTrendTest] = useSessionState(
+    `pcc.${studyId}.trendTest`, SETTINGS_DEFAULTS.trendTest,
+    isOneOf(TREND_TEST_VALUES),
   );
-  const [incidenceTrend, setIncidenceTrend] = useSessionState<"cochran-armitage" | "logistic-slope">(
-    `pcc.${studyId}.incidenceTrend`, "cochran-armitage",
+  const [incidenceTrend, setIncidenceTrend] = useSessionState(
+    `pcc.${studyId}.incidenceTrend`, SETTINGS_DEFAULTS.incidenceTrend,
+    isOneOf(INCIDENCE_TREND_VALUES),
   );
-  const [organWeightMethod, setOrganWeightMethod] = useSessionState<"absolute" | "ratio-bw" | "ratio-brain">(
-    `pcc.${studyId}.organWeightMethod`, "absolute",
+  const [organWeightMethod, setOrganWeightMethod] = useSessionState(
+    `pcc.${studyId}.organWeightMethod`, SETTINGS_DEFAULTS.organWeightMethod,
+    isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
   );
 
   const settings = useMemo<StudySettings>(
