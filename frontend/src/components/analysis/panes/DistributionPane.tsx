@@ -293,7 +293,7 @@ export function DistributionPane({
       ) : (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground shrink-0">{subtitle}</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{subtitle}{unit ? ` (${unit})` : ""}</span>
             <div className="flex items-center gap-1.5">
               {showModeSelector && (
                 <PanePillToggle
@@ -317,6 +317,7 @@ export function DistributionPane({
             sexes={sexes}
             doseGroups={doseGroupsForChart}
             onSubjectClick={handleSubjectClick}
+            mode={mode}
           />
         </div>
       )}

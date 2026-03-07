@@ -11,6 +11,7 @@
  */
 import { useMemo, useState, useRef, useCallback } from "react";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -30,6 +31,8 @@ export interface StripPlotChartProps {
   doseGroups: { doseLevel: number; doseLabel: string }[];
   /** Called when a dot is clicked — opens subject profile panel. */
   onSubjectClick?: (usubjid: string) => void;
+  /** Distribution mode — controls stat labels in the legend. */
+  mode?: "terminal" | "peak" | "recovery";
 }
 
 // ── Layout constants ──────────────────────────────────────
@@ -106,12 +109,35 @@ function shortId(usubjid: string): string {
 
 // ── Component ────────────────────────────────────────────
 
-export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick }: StripPlotChartProps) {
+export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal" }: StripPlotChartProps) {
   const [hoveredGroup, setHoveredGroup] = useState<{ sex: string; doseLevel: number } | null>(null);
   const [hoveredDot, setHoveredDot] = useState<SubjectValue | null>(null);
-  const [selectedDose, setSelectedDose] = useState<number | null>(null);
+  const [selectedDoses, setSelectedDoses] = useState<Set<number>>(new Set());
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Per-sex stats per dose group (for the stats beneath each panel)
+  const sexGroupStats = useMemo(() => {
+    const result: Record<string, Map<number, { n: number; mean: number; sd: number }>> = {};
+    for (const sex of sexes) {
+      const map = new Map<number, number[]>();
+      for (const dg of doseGroups) map.set(dg.doseLevel, []);
+      for (const s of subjects) {
+        if (s.sex === sex) map.get(s.dose_level)?.push(s.value);
+      }
+      const stats = new Map<number, { n: number; mean: number; sd: number }>();
+      for (const [level, vals] of map) {
+        if (vals.length === 0) continue;
+        const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const sd = vals.length > 1
+          ? Math.sqrt(vals.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (vals.length - 1))
+          : 0;
+        stats.set(level, { n: vals.length, mean, sd });
+      }
+      result[sex] = stats;
+    }
+    return result;
+  }, [subjects, sexes, doseGroups]);
 
   // Group subjects by sex → doseLevel
   const grouped = useMemo(() => {
@@ -179,21 +205,57 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     setTooltip(null);
   }, []);
 
-  // Dose label click → toggle selection
-  const handleDoseClick = useCallback((doseLevel: number) => {
-    setSelectedDose((prev) => prev === doseLevel ? null : doseLevel);
+  // Dose label click → single select; Ctrl/Cmd+click → multi-select toggle
+  const handleDoseClick = useCallback((doseLevel: number, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedDoses(prev => {
+        const next = new Set(prev);
+        if (next.has(doseLevel)) next.delete(doseLevel);
+        else next.add(doseLevel);
+        return next;
+      });
+    } else {
+      setSelectedDoses(prev =>
+        prev.size === 1 && prev.has(doseLevel) ? new Set() : new Set([doseLevel]),
+      );
+    }
     setHoveredGroup(null);
     setHoveredDot(null);
     setTooltip(null);
   }, []);
+
+  // Select all / none toggle
+  const handleSelectAll = useCallback(() => {
+    setSelectedDoses(prev =>
+      prev.size === doseGroups.length
+        ? new Set()
+        : new Set(doseGroups.map(dg => dg.doseLevel)),
+    );
+  }, [doseGroups]);
 
   // Dot click → subject profile
   const handleDotClick = useCallback((usubjid: string) => {
     onSubjectClick?.(usubjid);
   }, [onSubjectClick]);
 
+  const allSelected = selectedDoses.size === doseGroups.length;
+  const someSelected = selectedDoses.size > 0;
+
   return (
     <div ref={containerRef} className="relative">
+      {/* "All" checkbox */}
+      <div
+        className="flex items-center gap-1 mb-1 cursor-pointer select-none"
+        onClick={handleSelectAll}
+      >
+        <Checkbox
+          checked={allSelected ? true : someSelected ? "indeterminate" : false}
+          className="size-3 rounded-[2px]"
+          tabIndex={-1}
+        />
+        <span className="text-[9px] text-muted-foreground">All</span>
+      </div>
+
       {/* Sex headers */}
       {!isSingleSex && (
         <div className="flex" style={{ paddingLeft: LEFT_MARGIN }}>
@@ -205,7 +267,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
         </div>
       )}
 
-      {/* SVG panels per sex */}
+      {/* SVG panels + per-sex stats */}
       <div className="flex">
         {sexes.map((sex, idx) => (
           <div key={sex} className="flex-1 min-w-0">
@@ -226,7 +288,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               svgHeight={svgHeight}
               hoveredGroup={hoveredGroup}
               hoveredDot={hoveredDot}
-              selectedDose={selectedDose}
+              selectedDoses={selectedDoses}
               onGroupEnter={handleGroupEnter}
               onGroupLeave={handleGroupLeave}
               onDotEnter={handleDotEnter}
@@ -234,19 +296,54 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               onDotClick={handleDotClick}
               onDoseClick={handleDoseClick}
             />
+            {/* Per-sex dose legend — aligned with SVG columns */}
+            <div
+              className="mt-0.5 text-[9px] leading-[14px]"
+              style={{ paddingLeft: idx === 0 ? LEFT_MARGIN : 6, paddingRight: PLOT_RIGHT }}
+            >
+              {doseGroups
+                .filter((dg) => dg.doseLevel > 0)
+                .map((dg) => {
+                  const stats = sexGroupStats[sex]?.get(dg.doseLevel);
+                  if (!stats) return null;
+                  const color = getDoseGroupColor(dg.doseLevel);
+                  const label = formatDoseShortLabel(dg.doseLabel);
+                  const isPeak = mode === "peak";
+                  return (
+                    <div key={dg.doseLevel} className="flex items-center gap-1">
+                      <span
+                        className="inline-block shrink-0 rounded-full"
+                        style={{ width: 6, height: 6, backgroundColor: color }}
+                      />
+                      <span className="shrink-0 text-muted-foreground truncate" style={{ width: 52 }}>
+                        {label}
+                      </span>
+                      <span className="tabular-nums">
+                        <span className="font-semibold text-foreground/70">
+                          {isPeak ? "Δ" : "x̄"}&nbsp;=&nbsp;{isPeak && stats.mean > 0 ? "+" : ""}{stats.mean.toFixed(1)}
+                        </span>
+                        <span className="text-muted-foreground/40">±{stats.sd.toFixed(1)}</span>
+                      </span>
+                      <span className="text-muted-foreground/40">n={stats.n}</span>
+                    </div>
+                  );
+                })}
+              {(() => {
+                const ctrl = sexGroupStats[sex]?.get(0);
+                if (!ctrl) return null;
+                const isPeak = mode === "peak";
+                return (
+                  <div className="text-muted-foreground/60 pl-[7px] tabular-nums">
+                    Control n={ctrl.n}{!isPeak && <span> x̄={ctrl.mean.toFixed(1)}±{ctrl.sd.toFixed(1)}</span>}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Unit label (shared, centered) */}
-      {unit && (
-        <div
-          className="text-[7px] text-muted-foreground/60 text-center"
-          style={{ paddingLeft: LEFT_MARGIN }}
-        >
-          {unit}
-        </div>
-      )}
+      {/* Unit label removed — shown in DistributionPane subtitle instead */}
 
       {tooltip && (
         <div
@@ -274,7 +371,7 @@ function SexPanel({
   svgHeight,
   hoveredGroup,
   hoveredDot,
-  selectedDose,
+  selectedDoses,
   onGroupEnter,
   onGroupLeave,
   onDotEnter,
@@ -293,13 +390,13 @@ function SexPanel({
   svgHeight: number;
   hoveredGroup: { sex: string; doseLevel: number } | null;
   hoveredDot: SubjectValue | null;
-  selectedDose: number | null;
+  selectedDoses: Set<number>;
   onGroupEnter: (sex: string, doseLevel: number, stats: ReturnType<typeof computeStats>, e: React.MouseEvent) => void;
   onGroupLeave: () => void;
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
-  onDoseClick: (doseLevel: number) => void;
+  onDoseClick: (doseLevel: number, e: React.MouseEvent) => void;
 }) {
   const [width, setWidth] = useState(200);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -367,10 +464,10 @@ function SexPanel({
         const color = getDoseGroupColor(dg.doseLevel);
 
         // Highlight logic
-        const isSelected = selectedDose === dg.doseLevel;
+        const isSelected = selectedDoses.has(dg.doseLevel);
         const isGroupHovered = hoveredGroup?.sex === sex && hoveredGroup?.doseLevel === dg.doseLevel;
         const isActive = isSelected || isGroupHovered;
-        const isDimmed = !isActive && (selectedDose != null || hoveredGroup != null);
+        const isDimmed = !isActive && (selectedDoses.size > 0 || hoveredGroup != null);
 
         if (nums.length === 0) {
           return (
@@ -487,12 +584,12 @@ function SexPanel({
         const cx = colCenter(colIdx);
         const color = getDoseGroupColor(dg.doseLevel);
         const label = formatDoseShortLabel(dg.doseLabel);
-        const isSelected = selectedDose === dg.doseLevel;
+        const isSelected = selectedDoses.has(dg.doseLevel);
 
         return (
           <g
             key={dg.doseLevel}
-            onClick={() => onDoseClick(dg.doseLevel)}
+            onClick={(e) => onDoseClick(dg.doseLevel, e)}
             style={{ cursor: "pointer" }}
           >
             {/* Colored underline */}
@@ -513,6 +610,7 @@ function SexPanel({
           </g>
         );
       })}
+
     </svg>
   );
 }
