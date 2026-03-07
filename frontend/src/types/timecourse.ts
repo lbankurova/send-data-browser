@@ -34,6 +34,7 @@ export interface TimecourseSubjectResponse {
   unit: string;
   subjects: TimecourseSubject[];
   last_dosing_day?: number;
+  terminal_sacrifice_day?: number;
 }
 
 export interface TimecourseSubject {
