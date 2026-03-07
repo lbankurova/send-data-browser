@@ -20,6 +20,7 @@ import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
 import { TimeCoursePane } from "./TimeCoursePane";
+import { DistributionPane } from "./DistributionPane";
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { ChevronRight } from "lucide-react";
@@ -1251,7 +1252,6 @@ export function FindingsContextPanel() {
         defaultOpen
         expandAll={expandGen}
         collapseAll={collapseGen}
-        headerRight={activeStatistics!.unit ? <span className="text-[10px] text-muted-foreground">Unit: {activeStatistics!.unit}</span> : undefined}
       >
         <DoseDetailPane
           statistics={activeStatistics!}
@@ -1270,6 +1270,15 @@ export function FindingsContextPanel() {
         <TimeCoursePane
           finding={selectedFinding}
           doseGroups={findingsData?.dose_groups}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        />
+      )}
+
+      {/* Distribution — individual values at terminal */}
+      {selectedFinding && (
+        <DistributionPane
+          finding={selectedFinding}
           expandAll={expandGen}
           collapseAll={collapseGen}
         />
