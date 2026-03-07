@@ -1,20 +1,16 @@
 /**
- * Strip/dot plot for endpoints with too few timepoints for a line chart.
- * Shows individual subject values by dose group, split by sex (F left, M right).
- * Conditionally adds box/whisker overlay when group n > 15.
+ * Strip/dot plot — vertical orientation.
+ * X axis: dose groups (color-coded), Y axis: values.
+ * One SVG panel per sex, side by side for easy F/M comparison.
  *
  * Interaction:
- * - Hover dose row → highlight group on that panel, show group tooltip (n, mean, SD)
+ * - Hover dose column → highlight group, show group tooltip (n, mean, SD)
  * - Click dose label → select dose, highlight on both panels, enable per-dot hover
  * - Hover dot (when dose selected) → show individual tooltip (USUBJID, value)
  * - Click dot → open subject profile panel
- *
- * Layout matches RecoveryDumbbellChart: HTML dose labels (with colored pipe)
- * + inline SVG panels per sex.
  */
 import { useMemo, useState, useRef, useCallback } from "react";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
-import { DoseLabel } from "@/components/ui/DoseLabel";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -38,10 +34,11 @@ export interface StripPlotChartProps {
 
 // ── Layout constants ──────────────────────────────────────
 
-const ROW_HEIGHT = 32;
-const PLOT_LEFT = 4;
-const PLOT_RIGHT = 8;
+const PLOT_HEIGHT = 165;
 const PLOT_TOP = 4;
+const PLOT_BOTTOM = 26; // dose labels + unit
+const LEFT_MARGIN = 30; // Y-axis tick labels (first panel only uses it)
+const PLOT_RIGHT = 6;
 const DOT_RADIUS = 2.5;
 const DOT_RADIUS_HOVER = 3.5;
 const MEAN_TICK_HALF = 5;
@@ -75,15 +72,15 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-// ── Jitter (deterministic by index) ───────────────────────
+// ── Jitter (horizontal, deterministic by index) ──────────
 
-function jitterY(index: number, count: number): number {
+function jitterX(index: number, count: number, colWidth: number): number {
   if (count <= 1) return 0;
-  const span = Math.min(ROW_HEIGHT * 0.35, count * 1.5);
+  const span = Math.min(colWidth * 0.3, count * 1.8);
   return ((index / (count - 1)) - 0.5) * span;
 }
 
-// ── X-axis tick computation ───────────────────────────────
+// ── Y-axis tick computation ──────────────────────────────
 
 function computeNiceTicks(min: number, max: number, maxTicks = 5): number[] {
   const range = max - min;
@@ -100,15 +97,14 @@ function computeNiceTicks(min: number, max: number, maxTicks = 5): number[] {
   return ticks;
 }
 
-// ── Short subject ID ──────────────────────────────────────
+// ── Short subject ID ─────────────────────────────────────
 
 function shortId(usubjid: string): string {
-  // "STUDY-001" → "001", "PCDR-0034-1001" → "1001"
   const parts = usubjid.split("-");
   return parts[parts.length - 1];
 }
 
-// ── Component ─────────────────────────────────────────────
+// ── Component ────────────────────────────────────────────
 
 export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick }: StripPlotChartProps) {
   const [hoveredGroup, setHoveredGroup] = useState<{ sex: string; doseLevel: number } | null>(null);
@@ -142,14 +138,14 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     return [lo - pad, hi + pad];
   }, [subjects]);
 
-  const xTicks = useMemo(() => computeNiceTicks(vMin, vMax), [vMin, vMax]);
+  const yTicks = useMemo(() => computeNiceTicks(vMin, vMax), [vMin, vMax]);
 
-  const svgHeight = PLOT_TOP + doseGroups.length * ROW_HEIGHT + 18;
+  const svgHeight = PLOT_TOP + PLOT_HEIGHT + PLOT_BOTTOM;
   const isSingleSex = sexes.length === 1;
 
-  // Group-level hover (no dose selected)
+  // Group-level hover
   const handleGroupEnter = useCallback((sex: string, doseLevel: number, stats: ReturnType<typeof computeStats>, e: React.MouseEvent) => {
-    if (selectedDose != null) return; // group hover disabled when dose is selected
+    if (selectedDose != null) return;
     setHoveredGroup({ sex, doseLevel });
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
@@ -202,7 +198,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     <div ref={containerRef} className="relative">
       {/* Sex headers */}
       {!isSingleSex && (
-        <div className="flex gap-1.5" style={{ paddingLeft: 60 }}>
+        <div className="flex" style={{ paddingLeft: LEFT_MARGIN }}>
           {sexes.map((sex) => (
             <div key={sex} className="flex-1 text-center text-[9px] font-medium text-muted-foreground mb-0.5">
               {sex}
@@ -211,59 +207,48 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
         </div>
       )}
 
-      {/* Chart area: dose labels + SVG panels */}
-      <div className="flex gap-1.5">
-        {/* Shared dose labels column */}
-        <div className="w-[56px] shrink-0 flex flex-col">
-          {doseGroups.map((dg) => (
-            <div
-              key={dg.doseLevel}
-              className="flex items-center justify-end cursor-pointer"
-              style={{ height: ROW_HEIGHT }}
-              onClick={() => handleDoseClick(dg.doseLevel)}
-            >
-              <DoseLabel
-                level={dg.doseLevel}
-                label={formatDoseShortLabel(dg.doseLabel)}
-                align="right"
-                className={`text-[9px] ${selectedDose === dg.doseLevel ? "font-semibold" : ""}`}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* SVG panels per sex */}
+      {/* SVG panels per sex */}
+      <div className="flex">
         {sexes.map((sex, idx) => (
-          <div key={sex} className="flex-1 min-w-0 flex">
-            {idx > 0 && <div className="w-px bg-border/30 mr-1.5" />}
-            <div className="flex-1 min-w-0">
-              {isSingleSex && (
-                <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
-                  {sex}
-                </div>
-              )}
-              <SexPanel
-                sex={sex}
-                grouped={grouped[sex] ?? {}}
-                doseGroups={doseGroups}
-                vMin={vMin}
-                vMax={vMax}
-                xTicks={xTicks}
-                unit={unit}
-                svgHeight={svgHeight}
-                hoveredGroup={hoveredGroup}
-                hoveredDot={hoveredDot}
-                selectedDose={selectedDose}
-                onGroupEnter={handleGroupEnter}
-                onGroupLeave={handleGroupLeave}
-                onDotEnter={handleDotEnter}
-                onDotLeave={handleDotLeave}
-                onDotClick={handleDotClick}
-              />
-            </div>
+          <div key={sex} className="flex-1 min-w-0">
+            {isSingleSex && (
+              <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+                {sex}
+              </div>
+            )}
+            <SexPanel
+              sex={sex}
+              showYAxis={idx === 0}
+              grouped={grouped[sex] ?? {}}
+              doseGroups={doseGroups}
+              vMin={vMin}
+              vMax={vMax}
+              yTicks={yTicks}
+              unit={unit}
+              svgHeight={svgHeight}
+              hoveredGroup={hoveredGroup}
+              hoveredDot={hoveredDot}
+              selectedDose={selectedDose}
+              onGroupEnter={handleGroupEnter}
+              onGroupLeave={handleGroupLeave}
+              onDotEnter={handleDotEnter}
+              onDotLeave={handleDotLeave}
+              onDotClick={handleDotClick}
+              onDoseClick={handleDoseClick}
+            />
           </div>
         ))}
       </div>
+
+      {/* Unit label (shared, centered) */}
+      {unit && (
+        <div
+          className="text-[7px] text-muted-foreground/60 text-center"
+          style={{ paddingLeft: LEFT_MARGIN }}
+        >
+          {unit}
+        </div>
+      )}
 
       {tooltip && (
         <div
@@ -281,12 +266,13 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
 
 function SexPanel({
   sex,
+  showYAxis,
   grouped,
   doseGroups,
   vMin,
   vMax,
-  xTicks,
-  unit,
+  yTicks,
+  unit: _unit,
   svgHeight,
   hoveredGroup,
   hoveredDot,
@@ -296,13 +282,15 @@ function SexPanel({
   onDotEnter,
   onDotLeave,
   onDotClick,
+  onDoseClick,
 }: {
   sex: string;
+  showYAxis: boolean;
   grouped: Record<number, SubjectValue[]>;
   doseGroups: { doseLevel: number; doseLabel: string }[];
   vMin: number;
   vMax: number;
-  xTicks: number[];
+  yTicks: number[];
   unit: string;
   svgHeight: number;
   hoveredGroup: { sex: string; doseLevel: number } | null;
@@ -313,6 +301,7 @@ function SexPanel({
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
+  onDoseClick: (doseLevel: number) => void;
 }) {
   const [width, setWidth] = useState(200);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -333,9 +322,14 @@ function SexPanel({
     }
   }, []);
 
-  const plotWidth = width - PLOT_LEFT - PLOT_RIGHT;
-  const xScale = (v: number) => PLOT_LEFT + ((v - vMin) / (vMax - vMin)) * plotWidth;
-  const plotBottom = PLOT_TOP + doseGroups.length * ROW_HEIGHT;
+  const leftMargin = showYAxis ? LEFT_MARGIN : 6;
+  const plotWidth = width - leftMargin - PLOT_RIGHT;
+  const numCols = doseGroups.length;
+  const colWidth = numCols > 0 ? plotWidth / numCols : plotWidth;
+  const plotBottom = PLOT_TOP + PLOT_HEIGHT;
+
+  const colCenter = (colIdx: number) => leftMargin + (colIdx + 0.5) * colWidth;
+  const yScale = (v: number) => PLOT_TOP + PLOT_HEIGHT * (1 - (v - vMin) / (vMax - vMin));
 
   return (
     <svg
@@ -345,20 +339,32 @@ function SexPanel({
       preserveAspectRatio="xMinYMin meet"
       style={{ height: svgHeight }}
     >
-      {/* Grid lines */}
-      {xTicks.map((t) => (
+      {/* Horizontal grid lines */}
+      {yTicks.map((t) => (
         <line
           key={t}
-          x1={xScale(t)} y1={PLOT_TOP}
-          x2={xScale(t)} y2={plotBottom}
+          x1={leftMargin} y1={yScale(t)}
+          x2={width - PLOT_RIGHT} y2={yScale(t)}
           stroke="var(--border)" strokeWidth={0.5} strokeDasharray="2,2"
         />
       ))}
 
-      {/* Per-dose-group rows */}
-      {doseGroups.map((dg, rowIdx) => {
+      {/* Y-axis tick labels (first panel only) */}
+      {showYAxis && yTicks.map((t) => (
+        <text
+          key={t}
+          x={leftMargin - 3} y={yScale(t)}
+          textAnchor="end" dominantBaseline="central"
+          className="text-[8px]" fill="var(--muted-foreground)"
+        >
+          {t % 1 === 0 ? t : t.toFixed(1)}
+        </text>
+      ))}
+
+      {/* Per-dose-group columns */}
+      {doseGroups.map((dg, colIdx) => {
         const values = grouped[dg.doseLevel] ?? [];
-        const cy = PLOT_TOP + rowIdx * ROW_HEIGHT + ROW_HEIGHT / 2;
+        const cx = colCenter(colIdx);
         const nums = values.map((v) => v.value);
         const color = getDoseGroupColor(dg.doseLevel);
 
@@ -373,7 +379,7 @@ function SexPanel({
           return (
             <g key={dg.doseLevel}>
               <text
-                x={xScale((vMin + vMax) / 2)} y={cy}
+                x={cx} y={PLOT_TOP + PLOT_HEIGHT / 2}
                 textAnchor="middle" dominantBaseline="central"
                 className="text-[9px]" fill="var(--muted-foreground)" opacity={0.4}
               >
@@ -395,57 +401,61 @@ function SexPanel({
           >
             {/* Invisible hit area */}
             <rect
-              x={PLOT_LEFT} y={cy - ROW_HEIGHT / 2}
-              width={plotWidth} height={ROW_HEIGHT}
+              x={cx - colWidth / 2} y={PLOT_TOP}
+              width={colWidth} height={PLOT_HEIGHT}
               fill="transparent"
             />
 
-            {/* Box/whisker (conditional on n > 15) */}
+            {/* Box/whisker (vertical, conditional on n > 15) */}
             {showBox && (
               <>
+                {/* Whisker line (vertical) */}
                 <line
-                  x1={xScale(stats.whiskerLo)} y1={cy}
-                  x2={xScale(stats.whiskerHi)} y2={cy}
+                  x1={cx} y1={yScale(stats.whiskerHi)}
+                  x2={cx} y2={yScale(stats.whiskerLo)}
+                  stroke={color} strokeWidth={1}
+                  opacity={isDimmed ? 0.2 : 0.5}
+                />
+                {/* Whisker caps (horizontal) */}
+                <line
+                  x1={cx - 3} y1={yScale(stats.whiskerHi)}
+                  x2={cx + 3} y2={yScale(stats.whiskerHi)}
                   stroke={color} strokeWidth={1}
                   opacity={isDimmed ? 0.2 : 0.5}
                 />
                 <line
-                  x1={xScale(stats.whiskerLo)} y1={cy - 3}
-                  x2={xScale(stats.whiskerLo)} y2={cy + 3}
+                  x1={cx - 3} y1={yScale(stats.whiskerLo)}
+                  x2={cx + 3} y2={yScale(stats.whiskerLo)}
                   stroke={color} strokeWidth={1}
                   opacity={isDimmed ? 0.2 : 0.5}
                 />
-                <line
-                  x1={xScale(stats.whiskerHi)} y1={cy - 3}
-                  x2={xScale(stats.whiskerHi)} y2={cy + 3}
-                  stroke={color} strokeWidth={1}
-                  opacity={isDimmed ? 0.2 : 0.5}
-                />
+                {/* Box (Q1 to Q3) */}
                 <rect
-                  x={xScale(stats.q1)} y={cy - 5}
-                  width={xScale(stats.q3) - xScale(stats.q1)} height={10}
+                  x={cx - 5} y={yScale(stats.q3)}
+                  width={10} height={yScale(stats.q1) - yScale(stats.q3)}
                   fill={color} fillOpacity={isDimmed ? 0.03 : 0.08}
                   stroke={color} strokeWidth={1}
                   opacity={isDimmed ? 0.2 : 0.5}
                 />
+                {/* Median line (horizontal) */}
                 <line
-                  x1={xScale(stats.median)} y1={cy - 5}
-                  x2={xScale(stats.median)} y2={cy + 5}
+                  x1={cx - 5} y1={yScale(stats.median)}
+                  x2={cx + 5} y2={yScale(stats.median)}
                   stroke={color} strokeWidth={1.5}
                   opacity={isDimmed ? 0.2 : 0.7}
                 />
               </>
             )}
 
-            {/* Individual dots */}
+            {/* Individual dots (jittered horizontally) */}
             {values.map((sv, i) => {
               const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
               const dotInteractive = isSelected;
               return (
                 <circle
                   key={sv.usubjid}
-                  cx={xScale(sv.value)}
-                  cy={cy + jitterY(i, values.length)}
+                  cx={cx + jitterX(i, values.length, colWidth)}
+                  cy={yScale(sv.value)}
                   r={isDotHovered ? DOT_RADIUS_HOVER : DOT_RADIUS}
                   fill={isActive ? color : "var(--muted-foreground)"}
                   opacity={isDimmed ? 0.15 : isDotHovered ? 1 : isActive ? 0.9 : 0.45}
@@ -462,10 +472,10 @@ function SexPanel({
               );
             })}
 
-            {/* Mean tick */}
+            {/* Mean tick (horizontal line) */}
             <line
-              x1={xScale(stats.mean)} y1={cy - MEAN_TICK_HALF}
-              x2={xScale(stats.mean)} y2={cy + MEAN_TICK_HALF}
+              x1={cx - MEAN_TICK_HALF} y1={yScale(stats.mean)}
+              x2={cx + MEAN_TICK_HALF} y2={yScale(stats.mean)}
               stroke={isActive ? color : "var(--muted-foreground)"}
               strokeWidth={2}
               opacity={isDimmed ? 0.2 : isActive ? 1 : 0.6}
@@ -475,26 +485,37 @@ function SexPanel({
         );
       })}
 
-      {/* X-axis tick labels */}
-      {xTicks.map((t) => (
-        <text
-          key={t}
-          x={xScale(t)} y={plotBottom + 10}
-          textAnchor="middle" className="text-[8px]" fill="var(--muted-foreground)"
-        >
-          {t % 1 === 0 ? t : t.toFixed(1)}
-        </text>
-      ))}
+      {/* Dose labels at bottom */}
+      {doseGroups.map((dg, colIdx) => {
+        const cx = colCenter(colIdx);
+        const color = getDoseGroupColor(dg.doseLevel);
+        const label = formatDoseShortLabel(dg.doseLabel);
+        const isSelected = selectedDose === dg.doseLevel;
 
-      {/* Unit label */}
-      {unit && (
-        <text
-          x={xScale((vMin + vMax) / 2)} y={plotBottom + 17}
-          textAnchor="middle" className="text-[7px]" fill="var(--muted-foreground)" opacity={0.6}
-        >
-          {unit}
-        </text>
-      )}
+        return (
+          <g
+            key={dg.doseLevel}
+            onClick={() => onDoseClick(dg.doseLevel)}
+            style={{ cursor: "pointer" }}
+          >
+            {/* Colored underline */}
+            <line
+              x1={cx - colWidth * 0.3} y1={plotBottom + 2}
+              x2={cx + colWidth * 0.3} y2={plotBottom + 2}
+              stroke={color} strokeWidth={2} strokeLinecap="round"
+            />
+            {/* Label text */}
+            <text
+              x={cx} y={plotBottom + 13}
+              textAnchor="middle" dominantBaseline="central"
+              className="text-[8px]" fill="var(--muted-foreground)"
+              fontWeight={isSelected ? 600 : 400}
+            >
+              {label}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
