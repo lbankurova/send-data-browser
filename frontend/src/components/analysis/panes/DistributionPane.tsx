@@ -40,11 +40,11 @@ type DistMode = "terminal" | "peak" | "recovery";
 /**
  * Find the study day with the peak treatment effect on BW.
  *
- * Metric: argmin_t [ BWmean_high(t) − BWmean_control(t) ]
+ * Metric: argmin_t [ Hedges' g(t) ]
  *
- * The day where the gap between the highest-dose group mean and the
- * concurrent control mean is most negative. Works for both acute weight
- * loss AND growth suppression without absolute loss.
+ * Hedges' g = (mean_high − mean_control) / pooled_SD, which normalises
+ * the treatment effect by variability. The day where g is most negative
+ * is t* — the day of maximum treatment effect.
  *
  * Returns null when there are fewer than 2 shared timepoints or no
  * control/high-dose subjects.
@@ -74,20 +74,35 @@ export function findPeakEffectDay(
     }
   }
 
-  // Compute gap at each day that has both control and high-dose data
+  // Helpers
   const mean = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length;
+  const variance = (vals: number[], m: number) =>
+    vals.reduce((sum, v) => sum + (v - m) ** 2, 0) / (vals.length - 1);
+
+  // Compute Hedges' g at each day that has both control and high-dose data
   let bestDay: number | null = null;
-  let bestGap = Infinity;
+  let bestG = Infinity;
   let bestCtrlMean = 0;
 
   for (const [day, highVals] of highByDay) {
     const ctrlVals = ctrlByDay.get(day);
     if (!ctrlVals) continue;
-    const gap = mean(highVals) - mean(ctrlVals);
-    if (gap < bestGap) {
-      bestGap = gap;
+    const nC = ctrlVals.length;
+    const nH = highVals.length;
+    // Need at least 2 subjects per group for a meaningful SD
+    if (nC < 2 || nH < 2) continue;
+    const mC = mean(ctrlVals);
+    const mH = mean(highVals);
+    const pooledSD = Math.sqrt(
+      ((nC - 1) * variance(ctrlVals, mC) + (nH - 1) * variance(highVals, mH)) /
+      (nC + nH - 2),
+    );
+    if (pooledSD === 0) continue;
+    const g = (mH - mC) / pooledSD;
+    if (g < bestG) {
+      bestG = g;
       bestDay = day;
-      bestCtrlMean = mean(ctrlVals);
+      bestCtrlMean = mC;
     }
   }
 
@@ -272,7 +287,7 @@ export function DistributionPane({
 
   const infoText =
     mode === "peak"
-      ? `Each dot = subject BW minus concurrent control mean on Day ${peakDay?.day} (day of maximum high-dose vs control gap). Mean shown as tick mark.`
+      ? `Each dot = subject BW minus concurrent control mean on Day ${peakDay?.day} (day of largest Hedges' g for high-dose vs control). Mean shown as tick mark.`
       : mode === "recovery"
         ? "Individual subject values at recovery sacrifice. Recovery cohort may have fewer dose groups. Mean shown as tick mark."
         : "Individual subject values at terminal sacrifice. Mean shown as tick mark. Box/whisker overlay appears when group n\u00a0>\u00a015.";
