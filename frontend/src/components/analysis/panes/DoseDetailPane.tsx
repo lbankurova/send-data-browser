@@ -5,6 +5,7 @@ import type { FindingContext, ANCOVAResult } from "@/types/analysis";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { PAIRWISE_TEST_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS, MULTIPLICITY_LABELS } from "@/lib/build-settings-params";
+import { PaneTable } from "./PaneTable";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -47,33 +48,34 @@ function StatRowCells({ row, isContinuous, controlSd }: { row: StatRow; isContin
 
   return (
     <>
-      <td className="py-0.5 text-right font-mono">{row.n}</td>
+      <PaneTable.Td numeric>{row.n}</PaneTable.Td>
       {isContinuous ? (
         <>
-          <td className="py-0.5 text-right font-mono">
+          <PaneTable.Td numeric>
             {row.mean != null ? row.mean.toFixed(2) : "\u2014"}
-          </td>
-          <td
-            className="py-0.5 font-mono text-muted-foreground"
+          </PaneTable.Td>
+          <PaneTable.Td
+            numeric
+            className="text-muted-foreground"
             title={sdRatio != null ? `SD is ${sdRatio.toFixed(1)}\u00d7 the control SD \u2014 high within-group variance (possible responder/non-responder split)` : undefined}
           >
-            <span className="flex items-baseline justify-end">
+            <span className="inline-flex items-baseline justify-end">
               <span>{row.sd != null ? row.sd.toFixed(2) : "\u2014"}</span>
               <span className="w-3 pl-1 text-left text-[8px]">{sdOutlier ? "*" : ""}</span>
             </span>
-          </td>
+          </PaneTable.Td>
         </>
       ) : (
         <>
-          <td className="py-0.5 text-right font-mono">{row.affected ?? "\u2014"}</td>
-          <td className="py-0.5 text-right font-mono">
+          <PaneTable.Td numeric>{row.affected ?? "\u2014"}</PaneTable.Td>
+          <PaneTable.Td numeric>
             {row.incidence != null ? `${(row.incidence * 100).toFixed(0)}%` : "\u2014"}
-          </td>
+          </PaneTable.Td>
         </>
       )}
-      <td className={cn("py-0.5 text-right font-mono", getPValueColor(row.p_value_adj))}>
+      <PaneTable.Td numeric className={getPValueColor(row.p_value_adj)}>
         {formatPValue(row.p_value_adj)}
-      </td>
+      </PaneTable.Td>
     </>
   );
 }
@@ -169,31 +171,34 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
     <div className="space-y-3">
       {/* Group comparison table */}
       <div>
-        <table className="w-full text-[10px]">
+        <PaneTable>
+          {statistics.unit && (
+            <caption className="mb-1 text-right text-[9px] text-muted-foreground">{statistics.unit}</caption>
+          )}
           <thead>
             <tr className="border-b">
-              <th className="py-1 text-left font-medium">Group</th>
-              {hasSibling && <th className="py-1 text-left font-medium">Sex</th>}
-              <th className="py-1 text-right font-medium" title="Number of animals in the group.">n</th>
+              <PaneTable.Th>Group</PaneTable.Th>
+              {hasSibling && <PaneTable.Th>Sex</PaneTable.Th>}
+              <PaneTable.Th numeric title="Number of animals in the group.">n</PaneTable.Th>
               {isContinuous ? (
                 <>
-                  <th className="py-1 text-right font-medium" title="Group mean, absolute value.">Mean</th>
-                  <th className="py-1 font-medium" title="Standard deviation.">
-                    <span className="flex items-baseline justify-end"><span>SD</span><span className="w-3" /></span>
-                  </th>
+                  <PaneTable.Th numeric title="Group mean, absolute value.">Mean</PaneTable.Th>
+                  <PaneTable.Th numeric title="Standard deviation.">
+                    <span className="inline-flex items-baseline justify-end"><span>SD</span><span className="w-3" /></span>
+                  </PaneTable.Th>
                 </>
               ) : (
                 <>
-                  <th className="py-1 text-right font-medium" title="Number affected.">Aff</th>
-                  <th className="py-1 text-right font-medium" title="Incidence as percentage.">Inc%</th>
+                  <PaneTable.Th numeric title="Number affected.">Aff</PaneTable.Th>
+                  <PaneTable.Th numeric title="Incidence as percentage.">Inc%</PaneTable.Th>
                 </>
               )}
-              <th className="py-1 text-right font-medium" title="Adjusted p-value vs. control. Dunnett's (continuous) or Fisher's exact (incidence).">
+              <PaneTable.Th numeric title="Adjusted p-value vs. control. Dunnett's (continuous) or Fisher's exact (incidence).">
                 p-adj
                 <div className="text-[9px] font-normal text-muted-foreground">
                   {isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact"}
                 </div>
-              </th>
+              </PaneTable.Th>
             </tr>
           </thead>
           <tbody>
@@ -218,18 +223,18 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       >
                         {/* Group label only on first row of each dose level */}
                         {i === 0 ? (
-                          <td className="py-0.5" rowSpan={pairs.length}>
+                          <PaneTable.Td rowSpan={pairs.length}>
                             <DoseLabel
                               level={row.dose_level}
                               label={doseDisplayLabel(row)}
                               tooltip={row.label}
                               className="text-[10px]"
                             />
-                          </td>
+                          </PaneTable.Td>
                         ) : null}
-                        <td className="py-0.5 text-[9px] text-muted-foreground">
+                        <PaneTable.Td className="text-[9px] text-muted-foreground">
                           {p.sexLabel}
-                        </td>
+                        </PaneTable.Td>
                         <StatRowCells
                           row={p.data}
                           isContinuous={isContinuous}
@@ -244,20 +249,20 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
               // ── Single-sex rows (original layout) ──
               statistics.rows.map((row) => (
                 <tr key={row.dose_level} className="border-b border-border/50">
-                  <td className="py-1">
+                  <PaneTable.Td>
                     <DoseLabel
                       level={row.dose_level}
                       label={doseDisplayLabel(row)}
                       tooltip={row.label}
                       className="text-[10px]"
                     />
-                  </td>
+                  </PaneTable.Td>
                   <StatRowCells row={row} isContinuous={isContinuous} controlSd={controlSd} />
                 </tr>
               ))
             )}
           </tbody>
-        </table>
+        </PaneTable>
       </div>
 
       {/* Test name label */}

@@ -27,16 +27,16 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 6 | 5 | Incorrect behavior that should be fixed |
+| Bug | 8 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 46 | 6 | Missing capability, no spec exists |
+| Gap | 47 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **66** | **40** | |
+| **Total open** | **69** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -44,7 +44,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Bugs (5 open)
+## Bugs (7 open)
 
 ### BUG-06: Histopath findings table column resize not working
 - **Files:** `frontend/src/components/analysis/HistopathologyView.tsx` (`OverviewTab` component)
@@ -79,6 +79,22 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** Axis/reference labels below the SVG charts (e.g., "C: D29", "0.8", "−0.8") overlap when the context panel is narrow or on smaller screens. Labels are positioned with absolute percentages and don't account for collision. Fix: measure label positions after render and hide or truncate labels that would overlap their neighbors.
 - **Status:** Open
 - **Priority:** P3 (cosmetic, nice-to-have)
+- **Owner hint:** frontend-dev
+
+### BUG-12: Ctrl+click multi-select + right-click context menu for scatterplot and rail
+- **Files:** `frontend/src/components/analysis/FindingsScatterplot.tsx`, `frontend/src/components/analysis/FindingsRail.tsx`, `frontend/src/contexts/FindingSelectionContext.tsx`
+- **Issue:** Ctrl+click currently hides markers in the scatterplot. Ctrl+click should instead toggle discrete endpoint (de)selection — the universal multi-select convention — across both the scatterplot and rail cards. Hiding should move to a right-click context menu. New interaction model (applies to both scatterplot markers and rail cards): (a) **Click** — select single endpoint (replaces selection). (b) **Ctrl+click** — toggle endpoint in/out of current selection. (c) **Right-click** — context menu with "Hide endpoint" (and extensible for future actions: hide group, show hidden, navigate). Selection state is shared: Ctrl+clicking a rail card or a scatterplot marker both update the same selection set, and both surfaces reflect it.
+- **Status:** Open
+- **Priority:** P2 (interaction model — affects core selection workflow)
+- **Dependencies:** None (but coordinate with BUG-10 autoscroll for consistent rail↔table↔scatterplot selection)
+- **Owner hint:** frontend-dev
+
+### BUG-13: Dose detail info pane — regression (units, alignment, sex labels)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx` (or relevant dose detail pane component)
+- **Issue:** The dose detail info pane (e.g., Basophils endpoint) has regressed from a previous working state. Three problems: (1) **Units in header** — remove units from the pane header; instead show units as the first row in the info pane, right-aligned. (2) **Column alignment broken** — columns are misaligned (investigate which commit broke it). (3) **Sex labels** — each dose group should show one label per sex; currently not rendering correctly. A later commit broke this pane — bisect to find the regression.
+- **Status:** ~~Open~~ Fixed (pending commit)
+- **Priority:** P2 (regression — was working, now broken)
+- **Dependencies:** None
 - **Owner hint:** frontend-dev
 
 ### BUG-08: Validation registry.py get_script() logic error
@@ -444,6 +460,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### GAP-55: Dose-response view interaction gaps
 - **Issue:** Time-course "Click a line to view subject profile" is a no-op (DR-3, Medium), evidence chart data points not clickable (DR-4, Low), pairwise rows not clickable (DR-5, Low), InsightsList onEndpointClick not wired (DR-6, Low).
 - **Status:** Open
+- **Owner hint:** frontend-dev
+
+### GAP-56: Migrate remaining pane tables to PaneTable component
+- **Files:** ~23 tables across `frontend/src/components/analysis/panes/` (FindingsContextPanel, CorrelationsPane, NoaelContextPanel, HistopathologyContextPanel, NormalizationHeatmap, DoseResponseContextPanel, EndpointSyndromePane, SubjectProfilePanel, SyndromeContextPanel, ValidationContextPanel)
+- **Issue:** `PaneTable` component created for consistent context-panel table styling (auto layout, `tabular-nums`, shared `Th`/`Td` primitives). Currently only used by `DoseDetailPane`. Other pane tables should be migrated incrementally when touched.
+- **Status:** Open (low priority — migrate opportunistically)
 - **Owner hint:** frontend-dev
 
 ---
