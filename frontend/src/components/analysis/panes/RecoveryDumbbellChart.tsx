@@ -8,6 +8,7 @@
  */
 import { useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { useContainerWidth } from "@/hooks/useContainerWidth";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { DoseGroup } from "@/types/analysis";
 import {
@@ -223,7 +224,7 @@ function DumbbellPanel({
   onHoverDose,
   onClickDose,
 }: PanelProps) {
-  const chartWidth = 200;
+  const [containerRef, chartWidth] = useContainerWidth();
   const marginLeft = 2;
   const marginRight = 6;
   const plotWidth = chartWidth - marginLeft - marginRight;
@@ -250,7 +251,7 @@ function DumbbellPanel({
   const MIN_LINE_DIST = 8; // px in viewBox units — suppress marker lines too close to references
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col">
+    <div ref={containerRef} className="flex-1 min-w-0 flex flex-col">
       {/* Sex header */}
       <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
         {sex}
@@ -258,9 +259,8 @@ function DumbbellPanel({
 
       <svg
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block w-full h-auto"
-        preserveAspectRatio="xMinYMin meet"
-        style={{ overflow: "visible" }}
+        className="block w-full"
+        style={{ height: chartHeight, overflow: "visible" }}
       >
         {/* Zero reference line (control) */}
         <line

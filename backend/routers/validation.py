@@ -65,24 +65,13 @@ _engine: ValidationEngine | None = None
 
 
 def init_validation(studies: dict):
-    """Initialize validation engine and auto-run validation for all studies."""
+    """Store study references and create the validation engine (cheap).
+
+    Validation itself is deferred to first request per study.
+    """
     global _studies, _engine
     _studies = studies
     _engine = ValidationEngine()
-
-    # Auto-run validation so results are always cached on startup
-    for study_id, study in studies.items():
-        try:
-            results = _engine.validate(study, skip_core=True)
-            _engine.save_results(study_id, results)
-            logger.info(
-                "Validated %s: %d issues (%.1fs)",
-                study_id,
-                results.summary["total_issues"],
-                results.summary["elapsed_seconds"],
-            )
-        except Exception:
-            logger.exception("Auto-validation failed for %s", study_id)
 
 
 def register_validation_study(study, *, validate: bool = True, auto_fix: bool = False):
@@ -168,10 +157,21 @@ async def get_validation_results(
 
     cached = engine.load_cached_results(study_id)
     if cached is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Validation has not been run yet. POST to /validate first.",
-        )
+        # Lazy validation: run on first request instead of at startup
+        study = _get_study(study_id)
+        try:
+            results = engine.validate(study, skip_core=True)
+            engine.save_results(study_id, results)
+            logger.info(
+                "Lazy-validated %s: %d issues (%.1fs)",
+                study_id,
+                results.summary["total_issues"],
+                results.summary["elapsed_seconds"],
+            )
+            cached = results
+        except Exception as e:
+            logger.exception("Lazy validation failed for %s", study_id)
+            raise HTTPException(status_code=500, detail=f"Validation failed: {e}")
 
     rules = list(cached.rules)
 
