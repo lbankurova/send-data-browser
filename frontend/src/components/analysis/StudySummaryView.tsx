@@ -16,7 +16,8 @@ import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
+import { ORGAN_WEIGHT_METHOD_VALUES, RECOVERY_POOLING_VALUES } from "@/contexts/StudySettingsContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
@@ -767,8 +768,12 @@ function DetailsTab({
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
-  const [organWeightMethod, setOrganWeightMethod] = useSessionState(`pcc.${studyId}.organWeightMethod`, "absolute");
-  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
+  const [organWeightMethod, setOrganWeightMethod] = useSessionState(
+    `pcc.${studyId}.organWeightMethod`, "absolute", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
+  );
+  const [recoveryPooling] = useSessionState(
+    `pcc.${studyId}.recoveryPooling`, "pool", isOneOf(RECOVERY_POOLING_VALUES),
+  );
   const { effectSize: effectSizeMethod } = useStatMethods(studyId);
 
   // Fetch TF domain records for tumor type summary (tiny payload — typically <50 records)

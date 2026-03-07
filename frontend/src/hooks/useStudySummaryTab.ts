@@ -1,7 +1,8 @@
 import { useEffect, useCallback } from "react";
-import { useSessionState } from "./useSessionState";
+import { useSessionState, isOneOf } from "./useSessionState";
 
 type StudySummaryTab = "details" | "insights";
+const isStudySummaryTab = isOneOf(["details", "insights"] as const);
 
 const TAB_CHANGE_EVENT = "pcc:studySummaryTabChange";
 const SESSION_KEY = "pcc.studySummary.tab";
@@ -15,6 +16,7 @@ export function useStudySummaryTab(initialTab?: StudySummaryTab) {
   const [tab, setTabRaw] = useSessionState<StudySummaryTab>(
     SESSION_KEY,
     initialTab ?? "details",
+    isStudySummaryTab,
   );
 
   // Dispatch event when tab changes so the other component picks it up

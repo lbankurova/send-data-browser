@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { useParams, useLocation } from "react-router-dom";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
@@ -2076,7 +2076,10 @@ export function HistopathologyView() {
 
   // Read selected specimen from StudySelectionContext
   const selectedSpecimen = studySelection.specimen ?? null;
-  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>("pcc.histopath.tab", "overview");
+  const [activeTab, setActiveTab] = useSessionState<EvidenceTab>(
+    "pcc.histopath.tab", "overview",
+    isOneOf(["overview", "hypotheses", "compare"] as const),
+  );
   const [selection, setSelection] = useState<HistopathSelection | null>(null);
   const [comparisonSubjects, setComparisonSubjects] = useState<Set<string>>(new Set());
   const { filters } = useGlobalFilters();

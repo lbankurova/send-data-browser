@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { useParams, useLocation } from "react-router-dom";
 import { Loader2, TrendingUp, GitBranch, ScatterChart, Link2, BoxSelect, Pin, Plus, Search, Scale, Edit2, HelpCircle } from "lucide-react";
 import {
@@ -272,7 +272,10 @@ export function DoseResponseView() {
   // State — selectedEndpoint is local for evidence panel display,
   // but also synced to/from StudySelectionContext
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useSessionState<"evidence" | "hypotheses" | "metrics">("pcc.doseResponse.tab", "evidence");
+  const [activeTab, setActiveTab] = useSessionState(
+    "pcc.doseResponse.tab", "evidence" as const,
+    isOneOf(["evidence", "hypotheses", "metrics"] as const),
+  );
   const [selection, setSelection] = useState<DoseResponseSelection | null>(null);
   const { expandGen: sectionExpandGen, collapseGen: sectionCollapseGen, expandAll: sectionExpandAll, collapseAll: sectionCollapseAll } = useCollapseAll();
 
