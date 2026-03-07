@@ -23,7 +23,7 @@ import type { MergedPoint, VolcanoPoint } from "@/components/analysis/charts/dos
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import { useTimecourseGroup, useTimecourseSubject } from "@/hooks/useTimecourse";
-import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -1131,13 +1131,11 @@ function TimecourseSection({ studyId, selectedEndpoint, selectedSummary, tcSecti
   const isContinuous = selectedSummary.data_type === "continuous";
   const isCL = domain === "CL";
 
-  // Detect recovery arms (uses cached React Query)
-  const { data: meta } = useStudyMetadata(studyId ?? "");
-  const hasRecovery = meta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
-  // For in-life domains, include recovery data only when pooling is "pool"
+  // Canonical recovery-pooling decision (shared with TimeCoursePane, DistributionPane)
+  const { includeRecovery: poolRecovery } = useRecoveryPooling();
+  // Only pool recovery for in-life continuous domains — CL/MI/MA have no recovery timecourse
   const isInLifeDomain = ["BW", "LB", "FW", "BG", "EG", "VS"].includes(domain);
-  const [recoveryPooling] = useSessionState(`pcc.${studyId}.recoveryPooling`, "pool");
-  const includeRecovery = hasRecovery && isInLifeDomain && recoveryPooling === "pool";
+  const includeRecovery = isInLifeDomain && poolRecovery;
 
   // Continuous temporal data
   const { data: tcData, isLoading: tcLoading, error: tcError } = useTimecourseGroup(

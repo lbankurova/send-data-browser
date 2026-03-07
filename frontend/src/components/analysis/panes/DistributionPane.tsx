@@ -3,9 +3,10 @@
  * vertical strip/dot plot (F left, M right) for continuous endpoints.
  *
  * Modes:
- * - Terminal (default): last value per subject in the main arm
- * - Peak (BW only): all subjects' values on the day when the
- *   highest-dose group reaches its body weight nadir
+ * - Terminal (default): value at terminal_sacrifice_day (includes
+ *   recovery subjects when pooled)
+ * - Peak (BW only): delta from concurrent control on the day of
+ *   maximum treatment effect (argmin of high-dose − control gap)
  * - Recovery: last value per subject in the recovery arm (when available)
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -39,46 +40,68 @@ type DistMode = "terminal" | "peak" | "recovery";
 /**
  * Find the study day with the peak treatment effect on BW.
  *
- * Metric: BW nadir of the highest-dose group. The peak toxicity effect
- * on body weight is the day when the treated group reaches its lowest
- * absolute weight — the point where weight loss stops and recovery begins.
+ * Metric: argmin_t [ BWmean_high(t) − BWmean_control(t) ]
  *
- * Returns null if the high-dose group never shows a clear nadir (i.e.,
- * the minimum is at the first or last measurement day).
+ * The day where the gap between the highest-dose group mean and the
+ * concurrent control mean is most negative. Works for both acute weight
+ * loss AND growth suppression without absolute loss.
+ *
+ * Returns null when there are fewer than 2 shared timepoints or no
+ * control/high-dose subjects.
  */
-function findPeakEffectDay(subjects: TimecourseSubject[]): { day: number } | null {
+export function findPeakEffectDay(
+  subjects: TimecourseSubject[],
+): { day: number; controlMean: number } | null {
   const main = subjects.filter((s) => !s.is_recovery);
   if (main.length === 0) return null;
 
   const maxDoseLevel = Math.max(...main.map((s) => s.dose_level));
   if (maxDoseLevel === 0) return null;
 
-  // Collect high-dose group mean at each day
-  const dayMeans: { day: number; trtMean: number }[] = [];
-  const dayMap = new Map<number, number[]>();
+  // Collect per-day values for control (dose_level 0) and high-dose
+  const ctrlByDay = new Map<number, number[]>();
+  const highByDay = new Map<number, number[]>();
+
   for (const s of main) {
-    if (s.dose_level !== maxDoseLevel) continue;
+    const target =
+      s.dose_level === 0 ? ctrlByDay :
+      s.dose_level === maxDoseLevel ? highByDay : null;
+    if (!target) continue;
     for (const v of s.values) {
-      let arr = dayMap.get(v.day);
-      if (!arr) { arr = []; dayMap.set(v.day, arr); }
+      let arr = target.get(v.day);
+      if (!arr) { arr = []; target.set(v.day, arr); }
       arr.push(v.value);
     }
   }
 
-  for (const [day, vals] of dayMap) {
-    dayMeans.push({ day, trtMean: vals.reduce((a, b) => a + b, 0) / vals.length });
+  // Compute gap at each day that has both control and high-dose data
+  const mean = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length;
+  let bestDay: number | null = null;
+  let bestGap = Infinity;
+  let bestCtrlMean = 0;
+
+  for (const [day, highVals] of highByDay) {
+    const ctrlVals = ctrlByDay.get(day);
+    if (!ctrlVals) continue;
+    const gap = mean(highVals) - mean(ctrlVals);
+    if (gap < bestGap) {
+      bestGap = gap;
+      bestDay = day;
+      bestCtrlMean = mean(ctrlVals);
+    }
   }
-  dayMeans.sort((a, b) => a.day - b.day);
 
-  if (dayMeans.length < 3) return null;
+  if (bestDay == null) return null;
 
-  // Find the day with the minimum high-dose mean (skip first and last)
-  let best: { day: number; trtMean: number } | null = null;
-  for (let i = 1; i < dayMeans.length - 1; i++) {
-    if (!best || dayMeans[i].trtMean < best.trtMean) best = dayMeans[i];
+  // Need at least 2 shared timepoints — with only 1, there's no
+  // meaningful "peak" to distinguish from Terminal mode
+  let sharedCount = 0;
+  for (const day of highByDay.keys()) {
+    if (ctrlByDay.has(day)) sharedCount++;
   }
+  if (sharedCount < 2) return null;
 
-  return best ? { day: best.day } : null;
+  return { day: bestDay, controlMean: bestCtrlMean };
 }
 
 // ── Main component ────────────────────────────────────────
@@ -183,9 +206,9 @@ export function DistributionPane({
 
       let value: number | null = null;
       if (mode === "peak" && peakDay) {
-        // Value at the peak effect day
+        // Delta from concurrent control mean at peak effect day
         const match = s.values.find((v) => v.day === peakDay.day);
-        value = match?.value ?? null;
+        value = match != null ? match.value - peakDay.controlMean : null;
       } else if (mode === "terminal" && terminalDay != null) {
         // Value at terminal sacrifice day — matches server group API N logic:
         // subjects without data at this day (deaths, missing measurements)
@@ -212,7 +235,7 @@ export function DistributionPane({
     return {
       subjects: subjs,
       sexes: [...sexSet].sort(),
-      unit: subjectData.unit,
+      unit: mode === "peak" ? `Δ ${subjectData.unit}` : subjectData.unit,
     };
   }, [subjectData, mode, peakDay, terminalDay, shouldIncludeSubject]);
 
@@ -242,14 +265,14 @@ export function DistributionPane({
 
   const subtitle =
     mode === "peak" && peakDay
-      ? `Values at peak effect (Day ${peakDay.day})`
+      ? `Delta from control at peak effect (Day ${peakDay.day})`
       : mode === "recovery"
         ? "Individual values at recovery sacrifice"
         : "Individual values at terminal sacrifice";
 
   const infoText =
     mode === "peak"
-      ? `All subjects' values at the high-dose group's body weight nadir (Day ${peakDay?.day}). Mean shown as tick mark.`
+      ? `Each dot = subject BW minus concurrent control mean on Day ${peakDay?.day} (day of maximum high-dose vs control gap). Mean shown as tick mark.`
       : mode === "recovery"
         ? "Individual subject values at recovery sacrifice. Recovery cohort may have fewer dose groups. Mean shown as tick mark."
         : "Individual subject values at terminal sacrifice. Mean shown as tick mark. Box/whisker overlay appears when group n\u00a0>\u00a015.";
