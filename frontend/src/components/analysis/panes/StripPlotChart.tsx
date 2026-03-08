@@ -11,7 +11,6 @@
  */
 import { useMemo, useState, useRef, useCallback } from "react";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
-import { Checkbox } from "@/components/ui/checkbox";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -110,9 +109,7 @@ function shortId(usubjid: string): string {
 // ── Component ────────────────────────────────────────────
 
 export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal" }: StripPlotChartProps) {
-  const [hoveredGroup, setHoveredGroup] = useState<{ sex: string; doseLevel: number } | null>(null);
   const [hoveredDot, setHoveredDot] = useState<SubjectValue | null>(null);
-  const [selectedDoses, setSelectedDoses] = useState<Set<number>>(new Set());
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -169,25 +166,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
   const svgHeight = PLOT_TOP + PLOT_HEIGHT + PLOT_BOTTOM;
   const isSingleSex = sexes.length === 1;
 
-  // Group-level hover
-  const handleGroupEnter = useCallback((sex: string, doseLevel: number, stats: ReturnType<typeof computeStats>, e: React.MouseEvent) => {
-    setHoveredGroup({ sex, doseLevel });
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (rect) {
-      setTooltip({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top - 10,
-        text: `n=${stats.n}  mean=${stats.mean.toFixed(2)}  SD=${stats.sd.toFixed(2)}`,
-      });
-    }
-  }, []);
-
-  const handleGroupLeave = useCallback(() => {
-    setHoveredGroup(null);
-    setTooltip(null);
-  }, []);
-
-  // Dot-level hover (dose selected)
+  // Dot-level hover
   const handleDotEnter = useCallback((sv: SubjectValue, e: React.MouseEvent) => {
     setHoveredDot(sv);
     const rect = containerRef.current?.getBoundingClientRect();
@@ -205,58 +184,13 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     setTooltip(null);
   }, []);
 
-  // Dose label click → single select; Ctrl/Cmd+click → multi-select toggle
-  const handleDoseClick = useCallback((doseLevel: number, e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      setSelectedDoses(prev => {
-        const next = new Set(prev);
-        if (next.has(doseLevel)) next.delete(doseLevel);
-        else next.add(doseLevel);
-        return next;
-      });
-    } else {
-      setSelectedDoses(prev =>
-        prev.size === 1 && prev.has(doseLevel) ? new Set() : new Set([doseLevel]),
-      );
-    }
-    setHoveredGroup(null);
-    setHoveredDot(null);
-    setTooltip(null);
-  }, []);
-
-  // Select all / none toggle
-  const handleSelectAll = useCallback(() => {
-    setSelectedDoses(prev =>
-      prev.size === doseGroups.length
-        ? new Set()
-        : new Set(doseGroups.map(dg => dg.doseLevel)),
-    );
-  }, [doseGroups]);
-
   // Dot click → subject profile
   const handleDotClick = useCallback((usubjid: string) => {
     onSubjectClick?.(usubjid);
   }, [onSubjectClick]);
 
-  const allSelected = selectedDoses.size === doseGroups.length;
-  const someSelected = selectedDoses.size > 0;
-
   return (
     <div ref={containerRef} className="relative">
-      {/* "All" checkbox */}
-      <div
-        className="flex items-center gap-1 mb-1 cursor-pointer select-none"
-        title="Enable clicking individual dots to open subject profile"
-        onClick={handleSelectAll}
-      >
-        <Checkbox
-          checked={allSelected ? true : someSelected ? "indeterminate" : false}
-          className="size-3 rounded-[2px]"
-          tabIndex={-1}
-        />
-        <span className="text-[9px] text-muted-foreground">Explore subjects</span>
-      </div>
-
       {/* Sex headers */}
       {!isSingleSex && (
         <div className="flex" style={{ paddingLeft: LEFT_MARGIN }}>
@@ -278,28 +212,21 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               </div>
             )}
             <SexPanel
-              sex={sex}
               showYAxis={idx === 0}
               grouped={grouped[sex] ?? {}}
               doseGroups={doseGroups}
               vMin={vMin}
               vMax={vMax}
               yTicks={yTicks}
-              unit={unit}
               svgHeight={svgHeight}
-              hoveredGroup={hoveredGroup}
               hoveredDot={hoveredDot}
-              selectedDoses={selectedDoses}
-              onGroupEnter={handleGroupEnter}
-              onGroupLeave={handleGroupLeave}
               onDotEnter={handleDotEnter}
               onDotLeave={handleDotLeave}
               onDotClick={handleDotClick}
-              onDoseClick={handleDoseClick}
             />
             {/* Per-sex dose legend — aligned with SVG columns */}
             <div
-              className="mt-0.5 text-[9px] leading-[14px]"
+              className="mt-1 text-[9px] leading-[14px]"
               style={{ paddingLeft: idx === 0 ? LEFT_MARGIN : 6, paddingRight: PLOT_RIGHT }}
             >
               {doseGroups
@@ -361,43 +288,29 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
 // ── Per-sex SVG panel ─────────────────────────────────────
 
 function SexPanel({
-  sex,
   showYAxis,
   grouped,
   doseGroups,
   vMin,
   vMax,
   yTicks,
-  unit: _unit,
   svgHeight,
-  hoveredGroup,
   hoveredDot,
-  selectedDoses,
-  onGroupEnter,
-  onGroupLeave,
   onDotEnter,
   onDotLeave,
   onDotClick,
-  onDoseClick,
 }: {
-  sex: string;
   showYAxis: boolean;
   grouped: Record<number, SubjectValue[]>;
   doseGroups: { doseLevel: number; doseLabel: string }[];
   vMin: number;
   vMax: number;
   yTicks: number[];
-  unit: string;
   svgHeight: number;
-  hoveredGroup: { sex: string; doseLevel: number } | null;
   hoveredDot: SubjectValue | null;
-  selectedDoses: Set<number>;
-  onGroupEnter: (sex: string, doseLevel: number, stats: ReturnType<typeof computeStats>, e: React.MouseEvent) => void;
-  onGroupLeave: () => void;
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
-  onDoseClick: (doseLevel: number, e: React.MouseEvent) => void;
 }) {
   const [width, setWidth] = useState(200);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -464,12 +377,6 @@ function SexPanel({
         const nums = values.map((v) => v.value);
         const color = getDoseGroupColor(dg.doseLevel);
 
-        // Highlight logic
-        const isSelected = selectedDoses.has(dg.doseLevel);
-        const isGroupHovered = hoveredGroup?.sex === sex && hoveredGroup?.doseLevel === dg.doseLevel;
-        const isActive = isSelected || isGroupHovered;
-        const isDimmed = !isActive && (selectedDoses.size > 0 || hoveredGroup != null);
-
         if (nums.length === 0) {
           return (
             <g key={dg.doseLevel}>
@@ -488,56 +395,35 @@ function SexPanel({
         const showBox = nums.length > BOX_THRESHOLD;
 
         return (
-          <g
-            key={dg.doseLevel}
-            onMouseEnter={(e) => onGroupEnter(sex, dg.doseLevel, stats, e)}
-            onMouseLeave={onGroupLeave}
-            style={{ cursor: "default" }}
-          >
-            {/* Invisible hit area */}
-            <rect
-              x={cx - colWidth / 2} y={PLOT_TOP}
-              width={colWidth} height={PLOT_HEIGHT}
-              fill="transparent"
-            />
-
+          <g key={dg.doseLevel}>
             {/* Box/whisker (vertical, conditional on n > 15) */}
             {showBox && (
               <>
-                {/* Whisker line (vertical) */}
                 <line
                   x1={cx} y1={yScale(stats.whiskerHi)}
                   x2={cx} y2={yScale(stats.whiskerLo)}
-                  stroke={color} strokeWidth={1}
-                  opacity={isDimmed ? 0.2 : 0.5}
+                  stroke={color} strokeWidth={1} opacity={0.5}
                 />
-                {/* Whisker caps (horizontal) */}
                 <line
                   x1={cx - 3} y1={yScale(stats.whiskerHi)}
                   x2={cx + 3} y2={yScale(stats.whiskerHi)}
-                  stroke={color} strokeWidth={1}
-                  opacity={isDimmed ? 0.2 : 0.5}
+                  stroke={color} strokeWidth={1} opacity={0.5}
                 />
                 <line
                   x1={cx - 3} y1={yScale(stats.whiskerLo)}
                   x2={cx + 3} y2={yScale(stats.whiskerLo)}
-                  stroke={color} strokeWidth={1}
-                  opacity={isDimmed ? 0.2 : 0.5}
+                  stroke={color} strokeWidth={1} opacity={0.5}
                 />
-                {/* Box (Q1 to Q3) */}
                 <rect
                   x={cx - 5} y={yScale(stats.q3)}
                   width={10} height={yScale(stats.q1) - yScale(stats.q3)}
-                  fill={color} fillOpacity={isDimmed ? 0.03 : 0.08}
-                  stroke={color} strokeWidth={1}
-                  opacity={isDimmed ? 0.2 : 0.5}
+                  fill={color} fillOpacity={0.08}
+                  stroke={color} strokeWidth={1} opacity={0.5}
                 />
-                {/* Median line (horizontal) */}
                 <line
                   x1={cx - 5} y1={yScale(stats.median)}
                   x2={cx + 5} y2={yScale(stats.median)}
-                  stroke={color} strokeWidth={1.5}
-                  opacity={isDimmed ? 0.2 : 0.7}
+                  stroke={color} strokeWidth={1.5} opacity={0.7}
                 />
               </>
             )}
@@ -545,24 +431,20 @@ function SexPanel({
             {/* Individual dots (jittered horizontally) */}
             {values.map((sv, i) => {
               const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
-              const dotInteractive = isSelected;
               return (
                 <circle
                   key={sv.usubjid}
                   cx={cx + jitterX(i, values.length, colWidth)}
                   cy={yScale(sv.value)}
                   r={isDotHovered ? DOT_RADIUS_HOVER : DOT_RADIUS}
-                  fill={isActive ? color : "var(--muted-foreground)"}
-                  opacity={isDimmed ? 0.15 : isDotHovered ? 1 : isActive ? 0.9 : 0.45}
+                  fill={color}
+                  opacity={isDotHovered ? 1 : 0.7}
                   stroke={isDotHovered ? "var(--foreground)" : "none"}
                   strokeWidth={isDotHovered ? 1 : 0}
-                  style={{
-                    transition: "fill 0.15s, opacity 0.15s, r 0.1s",
-                    cursor: dotInteractive ? "pointer" : "default",
-                  }}
-                  onMouseEnter={dotInteractive ? (e) => { e.stopPropagation(); onDotEnter(sv, e); } : undefined}
-                  onMouseLeave={dotInteractive ? (e) => { e.stopPropagation(); onDotLeave(); } : undefined}
-                  onClick={dotInteractive ? (e) => { e.stopPropagation(); onDotClick(sv.usubjid); } : undefined}
+                  style={{ transition: "opacity 0.15s, r 0.1s", cursor: "pointer" }}
+                  onMouseEnter={(e) => { e.stopPropagation(); onDotEnter(sv, e); }}
+                  onMouseLeave={(e) => { e.stopPropagation(); onDotLeave(); }}
+                  onClick={(e) => { e.stopPropagation(); onDotClick(sv.usubjid); }}
                 />
               );
             })}
@@ -571,10 +453,7 @@ function SexPanel({
             <line
               x1={cx - MEAN_TICK_HALF} y1={yScale(stats.mean)}
               x2={cx + MEAN_TICK_HALF} y2={yScale(stats.mean)}
-              stroke={isActive ? color : "var(--muted-foreground)"}
-              strokeWidth={2}
-              opacity={isDimmed ? 0.2 : isActive ? 1 : 0.6}
-              style={{ transition: "stroke 0.15s, opacity 0.15s" }}
+              stroke={color} strokeWidth={2} opacity={0.8}
             />
           </g>
         );
@@ -583,32 +462,17 @@ function SexPanel({
       {/* Dose labels at bottom */}
       {doseGroups.map((dg, colIdx) => {
         const cx = colCenter(colIdx);
-        const color = getDoseGroupColor(dg.doseLevel);
         const label = formatDoseShortLabel(dg.doseLabel);
-        const isSelected = selectedDoses.has(dg.doseLevel);
 
         return (
-          <g
+          <text
             key={dg.doseLevel}
-            onClick={(e) => onDoseClick(dg.doseLevel, e)}
-            style={{ cursor: "pointer" }}
+            x={cx} y={plotBottom + 10}
+            textAnchor="middle" dominantBaseline="central"
+            className="text-[8px]" fill="var(--muted-foreground)"
           >
-            {/* Colored underline */}
-            <line
-              x1={cx - colWidth * 0.3} y1={plotBottom + 2}
-              x2={cx + colWidth * 0.3} y2={plotBottom + 2}
-              stroke={color} strokeWidth={2} strokeLinecap="round"
-            />
-            {/* Label text */}
-            <text
-              x={cx} y={plotBottom + 13}
-              textAnchor="middle" dominantBaseline="central"
-              className="text-[8px]" fill="var(--muted-foreground)"
-              fontWeight={isSelected ? 600 : 400}
-            >
-              {label}
-            </text>
-          </g>
+            {label}
+          </text>
         );
       })}
 
