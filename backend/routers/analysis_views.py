@@ -10,11 +10,18 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from services.study_discovery import StudyInfo
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
 from services.analysis.analysis_cache import read_cache, write_cache, invalidate_study
-from services.analysis.override_reader import get_last_dosing_day_override, apply_pattern_overrides
+from services.analysis.override_reader import (
+    get_last_dosing_day_override,
+    apply_pattern_overrides,
+    VALID_PATTERN_OVERRIDES,
+    _resolve_override,
+)
+from services.analysis.classification import determine_treatment_related, assess_finding
 
 log = logging.getLogger(__name__)
 
@@ -224,3 +231,78 @@ def get_analysis_view(
     # Return the requested view (convert slug to underscore key)
     view_key = view_name.replace("-", "_")
     return _apply_overrides(views[view_key], study_id, view_name)
+
+
+# ---------------------------------------------------------------------------
+# Pattern override preview (FF-01)
+# ---------------------------------------------------------------------------
+
+class PatternOverridePreviewRequest(BaseModel):
+    finding_id: str
+    proposed_pattern: str
+
+
+@router.post("/studies/{study_id}/analyses/pattern-override-preview")
+async def pattern_override_preview(study_id: str, body: PatternOverridePreviewRequest):
+    """Simulate a pattern override without saving — returns downstream changes.
+
+    Read-only: loads the finding, applies the proposed pattern on a copy,
+    re-derives treatment_related and finding_class, and returns what would change.
+    """
+    if body.proposed_pattern not in VALID_PATTERN_OVERRIDES:
+        raise HTTPException(status_code=400,
+                            detail=f"Invalid pattern: {body.proposed_pattern}")
+
+    # Load findings from disk
+    data = _load_from_disk(study_id, "unified_findings.json")
+    if data is None:
+        raise HTTPException(status_code=404, detail="Findings not generated")
+
+    findings = data.get("findings", [])
+    original = next((f for f in findings if f.get("id") == body.finding_id), None)
+    if original is None:
+        raise HTTPException(status_code=404,
+                            detail=f"Finding not found: {body.finding_id}")
+
+    # Simulate on a shallow copy
+    sim = {**original}
+    direction = sim.get("direction", "down") or "down"
+    sim["dose_response_pattern"] = _resolve_override(body.proposed_pattern, direction)
+    sim["treatment_related"] = determine_treatment_related(sim)
+    sim["finding_class"] = assess_finding(sim)
+
+    # Re-derive confidence (D2 reads pattern, D5 reads sibling finding_class)
+    from services.analysis.confidence import compute_confidence
+    opposite = {"M": "F", "F": "M"}
+    opp_sex = opposite.get(sim.get("sex", ""), "")
+    sibling = next(
+        (f for f in findings
+         if f.get("endpoint_label") == sim.get("endpoint_label")
+         and f.get("day") == sim.get("day")
+         and f.get("sex") == opp_sex),
+        None,
+    )
+    sim["_confidence"] = compute_confidence(sim, sibling)
+
+    original_confidence = original.get("_confidence", {})
+    return {
+        "finding_id": body.finding_id,
+        "original_pattern": original.get("dose_response_pattern"),
+        "proposed_pattern": body.proposed_pattern,
+        "resolved_pattern": sim["dose_response_pattern"],
+        "treatment_related": {
+            "original": original.get("treatment_related"),
+            "proposed": sim["treatment_related"],
+            "changed": original.get("treatment_related") != sim["treatment_related"],
+        },
+        "finding_class": {
+            "original": original.get("finding_class"),
+            "proposed": sim["finding_class"],
+            "changed": original.get("finding_class") != sim["finding_class"],
+        },
+        "confidence": {
+            "original": original_confidence.get("grade"),
+            "proposed": sim["_confidence"]["grade"],
+            "changed": original_confidence.get("grade") != sim["_confidence"]["grade"],
+        },
+    }
