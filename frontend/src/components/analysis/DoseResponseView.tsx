@@ -77,6 +77,7 @@ const PATTERN_LABELS: Record<string, string> = {
   monotonic_decrease: "Monotonic decrease",
   threshold: "Threshold effect",
   non_monotonic: "Non-monotonic",
+  u_shaped: "U-shaped",
   flat: "Flat (no effect)",
   insufficient_data: "Insufficient data",
 };
@@ -86,6 +87,7 @@ const PATTERN_BG: Record<string, string> = {
   monotonic_decrease: "bg-gray-100 text-gray-600",
   threshold: "bg-gray-100 text-gray-600",
   non_monotonic: "bg-gray-100 text-gray-600",
+  u_shaped: "bg-gray-100 text-gray-600",
   flat: "bg-gray-100 text-gray-500",
   insufficient_data: "bg-gray-100 text-gray-400",
 };

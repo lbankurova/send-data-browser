@@ -34,6 +34,7 @@ const PATTERN_SHORT: Record<string, string> = {
   monotonic_decrease: "Mon↓",
   threshold: "Thresh",
   non_monotonic: "Non-mon",
+  u_shaped: "U-shape",
   flat: "Flat",
   insufficient_data: "Insuf",
 };

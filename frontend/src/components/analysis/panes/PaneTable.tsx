@@ -2,11 +2,11 @@ import type { ReactNode, TableHTMLAttributes, TdHTMLAttributes, ThHTMLAttributes
 import { cn } from "@/lib/utils";
 
 /**
- * Shared table primitives for context-panel panes (~300 px wide).
+ * Shared table primitives for context-panel panes.
  *
- * Defaults: auto column layout, tabular-nums for numeric alignment,
- * text-[10px], full width.  No content-hugging width hacks —
- * those belong in wide main-area tables only.
+ * Uses table-layout:fixed with caller-supplied column widths.
+ * One label column (absorber) takes remaining width after sized columns.
+ * Numeric columns get explicit pixel widths computed from data content.
  */
 export function PaneTable({
   className,
@@ -14,34 +14,39 @@ export function PaneTable({
   ...rest
 }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <table className={cn("w-full text-[10px] tabular-nums", className)} {...rest}>
+    <table className={cn("w-full table-fixed text-[10px] tabular-nums", className)} {...rest}>
       {children}
     </table>
   );
 }
 
-/** Header cell — left-aligned label or right-aligned numeric header. */
+/** Header cell.  `absorber` marks the column that takes remaining width.
+ *  Sized columns receive explicit `style={{ width }}` from the caller. */
 function Th({
   className,
   children,
   numeric,
+  absorber,
+  style,
   ...rest
-}: ThHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean; children?: ReactNode }) {
+}: ThHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean; absorber?: boolean; children?: ReactNode }) {
   return (
     <th
+      {...rest}
       className={cn(
-        "py-1 font-medium whitespace-nowrap",
-        numeric ? "text-right" : "text-left",
+        "py-1 font-medium whitespace-nowrap overflow-hidden text-ellipsis",
+        numeric && "text-right pl-2",
+        (absorber || (!numeric && !absorber)) && "text-left",
         className,
       )}
-      {...rest}
+      style={style}
     >
       {children}
     </th>
   );
 }
 
-/** Data cell — numeric cells are right-aligned, monospaced, non-wrapping. */
+/** Data cell.  All cells clip overflow (table-layout:fixed safety). */
 function Td({
   className,
   children,
@@ -50,12 +55,12 @@ function Td({
 }: TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean; children?: ReactNode }) {
   return (
     <td
+      {...rest}
       className={cn(
-        "py-0.5",
-        numeric && "text-right font-mono whitespace-nowrap",
+        "py-0.5 overflow-hidden text-ellipsis whitespace-nowrap",
+        numeric && "text-right font-mono pl-2",
         className,
       )}
-      {...rest}
     >
       {children}
     </td>
