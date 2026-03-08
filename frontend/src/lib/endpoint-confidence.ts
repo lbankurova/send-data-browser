@@ -587,8 +587,8 @@ export function integrateConfidence(
       statistical,
       nonMonoFlag.consequences.confidencePenalty,
     );
-  } else if (ep.pattern === "non_monotonic") {
-    // Backend already classified as non-monotonic — JT trend test is less
+  } else if (ep.pattern === "non_monotonic" || ep.pattern === "u_shaped") {
+    // Backend already classified as non-monotonic/u-shaped — JT trend test is less
     // informative for non-monotonic data, cap at moderate
     doseResponse = "moderate";
   } else {

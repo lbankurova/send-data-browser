@@ -2431,7 +2431,7 @@ function computeBiologicalGradient(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 
   let base = 1;
   if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") base = 4;
   else if (pattern === "threshold") base = 3;
-  else if (pattern === "non_monotonic") base = 2;
+  else if (pattern === "non_monotonic" || pattern === "u_shaped") base = 2;
 
   if (ep.min_trend_p != null && ep.min_trend_p < 0.01) base = Math.min(base + 1, 5);
 

@@ -421,7 +421,7 @@ function buildClassificationContext(
   let doseConsistency: RecoveryContext["doseConsistency"] = "Weak";
   if (pattern.includes("monotonic")) doseConsistency = "Strong";
   else if (pattern.includes("threshold") || pattern.includes("sublinear")) doseConsistency = "Moderate";
-  else if (pattern.includes("non_monotonic") || pattern.includes("non-monotonic")) doseConsistency = "NonMonotonic";
+  else if (pattern.includes("non_monotonic") || pattern.includes("non-monotonic") || pattern.includes("u_shaped")) doseConsistency = "NonMonotonic";
 
   return {
     isAdverse: finding.severity === "adverse",

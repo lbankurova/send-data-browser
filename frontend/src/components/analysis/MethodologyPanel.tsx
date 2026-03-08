@@ -153,7 +153,8 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
           <div className="font-mono text-[9px] space-y-0.5 mt-1">
             <div>&bull; <span className="text-foreground">monotonic_increase</span> / <span className="text-foreground">monotonic_decrease</span>: Consistent directional change across dose groups</div>
             <div>&bull; <span className="text-foreground">threshold</span>: Response appears at specific dose level and above</div>
-            <div>&bull; <span className="text-foreground">non_monotonic</span>: Inconsistent direction (e.g., U-shaped or inverted-U)</div>
+            <div>&bull; <span className="text-foreground">non_monotonic</span>: Inconsistent direction across dose groups</div>
+            <div>&bull; <span className="text-foreground">u_shaped</span>: Downturn at high dose or inverted-U response</div>
             <div>&bull; <span className="text-foreground">flat</span>: No meaningful change</div>
             <div>&bull; <span className="text-foreground">insufficient_data</span>: Too few groups or observations</div>
           </div>

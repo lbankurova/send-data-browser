@@ -273,6 +273,9 @@ def process_findings(
       2. Merge separate/main-only stats (Pass 3) if provided
       3. Enrich all findings (classification, fold change, labels, etc.)
 
+    Pattern overrides are applied at the endpoint level (analysis_views.py)
+    so they work for both static file serving and parameterized pipeline paths.
+
     Callers are responsible for collecting base_findings (Pass 1) and building
     scheduled_map / separate_map via ``build_findings_map()``. This function
     handles only the shared enrichment — caller-specific enrichment (e.g.
@@ -293,6 +296,8 @@ def process_findings(
     if separate_map is not None:
         base_findings = attach_separate_stats(base_findings, separate_map)
     enriched = enrich_findings(base_findings)
+    # Pattern overrides applied at endpoint level (analysis_views.py) so they
+    # work for both static file serving and parameterized pipeline results
     # Cross-domain corroboration (requires all enriched findings present)
     enriched = compute_corroboration(enriched)
     # Cross-organ chain detection (requires all enriched findings present)
