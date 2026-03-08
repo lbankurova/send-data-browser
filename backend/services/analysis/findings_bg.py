@@ -1,4 +1,10 @@
-"""BG (Body Weight Gain) domain findings: per (BGTESTCD, BGDY, SEX) → group stats + pairwise tests."""
+"""BG (Body Weight Gain) domain findings: per (BGTESTCD, BGDY, BGENDY, SEX) → group stats + pairwise tests.
+
+BG records are interval-based: each row covers a (BGDY → BGENDY) period.
+A single subject can have multiple records at the same BGDY (e.g., day 1→29
+and day 1→92 for cumulative gain).  Grouping must include BGENDY to avoid
+inflating N by counting multiple intervals per subject as separate observations.
+"""
 
 import numpy as np
 import pandas as pd
@@ -37,14 +43,30 @@ def compute_bg_findings(
     else:
         return []
 
-    # Day column — BG is longitudinal
+    # Day columns — BG is interval-based (BGDY → BGENDY)
     if "BGDY" in bg_df.columns:
         bg_df["BGDY"] = pd.to_numeric(bg_df["BGDY"], errors="coerce")
     else:
         bg_df["BGDY"] = 1
 
-    # Filter recovery animals' records to treatment period only
-    bg_df = filter_treatment_period_records(bg_df, subjects, "BGDY", last_dosing_day)
+    has_endy = "BGENDY" in bg_df.columns
+    if has_endy:
+        bg_df["BGENDY"] = pd.to_numeric(bg_df["BGENDY"], errors="coerce")
+
+    # Filter recovery animals' records to treatment period only.
+    # Use BGENDY (interval end) when available — a cumulative record ending
+    # after last_dosing_day spans into the recovery period.
+    filter_col = "BGENDY" if has_endy else "BGDY"
+    bg_df = filter_treatment_period_records(bg_df, subjects, filter_col, last_dosing_day)
+
+    # Drop cumulative intervals: when a subject has multiple records ending
+    # on the same day (e.g., 1→92 cumulative AND 85→92 period), keep only
+    # the adjacent-period record (latest BGDY for each BGENDY).
+    if has_endy:
+        bg_df = bg_df.sort_values("BGDY").drop_duplicates(
+            subset=["USUBJID", "BGTESTCD", "BGENDY"],
+            keep="last",
+        )
 
     # Test code / test name
     has_testcd = "BGTESTCD" in bg_df.columns
@@ -56,14 +78,26 @@ def compute_bg_findings(
         "BGORRESU" if "BGORRESU" in bg_df.columns else None
     )
 
+    # Group by interval (BGDY, BGENDY) to avoid inflating N when a subject
+    # has multiple intervals starting on the same day (e.g., day 1→29 and day 1→92).
     findings = []
-    grouped = bg_df.groupby(["BGTESTCD", "BGDY", "SEX"])
+    group_cols = ["BGTESTCD", "BGDY", "SEX"]
+    if has_endy:
+        group_cols = ["BGTESTCD", "BGDY", "BGENDY", "SEX"]
+    grouped = bg_df.groupby(group_cols)
 
-    for (testcd, day, sex), grp in grouped:
+    for keys, grp in grouped:
+        if has_endy:
+            testcd, start_day, end_day, sex = keys
+        else:
+            testcd, start_day, sex = keys
+            end_day = start_day
+
         if grp["value"].isna().all():
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
+        # Use end day as the finding timepoint (meaningful for interval data)
+        day_val = int(end_day) if not np.isnan(end_day) else None
         unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else "g"
         if unit == "nan":
             unit = "g"
