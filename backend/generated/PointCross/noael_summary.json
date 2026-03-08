@@ -24,7 +24,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00055,
+          "p_value": 0.00057,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -32,7 +32,7 @@
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00157,
+          "p_value": 0.0015,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -40,7 +40,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832,
+          "p_value": 0.03831,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -89,7 +89,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00715,
+          "p_value": 0.00709,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -139,7 +139,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00055,
+          "p_value": 0.00057,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -147,7 +147,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00715,
+          "p_value": 0.00709,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -155,7 +155,7 @@
           "finding": "Leukocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00157,
+          "p_value": 0.0015,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -163,7 +163,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832,
+          "p_value": 0.03831,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
