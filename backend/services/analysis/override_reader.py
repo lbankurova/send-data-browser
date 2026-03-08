@@ -116,4 +116,8 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
         applied += 1
     if applied:
         log.info("Applied %d pattern override(s) for %s", applied, study_id)
+        # Re-derive confidence for ALL findings — D2 reads dose_response_pattern,
+        # D5 reads cross-sex sibling's finding_class. Both may have changed.
+        from services.analysis.confidence import compute_all_confidence
+        compute_all_confidence(findings)
     return findings
