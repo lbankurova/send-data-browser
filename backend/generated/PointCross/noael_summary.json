@@ -24,7 +24,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00057,
+          "p_value": 0.00058,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -40,7 +40,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832,
+          "p_value": 0.03841,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -89,7 +89,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00719,
+          "p_value": 0.00708,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -139,7 +139,7 @@
           "finding": "Neutrophils",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00057,
+          "p_value": 0.00058,
           "finding_class": "tr_adverse",
           "corroboration_status": "uncorroborated"
         },
@@ -147,7 +147,7 @@
           "finding": "Reticulocytes",
           "specimen": null,
           "domain": "LB",
-          "p_value": 0.00719,
+          "p_value": 0.00708,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },
@@ -163,7 +163,7 @@
           "finding": "TESTIS (WEIGHT)",
           "specimen": "TESTIS",
           "domain": "OM",
-          "p_value": 0.03832,
+          "p_value": 0.03841,
           "finding_class": "tr_adverse",
           "corroboration_status": "corroborated"
         },

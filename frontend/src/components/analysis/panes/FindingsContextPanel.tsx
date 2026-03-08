@@ -23,6 +23,7 @@ import { TimeCoursePane } from "./TimeCoursePane";
 import { DistributionPane } from "./DistributionPane";
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
+import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -713,6 +714,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
 
 function SexComparisonPane({
   finding,
+  siblingFinding,
   analytics,
   primaryStatistics,
   siblingStatistics,
@@ -720,6 +722,7 @@ function SexComparisonPane({
   siblingRecoveryLabel,
 }: {
   finding: UnifiedFinding;
+  siblingFinding?: UnifiedFinding;
   analytics: ReturnType<typeof useFindingsAnalyticsLocal>["analytics"];
   primaryStatistics?: FindingContext["statistics"];
   siblingStatistics?: FindingContext["statistics"];
@@ -752,6 +755,13 @@ function SexComparisonPane({
   const m = bySex.get(sexes[0])!;
   const f = bySex.get(sexes[1])!;
 
+  // Resolve per-sex findings for pattern override dropdowns
+  const primarySex = finding.sex;
+  const findingForSex: Record<string, UnifiedFinding | undefined> = {
+    [primarySex]: finding,
+    ...(siblingFinding ? { [siblingFinding.sex]: siblingFinding } : {}),
+  };
+
   const rows: Array<{ label: string; values: [string, string] }> = [
     { label: "Direction", values: [dirLabel(m), dirLabel(f)] },
     {
@@ -768,7 +778,6 @@ function SexComparisonPane({
         f.minPValue != null ? formatPValue(f.minPValue) : "\u2014",
       ],
     },
-    { label: "Pattern", values: [patLabel(m), patLabel(f)] },
     { label: "Severity", values: [m.worstSeverity, f.worstSeverity] },
   ];
   if (noaelBySex) {
@@ -780,7 +789,6 @@ function SexComparisonPane({
   // BW confound row: check if primary or sibling has ANCOVA
   const primaryHasAncova = finding.ancova != null;
   if (primaryHasAncova) {
-    const primarySex = finding.sex;
     rows.push({
       label: "BW confound",
       values: [
@@ -802,7 +810,6 @@ function SexComparisonPane({
     }
     return "n.s.";
   };
-  const primarySex = finding.sex;
   const primaryOnset = onsetLabel(primaryStatistics);
   const sibOnset = onsetLabel(siblingStatistics);
   rows.push({
@@ -841,12 +848,34 @@ function SexComparisonPane({
           </tr>
         </thead>
         <tbody>
-          {rows.map(r => (
-            <tr key={r.label} className="border-b border-border/30">
-              <td className="py-0.5 text-muted-foreground">{r.label}</td>
-              <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
-              <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
-            </tr>
+          {rows.map((r, i) => (
+            <Fragment key={r.label}>
+              <tr className="border-b border-border/30">
+                <td className="py-0.5 text-muted-foreground">{r.label}</td>
+                <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
+                <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
+              </tr>
+              {/* Insert Pattern row after Trend p (index 2) */}
+              {i === 2 && (
+                <tr className="border-b border-border/30">
+                  <td className="py-0.5 text-muted-foreground">Pattern</td>
+                  {sexes.map(s => {
+                    const sf = findingForSex[s];
+                    return (
+                      <td key={s} className="py-0.5 text-right">
+                        {sf ? (
+                          <div className="flex justify-end">
+                            <PatternOverrideDropdown finding={sf} />
+                          </div>
+                        ) : (
+                          <span className="font-mono">{patLabel(bySex.get(s)!)}</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
@@ -1228,6 +1257,7 @@ export function FindingsContextPanel() {
           onSeeDecomposition={() => {
             evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }}
+          hasSibling={hasSibling}
         />
         {hasRecovery && !notEvaluated && (
           <RecoveryVerdictLine
@@ -1240,6 +1270,7 @@ export function FindingsContextPanel() {
         {context.sibling && (
           <SexComparisonPane
             finding={selectedFinding}
+            siblingFinding={findingsData?.findings.find(f => f.id === siblingContext!.finding_id)}
             analytics={analytics}
             primaryStatistics={activeStatistics}
             siblingStatistics={siblingContext?.statistics}

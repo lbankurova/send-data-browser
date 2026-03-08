@@ -1,7 +1,7 @@
 """GRADE-inspired per-finding confidence scoring (Track 4A).
 
 Each finding receives a confidence grade (HIGH / MODERATE / LOW) based on
-5 evidence dimensions.  The baseline is MODERATE (sum = 0).
+6 evidence dimensions.  The baseline is MODERATE (sum = 0).
 
 | Dim | Upgrade (+1)                      | Neutral (0)  | Downgrade (-1)              | Skip              |
 |-----|-----------------------------------|--------------|-----------------------------|---------------------|
@@ -11,6 +11,7 @@ Each finding receives a confidence grade (HIGH / MODERATE / LOW) based on
 | D4  | Outside HCD range                 | —            | Within HCD range            | No HCD data        |
 | D5  | Both sexes concordant + TR        | Same dir,    | Discordant                  | No sibling         |
 |     |                                   | opp not TR   |                             |                    |
+| D6  | —                                 | Outside zone | Max step 0.75-1.0 SD        | Not Tier 2         |
 
 Grade: sum ≥ 2 → HIGH, 0–1 → MODERATE, ≤ -1 → LOW
 """
@@ -18,6 +19,9 @@ Grade: sum ≥ 2 → HIGH, 0–1 → MODERATE, ≤ -1 → LOW
 from __future__ import annotations
 
 import logging
+import math
+
+from services.analysis.classification import _equivalence_tier
 
 log = logging.getLogger(__name__)
 
@@ -167,6 +171,62 @@ def _score_d5_cross_sex(f: dict, sibling: dict | None) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# D6: Tier 2 equivocal zone (0.75-1.0 SD)
+# ---------------------------------------------------------------------------
+
+def _score_d6_tier2_equivocal(f: dict) -> dict:
+    """Downgrade when a Tier 2 endpoint's max step falls in the equivocal zone.
+
+    Tier 2 endpoints use a 0.5 SD equivalence band.  Steps in the 0.75-1.0 SD
+    range are genuine but marginal — too large to call flat, too small to call
+    with confidence.  Flagging this as a confidence downgrade surfaces
+    uncertainty without changing the pattern classification itself.
+    """
+    test_code = f.get("test_code", "")
+    specimen = f.get("specimen")
+    domain = f.get("domain", "")
+    tier = _equivalence_tier(test_code, specimen, domain)
+
+    if tier != 2:
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     f"Tier {tier} — not applicable")
+
+    # Compute max step size in pooled-SD units from group_stats
+    group_stats = f.get("group_stats", [])
+    data_type = f.get("data_type", "continuous")
+    if data_type != "continuous" or len(group_stats) < 2:
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     "Not continuous or insufficient groups — skipped")
+
+    means = [g.get("mean") for g in group_stats]
+    if any(m is None for m in means):
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     "Missing means — skipped")
+
+    sds = [g["sd"] for g in group_stats if g.get("sd") is not None and g["sd"] > 0]
+    if not sds:
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     "No SD data — skipped")
+    pooled_sd = math.sqrt(sum(s ** 2 for s in sds) / len(sds))
+    if pooled_sd <= 0:
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     "Pooled SD is zero — skipped")
+
+    # Max consecutive step in SD units
+    max_step_sd = max(
+        abs(means[i + 1] - means[i]) / pooled_sd
+        for i in range(len(means) - 1)
+    )
+
+    if 0.75 <= max_step_sd < 1.0:
+        return _dim("D6", "Tier 2 equivocal zone", -1,
+                     f"Max step {max_step_sd:.2f} SD in equivocal zone (0.75-1.0 SD)")
+
+    return _dim("D6", "Tier 2 equivocal zone", 0,
+                 f"Max step {max_step_sd:.2f} SD — outside equivocal zone")
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -178,6 +238,7 @@ def compute_confidence(finding: dict, sibling: dict | None) -> dict:
         _score_d3_concordance(finding),
         _score_d4_hcd(finding),
         _score_d5_cross_sex(finding, sibling),
+        _score_d6_tier2_equivocal(finding),
     ]
     return _result(dims)
 
