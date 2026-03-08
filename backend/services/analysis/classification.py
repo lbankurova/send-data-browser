@@ -461,7 +461,7 @@ def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
         score += 2.0
     elif pattern.startswith("threshold"):
         score += 1.5
-    elif pattern == "non_monotonic":
+    elif pattern in ("non_monotonic", "u_shaped"):
         score += 0.5
 
     # A-2: Concordance — corroboration from other domains

@@ -98,6 +98,10 @@ def generate(study_id: str):
     out_dir = OUTPUT_DIR / study_id
     static_dir = out_dir / "static"
 
+    # Clear settings cache so stale non-default-settings results don't persist
+    from services.analysis.analysis_cache import invalidate_study
+    invalidate_study(study_id)
+
     def _tick(label: str):
         timings[label] = time.perf_counter()
 

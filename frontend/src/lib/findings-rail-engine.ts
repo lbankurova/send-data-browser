@@ -48,6 +48,7 @@ const PATTERN_WEIGHTS: Record<string, number> = {
   threshold_decrease: 1.5,
   threshold: 1.5,  // backward compat
   non_monotonic: 0.5,
+  u_shaped: 0.5,
   flat: 0,
 };
 

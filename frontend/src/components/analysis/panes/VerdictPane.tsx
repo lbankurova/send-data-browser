@@ -170,6 +170,9 @@ function formatPattern(pattern: string, direction: string | null): string {
   if (pattern === "non_monotonic") {
     return dirWord ? `Non-monotonic ${dirWord}` : "Non-monotonic";
   }
+  if (pattern === "u_shaped") {
+    return "U-shaped";
+  }
   if (pattern === "flat") {
     return "No dose-dependent pattern";
   }
@@ -181,6 +184,7 @@ function patternTypeOnly(pattern: string): string {
   if (pattern.startsWith("threshold")) return "threshold";
   if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") return "monotonic";
   if (pattern === "non_monotonic") return "non-monotonic";
+  if (pattern === "u_shaped") return "U-shaped";
   if (pattern === "flat") return "no pattern";
   return getPatternLabel(pattern);
 }

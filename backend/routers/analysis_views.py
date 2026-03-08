@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from services.study_discovery import StudyInfo
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
 from services.analysis.analysis_cache import read_cache, write_cache, invalidate_study
-from services.analysis.override_reader import get_last_dosing_day_override
+from services.analysis.override_reader import get_last_dosing_day_override, apply_pattern_overrides
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +88,18 @@ def _load_from_disk(study_id: str, file_name: str):
         return None
     with open(file_path, "r") as f:
         return json.load(f)
+
+
+def _apply_overrides(data, study_id: str, view_name: str):
+    """Apply user annotation overrides to view data before serving.
+
+    Currently handles pattern overrides for unified-findings.
+    """
+    if view_name == "unified-findings" and isinstance(data, dict):
+        findings = data.get("findings")
+        if findings and isinstance(findings, list):
+            data["findings"] = apply_pattern_overrides(findings, study_id)
+    return data
 
 
 # Regenerate endpoint — runs the full generation pipeline synchronously.
@@ -182,13 +194,13 @@ def get_analysis_view(
                 status_code=404,
                 detail=f"Analysis data not generated for {study_id}/{view_name}. Run the generator first.",
             )
-        return data
+        return _apply_overrides(data, study_id, view_name)
 
     # Non-default settings -> cache -> pipeline
     cache_key = settings.settings_hash()
     cached = read_cache(study_id, cache_key, view_name)
     if cached is not None:
-        return cached
+        return _apply_overrides(cached, study_id, view_name)
 
     # Cache miss -> compute all views for this settings combination
     log.info("Cache miss for %s/%s (hash=%s), computing...", study_id, view_name, cache_key)
@@ -211,4 +223,4 @@ def get_analysis_view(
 
     # Return the requested view (convert slug to underscore key)
     view_key = view_name.replace("-", "_")
-    return views[view_key]
+    return _apply_overrides(views[view_key], study_id, view_name)

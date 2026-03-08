@@ -21,6 +21,7 @@ export function useRegenerate(studyId: string | undefined) {
     onSuccess: () => {
       // Invalidate all generated-data query keys so views refresh
       const keys = [
+        "findings",
         "study-signal-summary",
         "target-organ-summary",
         "dose-response-metrics",
@@ -44,7 +45,6 @@ export function useRegenerate(studyId: string | undefined) {
         "study-metadata-enriched",
         "histopath-subjects",
         "ae-summary",
-        "dose-response-metrics",
       ];
       for (const key of keys) {
         queryClient.invalidateQueries({ queryKey: [key, studyId] });

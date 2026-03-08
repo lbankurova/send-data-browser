@@ -132,6 +132,13 @@ export interface UnifiedFinding {
   };
   /** Track 4A: GRADE-style evidence confidence scoring. */
   _confidence?: EvidenceConfidence;
+  /** Pattern override annotation — present when user has overridden algorithmic pattern. */
+  _pattern_override?: {
+    pattern: string;
+    original_pattern: string;
+    original_direction: string | null;
+    timestamp: string;
+  };
 }
 
 export interface ConfidenceDimension {

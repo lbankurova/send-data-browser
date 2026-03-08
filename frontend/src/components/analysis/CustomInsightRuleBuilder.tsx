@@ -23,7 +23,7 @@ const CONDITION_PRESETS = [
   { value: "custom", label: "Custom condition", humanTemplate: "", templateHint: "" },
 ] as const;
 
-const PATTERN_OPTIONS = ["monotonic_increase", "monotonic_decrease", "threshold", "non_monotonic"];
+const PATTERN_OPTIONS = ["monotonic_increase", "monotonic_decrease", "threshold", "non_monotonic", "u_shaped"];
 const DOMAIN_OPTIONS = ["LB", "BW", "MI", "MA", "CL", "OM", "FW", "DS"];
 
 // ── Props ─────────────────────────────────────────────────────────────

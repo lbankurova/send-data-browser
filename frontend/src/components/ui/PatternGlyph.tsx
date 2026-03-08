@@ -36,6 +36,9 @@ function pathForPattern(pattern: string): string {
     case "non_monotonic":
       // Zigzag
       return "M2,8 L8,3 L14,9 L22,4";
+    case "u_shaped":
+      // Inverted parabola (down then up, or up then down)
+      return "M2,3 Q12,12 22,3";
     case "flat":
     default:
       // Horizontal line
