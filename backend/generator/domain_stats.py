@@ -290,27 +290,56 @@ def _compute_fw_findings(
         fw_df["FWDY"] = 1
     fw_df["FWDY"] = pd.to_numeric(fw_df["FWDY"], errors="coerce")
 
-    # Filter recovery animals' records to treatment period only
-    fw_df = filter_treatment_period_records(fw_df, subjects, "FWDY", last_dosing_day)
+    has_endy = "FWENDY" in fw_df.columns
+    if has_endy:
+        fw_df["FWENDY"] = pd.to_numeric(fw_df["FWENDY"], errors="coerce")
+
+    # Filter recovery animals' records to treatment period only.
+    # Use FWENDY (interval end) when available — a cumulative record ending
+    # after last_dosing_day spans into the recovery period.
+    filter_col = "FWENDY" if has_endy else "FWDY"
+    fw_df = filter_treatment_period_records(fw_df, subjects, filter_col, last_dosing_day)
+
+    # Drop cumulative intervals (same logic as findings_bg.py)
+    if has_endy:
+        dedup_cols = ["USUBJID", "FWENDY"]
+        if "FWTESTCD" in fw_df.columns:
+            dedup_cols.insert(1, "FWTESTCD")
+        fw_df = fw_df.sort_values("FWDY").drop_duplicates(
+            subset=dedup_cols, keep="last",
+        )
 
     unit_col = "FWSTRESU" if "FWSTRESU" in fw_df.columns else None
     test_col = "FWTESTCD" if "FWTESTCD" in fw_df.columns else None
 
+    # Group by interval (FWDY, FWENDY) to avoid inflating N when a subject
+    # has multiple intervals starting on the same day.
     findings = []
-    group_by = [test_col, "FWDY", "SEX"] if test_col else ["FWDY", "SEX"]
+    group_by = ["FWDY", "SEX"]
+    if test_col:
+        group_by = [test_col] + group_by
+    if has_endy:
+        group_by.insert(-1, "FWENDY")  # insert before SEX
     grouped = fw_df.groupby(group_by)
 
     for keys, grp in grouped:
+        keys = list(keys)
         if test_col:
-            testcd, day, sex = keys
+            testcd = keys.pop(0)
         else:
-            day, sex = keys
             testcd = "FW"
+        start_day = keys.pop(0)
+        if has_endy:
+            end_day = keys.pop(0)
+        else:
+            end_day = start_day
+        sex = keys.pop(0)
 
         if grp["value"].isna().all():
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
+        # Use end day as the finding timepoint (meaningful for interval data)
+        day_val = int(end_day) if not np.isnan(end_day) else None
         unit = str(grp[unit_col].iloc[0]) if unit_col else "g"
         if unit == "nan":
             unit = "g"

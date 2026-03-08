@@ -1701,6 +1701,7 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 - `filter_treatment_period_records(records, subjects, day_col, last_dosing_day)` keeps all main study records plus recovery records where `day_col <= last_dosing_day`.
 - If `last_dosing_day` is None (can't determine treatment period), recovery records are excluded (safe fallback).
 - `pooled_n_male/female/total` fields in dose_groups output reflect the pooled counts.
+- **Interval domains (BG, FW):** These domains store interval data with start/end days (`BGDY→BGENDY`, `FWDY→FWENDY`). A single subject can have multiple records at the same start day covering different intervals (e.g., day 1→29 period gain and day 1→92 cumulative gain). Treatment-period filtering uses the end day column, and cumulative intervals are dropped (keeping only the adjacent-period record per subject per end day). The finding's `day` field is set to the interval end day.
 
 **Why this method:** Recovery animals receive identical treatment during the dosing period. Excluding them from treatment-period statistics wastes valid data and reduces N per group. Pooling is standard practice in regulatory toxicology for in-life endpoints. Terminal domains cannot be pooled because sacrifice timing differs.
 
