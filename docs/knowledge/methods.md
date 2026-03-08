@@ -1362,9 +1362,10 @@ Suppressions (METH-12): R01 → suppress R07; R04 → suppress R01, R03.
 **Implementation:** `classifyRecovery(assessment, context)` — frontend `recovery-classification.ts:140`. Consumes `RecoveryAssessment` from `recovery-assessment.ts` (CLASS-10).
 
 **Parameters:**
-- **7 classification types:** `EXPECTED_REVERSIBILITY`, `INCOMPLETE_RECOVERY`, `ASSESSMENT_LIMITED_BY_DURATION`, `DELAYED_ONSET_POSSIBLE`, `INCIDENTAL_RECOVERY_SIGNAL`, `PATTERN_ANOMALY`, `UNCLASSIFIABLE`.
-- **Priority order (most concerning first):** PATTERN_ANOMALY (0) > DELAYED_ONSET (1) > INCOMPLETE_RECOVERY (2) > ASSESSMENT_LIMITED (3) > EXPECTED_REVERSIBILITY (4) > INCIDENTAL (5) > UNCLASSIFIABLE (6).
-- **Guard verdicts short-circuit:** If the mechanical verdict is `not_examined`, `insufficient_n`, `low_power`, `anomaly`, or `no_data`, classification returns `UNCLASSIFIABLE` with a specific rationale.
+- **8 classification types:** `EXPECTED_REVERSIBILITY`, `INCOMPLETE_RECOVERY`, `ASSESSMENT_LIMITED_BY_DURATION`, `DELAYED_ONSET`, `DELAYED_ONSET_POSSIBLE`, `INCIDENTAL_RECOVERY_SIGNAL`, `POSSIBLE_SPONTANEOUS`, `UNCLASSIFIABLE`.
+- **Priority order (most concerning first):** DELAYED_ONSET (0) > DELAYED_ONSET_POSSIBLE (1) > INCOMPLETE_RECOVERY (2) > ASSESSMENT_LIMITED (3) > EXPECTED_REVERSIBILITY (4) > POSSIBLE_SPONTANEOUS / INCIDENTAL (5) > UNCLASSIFIABLE (6).
+- **Anomaly discrimination (CLASS-20b):** When verdict is `anomaly` (0% main → >0% recovery), routes to `discriminateAnomaly()` in `anomaly-discrimination.ts` instead of short-circuiting to UNCLASSIFIABLE. The 5-step decision tree: (1) precursor in main arm → DELAYED_ONSET, (2) dose-response in recovery → DELAYED_ONSET[_POSSIBLE], (3) within HCD → POSSIBLE_SPONTANEOUS, (3b) same finding treatment-related at higher dose → DELAYED_ONSET_POSSIBLE, (4) single animal + low propensity → POSSIBLE_SPONTANEOUS, (5) fallback → UNCLASSIFIABLE.
+- **Guard verdicts short-circuit:** If the mechanical verdict is `not_examined`, `insufficient_n`, `low_power`, or `no_data`, classification returns `UNCLASSIFIABLE` with a specific rationale.
 - **Context inputs:** `isAdverse`, `doseConsistency` (Weak/Moderate/Strong/NonMonotonic), `doseResponsePValue`, `clinicalClass` (Sentinel/HighConcern/etc.), `signalClass`, `findingNature` (from CLASS-19). Future nullable inputs: `historicalControlIncidence`, `crossDomainCorroboration`, `recoveryPeriodDays`.
 - **Confidence model:** Starts at Low/Moderate/High based on classification certainty. Boosted one tier by strong dose consistency, available clinical class, or finding nature match. Degraded when inputs are missing.
 

@@ -200,6 +200,33 @@ export function discriminateAnomaly(
     }
   }
 
+  // ── Step 3b: Same finding treatment-related at higher doses ──
+  // If this exact finding is present in the main arm at higher doses, the anomaly
+  // at lower doses likely reflects sub-threshold delayed expression — not spontaneous.
+  // Biological rationale: dose-dependent adaptive/degenerative changes can manifest
+  // below the histological detection threshold during dosing but appear in recovery
+  // as the biological process completes (e.g., enzyme induction → hypertrophy).
+  const sameFindingAtHigherDose = checkSameFindingAtHigherDose(assessment);
+  if (sameFindingAtHigherDose) {
+    return {
+      subtype: "delayed_onset_possible",
+      confidence: "Low",
+      rationale: `Same finding is treatment-related at higher dose(s) in main arm. Recovery-only occurrence at lower dose is consistent with sub-threshold delayed expression rather than spontaneous incidence.`,
+      qualifiers: [
+        `Finding type (${nature}) — sub-threshold effects may manifest after continued low-level exposure or during recovery.`,
+      ],
+      recommendedAction: "Consider whether the dose-response continuum extends to this dose level. Pathologist assessment recommended.",
+      evidence: {
+        doseResponseInRecovery: doseResponseInRecovery,
+        precursorInMain: null,
+        withinHistoricalControl: context.historicalControlIncidence != null ? false : null,
+        singleAnimalOnly: totalRecoveryAffected <= 1,
+        findingDelayedOnsetPropensity: propensity,
+        recoverySeverity,
+      },
+    };
+  }
+
   // ── Step 4: Single-animal check ──
   if (totalRecoveryAffected <= 1 && (propensity === "low" || propensity === "none")) {
     return {
@@ -275,4 +302,24 @@ function checkDoseResponseInRecovery(anomalyDoses: RecoveryDoseAssessment[]): bo
   const lowestIncidence = sorted[0].recovery.incidence;
   const highestIncidence = sorted[sorted.length - 1].recovery.incidence;
   return highestIncidence > lowestIncidence;
+}
+
+/**
+ * Check if the SAME finding is present in the main arm at any higher dose level.
+ * When a finding is treatment-related at high dose but shows 0% main → >0% recovery
+ * at a lower dose, the recovery occurrence likely reflects sub-threshold delayed
+ * expression rather than spontaneous incidence.
+ *
+ * @method CLASS-20b — Same-finding dose extrapolation
+ */
+function checkSameFindingAtHigherDose(assessment: RecoveryAssessment): boolean {
+  const anomalyDoses = assessment.assessments.filter((d) => d.verdict === "anomaly");
+  const nonAnomalyDoses = assessment.assessments.filter(
+    (d) => d.verdict !== "anomaly" && d.main.affected > 0,
+  );
+  if (nonAnomalyDoses.length === 0) return false;
+
+  // Is there any non-anomaly dose level HIGHER than any anomaly dose level?
+  const maxAnomalyDose = Math.max(...anomalyDoses.map((d) => d.doseLevel));
+  return nonAnomalyDoses.some((d) => d.doseLevel > maxAnomalyDose);
 }

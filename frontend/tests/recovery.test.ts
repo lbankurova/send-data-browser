@@ -1011,6 +1011,40 @@ describe("anomaly discrimination", () => {
     expect(result.confidence).toBe("Low");
   });
 
+  test("same finding at higher dose in main → delayed_onset_possible (not spontaneous)", () => {
+    // Liver hypertrophy: 0/10 main at low dose, 1/5 recovery at low dose,
+    // but 5/9 main at high dose (clearly treatment-related at high dose).
+    // The low-dose recovery occurrence should NOT be classified as spontaneous.
+    const a = assessment("Hypertrophy", [
+      // Low dose: anomaly (0 main → 1 recovery)
+      anomalyDose({ recoveryAffected: 1, doseLevel: 1 }),
+      // High dose: treatment-related (5/9 main, 2/5 recovery → reversing)
+      doseAssessment({
+        main: { incidence: 0.56, affected: 5, n: 9, examined: 9, avgSeverity: 1.5 },
+        recovery: { incidence: 0.40, affected: 2, n: 5, examined: 5, avgSeverity: 1.0 },
+        verdict: "reversing",
+        doseLevel: 3,
+      }),
+    ], "anomaly");
+    const nature = classifyFindingNature("Hypertrophy");
+    expect(nature.nature).toBe("adaptive");
+
+    const result = discriminateAnomaly(a, [a], context({ findingNature: nature }));
+    expect(result.subtype).toBe("delayed_onset_possible");
+    expect(result.rationale).toContain("higher dose");
+  });
+
+  test("same finding NOT at higher dose → still possible_spontaneous for single animal", () => {
+    // Only one dose level, anomaly, single animal, adaptive → spontaneous
+    const a = assessment("Hypertrophy", [
+      anomalyDose({ recoveryAffected: 1, doseLevel: 1 }),
+    ], "anomaly");
+    const nature = classifyFindingNature("Hypertrophy");
+
+    const result = discriminateAnomaly(a, [a], context({ findingNature: nature }));
+    expect(result.subtype).toBe("possible_spontaneous");
+  });
+
   test("fallback → anomaly_unresolved", () => {
     // Multiple animals affected, no precursors, no dose-response, no HCD
     const a = assessment("Some finding", [anomalyDose({ recoveryAffected: 3 })], "anomaly");
