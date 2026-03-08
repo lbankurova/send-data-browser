@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getPValueColor, formatPValue, getSexColor, getDoseGroupColor } from "@/lib/severity-colors";
 import type { FindingContext, ANCOVAResult } from "@/types/analysis";
@@ -167,6 +167,31 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
   const controlSd = statistics.rows.find(r => r.dose_level === 0)?.sd ?? null;
   const siblingControlSd = siblingStatistics?.rows.find(r => r.dose_level === 0)?.sd ?? null;
 
+  // Column widths — measured from data so table-layout:fixed sizes correctly
+  const colWidths = useMemo(() => {
+    const CH = 7;           // avg char width at 10px mono/tabular-nums
+    const PAD = 12;         // pl-2 (8px) + breathing room
+    const SD_SPACER = 12;   // w-3 asterisk annotation space
+
+    const allRows = hasSibling && siblingStatistics
+      ? [...statistics.rows, ...siblingStatistics.rows]
+      : statistics.rows;
+
+    const n = Math.max(1, ...allRows.map(r => String(r.n).length)) * CH + PAD;
+    const pAdj = Math.max(5, ...allRows.map(r => formatPValue(r.p_value_adj).length)) * CH + PAD;
+    const sex = 3 * CH + PAD; // "Sex" header = 3 chars
+
+    if (isContinuous) {
+      const mean = Math.max(4, ...allRows.map(r => r.mean != null ? r.mean.toFixed(2).length : 1)) * CH + PAD;
+      const sd = Math.max(2, ...allRows.map(r => r.sd != null ? r.sd.toFixed(2).length : 1)) * CH + PAD + SD_SPACER;
+      return { n, col1: mean, col2: sd, pAdj, sex };
+    } else {
+      const aff = Math.max(3, ...allRows.map(r => String(r.affected ?? "\u2014").length)) * CH + PAD;
+      const inc = Math.max(4, ...allRows.map(r => r.incidence != null ? `${(r.incidence * 100).toFixed(0)}%`.length : 1)) * CH + PAD;
+      return { n, col1: aff, col2: inc, pAdj, sex };
+    }
+  }, [statistics, siblingStatistics, isContinuous, hasSibling]);
+
   return (
     <div className="space-y-3">
       {/* Group comparison table */}
@@ -177,27 +202,24 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
           )}
           <thead>
             <tr className="border-b">
-              <PaneTable.Th>Group</PaneTable.Th>
-              {hasSibling && <PaneTable.Th>Sex</PaneTable.Th>}
-              <PaneTable.Th numeric title="Number of animals in the group.">n</PaneTable.Th>
+              <PaneTable.Th absorber>Group</PaneTable.Th>
+              {hasSibling && <PaneTable.Th style={{ width: colWidths.sex }}>Sex</PaneTable.Th>}
+              <PaneTable.Th numeric style={{ width: colWidths.n }} title="Number of animals in the group.">n</PaneTable.Th>
               {isContinuous ? (
                 <>
-                  <PaneTable.Th numeric title="Group mean, absolute value.">Mean</PaneTable.Th>
-                  <PaneTable.Th numeric title="Standard deviation.">
+                  <PaneTable.Th numeric style={{ width: colWidths.col1 }} title="Group mean, absolute value.">Mean</PaneTable.Th>
+                  <PaneTable.Th numeric style={{ width: colWidths.col2 }} title="Standard deviation.">
                     <span className="inline-flex items-baseline justify-end"><span>SD</span><span className="w-3" /></span>
                   </PaneTable.Th>
                 </>
               ) : (
                 <>
-                  <PaneTable.Th numeric title="Number affected.">Aff</PaneTable.Th>
-                  <PaneTable.Th numeric title="Incidence as percentage.">Inc%</PaneTable.Th>
+                  <PaneTable.Th numeric style={{ width: colWidths.col1 }} title="Number affected.">Aff</PaneTable.Th>
+                  <PaneTable.Th numeric style={{ width: colWidths.col2 }} title="Incidence as percentage.">Inc%</PaneTable.Th>
                 </>
               )}
-              <PaneTable.Th numeric title="Adjusted p-value vs. control. Dunnett's (continuous) or Fisher's exact (incidence).">
+              <PaneTable.Th numeric style={{ width: colWidths.pAdj }} title="Adjusted p-value vs. control.">
                 p-adj
-                <div className="text-[9px] font-normal text-muted-foreground">
-                  {isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact"}
-                </div>
               </PaneTable.Th>
             </tr>
           </thead>
