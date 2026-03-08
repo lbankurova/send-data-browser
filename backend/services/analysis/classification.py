@@ -93,20 +93,110 @@ _MIN_POOLED_SD = 0.001
 
 
 def _pooled_sd(group_stats: list[dict]) -> float:
-    """Compute pooled SD across treated groups (exclude control at index 0).
+    """Compute pooled SD across all dose groups (RMS of per-group SDs).
 
-    Uses per-group SDs when available; falls back to SD of group means.
+    Including control stabilises the estimate when treatment compresses
+    or inflates variability at high doses.  Matches EFSA pooled-all approach.
     """
-    treated = group_stats[1:]  # skip control
-    sds = [g["sd"] for g in treated if g.get("sd") is not None and g["sd"] > 0]
+    sds = [g["sd"] for g in group_stats if g.get("sd") is not None and g["sd"] > 0]
     if sds:
         return math.sqrt(sum(s ** 2 for s in sds) / len(sds))
-    # Fallback: SD of treated group means
-    means = [g["mean"] for g in treated if g.get("mean") is not None]
+    # Fallback: SD of all group means
+    means = [g["mean"] for g in group_stats if g.get("mean") is not None]
     if len(means) >= 2:
         avg = sum(means) / len(means)
         return math.sqrt(sum((m - avg) ** 2 for m in means) / (len(means) - 1))
     return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Tiered CV%-based equivalence fractions
+# ---------------------------------------------------------------------------
+# Three-tier system from deep-research brief 9, based on biological variability:
+#   Tier 1 (CV < 10%):  0.5 SD — tight band, high sensitivity
+#   Tier 2 (CV 10-20%): 0.5 SD — same fraction, equivocal flagging deferred
+#   Tier 3 (CV > 20%):  0.75 SD — wider band absorbs intrinsic noise
+
+_TIER_FRACTIONS = {1: 0.5, 2: 0.5, 3: 0.75}
+
+# Tier 3: high-variability LB test codes (CV > 20%)
+_HIGH_CV_TESTS = {
+    "WBC", "EOS", "BASO",                          # hematology
+    "TRIG", "BILI", "TBILI", "GGT",                # clinical chemistry
+    "VOLUME",                                       # urinalysis
+    "KETONES",                                      # urinalysis (ordinal, but continuous path)
+    "LYM", "MONO", "NEUT",                         # differential WBC (high CV)
+    "RETI",                                         # reticulocytes (high CV)
+}
+
+# Tier 2: moderate-variability LB test codes (CV 10-20%)
+_MODERATE_CV_TESTS = {
+    "ALT", "AST", "GLUC", "PLAT",                  # clinical chemistry / hematology
+    "CREAT", "CHOL", "ALP",                        # clinical chemistry
+    "FIBRINO", "APTT", "PT",                       # coagulation
+}
+
+# Tier 1: confirmed low-variability test codes (CV < 10%)
+_KNOWN_TIER1_TESTS = {
+    "BW", "BWSTRESN", "BWGAIN",                    # body weight
+    "RBC", "HGB", "HCT", "MCV", "MCH", "MCHC",   # RBC parameters
+    "TP", "PROT", "ALB",                           # total protein / albumin
+    "RDW",                                          # red cell distribution width
+    "ALBGLOB", "GLOBUL",                           # protein fractions
+    "CA", "SODIUM", "K", "CL", "PHOS",            # electrolytes (tightly regulated)
+    "UREAN",                                        # BUN
+}
+
+# Tier 3: high-variability OM specimens (CV > 20%)
+_HIGH_CV_SPECIMENS = {
+    "SPLEEN", "THYMUS",
+    "GLAND, ADRENAL", "ADRENAL", "ADRENALS",
+    "UTERUS", "OVARY", "OVARIES",
+    "TESTIS", "TESTES",
+    "EPIDIDYMIS",
+}
+
+# Tier 2: moderate-variability OM specimens (CV 10-20%)
+_MODERATE_CV_SPECIMENS = {
+    "LIVER", "KIDNEY", "KIDNEYS",
+    "LUNG", "LUNGS",
+    "LYMPH NODE", "LYMPH NODE, MESENTERIC",
+}
+
+
+def _equivalence_tier(test_code: str, specimen: str | None = None,
+                      domain: str | None = None) -> int:
+    """Determine CV% tier for equivalence band width.
+
+    For OM domain, uses specimen (organ) instead of test_code since all OM
+    findings share test_code='WEIGHT'.
+    """
+    # OM domain: tier by specimen (organ), not test_code
+    if domain == "OM" and specimen:
+        spec_upper = specimen.upper()
+        for high in _HIGH_CV_SPECIMENS:
+            if high in spec_upper:
+                return 3
+        for mod in _MODERATE_CV_SPECIMENS:
+            if mod in spec_upper:
+                return 2
+        # Brain, heart → Tier 1
+        return 1
+
+    tc = (test_code or "").upper()
+    if tc in _HIGH_CV_TESTS:
+        return 3
+    if tc in _MODERATE_CV_TESTS:
+        return 2
+    if tc and tc not in _KNOWN_TIER1_TESTS:
+        log.info("Unknown test_code '%s' defaulting to Tier 1 (0.5 SD)", tc)
+    return 1
+
+
+def _equivalence_fraction(test_code: str, specimen: str | None = None,
+                          domain: str | None = None) -> float:
+    """Get equivalence band fraction for the given endpoint."""
+    return _TIER_FRACTIONS[_equivalence_tier(test_code, specimen, domain)]
 
 
 _MIN_INCIDENCE_TOLERANCE = 0.02  # floor at 2pp, matching client-side
@@ -206,12 +296,23 @@ def _find_onset_dose_level(steps: list[str]) -> int | None:
     return None
 
 
-def classify_dose_response(group_stats: list[dict], data_type: str = "continuous") -> dict:
+def classify_dose_response(
+    group_stats: list[dict],
+    data_type: str = "continuous",
+    test_code: str | None = None,
+    specimen: str | None = None,
+    domain: str | None = None,
+) -> dict:
     """Classify dose-response pattern using equivalence-band noise tolerance.
 
-    For continuous data, differences within 0.5× pooled SD are treated as
-    equivalent ("flat") rather than directional, preventing sampling noise
-    from producing false non-monotonic classifications.
+    For continuous data, differences within the tiered equivalence fraction
+    of pooled SD are treated as equivalent ("flat") rather than directional,
+    preventing sampling noise from producing false non-monotonic classifications.
+
+    The equivalence fraction is determined by endpoint variability tier:
+      Tier 1 (CV < 10%): 0.5 SD — BW, brain, heart, RBC, total protein
+      Tier 2 (CV 10-20%): 0.5 SD — liver, kidney, ALT, AST, glucose
+      Tier 3 (CV > 20%): 0.75 SD — spleen, thymus, WBC, triglycerides
 
     Returns dict with:
       pattern: one of 'monotonic_increase', 'monotonic_decrease',
@@ -229,7 +330,8 @@ def classify_dose_response(group_stats: list[dict], data_type: str = "continuous
             return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
         pooled = max(_pooled_sd(group_stats), _MIN_POOLED_SD)
-        band = _EQUIVALENCE_FRACTION * pooled
+        frac = _equivalence_fraction(test_code or "", specimen, domain)
+        band = frac * pooled
 
         # Build step sequence: control → dose1 → dose2 → ...
         steps = []

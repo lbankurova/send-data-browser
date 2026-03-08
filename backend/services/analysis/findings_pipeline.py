@@ -114,6 +114,9 @@ def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
     dr_result = classify_dose_response(
         f.get("group_stats", []),
         f.get("data_type", "continuous"),
+        test_code=f.get("test_code"),
+        specimen=f.get("specimen"),
+        domain=f.get("domain"),
     )
     f["dose_response_pattern"] = dr_result["pattern"]
     f["pattern_confidence"] = dr_result.get("confidence")
