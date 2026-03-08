@@ -426,6 +426,7 @@ const PATTERN_LABELS: Record<string, string> = {
   threshold_decrease: "Threshold decrease",
   threshold: "Threshold",  // backward compat
   non_monotonic: "Non-monotonic",
+  u_shaped: "U-shaped",
   flat: "Flat",
 };
 

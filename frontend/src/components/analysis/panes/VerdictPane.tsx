@@ -16,6 +16,7 @@ import type { EndpointSummary, SexEndpointSummary } from "@/lib/derive-summaries
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
+import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -40,6 +41,8 @@ interface Props {
   endpointConfidence?: EndpointConfidenceResult | null;
   /** Callback to scroll to confidence decomposition in Evidence pane. */
   onSeeDecomposition?: () => void;
+  /** When false, sex comparison table won't render — show pattern override inline. */
+  hasSibling?: boolean;
 }
 
 interface Verdict {
@@ -255,6 +258,7 @@ export function VerdictPane({
   eciConfidence,
   endpointConfidence,
   onSeeDecomposition,
+  hasSibling,
 }: Props) {
   const { settings: studySettings } = useStudySettings();
   const verdict = notEvaluated
@@ -463,10 +467,11 @@ export function VerdictPane({
         </div>
       )}
 
-      {/* Line 4 -- Sex + direction + pattern */}
+      {/* Line 4 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
       {sexDirectionLine && (
-        <div className="mt-0.5 text-[10px] font-medium text-foreground/80">
-          {sexDirectionLine}
+        <div className="mt-0.5 flex items-center gap-2 text-[10px] font-medium text-foreground/80">
+          <span>{sexDirectionLine}</span>
+          {!hasSibling && !notEvaluated && <PatternOverrideDropdown finding={finding} />}
         </div>
       )}
 
