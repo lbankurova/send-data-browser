@@ -51,7 +51,7 @@ export function CollapsiblePane({
   const isBorder = variant === "border";
 
   return (
-    <div className={isBorder ? "border-b last:border-b-0" : "mb-3"}>
+    <div className={isBorder ? "border-b" : "mb-3"}>
       <div
         role="button"
         tabIndex={0}
