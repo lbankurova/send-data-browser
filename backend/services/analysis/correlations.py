@@ -82,8 +82,17 @@ def compute_correlations(findings: list[dict], max_per_organ: int = 30) -> list[
 
 
 def _endpoint_key(finding: dict) -> str:
-    """Unique key for an endpoint regardless of sex."""
-    return f"{finding['domain']}_{finding.get('test_code', '')}_{finding.get('day', '')}"
+    """Unique key for an endpoint regardless of sex.
+
+    Includes specimen when present (critical for OM where all findings share
+    test_code='WEIGHT' but differ by organ specimen).
+    """
+    parts = [finding["domain"], finding.get("test_code", "")]
+    specimen = finding.get("specimen")
+    if specimen:
+        parts.append(specimen)
+    parts.append(str(finding.get("day", "")))
+    return "_".join(parts)
 
 
 def _residualized_correlation(
