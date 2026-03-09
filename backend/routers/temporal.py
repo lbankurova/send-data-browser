@@ -18,6 +18,7 @@ from services.xpt_processor import ensure_cached, read_xpt
 from services.analysis.dose_groups import build_dose_groups
 from services.analysis.phase_filter import compute_last_dosing_day
 from services.analysis.override_reader import get_last_dosing_day_override
+from services.analysis.incidence_recovery import compute_incidence_recovery
 
 router = APIRouter(prefix="/api", tags=["temporal"])
 
@@ -1362,136 +1363,19 @@ async def get_recovery_comparison(study_id: str):
     # vs recovery arm to assess persistence/resolution.
     incidence_rows: list[dict] = []
 
-    def _compute_incidence_recovery(domain_key: str, day_col: str):
-        """Compute incidence recovery for CL-like domains.
-
-        Uses CLSTRESC (standardised finding) to match the unified_findings
-        grouping, falling back to CLORRES if CLSTRESC is absent.
-        """
-        if domain_key not in study.xpt_files:
-            return
+    if "cl" in study.xpt_files:
         try:
-            df = _read_domain_df(study, domain_key.upper())
+            cl_df = _read_domain_df(study, "CL")
+            incidence_rows = compute_incidence_recovery(
+                cl_df=cl_df,
+                subjects_df=subjects_df,
+                domain_key="cl",
+                day_col="CLDY",
+                last_dosing_day=last_dosing_day,
+                recovery_day=recovery_day,
+            )
         except Exception:
-            return
-
-        prefix = domain_key.upper()
-        stresc_col = f"{prefix}STRESC"
-        orres_col = f"{prefix}ORRES"
-        obs_col = stresc_col if stresc_col in df.columns else (orres_col if orres_col in df.columns else None)
-        if obs_col is None:
-            return
-
-        # Normalise observation text
-        df[obs_col] = df[obs_col].astype(str).str.strip().str.upper()
-        normal_terms = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL",
-                        "NO ABNORMALITIES", "UNREMARKABLE", "NONE", "NAN", ""}
-        df = df[~df[obs_col].isin(normal_terms)]
-        if df.empty:
-            return
-
-        # Join dose info
-        df = df.merge(
-            subjects_df[["USUBJID", "SEX", "dose_level", "dose_label", "is_recovery"]],
-            on="USUBJID", how="inner",
-        )
-
-        # Time-period filter: restrict main-arm records to treatment period,
-        # recovery-arm records to recovery period. Without this, treatment-phase
-        # CL observations from recovery animals inflate recovery incidence counts.
-        if last_dosing_day is not None and day_col in df.columns:
-            df[day_col] = pd.to_numeric(df[day_col], errors="coerce")
-            main_df = df[~df["is_recovery"] & (df[day_col].isna() | (df[day_col] <= last_dosing_day))]
-            rec_df = df[df["is_recovery"] & (df[day_col].isna() | (df[day_col] > last_dosing_day))]
-        else:
-            main_df = df[~df["is_recovery"]]
-            rec_df = df[df["is_recovery"]]
-
-        # All subjects roster by (sex, dose_level) for denominators
-        roster = subjects_df.groupby(["SEX", "dose_level", "is_recovery"]).agg(
-            n=("USUBJID", "nunique"),
-            dose_label=("dose_label", "first"),
-        ).reset_index()
-
-        # Get unique findings
-        all_findings = sorted(set(main_df[obs_col].unique()) | set(rec_df[obs_col].unique()))
-
-        for finding_name in all_findings:
-            for sex_val in ["F", "M"]:
-                for dose_level in sorted(subjects_df["dose_level"].unique()):
-                    if dose_level == 0:
-                        continue  # Skip control for incidence recovery
-
-                    # Main arm: subjects with this finding at this dose+sex
-                    main_match = main_df[
-                        (main_df[obs_col] == finding_name) &
-                        (main_df["SEX"] == sex_val) &
-                        (main_df["dose_level"] == dose_level)
-                    ]
-                    main_affected = main_match["USUBJID"].nunique()
-
-                    # Recovery arm: subjects with this finding at this dose+sex
-                    rec_match = rec_df[
-                        (rec_df[obs_col] == finding_name) &
-                        (rec_df["SEX"] == sex_val) &
-                        (rec_df["dose_level"] == dose_level)
-                    ]
-                    rec_affected = rec_match["USUBJID"].nunique()
-
-                    # Denominators
-                    main_roster = roster[
-                        (roster["SEX"] == sex_val) &
-                        (roster["dose_level"] == dose_level) &
-                        (~roster["is_recovery"])
-                    ]
-                    rec_roster = roster[
-                        (roster["SEX"] == sex_val) &
-                        (roster["dose_level"] == dose_level) &
-                        (roster["is_recovery"])
-                    ]
-                    main_n = int(main_roster["n"].iloc[0]) if not main_roster.empty else 0
-                    rec_n = int(rec_roster["n"].iloc[0]) if not rec_roster.empty else 0
-
-                    dose_label = ""
-                    if not main_roster.empty:
-                        dose_label = str(main_roster["dose_label"].iloc[0])
-                    elif not rec_roster.empty:
-                        dose_label = str(rec_roster["dose_label"].iloc[0])
-
-                    if main_n == 0 and rec_n == 0:
-                        continue
-
-                    # Compute verdict from incidence ratios
-                    main_inc = main_affected / main_n if main_n > 0 else 0
-                    rec_inc = rec_affected / rec_n if rec_n > 0 else 0
-                    if rec_inc == 0:
-                        verdict = "resolved"
-                    elif rec_inc < main_inc:
-                        verdict = "improving"
-                    elif rec_inc > main_inc and main_inc > 0:
-                        verdict = "worsening"
-                    elif main_inc > 0:
-                        verdict = "persistent"
-                    elif rec_inc > 0:
-                        verdict = "new_in_recovery"
-                    else:
-                        verdict = None
-
-                    incidence_rows.append({
-                        "domain": domain_key.upper(),
-                        "finding": finding_name,
-                        "sex": sex_val,
-                        "dose_level": int(dose_level),
-                        "dose_label": dose_label,
-                        "main_affected": main_affected,
-                        "main_n": main_n,
-                        "recovery_affected": rec_affected,
-                        "recovery_n": rec_n,
-                        "recovery_day": recovery_day,
-                        "verdict": verdict,
-                    })
-
-    _compute_incidence_recovery("cl", "CLDY")
+            pass
 
     return {
         "available": len(rows) > 0 or len(incidence_rows) > 0,
