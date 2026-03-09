@@ -15,6 +15,7 @@ import {
   verdictLabel,
   formatRecoveryFraction,
   assessRecoveryAdequacy,
+  deriveRecoveryAssessments,
   DEFAULT_VERDICT_THRESHOLDS,
 } from "@/lib/recovery-assessment";
 import type {
@@ -22,6 +23,7 @@ import type {
   RecoveryAssessment,
   RecoveryDoseAssessment,
 } from "@/lib/recovery-assessment";
+import type { SubjectHistopathEntry } from "@/types/timecourse";
 import {
   classifyRecovery,
   CLASSIFICATION_LABELS,
@@ -174,6 +176,34 @@ describe("computeVerdict — guard chain", () => {
       arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
     );
     expect(v).toBe("reversed");
+  });
+
+  test("v4 guard order: anomaly fires before not_observed when recovery has findings", () => {
+    // main=0 affected, recovery>0 affected → anomaly (Guard 2), NOT not_observed (Guard 3)
+    const v = computeVerdict(
+      arm({ incidence: 0, affected: 0 }),
+      arm({ n: 5, examined: 5, affected: 1 }),
+    );
+    expect(v).toBe("anomaly");
+  });
+
+  test("v4 low_power boundary: product exactly 2.0 passes guard", () => {
+    // main.incidence * recovery.examined = 0.4 * 5 = 2.0 → NOT < 2, so guard passes
+    const v = computeVerdict(
+      arm({ incidence: 0.4, affected: 4 }),
+      arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
+    );
+    // Should pass low_power (product = 2.0 is NOT < 2) and hit Guard 5 → reversed
+    expect(v).toBe("reversed");
+  });
+
+  test("v4 low_power boundary: product just below 2.0 triggers guard", () => {
+    // main.incidence * recovery.examined = 0.3 * 5 = 1.5 < 2 → low_power
+    const v = computeVerdict(
+      arm({ incidence: 0.3, affected: 3 }),
+      arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
+    );
+    expect(v).toBe("low_power");
   });
 });
 
@@ -1318,5 +1348,132 @@ describe("v3: null-safety integration", () => {
     const r = classifyFindingNature("Mineralization", null, "KIDNEY");
     const label = reversibilityLabel(r);
     expect(label).toContain("Not expected");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Fix 4: MA domain examination heuristic (computeGroupStats via deriveRecoveryAssessments)
+// ═════════════════════════════════════════════════════════
+
+describe("MA domain examination heuristic", () => {
+  function makeSubject(overrides: Partial<SubjectHistopathEntry>): SubjectHistopathEntry {
+    return {
+      usubjid: "SUBJ-001",
+      sex: "M",
+      dose_level: 1,
+      dose_label: "100 mg/kg",
+      is_recovery: false,
+      findings: {},
+      disposition: null,
+      disposition_day: null,
+      ...overrides,
+    };
+  }
+
+  function buildSubjects(
+    opts: {
+      mainCount: number;
+      recCount: number;
+      mainFindings?: Record<string, { severity: string | null; severity_num: number }>;
+      recFindings?: Record<string, { severity: string | null; severity_num: number }>;
+      maExamined?: boolean;
+    },
+  ): SubjectHistopathEntry[] {
+    const subjects: SubjectHistopathEntry[] = [];
+    for (let i = 0; i < opts.mainCount; i++) {
+      subjects.push(makeSubject({
+        usubjid: `MAIN-${i}`,
+        is_recovery: false,
+        findings: i === 0 && opts.mainFindings ? opts.mainFindings : {},
+        ...(opts.maExamined !== undefined ? { ma_examined: opts.maExamined } : {}),
+      }));
+    }
+    for (let i = 0; i < opts.recCount; i++) {
+      subjects.push(makeSubject({
+        usubjid: `REC-${i}`,
+        is_recovery: true,
+        findings: i === 0 && opts.recFindings ? opts.recFindings : {},
+        ...(opts.maExamined !== undefined ? { ma_examined: opts.maExamined } : {}),
+      }));
+    }
+    return subjects;
+  }
+
+  test("MA present, all examined, no findings → not_observed (not not_examined)", () => {
+    // All subjects have ma_examined=true, no findings in either arm
+    const subjects = buildSubjects({ mainCount: 5, recCount: 5, maExamined: true });
+    const results = deriveRecoveryAssessments(["Necrosis"], subjects);
+    expect(results).toHaveLength(1);
+    const verdict = results[0].assessments[0].verdict;
+    expect(verdict).toBe("not_observed");
+  });
+
+  test("MA absent, no findings → not_examined (heuristic: examined=0)", () => {
+    // No ma_examined field at all, no findings → heuristic says examined=0
+    const subjects = buildSubjects({ mainCount: 5, recCount: 5 });
+    const results = deriveRecoveryAssessments(["Necrosis"], subjects);
+    expect(results).toHaveLength(1);
+    const verdict = results[0].assessments[0].verdict;
+    expect(verdict).toBe("not_examined");
+  });
+
+  test("MA present, all examined, some findings → correct incidence", () => {
+    const finding = { severity: "MODERATE", severity_num: 3 };
+    const subjects = buildSubjects({
+      mainCount: 5,
+      recCount: 5,
+      mainFindings: { Necrosis: finding },
+      recFindings: { Necrosis: finding },
+      maExamined: true,
+    });
+    const results = deriveRecoveryAssessments(["Necrosis"], subjects);
+    const da = results[0].assessments[0];
+    // main: 1 affected out of 5 examined → incidence = 0.2
+    expect(da.main.examined).toBe(5);
+    expect(da.main.affected).toBe(1);
+    expect(da.main.incidence).toBeCloseTo(0.2);
+    // recovery: 1 affected out of 5 examined → incidence = 0.2
+    expect(da.recovery.examined).toBe(5);
+    expect(da.recovery.affected).toBe(1);
+  });
+
+  test("MA absent, some findings → heuristic counts all as examined", () => {
+    const finding = { severity: "MILD", severity_num: 2 };
+    const subjects = buildSubjects({
+      mainCount: 5,
+      recCount: 5,
+      mainFindings: { Necrosis: finding },
+      recFindings: { Necrosis: finding },
+    });
+    const results = deriveRecoveryAssessments(["Necrosis"], subjects);
+    const da = results[0].assessments[0];
+    // Heuristic: any finding in group → all N examined
+    expect(da.main.examined).toBe(5);
+    expect(da.recovery.examined).toBe(5);
+  });
+
+  test("MA present, some not examined → examined count matches ma_examined", () => {
+    // 5 recovery subjects, only 3 had tissue collected
+    const subjects: SubjectHistopathEntry[] = [];
+    for (let i = 0; i < 5; i++) {
+      subjects.push(makeSubject({
+        usubjid: `MAIN-${i}`,
+        is_recovery: false,
+        ma_examined: true,
+        findings: i === 0 ? { Necrosis: { severity: "MILD", severity_num: 2 } } : {},
+      }));
+    }
+    for (let i = 0; i < 5; i++) {
+      subjects.push(makeSubject({
+        usubjid: `REC-${i}`,
+        is_recovery: true,
+        ma_examined: i < 3, // Only first 3 had specimen collected
+        findings: {},
+      }));
+    }
+    const results = deriveRecoveryAssessments(["Necrosis"], subjects);
+    const da = results[0].assessments[0];
+    expect(da.recovery.examined).toBe(3);
+    expect(da.recovery.n).toBe(5);
   });
 });

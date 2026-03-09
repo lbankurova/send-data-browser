@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 49 | 6 | Missing capability, no spec exists |
+| Gap | 50 | 6 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **73** | **40** | |
+| **Total open** | **74** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -225,7 +225,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (14 open)
+## Gaps (15 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -511,6 +511,15 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P3 (design system consistency)
 - **Dependencies:** Related to GAP-56 (PaneTable) — both standardize pane internals
 - **Owner hint:** frontend-dev
+
+### GAP-59: Recovery sex-stratification — verify grouping is sex-aware
+- **Files:** `frontend/src/lib/recovery-assessment.ts` (`deriveRecoveryAssessments`), `backend/routers/temporal.py` (recovery comparison endpoint)
+- **Issue:** Recovery arms in rodent studies are often sex-restricted (e.g., males only). If the verdict engine pools sexes without checking whether recovery was sex-restricted, it compares mixed-sex main arm against single-sex recovery arm, corrupting all incidence-based verdicts. Need to verify both frontend and backend group by sex before computing. If already correct, close as N/A.
+- **Status:** Open — investigation needed
+- **Priority:** P1 (potential silent data corruption if present)
+- **Dependencies:** None
+- **Owner hint:** frontend-dev / backend-dev
+- **Source:** Recovery assessment audit spec, "Additional findings" section
 
 ---
 

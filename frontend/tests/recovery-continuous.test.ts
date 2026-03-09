@@ -140,6 +140,113 @@ describe("classifyContinuousRecovery", () => {
 });
 
 // ═════════════════════════════════════════════════════════
+// Fix 5: confidence field (low-N qualifier)
+// ═════════════════════════════════════════════════════════
+
+describe("classifyContinuousRecovery — confidence", () => {
+  test("no n values → confidence undefined", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8);
+    expect(v.confidence).toBeUndefined();
+  });
+
+  test("both n >= 5 → adequate", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 10, 10);
+    expect(v.confidence).toBe("adequate");
+  });
+
+  test("both n exactly 5 → adequate (boundary)", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 5, 5);
+    expect(v.confidence).toBe("adequate");
+  });
+
+  test("treated n < 5 → low", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 4, 10);
+    expect(v.confidence).toBe("low");
+  });
+
+  test("control n < 5 → low", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 10, 3);
+    expect(v.confidence).toBe("low");
+  });
+
+  test("both n < 5 → low", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 2, 2);
+    expect(v.confidence).toBe("low");
+  });
+
+  test("treated n=2 with resolved verdict → still low confidence", () => {
+    // Near-zero terminal, low recovery → "resolved" but with low confidence
+    const v = classifyContinuousRecovery(0.005, 0.3, 2, 10);
+    expect(v.verdict).toBe("resolved");
+    expect(v.confidence).toBe("low");
+  });
+
+  test("only treated n provided (control null) → adequate if treated >= 5", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 10, null);
+    expect(v.confidence).toBe("adequate");
+  });
+
+  test("only control n provided (treated null) → adequate if control >= 5", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, null, 10);
+    expect(v.confidence).toBe("adequate");
+  });
+
+  test("only treated n provided, n < 5 → low", () => {
+    const v = classifyContinuousRecovery(2.0, 0.8, 3, null);
+    expect(v.confidence).toBe("low");
+  });
+
+  test("confidence threads through all verdict types", () => {
+    // Verify confidence appears on different verdicts, not just one branch
+    const reversed = classifyContinuousRecovery(4.0, 0.6, 10, 10); // 85% → reversed
+    expect(reversed.verdict).toBe("reversed");
+    expect(reversed.confidence).toBe("adequate");
+
+    const worsening = classifyContinuousRecovery(1.5, 2.0, 3, 3); // neg pct → worsening
+    expect(worsening.verdict).toBe("worsening");
+    expect(worsening.confidence).toBe("low");
+
+    const persistent = classifyContinuousRecovery(2.0, 1.8, 5, 5); // 10% → persistent
+    expect(persistent.verdict).toBe("persistent");
+    expect(persistent.confidence).toBe("adequate");
+
+    const notAssessed = classifyContinuousRecovery(1.5, null, 2, 10);
+    expect(notAssessed.verdict).toBe("not_assessed");
+    expect(notAssessed.confidence).toBe("low");
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// Fix 5: buildChartRows populates confidence
+// ═════════════════════════════════════════════════════════
+
+describe("buildChartRows — confidence field", () => {
+  test("row with n values → confidence populated on ChartRow", () => {
+    const rows = buildChartRows(
+      [makeRow({ treated_n: 10, control_n: 10 })],
+      undefined,
+    );
+    expect(rows[0].confidence).toBe("adequate");
+  });
+
+  test("row with low treated_n → confidence = low", () => {
+    const rows = buildChartRows(
+      [makeRow({ treated_n: 2, control_n: 10 })],
+      undefined,
+    );
+    expect(rows[0].confidence).toBe("low");
+  });
+
+  test("row without n values → confidence undefined", () => {
+    const rows = buildChartRows(
+      [makeRow({ treated_n: undefined, control_n: undefined })],
+      undefined,
+    );
+    expect(rows[0].confidence).toBeUndefined();
+  });
+});
+
+// ═════════════════════════════════════════════════════════
 // buildChartRows
 // ═════════════════════════════════════════════════════════
 
