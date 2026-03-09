@@ -486,9 +486,11 @@ function groupByDoseLevel(
 /**
  * Compute group stats with examination-aware incidence.
  *
- * Examination heuristic (fallback — backend doesn't provide explicit examination status):
+ * Uses MA domain data (ma_examined field) when available for accurate
+ * examination counts. Falls back to heuristic when MA is not available.
+ *
+ * Fallback heuristic:
  * - If ANY subject in the dose group has ANY finding for the specimen → examined = n
- *   (standard protocol: if tissue was collected, all subjects in the group were examined)
  * - If ZERO subjects have any findings → examined = 0 (tissue likely not examined)
  *
  * Incidence = affected / examined (not affected / n).
@@ -502,12 +504,14 @@ function computeGroupStats(
   let totalSev = 0;
   let maxSev = 0;
 
-  // Check if any subject in the group has any findings for this specimen
-  let anyExamined = false;
+  // Check MA domain examination status and fallback heuristic
+  const hasMAData = subjects.some((s) => s.ma_examined !== undefined);
+  let maExaminedCount = 0;
+  let anyFinding = false;
+
   for (const s of subjects) {
-    if (Object.keys(s.findings).length > 0) {
-      anyExamined = true;
-    }
+    if (s.ma_examined) maExaminedCount++;
+    if (Object.keys(s.findings).length > 0) anyFinding = true;
     const f = s.findings[finding];
     if (f) {
       affected++;
@@ -516,8 +520,9 @@ function computeGroupStats(
     }
   }
 
-  // Examination heuristic: if any subject has any finding → all examined
-  const examined = anyExamined ? n : 0;
+  // MA domain: count subjects with confirmed specimen collection
+  // Fallback: any finding in group → all examined (original heuristic)
+  const examined = hasMAData ? maExaminedCount : (anyFinding ? n : 0);
   const incidence = examined > 0 ? affected / examined : 0;
   const avgSeverity = affected > 0 ? totalSev / affected : 0;
 

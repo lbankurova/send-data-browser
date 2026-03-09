@@ -640,6 +640,7 @@ async def get_histopath_subjects(
     ma_finding_col = None
     ma_sev_col = None
     ma_lat_col = None
+    ma_examined_subjects: set[str] = set()  # subjects with MA records for this specimen
     if "ma" in study.xpt_files:
         ma_df = _read_domain_df(study, "MA")
         ma_spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
@@ -650,6 +651,9 @@ async def get_histopath_subjects(
             ma_specimen_df = ma_df[ma_df[ma_spec_col].str.upper() == specimen.upper()]
             if ma_specimen_df.empty:
                 ma_specimen_df = None
+            else:
+                # Track all subjects who had this specimen collected (MA record exists)
+                ma_examined_subjects = set(ma_specimen_df["USUBJID"].dropna().astype(str).unique())
 
     if specimen_df.empty and ma_specimen_df is None:
         raise HTTPException(status_code=404, detail=f"No findings for specimen '{specimen}'")
@@ -740,7 +744,7 @@ async def get_histopath_subjects(
     for _, row in subjects_df.iterrows():
         usubjid = str(row["USUBJID"])
         disp_info = disposition_map.get(usubjid, (None, None))
-        subject_list.append({
+        entry: dict = {
             "usubjid": usubjid,
             "sex": str(row["SEX"]),
             "dose_level": int(row["dose_level"]),
@@ -750,7 +754,10 @@ async def get_histopath_subjects(
             "findings": findings_by_subj.get(usubjid, {}),
             "disposition": disp_info[0],
             "disposition_day": disp_info[1],
-        })
+        }
+        if ma_examined_subjects:
+            entry["ma_examined"] = usubjid in ma_examined_subjects
+        subject_list.append(entry)
 
     # Sort by dose_level then sex then USUBJID
     subject_list.sort(key=lambda s: (s["dose_level"], s["sex"], s["usubjid"]))

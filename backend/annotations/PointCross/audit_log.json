@@ -174,5 +174,131 @@
         "new": null
       }
     }
+  },
+  {
+    "timestamp": "2026-03-08T16:34:49.926428+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "6bf115dfbdf3",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "non_monotonic"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "up"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_increase"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-08T23:16:43.202712+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "40bde98493e4",
+    "action": "create",
+    "changes": {
+      "original_direction": {
+        "old": null,
+        "new": "up"
+      },
+      "pattern": {
+        "old": null,
+        "new": "non_monotonic"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_increase"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-08T23:38:49.207870+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-08T23:48:17.147049+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "non_monotonic"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-08T23:55:06.808309+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "07a9a4f8d4bd",
+    "action": "create",
+    "changes": {
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_increase"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "up"
+      },
+      "pattern": {
+        "old": null,
+        "new": "u_shaped"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-08T23:57:09.422845+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "3b2c867e7fae",
+    "action": "create",
+    "changes": {
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_increase"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "up"
+      },
+      "pattern": {
+        "old": null,
+        "new": "non_monotonic"
+      }
+    }
   }
 ]
