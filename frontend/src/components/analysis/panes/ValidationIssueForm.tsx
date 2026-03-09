@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { OverridePill } from "@/components/ui/OverridePill";
 import { cn } from "@/lib/utils";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { ValidationIssue } from "@/types/annotations";
@@ -73,7 +74,21 @@ export function ValidationIssueForm({ studyId, ruleId }: Props) {
     comment !== (existing?.comment ?? "");
 
   return (
-    <CollapsiblePane title="Rule disposition" defaultOpen>
+    <CollapsiblePane
+      title="Rule disposition"
+      defaultOpen
+      headerRight={
+        <OverridePill
+          isOverridden={existing?.status != null && existing.status !== "Not reviewed"}
+          note={existing?.comment}
+          user={existing?.reviewedBy}
+          timestamp={existing?.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : undefined}
+          onSaveNote={(text) => setComment(text)}
+          placeholder="Disposition note"
+          popoverSide="left"
+        />
+      }
+    >
       <div className="space-y-2 text-[11px]">
         {/* Status */}
         <div>

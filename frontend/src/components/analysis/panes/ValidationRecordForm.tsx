@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { OverridePill } from "@/components/ui/OverridePill";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { ValidationRecordReview } from "@/types/annotations";
 
@@ -62,7 +63,21 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
     comment !== (existing?.comment ?? "");
 
   return (
-    <CollapsiblePane title="Review" defaultOpen={defaultOpen}>
+    <CollapsiblePane
+      title="Review"
+      defaultOpen={defaultOpen}
+      headerRight={
+        <OverridePill
+          isOverridden={existing?.reviewStatus != null && existing.reviewStatus !== "Not reviewed"}
+          note={existing?.justification || existing?.comment}
+          user={existing?.pathologist ?? existing?.reviewedBy}
+          timestamp={existing?.reviewDate ? new Date(existing.reviewDate).toLocaleDateString() : undefined}
+          onSaveNote={(text) => setJustification(text)}
+          placeholder="Review justification"
+          popoverSide="left"
+        />
+      }
+    >
       <div className="space-y-2 text-[11px]">
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Review status</label>
@@ -130,10 +145,10 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
           {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
         </button>
 
-        {(existing?.reviewedBy ?? existing?.pathologist) && (
+        {(existing?.pathologist ?? existing?.reviewedBy) && (
           <p className="text-[10px] text-muted-foreground">
             Reviewed by {existing?.pathologist ?? existing?.reviewedBy} on{" "}
-            {new Date(existing?.reviewDate ?? existing?.reviewedDate ?? "").toLocaleDateString()}
+            {new Date(existing?.reviewDate ?? "").toLocaleDateString()}
           </p>
         )}
       </div>
