@@ -2,11 +2,22 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { resolveOnsetDose, formatOnsetDose, onsetNeedsAttention } from "@/lib/onset-dose";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { patternToOverrideKey } from "./PatternOverrideDropdown";
+
+interface PatternAnnotation {
+  pattern: string;
+  original_pattern?: string;
+  original_direction?: string | null;
+  onset_dose_level?: number | null;
+  pattern_note?: string;
+  onset_note?: string;
+  pathologist?: string;
+  reviewDate?: string;
+}
 
 interface Props {
   finding: UnifiedFinding;
@@ -37,12 +48,8 @@ function getSystemOnsetLevel(finding: UnifiedFinding): number | null {
 export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
   const queryClient = useQueryClient();
-  const saveMutation = useSaveAnnotation<{
-    pattern: string;
-    onset_dose_level: number | null;
-    original_pattern?: string;
-    original_direction?: string | null;
-  }>(studyId, "pattern-overrides");
+  const { data: annotations } = useAnnotations<PatternAnnotation>(studyId, "pattern-overrides");
+  const saveMutation = useSaveAnnotation<PatternAnnotation>(studyId, "pattern-overrides");
 
   const [open, setOpen] = useState(false);
 
@@ -69,8 +76,9 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
   const needsAttention = isDirectional && override != null
     && onsetNeedsAttention(override.pattern, override.onset_dose_level, lowestDoseLevel);
 
-  // Build the override note (stored in annotation as extra field)
-  const overrideNote = (override as Record<string, unknown> | undefined)?.onset_note as string | undefined;
+  // Read note from annotations query (single source of truth, like mortality)
+  const annotation = annotations?.[finding.id];
+  const overrideNote = annotation?.onset_note || undefined;
 
   function handleSelect(doseLevel: number) {
     if (!studyId) return;
@@ -167,16 +175,32 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
     );
   }
 
+  // Save note — same pattern as mortality: optimistic update on annotations cache
   function handleSaveNote(text: string) {
     if (!studyId) return;
-    const patternKey = override?.pattern ?? patternToOverrideKey(finding.dose_response_pattern) ?? "no_change";
+    queryClient.setQueryData<Record<string, PatternAnnotation>>(
+      ["annotations", studyId, "pattern-overrides"],
+      (old) => {
+        const next = { ...(old ?? {}) };
+        if (text) {
+          next[finding.id] = { ...next[finding.id], onset_note: text };
+        } else {
+          // Clear note — remove the field but keep the annotation
+          if (next[finding.id]) {
+            const { onset_note: _, ...rest } = next[finding.id];
+            next[finding.id] = rest as PatternAnnotation;
+          }
+        }
+        return next;
+      },
+    );
     saveMutation.mutate({
       entityKey: finding.id,
       data: {
-        pattern: patternKey,
+        pattern: override?.pattern ?? patternToOverrideKey(finding.dose_response_pattern) ?? "no_change",
         onset_dose_level: override?.onset_dose_level ?? onset?.doseLevel ?? null,
-        onset_note: text || undefined,
-      } as Record<string, unknown>,
+        onset_note: text,
+      } as Partial<PatternAnnotation>,
     });
   }
 
@@ -210,8 +234,8 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
         <OverridePill
           isOverridden={isOverridden}
           note={overrideNote}
-          user={override?.pathologist}
-          timestamp={override?.timestamp ? new Date(override.timestamp).toLocaleDateString() : undefined}
+          user={annotation?.pathologist}
+          timestamp={annotation?.reviewDate ? new Date(annotation.reviewDate).toLocaleDateString() : undefined}
           onSaveNote={handleSaveNote}
           placeholder="Onset at dose 2 — earliest statistically significant effect"
           popoverSide="top"

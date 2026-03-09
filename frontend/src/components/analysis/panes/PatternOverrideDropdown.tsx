@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { useSaveAnnotation, useDeleteAnnotation } from "@/hooks/useAnnotations";
+import { useAnnotations, useSaveAnnotation, useDeleteAnnotation } from "@/hooks/useAnnotations";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { UnifiedFinding } from "@/types/analysis";
 import { defaultOnsetForPattern } from "@/lib/onset-dose";
@@ -62,6 +62,17 @@ interface PreviewResult {
   finding_class: { original: string; proposed: string; changed: boolean };
 }
 
+interface PatternAnnotation {
+  pattern: string;
+  original_pattern: string;
+  original_direction: string | null;
+  onset_dose_level?: number | null;
+  pattern_note?: string;
+  onset_note?: string;
+  pathologist?: string;
+  reviewDate?: string;
+}
+
 interface Props {
   finding: UnifiedFinding;
 }
@@ -69,12 +80,8 @@ interface Props {
 export function PatternOverrideDropdown({ finding }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
   const queryClient = useQueryClient();
-  const saveMutation = useSaveAnnotation<{
-    pattern: string;
-    original_pattern: string;
-    original_direction: string | null;
-    onset_dose_level?: number | null;
-  }>(studyId, "pattern-overrides");
+  const { data: annotations } = useAnnotations<PatternAnnotation>(studyId, "pattern-overrides");
+  const saveMutation = useSaveAnnotation<PatternAnnotation>(studyId, "pattern-overrides");
   const deleteMutation = useDeleteAnnotation(studyId, "pattern-overrides");
 
   const [open, setOpen] = useState(false);
@@ -102,8 +109,9 @@ export function PatternOverrideDropdown({ finding }: Props) {
 
   const direction = finding.direction ?? null;
 
-  // Override note (stored in annotation)
-  const overrideNote = (override as Record<string, unknown> | undefined)?.pattern_note as string | undefined;
+  // Read note from annotations query (single source of truth, like mortality)
+  const annotation = annotations?.[finding.id];
+  const overrideNote = annotation?.pattern_note || undefined;
 
   // Fetch preview when hovering a non-current option
   const fetchPreview = useCallback(async (proposedPattern: string) => {
@@ -249,16 +257,33 @@ export function PatternOverrideDropdown({ finding }: Props) {
     });
   }
 
+  // Save note — same pattern as mortality: optimistic update on annotations cache
   function handleSaveNote(text: string) {
     if (!studyId) return;
+    queryClient.setQueryData<Record<string, PatternAnnotation>>(
+      ["annotations", studyId, "pattern-overrides"],
+      (old) => {
+        const next = { ...(old ?? {}) };
+        if (text) {
+          next[finding.id] = { ...next[finding.id], pattern_note: text };
+        } else {
+          // Clear note — remove the field but keep the annotation
+          if (next[finding.id]) {
+            const { pattern_note: _, ...rest } = next[finding.id];
+            next[finding.id] = rest as PatternAnnotation;
+          }
+        }
+        return next;
+      },
+    );
     saveMutation.mutate({
       entityKey: finding.id,
       data: {
         pattern: override?.pattern ?? patternToOverrideKey(finding.dose_response_pattern) ?? "no_change",
         original_pattern: originalPattern ?? "flat",
         original_direction: direction,
-        pattern_note: text || undefined,
-      } as Record<string, unknown>,
+        pattern_note: text,
+      } as Partial<PatternAnnotation>,
     });
   }
 
@@ -299,8 +324,8 @@ export function PatternOverrideDropdown({ finding }: Props) {
         <OverridePill
           isOverridden={patternChanged}
           note={overrideNote}
-          user={override?.pathologist}
-          timestamp={override?.timestamp ? new Date(override.timestamp).toLocaleDateString() : undefined}
+          user={annotation?.pathologist}
+          timestamp={annotation?.reviewDate ? new Date(annotation.reviewDate).toLocaleDateString() : undefined}
           onSaveNote={handleSaveNote}
           placeholder="Consistent downward drift from first dose"
           popoverSide="top"
