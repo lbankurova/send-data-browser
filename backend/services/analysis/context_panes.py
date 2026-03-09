@@ -218,13 +218,16 @@ def _build_dose_response(finding: dict, dose_groups: list[dict]) -> dict:
 
 
 def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]) -> dict:
-    """Correlations pane: related findings.
+    """Correlations pane: related endpoints.
 
     Matches by endpoint key (domain_testcode_day) so both M and F findings
     for the same endpoint see the same correlations.
+
+    Filters out same-endpoint_label autocorrelations (e.g. BW Day 8 ↔ BW Day 15)
+    which are uninformative repeated-measure autocorrelations.
     """
     ep_key = f"{finding.get('domain', '')}_{finding.get('test_code', '')}_{finding.get('day', '')}"
-    sex = finding.get("sex")
+    my_label = finding.get("endpoint_label", finding.get("finding", ""))
 
     related = []
     for c in correlations:
@@ -241,7 +244,10 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
         )
 
         if is_side_1:
-            # Pick a finding_id from the other side, preferring same sex
+            # Filter same-endpoint_label autocorrelations (same test, different day)
+            other_label = c.get("endpoint_label_2", c.get("endpoint_2", ""))
+            if other_label == my_label:
+                continue
             other_ids = c.get("finding_ids_2", [])
             other_id = c.get("finding_id_2", other_ids[0] if other_ids else "")
             related.append({
@@ -254,6 +260,9 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
                 "basis": c.get("basis"),
             })
         elif is_side_2:
+            other_label = c.get("endpoint_label_1", c.get("endpoint_1", ""))
+            if other_label == my_label:
+                continue
             other_ids = c.get("finding_ids_1", [])
             other_id = c.get("finding_id_1", other_ids[0] if other_ids else "")
             related.append({
@@ -275,24 +284,50 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
 
 
 def _build_effect_size(finding: dict, all_findings: list[dict]) -> dict:
-    """Effect size pane: context for the selected finding's effect magnitude."""
+    """Effect size pane: endpoint-level ranking split by data type.
+
+    Aggregates findings by endpoint_label, keeping only the peak effect per
+    endpoint (max |effect_size| across all days and sexes). Preserves which
+    day and sex produced the peak so the UI can show it.
+
+    Returns separate ranked lists for continuous (Hedges' g) and incidence
+    (severity score) endpoints — these scales are not comparable.
+    """
     data_type = finding.get("data_type", "continuous")
     domain = finding.get("domain", "")
+    my_label = finding.get("endpoint_label", finding.get("finding", ""))
 
-    # Collect all effect sizes
-    all_effects = []
+    # Group findings by endpoint_label, keeping peak per endpoint
+    by_endpoint: dict[str, dict] = {}
     for f in all_findings:
         es = f.get("max_effect_size")
-        if es is not None:
-            all_effects.append({
+        if es is None:
+            continue
+        label = f.get("endpoint_label", f.get("finding", ""))
+        existing = by_endpoint.get(label)
+        if existing is None or abs(es) > abs(existing["effect_size"]):
+            by_endpoint[label] = {
                 "finding_id": f.get("id", ""),
+                "endpoint_label": label,
                 "finding": f.get("finding", ""),
                 "domain": f.get("domain", ""),
                 "effect_size": es,
                 "data_type": f.get("data_type", "continuous"),
-            })
+                "peak_day": f.get("day"),
+                "peak_sex": f.get("sex"),
+            }
 
-    all_effects.sort(key=lambda x: abs(x.get("effect_size", 0)), reverse=True)
+    # Split into continuous and incidence, rank each by |effect_size|
+    continuous = sorted(
+        [e for e in by_endpoint.values() if e["data_type"] == "continuous"],
+        key=lambda x: abs(x["effect_size"]),
+        reverse=True,
+    )
+    incidence = sorted(
+        [e for e in by_endpoint.values() if e["data_type"] != "continuous"],
+        key=lambda x: abs(x["effect_size"]),
+        reverse=True,
+    )
 
     # Current finding's effect — use domain-aware interpretation
     current_es = finding.get("max_effect_size")
@@ -305,8 +340,14 @@ def _build_effect_size(finding: dict, all_findings: list[dict]) -> dict:
         "current_effect_size": current_es,
         "data_type": data_type,
         "interpretation": interpretation,
-        "largest_effects": all_effects[:10],
-        "total_with_effects": len(all_effects),
+        "current_endpoint_label": my_label,
+        "continuous_effects": continuous,
+        "incidence_effects": incidence,
+        "total_continuous": len(continuous),
+        "total_incidence": len(incidence),
+        # Backward compat: largest_effects as merged list (deprecated)
+        "largest_effects": (continuous + incidence)[:10],
+        "total_with_effects": len(by_endpoint),
     }
 
 
