@@ -1,7 +1,10 @@
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
@@ -51,16 +54,35 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
 
 /** Mortality info pane — top-level CollapsiblePane with per-subject table. */
 export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | null }) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const queryClient = useQueryClient();
   const { excludedSubjects, toggleSubjectExclusion, trEarlyDeathIds } = useScheduledOnly();
-  const [overrideComments, setOverrideComments] = useState<Record<string, string>>({});
+
+  // Mortality override comments — persisted via annotation API
+  const { data: commentAnnotations } = useAnnotations<{ comment: string }>(studyId, "mortality-overrides");
+  const saveCommentMutation = useSaveAnnotation<{ comment: string }>(studyId, "mortality-overrides");
+
+  const overrideComments = useMemo<Record<string, string>>(() => {
+    if (!commentAnnotations) return {};
+    const out: Record<string, string> = {};
+    for (const [key, val] of Object.entries(commentAnnotations)) {
+      if (val.comment) out[key] = val.comment;
+    }
+    return out;
+  }, [commentAnnotations]);
 
   const saveComment = (id: string, text: string) => {
-    setOverrideComments((prev) => {
-      const next = { ...prev };
-      if (text) next[id] = text;
-      else delete next[id];
-      return next;
-    });
+    // Optimistic update
+    queryClient.setQueryData<Record<string, { comment: string }>>(
+      ["annotations", studyId, "mortality-overrides"],
+      (old) => {
+        const next = { ...(old ?? {}) };
+        if (text) next[id] = { ...next[id], comment: text };
+        else delete next[id];
+        return next;
+      },
+    );
+    saveCommentMutation.mutate({ entityKey: id, data: { comment: text } });
   };
 
   // Pending confirmation when reverting a subject with a comment
