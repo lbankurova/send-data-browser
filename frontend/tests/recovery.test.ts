@@ -16,6 +16,7 @@ import {
   formatRecoveryFraction,
   assessRecoveryAdequacy,
   deriveRecoveryAssessments,
+  deriveRecoveryAssessmentsSexAware,
   DEFAULT_VERDICT_THRESHOLDS,
 } from "@/lib/recovery-assessment";
 import type {
@@ -1475,5 +1476,176 @@ describe("MA domain examination heuristic", () => {
     const da = results[0].assessments[0];
     expect(da.recovery.examined).toBe(3);
     expect(da.recovery.n).toBe(5);
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// GAP-59: deriveRecoveryAssessmentsSexAware
+// ═════════════════════════════════════════════════════════
+
+describe("deriveRecoveryAssessmentsSexAware — sex stratification (GAP-59)", () => {
+  /** All test subjects use ma_examined: true to bypass the "any finding" heuristic
+   *  in computeGroupStats, ensuring examined count = number of subjects with ma_examined. */
+  function mkSubj(overrides: Partial<SubjectHistopathEntry>): SubjectHistopathEntry {
+    return {
+      usubjid: "S-001",
+      sex: "M",
+      dose_level: 1,
+      dose_label: "100 mg/kg",
+      is_recovery: false,
+      findings: {},
+      disposition: null,
+      disposition_day: null,
+      ma_examined: true,
+      ...overrides,
+    };
+  }
+
+  const FINDING = { severity: "MODERATE" as string | null, severity_num: 2 };
+
+  test("single-sex recovery delegates to base function (no merge)", () => {
+    // All subjects are male — should produce identical result to deriveRecoveryAssessments
+    const subjects: SubjectHistopathEntry[] = [];
+    for (let i = 0; i < 10; i++) {
+      subjects.push(mkSubj({ usubjid: `MAIN-${i}`, sex: "M", is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+    }
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `REC-${i}`, sex: "M", is_recovery: true, findings: i < 1 ? { Necrosis: FINDING } : {} }));
+    }
+
+    const base = deriveRecoveryAssessments(["Necrosis"], subjects);
+    const sexAware = deriveRecoveryAssessmentsSexAware(["Necrosis"], subjects);
+
+    expect(sexAware.length).toBe(base.length);
+    expect(sexAware[0].overall).toBe(base[0].overall);
+    expect(sexAware[0].assessments.length).toBe(base[0].assessments.length);
+    expect(sexAware[0].assessments[0].verdict).toBe(base[0].assessments[0].verdict);
+  });
+
+  test("sex-restricted recovery: males-only recovery + both-sex main", () => {
+    // The bug scenario: recovery arm has only males, main arm has both sexes.
+    // Pooling dilutes main incidence (F add unaffected subjects to denominator).
+    // Sex-aware compares only M main vs M recovery.
+    const subjects: SubjectHistopathEntry[] = [];
+
+    // Main: 5F (0 affected) + 5M (4 affected)
+    // Pooled main incidence: 4/10 = 40%. Male-only main incidence: 4/5 = 80%.
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MAIN-F-${i}`, sex: "F", dose_level: 1, is_recovery: false, findings: {} }));
+    }
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MAIN-M-${i}`, sex: "M", dose_level: 1, is_recovery: false, findings: i < 4 ? { Necrosis: FINDING } : {} }));
+    }
+
+    // Recovery: 5M only, 2 affected → 40% incidence
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `REC-M-${i}`, sex: "M", dose_level: 1, is_recovery: true, findings: i < 2 ? { Necrosis: FINDING } : {} }));
+    }
+
+    const pooled = deriveRecoveryAssessments(["Necrosis"], subjects);
+    const sexAware = deriveRecoveryAssessmentsSexAware(["Necrosis"], subjects);
+
+    // Pooled: rec 40% / main 40% = 1.0 → persistent (F dilution hides the improvement)
+    expect(pooled[0].assessments[0].verdict).toBe("persistent");
+    // Sex-aware: rec 40% / main-M 80% = 0.5 → reversing (correct: real improvement visible)
+    expect(sexAware[0].assessments[0].verdict).toBe("reversing");
+  });
+
+  test("both-sex recovery: merges worst verdict across sexes", () => {
+    // F: finding resolved in recovery. M: finding persistent in recovery.
+    // Merged should take worst = persistent.
+    const subjects: SubjectHistopathEntry[] = [];
+
+    // Female main: 5F, 3 affected
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MAIN-F-${i}`, sex: "F", dose_level: 1, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+    }
+    // Female recovery: 5F, 0 affected → reversed (ma_examined=true → examined=5, not "not_examined")
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `REC-F-${i}`, sex: "F", dose_level: 1, is_recovery: true, findings: {} }));
+    }
+
+    // Male main: 5M, 3 affected
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MAIN-M-${i}`, sex: "M", dose_level: 1, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+    }
+    // Male recovery: 5M, 3 affected → persistent (same incidence)
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `REC-M-${i}`, sex: "M", dose_level: 1, is_recovery: true, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+    }
+
+    const result = deriveRecoveryAssessmentsSexAware(["Necrosis"], subjects);
+
+    // F = reversed, M = persistent → merged worst = persistent
+    expect(result[0].overall).toBe("persistent");
+    expect(result[0].assessments.length).toBe(1);
+    expect(result[0].assessments[0].verdict).toBe("persistent");
+  });
+
+  test("both-sex recovery: per-dose worst when sexes differ by dose level", () => {
+    const subjects: SubjectHistopathEntry[] = [];
+
+    // Dose 1: F reversed, M reversed → merged = reversed
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MF-D1-${i}`, sex: "F", dose_level: 1, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+      subjects.push(mkSubj({ usubjid: `RF-D1-${i}`, sex: "F", dose_level: 1, is_recovery: true, findings: {} }));
+      subjects.push(mkSubj({ usubjid: `MM-D1-${i}`, sex: "M", dose_level: 1, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+      subjects.push(mkSubj({ usubjid: `RM-D1-${i}`, sex: "M", dose_level: 1, is_recovery: true, findings: {} }));
+    }
+
+    // Dose 2: F persistent, M reversed → merged = persistent
+    for (let i = 0; i < 5; i++) {
+      subjects.push(mkSubj({ usubjid: `MF-D2-${i}`, sex: "F", dose_level: 2, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+      subjects.push(mkSubj({ usubjid: `RF-D2-${i}`, sex: "F", dose_level: 2, is_recovery: true, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+      subjects.push(mkSubj({ usubjid: `MM-D2-${i}`, sex: "M", dose_level: 2, is_recovery: false, findings: i < 3 ? { Necrosis: FINDING } : {} }));
+      subjects.push(mkSubj({ usubjid: `RM-D2-${i}`, sex: "M", dose_level: 2, is_recovery: true, findings: {} }));
+    }
+
+    const result = deriveRecoveryAssessmentsSexAware(["Necrosis"], subjects);
+
+    expect(result[0].assessments.length).toBe(2);
+    // Dose 1: both reversed → reversed
+    expect(result[0].assessments[0].verdict).toBe("reversed");
+    // Dose 2: F persistent, M reversed → persistent (worst)
+    expect(result[0].assessments[1].verdict).toBe("persistent");
+    // Overall: worst across all dose levels = persistent
+    expect(result[0].overall).toBe("persistent");
+  });
+
+  test("no recovery subjects → empty result (same as base)", () => {
+    const subjects = [
+      mkSubj({ usubjid: "MAIN-1", is_recovery: false, findings: { Necrosis: FINDING } }),
+      mkSubj({ usubjid: "MAIN-2", is_recovery: false }),
+    ];
+    const result = deriveRecoveryAssessmentsSexAware(["Necrosis"], subjects);
+    expect(result).toEqual([]);
+  });
+
+  test("multiple findings handled independently", () => {
+    const subjects: SubjectHistopathEntry[] = [];
+    const FINDING_B = { severity: "MILD" as string | null, severity_num: 1 };
+
+    // Main: 5M, finding A in 3, finding B in 4
+    for (let i = 0; i < 5; i++) {
+      const findings: Record<string, { severity: string | null; severity_num: number }> = {};
+      if (i < 3) findings["Necrosis"] = FINDING;
+      if (i < 4) findings["Inflammation"] = FINDING_B;
+      subjects.push(mkSubj({ usubjid: `MAIN-M-${i}`, sex: "M", dose_level: 1, is_recovery: false, findings }));
+    }
+
+    // Recovery: 5M, finding A in 0 (reversed), finding B in 4 (persistent)
+    for (let i = 0; i < 5; i++) {
+      const findings: Record<string, { severity: string | null; severity_num: number }> = {};
+      if (i < 4) findings["Inflammation"] = FINDING_B;
+      subjects.push(mkSubj({ usubjid: `REC-M-${i}`, sex: "M", dose_level: 1, is_recovery: true, findings }));
+    }
+
+    const result = deriveRecoveryAssessmentsSexAware(["Necrosis", "Inflammation"], subjects);
+
+    expect(result.length).toBe(2);
+    expect(result[0].finding).toBe("Necrosis");
+    expect(result[0].overall).toBe("reversed");
+    expect(result[1].finding).toBe("Inflammation");
+    expect(result[1].overall).toBe("persistent");
   });
 });

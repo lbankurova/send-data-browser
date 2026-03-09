@@ -820,42 +820,20 @@ export function RecoveryDumbbellChart({
       <div className="flex gap-1.5">
         {/* Shared dose labels column */}
         <div className="w-[60px] shrink-0 flex flex-col pt-[14px]">
-          {primaryRows.map((cr) => {
-            // Check for control drift warning
-            const row = cr.row;
-            let driftWarning = false;
-            if (
-              row.control_mean_terminal != null &&
-              row.control_mean != null &&
-              Math.abs(row.control_mean_terminal) > 0.001
-            ) {
-              const drift =
-                Math.abs(row.control_mean! - row.control_mean_terminal) /
-                Math.abs(row.control_mean_terminal) *
-                100;
-              if (drift > 15) driftWarning = true;
-            }
-
-            return (
-              <div
-                key={cr.row.dose_level}
-                className="flex items-center justify-end"
-                style={{ height: ROW_HEIGHT }}
-              >
-                {driftWarning && (
-                  <span className="text-[8px] text-amber-600 mr-0.5" title="Control group shifted >15% between terminal and recovery">
-                    ⚠
-                  </span>
-                )}
-                <DoseLabel
-                  level={cr.row.dose_level}
-                  label={cr.doseLabel}
-                  align="right"
-                  className="text-[9px]"
-                />
-              </div>
-            );
-          })}
+          {primaryRows.map((cr) => (
+            <div
+              key={cr.row.dose_level}
+              className="flex items-center justify-end"
+              style={{ height: ROW_HEIGHT }}
+            >
+              <DoseLabel
+                level={cr.row.dose_level}
+                label={cr.doseLabel}
+                align="right"
+                className="text-[9px]"
+              />
+            </div>
+          ))}
         </div>
 
         {/* Panels */}

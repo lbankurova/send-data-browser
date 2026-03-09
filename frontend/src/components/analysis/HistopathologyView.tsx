@@ -59,7 +59,7 @@ import { specimenToOrganSystem } from "@/components/analysis/panes/Histopatholog
 import { CompareTab } from "@/components/analysis/CompareTab";
 import type { LesionSeverityRow, RuleResult, FindingDoseTrend, SignalSummaryRow } from "@/types/analysis-views";
 import {
-  deriveRecoveryAssessments,
+  deriveRecoveryAssessmentsSexAware,
   specimenRecoveryLabel,
   verdictPriority,
   verdictArrow,
@@ -453,7 +453,7 @@ function OverviewTab({
   const recoveryAssessments = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const findingNames = findingSummaries.map((f) => f.finding);
-    return deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesTab);
+    return deriveRecoveryAssessmentsSexAware(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesTab);
   }, [specimenHasRecovery, subjData, findingSummaries, specimen, speciesTab]);
 
   // Recovery chart anomaly summary for header icon (§4.4)
@@ -2204,7 +2204,7 @@ export function HistopathologyView() {
     const findingNames = findingSummaries.map((f) => f.finding);
     if (findingNames.length === 0) return null;
     const speciesMain = studyCtxMain?.species ?? null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, selectedSpecimen, speciesMain);
+    const assessments = deriveRecoveryAssessmentsSexAware(findingNames, subjData.subjects, undefined, subjData.recovery_days, selectedSpecimen, speciesMain);
     return specimenRecoveryLabel(assessments);
   }, [subjData, findingSummaries, selectedSpecimen, studyCtxMain]);
 
