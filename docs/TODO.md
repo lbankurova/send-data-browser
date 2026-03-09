@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 10 | 5 | Incorrect behavior that should be fixed |
+| Bug | 11 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -36,7 +36,7 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **75** | **40** | |
+| **Total open** | **76** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -126,6 +126,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P2 (incorrect UX signal — false red borders)
 - **Dependencies:** Unified override pattern spec (`docs/incoming/unified-override-pattern.md`)
 - **Owner hint:** frontend-dev
+
+### BUG-17: Incidence `max_effect_size` is avg severity but labeled as `|g|` across UI
+- **Files:** `backend/services/analysis/findings_mi.py:195`, `frontend/src/components/analysis/charts/findings-charts.ts` (scatter X-axis), `frontend/src/components/analysis/FindingsTable.tsx` (Effect column), `frontend/src/lib/derive-summaries.ts` (EndpointSummary)
+- **Issue:** MI findings store `avg_severity` (1–4 ordinal scale) in the `max_effect_size` field with a comment `# use avg severity as "effect size" for incidence`. This value is then displayed as `|g|` on the scatter plot X-axis, the findings table Effect column, and the endpoint rail — all surfaces that label it as Hedges' g. MA/CL/TF/DS set `max_effect_size = None` so they show "—". The mislabeling means a severity score of 2.18 appears as `g = 2.18`, which a reviewer would interpret as a very large standardized effect when it's actually a moderate severity grade.
+- **Scope:** Requires thorough analysis before implementation — touches the scatter plot axis, table column, rail sorting, endpoint summary derivation, classification thresholds (`classification.py` uses `max_effect_size` for adversity gating), and the new context pane (already handled: split into separate continuous/incidence sublists with correct labels). Need to decide: (a) give incidence its own field and axis, (b) compute a real effect size for incidence (e.g., odds ratio, risk ratio), or (c) keep dual-purpose field but fix labels everywhere. Option (a) is cleanest but largest scope.
+- **Status:** Open
+- **Priority:** P2 (misleading labels on statistical output — correctness issue for reviewers)
+- **Owner hint:** backend-dev + frontend-dev (cross-cutting)
 
 ### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅
 - **Files:** `backend/validation/scripts/registry.py`
