@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 11 | 5 | Incorrect behavior that should be fixed |
+| Bug | 11 | 7 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -111,12 +111,22 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
 
-### BUG-14: Syndrome info pane — duplicate endpoint entries
-- **Files:** `frontend/src/components/analysis/panes/EndpointSyndromePane.tsx`, `frontend/src/lib/cross-domain-syndromes.ts`
-- **Issue:** The syndrome info pane in the endpoint context panel shows duplicate rows for some endpoints. E.g., for Body Weight, "GLAND, MAMMARY — ATROPHY" appears twice. Likely cause: the syndrome engine or pane renderer is not deduplicating by a unique key (possibly same finding from multiple sex groups, or multiple syndrome rules matching the same endpoint, or the endpoint appearing in both the fired syndrome's required and supporting lists). Investigate root cause — fix may be in the data (deduplicate upstream) or the renderer (group/merge rows).
-- **Status:** Open
-- **Priority:** P2 (data correctness — misleading display)
+### ~~BUG-14: Syndrome info pane — duplicate endpoint entries~~ ✅
+- **Files:** `frontend/src/lib/cross-domain-syndromes.ts` (`mergeEndpoints`)
+- **Issue:** `mergeEndpoints()` used `endpoint_label::role::sex` as the dedup key. When any endpoint has sex-divergent directions, syndrome detection runs per-sex, producing duplicate `EndpointMatch` entries for every non-divergent endpoint (identical data, different sex tag). Three downstream bugs: (1) EndpointSyndromePane shows duplicate rows; (2) `syndrome-cross-reference.ts` recovery assessment inflates `recovered.length` / `partial.length` / `notRecovered.length` — misrepresents recovery narrative in regulatory context; (3) `SyndromeContextPanel` endpoint count header is 2× reality.
+- **Fix:** Changed dedup key to `endpoint_label::role` (sex-specificity lives on syndrome-level `sexes` array). Null out `sex` on merged entries to make aggregate semantics explicit and prevent future consumers from silently reading a stale sex tag.
+- **Status:** ~~Open~~ Fixed
+- **Priority:** P2 → P1 (recovery count inflation is data correctness, not cosmetic)
 - **Dependencies:** None
+- **Owner hint:** frontend-dev
+
+### ~~BUG-18: `direction: "any"` syndrome terms on sex-divergent endpoints~~ ✅
+- **Files:** `frontend/src/lib/cross-domain-syndromes.ts` (`mergeEndpoints`)
+- **Issue:** When a syndrome term uses `direction: "any"` and matches a sex-divergent endpoint (↑ in F, ↓ in M), per-sex detection produces two `EndpointMatch` entries with genuinely different directions. After the BUG-14 merge fix, only the first (alphabetically F) was kept — the M direction silently dropped. `direction: "any"` terms are common (60+ uses in syndrome definitions), not rare.
+- **Fix:** `mergeEndpoints` now detects direction conflicts during merge: keeps the higher-severity entry's fields but sets `direction: "divergent"`. The UI arrow column renders "—" for divergent (falls through existing ternary). One entry per endpoint, no misleading single-sex arrow.
+- **Status:** ~~Open~~ Fixed
+- **Priority:** P3
+- **Dependencies:** BUG-14 (fixed)
 - **Owner hint:** frontend-dev
 
 ### BUG-16: Pattern → onset dose dependency invalidation logic is buggy

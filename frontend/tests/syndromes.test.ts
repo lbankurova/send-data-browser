@@ -5,7 +5,8 @@
  */
 import { describe, test, expect } from "vitest";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
-import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
+import { detectCrossDomainSyndromes, mergeEndpoints } from "@/lib/cross-domain-syndromes";
+import type { EndpointMatch } from "@/lib/cross-domain-syndromes";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 import fixture from "./fixtures/pointcross-findings.json";
 
@@ -332,6 +333,176 @@ describe("term match statuses (BTM-1/2/3)", () => {
         report!.oppositeCount,
         `${s.id} is LOW with requiredMet + ${s.domainsCovered.length} domains but report shows ${report!.oppositeCount} opposites`,
       ).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BUG-14: mergeEndpoints deduplication (no per-sex duplicates)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe("mergeEndpoints — BUG-14 deduplication", () => {
+  const makeMatch = (
+    overrides: Partial<EndpointMatch> & Pick<EndpointMatch, "endpoint_label">,
+  ): EndpointMatch => ({
+    domain: "LB",
+    role: "required",
+    direction: "up",
+    severity: "adverse",
+    sex: null,
+    ...overrides,
+  });
+
+  test("same endpoint+role from two sex runs produces one entry", () => {
+    const fGroup = [makeMatch({ endpoint_label: "ALT", sex: "F" })];
+    const mGroup = [makeMatch({ endpoint_label: "ALT", sex: "M" })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].endpoint_label).toBe("ALT");
+  });
+
+  test("merged entry has sex: null (aggregate semantics)", () => {
+    const fGroup = [makeMatch({ endpoint_label: "ALT", sex: "F" })];
+    const mGroup = [makeMatch({ endpoint_label: "ALT", sex: "M" })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged[0].sex).toBeNull();
+  });
+
+  test("different roles for the same endpoint are kept as separate entries", () => {
+    const fGroup = [
+      makeMatch({ endpoint_label: "ALT", role: "required", sex: "F" }),
+      makeMatch({ endpoint_label: "AST", role: "supporting", sex: "F" }),
+    ];
+    const mGroup = [
+      makeMatch({ endpoint_label: "ALT", role: "required", sex: "M" }),
+      makeMatch({ endpoint_label: "AST", role: "supporting", sex: "M" }),
+    ];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(2);
+    expect(merged.find((m) => m.endpoint_label === "ALT")?.role).toBe("required");
+    expect(merged.find((m) => m.endpoint_label === "AST")?.role).toBe("supporting");
+  });
+
+  test("single group with no duplicates passes through unchanged (except sex nulled)", () => {
+    const group = [
+      makeMatch({ endpoint_label: "ALT", sex: null }),
+      makeMatch({ endpoint_label: "AST", role: "supporting", sex: null }),
+    ];
+    const merged = mergeEndpoints([group]);
+    expect(merged).toHaveLength(2);
+    merged.forEach((m) => expect(m.sex).toBeNull());
+  });
+
+  test("empty groups produce empty result", () => {
+    expect(mergeEndpoints([])).toHaveLength(0);
+    expect(mergeEndpoints([[], []])).toHaveLength(0);
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BUG-18: direction:"any" terms on sex-divergent endpoints
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe("mergeEndpoints — BUG-18 divergent direction handling", () => {
+  const makeMatch = (
+    overrides: Partial<EndpointMatch> & Pick<EndpointMatch, "endpoint_label">,
+  ): EndpointMatch => ({
+    domain: "LB",
+    role: "required",
+    direction: "up",
+    severity: "adverse",
+    sex: null,
+    ...overrides,
+  });
+
+  test("same endpoint with different directions merges to 'divergent'", () => {
+    const fGroup = [makeMatch({ endpoint_label: "ALT", direction: "up", sex: "F" })];
+    const mGroup = [makeMatch({ endpoint_label: "ALT", direction: "down", sex: "M" })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].direction).toBe("divergent");
+    expect(merged[0].sex).toBeNull();
+  });
+
+  test("divergent merge keeps the higher-severity entry's fields", () => {
+    const fGroup = [makeMatch({
+      endpoint_label: "ALT", direction: "up", severity: "warning", sex: "F", domain: "LB",
+    })];
+    const mGroup = [makeMatch({
+      endpoint_label: "ALT", direction: "down", severity: "adverse", sex: "M", domain: "LB",
+    })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(1);
+    // M had higher severity (adverse > warning), so severity should be adverse
+    expect(merged[0].severity).toBe("adverse");
+    expect(merged[0].direction).toBe("divergent");
+  });
+
+  test("divergent merge keeps first entry when severities are equal", () => {
+    const fGroup = [makeMatch({
+      endpoint_label: "ALT", direction: "up", severity: "adverse", sex: "F",
+    })];
+    const mGroup = [makeMatch({
+      endpoint_label: "ALT", direction: "down", severity: "adverse", sex: "M",
+    })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].direction).toBe("divergent");
+    // Both adverse — first (F) kept, but direction overridden to divergent
+    expect(merged[0].severity).toBe("adverse");
+  });
+
+  test("same direction across sexes does NOT produce 'divergent'", () => {
+    const fGroup = [makeMatch({ endpoint_label: "ALT", direction: "up", sex: "F" })];
+    const mGroup = [makeMatch({ endpoint_label: "ALT", direction: "up", sex: "M" })];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].direction).toBe("up");
+  });
+
+  test("mixed scenario: one endpoint divergent, others normal", () => {
+    const fGroup = [
+      makeMatch({ endpoint_label: "ALT", direction: "up", sex: "F" }),
+      makeMatch({ endpoint_label: "AST", direction: "up", role: "supporting", sex: "F" }),
+    ];
+    const mGroup = [
+      makeMatch({ endpoint_label: "ALT", direction: "down", sex: "M" }),
+      makeMatch({ endpoint_label: "AST", direction: "up", role: "supporting", sex: "M" }),
+    ];
+    const merged = mergeEndpoints([fGroup, mGroup]);
+    expect(merged).toHaveLength(2);
+    expect(merged.find((m) => m.endpoint_label === "ALT")?.direction).toBe("divergent");
+    expect(merged.find((m) => m.endpoint_label === "AST")?.direction).toBe("up");
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BUG-14 regression: PointCross fixture — no duplicate matchedEndpoints
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+describe("detectCrossDomainSyndromes — no duplicate matchedEndpoints", () => {
+  test("no syndrome has duplicate endpoint_label+role pairs", () => {
+    for (const s of syndromes) {
+      const seen = new Set<string>();
+      for (const ep of s.matchedEndpoints) {
+        const key = `${ep.endpoint_label}::${ep.role}`;
+        expect(
+          seen.has(key),
+          `Syndrome ${s.id}: duplicate matchedEndpoint "${ep.endpoint_label}" (${ep.role})`,
+        ).toBe(false);
+        seen.add(key);
+      }
+    }
+  });
+
+  test("all matchedEndpoints have sex: null after merge", () => {
+    for (const s of syndromes) {
+      for (const ep of s.matchedEndpoints) {
+        expect(
+          ep.sex,
+          `Syndrome ${s.id}: endpoint "${ep.endpoint_label}" has non-null sex "${ep.sex}"`,
+        ).toBeNull();
+      }
     }
   });
 });
