@@ -2251,6 +2251,7 @@ function VolcanoScatter({
       .map((ep) => ({
         endpoint_label: ep.endpoint_label,
         organ_system: ep.organ_system,
+        domain: ep.domain,
         x: Math.abs(ep.max_effect_size!),
         y: -Math.log10(ep.min_trend_p!),
         color: getOrganColor(ep.organ_system),
@@ -2452,8 +2453,10 @@ function computeStrength(ep: EndpointSummary, esSymbol = "d"): { level: 0 | 1 | 
   else if (d >= 0.2) level = 2;
   else level = 1;
 
+  const isIncidence = ep.data_type === "categorical";
+  const metricLabel = isIncidence ? "avg sev" : `|${esSymbol}|`;
   const pText = ep.min_p_value != null ? ` · p ${ep.min_p_value < 0.001 ? "< 0.001" : `= ${ep.min_p_value.toFixed(3)}`}` : "";
-  return { level, evidence: `|${esSymbol}| = ${d.toFixed(2)}${pText}` };
+  return { level, evidence: `${metricLabel} = ${d.toFixed(2)}${pText}` };
 }
 
 function computeConsistency(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {

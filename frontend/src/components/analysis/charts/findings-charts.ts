@@ -3,11 +3,11 @@
  */
 
 import type { EChartsOption } from "echarts";
+import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import type { EndpointSummary, OrganCoherence, NoaelTier } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
-
 
 /** Hex domain color for use in tooltip HTML (not Tailwind classes). */
 function getDomainHexColor(domain: string): string {
@@ -244,7 +244,7 @@ export function buildFindingsQuadrantOption(
       max: maxX,
       axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
-      name: `Effect, |${effectSizeSymbol}|`,
+      name: "Effect",
       nameLocation: "end",
       nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
     },
@@ -281,11 +281,13 @@ export function buildFindingsQuadrantOption(
         const domainColor = getDomainHexColor(meta.domain);
         const sevLabel = meta.worstSeverity === "adverse" ? "adverse" : meta.worstSeverity === "warning" ? "warning" : "normal";
         const trLabel = meta.treatmentRelated ? "TR" : "non-TR";
+        const isIncidence = INCIDENCE_DOMAINS.has(meta.domain);
+        const effectLabel = isIncidence ? `avg sev=${meta.x.toFixed(2)}` : `|${effectSizeSymbol}|=${meta.x.toFixed(2)}`;
         const lines = [
           `<div style="font-size:11px;font-weight:600">${meta.endpoint_label}</div>`,
           `<div style="font-size:10px;color:#9CA3AF"><span style="color:${domainColor}">${meta.domain}</span> \u00b7 ${meta.organ_system}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:3px">`,
-          `<span>|${effectSizeSymbol}|=${meta.x.toFixed(2)}</span>`,
+          `<span>${effectLabel}</span>`,
           `<span>p=${meta.rawP.toExponential(1)}</span>`,
           `</div>`,
           `<div style="font-size:9px;color:#9CA3AF;margin-top:2px">${sevLabel} \u00b7 ${trLabel}</div>`,

@@ -6,6 +6,11 @@
 import type { AdverseEffectSummaryRow, DoseResponseRow } from "@/types/analysis-views";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
+// ─── Domain classification ─────────────────────────────────
+
+/** Domains where max_effect_size represents avg severity (not Cohen's d / Hedges' g). */
+export const INCIDENCE_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
+
 // ─── Public types ──────────────────────────────────────────
 
 /** NOAEL tier relative to the dose range. Only "below-lowest" and "at-lowest" get color tint. */
