@@ -450,6 +450,76 @@ export function deriveRecoveryAssessments(
   });
 }
 
+// ─── Sex-stratified wrapper ──────────────────────────────
+
+/**
+ * Sex-aware recovery assessment: computes per-sex, then merges to worst
+ * verdict per finding × dose level.
+ *
+ * Rodent recovery arms are often sex-restricted (e.g., males only). Pooling
+ * sexes would compare mixed-sex main arm against single-sex recovery arm,
+ * corrupting incidence-based verdicts. This wrapper stratifies by sex before
+ * computing, then takes the worst verdict per dose level across sexes.
+ */
+export function deriveRecoveryAssessmentsSexAware(
+  findingNames: string[],
+  subjects: SubjectHistopathEntry[],
+  thresholds: VerdictThresholds = DEFAULT_VERDICT_THRESHOLDS,
+  recoveryPeriodDays?: number | null,
+  organ?: string | null,
+  species?: string | null,
+): RecoveryAssessment[] {
+  // Determine sexes present in recovery arm
+  const recoverySexes = new Set(
+    subjects.filter((s) => s.is_recovery && !s.is_satellite).map((s) => s.sex),
+  );
+
+  // No recovery subjects: delegate directly
+  if (recoverySexes.size === 0) {
+    return deriveRecoveryAssessments(findingNames, subjects, thresholds, recoveryPeriodDays, organ, species);
+  }
+
+  // Compute per-sex assessments (filtering BOTH arms to same sex)
+  const perSex: RecoveryAssessment[][] = [];
+  for (const sex of recoverySexes) {
+    const sexSubjects = subjects.filter((s) => s.sex === sex);
+    perSex.push(deriveRecoveryAssessments(findingNames, sexSubjects, thresholds, recoveryPeriodDays, organ, species));
+  }
+
+  // Merge: for each finding, combine dose assessments across sexes
+  return findingNames.map((finding) => {
+    const sexResults = perSex
+      .map((assessments) => assessments.find((a) => a.finding === finding))
+      .filter((a): a is RecoveryAssessment => a != null);
+
+    if (sexResults.length === 0) {
+      return { finding, assessments: [], overall: "no_data" as RecoveryVerdict };
+    }
+
+    // Collect all dose levels across sexes
+    const allDoseLevels = new Set<number>();
+    for (const sa of sexResults) {
+      for (const da of sa.assessments) allDoseLevels.add(da.doseLevel);
+    }
+
+    // For each dose level, take worst verdict across sexes
+    const merged: RecoveryDoseAssessment[] = [];
+    for (const dl of [...allDoseLevels].sort((a, b) => a - b)) {
+      const candidates = sexResults
+        .flatMap((sa) => sa.assessments)
+        .filter((da) => da.doseLevel === dl);
+      if (candidates.length === 0) continue;
+      const worst = candidates.reduce((a, b) =>
+        verdictPriority(a.verdict) <= verdictPriority(b.verdict) ? a : b,
+      );
+      merged.push(worst);
+    }
+
+    const overall = worstVerdict(merged.map((a) => a.verdict));
+    return { finding, assessments: merged, overall };
+  });
+}
+
 // ─── Helpers ──────────────────────────────────────────────
 
 /**

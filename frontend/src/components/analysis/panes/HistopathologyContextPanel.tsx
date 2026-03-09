@@ -24,7 +24,7 @@ import type { LesionSeverityRow, RuleResult } from "@/types/analysis-views";
 import type { PathologyReview } from "@/types/annotations";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { deriveRecoveryAssessments, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
+import { deriveRecoveryAssessmentsSexAware, MIN_RECOVERY_N, verdictArrow, formatRecoveryFraction } from "@/lib/recovery-assessment";
 import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import { classifyRecovery, classifySpecimenRecovery, CLASSIFICATION_LABELS, CLASSIFICATION_BORDER, CLASSIFICATION_PRIORITY } from "@/lib/recovery-classification";
@@ -888,7 +888,7 @@ function SpecimenOverviewPane({
     if (!specimenHasRecoveryFlag || !subjData?.subjects) return null;
     if (findingNames.length === 0) return null;
     const speciesForRecovery = studyCtxSpec?.species ?? null;
-    const assessments = deriveRecoveryAssessments(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesForRecovery);
+    const assessments = deriveRecoveryAssessmentsSexAware(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesForRecovery);
 
     // Build per-finding clinical catalog lookup
     const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
@@ -1616,7 +1616,7 @@ function FindingDetailPane({
 
   const findingRecovery = useMemo(() => {
     if (!specimenHasRecovery || !subjData?.subjects) return null;
-    const assessments = deriveRecoveryAssessments([selection.finding], subjData.subjects, undefined, subjData.recovery_days, selection.specimen, studyCtx?.species ?? null);
+    const assessments = deriveRecoveryAssessmentsSexAware([selection.finding], subjData.subjects, undefined, subjData.recovery_days, selection.specimen, studyCtx?.species ?? null);
     return assessments[0] ?? null;
   }, [specimenHasRecovery, subjData, selection.finding, selection.specimen, studyCtx]);
   const findingSyndromeMatch = useMemo(() => {
