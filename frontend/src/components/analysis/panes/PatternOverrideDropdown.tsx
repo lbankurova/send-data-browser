@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useSaveAnnotation, useDeleteAnnotation } from "@/hooks/useAnnotations";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { UnifiedFinding } from "@/types/analysis";
 import { defaultOnsetForPattern } from "@/lib/onset-dose";
@@ -75,6 +75,7 @@ export function PatternOverrideDropdown({ finding }: Props) {
     original_direction: string | null;
     onset_dose_level?: number | null;
   }>(studyId, "pattern-overrides");
+  const deleteMutation = useDeleteAnnotation(studyId, "pattern-overrides");
 
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -95,8 +96,9 @@ export function PatternOverrideDropdown({ finding }: Props) {
     : finding.dose_response_pattern;
 
   // Has the pattern actually been changed from algorithmic?
+  // Guard: if originalKey is null (missing/corrupt original_pattern), don't show pill
   const originalKey = patternToOverrideKey(originalPattern);
-  const patternChanged = hasOverride && override.pattern !== originalKey;
+  const patternChanged = hasOverride && originalKey != null && override.pattern !== originalKey;
 
   const direction = finding.direction ?? null;
 
@@ -147,6 +149,16 @@ export function PatternOverrideDropdown({ finding }: Props) {
   function handleSelect(value: string) {
     if (!studyId) return;
     setOpen(false);
+
+    // If selecting the original pattern, treat as reset (delete annotation)
+    // This prevents stale no-op overrides from persisting across sessions
+    const origKey = patternToOverrideKey(originalPattern ?? finding.dose_response_pattern);
+    if (value === origKey && hasOverride) {
+      handleReset();
+      return;
+    }
+    // No override exists and user selected the current pattern — nothing to do
+    if (value === origKey && !hasOverride) return;
 
     // Determine onset_dose_level for the new pattern
     const prevOverrideKey = currentOverrideKey;
@@ -213,7 +225,7 @@ export function PatternOverrideDropdown({ finding }: Props) {
     if (!studyId || !hasOverride) return;
     setOpen(false);
 
-    // Restore algorithmic pattern — remove override from annotation
+    // Optimistic: remove override from this finding only
     queryClient.setQueriesData<{ findings: UnifiedFinding[] }>(
       { queryKey: ["findings", studyId] },
       (old) => {
@@ -229,24 +241,12 @@ export function PatternOverrideDropdown({ finding }: Props) {
       },
     );
 
-    // Save the original pattern back (effectively clearing the override)
-    const origKey = patternToOverrideKey(originalPattern) ?? "no_change";
-    saveMutation.mutate(
-      {
-        entityKey: finding.id,
-        data: {
-          pattern: origKey,
-          original_pattern: originalPattern ?? "flat",
-          original_direction: direction,
-          onset_dose_level: null,
-        },
+    // Delete the annotation entry entirely (not save-back-original)
+    deleteMutation.mutate(finding.id, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["findings", studyId] });
       },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["findings", studyId] });
-        },
-      },
-    );
+    });
   }
 
   function handleSaveNote(text: string) {
@@ -285,19 +285,17 @@ export function PatternOverrideDropdown({ finding }: Props) {
   })();
 
   return (
-    <div className="relative">
-      {/* Text — flush right, matches non-dropdown cell alignment */}
+    <div className="relative flex items-center gap-0.5">
       <button
         onClick={() => setOpen(!open)}
-        className="block w-full text-right font-mono py-0.5 text-muted-foreground hover:bg-muted/50 rounded transition-colors"
+        className="flex-1 text-right font-mono py-0.5 text-muted-foreground hover:bg-muted/50 rounded transition-colors"
         title={patternChanged
           ? `Overridden (was: ${originalLabel ?? originalPattern})`
           : "Click to override pattern"}
       >
         {currentLabel}
       </button>
-      {/* Override pill + chevron — absolutely positioned, outside text flow */}
-      <span className="absolute right-[-20px] top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+      <div className="w-3 shrink-0">
         <OverridePill
           isOverridden={patternChanged}
           note={overrideNote}
@@ -308,11 +306,11 @@ export function PatternOverrideDropdown({ finding }: Props) {
           popoverSide="top"
           popoverAlign="end"
         />
-        <ChevronDown
-          className="h-2.5 w-2.5 text-muted-foreground/40 cursor-pointer"
-          onClick={() => setOpen(!open)}
-        />
-      </span>
+      </div>
+      <ChevronDown
+        className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40 cursor-pointer"
+        onClick={() => setOpen(!open)}
+      />
 
       {open && (
         <>
