@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { useSaveAnnotation } from "@/hooks/useAnnotations";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { UnifiedFinding } from "@/types/analysis";
 import { defaultOnsetForPattern } from "@/lib/onset-dose";
 
@@ -79,8 +79,6 @@ export function PatternOverrideDropdown({ finding }: Props) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [hoveredOption, setHoveredOption] = useState<string | null>(null);
-  const [noteDraft, setNoteDraft] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const override = finding._pattern_override;
@@ -298,57 +296,16 @@ export function PatternOverrideDropdown({ finding }: Props) {
       >
         {currentLabel}
       </button>
-      {/* Asterisk + chevron — absolutely positioned, outside text flow */}
+      {/* Override pill + chevron — absolutely positioned, outside text flow */}
       <span className="absolute right-[-20px] top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-        {patternChanged ? (
-          <Popover open={noteOpen} onOpenChange={(v) => { setNoteOpen(v); if (v) setNoteDraft(overrideNote ?? ""); }}>
-            <PopoverTrigger asChild>
-              <span
-                role="button"
-                tabIndex={0}
-                className="text-[10px] text-primary/70 hover:text-primary leading-none cursor-pointer"
-                title={`Overridden (was: ${originalLabel ?? originalPattern})`}
-                onClick={(e) => { e.stopPropagation(); setNoteOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setNoteOpen(true); } }}
-              >
-                *
-              </span>
-            </PopoverTrigger>
-            <PopoverContent align="end" side="top" className="w-56 p-2">
-              <div className="mb-1 text-[10px] font-medium text-muted-foreground">Override note</div>
-              <textarea
-                className="w-full rounded border bg-background px-1.5 py-1 text-[11px] leading-snug placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
-                rows={2}
-                placeholder="e.g., Consistent downward drift from first dose"
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSaveNote(noteDraft);
-                    setNoteOpen(false);
-                  }
-                }}
-              />
-              <div className="mt-1 flex justify-end gap-1">
-                <button
-                  type="button"
-                  className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-                  onClick={() => setNoteOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90"
-                  onClick={() => { handleSaveNote(noteDraft); setNoteOpen(false); }}
-                >
-                  Save
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : null}
+        <OverridePill
+          isOverridden={patternChanged}
+          note={overrideNote}
+          onSaveNote={handleSaveNote}
+          placeholder="Consistent downward drift from first dose"
+          popoverSide="top"
+          popoverAlign="end"
+        />
         <ChevronDown
           className="h-2.5 w-2.5 text-muted-foreground/40 cursor-pointer"
           onClick={() => setOpen(!open)}

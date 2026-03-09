@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { useSaveAnnotation } from "@/hooks/useAnnotations";
 import { resolveOnsetDose, formatOnsetDose, onsetNeedsAttention } from "@/lib/onset-dose";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { patternToOverrideKey } from "./PatternOverrideDropdown";
 
@@ -45,8 +45,6 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
   }>(studyId, "pattern-overrides");
 
   const [open, setOpen] = useState(false);
-  const [noteDraft, setNoteDraft] = useState("");
-  const [noteOpen, setNoteOpen] = useState(false);
 
   const treatmentGroups = doseGroups.filter(g => g.dose_level > 0);
   const lowestDoseLevel = treatmentGroups.length > 0 ? treatmentGroups[0].dose_level : 1;
@@ -203,63 +201,22 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
       <button
         onClick={() => setOpen(!open)}
         className={`block w-full text-right font-mono py-0.5 hover:bg-muted/50 rounded transition-colors ${
-          needsAttention ? "border-b-2 border-red-500" : ""
+          needsAttention ? "border-b border-red-500" : ""
         }`}
         title={needsAttention ? "Onset dose needs selection" : overrideTooltip}
       >
         <span className={onset ? "" : "text-muted-foreground/60"}>{displayLabel}</span>
       </button>
-      {/* Asterisk + chevron — absolutely positioned, outside text flow */}
+      {/* Override pill + chevron — absolutely positioned, outside text flow */}
       <span className="absolute right-[-20px] top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-        {isOverridden ? (
-          <Popover open={noteOpen} onOpenChange={(v) => { setNoteOpen(v); if (v) setNoteDraft(overrideNote ?? ""); }}>
-            <PopoverTrigger asChild>
-              <span
-                role="button"
-                tabIndex={0}
-                className="text-[10px] text-primary/70 hover:text-primary leading-none cursor-pointer"
-                title={overrideTooltip}
-                onClick={(e) => { e.stopPropagation(); setNoteOpen(true); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setNoteOpen(true); } }}
-              >
-                *
-              </span>
-            </PopoverTrigger>
-            <PopoverContent align="end" side="top" className="w-56 p-2">
-              <div className="mb-1 text-[10px] font-medium text-muted-foreground">Override note</div>
-              <textarea
-                className="w-full rounded border bg-background px-1.5 py-1 text-[11px] leading-snug placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
-                rows={2}
-                placeholder="e.g., Consistent downward drift from first dose"
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSaveNote(noteDraft);
-                    setNoteOpen(false);
-                  }
-                }}
-              />
-              <div className="mt-1 flex justify-end gap-1">
-                <button
-                  type="button"
-                  className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-                  onClick={() => setNoteOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90"
-                  onClick={() => { handleSaveNote(noteDraft); setNoteOpen(false); }}
-                >
-                  Save
-                </button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : null}
+        <OverridePill
+          isOverridden={isOverridden}
+          note={overrideNote}
+          onSaveNote={handleSaveNote}
+          placeholder="Onset at dose 2 — earliest statistically significant effect"
+          popoverSide="top"
+          popoverAlign="end"
+        />
         <ChevronDown
           className="h-2.5 w-2.5 text-muted-foreground/40 cursor-pointer"
           onClick={() => setOpen(!open)}
