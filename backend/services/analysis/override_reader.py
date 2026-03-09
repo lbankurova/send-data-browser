@@ -84,6 +84,7 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
     """Apply user pattern overrides to fully-enriched findings.
 
     Replaces the pattern and re-derives ALL downstream fields:
+      - onset_dose_level (from onset_dose override or cleared for no_change)
       - treatment_related (reads dose_response_pattern)
       - finding_class (ECETOC A-1 factor reads pattern)
       - _confidence (reads finding_class)
@@ -105,9 +106,17 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
             "pattern": override_pattern,
             "original_pattern": f.get("dose_response_pattern"),
             "original_direction": f.get("direction"),
+            "onset_dose_level": ov.get("onset_dose_level"),
+            "original_onset_dose_level": f.get("onset_dose_level"),
             "timestamp": ov.get("timestamp", ov.get("reviewDate")),
         }
         f["dose_response_pattern"] = _resolve_override(override_pattern, direction)
+        # Apply onset dose override
+        if override_pattern == "no_change":
+            # No change → clear onset dose
+            f["onset_dose_level"] = None
+        elif ov.get("onset_dose_level") is not None:
+            f["onset_dose_level"] = ov["onset_dose_level"]
         # Re-derive treatment-relatedness with the overridden pattern
         f["treatment_related"] = determine_treatment_related(f)
         # Re-derive ECETOC finding_class (A-1 factor reads pattern)

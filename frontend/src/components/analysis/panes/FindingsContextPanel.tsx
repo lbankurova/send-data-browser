@@ -24,6 +24,7 @@ import { DistributionPane } from "./DistributionPane";
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
+import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,7 @@ import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/org
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
-import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
@@ -716,18 +717,16 @@ function SexComparisonPane({
   finding,
   siblingFinding,
   analytics,
-  primaryStatistics,
-  siblingStatistics,
   primaryRecoveryLabel,
   siblingRecoveryLabel,
+  doseGroups,
 }: {
   finding: UnifiedFinding;
   siblingFinding?: UnifiedFinding;
   analytics: ReturnType<typeof useFindingsAnalyticsLocal>["analytics"];
-  primaryStatistics?: FindingContext["statistics"];
-  siblingStatistics?: FindingContext["statistics"];
   primaryRecoveryLabel?: string;
   siblingRecoveryLabel?: string;
+  doseGroups?: DoseGroup[];
 }) {
   const endpointLabel = finding.endpoint_label ?? finding.finding;
   const epSummary = analytics.endpoints.find(e => e.endpoint_label === endpointLabel);
@@ -798,27 +797,8 @@ function SexComparisonPane({
     });
   }
 
-  // Onset dose row: first dose with p < 0.05 from statistics rows
-  const onsetLabel = (stats: FindingContext["statistics"] | undefined): string => {
-    if (!stats?.rows) return "\u2014";
-    for (let i = 1; i < stats.rows.length; i++) {
-      const p = stats.rows[i].p_value_adj ?? stats.rows[i].p_value;
-      if (p != null && p < 0.05) {
-        const r = stats.rows[i];
-        return r.dose_value != null ? `${r.dose_value} ${r.dose_unit ?? "mg/kg"}`.trim() : (r.label ?? "\u2014");
-      }
-    }
-    return "n.s.";
-  };
-  const primaryOnset = onsetLabel(primaryStatistics);
-  const sibOnset = onsetLabel(siblingStatistics);
-  rows.push({
-    label: "Onset dose",
-    values: [
-      primarySex === sexes[0] ? primaryOnset : sibOnset,
-      primarySex === sexes[1] ? primaryOnset : sibOnset,
-    ],
-  });
+  // Onset dose row — always rendered as custom JSX cells with dropdown
+  // (onset dose is always overridable, even without a pattern override)
 
   // Recovery row (when available)
   if (primaryRecoveryLabel || siblingRecoveryLabel) {
@@ -832,7 +812,7 @@ function SexComparisonPane({
   }
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 pr-6">
       <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
         Sex comparison
       </div>
@@ -864,9 +844,7 @@ function SexComparisonPane({
                     return (
                       <td key={s} className="py-0.5 text-right">
                         {sf ? (
-                          <div className="flex justify-end">
-                            <PatternOverrideDropdown finding={sf} />
-                          </div>
+                          <PatternOverrideDropdown finding={sf} />
                         ) : (
                           <span className="font-mono">{patLabel(bySex.get(s)!)}</span>
                         )}
@@ -877,6 +855,22 @@ function SexComparisonPane({
               )}
             </Fragment>
           ))}
+          {/* Onset dose row — always shows dropdown for override */}
+          <tr className="border-b border-border/30">
+            <td className="py-0.5 text-muted-foreground">Onset dose</td>
+            {sexes.map(s => {
+              const sf = findingForSex[s];
+              return (
+                <td key={s} className="py-0.5 text-right">
+                  {sf && doseGroups ? (
+                    <OnsetDoseDropdown finding={sf} doseGroups={doseGroups} />
+                  ) : (
+                    <span className="font-mono">{"\u2014"}</span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
         </tbody>
       </table>
     </div>
@@ -1272,8 +1266,7 @@ export function FindingsContextPanel() {
             finding={selectedFinding}
             siblingFinding={findingsData?.findings.find(f => f.id === siblingContext!.finding_id)}
             analytics={analytics}
-            primaryStatistics={activeStatistics}
-            siblingStatistics={siblingContext?.statistics}
+            doseGroups={findingsData?.dose_groups}
           />
         )}
       </div>

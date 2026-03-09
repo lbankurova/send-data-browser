@@ -53,6 +53,8 @@ export interface UnifiedFinding {
   severity: "adverse" | "warning" | "normal";
   direction: "up" | "down" | "none" | null;
   dose_response_pattern: string | null;
+  /** Backend classifier's onset dose level (1-based, threshold patterns). */
+  onset_dose_level?: number | null;
   treatment_related: boolean;
   max_effect_size: number | null;
   min_p_adj: number | null;
@@ -137,6 +139,8 @@ export interface UnifiedFinding {
     pattern: string;
     original_pattern: string;
     original_direction: string | null;
+    onset_dose_level: number | null;
+    original_onset_dose_level: number | null;
     timestamp: string;
   };
 }
