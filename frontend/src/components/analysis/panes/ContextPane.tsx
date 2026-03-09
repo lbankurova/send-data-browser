@@ -51,7 +51,7 @@ function EffectList({ entries, currentLabel, label, total, unit }: {
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
-        <span className="text-[9px] text-muted-foreground">{unit}</span>
+        <span className="shrink-0 text-[10px] font-mono text-muted-foreground">{unit}</span>
       </div>
       <div className="space-y-0.5">
         {visible.map((e, i) => {
@@ -137,7 +137,7 @@ export function ContextPane({ effectSize, selectedFindingId: _selectedFindingId,
         currentLabel={currentLabel}
         label="Largest incidence effects"
         total={effectSize.total_incidence ?? incidence.length}
-        unit="severity"
+        unit="avg severity"
       />
     </div>
   );
