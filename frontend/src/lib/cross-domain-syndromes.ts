@@ -403,16 +403,38 @@ function projectToSex(ep: EndpointSummary, sex: string): EndpointSummary {
   };
 }
 
-/** Merge endpoint match lists from multiple syndrome results. */
-function mergeEndpoints(groups: EndpointMatch[][]): EndpointMatch[] {
-  const seen = new Set<string>();
+/** Severity rank for merge conflict resolution. */
+const SEVERITY_RANK: Record<string, number> = { adverse: 2, warning: 1, normal: 0 };
+
+/** Merge endpoint match lists from multiple per-sex syndrome results.
+ *  Dedup by endpoint_label + role — sex-specificity lives on the
+ *  syndrome-level `sexes` array, not per-endpoint. Nulling `sex`
+ *  makes aggregate semantics explicit for future consumers.
+ *
+ *  BUG-18: When a `direction:"any"` term matches a sex-divergent endpoint,
+ *  the two per-sex runs produce entries with different directions. We keep
+ *  the higher-severity entry and set direction to "divergent" so the UI
+ *  shows "—" instead of a misleading single-sex arrow. */
+/** @internal Exported for testing only. */
+export function mergeEndpoints(groups: EndpointMatch[][]): EndpointMatch[] {
+  const seen = new Map<string, number>(); // key → index in result
   const result: EndpointMatch[] = [];
   for (const group of groups) {
     for (const m of group) {
-      const key = `${m.endpoint_label}::${m.role}::${m.sex ?? ""}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(m);
+      const key = `${m.endpoint_label}::${m.role}`;
+      const idx = seen.get(key);
+      if (idx === undefined) {
+        seen.set(key, result.length);
+        result.push({ ...m, sex: null });
+      } else if (result[idx].direction !== m.direction) {
+        // Same endpoint matched with different directions across sexes.
+        // Keep the higher-severity entry; mark direction as "divergent".
+        const keepNew = (SEVERITY_RANK[m.severity] ?? 0) > (SEVERITY_RANK[result[idx].severity] ?? 0);
+        result[idx] = {
+          ...(keepNew ? m : result[idx]),
+          sex: null,
+          direction: "divergent",
+        };
       }
     }
   }
@@ -430,7 +452,12 @@ function deduplicateSyndromes(syndromes: CrossDomainSyndrome[]): CrossDomainSynd
   const results: CrossDomainSyndrome[] = [];
   for (const [, group] of byId) {
     if (group.length === 1) {
-      results.push(group[0]);
+      // Null out per-sex tags even for single-sex syndromes —
+      // sex-specificity lives on syndrome.sexes, not per-endpoint.
+      results.push({
+        ...group[0],
+        matchedEndpoints: group[0].matchedEndpoints.map((m) => ({ ...m, sex: null })),
+      });
       continue;
     }
     // Same syndrome fired for multiple sexes — merge
