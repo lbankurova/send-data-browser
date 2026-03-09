@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { OverridePill } from "@/components/ui/OverridePill";
 import { cn } from "@/lib/utils";
 import type { PathologyReview } from "@/types/annotations";
 
@@ -173,7 +174,21 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
   const notesRequiredButMissing = peerReviewStatus === "Disagreed" && !comment.trim();
 
   return (
-    <CollapsiblePane title="Pathology review" defaultOpen={defaultOpen}>
+    <CollapsiblePane
+      title="Pathology review"
+      defaultOpen={defaultOpen}
+      headerRight={
+        <OverridePill
+          isOverridden={existing?.peerReviewStatus === "Disagreed"}
+          note={existing?.comment}
+          user={existing?.reviewerName || existing?.pathologist}
+          timestamp={existing?.reviewedAt ? new Date(existing.reviewedAt).toLocaleDateString() : undefined}
+          onSaveNote={(text) => setComment(text)}
+          placeholder="Disagreement summary"
+          popoverSide="left"
+        />
+      }
+    >
       <div className="space-y-2 text-[11px]">
         {/* Step 1: Review decision */}
         <div>

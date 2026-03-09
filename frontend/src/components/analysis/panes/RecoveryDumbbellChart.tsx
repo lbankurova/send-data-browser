@@ -131,6 +131,7 @@ export interface ChartRow {
   row: RecoveryRow;
   doseLabel: string;
   verdict: ContinuousVerdictType;
+  confidence?: "adequate" | "low";
   terminalVal: number | null; // |g| at terminal (always ≥ 0)
   recoveryVal: number | null; // |g| at recovery; negative when overcorrected (crossed control)
   peakVal: number | null;     // |g| at peak (always ≥ 0)
@@ -172,7 +173,7 @@ export function buildChartRows(
       };
     }
 
-    const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size);
+    const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size, row.treated_n, row.control_n);
 
     // Chart plots |g|. Overcorrected recovery crosses zero (negative) to show
     // the effect reversed past control. All other values are absolute.
@@ -182,6 +183,7 @@ export function buildChartRows(
       row,
       doseLabel,
       verdict: v.verdict,
+      confidence: v.confidence,
       terminalVal: row.terminal_effect != null ? Math.abs(row.terminal_effect) : null,
       recoveryVal: row.effect_size != null
         ? (isOvercorrected ? -Math.abs(row.effect_size) : Math.abs(row.effect_size))
@@ -366,6 +368,7 @@ function DumbbellPanel({
           const tx = scale(tVal);
           const rx = scale(rVal);
           const cs = connectorStyle(cr.row.p_value);
+          const isLowConf = cr.confidence === "low";
           const recovering = Math.abs(rVal) < Math.abs(tVal); // effect magnitude shrinking = recovering
           const arrowDir = rx < tx ? -1 : 1; // arrow points in direction of recovery position
 
@@ -500,6 +503,7 @@ function DumbbellPanel({
                   stroke={CONNECTOR_COLOR}
                   strokeWidth={cs.width}
                   opacity={cs.opacity}
+                  {...(isLowConf ? { strokeDasharray: "3,2" } : {})}
                 />
 
                 {/* Terminal dot (filled) */}
@@ -611,7 +615,7 @@ function DumbbellPanel({
               </div>
             );
           }
-          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size);
+          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size, cr.row.treated_n, cr.row.control_n);
 
           // Both below trivial threshold — no meaningful effect
           const tAbs = cr.row.terminal_effect != null ? Math.abs(cr.row.terminal_effect) : 0;
@@ -643,7 +647,7 @@ function DumbbellPanel({
                   title={cr.doseLabel}
                 />
                 <span className={`inline-block w-[70px] shrink-0 ${CONT_VERDICT_CLASS[cr.verdict]}`}>
-                  {CONT_VERDICT_LABEL[cr.verdict]}:
+                  {CONT_VERDICT_LABEL[cr.verdict]}{cr.confidence === "low" ? " *" : ""}:
                 </span>
                 <span className="text-muted-foreground">{desc}</span>
               </span>

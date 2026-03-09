@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { ToxFinding, ToxSystemSuggestion } from "@/types/annotations";
 
 const TREATMENT_OPTIONS = ["Yes", "No", "Equivocal", "Not Evaluated"] as const;
@@ -81,7 +82,17 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
     <CollapsiblePane
       title="Tox assessment"
       defaultOpen={defaultOpen}
-      headerRight={hasOverride ? <span className="text-[9px] text-muted-foreground">(overridden)</span> : undefined}
+      headerRight={
+        <OverridePill
+          isOverridden={hasOverride}
+          note={existing?.comment}
+          user={existing?.reviewedBy}
+          timestamp={existing?.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : undefined}
+          onSaveNote={(text) => setComment(text)}
+          placeholder="Reason for overriding system suggestion"
+          popoverSide="left"
+        />
+      }
     >
       <div className="space-y-2 text-[11px]">
         {/* Treatment Related */}
@@ -92,9 +103,6 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
               <span className="text-[10px] text-muted-foreground/70">
                 System: {systemSuggestion.treatmentRelated}
               </span>
-            )}
-            {treatmentOverridden && (
-              <span className="text-[9px] text-muted-foreground">(overridden)</span>
             )}
           </div>
           <select
@@ -116,9 +124,6 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
               <span className="text-[10px] text-muted-foreground/70">
                 System: {systemSuggestion.adversity}
               </span>
-            )}
-            {adversityOverridden && (
-              <span className="text-[9px] text-muted-foreground">(overridden)</span>
             )}
           </div>
           <select

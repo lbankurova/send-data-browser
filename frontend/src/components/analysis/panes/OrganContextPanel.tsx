@@ -25,6 +25,7 @@ import { getSyndromeNearMissInfo } from "@/lib/cross-domain-syndromes";
 import { findClinicalMatchForEndpoint, getClinicalTierTextClass, getClinicalTierCardBorderClass, getClinicalSeverityLabel } from "@/lib/lab-clinical-catalog";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
+import { OverridePill } from "@/components/ui/OverridePill";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
@@ -245,9 +246,7 @@ function NormalizationModeDisplay({
       <div className="text-xs">
         <span className="font-semibold">Normalization: </span>
         {MODE_LABELS[decision.mode] ?? decision.mode}
-        {decision.userOverridden
-          ? <span className="ml-1 text-[9px] font-medium text-amber-600">(user override)</span>
-          : " (auto-selected)"}
+        {decision.userOverridden ? "" : " (auto-selected)"}
       </div>
       <div className="text-xs">
         <span className="font-semibold">Tier: </span>
@@ -666,7 +665,23 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
         };
         const existingOverride = normOverrides.getOverride(matchedSpecimen);
         return (
-          <CollapsiblePane title="Organ weight normalization" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <CollapsiblePane
+            title="Organ weight normalization"
+            defaultOpen
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+            headerRight={
+              <OverridePill
+                isOverridden={bestDecision.userOverridden}
+                note={existingOverride?.reason}
+                user={existingOverride?.pathologist}
+                timestamp={existingOverride?.reviewDate ? new Date(existingOverride.reviewDate).toLocaleDateString() : undefined}
+                onSaveNote={(text) => normOverrides.saveOverride(matchedSpecimen, existingOverride?.mode ?? bestDecision.mode, text)}
+                placeholder="Reason for overriding normalization mode"
+                popoverSide="left"
+              />
+            }
+          >
             <div className="space-y-2">
               <NormalizationModeDisplay
                 decision={bestDecision}
