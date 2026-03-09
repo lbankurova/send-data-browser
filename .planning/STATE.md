@@ -24,23 +24,15 @@ Work proceeds in parallel across low-conflict areas. Priorities are user-directe
 See `docs/TODO-archived.md` for full history (40 resolved items).
 
 Notable recent:
-- GAP-27: Settings recalculating indicator (RecalculatingBanner)
-- GAP-25: Parameterized unified_findings (Settings Phase 2b)
-- GAP-18: Organ weight normalization (Phase 1 + Phase 2)
-- GAP-24: Recovery anomaly discrimination
-- MF-06: Recovery arm analysis
-- Phase 3 settings (Williams, organ weight, adversity threshold)
+- Recovery audit fixes 1-5 (all committed + tested)
+- Extracted `_compute_incidence_recovery()` to `services/analysis/incidence_recovery.py`
+- 44 new tests (22 backend, 22 frontend) covering all 5 audit fixes
+- Spec archived: `docs/incoming/archive/recovery-assessment-audit.md`
+- GAP-59 logged: recovery sex-stratification investigation (P1)
 
 ## Backlog
 
-Single source of truth: `docs/TODO.md` (63 open items)
-
-Categories:
-- 3 bugs
-- 8 hardcoded values (most deferred to production)
-- 2 spec divergences
-- 4 missing features
-- 46 gaps (mix of deferred and actionable)
+Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Context for Agents
 
@@ -50,5 +42,11 @@ Categories:
 - Design system changes require explicit user approval (CLAUDE.md rule 1)
 - Run commit checklist before every commit
 
+## Session Continuity
+
+Last session: 2026-03-09
+Stopped at: Recovery audit complete — all 5 fixes committed, tested, spec archived, post-impl review done.
+Next action: Pick from TODO.md (74 open items). GAP-59 (recovery sex-stratification) is P1 investigation.
+
 ---
-*Last updated: 2026-03-05 — doc cleanup: archived docs/incoming/, migrated gaps to TODO.md*
+*Last updated: 2026-03-09 — recovery audit fixes 1-5 complete, extracted + tested*
