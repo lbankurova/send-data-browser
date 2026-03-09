@@ -1,6 +1,6 @@
 # Recovery Comparison System
 
-Last validated: 2026-03-08
+Last validated: 2026-03-09
 
 ## Overview
 
@@ -72,7 +72,7 @@ Each row = one (finding, sex, dose_level) tuple. Control (dose_level=0) excluded
 | recovery_affected | int | Subjects with finding in recovery arm |
 | recovery_n | int | Total subjects in recovery arm at this dose/sex |
 | recovery_day | int? | Study day of recovery sacrifice |
-| verdict | string? | Server-computed: "resolved", "improving", "persistent", "new_in_recovery" |
+| verdict | string? | Server-computed: "resolved", "improving", "persistent", "worsening", "new_in_recovery" |
 
 ## Frontend: RecoveryPane
 
@@ -92,7 +92,8 @@ Computed in `_compute_incidence_recovery()` from incidence ratios:
 |---------|-----------|-------|
 | Resolved | recovery incidence = 0 | emerald-700 |
 | Improving | recovery < terminal | emerald-600 |
-| Persistent | recovery >= terminal (both > 0) | amber-700 |
+| Persistent | recovery == terminal (both > 0) | amber-700 |
+| Worsening | recovery > terminal (both > 0) | red-700 |
 | New in recovery | recovery > 0, terminal = 0 | red-700 |
 
 ## Data flow

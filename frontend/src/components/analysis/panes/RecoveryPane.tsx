@@ -446,6 +446,7 @@ const VERDICT_LABEL: Record<string, string> = {
   resolved: "Resolved",
   improving: "Improving",
   persistent: "Persistent",
+  worsening: "Worsening",
   new_in_recovery: "New in recovery",
 };
 
@@ -453,6 +454,7 @@ const VERDICT_COLOR: Record<string, string> = {
   resolved: "text-emerald-700",
   improving: "text-emerald-600",
   persistent: "text-amber-700",
+  worsening: "text-red-700",
   new_in_recovery: "text-red-700",
 };
 

@@ -149,7 +149,7 @@ export interface RecoveryComparisonResponse {
     recovery_affected: number;
     recovery_n: number;
     recovery_day: number | null;
-    verdict: "resolved" | "improving" | "persistent" | "new_in_recovery" | null;
+    verdict: "resolved" | "improving" | "persistent" | "worsening" | "new_in_recovery" | null;
   }[];
 }
 

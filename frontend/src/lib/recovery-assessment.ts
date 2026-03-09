@@ -97,14 +97,18 @@ interface ArmStats {
 }
 
 /**
- * Full guard chain + ratio computation. v3 guard order:
+ * Full guard chain + ratio computation. v4 guard order:
  *  0. recovery.examined === 0              → not_examined
  *  1. recovery.examined < 3               → insufficient_n
  *  2. main incidence=0, recovery>0        → anomaly
- *  3. main.incidence * recovery.examined < 2 → low_power
- *  4. main incidence=0, main affected=0   → not_observed
+ *  3. main incidence=0, main affected=0   → not_observed
+ *  4. main.incidence * recovery.examined < 2 → low_power
  *  5. recovery.incidence === 0            → reversed
  *  6-10. Ratio computation
+ *
+ * v4 fix: not_observed must precede low_power. When main.incidence === 0,
+ * low_power's condition (0 * N < 2) is always true — previously swallowing
+ * all clean-negative cases into "low_power" instead of "not_observed".
  */
 export function computeVerdict(
   main: ArmStats,
@@ -122,11 +126,11 @@ export function computeVerdict(
   // Guard 2: anomaly — recovery has findings where main arm had none
   if (main.incidence === 0 && main.affected === 0 && recovery.affected > 0) return "anomaly";
 
-  // v3 Guard 3: low statistical power
-  if (main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
-
-  // Guard 4: main arm had no findings at this dose level
+  // Guard 3 (v4: moved before low_power): main arm had no findings at this dose level
   if (main.incidence === 0 && main.affected === 0) return "not_observed";
+
+  // Guard 4 (v4: after not_observed): low statistical power
+  if (main.incidence * recovery.examined < LOW_POWER_THRESHOLD) return "low_power";
 
   // Guard 5: recovery has zero affected (tissue was examined — guard 0 passed)
   if (recovery.incidence === 0) return "reversed";

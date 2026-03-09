@@ -141,35 +141,31 @@ describe("computeVerdict — guard chain", () => {
     expect(v).toBe("anomaly");
   });
 
-  test("Guard 3: low_power when main incidence × recovery.examined < 2", () => {
+  test("Guard 3 (v4): not_observed when both arms have zero findings", () => {
+    // v4 fix: not_observed now precedes low_power. When main.incidence === 0,
+    // both arms are clean negatives — verdict should be not_observed, not low_power.
+    const v = computeVerdict(
+      arm({ incidence: 0, affected: 0 }),
+      arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
+    );
+    expect(v).toBe("not_observed");
+  });
+
+  test("Guard 3 (v4): not_observed even with large recovery group", () => {
+    const v = computeVerdict(
+      arm({ incidence: 0, affected: 0, n: 20, examined: 20 }),
+      arm({ n: 10, examined: 10, affected: 0, incidence: 0 }),
+    );
+    expect(v).toBe("not_observed");
+  });
+
+  test("Guard 4 (v4): low_power when main has low incidence and recovery N is small", () => {
     // main incidence=0.1, recovery.examined=5 → 0.1 * 5 = 0.5 < 2
     const v = computeVerdict(
       arm({ incidence: 0.1, affected: 1 }),
       arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
     );
     expect(v).toBe("low_power");
-  });
-
-  test("Guard 4: not_observed when main has no findings (and recovery doesn't either)", () => {
-    // main incidence=0, affected=0; recovery also no affected
-    // Guard 3 check: 0 * 5 = 0 < 2 → hits guard 3 first if incidence=0
-    // Actually need main.incidence > 0 but affected = 0? No, guard 4 checks
-    // incidence === 0 && affected === 0. We need to bypass guard 3.
-    // Guard 3: main.incidence * recovery.examined < 2 → 0 * 5 = 0 < 2 → guard 3 fires first
-    // So guard 4 is reached only if guard 3 passes, which means
-    // main.incidence * recovery.examined >= 2 AND main.incidence === 0 → impossible
-    // Guard 4 can only fire when guard 2 didn't fire (recovery.affected === 0)
-    // AND guard 3 didn't fire (main.incidence * recovery.examined >= 2)
-    // So guard 4 fires when: main.incidence > 0 enough to pass guard 3, but affected = 0
-    // Wait — if affected=0 then incidence should be 0 too...
-    // Guard 4 is effectively unreachable after guard 3 for truly zero-incidence.
-    // But main could have incidence=0.4 (via rounding) with affected=0? Unlikely.
-    // Let's just verify the happy path where guard 5 catches zero-recovery:
-    const v = computeVerdict(
-      arm({ incidence: 0.5, affected: 5 }),
-      arm({ n: 5, examined: 5, affected: 0, incidence: 0 }),
-    );
-    expect(v).toBe("reversed"); // Guard 5
   });
 
   test("Guard 5: reversed when recovery.incidence === 0 (tissue examined, no findings)", () => {
