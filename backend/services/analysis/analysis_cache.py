@@ -8,8 +8,11 @@ Default settings are never written to the cache dir — they use existing pre-ge
 """
 
 import json
+import logging
 import shutil
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 GENERATED_DIR = Path(__file__).parent.parent.parent / "generated"
 
@@ -24,8 +27,12 @@ def read_cache(study_id: str, settings_hash: str, view_name: str) -> dict | None
     path = _cache_dir(study_id, settings_hash) / file_name
     if not path.exists():
         return None
-    with open(path, "r") as f:
-        return json.load(f)
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, ValueError):
+        log.warning("Corrupt cache file %s, treating as miss", path)
+        return None
 
 
 def write_cache(study_id: str, settings_hash: str, all_views: dict[str, list | dict]):

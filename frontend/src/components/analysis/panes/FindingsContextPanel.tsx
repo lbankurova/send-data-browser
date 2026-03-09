@@ -990,7 +990,7 @@ export function FindingsContextPanel() {
   const recoveryPaneRef = useRef<HTMLDivElement>(null);
   const evidencePaneRef = useRef<HTMLDivElement>(null);
   const distributionPaneRef = useRef<HTMLDivElement>(null);
-  const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
+  const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");

@@ -17,7 +17,7 @@ export interface EffectiveNoaelRow extends NoaelSummaryRow {
  */
 export function useEffectiveNoael(studyId: string | undefined) {
   const computed = useNoaelSummary(studyId);
-  const { data: overrides } = useAnnotations<NoaelOverride>(studyId, "noael-override");
+  const { data: overrides } = useAnnotations<NoaelOverride>(studyId, "noael-overrides");
 
   const data = useMemo((): EffectiveNoaelRow[] | undefined => {
     if (!computed.data) return undefined;
