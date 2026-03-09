@@ -138,6 +138,19 @@ export interface RecoveryComparisonResponse {
     /** Upper 95% CI of mean difference at terminal. */
     ci_upper_terminal?: number | null;
   }[];
+  incidence_rows?: {
+    domain: string;
+    finding: string;
+    sex: string;
+    dose_level: number;
+    dose_label: string;
+    main_affected: number;
+    main_n: number;
+    recovery_affected: number;
+    recovery_n: number;
+    recovery_day: number | null;
+    verdict: "resolved" | "improving" | "persistent" | "new_in_recovery" | null;
+  }[];
 }
 
 export function fetchRecoveryComparison(
