@@ -375,9 +375,10 @@ function DumbbellPanel({
           // Terminal → recovery tooltip
           const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
           const deltaDir = recovering ? "dropped" : "grew";
-          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size);
-          const pctStr = v.pctRecovered != null ? formatPctRecovered(v.pctRecovered) : "";
-          const recoveryTooltip = `${verdictStr} · Δ ${deltaDir} ${pctStr} (${effectSymbol}: ${formatGAbs(cr.row.terminal_effect ?? 0)} → ${formatGAbs(cr.row.effect_size ?? 0)})`;
+          const vTip = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size, cr.row.treated_n, cr.row.control_n);
+          const pctStr = vTip.pctRecovered != null ? formatPctRecovered(vTip.pctRecovered) : "";
+          const lowNStr = isLowConf ? ` · low N (n=${cr.row.treated_n ?? "?"})` : "";
+          const recoveryTooltip = `${verdictStr} · Δ ${deltaDir} ${pctStr} (${effectSymbol}: ${formatGAbs(cr.row.terminal_effect ?? 0)} → ${formatGAbs(cr.row.effect_size ?? 0)})${lowNStr}`;
 
           // Peak trajectory tooltip
           const showPeak = cr.peakVal != null && hasPeakQualifier(cr.row);
@@ -808,6 +809,10 @@ export function RecoveryDumbbellChart({
         <span className="inline-flex items-center gap-1" title="Recovery cohorts typically have smaller group sizes (n=5–10). Non-significant p-values do not rule out biologically meaningful effects.">
           <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="0.5" opacity="0.7" /></svg>
           p≥0.05 <span className="text-muted-foreground">*</span>
+        </span>
+        <span className="inline-flex items-center gap-1" title="n &lt; 5 in treated or control arm — Hedges' g has wide confidence intervals">
+          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="1" strokeDasharray="3,2" opacity="0.7" /></svg>
+          low N
         </span>
       </div>
 

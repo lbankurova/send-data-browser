@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 9 | 5 | Incorrect behavior that should be fixed |
+| Bug | 10 | 5 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -36,7 +36,7 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **72** | **40** | |
+| **Total open** | **73** | **40** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -44,7 +44,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Bugs (7 open)
+## Bugs (8 open)
 
 ### ~~BUG-15: Stale sessionStorage values cause 422 on all analysis views~~ ✅
 - **Files:** `frontend/src/hooks/useSessionState.ts`, `frontend/src/contexts/StudySettingsContext.tsx`, `frontend/src/lib/build-settings-params.ts`, `frontend/src/hooks/useRecoveryPooling.ts`, `frontend/src/components/analysis/StudySummaryView.tsx`
@@ -117,6 +117,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Priority:** P2 (data correctness — misleading display)
 - **Dependencies:** None
+- **Owner hint:** frontend-dev
+
+### BUG-16: Pattern → onset dose dependency invalidation logic is buggy
+- **Files:** `frontend/src/lib/onset-dose.ts` (`onsetNeedsAttention`), `frontend/src/components/analysis/panes/OnsetDoseDropdown.tsx`
+- **Issue:** The `onsetNeedsAttention` function has incorrect logic: (1) flags monotonic with onset not at lowest dose as needing attention, but that's a valid user choice (user may have statistical reason to set onset at dose 2); (2) doesn't account for switching from a directional pattern to `no_change` — onset should be cleared/hidden, not flagged; (3) the red border style is `border-b-2 border-red-500` (thick) instead of the canonical thin `border-b border-red-500`. The invalidation should only fire when a directional pattern override has no onset set (null) and the user must pick one.
+- **Status:** Open
+- **Priority:** P2 (incorrect UX signal — false red borders)
+- **Dependencies:** Unified override pattern spec (`docs/incoming/unified-override-pattern.md`)
 - **Owner hint:** frontend-dev
 
 ### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅

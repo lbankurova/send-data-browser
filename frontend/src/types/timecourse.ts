@@ -133,6 +133,8 @@ export interface SubjectHistopathEntry {
   findings: Record<string, { severity: string | null; severity_num: number; laterality?: string | null }>;
   disposition: string | null;
   disposition_day: number | null;
+  /** True when MA domain confirms this specimen was collected for this subject. */
+  ma_examined?: boolean;
 }
 
 // --- Endpoint 5: Multi-subject comparison ---

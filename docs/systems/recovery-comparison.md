@@ -1,6 +1,6 @@
 # Recovery Comparison System
 
-Last validated: 2026-03-09
+Last validated: 2026-03-10
 
 ## Overview
 
@@ -95,6 +95,28 @@ Computed in `_compute_incidence_recovery()` from incidence ratios:
 | Persistent | recovery == terminal (both > 0) | amber-700 |
 | Worsening | recovery > terminal (both > 0) | red-700 |
 | New in recovery | recovery > 0, terminal = 0 | red-700 |
+
+### Continuous verdict confidence (Fix 5, M-1)
+
+`classifyContinuousRecovery()` returns a `confidence` field when n values are provided:
+
+| confidence | Condition | Visual |
+|------------|-----------|--------|
+| adequate | treated_n >= 5 AND control_n >= 5 | Normal connector line |
+| low | either arm n < 5 | Dashed connector line, "* " suffix on verdict label, tooltip shows "(low N, n=X)" |
+
+With n=2, Hedges' g has a 95% CI of roughly g +/- 2.0. The verdict label makes this uncertainty visible without requiring reviewers to interpret CIs.
+
+### Histopath examination heuristic (Fix 4, M-3)
+
+`computeGroupStats()` determines how many subjects were "examined" for a finding:
+
+| Data available | Method | Source |
+|----------------|--------|--------|
+| MA domain present | Count subjects with MA records for specimen | `ma_examined` field from backend |
+| MA domain absent | If any subject in group has any finding → all examined | Original heuristic (fallback) |
+
+The backend `get_histopath_subjects` endpoint sets `ma_examined: true` per subject when the MA domain contains a record for that specimen+subject. This handles the case where all animals were examined but none had findings (all normal) — previously misclassified as `not_examined`.
 
 ## Data flow
 
