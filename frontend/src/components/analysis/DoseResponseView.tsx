@@ -290,7 +290,7 @@ export function DoseResponseView() {
   const noaelSummary: NoaelSummaryRow[] = noaelData ?? [];
 
   // ToxFinding annotations (for assessment status display)
-  const { data: toxFindingAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-finding");
+  const { data: toxFindingAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
 
   // Metrics tab state
   const [metricsFilters, setMetricsFilters] = useState<{

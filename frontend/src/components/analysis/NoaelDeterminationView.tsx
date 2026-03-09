@@ -289,8 +289,8 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
   const females = data.find((r) => r.sex === "F");
 
   // Override annotations
-  const { data: overrideAnnotations } = useAnnotations<NoaelOverride>(studyId, "noael-override");
-  const saveMutation = useSaveAnnotation<NoaelOverride>(studyId, "noael-override");
+  const { data: overrideAnnotations } = useAnnotations<NoaelOverride>(studyId, "noael-overrides");
+  const saveMutation = useSaveAnnotation<NoaelOverride>(studyId, "noael-overrides");
   const [editingSex, setEditingSex] = useState<string | null>(null);
   const [overrideDose, setOverrideDose] = useState("");
   const [overrideRationale, setOverrideRationale] = useState("");

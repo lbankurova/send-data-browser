@@ -98,7 +98,7 @@ class ParameterizedAnalysisPipeline:
         correlations = compute_correlations(findings)
         summary = _build_summary(findings, dose_groups)
 
-        unified = _sanitize_floats({
+        unified = {
             "study_id": self.study.study_id,
             "dose_groups": dose_groups,
             "findings": findings,
@@ -108,9 +108,11 @@ class ParameterizedAnalysisPipeline:
             "page_size": len(findings),
             "total_pages": 1,
             "summary": summary,
-        })
+        }
 
-        return {
+        # Sanitize all views — NaN/Inf from scipy can slip through when
+        # settings transforms (e.g. organ_weight_method) recompute stats.
+        return _sanitize_floats({
             "study_signal_summary": signal_summary,
             "target_organ_summary": target_organs,
             "dose_response_metrics": build_dose_response_metrics(findings, dose_groups),
@@ -121,7 +123,7 @@ class ParameterizedAnalysisPipeline:
             "finding_dose_trends": build_finding_dose_trends(findings, dose_groups),
             "rule_results": rules,
             "unified_findings": unified,
-        }
+        })
 
 
 # ---------------------------------------------------------------------------

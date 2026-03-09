@@ -203,7 +203,7 @@ export function SpecimenRailMode() {
   const { filters } = useGlobalFilters();
   const { data: lesionData } = useLesionSeveritySummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
-  const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology_review");
+  const { data: annotationsData } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
   const { data: studyCtx } = useStudyContext(studyId);
 
   const { containerRef: listRef, onKeyDown: handleListKeyDown } =

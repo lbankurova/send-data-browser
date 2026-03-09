@@ -19,7 +19,7 @@ VALID_SCHEMA_TYPES = {
     "threshold-config", "validation-rule-config",
     "custom-insight-rules", "custom-validation-rules",
     "study-notes", "analysis-settings", "normalization-overrides",
-    "pattern-overrides",
+    "pattern-overrides", "noael-overrides",
 }
 
 # Map URL slugs to file names
