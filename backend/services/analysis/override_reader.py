@@ -63,6 +63,49 @@ def _resolve_override(override_pattern: str, direction: str) -> str:
     return mapped
 
 
+def _pattern_to_override_key(pattern: str | None) -> str | None:
+    """Map backend pattern string to direction-independent override key.
+
+    Mirrors frontend patternToOverrideKey() — must stay in sync.
+    """
+    if not pattern:
+        return None
+    if pattern == "flat":
+        return "no_change"
+    if pattern.startswith("monotonic"):
+        return "monotonic"
+    if pattern.startswith("threshold"):
+        return "threshold"
+    if pattern == "non_monotonic":
+        return "non_monotonic"
+    if pattern == "u_shaped":
+        return "u_shaped"
+    return None
+
+
+def _remove_stale_overrides(study_id: str, keys: list[str]) -> None:
+    """Remove no-op override entries from the annotation file.
+
+    Called when apply_pattern_overrides detects overrides whose pattern
+    matches the finding's original pattern (i.e., they do nothing).
+    """
+    path = ANNOTATIONS_DIR / study_id / "pattern_overrides.json"
+    if not path.exists():
+        return
+    try:
+        data = json.loads(path.read_text())
+        removed = 0
+        for k in keys:
+            if k in data:
+                del data[k]
+                removed += 1
+        if removed:
+            path.write_text(json.dumps(data, indent=2))
+            log.info("Auto-cleaned %d stale no-op override(s) for %s", removed, study_id)
+    except (json.JSONDecodeError, OSError):
+        log.warning("Failed to clean stale overrides for %s", study_id)
+
+
 def load_all_pattern_overrides(study_id: str) -> dict[str, dict]:
     """Bulk-load all pattern overrides for a study.
 
@@ -96,11 +139,18 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
     if not overrides:
         return findings
     applied = 0
+    stale_keys: list[str] = []
     for f in findings:
-        ov = overrides.get(f.get("id", ""))
+        fid = f.get("id", "")
+        ov = overrides.get(fid)
         if not ov:
             continue
         override_pattern = ov["pattern"]
+        # Detect no-op overrides: override key matches original pattern key
+        original_key = _pattern_to_override_key(f.get("dose_response_pattern"))
+        if override_pattern == original_key:
+            stale_keys.append(fid)
+            continue
         direction = f.get("direction", "down") or "down"
         f["_pattern_override"] = {
             "pattern": override_pattern,
@@ -124,6 +174,9 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
         from services.analysis.classification import assess_finding
         f["finding_class"] = assess_finding(f)
         applied += 1
+    # Auto-clean stale no-op overrides from the annotation file
+    if stale_keys:
+        _remove_stale_overrides(study_id, stale_keys)
     if applied:
         log.info("Applied %d pattern override(s) for %s", applied, study_id)
         # Re-derive confidence for ALL findings — D2 reads dose_response_pattern,

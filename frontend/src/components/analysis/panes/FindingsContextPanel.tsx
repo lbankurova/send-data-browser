@@ -761,11 +761,6 @@ function SexComparisonPane({
     ...(siblingFinding ? { [siblingFinding.sex]: siblingFinding } : {}),
   };
 
-  // DEBUG: trace findingForSex mapping (remove after bug is found)
-  console.warn(`[SexComp] primary=${primarySex} findingForSex=`, Object.fromEntries(
-    Object.entries(findingForSex).map(([s, f]) => [s, f ? `${f.id}(${f.sex}) override=${!!f._pattern_override}` : 'undefined'])
-  ));
-
   const isIncidence = finding.data_type === "incidence";
   const effectLabel = isIncidence ? "avg sev" : "|g|";
 

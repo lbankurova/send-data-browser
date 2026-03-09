@@ -32,3 +32,18 @@ export async function saveAnnotation<T>(
   }
   return res.json();
 }
+
+export async function deleteAnnotation(
+  studyId: string,
+  schemaType: string,
+  entityKey: string
+): Promise<{ deleted: boolean }> {
+  const res = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/annotations/${schemaType}/${encodeURIComponent(entityKey)}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}

@@ -115,11 +115,25 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
     incoming["pathologist"] = "User"
     incoming["reviewDate"] = datetime.now(timezone.utc).isoformat()
 
-    # Pattern override validation: reject onset_dose_level when pattern = no_change
+    # Pattern override validation
     if schema_type == "pattern-overrides":
         existing_ann = data.get(entity_key, {})
         merged_pattern = incoming.get("pattern", existing_ann.get("pattern"))
         merged_onset = incoming.get("onset_dose_level", existing_ann.get("onset_dose_level"))
+        original_pattern = incoming.get("original_pattern", existing_ann.get("original_pattern"))
+        # Reject no-op overrides (pattern matches original) — prevents stale entries
+        if merged_pattern and original_pattern:
+            from services.analysis.override_reader import _pattern_to_override_key
+            orig_key = _pattern_to_override_key(original_pattern)
+            if merged_pattern == orig_key:
+                log.info("Rejecting no-op pattern override %s for %s (pattern=%s matches original=%s)",
+                         entity_key, study_id, merged_pattern, original_pattern)
+                # Delete existing entry if present (cleanup)
+                if entity_key in data:
+                    del data[entity_key]
+                    with open(file_path, "w") as fw:
+                        json.dump(data, fw, indent=2)
+                return {"pattern": merged_pattern, "original_pattern": original_pattern, "_noop": True}
         if merged_pattern == "no_change" and merged_onset is not None:
             raise HTTPException(
                 status_code=400,
@@ -147,6 +161,29 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
         _append_audit_entry(study_id, schema_type, entity_key, action, "User", changes)
 
     return annotation
+
+
+@router.delete("/studies/{study_id}/annotations/{schema_type}/{entity_key}")
+async def delete_annotation(study_id: str, schema_type: str, entity_key: str):
+    """Delete a single annotation entry by entity key."""
+    file_path = _get_file_path(study_id, schema_type)
+    if not file_path.exists():
+        return {"deleted": False}
+
+    with open(file_path, "r") as f:
+        data = json.load(f)
+
+    old_annotation = data.pop(entity_key, None)
+    if old_annotation is None:
+        return {"deleted": False}
+
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    # Audit trail
+    _append_audit_entry(study_id, schema_type, entity_key, "delete", "User",
+                        {"_deleted": {"old": old_annotation, "new": None}})
+    return {"deleted": True}
 
 
 @router.get("/studies/{study_id}/audit-log")

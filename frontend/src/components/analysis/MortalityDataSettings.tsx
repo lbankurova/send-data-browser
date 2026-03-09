@@ -59,8 +59,9 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
   const { excludedSubjects, toggleSubjectExclusion, trEarlyDeathIds } = useScheduledOnly();
 
   // Mortality override comments — persisted via annotation API
-  const { data: commentAnnotations } = useAnnotations<{ comment: string }>(studyId, "mortality-overrides");
-  const saveCommentMutation = useSaveAnnotation<{ comment: string }>(studyId, "mortality-overrides");
+  // Backend injects pathologist + reviewDate on every save
+  const { data: commentAnnotations } = useAnnotations<{ comment: string; pathologist?: string; reviewDate?: string }>(studyId, "mortality-overrides");
+  const saveCommentMutation = useSaveAnnotation<{ comment: string; pathologist?: string; reviewDate?: string }>(studyId, "mortality-overrides");
 
   const overrideComments = useMemo<Record<string, string>>(() => {
     if (!commentAnnotations) return {};
@@ -73,7 +74,7 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
 
   const saveComment = (id: string, text: string) => {
     // Optimistic update
-    queryClient.setQueryData<Record<string, { comment: string }>>(
+    queryClient.setQueryData<Record<string, { comment: string; pathologist?: string; reviewDate?: string }>>(
       ["annotations", studyId, "mortality-overrides"],
       (old) => {
         const next = { ...(old ?? {}) };
@@ -184,6 +185,8 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
                             <OverridePill
                               isOverridden
                               note={overrideComments[d.USUBJID]}
+                              user={commentAnnotations?.[d.USUBJID]?.pathologist}
+                              timestamp={commentAnnotations?.[d.USUBJID]?.reviewDate ? new Date(commentAnnotations[d.USUBJID].reviewDate!).toLocaleDateString() : undefined}
                               onSaveNote={(text) => saveComment(d.USUBJID, text)}
                               placeholder="Death on D90 near terminal sacrifice \u2014 included in stats"
                               autoOpen={autoOpenComment === d.USUBJID}
