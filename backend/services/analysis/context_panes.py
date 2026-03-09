@@ -226,7 +226,13 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
     Filters out same-endpoint_label autocorrelations (e.g. BW Day 8 ↔ BW Day 15)
     which are uninformative repeated-measure autocorrelations.
     """
-    ep_key = f"{finding.get('domain', '')}_{finding.get('test_code', '')}_{finding.get('day', '')}"
+    # Build endpoint key matching correlations._endpoint_key() — includes specimen when present
+    parts = [finding.get("domain", ""), finding.get("test_code", "")]
+    specimen = finding.get("specimen")
+    if specimen:
+        parts.append(specimen)
+    parts.append(str(finding.get("day", "")))
+    ep_key = "_".join(parts)
     my_label = finding.get("endpoint_label", finding.get("finding", ""))
 
     related = []
