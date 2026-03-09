@@ -58,6 +58,8 @@ def compute_correlations(findings: list[dict], max_per_organ: int = 30) -> list[
                 organ_corrs.append({
                     "endpoint_key_1": ep_keys[i],
                     "endpoint_key_2": ep_keys[j],
+                    "endpoint_label_1": f1.get("endpoint_label", f1.get("finding", "")),
+                    "endpoint_label_2": f2.get("endpoint_label", f2.get("finding", "")),
                     "finding_ids_1": [f["id"] for f in endpoints[ep_keys[i]]],
                     "finding_ids_2": [f["id"] for f in endpoints[ep_keys[j]]],
                     "endpoint_1": f1.get("finding", ""),

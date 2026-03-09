@@ -377,6 +377,30 @@ export interface FindingContext {
     current_effect_size: number | null;
     data_type: string;
     interpretation: string;
+    current_endpoint_label: string;
+    continuous_effects: Array<{
+      finding_id: string;
+      endpoint_label: string;
+      finding: string;
+      domain: string;
+      effect_size: number;
+      data_type: string;
+      peak_day: number | null;
+      peak_sex: string | null;
+    }>;
+    incidence_effects: Array<{
+      finding_id: string;
+      endpoint_label: string;
+      finding: string;
+      domain: string;
+      effect_size: number;
+      data_type: string;
+      peak_day: number | null;
+      peak_sex: string | null;
+    }>;
+    total_continuous: number;
+    total_incidence: number;
+    /** @deprecated Use continuous_effects / incidence_effects instead */
     largest_effects: Array<{
       finding_id: string;
       finding: string;

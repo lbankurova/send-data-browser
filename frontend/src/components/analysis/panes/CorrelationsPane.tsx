@@ -7,14 +7,22 @@ import { InsightBlock } from "./InsightBlock";
 interface Props {
   data: FindingContext["correlations"];
   organSystem?: string | null;
+  dataType?: string | null;
 }
 
-export function CorrelationsPane({ data, organSystem }: Props) {
+export function CorrelationsPane({ data, organSystem, dataType }: Props) {
   if (data.related.length === 0) {
+    if (dataType === "incidence") {
+      return (
+        <div className="text-xs text-muted-foreground">
+          Correlations not computed for incidence endpoints
+        </div>
+      );
+    }
     const organSuffix = organSystem ? ` in ${titleCase(organSystem)}` : "";
     return (
       <div className="text-xs text-muted-foreground">
-        No correlated findings{organSuffix}
+        No correlated endpoints{organSuffix}
       </div>
     );
   }
@@ -98,7 +106,7 @@ export function CorrelationsPane({ data, organSystem }: Props) {
       )}
 
       <div className="text-[10px] text-muted-foreground">
-        {data.total_correlations} total cross-finding correlations computed
+        {data.total_correlations} cross-endpoint correlations computed
       </div>
     </div>
   );

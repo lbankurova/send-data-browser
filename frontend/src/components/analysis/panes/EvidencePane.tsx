@@ -93,14 +93,20 @@ function buildDedupedBullets(
     }
   }
 
-  // 4. Effect rank
-  if (effectSize?.largest_effects && effectSize.largest_effects.length > 0) {
-    const findingId = finding.id;
-    const rank = effectSize.largest_effects.findIndex((e) => e.finding_id === findingId);
-    if (rank >= 0) {
+  // 4. Effect rank (endpoint-level, same data_type)
+  if (effectSize) {
+    const epLabel = finding.endpoint_label ?? finding.finding;
+    const list = finding.data_type === "continuous"
+      ? (effectSize.continuous_effects ?? [])
+      : (effectSize.incidence_effects ?? []);
+    const total = finding.data_type === "continuous"
+      ? (effectSize.total_continuous ?? list.length)
+      : (effectSize.total_incidence ?? list.length);
+    const rank = list.findIndex((e) => e.endpoint_label === epLabel);
+    if (rank >= 0 && total > 0) {
       const rankText = rank === 0
-        ? `Effect is largest of ${effectSize.total_with_effects} findings (#1 by |d|)`
-        : `Effect ranks #${rank + 1} of ${effectSize.total_with_effects} findings by |d|`;
+        ? `Effect is largest of ${total} ${finding.data_type} endpoints (#1 by |d|)`
+        : `Effect ranks #${rank + 1} of ${total} ${finding.data_type} endpoints by |d|`;
       bullets.push({ text: rankText, important: rank === 0 });
     }
   }

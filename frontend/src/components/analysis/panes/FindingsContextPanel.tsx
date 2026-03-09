@@ -1562,6 +1562,7 @@ export function FindingsContextPanel() {
           <CorrelationsPane
             data={context.correlations}
             organSystem={selectedFinding.organ_system}
+            dataType={selectedFinding.data_type}
           />
         </CollapsiblePane>
       )}
@@ -1570,6 +1571,7 @@ export function FindingsContextPanel() {
         <ContextPane
           effectSize={context.effect_size}
           selectedFindingId={selectedFindingId}
+          effectSizeMethod={effectSize}
         />
       </CollapsiblePane>
 

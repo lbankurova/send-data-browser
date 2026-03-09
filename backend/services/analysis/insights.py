@@ -478,21 +478,29 @@ def effect_size_insights(
             "level": level,
         })
 
-    # E2: Rank among all findings
+    # E2: Rank among endpoints (same data_type, aggregated by endpoint_label)
     if current_es is not None:
-        all_es = [abs(f.get("max_effect_size", 0)) for f in all_findings
-                  if f.get("max_effect_size") is not None]
-        all_es.sort(reverse=True)
-        if all_es:
-            rank = 1
+        # Aggregate to endpoint-level: max |effect_size| per endpoint_label, same data_type
+        ep_max: dict[str, float] = {}
+        for f in all_findings:
+            es = f.get("max_effect_size")
+            if es is None or f.get("data_type", "continuous") != data_type:
+                continue
+            label = f.get("endpoint_label", f.get("finding", ""))
+            if label not in ep_max or abs(es) > abs(ep_max[label]):
+                ep_max[label] = es
+        ranked = sorted(ep_max.values(), key=abs, reverse=True)
+        if ranked:
             abs_current = abs(current_es)
-            for val in all_es:
-                if val > abs_current:
+            rank = 1
+            for val in ranked:
+                if abs(val) > abs_current:
                     rank += 1
                 else:
                     break
+            kind = "continuous" if data_type == "continuous" else "incidence"
             insights.append({
-                "text": f"Ranks #{rank} of {len(all_es)} findings by effect magnitude",
+                "text": f"Ranks #{rank} of {len(ranked)} {kind} endpoints by effect magnitude",
                 "level": "info",
             })
 
