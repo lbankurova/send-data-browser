@@ -301,6 +301,8 @@ export function PatternOverrideDropdown({ finding }: Props) {
         <OverridePill
           isOverridden={patternChanged}
           note={overrideNote}
+          user={override?.pathologist}
+          timestamp={override?.timestamp ? new Date(override.timestamp).toLocaleDateString() : undefined}
           onSaveNote={handleSaveNote}
           placeholder="Consistent downward drift from first dose"
           popoverSide="top"

@@ -109,6 +109,7 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
             "onset_dose_level": ov.get("onset_dose_level"),
             "original_onset_dose_level": f.get("onset_dose_level"),
             "timestamp": ov.get("timestamp", ov.get("reviewDate")),
+            "pathologist": ov.get("pathologist"),
         }
         f["dose_response_pattern"] = _resolve_override(override_pattern, direction)
         # Apply onset dose override

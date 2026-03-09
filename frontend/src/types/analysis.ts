@@ -142,6 +142,7 @@ export interface UnifiedFinding {
     onset_dose_level: number | null;
     original_onset_dose_level: number | null;
     timestamp: string;
+    pathologist?: string;
   };
 }
 

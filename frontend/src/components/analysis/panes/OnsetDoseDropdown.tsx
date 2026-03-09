@@ -61,7 +61,7 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
   // System-generated onset (what the backend/algorithm produced, before any user override)
   const systemOnsetLevel = getSystemOnsetLevel(finding);
 
-  // Show asterisk when user override differs from system value
+  // Show override pill when user override differs from system value
   const isOverridden = onset?.source === "override"
     && onset.doseLevel !== systemOnsetLevel;
 
@@ -212,6 +212,8 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
         <OverridePill
           isOverridden={isOverridden}
           note={overrideNote}
+          user={override?.pathologist}
+          timestamp={override?.timestamp ? new Date(override.timestamp).toLocaleDateString() : undefined}
           onSaveNote={handleSaveNote}
           placeholder="Onset at dose 2 — earliest statistically significant effect"
           popoverSide="top"
