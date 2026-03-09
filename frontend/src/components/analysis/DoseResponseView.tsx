@@ -60,6 +60,7 @@ import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-trans
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import type { GroupStat, PairwiseResult } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
+import { OverridePill } from "@/components/ui/OverridePill";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -2628,9 +2629,15 @@ function CausalityWorksheet({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium">{c.label}</span>
                   <div className="flex items-center gap-2">
-                    {override && (
-                      <span className="text-[9px] text-muted-foreground">(overridden)</span>
-                    )}
+                    <OverridePill
+                      isOverridden={!!override}
+                      note={override?.justification}
+                      onSaveNote={(text) => {
+                        setOverrides((prev) => ({ ...prev, [c.key]: { ...prev[c.key], justification: text } }));
+                        setDirty(true);
+                      }}
+                      placeholder="Reason for overriding computed score"
+                    />
                     <DotGauge level={displayLevel} />
                     <span className="w-20 text-right text-[10px] font-medium text-muted-foreground">
                       {STRENGTH_LABELS[displayLevel]}
