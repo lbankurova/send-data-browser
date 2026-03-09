@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { StudyMortality, DeathRecord } from "@/types/mortality";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -45,96 +45,6 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
   return isExcluded
     ? `${id}: Excluded from terminal statistics.`
     : `${id}: Included in terminal statistics.`;
-}
-
-// ── Override Comment Popover ─────────────────────────────────
-
-function OverrideDot({
-  subjectId,
-  comments,
-  onSave,
-  autoOpen,
-  onAutoOpened,
-}: {
-  subjectId: string;
-  comments: Record<string, string>;
-  onSave: (id: string, text: string) => void;
-  autoOpen?: boolean;
-  onAutoOpened?: () => void;
-}) {
-  const existing = comments[subjectId] ?? "";
-  const [draft, setDraft] = useState(existing);
-  const [open, setOpen] = useState(autoOpen ?? false);
-  // Handle auto-open trigger
-  if (autoOpen && !open) {
-    setOpen(true);
-    setDraft(existing);
-    onAutoOpened?.();
-  }
-  const hasComment = existing.length > 0;
-  const PLACEHOLDER = "Death on D90 near terminal sacrifice \u2014 included in stats";
-
-  return (
-    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (v) setDraft(existing); }}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-4 w-3 items-center justify-center"
-          title={hasComment ? `Note: ${existing}` : "Add override note"}
-        >
-          <span
-            className={cn(
-              "block h-[6px] w-[6px] rounded-full",
-              hasComment
-                ? "bg-primary"
-                : "bg-muted-foreground/30 hover:bg-muted-foreground/60",
-            )}
-          />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" side="right" className="w-56 p-2">
-        <div className="mb-1 text-[10px] font-medium text-muted-foreground">Override note</div>
-        <textarea
-          className="w-full rounded border bg-background px-1.5 py-1 text-[11px] leading-snug placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
-          rows={3}
-          placeholder={`e.g., ${PLACEHOLDER}`}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            // Tab-complete when empty
-            if (e.key === "Tab" && !draft.trim()) {
-              e.preventDefault();
-              setDraft(PLACEHOLDER);
-              return;
-            }
-            // Enter saves (Shift+Enter for newline)
-            if (e.key === "Enter" && !e.shiftKey && draft !== existing) {
-              e.preventDefault();
-              onSave(subjectId, draft);
-              setOpen(false);
-            }
-          }}
-        />
-        <div className="mt-1 flex justify-end gap-1">
-          <button
-            type="button"
-            className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={draft === existing}
-            onClick={() => { onSave(subjectId, draft); setOpen(false); }}
-          >
-            Save
-          </button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
 }
 
 // ── Main Component ───────────────────────────────────────────
@@ -249,10 +159,11 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
                         {/* Fixed-width slot for override dot — keeps checkbox aligned */}
                         <div className="w-3 shrink-0">
                           {(overridden || hasComment) && (
-                            <OverrideDot
-                              subjectId={d.USUBJID}
-                              comments={overrideComments}
-                              onSave={saveComment}
+                            <OverridePill
+                              isOverridden
+                              note={overrideComments[d.USUBJID]}
+                              onSaveNote={(text) => saveComment(d.USUBJID, text)}
+                              placeholder="Death on D90 near terminal sacrifice \u2014 included in stats"
                               autoOpen={autoOpenComment === d.USUBJID}
                               onAutoOpened={() => setAutoOpenComment(null)}
                             />
