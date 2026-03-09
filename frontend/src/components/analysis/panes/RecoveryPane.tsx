@@ -31,6 +31,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { Info } from "lucide-react";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { DoseLabel } from "@/components/ui/DoseLabel";
+import { PaneTable } from "./PaneTable";
 import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
 import { IncidenceDumbbellChart } from "./IncidenceDumbbellChart";
 
@@ -437,6 +440,131 @@ function buildClassificationContext(
   };
 }
 
+// ── Incidence recovery section ───────────────────────────
+
+const VERDICT_LABEL: Record<string, string> = {
+  resolved: "Resolved",
+  improving: "Improving",
+  persistent: "Persistent",
+  new_in_recovery: "New in recovery",
+};
+
+const VERDICT_COLOR: Record<string, string> = {
+  resolved: "text-emerald-700",
+  improving: "text-emerald-600",
+  persistent: "text-amber-700",
+  new_in_recovery: "text-red-700",
+};
+
+function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { data: recovery } = useRecoveryComparison(studyId);
+
+  if (!recovery || !recovery.available) {
+    return (
+      <div className="text-[10px] text-muted-foreground">
+        No recovery comparison data available.
+      </div>
+    );
+  }
+
+  const incRows = recovery.incidence_rows ?? [];
+  // Match by finding name (uppercased in both unified_findings and backend)
+  // CL findings are per-sex; filter to the finding's sex when specific
+  const findingUpper = finding.finding.toUpperCase();
+  const findingSex = finding.sex === "F" || finding.sex === "M" ? finding.sex : null;
+  const matched = incRows.filter(
+    (r) => r.finding === findingUpper && r.domain === finding.domain
+      && (findingSex == null || r.sex === findingSex),
+  );
+
+  if (matched.length === 0) {
+    return (
+      <div className="text-[10px] text-muted-foreground">
+        No recovery data for {finding.finding}.
+      </div>
+    );
+  }
+
+  // Group by sex (F before M)
+  const bySex = new Map<string, typeof matched>();
+  for (const row of matched) {
+    const arr = bySex.get(row.sex) ?? [];
+    arr.push(row);
+    bySex.set(row.sex, arr);
+  }
+  const sexOrder = ["F", "M"].filter((s) => bySex.has(s));
+  const showSexCol = sexOrder.length > 1;
+
+  return (
+    <div className="space-y-2">
+      {recovery.recovery_day != null && (
+        <div className="text-[10px] text-muted-foreground">
+          Recovery sacrifice: Day {recovery.recovery_day}
+        </div>
+      )}
+      <PaneTable>
+        <colgroup>
+          {showSexCol && <col style={{ width: 20 }} />}
+          <col style={{ width: 80 }} />
+          <col style={{ width: 80 }} />
+          <col style={{ width: 80 }} />
+          <col />
+        </colgroup>
+        <thead>
+          <tr className="text-muted-foreground border-b border-border/40">
+            {showSexCol && <PaneTable.Th />}
+            <PaneTable.Th>Group</PaneTable.Th>
+            <PaneTable.Th numeric>Terminal</PaneTable.Th>
+            <PaneTable.Th numeric>Recovery</PaneTable.Th>
+            <PaneTable.Th absorber className="pl-4">Assessment</PaneTable.Th>
+          </tr>
+        </thead>
+        <tbody>
+          {sexOrder.map((sex) => {
+            const rows = bySex.get(sex)!;
+            return rows.map((row, i) => {
+              const mainPct = row.main_n > 0 ? Math.round(row.main_affected / row.main_n * 100) : 0;
+              const recPct = row.recovery_n > 0 ? Math.round(row.recovery_affected / row.recovery_n * 100) : 0;
+              const verdict = row.verdict;
+              const vLabel = verdict ? VERDICT_LABEL[verdict] ?? verdict : "—";
+              const vColor = verdict ? VERDICT_COLOR[verdict] ?? "text-muted-foreground" : "text-muted-foreground";
+
+              return (
+                <tr key={`${sex}-${row.dose_level}`} className="border-b border-border/20">
+                  {showSexCol && (
+                    <PaneTable.Td className="text-muted-foreground">
+                      {i === 0 ? sex : ""}
+                    </PaneTable.Td>
+                  )}
+                  <PaneTable.Td>
+                    <DoseLabel
+                      level={row.dose_level}
+                      label={formatDoseShortLabel(row.dose_label)}
+                      tooltip={row.dose_label}
+                    />
+                  </PaneTable.Td>
+                  <PaneTable.Td numeric>
+                    {row.main_affected}/{row.main_n}
+                    <span className="text-muted-foreground/60 ml-1">({mainPct}%)</span>
+                  </PaneTable.Td>
+                  <PaneTable.Td numeric>
+                    {row.recovery_affected}/{row.recovery_n}
+                    <span className="text-muted-foreground/60 ml-1">({recPct}%)</span>
+                  </PaneTable.Td>
+                  <PaneTable.Td className={`pl-4 font-medium ${vColor}`}>
+                    {vLabel}
+                  </PaneTable.Td>
+                </tr>
+              );
+            });
+          })}
+        </tbody>
+      </PaneTable>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────
 
 interface RecoveryPaneProps {
@@ -452,9 +580,14 @@ export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
     return <HistopathRecoveryAllSexes finding={finding} specimen={specimen} />;
   }
 
-  // Continuous domains (LB, BW, OM, etc.)
+  // Continuous domains (LB, BW, OM, VS, FW, EG, etc.)
   if (finding.data_type === "continuous") {
     return <ContinuousRecoverySection finding={finding} doseGroups={doseGroups} />;
+  }
+
+  // Incidence domains (CL, etc.) — exclude MI/MA which use histopath path
+  if (finding.data_type === "incidence") {
+    return <IncidenceRecoverySection finding={finding} doseGroups={doseGroups} />;
   }
 
   return (

@@ -81,6 +81,13 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Dependencies:** None
 - **Owner hint:** frontend-dev
 
+### BUG-13: CL recovery table — Terminal/Recovery column alignment
+- **Files:** `frontend/src/components/analysis/panes/RecoveryPane.tsx` (`IncidenceRecoverySection`)
+- **Issue:** The count values (e.g., "3/15") and percentage annotations (e.g., "(20%)") in the Terminal and Recovery columns are not aligned across rows. Counts and percentages should each form visually aligned columns — use fixed-width sub-columns or monospace tabular alignment so digits line up vertically.
+- **Status:** Open
+- **Priority:** P3 (cosmetic)
+- **Owner hint:** frontend-dev
+
 ### BUG-11: SVG chart reference line labels overlap at narrow widths
 - **Files:** `frontend/src/components/analysis/panes/RecoveryDumbbellChart.tsx`, `frontend/src/components/analysis/panes/IncidenceDumbbellChart.tsx`, `frontend/src/components/analysis/panes/TimeCourseLineChart.tsx`
 - **Issue:** Axis/reference labels below the SVG charts (e.g., "C: D29", "0.8", "−0.8") overlap when the context panel is narrow or on smaller screens. Labels are positioned with absolute percentages and don't account for collision. Fix: measure label positions after render and hide or truncate labels that would overlap their neighbors.
