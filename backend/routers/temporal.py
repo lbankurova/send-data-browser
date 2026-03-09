@@ -1063,6 +1063,13 @@ async def get_recovery_comparison(study_id: str):
         except Exception:
             pass
 
+    # Compute treatment/recovery boundary once for time-period filtering
+    try:
+        override = get_last_dosing_day_override(study_id)
+        last_dosing_day = compute_last_dosing_day(study, override=override)
+    except Exception:
+        last_dosing_day = None
+
     rows: list[dict] = []
 
     def _safe_round(v: float | None, ndigits: int) -> float | None:
@@ -1382,8 +1389,16 @@ async def get_recovery_comparison(study_id: str):
             on="USUBJID", how="inner",
         )
 
-        main_df = df[~df["is_recovery"]]
-        rec_df = df[df["is_recovery"]]
+        # Time-period filter: restrict main-arm records to treatment period,
+        # recovery-arm records to recovery period. Without this, treatment-phase
+        # CL observations from recovery animals inflate recovery incidence counts.
+        if last_dosing_day is not None and day_col in df.columns:
+            df[day_col] = pd.to_numeric(df[day_col], errors="coerce")
+            main_df = df[~df["is_recovery"] & (df[day_col].isna() | (df[day_col] <= last_dosing_day))]
+            rec_df = df[df["is_recovery"] & (df[day_col].isna() | (df[day_col] > last_dosing_day))]
+        else:
+            main_df = df[~df["is_recovery"]]
+            rec_df = df[df["is_recovery"]]
 
         # All subjects roster by (sex, dose_level) for denominators
         roster = subjects_df.groupby(["SEX", "dose_level", "is_recovery"]).agg(
@@ -1446,6 +1461,8 @@ async def get_recovery_comparison(study_id: str):
                         verdict = "resolved"
                     elif rec_inc < main_inc:
                         verdict = "improving"
+                    elif rec_inc > main_inc and main_inc > 0:
+                        verdict = "worsening"
                     elif main_inc > 0:
                         verdict = "persistent"
                     elif rec_inc > 0:
