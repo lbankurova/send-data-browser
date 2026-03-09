@@ -1,12 +1,15 @@
 """JSON-file-based annotation CRUD for sticky meta annotations (§13)."""
 
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"
 
@@ -111,6 +114,20 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
     incoming = payload.model_dump()
     incoming["pathologist"] = "User"
     incoming["reviewDate"] = datetime.now(timezone.utc).isoformat()
+
+    # Pattern override validation: reject onset_dose_level when pattern = no_change
+    if schema_type == "pattern-overrides":
+        existing_ann = data.get(entity_key, {})
+        merged_pattern = incoming.get("pattern", existing_ann.get("pattern"))
+        merged_onset = incoming.get("onset_dose_level", existing_ann.get("onset_dose_level"))
+        if merged_pattern == "no_change" and merged_onset is not None:
+            raise HTTPException(
+                status_code=400,
+                detail="onset_dose_level must be null when pattern is no_change",
+            )
+        if merged_pattern and merged_pattern != "no_change" and merged_onset is None:
+            log.warning("Pattern override %s for %s/%s has directional pattern but null onset_dose_level",
+                        entity_key, study_id, schema_type)
 
     # Merge into existing annotation so sibling fields are preserved
     existing = data.get(entity_key, {})

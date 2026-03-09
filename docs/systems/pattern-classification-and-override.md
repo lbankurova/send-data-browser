@@ -51,8 +51,26 @@ The finding's original `direction` field is preserved unchanged.
 
 ### Override Metadata
 
-Each overridden finding gets `_pattern_override` with: `pattern` (label), `original_pattern`, `original_direction`, `timestamp`.
+Each overridden finding gets `_pattern_override` with: `pattern` (label), `original_pattern`, `original_direction`, `onset_dose_level`, `original_onset_dose_level`, `timestamp`.
+
+### Onset Dose Override
+
+**Files:**
+- `frontend/src/components/analysis/panes/OnsetDoseDropdown.tsx` — inline dropdown in sex comparison table
+- `backend/services/analysis/override_reader.py` — reads/applies `onset_dose_level`
+
+When pattern is overridden to a directional value, onset dose may need user input:
+- **No change**: onset auto-clears to null
+- **Monotonic**: pre-selects dose_level 1 (lowest dose — monotonic implies effect from first dose)
+- **Threshold / Non-monotonic / U-shaped**: no pre-selection (user must specify)
+- **Switching between directional patterns**: keeps existing onset
+
+The onset dose cell shows a red bottom border when:
+- Pattern is directional but onset is null (pending state)
+- Pattern is monotonic but onset is not at the lowest dose (consistency hint)
+
+`onset_dose_level` is stored as an integer (1-based dose level index, matching `classification.py` convention). The frontend resolves it to a display string via `dose_groups`.
 
 ### Preview Endpoint
 
-`GET /api/analysis/{study_id}/pattern-override-preview/{finding_id}/{pattern}` returns the re-derived finding without persisting — used for inline preview in the dropdown.
+`POST /api/studies/{study_id}/analyses/pattern-override-preview` returns the re-derived finding without persisting — used for inline preview in the dropdown.
