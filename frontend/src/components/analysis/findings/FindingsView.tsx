@@ -16,6 +16,7 @@ import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
+import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
@@ -266,7 +267,7 @@ export function FindingsView() {
               {" "}
               <span className="font-medium">{selectedPointData.label}</span>
               {sep}
-              <span className="font-mono" title={`${getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")} — standardized effect size. Negative = decrease, positive = increase.`}>{getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}={formatEffectSize(selectedPointData.effectSize)}</span>
+              <span className="font-mono" title={INCIDENCE_DOMAINS.has(selectedPointData.domain) ? "avg severity (1\u20135 ordinal scale)" : `${getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")} \u2014 standardized effect size. Negative = decrease, positive = increase.`}>{INCIDENCE_DOMAINS.has(selectedPointData.domain) ? "sev" : getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}={formatEffectSize(selectedPointData.effectSize)}</span>
               {sep}
               <span className="font-mono">
                 p={formatPValue(selectedPointData.rawP)}

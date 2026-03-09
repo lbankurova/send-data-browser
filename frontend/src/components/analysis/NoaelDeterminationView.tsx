@@ -51,7 +51,7 @@ import type {
   SignalSelection,
   StudySummaryFilters as Filters,
 } from "@/types/analysis-views";
-import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows } from "@/lib/derive-summaries";
+import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows, INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import type { OrganSummary, EndpointSummary } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
@@ -602,7 +602,7 @@ function OrganHeader({ summary, recovery, effectSizeSymbol = "d" }: { summary: O
 
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
         <div>
-          <span className="text-muted-foreground">Max |{effectSizeSymbol}|: </span>
+          <span className="text-muted-foreground">Max {summary.domains.every(d => INCIDENCE_DOMAINS.has(d)) ? "avg sev" : `|${effectSizeSymbol}|`}: </span>
           <span className={cn(
             "font-mono",
             summary.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"

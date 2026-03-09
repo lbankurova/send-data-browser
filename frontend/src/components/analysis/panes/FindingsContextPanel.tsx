@@ -761,10 +761,18 @@ function SexComparisonPane({
     ...(siblingFinding ? { [siblingFinding.sex]: siblingFinding } : {}),
   };
 
+  // DEBUG: trace findingForSex mapping (remove after bug is found)
+  console.warn(`[SexComp] primary=${primarySex} findingForSex=`, Object.fromEntries(
+    Object.entries(findingForSex).map(([s, f]) => [s, f ? `${f.id}(${f.sex}) override=${!!f._pattern_override}` : 'undefined'])
+  ));
+
+  const isIncidence = finding.data_type === "incidence";
+  const effectLabel = isIncidence ? "avg sev" : "|g|";
+
   const rows: Array<{ label: string; values: [string, string] }> = [
     { label: "Direction", values: [dirLabel(m), dirLabel(f)] },
     {
-      label: "|g|",
+      label: effectLabel,
       values: [
         m.maxEffectSize != null ? Math.abs(m.maxEffectSize).toFixed(2) : "\u2014",
         f.maxEffectSize != null ? Math.abs(f.maxEffectSize).toFixed(2) : "\u2014",
@@ -844,7 +852,7 @@ function SexComparisonPane({
                     return (
                       <td key={s} className="py-0.5 text-right">
                         {sf ? (
-                          <PatternOverrideDropdown finding={sf} />
+                          <PatternOverrideDropdown key={sf.id} finding={sf} />
                         ) : (
                           <span className="font-mono">{patLabel(bySex.get(s)!)}</span>
                         )}
@@ -863,7 +871,7 @@ function SexComparisonPane({
               return (
                 <td key={s} className="py-0.5 text-right">
                   {sf && doseGroups ? (
-                    <OnsetDoseDropdown finding={sf} doseGroups={doseGroups} />
+                    <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (
                     <span className="font-mono">{"\u2014"}</span>
                   )}

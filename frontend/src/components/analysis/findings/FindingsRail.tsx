@@ -20,6 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
@@ -561,8 +562,8 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
                 strength: thick = strong, thin = weak. Dark = adverse/warning, invisible = normal.
               </p>
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Effect size</span> is the largest |g| across
-                all dose groups and both sexes.
+                <span className="font-medium text-foreground">Effect size</span> is the largest |g| (continuous)
+                or avg severity (incidence) across all dose groups and both sexes.
                 <span className="font-medium text-foreground"> Pattern glyph</span> shows the overall
                 dose-response shape. When M and F patterns diverge, per-sex glyphs appear on the second line.
               </p>
@@ -1226,10 +1227,11 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             const dirs = [...bySex.values()].map(s => s.direction).filter(d => d === "up" || d === "down");
             return dirs.includes("up") && dirs.includes("down");
           })();
+          const metricLabel = INCIDENCE_DOMAINS.has(endpoint.domain) ? "avg severity" : (effectSizeLabel ?? "Hedges\u2019 g");
           if (hasDirectionDivergence) {
             const sorted = [...bySex!.entries()].sort(([a], [b]) => a.localeCompare(b));
             return (
-              <span className="shrink-0 text-right font-mono text-[10px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${effectSizeLabel ?? "Hedges\u2019 g"} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
+              <span className="shrink-0 text-right font-mono text-[10px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${metricLabel} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
                 {sorted.map(([sex, s]) => (
                   <span key={sex} className={cn("whitespace-nowrap", effectTypography(s.maxEffectSize))}>
                     {sex}:{s.maxEffectSize !== null ? formatEffectCompact(s.maxEffectSize) : "—"}
@@ -1241,7 +1243,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
           return (
             <span
               className={cn("w-6 shrink-0 text-right font-mono text-[10px]", effectTypography(endpoint.maxEffectSize))}
-              title={endpoint.maxEffectSize !== null ? `${effectSizeLabel ?? "Hedges\u2019 g"} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
+              title={endpoint.maxEffectSize !== null ? `${metricLabel} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
             >
               {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
             </span>

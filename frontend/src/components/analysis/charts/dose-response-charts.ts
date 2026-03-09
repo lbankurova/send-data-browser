@@ -7,6 +7,7 @@
 import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
 import type { NonMonotonicFlag } from "@/lib/endpoint-confidence";
+import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
@@ -55,6 +56,7 @@ export interface SubjectTrace {
 export interface VolcanoPoint {
   endpoint_label: string;
   organ_system: string;
+  domain: string;
   x: number;
   y: number;
   color: string;
@@ -913,7 +915,7 @@ export function buildVolcanoScatterOption(
   points: VolcanoPoint[],
   selectedEndpoint: string | null,
   organSystems: [string, string][],
-  effectSizeLabel = "Hedges' g",
+  _effectSizeLabel = "Hedges' g",
   effectSizeSymbol = "g",
 ): EChartsOption {
   // Group points by organ system for colored series
@@ -940,6 +942,7 @@ export function buildVolcanoScatterOption(
         return {
           value: [pt.x, pt.y],
           name: pt.endpoint_label,
+          _domain: pt.domain,
           symbolSize: isSelected ? 14 : 8,
           itemStyle: {
             color,
@@ -1015,7 +1018,7 @@ export function buildVolcanoScatterOption(
       min: 0,
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
-      name: `|Effect size| (${effectSizeLabel})`,
+      name: "Effect",
       nameLocation: "center",
       nameGap: 24,
       nameTextStyle: { fontSize: 10, color: "#9CA3AF" },
@@ -1043,12 +1046,15 @@ export function buildVolcanoScatterOption(
         const [x, y] = item.value as [number, number];
         const name = item.name ?? "";
         const organ = item.seriesName ?? "";
+        const domain = item.data?._domain as string | undefined;
+        const isInc = domain ? INCIDENCE_DOMAINS.has(domain) : false;
+        const effectLabel = isInc ? `avg sev=${x.toFixed(2)}` : `|${effectSizeSymbol}|=${x.toFixed(2)}`;
         const pRaw = Math.pow(10, -y);
         return [
           `<div style="font-size:11px;font-weight:600">${name}</div>`,
           `<div style="font-size:10px;color:#9CA3AF">${organ}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:4px">`,
-          `<span>|${effectSizeSymbol}|=${x.toFixed(2)}</span>`,
+          `<span>${effectLabel}</span>`,
           `<span>p=${pRaw.toExponential(1)}</span>`,
           `</div>`,
         ].join("");
