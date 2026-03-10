@@ -2,7 +2,7 @@ import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import type { SexEndpointSummary } from "@/lib/derive-summaries";
-import { titleCase, formatPValue } from "@/lib/severity-colors";
+import { formatPValue } from "@/lib/severity-colors";
 import {
   resolveCanonical,
   findClinicalMatchForEndpoint,
@@ -24,7 +24,6 @@ interface Props {
   finding: UnifiedFinding;
   analytics?: FindingsAnalytics;
   statistics?: FindingContext["statistics"];
-  effectSize?: FindingContext["effect_size"];
 }
 
 interface Bullet {
@@ -37,9 +36,7 @@ interface Bullet {
 
 function buildDedupedBullets(
   finding: UnifiedFinding,
-  analytics: FindingsAnalytics | undefined,
   statistics: FindingContext["statistics"] | undefined,
-  effectSize: FindingContext["effect_size"] | undefined,
 ): Bullet[] {
   const bullets: Bullet[] = [];
   const isContinuous = statistics?.data_type === "continuous";
@@ -90,49 +87,6 @@ function buildDedupedBullets(
           bullets.push({ text: "BW decrease exceeds 10% regulatory threshold", important: true });
         }
       }
-    }
-  }
-
-  // 4. Effect rank (endpoint-level, same data_type)
-  if (effectSize) {
-    const epLabel = finding.endpoint_label ?? finding.finding;
-    const list = finding.data_type === "continuous"
-      ? (effectSize.continuous_effects ?? [])
-      : (effectSize.incidence_effects ?? []);
-    const total = finding.data_type === "continuous"
-      ? (effectSize.total_continuous ?? list.length)
-      : (effectSize.total_incidence ?? list.length);
-    const rank = list.findIndex((e) => e.endpoint_label === epLabel);
-    if (rank >= 0 && total > 0) {
-      const rankText = rank === 0
-        ? `Effect is largest of ${total} ${finding.data_type} endpoints (#1 by |d|)`
-        : `Effect ranks #${rank + 1} of ${total} ${finding.data_type} endpoints by |d|`;
-      bullets.push({ text: rankText, important: rank === 0 });
-    }
-  }
-
-  // 5. (Clinical lab matches moved to dedicated CLINICAL SIGNIFICANCE section below)
-
-  // 6. Syndrome membership
-  if (analytics?.syndromes.length) {
-    const endpointLabel = (finding.endpoint_label ?? finding.finding).toLowerCase();
-    for (const syn of analytics.syndromes) {
-      if (syn.matchedEndpoints.some((m) => m.endpoint_label.toLowerCase() === endpointLabel)) {
-        const others = syn.matchedEndpoints
-          .filter((m) => m.endpoint_label.toLowerCase() !== endpointLabel)
-          .map((m) => m.endpoint_label)
-          .slice(0, 3);
-        const suffix = others.length > 0 ? `: ${others.join(", ")}` : "";
-        bullets.push({ text: `Part of ${syn.name} syndrome (${syn.confidence.toLowerCase()})${suffix}`, important: false });
-      }
-    }
-  }
-
-  // 7. Organ coherence
-  if (analytics?.organCoherence && finding.organ_system) {
-    const coh = analytics.organCoherence.get(finding.organ_system);
-    if (coh && coh.domainCount >= 2) {
-      bullets.push({ text: `${coh.domainCount}-domain convergence in ${titleCase(coh.organ_system)}: ${coh.domains.join(", ")}`, important: false });
     }
   }
 
@@ -425,8 +379,8 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
 
 // ─── Component ──────────────────────────────────────────────
 
-export function EvidencePane({ finding, analytics, statistics, effectSize }: Props) {
-  const bullets = buildDedupedBullets(finding, analytics, statistics, effectSize);
+export function EvidencePane({ finding, analytics, statistics }: Props) {
+  const bullets = buildDedupedBullets(finding, statistics);
   const clinicalSection = buildClinicalSection(finding, analytics);
 
   const hasBullets = bullets.length > 0;
