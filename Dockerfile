@@ -20,6 +20,7 @@ COPY --from=frontend-build /app/frontend/dist ./static/
 COPY send/PointCross/PC201708_XPT/ /app/data/PointCross/
 
 ENV SEND_DATA_DIR=/app/data
+ENV OPENBLAS_NUM_THREADS=1
 
 # Verify data is present; regenerate if generated/ is missing or empty
 RUN echo "=== Build-time data check ===" && \
