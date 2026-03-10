@@ -14,6 +14,9 @@ interface CollapsiblePaneProps {
   collapseAll?: number;
   onToggle?: (isOpen: boolean) => void;
   variant?: "border" | "margin";
+  /** Keep children mounted when collapsed (CSS hidden instead of unmount).
+   *  Only safe for panes whose hooks are purely derived from props/context. */
+  keepMounted?: boolean;
 }
 
 export function CollapsiblePane({
@@ -27,6 +30,7 @@ export function CollapsiblePane({
   collapseAll,
   onToggle,
   variant = "border",
+  keepMounted = false,
 }: CollapsiblePaneProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const prevExpand = useRef(expandAll);
@@ -102,10 +106,16 @@ export function CollapsiblePane({
           </span>
         )}
       </div>
-      {isOpen && (
-        <div className={isBorder ? "px-4 pb-3" : "pl-4 pt-1.5"}>
+      {keepMounted ? (
+        <div className={cn(isBorder ? "px-4 pb-3" : "pl-4 pt-1.5", !isOpen && "hidden")}>
           {children}
         </div>
+      ) : (
+        isOpen && (
+          <div className={isBorder ? "px-4 pb-3" : "pl-4 pt-1.5"}>
+            {children}
+          </div>
+        )
       )}
     </div>
   );

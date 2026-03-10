@@ -35,7 +35,7 @@ import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/org
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
-import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
@@ -1189,23 +1189,14 @@ export function FindingsContextPanel() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-3 p-4">
-        <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    );
-  }
-
-  if (!context) return null;
+  // Progressive rendering: show header + independent panes immediately,
+  // skeleton for context-dependent panes while useFindingContext loads.
+  const contextReady = !isLoading && context != null;
 
   // Sync dose-response bars for sibling (reuses same logic inline)
   const syncBarsWithStats = (
-    dr: typeof context.dose_response,
-    stats: typeof context.statistics | undefined,
+    dr: FindingContext["dose_response"],
+    stats: FindingContext["statistics"] | undefined,
   ) => {
     if (!isScheduledOnly || !hasEarlyDeaths || !stats) return dr;
     const rowMap = new Map(stats.rows.map(r => [r.dose_level, r]));
@@ -1224,7 +1215,7 @@ export function FindingsContextPanel() {
 
   return (
     <div>
-      {/* Sticky header */}
+      {/* Sticky header — renders immediately from cached finding */}
       <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
@@ -1235,63 +1226,76 @@ export function FindingsContextPanel() {
         </p>
       </div>
 
-      {/* Verdict — always visible, not in CollapsiblePane */}
-      <div className="border-b px-4 py-3">
-        <VerdictPane
-          finding={selectedFinding}
-          siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
-          analytics={analytics}
-          noael={noael}
-          doseResponse={context.dose_response}
-          statistics={activeStatistics!}
-          siblingStatistics={hasSibling && siblingContext ? siblingContext.statistics : undefined}
-          siblingDoseResponse={hasSibling && siblingContext ? siblingContext.dose_response : undefined}
-          treatmentSummary={context.treatment_summary}
-          endpointSexes={endpointSexes}
-          notEvaluated={notEvaluated}
-          eciConfidence={eciConfidence}
-          endpointConfidence={endpointConfidenceResult}
-          onSeeDecomposition={() => {
-            evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }}
-          hasSibling={hasSibling}
-        />
-        {hasRecovery && !notEvaluated && (
-          <RecoveryVerdictLine
-            finding={selectedFinding}
-            onSeeDetails={() => {
-              recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            }}
-          />
-        )}
-        {context.sibling && (
-          <SexComparisonPane
-            finding={selectedFinding}
-            siblingFinding={findingsData?.findings.find(f => f.id === siblingContext!.finding_id)}
-            analytics={analytics}
-            doseGroups={findingsData?.dose_groups}
-          />
-        )}
-      </div>
+      {/* Context-dependent panes: Verdict + DoseDetail need useFindingContext */}
+      {contextReady ? (
+        <>
+          {/* Verdict — always visible, not in CollapsiblePane */}
+          <div className="border-b px-4 py-3">
+            <VerdictPane
+              finding={selectedFinding}
+              siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
+              analytics={analytics}
+              noael={noael}
+              doseResponse={context!.dose_response}
+              statistics={activeStatistics!}
+              siblingStatistics={hasSibling && siblingContext ? siblingContext.statistics : undefined}
+              siblingDoseResponse={hasSibling && siblingContext ? siblingContext.dose_response : undefined}
+              treatmentSummary={context!.treatment_summary}
+              endpointSexes={endpointSexes}
+              notEvaluated={notEvaluated}
+              eciConfidence={eciConfidence}
+              endpointConfidence={endpointConfidenceResult}
+              onSeeDecomposition={() => {
+                evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }}
+              hasSibling={hasSibling}
+            />
+            {hasRecovery && !notEvaluated && (
+              <RecoveryVerdictLine
+                finding={selectedFinding}
+                onSeeDetails={() => {
+                  recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }}
+              />
+            )}
+            {context!.sibling && (
+              <SexComparisonPane
+                finding={selectedFinding}
+                siblingFinding={findingsData?.findings.find(f => f.id === siblingContext!.finding_id)}
+                analytics={analytics}
+                doseGroups={findingsData?.dose_groups}
+              />
+            )}
+          </div>
 
-      {/* Dose detail — Tier 1: always shows both sexes, above sex selector */}
-      <CollapsiblePane
-        title="Dose detail"
-        defaultOpen
-        expandAll={expandGen}
-        collapseAll={collapseGen}
-      >
-        <DoseDetailPane
-          statistics={activeStatistics!}
-          doseResponse={context.dose_response}
-          sex={selectedFinding.sex}
-          siblingStatistics={hasSibling ? siblingContext!.statistics : undefined}
-          siblingDoseResponse={hasSibling ? syncBarsWithStats(siblingContext!.dose_response, siblingContext!.statistics) : undefined}
-          siblingSex={hasSibling ? siblingContext!.sex : undefined}
-          ancova={selectedFinding.ancova}
-          siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
-        />
-      </CollapsiblePane>
+          {/* Dose detail — Tier 1: always shows both sexes, above sex selector */}
+          <CollapsiblePane
+            title="Dose detail"
+            defaultOpen
+            keepMounted
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
+            <DoseDetailPane
+              statistics={activeStatistics!}
+              doseResponse={context!.dose_response}
+              sex={selectedFinding.sex}
+              siblingStatistics={hasSibling ? siblingContext!.statistics : undefined}
+              siblingDoseResponse={hasSibling ? syncBarsWithStats(siblingContext!.dose_response, siblingContext!.statistics) : undefined}
+              siblingSex={hasSibling ? siblingContext!.sex : undefined}
+              ancova={selectedFinding.ancova}
+              siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
+            />
+          </CollapsiblePane>
+        </>
+      ) : (
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      )}
+
+      {/* Independent panes — render immediately, have their own data hooks */}
 
       {/* Time course — between dose detail and recovery */}
       {selectedFinding && selectedFinding.data_type === "continuous" && (
@@ -1331,10 +1335,14 @@ export function FindingsContextPanel() {
         </div>
       )}
 
+      {/* Evidence + Correlations + Context — need useFindingContext data */}
+      {contextReady ? (
+      <>
       <div ref={evidencePaneRef}>
       <CollapsiblePane
         title={hasSibling ? "Evidence:" : "Evidence"}
         defaultOpen
+        keepMounted
         expandAll={expandGen}
         collapseAll={collapseGen}
         headerRight={hasSibling ? (
@@ -1357,7 +1365,7 @@ export function FindingsContextPanel() {
           finding={activeFinding!}
           analytics={analytics}
           statistics={sexAwareStatistics!}
-          effectSize={activeSex === selectedFinding.sex ? context.effect_size : siblingContext?.effect_size ?? context.effect_size}
+          effectSize={activeSex === selectedFinding.sex ? context!.effect_size : siblingContext?.effect_size ?? context!.effect_size}
         />
         {/* Normalization annotation for OM domain endpoints */}
         {selectedFinding.domain === "OM" && (() => {
@@ -1559,27 +1567,29 @@ export function FindingsContextPanel() {
       )}
 
       {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}
-      {context.correlations.related.length > 0
-        && context.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
-        <CollapsiblePane title="Correlations" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+      {context!.correlations.related.length > 0
+        && context!.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
+        <CollapsiblePane title="Correlations" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
           <CorrelationsPane
-            data={context.correlations}
+            data={context!.correlations}
             organSystem={selectedFinding.organ_system}
             dataType={selectedFinding.data_type}
           />
         </CollapsiblePane>
       )}
 
-      <CollapsiblePane title="Context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Context" defaultOpen keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
-          effectSize={context.effect_size}
+          effectSize={context!.effect_size}
           selectedFindingId={selectedFindingId}
           effectSizeMethod={effectSize}
         />
       </CollapsiblePane>
+      </>
+      ) : null}
 
       {/* Related views */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Related views" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <a
             href="#"

@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
   withSignalScores,
@@ -100,8 +101,38 @@ export function FindingsRail({
   onRestoreEndpoint,
 }: FindingsRailProps) {
   // Shared analytics derivation — single source of truth
-  const { analytics, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsLocal(studyId);
   const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
+
+  // Prefetch finding context on endpoint hover
+  const prefetchContext = usePrefetchFindingContext(studyId);
+  const bestFindingIdByLabel = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!activeFindings.length) return map;
+    // Group findings by endpoint_label, pick best (min p-value, max |effect|)
+    const grouped = new Map<string, typeof activeFindings>();
+    for (const f of activeFindings) {
+      const label = f.endpoint_label ?? f.finding;
+      let arr = grouped.get(label);
+      if (!arr) { arr = []; grouped.set(label, arr); }
+      arr.push(f);
+    }
+    for (const [label, fArr] of grouped) {
+      const best = fArr.reduce((b, f) => {
+        const bP = b.min_p_adj ?? Infinity;
+        const fP = f.min_p_adj ?? Infinity;
+        if (fP < bP) return f;
+        if (fP === bP && Math.abs(f.max_effect_size ?? 0) > Math.abs(b.max_effect_size ?? 0)) return f;
+        return b;
+      });
+      map.set(label, best.id);
+    }
+    return map;
+  }, [activeFindings]);
+  const handleEndpointHover = useCallback((endpointLabel: string) => {
+    const id = bestFindingIdByLabel.get(endpointLabel);
+    if (id) prefetchContext(id);
+  }, [bestFindingIdByLabel, prefetchContext]);
 
   // ── Local state ────────────────────────────────────────
   // Grouping & sort persist across view navigations (user preference)
@@ -488,6 +519,7 @@ export function FindingsRail({
                   isSelected={activeEndpoint === ep.endpoint_label}
                   isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                   onClick={() => handleEndpointClick(ep.endpoint_label)}
+                  onHover={() => handleEndpointHover(ep.endpoint_label)}
                   onRestore={onRestoreEndpoint}
                   ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                   clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
@@ -510,6 +542,7 @@ export function FindingsRail({
               onHeaderSelect={() => handleCardSelect(card)}
               onToggleExpand={() => handleCardToggleExpand(card)}
               onEndpointClick={handleEndpointClick}
+              onEndpointHover={handleEndpointHover}
               registerEndpointRef={registerEndpointRef}
               multiSyndromeIndex={multiSyndromeIndex}
               currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
@@ -899,6 +932,7 @@ function CardSection({
   onHeaderSelect,
   onToggleExpand,
   onEndpointClick,
+  onEndpointHover,
   registerEndpointRef,
   multiSyndromeIndex,
   currentSyndromeId,
@@ -918,6 +952,7 @@ function CardSection({
   onHeaderSelect: () => void;
   onToggleExpand: () => void;
   onEndpointClick: (label: string) => void;
+  onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
   multiSyndromeIndex?: Map<string, string[]>;
   currentSyndromeId?: string;
@@ -967,6 +1002,7 @@ function CardSection({
                 isSelected={activeEndpoint === ep.endpoint_label}
                 isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
                 onClick={() => onEndpointClick(ep.endpoint_label)}
+                onHover={onEndpointHover ? () => onEndpointHover(ep.endpoint_label) : undefined}
                 onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                 otherSyndromes={otherSyndromes}
@@ -1160,11 +1196,12 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   isSelected: boolean;
   isExcluded?: boolean;
   onClick: () => void;
+  onHover?: () => void;
   onRestore?: (label: string) => void;
   otherSyndromes?: string[];
   clinicalTier?: string;
   effectSizeLabel?: string;
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onRestore, otherSyndromes, clinicalTier, effectSizeLabel }, ref) {
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, otherSyndromes, clinicalTier, effectSizeLabel }, ref) {
   // Pipe weight from signal tier (matches FindingsTable severity column)
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
@@ -1182,6 +1219,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         isSelected ? "bg-accent" : "hover:bg-accent/30",
       )}
       onClick={onClick}
+      onMouseEnter={onHover}
       aria-selected={isSelected}
     >
       {/* Line 1: Name + right-aligned key signals (tier → TR → d → pattern) */}

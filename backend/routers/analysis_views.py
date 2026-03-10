@@ -129,8 +129,10 @@ def regenerate_study(study_id: str):
     except SystemExit:
         raise HTTPException(status_code=404, detail=f"Study '{study_id}' not found")
 
-    # Invalidate settings cache after regeneration
+    # Invalidate caches after regeneration
     invalidate_study(study_id)
+    from routers.analyses import invalidate_findings_cache
+    invalidate_findings_cache(study_id)
 
     # Read back the enriched metadata for response
     meta_path = GENERATED_DIR / study_id / "study_metadata_enriched.json"
@@ -253,10 +255,9 @@ async def pattern_override_preview(study_id: str, body: PatternOverridePreviewRe
         raise HTTPException(status_code=400,
                             detail=f"Invalid pattern: {body.proposed_pattern}")
 
-    # Load findings from disk
-    data = _load_from_disk(study_id, "unified_findings.json")
-    if data is None:
-        raise HTTPException(status_code=404, detail="Findings not generated")
+    # Reuse in-memory cached loader from analyses.py
+    from routers.analyses import _load_unified_findings
+    data = _load_unified_findings(study_id)
 
     findings = data.get("findings", [])
     original = next((f for f in findings if f.get("id") == body.finding_id), None)
