@@ -423,6 +423,25 @@ export interface FindingContext {
   } | null;
 }
 
+export interface OrganCorrelationSummary {
+  median_abs_rho: number;
+  strong_pairs: number;
+  total_pairs: number;
+  coherence_label: string;
+}
+
+export interface OrganCorrelationMatrix {
+  organ_system: string;
+  endpoints: string[];
+  endpoint_domains: string[];
+  matrix: (number | null)[][];
+  p_values: (number | null)[][];
+  n_values: (number | null)[][];
+  endpoint_finding_ids: string[][];
+  total_pairs: number;
+  summary: OrganCorrelationSummary;
+}
+
 export interface FindingsFilters {
   domain: string | null;
   sex: string | null;
