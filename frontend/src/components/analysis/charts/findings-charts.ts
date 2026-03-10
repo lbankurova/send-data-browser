@@ -30,9 +30,17 @@ export interface QuadrantPoint {
   domain: string;
   worstSeverity: "adverse" | "warning" | "normal";
   treatmentRelated: boolean;
-  x: number;  // |effect size|
+  x: number;  // effect percentile (0–1, Hazen plotting position)
   y: number;  // -log10(p)
   rawP: number;
+  /** Original |maxEffectSize| before percentile ranking (for tooltip) */
+  effectRaw: number;
+  /** True for MI/MA/CL/TF/DS domains (severity-based, not statistical effect size) */
+  isIncidence: boolean;
+  /** True when this is the only endpoint of its data type (rank not meaningful) */
+  isSingleton: boolean;
+  /** Maximum incidence fraction (0–1) across treated dose groups, for incidence tooltip */
+  maxIncidence?: number | null;
   coherenceSize?: number;       // 7 for 3+ domain organs
   syndromeId?: string;          // syndrome ID if endpoint is matched
   syndromeName?: string;        // for tooltip line
@@ -48,6 +56,48 @@ export interface QuadrantPoint {
   noaelWeight?: number;
   /** ECI NOAEL contribution label */
   noaelWeightLabel?: string;
+}
+
+/** Map mean INHAND severity grade (1–4) to a bracketed human-readable label. */
+function severityLabel(meanGrade: number): string {
+  if (meanGrade < 1.5) return "Minimal";
+  if (meanGrade < 2.0) return "Minimal\u2013Mild";
+  if (meanGrade < 2.5) return "Mild";
+  if (meanGrade < 3.0) return "Mild\u2013Moderate";
+  if (meanGrade < 3.5) return "Moderate";
+  if (meanGrade < 4.0) return "Moderate\u2013Marked";
+  return "Marked";
+}
+
+/**
+ * Compute within-type percentile rank using Hazen plotting position: rank / (n + 1).
+ * Continuous and incidence endpoints are ranked separately.
+ */
+function computeWithinTypeRank(points: QuadrantPoint[]): QuadrantPoint[] {
+  const continuous = points.filter(p => !p.isIncidence);
+  const incidence = points.filter(p => p.isIncidence);
+
+  function assignRanks(group: QuadrantPoint[]): QuadrantPoint[] {
+    if (group.length === 0) return [];
+    const singleton = group.length === 1;
+    // Sort indices by effectRaw ascending
+    const indexed = group.map((p, i) => ({ i, val: p.effectRaw }));
+    indexed.sort((a, b) => a.val - b.val);
+    // Average rank for ties
+    const ranks = new Array<number>(group.length);
+    let pos = 0;
+    while (pos < indexed.length) {
+      let end = pos + 1;
+      while (end < indexed.length && indexed[end].val === indexed[pos].val) end++;
+      const avgRank = (pos + 1 + end) / 2; // 1-based average
+      for (let k = pos; k < end; k++) ranks[indexed[k].i] = avgRank;
+      pos = end;
+    }
+    // Hazen plotting position: rank / (n + 1)
+    return group.map((p, i) => ({ ...p, x: ranks[i] / (group.length + 1), isSingleton: singleton }));
+  }
+
+  return [...assignRanks(continuous), ...assignRanks(incidence)];
 }
 
 export function prepareQuadrantPoints(
@@ -103,7 +153,7 @@ export function prepareQuadrantPoints(
     }
   }
 
-  return endpoints
+  const raw = endpoints
     .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null)
     .map((ep) => {
       const coh = organCoherence?.get(ep.organ_system);
@@ -111,6 +161,8 @@ export function prepareQuadrantPoints(
       const clinical = clinicalIndex.get(ep.endpoint_label.toLowerCase());
       // Clamp p=0 to 1e-300 to avoid -log10(0)=Infinity
       const safeP = Math.max(ep.minPValue!, 1e-300);
+      const absEffect = Math.abs(ep.maxEffectSize!);
+      const isInc = INCIDENCE_DOMAINS.has(ep.domain);
 
       return {
         endpoint_label: ep.endpoint_label,
@@ -118,9 +170,13 @@ export function prepareQuadrantPoints(
         domain: ep.domain,
         worstSeverity: ep.worstSeverity,
         treatmentRelated: ep.treatmentRelated,
-        x: Math.abs(ep.maxEffectSize!),
+        x: absEffect, // overwritten by computeWithinTypeRank
         y: -Math.log10(safeP),
         rawP: ep.minPValue!,
+        effectRaw: absEffect,
+        isIncidence: isInc,
+        isSingleton: false, // set by computeWithinTypeRank
+        maxIncidence: isInc ? (ep.maxIncidence ?? null) : undefined,
         coherenceSize: coh && coh.domainCount >= 3 ? 7 : undefined,
         syndromeId: syn?.id,
         syndromeName: syn?.name,
@@ -136,6 +192,8 @@ export function prepareQuadrantPoints(
         noaelWeightLabel: ep.endpointConfidence?.noaelContribution.label,
       };
     });
+
+  return computeWithinTypeRank(raw);
 }
 
 export function buildFindingsQuadrantOption(
@@ -146,7 +204,6 @@ export function buildFindingsQuadrantOption(
 ): EChartsOption {
   if (points.length === 0) return {};
 
-  const maxX = Math.max(...points.map((p) => p.x)) * 1.1 || 2;
   const maxY = Math.max(...points.map((p) => p.y)) * 1.1 || 3;
 
   const data = points.map((pt) => {
@@ -241,10 +298,10 @@ export function buildFindingsQuadrantOption(
     xAxis: {
       type: "value",
       min: 0,
-      max: maxX,
-      axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => v.toFixed(2) },
+      max: 1,
+      axisLabel: { fontSize: 9, color: "#9CA3AF", formatter: (v: number) => Math.round(v * 100) + "%" },
       splitLine: { lineStyle: { color: "#F3F4F6", type: "dashed" } },
-      name: "Effect",
+      name: "Effect percentile",
       nameLocation: "end",
       nameTextStyle: { fontSize: 9, color: "#9CA3AF" },
     },
@@ -281,8 +338,20 @@ export function buildFindingsQuadrantOption(
         const domainColor = getDomainHexColor(meta.domain);
         const sevLabel = meta.worstSeverity === "adverse" ? "adverse" : meta.worstSeverity === "warning" ? "warning" : "normal";
         const trLabel = meta.treatmentRelated ? "TR" : "non-TR";
-        const isIncidence = INCIDENCE_DOMAINS.has(meta.domain);
-        const effectLabel = isIncidence ? `avg sev=${meta.x.toFixed(2)}` : `|${effectSizeSymbol}|=${meta.x.toFixed(2)}`;
+        const effectLabel = meta.isIncidence
+          ? `avg sev=${meta.effectRaw.toFixed(2)} (${severityLabel(meta.effectRaw)})`
+          : `|${effectSizeSymbol}|=${meta.effectRaw.toFixed(2)}`;
+        // Percentile context or singleton caveat
+        const pctVal = Math.round(meta.x * 100);
+        const pctSuffix = pctVal % 100 >= 11 && pctVal % 100 <= 13 ? "th"
+          : pctVal % 10 === 1 ? "st" : pctVal % 10 === 2 ? "nd" : pctVal % 10 === 3 ? "rd" : "th";
+        const pctLine = meta.isSingleton
+          ? `<div style="font-size:9px;color:#9CA3AF">Only endpoint of this type \u2014 rank not meaningful</div>`
+          : `<div style="font-size:9px;color:#9CA3AF">${pctVal}${pctSuffix} pctl among ${meta.isIncidence ? "incidence" : "continuous"}</div>`;
+        // Incidence fraction for MI/MA/CL
+        const incidenceLine = meta.isIncidence && meta.maxIncidence != null
+          ? `<div style="font-size:9px;color:#9CA3AF">${Math.round(meta.maxIncidence * 100)}% incidence</div>`
+          : "";
         const lines = [
           `<div style="font-size:11px;font-weight:600">${meta.endpoint_label}</div>`,
           `<div style="font-size:10px;color:#9CA3AF"><span style="color:${domainColor}">${meta.domain}</span> \u00b7 ${meta.organ_system}</div>`,
@@ -290,6 +359,8 @@ export function buildFindingsQuadrantOption(
           `<span>${effectLabel}</span>`,
           `<span>p=${meta.rawP.toExponential(1)}</span>`,
           `</div>`,
+          incidenceLine,
+          pctLine,
           `<div style="font-size:9px;color:#9CA3AF;margin-top:2px">${sevLabel} \u00b7 ${trLabel}</div>`,
         ];
         if (meta.clinicalSeverity && meta.clinicalRuleId) {
@@ -337,16 +408,6 @@ export function buildFindingsQuadrantOption(
                 position: "insideEndTop",
                 fontSize: 8,
                 color: "#9CA3AF",
-              },
-            },
-            {
-              xAxis: 0.8,
-              lineStyle: { color: "#9CA3AF", type: "dashed", width: 1 },
-              label: {
-                formatter: `|${effectSizeSymbol}|=0.8`,
-                position: "end",
-                fontSize: 8,
-                color: "#6B7280",
               },
             },
           ],
