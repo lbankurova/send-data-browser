@@ -6,9 +6,10 @@ the JSON first; consumers import derived views from here.
 """
 
 import json
-from pathlib import Path
 
-_DEFS_PATH = Path(__file__).resolve().parents[3] / "shared" / "syndrome-definitions.json"
+from config import SHARED_DIR
+
+_DEFS_PATH = SHARED_DIR / "syndrome-definitions.json"
 _raw = json.loads(_DEFS_PATH.read_text(encoding="utf-8"))
 
 SYNDROME_DEFINITIONS: list[dict] = _raw["syndromes"]

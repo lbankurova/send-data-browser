@@ -44,6 +44,31 @@ async def lifespan(app: FastAPI):
                 jsons = [f.name for f in study_dir.iterdir() if f.suffix == ".json"]
                 print(f"[DIAG]   {study_dir.name}/: {len(jsons)} json files")
 
+    # Verify shared data files exist (fail fast — don't wait for first request)
+    from config import SHARED_DIR
+    _required_shared = [
+        "syndrome-definitions.json",
+        "progression-chains.yaml",
+        "organ-weight-thresholds.json",
+        "hcd-reference-ranges.json",
+        "adversity-dictionary.json",
+    ]
+    print(f"[DIAG] SHARED_DIR = {SHARED_DIR}")
+    print(f"[DIAG] SHARED_DIR exists = {SHARED_DIR.exists()}")
+    missing = [f for f in _required_shared if not (SHARED_DIR / f).exists()]
+    if missing:
+        print(f"[FATAL] Missing shared files in {SHARED_DIR}: {missing}")
+        raise SystemExit(1)
+    print(f"[DIAG] All {len(_required_shared)} shared files verified")
+
+    # Eagerly import the analysis pipeline to surface import errors at startup
+    try:
+        from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline  # noqa: F401
+        print("[DIAG] Analysis pipeline imported successfully")
+    except Exception as e:
+        print(f"[FATAL] Analysis pipeline import failed: {e}")
+        raise
+
     print("Discovering studies...")
     studies = discover_studies()
     print(f"Found {len(studies)} studies: {list(studies.keys())}")

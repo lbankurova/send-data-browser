@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
+
+from config import SHARED_DIR
 
 log = logging.getLogger(__name__)
 
-_JSON_PATH = Path(__file__).resolve().parents[3] / "shared" / "organ-weight-thresholds.json"
+_JSON_PATH = SHARED_DIR / "organ-weight-thresholds.json"
 
 # Lazy-loaded singleton
 _DATA: dict | None = None

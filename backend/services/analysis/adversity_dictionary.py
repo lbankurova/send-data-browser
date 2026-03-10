@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
+
+from config import SHARED_DIR
 
 log = logging.getLogger(__name__)
 
-_DICT_PATH = Path(__file__).resolve().parents[3] / "shared" / "adversity-dictionary.json"
+_DICT_PATH = SHARED_DIR / "adversity-dictionary.json"
 
 # Lazy-loaded singleton
 _TIERS: dict[str, list[str]] | None = None
