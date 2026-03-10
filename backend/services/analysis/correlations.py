@@ -22,11 +22,15 @@ def compute_correlations(findings: list[dict], max_per_organ: int = 30) -> list[
     # 1. Collect continuous endpoints with subject-level data.
     #    An endpoint is identified by (domain, test_code, day) — sex is NOT part
     #    of the key so M and F findings for the same test are pooled.
+    #    Derived endpoints (ratios/indices) are excluded — they create
+    #    tautological correlations with their source components.
     endpoints: dict[str, list[dict]] = {}
     for f in findings:
         if f.get("data_type") != "continuous":
             continue
         if not f.get("raw_subject_values"):
+            continue
+        if f.get("is_derived"):
             continue
         key = _endpoint_key(f)
         endpoints.setdefault(key, []).append(f)

@@ -374,7 +374,11 @@ def _interpret_effect_size_incidence(d: float | None) -> str:
 # ─── Organ correlation matrix ─────────────────────────────
 
 
-def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> dict:
+def build_organ_correlation_matrix(
+    organ_key: str,
+    correlations: list[dict],
+    convergence_domain_count: int = 0,
+) -> dict:
     """Build correlation matrix for an organ system from precomputed correlations.
 
     Reshapes the flat list of pairwise correlations into an NxN lower-triangle
@@ -382,6 +386,9 @@ def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> 
 
     Endpoints are sorted by domain then alphabetically within domain so that
     biologically related endpoints (same domain) are visually adjacent.
+
+    ``convergence_domain_count`` is the number of unique domains with adverse/warning
+    findings for this organ, used to produce a convergence-aware interpretive gloss.
     """
     organ_corrs = [
         c for c in correlations
@@ -404,6 +411,7 @@ def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> 
                 "strong_pairs": 0,
                 "total_pairs": 0,
                 "coherence_label": "Insufficient data",
+                "gloss": None,
             },
         }
 
@@ -451,11 +459,14 @@ def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> 
     if total < 2:
         coherence = "Insufficient data"
     elif med >= 0.7:
-        coherence = "Highly coherent"
+        coherence = "Tightly coupled"
     elif med >= 0.4:
-        coherence = "Moderately coherent"
+        coherence = "Partially coupled"
     else:
-        coherence = "Fragmented"
+        coherence = "Multi-pathway"
+
+    # 2×2 interpretive gloss: convergence strength × correlation coupling
+    gloss = _correlation_gloss(coherence, convergence_domain_count, organ_key)
 
     return {
         "organ_system": organ_key,
@@ -471,5 +482,38 @@ def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> 
             "strong_pairs": strong,
             "total_pairs": total,
             "coherence_label": coherence,
+            "gloss": gloss,
         },
     }
+
+
+def _correlation_gloss(
+    coherence: str,
+    convergence_domain_count: int,
+    organ_key: str,
+) -> str | None:
+    """Produce an interpretive sentence when convergence and correlation diverge.
+
+    Returns None when the combination is unremarkable (middle band, 2-domain,
+    or low convergence + multi-pathway).
+    """
+    organ_name = organ_key.replace("_", " ")
+    high_conv = convergence_domain_count >= 3
+    low_conv = convergence_domain_count <= 1
+
+    if coherence == "Tightly coupled" and high_conv:
+        return (
+            f"Tightly coupled response across {convergence_domain_count} domains "
+            f"\u2014 consistent with single-mechanism {organ_name} injury."
+        )
+    if coherence == "Multi-pathway" and high_conv:
+        return (
+            f"Multiple domains confirm {organ_name} effects. Multi-pathway response "
+            f"pattern \u2014 several injury mechanisms acting simultaneously."
+        )
+    if coherence == "Tightly coupled" and low_conv:
+        return (
+            "Endpoints co-vary strongly despite limited domain coverage "
+            "\u2014 possible subclinical coordinated response."
+        )
+    return None

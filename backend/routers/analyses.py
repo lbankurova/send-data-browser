@@ -210,7 +210,22 @@ def get_organ_correlations(
 ):
     _get_study(study_id)
     data = _load_findings_for_settings(study_id, settings)
-    result = build_organ_correlation_matrix(organ_key, data.get("correlations", []))
+
+    # Count unique domains with adverse/warning findings for this organ
+    # (used for convergence-aware interpretive gloss in the matrix summary)
+    convergence_domains: set[str] = set()
+    for f in data.get("findings", []):
+        if f.get("organ_system", "").lower() != organ_key.lower():
+            continue
+        sev = f.get("severity", "normal")
+        if sev in ("adverse", "warning"):
+            convergence_domains.add(f.get("domain", ""))
+
+    result = build_organ_correlation_matrix(
+        organ_key,
+        data.get("correlations", []),
+        convergence_domain_count=len(convergence_domains),
+    )
     return OrganCorrelationMatrix(**result)
 
 

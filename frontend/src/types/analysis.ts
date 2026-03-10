@@ -428,6 +428,7 @@ export interface OrganCorrelationSummary {
   strong_pairs: number;
   total_pairs: number;
   coherence_label: string;
+  gloss: string | null;
 }
 
 export interface OrganCorrelationMatrix {

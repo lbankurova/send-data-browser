@@ -125,7 +125,8 @@ class OrganCorrelationSummary(BaseModel):
     median_abs_rho: float
     strong_pairs: int  # |rho| >= 0.7
     total_pairs: int
-    coherence_label: str  # "Highly coherent", "Moderately coherent", "Fragmented", "Insufficient data"
+    coherence_label: str  # "Tightly coupled", "Partially coupled", "Multi-pathway", "Insufficient data"
+    gloss: str | None = None  # Interpretive sentence when convergence and correlation diverge
 
 
 class OrganCorrelationMatrix(BaseModel):

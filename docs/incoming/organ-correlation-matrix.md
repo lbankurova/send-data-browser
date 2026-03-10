@@ -2,7 +2,7 @@
 
 ## What this does
 
-Adds a correlation matrix pane to the OrganContextPanel, showing pairwise Spearman correlations between all continuous endpoints within the selected organ system. Answers: "Is this organ's response coherent or fragmented?"
+Adds a correlation matrix pane to the OrganContextPanel, showing pairwise Spearman correlations between all continuous endpoints within the selected organ system. Answers: "Is this organ's response coherent or multi-pathway?"
 
 ## User workflow
 
@@ -67,7 +67,8 @@ class OrganCorrelationSummary(BaseModel):
     median_abs_rho: float                   # median |rho| across all pairs
     strong_pairs: int                       # count of |rho| >= 0.7
     total_pairs: int
-    coherence_label: str                    # "Highly coherent", "Moderately coherent", "Fragmented", "Insufficient data"
+    coherence_label: str                    # "Tightly coupled", "Partially coupled", "Multi-pathway", "Insufficient data"
+    gloss: str | None = None                # interpretive sentence when convergence and correlation diverge (2×2 logic)
 ```
 
 ### Backend assembly function
@@ -105,7 +106,7 @@ In `OrganContextPanel.tsx`, as a new CollapsiblePane:
 - **Position:** After Convergence pane, before Organ Weight Normalization
 - **Title:** "Endpoint correlations"
 - **defaultOpen:** `true` (this is high-value information)
-- **Badge:** summary coherence label (e.g., "Highly coherent") as `headerRight`
+- **Badge:** summary coherence label (e.g., "Tightly coupled") as `headerRight`
 
 ### Matrix layout
 
@@ -184,54 +185,64 @@ Using `getNeutralHeatColor()` for each swatch.
 
 ## Implementation plan
 
-### Phase 1: Backend (new endpoint + matrix assembly)
+### Phase 1: Derived endpoint flag (data quality foundation)
 
-**Step 1.1: Schema** (`backend/models/analysis_schemas.py`)
-- Add `OrganCorrelationSummary` and `OrganCorrelationMatrix` Pydantic models
+**Step 1.1: Add `derived` field to BIOMARKER_MAP** (`backend/services/analysis/send_knowledge.py`)
+- Add `"derived": True, "source_tests": [...]` to calculated endpoints:
+  - `ALBGLOB` → derived from ALB, GLOB
+  - `MCH` → derived from HGB, RBC
+  - `MCHC` → derived from HGB, HCT
+  - `MCV` → derived from HCT, RBC
+- Non-derived entries get no `derived` key (falsy default)
+- Future: BW gain and organ-to-BW ratios would use the same pattern
 
-**Step 1.2: Matrix builder** (`backend/services/analysis/context_panes.py`)
-- Add `build_organ_correlation_matrix(organ_key, correlations)` function
-- Filter correlations by organ_system
-- Collect unique endpoint labels, sort by domain then alphabetically within domain
-- Build lower-triangle matrices (rho, p_value, n)
-- Compute summary: median |rho|, strong pair count, coherence label
-- Collect finding_ids per endpoint for navigation
+**Step 1.2: Stamp `is_derived` in enrichment** (`backend/services/analysis/findings_pipeline.py`)
+- In `_enrich_finding()`, after organ system assignment, look up test_code in BIOMARKER_MAP
+- Stamp `f["is_derived"] = True` when the map entry has `derived: True`
+- Default to `False` when not in map or no `derived` key
 
-**Step 1.3: API endpoint** (`backend/routers/analyses.py`)
-- Add `GET /api/studies/{study_id}/analyses/adverse-effects/organ/{organ_key}/correlations`
-- Load unified_findings via `_load_findings_for_settings()`
-- Extract `correlations` array, pass to `build_organ_correlation_matrix()`
-- Return `OrganCorrelationMatrix`
+**Step 1.3: Filter derived endpoints in correlation engine** (`backend/services/analysis/correlations.py`)
+- In `compute_correlations()`, skip findings where `is_derived` is True
+- This removes tautological pairs (ALBGLOB↔GLOB, MCH↔HGB, etc.) from all organs systematically
 
-### Phase 2: Frontend hook
+### Phase 2: Coherence label vocabulary + 2×2 gloss
 
-**Step 2.1: Hook** (`frontend/src/hooks/useOrganCorrelations.ts`)
-- React Query hook: `useOrganCorrelations(studyId, organKey)`
-- Query key: `["organ-correlations", studyId, organKey, ...settingsKey]`
-- Fetch from new endpoint
-- Type the response matching the backend schema
+**Step 2.1: Update coherence labels** (`backend/services/analysis/context_panes.py`)
+- Replace label vocabulary in `build_organ_correlation_matrix()`:
+  - `med >= 0.7` → "Tightly coupled" (was "Highly coherent")
+  - `med >= 0.4` → "Partially coupled" (was "Moderately coherent")
+  - `med < 0.4` → "Multi-pathway" (was "Fragmented")
+  - `total < 2` → "Insufficient data" (unchanged)
 
-### Phase 3: Frontend component
+**Step 2.2: Add convergence-aware interpretive gloss** (`backend/services/analysis/context_panes.py`)
+- Add `gloss: str | None` to the summary output
+- The gloss is a 2×2 matrix keyed on (convergence_domain_count, coherence_label):
 
-**Step 3.1: CorrelationMatrixPane** (`frontend/src/components/analysis/panes/CorrelationMatrixPane.tsx`)
-- Props: `{ data: OrganCorrelationMatrix; onCellClick: (endpointLabel: string) => void }`
-- Render lower-triangle matrix table
-- Cell backgrounds via `getNeutralHeatColor(Math.abs(rho))`
-- Tooltips via native `title` attribute
-- Click handler on cells
-- Summary text below matrix
-- Color scale legend
-- Fallback for < 3 endpoints (text summary)
-- Fallback for no data
+| | Tightly coupled (med |ρ| ≥ 0.7) | Multi-pathway (med |ρ| < 0.4) |
+|---|---|---|
+| **≥3 domains** | Tightly coupled response across N domains — consistent with single-mechanism organ injury. | Multiple domains confirm organ effects. Multi-pathway response pattern — several injury mechanisms acting simultaneously. |
+| **≤1 domain** | Endpoints co-vary strongly despite limited domain coverage — possible subclinical coordinated response. | *(null — nothing notable)* |
 
-**Step 3.2: Integrate into OrganContextPanel** (`OrganContextPanel.tsx`)
-- Import `useOrganCorrelations` hook
-- Import `CorrelationMatrixPane` component
-- Add `CollapsiblePane` with title "Endpoint correlations" after Convergence
-- Pass `handleEndpointClick` as click handler
-- Show coherence label as `headerRight` badge
+- Middle band (0.4–0.7) and 2-domain convergence: no gloss (unremarkable)
+- The matrix builder needs the domain count as a new parameter (passed from the API endpoint)
 
-### Phase 4: Polish
+**Step 2.3: Pass convergence domain count to matrix builder**
+- API endpoint extracts domain count from findings (count unique domains with adverse/warning findings for this organ)
+- Pass to `build_organ_correlation_matrix()` as `convergence_domain_count`
+
+### Phase 3: Frontend label + gloss updates
+
+**Step 3.1: Update coherence label display** (`OrganContextPanel.tsx`)
+- No code change needed if label comes from backend (already renders `corrMatrix.summary.coherence_label`)
+
+**Step 3.2: Render gloss text** (`CorrelationMatrixPane.tsx`)
+- If `summary.gloss` is non-null, render it below the summary stats line
+- Style: `text-xs leading-relaxed text-foreground/80` (matches convergence interpretation text)
+
+**Step 3.3: Update TypeScript types** (`frontend/src/types/analysis.ts`)
+- Add `gloss: string | null` to `OrganCorrelationSummary`
+
+### Phase 4: Polish (unchanged from original)
 
 **Step 4.1: Vertical column headers**
 - CSS `writing-mode: vertical-rl` + `transform: rotate(180deg)` for 90° vertical text
@@ -245,6 +256,13 @@ Using `getNeutralHeatColor()` for each swatch.
 - Handle organs with 0-2 continuous endpoints gracefully
 - Handle missing correlation data (no raw_subject_values)
 
+### Follow-on items (not this feature scope — log to TODO.md)
+
+- Audit volcano plot percentile ranking for derived-endpoint contamination
+- Audit NOAEL weight logic for derived-endpoint influence
+- Add `derived` flag for BW gain endpoints when BW gain is generated as a separate finding
+- Add `derived` flag for organ-to-body-weight ratios if/when they enter the findings pipeline
+
 ## Acceptance criteria
 
 - When clicking an organ group header, the OrganContextPanel shows an "Endpoint correlations" pane
@@ -253,11 +271,13 @@ Using `getNeutralHeatColor()` for each swatch.
 - Hovering a cell shows tooltip with ρ, n, p-value, and direction
 - Clicking a cell navigates to the row endpoint (left axis) in the findings rail
 - Summary text shows strong pair count and median |ρ|
-- Coherence label appears in the pane header
+- Coherence label ("Tightly coupled" / "Partially coupled" / "Multi-pathway") appears in the pane header
+- Derived endpoints (ALBGLOB, MCH, MCHC, MCV) are excluded from correlation computation
+- Interpretive gloss appears below matrix when convergence and correlation diverge (2×2 logic)
 - Organs with < 3 continuous endpoints show a text summary instead of matrix
 - Organs with < 2 continuous endpoints show "insufficient" message
 - Matrix axes are ordered by domain then alphabetically within domain
-- Pane is collapsed when loading and expands once data arrives
+- Pane is hidden until data arrives, then renders open (`defaultOpen`)
 - No new computation in the backend — reshapes precomputed correlations
 - Frontend build passes (`npm run build`)
 - No ESLint errors (`npm run lint`)
@@ -281,7 +301,26 @@ One endpoint = one organ system. No multi-membership. OM findings get organ_syst
 1. ~~Column header rotation angle~~ → **90° vertical.** At 45° with 6-8 endpoints the headers overflow at 36px cell width.
 2. ~~Cell click — which endpoint~~ → **Row endpoint (left axis).** Avoids needing signal scores in matrix response. Simple.
 3. ~~Axis ordering~~ → **Domain then alphabetical within domain.** Alphabetical is stable but biologically meaningless. Domain grouping makes cluster structure visible (e.g., LB hematology endpoints adjacent).
+4. ~~Coherence label vocabulary~~ → **"Tightly coupled" / "Partially coupled" / "Multi-pathway".** Original labels ("Highly coherent", "Moderately coherent", "Fragmented") carry misleading connotations for toxicologists. "Fragmented" implies weak evidence when it actually means independent biological pathways. "Multi-pathway" is mechanistically descriptive and carries positive connotation — multiple injury mechanisms simultaneously is actually a stronger finding than single-mechanism.
+5. ~~Derived endpoint exclusion approach~~ → **Flag on the endpoint (`is_derived` in BIOMARKER_MAP), not hardcoded exclusion list.** The A/G ratio tautology (ALBGLOB↔GLOB at ρ=-0.68 is mechanical, not biological) is the visible case, but the same problem applies to MCH/MCHC/MCV and any calculated endpoint. Systematic flag enables filtering in correlation, volcano percentile, and NOAEL consumers without per-organ special-casing.
+6. ~~Should coherence label influence convergence pane~~ → **Yes, via interpretive gloss.** A 2×2 matrix of (convergence strength × correlation coupling) produces conditional gloss text below the matrix. High convergence + multi-pathway = "several injury mechanisms acting simultaneously." Low convergence + tightly coupled = "possible subclinical coordinated response." This resolves the apparent contradiction in-place.
+
+## Analysis: Hepatic correlation structure (PointCross)
+
+**Findings from implementation review (2026-03-09):**
+
+The hepatic organ system has 9 continuous endpoints (ALT, AST, ALP, Albumin, A/G ratio, Bilirubin, Globulin, Protein, Liver weight) producing 30 correlation pairs. Key metrics:
+
+- **Strong pairs (|ρ| ≥ 0.7): 0** — closest is ALBGLOB↔Globulin at -0.678
+- **Median |ρ|: 0.137** — well below the 0.4 "Partially coupled" threshold
+- **ALT↔AST: ρ = 0.095** — the classic paired hepatic injury markers barely correlate after dose removal
+
+**Why this is expected:** Correlations are computed on residualized values (individual value minus dose×sex group mean). This removes the treatment effect and measures within-group biological co-variation. Hepatic endpoints reflect independent pathways (hepatocellular injury, cholestasis, synthetic function, conjugation, organ mass) — a toxicant pushes all of them (convergence) but individual animals vary independently on each axis.
+
+**Data quality issues identified:**
+- ALBGLOB (Albumin/Globulin ratio) creates two tautological pairs: ALBGLOB↔Globulin (-0.678) and Albumin↔ALBGLOB (+0.552). These are mathematical, not biological. The `derived` flag fix (Phase 1) removes these from all organs systematically.
+- Similarly, hematologic indices (MCH, MCHC, MCV) derived from RBC/HGB/HCT create tautological correlations in the hematologic organ system.
 
 ## Open questions
 
-1. **Should the coherence label influence the Convergence pane?** Not in this implementation — keep them independent. Could be a future enhancement.
+*(None remaining — all resolved above.)*

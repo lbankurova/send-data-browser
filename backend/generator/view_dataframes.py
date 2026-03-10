@@ -311,6 +311,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "finding": finding.get("finding"),
                 "max_fold_change": finding.get("max_fold_change"),
                 "max_incidence": finding.get("max_incidence"),
+                "is_derived": finding.get("is_derived", False),
             }
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
@@ -335,9 +336,13 @@ def build_noael_summary(
             if sex_filter == "Combined" or f.get("sex") == sex_filter
         ]
 
-        # Find lowest dose with adverse effect (using ECETOC finding_class)
+        # Find lowest dose with adverse effect (using ECETOC finding_class).
+        # Derived endpoints (ratios/indices) are excluded — their NOAEL can be
+        # artifactually lower than source components due to ratio mathematics.
         adverse_dose_levels = set()
         for f in sex_findings:
+            if f.get("is_derived"):
+                continue
             if _is_loael_driving(f):
                 for pw in f.get("pairwise", []):
                     p = pw.get("p_value_adj", pw.get("p_value"))
@@ -357,6 +362,8 @@ def build_noael_summary(
         adverse_at_loael = []   # (IMP-10) for noael_derivation
         if loael_level is not None:
             for f in sex_findings:
+                if f.get("is_derived"):
+                    continue
                 if _is_loael_driving(f):
                     for pw in f.get("pairwise", []):
                         if pw["dose_level"] == loael_level:
