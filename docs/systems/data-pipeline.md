@@ -1169,6 +1169,27 @@ This pipeline runs the same Phase 1-2 as the generator (same dose_groups, same p
 
 **Caching:** Results serialized to `backend/cache/{study_id}/adverse_effects.json`. Cache is valid when its mtime exceeds the max mtime of relevant XPT files.
 
+### Caching Strategy
+
+Three caching layers serve findings data:
+
+**Layer 1 — In-memory LRU (`analyses.py`).** `_load_unified_findings_cached` uses `functools.lru_cache(maxsize=8)` keyed on `(study_id, file_mtime_ns)`. Avoids re-deserializing the 2–3MB `unified_findings.json` on every API request (finding context, findings list, summary all share this path). The mtime key ensures automatic invalidation when the file is regenerated. Explicit `invalidate_findings_cache()` is called from the regenerate endpoint as belt-and-suspenders.
+
+- **Thread safety:** FastAPI runs sync handlers in a threadpool. `lru_cache` is thread-safe under CPython's GIL — worst case is two threads both deserializing on a cache miss, with one result evicting the other. No data corruption.
+- **Mutation safety:** All consumers create new lists/dicts from the cached data (list comprehensions for filtering, new dicts in `build_finding_context`). No consumer mutates the cached dict in place. This is a correctness invariant — new consumers must not mutate.
+- **Memory:** ~2.7MB per study × 8 slots = ~22MB worst case. Acceptable for single-user tool.
+
+**Layer 2 — File-based settings cache (`analysis_cache.py`).** Non-default analysis settings (different effect size method, multiplicity correction, etc.) are computed on demand and cached to `generated/{study_id}/.settings_cache/{hash}/unified_findings.json`. Invalidated on regeneration via `invalidate_study()`.
+
+**Layer 3 — Frontend React Query (5-min staleTime).** `useFindings()` and `useFindingContext()` cache API responses client-side. `usePrefetchFindingContext` warms the cache on table row hover before the user clicks. Query keys include study settings params so settings changes trigger fresh fetches.
+
+**Invalidation flow on regeneration:**
+1. `generate.py` or `/api/studies/{id}/regenerate` writes new `unified_findings.json` (changes file mtime)
+2. `invalidate_study()` clears Layer 2 (file-based settings cache)
+3. `invalidate_findings_cache()` clears Layer 1 (in-memory LRU)
+4. Next API request re-reads from disk into Layer 1
+5. Frontend React Query picks up new data on next fetch (staleTime expiry or page navigation)
+
 ---
 
 ## Current State

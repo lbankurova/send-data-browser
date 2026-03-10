@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,6 +21,7 @@ import {
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
 import { getSignalTier } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -43,7 +45,9 @@ interface FindingsTableProps {
 }
 
 export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping }: FindingsTableProps) {
+  const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
+  const prefetch = usePrefetchFindingContext(studyId);
   const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
@@ -343,6 +347,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(row.original)}
+                onMouseEnter={() => prefetch(row.original.id)}
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;

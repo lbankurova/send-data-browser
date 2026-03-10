@@ -1346,3 +1346,4 @@ Classifies every computed field in `unified_findings.json` by authoritative sour
 | `_hcd_assessment` | backend | A-3 HCD reference range assessment (OM findings only) |
 | `_tree_result` | backend | Adaptive decision tree evaluation result (context-dependent histopath) |
 | `_b6_result` | backend | B-6 progression chain evaluation result (MI/MA/TF findings) |
+| `is_derived` | backend | Boolean flag for derived endpoints (ALBGLOB, MCH, MCHC, MCV) — excluded from volcano percentile ranking and NOAEL determination |

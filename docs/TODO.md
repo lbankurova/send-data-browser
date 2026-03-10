@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 51 | 6 | Missing capability, no spec exists |
+| Gap | 52 | 13 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **76** | **40** | |
+| **Total open** | **77** | **47** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -243,7 +243,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (15 open)
+## Gaps (18 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -541,6 +541,47 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Fixed — backend already sex-stratified (continuous: `groupby("SEX")`, incidence: `for sex_val in ["F", "M"]`). Frontend histopath `deriveRecoveryAssessments` was NOT — pooled sexes from HistopathologyView and HistopathologyContextPanel. Added `deriveRecoveryAssessmentsSexAware()` wrapper that stratifies by sex, computes per-sex, merges worst verdict per dose level. `RecoveryPane` was already correct (`useOrganRecovery` per sex).
 - **Priority:** ~~P1~~ Resolved
 - **Source:** Recovery assessment audit spec, "Additional findings" section
+
+### ~~GAP-62: Audit volcano plot percentile ranking for derived-endpoint contamination~~
+- **Files:** `frontend/src/components/analysis/charts/findings-charts.ts`, `frontend/src/lib/derive-summaries.ts`, `frontend/src/types/analysis-views.ts`
+- **Issue:** Derived endpoints (ALBGLOB, MCH, MCHC, MCV) distorted percentile distributions used for volcano plot positioning.
+- **Fix:** Added `is_derived` to `AdverseEffectSummaryRow` (backend emits), propagated to `EndpointSummary.isDerived`, filtered in `prepareQuadrantPoints()` before ranking. Backend `build_adverse_effect_summary()` now includes `is_derived` field.
+- **Status:** ~~Open~~ Resolved
+- **Priority:** ~~P3~~ Resolved
+
+### ~~GAP-63: Audit NOAEL weight logic for derived-endpoint influence~~
+- **Files:** `backend/generator/view_dataframes.py` (`build_noael_summary`)
+- **Issue:** Derived endpoints could drive organ-level NOAEL to artifactually low values (ratio math can produce spurious significance at lower doses than source components).
+- **Fix:** Added `is_derived` filter in both the adverse-dose-level collection loop and the LOAEL evidence collection loop in `build_noael_summary()`. Derived findings no longer participate in NOAEL/LOAEL determination.
+- **Status:** ~~Open~~ Resolved
+- **Priority:** ~~P3~~ Resolved
+
+### GAP-64: Extend `is_derived` flag to BW gain and organ-to-BW ratios
+- **Files:** `backend/services/analysis/send_knowledge.py`, `findings_pipeline.py`
+- **Issue:** BW gain (if generated as separate finding) and organ-to-body-weight ratios share the same tautological correlation problem as ALBGLOB/MCH/MCHC/MCV. When these enter the findings pipeline, they need the `derived` flag in BIOMARKER_MAP. Currently not an issue for PointCross (no BW gain findings, OM ratios computed client-side) but will matter for studies that report them.
+- **Status:** Open — deferred until relevant study data arrives
+- **Priority:** P4
+- **Owner hint:** backend-dev
+
+### ~~GAP-61: FindingsRail prefetch on hover~~
+- **Status:** Resolved. Rail now has `bestFindingIdByLabel` map (useMemo) that resolves `endpoint_label → finding.id` using the `activeFindings` array from `useFindingsAnalyticsLocal`. `handleEndpointHover` callback passed to `EndpointRow` via `onHover` prop. Both AllEndpointsCard and CardSection paths covered.
+- **Priority:** ~~P3~~ Resolved
+
+### ~~GAP-62: Progressive rendering for FindingsContextPanel~~
+- **Status:** Resolved. Header + independent panes (TimeCourse, Distribution, Recovery) render immediately from cached finding data. Context-dependent panes (Verdict, DoseDetail, Evidence, Correlations, Context) show skeleton until `useFindingContext()` resolves. `contextReady` flag gates the split.
+- **Priority:** ~~P3~~ Resolved
+
+### ~~GAP-63: CollapsiblePane mount-when-collapsed — hybrid approach~~
+- **Status:** Resolved. Added `keepMounted` prop to CollapsiblePane — uses CSS `hidden` instead of conditional unmount. Applied to 5 safe panes (DoseDetail, Evidence, Correlations, Context, Related views). 4 panes with independent FETCH hooks (TimeCourse, Distribution, Recovery, Syndromes) remain conditionally rendered.
+- **Priority:** ~~P3~~ Resolved
+
+### ~~GAP-64: `analysis_views.py` `_load_from_disk` not cached for unified_findings~~
+- **Status:** Resolved. `pattern_override_preview` now calls `_load_unified_findings` from `analyses.py` (in-memory LRU cached) instead of `_load_from_disk`.
+- **Priority:** ~~P4~~ Resolved
+
+### ~~GAP-65: Document in-memory findings cache strategy~~
+- **Status:** Resolved. Added "Caching Strategy" section to `docs/systems/data-pipeline.md` documenting all 3 layers (in-memory LRU, file-based settings cache, frontend React Query), invalidation flow, thread safety, and mutation safety contract.
+- **Priority:** ~~P4~~ Resolved
 
 ---
 
