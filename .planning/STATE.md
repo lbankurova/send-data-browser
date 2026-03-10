@@ -45,8 +45,9 @@ Single source of truth: `docs/TODO.md` (74 open items)
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Recovery audit complete — all 5 fixes committed, tested, spec archived, post-impl review done.
-Next action: Pick from TODO.md (74 open items). GAP-59 (recovery sex-stratification) is P1 investigation.
+Stopped at: BUG-17 fix committed (f9f3440) — domain-aware effect size labels across 9 files.
+Uncommitted work: 8 files — annotation system (audit_log, override_reader, annotations router), pattern/onset dose dropdown refactors, MortalityDataSettings, useAnnotations, annotations-api. These are from a prior session and were not committed.
+Next action: Pick from TODO.md. Mark BUG-17 as resolved. Consider committing the 8 uncommitted files (review first — they may be WIP).
 
 ---
-*Last updated: 2026-03-09 — recovery audit fixes 1-5 complete, extracted + tested*
+*Last updated: 2026-03-09 — BUG-17 fix committed, 8 unrelated files still uncommitted*

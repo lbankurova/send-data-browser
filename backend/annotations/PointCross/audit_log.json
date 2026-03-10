@@ -300,5 +300,227 @@
         "new": "non_monotonic"
       }
     }
+  },
+  {
+    "timestamp": "2026-03-09T21:49:14.102638+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": 2,
+          "pathologist": "User",
+          "reviewDate": "2026-03-09T21:36:29.521960+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T21:49:34.441133+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "monotonic"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      },
+      "onset_dose_level": {
+        "old": null,
+        "new": 1
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T21:50:48.487906+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": null,
+          "pathologist": "User",
+          "reviewDate": "2026-03-09T21:50:42.129024+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T21:50:57.559687+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T22:20:38.046597+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": 2,
+          "pathologist": "User",
+          "reviewDate": "2026-03-09T21:51:04.007316+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T22:21:51.266438+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T22:29:47.740713+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "6bf115dfbdf3",
+    "action": "create",
+    "changes": {
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_increase"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "up"
+      },
+      "pattern": {
+        "old": null,
+        "new": "non_monotonic"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T22:29:54.147244+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "6bf115dfbdf3",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "non_monotonic",
+          "original_pattern": "threshold_increase",
+          "original_direction": "up",
+          "onset_dose_level": null,
+          "pathologist": "User",
+          "reviewDate": "2026-03-09T22:29:47.731050+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T22:41:47.926183+00:00",
+    "user": "User",
+    "schemaType": "mortality-overrides",
+    "entityKey": "PC201708-4003",
+    "action": "create",
+    "changes": {
+      "comment": {
+        "old": null,
+        "new": "gggg"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T23:47:06.115185+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": 2,
+          "pathologist": "User",
+          "reviewDate": "2026-03-09T23:37:39.702990+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-09T23:47:13.736036+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      }
+    }
   }
 ]
