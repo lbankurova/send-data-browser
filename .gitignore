@@ -23,6 +23,7 @@ send/*
 *.docx
 *.doc
 *.png
+!docs/img/*.png
 *.zip
 
 # Incoming specs — local work-in-progress; pull from GitHub, never push
