@@ -27,7 +27,9 @@ import yaml
 
 log = logging.getLogger(__name__)
 
-_CHAINS_PATH = Path(__file__).parents[3] / "shared" / "progression-chains.yaml"
+from config import SHARED_DIR
+
+_CHAINS_PATH = SHARED_DIR / "progression-chains.yaml"
 
 
 @dataclass

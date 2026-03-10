@@ -22,7 +22,9 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-_JSON_PATH = Path(__file__).resolve().parents[3] / "shared" / "hcd-reference-ranges.json"
+from config import SHARED_DIR
+
+_JSON_PATH = SHARED_DIR / "hcd-reference-ranges.json"
 
 # Lazy-loaded singletons
 _DB: HcdRangeDB | None = None

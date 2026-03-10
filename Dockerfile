@@ -20,7 +20,17 @@ COPY --from=frontend-build /app/frontend/dist ./static/
 COPY send/PointCross/PC201708_XPT/ /app/data/PointCross/
 
 ENV SEND_DATA_DIR=/app/data
+ENV SHARED_DIR=/shared
 ENV OPENBLAS_NUM_THREADS=1
+
+# Verify shared data files exist (fail build if missing)
+RUN echo "=== Shared files check ===" && \
+    ls /shared/syndrome-definitions.json && \
+    ls /shared/progression-chains.yaml && \
+    ls /shared/organ-weight-thresholds.json && \
+    ls /shared/hcd-reference-ranges.json && \
+    ls /shared/adversity-dictionary.json && \
+    echo "All shared files present."
 
 # Verify data is present; regenerate if generated/ is missing or empty
 RUN echo "=== Build-time data check ===" && \
