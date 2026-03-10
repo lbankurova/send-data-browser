@@ -746,13 +746,11 @@ function OverviewTab({
     const doseLevels = [...doseLevelSet.keys()].sort((a, b) => a - b);
     const doseLabels = doseLevelSet;
 
-    // Pre-compute examined count per dose level (v3: examination-aware)
-    // Heuristic: if ANY subject at this dose level has any finding → all examined
+    // Pre-compute examined count per dose level: per-subject MI findings check
     const examinedByDose = new Map<number, number>();
     for (const dl of doseLevels) {
       const doseSubjects = recSubjects.filter((s) => s.dose_level === dl);
-      const anyExamined = doseSubjects.some((s) => Object.keys(s.findings).length > 0);
-      examinedByDose.set(dl, anyExamined ? doseSubjects.length : 0);
+      examinedByDose.set(dl, doseSubjects.filter((s) => Object.keys(s.findings).length > 0).length);
     }
 
     // Build cells: per-finding per-dose incidence and avg severity
