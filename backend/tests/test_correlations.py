@@ -192,15 +192,20 @@ class TestOMCorrelations:
 class TestContextPaneCorrelationMatching:
     """_build_correlations must use the same key format as _endpoint_key."""
 
-    def _make_correlation_record(self, f1: dict, f2: dict) -> dict:
-        """Build a correlation record like compute_correlations produces."""
+    def _make_correlation_record(self, findings_1: list[dict], findings_2: list[dict]) -> dict:
+        """Build a correlation record like compute_correlations produces.
+
+        Accepts lists of findings per side (M+F grouped), matching the real
+        output of compute_correlations.
+        """
+        f1, f2 = findings_1[0], findings_2[0]
         return {
             "endpoint_key_1": _endpoint_key(f1),
             "endpoint_key_2": _endpoint_key(f2),
             "endpoint_label_1": f1.get("endpoint_label", f1.get("finding", "")),
             "endpoint_label_2": f2.get("endpoint_label", f2.get("finding", "")),
-            "finding_ids_1": [f1["id"]],
-            "finding_ids_2": [f2["id"]],
+            "finding_ids_1": [f["id"] for f in findings_1],
+            "finding_ids_2": [f["id"] for f in findings_2],
             "endpoint_1": f1["finding"],
             "endpoint_2": f2["finding"],
             "domain_1": f1["domain"],
@@ -216,7 +221,7 @@ class TestContextPaneCorrelationMatching:
         """An OM LIVER finding must match a correlation that has OM LIVER on one side."""
         om = _om_finding("LIVER", "F", finding_id="om-liver-f")
         lb = _lb_finding("ALT", "F", finding_id="lb-alt-f")
-        corr = self._make_correlation_record(om, lb)
+        corr = self._make_correlation_record([om], [lb])
 
         result = _build_correlations("om-liver-f", om, [corr])
         assert len(result["related"]) == 1
@@ -226,7 +231,7 @@ class TestContextPaneCorrelationMatching:
         """OM LIVER must NOT match a correlation keyed to OM BRAIN."""
         brain = _om_finding("BRAIN", "F", organ_system="neurological", finding_id="om-brain-f")
         lb = _lb_finding("ALT", "F", finding_id="lb-alt-f")
-        corr = self._make_correlation_record(brain, lb)
+        corr = self._make_correlation_record([brain], [lb])
 
         liver = _om_finding("LIVER", "F", finding_id="om-liver-f")
         result = _build_correlations("om-liver-f", liver, [corr])
@@ -236,7 +241,7 @@ class TestContextPaneCorrelationMatching:
         """LB ALT must match a correlation that has LB ALT on one side."""
         om = _om_finding("LIVER", "F", finding_id="om-liver-f")
         lb = _lb_finding("ALT", "F", finding_id="lb-alt-f")
-        corr = self._make_correlation_record(om, lb)
+        corr = self._make_correlation_record([om], [lb])
 
         result = _build_correlations("lb-alt-f", lb, [corr])
         assert len(result["related"]) == 1
@@ -246,7 +251,7 @@ class TestContextPaneCorrelationMatching:
         """BW (no specimen) still matches correctly."""
         bw = _bw_finding("M", day=92)
         lb = _lb_finding("BUN", "M", organ_system="general", finding_id="lb-bun-m")
-        corr = self._make_correlation_record(bw, lb)
+        corr = self._make_correlation_record([bw], [lb])
 
         result = _build_correlations("bw-M-92", bw, [corr])
         assert len(result["related"]) == 1
@@ -256,7 +261,113 @@ class TestContextPaneCorrelationMatching:
         om1 = _om_finding("LIVER", "F", finding_id="om-liver-f")
         om2 = _om_finding("KIDNEY", "F", organ_system="renal", finding_id="om-kidney-f")
         # Different endpoint_labels → should NOT be filtered
-        corr = self._make_correlation_record(om1, om2)
+        corr = self._make_correlation_record([om1], [om2])
 
         result = _build_correlations("om-liver-f", om1, [corr])
         assert len(result["related"]) == 1, "Cross-endpoint correlation was incorrectly filtered"
+
+
+# ──────────────────────────────────────────────────────────────
+# Sex-matched ID resolution
+# ──────────────────────────────────────────────────────────────
+
+class TestSexMatchedCorrelationID:
+    """_build_correlations must return the sex-matched finding ID from correlation
+    records that contain both M and F findings.
+
+    Four combinations: {M, F} × {current finding on side 1, side 2}.
+    Plus: aggregate (no sex) falls back to first ID.
+    """
+
+    def _make_dual_sex_correlation(self, side1: list[dict], side2: list[dict]) -> dict:
+        """Correlation record with M+F findings on both sides."""
+        f1, f2 = side1[0], side2[0]
+        return {
+            "endpoint_key_1": _endpoint_key(f1),
+            "endpoint_key_2": _endpoint_key(f2),
+            "endpoint_label_1": f1.get("endpoint_label", f1.get("finding", "")),
+            "endpoint_label_2": f2.get("endpoint_label", f2.get("finding", "")),
+            "finding_ids_1": [f["id"] for f in side1],
+            "finding_ids_2": [f["id"] for f in side2],
+            "endpoint_1": f1["finding"],
+            "endpoint_2": f2["finding"],
+            "domain_1": f1["domain"],
+            "domain_2": f2["domain"],
+            "organ_system": f1.get("organ_system", "unknown"),
+            "rho": 0.75,
+            "p_value": 0.001,
+            "n": 20,
+            "basis": "individual",
+        }
+
+    def test_female_on_side1_gets_female_other_id(self):
+        """F finding on side 1 → must get F finding ID from side 2."""
+        om_f = _om_finding("LIVER", "F", finding_id="om-liver-f")
+        om_m = _om_finding("LIVER", "M", finding_id="om-liver-m")
+        lb_f = _lb_finding("ALT", "F", finding_id="lb-alt-f")
+        lb_m = _lb_finding("ALT", "M", finding_id="lb-alt-m")
+        all_findings = [om_f, om_m, lb_f, lb_m]
+        corr = self._make_dual_sex_correlation([om_f, om_m], [lb_f, lb_m])
+
+        result = _build_correlations("om-liver-f", om_f, [corr], all_findings)
+        assert len(result["related"]) == 1
+        assert result["related"][0]["finding_id"] == "lb-alt-f"
+
+    def test_male_on_side1_gets_male_other_id(self):
+        """M finding on side 1 → must get M finding ID from side 2."""
+        om_f = _om_finding("LIVER", "F", finding_id="om-liver-f")
+        om_m = _om_finding("LIVER", "M", finding_id="om-liver-m")
+        lb_f = _lb_finding("ALT", "F", finding_id="lb-alt-f")
+        lb_m = _lb_finding("ALT", "M", finding_id="lb-alt-m")
+        all_findings = [om_f, om_m, lb_f, lb_m]
+        corr = self._make_dual_sex_correlation([om_f, om_m], [lb_f, lb_m])
+
+        result = _build_correlations("om-liver-m", om_m, [corr], all_findings)
+        assert len(result["related"]) == 1
+        assert result["related"][0]["finding_id"] == "lb-alt-m"
+
+    def test_female_on_side2_gets_female_other_id(self):
+        """F finding on side 2 → must get F finding ID from side 1."""
+        om_f = _om_finding("LIVER", "F", finding_id="om-liver-f")
+        om_m = _om_finding("LIVER", "M", finding_id="om-liver-m")
+        lb_f = _lb_finding("ALT", "F", finding_id="lb-alt-f")
+        lb_m = _lb_finding("ALT", "M", finding_id="lb-alt-m")
+        all_findings = [om_f, om_m, lb_f, lb_m]
+        corr = self._make_dual_sex_correlation([om_f, om_m], [lb_f, lb_m])
+
+        result = _build_correlations("lb-alt-f", lb_f, [corr], all_findings)
+        assert len(result["related"]) == 1
+        assert result["related"][0]["finding_id"] == "om-liver-f"
+
+    def test_male_on_side2_gets_male_other_id(self):
+        """M finding on side 2 → must get M finding ID from side 1."""
+        om_f = _om_finding("LIVER", "F", finding_id="om-liver-f")
+        om_m = _om_finding("LIVER", "M", finding_id="om-liver-m")
+        lb_f = _lb_finding("ALT", "F", finding_id="lb-alt-f")
+        lb_m = _lb_finding("ALT", "M", finding_id="lb-alt-m")
+        all_findings = [om_f, om_m, lb_f, lb_m]
+        corr = self._make_dual_sex_correlation([om_f, om_m], [lb_f, lb_m])
+
+        result = _build_correlations("lb-alt-m", lb_m, [corr], all_findings)
+        assert len(result["related"]) == 1
+        assert result["related"][0]["finding_id"] == "om-liver-m"
+
+    def test_aggregate_finding_falls_back_to_first_id(self):
+        """Finding with no sex (aggregate) falls back to first ID in the list."""
+        om_f = _om_finding("LIVER", "F", finding_id="om-liver-f")
+        om_m = _om_finding("LIVER", "M", finding_id="om-liver-m")
+        lb_f = _lb_finding("ALT", "F", finding_id="lb-alt-f")
+        lb_m = _lb_finding("ALT", "M", finding_id="lb-alt-m")
+        all_findings = [om_f, om_m, lb_f, lb_m]
+        corr = self._make_dual_sex_correlation([om_f, om_m], [lb_f, lb_m])
+
+        # Simulate aggregate finding — same endpoint key as OM LIVER, but no sex
+        aggregate = _om_finding("LIVER", "F", finding_id="om-liver-agg")
+        aggregate["sex"] = None  # aggregate: no sex
+        aggregate["id"] = "om-liver-agg"
+        all_findings.append(aggregate)
+
+        result = _build_correlations("om-liver-agg", aggregate, [corr], all_findings)
+        assert len(result["related"]) == 1
+        # Falls back to first ID in the list (defined behavior, not accidental)
+        assert result["related"][0]["finding_id"] == "lb-alt-f"
