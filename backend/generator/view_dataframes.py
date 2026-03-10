@@ -260,7 +260,15 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 "incidence": gs.get("incidence", 0),
                 "avg_severity": avg_sev,
                 "severity_status": sev_status,
-                "severity": finding.get("severity", "normal"),
+                # Finding-level severity applies only to treated groups with
+                # actual incidence.  Control groups (dose_level 0) are by
+                # definition not treatment-related, and groups with no
+                # affected subjects have nothing to classify.
+                "severity": (
+                    finding.get("severity", "normal")
+                    if affected > 0 and gs["dose_level"] > 0
+                    else "normal"
+                ),
             }
 
             # Propagate SUPP modifier fields

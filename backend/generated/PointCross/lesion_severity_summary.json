@@ -12,7 +12,7 @@
     "incidence": 1.0,
     "avg_severity": 2.3,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -376,7 +376,7 @@
     "incidence": 1.0,
     "avg_severity": 2.3,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -4810,7 +4810,7 @@
     "incidence": 0.1,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -4979,7 +4979,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -5148,7 +5148,7 @@
     "incidence": 0.1,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -5317,7 +5317,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6124,7 +6124,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6200,7 +6200,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6276,7 +6276,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6428,7 +6428,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6504,7 +6504,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -6580,7 +6580,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -11960,7 +11960,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal",
     "dominant_temporality": "chronic",
     "modifier_raw": [
@@ -12044,7 +12044,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal",
     "dominant_temporality": "chronic",
     "modifier_raw": [
@@ -12302,7 +12302,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal",
     "dominant_temporality": "chronic",
     "modifier_raw": [
@@ -12386,7 +12386,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal",
     "dominant_temporality": "chronic",
     "modifier_raw": [
@@ -12644,7 +12644,7 @@
     "incidence": 0.7,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal/multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -13008,7 +13008,7 @@
     "incidence": 0.7,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal/multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17054,7 +17054,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17133,7 +17133,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17212,7 +17212,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17373,7 +17373,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17452,7 +17452,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -17531,7 +17531,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -18330,7 +18330,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "mixed",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -18414,7 +18414,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "mixed",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -18673,7 +18673,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -18755,7 +18755,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -22343,7 +22343,7 @@
     "incidence": 0.1,
     "avg_severity": 3.0,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal/multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -22711,7 +22711,7 @@
     "incidence": 0.1,
     "avg_severity": 3.0,
     "severity_status": "graded",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": "focal/multifocal",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -25001,7 +25001,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "mixed",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -25364,7 +25364,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "mixed",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -27412,7 +27412,7 @@
     "incidence": 0.2,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -27776,7 +27776,7 @@
     "incidence": 0.2,
     "avg_severity": 2.0,
     "severity_status": "graded",
-    "severity": "adverse",
+    "severity": "normal",
     "dominant_distribution": "diffuse",
     "dominant_temporality": null,
     "modifier_raw": [
@@ -39910,7 +39910,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -39983,7 +39983,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -40129,7 +40129,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -40202,7 +40202,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -40268,7 +40268,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -40334,7 +40334,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -40466,7 +40466,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -40532,7 +40532,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -40598,7 +40598,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -44242,7 +44242,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -44316,7 +44316,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -44390,7 +44390,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -50406,7 +50406,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -50472,7 +50472,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse",
+    "severity": "normal",
     "scheduled_group_stats": [
       {
         "dose_level": 0,
@@ -50934,7 +50934,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -51007,7 +51007,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning",
+    "severity": "normal",
     "dominant_distribution": null,
     "dominant_temporality": null,
     "modifier_raw": [
@@ -52418,7 +52418,7 @@
     "incidence": 0.8,
     "avg_severity": null,
     "severity_status": "present_ungraded",
-    "severity": "warning"
+    "severity": "normal"
   },
   {
     "endpoint_label": "BEDDING WET",
@@ -52463,7 +52463,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning"
+    "severity": "normal"
   },
   {
     "endpoint_label": "CRUST",
@@ -52538,7 +52538,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse"
+    "severity": "normal"
   },
   {
     "endpoint_label": "CRUST",
@@ -52553,7 +52553,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "adverse"
+    "severity": "normal"
   },
   {
     "endpoint_label": "CRUST",
@@ -52658,7 +52658,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning"
+    "severity": "normal"
   },
   {
     "endpoint_label": "EXUDATE",
@@ -52673,7 +52673,7 @@
     "incidence": 0.0,
     "avg_severity": null,
     "severity_status": "absent",
-    "severity": "warning"
+    "severity": "normal"
   },
   {
     "endpoint_label": "EXUDATE",
