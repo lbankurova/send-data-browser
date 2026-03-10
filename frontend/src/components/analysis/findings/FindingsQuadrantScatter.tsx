@@ -124,14 +124,14 @@ export function FindingsQuadrantScatter({
     if (selectedPt) {
       onSelectedPointChange?.({
         label: selectedPt.endpoint_label,
-        effectSize: selectedPt.x,
+        effectSize: selectedPt.effectRaw,
         rawP: selectedPt.rawP,
         domain: selectedPt.domain,
       });
     } else {
       onSelectedPointChange?.(null);
     }
-  }, [selectedPt?.endpoint_label, selectedPt?.x, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedPt?.endpoint_label, selectedPt?.effectRaw, selectedPt?.rawP, onSelectedPointChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Legend: three independent encoding channels.
   //   Stroke → adverse = dark stroke, non-adverse = no stroke
