@@ -15,6 +15,7 @@ COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
+COPY shared/ /shared/
 COPY --from=frontend-build /app/frontend/dist ./static/
 COPY send/PointCross/PC201708_XPT/ /app/data/PointCross/
 
