@@ -45,10 +45,10 @@ Single source of truth: `docs/TODO.md` (74 open items)
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Wrote syndrome correlation validation spec. No code changes — review + planning session.
-Session work: (1) Post-impl review of organ-correlation-matrix.md — all pass, archived. (2) Wrote `docs/incoming/syndrome-correlation-validation.md` — full implementation spec for syndrome co-variation pane.
+Stopped at: Docker deployment debugging — Render deployment fixed and live.
+Session work: (1) Diagnosed and fixed 5 modules using fragile `parents[3]` path resolution — centralized to `config.SHARED_DIR`. (2) Added `OPENBLAS_NUM_THREADS=1` for Docker. (3) Added startup verification (shared files + eager pipeline import). (4) App loads on Render but slow on free tier (0.1 CPU) — user evaluating upgrade.
 Resume file: .planning/phases/exploratory/.continue-here.md
-Next action: Implement syndrome-correlation-validation.md Phase 1 (backend computation).
+Next action: Push unpushed commit 1e3d4a5, then feature work.
 
 ---
-*Last updated: 2026-03-10 — syndrome correlation validation spec written, organ-correlation-matrix archived*
+*Last updated: 2026-03-10 — Docker deployment fixes committed and pushed*
