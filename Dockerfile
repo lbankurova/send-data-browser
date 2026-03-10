@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
 COPY --from=frontend-build /app/frontend/dist ./static/
-COPY send/PointCross/ /app/data/PointCross/
+COPY send/PointCross/PC201708_XPT/ /app/data/PointCross/
 
 ENV SEND_DATA_DIR=/app/data
 
