@@ -6,7 +6,9 @@ with file-based caching (same pattern as analysis_views.py).
 """
 
 import json
+import logging
 import math
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,12 +18,15 @@ from models.analysis_schemas import (
     AdverseEffectsResponse,
     AnalysisSummary,
     FindingContext,
+    OrganCorrelationMatrix,
 )
 from services.study_discovery import StudyInfo
-from services.analysis.context_panes import build_finding_context
+from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
 from services.analysis.analysis_cache import read_cache, write_cache
 from services.analysis.override_reader import get_last_dosing_day_override
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
@@ -50,16 +55,34 @@ def _get_study(study_id: str) -> StudyInfo:
     return _studies[study_id]
 
 
+@lru_cache(maxsize=8)
+def _load_unified_findings_cached(study_id: str, _mtime_ns: int) -> dict:
+    """Deserialize unified_findings.json with in-memory caching.
+
+    Keyed on (study_id, file mtime) so cache auto-invalidates when the
+    file is regenerated. LRU(8) keeps the last few studies warm.
+    """
+    path = GENERATED_DIR / study_id / "unified_findings.json"
+    with open(path, "r") as f:
+        return json.load(f)
+
+
 def _load_unified_findings(study_id: str) -> dict:
-    """Load pre-generated unified_findings.json for a study."""
+    """Load pre-generated unified_findings.json, cached in memory."""
     path = GENERATED_DIR / study_id / "unified_findings.json"
     if not path.exists():
         raise HTTPException(
             status_code=404,
             detail=f"Pre-generated data not found for study '{study_id}'. Run the generator first.",
         )
-    with open(path, "r") as f:
-        return json.load(f)
+    mtime_ns = path.stat().st_mtime_ns
+    return _load_unified_findings_cached(study_id, mtime_ns)
+
+
+def invalidate_findings_cache(study_id: str | None = None):
+    """Clear in-memory findings cache. Called after regeneration."""
+    _load_unified_findings_cached.cache_clear()
+    log.debug("Cleared in-memory findings cache%s", f" (triggered by {study_id})" if study_id else "")
 
 
 def _load_findings_for_settings(study_id: str, settings: AnalysisSettings) -> dict:
@@ -177,6 +200,18 @@ def get_finding_context(
     )
 
     return FindingContext(**context)
+
+
+@router.get("/studies/{study_id}/analyses/adverse-effects/organ/{organ_key}/correlations", response_model=OrganCorrelationMatrix)
+def get_organ_correlations(
+    study_id: str,
+    organ_key: str,
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
+):
+    _get_study(study_id)
+    data = _load_findings_for_settings(study_id, settings)
+    result = build_organ_correlation_matrix(organ_key, data.get("correlations", []))
+    return OrganCorrelationMatrix(**result)
 
 
 @router.get("/studies/{study_id}/analyses/adverse-effects/summary")

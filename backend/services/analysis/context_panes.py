@@ -1,5 +1,7 @@
 """Compute per-finding context pane payloads for the 5 info panes."""
 
+from statistics import median
+
 from services.analysis.insights import (
     treatment_summary_insights,
     statistics_insights,
@@ -367,3 +369,107 @@ def _interpret_effect_size_incidence(d: float | None) -> str:
     if abs_d < 2.5:
         return "Moderate"
     return "Marked"
+
+
+# ─── Organ correlation matrix ─────────────────────────────
+
+
+def build_organ_correlation_matrix(organ_key: str, correlations: list[dict]) -> dict:
+    """Build correlation matrix for an organ system from precomputed correlations.
+
+    Reshapes the flat list of pairwise correlations into an NxN lower-triangle
+    matrix suitable for heatmap rendering. No new computation — purely a reshape.
+
+    Endpoints are sorted by domain then alphabetically within domain so that
+    biologically related endpoints (same domain) are visually adjacent.
+    """
+    organ_corrs = [
+        c for c in correlations
+        if c.get("organ_system", "").lower() == organ_key.lower()
+        and c.get("basis") == "individual"
+    ]
+
+    if not organ_corrs:
+        return {
+            "organ_system": organ_key,
+            "endpoints": [],
+            "endpoint_domains": [],
+            "matrix": [],
+            "p_values": [],
+            "n_values": [],
+            "endpoint_finding_ids": [],
+            "total_pairs": 0,
+            "summary": {
+                "median_abs_rho": 0.0,
+                "strong_pairs": 0,
+                "total_pairs": 0,
+                "coherence_label": "Insufficient data",
+            },
+        }
+
+    # Collect unique endpoints with their domain and finding_ids
+    ep_info: dict[str, dict] = {}
+    for c in organ_corrs:
+        for side in (1, 2):
+            label = c.get(f"endpoint_label_{side}", c.get(f"endpoint_{side}", ""))
+            if label and label not in ep_info:
+                ep_info[label] = {
+                    "domain": c.get(f"domain_{side}", ""),
+                    "finding_ids": c.get(f"finding_ids_{side}", []),
+                }
+
+    # Sort by domain then alphabetically within domain
+    sorted_labels = sorted(ep_info.keys(), key=lambda lbl: (ep_info[lbl]["domain"], lbl))
+
+    n = len(sorted_labels)
+    label_idx = {lbl: i for i, lbl in enumerate(sorted_labels)}
+
+    # Build lower-triangle matrices
+    rho_matrix: list[list[float | None]] = [[None] * n for _ in range(n)]
+    p_matrix: list[list[float | None]] = [[None] * n for _ in range(n)]
+    n_matrix: list[list[int | None]] = [[None] * n for _ in range(n)]
+
+    for c in organ_corrs:
+        lbl1 = c.get("endpoint_label_1", c.get("endpoint_1", ""))
+        lbl2 = c.get("endpoint_label_2", c.get("endpoint_2", ""))
+        if lbl1 not in label_idx or lbl2 not in label_idx:
+            continue
+        i, j = label_idx[lbl1], label_idx[lbl2]
+        # Ensure lower triangle: row > col
+        if i < j:
+            i, j = j, i
+        rho_matrix[i][j] = c.get("rho")
+        p_matrix[i][j] = c.get("p_value")
+        n_matrix[i][j] = c.get("n")
+
+    # Summary stats
+    abs_rhos = [abs(c["rho"]) for c in organ_corrs if c.get("rho") is not None]
+    strong = sum(1 for r in abs_rhos if r >= 0.7)
+    total = len(abs_rhos)
+    med = median(abs_rhos) if abs_rhos else 0.0
+
+    if total < 2:
+        coherence = "Insufficient data"
+    elif med >= 0.7:
+        coherence = "Highly coherent"
+    elif med >= 0.4:
+        coherence = "Moderately coherent"
+    else:
+        coherence = "Fragmented"
+
+    return {
+        "organ_system": organ_key,
+        "endpoints": sorted_labels,
+        "endpoint_domains": [ep_info[lbl]["domain"] for lbl in sorted_labels],
+        "matrix": rho_matrix,
+        "p_values": p_matrix,
+        "n_values": n_matrix,
+        "endpoint_finding_ids": [ep_info[lbl]["finding_ids"] for lbl in sorted_labels],
+        "total_pairs": total,
+        "summary": {
+            "median_abs_rho": round(med, 3),
+            "strong_pairs": strong,
+            "total_pairs": total,
+            "coherence_label": coherence,
+        },
+    }

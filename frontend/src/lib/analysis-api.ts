@@ -3,6 +3,7 @@ import type {
   FindingsFilters,
   FindingContext,
   AnalysisSummary,
+  OrganCorrelationMatrix,
 } from "@/types/analysis";
 
 const API_BASE = "/api";
@@ -36,6 +37,17 @@ export function fetchFindingContext(
   const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/finding/${encodeURIComponent(findingId)}${qs}`
+  );
+}
+
+export function fetchOrganCorrelations(
+  studyId: string,
+  organKey: string,
+  settingsParams?: string,
+): Promise<OrganCorrelationMatrix> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/organ/${encodeURIComponent(organKey)}/correlations${qs}`
   );
 }
 

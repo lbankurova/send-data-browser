@@ -121,6 +121,25 @@ class EffectSizePane(BaseModel):
     total_with_effects: int = 0
 
 
+class OrganCorrelationSummary(BaseModel):
+    median_abs_rho: float
+    strong_pairs: int  # |rho| >= 0.7
+    total_pairs: int
+    coherence_label: str  # "Highly coherent", "Moderately coherent", "Fragmented", "Insufficient data"
+
+
+class OrganCorrelationMatrix(BaseModel):
+    organ_system: str
+    endpoints: list[str]  # ordered endpoint labels (axis labels)
+    endpoint_domains: list[str]  # domain code per endpoint (for DomainLabel)
+    matrix: list[list[float | None]]  # lower triangle: matrix[i][j] = rho for i > j
+    p_values: list[list[float | None]]  # same shape
+    n_values: list[list[int | None]]  # same shape
+    endpoint_finding_ids: list[list[str]]  # finding_ids per endpoint (for navigation)
+    total_pairs: int
+    summary: OrganCorrelationSummary
+
+
 class FindingContext(BaseModel):
     finding_id: str
     treatment_summary: dict

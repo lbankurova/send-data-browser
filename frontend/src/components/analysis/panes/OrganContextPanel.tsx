@@ -29,6 +29,8 @@ import { OverridePill } from "@/components/ui/OverridePill";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-weight-normalization";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
+import { CorrelationMatrixPane } from "./CorrelationMatrixPane";
+import { useOrganCorrelations } from "@/hooks/useOrganCorrelations";
 import type { FindingsFilters, UnifiedFinding, NormalizationOverride } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
@@ -443,6 +445,9 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   // Fetch all findings data (shared cache with FindingsView)
   const { data: rawData } = useFindings(studyId, 1, 10000, ALL_FILTERS);
 
+  // Correlation matrix — for "Endpoint correlations" pane
+  const { data: corrMatrix } = useOrganCorrelations(studyId, organKey);
+
   // Normalization engine — for "Organ weight normalization" pane
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
@@ -639,7 +644,27 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
         )}
       </div>
 
-      {/* Pane 1b: ORGAN WEIGHT NORMALIZATION (only when organ has OM endpoints and tier >= 2) */}
+      {/* Pane 1b: ENDPOINT CORRELATIONS (matrix of within-organ Spearman correlations) */}
+      {corrMatrix && corrMatrix.endpoints.length >= 2 && (
+        <CollapsiblePane
+          title="Endpoint correlations"
+          defaultOpen
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+          headerRight={
+            <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+              {corrMatrix.summary.coherence_label}
+            </span>
+          }
+        >
+          <CorrelationMatrixPane
+            data={corrMatrix}
+            onCellClick={handleEndpointClick}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Pane 1c: ORGAN WEIGHT NORMALIZATION (only when organ has OM endpoints and tier >= 2) */}
       {(() => {
         if (normalization.highestTier < 2) return null;
         const specimens = ORGAN_SYSTEM_TO_SPECIMENS[organKey.toLowerCase()] ?? [];
