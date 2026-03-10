@@ -8,6 +8,8 @@ SENDEX structures the analytical workflow around the common tasks: detect treatm
 
 Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custom study design and FDA data quality checks, with per-record evidence and a triage UI.
 
+![sendex-app](docs/img/sendex-app.png)
+
 ## Analysis views
 
 | View | Question it answers |
