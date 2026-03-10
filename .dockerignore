@@ -1,8 +1,11 @@
 node_modules/
 backend/venv/
+backend/.venv-core/
+backend/_core_engine/
 backend/cache/
 backend/static/
 frontend/dist/
 .git/
 .gitignore
+.planning/
 *.md

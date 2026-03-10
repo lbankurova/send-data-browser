@@ -20,4 +20,16 @@ COPY send/PointCross/PC201708_XPT/ /app/data/PointCross/
 
 ENV SEND_DATA_DIR=/app/data
 
+# Verify data is present; regenerate if generated/ is missing or empty
+RUN echo "=== Build-time data check ===" && \
+    echo "XPT files:" && ls /app/data/PointCross/*.xpt | head -5 && \
+    echo "Generated files:" && ls /app/generated/PointCross/*.json 2>/dev/null | head -5 || true && \
+    if [ ! -f /app/generated/PointCross/unified_findings.json ]; then \
+      echo "Generated data missing — running generator..." && \
+      cd /app && python -m generator.generate PointCross && \
+      echo "Generator complete:" && ls /app/generated/PointCross/*.json | wc -l; \
+    else \
+      echo "Generated data present — skipping generator."; \
+    fi
+
 CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
