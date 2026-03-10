@@ -127,7 +127,14 @@ if STATIC_DIR.is_dir():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        """Catch-all: serve index.html for SPA client-side routing."""
+        """Catch-all: serve index.html for SPA client-side routing.
+
+        API paths are excluded — unmatched /api/* must return 404 JSON,
+        not index.html (which the frontend would fail to parse as JSON).
+        """
+        if full_path.startswith("api/"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
         file_path = STATIC_DIR / full_path
         if file_path.is_file():
             return FileResponse(file_path)
