@@ -36,9 +36,9 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
-import { formatPValue, getDoseGroupColor } from "@/lib/severity-colors";
+import { formatPValue, getDoseGroupColor, titleCase } from "@/lib/severity-colors";
 import { getPatternLabel } from "@/lib/findings-rail-engine";
-import type { SexEndpointSummary, EndpointNoael } from "@/lib/derive-summaries";
+import type { SexEndpointSummary, EndpointNoael, OrganCoherence } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
@@ -973,6 +973,26 @@ function RecoveryVerdictLine({
   return null;
 }
 
+// ─── Convergence Note (for Patterns pane) ───────────────
+
+function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
+  const totalEndpoints = coherence.adverseEndpoints + coherence.warningEndpoints;
+  return (
+    <div className="rounded border border-border/40 bg-muted/10 p-2 text-[10px]">
+      <div className="font-medium text-foreground">
+        {coherence.convergenceLabel} in {titleCase(coherence.organ_system)}
+      </div>
+      <div className="mt-0.5 text-muted-foreground">
+        Domains: {coherence.domains.join(", ")}
+        {" \u00b7 "}
+        {coherence.adverseEndpoints} adverse
+        {coherence.warningEndpoints > 0 && ` + ${coherence.warningEndpoints} warning`}
+        {" endpoint"}{totalEndpoints !== 1 ? "s" : ""}
+      </div>
+    </div>
+  );
+}
+
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
@@ -1085,6 +1105,12 @@ export function FindingsContextPanel() {
       syn.matchedEndpoints.some((m) => m.endpoint_label === label)
     );
   }, [analytics.syndromes, selectedFinding]);
+
+  // Organ coherence for the selected endpoint's organ system
+  const organCoh = selectedFinding?.organ_system
+    ? analytics.organCoherence.get(selectedFinding.organ_system)
+    : undefined;
+  const hasOrganConvergence = organCoh != null && organCoh.domainCount >= 2;
 
   // Look up ECI integrated confidence for the selected endpoint
   const eciConfidence = useMemo(() => {
@@ -1335,12 +1361,12 @@ export function FindingsContextPanel() {
         </div>
       )}
 
-      {/* Evidence + Correlations + Context — need useFindingContext data */}
+      {/* Statistical Evidence + Patterns + Correlations + Effect Ranking — need useFindingContext data */}
       {contextReady ? (
       <>
       <div ref={evidencePaneRef}>
       <CollapsiblePane
-        title={hasSibling ? "Evidence:" : "Evidence"}
+        title={hasSibling ? "Statistical Evidence:" : "Statistical Evidence"}
         defaultOpen
         keepMounted
         expandAll={expandGen}
@@ -1365,7 +1391,6 @@ export function FindingsContextPanel() {
           finding={activeFinding!}
           analytics={analytics}
           statistics={sexAwareStatistics!}
-          effectSize={activeSex === selectedFinding.sex ? context!.effect_size : siblingContext?.effect_size ?? context!.effect_size}
         />
         {/* Normalization annotation for OM domain endpoints */}
         {selectedFinding.domain === "OM" && (() => {
@@ -1535,34 +1560,47 @@ export function FindingsContextPanel() {
           const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
           const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
           if (!ep?.endpointConfidence) return null;
-          return <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />;
+          return (
+            <div className="mt-3 border-t border-border/30 pt-2">
+              <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
+            </div>
+          );
         })()}
       </CollapsiblePane>
       </div>
 
-      {/* Syndrome context — only when endpoint participates in ≥1 syndrome */}
-      {endpointSyndromes.length > 0 && studyId && (
+      {/* Patterns pane — three states: syndromes only, convergence only, both */}
+      {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
         <CollapsiblePane
-          title="Syndromes"
+          title={endpointSyndromes.length > 0 && hasOrganConvergence ? "Patterns" : endpointSyndromes.length > 0 ? "Syndromes" : "Patterns"}
           defaultOpen
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
-            <span className="text-[9px] text-muted-foreground">
-              {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
-            </span>
+            endpointSyndromes.length > 0 ? (
+              <span className="text-[9px] text-muted-foreground">
+                {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span className="text-[9px] text-muted-foreground">convergence</span>
+            )
           }
         >
-          <EndpointSyndromePane
-            studyId={studyId}
-            currentEndpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
-            syndromes={endpointSyndromes}
-            allSyndromeIds={analytics.syndromes.map((s) => s.id)}
-            endpoints={analytics.endpoints}
-            signalScores={analytics.signalScores}
-            normalizationContexts={analytics.normalizationContexts}
-            onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
-          />
+          <div className="space-y-3">
+            {hasOrganConvergence && <ConvergenceNote coherence={organCoh!} />}
+            {endpointSyndromes.length > 0 && (
+              <EndpointSyndromePane
+                studyId={studyId}
+                currentEndpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
+                syndromes={endpointSyndromes}
+                allSyndromeIds={analytics.syndromes.map((s) => s.id)}
+                endpoints={analytics.endpoints}
+                signalScores={analytics.signalScores}
+                normalizationContexts={analytics.normalizationContexts}
+                onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
+              />
+            )}
+          </div>
         </CollapsiblePane>
       )}
 
@@ -1578,7 +1616,7 @@ export function FindingsContextPanel() {
         </CollapsiblePane>
       )}
 
-      <CollapsiblePane title="Context" defaultOpen keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Effect Ranking" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
           effectSize={context!.effect_size}
           selectedFindingId={selectedFindingId}
