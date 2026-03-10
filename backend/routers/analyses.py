@@ -19,9 +19,12 @@ from models.analysis_schemas import (
     AnalysisSummary,
     FindingContext,
     OrganCorrelationMatrix,
+    SyndromeCorrelationRequest,
+    SyndromeCorrelationResult,
 )
 from services.study_discovery import StudyInfo
-from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix
+from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix, build_syndrome_correlation_summary
+from services.analysis.correlations import compute_syndrome_correlations
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
 from services.analysis.analysis_cache import read_cache, write_cache
 from services.analysis.override_reader import get_last_dosing_day_override
@@ -237,3 +240,24 @@ def get_adverse_effects_summary(
     _get_study(study_id)  # validate study exists
     data = _load_findings_for_settings(study_id, settings)
     return data["summary"]
+
+
+@router.post("/studies/{study_id}/analyses/adverse-effects/syndrome-correlations", response_model=SyndromeCorrelationResult)
+def post_syndrome_correlations(
+    study_id: str,
+    body: SyndromeCorrelationRequest,
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
+):
+    _get_study(study_id)
+    data = _load_findings_for_settings(study_id, settings)
+
+    correlations, excluded = compute_syndrome_correlations(
+        data["findings"],
+        body.endpoint_labels,
+    )
+
+    result = build_syndrome_correlation_summary(
+        correlations, excluded, body.syndrome_id,
+    )
+
+    return SyndromeCorrelationResult(**result)
