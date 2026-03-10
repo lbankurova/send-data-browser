@@ -3,6 +3,7 @@ import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import {
   prepareQuadrantPoints,
   buildFindingsQuadrantOption,
+  Y_CEILING,
 } from "@/components/analysis/charts/findings-charts";
 import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
@@ -138,13 +139,16 @@ export function FindingsQuadrantScatter({
   //   Shape  → clinical S2+ = diamond, everything else = circle
   //   Color  → NOAEL contribution (determining=rose, contributing=gray, supporting=outline)
   const legendEntries = useMemo(() => {
-    const entries: { symbol: string; label: string; color?: string; stroke?: boolean }[] = [];
+    const entries: { symbol: string; label: string; color?: string; stroke?: boolean; clipTop?: boolean }[] = [];
     // Stroke: adverse (no fill — stroke IS the encoding)
     if (points.some((p) => p.worstSeverity === "adverse"))
       entries.push({ symbol: "\u25CF", label: "adverse", stroke: true });
     // Shape: clinical (outline diamond — shape IS the encoding)
     if (points.some((p) => p.clinicalSeverity))
       entries.push({ symbol: "\u25C7", label: "clinical S2+" });
+    // Overflow: clamped at ceiling
+    if (points.some((p) => p.y > Y_CEILING))
+      entries.push({ symbol: "\u25CF", label: "p < 10\u207B\u00B2\u2070", clipTop: true });
     // Color: NOAEL contribution
     if (points.some((p) => p.noaelWeight === 1.0))
       entries.push({ symbol: "\u25CF", label: "NOAEL determining", color: "rgba(248,113,113,0.7)" });
@@ -170,10 +174,17 @@ export function FindingsQuadrantScatter({
         <div className="flex items-center gap-2">
           {legendEntries.map((e, i) => (
             <span key={i} className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
-              <span style={{
-                color: e.stroke ? "transparent" : (e.color ?? "#9CA3AF"),
-                ...(e.stroke ? { WebkitTextStroke: "1px #374151" } : {}),
-              }}>{e.symbol}</span>{e.label}
+              {e.clipTop ? (
+                <svg width="8" height="8" viewBox="-1.1 -1.1 2.2 2.2" className="inline-block">
+                  <path d="M-0.917,-0.4 A1,1,0,1,1,0.917,-0.4 Z" fill="#9CA3AF"/>
+                </svg>
+              ) : (
+                <span style={{
+                  color: e.stroke ? "transparent" : (e.color ?? "#9CA3AF"),
+                  ...(e.stroke ? { WebkitTextStroke: "1px #374151" } : {}),
+                }}>{e.symbol}</span>
+              )}
+              {e.label}
             </span>
           ))}
         </div>

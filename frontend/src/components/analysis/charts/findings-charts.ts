@@ -15,6 +15,9 @@ export const Y_CEILING = 20;
 /** Flat-top circle SVG — circle with top ~30% sliced off (overflow indicator). */
 const FLAT_TOP_CIRCLE = "path://M-0.917,-0.4 A1,1,0,1,1,0.917,-0.4 Z";
 
+/** Flat-top diamond SVG — diamond with top ~30% sliced off (clamped clinical S2+). */
+const FLAT_TOP_DIAMOND = "path://M-0.6,-0.4 L-1,0 L0,1 L1,0 L0.6,-0.4 Z";
+
 /** Hex domain color for use in tooltip HTML (not Tailwind classes). */
 function getDomainHexColor(domain: string): string {
   switch (domain.toUpperCase()) {
@@ -227,9 +230,11 @@ export function buildFindingsQuadrantOption(
     const isWorstCombo = isAdverse && isClinical && pt.noaelWeight === 1.0;
     const symbolSize = isSelected ? 10 : isWorstCombo ? 7 : isAdverse ? 6 : 5;
 
-    // Symbol shape: clamped → flat-top, clinical S2+ → diamond, else → circle
+    // Symbol shape: clamped → flat-top variant, clinical S2+ → diamond, else → circle
     const isClamped = pt.y > Y_CEILING;
-    const symbol = isClamped ? FLAT_TOP_CIRCLE : isClinical ? "diamond" : "circle";
+    const symbol = isClamped
+      ? (isClinical ? FLAT_TOP_DIAMOND : FLAT_TOP_CIRCLE)
+      : isClinical ? "diamond" : "circle";
 
     // ECI NOAEL weight encoding → fill color
     const nw = pt.noaelWeight;

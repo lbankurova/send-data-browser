@@ -12,6 +12,12 @@ import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
 
+/** Y-axis ceiling for -log₁₀(p). Points beyond are visually clamped. */
+const Y_CEILING = 20;
+
+/** Flat-top circle SVG — circle with top ~30% sliced off (overflow indicator). */
+const FLAT_TOP_CIRCLE = "path://M-0.917,-0.4 A1,1,0,1,1,0.917,-0.4 Z";
+
 const GRID_LINE_COLOR = "#e5e7eb";
 const AXIS_LABEL_SIZE = 10;
 const TOOLTIP_TEXT_SIZE = 11;
@@ -929,6 +935,7 @@ export function buildVolcanoScatterOption(
     arr.push(pt);
   }
 
+  const hasClamped = points.some((p) => p.y > Y_CEILING);
   const scatterSeries: EChartsOption["series"] = [];
 
   for (const [organ, organPoints] of seriesByOrgan) {
@@ -939,10 +946,13 @@ export function buildVolcanoScatterOption(
       name: organ,
       data: organPoints.map((pt) => {
         const isSelected = pt.endpoint_label === selectedEndpoint;
+        const isClamped = pt.y > Y_CEILING;
         return {
-          value: [pt.x, pt.y],
+          value: [pt.x, Math.min(pt.y, Y_CEILING)],
           name: pt.endpoint_label,
           _domain: pt.domain,
+          _rawY: pt.y,
+          symbol: isClamped ? FLAT_TOP_CIRCLE : "circle",
           symbolSize: isSelected ? 14 : 8,
           itemStyle: {
             color,
@@ -1004,6 +1014,20 @@ export function buildVolcanoScatterOption(
             color: "#6B7280",
           },
         },
+        ...(hasClamped
+          ? [
+              {
+                yAxis: Y_CEILING,
+                lineStyle: { color: "#9CA3AF", type: "dotted" as const, width: 1 },
+                label: {
+                  formatter: "p < 10⁻²⁰",
+                  position: "insideEndTop" as const,
+                  fontSize: REF_LINE_LABEL_SIZE,
+                  color: "#9CA3AF",
+                },
+              },
+            ]
+          : []),
       ],
     };
   }
@@ -1026,6 +1050,7 @@ export function buildVolcanoScatterOption(
     yAxis: {
       type: "value",
       min: 0,
+      ...(hasClamped ? { max: Y_CEILING } : {}),
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
       name: "-log\u2081\u2080(trend p)",
@@ -1043,19 +1068,21 @@ export function buildVolcanoScatterOption(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const item = params as any;
         if (!item || !item.value) return "";
-        const [x, y] = item.value as [number, number];
+        const [x] = item.value as [number, number];
+        const rawY = (item.data?._rawY as number | undefined) ?? item.value[1];
         const name = item.name ?? "";
         const organ = item.seriesName ?? "";
         const domain = item.data?._domain as string | undefined;
         const isInc = domain ? INCIDENCE_DOMAINS.has(domain) : false;
         const effectLabel = isInc ? `avg sev=${x.toFixed(2)}` : `|${effectSizeSymbol}|=${x.toFixed(2)}`;
-        const pRaw = Math.pow(10, -y);
+        const pRaw = Math.pow(10, -rawY);
+        const pLabel = pRaw < 0.0001 ? "p<0.0001" : `p=${pRaw.toFixed(4)}`;
         return [
           `<div style="font-size:11px;font-weight:600">${name}</div>`,
           `<div style="font-size:10px;color:#9CA3AF">${organ}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:4px">`,
           `<span>${effectLabel}</span>`,
-          `<span>p=${pRaw.toExponential(1)}</span>`,
+          `<span>${pLabel}</span>`,
           `</div>`,
         ].join("");
       },
