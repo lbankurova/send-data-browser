@@ -24,7 +24,6 @@ STATIC_DIR = Path(__file__).parent / "static"
 async def lifespan(app: FastAPI):
     # Startup: discover studies and extract metadata
     from config import SEND_DATA_DIR
-    import os
 
     print(f"[DIAG] SEND_DATA_DIR = {SEND_DATA_DIR}")
     print(f"[DIAG] SEND_DATA_DIR exists = {SEND_DATA_DIR.exists()}")
@@ -50,6 +49,21 @@ async def lifespan(app: FastAPI):
     print(f"Found {len(studies)} studies: {list(studies.keys())}")
     for sid, info in studies.items():
         print(f"[DIAG] Study '{sid}': path={info.path}, xpt_count={len(info.xpt_files)}")
+
+    # Auto-generate analysis data if missing for any discovered study
+    for sid in list(studies.keys()):
+        check_path = generated_dir / sid / "unified_findings.json"
+        if not check_path.exists():
+            print(f"[STARTUP] Generated data missing for '{sid}' — running generator...")
+            try:
+                from generator.generate import generate
+                generate(sid)
+                print(f"[STARTUP] Generator complete for '{sid}'")
+            except Exception as e:
+                print(f"[STARTUP] Generator failed for '{sid}': {e}")
+        else:
+            print(f"[DIAG] Generated data present for '{sid}'")
+
     init_studies(studies)
     init_analysis_studies(studies)
     init_analysis_views(studies)
