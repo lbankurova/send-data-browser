@@ -414,6 +414,16 @@ export function buildFindingsQuadrantOption(
           symbol: "none",
           data: [
             {
+              xAxis: 0.75,
+              lineStyle: { color: "#D1D5DB", type: "dashed", width: 1 },
+              label: {
+                formatter: "75th",
+                position: "end",
+                fontSize: 8,
+                color: "#9CA3AF",
+              },
+            },
+            {
               yAxis: -Math.log10(0.05),
               lineStyle: { color: "#D1D5DB", type: "dashed", width: 1 },
               label: {
