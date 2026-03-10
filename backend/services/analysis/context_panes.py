@@ -37,7 +37,7 @@ def build_finding_context(finding: dict, all_findings: list[dict], correlations:
     dose_response["insights"] = dose_response_insights(finding, dose_groups)
 
     # 4. Correlations pane
-    corr_pane = _build_correlations(finding_id, finding, correlations)
+    corr_pane = _build_correlations(finding_id, finding, correlations, all_findings)
     corr_pane["insights"] = correlations_insights(finding, corr_pane)
 
     # 5. Effect Size pane
@@ -69,7 +69,7 @@ def build_finding_context(finding: dict, all_findings: list[dict], correlations:
             "treatment_summary": _build_treatment_summary(sibling_finding, all_findings),
             "statistics": _build_statistics(sibling_finding, dose_groups),
             "dose_response": _build_dose_response(sibling_finding, dose_groups),
-            "correlations": _build_correlations(sibling_finding.get("id", ""), sibling_finding, correlations),
+            "correlations": _build_correlations(sibling_finding.get("id", ""), sibling_finding, correlations, all_findings),
             "effect_size": _build_effect_size(sibling_finding, all_findings),
         }
     result["sibling"] = sibling_context
@@ -219,7 +219,28 @@ def _build_dose_response(finding: dict, dose_groups: list[dict]) -> dict:
     }
 
 
-def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]) -> dict:
+def _pick_sex_matched_id(
+    other_ids: list[str], my_sex: str | None, sex_lookup: dict[str, str | None],
+) -> str:
+    """Select the finding ID from *other_ids* whose sex matches *my_sex*.
+
+    Fallback order:
+    1. Exact sex match (e.g. both "M").
+    2. First ID in the list (covers aggregates and legacy single-ID records).
+    Returns "" if the list is empty.
+    """
+    if not other_ids:
+        return ""
+    if my_sex:
+        for oid in other_ids:
+            if sex_lookup.get(oid) == my_sex:
+                return oid
+    # Fallback: aggregate finding or no sex match — return first
+    return other_ids[0]
+
+
+def _build_correlations(finding_id: str, finding: dict, correlations: list[dict],
+                        all_findings: list[dict] | None = None) -> dict:
     """Correlations pane: related endpoints.
 
     Matches by endpoint key (domain_testcode_day) so both M and F findings
@@ -228,6 +249,15 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
     Filters out same-endpoint_label autocorrelations (e.g. BW Day 8 ↔ BW Day 15)
     which are uninformative repeated-measure autocorrelations.
     """
+    # Build {finding_id: sex} lookup for sex-matched ID resolution
+    sex_lookup: dict[str, str | None] = {}
+    if all_findings:
+        for f in all_findings:
+            fid = f.get("id")
+            if fid:
+                sex_lookup[fid] = f.get("sex")
+    my_sex = finding.get("sex")
+
     # Build endpoint key matching correlations._endpoint_key() — includes specimen when present
     parts = [finding.get("domain", ""), finding.get("test_code", "")]
     specimen = finding.get("specimen")
@@ -257,7 +287,8 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
             if other_label == my_label:
                 continue
             other_ids = c.get("finding_ids_2", [])
-            other_id = c.get("finding_id_2", other_ids[0] if other_ids else "")
+            other_id = c.get("finding_id_2",
+                             _pick_sex_matched_id(other_ids, my_sex, sex_lookup))
             related.append({
                 "finding_id": other_id,
                 "endpoint": c["endpoint_2"],
@@ -272,7 +303,8 @@ def _build_correlations(finding_id: str, finding: dict, correlations: list[dict]
             if other_label == my_label:
                 continue
             other_ids = c.get("finding_ids_1", [])
-            other_id = c.get("finding_id_1", other_ids[0] if other_ids else "")
+            other_id = c.get("finding_id_1",
+                             _pick_sex_matched_id(other_ids, my_sex, sex_lookup))
             related.append({
                 "finding_id": other_id,
                 "endpoint": c["endpoint_1"],
@@ -517,3 +549,117 @@ def _correlation_gloss(
             "\u2014 possible subclinical coordinated response."
         )
     return None
+
+
+# ─── Syndrome correlation validation ─────────────────────────────
+
+
+def build_syndrome_correlation_summary(
+    correlations: list[dict],
+    excluded: list[dict],
+    syndrome_id: str,
+) -> dict:
+    """Build correlation summary for a syndrome from computed correlations.
+
+    Same reshape pattern as build_organ_correlation_matrix() but without organ
+    filtering or convergence gloss. Uses "co-variation" vocabulary and thresholds
+    aligned with organ matrix (0.7/0.4).
+    """
+    if not correlations:
+        return {
+            "syndrome_id": syndrome_id,
+            "endpoints": [],
+            "endpoint_domains": [],
+            "matrix": [],
+            "p_values": [],
+            "n_values": [],
+            "endpoint_finding_ids": [],
+            "total_pairs": 0,
+            "excluded_members": excluded,
+            "summary": {
+                "median_abs_rho": 0.0,
+                "strong_pairs": 0,
+                "total_pairs": 0,
+                "validation_label": "Insufficient data",
+                "gloss": None,
+            },
+        }
+
+    # Collect unique endpoints with their domain and finding_ids
+    ep_info: dict[str, dict] = {}
+    for c in correlations:
+        for side in (1, 2):
+            label = c.get(f"endpoint_label_{side}", c.get(f"endpoint_{side}", ""))
+            if label and label not in ep_info:
+                ep_info[label] = {
+                    "domain": c.get(f"domain_{side}", ""),
+                    "finding_ids": c.get(f"finding_ids_{side}", []),
+                }
+
+    # Sort by domain then alphabetically within domain
+    sorted_labels = sorted(ep_info.keys(), key=lambda lbl: (ep_info[lbl]["domain"], lbl))
+
+    n = len(sorted_labels)
+    label_idx = {lbl: i for i, lbl in enumerate(sorted_labels)}
+
+    # Build lower-triangle matrices
+    rho_matrix: list[list[float | None]] = [[None] * n for _ in range(n)]
+    p_matrix: list[list[float | None]] = [[None] * n for _ in range(n)]
+    n_matrix: list[list[int | None]] = [[None] * n for _ in range(n)]
+
+    for c in correlations:
+        lbl1 = c.get("endpoint_label_1", c.get("endpoint_1", ""))
+        lbl2 = c.get("endpoint_label_2", c.get("endpoint_2", ""))
+        if lbl1 not in label_idx or lbl2 not in label_idx:
+            continue
+        i, j = label_idx[lbl1], label_idx[lbl2]
+        # Ensure lower triangle: row > col
+        if i < j:
+            i, j = j, i
+        rho_matrix[i][j] = c.get("rho")
+        p_matrix[i][j] = c.get("p_value")
+        n_matrix[i][j] = c.get("n")
+
+    # Summary stats
+    abs_rhos = [abs(c["rho"]) for c in correlations if c.get("rho") is not None]
+    strong = sum(1 for r in abs_rhos if r >= 0.7)
+    total = len(abs_rhos)
+    med = median(abs_rhos) if abs_rhos else 0.0
+
+    if total < 2:
+        validation_label = "Insufficient data"
+        gloss = None
+    elif med >= 0.7:
+        validation_label = "Strong co-variation"
+        gloss = (
+            "Pattern members co-vary biologically \u2014 "
+            "syndrome is statistically supported beyond rule-matching."
+        )
+    elif med >= 0.4:
+        validation_label = "Moderate co-variation"
+        gloss = None
+    else:
+        validation_label = "Weak co-variation"
+        gloss = (
+            "Low pairwise correlation among members \u2014 "
+            "pattern may reflect coincidental co-occurrence rather than shared mechanism."
+        )
+
+    return {
+        "syndrome_id": syndrome_id,
+        "endpoints": sorted_labels,
+        "endpoint_domains": [ep_info[lbl]["domain"] for lbl in sorted_labels],
+        "matrix": rho_matrix,
+        "p_values": p_matrix,
+        "n_values": n_matrix,
+        "endpoint_finding_ids": [ep_info[lbl]["finding_ids"] for lbl in sorted_labels],
+        "total_pairs": total,
+        "excluded_members": excluded,
+        "summary": {
+            "median_abs_rho": round(med, 3),
+            "strong_pairs": strong,
+            "total_pairs": total,
+            "validation_label": validation_label,
+            "gloss": gloss,
+        },
+    }
