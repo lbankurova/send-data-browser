@@ -83,6 +83,8 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** Endpoint confidence integrity assessment (ECI) — SPEC-ECI-AMD-002 */
   endpointConfidence?: import("./endpoint-confidence").EndpointConfidenceResult;
+  /** True for derived endpoints (ratios/indices) — excluded from percentile ranking and NOAEL. */
+  isDerived?: boolean;
 }
 
 export interface OrganCoherence {
@@ -293,6 +295,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxIncidence: number | null;
     maxFoldChange: number | null;
     hasEarlyDeathExclusion: boolean;
+    isDerived: boolean;
     /** REM-05: Group stats from scheduled sacrifice (same sex as direction) */
     groupStats: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[] | null;
     /** Sex that set the direction (used to align groupStats with direction) */
@@ -330,6 +333,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         maxIncidence: null,
         maxFoldChange: null,
         hasEarlyDeathExclusion: false,
+        isDerived: !!row.is_derived,
         groupStats: null,
       };
       map.set(row.endpoint_label, entry);
@@ -453,6 +457,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       maxIncidence: entry.maxIncidence,
       maxFoldChange: entry.maxFoldChange,
       hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
+      isDerived: entry.isDerived,
     };
 
     // REM-05: Derive control and worst-treated group stats (continuous endpoints only)

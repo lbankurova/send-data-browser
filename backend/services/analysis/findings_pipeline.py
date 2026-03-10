@@ -25,6 +25,7 @@ from services.analysis.corroboration import compute_corroboration, compute_chain
 from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
+from services.analysis.send_knowledge import BIOMARKER_MAP
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ def _with_defaults(f: dict) -> dict:
     f.setdefault("max_incidence", None)
     f.setdefault("organ_system", "general")
     f.setdefault("endpoint_label", f.get("test_name", f.get("test_code", "")))
+    f.setdefault("is_derived", False)
     return f
 
 
@@ -152,6 +154,13 @@ def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
         f.get("test_code"),
         f.get("domain"),
     )
+
+    # Derived endpoint flag — calculated ratios/indices create tautological
+    # correlations with their source components.  Consumers (correlation engine,
+    # volcano percentile, NOAEL) can filter on this.
+    tc = f.get("test_code", "")
+    bio = BIOMARKER_MAP.get(tc)
+    f["is_derived"] = bool(bio and bio.get("derived"))
 
     # Endpoint label
     test_name = f.get("test_name", f.get("test_code", ""))

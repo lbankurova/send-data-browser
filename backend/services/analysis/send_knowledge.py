@@ -17,7 +17,7 @@ BIOMARKER_MAP: dict[str, dict] = {
     "PROT": {"name": "Total Protein", "organ": "LIVER", "system": "hepatic", "direction_of_concern": "down", "category": "general"},
     "GLOB": {"name": "Globulin", "organ": "LIVER", "system": "hepatic", "direction_of_concern": "up", "category": "general"},
     "GLOBUL": {"name": "Globulin", "organ": "LIVER", "system": "hepatic", "direction_of_concern": "up", "category": "general"},
-    "ALBGLOB": {"name": "Albumin/Globulin Ratio", "organ": "LIVER", "system": "hepatic", "direction_of_concern": "down", "category": "general"},
+    "ALBGLOB": {"name": "Albumin/Globulin Ratio", "organ": "LIVER", "system": "hepatic", "direction_of_concern": "down", "category": "general", "derived": True, "source_tests": ["ALB", "GLOB"]},
     # Renal / Kidney
     "BUN": {"name": "Blood Urea Nitrogen", "organ": "KIDNEY", "system": "renal", "direction_of_concern": "up", "category": "general"},
     "UREAN": {"name": "Urea Nitrogen", "organ": "KIDNEY", "system": "renal", "direction_of_concern": "up", "category": "general"},
@@ -32,9 +32,9 @@ BIOMARKER_MAP: dict[str, dict] = {
     "PLAT": {"name": "Platelet Count", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "down", "category": "general"},
     "RETIC": {"name": "Reticulocyte Count", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
     "RETI": {"name": "Reticulocyte Count", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
-    "MCV": {"name": "Mean Corpuscular Volume", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
-    "MCH": {"name": "Mean Corpuscular Hemoglobin", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
-    "MCHC": {"name": "Mean Corpuscular Hemoglobin Concentration", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "down", "category": "general"},
+    "MCV": {"name": "Mean Corpuscular Volume", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general", "derived": True, "source_tests": ["HCT", "RBC"]},
+    "MCH": {"name": "Mean Corpuscular Hemoglobin", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general", "derived": True, "source_tests": ["HGB", "RBC"]},
+    "MCHC": {"name": "Mean Corpuscular Hemoglobin Concentration", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "down", "category": "general", "derived": True, "source_tests": ["HGB", "HCT"]},
     "RDW": {"name": "Red Cell Distribution Width", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "up", "category": "general"},
     # Hematologic — WBC differential
     "NEUT": {"name": "Neutrophil Count", "organ": "BONE MARROW", "system": "hematologic", "direction_of_concern": "down", "category": "general"},

@@ -151,6 +151,13 @@ export function CorrelationMatrixPane({ data, onCellClick }: Props) {
         (|ρ| ≥ 0.7). Median |ρ| = {summary.median_abs_rho.toFixed(2)}.
       </div>
 
+      {/* Interpretive gloss (when convergence and correlation diverge) */}
+      {summary.gloss && (
+        <p className="text-xs leading-relaxed text-foreground/80">
+          {summary.gloss}
+        </p>
+      )}
+
       {/* Legend */}
       {n >= 3 && (
         <div className="flex items-center gap-1 text-[9px] text-muted-foreground">

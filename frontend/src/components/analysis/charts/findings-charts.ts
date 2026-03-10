@@ -9,6 +9,12 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { resolveCanonical } from "@/lib/lab-clinical-catalog";
 
+/** Y-axis ceiling for -log₁₀(p). Points beyond are visually clamped. */
+export const Y_CEILING = 20;
+
+/** Flat-top circle SVG — circle with top ~30% sliced off (overflow indicator). */
+const FLAT_TOP_CIRCLE = "path://M-0.917,-0.4 A1,1,0,1,1,0.917,-0.4 Z";
+
 /** Hex domain color for use in tooltip HTML (not Tailwind classes). */
 function getDomainHexColor(domain: string): string {
   switch (domain.toUpperCase()) {
@@ -154,7 +160,7 @@ export function prepareQuadrantPoints(
   }
 
   const raw = endpoints
-    .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null)
+    .filter((ep) => ep.maxEffectSize != null && ep.minPValue != null && !ep.isDerived)
     .map((ep) => {
       const coh = organCoherence?.get(ep.organ_system);
       const syn = syndromeIndex.get(ep.endpoint_label.toLowerCase());
@@ -204,7 +210,8 @@ export function buildFindingsQuadrantOption(
 ): EChartsOption {
   if (points.length === 0) return {};
 
-  const maxY = Math.max(...points.map((p) => p.y)) * 1.1 || 3;
+  const hasClamped = points.some((p) => p.y > Y_CEILING);
+  const maxY = hasClamped ? Y_CEILING : Math.max(...points.map((p) => p.y)) * 1.1 || 3;
 
   const data = points.map((pt) => {
     const isSelected = pt.endpoint_label === selectedEndpoint;
@@ -220,8 +227,9 @@ export function buildFindingsQuadrantOption(
     const isWorstCombo = isAdverse && isClinical && pt.noaelWeight === 1.0;
     const symbolSize = isSelected ? 10 : isWorstCombo ? 7 : isAdverse ? 6 : 5;
 
-    // Symbol shape: clinical S2+ → diamond, everything else → circle
-    const symbol = isClinical ? "diamond" : "circle";
+    // Symbol shape: clamped → flat-top, clinical S2+ → diamond, else → circle
+    const isClamped = pt.y > Y_CEILING;
+    const symbol = isClamped ? FLAT_TOP_CIRCLE : isClinical ? "diamond" : "circle";
 
     // ECI NOAEL weight encoding → fill color
     const nw = pt.noaelWeight;
@@ -267,7 +275,7 @@ export function buildFindingsQuadrantOption(
     }
 
     return {
-      value: [pt.x, pt.y],
+      value: [pt.x, Math.min(pt.y, Y_CEILING)],
       name: pt.endpoint_label,
       _meta: pt,
       _outOfScope: isOutOfScope,
@@ -357,7 +365,7 @@ export function buildFindingsQuadrantOption(
           `<div style="font-size:10px;color:#9CA3AF"><span style="color:${domainColor}">${meta.domain}</span> \u00b7 ${meta.organ_system}</div>`,
           `<div style="display:flex;gap:12px;font-family:monospace;font-size:10px;margin-top:3px">`,
           `<span>${effectLabel}</span>`,
-          `<span>p=${meta.rawP.toExponential(1)}</span>`,
+          `<span>${meta.rawP < 0.0001 ? "p<0.0001" : `p=${meta.rawP.toFixed(4)}`}</span>`,
           `</div>`,
           incidenceLine,
           pctLine,
@@ -410,6 +418,20 @@ export function buildFindingsQuadrantOption(
                 color: "#9CA3AF",
               },
             },
+            ...(hasClamped
+              ? [
+                  {
+                    yAxis: Y_CEILING,
+                    lineStyle: { color: "#9CA3AF", type: "dotted" as const, width: 1 },
+                    label: {
+                      formatter: "p < 10⁻²⁰",
+                      position: "insideEndTop" as const,
+                      fontSize: 8,
+                      color: "#9CA3AF",
+                    },
+                  },
+                ]
+              : []),
           ],
         },
       },

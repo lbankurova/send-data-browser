@@ -166,6 +166,8 @@ export interface AdverseEffectSummaryRow {
   n_excluded?: number;
   /** REM-05: Per-dose-group statistics (from scheduled sacrifice timepoint) */
   scheduled_group_stats?: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[];
+  /** True for derived endpoints (ratios/indices) that create tautological correlations. */
+  is_derived?: boolean;
 }
 
 // --- Dose-Response (View 2) ---
