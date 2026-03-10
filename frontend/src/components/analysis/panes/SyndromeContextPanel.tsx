@@ -41,6 +41,10 @@ import { computeOrganProportionality, checkSexDivergence } from "@/lib/organ-pro
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { OrganProportionalityResult, OrganOpiRow, OpiClassification } from "@/lib/organ-proportionality";
+import { useSyndromeCorrelations } from "@/hooks/useSyndromeCorrelations";
+import type { SyndromeMember } from "@/hooks/useSyndromeCorrelations";
+import { SyndromeCorrelationPane } from "./SyndromeCorrelationPane";
+import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -287,12 +291,40 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   const syndromeDef = getSyndromeDefinition(syndromeId);
   const name = detected?.name ?? syndromeDef?.name ?? syndromeId;
 
+  const { selectFinding } = useFindingSelection();
+
   // Use shared derivation — single source of truth (includes all fields)
   const allEndpoints = analytics.endpoints;
 
   // Normalization engine — for OM term annotations and B-7 BW confounding
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
+
+  // Syndrome correlation validation — endpoint co-variation
+  const syndromeMembers = useMemo<SyndromeMember[]>(
+    () => (detected?.matchedEndpoints ?? []).map((m) => ({
+      endpoint_label: m.endpoint_label,
+      domain: m.domain,
+    })),
+    [detected?.matchedEndpoints],
+  );
+  const { data: syndromeCorrelation } = useSyndromeCorrelations(studyId, syndromeId, syndromeMembers);
+
+  const handleCorrelationCellClick = (endpointLabel: string) => {
+    if (!rawData?.findings) return;
+    const epFindings = rawData.findings.filter(
+      (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
+    );
+    if (epFindings.length === 0) return;
+    const best = epFindings.reduce((b, f) => {
+      const bestP = b.min_p_adj ?? Infinity;
+      const fP = f.min_p_adj ?? Infinity;
+      if (fP < bestP) return f;
+      if (fP === bestP && Math.abs(f.max_effect_size ?? 0) > Math.abs(b.max_effect_size ?? 0)) return f;
+      return b;
+    });
+    selectFinding(best);
+  };
 
   // Evidence Summary: term report
   const syndromeSexes = detected?.sexes;
@@ -625,6 +657,27 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             differential={differential}
             detectedSyndromes={analytics.syndromes}
             syndromeName={name}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* ══ ENDPOINT CO-VARIATION PANE ══ */}
+      {syndromeCorrelation && syndromeCorrelation.matrix.endpoints.length >= 2 && (
+        <CollapsiblePane
+          title="Endpoint co-variation"
+          defaultOpen={false}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+          headerRight={
+            <span className="text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1.5 py-0.5">
+              {syndromeCorrelation.matrix.summary.coherence_label}
+            </span>
+          }
+        >
+          <SyndromeCorrelationPane
+            matrix={syndromeCorrelation.matrix}
+            excludedMembers={syndromeCorrelation.excludedMembers}
+            onCellClick={handleCorrelationCellClick}
           />
         </CollapsiblePane>
       )}

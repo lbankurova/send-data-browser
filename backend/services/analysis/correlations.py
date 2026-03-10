@@ -85,6 +85,114 @@ def compute_correlations(findings: list[dict], max_per_organ: int = 30) -> list[
     return correlations
 
 
+def compute_syndrome_correlations(
+    findings: list[dict],
+    endpoint_labels: list[str],
+) -> tuple[list[dict], list[dict]]:
+    """Compute pairwise correlations among specified endpoints, ignoring organ boundaries.
+
+    Returns (correlations, excluded_endpoints) where excluded_endpoints are
+    endpoint_labels that couldn't participate (no individual data, < 10 subjects).
+    """
+    label_set = set(endpoint_labels)
+
+    # 1. Collect continuous endpoints with subject-level data, scoped to requested labels
+    endpoints: dict[str, list[dict]] = {}
+    matched_labels: set[str] = set()
+    for f in findings:
+        label = f.get("endpoint_label", f.get("finding", ""))
+        if label not in label_set:
+            continue
+        if f.get("data_type") != "continuous":
+            continue
+        if f.get("is_derived"):
+            continue
+        if not f.get("raw_subject_values"):
+            matched_labels.add(label)  # found but no individual data
+            continue
+        key = _endpoint_key(f)
+        endpoints.setdefault(key, []).append(f)
+        matched_labels.add(label)
+
+    # 2. Track which labels produced valid endpoint keys
+    labels_with_keys: dict[str, str] = {}  # label -> endpoint_key
+    for ep_key, ep_findings in endpoints.items():
+        label = ep_findings[0].get("endpoint_label", ep_findings[0].get("finding", ""))
+        labels_with_keys[label] = ep_key
+
+    # 3. Compute all pairwise correlations (no organ grouping)
+    ep_keys = list(endpoints.keys())
+    correlations: list[dict] = []
+
+    for i in range(len(ep_keys)):
+        for j in range(i + 1, len(ep_keys)):
+            result = _residualized_correlation(
+                endpoints[ep_keys[i]], endpoints[ep_keys[j]]
+            )
+            if result is None:
+                continue
+
+            f1 = endpoints[ep_keys[i]][0]
+            f2 = endpoints[ep_keys[j]][0]
+
+            correlations.append({
+                "endpoint_key_1": ep_keys[i],
+                "endpoint_key_2": ep_keys[j],
+                "endpoint_label_1": f1.get("endpoint_label", f1.get("finding", "")),
+                "endpoint_label_2": f2.get("endpoint_label", f2.get("finding", "")),
+                "finding_ids_1": [f["id"] for f in endpoints[ep_keys[i]]],
+                "finding_ids_2": [f["id"] for f in endpoints[ep_keys[j]]],
+                "endpoint_1": f1.get("finding", ""),
+                "endpoint_2": f2.get("finding", ""),
+                "domain_1": f1.get("domain", ""),
+                "domain_2": f2.get("domain", ""),
+                "rho": round(result["rho"], 4),
+                "p_value": round(result["p_value"], 6) if result["p_value"] is not None else None,
+                "n": result["n"],
+                "basis": "individual",
+            })
+
+    # Determine which endpoint keys produced at least one valid correlation
+    correlated_keys: set[str] = set()
+    for c in correlations:
+        correlated_keys.add(c["endpoint_key_1"])
+        correlated_keys.add(c["endpoint_key_2"])
+    insufficient_labels = {
+        label for label, key in labels_with_keys.items()
+        if key not in correlated_keys
+    }
+
+    # 4. Build excluded list
+    excluded: list[dict] = []
+    for label in endpoint_labels:
+        if label not in matched_labels:
+            # Not found at all (incidence-only or missing) — caller handles incidence exclusion
+            continue
+        if label not in labels_with_keys:
+            excluded.append({
+                "endpoint_label": label,
+                "domain": _find_domain_for_label(findings, label),
+                "reason": "no_individual_data",
+            })
+        elif label in insufficient_labels:
+            excluded.append({
+                "endpoint_label": label,
+                "domain": _find_domain_for_label(findings, label),
+                "reason": "insufficient_subjects",
+            })
+
+    correlations.sort(key=lambda c: abs(c.get("rho", 0)), reverse=True)
+    return correlations, excluded
+
+
+def _find_domain_for_label(findings: list[dict], label: str) -> str:
+    """Find the domain code for an endpoint label."""
+    for f in findings:
+        if f.get("endpoint_label", f.get("finding", "")) == label:
+            return f.get("domain", "")
+    return ""
+
+
 def _endpoint_key(finding: dict) -> str:
     """Unique key for an endpoint regardless of sex.
 

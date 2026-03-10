@@ -141,6 +141,39 @@ class OrganCorrelationMatrix(BaseModel):
     summary: OrganCorrelationSummary
 
 
+class SyndromeCorrelationRequest(BaseModel):
+    endpoint_labels: list[str]
+    syndrome_id: str  # Cache key / label only. Not resolved by backend.
+                      # Retained for future backend syndrome detection.
+
+
+class ExcludedMember(BaseModel):
+    endpoint_label: str
+    domain: str
+    reason: str  # "incidence_data" | "insufficient_subjects" | "no_individual_data"
+
+
+class SyndromeCorrelationSummary(BaseModel):
+    median_abs_rho: float
+    strong_pairs: int       # |rho| >= 0.7 (aligned with organ matrix thresholds)
+    total_pairs: int
+    validation_label: str   # "Strong co-variation", "Moderate co-variation", "Weak co-variation", "Insufficient data"
+    gloss: str | None = None  # Interpretive sentence at extremes only
+
+
+class SyndromeCorrelationResult(BaseModel):
+    syndrome_id: str
+    endpoints: list[str]                    # correlatable endpoint labels (axis labels)
+    endpoint_domains: list[str]             # domain code per endpoint (for DomainLabel)
+    matrix: list[list[float | None]]        # lower triangle: matrix[i][j] = rho for i > j
+    p_values: list[list[float | None]]      # same shape
+    n_values: list[list[int | None]]        # same shape
+    endpoint_finding_ids: list[list[str]]   # finding_ids per endpoint (for navigation)
+    total_pairs: int
+    excluded_members: list[ExcludedMember]
+    summary: SyndromeCorrelationSummary
+
+
 class FindingContext(BaseModel):
     finding_id: str
     treatment_summary: dict

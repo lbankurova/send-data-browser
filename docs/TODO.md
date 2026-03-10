@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 52 | 13 | Missing capability, no spec exists |
+| Gap | 55 | 13 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **77** | **47** | |
+| **Total open** | **80** | **47** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -243,7 +243,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ---
 
-## Gaps (18 open)
+## Gaps (21 open)
 
 ### GAP-01: No URL persistence of filter state
 - **Status:** Skip for prototype (Datagrok handles differently)
@@ -560,6 +560,27 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `backend/services/analysis/send_knowledge.py`, `findings_pipeline.py`
 - **Issue:** BW gain (if generated as separate finding) and organ-to-body-weight ratios share the same tautological correlation problem as ALBGLOB/MCH/MCHC/MCV. When these enter the findings pipeline, they need the `derived` flag in BIOMARKER_MAP. Currently not an issue for PointCross (no BW gain findings, OM ratios computed client-side) but will matter for studies that report them.
 - **Status:** Open — deferred until relevant study data arrives
+- **Priority:** P4
+- **Owner hint:** backend-dev
+
+### GAP-66: Syndrome validation label in FindingsRail syndrome cards
+- **Files:** `frontend/src/components/analysis/FindingsRail.tsx` (syndrome card rendering)
+- **Issue:** The validation label (Strong/Moderate/Weak co-variation) is only visible after opening the SyndromeContextPanel and expanding the co-variation pane. Showing it inline on the rail card (as a neutral badge) would give toxicologists a quick signal without drilling in.
+- **Status:** Open — follow-on from syndrome correlation validation feature
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### GAP-67: Syndrome confidence adjustment based on co-variation strength
+- **Files:** `frontend/src/lib/cross-domain-syndromes.ts`, `frontend/src/lib/syndrome-interpretation.ts`
+- **Issue:** Syndrome confidence is currently assigned from rule-matching (required met, support count, domain coverage). Co-variation strength could upgrade/downgrade confidence — e.g., "HIGH confidence + Weak co-variation" deserves a caveat, while "MODERATE confidence + Strong co-variation" could be upgraded.
+- **Status:** Open — needs design decision on how co-variation affects confidence scoring
+- **Priority:** P3
+- **Owner hint:** ux-designer, frontend-dev
+
+### GAP-68: Precomputed syndrome correlations fallback
+- **Files:** `backend/services/analysis/correlations.py`, `backend/generator/`
+- **Issue:** Syndrome correlations are computed lazily (on-request POST). If latency becomes noticeable (large studies, many endpoints), consider precomputing at generation time. Currently sub-second for PointCross (3–28 pairs per syndrome).
+- **Status:** Open — deferred until latency is observed
 - **Priority:** P4
 - **Owner hint:** backend-dev
 
