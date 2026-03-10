@@ -329,19 +329,11 @@ export function FindingsView() {
         {showInfoTooltip && (
           <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
             <div className="text-[11px] leading-relaxed text-popover-foreground">
-              <p>Each dot is one endpoint (e.g., "ALT", "Liver weight").</p>
-              <p className="mt-1.5 font-medium">Position shows signal strength:</p>
-              <p><span className="text-muted-foreground">&rarr;</span> Right = larger effect ({getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")})</p>
-              <p><span className="text-muted-foreground">&uarr;</span> Up = more statistically significant</p>
-              <p className="mt-1.5 font-medium">Reference lines:</p>
-              <p><span className="text-muted-foreground">&mdash;</span> Vertical at |{getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}| = 0.8 (large effect)</p>
-              <p><span className="text-muted-foreground">&mdash;</span> Horizontal at p = 0.05 (significance)</p>
-              <p className="mt-1.5 font-medium">Dot color:</p>
-              <p><span className="text-muted-foreground">&bull;</span> Gray = effect at higher doses only</p>
-              <p><span style={{ color: "rgba(248,113,113,0.8)" }}>&bull;</span> Warm = NOAEL below lowest tested dose</p>
-              <p className="pl-3 text-muted-foreground">(effect present at all doses)</p>
+              <p>One dot per endpoint, showing the strongest signal across timepoints and sexes.</p>
+              <p className="mt-1.5"><span className="text-muted-foreground">&rarr;</span> Effect size percentile <span className="text-muted-foreground">(continuous and incidence ranked separately)</span></p>
+              <p><span className="text-muted-foreground">&uarr;</span> Lower p-value (pairwise vs. control)</p>
               <p className="mt-1.5 italic text-muted-foreground">
-                Upper-right quadrant = investigate first. Dots show the strongest result across all timepoints and sexes for each endpoint.
+                Investigate the upper-right quadrant first.
               </p>
             </div>
           </div>

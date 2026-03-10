@@ -2303,6 +2303,14 @@ function VolcanoScatter({
             {titleCase(os)}
           </span>
         ))}
+        {points.some((p) => p.y > 20) && (
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <svg width="8" height="8" viewBox="-1.1 -1.1 2.2 2.2" className="inline-block">
+              <path d="M-0.917,-0.4 A1,1,0,1,1,0.917,-0.4 Z" fill="#9CA3AF"/>
+            </svg>
+            p &lt; 10⁻²⁰
+          </span>
+        )}
       </div>
     </div>
   );
