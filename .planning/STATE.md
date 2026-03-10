@@ -44,10 +44,11 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: BUG-17 fix committed (f9f3440) — domain-aware effect size labels across 9 files.
-Uncommitted work: 8 files — annotation system (audit_log, override_reader, annotations router), pattern/onset dose dropdown refactors, MortalityDataSettings, useAnnotations, annotations-api. These are from a prior session and were not committed.
-Next action: Pick from TODO.md. Mark BUG-17 as resolved. Consider committing the 8 uncommitted files (review first — they may be WIP).
+Last session: 2026-03-10
+Stopped at: Wrote syndrome correlation validation spec. No code changes — review + planning session.
+Session work: (1) Post-impl review of organ-correlation-matrix.md — all pass, archived. (2) Wrote `docs/incoming/syndrome-correlation-validation.md` — full implementation spec for syndrome co-variation pane.
+Resume file: .planning/phases/exploratory/.continue-here.md
+Next action: Implement syndrome-correlation-validation.md Phase 1 (backend computation).
 
 ---
-*Last updated: 2026-03-09 — BUG-17 fix committed, 8 unrelated files still uncommitted*
+*Last updated: 2026-03-10 — syndrome correlation validation spec written, organ-correlation-matrix archived*
