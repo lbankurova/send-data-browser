@@ -107,16 +107,11 @@ Computed in `_compute_incidence_recovery()` from incidence ratios:
 
 With n=2, Hedges' g has a 95% CI of roughly g +/- 2.0. The verdict label makes this uncertainty visible without requiring reviewers to interpret CIs.
 
-### Histopath examination heuristic (Fix 4, M-3)
+### Histopath examination counting
 
-`computeGroupStats()` determines how many subjects were "examined" for a finding:
+`computeGroupStats()` determines how many subjects were "examined" for a finding using per-subject MI findings presence: a subject with ANY entry in their `findings` dict (including NORMAL) counts as examined. In SEND, NORMAL is recorded for every microscopically examined tissue, so non-empty findings ≡ examined. Subjects with an empty `findings` dict (e.g., satellite/TK animals) are excluded from the denominator.
 
-| Data available | Method | Source |
-|----------------|--------|--------|
-| MA domain present | Count subjects with MA records for specimen | `ma_examined` field from backend |
-| MA domain absent | If any subject in group has any finding → all examined | Original heuristic (fallback) |
-
-The backend `get_histopath_subjects` endpoint sets `ma_examined: true` per subject when the MA domain contains a record for that specimen+subject. This handles the case where all animals were examined but none had findings (all normal) — previously misclassified as `not_examined`.
+The backend `get_histopath_subjects` endpoint also sets `ma_examined` per subject (true when the MA domain has a record for that specimen+subject), but this field is not used for the examined count — MI findings are the ground truth for microscopic examination status.
 
 ## Data flow
 

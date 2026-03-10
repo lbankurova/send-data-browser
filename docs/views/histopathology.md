@@ -332,7 +332,7 @@ Rendered when `heatmapData` exists and has findings.
   5. **Not observed** (main incidence = 0 AND recovery incidence = 0): empty cell with `bg-gray-50`.
   Otherwise, same rendering as main cells (heat-colored by incidence/severity). Empty recovery cells (no data at all) use `bg-gray-50` instead of `bg-gray-100`.
 
-**Examined count heuristic:** The `examined` count for recovery cells is determined by: if ANY subject at a dose level has any finding, then all subjects at that dose level are considered examined. This avoids undercounting when tissue was examined but no findings were recorded.
+**Examined count:** Per-subject MI findings check. A subject counts as "examined" if their `findings` dict is non-empty (includes NORMAL). In SEND, NORMAL is recorded for every microscopically examined tissue, so non-empty findings ≡ examined. Satellite (TK) animals with empty findings are correctly excluded from the denominator.
 
 **Neutral heat color scale:** `getNeutralHeatColor()` — 5 distinct grades: transparent (minimal, grade 1), `#D1D5DB` (mild), `#9CA3AF` (moderate), `#6B7280` (marked), `#4B5563` (severe). Minimal gets no color to reinforce low clinical significance; thresholds are integer-aligned (`>= 2`, `>= 3`, etc.). Incidence mode uses `getNeutralHeatColor01()` (0-1 scale).
 
