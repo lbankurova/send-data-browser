@@ -6,6 +6,7 @@ computation with file-based caching.
 
 import json
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -86,26 +87,42 @@ def _load_mortality(study_id: str) -> dict | None:
         return json.load(f)
 
 
+@lru_cache(maxsize=64)
+def _load_from_disk_cached(file_path: str, _mtime_ns: int):
+    """Deserialize a JSON file with in-memory LRU caching.
+
+    Keyed on (path, mtime) so cache auto-invalidates when the file changes.
+    """
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+
 def _load_from_disk(study_id: str, file_name: str):
-    """Load a JSON file from generated/ or scenarios/ fallback."""
+    """Load a JSON file from generated/ or scenarios/ fallback, cached in memory."""
     file_path = GENERATED_DIR / study_id / file_name
     if not file_path.exists():
         file_path = SCENARIOS_DIR / study_id / file_name
     if not file_path.exists():
         return None
-    with open(file_path, "r") as f:
-        return json.load(f)
+    mtime_ns = file_path.stat().st_mtime_ns
+    return _load_from_disk_cached(str(file_path), mtime_ns)
 
 
 def _apply_overrides(data, study_id: str, view_name: str):
     """Apply user annotation overrides to view data before serving.
 
     Currently handles pattern overrides for unified-findings.
+    Works on copies to avoid mutating LRU-cached originals.
     """
     if view_name == "unified-findings" and isinstance(data, dict):
         findings = data.get("findings")
         if findings and isinstance(findings, list):
-            data["findings"] = apply_pattern_overrides(findings, study_id)
+            # Shallow-copy each finding — apply_pattern_overrides mutates dicts
+            # in-place (pattern, onset_dose, treatment_related, finding_class,
+            # confidence). Without copies, the LRU cache would hold mutated
+            # findings, causing stale-override detection to delete annotations.
+            findings_copy = [{**f} for f in findings]
+            return {**data, "findings": apply_pattern_overrides(findings_copy, study_id)}
     return data
 
 
@@ -131,6 +148,7 @@ def regenerate_study(study_id: str):
 
     # Invalidate caches after regeneration
     invalidate_study(study_id)
+    _load_from_disk_cached.cache_clear()
     from routers.analyses import invalidate_findings_cache
     invalidate_findings_cache(study_id)
 
