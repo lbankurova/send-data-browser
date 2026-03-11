@@ -15,7 +15,10 @@ from pydantic import BaseModel
 
 from services.study_discovery import StudyInfo
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
-from services.analysis.analysis_cache import read_cache, write_cache, invalidate_study
+from services.analysis.analysis_cache import (
+    read_cache, write_cache, invalidate_study,
+    acquire_compute_lock, release_compute_lock, wait_for_cache,
+)
 from services.analysis.override_reader import (
     get_last_dosing_day_override,
     apply_pattern_overrides,
@@ -229,28 +232,49 @@ def get_analysis_view(
     if cached is not None:
         return _apply_overrides(cached, study_id, view_name)
 
-    # Cache miss -> compute all views for this settings combination
-    log.info("Cache miss for %s/%s (hash=%s), computing...", study_id, view_name, cache_key)
-    study = _resolve_study(study_id)
+    # Cache miss -> file-based lock prevents thundering herd across workers.
+    # Lock is keyed on settings_hash: only requests with the SAME non-default
+    # settings are serialized; different settings combinations run independently.
+    if acquire_compute_lock(study_id, cache_key):
+        try:
+            # Double-check: cache may have appeared between our read and lock
+            cached = read_cache(study_id, cache_key, view_name)
+            if cached is not None:
+                return _apply_overrides(cached, study_id, view_name)
 
-    from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
+            log.info("Cache miss for %s/%s (hash=%s), computing...", study_id, view_name, cache_key)
+            study = _resolve_study(study_id)
 
-    pipeline = ParameterizedAnalysisPipeline(study)
-    mortality = _load_mortality(study_id)
-    early_deaths = mortality.get("early_death_subjects") if mortality else None
-    ldd_override = get_last_dosing_day_override(study_id)
+            from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
 
-    views = pipeline.run(
-        settings,
-        early_death_subjects=early_deaths,
-        last_dosing_day_override=ldd_override,
-        mortality=mortality,
-    )
-    write_cache(study_id, cache_key, views)
+            pipeline = ParameterizedAnalysisPipeline(study)
+            mortality = _load_mortality(study_id)
+            early_deaths = mortality.get("early_death_subjects") if mortality else None
+            ldd_override = get_last_dosing_day_override(study_id)
 
-    # Return the requested view (convert slug to underscore key)
+            views = pipeline.run(
+                settings,
+                early_death_subjects=early_deaths,
+                last_dosing_day_override=ldd_override,
+                mortality=mortality,
+            )
+            write_cache(study_id, cache_key, views)
+        finally:
+            release_compute_lock(study_id, cache_key)
+    else:
+        # Another worker/thread is computing — wait for result
+        log.info("Waiting for pipeline %s/%s (hash=%s)...", study_id, view_name, cache_key)
+        cached = wait_for_cache(study_id, cache_key, view_name)
+        if cached is not None:
+            return _apply_overrides(cached, study_id, view_name)
+        raise HTTPException(status_code=503, detail="Pipeline computation timed out")
+
+    # Return the requested view from cache
     view_key = view_name.replace("-", "_")
-    return _apply_overrides(views[view_key], study_id, view_name)
+    cached = read_cache(study_id, cache_key, view_name)
+    if cached is None:
+        raise HTTPException(status_code=500, detail=f"Pipeline did not produce {view_name}")
+    return _apply_overrides(cached, study_id, view_name)
 
 
 # ---------------------------------------------------------------------------

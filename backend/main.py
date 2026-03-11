@@ -101,6 +101,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SENDEX — SEND Explorer", version="0.1.0", lifespan=lifespan)
 
+
+@app.middleware("http")
+async def log_request_timing(request, call_next):
+    import time
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed = time.perf_counter() - start
+    path = request.url.path
+    if path.startswith("/api/"):
+        size = response.headers.get("content-length", "?")
+        enc = response.headers.get("content-encoding", "none")
+        print(f"[PERF] {request.method} {path} → {response.status_code} {elapsed*1000:.0f}ms size={size} enc={enc}")
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
