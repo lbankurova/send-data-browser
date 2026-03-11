@@ -7,7 +7,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.724699,
+    "p_value": 0.724691,
     "effect_size": -0.4427,
     "direction": "down",
     "severity": "adverse",
@@ -52,24 +52,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.724706,
-        "p_value_adj": 0.724706,
+        "p_value": 0.72469,
+        "p_value_adj": 0.72469,
         "statistic": null,
         "cohens_d": -0.4427,
         "p_value_welch": 0.315037
       },
       {
         "dose_level": 2,
-        "p_value": 0.041049,
-        "p_value_adj": 0.041049,
+        "p_value": 0.041028,
+        "p_value_adj": 0.041028,
         "statistic": null,
         "cohens_d": -1.0037,
         "p_value_welch": 0.032857
       },
       {
         "dose_level": 3,
-        "p_value": 1.8e-05,
-        "p_value_adj": 1.8e-05,
+        "p_value": 3.8e-05,
+        "p_value_adj": 3.8e-05,
         "statistic": null,
         "cohens_d": -2.4679,
         "p_value_welch": 2e-05
@@ -86,7 +86,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.041033,
+    "p_value": 0.041092,
     "effect_size": -1.0037,
     "direction": "down",
     "severity": "adverse",
@@ -131,24 +131,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.724706,
-        "p_value_adj": 0.724706,
+        "p_value": 0.72469,
+        "p_value_adj": 0.72469,
         "statistic": null,
         "cohens_d": -0.4427,
         "p_value_welch": 0.315037
       },
       {
         "dose_level": 2,
-        "p_value": 0.041049,
-        "p_value_adj": 0.041049,
+        "p_value": 0.041028,
+        "p_value_adj": 0.041028,
         "statistic": null,
         "cohens_d": -1.0037,
         "p_value_welch": 0.032857
       },
       {
         "dose_level": 3,
-        "p_value": 1.8e-05,
-        "p_value_adj": 1.8e-05,
+        "p_value": 3.8e-05,
+        "p_value_adj": 3.8e-05,
         "statistic": null,
         "cohens_d": -2.4679,
         "p_value_welch": 2e-05
@@ -165,7 +165,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 1.7e-05,
+    "p_value": 2.1e-05,
     "effect_size": -2.4679,
     "direction": "down",
     "severity": "adverse",
@@ -210,24 +210,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.724706,
-        "p_value_adj": 0.724706,
+        "p_value": 0.72469,
+        "p_value_adj": 0.72469,
         "statistic": null,
         "cohens_d": -0.4427,
         "p_value_welch": 0.315037
       },
       {
         "dose_level": 2,
-        "p_value": 0.041049,
-        "p_value_adj": 0.041049,
+        "p_value": 0.041028,
+        "p_value_adj": 0.041028,
         "statistic": null,
         "cohens_d": -1.0037,
         "p_value_welch": 0.032857
       },
       {
         "dose_level": 3,
-        "p_value": 1.8e-05,
-        "p_value_adj": 1.8e-05,
+        "p_value": 3.8e-05,
+        "p_value_adj": 3.8e-05,
         "statistic": null,
         "cohens_d": -2.4679,
         "p_value_welch": 2e-05
@@ -244,7 +244,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.976385,
+    "p_value": 0.976399,
     "effect_size": -0.1348,
     "direction": "down",
     "severity": "adverse",
@@ -289,24 +289,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.976395,
-        "p_value_adj": 0.976395,
+        "p_value": 0.976401,
+        "p_value_adj": 0.976401,
         "statistic": null,
         "cohens_d": -0.1348,
         "p_value_welch": 0.756855
       },
       {
         "dose_level": 2,
-        "p_value": 0.017049,
-        "p_value_adj": 0.017049,
+        "p_value": 0.017022,
+        "p_value_adj": 0.017022,
         "statistic": null,
         "cohens_d": -1.235,
         "p_value_welch": 0.010617
       },
       {
         "dose_level": 3,
-        "p_value": 0.000278,
-        "p_value_adj": 0.000278,
+        "p_value": 0.000264,
+        "p_value_adj": 0.000264,
         "statistic": null,
         "cohens_d": -1.6925,
         "p_value_welch": 0.000945
@@ -323,7 +323,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.016983,
+    "p_value": 0.017102,
     "effect_size": -1.235,
     "direction": "down",
     "severity": "adverse",
@@ -368,24 +368,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.976395,
-        "p_value_adj": 0.976395,
+        "p_value": 0.976401,
+        "p_value_adj": 0.976401,
         "statistic": null,
         "cohens_d": -0.1348,
         "p_value_welch": 0.756855
       },
       {
         "dose_level": 2,
-        "p_value": 0.017049,
-        "p_value_adj": 0.017049,
+        "p_value": 0.017022,
+        "p_value_adj": 0.017022,
         "statistic": null,
         "cohens_d": -1.235,
         "p_value_welch": 0.010617
       },
       {
         "dose_level": 3,
-        "p_value": 0.000278,
-        "p_value_adj": 0.000278,
+        "p_value": 0.000264,
+        "p_value_adj": 0.000264,
         "statistic": null,
         "cohens_d": -1.6925,
         "p_value_welch": 0.000945
@@ -402,7 +402,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.000318,
+    "p_value": 0.000245,
     "effect_size": -1.6925,
     "direction": "down",
     "severity": "adverse",
@@ -447,24 +447,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.976395,
-        "p_value_adj": 0.976395,
+        "p_value": 0.976401,
+        "p_value_adj": 0.976401,
         "statistic": null,
         "cohens_d": -0.1348,
         "p_value_welch": 0.756855
       },
       {
         "dose_level": 2,
-        "p_value": 0.017049,
-        "p_value_adj": 0.017049,
+        "p_value": 0.017022,
+        "p_value_adj": 0.017022,
         "statistic": null,
         "cohens_d": -1.235,
         "p_value_welch": 0.010617
       },
       {
         "dose_level": 3,
-        "p_value": 0.000278,
-        "p_value_adj": 0.000278,
+        "p_value": 0.000264,
+        "p_value_adj": 0.000264,
         "statistic": null,
         "cohens_d": -1.6925,
         "p_value_welch": 0.000945
@@ -481,7 +481,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.062537,
+    "p_value": 0.062497,
     "effect_size": 1.0435,
     "direction": "up",
     "severity": "warning",
@@ -526,16 +526,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.062495,
-        "p_value_adj": 0.062495,
+        "p_value": 0.062455,
+        "p_value_adj": 0.062455,
         "statistic": null,
         "cohens_d": 1.0435,
         "p_value_welch": 0.027507
       },
       {
         "dose_level": 2,
-        "p_value": 0.118394,
-        "p_value_adj": 0.118394,
+        "p_value": 0.118328,
+        "p_value_adj": 0.118328,
         "statistic": null,
         "cohens_d": 1.1881,
         "p_value_welch": 0.014882
@@ -560,7 +560,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.118355,
+    "p_value": 0.118351,
     "effect_size": 1.1881,
     "direction": "up",
     "severity": "warning",
@@ -605,16 +605,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.062495,
-        "p_value_adj": 0.062495,
+        "p_value": 0.062455,
+        "p_value_adj": 0.062455,
         "statistic": null,
         "cohens_d": 1.0435,
         "p_value_welch": 0.027507
       },
       {
         "dose_level": 2,
-        "p_value": 0.118394,
-        "p_value_adj": 0.118394,
+        "p_value": 0.118328,
+        "p_value_adj": 0.118328,
         "statistic": null,
         "cohens_d": 1.1881,
         "p_value_welch": 0.014882
@@ -684,16 +684,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.062495,
-        "p_value_adj": 0.062495,
+        "p_value": 0.062455,
+        "p_value_adj": 0.062455,
         "statistic": null,
         "cohens_d": 1.0435,
         "p_value_welch": 0.027507
       },
       {
         "dose_level": 2,
-        "p_value": 0.118394,
-        "p_value_adj": 0.118394,
+        "p_value": 0.118328,
+        "p_value_adj": 0.118328,
         "statistic": null,
         "cohens_d": 1.1881,
         "p_value_welch": 0.014882
@@ -718,7 +718,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.282852,
+    "p_value": 0.282814,
     "effect_size": -0.8771,
     "direction": "up",
     "severity": "adverse",
@@ -763,24 +763,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.282779,
-        "p_value_adj": 0.282779,
+        "p_value": 0.282828,
+        "p_value_adj": 0.282828,
         "statistic": null,
         "cohens_d": -0.8771,
         "p_value_welch": 0.057148
       },
       {
         "dose_level": 2,
-        "p_value": 0.106711,
-        "p_value_adj": 0.106711,
+        "p_value": 0.10665,
+        "p_value_adj": 0.10665,
         "statistic": null,
         "cohens_d": 0.7851,
         "p_value_welch": 0.086041
       },
       {
         "dose_level": 3,
-        "p_value": 1e-06,
-        "p_value_adj": 1e-06,
+        "p_value": 2e-06,
+        "p_value_adj": 2e-06,
         "statistic": null,
         "cohens_d": 2.8113,
         "p_value_welch": 4e-06
@@ -797,7 +797,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.106706,
+    "p_value": 0.106643,
     "effect_size": 0.7851,
     "direction": "up",
     "severity": "adverse",
@@ -842,24 +842,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.282779,
-        "p_value_adj": 0.282779,
+        "p_value": 0.282828,
+        "p_value_adj": 0.282828,
         "statistic": null,
         "cohens_d": -0.8771,
         "p_value_welch": 0.057148
       },
       {
         "dose_level": 2,
-        "p_value": 0.106711,
-        "p_value_adj": 0.106711,
+        "p_value": 0.10665,
+        "p_value_adj": 0.10665,
         "statistic": null,
         "cohens_d": 0.7851,
         "p_value_welch": 0.086041
       },
       {
         "dose_level": 3,
-        "p_value": 1e-06,
-        "p_value_adj": 1e-06,
+        "p_value": 2e-06,
+        "p_value_adj": 2e-06,
         "statistic": null,
         "cohens_d": 2.8113,
         "p_value_welch": 4e-06
@@ -921,24 +921,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.282779,
-        "p_value_adj": 0.282779,
+        "p_value": 0.282828,
+        "p_value_adj": 0.282828,
         "statistic": null,
         "cohens_d": -0.8771,
         "p_value_welch": 0.057148
       },
       {
         "dose_level": 2,
-        "p_value": 0.106711,
-        "p_value_adj": 0.106711,
+        "p_value": 0.10665,
+        "p_value_adj": 0.10665,
         "statistic": null,
         "cohens_d": 0.7851,
         "p_value_welch": 0.086041
       },
       {
         "dose_level": 3,
-        "p_value": 1e-06,
-        "p_value_adj": 1e-06,
+        "p_value": 2e-06,
+        "p_value_adj": 2e-06,
         "statistic": null,
         "cohens_d": 2.8113,
         "p_value_welch": 4e-06
@@ -955,7 +955,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.370653,
+    "p_value": 0.370668,
     "effect_size": 0.7208,
     "direction": "up",
     "severity": "adverse",
@@ -1000,24 +1000,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.370706,
-        "p_value_adj": 0.370706,
+        "p_value": 0.370753,
+        "p_value_adj": 0.370753,
         "statistic": null,
         "cohens_d": 0.7208,
         "p_value_welch": 0.112837
       },
       {
         "dose_level": 2,
-        "p_value": 0.033871,
-        "p_value_adj": 0.033871,
+        "p_value": 0.033828,
+        "p_value_adj": 0.033828,
         "statistic": null,
         "cohens_d": 1.5908,
         "p_value_welch": 0.001937
       },
       {
         "dose_level": 3,
-        "p_value": 0.002105,
-        "p_value_adj": 0.002105,
+        "p_value": 0.002131,
+        "p_value_adj": 0.002131,
         "statistic": null,
         "cohens_d": 1.5123,
         "p_value_welch": 0.006156
@@ -1034,7 +1034,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.033859,
+    "p_value": 0.033829,
     "effect_size": 1.5908,
     "direction": "up",
     "severity": "adverse",
@@ -1079,24 +1079,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.370706,
-        "p_value_adj": 0.370706,
+        "p_value": 0.370753,
+        "p_value_adj": 0.370753,
         "statistic": null,
         "cohens_d": 0.7208,
         "p_value_welch": 0.112837
       },
       {
         "dose_level": 2,
-        "p_value": 0.033871,
-        "p_value_adj": 0.033871,
+        "p_value": 0.033828,
+        "p_value_adj": 0.033828,
         "statistic": null,
         "cohens_d": 1.5908,
         "p_value_welch": 0.001937
       },
       {
         "dose_level": 3,
-        "p_value": 0.002105,
-        "p_value_adj": 0.002105,
+        "p_value": 0.002131,
+        "p_value_adj": 0.002131,
         "statistic": null,
         "cohens_d": 1.5123,
         "p_value_welch": 0.006156
@@ -1113,7 +1113,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.002143,
+    "p_value": 0.002158,
     "effect_size": 1.5123,
     "direction": "up",
     "severity": "adverse",
@@ -1158,24 +1158,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.370706,
-        "p_value_adj": 0.370706,
+        "p_value": 0.370753,
+        "p_value_adj": 0.370753,
         "statistic": null,
         "cohens_d": 0.7208,
         "p_value_welch": 0.112837
       },
       {
         "dose_level": 2,
-        "p_value": 0.033871,
-        "p_value_adj": 0.033871,
+        "p_value": 0.033828,
+        "p_value_adj": 0.033828,
         "statistic": null,
         "cohens_d": 1.5908,
         "p_value_welch": 0.001937
       },
       {
         "dose_level": 3,
-        "p_value": 0.002105,
-        "p_value_adj": 0.002105,
+        "p_value": 0.002131,
+        "p_value_adj": 0.002131,
         "statistic": null,
         "cohens_d": 1.5123,
         "p_value_welch": 0.006156
@@ -1192,7 +1192,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.262369,
+    "p_value": 0.262381,
     "effect_size": -0.665,
     "direction": "up",
     "severity": "adverse",
@@ -1237,24 +1237,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.262429,
-        "p_value_adj": 0.262429,
+        "p_value": 0.262295,
+        "p_value_adj": 0.262295,
         "statistic": null,
         "cohens_d": -0.665,
         "p_value_welch": 0.138446
       },
       {
         "dose_level": 2,
-        "p_value": 0.006039,
-        "p_value_adj": 0.006039,
+        "p_value": 0.006064,
+        "p_value_adj": 0.006064,
         "statistic": null,
         "cohens_d": 1.4477,
         "p_value_welch": 0.003348
       },
       {
         "dose_level": 3,
-        "p_value": 0.000158,
-        "p_value_adj": 0.000158,
+        "p_value": 0.000132,
+        "p_value_adj": 0.000132,
         "statistic": null,
         "cohens_d": 2.1348,
         "p_value_welch": 9.7e-05
@@ -1271,7 +1271,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.006077,
+    "p_value": 0.006058,
     "effect_size": 1.4477,
     "direction": "up",
     "severity": "adverse",
@@ -1316,24 +1316,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.262429,
-        "p_value_adj": 0.262429,
+        "p_value": 0.262295,
+        "p_value_adj": 0.262295,
         "statistic": null,
         "cohens_d": -0.665,
         "p_value_welch": 0.138446
       },
       {
         "dose_level": 2,
-        "p_value": 0.006039,
-        "p_value_adj": 0.006039,
+        "p_value": 0.006064,
+        "p_value_adj": 0.006064,
         "statistic": null,
         "cohens_d": 1.4477,
         "p_value_welch": 0.003348
       },
       {
         "dose_level": 3,
-        "p_value": 0.000158,
-        "p_value_adj": 0.000158,
+        "p_value": 0.000132,
+        "p_value_adj": 0.000132,
         "statistic": null,
         "cohens_d": 2.1348,
         "p_value_welch": 9.7e-05
@@ -1350,7 +1350,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.000131,
+    "p_value": 0.000164,
     "effect_size": 2.1348,
     "direction": "up",
     "severity": "adverse",
@@ -1395,24 +1395,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.262429,
-        "p_value_adj": 0.262429,
+        "p_value": 0.262295,
+        "p_value_adj": 0.262295,
         "statistic": null,
         "cohens_d": -0.665,
         "p_value_welch": 0.138446
       },
       {
         "dose_level": 2,
-        "p_value": 0.006039,
-        "p_value_adj": 0.006039,
+        "p_value": 0.006064,
+        "p_value_adj": 0.006064,
         "statistic": null,
         "cohens_d": 1.4477,
         "p_value_welch": 0.003348
       },
       {
         "dose_level": 3,
-        "p_value": 0.000158,
-        "p_value_adj": 0.000158,
+        "p_value": 0.000132,
+        "p_value_adj": 0.000132,
         "statistic": null,
         "cohens_d": 2.1348,
         "p_value_welch": 9.7e-05
@@ -1474,24 +1474,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.931592,
-        "p_value_adj": 0.931592,
+        "p_value": 0.931591,
+        "p_value_adj": 0.931591,
         "statistic": null,
         "cohens_d": -0.3807,
         "p_value_welch": 0.394792
       },
       {
         "dose_level": 2,
-        "p_value": 0.875974,
-        "p_value_adj": 0.875974,
+        "p_value": 0.876003,
+        "p_value_adj": 0.876003,
         "statistic": null,
         "cohens_d": -0.52,
         "p_value_welch": 0.253432
       },
       {
         "dose_level": 3,
-        "p_value": 0.007326,
-        "p_value_adj": 0.007326,
+        "p_value": 0.007362,
+        "p_value_adj": 0.007362,
         "statistic": null,
         "cohens_d": 1.0852,
         "p_value_welch": 0.038027
@@ -1508,7 +1508,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.875976,
+    "p_value": 0.875999,
     "effect_size": -0.52,
     "direction": "up",
     "severity": "adverse",
@@ -1553,24 +1553,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.931592,
-        "p_value_adj": 0.931592,
+        "p_value": 0.931591,
+        "p_value_adj": 0.931591,
         "statistic": null,
         "cohens_d": -0.3807,
         "p_value_welch": 0.394792
       },
       {
         "dose_level": 2,
-        "p_value": 0.875974,
-        "p_value_adj": 0.875974,
+        "p_value": 0.876003,
+        "p_value_adj": 0.876003,
         "statistic": null,
         "cohens_d": -0.52,
         "p_value_welch": 0.253432
       },
       {
         "dose_level": 3,
-        "p_value": 0.007326,
-        "p_value_adj": 0.007326,
+        "p_value": 0.007362,
+        "p_value_adj": 0.007362,
         "statistic": null,
         "cohens_d": 1.0852,
         "p_value_welch": 0.038027
@@ -1587,7 +1587,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.00744,
+    "p_value": 0.00736,
     "effect_size": 1.0852,
     "direction": "up",
     "severity": "adverse",
@@ -1632,24 +1632,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.931592,
-        "p_value_adj": 0.931592,
+        "p_value": 0.931591,
+        "p_value_adj": 0.931591,
         "statistic": null,
         "cohens_d": -0.3807,
         "p_value_welch": 0.394792
       },
       {
         "dose_level": 2,
-        "p_value": 0.875974,
-        "p_value_adj": 0.875974,
+        "p_value": 0.876003,
+        "p_value_adj": 0.876003,
         "statistic": null,
         "cohens_d": -0.52,
         "p_value_welch": 0.253432
       },
       {
         "dose_level": 3,
-        "p_value": 0.007326,
-        "p_value_adj": 0.007326,
+        "p_value": 0.007362,
+        "p_value_adj": 0.007362,
         "statistic": null,
         "cohens_d": 1.0852,
         "p_value_welch": 0.038027
@@ -1666,7 +1666,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.971665,
+    "p_value": 0.971662,
     "effect_size": 0.1908,
     "direction": "up",
     "severity": "adverse",
@@ -1719,8 +1719,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 1.1e-05,
-        "p_value_adj": 1.1e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": 2.7943,
         "p_value_welch": 4e-06
@@ -1745,7 +1745,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 9e-06,
+    "p_value": 1.1e-05,
     "effect_size": 2.7943,
     "direction": "up",
     "severity": "adverse",
@@ -1798,8 +1798,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 1.1e-05,
-        "p_value_adj": 1.1e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": 2.7943,
         "p_value_welch": 4e-06
@@ -1877,8 +1877,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 1.1e-05,
-        "p_value_adj": 1.1e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": 2.7943,
         "p_value_welch": 4e-06
@@ -1956,16 +1956,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.052857,
-        "p_value_adj": 0.052857,
+        "p_value": 0.052825,
+        "p_value_adj": 0.052825,
         "statistic": null,
         "cohens_d": 1.7327,
         "p_value_welch": 0.001369
       },
       {
         "dose_level": 3,
-        "p_value": 6.6e-05,
-        "p_value_adj": 6.6e-05,
+        "p_value": 6.5e-05,
+        "p_value_adj": 6.5e-05,
         "statistic": null,
         "cohens_d": 1.5933,
         "p_value_welch": 0.005093
@@ -1982,7 +1982,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.052761,
+    "p_value": 0.052767,
     "effect_size": 1.7327,
     "direction": "up",
     "severity": "adverse",
@@ -2035,16 +2035,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.052857,
-        "p_value_adj": 0.052857,
+        "p_value": 0.052825,
+        "p_value_adj": 0.052825,
         "statistic": null,
         "cohens_d": 1.7327,
         "p_value_welch": 0.001369
       },
       {
         "dose_level": 3,
-        "p_value": 6.6e-05,
-        "p_value_adj": 6.6e-05,
+        "p_value": 6.5e-05,
+        "p_value_adj": 6.5e-05,
         "statistic": null,
         "cohens_d": 1.5933,
         "p_value_welch": 0.005093
@@ -2061,7 +2061,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 7.2e-05,
+    "p_value": 7.3e-05,
     "effect_size": 1.5933,
     "direction": "up",
     "severity": "adverse",
@@ -2114,16 +2114,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.052857,
-        "p_value_adj": 0.052857,
+        "p_value": 0.052825,
+        "p_value_adj": 0.052825,
         "statistic": null,
         "cohens_d": 1.7327,
         "p_value_welch": 0.001369
       },
       {
         "dose_level": 3,
-        "p_value": 6.6e-05,
-        "p_value_adj": 6.6e-05,
+        "p_value": 6.5e-05,
+        "p_value_adj": 6.5e-05,
         "statistic": null,
         "cohens_d": 1.5933,
         "p_value_welch": 0.005093
@@ -2193,8 +2193,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.001255,
-        "p_value_adj": 0.001255,
+        "p_value": 0.001314,
+        "p_value_adj": 0.001314,
         "statistic": null,
         "cohens_d": 2.0821,
         "p_value_welch": 0.000284
@@ -2219,7 +2219,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.001269,
+    "p_value": 0.001245,
     "effect_size": 2.0821,
     "direction": "up",
     "severity": "adverse",
@@ -2272,8 +2272,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.001255,
-        "p_value_adj": 0.001255,
+        "p_value": 0.001314,
+        "p_value_adj": 0.001314,
         "statistic": null,
         "cohens_d": 2.0821,
         "p_value_welch": 0.000284
@@ -2351,8 +2351,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.001255,
-        "p_value_adj": 0.001255,
+        "p_value": 0.001314,
+        "p_value_adj": 0.001314,
         "statistic": null,
         "cohens_d": 2.0821,
         "p_value_welch": 0.000284
@@ -2377,7 +2377,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.682651,
+    "p_value": 0.682616,
     "effect_size": -0.3349,
     "direction": "down",
     "severity": "adverse",
@@ -2422,24 +2422,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.682598,
-        "p_value_adj": 0.682598,
+        "p_value": 0.682535,
+        "p_value_adj": 0.682535,
         "statistic": null,
         "cohens_d": -0.3349,
         "p_value_welch": 0.469881
       },
       {
         "dose_level": 2,
-        "p_value": 0.178526,
-        "p_value_adj": 0.178526,
+        "p_value": 0.178463,
+        "p_value_adj": 0.178463,
         "statistic": null,
         "cohens_d": -1.1715,
         "p_value_welch": 0.02036
       },
       {
         "dose_level": 3,
-        "p_value": 0.178703,
-        "p_value_adj": 0.178703,
+        "p_value": 0.178722,
+        "p_value_adj": 0.178722,
         "statistic": null,
         "cohens_d": -0.9867,
         "p_value_welch": 0.043083
@@ -2456,7 +2456,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.178533,
+    "p_value": 0.178627,
     "effect_size": -1.1715,
     "direction": "down",
     "severity": "adverse",
@@ -2501,24 +2501,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.682598,
-        "p_value_adj": 0.682598,
+        "p_value": 0.682535,
+        "p_value_adj": 0.682535,
         "statistic": null,
         "cohens_d": -0.3349,
         "p_value_welch": 0.469881
       },
       {
         "dose_level": 2,
-        "p_value": 0.178526,
-        "p_value_adj": 0.178526,
+        "p_value": 0.178463,
+        "p_value_adj": 0.178463,
         "statistic": null,
         "cohens_d": -1.1715,
         "p_value_welch": 0.02036
       },
       {
         "dose_level": 3,
-        "p_value": 0.178703,
-        "p_value_adj": 0.178703,
+        "p_value": 0.178722,
+        "p_value_adj": 0.178722,
         "statistic": null,
         "cohens_d": -0.9867,
         "p_value_welch": 0.043083
@@ -2535,7 +2535,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.178715,
+    "p_value": 0.178714,
     "effect_size": -0.9867,
     "direction": "down",
     "severity": "adverse",
@@ -2580,24 +2580,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.682598,
-        "p_value_adj": 0.682598,
+        "p_value": 0.682535,
+        "p_value_adj": 0.682535,
         "statistic": null,
         "cohens_d": -0.3349,
         "p_value_welch": 0.469881
       },
       {
         "dose_level": 2,
-        "p_value": 0.178526,
-        "p_value_adj": 0.178526,
+        "p_value": 0.178463,
+        "p_value_adj": 0.178463,
         "statistic": null,
         "cohens_d": -1.1715,
         "p_value_welch": 0.02036
       },
       {
         "dose_level": 3,
-        "p_value": 0.178703,
-        "p_value_adj": 0.178703,
+        "p_value": 0.178722,
+        "p_value_adj": 0.178722,
         "statistic": null,
         "cohens_d": -0.9867,
         "p_value_welch": 0.043083
@@ -2614,7 +2614,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.57087,
+    "p_value": 0.570887,
     "effect_size": 0.536,
     "direction": "down",
     "severity": "warning",
@@ -2659,24 +2659,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.570871,
-        "p_value_adj": 0.570871,
+        "p_value": 0.570852,
+        "p_value_adj": 0.570852,
         "statistic": null,
         "cohens_d": 0.536,
         "p_value_welch": 0.227003
       },
       {
         "dose_level": 2,
-        "p_value": 0.795213,
-        "p_value_adj": 0.795213,
+        "p_value": 0.795277,
+        "p_value_adj": 0.795277,
         "statistic": null,
         "cohens_d": 0.267,
         "p_value_welch": 0.543119
       },
       {
         "dose_level": 3,
-        "p_value": 0.183753,
-        "p_value_adj": 0.183753,
+        "p_value": 0.183739,
+        "p_value_adj": 0.183739,
         "statistic": null,
         "cohens_d": -1.1455,
         "p_value_welch": 0.01716
@@ -2693,7 +2693,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.795254,
+    "p_value": 0.795273,
     "effect_size": 0.267,
     "direction": "down",
     "severity": "warning",
@@ -2738,24 +2738,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.570871,
-        "p_value_adj": 0.570871,
+        "p_value": 0.570852,
+        "p_value_adj": 0.570852,
         "statistic": null,
         "cohens_d": 0.536,
         "p_value_welch": 0.227003
       },
       {
         "dose_level": 2,
-        "p_value": 0.795213,
-        "p_value_adj": 0.795213,
+        "p_value": 0.795277,
+        "p_value_adj": 0.795277,
         "statistic": null,
         "cohens_d": 0.267,
         "p_value_welch": 0.543119
       },
       {
         "dose_level": 3,
-        "p_value": 0.183753,
-        "p_value_adj": 0.183753,
+        "p_value": 0.183739,
+        "p_value_adj": 0.183739,
         "statistic": null,
         "cohens_d": -1.1455,
         "p_value_welch": 0.01716
@@ -2772,7 +2772,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.183727,
+    "p_value": 0.18377,
     "effect_size": -1.1455,
     "direction": "down",
     "severity": "warning",
@@ -2817,24 +2817,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.570871,
-        "p_value_adj": 0.570871,
+        "p_value": 0.570852,
+        "p_value_adj": 0.570852,
         "statistic": null,
         "cohens_d": 0.536,
         "p_value_welch": 0.227003
       },
       {
         "dose_level": 2,
-        "p_value": 0.795213,
-        "p_value_adj": 0.795213,
+        "p_value": 0.795277,
+        "p_value_adj": 0.795277,
         "statistic": null,
         "cohens_d": 0.267,
         "p_value_welch": 0.543119
       },
       {
         "dose_level": 3,
-        "p_value": 0.183753,
-        "p_value_adj": 0.183753,
+        "p_value": 0.183739,
+        "p_value_adj": 0.183739,
         "statistic": null,
         "cohens_d": -1.1455,
         "p_value_welch": 0.01716
@@ -2904,16 +2904,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.558694,
-        "p_value_adj": 0.558694,
+        "p_value": 0.558685,
+        "p_value_adj": 0.558685,
         "statistic": null,
         "cohens_d": 0.5366,
         "p_value_welch": 0.228944
       },
       {
         "dose_level": 3,
-        "p_value": 0.011152,
-        "p_value_adj": 0.011152,
+        "p_value": 0.011139,
+        "p_value_adj": 0.011139,
         "statistic": null,
         "cohens_d": 1.2793,
         "p_value_welch": 0.015293
@@ -2930,7 +2930,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.558667,
+    "p_value": 0.558678,
     "effect_size": 0.5366,
     "direction": "up",
     "severity": "adverse",
@@ -2983,16 +2983,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.558694,
-        "p_value_adj": 0.558694,
+        "p_value": 0.558685,
+        "p_value_adj": 0.558685,
         "statistic": null,
         "cohens_d": 0.5366,
         "p_value_welch": 0.228944
       },
       {
         "dose_level": 3,
-        "p_value": 0.011152,
-        "p_value_adj": 0.011152,
+        "p_value": 0.011139,
+        "p_value_adj": 0.011139,
         "statistic": null,
         "cohens_d": 1.2793,
         "p_value_welch": 0.015293
@@ -3009,7 +3009,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.01114,
+    "p_value": 0.011124,
     "effect_size": 1.2793,
     "direction": "up",
     "severity": "adverse",
@@ -3062,16 +3062,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.558694,
-        "p_value_adj": 0.558694,
+        "p_value": 0.558685,
+        "p_value_adj": 0.558685,
         "statistic": null,
         "cohens_d": 0.5366,
         "p_value_welch": 0.228944
       },
       {
         "dose_level": 3,
-        "p_value": 0.011152,
-        "p_value_adj": 0.011152,
+        "p_value": 0.011139,
+        "p_value_adj": 0.011139,
         "statistic": null,
         "cohens_d": 1.2793,
         "p_value_welch": 0.015293
@@ -3088,7 +3088,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.295559,
+    "p_value": 0.295504,
     "effect_size": -0.7301,
     "direction": "down",
     "severity": "adverse",
@@ -3133,24 +3133,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.295528,
-        "p_value_adj": 0.295528,
+        "p_value": 0.29552,
+        "p_value_adj": 0.29552,
         "statistic": null,
         "cohens_d": -0.7301,
         "p_value_welch": 0.108809
       },
       {
         "dose_level": 2,
-        "p_value": 0.044556,
-        "p_value_adj": 0.044556,
+        "p_value": 0.044546,
+        "p_value_adj": 0.044546,
         "statistic": null,
         "cohens_d": -1.299,
         "p_value_welch": 0.007786
       },
       {
         "dose_level": 3,
-        "p_value": 0.13968,
-        "p_value_adj": 0.13968,
+        "p_value": 0.139645,
+        "p_value_adj": 0.139645,
         "statistic": null,
         "cohens_d": -0.8618,
         "p_value_welch": 0.063577
@@ -3167,7 +3167,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.044564,
+    "p_value": 0.044639,
     "effect_size": -1.299,
     "direction": "down",
     "severity": "adverse",
@@ -3212,24 +3212,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.295528,
-        "p_value_adj": 0.295528,
+        "p_value": 0.29552,
+        "p_value_adj": 0.29552,
         "statistic": null,
         "cohens_d": -0.7301,
         "p_value_welch": 0.108809
       },
       {
         "dose_level": 2,
-        "p_value": 0.044556,
-        "p_value_adj": 0.044556,
+        "p_value": 0.044546,
+        "p_value_adj": 0.044546,
         "statistic": null,
         "cohens_d": -1.299,
         "p_value_welch": 0.007786
       },
       {
         "dose_level": 3,
-        "p_value": 0.13968,
-        "p_value_adj": 0.13968,
+        "p_value": 0.139645,
+        "p_value_adj": 0.139645,
         "statistic": null,
         "cohens_d": -0.8618,
         "p_value_welch": 0.063577
@@ -3246,7 +3246,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.139677,
+    "p_value": 0.139694,
     "effect_size": -0.8618,
     "direction": "down",
     "severity": "adverse",
@@ -3291,24 +3291,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.295528,
-        "p_value_adj": 0.295528,
+        "p_value": 0.29552,
+        "p_value_adj": 0.29552,
         "statistic": null,
         "cohens_d": -0.7301,
         "p_value_welch": 0.108809
       },
       {
         "dose_level": 2,
-        "p_value": 0.044556,
-        "p_value_adj": 0.044556,
+        "p_value": 0.044546,
+        "p_value_adj": 0.044546,
         "statistic": null,
         "cohens_d": -1.299,
         "p_value_welch": 0.007786
       },
       {
         "dose_level": 3,
-        "p_value": 0.13968,
-        "p_value_adj": 0.13968,
+        "p_value": 0.139645,
+        "p_value_adj": 0.139645,
         "statistic": null,
         "cohens_d": -0.8618,
         "p_value_welch": 0.063577
@@ -3325,7 +3325,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.573042,
+    "p_value": 0.573034,
     "effect_size": 0.4669,
     "direction": "up",
     "severity": "adverse",
@@ -3370,24 +3370,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.573072,
-        "p_value_adj": 0.573072,
+        "p_value": 0.573038,
+        "p_value_adj": 0.573038,
         "statistic": null,
         "cohens_d": 0.4669,
         "p_value_welch": 0.291582
       },
       {
         "dose_level": 2,
-        "p_value": 0.976088,
-        "p_value_adj": 0.976088,
+        "p_value": 0.976082,
+        "p_value_adj": 0.976082,
         "statistic": null,
         "cohens_d": 0.2193,
         "p_value_welch": 0.62669
       },
       {
         "dose_level": 3,
-        "p_value": 0.001171,
-        "p_value_adj": 0.001171,
+        "p_value": 0.001151,
+        "p_value_adj": 0.001151,
         "statistic": null,
         "cohens_d": 1.6985,
         "p_value_welch": 0.002494
@@ -3404,7 +3404,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.976086,
+    "p_value": 0.976079,
     "effect_size": 0.2193,
     "direction": "up",
     "severity": "adverse",
@@ -3449,24 +3449,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.573072,
-        "p_value_adj": 0.573072,
+        "p_value": 0.573038,
+        "p_value_adj": 0.573038,
         "statistic": null,
         "cohens_d": 0.4669,
         "p_value_welch": 0.291582
       },
       {
         "dose_level": 2,
-        "p_value": 0.976088,
-        "p_value_adj": 0.976088,
+        "p_value": 0.976082,
+        "p_value_adj": 0.976082,
         "statistic": null,
         "cohens_d": 0.2193,
         "p_value_welch": 0.62669
       },
       {
         "dose_level": 3,
-        "p_value": 0.001171,
-        "p_value_adj": 0.001171,
+        "p_value": 0.001151,
+        "p_value_adj": 0.001151,
         "statistic": null,
         "cohens_d": 1.6985,
         "p_value_welch": 0.002494
@@ -3483,7 +3483,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.001173,
+    "p_value": 0.001172,
     "effect_size": 1.6985,
     "direction": "up",
     "severity": "adverse",
@@ -3528,24 +3528,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.573072,
-        "p_value_adj": 0.573072,
+        "p_value": 0.573038,
+        "p_value_adj": 0.573038,
         "statistic": null,
         "cohens_d": 0.4669,
         "p_value_welch": 0.291582
       },
       {
         "dose_level": 2,
-        "p_value": 0.976088,
-        "p_value_adj": 0.976088,
+        "p_value": 0.976082,
+        "p_value_adj": 0.976082,
         "statistic": null,
         "cohens_d": 0.2193,
         "p_value_welch": 0.62669
       },
       {
         "dose_level": 3,
-        "p_value": 0.001171,
-        "p_value_adj": 0.001171,
+        "p_value": 0.001151,
+        "p_value_adj": 0.001151,
         "statistic": null,
         "cohens_d": 1.6985,
         "p_value_welch": 0.002494
@@ -3562,7 +3562,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.950358,
+    "p_value": 0.950345,
     "effect_size": -0.2509,
     "direction": "up",
     "severity": "adverse",
@@ -3607,24 +3607,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.950348,
-        "p_value_adj": 0.950348,
+        "p_value": 0.950354,
+        "p_value_adj": 0.950354,
         "statistic": null,
         "cohens_d": -0.2509,
         "p_value_welch": 0.565376
       },
       {
         "dose_level": 2,
-        "p_value": 0.309616,
-        "p_value_adj": 0.309616,
+        "p_value": 0.309581,
+        "p_value_adj": 0.309581,
         "statistic": null,
         "cohens_d": 0.5686,
         "p_value_welch": 0.207231
       },
       {
         "dose_level": 3,
-        "p_value": 0.158542,
-        "p_value_adj": 0.158542,
+        "p_value": 0.158534,
+        "p_value_adj": 0.158534,
         "statistic": null,
         "cohens_d": 1.0084,
         "p_value_welch": 0.030819
@@ -3641,7 +3641,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.309597,
+    "p_value": 0.309533,
     "effect_size": 0.5686,
     "direction": "up",
     "severity": "adverse",
@@ -3686,24 +3686,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.950348,
-        "p_value_adj": 0.950348,
+        "p_value": 0.950354,
+        "p_value_adj": 0.950354,
         "statistic": null,
         "cohens_d": -0.2509,
         "p_value_welch": 0.565376
       },
       {
         "dose_level": 2,
-        "p_value": 0.309616,
-        "p_value_adj": 0.309616,
+        "p_value": 0.309581,
+        "p_value_adj": 0.309581,
         "statistic": null,
         "cohens_d": 0.5686,
         "p_value_welch": 0.207231
       },
       {
         "dose_level": 3,
-        "p_value": 0.158542,
-        "p_value_adj": 0.158542,
+        "p_value": 0.158534,
+        "p_value_adj": 0.158534,
         "statistic": null,
         "cohens_d": 1.0084,
         "p_value_welch": 0.030819
@@ -3720,7 +3720,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.158662,
+    "p_value": 0.158617,
     "effect_size": 1.0084,
     "direction": "up",
     "severity": "adverse",
@@ -3765,24 +3765,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.950348,
-        "p_value_adj": 0.950348,
+        "p_value": 0.950354,
+        "p_value_adj": 0.950354,
         "statistic": null,
         "cohens_d": -0.2509,
         "p_value_welch": 0.565376
       },
       {
         "dose_level": 2,
-        "p_value": 0.309616,
-        "p_value_adj": 0.309616,
+        "p_value": 0.309581,
+        "p_value_adj": 0.309581,
         "statistic": null,
         "cohens_d": 0.5686,
         "p_value_welch": 0.207231
       },
       {
         "dose_level": 3,
-        "p_value": 0.158542,
-        "p_value_adj": 0.158542,
+        "p_value": 0.158534,
+        "p_value_adj": 0.158534,
         "statistic": null,
         "cohens_d": 1.0084,
         "p_value_welch": 0.030819
@@ -3799,7 +3799,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.949152,
+    "p_value": 0.949143,
     "effect_size": -0.2626,
     "direction": "up",
     "severity": "adverse",
@@ -3844,24 +3844,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.949157,
-        "p_value_adj": 0.949157,
+        "p_value": 0.949134,
+        "p_value_adj": 0.949134,
         "statistic": null,
         "cohens_d": -0.2626,
         "p_value_welch": 0.548787
       },
       {
         "dose_level": 2,
-        "p_value": 0.299623,
-        "p_value_adj": 0.299623,
+        "p_value": 0.299669,
+        "p_value_adj": 0.299669,
         "statistic": null,
         "cohens_d": 0.5596,
         "p_value_welch": 0.211762
       },
       {
         "dose_level": 3,
-        "p_value": 0.181627,
-        "p_value_adj": 0.181627,
+        "p_value": 0.181676,
+        "p_value_adj": 0.181676,
         "statistic": null,
         "cohens_d": 0.8655,
         "p_value_welch": 0.058736
@@ -3878,7 +3878,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.299686,
+    "p_value": 0.299629,
     "effect_size": 0.5596,
     "direction": "up",
     "severity": "adverse",
@@ -3923,24 +3923,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.949157,
-        "p_value_adj": 0.949157,
+        "p_value": 0.949134,
+        "p_value_adj": 0.949134,
         "statistic": null,
         "cohens_d": -0.2626,
         "p_value_welch": 0.548787
       },
       {
         "dose_level": 2,
-        "p_value": 0.299623,
-        "p_value_adj": 0.299623,
+        "p_value": 0.299669,
+        "p_value_adj": 0.299669,
         "statistic": null,
         "cohens_d": 0.5596,
         "p_value_welch": 0.211762
       },
       {
         "dose_level": 3,
-        "p_value": 0.181627,
-        "p_value_adj": 0.181627,
+        "p_value": 0.181676,
+        "p_value_adj": 0.181676,
         "statistic": null,
         "cohens_d": 0.8655,
         "p_value_welch": 0.058736
@@ -3957,7 +3957,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.181723,
+    "p_value": 0.181639,
     "effect_size": 0.8655,
     "direction": "up",
     "severity": "adverse",
@@ -4002,24 +4002,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.949157,
-        "p_value_adj": 0.949157,
+        "p_value": 0.949134,
+        "p_value_adj": 0.949134,
         "statistic": null,
         "cohens_d": -0.2626,
         "p_value_welch": 0.548787
       },
       {
         "dose_level": 2,
-        "p_value": 0.299623,
-        "p_value_adj": 0.299623,
+        "p_value": 0.299669,
+        "p_value_adj": 0.299669,
         "statistic": null,
         "cohens_d": 0.5596,
         "p_value_welch": 0.211762
       },
       {
         "dose_level": 3,
-        "p_value": 0.181627,
-        "p_value_adj": 0.181627,
+        "p_value": 0.181676,
+        "p_value_adj": 0.181676,
         "statistic": null,
         "cohens_d": 0.8655,
         "p_value_welch": 0.058736
@@ -4036,7 +4036,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.562782,
+    "p_value": 0.562784,
     "effect_size": -0.5387,
     "direction": "down",
     "severity": "adverse",
@@ -4081,24 +4081,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.562783,
-        "p_value_adj": 0.562783,
+        "p_value": 0.562794,
+        "p_value_adj": 0.562794,
         "statistic": null,
         "cohens_d": -0.5387,
         "p_value_welch": 0.250724
       },
       {
         "dose_level": 2,
-        "p_value": 0.004137,
-        "p_value_adj": 0.004137,
+        "p_value": 0.00412,
+        "p_value_adj": 0.00412,
         "statistic": null,
         "cohens_d": -1.6442,
         "p_value_welch": 0.001551
       },
       {
         "dose_level": 3,
-        "p_value": 0.259737,
-        "p_value_adj": 0.259737,
+        "p_value": 0.259746,
+        "p_value_adj": 0.259746,
         "statistic": null,
         "cohens_d": -0.8164,
         "p_value_welch": 0.090743
@@ -4115,7 +4115,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.004118,
+    "p_value": 0.004072,
     "effect_size": -1.6442,
     "direction": "down",
     "severity": "adverse",
@@ -4160,24 +4160,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.562783,
-        "p_value_adj": 0.562783,
+        "p_value": 0.562794,
+        "p_value_adj": 0.562794,
         "statistic": null,
         "cohens_d": -0.5387,
         "p_value_welch": 0.250724
       },
       {
         "dose_level": 2,
-        "p_value": 0.004137,
-        "p_value_adj": 0.004137,
+        "p_value": 0.00412,
+        "p_value_adj": 0.00412,
         "statistic": null,
         "cohens_d": -1.6442,
         "p_value_welch": 0.001551
       },
       {
         "dose_level": 3,
-        "p_value": 0.259737,
-        "p_value_adj": 0.259737,
+        "p_value": 0.259746,
+        "p_value_adj": 0.259746,
         "statistic": null,
         "cohens_d": -0.8164,
         "p_value_welch": 0.090743
@@ -4194,7 +4194,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.25985,
+    "p_value": 0.259697,
     "effect_size": -0.8164,
     "direction": "down",
     "severity": "adverse",
@@ -4239,24 +4239,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.562783,
-        "p_value_adj": 0.562783,
+        "p_value": 0.562794,
+        "p_value_adj": 0.562794,
         "statistic": null,
         "cohens_d": -0.5387,
         "p_value_welch": 0.250724
       },
       {
         "dose_level": 2,
-        "p_value": 0.004137,
-        "p_value_adj": 0.004137,
+        "p_value": 0.00412,
+        "p_value_adj": 0.00412,
         "statistic": null,
         "cohens_d": -1.6442,
         "p_value_welch": 0.001551
       },
       {
         "dose_level": 3,
-        "p_value": 0.259737,
-        "p_value_adj": 0.259737,
+        "p_value": 0.259746,
+        "p_value_adj": 0.259746,
         "statistic": null,
         "cohens_d": -0.8164,
         "p_value_welch": 0.090743
@@ -4273,7 +4273,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.004359,
+    "p_value": 0.004303,
     "effect_size": 1.3885,
     "direction": "up",
     "severity": "adverse",
@@ -4326,8 +4326,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.528423,
-        "p_value_adj": 0.528423,
+        "p_value": 0.528512,
+        "p_value_adj": 0.528512,
         "statistic": null,
         "cohens_d": 0.5179,
         "p_value_welch": 0.243259
@@ -4352,7 +4352,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.528466,
+    "p_value": 0.528486,
     "effect_size": 0.5179,
     "direction": "up",
     "severity": "adverse",
@@ -4405,8 +4405,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.528423,
-        "p_value_adj": 0.528423,
+        "p_value": 0.528512,
+        "p_value_adj": 0.528512,
         "statistic": null,
         "cohens_d": 0.5179,
         "p_value_welch": 0.243259
@@ -4484,8 +4484,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.528423,
-        "p_value_adj": 0.528423,
+        "p_value": 0.528512,
+        "p_value_adj": 0.528512,
         "statistic": null,
         "cohens_d": 0.5179,
         "p_value_welch": 0.243259
@@ -4510,7 +4510,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.53981,
+    "p_value": 0.53976,
     "effect_size": -0.5766,
     "direction": "down",
     "severity": "adverse",
@@ -4555,16 +4555,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.539789,
-        "p_value_adj": 0.539789,
+        "p_value": 0.539746,
+        "p_value_adj": 0.539746,
         "statistic": null,
         "cohens_d": -0.5766,
         "p_value_welch": 0.205049
       },
       {
         "dose_level": 2,
-        "p_value": 0.559598,
-        "p_value_adj": 0.559598,
+        "p_value": 0.559565,
+        "p_value_adj": 0.559565,
         "statistic": null,
         "cohens_d": -0.4447,
         "p_value_welch": 0.322937
@@ -4589,7 +4589,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.559541,
+    "p_value": 0.55955,
     "effect_size": -0.4447,
     "direction": "down",
     "severity": "adverse",
@@ -4634,16 +4634,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.539789,
-        "p_value_adj": 0.539789,
+        "p_value": 0.539746,
+        "p_value_adj": 0.539746,
         "statistic": null,
         "cohens_d": -0.5766,
         "p_value_welch": 0.205049
       },
       {
         "dose_level": 2,
-        "p_value": 0.559598,
-        "p_value_adj": 0.559598,
+        "p_value": 0.559565,
+        "p_value_adj": 0.559565,
         "statistic": null,
         "cohens_d": -0.4447,
         "p_value_welch": 0.322937
@@ -4668,7 +4668,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 6e-06,
+    "p_value": 3e-06,
     "effect_size": -4.4029,
     "direction": "down",
     "severity": "adverse",
@@ -4713,16 +4713,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.539789,
-        "p_value_adj": 0.539789,
+        "p_value": 0.539746,
+        "p_value_adj": 0.539746,
         "statistic": null,
         "cohens_d": -0.5766,
         "p_value_welch": 0.205049
       },
       {
         "dose_level": 2,
-        "p_value": 0.559598,
-        "p_value_adj": 0.559598,
+        "p_value": 0.559565,
+        "p_value_adj": 0.559565,
         "statistic": null,
         "cohens_d": -0.4447,
         "p_value_welch": 0.322937
@@ -4747,7 +4747,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.997311,
+    "p_value": 0.997309,
     "effect_size": -0.0627,
     "direction": "down",
     "severity": "adverse",
@@ -4792,24 +4792,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.99731,
-        "p_value_adj": 0.99731,
+        "p_value": 0.997307,
+        "p_value_adj": 0.997307,
         "statistic": null,
         "cohens_d": -0.0627,
         "p_value_welch": 0.890786
       },
       {
         "dose_level": 2,
-        "p_value": 0.811673,
-        "p_value_adj": 0.811673,
+        "p_value": 0.811641,
+        "p_value_adj": 0.811641,
         "statistic": null,
         "cohens_d": -0.3281,
         "p_value_welch": 0.468146
       },
       {
         "dose_level": 3,
-        "p_value": 0.003119,
-        "p_value_adj": 0.003119,
+        "p_value": 0.003133,
+        "p_value_adj": 0.003133,
         "statistic": null,
         "cohens_d": -1.6981,
         "p_value_welch": 0.001704
@@ -4826,7 +4826,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.811628,
+    "p_value": 0.811679,
     "effect_size": -0.3281,
     "direction": "down",
     "severity": "adverse",
@@ -4871,24 +4871,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.99731,
-        "p_value_adj": 0.99731,
+        "p_value": 0.997307,
+        "p_value_adj": 0.997307,
         "statistic": null,
         "cohens_d": -0.0627,
         "p_value_welch": 0.890786
       },
       {
         "dose_level": 2,
-        "p_value": 0.811673,
-        "p_value_adj": 0.811673,
+        "p_value": 0.811641,
+        "p_value_adj": 0.811641,
         "statistic": null,
         "cohens_d": -0.3281,
         "p_value_welch": 0.468146
       },
       {
         "dose_level": 3,
-        "p_value": 0.003119,
-        "p_value_adj": 0.003119,
+        "p_value": 0.003133,
+        "p_value_adj": 0.003133,
         "statistic": null,
         "cohens_d": -1.6981,
         "p_value_welch": 0.001704
@@ -4905,7 +4905,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.003185,
+    "p_value": 0.003197,
     "effect_size": -1.6981,
     "direction": "down",
     "severity": "adverse",
@@ -4950,24 +4950,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.99731,
-        "p_value_adj": 0.99731,
+        "p_value": 0.997307,
+        "p_value_adj": 0.997307,
         "statistic": null,
         "cohens_d": -0.0627,
         "p_value_welch": 0.890786
       },
       {
         "dose_level": 2,
-        "p_value": 0.811673,
-        "p_value_adj": 0.811673,
+        "p_value": 0.811641,
+        "p_value_adj": 0.811641,
         "statistic": null,
         "cohens_d": -0.3281,
         "p_value_welch": 0.468146
       },
       {
         "dose_level": 3,
-        "p_value": 0.003119,
-        "p_value_adj": 0.003119,
+        "p_value": 0.003133,
+        "p_value_adj": 0.003133,
         "statistic": null,
         "cohens_d": -1.6981,
         "p_value_welch": 0.001704
@@ -4984,7 +4984,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.878922,
+    "p_value": 0.878941,
     "effect_size": -0.2802,
     "direction": "down",
     "severity": "adverse",
@@ -5029,24 +5029,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878912,
-        "p_value_adj": 0.878912,
+        "p_value": 0.878901,
+        "p_value_adj": 0.878901,
         "statistic": null,
         "cohens_d": -0.2802,
         "p_value_welch": 0.521418
       },
       {
         "dose_level": 2,
-        "p_value": 0.418116,
-        "p_value_adj": 0.418116,
+        "p_value": 0.418202,
+        "p_value_adj": 0.418202,
         "statistic": null,
         "cohens_d": -0.5081,
         "p_value_welch": 0.251859
       },
       {
         "dose_level": 3,
-        "p_value": 1.4e-05,
-        "p_value_adj": 1.4e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": -2.531,
         "p_value_welch": 1.4e-05
@@ -5063,7 +5063,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.418131,
+    "p_value": 0.418181,
     "effect_size": -0.5081,
     "direction": "down",
     "severity": "adverse",
@@ -5108,24 +5108,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878912,
-        "p_value_adj": 0.878912,
+        "p_value": 0.878901,
+        "p_value_adj": 0.878901,
         "statistic": null,
         "cohens_d": -0.2802,
         "p_value_welch": 0.521418
       },
       {
         "dose_level": 2,
-        "p_value": 0.418116,
-        "p_value_adj": 0.418116,
+        "p_value": 0.418202,
+        "p_value_adj": 0.418202,
         "statistic": null,
         "cohens_d": -0.5081,
         "p_value_welch": 0.251859
       },
       {
         "dose_level": 3,
-        "p_value": 1.4e-05,
-        "p_value_adj": 1.4e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": -2.531,
         "p_value_welch": 1.4e-05
@@ -5187,24 +5187,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878912,
-        "p_value_adj": 0.878912,
+        "p_value": 0.878901,
+        "p_value_adj": 0.878901,
         "statistic": null,
         "cohens_d": -0.2802,
         "p_value_welch": 0.521418
       },
       {
         "dose_level": 2,
-        "p_value": 0.418116,
-        "p_value_adj": 0.418116,
+        "p_value": 0.418202,
+        "p_value_adj": 0.418202,
         "statistic": null,
         "cohens_d": -0.5081,
         "p_value_welch": 0.251859
       },
       {
         "dose_level": 3,
-        "p_value": 1.4e-05,
-        "p_value_adj": 1.4e-05,
+        "p_value": 1.2e-05,
+        "p_value_adj": 1.2e-05,
         "statistic": null,
         "cohens_d": -2.531,
         "p_value_welch": 1.4e-05
@@ -5274,16 +5274,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.959029,
-        "p_value_adj": 0.959029,
+        "p_value": 0.959036,
+        "p_value_adj": 0.959036,
         "statistic": null,
         "cohens_d": -0.1909,
         "p_value_welch": 0.66925
       },
       {
         "dose_level": 3,
-        "p_value": 0.059205,
-        "p_value_adj": 0.059205,
+        "p_value": 0.059297,
+        "p_value_adj": 0.059297,
         "statistic": null,
         "cohens_d": -1.1755,
         "p_value_welch": 0.018637
@@ -5353,16 +5353,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.959029,
-        "p_value_adj": 0.959029,
+        "p_value": 0.959036,
+        "p_value_adj": 0.959036,
         "statistic": null,
         "cohens_d": -0.1909,
         "p_value_welch": 0.66925
       },
       {
         "dose_level": 3,
-        "p_value": 0.059205,
-        "p_value_adj": 0.059205,
+        "p_value": 0.059297,
+        "p_value_adj": 0.059297,
         "statistic": null,
         "cohens_d": -1.1755,
         "p_value_welch": 0.018637
@@ -5379,7 +5379,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.059298,
+    "p_value": 0.059241,
     "effect_size": -1.1755,
     "direction": "down",
     "severity": "adverse",
@@ -5432,16 +5432,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.959029,
-        "p_value_adj": 0.959029,
+        "p_value": 0.959036,
+        "p_value_adj": 0.959036,
         "statistic": null,
         "cohens_d": -0.1909,
         "p_value_welch": 0.66925
       },
       {
         "dose_level": 3,
-        "p_value": 0.059205,
-        "p_value_adj": 0.059205,
+        "p_value": 0.059297,
+        "p_value_adj": 0.059297,
         "statistic": null,
         "cohens_d": -1.1755,
         "p_value_welch": 0.018637
@@ -5458,7 +5458,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.039552,
+    "p_value": 0.039574,
     "effect_size": 0.9762,
     "direction": "up",
     "severity": "adverse",
@@ -5503,24 +5503,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.039538,
-        "p_value_adj": 0.039538,
+        "p_value": 0.039529,
+        "p_value_adj": 0.039529,
         "statistic": null,
         "cohens_d": 0.9762,
         "p_value_welch": 0.03771
       },
       {
         "dose_level": 2,
-        "p_value": 0.122151,
-        "p_value_adj": 0.122151,
+        "p_value": 0.122152,
+        "p_value_adj": 0.122152,
         "statistic": null,
         "cohens_d": 1.0585,
         "p_value_welch": 0.023689
       },
       {
         "dose_level": 3,
-        "p_value": 0.417044,
-        "p_value_adj": 0.417044,
+        "p_value": 0.417076,
+        "p_value_adj": 0.417076,
         "statistic": null,
         "cohens_d": 0.6504,
         "p_value_welch": 0.146386
@@ -5537,7 +5537,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.122177,
+    "p_value": 0.122218,
     "effect_size": 1.0585,
     "direction": "up",
     "severity": "adverse",
@@ -5582,24 +5582,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.039538,
-        "p_value_adj": 0.039538,
+        "p_value": 0.039529,
+        "p_value_adj": 0.039529,
         "statistic": null,
         "cohens_d": 0.9762,
         "p_value_welch": 0.03771
       },
       {
         "dose_level": 2,
-        "p_value": 0.122151,
-        "p_value_adj": 0.122151,
+        "p_value": 0.122152,
+        "p_value_adj": 0.122152,
         "statistic": null,
         "cohens_d": 1.0585,
         "p_value_welch": 0.023689
       },
       {
         "dose_level": 3,
-        "p_value": 0.417044,
-        "p_value_adj": 0.417044,
+        "p_value": 0.417076,
+        "p_value_adj": 0.417076,
         "statistic": null,
         "cohens_d": 0.6504,
         "p_value_welch": 0.146386
@@ -5616,7 +5616,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.417066,
+    "p_value": 0.417015,
     "effect_size": 0.6504,
     "direction": "up",
     "severity": "adverse",
@@ -5661,24 +5661,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.039538,
-        "p_value_adj": 0.039538,
+        "p_value": 0.039529,
+        "p_value_adj": 0.039529,
         "statistic": null,
         "cohens_d": 0.9762,
         "p_value_welch": 0.03771
       },
       {
         "dose_level": 2,
-        "p_value": 0.122151,
-        "p_value_adj": 0.122151,
+        "p_value": 0.122152,
+        "p_value_adj": 0.122152,
         "statistic": null,
         "cohens_d": 1.0585,
         "p_value_welch": 0.023689
       },
       {
         "dose_level": 3,
-        "p_value": 0.417044,
-        "p_value_adj": 0.417044,
+        "p_value": 0.417076,
+        "p_value_adj": 0.417076,
         "statistic": null,
         "cohens_d": 0.6504,
         "p_value_welch": 0.146386
@@ -5748,8 +5748,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.039829,
-        "p_value_adj": 0.039829,
+        "p_value": 0.039882,
+        "p_value_adj": 0.039882,
         "statistic": null,
         "cohens_d": 1.4276,
         "p_value_welch": 0.204413
@@ -5774,7 +5774,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.039937,
+    "p_value": 0.039991,
     "effect_size": 1.4276,
     "direction": "up",
     "severity": "adverse",
@@ -5827,8 +5827,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.039829,
-        "p_value_adj": 0.039829,
+        "p_value": 0.039882,
+        "p_value_adj": 0.039882,
         "statistic": null,
         "cohens_d": 1.4276,
         "p_value_welch": 0.204413
@@ -5906,8 +5906,8 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.039829,
-        "p_value_adj": 0.039829,
+        "p_value": 0.039882,
+        "p_value_adj": 0.039882,
         "statistic": null,
         "cohens_d": 1.4276,
         "p_value_welch": 0.204413
@@ -5932,7 +5932,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.011161,
+    "p_value": 0.011087,
     "effect_size": -1.1673,
     "direction": "down",
     "severity": "adverse",
@@ -5977,24 +5977,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.011057,
-        "p_value_adj": 0.011057,
+        "p_value": 0.011024,
+        "p_value_adj": 0.011024,
         "statistic": null,
         "cohens_d": -1.1673,
         "p_value_welch": 0.024585
       },
       {
         "dose_level": 2,
-        "p_value": 0.043521,
-        "p_value_adj": 0.043521,
+        "p_value": 0.043536,
+        "p_value_adj": 0.043536,
         "statistic": null,
         "cohens_d": -0.8948,
         "p_value_welch": 0.069598
       },
       {
         "dose_level": 3,
-        "p_value": 0.002664,
-        "p_value_adj": 0.002664,
+        "p_value": 0.002677,
+        "p_value_adj": 0.002677,
         "statistic": null,
         "cohens_d": -1.3859,
         "p_value_welch": 0.010685
@@ -6011,7 +6011,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.04351,
+    "p_value": 0.043533,
     "effect_size": -0.8948,
     "direction": "down",
     "severity": "adverse",
@@ -6056,24 +6056,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.011057,
-        "p_value_adj": 0.011057,
+        "p_value": 0.011024,
+        "p_value_adj": 0.011024,
         "statistic": null,
         "cohens_d": -1.1673,
         "p_value_welch": 0.024585
       },
       {
         "dose_level": 2,
-        "p_value": 0.043521,
-        "p_value_adj": 0.043521,
+        "p_value": 0.043536,
+        "p_value_adj": 0.043536,
         "statistic": null,
         "cohens_d": -0.8948,
         "p_value_welch": 0.069598
       },
       {
         "dose_level": 3,
-        "p_value": 0.002664,
-        "p_value_adj": 0.002664,
+        "p_value": 0.002677,
+        "p_value_adj": 0.002677,
         "statistic": null,
         "cohens_d": -1.3859,
         "p_value_welch": 0.010685
@@ -6135,24 +6135,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.011057,
-        "p_value_adj": 0.011057,
+        "p_value": 0.011024,
+        "p_value_adj": 0.011024,
         "statistic": null,
         "cohens_d": -1.1673,
         "p_value_welch": 0.024585
       },
       {
         "dose_level": 2,
-        "p_value": 0.043521,
-        "p_value_adj": 0.043521,
+        "p_value": 0.043536,
+        "p_value_adj": 0.043536,
         "statistic": null,
         "cohens_d": -0.8948,
         "p_value_welch": 0.069598
       },
       {
         "dose_level": 3,
-        "p_value": 0.002664,
-        "p_value_adj": 0.002664,
+        "p_value": 0.002677,
+        "p_value_adj": 0.002677,
         "statistic": null,
         "cohens_d": -1.3859,
         "p_value_welch": 0.010685
@@ -6169,7 +6169,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.838387,
+    "p_value": 0.838402,
     "effect_size": 0.5034,
     "direction": "up",
     "severity": "adverse",
@@ -6214,24 +6214,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.838427,
-        "p_value_adj": 0.838427,
+        "p_value": 0.838424,
+        "p_value_adj": 0.838424,
         "statistic": null,
         "cohens_d": 0.5034,
         "p_value_welch": 0.255664
       },
       {
         "dose_level": 2,
-        "p_value": 0.032303,
-        "p_value_adj": 0.032303,
+        "p_value": 0.032289,
+        "p_value_adj": 0.032289,
         "statistic": null,
         "cohens_d": 1.3047,
         "p_value_welch": 0.00951
       },
       {
         "dose_level": 3,
-        "p_value": 0.004181,
-        "p_value_adj": 0.004181,
+        "p_value": 0.004154,
+        "p_value_adj": 0.004154,
         "statistic": null,
         "cohens_d": 1.3504,
         "p_value_welch": 0.008923
@@ -6248,7 +6248,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.032308,
+    "p_value": 0.032298,
     "effect_size": 1.3047,
     "direction": "up",
     "severity": "adverse",
@@ -6293,24 +6293,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.838427,
-        "p_value_adj": 0.838427,
+        "p_value": 0.838424,
+        "p_value_adj": 0.838424,
         "statistic": null,
         "cohens_d": 0.5034,
         "p_value_welch": 0.255664
       },
       {
         "dose_level": 2,
-        "p_value": 0.032303,
-        "p_value_adj": 0.032303,
+        "p_value": 0.032289,
+        "p_value_adj": 0.032289,
         "statistic": null,
         "cohens_d": 1.3047,
         "p_value_welch": 0.00951
       },
       {
         "dose_level": 3,
-        "p_value": 0.004181,
-        "p_value_adj": 0.004181,
+        "p_value": 0.004154,
+        "p_value_adj": 0.004154,
         "statistic": null,
         "cohens_d": 1.3504,
         "p_value_welch": 0.008923
@@ -6327,7 +6327,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.004177,
+    "p_value": 0.004237,
     "effect_size": 1.3504,
     "direction": "up",
     "severity": "adverse",
@@ -6372,24 +6372,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.838427,
-        "p_value_adj": 0.838427,
+        "p_value": 0.838424,
+        "p_value_adj": 0.838424,
         "statistic": null,
         "cohens_d": 0.5034,
         "p_value_welch": 0.255664
       },
       {
         "dose_level": 2,
-        "p_value": 0.032303,
-        "p_value_adj": 0.032303,
+        "p_value": 0.032289,
+        "p_value_adj": 0.032289,
         "statistic": null,
         "cohens_d": 1.3047,
         "p_value_welch": 0.00951
       },
       {
         "dose_level": 3,
-        "p_value": 0.004181,
-        "p_value_adj": 0.004181,
+        "p_value": 0.004154,
+        "p_value_adj": 0.004154,
         "statistic": null,
         "cohens_d": 1.3504,
         "p_value_welch": 0.008923
@@ -6406,7 +6406,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.063644,
+    "p_value": 0.063646,
     "effect_size": -0.9395,
     "direction": "down",
     "severity": "adverse",
@@ -6451,24 +6451,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.063643,
-        "p_value_adj": 0.063643,
+        "p_value": 0.063602,
+        "p_value_adj": 0.063602,
         "statistic": null,
         "cohens_d": -0.9395,
         "p_value_welch": 0.053275
       },
       {
         "dose_level": 2,
-        "p_value": 0.042612,
-        "p_value_adj": 0.042612,
+        "p_value": 0.042724,
+        "p_value_adj": 0.042724,
         "statistic": null,
         "cohens_d": -1.0725,
         "p_value_welch": 0.031363
       },
       {
         "dose_level": 3,
-        "p_value": 0.009607,
-        "p_value_adj": 0.009607,
+        "p_value": 0.009631,
+        "p_value_adj": 0.009631,
         "statistic": null,
         "cohens_d": -1.3099,
         "p_value_welch": 0.010759
@@ -6485,7 +6485,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.042637,
+    "p_value": 0.042543,
     "effect_size": -1.0725,
     "direction": "down",
     "severity": "adverse",
@@ -6530,24 +6530,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.063643,
-        "p_value_adj": 0.063643,
+        "p_value": 0.063602,
+        "p_value_adj": 0.063602,
         "statistic": null,
         "cohens_d": -0.9395,
         "p_value_welch": 0.053275
       },
       {
         "dose_level": 2,
-        "p_value": 0.042612,
-        "p_value_adj": 0.042612,
+        "p_value": 0.042724,
+        "p_value_adj": 0.042724,
         "statistic": null,
         "cohens_d": -1.0725,
         "p_value_welch": 0.031363
       },
       {
         "dose_level": 3,
-        "p_value": 0.009607,
-        "p_value_adj": 0.009607,
+        "p_value": 0.009631,
+        "p_value_adj": 0.009631,
         "statistic": null,
         "cohens_d": -1.3099,
         "p_value_welch": 0.010759
@@ -6564,7 +6564,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.009548,
+    "p_value": 0.009531,
     "effect_size": -1.3099,
     "direction": "down",
     "severity": "adverse",
@@ -6609,24 +6609,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.063643,
-        "p_value_adj": 0.063643,
+        "p_value": 0.063602,
+        "p_value_adj": 0.063602,
         "statistic": null,
         "cohens_d": -0.9395,
         "p_value_welch": 0.053275
       },
       {
         "dose_level": 2,
-        "p_value": 0.042612,
-        "p_value_adj": 0.042612,
+        "p_value": 0.042724,
+        "p_value_adj": 0.042724,
         "statistic": null,
         "cohens_d": -1.0725,
         "p_value_welch": 0.031363
       },
       {
         "dose_level": 3,
-        "p_value": 0.009607,
-        "p_value_adj": 0.009607,
+        "p_value": 0.009631,
+        "p_value_adj": 0.009631,
         "statistic": null,
         "cohens_d": -1.3099,
         "p_value_welch": 0.010759
@@ -6643,7 +6643,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.819235,
+    "p_value": 0.81924,
     "effect_size": -0.3219,
     "direction": "down",
     "severity": "adverse",
@@ -6688,24 +6688,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.81927,
-        "p_value_adj": 0.81927,
+        "p_value": 0.819242,
+        "p_value_adj": 0.819242,
         "statistic": null,
         "cohens_d": -0.3219,
         "p_value_welch": 0.462498
       },
       {
         "dose_level": 2,
-        "p_value": 0.056654,
-        "p_value_adj": 0.056654,
+        "p_value": 0.056653,
+        "p_value_adj": 0.056653,
         "statistic": null,
         "cohens_d": -0.9657,
         "p_value_welch": 0.03873
       },
       {
         "dose_level": 3,
-        "p_value": 0.002281,
-        "p_value_adj": 0.002281,
+        "p_value": 0.00223,
+        "p_value_adj": 0.00223,
         "statistic": null,
         "cohens_d": -1.899,
         "p_value_welch": 0.000321
@@ -6722,7 +6722,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.056641,
+    "p_value": 0.056688,
     "effect_size": -0.9657,
     "direction": "down",
     "severity": "adverse",
@@ -6767,24 +6767,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.81927,
-        "p_value_adj": 0.81927,
+        "p_value": 0.819242,
+        "p_value_adj": 0.819242,
         "statistic": null,
         "cohens_d": -0.3219,
         "p_value_welch": 0.462498
       },
       {
         "dose_level": 2,
-        "p_value": 0.056654,
-        "p_value_adj": 0.056654,
+        "p_value": 0.056653,
+        "p_value_adj": 0.056653,
         "statistic": null,
         "cohens_d": -0.9657,
         "p_value_welch": 0.03873
       },
       {
         "dose_level": 3,
-        "p_value": 0.002281,
-        "p_value_adj": 0.002281,
+        "p_value": 0.00223,
+        "p_value_adj": 0.00223,
         "statistic": null,
         "cohens_d": -1.899,
         "p_value_welch": 0.000321
@@ -6801,7 +6801,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.002204,
+    "p_value": 0.002165,
     "effect_size": -1.899,
     "direction": "down",
     "severity": "adverse",
@@ -6846,24 +6846,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.81927,
-        "p_value_adj": 0.81927,
+        "p_value": 0.819242,
+        "p_value_adj": 0.819242,
         "statistic": null,
         "cohens_d": -0.3219,
         "p_value_welch": 0.462498
       },
       {
         "dose_level": 2,
-        "p_value": 0.056654,
-        "p_value_adj": 0.056654,
+        "p_value": 0.056653,
+        "p_value_adj": 0.056653,
         "statistic": null,
         "cohens_d": -0.9657,
         "p_value_welch": 0.03873
       },
       {
         "dose_level": 3,
-        "p_value": 0.002281,
-        "p_value_adj": 0.002281,
+        "p_value": 0.00223,
+        "p_value_adj": 0.00223,
         "statistic": null,
         "cohens_d": -1.899,
         "p_value_welch": 0.000321
@@ -6880,7 +6880,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.628315,
+    "p_value": 0.628277,
     "effect_size": -0.4796,
     "direction": "down",
     "severity": "adverse",
@@ -6925,24 +6925,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.628245,
-        "p_value_adj": 0.628245,
+        "p_value": 0.62831,
+        "p_value_adj": 0.62831,
         "statistic": null,
         "cohens_d": -0.4796,
         "p_value_welch": 0.277738
       },
       {
         "dose_level": 2,
-        "p_value": 0.066019,
-        "p_value_adj": 0.066019,
+        "p_value": 0.065982,
+        "p_value_adj": 0.065982,
         "statistic": null,
         "cohens_d": -0.974,
         "p_value_welch": 0.035762
       },
       {
         "dose_level": 3,
-        "p_value": 0.000463,
-        "p_value_adj": 0.000463,
+        "p_value": 0.000439,
+        "p_value_adj": 0.000439,
         "statistic": null,
         "cohens_d": -1.7722,
         "p_value_welch": 0.000644
@@ -6959,7 +6959,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.065993,
+    "p_value": 0.065978,
     "effect_size": -0.974,
     "direction": "down",
     "severity": "adverse",
@@ -7004,24 +7004,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.628245,
-        "p_value_adj": 0.628245,
+        "p_value": 0.62831,
+        "p_value_adj": 0.62831,
         "statistic": null,
         "cohens_d": -0.4796,
         "p_value_welch": 0.277738
       },
       {
         "dose_level": 2,
-        "p_value": 0.066019,
-        "p_value_adj": 0.066019,
+        "p_value": 0.065982,
+        "p_value_adj": 0.065982,
         "statistic": null,
         "cohens_d": -0.974,
         "p_value_welch": 0.035762
       },
       {
         "dose_level": 3,
-        "p_value": 0.000463,
-        "p_value_adj": 0.000463,
+        "p_value": 0.000439,
+        "p_value_adj": 0.000439,
         "statistic": null,
         "cohens_d": -1.7722,
         "p_value_welch": 0.000644
@@ -7038,7 +7038,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.00047,
+    "p_value": 0.000459,
     "effect_size": -1.7722,
     "direction": "down",
     "severity": "adverse",
@@ -7083,24 +7083,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.628245,
-        "p_value_adj": 0.628245,
+        "p_value": 0.62831,
+        "p_value_adj": 0.62831,
         "statistic": null,
         "cohens_d": -0.4796,
         "p_value_welch": 0.277738
       },
       {
         "dose_level": 2,
-        "p_value": 0.066019,
-        "p_value_adj": 0.066019,
+        "p_value": 0.065982,
+        "p_value_adj": 0.065982,
         "statistic": null,
         "cohens_d": -0.974,
         "p_value_welch": 0.035762
       },
       {
         "dose_level": 3,
-        "p_value": 0.000463,
-        "p_value_adj": 0.000463,
+        "p_value": 0.000439,
+        "p_value_adj": 0.000439,
         "statistic": null,
         "cohens_d": -1.7722,
         "p_value_welch": 0.000644
@@ -7117,7 +7117,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.149318,
+    "p_value": 0.149303,
     "effect_size": -1.083,
     "direction": "down",
     "severity": "warning",
@@ -7162,24 +7162,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.149258,
-        "p_value_adj": 0.149258,
+        "p_value": 0.149314,
+        "p_value_adj": 0.149314,
         "statistic": null,
         "cohens_d": -1.083,
         "p_value_welch": 0.03137
       },
       {
         "dose_level": 2,
-        "p_value": 0.858505,
-        "p_value_adj": 0.858505,
+        "p_value": 0.858516,
+        "p_value_adj": 0.858516,
         "statistic": null,
         "cohens_d": -0.2822,
         "p_value_welch": 0.528206
       },
       {
         "dose_level": 3,
-        "p_value": 0.37153,
-        "p_value_adj": 0.37153,
+        "p_value": 0.371525,
+        "p_value_adj": 0.371525,
         "statistic": null,
         "cohens_d": 0.5467,
         "p_value_welch": 0.24233
@@ -7196,7 +7196,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.858473,
+    "p_value": 0.858533,
     "effect_size": -0.2822,
     "direction": "down",
     "severity": "warning",
@@ -7241,24 +7241,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.149258,
-        "p_value_adj": 0.149258,
+        "p_value": 0.149314,
+        "p_value_adj": 0.149314,
         "statistic": null,
         "cohens_d": -1.083,
         "p_value_welch": 0.03137
       },
       {
         "dose_level": 2,
-        "p_value": 0.858505,
-        "p_value_adj": 0.858505,
+        "p_value": 0.858516,
+        "p_value_adj": 0.858516,
         "statistic": null,
         "cohens_d": -0.2822,
         "p_value_welch": 0.528206
       },
       {
         "dose_level": 3,
-        "p_value": 0.37153,
-        "p_value_adj": 0.37153,
+        "p_value": 0.371525,
+        "p_value_adj": 0.371525,
         "statistic": null,
         "cohens_d": 0.5467,
         "p_value_welch": 0.24233
@@ -7275,7 +7275,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.37152,
+    "p_value": 0.371563,
     "effect_size": 0.5467,
     "direction": "down",
     "severity": "warning",
@@ -7320,24 +7320,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.149258,
-        "p_value_adj": 0.149258,
+        "p_value": 0.149314,
+        "p_value_adj": 0.149314,
         "statistic": null,
         "cohens_d": -1.083,
         "p_value_welch": 0.03137
       },
       {
         "dose_level": 2,
-        "p_value": 0.858505,
-        "p_value_adj": 0.858505,
+        "p_value": 0.858516,
+        "p_value_adj": 0.858516,
         "statistic": null,
         "cohens_d": -0.2822,
         "p_value_welch": 0.528206
       },
       {
         "dose_level": 3,
-        "p_value": 0.37153,
-        "p_value_adj": 0.37153,
+        "p_value": 0.371525,
+        "p_value_adj": 0.371525,
         "statistic": null,
         "cohens_d": 0.5467,
         "p_value_welch": 0.24233
@@ -7354,7 +7354,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.95933,
+    "p_value": 0.959336,
     "effect_size": -0.2405,
     "direction": "up",
     "severity": "adverse",
@@ -7399,24 +7399,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.959331,
-        "p_value_adj": 0.959331,
+        "p_value": 0.95934,
+        "p_value_adj": 0.95934,
         "statistic": null,
         "cohens_d": -0.2405,
         "p_value_welch": 0.581488
       },
       {
         "dose_level": 2,
-        "p_value": 0.071191,
-        "p_value_adj": 0.071191,
+        "p_value": 0.071112,
+        "p_value_adj": 0.071112,
         "statistic": null,
         "cohens_d": 0.8301,
         "p_value_welch": 0.075886
       },
       {
         "dose_level": 3,
-        "p_value": 0.086531,
-        "p_value_adj": 0.086531,
+        "p_value": 0.086546,
+        "p_value_adj": 0.086546,
         "statistic": null,
         "cohens_d": 1.2756,
         "p_value_welch": 0.008266
@@ -7433,7 +7433,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.071121,
+    "p_value": 0.07112,
     "effect_size": 0.8301,
     "direction": "up",
     "severity": "adverse",
@@ -7478,24 +7478,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.959331,
-        "p_value_adj": 0.959331,
+        "p_value": 0.95934,
+        "p_value_adj": 0.95934,
         "statistic": null,
         "cohens_d": -0.2405,
         "p_value_welch": 0.581488
       },
       {
         "dose_level": 2,
-        "p_value": 0.071191,
-        "p_value_adj": 0.071191,
+        "p_value": 0.071112,
+        "p_value_adj": 0.071112,
         "statistic": null,
         "cohens_d": 0.8301,
         "p_value_welch": 0.075886
       },
       {
         "dose_level": 3,
-        "p_value": 0.086531,
-        "p_value_adj": 0.086531,
+        "p_value": 0.086546,
+        "p_value_adj": 0.086546,
         "statistic": null,
         "cohens_d": 1.2756,
         "p_value_welch": 0.008266
@@ -7512,7 +7512,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.086531,
+    "p_value": 0.086537,
     "effect_size": 1.2756,
     "direction": "up",
     "severity": "adverse",
@@ -7557,24 +7557,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.959331,
-        "p_value_adj": 0.959331,
+        "p_value": 0.95934,
+        "p_value_adj": 0.95934,
         "statistic": null,
         "cohens_d": -0.2405,
         "p_value_welch": 0.581488
       },
       {
         "dose_level": 2,
-        "p_value": 0.071191,
-        "p_value_adj": 0.071191,
+        "p_value": 0.071112,
+        "p_value_adj": 0.071112,
         "statistic": null,
         "cohens_d": 0.8301,
         "p_value_welch": 0.075886
       },
       {
         "dose_level": 3,
-        "p_value": 0.086531,
-        "p_value_adj": 0.086531,
+        "p_value": 0.086546,
+        "p_value_adj": 0.086546,
         "statistic": null,
         "cohens_d": 1.2756,
         "p_value_welch": 0.008266
@@ -7591,7 +7591,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.337542,
+    "p_value": 0.337524,
     "effect_size": 0.5657,
     "direction": "up",
     "severity": "adverse",
@@ -7636,24 +7636,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.337599,
-        "p_value_adj": 0.337599,
+        "p_value": 0.337504,
+        "p_value_adj": 0.337504,
         "statistic": null,
         "cohens_d": 0.5657,
         "p_value_welch": 0.211636
       },
       {
         "dose_level": 2,
-        "p_value": 0.214498,
-        "p_value_adj": 0.214498,
+        "p_value": 0.214552,
+        "p_value_adj": 0.214552,
         "statistic": null,
         "cohens_d": 1.1513,
         "p_value_welch": 0.015362
       },
       {
         "dose_level": 3,
-        "p_value": 0.001607,
-        "p_value_adj": 0.001607,
+        "p_value": 0.00162,
+        "p_value_adj": 0.00162,
         "statistic": null,
         "cohens_d": 1.9502,
         "p_value_welch": 0.000429
@@ -7670,7 +7670,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.214541,
+    "p_value": 0.214521,
     "effect_size": 1.1513,
     "direction": "up",
     "severity": "adverse",
@@ -7715,24 +7715,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.337599,
-        "p_value_adj": 0.337599,
+        "p_value": 0.337504,
+        "p_value_adj": 0.337504,
         "statistic": null,
         "cohens_d": 0.5657,
         "p_value_welch": 0.211636
       },
       {
         "dose_level": 2,
-        "p_value": 0.214498,
-        "p_value_adj": 0.214498,
+        "p_value": 0.214552,
+        "p_value_adj": 0.214552,
         "statistic": null,
         "cohens_d": 1.1513,
         "p_value_welch": 0.015362
       },
       {
         "dose_level": 3,
-        "p_value": 0.001607,
-        "p_value_adj": 0.001607,
+        "p_value": 0.00162,
+        "p_value_adj": 0.00162,
         "statistic": null,
         "cohens_d": 1.9502,
         "p_value_welch": 0.000429
@@ -7749,7 +7749,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.001595,
+    "p_value": 0.001626,
     "effect_size": 1.9502,
     "direction": "up",
     "severity": "adverse",
@@ -7794,24 +7794,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.337599,
-        "p_value_adj": 0.337599,
+        "p_value": 0.337504,
+        "p_value_adj": 0.337504,
         "statistic": null,
         "cohens_d": 0.5657,
         "p_value_welch": 0.211636
       },
       {
         "dose_level": 2,
-        "p_value": 0.214498,
-        "p_value_adj": 0.214498,
+        "p_value": 0.214552,
+        "p_value_adj": 0.214552,
         "statistic": null,
         "cohens_d": 1.1513,
         "p_value_welch": 0.015362
       },
       {
         "dose_level": 3,
-        "p_value": 0.001607,
-        "p_value_adj": 0.001607,
+        "p_value": 0.00162,
+        "p_value_adj": 0.00162,
         "statistic": null,
         "cohens_d": 1.9502,
         "p_value_welch": 0.000429
@@ -7828,7 +7828,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.000544,
+    "p_value": 0.00055,
     "effect_size": -2.3355,
     "direction": "down",
     "severity": "adverse",
@@ -7873,24 +7873,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.000544,
-        "p_value_adj": 0.000544,
+        "p_value": 0.000528,
+        "p_value_adj": 0.000528,
         "statistic": null,
         "cohens_d": -2.3355,
         "p_value_welch": 8.7e-05
       },
       {
         "dose_level": 2,
-        "p_value": 0.000705,
-        "p_value_adj": 0.000705,
+        "p_value": 0.000684,
+        "p_value_adj": 0.000684,
         "statistic": null,
         "cohens_d": -2.2343,
         "p_value_welch": 9.2e-05
       },
       {
         "dose_level": 3,
-        "p_value": 0.00038,
-        "p_value_adj": 0.00038,
+        "p_value": 0.000356,
+        "p_value_adj": 0.000356,
         "statistic": null,
         "cohens_d": -1.6735,
         "p_value_welch": 0.002698
@@ -7907,7 +7907,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.000691,
+    "p_value": 0.00069,
     "effect_size": -2.2343,
     "direction": "down",
     "severity": "adverse",
@@ -7952,24 +7952,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.000544,
-        "p_value_adj": 0.000544,
+        "p_value": 0.000528,
+        "p_value_adj": 0.000528,
         "statistic": null,
         "cohens_d": -2.3355,
         "p_value_welch": 8.7e-05
       },
       {
         "dose_level": 2,
-        "p_value": 0.000705,
-        "p_value_adj": 0.000705,
+        "p_value": 0.000684,
+        "p_value_adj": 0.000684,
         "statistic": null,
         "cohens_d": -2.2343,
         "p_value_welch": 9.2e-05
       },
       {
         "dose_level": 3,
-        "p_value": 0.00038,
-        "p_value_adj": 0.00038,
+        "p_value": 0.000356,
+        "p_value_adj": 0.000356,
         "statistic": null,
         "cohens_d": -1.6735,
         "p_value_welch": 0.002698
@@ -7986,7 +7986,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.00034,
+    "p_value": 0.000378,
     "effect_size": -1.6735,
     "direction": "down",
     "severity": "adverse",
@@ -8031,24 +8031,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.000544,
-        "p_value_adj": 0.000544,
+        "p_value": 0.000528,
+        "p_value_adj": 0.000528,
         "statistic": null,
         "cohens_d": -2.3355,
         "p_value_welch": 8.7e-05
       },
       {
         "dose_level": 2,
-        "p_value": 0.000705,
-        "p_value_adj": 0.000705,
+        "p_value": 0.000684,
+        "p_value_adj": 0.000684,
         "statistic": null,
         "cohens_d": -2.2343,
         "p_value_welch": 9.2e-05
       },
       {
         "dose_level": 3,
-        "p_value": 0.00038,
-        "p_value_adj": 0.00038,
+        "p_value": 0.000356,
+        "p_value_adj": 0.000356,
         "statistic": null,
         "cohens_d": -1.6735,
         "p_value_welch": 0.002698
@@ -8065,7 +8065,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.975095,
+    "p_value": 0.975104,
     "effect_size": 0.201,
     "direction": "up",
     "severity": "adverse",
@@ -8110,24 +8110,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.975114,
-        "p_value_adj": 0.975114,
+        "p_value": 0.975111,
+        "p_value_adj": 0.975111,
         "statistic": null,
         "cohens_d": 0.201,
         "p_value_welch": 0.649615
       },
       {
         "dose_level": 2,
-        "p_value": 0.151657,
-        "p_value_adj": 0.151657,
+        "p_value": 0.151778,
+        "p_value_adj": 0.151778,
         "statistic": null,
         "cohens_d": 0.9131,
         "p_value_welch": 0.049685
       },
       {
         "dose_level": 3,
-        "p_value": 0.048017,
-        "p_value_adj": 0.048017,
+        "p_value": 0.048167,
+        "p_value_adj": 0.048167,
         "statistic": null,
         "cohens_d": 1.0637,
         "p_value_welch": 0.036022
@@ -8144,7 +8144,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.151732,
+    "p_value": 0.151716,
     "effect_size": 0.9131,
     "direction": "up",
     "severity": "adverse",
@@ -8189,24 +8189,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.975114,
-        "p_value_adj": 0.975114,
+        "p_value": 0.975111,
+        "p_value_adj": 0.975111,
         "statistic": null,
         "cohens_d": 0.201,
         "p_value_welch": 0.649615
       },
       {
         "dose_level": 2,
-        "p_value": 0.151657,
-        "p_value_adj": 0.151657,
+        "p_value": 0.151778,
+        "p_value_adj": 0.151778,
         "statistic": null,
         "cohens_d": 0.9131,
         "p_value_welch": 0.049685
       },
       {
         "dose_level": 3,
-        "p_value": 0.048017,
-        "p_value_adj": 0.048017,
+        "p_value": 0.048167,
+        "p_value_adj": 0.048167,
         "statistic": null,
         "cohens_d": 1.0637,
         "p_value_welch": 0.036022
@@ -8223,7 +8223,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.048037,
+    "p_value": 0.04802,
     "effect_size": 1.0637,
     "direction": "up",
     "severity": "adverse",
@@ -8268,24 +8268,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.975114,
-        "p_value_adj": 0.975114,
+        "p_value": 0.975111,
+        "p_value_adj": 0.975111,
         "statistic": null,
         "cohens_d": 0.201,
         "p_value_welch": 0.649615
       },
       {
         "dose_level": 2,
-        "p_value": 0.151657,
-        "p_value_adj": 0.151657,
+        "p_value": 0.151778,
+        "p_value_adj": 0.151778,
         "statistic": null,
         "cohens_d": 0.9131,
         "p_value_welch": 0.049685
       },
       {
         "dose_level": 3,
-        "p_value": 0.048017,
-        "p_value_adj": 0.048017,
+        "p_value": 0.048167,
+        "p_value_adj": 0.048167,
         "statistic": null,
         "cohens_d": 1.0637,
         "p_value_welch": 0.036022
@@ -8302,7 +8302,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.32827,
+    "p_value": 0.328284,
     "effect_size": 0.6669,
     "direction": "up",
     "severity": "adverse",
@@ -8347,24 +8347,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.328245,
-        "p_value_adj": 0.328245,
+        "p_value": 0.328287,
+        "p_value_adj": 0.328287,
         "statistic": null,
         "cohens_d": 0.6669,
         "p_value_welch": 0.138512
       },
       {
         "dose_level": 2,
-        "p_value": 0.061979,
-        "p_value_adj": 0.061979,
+        "p_value": 0.061857,
+        "p_value_adj": 0.061857,
         "statistic": null,
         "cohens_d": 1.1078,
         "p_value_welch": 0.019231
       },
       {
         "dose_level": 3,
-        "p_value": 0.068541,
-        "p_value_adj": 0.068541,
+        "p_value": 0.068524,
+        "p_value_adj": 0.068524,
         "statistic": null,
         "cohens_d": 1.0498,
         "p_value_welch": 0.025682
@@ -8381,7 +8381,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.061927,
+    "p_value": 0.061887,
     "effect_size": 1.1078,
     "direction": "up",
     "severity": "adverse",
@@ -8426,24 +8426,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.328245,
-        "p_value_adj": 0.328245,
+        "p_value": 0.328287,
+        "p_value_adj": 0.328287,
         "statistic": null,
         "cohens_d": 0.6669,
         "p_value_welch": 0.138512
       },
       {
         "dose_level": 2,
-        "p_value": 0.061979,
-        "p_value_adj": 0.061979,
+        "p_value": 0.061857,
+        "p_value_adj": 0.061857,
         "statistic": null,
         "cohens_d": 1.1078,
         "p_value_welch": 0.019231
       },
       {
         "dose_level": 3,
-        "p_value": 0.068541,
-        "p_value_adj": 0.068541,
+        "p_value": 0.068524,
+        "p_value_adj": 0.068524,
         "statistic": null,
         "cohens_d": 1.0498,
         "p_value_welch": 0.025682
@@ -8460,7 +8460,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.068607,
+    "p_value": 0.068498,
     "effect_size": 1.0498,
     "direction": "up",
     "severity": "adverse",
@@ -8505,24 +8505,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.328245,
-        "p_value_adj": 0.328245,
+        "p_value": 0.328287,
+        "p_value_adj": 0.328287,
         "statistic": null,
         "cohens_d": 0.6669,
         "p_value_welch": 0.138512
       },
       {
         "dose_level": 2,
-        "p_value": 0.061979,
-        "p_value_adj": 0.061979,
+        "p_value": 0.061857,
+        "p_value_adj": 0.061857,
         "statistic": null,
         "cohens_d": 1.1078,
         "p_value_welch": 0.019231
       },
       {
         "dose_level": 3,
-        "p_value": 0.068541,
-        "p_value_adj": 0.068541,
+        "p_value": 0.068524,
+        "p_value_adj": 0.068524,
         "statistic": null,
         "cohens_d": 1.0498,
         "p_value_welch": 0.025682
@@ -8539,7 +8539,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.062061,
+    "p_value": 0.062055,
     "effect_size": -0.957,
     "direction": "down",
     "severity": "adverse",
@@ -8584,24 +8584,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.061982,
-        "p_value_adj": 0.061982,
+        "p_value": 0.062043,
+        "p_value_adj": 0.062043,
         "statistic": null,
         "cohens_d": -0.957,
         "p_value_welch": 0.045703
       },
       {
         "dose_level": 2,
-        "p_value": 0.075728,
-        "p_value_adj": 0.075728,
+        "p_value": 0.075716,
+        "p_value_adj": 0.075716,
         "statistic": null,
         "cohens_d": -0.9544,
         "p_value_welch": 0.04778
       },
       {
         "dose_level": 3,
-        "p_value": 0.000471,
-        "p_value_adj": 0.000471,
+        "p_value": 0.000491,
+        "p_value_adj": 0.000491,
         "statistic": null,
         "cohens_d": -1.8444,
         "p_value_welch": 0.000928
@@ -8618,7 +8618,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.075773,
+    "p_value": 0.075778,
     "effect_size": -0.9544,
     "direction": "down",
     "severity": "adverse",
@@ -8663,24 +8663,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.061982,
-        "p_value_adj": 0.061982,
+        "p_value": 0.062043,
+        "p_value_adj": 0.062043,
         "statistic": null,
         "cohens_d": -0.957,
         "p_value_welch": 0.045703
       },
       {
         "dose_level": 2,
-        "p_value": 0.075728,
-        "p_value_adj": 0.075728,
+        "p_value": 0.075716,
+        "p_value_adj": 0.075716,
         "statistic": null,
         "cohens_d": -0.9544,
         "p_value_welch": 0.04778
       },
       {
         "dose_level": 3,
-        "p_value": 0.000471,
-        "p_value_adj": 0.000471,
+        "p_value": 0.000491,
+        "p_value_adj": 0.000491,
         "statistic": null,
         "cohens_d": -1.8444,
         "p_value_welch": 0.000928
@@ -8697,7 +8697,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.000519,
+    "p_value": 0.000488,
     "effect_size": -1.8444,
     "direction": "down",
     "severity": "adverse",
@@ -8742,24 +8742,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.061982,
-        "p_value_adj": 0.061982,
+        "p_value": 0.062043,
+        "p_value_adj": 0.062043,
         "statistic": null,
         "cohens_d": -0.957,
         "p_value_welch": 0.045703
       },
       {
         "dose_level": 2,
-        "p_value": 0.075728,
-        "p_value_adj": 0.075728,
+        "p_value": 0.075716,
+        "p_value_adj": 0.075716,
         "statistic": null,
         "cohens_d": -0.9544,
         "p_value_welch": 0.04778
       },
       {
         "dose_level": 3,
-        "p_value": 0.000471,
-        "p_value_adj": 0.000471,
+        "p_value": 0.000491,
+        "p_value_adj": 0.000491,
         "statistic": null,
         "cohens_d": -1.8444,
         "p_value_welch": 0.000928
@@ -8776,7 +8776,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.497159,
+    "p_value": 0.49707,
     "effect_size": -0.5195,
     "direction": "up",
     "severity": "adverse",
@@ -8821,8 +8821,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.497045,
-        "p_value_adj": 0.497045,
+        "p_value": 0.49705,
+        "p_value_adj": 0.49705,
         "statistic": null,
         "cohens_d": -0.5195,
         "p_value_welch": 0.243426
@@ -8837,8 +8837,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.051125,
-        "p_value_adj": 0.051125,
+        "p_value": 0.051174,
+        "p_value_adj": 0.051174,
         "statistic": null,
         "cohens_d": 1.0181,
         "p_value_welch": 0.030428
@@ -8855,7 +8855,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.998115,
+    "p_value": 0.998114,
     "effect_size": 0.0506,
     "direction": "up",
     "severity": "adverse",
@@ -8900,8 +8900,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.497045,
-        "p_value_adj": 0.497045,
+        "p_value": 0.49705,
+        "p_value_adj": 0.49705,
         "statistic": null,
         "cohens_d": -0.5195,
         "p_value_welch": 0.243426
@@ -8916,8 +8916,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.051125,
-        "p_value_adj": 0.051125,
+        "p_value": 0.051174,
+        "p_value_adj": 0.051174,
         "statistic": null,
         "cohens_d": 1.0181,
         "p_value_welch": 0.030428
@@ -8934,7 +8934,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.051031,
+    "p_value": 0.051045,
     "effect_size": 1.0181,
     "direction": "up",
     "severity": "adverse",
@@ -8979,8 +8979,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.497045,
-        "p_value_adj": 0.497045,
+        "p_value": 0.49705,
+        "p_value_adj": 0.49705,
         "statistic": null,
         "cohens_d": -0.5195,
         "p_value_welch": 0.243426
@@ -8995,8 +8995,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.051125,
-        "p_value_adj": 0.051125,
+        "p_value": 0.051174,
+        "p_value_adj": 0.051174,
         "statistic": null,
         "cohens_d": 1.0181,
         "p_value_welch": 0.030428
@@ -9013,7 +9013,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.298775,
+    "p_value": 0.298782,
     "effect_size": -2.8152,
     "direction": "down",
     "severity": "adverse",
@@ -9058,16 +9058,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.298749,
-        "p_value_adj": 0.298749,
+        "p_value": 0.298787,
+        "p_value_adj": 0.298787,
         "statistic": null,
         "cohens_d": -2.8152,
         "p_value_welch": 4e-06
       },
       {
         "dose_level": 2,
-        "p_value": 0.132801,
-        "p_value_adj": 0.132801,
+        "p_value": 0.13273,
+        "p_value_adj": 0.13273,
         "statistic": null,
         "cohens_d": 0.7788,
         "p_value_welch": 0.101156
@@ -9092,7 +9092,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.132745,
+    "p_value": 0.132751,
     "effect_size": 0.7788,
     "direction": "down",
     "severity": "adverse",
@@ -9137,16 +9137,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.298749,
-        "p_value_adj": 0.298749,
+        "p_value": 0.298787,
+        "p_value_adj": 0.298787,
         "statistic": null,
         "cohens_d": -2.8152,
         "p_value_welch": 4e-06
       },
       {
         "dose_level": 2,
-        "p_value": 0.132801,
-        "p_value_adj": 0.132801,
+        "p_value": 0.13273,
+        "p_value_adj": 0.13273,
         "statistic": null,
         "cohens_d": 0.7788,
         "p_value_welch": 0.101156
@@ -9171,7 +9171,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 5e-06,
+    "p_value": 7e-06,
     "effect_size": 2.6984,
     "direction": "down",
     "severity": "adverse",
@@ -9216,16 +9216,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.298749,
-        "p_value_adj": 0.298749,
+        "p_value": 0.298787,
+        "p_value_adj": 0.298787,
         "statistic": null,
         "cohens_d": -2.8152,
         "p_value_welch": 4e-06
       },
       {
         "dose_level": 2,
-        "p_value": 0.132801,
-        "p_value_adj": 0.132801,
+        "p_value": 0.13273,
+        "p_value_adj": 0.13273,
         "statistic": null,
         "cohens_d": 0.7788,
         "p_value_welch": 0.101156
@@ -9250,7 +9250,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.997197,
+    "p_value": 0.997196,
     "effect_size": 0.0758,
     "direction": "down",
     "severity": "warning",
@@ -9303,16 +9303,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.635219,
-        "p_value_adj": 0.635219,
+        "p_value": 0.635292,
+        "p_value_adj": 0.635292,
         "statistic": null,
         "cohens_d": 0.4664,
         "p_value_welch": 0.298681
       },
       {
         "dose_level": 3,
-        "p_value": 0.188811,
-        "p_value_adj": 0.188811,
+        "p_value": 0.188792,
+        "p_value_adj": 0.188792,
         "statistic": null,
         "cohens_d": -1.0168,
         "p_value_welch": 0.034287
@@ -9329,7 +9329,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.635221,
+    "p_value": 0.635168,
     "effect_size": 0.4664,
     "direction": "down",
     "severity": "warning",
@@ -9382,16 +9382,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.635219,
-        "p_value_adj": 0.635219,
+        "p_value": 0.635292,
+        "p_value_adj": 0.635292,
         "statistic": null,
         "cohens_d": 0.4664,
         "p_value_welch": 0.298681
       },
       {
         "dose_level": 3,
-        "p_value": 0.188811,
-        "p_value_adj": 0.188811,
+        "p_value": 0.188792,
+        "p_value_adj": 0.188792,
         "statistic": null,
         "cohens_d": -1.0168,
         "p_value_welch": 0.034287
@@ -9408,7 +9408,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.188779,
+    "p_value": 0.188844,
     "effect_size": -1.0168,
     "direction": "down",
     "severity": "warning",
@@ -9461,16 +9461,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.635219,
-        "p_value_adj": 0.635219,
+        "p_value": 0.635292,
+        "p_value_adj": 0.635292,
         "statistic": null,
         "cohens_d": 0.4664,
         "p_value_welch": 0.298681
       },
       {
         "dose_level": 3,
-        "p_value": 0.188811,
-        "p_value_adj": 0.188811,
+        "p_value": 0.188792,
+        "p_value_adj": 0.188792,
         "statistic": null,
         "cohens_d": -1.0168,
         "p_value_welch": 0.034287
@@ -9487,7 +9487,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.209769,
+    "p_value": 0.209773,
     "effect_size": 0.8567,
     "direction": "down",
     "severity": "adverse",
@@ -9532,8 +9532,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.209791,
-        "p_value_adj": 0.209791,
+        "p_value": 0.20984,
+        "p_value_adj": 0.20984,
         "statistic": null,
         "cohens_d": 0.8567,
         "p_value_welch": 0.088658
@@ -9548,8 +9548,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.081083,
-        "p_value_adj": 0.081083,
+        "p_value": 0.081174,
+        "p_value_adj": 0.081174,
         "statistic": null,
         "cohens_d": -1.359,
         "p_value_welch": 0.013315
@@ -9611,8 +9611,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.209791,
-        "p_value_adj": 0.209791,
+        "p_value": 0.20984,
+        "p_value_adj": 0.20984,
         "statistic": null,
         "cohens_d": 0.8567,
         "p_value_welch": 0.088658
@@ -9627,8 +9627,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.081083,
-        "p_value_adj": 0.081083,
+        "p_value": 0.081174,
+        "p_value_adj": 0.081174,
         "statistic": null,
         "cohens_d": -1.359,
         "p_value_welch": 0.013315
@@ -9645,7 +9645,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.081091,
+    "p_value": 0.081074,
     "effect_size": -1.359,
     "direction": "down",
     "severity": "adverse",
@@ -9690,8 +9690,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.209791,
-        "p_value_adj": 0.209791,
+        "p_value": 0.20984,
+        "p_value_adj": 0.20984,
         "statistic": null,
         "cohens_d": 0.8567,
         "p_value_welch": 0.088658
@@ -9706,8 +9706,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.081083,
-        "p_value_adj": 0.081083,
+        "p_value": 0.081174,
+        "p_value_adj": 0.081174,
         "statistic": null,
         "cohens_d": -1.359,
         "p_value_welch": 0.013315
@@ -9724,7 +9724,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.136236,
+    "p_value": 0.136231,
     "effect_size": 1.1217,
     "direction": "up",
     "severity": "adverse",
@@ -9769,24 +9769,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.136276,
-        "p_value_adj": 0.136276,
+        "p_value": 0.136227,
+        "p_value_adj": 0.136227,
         "statistic": null,
         "cohens_d": 1.1217,
         "p_value_welch": 0.01922
       },
       {
         "dose_level": 2,
-        "p_value": 0.002106,
-        "p_value_adj": 0.002106,
+        "p_value": 0.002032,
+        "p_value_adj": 0.002032,
         "statistic": null,
         "cohens_d": 1.4311,
         "p_value_welch": 0.006077
       },
       {
         "dose_level": 3,
-        "p_value": 0.974038,
-        "p_value_adj": 0.974038,
+        "p_value": 0.97404,
+        "p_value_adj": 0.97404,
         "statistic": null,
         "cohens_d": 0.1993,
         "p_value_welch": 0.648114
@@ -9803,7 +9803,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.002072,
+    "p_value": 0.002002,
     "effect_size": 1.4311,
     "direction": "up",
     "severity": "adverse",
@@ -9848,24 +9848,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.136276,
-        "p_value_adj": 0.136276,
+        "p_value": 0.136227,
+        "p_value_adj": 0.136227,
         "statistic": null,
         "cohens_d": 1.1217,
         "p_value_welch": 0.01922
       },
       {
         "dose_level": 2,
-        "p_value": 0.002106,
-        "p_value_adj": 0.002106,
+        "p_value": 0.002032,
+        "p_value_adj": 0.002032,
         "statistic": null,
         "cohens_d": 1.4311,
         "p_value_welch": 0.006077
       },
       {
         "dose_level": 3,
-        "p_value": 0.974038,
-        "p_value_adj": 0.974038,
+        "p_value": 0.97404,
+        "p_value_adj": 0.97404,
         "statistic": null,
         "cohens_d": 0.1993,
         "p_value_welch": 0.648114
@@ -9882,7 +9882,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.974042,
+    "p_value": 0.974031,
     "effect_size": 0.1993,
     "direction": "up",
     "severity": "adverse",
@@ -9927,24 +9927,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.136276,
-        "p_value_adj": 0.136276,
+        "p_value": 0.136227,
+        "p_value_adj": 0.136227,
         "statistic": null,
         "cohens_d": 1.1217,
         "p_value_welch": 0.01922
       },
       {
         "dose_level": 2,
-        "p_value": 0.002106,
-        "p_value_adj": 0.002106,
+        "p_value": 0.002032,
+        "p_value_adj": 0.002032,
         "statistic": null,
         "cohens_d": 1.4311,
         "p_value_welch": 0.006077
       },
       {
         "dose_level": 3,
-        "p_value": 0.974038,
-        "p_value_adj": 0.974038,
+        "p_value": 0.97404,
+        "p_value_adj": 0.97404,
         "statistic": null,
         "cohens_d": 0.1993,
         "p_value_welch": 0.648114
@@ -9961,7 +9961,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.007165,
+    "p_value": 0.007109,
     "effect_size": 1.6875,
     "direction": "up",
     "severity": "adverse",
@@ -10006,24 +10006,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.007165,
-        "p_value_adj": 0.007165,
+        "p_value": 0.007156,
+        "p_value_adj": 0.007156,
         "statistic": null,
         "cohens_d": 1.6875,
         "p_value_welch": 0.001071
       },
       {
         "dose_level": 2,
-        "p_value": 0.004205,
-        "p_value_adj": 0.004205,
+        "p_value": 0.004267,
+        "p_value_adj": 0.004267,
         "statistic": null,
         "cohens_d": 1.3327,
         "p_value_welch": 0.008026
       },
       {
         "dose_level": 3,
-        "p_value": 0.995792,
-        "p_value_adj": 0.995792,
+        "p_value": 0.995791,
+        "p_value_adj": 0.995791,
         "statistic": null,
         "cohens_d": -0.0993,
         "p_value_welch": 0.819446
@@ -10040,7 +10040,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.00422,
+    "p_value": 0.004238,
     "effect_size": 1.3327,
     "direction": "up",
     "severity": "adverse",
@@ -10085,24 +10085,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.007165,
-        "p_value_adj": 0.007165,
+        "p_value": 0.007156,
+        "p_value_adj": 0.007156,
         "statistic": null,
         "cohens_d": 1.6875,
         "p_value_welch": 0.001071
       },
       {
         "dose_level": 2,
-        "p_value": 0.004205,
-        "p_value_adj": 0.004205,
+        "p_value": 0.004267,
+        "p_value_adj": 0.004267,
         "statistic": null,
         "cohens_d": 1.3327,
         "p_value_welch": 0.008026
       },
       {
         "dose_level": 3,
-        "p_value": 0.995792,
-        "p_value_adj": 0.995792,
+        "p_value": 0.995791,
+        "p_value_adj": 0.995791,
         "statistic": null,
         "cohens_d": -0.0993,
         "p_value_welch": 0.819446
@@ -10164,24 +10164,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.007165,
-        "p_value_adj": 0.007165,
+        "p_value": 0.007156,
+        "p_value_adj": 0.007156,
         "statistic": null,
         "cohens_d": 1.6875,
         "p_value_welch": 0.001071
       },
       {
         "dose_level": 2,
-        "p_value": 0.004205,
-        "p_value_adj": 0.004205,
+        "p_value": 0.004267,
+        "p_value_adj": 0.004267,
         "statistic": null,
         "cohens_d": 1.3327,
         "p_value_welch": 0.008026
       },
       {
         "dose_level": 3,
-        "p_value": 0.995792,
-        "p_value_adj": 0.995792,
+        "p_value": 0.995791,
+        "p_value_adj": 0.995791,
         "statistic": null,
         "cohens_d": -0.0993,
         "p_value_welch": 0.819446
@@ -10198,7 +10198,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.46745,
+    "p_value": 0.467419,
     "effect_size": -0.5442,
     "direction": "down",
     "severity": "adverse",
@@ -10243,24 +10243,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.467389,
-        "p_value_adj": 0.467389,
+        "p_value": 0.467507,
+        "p_value_adj": 0.467507,
         "statistic": null,
         "cohens_d": -0.5442,
         "p_value_welch": 0.225963
       },
       {
         "dose_level": 2,
-        "p_value": 0.015793,
-        "p_value_adj": 0.015793,
+        "p_value": 0.015829,
+        "p_value_adj": 0.015829,
         "statistic": null,
         "cohens_d": -1.4008,
         "p_value_welch": 0.005088
       },
       {
         "dose_level": 3,
-        "p_value": 0.288228,
-        "p_value_adj": 0.288228,
+        "p_value": 0.288091,
+        "p_value_adj": 0.288091,
         "statistic": null,
         "cohens_d": -0.7382,
         "p_value_welch": 0.120261
@@ -10277,7 +10277,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.015743,
+    "p_value": 0.015757,
     "effect_size": -1.4008,
     "direction": "down",
     "severity": "adverse",
@@ -10322,24 +10322,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.467389,
-        "p_value_adj": 0.467389,
+        "p_value": 0.467507,
+        "p_value_adj": 0.467507,
         "statistic": null,
         "cohens_d": -0.5442,
         "p_value_welch": 0.225963
       },
       {
         "dose_level": 2,
-        "p_value": 0.015793,
-        "p_value_adj": 0.015793,
+        "p_value": 0.015829,
+        "p_value_adj": 0.015829,
         "statistic": null,
         "cohens_d": -1.4008,
         "p_value_welch": 0.005088
       },
       {
         "dose_level": 3,
-        "p_value": 0.288228,
-        "p_value_adj": 0.288228,
+        "p_value": 0.288091,
+        "p_value_adj": 0.288091,
         "statistic": null,
         "cohens_d": -0.7382,
         "p_value_welch": 0.120261
@@ -10356,7 +10356,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.288168,
+    "p_value": 0.288147,
     "effect_size": -0.7382,
     "direction": "down",
     "severity": "adverse",
@@ -10401,24 +10401,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.467389,
-        "p_value_adj": 0.467389,
+        "p_value": 0.467507,
+        "p_value_adj": 0.467507,
         "statistic": null,
         "cohens_d": -0.5442,
         "p_value_welch": 0.225963
       },
       {
         "dose_level": 2,
-        "p_value": 0.015793,
-        "p_value_adj": 0.015793,
+        "p_value": 0.015829,
+        "p_value_adj": 0.015829,
         "statistic": null,
         "cohens_d": -1.4008,
         "p_value_welch": 0.005088
       },
       {
         "dose_level": 3,
-        "p_value": 0.288228,
-        "p_value_adj": 0.288228,
+        "p_value": 0.288091,
+        "p_value_adj": 0.288091,
         "statistic": null,
         "cohens_d": -0.7382,
         "p_value_welch": 0.120261
@@ -10435,7 +10435,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.97295,
+    "p_value": 0.972961,
     "effect_size": 0.1494,
     "direction": "up",
     "severity": "adverse",
@@ -10480,24 +10480,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.972953,
-        "p_value_adj": 0.972953,
+        "p_value": 0.972952,
+        "p_value_adj": 0.972952,
         "statistic": null,
         "cohens_d": 0.1494,
         "p_value_welch": 0.731976
       },
       {
         "dose_level": 2,
-        "p_value": 0.831278,
-        "p_value_adj": 0.831278,
+        "p_value": 0.831294,
+        "p_value_adj": 0.831294,
         "statistic": null,
         "cohens_d": 0.3056,
         "p_value_welch": 0.485952
       },
       {
         "dose_level": 3,
-        "p_value": 0.150773,
-        "p_value_adj": 0.150773,
+        "p_value": 0.15069,
+        "p_value_adj": 0.15069,
         "statistic": null,
         "cohens_d": 1.0052,
         "p_value_welch": 0.030826
@@ -10514,7 +10514,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.831255,
+    "p_value": 0.831299,
     "effect_size": 0.3056,
     "direction": "up",
     "severity": "adverse",
@@ -10559,24 +10559,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.972953,
-        "p_value_adj": 0.972953,
+        "p_value": 0.972952,
+        "p_value_adj": 0.972952,
         "statistic": null,
         "cohens_d": 0.1494,
         "p_value_welch": 0.731976
       },
       {
         "dose_level": 2,
-        "p_value": 0.831278,
-        "p_value_adj": 0.831278,
+        "p_value": 0.831294,
+        "p_value_adj": 0.831294,
         "statistic": null,
         "cohens_d": 0.3056,
         "p_value_welch": 0.485952
       },
       {
         "dose_level": 3,
-        "p_value": 0.150773,
-        "p_value_adj": 0.150773,
+        "p_value": 0.15069,
+        "p_value_adj": 0.15069,
         "statistic": null,
         "cohens_d": 1.0052,
         "p_value_welch": 0.030826
@@ -10593,7 +10593,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.150746,
+    "p_value": 0.1507,
     "effect_size": 1.0052,
     "direction": "up",
     "severity": "adverse",
@@ -10638,24 +10638,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.972953,
-        "p_value_adj": 0.972953,
+        "p_value": 0.972952,
+        "p_value_adj": 0.972952,
         "statistic": null,
         "cohens_d": 0.1494,
         "p_value_welch": 0.731976
       },
       {
         "dose_level": 2,
-        "p_value": 0.831278,
-        "p_value_adj": 0.831278,
+        "p_value": 0.831294,
+        "p_value_adj": 0.831294,
         "statistic": null,
         "cohens_d": 0.3056,
         "p_value_welch": 0.485952
       },
       {
         "dose_level": 3,
-        "p_value": 0.150773,
-        "p_value_adj": 0.150773,
+        "p_value": 0.15069,
+        "p_value_adj": 0.15069,
         "statistic": null,
         "cohens_d": 1.0052,
         "p_value_welch": 0.030826
@@ -10672,7 +10672,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.23516,
+    "p_value": 0.23514,
     "effect_size": -0.6311,
     "direction": "down",
     "severity": "adverse",
@@ -10717,24 +10717,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.2351,
-        "p_value_adj": 0.2351,
+        "p_value": 0.235111,
+        "p_value_adj": 0.235111,
         "statistic": null,
         "cohens_d": -0.6311,
         "p_value_welch": 0.175324
       },
       {
         "dose_level": 2,
-        "p_value": 0.052734,
-        "p_value_adj": 0.052734,
+        "p_value": 0.052653,
+        "p_value_adj": 0.052653,
         "statistic": null,
         "cohens_d": -1.0809,
         "p_value_welch": 0.037079
       },
       {
         "dose_level": 3,
-        "p_value": 0.06446,
-        "p_value_adj": 0.06446,
+        "p_value": 0.064405,
+        "p_value_adj": 0.064405,
         "statistic": null,
         "cohens_d": -0.9151,
         "p_value_welch": 0.059715
@@ -10751,7 +10751,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.052675,
+    "p_value": 0.052687,
     "effect_size": -1.0809,
     "direction": "down",
     "severity": "adverse",
@@ -10796,24 +10796,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.2351,
-        "p_value_adj": 0.2351,
+        "p_value": 0.235111,
+        "p_value_adj": 0.235111,
         "statistic": null,
         "cohens_d": -0.6311,
         "p_value_welch": 0.175324
       },
       {
         "dose_level": 2,
-        "p_value": 0.052734,
-        "p_value_adj": 0.052734,
+        "p_value": 0.052653,
+        "p_value_adj": 0.052653,
         "statistic": null,
         "cohens_d": -1.0809,
         "p_value_welch": 0.037079
       },
       {
         "dose_level": 3,
-        "p_value": 0.06446,
-        "p_value_adj": 0.06446,
+        "p_value": 0.064405,
+        "p_value_adj": 0.064405,
         "statistic": null,
         "cohens_d": -0.9151,
         "p_value_welch": 0.059715
@@ -10830,7 +10830,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.064442,
+    "p_value": 0.064415,
     "effect_size": -0.9151,
     "direction": "down",
     "severity": "adverse",
@@ -10875,24 +10875,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.2351,
-        "p_value_adj": 0.2351,
+        "p_value": 0.235111,
+        "p_value_adj": 0.235111,
         "statistic": null,
         "cohens_d": -0.6311,
         "p_value_welch": 0.175324
       },
       {
         "dose_level": 2,
-        "p_value": 0.052734,
-        "p_value_adj": 0.052734,
+        "p_value": 0.052653,
+        "p_value_adj": 0.052653,
         "statistic": null,
         "cohens_d": -1.0809,
         "p_value_welch": 0.037079
       },
       {
         "dose_level": 3,
-        "p_value": 0.06446,
-        "p_value_adj": 0.06446,
+        "p_value": 0.064405,
+        "p_value_adj": 0.064405,
         "statistic": null,
         "cohens_d": -0.9151,
         "p_value_welch": 0.059715
@@ -10909,7 +10909,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.556761,
+    "p_value": 0.556818,
     "effect_size": 0.5836,
     "direction": "up",
     "severity": "adverse",
@@ -10954,24 +10954,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.556813,
-        "p_value_adj": 0.556813,
+        "p_value": 0.556826,
+        "p_value_adj": 0.556826,
         "statistic": null,
         "cohens_d": 0.5836,
         "p_value_welch": 0.19655
       },
       {
         "dose_level": 2,
-        "p_value": 0.015167,
-        "p_value_adj": 0.015167,
+        "p_value": 0.015155,
+        "p_value_adj": 0.015155,
         "statistic": null,
         "cohens_d": 1.6341,
         "p_value_welch": 0.002089
       },
       {
         "dose_level": 3,
-        "p_value": 0.001308,
-        "p_value_adj": 0.001308,
+        "p_value": 0.001312,
+        "p_value_adj": 0.001312,
         "statistic": null,
         "cohens_d": 1.6668,
         "p_value_welch": 0.002342
@@ -10988,7 +10988,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.015142,
+    "p_value": 0.015158,
     "effect_size": 1.6341,
     "direction": "up",
     "severity": "adverse",
@@ -11033,24 +11033,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.556813,
-        "p_value_adj": 0.556813,
+        "p_value": 0.556826,
+        "p_value_adj": 0.556826,
         "statistic": null,
         "cohens_d": 0.5836,
         "p_value_welch": 0.19655
       },
       {
         "dose_level": 2,
-        "p_value": 0.015167,
-        "p_value_adj": 0.015167,
+        "p_value": 0.015155,
+        "p_value_adj": 0.015155,
         "statistic": null,
         "cohens_d": 1.6341,
         "p_value_welch": 0.002089
       },
       {
         "dose_level": 3,
-        "p_value": 0.001308,
-        "p_value_adj": 0.001308,
+        "p_value": 0.001312,
+        "p_value_adj": 0.001312,
         "statistic": null,
         "cohens_d": 1.6668,
         "p_value_welch": 0.002342
@@ -11067,7 +11067,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.001322,
+    "p_value": 0.001323,
     "effect_size": 1.6668,
     "direction": "up",
     "severity": "adverse",
@@ -11112,24 +11112,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.556813,
-        "p_value_adj": 0.556813,
+        "p_value": 0.556826,
+        "p_value_adj": 0.556826,
         "statistic": null,
         "cohens_d": 0.5836,
         "p_value_welch": 0.19655
       },
       {
         "dose_level": 2,
-        "p_value": 0.015167,
-        "p_value_adj": 0.015167,
+        "p_value": 0.015155,
+        "p_value_adj": 0.015155,
         "statistic": null,
         "cohens_d": 1.6341,
         "p_value_welch": 0.002089
       },
       {
         "dose_level": 3,
-        "p_value": 0.001308,
-        "p_value_adj": 0.001308,
+        "p_value": 0.001312,
+        "p_value_adj": 0.001312,
         "statistic": null,
         "cohens_d": 1.6668,
         "p_value_welch": 0.002342
@@ -11146,7 +11146,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.001544,
+    "p_value": 0.001552,
     "effect_size": -1.5416,
     "direction": "down",
     "severity": "adverse",
@@ -11191,24 +11191,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.00161,
-        "p_value_adj": 0.00161,
+        "p_value": 0.001557,
+        "p_value_adj": 0.001557,
         "statistic": null,
         "cohens_d": -1.5416,
         "p_value_welch": 0.005906
       },
       {
         "dose_level": 2,
-        "p_value": 0.003078,
-        "p_value_adj": 0.003078,
+        "p_value": 0.003005,
+        "p_value_adj": 0.003005,
         "statistic": null,
         "cohens_d": -1.2459,
         "p_value_welch": 0.014152
       },
       {
         "dose_level": 3,
-        "p_value": 5.6e-05,
-        "p_value_adj": 5.6e-05,
+        "p_value": 6.1e-05,
+        "p_value_adj": 6.1e-05,
         "statistic": null,
         "cohens_d": -1.9839,
         "p_value_welch": 0.001067
@@ -11225,7 +11225,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.003013,
+    "p_value": 0.00308,
     "effect_size": -1.2459,
     "direction": "down",
     "severity": "adverse",
@@ -11270,24 +11270,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.00161,
-        "p_value_adj": 0.00161,
+        "p_value": 0.001557,
+        "p_value_adj": 0.001557,
         "statistic": null,
         "cohens_d": -1.5416,
         "p_value_welch": 0.005906
       },
       {
         "dose_level": 2,
-        "p_value": 0.003078,
-        "p_value_adj": 0.003078,
+        "p_value": 0.003005,
+        "p_value_adj": 0.003005,
         "statistic": null,
         "cohens_d": -1.2459,
         "p_value_welch": 0.014152
       },
       {
         "dose_level": 3,
-        "p_value": 5.6e-05,
-        "p_value_adj": 5.6e-05,
+        "p_value": 6.1e-05,
+        "p_value_adj": 6.1e-05,
         "statistic": null,
         "cohens_d": -1.9839,
         "p_value_welch": 0.001067
@@ -11349,24 +11349,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.00161,
-        "p_value_adj": 0.00161,
+        "p_value": 0.001557,
+        "p_value_adj": 0.001557,
         "statistic": null,
         "cohens_d": -1.5416,
         "p_value_welch": 0.005906
       },
       {
         "dose_level": 2,
-        "p_value": 0.003078,
-        "p_value_adj": 0.003078,
+        "p_value": 0.003005,
+        "p_value_adj": 0.003005,
         "statistic": null,
         "cohens_d": -1.2459,
         "p_value_welch": 0.014152
       },
       {
         "dose_level": 3,
-        "p_value": 5.6e-05,
-        "p_value_adj": 5.6e-05,
+        "p_value": 6.1e-05,
+        "p_value_adj": 6.1e-05,
         "statistic": null,
         "cohens_d": -1.9839,
         "p_value_welch": 0.001067
@@ -11383,7 +11383,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.984257,
+    "p_value": 0.984258,
     "effect_size": -0.0905,
     "direction": "down",
     "severity": "adverse",
@@ -11404,7 +11404,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.269481,
+    "p_value": 0.269396,
     "effect_size": -0.565,
     "direction": "down",
     "severity": "adverse",
@@ -11446,7 +11446,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.426298,
+    "p_value": 0.426336,
     "effect_size": 0.3973,
     "direction": "down",
     "severity": "adverse",
@@ -11467,7 +11467,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.971793,
+    "p_value": 0.971803,
     "effect_size": 0.1159,
     "direction": "down",
     "severity": "adverse",
@@ -11509,7 +11509,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.566713,
+    "p_value": 0.566788,
     "effect_size": -0.3491,
     "direction": "down",
     "severity": "adverse",
@@ -11530,7 +11530,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.142262,
+    "p_value": 0.142222,
     "effect_size": -0.6614,
     "direction": "down",
     "severity": "adverse",
@@ -11572,7 +11572,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.386864,
+    "p_value": 0.386879,
     "effect_size": 0.4763,
     "direction": "down",
     "severity": "adverse",
@@ -11593,7 +11593,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.661013,
+    "p_value": 0.661009,
     "effect_size": -0.2903,
     "direction": "down",
     "severity": "adverse",
@@ -11656,7 +11656,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.786204,
+    "p_value": 0.786185,
     "effect_size": -0.2536,
     "direction": "down",
     "severity": "adverse",
@@ -11698,7 +11698,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.702087,
+    "p_value": 0.70212,
     "effect_size": 0.2811,
     "direction": "down",
     "severity": "adverse",
@@ -11719,7 +11719,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.120554,
+    "p_value": 0.120535,
     "effect_size": -0.8226,
     "direction": "down",
     "severity": "adverse",
@@ -11761,7 +11761,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.521904,
+    "p_value": 0.521912,
     "effect_size": 0.3853,
     "direction": "down",
     "severity": "adverse",
@@ -11782,7 +11782,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.813064,
+    "p_value": 0.813083,
     "effect_size": 0.2372,
     "direction": "down",
     "severity": "adverse",
@@ -11845,7 +11845,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.076976,
+    "p_value": 0.076984,
     "effect_size": -0.7619,
     "direction": "down",
     "severity": "adverse",
@@ -11887,7 +11887,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.394528,
+    "p_value": 0.394552,
     "effect_size": 0.5039,
     "direction": "down",
     "severity": "adverse",
@@ -11908,7 +11908,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.564755,
+    "p_value": 0.564706,
     "effect_size": 0.354,
     "direction": "down",
     "severity": "adverse",
@@ -11950,7 +11950,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.110594,
+    "p_value": 0.110525,
     "effect_size": 0.6238,
     "direction": "down",
     "severity": "adverse",
@@ -11971,7 +11971,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.758621,
+    "p_value": 0.758647,
     "effect_size": 0.2925,
     "direction": "down",
     "severity": "adverse",
@@ -11992,7 +11992,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 5e-06,
+    "p_value": 3e-06,
     "effect_size": -2.3079,
     "direction": "down",
     "severity": "adverse",
@@ -12013,7 +12013,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.104265,
+    "p_value": 0.104295,
     "effect_size": -0.7507,
     "direction": "down",
     "severity": "adverse",
@@ -12034,7 +12034,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.214682,
+    "p_value": 0.214692,
     "effect_size": -0.5808,
     "direction": "down",
     "severity": "adverse",
@@ -12076,7 +12076,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.250231,
+    "p_value": 0.250218,
     "effect_size": -0.6342,
     "direction": "down",
     "severity": "adverse",
@@ -12097,7 +12097,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.089085,
+    "p_value": 0.089084,
     "effect_size": -0.7115,
     "direction": "down",
     "severity": "adverse",
@@ -12139,7 +12139,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.953173,
+    "p_value": 0.953187,
     "effect_size": -0.162,
     "direction": "down",
     "severity": "adverse",
@@ -12160,7 +12160,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.999742,
+    "p_value": 0.999741,
     "effect_size": -0.0226,
     "direction": "down",
     "severity": "adverse",
@@ -12202,7 +12202,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.71847,
+    "p_value": 0.718526,
     "effect_size": -0.2728,
     "direction": "down",
     "severity": "adverse",
@@ -12265,7 +12265,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.987568,
+    "p_value": 0.987571,
     "effect_size": -0.0917,
     "direction": "down",
     "severity": "adverse",
@@ -12286,7 +12286,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.901591,
+    "p_value": 0.901594,
     "effect_size": 0.175,
     "direction": "down",
     "severity": "adverse",
@@ -12328,7 +12328,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.670428,
+    "p_value": 0.67048,
     "effect_size": 0.3045,
     "direction": "down",
     "severity": "adverse",
@@ -12349,7 +12349,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.995972,
+    "p_value": 0.995973,
     "effect_size": 0.0603,
     "direction": "down",
     "severity": "adverse",
@@ -12391,7 +12391,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.255537,
+    "p_value": 0.255519,
     "effect_size": 0.5741,
     "direction": "down",
     "severity": "adverse",
@@ -12412,7 +12412,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.884566,
+    "p_value": 0.884575,
     "effect_size": 0.1929,
     "direction": "down",
     "severity": "adverse",
@@ -12454,7 +12454,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.639396,
+    "p_value": 0.639465,
     "effect_size": -0.4008,
     "direction": "down",
     "severity": "adverse",
@@ -12475,7 +12475,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.802937,
+    "p_value": 0.80294,
     "effect_size": -0.2208,
     "direction": "down",
     "severity": "adverse",
@@ -12517,7 +12517,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.994546,
+    "p_value": 0.994545,
     "effect_size": -0.0709,
     "direction": "down",
     "severity": "adverse",
@@ -12538,7 +12538,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.797263,
+    "p_value": 0.797241,
     "effect_size": -0.2672,
     "direction": "down",
     "severity": "adverse",
@@ -12580,7 +12580,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.30465,
+    "p_value": 0.304645,
     "effect_size": 0.5521,
     "direction": "down",
     "severity": "adverse",
@@ -12601,7 +12601,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.291549,
+    "p_value": 0.291514,
     "effect_size": -0.4983,
     "direction": "down",
     "severity": "adverse",
@@ -12622,7 +12622,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.007193,
+    "p_value": 0.007208,
     "effect_size": -1.1549,
     "direction": "down",
     "severity": "adverse",
@@ -12643,7 +12643,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.809227,
+    "p_value": 0.809226,
     "effect_size": 0.2624,
     "direction": "down",
     "severity": "adverse",
@@ -12664,7 +12664,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.18311,
+    "p_value": 0.183108,
     "effect_size": 0.5835,
     "direction": "down",
     "severity": "adverse",
@@ -12727,7 +12727,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.526897,
+    "p_value": 0.526939,
     "effect_size": -0.4178,
     "direction": "down",
     "severity": "adverse",
@@ -12769,7 +12769,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.984235,
+    "p_value": 0.984239,
     "effect_size": -0.1016,
     "direction": "down",
     "severity": "adverse",
@@ -12832,7 +12832,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.60928,
+    "p_value": 0.609336,
     "effect_size": -0.3252,
     "direction": "down",
     "severity": "adverse",
@@ -12853,7 +12853,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.342112,
+    "p_value": 0.342064,
     "effect_size": -0.5276,
     "direction": "down",
     "severity": "adverse",
@@ -12895,7 +12895,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.89566,
+    "p_value": 0.895635,
     "effect_size": 0.2473,
     "direction": "down",
     "severity": "adverse",
@@ -12916,7 +12916,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.975241,
+    "p_value": 0.975236,
     "effect_size": 0.131,
     "direction": "down",
     "severity": "adverse",
@@ -12937,7 +12937,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.000139,
+    "p_value": 0.000116,
     "effect_size": -2.9651,
     "direction": "down",
     "severity": "adverse",
@@ -12958,7 +12958,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.171751,
+    "p_value": 0.171717,
     "effect_size": 0.7828,
     "direction": "down",
     "severity": "adverse",
@@ -12979,7 +12979,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.473002,
+    "p_value": 0.473023,
     "effect_size": -0.448,
     "direction": "down",
     "severity": "adverse",
@@ -13021,7 +13021,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.970992,
+    "p_value": 0.970983,
     "effect_size": -0.6659,
     "direction": "up",
     "severity": "adverse",
@@ -13066,24 +13066,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.970995,
-        "p_value_adj": 0.970995,
+        "p_value": 0.971001,
+        "p_value_adj": 0.971001,
         "statistic": null,
         "cohens_d": -0.6659,
         "p_value_welch": 0.13745
       },
       {
         "dose_level": 2,
-        "p_value": 0.000531,
-        "p_value_adj": 0.000531,
+        "p_value": 0.000535,
+        "p_value_adj": 0.000535,
         "statistic": null,
         "cohens_d": 1.6392,
         "p_value_welch": 0.003741
       },
       {
         "dose_level": 3,
-        "p_value": 0.000371,
-        "p_value_adj": 0.000371,
+        "p_value": 0.000382,
+        "p_value_adj": 0.000382,
         "statistic": null,
         "cohens_d": 2.0266,
         "p_value_welch": 0.000904
@@ -13100,7 +13100,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.000535,
+    "p_value": 0.00055,
     "effect_size": 1.6392,
     "direction": "up",
     "severity": "adverse",
@@ -13145,24 +13145,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.970995,
-        "p_value_adj": 0.970995,
+        "p_value": 0.971001,
+        "p_value_adj": 0.971001,
         "statistic": null,
         "cohens_d": -0.6659,
         "p_value_welch": 0.13745
       },
       {
         "dose_level": 2,
-        "p_value": 0.000531,
-        "p_value_adj": 0.000531,
+        "p_value": 0.000535,
+        "p_value_adj": 0.000535,
         "statistic": null,
         "cohens_d": 1.6392,
         "p_value_welch": 0.003741
       },
       {
         "dose_level": 3,
-        "p_value": 0.000371,
-        "p_value_adj": 0.000371,
+        "p_value": 0.000382,
+        "p_value_adj": 0.000382,
         "statistic": null,
         "cohens_d": 2.0266,
         "p_value_welch": 0.000904
@@ -13179,7 +13179,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.000373,
+    "p_value": 0.000363,
     "effect_size": 2.0266,
     "direction": "up",
     "severity": "adverse",
@@ -13224,24 +13224,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.970995,
-        "p_value_adj": 0.970995,
+        "p_value": 0.971001,
+        "p_value_adj": 0.971001,
         "statistic": null,
         "cohens_d": -0.6659,
         "p_value_welch": 0.13745
       },
       {
         "dose_level": 2,
-        "p_value": 0.000531,
-        "p_value_adj": 0.000531,
+        "p_value": 0.000535,
+        "p_value_adj": 0.000535,
         "statistic": null,
         "cohens_d": 1.6392,
         "p_value_welch": 0.003741
       },
       {
         "dose_level": 3,
-        "p_value": 0.000371,
-        "p_value_adj": 0.000371,
+        "p_value": 0.000382,
+        "p_value_adj": 0.000382,
         "statistic": null,
         "cohens_d": 2.0266,
         "p_value_welch": 0.000904
@@ -13258,7 +13258,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.375071,
+    "p_value": 0.374997,
     "effect_size": -0.5984,
     "direction": "down",
     "severity": "adverse",
@@ -13303,24 +13303,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.318337,
-        "p_value_adj": 0.318337,
+        "p_value": 0.318197,
+        "p_value_adj": 0.318197,
         "statistic": null,
         "cohens_d": -0.6631,
         "p_value_welch": 0.144016
       },
       {
         "dose_level": 2,
-        "p_value": 0.702731,
-        "p_value_adj": 0.702731,
+        "p_value": 0.702753,
+        "p_value_adj": 0.702753,
         "statistic": null,
         "cohens_d": -0.5551,
         "p_value_welch": 0.237437
       },
       {
         "dose_level": 3,
-        "p_value": 0.003463,
-        "p_value_adj": 0.003463,
+        "p_value": 0.003379,
+        "p_value_adj": 0.003379,
         "statistic": null,
         "cohens_d": -1.4067,
         "p_value_welch": 0.007671
@@ -13337,7 +13337,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.792301,
+    "p_value": 0.792386,
     "effect_size": -0.4506,
     "direction": "down",
     "severity": "adverse",
@@ -13382,24 +13382,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.318337,
-        "p_value_adj": 0.318337,
+        "p_value": 0.318197,
+        "p_value_adj": 0.318197,
         "statistic": null,
         "cohens_d": -0.6631,
         "p_value_welch": 0.144016
       },
       {
         "dose_level": 2,
-        "p_value": 0.702731,
-        "p_value_adj": 0.702731,
+        "p_value": 0.702753,
+        "p_value_adj": 0.702753,
         "statistic": null,
         "cohens_d": -0.5551,
         "p_value_welch": 0.237437
       },
       {
         "dose_level": 3,
-        "p_value": 0.003463,
-        "p_value_adj": 0.003463,
+        "p_value": 0.003379,
+        "p_value_adj": 0.003379,
         "statistic": null,
         "cohens_d": -1.4067,
         "p_value_welch": 0.007671
@@ -13416,7 +13416,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.002459,
+    "p_value": 0.002384,
     "effect_size": -1.4184,
     "direction": "down",
     "severity": "adverse",
@@ -13461,24 +13461,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.318337,
-        "p_value_adj": 0.318337,
+        "p_value": 0.318197,
+        "p_value_adj": 0.318197,
         "statistic": null,
         "cohens_d": -0.6631,
         "p_value_welch": 0.144016
       },
       {
         "dose_level": 2,
-        "p_value": 0.702731,
-        "p_value_adj": 0.702731,
+        "p_value": 0.702753,
+        "p_value_adj": 0.702753,
         "statistic": null,
         "cohens_d": -0.5551,
         "p_value_welch": 0.237437
       },
       {
         "dose_level": 3,
-        "p_value": 0.003463,
-        "p_value_adj": 0.003463,
+        "p_value": 0.003379,
+        "p_value_adj": 0.003379,
         "statistic": null,
         "cohens_d": -1.4067,
         "p_value_welch": 0.007671
@@ -13495,7 +13495,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.226579,
+    "p_value": 0.22663,
     "effect_size": -0.7525,
     "direction": "up",
     "severity": "adverse",
@@ -13540,24 +13540,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.116501,
-        "p_value_adj": 0.116501,
+        "p_value": 0.116439,
+        "p_value_adj": 0.116439,
         "statistic": null,
         "cohens_d": -0.8816,
         "p_value_welch": 0.060103
       },
       {
         "dose_level": 2,
-        "p_value": 0.657375,
-        "p_value_adj": 0.657375,
+        "p_value": 0.657328,
+        "p_value_adj": 0.657328,
         "statistic": null,
         "cohens_d": -0.471,
         "p_value_welch": 0.306174
       },
       {
         "dose_level": 3,
-        "p_value": 0.683758,
-        "p_value_adj": 0.683758,
+        "p_value": 0.683766,
+        "p_value_adj": 0.683766,
         "statistic": null,
         "cohens_d": 0.3805,
         "p_value_welch": 0.409464
@@ -13574,7 +13574,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.700028,
+    "p_value": 0.700135,
     "effect_size": -0.4652,
     "direction": "up",
     "severity": "adverse",
@@ -13619,24 +13619,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.116501,
-        "p_value_adj": 0.116501,
+        "p_value": 0.116439,
+        "p_value_adj": 0.116439,
         "statistic": null,
         "cohens_d": -0.8816,
         "p_value_welch": 0.060103
       },
       {
         "dose_level": 2,
-        "p_value": 0.657375,
-        "p_value_adj": 0.657375,
+        "p_value": 0.657328,
+        "p_value_adj": 0.657328,
         "statistic": null,
         "cohens_d": -0.471,
         "p_value_welch": 0.306174
       },
       {
         "dose_level": 3,
-        "p_value": 0.683758,
-        "p_value_adj": 0.683758,
+        "p_value": 0.683766,
+        "p_value_adj": 0.683766,
         "statistic": null,
         "cohens_d": 0.3805,
         "p_value_welch": 0.409464
@@ -13653,7 +13653,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.03884,
+    "p_value": 0.03882,
     "effect_size": 0.9378,
     "direction": "up",
     "severity": "adverse",
@@ -13698,24 +13698,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.116501,
-        "p_value_adj": 0.116501,
+        "p_value": 0.116439,
+        "p_value_adj": 0.116439,
         "statistic": null,
         "cohens_d": -0.8816,
         "p_value_welch": 0.060103
       },
       {
         "dose_level": 2,
-        "p_value": 0.657375,
-        "p_value_adj": 0.657375,
+        "p_value": 0.657328,
+        "p_value_adj": 0.657328,
         "statistic": null,
         "cohens_d": -0.471,
         "p_value_welch": 0.306174
       },
       {
         "dose_level": 3,
-        "p_value": 0.683758,
-        "p_value_adj": 0.683758,
+        "p_value": 0.683766,
+        "p_value_adj": 0.683766,
         "statistic": null,
         "cohens_d": 0.3805,
         "p_value_welch": 0.409464
@@ -13732,7 +13732,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.423927,
+    "p_value": 0.423906,
     "effect_size": -1.1647,
     "direction": "up",
     "severity": "adverse",
@@ -13777,24 +13777,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.423918,
-        "p_value_adj": 0.423918,
+        "p_value": 0.423925,
+        "p_value_adj": 0.423925,
         "statistic": null,
         "cohens_d": -1.1647,
         "p_value_welch": 0.014373
       },
       {
         "dose_level": 2,
-        "p_value": 0.021591,
-        "p_value_adj": 0.021591,
+        "p_value": 0.021598,
+        "p_value_adj": 0.021598,
         "statistic": null,
         "cohens_d": 1.1071,
         "p_value_welch": 0.02613
       },
       {
         "dose_level": 3,
-        "p_value": 0.029747,
-        "p_value_adj": 0.029747,
+        "p_value": 0.0297,
+        "p_value_adj": 0.0297,
         "statistic": null,
         "cohens_d": 1.3002,
         "p_value_welch": 0.010868
@@ -13811,7 +13811,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.02155,
+    "p_value": 0.021611,
     "effect_size": 1.1071,
     "direction": "up",
     "severity": "adverse",
@@ -13856,24 +13856,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.423918,
-        "p_value_adj": 0.423918,
+        "p_value": 0.423925,
+        "p_value_adj": 0.423925,
         "statistic": null,
         "cohens_d": -1.1647,
         "p_value_welch": 0.014373
       },
       {
         "dose_level": 2,
-        "p_value": 0.021591,
-        "p_value_adj": 0.021591,
+        "p_value": 0.021598,
+        "p_value_adj": 0.021598,
         "statistic": null,
         "cohens_d": 1.1071,
         "p_value_welch": 0.02613
       },
       {
         "dose_level": 3,
-        "p_value": 0.029747,
-        "p_value_adj": 0.029747,
+        "p_value": 0.0297,
+        "p_value_adj": 0.0297,
         "statistic": null,
         "cohens_d": 1.3002,
         "p_value_welch": 0.010868
@@ -13890,7 +13890,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.029662,
+    "p_value": 0.029696,
     "effect_size": 1.3002,
     "direction": "up",
     "severity": "adverse",
@@ -13935,24 +13935,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.423918,
-        "p_value_adj": 0.423918,
+        "p_value": 0.423925,
+        "p_value_adj": 0.423925,
         "statistic": null,
         "cohens_d": -1.1647,
         "p_value_welch": 0.014373
       },
       {
         "dose_level": 2,
-        "p_value": 0.021591,
-        "p_value_adj": 0.021591,
+        "p_value": 0.021598,
+        "p_value_adj": 0.021598,
         "statistic": null,
         "cohens_d": 1.1071,
         "p_value_welch": 0.02613
       },
       {
         "dose_level": 3,
-        "p_value": 0.029747,
-        "p_value_adj": 0.029747,
+        "p_value": 0.0297,
+        "p_value_adj": 0.0297,
         "statistic": null,
         "cohens_d": 1.3002,
         "p_value_welch": 0.010868
@@ -13969,7 +13969,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.85737,
+    "p_value": 0.857337,
     "effect_size": -0.2893,
     "direction": "up",
     "severity": "adverse",
@@ -14014,24 +14014,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878004,
-        "p_value_adj": 0.878004,
+        "p_value": 0.878035,
+        "p_value_adj": 0.878035,
         "statistic": null,
         "cohens_d": -0.2752,
         "p_value_welch": 0.555088
       },
       {
         "dose_level": 2,
-        "p_value": 0.814276,
-        "p_value_adj": 0.814276,
+        "p_value": 0.814244,
+        "p_value_adj": 0.814244,
         "statistic": null,
         "cohens_d": 0.299,
         "p_value_welch": 0.514116
       },
       {
         "dose_level": 3,
-        "p_value": 0.007941,
-        "p_value_adj": 0.007941,
+        "p_value": 0.007984,
+        "p_value_adj": 0.007984,
         "statistic": null,
         "cohens_d": 1.1874,
         "p_value_welch": 0.017655
@@ -14048,7 +14048,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.801273,
+    "p_value": 0.801215,
     "effect_size": 0.3036,
     "direction": "up",
     "severity": "adverse",
@@ -14093,24 +14093,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878004,
-        "p_value_adj": 0.878004,
+        "p_value": 0.878035,
+        "p_value_adj": 0.878035,
         "statistic": null,
         "cohens_d": -0.2752,
         "p_value_welch": 0.555088
       },
       {
         "dose_level": 2,
-        "p_value": 0.814276,
-        "p_value_adj": 0.814276,
+        "p_value": 0.814244,
+        "p_value_adj": 0.814244,
         "statistic": null,
         "cohens_d": 0.299,
         "p_value_welch": 0.514116
       },
       {
         "dose_level": 3,
-        "p_value": 0.007941,
-        "p_value_adj": 0.007941,
+        "p_value": 0.007984,
+        "p_value_adj": 0.007984,
         "statistic": null,
         "cohens_d": 1.1874,
         "p_value_welch": 0.017655
@@ -14127,7 +14127,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.002964,
+    "p_value": 0.002975,
     "effect_size": 1.2947,
     "direction": "up",
     "severity": "adverse",
@@ -14172,24 +14172,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.878004,
-        "p_value_adj": 0.878004,
+        "p_value": 0.878035,
+        "p_value_adj": 0.878035,
         "statistic": null,
         "cohens_d": -0.2752,
         "p_value_welch": 0.555088
       },
       {
         "dose_level": 2,
-        "p_value": 0.814276,
-        "p_value_adj": 0.814276,
+        "p_value": 0.814244,
+        "p_value_adj": 0.814244,
         "statistic": null,
         "cohens_d": 0.299,
         "p_value_welch": 0.514116
       },
       {
         "dose_level": 3,
-        "p_value": 0.007941,
-        "p_value_adj": 0.007941,
+        "p_value": 0.007984,
+        "p_value_adj": 0.007984,
         "statistic": null,
         "cohens_d": 1.1874,
         "p_value_welch": 0.017655
@@ -14259,16 +14259,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.000275,
-        "p_value_adj": 0.000275,
+        "p_value": 0.000305,
+        "p_value_adj": 0.000305,
         "statistic": null,
         "cohens_d": 2.1532,
         "p_value_welch": 0.000297
       },
       {
         "dose_level": 3,
-        "p_value": 0.005036,
-        "p_value_adj": 0.005036,
+        "p_value": 0.005029,
+        "p_value_adj": 0.005029,
         "statistic": null,
         "cohens_d": 1.4652,
         "p_value_welch": 0.005526
@@ -14285,7 +14285,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.00027,
+    "p_value": 0.000277,
     "effect_size": 2.1532,
     "direction": "up",
     "severity": "adverse",
@@ -14338,16 +14338,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.000275,
-        "p_value_adj": 0.000275,
+        "p_value": 0.000305,
+        "p_value_adj": 0.000305,
         "statistic": null,
         "cohens_d": 2.1532,
         "p_value_welch": 0.000297
       },
       {
         "dose_level": 3,
-        "p_value": 0.005036,
-        "p_value_adj": 0.005036,
+        "p_value": 0.005029,
+        "p_value_adj": 0.005029,
         "statistic": null,
         "cohens_d": 1.4652,
         "p_value_welch": 0.005526
@@ -14364,7 +14364,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.005028,
+    "p_value": 0.00503,
     "effect_size": 1.4652,
     "direction": "up",
     "severity": "adverse",
@@ -14417,16 +14417,16 @@
       },
       {
         "dose_level": 2,
-        "p_value": 0.000275,
-        "p_value_adj": 0.000275,
+        "p_value": 0.000305,
+        "p_value_adj": 0.000305,
         "statistic": null,
         "cohens_d": 2.1532,
         "p_value_welch": 0.000297
       },
       {
         "dose_level": 3,
-        "p_value": 0.005036,
-        "p_value_adj": 0.005036,
+        "p_value": 0.005029,
+        "p_value_adj": 0.005029,
         "statistic": null,
         "cohens_d": 1.4652,
         "p_value_welch": 0.005526
@@ -14443,7 +14443,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.679484,
+    "p_value": 0.679479,
     "effect_size": -1.0998,
     "direction": "up",
     "severity": "adverse",
@@ -14488,24 +14488,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.679477,
-        "p_value_adj": 0.679477,
+        "p_value": 0.679431,
+        "p_value_adj": 0.679431,
         "statistic": null,
         "cohens_d": -1.0998,
         "p_value_welch": 0.019748
       },
       {
         "dose_level": 2,
-        "p_value": 0.003181,
-        "p_value_adj": 0.003181,
+        "p_value": 0.003203,
+        "p_value_adj": 0.003203,
         "statistic": null,
         "cohens_d": 1.2871,
         "p_value_welch": 0.013666
       },
       {
         "dose_level": 3,
-        "p_value": 0.042125,
-        "p_value_adj": 0.042125,
+        "p_value": 0.04224,
+        "p_value_adj": 0.04224,
         "statistic": null,
         "cohens_d": 1.418,
         "p_value_welch": 0.007144
@@ -14522,7 +14522,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.003127,
+    "p_value": 0.003144,
     "effect_size": 1.2871,
     "direction": "up",
     "severity": "adverse",
@@ -14567,24 +14567,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.679477,
-        "p_value_adj": 0.679477,
+        "p_value": 0.679431,
+        "p_value_adj": 0.679431,
         "statistic": null,
         "cohens_d": -1.0998,
         "p_value_welch": 0.019748
       },
       {
         "dose_level": 2,
-        "p_value": 0.003181,
-        "p_value_adj": 0.003181,
+        "p_value": 0.003203,
+        "p_value_adj": 0.003203,
         "statistic": null,
         "cohens_d": 1.2871,
         "p_value_welch": 0.013666
       },
       {
         "dose_level": 3,
-        "p_value": 0.042125,
-        "p_value_adj": 0.042125,
+        "p_value": 0.04224,
+        "p_value_adj": 0.04224,
         "statistic": null,
         "cohens_d": 1.418,
         "p_value_welch": 0.007144
@@ -14601,7 +14601,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.042132,
+    "p_value": 0.042101,
     "effect_size": 1.418,
     "direction": "up",
     "severity": "adverse",
@@ -14646,24 +14646,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.679477,
-        "p_value_adj": 0.679477,
+        "p_value": 0.679431,
+        "p_value_adj": 0.679431,
         "statistic": null,
         "cohens_d": -1.0998,
         "p_value_welch": 0.019748
       },
       {
         "dose_level": 2,
-        "p_value": 0.003181,
-        "p_value_adj": 0.003181,
+        "p_value": 0.003203,
+        "p_value_adj": 0.003203,
         "statistic": null,
         "cohens_d": 1.2871,
         "p_value_welch": 0.013666
       },
       {
         "dose_level": 3,
-        "p_value": 0.042125,
-        "p_value_adj": 0.042125,
+        "p_value": 0.04224,
+        "p_value_adj": 0.04224,
         "statistic": null,
         "cohens_d": 1.418,
         "p_value_welch": 0.007144
@@ -14680,7 +14680,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.179811,
+    "p_value": 0.179813,
     "effect_size": -0.841,
     "direction": "down",
     "severity": "adverse",
@@ -14725,16 +14725,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.129285,
-        "p_value_adj": 0.129285,
+        "p_value": 0.129305,
+        "p_value_adj": 0.129305,
         "statistic": null,
         "cohens_d": -0.9558,
         "p_value_welch": 0.060357
       },
       {
         "dose_level": 2,
-        "p_value": 0.078054,
-        "p_value_adj": 0.078054,
+        "p_value": 0.07799,
+        "p_value_adj": 0.07799,
         "statistic": null,
         "cohens_d": -0.958,
         "p_value_welch": 0.050446
@@ -14759,7 +14759,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.109265,
+    "p_value": 0.109323,
     "effect_size": -0.8612,
     "direction": "down",
     "severity": "adverse",
@@ -14804,16 +14804,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.129285,
-        "p_value_adj": 0.129285,
+        "p_value": 0.129305,
+        "p_value_adj": 0.129305,
         "statistic": null,
         "cohens_d": -0.9558,
         "p_value_welch": 0.060357
       },
       {
         "dose_level": 2,
-        "p_value": 0.078054,
-        "p_value_adj": 0.078054,
+        "p_value": 0.07799,
+        "p_value_adj": 0.07799,
         "statistic": null,
         "cohens_d": -0.958,
         "p_value_welch": 0.050446
@@ -14883,16 +14883,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.129285,
-        "p_value_adj": 0.129285,
+        "p_value": 0.129305,
+        "p_value_adj": 0.129305,
         "statistic": null,
         "cohens_d": -0.9558,
         "p_value_welch": 0.060357
       },
       {
         "dose_level": 2,
-        "p_value": 0.078054,
-        "p_value_adj": 0.078054,
+        "p_value": 0.07799,
+        "p_value_adj": 0.07799,
         "statistic": null,
         "cohens_d": -0.958,
         "p_value_welch": 0.050446
@@ -14917,7 +14917,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.937324,
+    "p_value": 0.937292,
     "effect_size": -0.5483,
     "direction": "up",
     "severity": "adverse",
@@ -14962,16 +14962,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.937318,
-        "p_value_adj": 0.937318,
+        "p_value": 0.937327,
+        "p_value_adj": 0.937327,
         "statistic": null,
         "cohens_d": -0.5483,
         "p_value_welch": 0.217306
       },
       {
         "dose_level": 2,
-        "p_value": 0.002993,
-        "p_value_adj": 0.002993,
+        "p_value": 0.003022,
+        "p_value_adj": 0.003022,
         "statistic": null,
         "cohens_d": 1.3195,
         "p_value_welch": 0.011472
@@ -14996,7 +14996,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.003043,
+    "p_value": 0.003018,
     "effect_size": 1.3195,
     "direction": "up",
     "severity": "adverse",
@@ -15041,16 +15041,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.937318,
-        "p_value_adj": 0.937318,
+        "p_value": 0.937327,
+        "p_value_adj": 0.937327,
         "statistic": null,
         "cohens_d": -0.5483,
         "p_value_welch": 0.217306
       },
       {
         "dose_level": 2,
-        "p_value": 0.002993,
-        "p_value_adj": 0.002993,
+        "p_value": 0.003022,
+        "p_value_adj": 0.003022,
         "statistic": null,
         "cohens_d": 1.3195,
         "p_value_welch": 0.011472
@@ -15075,7 +15075,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 3.5e-05,
+    "p_value": 3e-05,
     "effect_size": 2.6113,
     "direction": "up",
     "severity": "adverse",
@@ -15120,16 +15120,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.937318,
-        "p_value_adj": 0.937318,
+        "p_value": 0.937327,
+        "p_value_adj": 0.937327,
         "statistic": null,
         "cohens_d": -0.5483,
         "p_value_welch": 0.217306
       },
       {
         "dose_level": 2,
-        "p_value": 0.002993,
-        "p_value_adj": 0.002993,
+        "p_value": 0.003022,
+        "p_value_adj": 0.003022,
         "statistic": null,
         "cohens_d": 1.3195,
         "p_value_welch": 0.011472
@@ -15154,7 +15154,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.59952,
+    "p_value": 0.599419,
     "effect_size": -0.3988,
     "direction": "down",
     "severity": "adverse",
@@ -15199,24 +15199,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.740603,
-        "p_value_adj": 0.740603,
+        "p_value": 0.74056,
+        "p_value_adj": 0.74056,
         "statistic": null,
         "cohens_d": -0.3264,
         "p_value_welch": 0.486106
       },
       {
         "dose_level": 2,
-        "p_value": 0.918867,
-        "p_value_adj": 0.918867,
+        "p_value": 0.918863,
+        "p_value_adj": 0.918863,
         "statistic": null,
         "cohens_d": -0.2029,
         "p_value_welch": 0.663817
       },
       {
         "dose_level": 3,
-        "p_value": 1.2e-05,
-        "p_value_adj": 1.2e-05,
+        "p_value": 9e-06,
+        "p_value_adj": 9e-06,
         "statistic": null,
         "cohens_d": -1.9713,
         "p_value_welch": 0.000562
@@ -15233,7 +15233,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.820769,
+    "p_value": 0.820805,
     "effect_size": -0.2736,
     "direction": "down",
     "severity": "adverse",
@@ -15278,24 +15278,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.740603,
-        "p_value_adj": 0.740603,
+        "p_value": 0.74056,
+        "p_value_adj": 0.74056,
         "statistic": null,
         "cohens_d": -0.3264,
         "p_value_welch": 0.486106
       },
       {
         "dose_level": 2,
-        "p_value": 0.918867,
-        "p_value_adj": 0.918867,
+        "p_value": 0.918863,
+        "p_value_adj": 0.918863,
         "statistic": null,
         "cohens_d": -0.2029,
         "p_value_welch": 0.663817
       },
       {
         "dose_level": 3,
-        "p_value": 1.2e-05,
-        "p_value_adj": 1.2e-05,
+        "p_value": 9e-06,
+        "p_value_adj": 9e-06,
         "statistic": null,
         "cohens_d": -1.9713,
         "p_value_welch": 0.000562
@@ -15357,24 +15357,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.740603,
-        "p_value_adj": 0.740603,
+        "p_value": 0.74056,
+        "p_value_adj": 0.74056,
         "statistic": null,
         "cohens_d": -0.3264,
         "p_value_welch": 0.486106
       },
       {
         "dose_level": 2,
-        "p_value": 0.918867,
-        "p_value_adj": 0.918867,
+        "p_value": 0.918863,
+        "p_value_adj": 0.918863,
         "statistic": null,
         "cohens_d": -0.2029,
         "p_value_welch": 0.663817
       },
       {
         "dose_level": 3,
-        "p_value": 1.2e-05,
-        "p_value_adj": 1.2e-05,
+        "p_value": 9e-06,
+        "p_value_adj": 9e-06,
         "statistic": null,
         "cohens_d": -1.9713,
         "p_value_welch": 0.000562
@@ -15391,7 +15391,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.977374,
+    "p_value": 0.977371,
     "effect_size": 0.3497,
     "direction": "up",
     "severity": "adverse",
@@ -15436,16 +15436,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.97737,
-        "p_value_adj": 0.97737,
+        "p_value": 0.977377,
+        "p_value_adj": 0.977377,
         "statistic": null,
         "cohens_d": 0.3497,
         "p_value_welch": 0.425443
       },
       {
         "dose_level": 2,
-        "p_value": 0.504628,
-        "p_value_adj": 0.504628,
+        "p_value": 0.504617,
+        "p_value_adj": 0.504617,
         "statistic": null,
         "cohens_d": 0.6444,
         "p_value_welch": 0.158005
@@ -15470,7 +15470,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.504637,
+    "p_value": 0.504643,
     "effect_size": 0.6444,
     "direction": "up",
     "severity": "adverse",
@@ -15515,16 +15515,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.97737,
-        "p_value_adj": 0.97737,
+        "p_value": 0.977377,
+        "p_value_adj": 0.977377,
         "statistic": null,
         "cohens_d": 0.3497,
         "p_value_welch": 0.425443
       },
       {
         "dose_level": 2,
-        "p_value": 0.504628,
-        "p_value_adj": 0.504628,
+        "p_value": 0.504617,
+        "p_value_adj": 0.504617,
         "statistic": null,
         "cohens_d": 0.6444,
         "p_value_welch": 0.158005
@@ -15594,16 +15594,16 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.97737,
-        "p_value_adj": 0.97737,
+        "p_value": 0.977377,
+        "p_value_adj": 0.977377,
         "statistic": null,
         "cohens_d": 0.3497,
         "p_value_welch": 0.425443
       },
       {
         "dose_level": 2,
-        "p_value": 0.504628,
-        "p_value_adj": 0.504628,
+        "p_value": 0.504617,
+        "p_value_adj": 0.504617,
         "statistic": null,
         "cohens_d": 0.6444,
         "p_value_welch": 0.158005
@@ -15628,7 +15628,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.432279,
+    "p_value": 0.432233,
     "effect_size": -0.5539,
     "direction": "up",
     "severity": "adverse",
@@ -15673,8 +15673,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.372136,
-        "p_value_adj": 0.372136,
+        "p_value": 0.372146,
+        "p_value_adj": 0.372146,
         "statistic": null,
         "cohens_d": -0.6097,
         "p_value_welch": 0.216053
@@ -15689,8 +15689,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.03666,
-        "p_value_adj": 0.03666,
+        "p_value": 0.036596,
+        "p_value_adj": 0.036596,
         "statistic": null,
         "cohens_d": 0.8499,
         "p_value_welch": 0.076606
@@ -15707,7 +15707,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.990129,
+    "p_value": 0.990127,
     "effect_size": 0.1011,
     "direction": "up",
     "severity": "adverse",
@@ -15752,8 +15752,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.372136,
-        "p_value_adj": 0.372136,
+        "p_value": 0.372146,
+        "p_value_adj": 0.372146,
         "statistic": null,
         "cohens_d": -0.6097,
         "p_value_welch": 0.216053
@@ -15768,8 +15768,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.03666,
-        "p_value_adj": 0.03666,
+        "p_value": 0.036596,
+        "p_value_adj": 0.036596,
         "statistic": null,
         "cohens_d": 0.8499,
         "p_value_welch": 0.076606
@@ -15786,7 +15786,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.010234,
+    "p_value": 0.010287,
     "effect_size": 0.9984,
     "direction": "up",
     "severity": "adverse",
@@ -15831,8 +15831,8 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.372136,
-        "p_value_adj": 0.372136,
+        "p_value": 0.372146,
+        "p_value_adj": 0.372146,
         "statistic": null,
         "cohens_d": -0.6097,
         "p_value_welch": 0.216053
@@ -15847,8 +15847,8 @@
       },
       {
         "dose_level": 3,
-        "p_value": 0.03666,
-        "p_value_adj": 0.03666,
+        "p_value": 0.036596,
+        "p_value_adj": 0.036596,
         "statistic": null,
         "cohens_d": 0.8499,
         "p_value_welch": 0.076606
@@ -15865,7 +15865,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.449255,
+    "p_value": 0.449213,
     "effect_size": -1.3938,
     "direction": "up",
     "severity": "adverse",
@@ -15910,24 +15910,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.449156,
-        "p_value_adj": 0.449156,
+        "p_value": 0.449242,
+        "p_value_adj": 0.449242,
         "statistic": null,
         "cohens_d": -1.3938,
         "p_value_welch": 0.005989
       },
       {
         "dose_level": 2,
-        "p_value": 0.0046,
-        "p_value_adj": 0.0046,
+        "p_value": 0.004622,
+        "p_value_adj": 0.004622,
         "statistic": null,
         "cohens_d": 1.4216,
         "p_value_welch": 0.008228
       },
       {
         "dose_level": 3,
-        "p_value": 0.09603,
-        "p_value_adj": 0.09603,
+        "p_value": 0.096074,
+        "p_value_adj": 0.096074,
         "statistic": null,
         "cohens_d": 0.9934,
         "p_value_welch": 0.043569
@@ -15944,7 +15944,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.004528,
+    "p_value": 0.004576,
     "effect_size": 1.4216,
     "direction": "up",
     "severity": "adverse",
@@ -15989,24 +15989,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.449156,
-        "p_value_adj": 0.449156,
+        "p_value": 0.449242,
+        "p_value_adj": 0.449242,
         "statistic": null,
         "cohens_d": -1.3938,
         "p_value_welch": 0.005989
       },
       {
         "dose_level": 2,
-        "p_value": 0.0046,
-        "p_value_adj": 0.0046,
+        "p_value": 0.004622,
+        "p_value_adj": 0.004622,
         "statistic": null,
         "cohens_d": 1.4216,
         "p_value_welch": 0.008228
       },
       {
         "dose_level": 3,
-        "p_value": 0.09603,
-        "p_value_adj": 0.09603,
+        "p_value": 0.096074,
+        "p_value_adj": 0.096074,
         "statistic": null,
         "cohens_d": 0.9934,
         "p_value_welch": 0.043569
@@ -16023,7 +16023,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.09606,
+    "p_value": 0.096006,
     "effect_size": 0.9934,
     "direction": "up",
     "severity": "adverse",
@@ -16068,24 +16068,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.449156,
-        "p_value_adj": 0.449156,
+        "p_value": 0.449242,
+        "p_value_adj": 0.449242,
         "statistic": null,
         "cohens_d": -1.3938,
         "p_value_welch": 0.005989
       },
       {
         "dose_level": 2,
-        "p_value": 0.0046,
-        "p_value_adj": 0.0046,
+        "p_value": 0.004622,
+        "p_value_adj": 0.004622,
         "statistic": null,
         "cohens_d": 1.4216,
         "p_value_welch": 0.008228
       },
       {
         "dose_level": 3,
-        "p_value": 0.09603,
-        "p_value_adj": 0.09603,
+        "p_value": 0.096074,
+        "p_value_adj": 0.096074,
         "statistic": null,
         "cohens_d": 0.9934,
         "p_value_welch": 0.043569
@@ -16102,7 +16102,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.038304,
+    "p_value": 0.038339,
     "effect_size": -0.9227,
     "direction": "down",
     "severity": "adverse",
@@ -16147,24 +16147,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.112976,
-        "p_value_adj": 0.112976,
+        "p_value": 0.112932,
+        "p_value_adj": 0.112932,
         "statistic": null,
         "cohens_d": -0.7921,
         "p_value_welch": 0.08781
       },
       {
         "dose_level": 2,
-        "p_value": 0.835959,
-        "p_value_adj": 0.835959,
+        "p_value": 0.835969,
+        "p_value_adj": 0.835969,
         "statistic": null,
         "cohens_d": 0.2649,
         "p_value_welch": 0.553736
       },
       {
         "dose_level": 3,
-        "p_value": 0.014902,
-        "p_value_adj": 0.014902,
+        "p_value": 0.015013,
+        "p_value_adj": 0.015013,
         "statistic": null,
         "cohens_d": -1.6928,
         "p_value_welch": 0.005324
@@ -16226,24 +16226,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.112976,
-        "p_value_adj": 0.112976,
+        "p_value": 0.112932,
+        "p_value_adj": 0.112932,
         "statistic": null,
         "cohens_d": -0.7921,
         "p_value_welch": 0.08781
       },
       {
         "dose_level": 2,
-        "p_value": 0.835959,
-        "p_value_adj": 0.835959,
+        "p_value": 0.835969,
+        "p_value_adj": 0.835969,
         "statistic": null,
         "cohens_d": 0.2649,
         "p_value_welch": 0.553736
       },
       {
         "dose_level": 3,
-        "p_value": 0.014902,
-        "p_value_adj": 0.014902,
+        "p_value": 0.015013,
+        "p_value_adj": 0.015013,
         "statistic": null,
         "cohens_d": -1.6928,
         "p_value_welch": 0.005324
@@ -16260,7 +16260,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.00367,
+    "p_value": 0.003672,
     "effect_size": -1.674,
     "direction": "down",
     "severity": "adverse",
@@ -16305,24 +16305,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.112976,
-        "p_value_adj": 0.112976,
+        "p_value": 0.112932,
+        "p_value_adj": 0.112932,
         "statistic": null,
         "cohens_d": -0.7921,
         "p_value_welch": 0.08781
       },
       {
         "dose_level": 2,
-        "p_value": 0.835959,
-        "p_value_adj": 0.835959,
+        "p_value": 0.835969,
+        "p_value_adj": 0.835969,
         "statistic": null,
         "cohens_d": 0.2649,
         "p_value_welch": 0.553736
       },
       {
         "dose_level": 3,
-        "p_value": 0.014902,
-        "p_value_adj": 0.014902,
+        "p_value": 0.015013,
+        "p_value_adj": 0.015013,
         "statistic": null,
         "cohens_d": -1.6928,
         "p_value_welch": 0.005324
@@ -16339,7 +16339,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.247407,
+    "p_value": 0.247354,
     "effect_size": -1.069,
     "direction": "down",
     "severity": "adverse",
@@ -16384,24 +16384,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.247296,
-        "p_value_adj": 0.247296,
+        "p_value": 0.247328,
+        "p_value_adj": 0.247328,
         "statistic": null,
         "cohens_d": -1.069,
         "p_value_welch": 0.022595
       },
       {
         "dose_level": 2,
-        "p_value": 0.04666,
-        "p_value_adj": 0.04666,
+        "p_value": 0.046685,
+        "p_value_adj": 0.046685,
         "statistic": null,
         "cohens_d": 0.9333,
         "p_value_welch": 0.048494
       },
       {
         "dose_level": 3,
-        "p_value": 0.984109,
-        "p_value_adj": 0.984109,
+        "p_value": 0.984115,
+        "p_value_adj": 0.984115,
         "statistic": null,
         "cohens_d": 0.1416,
         "p_value_welch": 0.745318
@@ -16418,7 +16418,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.046693,
+    "p_value": 0.046664,
     "effect_size": 0.9333,
     "direction": "down",
     "severity": "adverse",
@@ -16463,24 +16463,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.247296,
-        "p_value_adj": 0.247296,
+        "p_value": 0.247328,
+        "p_value_adj": 0.247328,
         "statistic": null,
         "cohens_d": -1.069,
         "p_value_welch": 0.022595
       },
       {
         "dose_level": 2,
-        "p_value": 0.04666,
-        "p_value_adj": 0.04666,
+        "p_value": 0.046685,
+        "p_value_adj": 0.046685,
         "statistic": null,
         "cohens_d": 0.9333,
         "p_value_welch": 0.048494
       },
       {
         "dose_level": 3,
-        "p_value": 0.984109,
-        "p_value_adj": 0.984109,
+        "p_value": 0.984115,
+        "p_value_adj": 0.984115,
         "statistic": null,
         "cohens_d": 0.1416,
         "p_value_welch": 0.745318
@@ -16497,7 +16497,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.984115,
+    "p_value": 0.984108,
     "effect_size": 0.1416,
     "direction": "down",
     "severity": "adverse",
@@ -16542,24 +16542,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.247296,
-        "p_value_adj": 0.247296,
+        "p_value": 0.247328,
+        "p_value_adj": 0.247328,
         "statistic": null,
         "cohens_d": -1.069,
         "p_value_welch": 0.022595
       },
       {
         "dose_level": 2,
-        "p_value": 0.04666,
-        "p_value_adj": 0.04666,
+        "p_value": 0.046685,
+        "p_value_adj": 0.046685,
         "statistic": null,
         "cohens_d": 0.9333,
         "p_value_welch": 0.048494
       },
       {
         "dose_level": 3,
-        "p_value": 0.984109,
-        "p_value_adj": 0.984109,
+        "p_value": 0.984115,
+        "p_value_adj": 0.984115,
         "statistic": null,
         "cohens_d": 0.1416,
         "p_value_welch": 0.745318
@@ -16576,7 +16576,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.996382,
+    "p_value": 0.996381,
     "effect_size": -0.0784,
     "direction": "up",
     "severity": "adverse",
@@ -16621,24 +16621,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.936298,
-        "p_value_adj": 0.936298,
+        "p_value": 0.936303,
+        "p_value_adj": 0.936303,
         "statistic": null,
         "cohens_d": -0.208,
         "p_value_welch": 0.651723
       },
       {
         "dose_level": 2,
-        "p_value": 0.943836,
-        "p_value_adj": 0.943836,
+        "p_value": 0.943845,
+        "p_value_adj": 0.943845,
         "statistic": null,
         "cohens_d": -0.2091,
         "p_value_welch": 0.653659
       },
       {
         "dose_level": 3,
-        "p_value": 0.099087,
-        "p_value_adj": 0.099087,
+        "p_value": 0.099114,
+        "p_value_adj": 0.099114,
         "statistic": null,
         "cohens_d": 0.7539,
         "p_value_welch": 0.112754
@@ -16655,7 +16655,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.981012,
+    "p_value": 0.981023,
     "effect_size": -0.1537,
     "direction": "up",
     "severity": "adverse",
@@ -16700,24 +16700,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.936298,
-        "p_value_adj": 0.936298,
+        "p_value": 0.936303,
+        "p_value_adj": 0.936303,
         "statistic": null,
         "cohens_d": -0.208,
         "p_value_welch": 0.651723
       },
       {
         "dose_level": 2,
-        "p_value": 0.943836,
-        "p_value_adj": 0.943836,
+        "p_value": 0.943845,
+        "p_value_adj": 0.943845,
         "statistic": null,
         "cohens_d": -0.2091,
         "p_value_welch": 0.653659
       },
       {
         "dose_level": 3,
-        "p_value": 0.099087,
-        "p_value_adj": 0.099087,
+        "p_value": 0.099114,
+        "p_value_adj": 0.099114,
         "statistic": null,
         "cohens_d": 0.7539,
         "p_value_welch": 0.112754
@@ -16734,7 +16734,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.02804,
+    "p_value": 0.028091,
     "effect_size": 0.9338,
     "direction": "up",
     "severity": "adverse",
@@ -16779,24 +16779,24 @@
     "scheduled_pairwise": [
       {
         "dose_level": 1,
-        "p_value": 0.936298,
-        "p_value_adj": 0.936298,
+        "p_value": 0.936303,
+        "p_value_adj": 0.936303,
         "statistic": null,
         "cohens_d": -0.208,
         "p_value_welch": 0.651723
       },
       {
         "dose_level": 2,
-        "p_value": 0.943836,
-        "p_value_adj": 0.943836,
+        "p_value": 0.943845,
+        "p_value_adj": 0.943845,
         "statistic": null,
         "cohens_d": -0.2091,
         "p_value_welch": 0.653659
       },
       {
         "dose_level": 3,
-        "p_value": 0.099087,
-        "p_value_adj": 0.099087,
+        "p_value": 0.099114,
+        "p_value_adj": 0.099114,
         "statistic": null,
         "cohens_d": 0.7539,
         "p_value_welch": 0.112754
@@ -23341,7 +23341,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.656229,
+    "p_value": 0.656216,
     "effect_size": -0.3294,
     "direction": "down",
     "severity": "adverse",
@@ -23362,7 +23362,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.255887,
+    "p_value": 0.255906,
     "effect_size": -0.5888,
     "direction": "down",
     "severity": "adverse",
@@ -23383,7 +23383,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.043653,
+    "p_value": 0.04362,
     "effect_size": -0.9742,
     "direction": "down",
     "severity": "adverse",
@@ -23404,7 +23404,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.627809,
+    "p_value": 0.627817,
     "effect_size": 0.3687,
     "direction": "down",
     "severity": "adverse",
@@ -23425,7 +23425,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.882476,
+    "p_value": 0.882464,
     "effect_size": 0.1949,
     "direction": "down",
     "severity": "adverse",
@@ -23467,7 +23467,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.92854,
+    "p_value": 0.928539,
     "effect_size": 0.159,
     "direction": "down",
     "severity": "adverse",
@@ -23488,7 +23488,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "M",
-    "p_value": 0.249057,
+    "p_value": 0.249063,
     "effect_size": -0.5825,
     "direction": "down",
     "severity": "adverse",
@@ -23530,7 +23530,7 @@
     "dose_level": 1,
     "dose_label": "Group 2,2 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.043394,
+    "p_value": 0.043424,
     "effect_size": 1.0506,
     "direction": "up",
     "severity": "adverse",
@@ -23551,7 +23551,7 @@
     "dose_level": 2,
     "dose_label": "Group 3,20 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.858856,
+    "p_value": 0.858845,
     "effect_size": -0.2248,
     "direction": "up",
     "severity": "adverse",
@@ -23572,7 +23572,7 @@
     "dose_level": 3,
     "dose_label": "Group 4,200 mg/kg PCDRUG",
     "sex": "F",
-    "p_value": 0.718719,
+    "p_value": 0.718706,
     "effect_size": -0.3694,
     "direction": "up",
     "severity": "adverse",

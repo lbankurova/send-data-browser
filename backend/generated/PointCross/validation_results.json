@@ -461,8 +461,12 @@
       "PC",
       "TS"
     ],
-    "elapsed_seconds": 0.8,
-    "validated_at": "2026-03-07T12:48:26.127347+00:00"
+    "elapsed_seconds": 11.91,
+    "validated_at": "2026-03-10T20:31:07.950225+00:00"
   },
-  "core_conformance": null
+  "core_conformance": {
+    "engine_version": "",
+    "standard": "SEND",
+    "ct_version": ""
+  }
 }
