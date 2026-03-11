@@ -26,6 +26,14 @@ def compute_ma_findings(
     ma_df.columns = [c.upper() for c in ma_df.columns]
     ma_df["MADY"] = pd.to_numeric(ma_df.get("MADY", pd.Series(dtype=float)), errors="coerce")
 
+    # Identify specimens with recovery subjects BEFORE filtering to main-only
+    specimens_with_recovery: set[str] = set()
+    recovery_subs = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
+    if len(recovery_subs) > 0 and "MASPEC" in ma_df.columns:
+        recovery_ma = ma_df.merge(recovery_subs[["USUBJID"]], on="USUBJID", how="inner")
+        if len(recovery_ma) > 0:
+            specimens_with_recovery = set(recovery_ma["MASPEC"].astype(str).str.strip().str.upper())
+
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
@@ -163,6 +171,7 @@ def compute_ma_findings(
             "max_effect_size": None,
             "min_p_adj": min_p,
             "modifier_profile": modifier_profile,
+            "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
         })
 
     return findings

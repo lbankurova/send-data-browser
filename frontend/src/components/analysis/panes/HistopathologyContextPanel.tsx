@@ -9,8 +9,9 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { usePaneHistory } from "@/hooks/usePaneHistory";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
-import { classifyFindingPattern, formatPatternLabel, patternToLegacyConsistency } from "@/lib/pattern-classification";
+import { classifyFindingPattern, formatPatternLabel, patternToLegacyConsistency, buildDoseGroupData, classifyPattern } from "@/lib/pattern-classification";
 import { detectSyndromes } from "@/lib/syndrome-rules";
 import { DoseLabel } from "@/components/ui/DoseLabel";
 import {
@@ -44,6 +45,28 @@ import type { SignalSummaryRow } from "@/types/analysis-views";
 import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import type { LabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
+
+// ─── Header helpers ──────────────────────────────────────────────────────────
+
+function formatPCompact(p: number | null): string {
+  if (p == null) return "—";
+  if (p < 0.001) return "<.001";
+  if (p < 0.01) return p.toFixed(3).replace(/^0/, "");
+  return p.toFixed(2).replace(/^0/, "");
+}
+
+function getPatternShortLabel(pattern: string): string {
+  const map: Record<string, string> = {
+    monotonic_increase: "dose-dep \u2191",
+    monotonic_decrease: "dose-dep \u2193",
+    threshold_increase: "threshold \u2191",
+    threshold_decrease: "threshold \u2193",
+    non_monotonic: "non-monotonic",
+    inverted_u: "inverted-U",
+    flat: "flat",
+  };
+  return map[pattern] ?? pattern.replace(/_/g, " ");
+}
 
 // ─── Lab Correlates Pane ─────────────────────────────────────────────────────
 
@@ -347,7 +370,7 @@ interface InsightBlock {
   correlates?: string;
 }
 
-function deriveSpecimenInsights(rules: RuleResult[], specimen: string, signalData?: SignalSummaryRow[]): InsightBlock[] {
+function deriveSpecimenInsights(rules: RuleResult[], specimen: string, signalData?: SignalSummaryRow[], controlOnlyFindings?: Set<string>): InsightBlock[] {
   const blocks: InsightBlock[] = [];
   const specLower = specimen.toLowerCase();
 
@@ -365,6 +388,7 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string, signalDat
   for (const agg of aggregated) {
     if (agg.category !== "adverse") continue;
     const name = agg.finding || agg.endpointLabel;
+    if (controlOnlyFindings?.has(name)) continue; // skip control-only findings
     const list = adverseByName.get(name);
     if (list) list.push(agg);
     else adverseByName.set(name, [agg]);
@@ -418,6 +442,7 @@ function deriveSpecimenInsights(rules: RuleResult[], specimen: string, signalDat
     const catalogId = r.params?.catalog_id;
     if (!cc || !catalogId) continue;
     const finding = r.params?.finding ?? r.params?.endpoint_label ?? "";
+    if (controlOnlyFindings?.has(finding)) continue; // skip control-only findings
     if (adverseNames.has(finding)) continue; // already shown with inline clinical tag
     const key = `${catalogId}|${finding}`;
     if (clinicalSeen.has(key)) continue;
@@ -508,8 +533,8 @@ const INSIGHT_STYLES: Record<InsightBlock["kind"], { border: string; icon: strin
   info:        { border: "border-l-gray-300",   icon: "\u00b7", label: "Info" },
 };
 
-function SpecimenInsights({ rules, specimen, signalData }: { rules: RuleResult[]; specimen: string; signalData?: SignalSummaryRow[] }) {
-  const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen, signalData), [rules, specimen, signalData]);
+function SpecimenInsights({ rules, specimen, signalData, controlOnlyFindings }: { rules: RuleResult[]; specimen: string; signalData?: SignalSummaryRow[]; controlOnlyFindings?: Set<string> }) {
+  const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen, signalData, controlOnlyFindings), [rules, specimen, signalData, controlOnlyFindings]);
 
   if (blocks.length === 0) {
     return <p className="text-[11px] text-muted-foreground">No insights for this specimen.</p>;
@@ -576,9 +601,9 @@ function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock
 }
 
 /** Wrapper that fetches signal data for cross-domain correlates in insight blocks */
-function SpecimenInsightsWithSignals({ rules, specimen, studyId }: { rules: RuleResult[]; specimen: string; studyId?: string }) {
+function SpecimenInsightsWithSignals({ rules, specimen, studyId, controlOnlyFindings }: { rules: RuleResult[]; specimen: string; studyId?: string; controlOnlyFindings?: Set<string> }) {
   const { data: signalData } = useStudySignalSummary(studyId);
-  return <SpecimenInsights rules={rules} specimen={specimen} signalData={signalData} />;
+  return <SpecimenInsights rules={rules} specimen={specimen} signalData={signalData} controlOnlyFindings={controlOnlyFindings} />;
 }
 
 // ─── Recovery insight block (interpretive layer — Insights pane only) ─────────
@@ -790,97 +815,65 @@ function SpecimenOverviewPane({
     return [...set].sort();
   }, [summary?.domains, specimenRules]);
 
-  // Dose-response: incidence by dose group
-  const doseTrendDetail = useMemo(() => {
-    // Aggregate across all findings in specimen
-    const doseMap = new Map<number, { label: string; affected: number; n: number }>();
+  // Enhanced sex skew: Fisher's exact with 20pp + p<0.10 threshold
+  const enhancedSexSkew = useMemo(() => {
+    if (!summary?.sexSkew || summary.sexSkew === "M=F") return null;
+    const byDoseSex = new Map<number, Map<string, { affected: number; n: number }>>();
     for (const r of specimenData) {
-      const existing = doseMap.get(r.dose_level);
-      if (existing) {
-        existing.affected += r.affected;
-        existing.n += r.n;
-      } else {
-        doseMap.set(r.dose_level, { label: formatDoseShortLabel(r.dose_label), affected: r.affected, n: r.n });
+      let sexMap = byDoseSex.get(r.dose_level);
+      if (!sexMap) { sexMap = new Map(); byDoseSex.set(r.dose_level, sexMap); }
+      const existing = sexMap.get(r.sex);
+      if (existing) { existing.affected += r.affected; existing.n += r.n; }
+      else sexMap.set(r.sex, { affected: r.affected, n: r.n });
+    }
+    let bestDose: number | null = null;
+    let bestTotal = 0;
+    for (const [dl, sexMap] of byDoseSex) {
+      const m = sexMap.get("M");
+      const f = sexMap.get("F");
+      if (!m || !f || m.n === 0 || f.n === 0) continue;
+      const total = m.affected + f.affected;
+      if (total > bestTotal) { bestTotal = total; bestDose = dl; }
+    }
+    if (bestDose === null) return null;
+    const sexMap = byDoseSex.get(bestDose)!;
+    const m = sexMap.get("M")!;
+    const f = sexMap.get("F")!;
+    const mInc = m.n > 0 ? m.affected / m.n : 0;
+    const fInc = f.n > 0 ? f.affected / f.n : 0;
+    const incDiff = Math.abs(mInc - fInc);
+    const p = fishersExact2x2(m.affected, m.n - m.affected, f.affected, f.n - f.affected);
+    if (incDiff >= 0.2 && p < 0.10) {
+      const pLabel = p < 0.001 ? "<0.001" : p.toFixed(3);
+      return `${summary.sexSkew === "M>F" ? "males" : "females"} >1.5\u00D7 higher (p=${pLabel})`;
+    }
+    return null;
+  }, [summary, specimenData]);
+
+  // Organ weight summary (OM domain signals matching this specimen)
+  const organWeightSummary = useMemo(() => {
+    if (!signalDataSpec || !specimen) return null;
+    const specimenUpper = specimen.toUpperCase();
+    const omEntries = signalDataSpec.filter(
+      (r: SignalSummaryRow) => r.domain === "OM" && r.organ_name.toUpperCase() === specimenUpper,
+    );
+    if (omEntries.length === 0) return null;
+    const bySex = new Map<string, SignalSummaryRow>();
+    for (const e of omEntries) {
+      const prev = bySex.get(e.sex);
+      if (!prev || e.signal_score > prev.signal_score || (e.signal_score === prev.signal_score && (e.p_value ?? 1) < (prev.p_value ?? 1))) {
+        bySex.set(e.sex, e);
       }
     }
-    const sorted = [...doseMap.entries()].sort((a, b) => a[0] - b[0]);
-
-    // Determine method
-    const hasDoseRule = specimenRules.some((r) => r.rule_id === "R01" || r.rule_id === "R04");
-    const matchingRuleIds = specimenRules
-      .filter((r) => r.rule_id === "R01" || r.rule_id === "R04")
-      .map((r) => r.rule_id);
-    const method = hasDoseRule
-      ? `Rule engine (${[...new Set(matchingRuleIds)].join("/")})`
-      : "Pattern classification";
-
-    // Use pattern from precomputed summary, or fall back to legacy label
-    const patternLabel = summary ? formatPatternLabel(summary.pattern) : "—";
-
-    return { doses: sorted, method, patternLabel };
-  }, [specimenData, specimenRules, summary]);
-
-  // Structured conclusion parts (rendered as individual chips)
-  const conclusionParts = useMemo(() => {
-    if (!summary) return null;
-    const incPct = Math.round(summary.maxIncidence * 100);
-    const incidenceLabel = incPct > 50 ? "high" : incPct > 20 ? "moderate" : "low";
-    const sevLabel = summary.adverseCount > 0
-      ? `max severity ${summary.maxSeverity.toFixed(1)}`
-      : "non-adverse";
-    const sexLabel = deriveSexLabel(specimenData).toLowerCase();
-    const doseRelation = `pattern: ${doseTrendDetail.patternLabel}`;
-    const findingBreakdown = summary.warningCount > 0
-      ? `${summary.findingCount} findings (${summary.adverseCount}adv/${summary.warningCount}warn)`
-      : `${summary.findingCount} findings`;
-    // Enhanced sexSkew: require ratio > 1.5× AND incidence difference ≥ 20pp AND Fisher's p < 0.10
-    let sexSkewLabel: string | null = null;
-    if (summary.sexSkew && summary.sexSkew !== "M=F") {
-      // Compute Fisher's from highest-affected dose group with both sexes
-      const byDoseSex = new Map<number, Map<string, { affected: number; n: number }>>();
-      for (const r of specimenData) {
-        let sexMap = byDoseSex.get(r.dose_level);
-        if (!sexMap) { sexMap = new Map(); byDoseSex.set(r.dose_level, sexMap); }
-        const existing = sexMap.get(r.sex);
-        if (existing) { existing.affected += r.affected; existing.n += r.n; }
-        else sexMap.set(r.sex, { affected: r.affected, n: r.n });
-      }
-      let bestDose: number | null = null;
-      let bestTotal = 0;
-      for (const [dl, sexMap] of byDoseSex) {
-        const m = sexMap.get("M");
-        const f = sexMap.get("F");
-        if (!m || !f || m.n === 0 || f.n === 0) continue;
-        const total = m.affected + f.affected;
-        if (total > bestTotal) { bestTotal = total; bestDose = dl; }
-      }
-      if (bestDose !== null) {
-        const sexMap = byDoseSex.get(bestDose)!;
-        const m = sexMap.get("M")!;
-        const f = sexMap.get("F")!;
-        const mInc = m.n > 0 ? m.affected / m.n : 0;
-        const fInc = f.n > 0 ? f.affected / f.n : 0;
-        const incDiff = Math.abs(mInc - fInc);
-        const p = fishersExact2x2(m.affected, m.n - m.affected, f.affected, f.n - f.affected);
-        // Require both: incidence difference ≥ 20pp AND Fisher's p < 0.10
-        if (incDiff >= 0.2 && p < 0.10) {
-          const pLabel = p < 0.001 ? "<0.001" : p.toFixed(3);
-          sexSkewLabel = `sex difference: ${summary.sexSkew === "M>F" ? "males" : "females"} >1.5× higher (p=${pLabel})`;
-        }
-        // Below both thresholds: sexSkew suppressed (null)
+    let peak: SignalSummaryRow | null = null;
+    for (const e of bySex.values()) {
+      if (!peak || e.signal_score > peak.signal_score || (e.signal_score === peak.signal_score && (e.p_value ?? 1) < (peak.p_value ?? 1))) {
+        peak = e;
       }
     }
-
-    return {
-      incidence: `incidence: ${incidenceLabel}, ${incPct}%`,
-      severity: sevLabel,
-      sex: sexLabel,
-      sexSkew: sexSkewLabel,
-      doseRelation,
-      findings: findingBreakdown,
-      hasRecovery: summary.hasRecovery,
-    };
-  }, [summary, specimenData, doseTrendDetail.patternLabel]);
+    if (!peak || peak.signal_score === 0) return null;
+    return { peak, bySex };
+  }, [signalDataSpec, specimen]);
 
   // Review status
   const findingNames = useMemo(
@@ -888,17 +881,36 @@ function SpecimenOverviewPane({
     [specimenData]
   );
 
+  // ── Control-only finding detection ──────────────────────────
+  // Findings with zero treated-group signal — exclude from insights and recovery
+  const controlOnlyFindings = useMemo(() => {
+    const coSet = new Set<string>();
+    for (const name of findingNames) {
+      const groups = buildDoseGroupData(specimenData, name);
+      if (groups.length < 2) continue;
+      const result = classifyPattern(groups);
+      if (result.pattern === "CONTROL_ONLY") coSet.add(name);
+    }
+    return coSet;
+  }, [specimenData, findingNames]);
+
   // ── Recovery assessment (specimen-level) ─────────────────────
   const specimenHasRecoveryFlag = useMemo(
     () => subjData?.subjects?.some((s) => s.is_recovery) ?? false,
     [subjData],
   );
 
+  // Filter out control-only findings from recovery assessment
+  const treatmentRelatedFindings = useMemo(
+    () => findingNames.filter((f) => !controlOnlyFindings.has(f)),
+    [findingNames, controlOnlyFindings],
+  );
+
   const recoveryClassifications = useMemo(() => {
     if (!specimenHasRecoveryFlag || !subjData?.subjects) return null;
-    if (findingNames.length === 0) return null;
+    if (treatmentRelatedFindings.length === 0) return null;
     const speciesForRecovery = studyCtxSpec?.species ?? null;
-    const assessments = deriveRecoveryAssessmentsSexAware(findingNames, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesForRecovery);
+    const assessments = deriveRecoveryAssessmentsSexAware(treatmentRelatedFindings, subjData.subjects, undefined, subjData.recovery_days, specimen, speciesForRecovery);
 
     // Build per-finding clinical catalog lookup
     const findingClinicalMap = new Map<string, { clinicalClass: string; catalogId: string }>();
@@ -958,7 +970,7 @@ function SpecimenOverviewPane({
 
       return { finding, classification, findingNature };
     });
-  }, [specimenHasRecoveryFlag, subjData, findingNames, ruleResults, specimen, trendDataSpec, specimenData]);
+  }, [specimenHasRecoveryFlag, subjData, treatmentRelatedFindings, ruleResults, specimen, trendDataSpec, specimenData]);
 
   const specimenRecoveryClassification = useMemo(() => {
     if (!recoveryClassifications || recoveryClassifications.length === 0) return undefined;
@@ -1052,7 +1064,7 @@ function SpecimenOverviewPane({
 
   return (
     <div>
-      {/* Header */}
+      {/* Header — enriched with specimen metrics (replaces former summary strip + Overview pane) */}
       <ContextPanelHeader
         title={
           <span className="flex items-end gap-2">
@@ -1063,9 +1075,13 @@ function SpecimenOverviewPane({
             >
               {reviewStatus}
             </span>
-            {summary.adverseCount > 0 && (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium font-normal text-muted-foreground">
+            {summary.adverseCount > 0 ? (
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-normal text-muted-foreground">
                 {summary.adverseCount} adverse
+              </span>
+            ) : (
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-normal text-muted-foreground">
+                non-adverse
               </span>
             )}
           </span>
@@ -1075,6 +1091,7 @@ function SpecimenOverviewPane({
             {allDomains.map((d) => (
               <DomainLabel key={d} domain={d} />
             ))}
+            <span className="text-muted-foreground">{deriveSexLabel(specimenData)}</span>
           </div>
         ) : undefined}
         onExpandAll={expandAll}
@@ -1083,31 +1100,91 @@ function SpecimenOverviewPane({
         canGoForward={nav?.canGoForward}
         onBack={nav?.onBack}
         onForward={nav?.onForward}
-      />
-
-      {/* Overview */}
-      <CollapsiblePane title="Overview" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        {conclusionParts && (
-          <div className="flex flex-wrap gap-1.5">
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.incidence}</span>
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.severity}</span>
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.sex}</span>
-            {conclusionParts.sexSkew && (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{conclusionParts.sexSkew}</span>
-            )}
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.doseRelation}</span>
-            <span className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">{conclusionParts.findings}</span>
-            {conclusionParts.hasRecovery && (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">recovery data available</span>
-            )}
+      >
+        {/* Key metrics line */}
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <span>Peak incidence: <span className="font-mono font-medium">{Math.round(summary.maxIncidence * 100)}%</span></span>
+          <span>Max sev: <span className="font-mono font-medium">{summary.maxSeverity.toFixed(1)}</span></span>
+          <span className="inline-flex items-center gap-1">
+            <SparklineGlyph values={summary.pattern.sparkline} pattern={summary.pattern.pattern} />
+            <span className="font-medium">{formatPatternLabel(summary.pattern)}</span>
+          </span>
+          <span>Findings: <span className="font-mono font-medium">{summary.findingCount}</span>
+            {summary.warningCount > 0 && <> ({summary.adverseCount}adv/{summary.warningCount}warn)</>}
+          </span>
+          {enhancedSexSkew && (
+            <span>Sex: <span className="font-medium">{enhancedSexSkew}</span></span>
+          )}
+          {labCorrelation.hasData && labCorrelation.topSignal && labCorrelation.topSignal.signal >= 2 && (
+            <span>
+              Lab: <span className="font-mono font-medium">
+                {labCorrelation.topSignal.signal >= 3 ? "\u25CF\u25CF\u25CF" : "\u25CF\u25CF"}{" "}
+                {labCorrelation.topSignal.test} {labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}{labCorrelation.topSignal.pctChange.toFixed(0)}%
+              </span>
+            </span>
+          )}
+        </div>
+        {/* Organ weight line (conditional) */}
+        {organWeightSummary && (() => {
+          const { peak, bySex } = organWeightSummary;
+          const arrow = peak.direction === "up" ? "\u2191" : peak.direction === "down" ? "\u2193" : "";
+          const sexEntries = Array.from(bySex.entries()).sort(([a], [b]) => a.localeCompare(b));
+          const hasBothSexes = sexEntries.length > 1;
+          return (
+            <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <DomainLabel domain="OM" />
+                <span>weight {arrow}</span>
+              </span>
+              {hasBothSexes ? (
+                sexEntries.map(([sex, entry]) => (
+                  <span key={sex} className="inline-flex items-center gap-1">
+                    <span className="font-medium">{sex}:</span>
+                    <span className="font-mono">p={formatPCompact(entry.p_value)}</span>
+                    {entry.effect_size != null && (
+                      <span className="font-mono">d={Math.abs(entry.effect_size).toFixed(1)}</span>
+                    )}
+                  </span>
+                ))
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <span className="font-mono">p={formatPCompact(peak.p_value)}</span>
+                  {peak.effect_size != null && (
+                    <span className="font-mono">d={Math.abs(peak.effect_size).toFixed(1)}</span>
+                  )}
+                </span>
+              )}
+              <span className="font-medium">{getPatternShortLabel(peak.dose_response_pattern)}</span>
+              {peak.treatment_related && (
+                <span className="rounded border border-border px-1 py-px font-medium">TR</span>
+              )}
+            </div>
+          );
+        })()}
+        {/* Syndrome line (conditional) */}
+        {summary.pattern.syndrome && (
+          <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70" title={`${summary.pattern.syndrome.syndrome.syndrome_name}: ${summary.pattern.syndrome.requiredFinding}${summary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${summary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>
+            {"\uD83D\uDD17"} {summary.pattern.syndrome.syndrome.syndrome_name}: {summary.pattern.syndrome.requiredFinding}
+            {summary.pattern.syndrome.supportingFindings.length > 0 && ` + ${summary.pattern.syndrome.supportingFindings.join(", ")}`}
           </div>
         )}
-      </CollapsiblePane>
+        {/* Pattern alerts (conditional) */}
+        {summary.pattern.alerts.length > 0 && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+            {summary.pattern.alerts.map((a, i) => (
+              <span key={a.id}>
+                {i > 0 && " \u00B7 "}
+                {a.priority === "HIGH" || a.priority === "MEDIUM" ? "\u26A0" : "\u24D8"} {a.text}
+              </span>
+            ))}
+          </div>
+        )}
+      </ContextPanelHeader>
 
       {/* Insights */}
       {specimenRules.length > 0 && (
         <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <SpecimenInsightsWithSignals rules={specimenRules} specimen={specimen} studyId={studyId} />
+          <SpecimenInsightsWithSignals rules={specimenRules} specimen={specimen} studyId={studyId} controlOnlyFindings={controlOnlyFindings} />
         </CollapsiblePane>
       )}
 
@@ -1631,11 +1708,25 @@ function FindingDetailPane({
   const { data: signalDataFinding } = useStudySignalSummary(studyId);
   const { data: studyCtx } = useStudyContext(studyId);
 
+  // Check if selected finding is control-only
+  const findingIsControlOnly = useMemo(() => {
+    const specimenRows = lesionData.filter((r) => r.specimen === selection.specimen);
+    const groups = buildDoseGroupData(specimenRows, selection.finding);
+    if (groups.length < 2) return false;
+    return classifyPattern(groups).pattern === "CONTROL_ONLY";
+  }, [lesionData, selection.specimen, selection.finding]);
+
+  const findingControlOnlySet = useMemo(
+    () => findingIsControlOnly ? new Set([selection.finding]) : undefined,
+    [findingIsControlOnly, selection.finding],
+  );
+
   const findingRecovery = useMemo(() => {
+    if (findingIsControlOnly) return null; // no recovery for control-only findings
     if (!specimenHasRecovery || !subjData?.subjects) return null;
     const assessments = deriveRecoveryAssessmentsSexAware([selection.finding], subjData.subjects, undefined, subjData.recovery_days, selection.specimen, studyCtx?.species ?? null);
     return assessments[0] ?? null;
-  }, [specimenHasRecovery, subjData, selection.finding, selection.specimen, studyCtx]);
+  }, [findingIsControlOnly, specimenHasRecovery, subjData, selection.finding, selection.specimen, studyCtx]);
   const findingSyndromeMatch = useMemo(() => {
     if (!lesionData.length) return null;
     const organMap = new Map<string, LesionSeverityRow[]>();
@@ -1944,7 +2035,7 @@ function FindingDetailPane({
 
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <SpecimenInsightsWithSignals rules={findingRules} specimen={selection.specimen} studyId={studyId} />
+        <SpecimenInsightsWithSignals rules={findingRules} specimen={selection.specimen} studyId={studyId} controlOnlyFindings={findingControlOnlySet} />
         {showRecoveryInsight && recoveryClassification && (
           <div className="mt-2.5">
             <RecoveryInsightBlock classification={recoveryClassification} />

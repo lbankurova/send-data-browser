@@ -257,6 +257,8 @@ export interface LesionSeverityRow {
   n_with_modifiers?: number;
   /** Per-dose distribution counts: {focal: 2, diffuse: 1} */
   modifier_counts?: Record<string, number>;
+  /** Whether the specimen has recovery-phase subjects in the study (computed from unfiltered subject list). */
+  has_recovery_subjects?: boolean;
   /** Number of early-death subjects excluded (0 for longitudinal domains). */
   n_excluded?: number;
   /** Scheduled-sacrifice stats per dose level (early-death subjects excluded). */

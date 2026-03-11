@@ -137,8 +137,8 @@ export function deriveSpecimenSummaries(
     if (row.sex === "M") { entry.hasMale = true; if (row.incidence > entry.maxMaleInc) entry.maxMaleInc = row.incidence; }
     else if (row.sex === "F") { entry.hasFemale = true; if (row.incidence > entry.maxFemaleInc) entry.maxFemaleInc = row.incidence; }
 
-    // Recovery detection
-    if (row.dose_label.toLowerCase().includes("recovery")) entry.hasRecovery = true;
+    // Recovery detection — use backend-computed flag (checks unfiltered subject list)
+    if (row.has_recovery_subjects) entry.hasRecovery = true;
 
     // Track worst severity per finding (adverse > warning > normal)
     const prev = entry.findingSeverity.get(row.finding);
@@ -208,8 +208,9 @@ export function deriveSpecimenSummaries(
       { domain: "MI", isHighestDoseGroup: specimenPattern.isHighestDoseGroup },
     );
 
-    // Clinical-aware signal score
-    const clin = clinicalBySpecimen.get(specimen.toLowerCase());
+    // Clinical-aware signal score — suppress for control-only specimens (no treatment signal)
+    const isControlOnly = specimenPattern.pattern === "CONTROL_ONLY" || specimenPattern.pattern === "NO_PATTERN";
+    const clin = isControlOnly ? undefined : clinicalBySpecimen.get(specimen.toLowerCase());
     const highestClinicalClass = (clin?.highest ?? null) as SpecimenSummary["highestClinicalClass"];
     const hasSentinel = clin?.hasSentinel ?? false;
     const clinicalFloor = CLINICAL_FLOOR[highestClinicalClass ?? ""] ?? 0;
@@ -219,9 +220,12 @@ export function deriveSpecimenSummaries(
     const severityComponent = entry.maxSev;
     const incidenceComponent = entry.maxIncidence * 5;
 
-    // Modified score formula for purely decreasing specimens
+    // Modified score formula by pattern type
     let signalScore: number;
-    if (specimenPattern.pattern === "MONOTONIC_DOWN") {
+    if (specimenPattern.pattern === "CONTROL_ONLY" || specimenPattern.pattern === "NO_PATTERN") {
+      // No treatment signal — minimal score for rail ordering only
+      signalScore = 0;
+    } else if (specimenPattern.pattern === "MONOTONIC_DOWN") {
       // Compute actual control - highDose magnitude across all findings
       const doseLevels = [...new Set(specimenRows.map((r) => r.dose_level))].sort((a, b) => a - b);
       const ctrlLevel = doseLevels[0];

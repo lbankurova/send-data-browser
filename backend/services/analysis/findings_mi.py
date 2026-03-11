@@ -30,6 +30,14 @@ def compute_mi_findings(
     mi_df.columns = [c.upper() for c in mi_df.columns]
     mi_df["MIDY"] = pd.to_numeric(mi_df.get("MIDY", pd.Series(dtype=float)), errors="coerce")
 
+    # Identify specimens with recovery subjects BEFORE filtering to main-only
+    specimens_with_recovery: set[str] = set()
+    recovery_subs = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
+    if len(recovery_subs) > 0 and "MISPEC" in mi_df.columns:
+        recovery_mi = mi_df.merge(recovery_subs[["USUBJID"]], on="USUBJID", how="inner")
+        if len(recovery_mi) > 0:
+            specimens_with_recovery = set(recovery_mi["MISPEC"].astype(str).str.strip().str.upper())
+
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
@@ -194,6 +202,7 @@ def compute_mi_findings(
             "direction": direction,
             "max_effect_size": all_sev,  # use avg severity as "effect size" for incidence
             "min_p_adj": min_p,
+            "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
             "avg_severity": all_sev,
             "modifier_profile": modifier_profile,
         })

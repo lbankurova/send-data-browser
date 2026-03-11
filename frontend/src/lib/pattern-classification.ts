@@ -374,16 +374,17 @@ export function computeConfidence(
     factors.push(`${totalAffected} affected`);
   }
 
-  // Modifiers
-  if (syndromeMatch) {
+  // Modifiers — skip for patterns with no treatment signal
+  const hasSignal = _pattern !== "CONTROL_ONLY" && _pattern !== "NO_PATTERN";
+  if (hasSignal && syndromeMatch) {
     level = Math.min(level + 1, 2);
     factors.push("concordant syndrome");
   }
-  if (organWeightSignificant) {
+  if (hasSignal && organWeightSignificant) {
     level = Math.min(level + 1, 2);
     factors.push("organ weight");
   }
-  if (peakSeverity >= 3.0) {
+  if (hasSignal && peakSeverity >= 3.0) {
     level = Math.min(level + 1, 2);
     factors.push(`peak severity ${peakSeverity.toFixed(1)}`);
   }
@@ -415,10 +416,8 @@ export function computeAlerts(
 ): PatternAlert[] {
   const alerts: PatternAlert[] = [];
 
-  // RECOVERY_NOT_EXAMINED
-  const hasRecovery = specimenData.some((r) =>
-    r.dose_label.toLowerCase().includes("recovery"),
-  );
+  // RECOVERY_NOT_EXAMINED — use backend-computed flag (checks unfiltered subject list)
+  const hasRecovery = specimenData.some((r) => r.has_recovery_subjects);
   const concerningPattern = ["MONOTONIC_UP", "THRESHOLD", "NON_MONOTONIC"].includes(pattern);
   if (!hasRecovery && concerningPattern) {
     alerts.push({
