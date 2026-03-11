@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 11 | 8 | Incorrect behavior that should be fixed |
+| Bug | 11 | 9 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -151,6 +151,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Open~~ Fixed
 - **Priority:** P1 (actively misleading — alert told pathologists recovery wasn't examined when it was)
 - **Owner hint:** backend-dev + frontend-dev
+
+### ~~BUG-19: Control-only findings leak into downstream pipelines (sentinel/insight/recovery/lab correlates)~~ ✅
+- **Spec:** `docs/incoming/sla-fix-investigation-esophagus.md` (5 bugs)
+- **Files:** `backend/services/analysis/clinical_catalog.py`, `frontend/src/components/analysis/panes/HistopathologyContextPanel.tsx`, `frontend/src/hooks/useSpecimenLabCorrelation.ts`, `frontend/src/lib/pattern-classification.ts`, `frontend/src/lib/histopathology-helpers.ts`
+- **Issue:** ESOPHAGUS (CONTROL_ONLY pattern: INFLAMMATION grade 4.0 + PERFORATION 10% incidence, both control-only) was displayed through the full Evidence/Insights/Recovery/Lab Correlates pipeline as treatment-related. Sentinel classification set correctly upstream but not checked by downstream consumers. Signal score inflated by clinical floor (20) + sentinel boost (15) → ranked first in specimen rail.
+- **Fix:** (1) Backend: `clinical_catalog.py` gates on `treatment_related` — no clinical annotation for non-treatment-related findings. (2) Frontend: `deriveSpecimenInsights()` and recovery assessment filter out `CONTROL_ONLY` findings via `controlOnlyFindings` set. (3) Lab correlates: return empty when no organ-specific mapping exists; suppress signal for degenerate controls (n<3 or SD=0). (4) Pattern confidence: no modifier boosts for CONTROL_ONLY/NO_PATTERN. (5) Signal score: 0 for CONTROL_ONLY/NO_PATTERN specimens; clinical data suppressed.
+- **Status:** Fixed
+- **Priority:** P1 (5 user-visible correctness bugs — misleading clinical annotations, false signal, wrong organ biomarkers)
 
 ### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅
 - **Files:** `backend/validation/scripts/registry.py`

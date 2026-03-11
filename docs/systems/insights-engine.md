@@ -698,6 +698,8 @@ This handles "BONE MARROW, FEMUR" matching against "BONE MARROW", "LIVER" matchi
 
 `apply_clinical_layer(results, findings)` iterates over endpoint-scoped rule results and performs four operations:
 
+**0. Treatment-relatedness gate.** Skips all annotation for findings where `params.treatment_related` is False. Control-only or no-signal findings do not receive clinical catalog metadata — clinical significance is only meaningful in the context of treatment-related dose-response.
+
 **1. Catalog annotation.** For each matched finding, adds to `params`:
 - `clinical_class`: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent"
 - `catalog_id`: "C01" through "C15"
@@ -931,5 +933,6 @@ The following items were previously listed as spec divergences. All have been re
 ## Changelog
 
 - 2026-02-13: Added Clinical Insight Layer section — 15-entry catalog (C01-C15), 7 protective exclusions (PEX01-PEX07), confidence scoring, severity promotion, R10 un-dampening. Expanded RuleResult contract with full `RuleParams` interface including clinical annotation fields. Updated data flow diagram with post-pass pipeline. Added `clinical_catalog.py`, `finding-aggregation.ts`, `HistopathologyContextPanel.tsx` to code map. Updated synthesis logic for clinical signals block and protective exclusion filtering. Updated Current State and Datagrok Notes sections.
+- 2026-03-11: Added treatment-relatedness gate (Step 0) to `apply_clinical_layer` — non-treatment-related findings skip all clinical annotation. Prevents control-only findings from receiving misleading Sentinel/HighConcern classifications.
 - 2026-02-09: Added `SynthEndpoint` interface, `computeTierCounts()` export, and `tierFilter` prop on InsightsList. Updated SynthLine interface with full field set (endpoints, extraCount, qualifiers, listItems). Updated code map for rule-synthesis.ts and InsightsList.tsx.
 - 2026-02-08: Consolidated from insight-synthesis-engine.md, send-browser- rule-based-insight-system.md, signals-panel-implementation-spec.md, CLAUDE.md, and five source code files (scores_and_rules.py, view_dataframes.py, signals-panel-engine.ts, rule-synthesis.ts, InsightsList.tsx, SignalsPanel.tsx)
