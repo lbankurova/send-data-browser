@@ -68,7 +68,7 @@ export function SubjectHeatmap({
   const [maxToast, setMaxToast] = useState(false);
 
   // Resizable finding label column
-  const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(124, 100, 400);
+  const { width: labelColW, onPointerDown: onLabelResize } = useResizePanel(124, { min: 100, max: 400 });
 
   // Filter subjects: dose group first (so control subjects survive), then sex, then affected-only
   const subjects = useMemo(() => {

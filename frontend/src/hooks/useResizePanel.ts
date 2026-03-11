@@ -14,23 +14,29 @@ function writeSession(key: string | undefined, value: number) {
   try { sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
 }
 
+interface ResizePanelOptions {
+  min?: number;
+  max?: number;
+  direction?: "left" | "right";
+  storageKey?: string;
+}
+
 /**
  * Hook for resizable panels. Returns current width and a pointer-down handler
  * to attach to a resize handle element.
  *
  * @param initial - default width in px
- * @param min - minimum width
- * @param max - maximum width
- * @param direction - "left" means dragging right increases width
- * @param storageKey - optional sessionStorage key to persist width across view switches
+ * @param options - optional min/max/direction/storageKey
  */
 export function useResizePanel(
   initial: number,
-  min: number,
-  max: number,
-  direction: "left" | "right" = "left",
-  storageKey?: string,
+  options?: ResizePanelOptions,
 ) {
+  const min = options?.min ?? 0;
+  const max = options?.max ?? Infinity;
+  const direction = options?.direction ?? "left";
+  const storageKey = options?.storageKey;
+
   const [width, setWidth] = useState(() => readSession(storageKey) ?? initial);
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -74,16 +80,24 @@ export function useResizePanel(
   return { width, onPointerDown };
 }
 
+interface ResizePanelYOptions {
+  min?: number;
+  max?: number;
+  storageKey?: string;
+}
+
 /**
  * Vertical variant — returns current height and a pointer-down handler.
  * Dragging down increases height.
  */
 export function useResizePanelY(
   initial: number,
-  min: number,
-  max: number,
-  storageKey?: string,
+  options?: ResizePanelYOptions,
 ) {
+  const min = options?.min ?? 0;
+  const max = options?.max ?? Infinity;
+  const storageKey = options?.storageKey;
+
   const [height, setHeight] = useState(() => readSession(storageKey) ?? initial);
   const dragging = useRef(false);
   const startY = useRef(0);
