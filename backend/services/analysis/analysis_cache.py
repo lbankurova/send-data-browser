@@ -9,7 +9,9 @@ Default settings are never written to the cache dir — they use existing pre-ge
 
 import json
 import logging
+import os
 import shutil
+import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -65,3 +67,79 @@ def invalidate_study(study_id: str):
     cache_root = GENERATED_DIR / study_id / ".settings_cache"
     if cache_root.exists():
         shutil.rmtree(cache_root)
+
+
+# ---------------------------------------------------------------------------
+# Cross-process pipeline lock (prevents thundering herd across workers)
+# ---------------------------------------------------------------------------
+# Lock file per settings_hash: .settings_cache/.computing.{hash}
+# Uses O_CREAT|O_EXCL for atomic creation — works across threads AND processes.
+# Stale lock cleanup: if lock file age exceeds max_age, it's removed.
+
+_LOCK_MAX_AGE = 120  # seconds — pipeline should finish well within this
+
+
+def _compute_lock_path(study_id: str, settings_hash: str) -> Path:
+    return GENERATED_DIR / study_id / ".settings_cache" / f".computing.{settings_hash}"
+
+
+def acquire_compute_lock(study_id: str, settings_hash: str) -> bool:
+    """Try to acquire exclusive compute lock via atomic file creation.
+
+    Returns True if this caller should compute.
+    Returns False if another worker/thread is already computing.
+    Cleans up stale locks older than _LOCK_MAX_AGE.
+    """
+    lock_path = _compute_lock_path(study_id, settings_hash)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Clean stale lock if present
+    try:
+        age = time.time() - lock_path.stat().st_mtime
+        if age > _LOCK_MAX_AGE:
+            log.warning("Removing stale compute lock %s (age=%.0fs)", lock_path.name, age)
+            os.unlink(str(lock_path))
+    except OSError:
+        pass
+
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+        return True
+    except FileExistsError:
+        return False
+
+
+def release_compute_lock(study_id: str, settings_hash: str):
+    """Release compute lock by removing the lock file."""
+    try:
+        os.unlink(str(_compute_lock_path(study_id, settings_hash)))
+    except OSError:
+        pass
+
+
+def wait_for_cache(
+    study_id: str, settings_hash: str, view_name: str, timeout: float = 120
+) -> dict | None:
+    """Poll cache until the requested view appears or timeout.
+
+    Used by threads/workers that lost the lock race — they wait for the
+    winner to finish computing and writing the cache.
+    Returns None on timeout (caller should raise 503).
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        cached = read_cache(study_id, settings_hash, view_name)
+        if cached is not None:
+            return cached
+        # Also check if the lock was released (compute finished but our
+        # specific view might not exist — e.g., a view not produced by pipeline)
+        lock_path = _compute_lock_path(study_id, settings_hash)
+        if not lock_path.exists():
+            # Lock released — one final cache check
+            return read_cache(study_id, settings_hash, view_name)
+        time.sleep(0.3)
+    # Timeout — clean up stale lock
+    log.warning("Timed out waiting for compute lock %s/%s", study_id, settings_hash)
+    release_compute_lock(study_id, settings_hash)
+    return None

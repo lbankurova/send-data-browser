@@ -28,7 +28,10 @@ from services.study_discovery import StudyInfo
 from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix, build_syndrome_correlation_summary
 from services.analysis.correlations import compute_syndrome_correlations
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
-from services.analysis.analysis_cache import read_cache, write_cache
+from services.analysis.analysis_cache import (
+    read_cache, write_cache,
+    acquire_compute_lock, release_compute_lock, wait_for_cache,
+)
 from services.analysis.override_reader import get_last_dosing_day_override
 
 log = logging.getLogger(__name__)
@@ -95,30 +98,43 @@ def _load_findings_for_settings(study_id: str, settings: AnalysisSettings) -> di
     if settings.is_default():
         return _load_unified_findings(study_id)
 
-    # Non-default: cache check → pipeline
+    # Non-default: cache check → pipeline (with cross-process lock)
     cache_key = settings.settings_hash()
     cached = read_cache(study_id, cache_key, "unified-findings")
     if cached is not None:
         return cached
 
-    # Cache miss: run pipeline
-    from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
+    if acquire_compute_lock(study_id, cache_key):
+        try:
+            cached = read_cache(study_id, cache_key, "unified-findings")
+            if cached is not None:
+                return cached
 
-    study = _get_study(study_id)
-    mortality_path = GENERATED_DIR / study_id / "study_mortality.json"
-    mortality = json.loads(mortality_path.read_text()) if mortality_path.exists() else None
-    early_deaths = mortality.get("early_death_subjects") if mortality else None
-    ldd_override = get_last_dosing_day_override(study_id)
+            from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
 
-    pipeline = ParameterizedAnalysisPipeline(study)
-    views = pipeline.run(
-        settings,
-        early_death_subjects=early_deaths,
-        last_dosing_day_override=ldd_override,
-        mortality=mortality,
-    )
-    write_cache(study_id, cache_key, views)
-    return views["unified_findings"]
+            study = _get_study(study_id)
+            mortality_path = GENERATED_DIR / study_id / "study_mortality.json"
+            mortality = json.loads(mortality_path.read_text()) if mortality_path.exists() else None
+            early_deaths = mortality.get("early_death_subjects") if mortality else None
+            ldd_override = get_last_dosing_day_override(study_id)
+
+            pipeline = ParameterizedAnalysisPipeline(study)
+            views = pipeline.run(
+                settings,
+                early_death_subjects=early_deaths,
+                last_dosing_day_override=ldd_override,
+                mortality=mortality,
+            )
+            write_cache(study_id, cache_key, views)
+            return views["unified_findings"]
+        finally:
+            release_compute_lock(study_id, cache_key)
+    else:
+        cached = wait_for_cache(study_id, cache_key, "unified-findings")
+        if cached is not None:
+            return cached
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Pipeline computation timed out")
 
 
 @router.get("/studies/{study_id}/analyses/adverse-effects", response_model=AdverseEffectsResponse)
