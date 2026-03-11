@@ -26,6 +26,14 @@ def compute_cl_findings(
     cl_df.columns = [c.upper() for c in cl_df.columns]
     cl_df["CLDY"] = pd.to_numeric(cl_df.get("CLDY", pd.Series(dtype=float)), errors="coerce")
 
+    # Identify whether recovery subjects have CL records BEFORE filtering to main-only
+    has_any_recovery_cl = False
+    recovery_subs = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
+    if len(recovery_subs) > 0:
+        recovery_cl = cl_df.merge(recovery_subs[["USUBJID"]], on="USUBJID", how="inner")
+        if len(recovery_cl) > 0:
+            has_any_recovery_cl = True
+
     # Include recovery animals for treatment-period pooling
     treatment_subs = get_treatment_subjects(subjects)
     cl_df = cl_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
@@ -137,6 +145,7 @@ def compute_cl_findings(
             "direction": direction,
             "max_effect_size": None,
             "min_p_adj": min_p,
+            "has_recovery_subjects": has_any_recovery_cl,
         })
 
     return findings

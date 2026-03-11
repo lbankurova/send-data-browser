@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 11 | 7 | Incorrect behavior that should be fixed |
+| Bug | 11 | 8 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -36,7 +36,7 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **80** | **50** | |
+| **Total open** | **80** | **51** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -143,6 +143,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Mostly resolved by SLA fix (Phase 0 typed accessors + Phase 1-3 critical computation fixes). 17/19 SLA findings fixed (SLA-15, SLA-16 added). Remaining: SLA-09, SLA-18, plus accessor migration sweep — tracked in GAP-72.
 - **Priority:** P2 → P3 (core computation paths fixed; remaining items are label polish)
 - **Owner hint:** frontend-dev (remaining label gaps in GAP-72)
+
+### ~~BUG-18: RECOVERY_NOT_EXAMINED alert fires incorrectly for specimens WITH recovery data~~ ✅
+- **Files:** `backend/services/analysis/findings_mi.py`, `findings_ma.py`, `findings_cl.py`, `findings_tf.py`, `backend/generator/view_dataframes.py`, `frontend/src/types/analysis-views.ts`, `frontend/src/lib/histopathology-helpers.ts`, `frontend/src/lib/pattern-classification.ts`
+- **Issue:** `pattern-classification.ts:computeAlerts()` and `histopathology-helpers.ts` checked for recovery by looking for "recovery" in `dose_label` of `LesionSeverityRow`. But MI/MA/CL/TF findings exclude recovery subjects before computing group_stats, so `dose_label` never contains "recovery". The alert fired for every specimen with a concerning pattern, regardless of whether recovery subjects actually existed.
+- **Fix:** Added backend-computed `has_recovery_subjects` boolean on each finding dict (computed from unfiltered subject list before main_subs filter). Propagated through `view_dataframes.py` → `LesionSeverityRow` TypeScript type → both frontend consumers. All 4 domains (MI, MA, CL, TF) now emit the field.
+- **Status:** ~~Open~~ Fixed
+- **Priority:** P1 (actively misleading — alert told pathologists recovery wasn't examined when it was)
+- **Owner hint:** backend-dev + frontend-dev
 
 ### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅
 - **Files:** `backend/validation/scripts/registry.py`

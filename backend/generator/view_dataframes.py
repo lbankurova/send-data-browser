@@ -302,6 +302,9 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
             if gs_modifier_counts:
                 row["modifier_counts"] = gs_modifier_counts
 
+            # Recovery flag — computed upstream from unfiltered subject list
+            row["has_recovery_subjects"] = finding.get("has_recovery_subjects", False)
+
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
 

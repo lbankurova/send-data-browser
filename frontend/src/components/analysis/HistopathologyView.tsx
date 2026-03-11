@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { signal } from "@/lib/design-tokens";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FilterBar, FilterSelect, FilterMultiSelect, FilterShowingLine } from "@/components/ui/FilterBar";
-import { DomainLabel } from "@/components/ui/DomainLabel";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { getNeutralHeatColor as getNeutralHeatColor01, titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { classifyFindingPatternWithSex, formatPatternLabel } from "@/lib/pattern-classification";
@@ -33,7 +32,6 @@ import {
   getNeutralHeatColor,
   deriveSpecimenSummaries,
   deriveFindingSummaries,
-  deriveSexLabel,
 } from "@/lib/histopathology-helpers";
 import type {
   HistopathSelection,
@@ -42,7 +40,6 @@ import type {
   FindingTableRow,
   HeatmapData,
 } from "@/lib/histopathology-helpers";
-import { SparklineGlyph } from "@/components/ui/SparklineGlyph";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FindingsSelectionZone } from "@/components/analysis/FindingsSelectionZone";
@@ -57,10 +54,9 @@ import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
 import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { CompareTab } from "@/components/analysis/CompareTab";
-import type { LesionSeverityRow, RuleResult, FindingDoseTrend, SignalSummaryRow } from "@/types/analysis-views";
+import type { LesionSeverityRow, RuleResult, FindingDoseTrend } from "@/types/analysis-views";
 import {
   deriveRecoveryAssessmentsSexAware,
-  specimenRecoveryLabel,
   verdictPriority,
   verdictArrow,
   buildRecoveryTooltip,
@@ -70,7 +66,6 @@ import { classifyFindingNature } from "@/lib/finding-nature";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality } from "@/lib/laterality";
-import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import { SubjectHeatmap } from "@/components/analysis/SubjectHeatmap";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { HistopathHypothesesTab } from "@/components/analysis/HistopathologyHypothesesTab";
@@ -94,27 +89,6 @@ export type {
   SpecimenReviewStatus,
 } from "@/lib/histopathology-helpers";
 
-// ─── Organ weight strip helpers ────────────────────────────
-
-function formatPCompact(p: number | null): string {
-  if (p == null) return "—";
-  if (p < 0.001) return "<.001";
-  if (p < 0.01) return p.toFixed(3).replace(/^0/, "");
-  return p.toFixed(2).replace(/^0/, "");
-}
-
-function getPatternShortLabel(pattern: string): string {
-  const map: Record<string, string> = {
-    monotonic_increase: "dose-dep \u2191",
-    monotonic_decrease: "dose-dep \u2193",
-    threshold_increase: "threshold \u2191",
-    threshold_decrease: "threshold \u2193",
-    non_monotonic: "non-monotonic",
-    inverted_u: "inverted-U",
-    flat: "flat",
-  };
-  return map[pattern] ?? pattern.replace(/_/g, " ");
-}
 
 const findingColHelper = createColumnHelper<FindingTableRow>();
 
@@ -2093,45 +2067,9 @@ export function HistopathologyView() {
     }
   }, [pendingCompare, setPendingCompare]);
 
-  // Subject data for recovery assessment (React Query caches, so shared with OverviewTab)
-  const { data: subjData } = useHistopathSubjects(studyId, selectedSpecimen);
-
-  // Lab correlation for summary strip
-  const labCorrelation = useSpecimenLabCorrelation(studyId, selectedSpecimen);
-
-  // Signal data for syndrome detection + organ weight confidence
+  // Signal data for syndrome detection
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: studyCtxMain } = useStudyContext(studyId);
-
-  // Organ weight summary for specimen strip (OM domain signals matching selected specimen)
-  const organWeightSummary = useMemo(() => {
-    if (!signalData || !selectedSpecimen) return null;
-    const specimenUpper = selectedSpecimen.toUpperCase();
-    const omEntries = signalData.filter(
-      (r) => r.domain === "OM" && r.organ_name.toUpperCase() === specimenUpper,
-    );
-    if (omEntries.length === 0) return null;
-
-    // Group by sex, pick peak signal per sex
-    const bySex = new Map<string, SignalSummaryRow>();
-    for (const e of omEntries) {
-      const prev = bySex.get(e.sex);
-      if (!prev || e.signal_score > prev.signal_score || (e.signal_score === prev.signal_score && (e.p_value ?? 1) < (prev.p_value ?? 1))) {
-        bySex.set(e.sex, e);
-      }
-    }
-
-    // Overall peak across sexes
-    let peak: SignalSummaryRow | null = null;
-    for (const e of bySex.values()) {
-      if (!peak || e.signal_score > peak.signal_score || (e.signal_score === peak.signal_score && (e.p_value ?? 1) < (peak.p_value ?? 1))) {
-        peak = e;
-      }
-    }
-    if (!peak || peak.signal_score === 0) return null;
-
-    return { peak, bySex };
-  }, [signalData, selectedSpecimen]);
 
   // Syndrome detection (runs once per study, cached via useMemo)
   const syndromeMatches = useMemo(() => {
@@ -2195,17 +2133,6 @@ export function HistopathologyView() {
     }
     return map;
   }, [trendData, selectedSpecimen]);
-
-  // Recovery assessment for specimen summary strip
-  const specimenRecoveryOverall = useMemo(() => {
-    if (!subjData?.subjects?.some((s) => s.is_recovery)) return null;
-    const findingNames = findingSummaries.map((f) => f.finding);
-    if (findingNames.length === 0) return null;
-    const speciesMain = studyCtxMain?.species ?? null;
-    const assessments = deriveRecoveryAssessmentsSexAware(findingNames, subjData.subjects, undefined, subjData.recovery_days, selectedSpecimen, speciesMain);
-    return specimenRecoveryLabel(assessments);
-  }, [subjData, findingSummaries, selectedSpecimen, studyCtxMain]);
-
 
 
   // Reset finding selection and comparison when specimen changes (from shell rail)
@@ -2306,110 +2233,6 @@ export function HistopathologyView() {
       <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       {selectedSummary && (
         <>
-          {/* Specimen summary strip */}
-          <div className="shrink-0 border-b bg-background px-3 py-1.5">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold">{selectedSummary.specimen.replace(/_/g, " ")}</h2>
-              {selectedSummary.domains.map((d) => (
-                <DomainLabel key={d} domain={d} />
-              ))}
-              <span className="text-[10px] text-muted-foreground">{deriveSexLabel(specimenData)}</span>
-              {selectedSummary.adverseCount > 0 && (
-                <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  {selectedSummary.adverseCount} adverse
-                </span>
-              )}
-            </div>
-            <div className="mt-1 flex items-center gap-4 text-[10px] text-muted-foreground">
-              <span>Peak incidence: <span className="font-mono font-medium">{Math.round(selectedSummary.maxIncidence * 100)}%</span></span>
-              <span>Max sev: <span className="font-mono font-medium">{selectedSummary.maxSeverity.toFixed(1)}</span></span>
-              <span className="inline-flex items-center gap-1">
-                <SparklineGlyph values={selectedSummary.pattern.sparkline} pattern={selectedSummary.pattern.pattern} />
-                <span className="font-medium">{formatPatternLabel(selectedSummary.pattern)}</span>
-              </span>
-              <span>Findings: <span className="font-mono font-medium">{selectedSummary.findingCount}</span>
-                {selectedSummary.warningCount > 0 && <> ({selectedSummary.adverseCount}adv/{selectedSummary.warningCount}warn)</>}
-              </span>
-              {selectedSummary.sexSkew && (
-                <span>Sex: <span className="font-medium">{selectedSummary.sexSkew === "M>F" ? "males higher" : selectedSummary.sexSkew === "F>M" ? "females higher" : "balanced"}</span></span>
-              )}
-              {specimenRecoveryOverall && specimenRecoveryOverall !== "reversed" && (
-                <span>Recovery: <span className="font-medium">{specimenRecoveryOverall}</span></span>
-              )}
-              {labCorrelation.hasData && labCorrelation.topSignal && labCorrelation.topSignal.signal >= 2 && (
-                <span
-                  className="cursor-pointer hover:underline"
-                  title={`Top lab signal: ${labCorrelation.topSignal.test} ${labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}${labCorrelation.topSignal.pctChange.toFixed(0)}% vs control — click to view lab correlates`}
-                  onClick={() => {
-                    // Scroll to / expand Lab correlates pane in context panel
-                    const el = document.querySelector('[data-pane="lab-correlates"]');
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                  }}
-                >
-                  Lab: <span className="font-mono font-medium">
-                    {labCorrelation.topSignal.signal >= 3 ? "●●●" : "●●"}{" "}
-                    {labCorrelation.topSignal.test} {labCorrelation.topSignal.pctChange >= 0 ? "+" : ""}{labCorrelation.topSignal.pctChange.toFixed(0)}%
-                  </span>
-                </span>
-              )}
-            </div>
-            {/* Organ weight strip (OM domain) */}
-            {organWeightSummary && (() => {
-              const { peak, bySex } = organWeightSummary;
-              const arrow = peak.direction === "up" ? "\u2191" : peak.direction === "down" ? "\u2193" : "";
-              const sexEntries = Array.from(bySex.entries()).sort(([a], [b]) => a.localeCompare(b));
-              const hasBothSexes = sexEntries.length > 1;
-              return (
-                <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <DomainLabel domain="OM" />
-                    <span>weight {arrow}</span>
-                  </span>
-                  {hasBothSexes ? (
-                    sexEntries.map(([sex, entry]) => (
-                      <span key={sex} className="inline-flex items-center gap-1">
-                        <span className="font-medium">{sex}:</span>
-                        <span className="font-mono">p={formatPCompact(entry.p_value)}</span>
-                        {entry.effect_size != null && (
-                          <span className="font-mono">d={Math.abs(entry.effect_size).toFixed(1)}</span>
-                        )}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="inline-flex items-center gap-1">
-                      <span className="font-mono">p={formatPCompact(peak.p_value)}</span>
-                      {peak.effect_size != null && (
-                        <span className="font-mono">d={Math.abs(peak.effect_size).toFixed(1)}</span>
-                      )}
-                    </span>
-                  )}
-                  <span className="font-medium">{getPatternShortLabel(peak.dose_response_pattern)}</span>
-                  {peak.treatment_related && (
-                    <span className="rounded border border-border px-1 py-px font-medium">TR</span>
-                  )}
-                </div>
-              );
-            })()}
-            {/* Syndrome line */}
-            {selectedSummary.pattern.syndrome && (
-              <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70" title={`${selectedSummary.pattern.syndrome.syndrome.syndrome_name}: ${selectedSummary.pattern.syndrome.requiredFinding}${selectedSummary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${selectedSummary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>
-                {"\uD83D\uDD17"} {selectedSummary.pattern.syndrome.syndrome.syndrome_name}: {selectedSummary.pattern.syndrome.requiredFinding}
-                {selectedSummary.pattern.syndrome.supportingFindings.length > 0 && ` + ${selectedSummary.pattern.syndrome.supportingFindings.join(", ")}`}
-              </div>
-            )}
-            {/* Pattern alerts */}
-            {selectedSummary.pattern.alerts.length > 0 && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
-                {selectedSummary.pattern.alerts.map((a, i) => (
-                  <span key={a.id}>
-                    {i > 0 && " \u00B7 "}
-                    {a.priority === "HIGH" || a.priority === "MEDIUM" ? "\u26A0" : "\u24D8"} {a.text}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Tab bar */}
           <ViewTabBar
             tabs={[

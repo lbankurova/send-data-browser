@@ -78,6 +78,14 @@ def compute_tf_findings(
     tf_df.columns = [c.upper() for c in tf_df.columns]
     tf_df["TFDY"] = pd.to_numeric(tf_df.get("TFDY", pd.Series(dtype=float)), errors="coerce")
 
+    # Identify specimens with recovery subjects BEFORE filtering to main-only
+    specimens_with_recovery: set[str] = set()
+    recovery_subs = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
+    if len(recovery_subs) > 0 and "TFSPEC" in tf_df.columns:
+        recovery_tf = tf_df.merge(recovery_subs[["USUBJID"]], on="USUBJID", how="inner")
+        if len(recovery_tf) > 0:
+            specimens_with_recovery = set(recovery_tf["TFSPEC"].astype(str).str.strip().str.upper())
+
     main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
     if excluded_subjects:
         main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
@@ -203,6 +211,7 @@ def compute_tf_findings(
             "behavior": behavior,
             "cell_type": cell_type,
             "isNeoplastic": True,
+            "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
         })
 
     return findings
