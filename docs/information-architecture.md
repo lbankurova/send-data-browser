@@ -148,7 +148,7 @@ Additional utility route: `/studies/:id/domains/:domain` — raw domain data gri
 +------------------+------------------------------------+-------------------+
 ```
 
-**Rail:** Groups endpoints by organ system or detected syndrome. Filterable, Ctrl+click to exclude from rail.
+**Rail:** Groups findings by organ system, syndrome, or flat list. Filterable by domain, pattern, severity, TR, significance. Ctrl+click to exclude from scatter.
 
 **Scatter plot (FindingsQuadrantScatter):** Interactive ECharts scatter. Click dot to select finding. Colored by organ coherence, sized by signal score.
 

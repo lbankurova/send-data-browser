@@ -162,7 +162,7 @@ export function FindingsQuadrantScatter({
   if (points.length === 0) {
     return (
       <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">
-        No endpoints with both effect size and p-value
+        No findings with both effect size and p-value
       </div>
     );
   }

@@ -232,13 +232,13 @@ export function FindingsView() {
     // Dynamic title based on scope
     let titleText: string;
     if (!scopeLabel) {
-      titleText = "All endpoints";
+      titleText = "All findings";
     } else if (scopeType === "syndrome") {
       titleText = scopeLabel; // syndrome name stands alone
     } else if (scopeType === "finding") {
       titleText = scopeLabel; // individual endpoint label stands alone
     } else {
-      titleText = `${scopeLabel} endpoints`;
+      titleText = `${scopeLabel} findings`;
     }
 
     // Count: (plottable/total) when they differ, (plottable) when equal
@@ -329,7 +329,7 @@ export function FindingsView() {
         {showInfoTooltip && (
           <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
             <div className="text-[11px] leading-relaxed text-popover-foreground">
-              <p>One dot per endpoint, showing the strongest signal across timepoints and sexes.</p>
+              <p>One dot per finding, showing the strongest signal across timepoints and sexes.</p>
               <p className="mt-1.5"><span className="text-muted-foreground">&rarr;</span> Effect size percentile <span className="text-muted-foreground">(continuous and incidence ranked separately)</span></p>
               <p><span className="text-muted-foreground">&uarr;</span> Lower p-value (pairwise vs. control)</p>
               <p className="mt-1.5 italic text-muted-foreground">

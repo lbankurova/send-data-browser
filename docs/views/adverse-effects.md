@@ -49,7 +49,14 @@ The FilterBar contains (left to right):
 - **Summary counts:** `flex items-center gap-2 text-[10px] text-muted-foreground` — adverse count is `font-semibold` with red dashed underline (`underline decoration-dashed decoration-2 underline-offset-2`, `textDecorationColor: #dc2626`); warning and normal counts are plain text.
 - **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`ml-3 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg") — `font-semibold` with red dashed underline (same styling as adverse count). Status suffix in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
 
-**Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages endpoint grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
+**Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages finding grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
+
+**FindingsRail filters:** The rail has three filter rows:
+- **Row 1:** Search text input
+- **Row 2:** Group-by selector (Organ, Finding, Syndrome) + group multi-select filter + sort selector (Signal, P-value, Effect, A–Z)
+- **Row 3:** Domain multi-select ("All domains"), Pattern multi-select ("All patterns"), Severity multi-select ("All classes"), TR checkbox, Sig checkbox, S2+ checkbox (conditional)
+
+**FindingsRail signal summary:** Three inline badges: `{N} adverse`, `{N} warning`, `{N} TR`.
 
 **FindingsRail organ card indicators:** In organ grouping mode, organ group cards display up to two indicators:
 - **Organ confidence** — "Conf: High/Med/Low" with RAG-colored dashed underline (best integrated confidence across treatment-related endpoints).
@@ -377,8 +384,11 @@ Shown when `selectedGroupType === "syndrome"`. Displays cross-domain syndrome in
 | Scheduled-only mode | Shared | `useScheduledOnly()` — toggle in FilterBar excludes early-death treatment-group subjects from statistics. `useFindingsAnalyticsLocal` applies `applyScheduledFilter()` when active. |
 | Recovery pooling | Session-persisted | `useSessionState("pcc.{studyId}.recoveryPooling", "pool")` — "pool" (include recovery arms in treatment-period stats, default) or "separate" (exclude). Toggle in `StudyDetailsContextPanel` settings pane. `useFindingsAnalyticsLocal` applies `applyRecoveryPoolingFilter()` when "separate". |
 | Scatter section height | Local | `useAutoFitSections(containerRef, "findings", ...)` — resizable scatter panel |
-| Active endpoint | Local (via event bus) | `_findingsRailCallback` — endpoint selection from rail |
-| Excluded endpoints | Local (via event bus) | `_findingsExcludedCallback` — Ctrl+click exclusion |
+| Rail grouping | Session-persisted | `useSessionState("pcc.findings.rail.grouping", "syndrome")` — values: `organ`, `finding`, `syndrome` |
+| Rail sort | Session-persisted | `useSessionState("pcc.findings.rail.sort", "signal")` — values: `signal`, `pvalue`, `effect`, `az` |
+| Rail filters | Local (study-scoped) | `RailFilters` — reset on study change. Fields: `search`, `domains` (multi-select), `pattern` (multi-select), `severity` (multi-select), `trOnly`, `sigOnly`, `clinicalS2Plus`, `groupFilter` |
+| Active finding | Local (via event bus) | `_findingsRailCallback` — finding selection from rail |
+| Excluded findings | Local (via event bus) | `_findingsExcludedCallback` — Ctrl+click exclusion |
 | Collapse all | Local (context panel) | `useCollapseAll()` hook — provides expandGen/collapseGen counters |
 | Rail mode | Shared | `useRailModePreference("organ")` — set by wrapper |
 | Analytics context | Derived (composite) | `FindingsAnalyticsProvider` — wraps entire view, makes analytics available via `useFindingsAnalytics()` context hook to all child components (scatter, table, rail, context panels) |

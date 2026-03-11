@@ -143,7 +143,7 @@ export function FindingsRail({
   // Grouping & sort persist across view navigations (user preference)
   const [grouping, setGrouping] = useSessionState<GroupingMode>(
     "pcc.findings.rail.grouping", "syndrome",
-    isOneOf(["organ", "domain", "pattern", "finding", "syndrome"] as const),
+    isOneOf(["organ", "finding", "syndrome"] as const),
   );
   const [sortMode, setSortMode] = useSessionState<SortMode>(
     "pcc.findings.rail.sort", "signal",
@@ -233,6 +233,28 @@ export function FindingsRail({
     }));
   }, [endpointsWithSignal, grouping, syndromes]);
 
+  // Domain filter options — derived from unique domains in the dataset
+  const domainFilterOptions = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const ep of endpointsWithSignal) {
+      seen.set(ep.domain, (seen.get(ep.domain) ?? 0) + 1);
+    }
+    return [...seen.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([key]) => ({ key, label: getDomainFullLabel(key) }));
+  }, [endpointsWithSignal]);
+
+  // Pattern filter options — derived from unique patterns in the dataset
+  const patternFilterOptions = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const ep of endpointsWithSignal) {
+      seen.set(ep.pattern, (seen.get(ep.pattern) ?? 0) + 1);
+    }
+    return [...seen.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([key]) => ({ key, label: getPatternLabel(key) }));
+  }, [endpointsWithSignal]);
+
   // Signal summary — always full dataset, unfiltered
   const signalSummary = useMemo<SignalSummaryStats>(
     () => computeSignalSummary(endpointSummaries),
@@ -291,7 +313,14 @@ export function FindingsRail({
     if (railFilters.trOnly) labels.push("TR only");
     if (railFilters.sigOnly) labels.push("Sig only");
     if (railFilters.clinicalS2Plus) labels.push("Clinical S2+");
-    if (railFilters.sex) labels.push(railFilters.sex === "M" ? "Male" : "Female");
+    if (railFilters.domains) {
+      const domLabels = [...railFilters.domains].map((d) => getDomainFullLabel(d));
+      labels.push(domLabels.join(", "));
+    }
+    if (railFilters.pattern) {
+      const patLabels = [...railFilters.pattern].map((p) => getPatternLabel(p));
+      labels.push(patLabels.join(", "));
+    }
     if (railFilters.severity) {
       const sevLabels = [...railFilters.severity].map((s) => s.charAt(0).toUpperCase() + s.slice(1));
       labels.push(sevLabels.join(", "));
@@ -482,9 +511,8 @@ export function FindingsRail({
         sortMode={sortMode}
         grouping={grouping}
         groupFilterOptions={groupFilterOptions}
-        filteredCount={filteredEndpoints.length}
-        totalCount={endpointsWithSignal.length}
-        isFiltered={railIsFiltered}
+        domainFilterOptions={domainFilterOptions}
+        patternFilterOptions={patternFilterOptions}
         hasSyndromes={syndromes.length > 0}
         hasClinicalEndpoints={clinicalEndpoints.size > 0}
         clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
@@ -497,7 +525,7 @@ export function FindingsRail({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {sortedCards.length === 0 && railIsFiltered && (
           <div className="px-3 py-4 text-xs text-muted-foreground">
-            No endpoints match current filters.
+            No findings match current filters.
           </div>
         )}
         {grouping === "finding" ? (
@@ -569,10 +597,6 @@ export function FindingsRail({
 // ─── Signal Summary ────────────────────────────────────────
 
 function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
-  const trPct = stats.totalEndpoints > 0
-    ? (stats.trCount / stats.totalEndpoints) * 100
-    : 0;
-
   return (
     <div className="shrink-0 border-b px-3 pb-2 pt-3">
       {/* Header */}
@@ -588,31 +612,30 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
             <div className="space-y-2">
               <p className="font-semibold text-foreground">How to read the findings rail</p>
               <p className="text-muted-foreground">
-                Each row aggregates all findings for one measured variable across both sexes. Summary stats
-                (severity, p-value, effect size) reflect the worst/strongest value across M and F combined.
-              </p>
-              <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Context panel:</span> clicking a row selects
-                a single sex&apos;s finding (lowest adjusted p-value, then largest |effect| as tiebreaker).
-                The Verdict and Largest Effect sections show that sex&apos;s data. The F|M toggle in the
-                Evidence header switches Dose Detail and Evidence panes to the other sex.
+                Each row is one finding (measured variable) aggregated across both sexes. Severity, p-value,
+                and effect size reflect the worst/strongest value across M and F.
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Left border</span> encodes signal
                 strength: thick = strong, thin = weak. Dark = adverse/warning, invisible = normal.
               </p>
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Effect size</span> is the largest |g| (continuous)
-                or avg severity (incidence) across all dose groups and both sexes.
-                <span className="font-medium text-foreground"> Pattern glyph</span> shows the overall
-                dose-response shape. When M and F patterns diverge, per-sex glyphs appear on the second line.
+                <span className="font-medium text-foreground">Effect size</span> is the largest magnitude
+                (continuous) or avg severity (incidence) across dose groups and sexes.
+                <span className="font-medium text-foreground"> Pattern glyph</span> shows dose-response
+                shape; when M and F diverge, per-sex glyphs appear below.
+              </p>
+              <p className="text-muted-foreground">
+                <span className="font-medium text-foreground">Click</span> a row to select it in the
+                context panel. <span className="font-medium text-foreground">Group cards</span> scope
+                the scatter plot and table to that group.
               </p>
             </div>
           </PopoverContent>
         </Popover>
       </div>
 
-      {/* Line 1: Classification counts */}
+      {/* Counts: classification badges */}
       <div className="mt-1 flex items-center gap-2 text-xs">
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
           {stats.adverseCount} adverse
@@ -620,18 +643,8 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
           {stats.warningCount} warning
         </span>
-      </div>
-
-      {/* Line 2: TR ratio bar */}
-      <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full rounded-full bg-gray-400"
-            style={{ width: `${trPct}%` }}
-          />
-        </div>
-        <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-          {stats.trCount} TR / {stats.totalEndpoints} endpoints
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
+          {stats.trCount} TR
         </span>
       </div>
     </div>
@@ -662,7 +675,7 @@ function ScopeIndicator({
   return (
     <div className="flex shrink-0 items-center gap-2 border-b bg-accent/30 px-3 py-1.5 text-xs">
       <span className="font-semibold">{label}</span>
-      <span className="text-muted-foreground">&middot; {endpointCount} endpoints</span>
+      <span className="text-muted-foreground">&middot; {endpointCount} findings</span>
       <button
         className="ml-auto rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
         onClick={onClear}
@@ -708,7 +721,7 @@ function AllEndpointsCard({
         onClick={onToggleExpand}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleExpand(); } }}
       >
-        <span className="min-w-0 truncate font-semibold">All endpoints</span>
+        <span className="min-w-0 truncate font-semibold">All findings</span>
         <span className="ml-auto font-mono text-[10px] text-muted-foreground">
           {showFilteredCount ? `${totalEndpoints}/${unfilteredTotal}` : adverseCount}
         </span>
@@ -720,7 +733,7 @@ function AllEndpointsCard({
           className="ml-1 shrink-0 rounded p-0.5 hover:bg-accent/60 transition-colors"
           onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
           aria-expanded={isExpanded}
-          aria-label={isExpanded ? "Collapse endpoints" : "Expand endpoints"}
+          aria-label={isExpanded ? "Collapse findings" : "Expand findings"}
         >
           <Chevron className="h-3 w-3 text-muted-foreground" />
         </button>
@@ -762,9 +775,8 @@ function RailFiltersSection({
   sortMode,
   grouping,
   groupFilterOptions,
-  filteredCount,
-  totalCount,
-  isFiltered: hasActiveFilters,
+  domainFilterOptions,
+  patternFilterOptions,
   hasSyndromes,
   hasClinicalEndpoints,
   clinicalS2Plus,
@@ -776,9 +788,8 @@ function RailFiltersSection({
   sortMode: SortMode;
   grouping: GroupingMode;
   groupFilterOptions: { key: string; label: string }[];
-  filteredCount: number;
-  totalCount: number;
-  isFiltered: boolean;
+  domainFilterOptions: { key: string; label: string }[];
+  patternFilterOptions: { key: string; label: string }[];
   hasSyndromes: boolean;
   hasClinicalEndpoints: boolean;
   clinicalS2Plus: boolean;
@@ -802,9 +813,7 @@ function RailFiltersSection({
           onChange={(e) => onGroupingChange(e.target.value as GroupingMode)}
         >
           <option value="organ">Group: Organ</option>
-          <option value="domain">Group: Domain</option>
-          <option value="pattern">Group: Pattern</option>
-          <option value="finding">Group: Endpoint</option>
+          <option value="finding">Group: Finding</option>
           {hasSyndromes && <option value="syndrome">Group: Syndrome</option>}
         </FilterSelect>
         {grouping !== "finding" && (
@@ -826,16 +835,20 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 3: Sex + Severity + Quick toggles */}
+      {/* Row 3: Domain + Trend + Severity + Quick toggles */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <FilterSelect
-          value={filters.sex ?? ""}
-          onChange={(e) => onFiltersChange({ ...filters, sex: e.target.value || null })}
-        >
-          <option value="">All sexes</option>
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </FilterSelect>
+        <FilterMultiSelect
+          options={domainFilterOptions}
+          selected={filters.domains}
+          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
+          allLabel="All domains"
+        />
+        <FilterMultiSelect
+          options={patternFilterOptions}
+          selected={filters.pattern}
+          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
+          allLabel="All patterns"
+        />
         <FilterMultiSelect
           options={SEVERITY_OPTIONS}
           selected={filters.severity}
@@ -871,9 +884,6 @@ function RailFiltersSection({
             S2+
           </label>
         )}
-        <span className="ml-auto text-[10px] text-muted-foreground">
-          {hasActiveFilters ? `${filteredCount}/${totalCount}` : totalCount}
-        </span>
       </div>
     </div>
   );
@@ -1123,7 +1133,7 @@ function adjustSyndromeConfidence(
   if (label === "Weak co-variation") {
     // Weak co-variation adds a caveat but doesn't downgrade
     const level = confidence.toLowerCase() as ConfidenceLevel;
-    return { level, caveat: "Weak endpoint co-variation" };
+    return { level, caveat: "Weak finding co-variation" };
   }
   // Moderate co-variation or insufficient data — no adjustment
   return { level: confidence.toLowerCase() as ConfidenceLevel, caveat: null };
