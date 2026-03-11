@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchFindings } from "@/lib/analysis-api";
+import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
 import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
@@ -17,7 +19,7 @@ import { generateStudyReport } from "@/lib/report-generator";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
-import { ORGAN_WEIGHT_METHOD_VALUES, RECOVERY_POOLING_VALUES } from "@/contexts/StudySettingsContext";
+import { useStudySettings, ORGAN_WEIGHT_METHOD_VALUES, RECOVERY_POOLING_VALUES } from "@/contexts/StudySettingsContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
@@ -68,6 +70,26 @@ export function StudySummaryView() {
       setEarlyDeathSubjects(earlyDeaths, trIds, defaultExcluded);
     }
   }, [mortalityData, setEarlyDeathSubjects]);
+
+  // Prefetch the two heaviest datasets while the user reads the summary.
+  // Eliminates perceived latency when navigating to Findings or Histopathology.
+  const queryClient = useQueryClient();
+  const { queryParams: settingsParams } = useStudySettings();
+  useEffect(() => {
+    if (!studyId || settingsParams !== "") return;
+    const allFilters = {
+      domain: null, sex: null, severity: null, search: "",
+      organ_system: null, endpoint_label: null, dose_response_pattern: null,
+    };
+    queryClient.prefetchQuery({
+      queryKey: ["findings", studyId, 1, 10000, allFilters, ""],
+      queryFn: () => fetchFindings(studyId, 1, 10000, allFilters),
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["lesion-severity-summary", studyId, ""],
+      queryFn: () => fetchLesionSeveritySummary(studyId),
+    });
+  }, [studyId, settingsParams, queryClient]);
 
   // If analysis data not available but insights tab requested, show insights
   if (error && tab === "insights") {

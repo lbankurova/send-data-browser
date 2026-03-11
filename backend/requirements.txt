@@ -1,8 +1,8 @@
 fastapi
 uvicorn[standard]
+orjson
 pyreadstat
 pandas
 scipy>=1.11
-scikit-posthocs
 python-multipart
 openpyxl

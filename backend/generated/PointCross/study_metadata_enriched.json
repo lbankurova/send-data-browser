@@ -1,15 +1,1 @@
-{
-  "species": "RAT",
-  "strain": "SPRAGUE-DAWLEY",
-  "route": "ORAL GAVAGE",
-  "study_start": null,
-  "study_end": null,
-  "study_type": "REPEAT DOSE TOXICITY",
-  "study_design": "PARALLEL",
-  "vehicle": "Saline",
-  "sponsor": null,
-  "test_article": null,
-  "last_dosing_day": 91,
-  "auto_detected_last_dosing_day": 91,
-  "last_dosing_day_override": null
-}
+{"species":"RAT","strain":"SPRAGUE-DAWLEY","route":"ORAL GAVAGE","study_start":null,"study_end":null,"study_type":"REPEAT DOSE TOXICITY","study_design":"PARALLEL","vehicle":"Saline","sponsor":null,"test_article":null,"last_dosing_day":91,"auto_detected_last_dosing_day":91,"last_dosing_day_override":null}
