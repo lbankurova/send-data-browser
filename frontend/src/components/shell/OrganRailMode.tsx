@@ -253,13 +253,12 @@ export function OrganRailMode() {
       list = list.filter((o) => o.n_significant > 0);
     }
     if (filters.minSeverity > 0) {
-      // SLA-12: severity filter is a histopath concept — non-histopath organs
-      // (continuous-only) have null max_severity and should not be excluded.
-      const HISTO_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
+      // SLA-12: severity filter is a histopath concept — continuous-only organs
+      // have null max_severity and should not be excluded.
       list = list.filter(
         (o) =>
           (o.max_severity !== null && o.max_severity >= filters.minSeverity) ||
-          !o.domains.every((d: string) => HISTO_DOMAINS.has(d)),
+          o.domains.some((d: string) => CONTINUOUS_DOMAINS.has(d)),
       );
     }
 

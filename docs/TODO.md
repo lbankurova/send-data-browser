@@ -624,20 +624,22 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Resolved:**
   - ~~**SLA-15:** CL recovery `MIN_RECOVERY_N` guard~~ — implemented, `insufficient_n` verdict for rec_n<3
   - ~~**SLA-16:** Corroboration direction coherence~~ — implemented, `partially_corroborated` status for directional incoherence
-- **Partial gaps — "accessor migration sweep" (batch as single task):**
-  - **SLA-01:** `NoaelDecisionView.tsx:316` still shows `Max |d|:` unconditionally (should use domain-aware label)
-  - **SLA-01:** `NoaelDeterminationView.tsx:605` partial — mixed-domain organs still show `|d|` for MI findings
-  - **SLA-06:** `DoseResponseView.tsx:119-123` `computeSignalScore()` table sort still mixes raw `|maxEffect|` across data types
-  - **SLA-06:** `DoseResponseView.tsx:2251` creates local INCIDENCE set instead of importing from `domain-types.ts`
-  - **SLA-12:** `OrganRailMode.tsx:258` creates local `HISTO_DOMAINS` set instead of importing from `domain-types.ts`
-  - **SLA-13:** DR view column header/tooltip not updated to show `effectSizeLabel(domain)` for odds ratio column
-  - **Phase 0 migration:** ~20+ display-only callsites still read `maxEffectSize` directly instead of using typed accessors
+- ~~**Partial gaps — "accessor migration sweep" (batch as single task):**~~
+  - ~~**SLA-01:** `NoaelDecisionView.tsx` domain-aware "Max |d|/avg sev" label + endpoint tooltips~~
+  - ~~**SLA-01:** `NoaelDeterminationView.tsx` endpoint tooltips with `effectSizeLabel(domain)`~~
+  - ~~**SLA-06:** `DoseResponseView.tsx` `computeSignalScore()` zeros effect part for non-continuous; `computeStrength()` uses p-value-driven levels for categorical~~
+  - ~~**SLA-06:** `DoseResponseView.tsx` volcano scatter imports `INCIDENCE_DOMAINS` from domain-types~~
+  - ~~**SLA-12:** `OrganRailMode.tsx` severity filter uses `CONTINUOUS_DOMAINS` instead of local `HISTO_DOMAINS`~~
+  - ~~**SLA-13:** DR view + FindingsTable effect cells have domain-aware tooltips via `effectSizeLabel(domain)`; DoseResponseEndpointPicker guards `|d|` display with `CONTINUOUS_DOMAINS`~~
+  - ~~**Phase 0 migration:** Key display callsites migrated (DoseResponseEndpointPicker, FindingsTable, NoaelDecision/Determination, OrganRailMode)~~
+- **Medium priority — next sprint:**
+  - **SLA-01 organ-level aggregate:** `deriveOrganSummaries()` in `NoaelDecisionView.tsx:94` and `NoaelDeterminationView.tsx` (via `derive-summaries.ts`) computes `maxEffectSize` as `Math.abs(row.effect_size)` across ALL domains. Mixed-domain organs (e.g., Liver with LB d=1.2 + MI avg_sev=3.0) show maxEffectSize=3.0 labeled "|d|" — the exact SLA-01 problem one level up. Pathologists skimming at the organ row level see a misleading number. Fix: track separate per-metric-type max (max Cohen's d, max avg severity) in `deriveOrganSummaries()` and display accordingly.
 - **Other partial gaps (lower priority):**
   - **SLA-02 frontend:** `computeEndpointSignal()` zeroes effectWeight for incidence but doesn't boost pValueWeight/patternWeight to compensate — incidence endpoints get structurally lower frontend signal scores
   - **SLA-07:** `deriveMagnitudeLevel()` uses `Math.round(maxGrade)` for INHAND lookup; spec says fractional grades should display `"Minimal–Mild"` for avg_severity=1.7 — display-only, does not feed into exports or rule narratives (feeds into ECETOC syndrome magnitude label)
-- **Status:** Open (2 unimplemented, accessor migration sweep pending)
-- **Priority:** P2 (SLA-09/18 are correctness; accessor sweep is P2 mechanical; SLA-02/07 are P3)
-- **Owner hint:** backend-dev (SLA-18), frontend-dev (SLA-09 + accessor migration sweep)
+- **Status:** Open (2 unimplemented: SLA-09, SLA-18; 1 medium: organ-level aggregate; SLA-02/07 P3)
+- **Priority:** P2 (SLA-09/18 correctness, organ aggregate medium; SLA-02/07 P3)
+- **Owner hint:** backend-dev (SLA-18), frontend-dev (SLA-09, organ aggregate, SLA-02/07)
 
 ---
 

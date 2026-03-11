@@ -57,6 +57,7 @@ import type { ToxFinding } from "@/types/annotations";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { INCIDENCE_DOMAINS, effectSizeLabel } from "@/lib/domain-types";
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import type { GroupStat, PairwiseResult } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
@@ -217,7 +218,9 @@ function deriveEndpointSummaries(data: DoseResponseRow[]): EndpointSummary[] {
       max_effect_size: maxEffect,
       direction,
       sexes: [...sexSet].sort(),
-      signal_score: computeSignalScore(minTrendP, maxEffect),
+      // SLA-06: only use effect size in signal score for continuous data (Cohen's d);
+      // MI avg_severity and incidence null are not comparable magnitudes.
+      signal_score: computeSignalScore(minTrendP, first.data_type === "continuous" ? maxEffect : null),
       min_n: minN,
       has_timecourse: first.data_type === "continuous" || first.domain === "CL",
       sex_divergence: sexDivergence,
@@ -239,7 +242,7 @@ function generateConclusion(ep: EndpointSummary): string {
   }
 
   if (ep.max_effect_size != null) {
-    parts.push(`max effect size ${ep.max_effect_size.toFixed(2)}`);
+    parts.push(`max ${effectSizeLabel(ep.domain)} ${ep.max_effect_size.toFixed(2)}`);
   }
 
   const sexNote =
@@ -442,8 +445,9 @@ export function DoseResponseView() {
         header: "Effect",
         cell: (info) => {
           const v = info.getValue();
+          const domain = info.row.original.domain;
           return (
-            <span className="ev font-mono text-muted-foreground">
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${effectSizeLabel(domain)} = ${v.toFixed(3)}` : undefined}>
               {formatEffectSize(v)}
             </span>
           );
@@ -2248,10 +2252,9 @@ function VolcanoScatter({
   const points = useMemo<VolcanoPoint[]>(() => {
     // SLA-06: filter incidence endpoints out — they have no Cohen's d for X-axis.
     // Incidence domains already have their own bar chart in the dose-response view.
-    const INCIDENCE = new Set(["MI", "MA", "CL", "TF", "DS"]);
     return endpointSummaries
       .filter((ep) => ep.max_effect_size != null && ep.min_trend_p != null && ep.min_trend_p > 0
-        && !INCIDENCE.has(ep.domain))
+        && !INCIDENCE_DOMAINS.has(ep.domain) && ep.domain !== "MI")
       .map((ep) => ({
         endpoint_label: ep.endpoint_label,
         organ_system: ep.organ_system,
@@ -2456,17 +2459,32 @@ function computeBiologicalGradient(ep: EndpointSummary): { level: 0 | 1 | 2 | 3 
   return { level: base as 0 | 1 | 2 | 3 | 4 | 5, evidence: `${patternLabel}${trendText}` };
 }
 
+// Categorical/ordinal endpoints (MI, MA, CL, TF, DS) use p-value-driven strength
+// because their max_effect_size is avg_severity (1-5), not Cohen's d — applying
+// Cohen's d thresholds would inflate their apparent strength. Cap at level 3
+// (moderate) even with highly significant p-values; levels 4-5 require the
+// continuous-domain magnitude evidence that Cohen's d provides.
+const CATEGORICAL_MAX_STRENGTH_LEVEL = 3 as const;
+
 function computeStrength(ep: EndpointSummary, esSymbol = "d"): { level: 0 | 1 | 2 | 3 | 4 | 5; evidence: string } {
   const d = ep.max_effect_size != null ? Math.abs(ep.max_effect_size) : 0;
+  const isContinuous = ep.data_type === "continuous";
   let level: 0 | 1 | 2 | 3 | 4 | 5;
-  if (d >= 1.2) level = 5;
-  else if (d >= 0.8) level = 4;
-  else if (d >= 0.5) level = 3;
-  else if (d >= 0.2) level = 2;
-  else level = 1;
+  if (isContinuous) {
+    // Cohen's d thresholds
+    if (d >= 1.2) level = 5;
+    else if (d >= 0.8) level = 4;
+    else if (d >= 0.5) level = 3;
+    else if (d >= 0.2) level = 2;
+    else level = 1;
+  } else {
+    // Categorical/ordinal — strength is p-value-driven, not magnitude
+    level = ep.min_p_value != null && ep.min_p_value < 0.01
+      ? CATEGORICAL_MAX_STRENGTH_LEVEL
+      : ep.min_p_value != null && ep.min_p_value < 0.05 ? 2 : 1;
+  }
 
-  const isIncidence = ep.data_type === "categorical";
-  const metricLabel = isIncidence ? "avg sev" : `|${esSymbol}|`;
+  const metricLabel = isContinuous ? `|${esSymbol}|` : effectSizeLabel(ep.domain);
   const pText = ep.min_p_value != null ? ` · p ${ep.min_p_value < 0.001 ? "< 0.001" : `= ${ep.min_p_value.toFixed(3)}`}` : "";
   return { level, evidence: `${metricLabel} = ${d.toFixed(2)}${pText}` };
 }
