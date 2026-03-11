@@ -9,6 +9,8 @@ import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { CollapseAllButtons } from "./CollapseAllButtons";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSelect } from "@/components/ui/FilterBar";
 
@@ -90,6 +92,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const recoveryControlsExcluded = allControlCount > controlGroups.length;
 
   const normalization = useOrganWeightNormalization(studyId, false, effectSize as EffectSizeMethod);
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   if (metaLoading) {
     return (
@@ -110,13 +113,14 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Sticky header */}
-      <div className="sticky top-0 z-10 flex shrink-0 items-center border-b bg-muted/30 px-4 py-[15px]">
+      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b bg-muted/30 px-4 py-[15px]">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Study-level settings</h3>
+        <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
       </div>
 
       <div className="flex-1 overflow-auto">
       {/* ── Analysis methods ─────────────────────────────── */}
-      <CollapsiblePane title="Analysis methods">
+      <CollapsiblePane title="Analysis methods" expandAll={expandGen} collapseAll={collapseGen}>
         {/* Control group */}
         {controlGroups.length > 0 && (
           <>
@@ -327,14 +331,16 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       </CollapsiblePane>
 
       {/* ── Mortality ────────────────────────────────────── */}
-      <MortalityInfoPane mortality={mortalityData} />
+      <MortalityInfoPane mortality={mortalityData} expandAll={expandGen} collapseAll={collapseGen} />
 
       {/* ── Study notes ─────────────────────────────────── */}
       <CollapsiblePane
         title="Study notes"
         headerRight={currentNote ? "1 note" : "none"}
         defaultOpen={!!currentNote}
-              >
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+      >
         <textarea
           className="w-full rounded border bg-background px-2 py-1.5 text-xs leading-snug placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
           rows={4}

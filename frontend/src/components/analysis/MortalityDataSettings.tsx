@@ -53,7 +53,7 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
 // ── Main Component ───────────────────────────────────────────
 
 /** Mortality info pane — top-level CollapsiblePane with per-subject table. */
-export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | null }) {
+export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { mortality?: StudyMortality | null; expandAll?: number; collapseAll?: number }) {
   const { studyId } = useParams<{ studyId: string }>();
   const queryClient = useQueryClient();
   const { excludedSubjects, toggleSubjectExclusion, trEarlyDeathIds } = useScheduledOnly();
@@ -134,14 +134,14 @@ export function MortalityInfoPane({ mortality }: { mortality?: StudyMortality | 
 
   if (!hasMortality) {
     return (
-      <CollapsiblePane title="Mortality"  defaultOpen={false}>
+      <CollapsiblePane title="Mortality" defaultOpen={false} expandAll={expandAll} collapseAll={collapseAll}>
         <div className="text-[10px] text-muted-foreground">No mortality events recorded.</div>
       </CollapsiblePane>
     );
   }
 
   return (
-    <CollapsiblePane title="Mortality"  headerRight={summary}>
+    <CollapsiblePane title="Mortality" headerRight={summary} expandAll={expandAll} collapseAll={collapseAll}>
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">

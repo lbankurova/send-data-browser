@@ -8,9 +8,10 @@ import { useFindingContext } from "@/hooks/useFindingContext";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { usePaneHistory } from "@/hooks/usePaneHistory";
 import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
 import { EvidencePane } from "./EvidencePane";
 import { DoseDetailPane } from "./DoseDetailPane";
@@ -996,7 +997,7 @@ function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  const { selectedFindingId, selectedFinding: rawSelectedFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
+  const { selectedFindingId, selectedFinding: rawSelectedFinding, selectFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
   const { analytics, data: findingsData, activeFindings } = useFindingsAnalyticsLocal(studyId);
 
   // Use the filtered finding (with recovery pooling / scheduled-only stats swapped)
@@ -1015,6 +1016,30 @@ export function FindingsContextPanel() {
   const distributionPaneRef = useRef<HTMLDivElement>(null);
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // ── Navigation history (D1) ──
+  type FindingsNavEntry = { type: "finding"; id: string } | { type: "organ" | "syndrome"; key: string };
+  const currentNavEntry = useMemo((): FindingsNavEntry | null => {
+    if (selectedFindingId) return { type: "finding", id: selectedFindingId };
+    if (selectedGroupType && selectedGroupKey) return { type: selectedGroupType as "organ" | "syndrome", key: selectedGroupKey };
+    return null;
+  }, [selectedFindingId, selectedGroupType, selectedGroupKey]);
+
+  const handleNavTo = useCallback((entry: FindingsNavEntry) => {
+    if (entry.type === "finding") {
+      const f = activeFindings.find(af => af.id === entry.id);
+      if (f) selectFinding(f);
+    } else {
+      selectGroup(entry.type, entry.key);
+    }
+  }, [activeFindings, selectFinding, selectGroup]);
+
+  const { canGoBack, canGoForward, goBack, goForward } = usePaneHistory(
+    currentNavEntry,
+    handleNavTo,
+    (e) => `${e.type}:${"id" in e ? e.id : e.key}`,
+  );
+  const nav = { canGoBack, canGoForward, onBack: goBack, onForward: goForward };
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
   const hasRecovery = studyMeta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
@@ -1186,10 +1211,10 @@ export function FindingsContextPanel() {
     // Check for group selection (Priority 2)
     // Wrap in provider so child panels can access analytics via useFindingsAnalytics()
     if (selectedGroupType === "organ" && selectedGroupKey) {
-      return <FindingsAnalyticsProvider value={analytics}><OrganContextPanel organKey={selectedGroupKey} /></FindingsAnalyticsProvider>;
+      return <FindingsAnalyticsProvider value={analytics}><OrganContextPanel organKey={selectedGroupKey} nav={nav} /></FindingsAnalyticsProvider>;
     }
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
-      return <FindingsAnalyticsProvider value={analytics}><SyndromeContextPanel syndromeId={selectedGroupKey} /></FindingsAnalyticsProvider>;
+      return <FindingsAnalyticsProvider value={analytics}><SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} /></FindingsAnalyticsProvider>;
     }
 
     // Priority 3: empty state — show normalization heatmap when OM data present
@@ -1242,15 +1267,18 @@ export function FindingsContextPanel() {
   return (
     <div>
       {/* Sticky header — renders immediately from cached finding */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{selectedFinding.finding}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <p className="text-[10px] text-muted-foreground">
-          {selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}
-        </p>
-      </div>
+      <ContextPanelHeader
+        title={selectedFinding.finding}
+        subtitle={
+          <>{selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}</>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={nav.onBack}
+        onForward={nav.onForward}
+      />
 
       {/* Context-dependent panes: Verdict + DoseDetail need useFindingContext */}
       {contextReady ? (

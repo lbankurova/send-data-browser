@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import { ValidationIssueForm } from "./ValidationIssueForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { cn } from "@/lib/utils";
@@ -83,39 +83,13 @@ function DomainLink({
   );
 }
 
-// ── Navigation bar ─────────────────────────────────────────────────────
+// ── Nav props shared by Rule and Issue headers ─────────────────────────
 
-function PaneNavBar({
-  canGoBack,
-  canGoForward,
-  onBack,
-  onForward,
-}: {
+interface PaneNavProps {
   canGoBack: boolean;
   canGoForward: boolean;
   onBack: () => void;
   onForward: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-0.5 border-b px-2 py-1">
-      <button
-        className="rounded p-0.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-        disabled={!canGoBack}
-        onClick={onBack}
-        title="Back"
-      >
-        <ChevronLeft className="h-3.5 w-3.5" />
-      </button>
-      <button
-        className="rounded p-0.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
-        disabled={!canGoForward}
-        onClick={onForward}
-        title="Forward"
-      >
-        <ChevronRight className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
 }
 
 // ── Rule configuration pane (enable/disable toggle) ────────────────────
@@ -211,11 +185,13 @@ function RuleReviewSummary({
   detail,
   studyId,
   setSelection,
+  nav,
 }: {
   selection: ValidationViewSelection;
   detail: RuleDetail | null;
   studyId?: string;
   setSelection?: (sel: ValidationViewSelection | null) => void;
+  nav?: PaneNavProps;
 }) {
   const { data: affectedData } = useAffectedRecords(studyId, selection.rule_id);
   const records = useMemo(() => (affectedData?.records ?? []).map(mapApiRecord), [affectedData]);
@@ -255,23 +231,27 @@ function RuleReviewSummary({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-semibold">{selection.rule_id}</span>
-          <span
-            className="text-[10px] font-semibold"
-            style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
-          >
-            {selection.severity}
+      <ContextPanelHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span>{selection.rule_id}</span>
+            <span
+              className="text-[10px] font-semibold"
+              style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
+            >
+              {selection.severity}
+            </span>
           </span>
-          <span className="ml-auto">
-            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {selection.domain} &middot; {selection.category}
-        </p>
-      </div>
+        }
+        titleClassName="font-mono"
+        subtitle={<>{selection.domain} &middot; {selection.category}</>}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
+      />
 
       {/* Rule detail */}
       <CollapsiblePane title="Rule detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -1605,9 +1585,11 @@ function RulePopover({
 function IssueReview({
   selection,
   studyId,
+  nav,
 }: {
   selection: ValidationIssueViewSelection;
   studyId?: string;
+  nav?: PaneNavProps;
 }) {
   // Look up the full record from catalog data
   const { data: validationData } = useValidationCatalog(studyId);
@@ -1624,25 +1606,37 @@ function IssueReview({
     return rule ? extractRuleDetail(rule) : null;
   }, [validationData, selection.rule_id]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-semibold">{selection.issue_id}</span>
-          <span
-            className="text-[10px] font-semibold"
-            style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
-          >
-            {selection.severity}
+      <ContextPanelHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span>{selection.issue_id}</span>
+            <span
+              className="text-[10px] font-semibold"
+              style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
+            >
+              {selection.severity}
+            </span>
           </span>
-        </div>
-        {/* Rule ID with hover popover showing full rule detail */}
-        <RulePopover ruleId={selection.rule_id} domain={selection.domain} category={selection.category} severity={selection.severity} description={selection.description} detail={detail} />
-      </div>
+        }
+        titleClassName="font-mono"
+        subtitle={
+          <RulePopover ruleId={selection.rule_id} domain={selection.domain} category={selection.category} severity={selection.severity} description={selection.description} detail={detail} />
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
+      />
 
       {/* Record context */}
-      <CollapsiblePane title="Record context" defaultOpen>
+      <CollapsiblePane title="Record context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
           <div>
             <span className="font-medium text-muted-foreground">Subject ID: </span>
@@ -1761,20 +1755,20 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
     );
   }
 
+  const nav: PaneNavProps = {
+    canGoBack,
+    canGoForward,
+    onBack: handleBack,
+    onForward: handleForward,
+  };
+
   return (
     <div>
-      {/* < > navigation buttons */}
-      <PaneNavBar
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        onBack={handleBack}
-        onForward={handleForward}
-      />
-
       {selection.mode === "issue" && selection.issue_id ? (
         <IssueReview
           selection={selection}
           studyId={studyId}
+          nav={nav}
         />
       ) : (
         <RuleReviewSummary
@@ -1782,6 +1776,7 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
           detail={detail}
           studyId={studyId}
           setSelection={setSelection}
+          nav={nav}
         />
       )}
     </div>

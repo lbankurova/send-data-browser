@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
 import { InsightsList } from "./InsightsList";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -164,15 +164,17 @@ export function DoseResponseContextPanel({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{selection.endpoint_label}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          <DomainLabel domain={selection.domain ?? ""} /> &middot; {titleCase(selection.organ_system)}
-          {selection.sex && <> &middot; {selection.sex}</>}
-        </p>
+      <ContextPanelHeader
+        title={selection.endpoint_label}
+        subtitle={
+          <>
+            <DomainLabel domain={selection.domain ?? ""} /> &middot; {titleCase(selection.organ_system)}
+            {selection.sex && <> &middot; {selection.sex}</>}
+          </>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+      >
         <div className="mt-1.5 text-xs">
           <TierCountBadges
             counts={computeTierCounts(endpointRules)}
@@ -180,7 +182,7 @@ export function DoseResponseContextPanel({
             onTierClick={setTierFilter}
           />
         </div>
-      </div>
+      </ContextPanelHeader>
 
       {/* 1. Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

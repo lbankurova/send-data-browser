@@ -13,7 +13,7 @@ import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindings } from "@/hooks/useFindings";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import {
   formatPValue,
   formatEffectSize,
@@ -275,9 +275,10 @@ function getVerdictConfig(assessment: FoodConsumptionContext["bwFwAssessment"]) 
 
 interface SyndromeContextPanelProps {
   syndromeId: string;
+  nav?: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void; };
 }
 
-export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) {
+export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const analytics = useFindingsAnalytics();
@@ -587,22 +588,27 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
   return (
     <div>
       {/* ══ STICKY HEADER (verdict) ══ */}
-      <div
-        className={`sticky top-0 z-10 border-b bg-background px-4 py-3 ${sevAccent.borderClass}`}
+      <ContextPanelHeader
+        title={name}
+        className={sevAccent.borderClass}
         style={sevAccent.borderColor ? { borderLeftColor: sevAccent.borderColor } : undefined}
+        subtitle={
+          <>
+            {syndromeId} · {endpointCount} endpoint{endpointCount !== 1 ? "s" : ""} · {domainCount} domain{domainCount !== 1 ? "s" : ""}
+            {detected?.sexes && detected.sexes.length > 0 && (
+              <> · {detected.sexes.length === 1
+                ? `${detected.sexes[0]} only`
+                : detected.sexes.join(" + ")}</>
+            )}
+          </>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
       >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{name}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <p className="text-[10px] text-muted-foreground">
-          {syndromeId} · {endpointCount} endpoint{endpointCount !== 1 ? "s" : ""} · {domainCount} domain{domainCount !== 1 ? "s" : ""}
-          {detected?.sexes && detected.sexes.length > 0 && (
-            <> · {detected.sexes.length === 1
-              ? `${detected.sexes[0]} only`
-              : detected.sexes.join(" + ")}</>
-          )}
-        </p>
         {syndromeInterp && (
           <>
             {/* Line 1: Severity label */}
@@ -636,7 +642,7 @@ export function SyndromeContextPanel({ syndromeId }: SyndromeContextPanelProps) 
             )}
           </>
         )}
-      </div>
+      </ContextPanelHeader>
 
       {/* Loading state */}
       {!syndromeInterp && (
