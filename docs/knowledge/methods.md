@@ -1181,7 +1181,7 @@ Consequence finding heuristic: structural/compositional + >= 2 correlates → li
 
 **Per-finding A-factors (treatment-relatedness):**
 - A-1 (dose-response): monotonic → 2 pts, threshold → 1.5, non-monotonic → 0.5
-- A-2 (concordance): corroboration_status == "corroborated" → 1 pt
+- A-2 (concordance): corroboration_status == "corroborated" → 1 pt (SLA-16: "partially_corroborated" does NOT count — directional incoherence disqualifies)
 - A-6 (statistics): min_p_adj < 0.05 → 1 pt, trend_p < 0.05 → 0.5 pt
 - Score ≥ 1.0 = treatment-related
 

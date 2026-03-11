@@ -45,13 +45,15 @@ Single source of truth: `docs/TODO.md` (74 open items)
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Dose-response view audit completed, three audits now pending triage.
-Active audits:
-- `docs/incoming/scientific-logic-audit.md` — 19 findings (5 S1, 7 S2, 7 S3)
-- `docs/incoming/histopathology-view-audit.md` — 24 findings (1 S1, 10 S2, 13 S3)
-- `docs/incoming/dose-response-view-audit.md` — 19 findings (5 must-fix, 6 should-fix, 8 nice-to-fix)
-Next: Triage all three audits → TODO.md, then fix root cause (max_effect_size overloading).
-Prior session: Docker deployment fixes committed and pushed.
+Stopped at: SLA-15 (MIN_RECOVERY_N guard) and SLA-16 (corroboration direction coherence) implemented and tested.
+Completed this session:
+- SLA-15: `insufficient_n` verdict for CL recovery with rec_n < 3 (mirrors MI guard)
+- SLA-16: `partially_corroborated` status for directional incoherence (15 findings reclassified in PointCross)
+- 20 new tests (7 SLA-15, 13 SLA-16), all 42 backend + 1430 frontend pass
+- GAP-72 updated: 2/4 unimplemented items now resolved
+- Accessor migration sweep identified as separate batched task
+Next: Accessor migration sweep (SLA-01/06/12/13 + ~20 maxEffectSize callsites), then SLA-09/SLA-18.
+Prior session: Three audits completed (SLA, histopathology view, dose-response view).
 
 ---
-*Last updated: 2026-03-11 — Dose-response view audit completed*
+*Last updated: 2026-03-11 — SLA-15 + SLA-16 implemented*

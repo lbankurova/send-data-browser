@@ -20,15 +20,29 @@ NORMAL_TERMS = frozenset({
     "NO ABNORMALITIES", "UNREMARKABLE", "NONE", "NAN", "",
 })
 
+# SLA-15: Minimum recovery arm sample size — mirrors MI recovery's
+# insufficient_n guard.  A verdict from N<3 animals has no statistical
+# power and would mislead the toxicologist.
+MIN_RECOVERY_N = 3
+
 
 def compute_incidence_verdict(
     main_inc: float,
     rec_inc: float,
+    rec_n: int | None = None,
 ) -> str | None:
     """Classify recovery outcome from main vs recovery incidence ratios.
 
-    Returns one of: resolved, improving, worsening, persistent, new_in_recovery, None.
+    Args:
+        rec_n: Recovery arm sample size.  When provided and < MIN_RECOVERY_N,
+               returns ``"insufficient_n"`` immediately.  ``None`` skips the guard
+               (for backward-compatible calls that only have incidence ratios).
+
+    Returns one of: resolved, improving, worsening, persistent,
+    new_in_recovery, insufficient_n, or None.
     """
+    if rec_n is not None and rec_n < MIN_RECOVERY_N:
+        return "insufficient_n"
     if rec_inc == 0:
         return "resolved"
     if rec_inc < main_inc:
@@ -149,7 +163,7 @@ def compute_incidence_recovery(
 
                 main_inc = main_affected / main_n if main_n > 0 else 0
                 rec_inc = rec_affected / rec_n if rec_n > 0 else 0
-                verdict = compute_incidence_verdict(main_inc, rec_inc)
+                verdict = compute_incidence_verdict(main_inc, rec_inc, rec_n)
 
                 rows.append({
                     "domain": domain_key.upper(),

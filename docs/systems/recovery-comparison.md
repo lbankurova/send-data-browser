@@ -72,7 +72,7 @@ Each row = one (finding, sex, dose_level) tuple. Control (dose_level=0) excluded
 | recovery_affected | int | Subjects with finding in recovery arm |
 | recovery_n | int | Total subjects in recovery arm at this dose/sex |
 | recovery_day | int? | Study day of recovery sacrifice |
-| verdict | string? | Server-computed: "resolved", "improving", "persistent", "worsening", "new_in_recovery" |
+| verdict | string? | Server-computed: "resolved", "improving", "persistent", "worsening", "new_in_recovery", "insufficient_n" |
 
 ## Frontend: RecoveryPane
 
@@ -90,6 +90,7 @@ Computed in `_compute_incidence_recovery()` from incidence ratios:
 
 | Verdict | Condition | Color |
 |---------|-----------|-------|
+| Insufficient N | recovery_n < MIN_RECOVERY_N (3) | — (guard, no verdict) |
 | Resolved | recovery incidence = 0 | emerald-700 |
 | Improving | recovery < terminal | emerald-600 |
 | Persistent | recovery == terminal (both > 0) | amber-700 |

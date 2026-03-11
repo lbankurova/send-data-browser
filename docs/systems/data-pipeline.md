@@ -559,7 +559,7 @@ After all domain findings are collected (Pass 1), pass variants are merged and f
 1. **Pass 2 merge** (`attach_scheduled_stats`): Early-death-excluded stats for terminal + LB domains
 2. **Pass 3 merge** (`attach_separate_stats`): Recovery-excluded stats for in-life domains
 3. **Enrichment** (`enrich_findings`): Per-finding classification with safe defaults and error handling
-4. **Corroboration** (`compute_corroboration`): Cross-domain syndrome presence matching
+4. **Corroboration** (`compute_corroboration`): Cross-domain syndrome presence matching. Emits `corroboration_status`: `corroborated`, `partially_corroborated` (directional incoherence, SLA-16), `uncorroborated`, or `not_applicable`
 5. **Adversity assessment** (`_assess_all_findings`): ECETOC per-finding adversity classification
 6. **Confidence scoring** (`compute_all_confidence`): GRADE-style evidence confidence (HIGH/MODERATE/LOW) from 5 dimensions
 

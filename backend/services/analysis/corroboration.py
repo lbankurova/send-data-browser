@@ -157,6 +157,70 @@ def _match_finding(finding: dict, term: dict) -> bool:
 # Corroboration pass
 # ---------------------------------------------------------------------------
 
+def _syndrome_expects_mixed_directions(syndrome: dict) -> bool:
+    """Return True if this syndrome's terms specify BOTH 'up' and 'down'.
+
+    Syndromes that explicitly list both directions (e.g., XS05: albumin↓ +
+    globulin↑) expect directional diversity by design — the coherence check
+    should not flag them.  Syndromes whose specified terms all point one way
+    (plus some ``"any"`` terms) expect coherence.
+    """
+    specified = {t["direction"] for t in syndrome["terms"] if t["direction"] != "any"}
+    return "up" in specified and "down" in specified
+
+
+def _check_direction_coherence(
+    finding: dict,
+    my_term_indices: list[int],
+    supporting_findings: list[tuple[dict, int]],
+    syndrome: dict,
+) -> bool:
+    """SLA-16: Return True if direction coherence holds, False if contradictory.
+
+    When a syndrome specifies a single direction (all specified terms are
+    "up" OR all are "down"), any ``direction: "any"`` match whose *actual*
+    finding direction opposes the expected direction is incoherent.
+
+    If the syndrome explicitly expects mixed directions → always coherent.
+    """
+    if _syndrome_expects_mixed_directions(syndrome):
+        return True  # mixed is expected by design
+
+    # Determine the single expected direction from specified terms
+    specified = {t["direction"] for t in syndrome["terms"] if t["direction"] != "any"}
+    if not specified:
+        # All terms are "any" — check for contradictory actual directions
+        actual_dirs: set[str] = set()
+        my_dir = finding.get("direction")
+        if my_dir in ("up", "down"):
+            actual_dirs.add(my_dir)
+        for other_f, _ in supporting_findings:
+            d = other_f.get("direction")
+            if d in ("up", "down"):
+                actual_dirs.add(d)
+        return not ("up" in actual_dirs and "down" in actual_dirs)
+
+    expected_dir = next(iter(specified))  # the single specified direction
+
+    # Check this finding's actual direction vs expected
+    my_dir = finding.get("direction")
+    my_matched_via_any = any(
+        syndrome["terms"][i]["direction"] == "any" for i in my_term_indices
+    )
+    if my_matched_via_any and my_dir in ("up", "down") and my_dir != expected_dir:
+        return False
+
+    # Check supporting findings matched via "any" terms
+    for other_f, term_idx in supporting_findings:
+        term = syndrome["terms"][term_idx]
+        if term["direction"] == "any":
+            other_dir = other_f.get("direction")
+            if other_dir in ("up", "down") and other_dir != expected_dir:
+                return False
+
+    return True
+
+
 def compute_corroboration(findings: list[dict]) -> list[dict]:
     """Add ``corroboration_status`` to each finding based on cross-domain evidence.
 
@@ -165,7 +229,8 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
     2. If matched, looks for cross-domain corroboration within the same sex
        (at least one OTHER term in the SAME syndrome matched by a DIFFERENT
        domain in the same sex).
-    3. Sets ``corroboration_status`` on each finding.
+    3. SLA-16: Validates directional coherence across matched findings.
+    4. Sets ``corroboration_status`` on each finding.
 
     **No auto-downgrade**: ``severity`` is NOT modified. The frontend (and
     eventually the user) decides what to do with the flag.
@@ -183,6 +248,8 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
         matched_any_term = False
         # Track: is it corroborated by cross-domain evidence?
         is_corroborated = False
+        # Track: corroborated but with directional incoherence?
+        is_partially_corroborated = False
 
         for syndrome in SYNDROME_DEFINITIONS:
             # Which terms does THIS finding match?
@@ -201,7 +268,9 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
 
             # Check: do OTHER findings in same sex match OTHER terms
             # in this syndrome from a DIFFERENT domain?
+            # Track which findings matched which terms (for direction check).
             other_domains_matched: set[str] = set()
+            supporting: list[tuple[dict, int]] = []
             for other_f in sex_findings:
                 if other_f is f:
                     continue
@@ -214,14 +283,22 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
                         continue  # must be a different domain
                     if _match_finding(other_f, term):
                         other_domains_matched.add(term["domain"])
+                        supporting.append((other_f, j))
                         break  # one match per other_f is enough
 
             if other_domains_matched:
-                is_corroborated = True
-                break  # one corroborating syndrome is enough
+                # SLA-16: direction coherence gate
+                if _check_direction_coherence(f, my_term_indices, supporting, syndrome):
+                    is_corroborated = True
+                    break  # one fully corroborating syndrome is enough
+                else:
+                    is_partially_corroborated = True
+                    # keep scanning — another syndrome may provide full corroboration
 
         if is_corroborated:
             f["corroboration_status"] = "corroborated"
+        elif is_partially_corroborated:
+            f["corroboration_status"] = "partially_corroborated"
         elif matched_any_term:
             f["corroboration_status"] = "uncorroborated"
         else:
