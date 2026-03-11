@@ -61,6 +61,8 @@ export function useSpecimenLabCorrelation(
 
   const correlations = useMemo<LabCorrelation[]>(() => {
     if (!compData?.lab_values || !compData?.control_stats?.lab) return [];
+    // No organ-specific lab mapping → don't show random lab data for this organ
+    if (relevantTests.length === 0) return [];
 
     const controlStats = compData.control_stats.lab;
 
@@ -82,6 +84,7 @@ export function useSpecimenLabCorrelation(
       }
     }
 
+    const MIN_CONTROL_N = 3;
     const results: LabCorrelation[] = [];
     for (const [test, { values, unit }] of byTest) {
       const ctrl = controlStats[test];
@@ -96,7 +99,10 @@ export function useSpecimenLabCorrelation(
       const pctChange = ((highDoseMean - controlMean) / Math.abs(controlMean)) * 100;
       const direction: "up" | "down" = pctChange >= 0 ? "up" : "down";
       const absPct = Math.abs(pctChange);
-      const signal = absPct > 100 ? 3 : absPct > 50 ? 2 : absPct > 25 ? 1 : 0;
+      // Suppress signal when control is degenerate (n < 3 or zero variance)
+      const signal = (ctrl.n < MIN_CONTROL_N || controlSD === 0)
+        ? 0
+        : absPct > 100 ? 3 : absPct > 50 ? 2 : absPct > 25 ? 1 : 0;
       const isRelevant = relevantTests.includes(test);
 
       results.push({

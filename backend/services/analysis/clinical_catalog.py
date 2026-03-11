@@ -400,6 +400,11 @@ def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict
         if not catalog_match:
             continue
 
+        # Gate: skip clinical annotation for non-treatment-related findings
+        # (e.g., control-only incidence with no treated-group signal)
+        if not params.get("treatment_related", False):
+            continue
+
         # --- Annotate with catalog metadata ---
         params["clinical_class"] = catalog_match["clinical_class"]
         params["catalog_id"] = catalog_match["id"]
