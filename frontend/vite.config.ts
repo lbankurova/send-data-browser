@@ -10,6 +10,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'scheduler'],
+          'vendor-query': ['@tanstack/react-query', '@tanstack/react-table'],
+          'vendor-charts': ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers', 'zrender'],
+          'vendor-ui': ['radix-ui', 'lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     strictPort: true,

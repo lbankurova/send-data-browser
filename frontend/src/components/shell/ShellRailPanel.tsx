@@ -5,7 +5,7 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PolymorphicRail } from "./PolymorphicRail";
 import { FindingsRail } from "@/components/analysis/findings/FindingsRail";
 import type { RailVisibleState } from "@/components/analysis/findings/FindingsRail";
-import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback } from "@/components/analysis/findings/FindingsView";
+import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcludedCallback } from "@/components/analysis/findings/findings-bridge";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";

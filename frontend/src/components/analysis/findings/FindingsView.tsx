@@ -9,7 +9,6 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
-import type { RailVisibleState } from "./FindingsRail";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
@@ -21,6 +20,10 @@ import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/seve
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
+import {
+  setFindingsRailCallback,
+  getFindingsExcludedCallback,
+} from "./findings-bridge";
 
 /** Pick the most-significant finding row: min p-value (primary), max |effect size| (secondary). */
 function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
@@ -35,36 +38,6 @@ function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
     }
     return best;
   });
-}
-
-// ─── Event bus (simplified) ───────────────────────────────
-
-interface FindingsCallbackState {
-  activeEndpoint?: string | null;
-  activeGrouping?: GroupingMode;
-  visibleEndpoints?: RailVisibleState;
-  restoreEndpoint?: string;
-}
-
-let _findingsRailCallback: ((state: FindingsCallbackState) => void) | null = null;
-let _findingsClearScopeCallback: (() => void) | null = null;
-
-export function setFindingsRailCallback(cb: typeof _findingsRailCallback) {
-  _findingsRailCallback = cb;
-}
-export function getFindingsRailCallback() {
-  return _findingsRailCallback;
-}
-export function setFindingsClearScopeCallback(cb: typeof _findingsClearScopeCallback) {
-  _findingsClearScopeCallback = cb;
-}
-export function getFindingsClearScopeCallback() {
-  return _findingsClearScopeCallback;
-}
-
-let _findingsExcludedCallback: ((excluded: ReadonlySet<string>) => void) | null = null;
-export function setFindingsExcludedCallback(cb: typeof _findingsExcludedCallback) {
-  _findingsExcludedCallback = cb;
 }
 
 export function FindingsView() {
@@ -123,10 +96,11 @@ export function FindingsView() {
 
   // Sync excluded endpoints to rail via reverse callback
   useEffect(() => {
-    if (_findingsExcludedCallback) {
-      _findingsExcludedCallback(excludedEndpoints);
+    const cb = getFindingsExcludedCallback();
+    if (cb) {
+      cb(excludedEndpoints);
     } else if (excludedEndpoints.size > 0) {
-      const id = requestAnimationFrame(() => _findingsExcludedCallback?.(excludedEndpoints));
+      const id = requestAnimationFrame(() => getFindingsExcludedCallback()?.(excludedEndpoints));
       return () => cancelAnimationFrame(id);
     }
   }, [excludedEndpoints]);
