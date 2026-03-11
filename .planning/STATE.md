@@ -44,11 +44,14 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-10
-Stopped at: Docker deployment debugging — Render deployment fixed and live.
-Session work: (1) Diagnosed and fixed 5 modules using fragile `parents[3]` path resolution — centralized to `config.SHARED_DIR`. (2) Added `OPENBLAS_NUM_THREADS=1` for Docker. (3) Added startup verification (shared files + eager pipeline import). (4) App loads on Render but slow on free tier (0.1 CPU) — user evaluating upgrade.
-Resume file: .planning/phases/exploratory/.continue-here.md
-Next action: Push unpushed commit 1e3d4a5, then feature work.
+Last session: 2026-03-11
+Stopped at: Dose-response view audit completed, three audits now pending triage.
+Active audits:
+- `docs/incoming/scientific-logic-audit.md` — 19 findings (5 S1, 7 S2, 7 S3)
+- `docs/incoming/histopathology-view-audit.md` — 24 findings (1 S1, 10 S2, 13 S3)
+- `docs/incoming/dose-response-view-audit.md` — 19 findings (5 must-fix, 6 should-fix, 8 nice-to-fix)
+Next: Triage all three audits → TODO.md, then fix root cause (max_effect_size overloading).
+Prior session: Docker deployment fixes committed and pushed.
 
 ---
-*Last updated: 2026-03-10 — Docker deployment fixes committed and pushed*
+*Last updated: 2026-03-11 — Dose-response view audit completed*
