@@ -19,6 +19,7 @@ import {
   formatDoseShortLabel,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
+import { effectSizeLabel } from "@/lib/domain-types";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
@@ -203,9 +204,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       col.accessor("max_effect_size", {
         header: "Effect",
-        cell: (info) => (
-          <span className="ev font-mono text-muted-foreground">{formatEffectSize(info.getValue())}</span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          const domain = info.row.original.domain;
+          return (
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${effectSizeLabel(domain)} = ${v.toFixed(3)}` : undefined}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
       }),
       col.accessor("severity", {
         header: "Severity",

@@ -8,6 +8,7 @@ import {
   titleCase,
 } from "@/lib/severity-colors";
 import { useEndpointBookmarks, useToggleBookmark } from "@/hooks/useEndpointBookmarks";
+import { effectSizeLabel, CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
 // ─── Types ────────────────────────────────────────────────
@@ -356,11 +357,11 @@ export function DoseResponseEndpointPicker({
                       )}>
                         p={formatPValue(ep.min_trend_p)}
                       </span>
-                      {ep.max_effect_size != null && (
+                      {ep.max_effect_size != null && CONTINUOUS_DOMAINS.has(ep.domain) && (
                         <span className={cn(
                           "shrink-0 font-mono text-[10px] text-muted-foreground",
                           ep.max_effect_size >= 0.8 && "font-semibold",
-                        )}>
+                        )} title={`${effectSizeLabel(ep.domain)} = ${ep.max_effect_size.toFixed(3)}`}>
                           |d|={ep.max_effect_size.toFixed(2)}
                         </span>
                       )}

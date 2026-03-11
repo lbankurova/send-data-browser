@@ -52,6 +52,7 @@ import type {
   StudySummaryFilters as Filters,
 } from "@/types/analysis-views";
 import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows, CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
+import { effectSizeLabel } from "@/lib/domain-types";
 import type { OrganSummary, EndpointSummary } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
@@ -693,7 +694,7 @@ function OverviewTab({
                     </span>
                   )}
                   {ep.maxEffectSize != null && (
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`${effectSizeLabel(ep.domain)} = ${ep.maxEffectSize.toFixed(3)}`}>
                       {ep.maxEffectSize.toFixed(2)}
                     </span>
                   )}
