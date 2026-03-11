@@ -3,7 +3,7 @@
  */
 
 import type { EChartsOption } from "echarts";
-import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
+import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import type { EndpointSummary, OrganCoherence, NoaelTier } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
@@ -171,7 +171,7 @@ export function prepareQuadrantPoints(
       // Clamp p=0 to 1e-300 to avoid -log10(0)=Infinity
       const safeP = Math.max(ep.minPValue!, 1e-300);
       const absEffect = Math.abs(ep.maxEffectSize!);
-      const isInc = INCIDENCE_DOMAINS.has(ep.domain);
+      const isInc = !CONTINUOUS_DOMAINS.has(ep.domain);
 
       return {
         endpoint_label: ep.endpoint_label,

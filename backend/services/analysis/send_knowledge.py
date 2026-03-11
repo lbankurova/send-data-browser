@@ -3,6 +3,78 @@
 Pure data module — no imports required.
 """
 
+# ─── Domain effect-type registry (SLA-19, SLA-17) ─────────────────────────
+# Declares the effect-size semantics for each SEND domain.
+# Consumers must use typed accessors below instead of reading max_effect_size directly.
+
+DOMAIN_EFFECT_TYPE: dict[str, str] = {
+    "LB": "cohens_d",       # continuous lab measurement
+    "BW": "cohens_d",
+    "OM": "cohens_d",
+    "EG": "cohens_d",
+    "VS": "cohens_d",
+    "BG": "cohens_d",
+    "FW": "cohens_d",
+    "MI": "severity_grade", # INHAND ordinal 1–5
+    "MA": "incidence",      # binary/proportion — no magnitude scalar
+    "CL": "incidence",
+    "TF": "incidence",
+    "DS": "incidence",
+}
+
+INCIDENCE_DOMAINS: frozenset[str] = frozenset(
+    d for d, t in DOMAIN_EFFECT_TYPE.items() if t == "incidence"
+)  # {"MA", "CL", "TF", "DS"} — binary/proportion data, no magnitude scalar
+
+# Add a domain here if and only if it produces a continuous effect size scalar
+# (Cohen's d, Hedges' g, or equivalent). Domains absent from this set are
+# assumed to lack a magnitude scalar — signal weights, confidence thresholds,
+# and NOAEL penalty scope all depend on this assumption. When in doubt, omit
+# rather than include: the failure mode of a missing entry is "no effect size
+# displayed," which is visible and correctable.
+CONTINUOUS_DOMAINS: frozenset[str] = frozenset(
+    d for d, t in DOMAIN_EFFECT_TYPE.items() if t == "cohens_d"
+)  # {"LB", "BW", "OM", "EG", "VS", "BG", "FW"}
+
+
+def get_effect_size(finding: dict) -> float | None:
+    """Returns Cohen's d for continuous domains, None for all others.
+
+    Falls back to data_type field when domain is not set (e.g. test fixtures).
+    """
+    domain = finding.get("domain")
+    if domain is not None:
+        if DOMAIN_EFFECT_TYPE.get(domain) == "cohens_d":
+            return finding.get("max_effect_size")
+        return None
+    # Fallback: use data_type field
+    if finding.get("data_type", "continuous") == "continuous":
+        return finding.get("max_effect_size")
+    return None
+
+
+def get_severity_grade(finding: dict) -> float | None:
+    """Returns INHAND avg severity grade (1-5) for MI only, None for all others."""
+    if finding.get("domain") == "MI":
+        return finding.get("max_effect_size")
+    return None
+
+
+def effect_size_label(finding: dict) -> str:
+    """Return the human-readable label for the effect-size metric of this finding."""
+    domain = finding.get("domain", "")
+    if domain == "MI":
+        return "avg severity"
+    etype = DOMAIN_EFFECT_TYPE.get(domain)
+    if etype == "incidence":
+        return "odds ratio"
+    # Returns "Cohen's d" for consistency with existing codebase convention.
+    # The frontend uses "|d|" and cohens_d field names throughout.
+    # If stat method becomes configurable (Cohen's d vs Hedges' g), label and
+    # computation should change together. At typical group sizes (~10/group),
+    # difference is <2% — not currently meaningful to distinguish.
+    return "Cohen's d"
+
 # LBTESTCD → biomarker metadata
 BIOMARKER_MAP: dict[str, dict] = {
     # Hepatic / Liver

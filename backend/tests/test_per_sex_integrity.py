@@ -243,10 +243,15 @@ class TestCorroborationQuality:
             )
 
     def test_corroborated_count(self, findings: list[dict]):
-        """Total corroborated findings should be ~67 (±3 tolerance)."""
+        """Total corroborated findings should be ~76 (±3 tolerance).
+
+        SLA-05 fix: incidence domain adversity classification changed from
+        B-factor Cohen's d gates to statistical+pattern-based gates, which
+        increased corroboration count from ~67 to ~76.
+        """
         count = sum(1 for f in findings if f["corroboration_status"] == "corroborated")
-        assert 64 <= count <= 70, (
-            f"Corroborated count = {count}, expected 64–70"
+        assert 73 <= count <= 79, (
+            f"Corroborated count = {count}, expected 73–79"
         )
 
     def test_edge_case_tr_true_severity_normal(self, findings: list[dict]):

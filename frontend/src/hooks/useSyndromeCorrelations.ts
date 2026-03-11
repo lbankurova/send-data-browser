@@ -3,9 +3,7 @@ import { fetchSyndromeCorrelations } from "@/lib/analysis-api";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import type { OrganCorrelationMatrix } from "@/types/analysis";
 import type { ExcludedMember, SyndromeCorrelationResult } from "@/types/analysis";
-
-/** Domains whose findings are always incidence (non-correlatable). */
-const INCIDENCE_DOMAINS = new Set(["MI", "MA"]);
+import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 
 export interface SyndromeCorrelationData {
   matrix: OrganCorrelationMatrix;
@@ -51,11 +49,11 @@ export function useSyndromeCorrelations(
 ) {
   const { queryParams: params } = useStudySettings();
 
-  // Filter out incidence domains client-side, build exclusion list
+  // Filter to continuous domains client-side, build exclusion list
   const incidenceExcluded: ExcludedMember[] = [];
   const continuousMembers: SyndromeMember[] = [];
   for (const m of members) {
-    if (INCIDENCE_DOMAINS.has(m.domain)) {
+    if (!CONTINUOUS_DOMAINS.has(m.domain)) {
       incidenceExcluded.push({
         endpoint_label: m.endpoint_label,
         domain: m.domain,

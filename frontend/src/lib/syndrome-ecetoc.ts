@@ -10,6 +10,7 @@
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 import type { CrossDomainSyndrome, EndpointMatch } from "@/lib/cross-domain-syndromes";
 import { getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { LesionSeverityRow } from "@/types/analysis-views";
@@ -652,11 +653,14 @@ export function computeTreatmentRelatedness(
 // ─── Step 15: ECETOC Adversity Assessment ───────────────────
 
 /**
- * Derive magnitude level from the maximum effect size of matched endpoints.
- * Uses Cohen's d thresholds adapted for tox:
- *   |d| < 0.5 → minimal, < 1.0 → mild, < 1.5 → moderate, < 2.0 → marked, ≥ 2.0 → severe
+ * Derive magnitude level from matched endpoints.
+ *
+ * SLA-07: Data-type aware magnitude:
+ *   - MI: INHAND grade→label mapping (Minimal/Mild/Moderate/Marked/Severe)
+ *   - Incidence (MA/CL/TF/DS): "Present" (no magnitude scalar)
+ *   - Continuous: Cohen's d thresholds
  */
-// @field FIELD-24 — magnitudeLevel derivation from max |Cohen's d|
+// @field FIELD-24 — magnitudeLevel derivation (data-type aware)
 // @species SPECIES-01 — thresholds are rat-derived; proxied for dog, NHP, mouse, rabbit
 function deriveMagnitudeLevel(
   syndrome: CrossDomainSyndrome,
@@ -664,7 +668,32 @@ function deriveMagnitudeLevel(
 ): AdversityAssessment["magnitudeLevel"] {
   const matchedLabels = new Set(syndrome.matchedEndpoints.map((m) => m.endpoint_label));
   const matchedEps = allEndpoints.filter((ep) => matchedLabels.has(ep.endpoint_label));
-  const maxD = matchedEps.reduce<number>(
+
+  // Separate by data type for correct magnitude derivation
+  const continuousEps = matchedEps.filter((ep) => CONTINUOUS_DOMAINS.has(ep.domain));
+  const miEps = matchedEps.filter((ep) => ep.domain === "MI");
+  const incidenceOnly = matchedEps.every((ep) => !CONTINUOUS_DOMAINS.has(ep.domain));
+
+  // If all endpoints are incidence, return "Present"
+  if (incidenceOnly && matchedEps.length > 0) {
+    // If MI endpoints exist, use INHAND grade mapping
+    if (miEps.length > 0) {
+      const INHAND_MAGNITUDE: Record<number, AdversityAssessment["magnitudeLevel"]> = {
+        1: "minimal", 2: "mild", 3: "moderate", 4: "marked", 5: "severe",
+      };
+      const maxGrade = miEps.reduce<number>(
+        (max, ep) => Math.max(max, Math.abs(ep.maxEffectSize ?? 0)),
+        0,
+      );
+      if (maxGrade > 0) {
+        return INHAND_MAGNITUDE[Math.round(maxGrade)] ?? "moderate";
+      }
+    }
+    return "minimal"; // incidence-only with no MI grading
+  }
+
+  // Continuous endpoints: use Cohen's d thresholds
+  const maxD = continuousEps.reduce<number>(
     (max, ep) => Math.max(max, Math.abs(ep.maxEffectSize ?? 0)),
     0,
   );

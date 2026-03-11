@@ -8,8 +8,8 @@ import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 // ─── Domain classification ─────────────────────────────────
 
-/** Domains where max_effect_size represents avg severity (not Cohen's d / Hedges' g). */
-export const INCIDENCE_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
+// Re-export canonical domain sets from domain-types so existing imports don't break.
+export { INCIDENCE_DOMAINS, CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -199,7 +199,8 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
   return summaries.sort((a, b) =>
     b.adverseCount - a.adverseCount ||
     b.trCount - a.trCount ||
-    Math.abs(b.maxEffectSize) - Math.abs(a.maxEffectSize)
+    // SLA-08: use minPValue for cross-domain tiebreaker, not raw maxEffectSize
+    (a.minPValue ?? 1) - (b.minPValue ?? 1)
   );
 }
 
@@ -259,7 +260,10 @@ export function flattenFindingsToDRRows(
         incidence: gs.incidence ?? null,
         affected: gs.affected ?? null,
         p_value: pw?.p_value_adj ?? null,
-        effect_size: pw?.cohens_d ?? null,
+        // SLA-13: populate with domain-appropriate metric
+        effect_size: f.data_type === "continuous"
+          ? (pw?.cohens_d ?? null)
+          : (pw?.odds_ratio ?? null),
         dose_response_pattern: f.dose_response_pattern ?? "flat",
         trend_p: f.trend_p,
         // Runtime value is "incidence" (not "categorical") — matches backend JSON
@@ -509,13 +513,16 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     summaries.push(ep);
   }
 
-  // Sort: adverse first, then TR, then by max effect
+  // Sort: adverse first, then TR, then by min p-value (SLA-08: not raw maxEffectSize)
   return summaries.sort((a, b) => {
     const sevOrder = { adverse: 0, warning: 1, normal: 2 };
     const sevDiff = sevOrder[a.worstSeverity] - sevOrder[b.worstSeverity];
     if (sevDiff !== 0) return sevDiff;
     if (a.treatmentRelated !== b.treatmentRelated) return a.treatmentRelated ? -1 : 1;
-    return Math.abs(b.maxEffectSize ?? 0) - Math.abs(a.maxEffectSize ?? 0);
+    // Use p-value for cross-domain tiebreaker — comparable across data types
+    const ap = a.minPValue ?? 1;
+    const bp = b.minPValue ?? 1;
+    return ap - bp;
   });
 }
 

@@ -31,8 +31,9 @@ def classify_severity(
     - grade-ge-1: any significant pairwise → adverse (no effect size gate).
     - grade-ge-2: p < 0.05 AND |d| >= 0.5 → adverse (no trend consideration).
     """
+    from services.analysis.send_knowledge import get_effect_size as _get_es
     min_p = finding.get("min_p_adj")
-    max_d = finding.get("max_effect_size")
+    max_d = _get_es(finding)  # Cohen's d for continuous, None for incidence
     trend_p = finding.get("trend_p")
     data_type = finding.get("data_type", "continuous")
 
@@ -494,10 +495,11 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
     Returns one of: not_treatment_related, tr_non_adverse, tr_adaptive,
     tr_adverse, equivocal.
     """
+    from services.analysis.send_knowledge import get_effect_size, DOMAIN_EFFECT_TYPE
+
     domain = finding.get("domain", "")
     finding_text = finding.get("finding", "")
-    max_d = finding.get("max_effect_size")
-    abs_d = abs(max_d) if max_d is not None else 0.0
+    data_type = finding.get("data_type", "continuous")
 
     # -- Step 0: Intrinsic adversity override (histopath domains only) --
     if domain in _HISTOPATH_DOMAINS and finding_text:
@@ -514,7 +516,31 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
 
     # -- Step 2: Adversity (B-factors, only reached if treatment-related) --
 
+    # SLA-05: Branch on data_type BEFORE B-factor gates
+    if data_type != "continuous" and DOMAIN_EFFECT_TYPE.get(domain) != "cohens_d":
+        # Incidence domains (CL, DS) and MI fallback path:
+        # No magnitude scalar exists for CL/DS. MI severity grade is not
+        # comparable to Cohen's d for B-factor gating.
+        if domain == "MI":
+            # MI fallback (when adaptive trees in _classify_histopath don't match):
+            # Default to equivocal — adversity depends on finding type, not just grade.
+            return "equivocal"
+        # CL/DS: Adversity from statistical significance + dose-response pattern
+        min_p_adj = finding.get("min_p_adj")
+        pattern = finding.get("dose_response_pattern", "")
+        if tr_score >= 1.0 and min_p_adj is not None and min_p_adj < 0.05:
+            if pattern in ("monotonic_increase", "monotonic_decrease", "threshold",
+                           "threshold_increase", "threshold_decrease"):
+                return "tr_adverse"
+            return "equivocal"
+        elif tr_score >= 1.0:
+            return "equivocal"
+        return "tr_non_adverse"
+
     # B-0: Dictionary override for likely_adverse
+    d = get_effect_size(finding)
+    abs_d = abs(d) if d is not None else 0.0
+
     if domain in _HISTOPATH_DOMAINS and finding_text:
         intrinsic = lookup_intrinsic_adversity(finding_text)
         if intrinsic == "likely_adverse":
@@ -525,7 +551,7 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
                 return "tr_adverse"
             return "tr_adaptive"
 
-    # B-1: Large magnitude → adverse
+    # B-1: Large magnitude → adverse (Cohen's d thresholds, continuous only)
     if abs_d >= 1.5:
         return "tr_adverse"
 
