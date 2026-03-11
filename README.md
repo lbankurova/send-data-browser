@@ -8,9 +8,16 @@ Decision support framework for preclinical toxicology studies in [CDISC SEND](ht
 
 ## What it does
 
-SENDEX structures the analytical workflow around the common tasks: detect treatment-related effects → characterize dose-response → assess causality → evaluate reversibility → determine NOAEL. At each step SENDEX pre-computes statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags cross-domain syndromes (24 rules), scores signals against ECETOC assessment tiers, and then puts the evidence in front of the reviewer to interpret.
+SENDEX structures the analytical workflow around the common tasks: detect
+treatment-related effects → characterize dose-response → assess causality →
+evaluate reversibility → determine NOAEL. At each step SENDEX pre-computes
+statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags
+cross-domain syndromes (24 rules), scores signals against ECETOC assessment
+tiers, and then puts the evidence in front of the reviewer to interpret.
 
-Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custom study design and FDA data quality checks, with per-record evidence and a triage UI.
+Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14
+custom study design and FDA data quality checks, with per-record evidence and a
+triage UI.
 
 ![sendex-app](docs/img/sendex-app.png)
 
@@ -27,15 +34,19 @@ Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custo
 
 Plus a raw domain browser and HTML report generator.
 
-## SEND Standard Support
+## SEND standard support
 
-SENDEX targets **SENDIG v3.1** (Standard for Exchange of Nonclinical Data Implementation Guide).
-Input data is read from SAS XPT transport files conforming to SEND 3.0 or 3.1 datasets.
-The SENDIG version and controlled terminology version are extracted per-study from TS parameters (`SNDIGVER`, `SNDCTVER`) when available.
+SENDEX targets **SENDIG v3.1** (Standard for Exchange of Nonclinical Data
+Implementation Guide). Input data is read from SAS XPT transport files
+conforming to SEND 3.0 or 3.1 datasets. The SENDIG version and controlled
+terminology version are extracted per-study from TS parameters (`SNDIGVER`,
+`SNDCTVER`) when available.
 
-Non-conforming datasets are not rejected — the validation engine flags missing required domains, variables, and controlled terminology violations as findings with severity tiers, so partial or legacy datasets can still be explored.
+Non-conforming datasets are not rejected — the validation engine flags missing
+required domains, variables, and controlled terminology violations as findings
+with severity tiers, so partial or legacy datasets can still be explored.
 
-### Supported Domains
+### Supported domains
 
 | Category | Domains |
 |----------|---------|
@@ -45,7 +56,7 @@ Non-conforming datasets are not rejected — the validation engine flags missing
 | Supplemental | SUPPMA, SUPPMI |
 | Relationships | RELREC |
 
-### Species Coverage
+### Species coverage
 
 | Species | Concordance | ECG | Preferred Biomarkers | HCD | PK Scaling |
 |---------|:-----------:|:---:|:--------------------:|:---:|:----------:|
@@ -58,7 +69,10 @@ Non-conforming datasets are not rejected — the validation engine flags missing
 | Hamster | -- | -- | -- | -- | Yes |
 | Guinea Pig | -- | -- | -- | -- | Yes |
 
-Rat has the deepest support: strain-specific historical control data, FDA-qualified biomarker panels (REM-11), and human non-relevance mechanism detection (PPARa agonism, alpha-2u-globulin nephropathy, TSH-mediated thyroid tumors).
+Rat has the deepest support: strain-specific historical control data,
+FDA-qualified biomarker panels (REM-11), and human non-relevance mechanism
+detection (PPARa agonism, alpha-2u-globulin nephropathy, TSH-mediated thyroid
+tumors).
 
 ## Quick start
 
