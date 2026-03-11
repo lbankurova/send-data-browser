@@ -27,6 +27,39 @@ Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14 custo
 
 Plus a raw domain browser and HTML report generator.
 
+## SEND Standard Support
+
+SENDEX targets **SENDIG v3.1** (Standard for Exchange of Nonclinical Data Implementation Guide).
+Input data is read from SAS XPT transport files conforming to SEND 3.0 or 3.1 datasets.
+The SENDIG version and controlled terminology version are extracted per-study from TS parameters (`SNDIGVER`, `SNDCTVER`) when available.
+
+Non-conforming datasets are not rejected — the validation engine flags missing required domains, variables, and controlled terminology violations as findings with severity tiers, so partial or legacy datasets can still be explored.
+
+### Supported Domains
+
+| Category | Domains |
+|----------|---------|
+| Special Purpose | DM, DS, TS, TA, TE, TX, SE |
+| Interventions | EX |
+| Findings | BG, BW, CL, CO, DD, EG, FW, LB, MA, MI, OM, PC, PP, SC, VS |
+| Supplemental | SUPPMA, SUPPMI |
+| Relationships | RELREC |
+
+### Species Coverage
+
+| Species | Concordance | ECG | Preferred Biomarkers | HCD | PK Scaling |
+|---------|:-----------:|:---:|:--------------------:|:---:|:----------:|
+| Rat | Full | Yes | SDH, GLDH, KIM-1, Clusterin, Troponins | SD, Wistar Han, F344 | Yes |
+| Dog | Full | Yes (gold-standard QTc) | -- | -- | Yes |
+| Monkey | Full | Yes (Fridericia QTc) | -- | -- | Yes |
+| Mouse | Full | Yes | -- | CD-1, C57BL/6 | Yes |
+| Rabbit | Partial | -- | -- | -- | Yes |
+| Minipig | -- | -- | -- | -- | Yes |
+| Hamster | -- | -- | -- | -- | Yes |
+| Guinea Pig | -- | -- | -- | -- | Yes |
+
+Rat has the deepest support: strain-specific historical control data, FDA-qualified biomarker panels (REM-11), and human non-relevance mechanism detection (PPARa agonism, alpha-2u-globulin nephropathy, TSH-mediated thyroid tumors).
+
 ## Quick start
 
 ```bash
