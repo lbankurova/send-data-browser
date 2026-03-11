@@ -4,6 +4,7 @@
  */
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
+import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -56,7 +57,10 @@ const PATTERN_WEIGHTS: Record<string, number> = {
 export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
   const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
   const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
-  const effectWeight = ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0;
+  // SLA-02: non-continuous domains have no Cohen's d — zero effect weight
+  const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
+  const rawEffect = isContinuous ? (ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0) : 0;
+  const effectWeight = rawEffect;
   const trBoost = ep.treatmentRelated ? 2 : 0;
 
   // Per-sex pattern: use worst (highest-weight) per-sex pattern when patterns disagree
@@ -92,26 +96,36 @@ const CONFIDENCE_MULTIPLIERS: Record<EndpointConfidence, number> = {
 
 // @field FIELD-35 — endpoint confidence classification
 /** Classify endpoint confidence from summary-level data.
- *  Mirrors the histopath computeConfidence logic adapted for Findings endpoints. */
+ *  SLA-04: Branch on CONTINUOUS_DOMAINS for effect-size thresholds. */
 export function classifyEndpointConfidence(ep: EndpointSummary): EndpointConfidence {
   let level = 0; // 0=LOW, 1=MODERATE, 2=HIGH
   const p = ep.minPValue;
-  const effect = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
   const pattern = ep.pattern;
+  const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
+  const effect = isContinuous ? (ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0) : 0;
 
-  // Strong p-value + clear pattern + meaningful effect → HIGH
-  if (p !== null && p < 0.01 && effect >= 0.8 &&
-      (pattern === "monotonic_increase" || pattern === "monotonic_decrease" ||
-       pattern === "threshold_increase" || pattern === "threshold_decrease" || pattern === "threshold")) {
-    level = 2;
-  }
-  // Moderate: significant p or decent effect with pattern
-  else if (
-    (p !== null && p < 0.05) ||
-    (effect >= 0.5 && pattern !== "flat") ||
-    (ep.treatmentRelated && pattern !== "flat")
-  ) {
-    level = 1;
+  const informativePattern =
+    pattern === "monotonic_increase" || pattern === "monotonic_decrease" ||
+    pattern === "threshold_increase" || pattern === "threshold_decrease" || pattern === "threshold";
+
+  if (!isContinuous) {
+    // Non-continuous (MI, MA, CL, TF, DS): confidence from statistical significance + pattern only
+    if (p !== null && p < 0.01 && informativePattern) {
+      level = 2;
+    } else if (p !== null && p < 0.05) {
+      level = 1;
+    }
+  } else {
+    // Continuous: existing Cohen's d thresholds
+    if (p !== null && p < 0.01 && effect >= 0.8 && informativePattern) {
+      level = 2;
+    } else if (
+      (p !== null && p < 0.05) ||
+      (effect >= 0.5 && pattern !== "flat") ||
+      (ep.treatmentRelated && pattern !== "flat")
+    ) {
+      level = 1;
+    }
   }
 
   // Modifiers
@@ -394,11 +408,8 @@ export function sortEndpoints(
       });
       break;
     case "effect":
-      sorted.sort((a, b) => {
-        const ae = a.maxEffectSize !== null ? Math.abs(a.maxEffectSize) : -1;
-        const be = b.maxEffectSize !== null ? Math.abs(b.maxEffectSize) : -1;
-        return be - ae;
-      });
+      // SLA-08: sort by signal score for cross-domain comparison, not raw maxEffectSize
+      sorted.sort((a, b) => b.signal - a.signal);
       break;
     case "az":
       sorted.sort((a, b) => a.endpoint_label.localeCompare(b.endpoint_label));

@@ -2246,8 +2246,12 @@ function VolcanoScatter({
   effectSizeSymbol?: string;
 }) {
   const points = useMemo<VolcanoPoint[]>(() => {
+    // SLA-06: filter incidence endpoints out — they have no Cohen's d for X-axis.
+    // Incidence domains already have their own bar chart in the dose-response view.
+    const INCIDENCE = new Set(["MI", "MA", "CL", "TF", "DS"]);
     return endpointSummaries
-      .filter((ep) => ep.max_effect_size != null && ep.min_trend_p != null && ep.min_trend_p > 0)
+      .filter((ep) => ep.max_effect_size != null && ep.min_trend_p != null && ep.min_trend_p > 0
+        && !INCIDENCE.has(ep.domain))
       .map((ep) => ({
         endpoint_label: ep.endpoint_label,
         organ_system: ep.organ_system,

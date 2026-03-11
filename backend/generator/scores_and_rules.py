@@ -45,13 +45,13 @@ RULES = [
      "condition": "multi_domain_evidence",
      "template": "{n_endpoints} endpoints across {domains}."},
 
-    # Effect magnitude rules
+    # Effect magnitude rules (domain-aware label via effect_size_label)
     {"id": "R10", "scope": "endpoint", "severity": "warning",
      "condition": "large_effect",
-     "template": "{endpoint_label}: Cohen's d = {effect_size:.2f} at high dose in {sex}."},
+     "template": "{endpoint_label}: {effect_metric} = {effect_size:.2f} at high dose in {sex}."},
     {"id": "R11", "scope": "endpoint", "severity": "info",
      "condition": "moderate_effect",
-     "template": "{endpoint_label}: Cohen's d = {effect_size:.2f} at high dose."},
+     "template": "{endpoint_label}: {effect_metric} = {effect_size:.2f} at high dose."},
 
     # Histopathology rules
     {"id": "R12", "scope": "endpoint", "severity": "warning",
@@ -146,8 +146,11 @@ def evaluate_rules(
         elif pattern == "non_monotonic":
             results.append(_emit(RULES[6], ctx, finding))
 
-        # R10-R11: Effect magnitude
-        es = finding.get("max_effect_size")
+        # R10-R11: Effect magnitude (continuous domains only — Cohen's d thresholds)
+        # For MI, max_effect_size is avg_severity (1-5) not Cohen's d — skip magnitude rules.
+        # For MA/CL/TF/DS, max_effect_size is None — already skipped.
+        from services.analysis.send_knowledge import get_effect_size as _get_es
+        es = _get_es(finding)
         if es is not None:
             gs_r10 = finding.get("group_stats", [])
             n_aff = sum(g.get("affected", 0) for g in gs_r10 if g.get("dose_level", 0) > 0)
@@ -291,6 +294,7 @@ def _apply_suppressions(results: list[dict]) -> list[dict]:
 
 def _build_finding_context(finding: dict, dose_label_map: dict) -> dict:
     """Build template context from finding dict."""
+    from services.analysis.send_knowledge import effect_size_label
     return {
         "endpoint_label": finding.get("endpoint_label", ""),
         "domain": finding.get("domain", ""),
@@ -304,6 +308,7 @@ def _build_finding_context(finding: dict, dose_label_map: dict) -> dict:
         "organ_system": finding.get("organ_system", ""),
         "p_value": finding.get("min_p_adj", 0) or 0,
         "effect_size": finding.get("max_effect_size", 0) or 0,
+        "effect_metric": effect_size_label(finding),
         "trend_p": finding.get("trend_p", 0) or 0,
     }
 

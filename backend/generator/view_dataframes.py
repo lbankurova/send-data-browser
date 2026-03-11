@@ -61,6 +61,7 @@ def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) ->
                 trend_p=finding.get("trend_p"),
                 effect_size=effect_size,
                 dose_response_pattern=finding.get("dose_response_pattern"),
+                data_type=finding.get("data_type", "continuous"),
             )
 
             rows.append({
@@ -95,16 +96,28 @@ def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) ->
     return rows
 
 
+def _convergence_group(domain: str) -> str:
+    """Maps domains to convergence groups for diversity scoring (SLA-10).
+
+    MI+MA+TF measure the same biological event (tissue lesion + macroscopic correlate).
+    """
+    if domain in ("MI", "MA", "TF"):
+        return "PATHOLOGY"
+    return domain
+
+
 def build_target_organ_summary(findings: list[dict]) -> list[dict]:
     """Build target organ summary: one row per organ system.
 
-    Aggregates evidence across endpoints.
+    Aggregates evidence across endpoints. SLA-11 fix: deduplicates numerator
+    by taking max signal per endpoint key. SLA-10 fix: convergence groups.
     """
+    from services.analysis.send_knowledge import get_effect_size
+
     organ_data: dict[str, dict] = defaultdict(lambda: {
-        "endpoints": set(),
+        "ep_signals": {},     # SLA-11: max signal per endpoint key (deduped)
         "domains": set(),
         "max_signal": 0,
-        "total_signal": 0,
         "n_significant": 0,
         "n_treatment_related": 0,
         "n_endpoints": 0,
@@ -115,17 +128,20 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
         organ = finding.get("organ_system", "general")
         data = organ_data[organ]
         ep_key = f"{finding.get('domain')}_{finding.get('test_code')}_{finding.get('sex')}"
-        data["endpoints"].add(ep_key)
         data["domains"].add(finding.get("domain", ""))
         data["n_endpoints"] += 1
 
+        # SLA-02: pass data_type; use typed accessor for effect_size
         sig = _compute_signal_score(
             p_value=finding.get("min_p_adj"),
             trend_p=finding.get("trend_p"),
-            effect_size=finding.get("max_effect_size"),
+            effect_size=get_effect_size(finding),
             dose_response_pattern=finding.get("dose_response_pattern"),
+            data_type=finding.get("data_type", "continuous"),
         )
-        data["total_signal"] += sig
+        # SLA-11: keep max signal per endpoint key (dedup longitudinal duplicates)
+        if ep_key not in data["ep_signals"] or sig > data["ep_signals"][ep_key]:
+            data["ep_signals"][ep_key] = sig
         data["max_signal"] = max(data["max_signal"], sig)
 
         if finding.get("min_p_adj") is not None and finding["min_p_adj"] < 0.05:
@@ -142,17 +158,19 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
 
     rows = []
     for organ, data in organ_data.items():
-        evidence_score = data["total_signal"] / max(len(data["endpoints"]), 1)
-        # Weight by diversity of evidence
-        domain_count = len(data["domains"])
-        evidence_score *= (1 + 0.2 * (domain_count - 1))
+        ep_signals = data["ep_signals"]
+        n_endpoints = len(ep_signals)
+        avg_signal = sum(ep_signals.values()) / max(n_endpoints, 1)
+        # SLA-10: convergence group diversity (MI+MA+TF count as one group)
+        convergence_count = len({_convergence_group(d) for d in data["domains"]})
+        evidence_score = avg_signal * (1 + 0.2 * (convergence_count - 1))
 
         max_sev = data["max_severity"]
         rows.append({
             "organ_system": organ,
             "evidence_score": round(evidence_score, 3),
-            "n_endpoints": len(data["endpoints"]),
-            "n_domains": domain_count,
+            "n_endpoints": n_endpoints,
+            "n_domains": len(data["domains"]),
             "domains": sorted(data["domains"]),
             "max_signal_score": round(data["max_signal"], 3),
             "n_significant": data["n_significant"],
@@ -514,8 +532,12 @@ def _compute_noael_confidence(
 
     # Penalty: pathology_disagreement — defaults to 0 (annotation data unavailable at generation time)
 
-    # Penalty: large effect size but not statistically significant
+    # Penalty: large effect size but not statistically significant (SLA-14)
+    # Only applies to continuous data types — MI severity ≥ 1.0 for ALL graded
+    # findings, so the threshold is meaningless for incidence/ordinal.
     for f in sex_findings:
+        if f.get("data_type") != "continuous":
+            continue
         es = f.get("max_effect_size")
         p = f.get("min_p_adj")
         if es is not None and abs(es) >= 1.0 and (p is None or p >= 0.05):
@@ -543,45 +565,51 @@ def _compute_signal_score(
     trend_p: float | None,
     effect_size: float | None,
     dose_response_pattern: str | None,
+    data_type: str = "continuous",
 ) -> float:
     """Compute a 0-1 signal score combining statistical and biological significance.
 
-    Components (weighted):
-    - p_value contribution (0.35): -log10(p) scaled
-    - trend_p contribution (0.20): -log10(trend_p) scaled
-    - effect_size contribution (0.25): abs(d) scaled
-    - dose_response contribution (0.20): pattern bonus
+    Data-type-aware weight profiles (SLA-02):
+    - Continuous: p=0.35, trend=0.20, effect=0.25, pattern=0.20
+    - Incidence:  p=0.45, trend=0.30, effect=0.00, pattern=0.25
+      (MI severity grade as optional 0.10 modifier, total capped at 1.0)
     """
+    import math
     score = 0.0
 
-    # P-value component (0-0.35)
-    if p_value is not None and p_value > 0:
-        import math
-        p_score = min(-math.log10(p_value) / 4.0, 1.0)  # cap at p=0.0001
-        score += 0.35 * p_score
-
-    # Trend component (0-0.20)
-    if trend_p is not None and trend_p > 0:
-        import math
-        t_score = min(-math.log10(trend_p) / 4.0, 1.0)
-        score += 0.20 * t_score
-
-    # Effect size component (0-0.25)
-    if effect_size is not None:
-        e_score = min(abs(effect_size) / 2.0, 1.0)  # cap at |d|=2
-        score += 0.25 * e_score
-
-    # Dose-response pattern component (0-0.20)
     pattern_scores = {
         "monotonic_increase": 1.0,
         "monotonic_decrease": 1.0,
         "threshold": 0.7,
+        "threshold_increase": 0.7,
+        "threshold_decrease": 0.7,
         "non_monotonic": 0.3,
         "flat": 0.0,
         "insufficient_data": 0.0,
     }
-    if dose_response_pattern:
-        score += 0.20 * pattern_scores.get(dose_response_pattern, 0.0)
+    pat_score = pattern_scores.get(dose_response_pattern or "", 0.0)
+
+    if data_type == "continuous":
+        # Existing weights: p=0.35, trend=0.20, effect=0.25, pattern=0.20
+        if p_value is not None and p_value > 0:
+            score += 0.35 * min(-math.log10(p_value) / 4.0, 1.0)
+        if trend_p is not None and trend_p > 0:
+            score += 0.20 * min(-math.log10(trend_p) / 4.0, 1.0)
+        if effect_size is not None:
+            score += 0.25 * min(abs(effect_size) / 2.0, 1.0)
+        score += 0.20 * pat_score
+    else:
+        # Incidence: no effect-size analog — redistribute weight to statistical components
+        if p_value is not None and p_value > 0:
+            score += 0.45 * min(-math.log10(p_value) / 4.0, 1.0)
+        if trend_p is not None and trend_p > 0:
+            score += 0.30 * min(-math.log10(trend_p) / 4.0, 1.0)
+        score += 0.25 * pat_score
+        # MI severity grade as optional modifier (0-0.10 bonus)
+        if effect_size is not None:
+            sev_grade = effect_size  # MI avg_severity; None for MA/CL/TF/DS
+            if sev_grade is not None:
+                score += 0.10 * min((sev_grade - 1) / 4.0, 1.0)
 
     return min(score, 1.0)
 

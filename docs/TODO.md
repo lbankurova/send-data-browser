@@ -137,13 +137,12 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Dependencies:** Unified override pattern spec (`docs/incoming/unified-override-pattern.md`)
 - **Owner hint:** frontend-dev
 
-### BUG-17: Incidence `max_effect_size` is avg severity but labeled as `|g|` across UI
+### ~~BUG-17: Incidence `max_effect_size` is avg severity but labeled as `|g|` across UI~~ (mostly resolved)
 - **Files:** `backend/services/analysis/findings_mi.py:195`, `frontend/src/components/analysis/charts/findings-charts.ts` (scatter X-axis), `frontend/src/components/analysis/FindingsTable.tsx` (Effect column), `frontend/src/lib/derive-summaries.ts` (EndpointSummary)
 - **Issue:** MI findings store `avg_severity` (1–4 ordinal scale) in the `max_effect_size` field with a comment `# use avg severity as "effect size" for incidence`. This value is then displayed as `|g|` on the scatter plot X-axis, the findings table Effect column, and the endpoint rail — all surfaces that label it as Hedges' g. MA/CL/TF/DS set `max_effect_size = None` so they show "—". The mislabeling means a severity score of 2.18 appears as `g = 2.18`, which a reviewer would interpret as a very large standardized effect when it's actually a moderate severity grade.
-- **Scope:** Requires thorough analysis before implementation — touches the scatter plot axis, table column, rail sorting, endpoint summary derivation, classification thresholds (`classification.py` uses `max_effect_size` for adversity gating), and the new context pane (already handled: split into separate continuous/incidence sublists with correct labels). Need to decide: (a) give incidence its own field and axis, (b) compute a real effect size for incidence (e.g., odds ratio, risk ratio), or (c) keep dual-purpose field but fix labels everywhere. Option (a) is cleanest but largest scope.
-- **Status:** Open
-- **Priority:** P2 (misleading labels on statistical output — correctness issue for reviewers)
-- **Owner hint:** backend-dev + frontend-dev (cross-cutting)
+- **Status:** Mostly resolved by SLA fix (Phase 0 typed accessors + Phase 1-3 critical computation fixes). 15/19 SLA findings fixed. Remaining label/display gaps tracked in GAP-72.
+- **Priority:** P2 → P3 (core computation paths fixed; remaining items are label polish)
+- **Owner hint:** frontend-dev (remaining label gaps in GAP-72)
 
 ### ~~BUG-08: Validation registry.py get_script() logic error~~ ✅
 - **Files:** `backend/validation/scripts/registry.py`
@@ -615,6 +614,28 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open — deferred, waiting for user decision
 - **Priority:** P4 (design polish)
 - **Owner hint:** ux-designer
+
+### GAP-72: SLA fix remaining items (4 unimplemented + partial gaps)
+- **Spec:** `docs/incoming/sla-fix-spec.md`
+- **Issue:** Post-implementation review of SLA fix spec identified 4 completely unimplemented items and several partial gaps from the 15 implemented items.
+- **Unimplemented (Phase 3-4):**
+  - **SLA-15:** CL recovery `MIN_RECOVERY_N` guard in `incidence_recovery.py` — mirror MI's `insufficient_n` check
+  - **SLA-09:** Incidence quality checks (`checkNonMonotonic()` / `checkTrendTestValidity()` in `endpoint-confidence.ts`) silently skip incidence data (require `mean`/`sd`). Need incidence-appropriate checks.
+  - **SLA-16:** Corroboration direction coherence — cross-term check for contradictory matched directions
+  - **SLA-18:** Recovery vocabulary harmonization — 7 canonical verdicts across continuous/histopath/CL
+- **Partial gaps from implemented items:**
+  - **SLA-01:** `NoaelDecisionView.tsx:316` still shows `Max |d|:` unconditionally (should use domain-aware label)
+  - **SLA-01:** `NoaelDeterminationView.tsx:605` partial — mixed-domain organs still show `|d|` for MI findings
+  - **SLA-02 frontend:** `computeEndpointSignal()` zeroes effectWeight for incidence but doesn't boost pValueWeight/patternWeight to compensate — incidence endpoints get structurally lower frontend signal scores
+  - **SLA-06:** `DoseResponseView.tsx:119-123` `computeSignalScore()` table sort still mixes raw `|maxEffect|` across data types
+  - **SLA-06:** `DoseResponseView.tsx:2251` creates local INCIDENCE set instead of importing from `domain-types.ts`
+  - **SLA-07:** `deriveMagnitudeLevel()` uses `Math.round(maxGrade)` for INHAND lookup; spec says fractional grades should display `"Minimal–Mild"` for avg_severity=1.7
+  - **SLA-12:** `OrganRailMode.tsx:258` creates local `HISTO_DOMAINS` set instead of importing from `domain-types.ts`
+  - **SLA-13:** DR view column header/tooltip not updated to show `effectSizeLabel(domain)` for odds ratio column
+  - **Phase 0 migration:** ~20+ display-only callsites still read `maxEffectSize` directly instead of using typed accessors
+- **Status:** Open
+- **Priority:** P2 (SLA-15/09/16/18 are correctness; label gaps are P3)
+- **Owner hint:** backend-dev (SLA-15, 18), frontend-dev (SLA-01/02/06/07/09/12/13 + Phase 0 migration)
 
 ---
 

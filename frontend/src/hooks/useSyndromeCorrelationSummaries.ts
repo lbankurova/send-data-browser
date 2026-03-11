@@ -3,9 +3,7 @@ import { fetchSyndromeCorrelationSummaries } from "@/lib/analysis-api";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
-
-/** Domains whose findings are always incidence (non-correlatable). */
-const INCIDENCE_DOMAINS = new Set(["MI", "MA"]);
+import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 
 /**
  * Eagerly fetch co-variation summaries for all detected syndromes in one batch request.
@@ -21,7 +19,7 @@ export function useSyndromeCorrelationSummaries(
   const batchEntries = syndromes.map((syn) => ({
     syndrome_id: syn.id,
     endpoint_labels: syn.matchedEndpoints
-      .filter((m) => !INCIDENCE_DOMAINS.has(m.domain))
+      .filter((m) => CONTINUOUS_DOMAINS.has(m.domain))
       .map((m) => m.endpoint_label)
       .sort(),
   }));

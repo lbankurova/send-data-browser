@@ -7,7 +7,7 @@
 import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
 import type { NonMonotonicFlag } from "@/lib/endpoint-confidence";
-import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
+import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
@@ -1073,8 +1073,8 @@ export function buildVolcanoScatterOption(
         const name = item.name ?? "";
         const organ = item.seriesName ?? "";
         const domain = item.data?._domain as string | undefined;
-        const isInc = domain ? INCIDENCE_DOMAINS.has(domain) : false;
-        const effectLabel = isInc ? `avg sev=${x.toFixed(2)}` : `|${effectSizeSymbol}|=${x.toFixed(2)}`;
+        const isContinuous = domain ? CONTINUOUS_DOMAINS.has(domain) : true;
+        const effectLabel = !isContinuous ? `avg sev=${x.toFixed(2)}` : `|${effectSizeSymbol}|=${x.toFixed(2)}`;
         const pRaw = Math.pow(10, -rawY);
         const pLabel = pRaw < 0.0001 ? "p<0.0001" : `p=${pRaw.toFixed(4)}`;
         return [

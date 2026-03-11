@@ -14,6 +14,7 @@
 
 import type { GroupStat, PairwiseResult, UnifiedFinding, WilliamsTestResult } from "@/types/analysis";
 import type { EndpointSummary } from "./derive-summaries";
+import { CONTINUOUS_DOMAINS } from "./domain-types";
 import {
   getOrganCorrelationCategory,
   OrganCorrelationCategory,
@@ -543,22 +544,28 @@ export function getNormalizationCaveat(
 /**
  * Derive statistical confidence from endpoint metrics.
  * This is a standalone endpoint-level assessment (DP-5), not from syndrome TR.
+ *
+ * SLA-04: Branch on CONTINUOUS_DOMAINS — non-continuous endpoints have no Cohen's d
+ * for magnitude gating; MI severity grade is not comparable.
  */
 function deriveStatisticalConfidence(ep: EndpointSummary): ConfidenceLevel {
   const p = ep.minPValue;
-  const g = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
-  const pattern = ep.pattern;
-
-  // Strong: p<0.01 + |g|≥0.8 + informative pattern
   const informativePattern =
-    pattern !== "flat" &&
-    pattern !== "insufficient_data" &&
-    pattern !== "no_pattern";
+    ep.pattern !== "flat" &&
+    ep.pattern !== "insufficient_data" &&
+    ep.pattern !== "no_pattern";
+
+  if (!CONTINUOUS_DOMAINS.has(ep.domain)) {
+    // Non-continuous (MI, MA, CL, TF, DS): confidence from statistical significance + pattern only.
+    if (p != null && p < 0.01 && informativePattern) return "high";
+    if (p != null && p < 0.05) return "moderate";
+    return "low";
+  }
+
+  // Continuous: existing Cohen's d thresholds — correct
+  const g = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
   if (p != null && p < 0.01 && g >= 0.8 && informativePattern) return "high";
-
-  // Moderate: p<0.05 + |g|≥0.5
   if (p != null && p < 0.05 && g >= 0.5) return "moderate";
-
   return "low";
 }
 

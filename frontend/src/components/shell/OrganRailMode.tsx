@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useOrganEvidenceDetail } from "@/hooks/useOrganEvidenceDetail";
@@ -151,7 +152,7 @@ function OrganRailItem({
               p={formatPValue(stats.minPValue)}
             </span>
           )}
-          {stats.maxEffectSize !== null && (
+          {stats.maxEffectSize !== null && organ.domains.some((d: string) => CONTINUOUS_DOMAINS.has(d)) && (
             <span
               className={cn(
                 "font-mono text-muted-foreground",
@@ -252,8 +253,13 @@ export function OrganRailMode() {
       list = list.filter((o) => o.n_significant > 0);
     }
     if (filters.minSeverity > 0) {
+      // SLA-12: severity filter is a histopath concept — non-histopath organs
+      // (continuous-only) have null max_severity and should not be excluded.
+      const HISTO_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
       list = list.filter(
-        (o) => o.max_severity !== null && o.max_severity >= filters.minSeverity,
+        (o) =>
+          (o.max_severity !== null && o.max_severity >= filters.minSeverity) ||
+          !o.domains.every((d: string) => HISTO_DOMAINS.has(d)),
       );
     }
 

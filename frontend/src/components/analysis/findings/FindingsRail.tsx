@@ -20,7 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { INCIDENCE_DOMAINS } from "@/lib/derive-summaries";
+import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
@@ -1347,7 +1347,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             const dirs = [...bySex.values()].map(s => s.direction).filter(d => d === "up" || d === "down");
             return dirs.includes("up") && dirs.includes("down");
           })();
-          const metricLabel = INCIDENCE_DOMAINS.has(endpoint.domain) ? "avg severity" : (effectSizeLabel ?? "Hedges\u2019 g");
+          const metricLabel = !CONTINUOUS_DOMAINS.has(endpoint.domain) ? "avg severity" : (effectSizeLabel ?? "Hedges\u2019 g");
           if (hasDirectionDivergence) {
             const sorted = [...bySex!.entries()].sort(([a], [b]) => a.localeCompare(b));
             return (
