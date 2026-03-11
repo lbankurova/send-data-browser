@@ -147,6 +147,15 @@ class SyndromeCorrelationRequest(BaseModel):
                       # Retained for future backend syndrome detection.
 
 
+class SyndromeBatchEntry(BaseModel):
+    syndrome_id: str
+    endpoint_labels: list[str]
+
+
+class SyndromeBatchCorrelationRequest(BaseModel):
+    syndromes: list[SyndromeBatchEntry]
+
+
 class ExcludedMember(BaseModel):
     endpoint_label: str
     domain: str

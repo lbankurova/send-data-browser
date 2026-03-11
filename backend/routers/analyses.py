@@ -19,8 +19,10 @@ from models.analysis_schemas import (
     AnalysisSummary,
     FindingContext,
     OrganCorrelationMatrix,
+    SyndromeBatchCorrelationRequest,
     SyndromeCorrelationRequest,
     SyndromeCorrelationResult,
+    SyndromeCorrelationSummary,
 )
 from services.study_discovery import StudyInfo
 from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix, build_syndrome_correlation_summary
@@ -261,3 +263,27 @@ def post_syndrome_correlations(
     )
 
     return SyndromeCorrelationResult(**result)
+
+
+@router.post("/studies/{study_id}/analyses/adverse-effects/syndrome-correlation-summaries")
+def post_syndrome_correlation_summaries(
+    study_id: str,
+    body: SyndromeBatchCorrelationRequest,
+    settings: AnalysisSettings = Depends(parse_settings_from_query),
+):
+    """Batch endpoint: compute co-variation summaries for all syndromes in one request."""
+    _get_study(study_id)
+    data = _load_findings_for_settings(study_id, settings)
+    findings = data["findings"]
+
+    summaries: dict[str, dict] = {}
+    for entry in body.syndromes:
+        correlations, excluded = compute_syndrome_correlations(
+            findings, entry.endpoint_labels,
+        )
+        result = build_syndrome_correlation_summary(
+            correlations, excluded, entry.syndrome_id,
+        )
+        summaries[entry.syndrome_id] = result["summary"]
+
+    return {"summaries": summaries}

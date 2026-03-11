@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 55 | 13 | Missing capability, no spec exists |
+| Gap | 52 | 16 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **80** | **47** | |
+| **Total open** | **77** | **50** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -563,26 +563,17 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P4
 - **Owner hint:** backend-dev
 
-### GAP-66: Syndrome validation label in FindingsRail syndrome cards
-- **Files:** `frontend/src/components/analysis/FindingsRail.tsx` (syndrome card rendering)
-- **Issue:** The validation label (Strong/Moderate/Weak co-variation) is only visible after opening the SyndromeContextPanel and expanding the co-variation pane. Showing it inline on the rail card (as a neutral badge) would give toxicologists a quick signal without drilling in.
-- **Status:** Open — follow-on from syndrome correlation validation feature
-- **Priority:** P3
-- **Owner hint:** frontend-dev
+### ~~GAP-66: Syndrome validation label in FindingsRail syndrome cards~~
+- **Status:** Resolved. Co-variation label (Strong/Moderate/Weak) shown as neutral gray badge on syndrome cards in FindingsRail. Uses batch endpoint data from GAP-68.
+- **Priority:** ~~P3~~ Resolved
 
-### GAP-67: Syndrome confidence adjustment based on co-variation strength
-- **Files:** `frontend/src/lib/cross-domain-syndromes.ts`, `frontend/src/lib/syndrome-interpretation.ts`
-- **Issue:** Syndrome confidence is currently assigned from rule-matching (required met, support count, domain coverage). Co-variation strength could upgrade/downgrade confidence — e.g., "HIGH confidence + Weak co-variation" deserves a caveat, while "MODERATE confidence + Strong co-variation" could be upgraded.
-- **Status:** Open — needs design decision on how co-variation affects confidence scoring
-- **Priority:** P3
-- **Owner hint:** ux-designer, frontend-dev
+### ~~GAP-67: Syndrome confidence adjustment based on co-variation strength~~
+- **Status:** Resolved. `adjustSyndromeConfidence()` in FindingsRail: Strong co-variation upgrades MODERATE→HIGH and LOW→MODERATE. Weak co-variation adds caveat tooltip but doesn't downgrade. Confidence shown on syndrome card headers with dashed RAG underline (same pattern as organ confidence).
+- **Priority:** ~~P3~~ Resolved
 
-### GAP-68: Precomputed syndrome correlations fallback
-- **Files:** `backend/services/analysis/correlations.py`, `backend/generator/`
-- **Issue:** Syndrome correlations are computed lazily (on-request POST). If latency becomes noticeable (large studies, many endpoints), consider precomputing at generation time. Currently sub-second for PointCross (3–28 pairs per syndrome).
-- **Status:** Open — deferred until latency is observed
-- **Priority:** P4
-- **Owner hint:** backend-dev
+### ~~GAP-68: Precomputed syndrome correlations fallback~~
+- **Status:** Resolved. Batch POST endpoint (`/syndrome-correlation-summaries`) accepts all syndromes in one request, returns summaries per syndrome. Frontend `useSyndromeCorrelationSummaries` hook eagerly fetches on syndrome detection. Eliminates N per-syndrome requests.
+- **Priority:** ~~P4~~ Resolved
 
 ### ~~GAP-61: FindingsRail prefetch on hover~~
 - **Status:** Resolved. Rail now has `bestFindingIdByLabel` map (useMemo) that resolves `endpoint_label → finding.id` using the `activeFindings` array from `useFindingsAnalyticsLocal`. `handleEndpointHover` callback passed to `EndpointRow` via `onHover` prop. Both AllEndpointsCard and CardSection paths covered.
