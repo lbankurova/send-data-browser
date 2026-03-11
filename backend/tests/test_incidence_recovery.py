@@ -296,8 +296,8 @@ class TestComputeIncidenceRecovery:
     def test_null_days_preserved(self):
         """Records with NULL CLDY pass through in both arms."""
         subjects = make_subjects_df(
-            main_ids=["M1", "M2"],
-            rec_ids=["R1", "R2"],
+            main_ids=["M1", "M2", "M3"],
+            rec_ids=["R1", "R2", "R3"],
         )
         cl = make_cl_df([
             {"USUBJID": "M1", "CLSTRESC": "NODULE", "CLDY": None},
@@ -360,3 +360,77 @@ class TestComputeIncidenceRecovery:
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
         assert rows[0]["finding"] == "SWELLING"  # Uppercased
+
+
+# ═══════════════════════════════════════════════════════════
+# SLA-15: MIN_RECOVERY_N guard
+# ═══════════════════════════════════════════════════════════
+
+
+class TestMinRecoveryNGuard:
+    """SLA-15: CL recovery with too few recovery animals → insufficient_n."""
+
+    def test_verdict_insufficient_n_when_below_threshold(self):
+        """rec_n < MIN_RECOVERY_N → insufficient_n regardless of incidence."""
+        from services.analysis.incidence_recovery import MIN_RECOVERY_N
+        assert MIN_RECOVERY_N == 3
+        assert compute_incidence_verdict(0.5, 0.0, rec_n=0) == "insufficient_n"
+        assert compute_incidence_verdict(0.5, 0.0, rec_n=1) == "insufficient_n"
+        assert compute_incidence_verdict(0.5, 0.0, rec_n=2) == "insufficient_n"
+
+    def test_verdict_normal_when_at_threshold(self):
+        """rec_n == MIN_RECOVERY_N → normal verdict logic applies."""
+        assert compute_incidence_verdict(0.5, 0.0, rec_n=3) == "resolved"
+        assert compute_incidence_verdict(0.5, 0.3, rec_n=3) == "improving"
+        assert compute_incidence_verdict(0.5, 0.8, rec_n=3) == "worsening"
+
+    def test_verdict_none_skips_guard(self):
+        """rec_n=None (default) skips the guard for backward compat."""
+        assert compute_incidence_verdict(0.5, 0.0) == "resolved"
+        assert compute_incidence_verdict(0.5, 0.0, rec_n=None) == "resolved"
+
+    def test_integration_small_recovery_arm(self):
+        """DataFrame-level: 2 recovery subjects → insufficient_n verdict."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2"],  # only 2 — below MIN_RECOVERY_N
+        )
+        cl = make_cl_df([
+            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 20},
+        ])
+
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        assert len(rows) == 1
+        assert rows[0]["verdict"] == "insufficient_n"
+        assert rows[0]["recovery_n"] == 2
+
+    def test_integration_sufficient_recovery_arm(self):
+        """DataFrame-level: 3 recovery subjects → normal verdict."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3"],  # 3 — at MIN_RECOVERY_N
+        )
+        cl = make_cl_df([
+            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 20},
+        ])
+
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        assert len(rows) == 1
+        assert rows[0]["verdict"] == "resolved"
+        assert rows[0]["recovery_n"] == 3
+
+    def test_integration_single_animal_no_definitive_verdict(self):
+        """A CL finding with N=1 in recovery should not get 'resolved'."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3"],
+            rec_ids=["R1"],  # single recovery animal
+        )
+        cl = make_cl_df([
+            {"USUBJID": "M1", "CLSTRESC": "TREMOR", "CLDY": 10},
+        ])
+
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        assert len(rows) == 1
+        assert rows[0]["verdict"] == "insufficient_n"
