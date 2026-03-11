@@ -417,7 +417,10 @@ export function AppLandingPage() {
       }))
     : [];
 
-  const allStudiesUnfiltered: DisplayStudy[] = [...realStudies, ...portfolioDisplayStudies];
+  // Portfolio studies are mock data — only show them in design mode
+  const allStudiesUnfiltered: DisplayStudy[] = designMode
+    ? [...realStudies, ...portfolioDisplayStudies]
+    : [...realStudies];
 
   // Filter by program if selected
   const allStudies: DisplayStudy[] = useMemo(() => {
