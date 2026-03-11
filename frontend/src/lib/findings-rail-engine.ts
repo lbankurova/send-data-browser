@@ -320,7 +320,8 @@ export interface RailFilters {
   trOnly: boolean;
   sigOnly: boolean;
   clinicalS2Plus?: boolean;
-  sex: string | null;       // "M" | "F" | null (all)
+  domains: ReadonlySet<string> | null;  // null = all domains
+  pattern: ReadonlySet<string> | null;  // null = all patterns
   severity: ReadonlySet<string> | null;  // subset of {"adverse","warning","normal"} or null (all)
   /** null = all selected (no filter). Set of group keys to include. */
   groupFilter: ReadonlySet<string> | null;
@@ -328,7 +329,7 @@ export interface RailFilters {
 
 export const EMPTY_RAIL_FILTERS: RailFilters = {
   search: "", trOnly: false, sigOnly: false, clinicalS2Plus: false,
-  sex: null, severity: null, groupFilter: null,
+  domains: null, pattern: null, severity: null, groupFilter: null,
 };
 
 export function filterEndpoints(
@@ -351,9 +352,13 @@ export function filterEndpoints(
   if (filters.clinicalS2Plus && clinicalEndpoints) {
     result = result.filter((ep) => clinicalEndpoints.has(ep.endpoint_label));
   }
-  if (filters.sex) {
-    const sex = filters.sex;
-    result = result.filter((ep) => ep.sexes.includes(sex));
+  if (filters.domains) {
+    const doms = filters.domains;
+    result = result.filter((ep) => doms.has(ep.domain));
+  }
+  if (filters.pattern) {
+    const pats = filters.pattern;
+    result = result.filter((ep) => pats.has(ep.pattern));
   }
   if (filters.severity) {
     const sev = filters.severity;
@@ -366,7 +371,7 @@ export function filterEndpoints(
 }
 
 export function isFiltered(filters: RailFilters): boolean {
-  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || !!filters.sex || !!filters.severity || filters.groupFilter !== null;
+  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || !!filters.domains || !!filters.pattern || !!filters.severity || filters.groupFilter !== null;
 }
 
 // ─── Sort modes ────────────────────────────────────────────
