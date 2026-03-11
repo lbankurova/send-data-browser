@@ -56,6 +56,8 @@ import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { useSyndromeCorrelationSummaries } from "@/hooks/useSyndromeCorrelationSummaries";
+import type { SyndromeCorrelationSummary } from "@/types/analysis";
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -103,6 +105,9 @@ export function FindingsRail({
   // Shared analytics derivation — single source of truth
   const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsLocal(studyId);
   const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
+
+  // GAP-68: Eagerly fetch co-variation summaries for all syndromes in one batch request
+  const { data: syndromeCovariation } = useSyndromeCorrelationSummaries(studyId, syndromes);
 
   // Prefetch finding context on endpoint hover
   const prefetchContext = usePrefetchFindingContext(studyId);
@@ -551,6 +556,8 @@ export function FindingsRail({
               clinicalTierMap={clinicalTierMap}
               effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
               normalizationContexts={analytics.normalizationContexts}
+              syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
+              syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
             />
           ))
         )}
@@ -941,6 +948,8 @@ function CardSection({
   clinicalTierMap,
   effectSizeLabel,
   normalizationContexts,
+  syndromeCovariation,
+  syndromeConfidence,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -961,6 +970,8 @@ function CardSection({
   clinicalTierMap?: Map<string, string>;
   effectSizeLabel?: string;
   normalizationContexts?: NormalizationContext[];
+  syndromeCovariation?: SyndromeCorrelationSummary;
+  syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
 }) {
   // Compute organ confidence only for organ grouping mode
   const organConf = grouping === "organ"
@@ -985,6 +996,8 @@ function CardSection({
         onToggleExpand={onToggleExpand}
         organConfidence={organConf}
         organNorm={organNorm}
+        syndromeCovariation={syndromeCovariation}
+        syndromeConfidence={syndromeConfidence}
       />
       {isExpanded && (
         <div>
@@ -1030,6 +1043,8 @@ function CardHeader({
   onToggleExpand,
   organConfidence,
   organNorm,
+  syndromeCovariation,
+  syndromeConfidence,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1041,6 +1056,8 @@ function CardHeader({
   onToggleExpand: () => void;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
+  syndromeCovariation?: SyndromeCorrelationSummary;
+  syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -1057,7 +1074,7 @@ function CardHeader({
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} />
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} />
       <span className="ml-auto font-mono text-[10px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
@@ -1091,12 +1108,35 @@ const CONF_SHORT: Record<ConfidenceLevel, string> = {
   low: "Low",
 };
 
-function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm }: {
+/** GAP-67: Adjust displayed syndrome confidence based on co-variation strength. */
+function adjustSyndromeConfidence(
+  confidence: "HIGH" | "MODERATE" | "LOW",
+  covariation: SyndromeCorrelationSummary,
+): { level: ConfidenceLevel; caveat: string | null } {
+  const label = covariation.validation_label;
+  if (label === "Strong co-variation") {
+    // Strong co-variation can upgrade confidence one tier
+    if (confidence === "MODERATE") return { level: "high", caveat: null };
+    if (confidence === "LOW") return { level: "moderate", caveat: null };
+    return { level: "high", caveat: null };
+  }
+  if (label === "Weak co-variation") {
+    // Weak co-variation adds a caveat but doesn't downgrade
+    const level = confidence.toLowerCase() as ConfidenceLevel;
+    return { level, caveat: "Weak endpoint co-variation" };
+  }
+  // Moderate co-variation or insufficient data — no adjustment
+  return { level: confidence.toLowerCase() as ConfidenceLevel, caveat: null };
+}
+
+function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm, syndromeCovariation, syndromeConfidence }: {
   grouping: GroupingMode;
   value: string;
   syndromeLabel?: string;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
+  syndromeCovariation?: SyndromeCorrelationSummary;
+  syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
@@ -1123,10 +1163,42 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm 
   if (grouping === "syndrome") {
     const isNoSyndrome = value === "no_syndrome";
     const label = syndromeLabel ?? value;
+
+    // GAP-67: Compute adjusted confidence
+    const adjusted = !isNoSyndrome && syndromeConfidence && syndromeCovariation
+      ? adjustSyndromeConfidence(syndromeConfidence, syndromeCovariation)
+      : null;
+
+    // GAP-66: Short co-variation label for the badge
+    const covLabel = !isNoSyndrome && syndromeCovariation
+      ? syndromeCovariation.validation_label.replace(" co-variation", "")
+      : null;
+
+    const tooltipLines = [label];
+    if (adjusted) {
+      tooltipLines.push(`Confidence: ${CONF_SHORT[adjusted.level]}${adjusted.caveat ? ` (${adjusted.caveat})` : ""}`);
+    }
+    if (covLabel && covLabel !== "Insufficient data") {
+      tooltipLines.push(`Co-variation: ${covLabel}`);
+    }
+
     return (
-      <span className={cn("flex min-w-0 items-center gap-1.5 truncate font-semibold", isNoSyndrome && "text-muted-foreground/70")}>
+      <span className={cn("flex min-w-0 items-center gap-1.5 truncate font-semibold", isNoSyndrome && "text-muted-foreground/70")} title={tooltipLines.join("\n")}>
         {!isNoSyndrome && <span className="shrink-0">{"\uD83D\uDD17"}</span>}
-        <span className="truncate" title={label}>{label}</span>
+        <span className="truncate">{label}</span>
+        {adjusted && (
+          <span
+            className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+            style={{ borderBottom: `1.5px dashed ${RAG_COLOR[adjusted.level]}` }}
+          >
+            {CONF_SHORT[adjusted.level]}
+          </span>
+        )}
+        {covLabel && covLabel !== "Insufficient data" && (
+          <span className="shrink-0 text-[9px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
+            {covLabel}
+          </span>
+        )}
       </span>
     );
   }

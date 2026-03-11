@@ -5,6 +5,7 @@ import type {
   AnalysisSummary,
   OrganCorrelationMatrix,
   SyndromeCorrelationResult,
+  SyndromeCorrelationSummary,
 } from "@/types/analysis";
 
 const API_BASE = "/api";
@@ -74,6 +75,27 @@ export async function fetchSyndromeCorrelations(
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
   return res.json();
+}
+
+export async function fetchSyndromeCorrelationSummaries(
+  studyId: string,
+  syndromes: { syndrome_id: string; endpoint_labels: string[] }[],
+  settingsParams?: string,
+): Promise<Record<string, SyndromeCorrelationSummary>> {
+  const qs = settingsParams ? `?${settingsParams}` : "";
+  const res = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/analyses/adverse-effects/syndrome-correlation-summaries${qs}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ syndromes }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.summaries;
 }
 
 export function fetchAESummary(
