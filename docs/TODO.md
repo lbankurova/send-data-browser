@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 52 | 16 | Missing capability, no spec exists |
+| Gap | 55 | 16 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **77** | **50** | |
+| **Total open** | **80** | **50** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -594,6 +594,27 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### ~~GAP-65: Document in-memory findings cache strategy~~
 - **Status:** Resolved. Added "Caching Strategy" section to `docs/systems/data-pipeline.md` documenting all 3 layers (in-memory LRU, file-based settings cache, frontend React Query), invalidation flow, thread safety, and mutation safety contract.
 - **Priority:** ~~P4~~ Resolved
+
+### GAP-69: Promote StudyDetailsContextPanel header to ContextPanelHeader pattern
+- **Files:** `frontend/src/components/analysis/panes/StudyDetailsContextPanel.tsx`
+- **Issue:** The Study-level settings panel still uses a custom sticky header (`bg-muted/30`, `text-xs font-semibold uppercase`) rather than the shared `ContextPanelHeader` component used by all other context panels. CollapseAll was added (D2) but the header itself was not promoted (D5 deferred). Decide whether to adopt ContextPanelHeader here or keep the distinct "settings" header style as intentional differentiation.
+- **Status:** Open — deferred, waiting for user decision
+- **Priority:** P3 (design consistency)
+- **Owner hint:** ux-designer
+
+### GAP-70: Add header to PortfolioContextPanel
+- **Files:** `frontend/src/components/analysis/panes/PortfolioContextPanel.tsx` (or equivalent landing page panel)
+- **Issue:** The Portfolio / landing page context panel has no sticky header at all. All other context panels now use `ContextPanelHeader` with title, optional subtitle, and CollapseAll. Decide whether to add a header here and what title/subtitle to use.
+- **Status:** Open — deferred, waiting for user decision
+- **Priority:** P3 (design consistency)
+- **Owner hint:** ux-designer
+
+### GAP-71: Decide TierCountBadges placement in context panel headers
+- **Files:** `frontend/src/components/analysis/panes/DoseResponseContextPanel.tsx`, `frontend/src/components/analysis/panes/NoaelContextPanel.tsx`
+- **Issue:** TierCountBadges (colored tier-severity counts) currently render in the `children` slot of ContextPanelHeader on the DoseResponse panel. Other panels with tier data (NOAEL, Findings) don't show them in headers. Need user decision on whether TierCountBadges belong in the header, in a subtitle, or only in pane content. D8 deferred from context panel consistency audit.
+- **Status:** Open — deferred, waiting for user decision
+- **Priority:** P4 (design polish)
+- **Owner hint:** ux-designer
 
 ---
 

@@ -159,6 +159,29 @@ Center panel components write to the appropriate context on user interaction (ro
 - **Actions**: `selectFinding(finding: UnifiedFinding | null)`
 - **Used by**: `AdverseEffectsView`, `AdverseEffectsContextPanel`
 
+### Context Panel Header & Navigation
+
+All context panels (except StudyDetailsContextPanel and StudyPortfolioContextPanel — see GAP-69, GAP-70) use a shared `ContextPanelHeader` component for consistent sticky headers:
+
+**`ContextPanelHeader` component** (`frontend/src/components/analysis/panes/ContextPanelHeader.tsx`):
+- Props: `title` (ReactNode), `titleClassName?`, `subtitle?` (ReactNode, rendered in `text-[10px] text-muted-foreground`), `children?` (extra content below subtitle), `className?`, `style?`, `headerActions?` (ReactNode after CollapseAll), `onExpandAll?`/`onCollapseAll?` (shows CollapseAll buttons), `canGoBack?`/`canGoForward?`/`onBack?`/`onForward?` (shows `< >` nav bar)
+- Structure: optional nav bar (`< >` buttons in a `border-b` strip) above a sticky header div (`border-b bg-background px-4 py-3`) with title row (h3 + CollapseAll + headerActions), optional subtitle, optional children
+
+**`usePaneHistory<T>` hook** (`frontend/src/hooks/usePaneHistory.ts`):
+- Tracks selection history for context panel back/forward navigation
+- Parameters: `current` (current selection, null = nothing selected), `onNavigate` (callback to restore a selection), `toKey?` (selection → string for equality, defaults to `JSON.stringify`)
+- Returns: `{ canGoBack, canGoForward, goBack, goForward }`
+- Uses `navigatingRef` to skip pushing when restoring from history (prevents double-push)
+- Each panel defines its own nav entry type and `onNavigate` callback to handle its specific selection model
+
+**Panels with back/forward navigation (D1)**:
+- FindingsContextPanel: 3-level (finding → organ → syndrome)
+- HistopathologyContextPanel: 2-level (specimen → finding)
+- NoaelContextPanel: 3-state (overview → organ → endpoint)
+- ValidationContextPanel: 2-mode (rule summary → issue review)
+
+**CollapseAll (D2)**: All panels with CollapsiblePanes wire `useCollapseAll()` → `expandGen`/`collapseGen` to each pane. CollapseAll buttons rendered via `ContextPanelHeader` or directly (StudyDetailsContextPanel).
+
 ### Context Panel Modes
 
 The `ContextPanel` component (`components/panels/ContextPanel.tsx`) uses route-based pattern matching to decide what to render. It checks `location.pathname` against regex patterns in priority order:
@@ -292,6 +315,8 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 | `frontend/src/hooks/useAutoFitSections.ts` | Hook for content-aware vertical section sizing — measures content, distributes space, persists manual drags |
 | `frontend/src/components/ui/ViewSection.tsx` | Collapsible section with "fixed" (pixel height + contentRef) and "flex" (fills remaining) modes |
 | `frontend/src/components/ui/PanelResizeHandle.tsx` | Visual drag handle (4px) placed between resizable panels |
+| `frontend/src/components/analysis/panes/ContextPanelHeader.tsx` | Shared sticky header for context panels (nav bar, title, subtitle, CollapseAll, headerActions) |
+| `frontend/src/hooks/usePaneHistory.ts` | Generic selection history hook for context panel back/forward navigation |
 
 ## Datagrok Notes
 
@@ -308,6 +333,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 
 ## Changelog
 
+- 2026-03-11: Added Context Panel Header & Navigation section. New shared components: ContextPanelHeader (D9), usePaneHistory (D1). All context panels retrofitted with consistent headers, CollapseAll (D2), and back/forward navigation where applicable.
 - 2026-02-12: Added auto-fit sections documentation (useAutoFitSections hook, ViewSection component, content measurement algorithm, persistence model). Added to code map.
 - 2026-02-09: Added resizable panel system documentation (useResizePanel hook, PanelResizeHandle component, usage in Views 2-5). Added to code map and current state.
 - 2026-02-08: Created from CLAUDE.md architecture section and frontend source code

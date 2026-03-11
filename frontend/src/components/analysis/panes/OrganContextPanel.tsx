@@ -12,7 +12,7 @@ import { useFindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindings } from "@/hooks/useFindings";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import {
   titleCase,
   getDirectionSymbol,
@@ -219,6 +219,7 @@ function computeOrganNoaelDisplay(
 
 interface OrganContextPanelProps {
   organKey: string;
+  nav?: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void; };
 }
 
 // ─── Normalization mode labels ────────────────────────────
@@ -436,7 +437,7 @@ const ORGAN_SYSTEM_TO_SPECIMENS: Record<string, string[]> = {
   neurological: ["BRAIN"],
 };
 
-export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
+export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectFinding, selectGroup } = useFindingSelection();
   const analytics = useFindingsAnalytics();
@@ -597,26 +598,31 @@ export function OrganContextPanel({ organKey }: OrganContextPanelProps) {
   return (
     <div>
       {/* Sticky header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{titleCase(organKey)}</h3>
-          <div className="flex items-center gap-1">
-            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-            <button
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              onClick={handleClose}
-              title="Close"
-            >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M2 2l8 8M10 2l-8 8" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        <p className="text-[10px] text-muted-foreground">
-          {totalEndpoints} endpoint{totalEndpoints !== 1 ? "s" : ""} · {domains.length} domain{domains.length !== 1 ? "s" : ""} ({domains.join(", ")}) · {adverseCount} adverse
-        </p>
-      </div>
+      <ContextPanelHeader
+        title={titleCase(organKey)}
+        subtitle={
+          <>
+            {totalEndpoints} endpoint{totalEndpoints !== 1 ? "s" : ""} · {domains.length} domain{domains.length !== 1 ? "s" : ""} ({domains.join(", ")}) · {adverseCount} adverse
+          </>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        headerActions={
+          <button
+            className="rounded p-0.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            onClick={handleClose}
+            title="Close"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M2 2l8 8M10 2l-8 8" />
+            </svg>
+          </button>
+        }
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
+      />
 
       {/* Pane 1: CONVERGENCE — always visible, not collapsible */}
       <div className="border-b px-4 py-3">

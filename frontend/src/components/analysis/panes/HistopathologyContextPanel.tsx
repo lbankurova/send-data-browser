@@ -2,10 +2,11 @@ import { useMemo, useCallback, useState, useEffect, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { usePaneHistory } from "@/hooks/usePaneHistory";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
@@ -675,6 +676,13 @@ interface Props {
   pathReviews?: Record<string, PathologyReview>;
 }
 
+interface HistoNavProps {
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onBack: () => void;
+  onForward: () => void;
+}
+
 // ─── Specimen Overview (when no finding is selected) ──────────────────────────
 
 function SpecimenOverviewPane({
@@ -683,12 +691,14 @@ function SpecimenOverviewPane({
   ruleResults,
   studyId,
   pathReviews,
+  nav,
 }: {
   specimen: string;
   lesionData: LesionSeverityRow[];
   ruleResults: RuleResult[];
   studyId?: string;
   pathReviews?: Record<string, PathologyReview>;
+  nav?: HistoNavProps;
 }) {
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
@@ -1043,32 +1053,37 @@ function SpecimenOverviewPane({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-end gap-2">
-            <h3 className="text-sm font-semibold leading-none">{specimen.replace(/_/g, " ")}</h3>
+      <ContextPanelHeader
+        title={
+          <span className="flex items-end gap-2">
+            <span className="leading-none">{specimen.replace(/_/g, " ")}</span>
             <span
-              className={`text-[10px] leading-none ${reviewStatus === "Revised" ? "text-purple-600" : "text-muted-foreground"}`}
+              className={`text-[10px] font-normal leading-none ${reviewStatus === "Revised" ? "text-purple-600" : "text-muted-foreground"}`}
               title={REVIEW_STATUS_TOOLTIPS[reviewStatus]}
             >
               {reviewStatus}
             </span>
             {summary.adverseCount > 0 && (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-medium font-normal text-muted-foreground">
                 {summary.adverseCount} adverse
               </span>
             )}
-          </div>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        {allDomains.length > 0 && (
-          <div className="mt-1 flex items-center gap-1">
+          </span>
+        }
+        subtitle={allDomains.length > 0 ? (
+          <div className="flex items-center gap-1">
             {allDomains.map((d) => (
               <DomainLabel key={d} domain={d} />
             ))}
           </div>
-        )}
-      </div>
+        ) : undefined}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
+      />
 
       {/* Overview */}
       <CollapsiblePane title="Overview" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -1592,11 +1607,13 @@ function FindingDetailPane({
   lesionData,
   ruleResults,
   studyId,
+  nav,
 }: {
   selection: HistopathSelection & { finding: string };
   lesionData: LesionSeverityRow[];
   ruleResults: RuleResult[];
   studyId?: string;
+  nav?: HistoNavProps;
 }) {
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
@@ -1905,12 +1922,16 @@ function FindingDetailPane({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{selection.finding}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <p className="text-xs text-muted-foreground">{selection.specimen}</p>
+      <ContextPanelHeader
+        title={selection.finding}
+        subtitle={selection.specimen}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav?.canGoBack}
+        canGoForward={nav?.canGoForward}
+        onBack={nav?.onBack}
+        onForward={nav?.onForward}
+      >
         {headerMetrics && (
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
             <span>Peak incidence: <span className="font-mono font-medium">{headerMetrics.incPct}%</span></span>
@@ -1919,7 +1940,7 @@ function FindingDetailPane({
             <span>Sex: <span className="font-medium">{headerMetrics.sexLabel}</span></span>
           </div>
         )}
-      </div>
+      </ContextPanelHeader>
 
       {/* Insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -2324,6 +2345,28 @@ function FindingDetailPane({
 export function HistopathologyContextPanel({ lesionData, ruleResults, selection, studyId: studyIdProp, pathReviews }: Props) {
   const { studyId: studyIdParam } = useParams<{ studyId: string }>();
   const studyId = studyIdProp ?? studyIdParam;
+  const { setSelection: setViewSelection } = useViewSelection();
+
+  // ── Navigation history (D1) ──
+  const currentNavEntry = useMemo(() => {
+    if (!selection?.specimen) return null;
+    return { specimen: selection.specimen, finding: selection.finding ?? null };
+  }, [selection?.specimen, selection?.finding]);
+
+  const handleNavTo = useCallback((entry: { specimen: string; finding: string | null }) => {
+    setViewSelection({
+      _view: "histopathology",
+      specimen: entry.specimen,
+      ...(entry.finding ? { finding: entry.finding } : {}),
+    });
+  }, [setViewSelection]);
+
+  const { canGoBack, canGoForward, goBack, goForward } = usePaneHistory(
+    currentNavEntry,
+    handleNavTo,
+    (e) => `${e.specimen}:${e.finding ?? ""}`,
+  );
+  const nav: HistoNavProps = { canGoBack, canGoForward, onBack: goBack, onForward: goForward };
 
   if (!selection || !selection.specimen) {
     return (
@@ -2341,6 +2384,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
         lesionData={lesionData}
         ruleResults={ruleResults}
         studyId={studyId}
+        nav={nav}
       />
     );
   }
@@ -2353,6 +2397,7 @@ export function HistopathologyContextPanel({ lesionData, ruleResults, selection,
       ruleResults={ruleResults}
       studyId={studyId}
       pathReviews={pathReviews}
+      nav={nav}
     />
   );
 }

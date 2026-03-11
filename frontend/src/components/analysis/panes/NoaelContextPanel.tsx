@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { CollapseAllButtons } from "./CollapseAllButtons";
+import { ContextPanelHeader } from "./ContextPanelHeader";
 import { InsightsList } from "./InsightsList";
 import { TierCountBadges } from "./TierCountBadges";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { usePaneHistory } from "@/hooks/usePaneHistory";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
 import {
   formatPValue,
@@ -177,6 +179,30 @@ export function NoaelContextPanel({
 
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
+  // ── Navigation history (D1) ──
+  const { setSelection: setViewSelection } = useViewSelection();
+  type NoaelNavEntry = { type: "endpoint"; endpoint_label: string; dose_level: number; sex: string } | { type: "organ"; organSystem: string };
+  const currentNavEntry = useMemo((): NoaelNavEntry | null => {
+    if (selection) return { type: "endpoint", ...selection };
+    if (organSelection) return { type: "organ", organSystem: organSelection };
+    return null;
+  }, [selection, organSelection]);
+
+  const handleNavTo = useCallback((entry: NoaelNavEntry) => {
+    if (entry.type === "endpoint") {
+      setViewSelection({ _view: "noael", endpoint_label: entry.endpoint_label, dose_level: entry.dose_level, sex: entry.sex });
+    } else {
+      navigateTo({ organSystem: entry.organSystem });
+      setViewSelection(null);
+    }
+  }, [setViewSelection, navigateTo]);
+
+  const { canGoBack, canGoForward, goBack, goForward } = usePaneHistory(
+    currentNavEntry,
+    handleNavTo,
+    (e) => e.type === "endpoint" ? `ep:${e.endpoint_label}:${e.sex}` : `org:${e.organSystem}`,
+  );
+
   // NOAEL narrative for context panel
   const { data: noaelData } = useNoaelSummary(studyId);
   const narrative = useMemo(() => {
@@ -208,9 +234,15 @@ export function NoaelContextPanel({
   if (!selection && !organSelection) {
     return (
       <div>
-        <div className="flex items-center justify-end border-b px-4 py-1.5">
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
+        <ContextPanelHeader
+          title="NOAEL determination"
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          onBack={goBack}
+          onForward={goForward}
+        />
 
         {/* NOAEL rationale narrative */}
         {narrative && (
@@ -273,16 +305,18 @@ export function NoaelContextPanel({
     return (
       <div>
         {/* Header */}
-        <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">{titleCase(organSelection)}</h3>
-            <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-          </div>
-          {organSignalSummary && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {organSignalSummary.totalCount} signals &middot; {organSignalSummary.domains.size} domain(s)
-            </p>
-          )}
+        <ContextPanelHeader
+          title={titleCase(organSelection)}
+          subtitle={organSignalSummary ? (
+            <>{organSignalSummary.totalCount} signals &middot; {organSignalSummary.domains.size} domain(s)</>
+          ) : undefined}
+          onExpandAll={expandAll}
+          onCollapseAll={collapseAll}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          onBack={goBack}
+          onForward={goForward}
+        >
           <div className="mt-1.5 text-xs">
             <TierCountBadges
               counts={computeTierCounts(organRules)}
@@ -290,7 +324,7 @@ export function NoaelContextPanel({
               onTierClick={setTierFilter}
             />
           </div>
-        </div>
+        </ContextPanelHeader>
 
         {/* 1. Organ insights */}
         <CollapsiblePane title="Organ insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
@@ -387,14 +421,16 @@ export function NoaelContextPanel({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-background px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">{selection!.endpoint_label}</h3>
-          <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {selection!.sex} &middot; Dose {selection!.dose_level}
-        </p>
+      <ContextPanelHeader
+        title={selection!.endpoint_label}
+        subtitle={<>{selection!.sex} &middot; Dose {selection!.dose_level}</>}
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onBack={goBack}
+        onForward={goForward}
+      >
         <div className="mt-1.5 text-xs">
           <TierCountBadges
             counts={computeTierCounts(endpointRules)}
@@ -402,7 +438,7 @@ export function NoaelContextPanel({
             onTierClick={setTierFilter}
           />
         </div>
-      </div>
+      </ContextPanelHeader>
 
       {/* 1. Endpoint insights */}
       <CollapsiblePane title="Insights" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>

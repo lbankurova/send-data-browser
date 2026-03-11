@@ -14,6 +14,8 @@ import {
   flagLabValues,
 } from "@/lib/subject-profile-logic";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { ContextPanelHeader } from "./ContextPanelHeader";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
 
 // ─── Helpers (rendering-only) ────────────────────────────
@@ -707,83 +709,80 @@ function SubjectProfileContent({
     ) ?? null;
   }, [crossAnimalFlags, profile.usubjid]);
 
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header (§5) */}
-      <div className="shrink-0 border-b px-4 py-3">
-        {/* Nav row */}
-        <div className="flex items-center gap-2">
-          <button
-            className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-            onClick={onBack}
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-          <span className="text-sm font-semibold font-mono">{profile.usubjid}</span>
-        </div>
-
-        {/* Metadata row */}
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-          <span>
-            <span className="text-muted-foreground">Sex: </span>
-            <span className="font-medium">
-              {profile.sex === "M" ? "Male" : profile.sex === "F" ? "Female" : profile.sex}
-            </span>
-          </span>
-          <span>
-            <span className="text-muted-foreground">Dose: </span>
-            <span
-              className="font-mono font-medium"
-              style={{ color: getDoseGroupColor(profile.dose_level) }}
-            >
-              {formatDoseShortLabel(profile.dose_label)}
-            </span>
-          </span>
-        </div>
-
-        {/* Disposition row */}
-        {profile.disposition && (
-          <div className="mt-0.5 text-[11px]">
-            <span className="text-muted-foreground">Disposition: </span>
-            <span>{profile.disposition}</span>
-            {profile.disposition_day != null && (
-              <span className="ml-2 text-muted-foreground">
-                Day <span className="font-mono">{profile.disposition_day}</span>
+      <ContextPanelHeader
+        title={profile.usubjid}
+        titleClassName="font-mono"
+        onBack={onBack}
+        canGoBack
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        subtitle={
+          <div className="space-y-0.5 text-[10px]">
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+              <span>
+                <span className="text-muted-foreground">Sex: </span>
+                <span className="font-medium text-foreground">
+                  {profile.sex === "M" ? "Male" : profile.sex === "F" ? "Female" : profile.sex}
+                </span>
               </span>
+              <span>
+                <span className="text-muted-foreground">Dose: </span>
+                <span
+                  className="font-mono font-medium"
+                  style={{ color: getDoseGroupColor(profile.dose_level) }}
+                >
+                  {formatDoseShortLabel(profile.dose_label)}
+                </span>
+              </span>
+            </div>
+
+            {profile.disposition && (
+              <div>
+                <span className="text-muted-foreground">Disposition: </span>
+                <span className="text-foreground">{profile.disposition}</span>
+                {profile.disposition_day != null && (
+                  <span className="ml-2 text-muted-foreground">
+                    Day <span className="font-mono">{profile.disposition_day}</span>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {causeLine && (
+              <div>
+                <span className="text-muted-foreground">Cause: </span>
+                <span className={cn(
+                  causeLine === "Unknown"
+                    ? "text-muted-foreground italic"
+                    : "font-medium text-foreground"
+                )}>
+                  {causeLine}
+                </span>
+                {isAccidental && (
+                  <span className="ml-1.5 text-[9px] text-muted-foreground">(accidental)</span>
+                )}
+              </div>
+            )}
+
+            {recoveryNarrative && (
+              <div>
+                Recovery: {recoveryNarrative.narrative}
+              </div>
             )}
           </div>
-        )}
-
-        {/* Cause of death line — only for unscheduled deaths */}
-        {causeLine && (
-          <div className="mt-0.5 text-[11px]">
-            <span className="text-muted-foreground">Cause: </span>
-            <span className={cn(
-              causeLine === "Unknown"
-                ? "text-muted-foreground italic"
-                : "font-medium"
-            )}>
-              {causeLine}
-            </span>
-            {isAccidental && (
-              <span className="ml-1.5 text-[9px] text-muted-foreground">(accidental)</span>
-            )}
-          </div>
-        )}
-
-        {/* Recovery narrative — below cause of death */}
-        {recoveryNarrative && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
-            Recovery: {recoveryNarrative.narrative}
-          </div>
-        )}
-      </div>
+        }
+      />
 
       {/* Scrollable panes */}
       <div className="flex-1 overflow-y-auto">
         {/* Measurements pane */}
         {(bw.length > 0 || lb.length > 0) && (
-          <CollapsiblePane title="Measurements" defaultOpen>
+          <CollapsiblePane title="Measurements" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
             {bw.length > 0 && (
               <div className="mb-3">
                 <BWSparkline measurements={bw} />
@@ -805,6 +804,8 @@ function SubjectProfileContent({
         <CollapsiblePane
           title="Clinical observations"
           defaultOpen={clNonNormal.length > 0 || (cl.length === 0 && isDeath)}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
           summary={
             cl.length === 0
               ? undefined
@@ -830,6 +831,8 @@ function SubjectProfileContent({
         <CollapsiblePane
           title="Histopathology"
           defaultOpen={miNonNormal.length > 0}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
           summary={
             mi.length === 0
               ? undefined
@@ -860,7 +863,7 @@ function SubjectProfileContent({
 
         {/* Macroscopic */}
         {ma.length > 0 && (
-          <CollapsiblePane title="Macroscopic" defaultOpen={false}>
+          <CollapsiblePane title="Macroscopic" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
             <MacroscopicFindings findings={ma} />
           </CollapsiblePane>
         )}
