@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, ORJSONResponse
 
 from routers.studies import init_studies, router as studies_router
 from routers.analyses import init_analysis_studies, router as analyses_router
@@ -99,7 +99,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="SENDEX — SEND Explorer", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="SENDEX — SEND Explorer",
+    version="0.1.0",
+    lifespan=lifespan,
+    default_response_class=ORJSONResponse,
+)
 
 
 @app.middleware("http")

@@ -57,7 +57,7 @@ def _write_json(path: Path, data):
     """Write sanitized JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
-        json.dump(_sanitize(data), f, indent=2)
+        json.dump(_sanitize(data), f, separators=(",", ":"))
     print(f"  wrote {path.name} ({_count(data)} items)")
 
 

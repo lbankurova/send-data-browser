@@ -97,7 +97,7 @@ npm run dev                               # http://localhost:5173
 | Layer | Tech |
 |---|---|
 | Frontend | React 19, TypeScript 5.9, TailwindCSS 4, TanStack Query + Table, Radix UI, ECharts, Vite |
-| Backend | FastAPI, Python, pandas, scipy, scikit-posthocs, pyreadstat |
+| Backend | FastAPI, Python, pandas, scipy, pyreadstat, orjson |
 | Data | SEND .xpt files, pre-generated analysis JSON, SQLite (historical control database) |
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for pipeline details, module map, and engine inventory.

@@ -22,6 +22,7 @@ from services.analysis.analysis_cache import (
 from services.analysis.override_reader import (
     get_last_dosing_day_override,
     apply_pattern_overrides,
+    load_all_pattern_overrides,
     VALID_PATTERN_OVERRIDES,
     _resolve_override,
 )
@@ -111,21 +112,38 @@ def _load_from_disk(study_id: str, file_name: str):
     return _load_from_disk_cached(str(file_path), mtime_ns)
 
 
-def _apply_overrides(data, study_id: str, view_name: str):
-    """Apply user annotation overrides to view data before serving.
+# Fields produced by the generator for internal computation (e.g. correlations)
+# but never consumed by the frontend.  Strip before serving to reduce payload.
+_STRIP_FIELDS = ("raw_subject_values",)
 
-    Currently handles pattern overrides for unified-findings.
+
+def _strip_fields(findings: list[dict]) -> list[dict]:
+    """Remove generator-internal fields from findings (creates new dicts)."""
+    return [{k: v for k, v in f.items() if k not in _STRIP_FIELDS} for f in findings]
+
+
+def _apply_overrides(data, study_id: str, view_name: str):
+    """Apply user annotation overrides and strip internal fields before serving.
+
+    Handles pattern overrides for unified-findings and strips generator-internal
+    fields (e.g. raw_subject_values) that the frontend never consumes.
     Works on copies to avoid mutating LRU-cached originals.
     """
     if view_name == "unified-findings" and isinstance(data, dict):
         findings = data.get("findings")
         if findings and isinstance(findings, list):
-            # Shallow-copy each finding — apply_pattern_overrides mutates dicts
-            # in-place (pattern, onset_dose, treatment_related, finding_class,
-            # confidence). Without copies, the LRU cache would hold mutated
-            # findings, causing stale-override detection to delete annotations.
+            overrides = load_all_pattern_overrides(study_id)
+            if not overrides:
+                # No overrides — strip creates new dicts (protects LRU cache)
+                return {**data, "findings": _strip_fields(findings)}
+            # Shallow-copy + apply overrides, then strip in-place (copies
+            # already exist, so mutating them to delete keys is safe)
             findings_copy = [{**f} for f in findings]
-            return {**data, "findings": apply_pattern_overrides(findings_copy, study_id)}
+            applied = apply_pattern_overrides(findings_copy, study_id)
+            for f in applied:
+                for key in _STRIP_FIELDS:
+                    f.pop(key, None)
+            return {**data, "findings": applied}
     return data
 
 
