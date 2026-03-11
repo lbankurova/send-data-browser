@@ -22,7 +22,7 @@ import type { GroupingMode } from "@/lib/findings-rail-engine";
  */
 export function ShellRailPanel() {
   const { studyId, domainName } = useParams<{ studyId: string; domainName: string }>();
-  const { width, onPointerDown } = useResizePanel(300, 180, 500, "left", "pcc.layout.railWidth");
+  const { width, onPointerDown } = useResizePanel(300, { direction: "left", storageKey: "pcc.layout.railWidth" });
   const { pathname } = useLocation();
   const { selection: studySelection, navigateTo } = useStudySelection();
 

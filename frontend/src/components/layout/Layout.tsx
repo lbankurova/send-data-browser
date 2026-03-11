@@ -1,5 +1,5 @@
 import { Outlet, useLocation, matchPath } from "react-router-dom";
-import { useCallback, useRef, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Settings, HelpCircle, Compass } from "lucide-react";
 import { Header } from "./Header";
 import { BrowsingTree } from "@/components/tree/BrowsingTree";
@@ -16,92 +16,12 @@ import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
 import { StudySettingsProvider } from "@/contexts/StudySettingsContext";
 import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
-
-const LEFT_DEFAULT = 260;
-const RIGHT_DEFAULT = 380;
-const LEFT_MIN = 180;
-const LEFT_MAX = 500;
-const RIGHT_MIN = 200;
-const RIGHT_MAX = 600;
-
-function readSession(key: string | undefined): number | undefined {
-  if (!key) return undefined;
-  try {
-    const v = sessionStorage.getItem(key);
-    if (v !== null) return JSON.parse(v) as number;
-  } catch { /* ignore */ }
-  return undefined;
-}
-
-function useResize(
-  initial: number,
-  min: number,
-  max: number,
-  direction: "left" | "right",
-  storageKey?: string,
-) {
-  const [width, setWidth] = useState(() => readSession(storageKey) ?? initial);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startW = useRef(0);
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      dragging.current = true;
-      startX.current = e.clientX;
-      startW.current = width;
-      const el = e.currentTarget as HTMLElement;
-      el.setPointerCapture(e.pointerId);
-
-      const onMove = (ev: PointerEvent) => {
-        if (!dragging.current) return;
-        const delta = ev.clientX - startX.current;
-        const newW =
-          direction === "left"
-            ? startW.current + delta
-            : startW.current - delta;
-        setWidth(Math.max(min, Math.min(max, newW)));
-      };
-
-      const onUp = () => {
-        dragging.current = false;
-        el.removeEventListener("pointermove", onMove);
-        el.removeEventListener("pointerup", onUp);
-        el.removeEventListener("pointercancel", onUp);
-      };
-
-      el.addEventListener("pointermove", onMove);
-      el.addEventListener("pointerup", onUp);
-      el.addEventListener("pointercancel", onUp);
-    },
-    [width, min, max, direction],
-  );
-
-  if (storageKey) {
-    try { sessionStorage.setItem(storageKey, JSON.stringify(width)); } catch { /* ignore */ }
-  }
-
-  return { width, onPointerDown };
-}
-
-function ResizeHandle({
-  onPointerDown,
-}: {
-  onPointerDown: (e: React.PointerEvent) => void;
-}) {
-  return (
-    <div
-      onPointerDown={onPointerDown}
-      className="shrink-0 cursor-col-resize select-none border-r border-border bg-transparent transition-colors hover:bg-primary/10 active:bg-primary/20"
-      style={{ width: 4 }}
-    />
-  );
-}
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 
 export function Layout() {
-  const left = useResize(LEFT_DEFAULT, LEFT_MIN, LEFT_MAX, "left", "pcc.layout.leftWidth");
-  const right = useResize(RIGHT_DEFAULT, RIGHT_MIN, RIGHT_MAX, "right", "pcc.layout.rightWidth");
+  const left = useResizePanel(260, { direction: "left", storageKey: "pcc.layout.leftWidth" });
+  const right = useResizePanel(380, { direction: "right", storageKey: "pcc.layout.rightWidth" });
   const location = useLocation();
   const studyId = useMemo(() => {
     const match = matchPath("/studies/:studyId/*", location.pathname);
@@ -168,7 +88,7 @@ export function Layout() {
                 >
                   <BrowsingTree />
                 </aside>
-                <ResizeHandle onPointerDown={left.onPointerDown} />
+                <PanelResizeHandle onPointerDown={left.onPointerDown} />
                 <main className="relative min-w-0 flex-1 overflow-hidden">
                   <div className="flex h-full overflow-hidden">
                     <ShellRailPanel />
@@ -177,7 +97,7 @@ export function Layout() {
                     </div>
                   </div>
                 </main>
-                <ResizeHandle onPointerDown={right.onPointerDown} />
+                <PanelResizeHandle onPointerDown={right.onPointerDown} />
                 <aside
                   className="shrink-0 overflow-y-auto"
                   style={{ width: right.width }}
