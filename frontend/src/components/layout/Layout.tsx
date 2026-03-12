@@ -1,5 +1,5 @@
 import { Outlet, useLocation, matchPath } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Settings, HelpCircle, Compass } from "lucide-react";
 import { Header } from "./Header";
 import { BrowsingTree } from "@/components/tree/BrowsingTree";
@@ -22,6 +22,16 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 export function Layout() {
   const left = useResizePanel(260, { direction: "left", storageKey: "pcc.layout.leftWidth" });
   const right = useResizePanel(380, { direction: "right", storageKey: "pcc.layout.rightWidth" });
+  const [treeOpen, setTreeOpen] = useState(() => {
+    try { return sessionStorage.getItem("pcc.layout.treeOpen") !== "false"; } catch { return true; }
+  });
+  const toggleTree = useCallback(() => {
+    setTreeOpen(prev => {
+      const next = !prev;
+      try { sessionStorage.setItem("pcc.layout.treeOpen", String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
   const location = useLocation();
   const studyId = useMemo(() => {
     const match = matchPath("/studies/:studyId/*", location.pathname);
@@ -58,8 +68,9 @@ export function Layout() {
                   </svg>
                 </button>
                 <button
-                  className="flex h-7 w-7 items-center justify-center rounded text-white/70 hover:bg-white/15 hover:text-white/90"
+                  className={`flex h-7 w-7 items-center justify-center rounded hover:bg-white/15 ${treeOpen ? "bg-white/20 text-white" : "text-white/70 hover:text-white/90"}`}
                   title="Browse"
+                  onClick={toggleTree}
                 >
                   <Compass className="h-4 w-4" />
                 </button>
@@ -82,14 +93,18 @@ export function Layout() {
             {/* Content area: tree + panels + status bar */}
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex min-h-0 flex-1">
-                <aside
-                  ref={left.targetRef}
-                  className="shrink-0 overflow-y-auto"
-                  style={{ width: left.width }}
-                >
-                  <BrowsingTree />
-                </aside>
-                <PanelResizeHandle onPointerDown={left.onPointerDown} />
+                {treeOpen && (
+                  <>
+                    <aside
+                      ref={left.targetRef}
+                      className="shrink-0 overflow-y-auto"
+                      style={{ width: left.width }}
+                    >
+                      <BrowsingTree />
+                    </aside>
+                    <PanelResizeHandle onPointerDown={left.onPointerDown} />
+                  </>
+                )}
                 <main className="relative min-w-0 flex-1 overflow-hidden">
                   <div className="flex h-full overflow-hidden">
                     <ShellRailPanel />
