@@ -45,15 +45,15 @@ Single source of truth: `docs/TODO.md` (74 open items)
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: SLA-15 (MIN_RECOVERY_N guard) and SLA-16 (corroboration direction coherence) implemented and tested.
+Stopped at: BUG-19 control-only pipeline leak fixed and committed (35c92aa).
 Completed this session:
-- SLA-15: `insufficient_n` verdict for CL recovery with rec_n < 3 (mirrors MI guard)
-- SLA-16: `partially_corroborated` status for directional incoherence (15 findings reclassified in PointCross)
-- 20 new tests (7 SLA-15, 13 SLA-16), all 42 backend + 1430 frontend pass
-- GAP-72 updated: 2/4 unimplemented items now resolved
-- Accessor migration sweep identified as separate batched task
-Next: Accessor migration sweep (SLA-01/06/12/13 + ~20 maxEffectSize callsites), then SLA-09/SLA-18.
-Prior session: Three audits completed (SLA, histopathology view, dose-response view).
+- BUG-19: 5 sub-bugs where control-only findings leaked through clinical catalog, insights, recovery, lab correlates, signal score, and confidence modifiers — all fixed
+- Backend clinical_catalog.py gated with treatment_related check
+- Frontend: controlOnlyFindings filtering in context panel, signal score zeroed, confidence modifiers suppressed, lab correlates guarded
+- docs/systems/insights-engine.md updated, spec archived
+- Post-implementation review completed, 1430 frontend tests + build pass
+Prior: SLA-01/06/12/13 accessor migration sweep (e3b5fc0), SLA-15/16 (ac748e5).
+Next: SLA-09 (incidence quality checks), SLA-18 (recovery vocab harmonization), or other TODO.md items.
 
 ---
-*Last updated: 2026-03-11 — SLA-15 + SLA-16 implemented*
+*Last updated: 2026-03-11 — BUG-19 control-only pipeline leak fixed*

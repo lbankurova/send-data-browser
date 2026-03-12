@@ -28,32 +28,34 @@ interface IncidenceDumbbellChartProps {
   onDoseClick?: (doseLevel: number) => void;
 }
 
-// ── Verdict display ──────────────────────────────────────
+// ── Verdict display — SLA-18: canonical harmonized labels ───
+import { RECOVERY_VERDICT_LABEL, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 
+// Re-export for backward compatibility (consumed by tests/other components)
 export const INCIDENCE_VERDICT_CLASS: Record<RecoveryVerdict, string> = {
-  reversed: "text-foreground",
-  reversing: "text-foreground",
-  persistent: "text-foreground font-semibold",
-  progressing: "text-foreground font-semibold",
-  anomaly: "text-foreground font-semibold",
-  not_examined: "text-muted-foreground",
-  insufficient_n: "text-muted-foreground",
-  low_power: "text-muted-foreground",
-  not_observed: "text-muted-foreground",
-  no_data: "text-muted-foreground",
+  reversed: RECOVERY_VERDICT_CLASS["reversed"],
+  reversing: RECOVERY_VERDICT_CLASS["reversing"],
+  persistent: RECOVERY_VERDICT_CLASS["persistent"],
+  progressing: RECOVERY_VERDICT_CLASS["progressing"],
+  anomaly: RECOVERY_VERDICT_CLASS["anomaly"],
+  not_examined: RECOVERY_VERDICT_CLASS["not_examined"],
+  insufficient_n: RECOVERY_VERDICT_CLASS["insufficient_n"],
+  low_power: RECOVERY_VERDICT_CLASS["low_power"],
+  not_observed: RECOVERY_VERDICT_CLASS["not_observed"],
+  no_data: RECOVERY_VERDICT_CLASS["no_data"],
 };
 
 export const INCIDENCE_VERDICT_LABEL: Record<RecoveryVerdict, string> = {
-  reversed: "Reversed",
-  reversing: "Reversing",
-  persistent: "Persistent",
-  progressing: "Progressing",
-  anomaly: "Anomaly",
-  not_examined: "Not examined",
-  insufficient_n: "Insufficient N",
-  low_power: "Low power",
-  not_observed: "Not observed",
-  no_data: "No data",
+  reversed: RECOVERY_VERDICT_LABEL["reversed"],
+  reversing: RECOVERY_VERDICT_LABEL["reversing"],
+  persistent: RECOVERY_VERDICT_LABEL["persistent"],
+  progressing: RECOVERY_VERDICT_LABEL["progressing"],
+  anomaly: RECOVERY_VERDICT_LABEL["anomaly"],
+  not_examined: RECOVERY_VERDICT_LABEL["not_examined"],
+  insufficient_n: RECOVERY_VERDICT_LABEL["insufficient_n"],
+  low_power: RECOVERY_VERDICT_LABEL["low_power"],
+  not_observed: RECOVERY_VERDICT_LABEL["not_observed"],
+  no_data: RECOVERY_VERDICT_LABEL["no_data"],
 };
 
 // ── Constants ────────────────────────────────────────────

@@ -10,6 +10,9 @@ import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 // Re-export canonical domain sets from domain-types so existing imports don't break.
 export { INCIDENCE_DOMAINS, CONTINUOUS_DOMAINS } from "@/lib/domain-types";
+import { CONTINUOUS_DOMAINS as _CONTINUOUS_DOMAINS } from "@/lib/domain-types";
+// Local alias needed because `export { X } from` doesn't create a local binding
+const CONTINUOUS_DOMAINS = _CONTINUOUS_DOMAINS;
 
 // ─── Public types ──────────────────────────────────────────
 
@@ -27,7 +30,12 @@ export interface OrganSummary {
   adverseCount: number;
   totalEndpoints: number;
   trCount: number;
+  /** @deprecated Use maxCohensD / maxSeverity instead. Kept for sorting compatibility. */
   maxEffectSize: number;
+  /** SLA-01: Max Cohen's d from continuous domains (LB, BW, OM, EG, VS, BG, FW). Null if no continuous endpoints. */
+  maxCohensD: number | null;
+  /** SLA-01: Max INHAND avg severity (1-5) from MI domain. Null if no MI endpoints. */
+  maxSeverity: number | null;
   minPValue: number | null;
   domains: string[];
 }
@@ -149,6 +157,10 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
   const map = new Map<string, {
     endpoints: Map<string, { severity: "adverse" | "warning" | "normal"; tr: boolean }>;
     maxEffect: number;
+    /** SLA-01: Max Cohen's d from continuous domains only */
+    maxCohensD: number | null;
+    /** SLA-01: Max INHAND avg severity from MI only */
+    maxSeverity: number | null;
     minP: number | null;
     domains: Set<string>;
   }>();
@@ -156,13 +168,31 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
   for (const row of data) {
     let entry = map.get(row.organ_system);
     if (!entry) {
-      entry = { endpoints: new Map(), maxEffect: 0, minP: null, domains: new Set() };
+      entry = { endpoints: new Map(), maxEffect: 0, maxCohensD: null, maxSeverity: null, minP: null, domains: new Set() };
       map.set(row.organ_system, entry);
     }
     entry.domains.add(row.domain);
-    if (row.effect_size != null && Math.abs(row.effect_size) > entry.maxEffect) {
-      entry.maxEffect = Math.abs(row.effect_size);
+
+    if (row.effect_size != null) {
+      const abs = Math.abs(row.effect_size);
+      // Legacy maxEffect (kept for sorting compatibility)
+      if (abs > entry.maxEffect) entry.maxEffect = abs;
+
+      // SLA-01: Domain-aware metric tracking
+      if (row.domain === "MI") {
+        // MI's effect_size stores avg_severity (1–5), not Cohen's d
+        if (entry.maxSeverity === null || abs > entry.maxSeverity) {
+          entry.maxSeverity = abs;
+        }
+      } else if (CONTINUOUS_DOMAINS.has(row.domain)) {
+        // LB, BW, OM, EG, VS, BG, FW: Cohen's d
+        if (entry.maxCohensD === null || abs > entry.maxCohensD) {
+          entry.maxCohensD = abs;
+        }
+      }
+      // Incidence-only domains (MA, CL, TF, DS): effect_size is typically null
     }
+
     if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) {
       entry.minP = row.p_value;
     }
@@ -191,6 +221,8 @@ export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSumm
       totalEndpoints: entry.endpoints.size,
       trCount,
       maxEffectSize: entry.maxEffect,
+      maxCohensD: entry.maxCohensD,
+      maxSeverity: entry.maxSeverity,
       minPValue: entry.minP,
       domains: [...entry.domains].sort(),
     });

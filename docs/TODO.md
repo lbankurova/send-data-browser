@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 55 | 16 | Missing capability, no spec exists |
+| Gap | 50 | 21 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **80** | **51** | |
+| **Total open** | **75** | **56** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -140,9 +140,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### ~~BUG-17: Incidence `max_effect_size` is avg severity but labeled as `|g|` across UI~~ (mostly resolved)
 - **Files:** `backend/services/analysis/findings_mi.py:195`, `frontend/src/components/analysis/charts/findings-charts.ts` (scatter X-axis), `frontend/src/components/analysis/FindingsTable.tsx` (Effect column), `frontend/src/lib/derive-summaries.ts` (EndpointSummary)
 - **Issue:** MI findings store `avg_severity` (1–4 ordinal scale) in the `max_effect_size` field with a comment `# use avg severity as "effect size" for incidence`. This value is then displayed as `|g|` on the scatter plot X-axis, the findings table Effect column, and the endpoint rail — all surfaces that label it as Hedges' g. MA/CL/TF/DS set `max_effect_size = None` so they show "—". The mislabeling means a severity score of 2.18 appears as `g = 2.18`, which a reviewer would interpret as a very large standardized effect when it's actually a moderate severity grade.
-- **Status:** Mostly resolved by SLA fix (Phase 0 typed accessors + Phase 1-3 critical computation fixes). 17/19 SLA findings fixed (SLA-15, SLA-16 added). Remaining: SLA-09, SLA-18, plus accessor migration sweep — tracked in GAP-72.
-- **Priority:** P2 → P3 (core computation paths fixed; remaining items are label polish)
-- **Owner hint:** frontend-dev (remaining label gaps in GAP-72)
+- **Status:** ~~Mostly resolved~~ All 19/19 SLA findings resolved. SLA-09/18/01-organ/02/07 fixed in final sweep.
+- **Priority:** ~~P2 → P3~~ Resolved
+- **Owner hint:** ~~frontend-dev (remaining label gaps in GAP-72)~~
 
 ### ~~BUG-18: RECOVERY_NOT_EXAMINED alert fires incorrectly for specimens WITH recovery data~~ ✅
 - **Files:** `backend/services/analysis/findings_mi.py`, `findings_ma.py`, `findings_cl.py`, `findings_tf.py`, `backend/generator/view_dataframes.py`, `frontend/src/types/analysis-views.ts`, `frontend/src/lib/histopathology-helpers.ts`, `frontend/src/lib/pattern-classification.ts`
@@ -634,9 +634,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 ### GAP-72: SLA fix remaining items (2 unimplemented + partial gaps)
 - **Spec:** `docs/incoming/sla-fix-spec.md`
 - **Issue:** Post-implementation review of SLA fix spec identified unimplemented items and several partial gaps from the implemented items.
-- **Unimplemented:**
-  - **SLA-09:** Incidence quality checks (`checkNonMonotonic()` / `checkTrendTestValidity()` in `endpoint-confidence.ts`) silently skip incidence data (require `mean`/`sd`). Need incidence-appropriate checks.
-  - **SLA-18:** Recovery vocabulary harmonization — 7 canonical verdicts across continuous/histopath/CL
+- ~~**Unimplemented:**~~
+  - ~~**SLA-09:** Incidence quality checks — `checkNonMonotonic()` and `checkTrendTestValidity()` now handle incidence data via `isIncidence` flag. Incidence-specific checks: proportion-based non-monotonic detection, small-sample/floor-ceiling/extreme-range trend validity~~
+  - ~~**SLA-18:** Recovery vocabulary harmonization — canonical `recovery-labels.ts` with shared `RECOVERY_VERDICT_LABEL/CLASS/COLOR` maps. Backend `improving`→"Reversing", `resolved`→"Reversed"; histopath `progressing`→"Worsening", `anomaly`→"New in recovery"~~
 - **Resolved:**
   - ~~**SLA-15:** CL recovery `MIN_RECOVERY_N` guard~~ — implemented, `insufficient_n` verdict for rec_n<3
   - ~~**SLA-16:** Corroboration direction coherence~~ — implemented, `partially_corroborated` status for directional incoherence
@@ -648,14 +648,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
   - ~~**SLA-12:** `OrganRailMode.tsx` severity filter uses `CONTINUOUS_DOMAINS` instead of local `HISTO_DOMAINS`~~
   - ~~**SLA-13:** DR view + FindingsTable effect cells have domain-aware tooltips via `effectSizeLabel(domain)`; DoseResponseEndpointPicker guards `|d|` display with `CONTINUOUS_DOMAINS`~~
   - ~~**Phase 0 migration:** Key display callsites migrated (DoseResponseEndpointPicker, FindingsTable, NoaelDecision/Determination, OrganRailMode)~~
-- **Medium priority — next sprint:**
-  - **SLA-01 organ-level aggregate:** `deriveOrganSummaries()` in `NoaelDecisionView.tsx:94` and `NoaelDeterminationView.tsx` (via `derive-summaries.ts`) computes `maxEffectSize` as `Math.abs(row.effect_size)` across ALL domains. Mixed-domain organs (e.g., Liver with LB d=1.2 + MI avg_sev=3.0) show maxEffectSize=3.0 labeled "|d|" — the exact SLA-01 problem one level up. Pathologists skimming at the organ row level see a misleading number. Fix: track separate per-metric-type max (max Cohen's d, max avg severity) in `deriveOrganSummaries()` and display accordingly.
-- **Other partial gaps (lower priority):**
-  - **SLA-02 frontend:** `computeEndpointSignal()` zeroes effectWeight for incidence but doesn't boost pValueWeight/patternWeight to compensate — incidence endpoints get structurally lower frontend signal scores
-  - **SLA-07:** `deriveMagnitudeLevel()` uses `Math.round(maxGrade)` for INHAND lookup; spec says fractional grades should display `"Minimal–Mild"` for avg_severity=1.7 — display-only, does not feed into exports or rule narratives (feeds into ECETOC syndrome magnitude label)
-- **Status:** Open (2 unimplemented: SLA-09, SLA-18; 1 medium: organ-level aggregate; SLA-02/07 P3)
-- **Priority:** P2 (SLA-09/18 correctness, organ aggregate medium; SLA-02/07 P3)
-- **Owner hint:** backend-dev (SLA-18), frontend-dev (SLA-09, organ aggregate, SLA-02/07)
+- ~~**Medium priority — next sprint:**~~
+  - ~~**SLA-01 organ-level aggregate:** `deriveOrganSummaries()` now tracks separate `maxCohensD` (continuous) and `maxSeverity` (MI) instead of mixed `maxEffectSize`. Organ headers show metric-appropriate labels. Local duplicate in NoaelDecisionView removed (imports shared version).~~
+- ~~**Other partial gaps (lower priority):**~~
+  - ~~**SLA-02 frontend:** `computeEndpointSignal()` now boosts pValueWeight (×1.25) and patternWeight (×1.15) for incidence domains, compensating for missing effectWeight~~
+  - ~~**SLA-07:** `deriveMagnitudeLevel()` uses `Math.floor(maxGrade)` (conservative) instead of `Math.round()`. `formatMagnitudeLevel()` exported for fractional display (e.g., "minimal–mild" for 1.7)~~
+- **Status:** ~~Open~~ All 19/19 SLA findings resolved
+- **Priority:** ~~P2~~ Resolved
+- **Owner hint:** ~~backend-dev (SLA-18), frontend-dev (SLA-09, organ aggregate, SLA-02/07)~~
 
 ---
 

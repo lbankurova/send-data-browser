@@ -51,7 +51,7 @@ import type {
   SignalSelection,
   StudySummaryFilters as Filters,
 } from "@/types/analysis-views";
-import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows, CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
+import { deriveOrganSummaries, deriveEndpointSummaries, mapFindingsToRows } from "@/lib/derive-summaries";
 import { effectSizeLabel } from "@/lib/domain-types";
 import type { OrganSummary, EndpointSummary } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
@@ -601,16 +601,30 @@ function OrganHeader({ summary, recovery, effectSizeSymbol = "d" }: { summary: O
         {summary.adverseCount} adverse, {summary.trCount} treatment-related.
       </p>
 
+      {/* SLA-01: Show per-metric-type max instead of mixed maxEffectSize */}
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
-        <div>
-          <span className="text-muted-foreground">Max {!summary.domains.some(d => CONTINUOUS_DOMAINS.has(d)) ? "avg sev" : `|${effectSizeSymbol}|`}: </span>
-          <span className={cn(
-            "font-mono",
-            summary.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"
-          )}>
-            {summary.maxEffectSize.toFixed(2)}
-          </span>
-        </div>
+        {summary.maxCohensD != null && (
+          <div>
+            <span className="text-muted-foreground">Max |{effectSizeSymbol}|: </span>
+            <span className={cn(
+              "font-mono",
+              summary.maxCohensD >= 0.8 ? "font-semibold" : "font-medium"
+            )}>
+              {summary.maxCohensD.toFixed(2)}
+            </span>
+          </div>
+        )}
+        {summary.maxSeverity != null && (
+          <div>
+            <span className="text-muted-foreground">Max avg sev: </span>
+            <span className={cn(
+              "font-mono",
+              summary.maxSeverity >= 3.0 ? "font-semibold" : "font-medium"
+            )}>
+              {summary.maxSeverity.toFixed(1)}
+            </span>
+          </div>
+        )}
         <div>
           <span className="text-muted-foreground">Min p: </span>
           <span className={cn(

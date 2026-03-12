@@ -24,7 +24,9 @@ import {
   titleCase,
   getNeutralHeatColor,
 } from "@/lib/severity-colors";
-import { CONTINUOUS_DOMAINS, effectSizeLabel } from "@/lib/domain-types";
+import { effectSizeLabel } from "@/lib/domain-types";
+import { deriveOrganSummaries } from "@/lib/derive-summaries";
+import type { OrganSummary } from "@/lib/derive-summaries";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
@@ -53,16 +55,6 @@ interface NoaelSelection {
 
 // ─── Derived data types ────────────────────────────────────
 
-interface OrganSummary {
-  organ_system: string;
-  adverseCount: number;
-  totalEndpoints: number;
-  trCount: number;
-  maxEffectSize: number;
-  minPValue: number | null;
-  domains: string[];
-}
-
 interface EndpointSummary {
   endpoint_label: string;
   domain: string;
@@ -76,65 +68,7 @@ interface EndpointSummary {
 }
 
 // ─── Helpers ───────────────────────────────────────────────
-
-function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
-  const map = new Map<string, {
-    endpoints: Map<string, { severity: "adverse" | "warning" | "normal"; tr: boolean }>;
-    maxEffect: number;
-    minP: number | null;
-    domains: Set<string>;
-  }>();
-
-  for (const row of data) {
-    let entry = map.get(row.organ_system);
-    if (!entry) {
-      entry = { endpoints: new Map(), maxEffect: 0, minP: null, domains: new Set() };
-      map.set(row.organ_system, entry);
-    }
-    entry.domains.add(row.domain);
-    if (row.effect_size != null && Math.abs(row.effect_size) > entry.maxEffect) {
-      entry.maxEffect = Math.abs(row.effect_size);
-    }
-    if (row.p_value != null && (entry.minP === null || row.p_value < entry.minP)) {
-      entry.minP = row.p_value;
-    }
-
-    const epEntry = entry.endpoints.get(row.endpoint_label);
-    if (!epEntry) {
-      entry.endpoints.set(row.endpoint_label, { severity: row.severity, tr: row.treatment_related });
-    } else {
-      // Escalate severity
-      if (row.severity === "adverse") epEntry.severity = "adverse";
-      else if (row.severity === "warning" && epEntry.severity !== "adverse") epEntry.severity = "warning";
-      if (row.treatment_related) epEntry.tr = true;
-    }
-  }
-
-  const summaries: OrganSummary[] = [];
-  for (const [organ, entry] of map) {
-    let adverseCount = 0;
-    let trCount = 0;
-    for (const ep of entry.endpoints.values()) {
-      if (ep.severity === "adverse") adverseCount++;
-      if (ep.tr) trCount++;
-    }
-    summaries.push({
-      organ_system: organ,
-      adverseCount,
-      totalEndpoints: entry.endpoints.size,
-      trCount,
-      maxEffectSize: entry.maxEffect,
-      minPValue: entry.minP,
-      domains: [...entry.domains].sort(),
-    });
-  }
-
-  return summaries.sort((a, b) =>
-    b.adverseCount - a.adverseCount ||
-    b.trCount - a.trCount ||
-    b.maxEffectSize - a.maxEffectSize
-  );
-}
+// deriveOrganSummaries imported from @/lib/derive-summaries (SLA-01: removed local duplicate)
 
 function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): EndpointSummary[] {
   const map = new Map<string, {
@@ -312,16 +246,30 @@ function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: 
         {summary.adverseCount} adverse, {summary.trCount} treatment-related.
       </p>
 
+      {/* SLA-01: Show per-metric-type max instead of mixed maxEffectSize */}
       <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
-        <div>
-          <span className="text-muted-foreground">Max {summary.domains.some(d => CONTINUOUS_DOMAINS.has(d)) ? "|d|" : "avg sev"}: </span>
-          <span className={cn(
-            "font-mono",
-            summary.maxEffectSize >= 0.8 ? "font-semibold" : "font-medium"
-          )}>
-            {summary.maxEffectSize.toFixed(2)}
-          </span>
-        </div>
+        {summary.maxCohensD != null && (
+          <div>
+            <span className="text-muted-foreground">Max |d|: </span>
+            <span className={cn(
+              "font-mono",
+              summary.maxCohensD >= 0.8 ? "font-semibold" : "font-medium"
+            )}>
+              {summary.maxCohensD.toFixed(2)}
+            </span>
+          </div>
+        )}
+        {summary.maxSeverity != null && (
+          <div>
+            <span className="text-muted-foreground">Max avg sev: </span>
+            <span className={cn(
+              "font-mono",
+              summary.maxSeverity >= 3.0 ? "font-semibold" : "font-medium"
+            )}>
+              {summary.maxSeverity.toFixed(1)}
+            </span>
+          </div>
+        )}
         <div>
           <span className="text-muted-foreground">Min p: </span>
           <span className={cn(
