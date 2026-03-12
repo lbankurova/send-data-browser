@@ -13,6 +13,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
+import { RECOVERY_VERDICT_LABEL, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
 import type { RecoveryVerdict, RecoveryDoseAssessment, RecoveryAssessment } from "@/lib/recovery-assessment";
 import type { RecoveryAdequacy } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
@@ -442,21 +443,9 @@ function buildClassificationContext(
 
 // ── Incidence recovery section ───────────────────────────
 
-const VERDICT_LABEL: Record<string, string> = {
-  resolved: "Resolved",
-  improving: "Improving",
-  persistent: "Persistent",
-  worsening: "Worsening",
-  new_in_recovery: "New in recovery",
-};
-
-const VERDICT_COLOR: Record<string, string> = {
-  resolved: "text-emerald-700",
-  improving: "text-emerald-600",
-  persistent: "text-amber-700",
-  worsening: "text-red-700",
-  new_in_recovery: "text-red-700",
-};
+// SLA-18: Use canonical harmonized verdict labels
+const VERDICT_LABEL = RECOVERY_VERDICT_LABEL;
+const VERDICT_COLOR = RECOVERY_VERDICT_COLOR;
 
 function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
   const { studyId } = useParams<{ studyId: string }>();

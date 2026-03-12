@@ -53,12 +53,22 @@ const PATTERN_WEIGHTS: Record<string, number> = {
   flat: 0,
 };
 
+/**
+ * SLA-02: Incidence domains get effectWeight=0 (no Cohen's d). To prevent
+ * structural signal-score cap, boost pValueWeight by 25% and patternWeight
+ * by 15% for non-continuous domains, allowing strong statistical evidence
+ * alone to produce scores comparable to continuous endpoints.
+ */
+const INCIDENCE_P_VALUE_BOOST = 1.25;
+const INCIDENCE_PATTERN_BOOST = 1.15;
+
 // @field FIELD-34 — endpoint composite signal score
 export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
   const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
-  const pValueWeight = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
-  // SLA-02: non-continuous domains have no Cohen's d — zero effect weight
   const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
+  const rawP = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
+  // SLA-02: boost p-value weight for incidence domains to compensate for missing effectWeight
+  const pValueWeight = isContinuous ? rawP : rawP * INCIDENCE_P_VALUE_BOOST;
   const rawEffect = isContinuous ? (ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0) : 0;
   const effectWeight = rawEffect;
   const trBoost = ep.treatmentRelated ? 2 : 0;
@@ -76,7 +86,9 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   }
 
   const confMult = boosts?.confidenceMultiplier ?? 1;
-  const patternWeight = rawPatternWeight * confMult;
+  // SLA-02: boost pattern weight for incidence domains
+  const patternMult = isContinuous ? 1.0 : INCIDENCE_PATTERN_BOOST;
+  const patternWeight = rawPatternWeight * confMult * patternMult;
   const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;

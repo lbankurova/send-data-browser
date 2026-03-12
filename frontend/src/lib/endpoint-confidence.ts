@@ -191,6 +191,28 @@ function downgradeConfidence(
 // ─── Mechanism 2a: Non-Monotonic Detection ───────────────────
 
 /**
+ * Extract the effect metric from a group stat, handling both continuous
+ * (mean-based) and incidence (proportion-based) data.
+ * Returns the absolute delta from control, or null if no metric is available.
+ */
+function getGroupEffect(
+  g: GroupStat,
+  control: GroupStat,
+  isIncidence: boolean,
+): number | null {
+  if (isIncidence) {
+    // Incidence: use proportion difference from control
+    const gInc = g.incidence ?? (g.affected != null && g.n > 0 ? g.affected / g.n : null);
+    const cInc = control.incidence ?? (control.affected != null && control.n > 0 ? control.affected / control.n : null);
+    if (gInc == null || cInc == null) return null;
+    return Math.abs(gInc - cInc);
+  }
+  // Continuous: mean difference
+  if (g.mean == null || control.mean == null) return null;
+  return Math.abs(g.mean - control.mean);
+}
+
+/**
  * Detect non-monotonic dose-response on threshold-classified patterns.
  *
  * Fires when ALL 4 criteria are met:
@@ -198,12 +220,15 @@ function downgradeConfidence(
  *   2. Peak effect is NOT at the highest dose
  *   3. Highest dose shows <50% of peak effect
  *   4. Highest dose pairwise p > 0.05
+ *
+ * SLA-09: Works for both continuous (mean-based) and incidence (proportion-based) data.
  */
 // @field FIELD-54 — non-monotonic dose-response flag
 export function checkNonMonotonic(
   groupStats: GroupStat[],
   pairwise: PairwiseResult[],
   pattern: string,
+  isIncidence: boolean = false,
 ): NonMonotonicFlag {
   // Criterion 1: threshold-type pattern
   if (!THRESHOLD_PATTERNS.has(pattern)) return NOT_TRIGGERED_FLAG;
@@ -212,14 +237,20 @@ export function checkNonMonotonic(
   const sorted = [...groupStats].sort((a, b) => a.dose_level - b.dose_level);
   const control = sorted.find((g) => g.dose_level === 0);
   const treated = sorted.filter((g) => g.dose_level > 0);
-  if (!control || treated.length < 2 || control.mean == null) {
-    return NOT_TRIGGERED_FLAG;
+  if (!control || treated.length < 2) return NOT_TRIGGERED_FLAG;
+
+  // SLA-09: Check that control has the required metric
+  if (isIncidence) {
+    const cInc = control.incidence ?? (control.affected != null && control.n > 0 ? control.affected / control.n : null);
+    if (cInc == null) return NOT_TRIGGERED_FLAG;
+  } else {
+    if (control.mean == null) return NOT_TRIGGERED_FLAG;
   }
 
   // Compute absolute effects relative to control
   const effects = treated.map((g) => ({
     doseLevel: g.dose_level,
-    delta: g.mean != null ? Math.abs(g.mean - control.mean!) : 0,
+    delta: getGroupEffect(g, control, isIncidence) ?? 0,
   }));
 
   // Find peak effect
@@ -238,6 +269,7 @@ export function checkNonMonotonic(
   const highestP = highestPw?.p_value_adj ?? highestPw?.p_value ?? 1.0;
   if (highestP <= 0.05) return NOT_TRIGGERED_FLAG;
 
+  const metricLabel = isIncidence ? "incidence" : "Δ";
   return {
     triggered: true,
     peakDoseLevel: peak.doseLevel,
@@ -247,7 +279,7 @@ export function checkNonMonotonic(
     highestDosePValue: highestP,
     rationale:
       `Non-monotonic dose-response: peak effect at dose level ${peak.doseLevel} ` +
-      `(Δ${peak.delta.toFixed(3)}), but highest dose (level ${highest.doseLevel}) ` +
+      `(${metricLabel}${isIncidence ? "=" : ""}${peak.delta.toFixed(3)}), but highest dose (level ${highest.doseLevel}) ` +
       `shows only ${(reversalRatio * 100).toFixed(0)}% of peak effect ` +
       `(p=${highestP.toFixed(3)} vs control).`,
     consequences: {
@@ -264,17 +296,23 @@ export function checkNonMonotonic(
 /**
  * Check whether JT trend test assumptions hold (variance homogeneity).
  *
- * Fires when EITHER:
+ * For continuous data, fires when EITHER:
  *   - SD ratio: max treated SD / control SD > 2.0
  *   - CV ratio: max group CV / min group CV > 2.0 (groups with n≥3)
  *
- * Penalty = 1 when BOTH fire, 0 when only one fires.
+ * SLA-09: For incidence data, fires when:
+ *   - Small sample: any group has n < 3 (unreliable proportion estimate)
+ *   - Floor/ceiling: control incidence < 5% or > 95% (trend test power reduced)
+ *   - Extreme range: treated incidence span > 60 percentage points
+ *
+ * Penalty = 1 when BOTH continuous criteria fire, or small sample for incidence.
  */
 // @field FIELD-55 — trend test variance homogeneity caveat
 export function checkTrendTestValidity(
   groupStats: GroupStat[],
   trendP: number | null,
   hasValidAncova: boolean = false,
+  isIncidence: boolean = false,
 ): TrendTestCaveat {
   // No trend test → no caveat
   if (trendP == null) return NOT_TRIGGERED_TREND;
@@ -286,6 +324,11 @@ export function checkTrendTestValidity(
   const control = sorted.find((g) => g.dose_level === 0);
   const treated = sorted.filter((g) => g.dose_level > 0);
   if (!control || treated.length === 0) return NOT_TRIGGERED_TREND;
+
+  // SLA-09: Incidence-specific checks — Fisher exact / CMH assumptions
+  if (isIncidence) {
+    return _checkTrendValidityIncidence(sorted, control, treated);
+  }
 
   // Criterion 1: SD ratio vs control
   let sdRatio: number | null = null;
@@ -360,6 +403,92 @@ export function checkTrendTestValidity(
       additionalCaveat: true,
     },
   };
+}
+
+/** SLA-09: Incidence-specific trend test validity checks. */
+function _checkTrendValidityIncidence(
+  sorted: GroupStat[],
+  control: GroupStat,
+  treated: GroupStat[],
+): TrendTestCaveat {
+  // Helper: get incidence proportion from a group
+  const getInc = (g: GroupStat): number | null => {
+    if (g.incidence != null) return g.incidence;
+    if (g.affected != null && g.n > 0) return g.affected / g.n;
+    return null;
+  };
+
+  // Check 1: Small sample — any group with n < 3 (unreliable proportion)
+  const smallSampleGroup = sorted.find((g) => g.n < 3);
+  if (smallSampleGroup) {
+    return {
+      triggered: true,
+      issue: "variance_heterogeneity",
+      sdRatio: null,
+      cvRatio: null,
+      affectedDoseLevel: smallSampleGroup.dose_level,
+      rationale:
+        `Small group size: dose level ${smallSampleGroup.dose_level} has n=${smallSampleGroup.n}. ` +
+        `Proportions from groups with fewer than 3 subjects are unreliable; ` +
+        `trend test significance should be interpreted with caution.`,
+      consequences: {
+        trendEvidenceDowngraded: true,
+        confidencePenalty: 1,
+        additionalCaveat: true,
+      },
+    };
+  }
+
+  // Check 2: Control floor/ceiling (incidence < 5% or > 95%)
+  const controlInc = getInc(control);
+  if (controlInc != null && (controlInc < 0.05 || controlInc > 0.95)) {
+    const pctLabel = (controlInc * 100).toFixed(1);
+    const issue = controlInc < 0.05 ? "floor" : "ceiling";
+    return {
+      triggered: true,
+      issue: "variance_heterogeneity",
+      sdRatio: null,
+      cvRatio: null,
+      affectedDoseLevel: control.dose_level,
+      rationale:
+        `Control incidence at ${issue} (${pctLabel}%). ` +
+        `Trend test power is reduced when baseline rates are near 0% or 100%; ` +
+        `treatment effects may be difficult to detect.`,
+      consequences: {
+        trendEvidenceDowngraded: true,
+        confidencePenalty: 0,
+        additionalCaveat: true,
+      },
+    };
+  }
+
+  // Check 3: Extreme incidence range across treated groups (span > 60pp)
+  const treatedIncs = treated.map(getInc).filter((v): v is number => v != null);
+  if (treatedIncs.length >= 2) {
+    const maxInc = Math.max(...treatedIncs);
+    const minInc = Math.min(...treatedIncs);
+    const span = maxInc - minInc;
+    if (span > 0.60) {
+      return {
+        triggered: true,
+        issue: "variance_heterogeneity",
+        sdRatio: null,
+        cvRatio: null,
+        affectedDoseLevel: null,
+        rationale:
+          `Incidence range ${(minInc * 100).toFixed(0)}%–${(maxInc * 100).toFixed(0)}% ` +
+          `across treated groups (${(span * 100).toFixed(0)} percentage point span). ` +
+          `High variability may compromise trend test robustness.`,
+        consequences: {
+          trendEvidenceDowngraded: true,
+          confidencePenalty: 0,
+          additionalCaveat: true,
+        },
+      };
+    }
+  }
+
+  return NOT_TRIGGERED_TREND;
 }
 
 // ─── Mechanism 2c: Trend Test Concordance ─────────────────────
@@ -741,8 +870,9 @@ export function computeEndpointConfidence(
   williams?: WilliamsTestResult | null,
   hasValidAncova: boolean = false,
 ): EndpointConfidenceResult {
-  const nonMonotonic = checkNonMonotonic(groupStats, pairwise, pattern);
-  const trendCaveat = checkTrendTestValidity(groupStats, trendP, hasValidAncova);
+  const isIncidence = !CONTINUOUS_DOMAINS.has(ep.domain);
+  const nonMonotonic = checkNonMonotonic(groupStats, pairwise, pattern, isIncidence);
+  const trendCaveat = checkTrendTestValidity(groupStats, trendP, hasValidAncova, isIncidence);
   const concordance = checkTrendConcordance(trendP, williams);
   const normCaveat = getNormalizationCaveat(organ, hasEstrousData, miFindings);
   const integrated = integrateConfidence(

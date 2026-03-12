@@ -38,15 +38,18 @@ interface RecoveryDumbbellChartProps {
   onDoseClick?: (doseLevel: number) => void;
 }
 
+// SLA-18: Use canonical harmonized verdict classes
+import { RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
+
 const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
-  resolved: "text-foreground",
-  reversed: "text-foreground",
-  overcorrected: "text-foreground italic",
-  reversing: "text-foreground",
-  partial: "text-muted-foreground",
-  persistent: "text-foreground font-semibold",
-  worsening: "text-foreground font-semibold",
-  not_assessed: "text-muted-foreground",
+  resolved: RECOVERY_VERDICT_CLASS["resolved"],
+  reversed: RECOVERY_VERDICT_CLASS["reversed"],
+  overcorrected: RECOVERY_VERDICT_CLASS["overcorrected"] + " italic",
+  reversing: RECOVERY_VERDICT_CLASS["reversing"],
+  partial: "text-muted-foreground",   // continuous-specific: partial is subdued
+  persistent: RECOVERY_VERDICT_CLASS["persistent"],
+  worsening: RECOVERY_VERDICT_CLASS["worsening"],
+  not_assessed: RECOVERY_VERDICT_CLASS["not_assessed"],
 };
 
 function formatPCompact(p: number): string {

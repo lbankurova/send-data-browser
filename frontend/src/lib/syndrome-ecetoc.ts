@@ -686,7 +686,10 @@ function deriveMagnitudeLevel(
         0,
       );
       if (maxGrade > 0) {
-        return INHAND_MAGNITUDE[Math.round(maxGrade)] ?? "moderate";
+        // SLA-07: Use Math.floor (conservative) instead of Math.round.
+        // grade=1.7 → "minimal" (not "mild"). Display layer formats
+        // fractional grades as "minimal–mild" via formatMagnitudeLevel().
+        return INHAND_MAGNITUDE[Math.floor(maxGrade)] ?? "moderate";
       }
     }
     return "minimal"; // incidence-only with no MI grading
@@ -703,6 +706,32 @@ function deriveMagnitudeLevel(
   if (maxD >= 1.0) return "moderate";
   if (maxD >= 0.5) return "mild";
   return "minimal";
+}
+
+/**
+ * SLA-07: Format magnitude level for display, showing fractional INHAND grades
+ * as ranges (e.g., "minimal–mild" for avg_severity=1.7).
+ */
+const INHAND_LABELS: Record<number, string> = {
+  1: "minimal", 2: "mild", 3: "moderate", 4: "marked", 5: "severe",
+};
+
+export function formatMagnitudeLevel(
+  magnitudeLevel: AdversityAssessment["magnitudeLevel"],
+  miEps?: EndpointSummary[],
+): string {
+  if (!miEps || miEps.length === 0) return magnitudeLevel;
+
+  const maxGrade = miEps.reduce<number>(
+    (max, ep) => Math.max(max, Math.abs(ep.maxEffectSize ?? 0)),
+    0,
+  );
+  if (maxGrade <= 0 || Number.isInteger(maxGrade)) return magnitudeLevel;
+
+  const lower = INHAND_LABELS[Math.floor(maxGrade)];
+  const upper = INHAND_LABELS[Math.ceil(maxGrade)];
+  if (!lower || !upper || lower === upper) return magnitudeLevel;
+  return `${lower}–${upper}`;
 }
 
 /** REM-21: Extract max histopathologic severity grade from actual MI data.
