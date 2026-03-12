@@ -32,7 +32,7 @@ export interface OrganSummary {
   trCount: number;
   /** @deprecated Use maxCohensD / maxSeverity instead. Kept for sorting compatibility. */
   maxEffectSize: number;
-  /** SLA-01: Max Cohen's d from continuous domains (LB, BW, OM, EG, VS, BG, FW). Null if no continuous endpoints. */
+  /** SLA-01: Max effect size (Hedges' g by default) from continuous domains (LB, BW, OM, EG, VS, BG, FW). Null if no continuous endpoints. */
   maxCohensD: number | null;
   /** SLA-01: Max INHAND avg severity (1-5) from MI domain. Null if no MI endpoints. */
   maxSeverity: number | null;

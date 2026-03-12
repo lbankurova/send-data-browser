@@ -146,8 +146,8 @@ def evaluate_rules(
         elif pattern == "non_monotonic":
             results.append(_emit(RULES[6], ctx, finding))
 
-        # R10-R11: Effect magnitude (continuous domains only — Cohen's d thresholds)
-        # For MI, max_effect_size is avg_severity (1-5) not Cohen's d — skip magnitude rules.
+        # R10-R11: Effect magnitude (continuous domains only — Hedges' g thresholds)
+        # For MI, max_effect_size is avg_severity (1-5) not Hedges' g — skip magnitude rules.
         # For MA/CL/TF/DS, max_effect_size is None — already skipped.
         from services.analysis.send_knowledge import get_effect_size as _get_es
         es = _get_es(finding)

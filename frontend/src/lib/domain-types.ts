@@ -42,10 +42,9 @@ export function getSeverityGradeFromSummary(f: { domain?: string; maxEffectSize?
 export function effectSizeLabel(domain: string): string {
   if (domain === "MI") return "avg severity";
   if (INCIDENCE_DOMAINS.has(domain)) return "odds ratio";
-  // Returns "|d|" (Cohen's d) for consistency with existing codebase convention.
-  // The backend uses cohens_d field names and "Cohen's d" labels throughout.
-  // If stat method becomes configurable (Cohen's d vs Hedges' g), label and
-  // computation should change together. At typical group sizes (~10/group),
-  // difference is <2% — not currently meaningful to distinguish.
-  return "|d|";
+  // Default effect size method is Hedges' g (small-sample-corrected Cohen's d).
+  // The cohens_d field name is a legacy misnomer — values are Hedges' g.
+  // For settings-aware labels, use getEffectSizeLabel/getEffectSizeSymbol
+  // from stat-method-transforms.ts instead.
+  return "|g|";
 }

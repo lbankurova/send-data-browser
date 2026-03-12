@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 50 | 21 | Missing capability, no spec exists |
+| Gap | 51 | 21 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **75** | **56** | |
+| **Total open** | **76** | **56** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -656,6 +656,13 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** ~~Open~~ All 19/19 SLA findings resolved
 - **Priority:** ~~P2~~ Resolved
 - **Owner hint:** ~~backend-dev (SLA-18), frontend-dev (SLA-09, organ aggregate, SLA-02/07)~~
+
+### GAP-73: Rename `cohens_d` / `maxCohensD` field names to reflect Hedges' g
+- **Files:** `backend/` (pairwise entries use `cohens_d` field), `frontend/src/types/analysis.ts`, `frontend/src/lib/derive-summaries.ts` (`maxCohensD`), `frontend/src/lib/domain-types.ts`, and ~50+ consumers
+- **Issue:** The `cohens_d` field name is a legacy misnomer — values are Hedges' g by default (the small-sample-corrected variant). Labels and comments were fixed (commit TBD), but the structural field names remain `cohens_d` / `maxCohensD` throughout backend JSON output and frontend types. Renaming requires coordinated backend JSON + frontend type + all consumer changes.
+- **Status:** Open
+- **Priority:** P3 — cosmetic correctness, no runtime impact
+- **Owner hint:** backend-dev + frontend-dev (coordinated rename)
 
 ---
 
