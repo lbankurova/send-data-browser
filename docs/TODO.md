@@ -632,7 +632,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Owner hint:** ux-designer
 
 ### GAP-72: SLA fix remaining items (2 unimplemented + partial gaps)
-- **Spec:** `docs/incoming/sla-fix-spec.md`
+- **Spec:** `docs/incoming/archive/sla-fix-spec.md` (archived)
 - **Issue:** Post-implementation review of SLA fix spec identified unimplemented items and several partial gaps from the implemented items.
 - ~~**Unimplemented:**~~
   - ~~**SLA-09:** Incidence quality checks — `checkNonMonotonic()` and `checkTrendTestValidity()` now handle incidence data via `isIncidence` flag. Incidence-specific checks: proportion-based non-monotonic detection, small-sample/floor-ceiling/extreme-range trend validity~~

@@ -290,7 +290,7 @@ Every domain module produces findings with this common structure:
 | `trend_p` | float or null | Trend test p-value |
 | `trend_stat` | float or null | Trend test statistic |
 | `direction` | string or null | `"up"`, `"down"`, or `"none"` |
-| `max_effect_size` | float or null | Maximum absolute effect size across dose groups |
+| `max_effect_size` | float or null | **Polymorphic** — continuous: Cohen's d; MI: avg INHAND severity (1–5); MA/CL/TF/DS: null. Use typed accessors, not raw field. See §Domain-Type Registry. |
 | `min_p_adj` | float or null | Minimum adjusted p-value across dose groups |
 
 #### LB -- Laboratory Test Results
@@ -547,6 +547,28 @@ Follows the MI incidence pattern: counts unique USUBJID per dose group, Fisher's
 **Output fields:** `domain="DS"`, `test_code="MORTALITY"`, `data_type="incidence"`, `mortality_count=<int>`. No specimen, no avg_severity, no max_effect_size.
 
 **NOTE:** DS is processed in the generator pipeline (`domain_stats.py`) and included in the enrichment loop. The `organ_map.py` maps DS domain to `"general"` organ system by default.
+
+#### Domain-Type Registry & Typed Accessors
+
+`max_effect_size` is a **polymorphic field** whose semantics depend on domain. Three incompatible metrics share one column:
+
+| Effect type | Domains | `max_effect_size` value | Scale |
+|-------------|---------|------------------------|-------|
+| `cohens_d` | LB, BW, OM, EG, VS, BG, FW | Standardized mean difference | ~0–3+ |
+| `severity_grade` | MI | Average INHAND pathologist grade | 1–5 ordinal |
+| `incidence` | MA, CL, TF, DS | `null` | N/A |
+
+**Downstream code must never consume `max_effect_size` directly.** Typed accessors enforce correct semantics:
+
+| Accessor | Language | File | Returns |
+|----------|----------|------|---------|
+| `get_effect_size(finding)` | Python | `send_knowledge.py` | Cohen's d for continuous, `None` otherwise |
+| `get_severity_grade(finding)` | Python | `send_knowledge.py` | INHAND grade for MI, `None` otherwise |
+| `getEffectSize(f)` | TypeScript | `domain-types.ts` | Cohen's d for continuous, `null` otherwise |
+| `getSeverityGrade(f)` | TypeScript | `domain-types.ts` | INHAND grade for MI, `null` otherwise |
+| `effectSizeLabel(domain)` | TypeScript | `domain-types.ts` | Domain-aware display label ("|g|", "avg severity", "odds ratio") |
+
+Canonical domain sets: `DOMAIN_EFFECT_TYPE` (Python, `send_knowledge.py`), `INCIDENCE_DOMAINS` / `CONTINUOUS_DOMAINS` (TypeScript, `domain-types.ts`).
 
 ### Phase 3: Classification & Enrichment
 
@@ -1017,8 +1039,8 @@ Evaluates 16 rules (R01-R16) in three passes:
 | R07 | endpoint | info | `dose_response_pattern == "non_monotonic"` | `"Non-monotonic: {endpoint_label} shows inconsistent dose-response in {sex}. Consider biological plausibility."` |
 | R08 | organ | warning | `target_organ_flag == True` | `"Target organ: {organ_system} identified with convergent evidence from {n_domains} domains ({domains})."` |
 | R09 | organ | info | `n_domains >= 2` | `"Multi-domain evidence for {organ_system}: {n_endpoints} endpoints across {domains}."` |
-| R10 | endpoint | warning | `abs(max_effect_size) >= 1.0` | `"Large effect: {endpoint_label} shows Cohen's d = {effect_size:.2f} at high dose in {sex}."` |
-| R11 | endpoint | info | `0.5 <= abs(max_effect_size) < 1.0` | `"Moderate effect: {endpoint_label} shows Cohen's d = {effect_size:.2f} at high dose."` |
+| R10 | endpoint | warning | `abs(max_effect_size) >= 1.0` | `"Large effect: {endpoint_label} shows {effect_size_label} = {effect_size:.2f} at high dose in {sex}."` (label via `effect_size_label()`) |
+| R11 | endpoint | info | `0.5 <= abs(max_effect_size) < 1.0` | `"Moderate effect: {endpoint_label} shows {effect_size_label} = {effect_size:.2f} at high dose."` (label via `effect_size_label()`) |
 | R12 | endpoint | warning | `domain in ("MI", "MA", "CL") AND direction == "up" AND severity != "normal"` | `"Histopathology: increased incidence of {finding} in {specimen} at high dose ({sex})."` |
 | R13 | endpoint | info | `domain in ("MI", "MA", "CL") AND dose_response_pattern in ("monotonic_increase", "threshold") AND avg_severity is not None` | `"Severity grade increase: {finding} in {specimen} shows dose-dependent severity increase."` |
 | R14 | study | info | `noael_dose_level is not None` | `"NOAEL established at {noael_label} ({noael_dose_value} {noael_dose_unit}) for {sex}."` |

@@ -1318,7 +1318,7 @@ Classifies every computed field in `unified_findings.json` by authoritative sour
 | `severity` | backend | `classify_severity()` |
 | `treatment_related` | backend | `determine_treatment_related()` |
 | `direction` | backend | Max \|Cohen's d\| selection |
-| `max_effect_size` | backend | Max \|Cohen's d\| across pairwise |
+| `max_effect_size` | backend | **Polymorphic** — semantics depend on domain. Continuous (LB/BW/OM/EG/VS/BG/FW): Cohen's d. MI: avg INHAND severity grade (1–5). MA/CL/TF/DS: null. **Never consume directly** — use typed accessors: backend `get_effect_size()` / `get_severity_grade()` in `send_knowledge.py`, frontend `getEffectSize()` / `getSeverityGrade()` / `effectSizeLabel()` in `domain-types.ts`. See `DOMAIN_EFFECT_TYPE` registry. |
 | `min_p_adj` | backend | Min adjusted p-value |
 | `max_fold_change` | backend | Direction-aligned treated/control ratio |
 | `max_incidence` | backend | Max incidence across treated groups |
