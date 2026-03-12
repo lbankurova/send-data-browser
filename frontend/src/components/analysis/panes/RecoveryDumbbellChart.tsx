@@ -651,7 +651,7 @@ function DumbbellPanel({
                   title={cr.doseLabel}
                 />
                 <span className={`inline-block w-[70px] shrink-0 ${CONT_VERDICT_CLASS[cr.verdict]}`}>
-                  {CONT_VERDICT_LABEL[cr.verdict]}{cr.confidence === "low" ? " *" : ""}:
+                  {CONT_VERDICT_LABEL[cr.verdict]}{cr.confidence === "low" ? <span className="cursor-help" title="Low confidence: n < 5 in recovery group"> *</span> : ""}:
                 </span>
                 <span className="text-muted-foreground">{desc}</span>
               </span>

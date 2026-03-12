@@ -595,7 +595,7 @@ describe("modeToSessionValue", () => {
     expect(modeToSessionValue("absolute")).toBe("absolute");
     expect(modeToSessionValue("body_weight")).toBe("ratio-bw");
     expect(modeToSessionValue("brain_weight")).toBe("ratio-brain");
-    expect(modeToSessionValue("ancova")).toBe("ratio-brain"); // Phase 1 fallback
+    expect(modeToSessionValue("ancova")).toBe("absolute"); // ANCOVA not yet implemented as display metric
   });
 });
 

@@ -790,8 +790,8 @@ function DetailsTab({
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
-  const [organWeightMethod, setOrganWeightMethod] = useSessionState(
-    `pcc.${studyId}.organWeightMethod`, "absolute", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
+  const [organWeightMethod] = useSessionState(
+    `pcc.${studyId}.organWeightMethod`, "recommended", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
   );
   const [recoveryPooling] = useSessionState(
     `pcc.${studyId}.recoveryPooling`, "pool", isOneOf(RECOVERY_POOLING_VALUES),
@@ -814,25 +814,6 @@ function DetailsTab({
   // Normalization engine — fetches findings if not already cached.
   // Shared query key with findings view → zero extra calls if already visited.
   const normalization = useOrganWeightNormalization(studyId, true, effectSizeMethod);
-
-  // Auto-set organ weight method: tier-based when normalization data available,
-  // otherwise fall back to signal-based BW adverse+down heuristic.
-  const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
-  useEffect(() => {
-    if (normalization.highestTier >= 3 && organWeightMethod === "absolute") {
-      setOrganWeightMethod(normalization.worstBrainG != null ? "ratio-brain" : "ratio-bw");
-      return;
-    }
-    // Fallback: signal-based auto-set when normalization data not yet cached
-    if (normalization.highestTier <= 1) {
-      const bwSig = domainSignals["bw"];
-      if (!bwSig) return;
-      const hasBwDown = [...bwSig.endpoints.values()].some(ep => ep.adverse && ep.direction === "down");
-      if (hasBwDown && organWeightMethod === "absolute") {
-        setOrganWeightMethod("ratio-brain");
-      }
-    }
-  }, [normalization.highestTier, domainSignals, organWeightMethod, setOrganWeightMethod]);
 
   // Interpretation context notes from species/vehicle/route + BW confounding
   const interpretationNotes = useMemo(() => {

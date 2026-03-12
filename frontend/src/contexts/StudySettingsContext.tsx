@@ -15,7 +15,7 @@ export const MULTIPLICITY_VALUES = ["dunnett-fwer", "bonferroni"] as const;
 export const PAIRWISE_TEST_VALUES = ["dunnett", "williams", "steel"] as const;
 export const TREND_TEST_VALUES = ["jonckheere", "cuzick", "williams-trend"] as const;
 export const INCIDENCE_TREND_VALUES = ["cochran-armitage", "logistic-slope"] as const;
-export const ORGAN_WEIGHT_METHOD_VALUES = ["absolute", "ratio-bw", "ratio-brain"] as const;
+export const ORGAN_WEIGHT_METHOD_VALUES = ["recommended", "absolute", "ratio-bw", "ratio-brain"] as const;
 
 // ── Types (derived from the arrays) ──────────────────────────
 
@@ -54,7 +54,7 @@ export const SETTINGS_DEFAULTS: StudySettings = {
   pairwiseTest: "dunnett",
   trendTest: "jonckheere",
   incidenceTrend: "cochran-armitage",
-  organWeightMethod: "absolute",
+  organWeightMethod: "recommended",
 };
 
 const StudySettingsContext = createContext<StudySettingsContextValue>({

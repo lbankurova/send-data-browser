@@ -12,7 +12,7 @@ const DEFAULTS: StudySettings = {
   pairwiseTest: "dunnett",
   trendTest: "jonckheere",
   incidenceTrend: "cochran-armitage",
-  organWeightMethod: "absolute",
+  organWeightMethod: "recommended",
 };
 
 function withOverrides(overrides: Partial<StudySettings>): StudySettings {
@@ -93,8 +93,8 @@ describe("buildSettingsParams", () => {
   });
 
   it("serializes organWeightMethod when non-default", () => {
-    const qs = buildSettingsParams(withOverrides({ organWeightMethod: "ratio-bw" }));
-    expect(parseQS(qs).get("organ_weight_method")).toBe("ratio-bw");
+    const qs = buildSettingsParams(withOverrides({ organWeightMethod: "absolute" }));
+    expect(parseQS(qs).get("organ_weight_method")).toBe("absolute");
   });
 
   // ── Multiple non-defaults ────────────────────────────────

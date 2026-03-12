@@ -331,11 +331,29 @@ class TestPhase3Integration:
         assert findings[0]["normalization"]["active_metric"] == "ratio_to_bw"
         assert findings[0]["group_stats"][0]["mean"] == 0.035  # ratio stats
 
-        # Swap back to absolute (saved in alternatives during first swap)
-        # Need to simulate the "absolute" method — manually swap back
-        f = findings[0]
-        alt_abs = f["alternatives"].get("absolute")
-        assert alt_abs is not None, "Original absolute stats should be saved in alternatives"
-        assert alt_abs["group_stats"] == original_gs
-        assert alt_abs["pairwise"] == original_pw
-        assert alt_abs["trend_p"] == original_trend
+        # Swap back to absolute via the method map
+        apply_organ_weight_method(findings, "absolute")
+        assert findings[0]["normalization"]["active_metric"] == "absolute"
+        assert findings[0]["group_stats"] == original_gs
+        assert findings[0]["pairwise"] == original_pw
+        assert findings[0]["trend_p"] == original_trend
+
+    def test_force_absolute_noop_when_already_absolute(self):
+        """Force absolute is a no-op when primary is already absolute."""
+        findings = [_om_finding_with_alternatives()]
+        original_gs = copy.deepcopy(findings[0]["group_stats"])
+        apply_organ_weight_method(findings, "absolute")
+        assert findings[0]["group_stats"] == original_gs
+        assert findings[0]["normalization"]["active_metric"] == "absolute"
+
+    def test_recommended_default_skips_transform(self):
+        """Default 'recommended' setting skips apply_organ_weight_method entirely."""
+        findings = [_om_finding_with_alternatives()]
+        original_gs = copy.deepcopy(findings[0]["group_stats"])
+        for f in findings:
+            f.setdefault("test_name", "WEIGHT")
+        settings = AnalysisSettings()  # default organ_weight_method="recommended"
+        result = apply_settings_transforms(findings, settings)
+        # No swap should have occurred
+        assert result[0]["group_stats"] == original_gs
+        assert result[0]["normalization"]["active_metric"] == "absolute"
