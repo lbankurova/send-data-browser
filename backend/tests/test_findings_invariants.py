@@ -4,6 +4,7 @@ Catches cross-module contract violations that unit tests miss — each module
 may be correct in isolation, but the assembled output silently wrong.
 
 Loads unified_findings.json and checks domain invariants on every finding.
+Parameterized by study — auto-discovers all studies in generated/.
 Spec: docs/incoming/findings-invariant-audit.md
 """
 
@@ -21,6 +22,20 @@ import pytest
 GENERATED_DIR = Path(__file__).resolve().parent.parent / "generated"
 
 
+def _discover_studies() -> list[str]:
+    """Auto-discover studies with generated unified_findings.json."""
+    if not GENERATED_DIR.is_dir():
+        return []
+    return sorted(
+        d.name
+        for d in GENERATED_DIR.iterdir()
+        if d.is_dir() and (d / "unified_findings.json").exists()
+    )
+
+
+STUDIES = _discover_studies()
+
+
 def _load_findings(study: str) -> list[dict]:
     path = GENERATED_DIR / study / "unified_findings.json"
     if not path.exists():
@@ -30,9 +45,14 @@ def _load_findings(study: str) -> list[dict]:
     return data["findings"]
 
 
+@pytest.fixture(params=STUDIES or [pytest.param("PointCross", marks=pytest.mark.skip(reason="No generated studies"))], scope="module")
+def study_name(request) -> str:
+    return request.param
+
+
 @pytest.fixture(scope="module")
-def findings() -> list[dict]:
-    return _load_findings("PointCross")
+def findings(study_name: str) -> list[dict]:
+    return _load_findings(study_name)
 
 
 # ---------------------------------------------------------------------------
@@ -704,13 +724,13 @@ class TestD_ClassificationPipeline:
             + "\n".join(violations)
         )
 
-    def test_D5_signal_score_non_negative(self):
+    def test_D5_signal_score_non_negative(self, study_name):
         """Every signal_score in study_signal_summary.json must be >= 0.
 
         signal_score is computed per endpoint per dose group at generation
         time and stored in a separate file from unified_findings.json.
         """
-        path = GENERATED_DIR / "PointCross" / "study_signal_summary.json"
+        path = GENERATED_DIR / study_name / "study_signal_summary.json"
         if not path.exists():
             pytest.skip("No study_signal_summary.json")
         with open(path) as fp:
@@ -940,9 +960,9 @@ class TestG_EnrichmentPipeline:
     time into study_signal_summary.json and target_organ_summary.json.
     """
 
-    def test_G1_every_signal_row_has_required_fields(self):
+    def test_G1_every_signal_row_has_required_fields(self, study_name):
         """Every row in study_signal_summary must have the core fields."""
-        path = GENERATED_DIR / "PointCross" / "study_signal_summary.json"
+        path = GENERATED_DIR / study_name / "study_signal_summary.json"
         if not path.exists():
             pytest.skip("No study_signal_summary.json")
         with open(path) as fp:
@@ -964,9 +984,9 @@ class TestG_EnrichmentPipeline:
             + "\n".join(violations)
         )
 
-    def test_G2_signal_scores_in_valid_range(self):
+    def test_G2_signal_scores_in_valid_range(self, study_name):
         """signal_score must be in [0, 1]."""
-        path = GENERATED_DIR / "PointCross" / "study_signal_summary.json"
+        path = GENERATED_DIR / study_name / "study_signal_summary.json"
         if not path.exists():
             pytest.skip("No study_signal_summary.json")
         with open(path) as fp:
@@ -984,11 +1004,11 @@ class TestG_EnrichmentPipeline:
             + "\n".join(violations)
         )
 
-    def test_G3_target_organ_summary_consistent(self):
+    def test_G3_target_organ_summary_consistent(self, study_name):
         """target_organ_summary entries must have valid structure and
         non-negative evidence scores.
         """
-        path = GENERATED_DIR / "PointCross" / "target_organ_summary.json"
+        path = GENERATED_DIR / study_name / "target_organ_summary.json"
         if not path.exists():
             pytest.skip("No target_organ_summary.json")
         with open(path) as fp:
