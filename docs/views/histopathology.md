@@ -731,9 +731,11 @@ Panes:
    - **Notes** (info blocks): suppressed protective findings, etc.
 3. **Syndrome detected** (conditional) — shows matched syndromes from `detectSyndromes()` for this specimen's organ
 4. **Lab correlates** — organ-relevant lab test correlations from `useSpecimenLabCorrelation`
-5. **Laterality** (conditional) — laterality distribution for paired organs
-6. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`)
-7. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
+5. **Peer comparison** (conditional on `peerRows.length > 0`, default closed) — `PeerComparisonPane` showing cross-study peer comparison data for the specimen
+6. **Recovery assessment** (conditional on `specimenHasRecovery && recoveryClassifications.length > 0`, default closed) — `RecoveryAssessmentPane` showing per-finding recovery classifications and specimen-level recovery summary
+7. **Laterality** (conditional) — laterality distribution for paired organs
+8. **Pathology Review** — `PathologyReviewForm` (specimen-level, keyed by `specimen:{name}`, not wrapped in CollapsiblePane)
+9. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
 
 Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathReviews)` where `pathReviews` is fetched by the wrapper and passed through.
 
@@ -748,14 +750,15 @@ Panes in order (follows design system priority: insights > stats > related > ann
 2. **Dose-response pattern** — shows pattern classification details for the selected finding
 3. **Concordant findings** — other findings with similar dose-response pattern or co-occurring in the same dose groups
 4. **Dose detail** (default open) — all dose-level rows for finding + specimen, sorted by dose_level then sex. Table columns: Dose (`<DoseLabel>`), Sex, Incid. (right-aligned font-mono), mini dose ramp bar (color from `getDoseGroupColor(dose_level)`), Avg sev (right-aligned font-mono), Sev (colored text: adverse red, warning amber, normal green). The mini dose ramp is a `h-1.5 rounded-full` horizontal bar (track `bg-gray-100`, fill colored by dose group) showing relative incidence percentage per row.
-5. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
-6. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
-7. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
-8. **Lab correlates** — organ-relevant lab test data correlated with the histopathology finding
-9. **Laterality** (conditional) — laterality distribution for paired organs (left/right/bilateral counts)
-10. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
-11. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
-12. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
+5. **Result modifiers (SUPP)** (conditional on `dominant_distribution` or `dominant_temporality` or `modifier_raw` existing in finding rows, default closed) — aggregates distribution and temporality modifier counts across dose rows. Shows distribution label/count pairs, temporality label/count pairs, and source note with unique modifier value count from SUPP domain.
+6. **Sex comparison** (conditional, default open) — only shown when finding has data from both sexes. Per-sex row: affected/total + max severity badge with `getNeutralHeatColor()`.
+7. **Recovery** (conditional, default open) — only shown when `specimenHasRecovery` and finding has non-trivial recovery verdicts. Uses `RecoveryPaneContent` rendering per-dose `RecoveryDoseBlock` components. Each block shows: dose group label + recovery period, main arm incidence (with mini bar), recovery arm incidence (with mini bar), avg severity for both, verdict assessment, and clickable recovery subject links with severity values. Special cases: `insufficient_n` verdict skips the comparison and shows "Recovery arm has only N subject(s). Minimum 3 required for meaningful comparison." `anomaly` verdict adds a bordered warning block (`border-border/50 bg-muted/20`) with explanation text about delayed onset or data quality issues.
+8. **Correlating evidence** (default open) — up to 10 other findings in same specimen, sorted by max severity desc, with severity badge colored by `getNeutralHeatColor()`
+9. **Lab correlates** — organ-relevant lab test data correlated with the histopathology finding
+10. **Laterality** (conditional) — laterality distribution for paired organs (left/right/bilateral counts)
+11. **Pathology review** — `PathologyReviewForm` (not wrapped in CollapsiblePane, uses own form state)
+12. **Tox Assessment** — `ToxFindingForm` keyed by finding (not wrapped in CollapsiblePane)
+13. **Related views** (default closed) — "View study summary", "View dose-response", "View NOAEL determination" links
 
 ---
 

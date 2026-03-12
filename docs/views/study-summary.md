@@ -50,20 +50,20 @@ The Study Summary View itself is split into two tabs with a shared tab bar:
 
 ## Tab 1: Study Details
 
-Fixed header + scrollable body. The profile block is a frozen `shrink-0 border-b` section; everything below scrolls in `flex-1 overflow-auto`. Contains sections in vertical stack: Study Profile Block (two-column), Provenance Warnings (conditional), Study Timeline (in card), Domain Table (in CollapsiblePane), and Data Quality (in CollapsiblePane, default closed).
+Fixed header + scrollable body. The profile block is a frozen `shrink-0 border-b` section; everything below scrolls in `flex-1 overflow-auto`. Contains sections in vertical stack: Study Profile Block (single-column stack), Provenance Warnings (conditional), Study Timeline (in card), Domain Table (in CollapsiblePane), and Data Quality (in CollapsiblePane, default closed).
 
 ### Study Profile Block
 
-Dense two-column header pinned at top. Container: `shrink-0 border-b px-4 pb-4 pt-4`. Layout: `flex items-start gap-1.5`.
+Dense single-column stack header pinned at top. Container: `shrink-0 border-b px-4 pb-4 pt-4`.
 
-**Zone A — Study identity (55% width):**
+**Study identity lines:**
 
 - **Line 1:** `flex items-baseline gap-1.5 text-sm` — Study ID (`font-semibold`) + subtitle parts (`text-xs text-muted-foreground`, lowercase, separated by `|` dividers). Ends with `{nGroups} groups, {totalSubjects} subjects`.
 - **Line 2:** `mt-1 space-y-0.5 text-[10px] text-muted-foreground` — "Groups: {doseLabels}" comma-joined ascending.
 - **Line 3:** Arms breakdown — "Arms: Main: {N}" with optional ` · Recovery: {N}` and ` · TK satellite: {N}`.
 - **Line 4 (conditional):** TK/Recovery notes — "TK satellite subjects excluded from toxicology endpoints" and/or recovery pooling note ("Recovery arms included in treatment-period statistics" or "Recovery arms excluded from treatment-period statistics").
 
-**Zone B — NOAEL & conclusions (45% width, conditional):** Only rendered when NOAEL or target organ data is available. Container: `w-[45%] min-w-0 px-2 pb-2 pt-0.5`.
+**NOAEL & conclusions block (conditional):** Only rendered when NOAEL or target organ data is available. Rendered below study identity lines in the same single-column stack.
 
 - **Line 1 — Stage/NOAEL/LOAEL:** `flex items-baseline gap-1.5 text-xs` — pipeline stage (`font-semibold`, title-cased with underscores replaced), NOAEL (`font-semibold`), LOAEL (`font-semibold`), separated by `|` dividers. Sex qualifier in `text-[10px] text-muted-foreground`.
 - **Metrics block:** `mt-1 space-y-0.5 text-[10px] text-muted-foreground`:

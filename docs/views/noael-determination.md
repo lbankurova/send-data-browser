@@ -165,6 +165,8 @@ Each caveat: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
 
 ## Protective Signals Bar (conditional)
 
+> **Status: Not yet implemented.** This section describes planned functionality that has not been built.
+
 **Component:** `ProtectiveSignalsBar` (defined inline in `NoaelDeterminationView.tsx`)
 
 Rendered after the StudyStatementsBar. Only renders when `aggregateProtectiveFindings(rules)` produces at least one finding.

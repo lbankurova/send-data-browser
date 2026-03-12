@@ -73,7 +73,7 @@ Rendered inside `ViewSection mode="fixed"` when endpoint summaries are available
 The `ViewSection` header displays a dynamic title (left) and action area (right):
 
 **Title (left):** Composed in a `flex items-baseline gap-1.5` span:
-- **Scope label** — "All endpoints" (no scope), "{organName} endpoints" (organ scope), syndrome name (syndrome scope), or endpoint label (endpoint scope).
+- **Scope label** — "All findings" (no scope), "{organName} endpoints" (organ scope), syndrome name (syndrome scope), or endpoint label (endpoint scope).
 - **Count** — `(plottable/total)` when they differ, `(plottable)` when equal. Styled `text-muted-foreground/50`.
 - **Filter labels** — active filter descriptions separated by ` · ` dividers. Styled `text-muted-foreground`.
 - **Selected point stats** (when a scatter dot is selected) — `★ {label} · {symbol}={effectSize} · p={pValue} ({testName})`. Label in `font-medium`, stats in `font-mono`, test name (Dunnett's for LB/BW/OM/FW, Fisher's otherwise) in `text-muted-foreground/60`.
@@ -91,11 +91,9 @@ When endpoints are excluded via Ctrl+click on scatter dots, chips appear in the 
 ### Info Tooltip
 
 An `Info` icon (`h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground`) in the headerRight. Hover-with-delay (150ms hide delay) shows a tooltip (`absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md`) explaining:
-- Dot semantics ("Each dot is one endpoint")
-- Axes (right = larger effect, up = more significant)
-- Reference lines (vertical at |effect| = 0.8, horizontal at p = 0.05)
-- Dot color (gray = higher doses only, warm rose = NOAEL below lowest tested dose)
-- Guidance ("Upper-right quadrant = investigate first")
+- Dot semantics ("One dot per finding, showing the strongest signal across timepoints and sexes.")
+- Axes (→ "Effect size percentile" with note "continuous and incidence ranked separately"; ↑ "Lower p-value (pairwise vs. control)")
+- Guidance ("Investigate the upper-right quadrant first.")
 
 ### Scatter Chart
 
@@ -273,19 +271,37 @@ Three selection priorities:
 - Row: `flex items-center justify-between`
 - Finding name: `text-sm font-semibold` (`<h3>`)
 - Expand/collapse all buttons: `CollapseAllButtons` component in the header row (right side)
-- Subtitle: "{domain} | {sex} | Day {day}" (or "Terminal" if day is null) in `text-[10px] text-muted-foreground`
+- Subtitle: "{domain} | Day {day}" (or "Terminal" if day is null) in `text-[10px] text-muted-foreground`
 
 #### Verdict pane (always visible, not in CollapsiblePane)
 `VerdictPane` component — treatment-relatedness assessment with analytics, NOAEL context, dose-response data, and statistics. Rendered in a `border-b px-4 py-3` container outside of CollapsiblePane.
 
-#### Pane 1: Evidence (default open)
-`EvidencePane` component — statistical evidence summary with finding data, analytics, statistics, and effect size context.
+#### Pane 1: Dose detail (default open)
+`DoseDetailPane` component — dose-level detail table with statistics and dose-response data. Header right shows unit when available.
 
-**OM domain sub-sections (conditionally rendered after EvidencePane):**
+#### Pane 2: Time Course (conditional, default open)
+`TimeCoursePane` component — shown only for continuous-domain findings (`data_type === "continuous"`). Renders a time-series chart showing the endpoint's trajectory across study days by dose group. Manages its own `CollapsiblePane` internally.
+
+#### Pane 3: Distribution (conditional, default open)
+`DistributionPane` component — shown for all findings. Renders individual-value distribution at terminal sacrifice, showing per-animal values by dose group. Manages its own `CollapsiblePane` internally.
+
+#### Pane 4: Recovery (conditional, default open)
+`RecoveryPane` component — shown only when study has recovery arm (`dose_groups` has a `recovery_armcd` entry). `defaultOpen` is `true` unless recovery is "Not examined" (`recoveryNotExamined`). Renders three domain-specific sections:
+- **Histopath (MI/MA):** Per-dose recovery verdicts (reversed/persistent/progressing), classification with confidence, finding nature assessment. Uses `useOrganRecovery` hook.
+- **Continuous (BW, LB, OM, VS, FW, EG, BG):** Recovery vs terminal dumbbell chart with effect size comparison. Uses `useRecoveryComparison` → `rows[]`.
+- **Incidence (CL):** Terminal vs recovery incidence table per dose group with verdicts (Resolved/Improving/Persistent/New in recovery). Uses `useRecoveryComparison` → `incidence_rows[]`.
+
+#### Pane 5: Statistical Evidence (default open)
+`EvidencePane` component — statistical evidence summary with finding data, analytics, statistics, and effect size context. When sibling sex data exists, the pane header includes sex toggle tabs (`F | M`) to switch the active sex.
+
+**OM domain sub-sections (rendered inside the Statistical Evidence CollapsiblePane, after EvidencePane):**
 - **Normalization annotation** — category-specific messaging (GONADAL: absolute weight primary; ANDROGEN_DEPENDENT: androgen status correlation; FEMALE_REPRODUCTIVE: estrous cycle variability; non-reproductive organs at tier ≥ 2: BW confounding tier + active mode).
 - **Normalization alternatives table** — high-dose vs control comparison across absolute, ratio-to-BW, and ratio-to-brain metrics with Δ% column. Shown for GONADAL (ratios grayed), FEMALE_REPRODUCTIVE (always), or when normalization engine recommends showing alternatives (tier ≥ 2).
 - **Williams' trend test comparison** (`WilliamsComparisonPane`) — side-by-side JT vs Williams' results with concordance verdict (concordant/discordant). Expandable step-down detail table showing per-dose test statistic (t̃), critical value, p-value, and significance. Only shown when `finding.williams` is present (OM domain).
-- **ANCOVA effect decomposition** (`ANCOVADecompositionPane`) — shown when `finding.ancova` is present (OM domain, tier >= 3 or brain affected). Displays: model R², slope homogeneity warning (amber when non-parallel), BW slope + p-value, per-dose-group decomposition table (total/direct/indirect effect, % direct, direct p-value with red highlight when p < 0.05), adjusted least-squares means at overall mean BW with raw comparison.
+
+**ANCOVA effect decomposition** (`ANCOVADecompositionPane`) — rendered inside the Statistical Evidence pane after the OM normalization sections. Shown when `finding.ancova` is present (OM domain, tier >= 3 or brain affected). Displays: model R², slope homogeneity warning (amber when non-parallel), BW slope + p-value, per-dose-group decomposition table (total/direct/indirect effect, % direct, direct p-value with red highlight when p < 0.05), adjusted least-squares means at overall mean BW with raw comparison.
+
+**Decomposed confidence / ECI** (`DecomposedConfidencePane`) — rendered inside the Statistical Evidence pane after ANCOVA. Shown when the endpoint has an `endpointConfidence` result. 5-dimension ECI breakdown: statistical evidence, biological plausibility, dose-response quality, trend test validity, trend concordance. Integrated confidence level with limiting factor. NOAEL contribution weight.
 
 **OrganContextPanel — Normalization override form (OWN §8):**
 
@@ -296,24 +312,17 @@ The "Organ weight normalization" pane in `OrganContextPanel` (tier >= 2 only) in
 - **Override indicator:** When `userOverridden === true`, label shows "(user override)" in amber-600 instead of "(auto-selected)".
 - **Data flow:** `useNormalizationOverrides(studyId)` hook wraps `useAnnotations` + `useSaveAnnotation` for the `normalization-overrides` schema. `useOrganWeightNormalization` fetches overrides via `useAnnotations` and applies them in `useMemo` via `applyOverrides()` — sets mode + `userOverridden: true` on all dose-group decisions/contexts for the organ. All 7 callers of the hook automatically see overrides.
 - **Audit trail:** Server-side via `_append_audit_entry()` in `annotations.py` — logs field-level diffs on every save.
-- **Decomposed confidence display** (`DecomposedConfidencePane`) — 5-dimension ECI breakdown: statistical evidence, biological plausibility, dose-response quality, trend test validity, trend concordance. Integrated confidence level with limiting factor. NOAEL contribution weight.
 
-#### Pane 2: Dose detail (default open)
-`DoseDetailPane` component — dose-level detail table with statistics and dose-response data. Header right shows unit when available.
+#### Pane 6: Patterns (conditional, default open)
+`EndpointSyndromePane` + `ConvergenceNote` — shown when the endpoint belongs to cross-domain syndromes or has organ convergence. Title is dynamic: "Patterns" when both syndromes and convergence exist, "Syndromes" when only syndromes, "Patterns" when only convergence. Header right shows syndrome count or "convergence" label. Rendered as a separate `CollapsiblePane`, not merged with Statistical Evidence.
 
-#### Pane 3: Correlations (conditional, default closed)
+#### Pane 7: Correlations (conditional, default closed)
 `CorrelationsPane` component — shown only when correlations have related items that are not purely group-mean based (`basis !== "group_means"`) and have sufficient sample size (`n >= 10`). Explicitly passed `defaultOpen={false}`.
 
-#### Pane 4: Context (default open)
-`ContextPane` component — effect size interpretation and contextual information.
+#### Pane 8: Effect Ranking (default closed)
+`ContextPane` component — effect size interpretation and contextual ranking among all findings. Explicitly passed `defaultOpen={false}`.
 
-#### Pane 5: Recovery (conditional, default open)
-`RecoveryPane` component — shown only when study has recovery arm (`dose_groups` has a `recovery_armcd` entry). Renders three domain-specific sections:
-- **Histopath (MI/MA):** Per-dose recovery verdicts (reversed/persistent/progressing), classification with confidence, finding nature assessment. Uses `useOrganRecovery` hook.
-- **Continuous (BW, LB, OM, VS, FW, EG, BG):** Recovery vs terminal dumbbell chart with effect size comparison. Uses `useRecoveryComparison` → `rows[]`.
-- **Incidence (CL):** Terminal vs recovery incidence table per dose group with verdicts (Resolved/Improving/Persistent/New in recovery). Uses `useRecoveryComparison` → `incidence_rows[]`.
-
-#### Pane 6: Related views (default closed)
+#### Pane 9: Related views (default closed)
 Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contains 4 links:
 
 | Link Text | Target Route |
@@ -433,8 +442,8 @@ useFindingsAnalyticsLocal(studyId)
     │   (endpoint or group)           │                  │
     │          │                      │                  │
     │ FindingsContextPanel            │                  │
-    │   /    |    |    \    \         │                  │
-    │ Verdict Evid Dose Corr Related  │                  │
+    │   /  |   |   |  |   |  \  \   │                  │
+    │ Vrdt Dose TC Dist Rec Evid Corr│                  │
     │          │                      │                  │
     │ useFindingsAnalytics() ─────────┘                  │
     │   (context hook — reads from provider)             │
