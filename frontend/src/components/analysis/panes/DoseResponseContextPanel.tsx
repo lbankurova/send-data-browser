@@ -106,8 +106,30 @@ export function DoseResponseContextPanel({
   // Dose-level breakdown for selected endpoint
   const doseLevelBreakdown = useMemo(() => {
     if (!selection || !metricsData) return null;
-    const rows = metricsData.filter((r) => r.endpoint_label === selection.endpoint_label);
+    let rows = metricsData.filter((r) => r.endpoint_label === selection.endpoint_label);
     if (rows.length === 0) return null;
+    // For multi-day endpoints (e.g. BW with 15 measurement days), filter to
+    // the peak-effect day — the day whose rows have the largest |effect_size|.
+    // Without this, N gets summed across all days producing inflated values.
+    const days = new Set(rows.map((r) => r.day));
+    if (days.size > 1) {
+      let peakDay: number | null = null;
+      let peakEffect = -1;
+      for (const d of days) {
+        if (d == null) continue;
+        const dayRows = rows.filter((r) => r.day === d);
+        for (const r of dayRows) {
+          const abs = r.effect_size != null ? Math.abs(r.effect_size) : 0;
+          if (abs > peakEffect) {
+            peakEffect = abs;
+            peakDay = d;
+          }
+        }
+      }
+      if (peakDay != null) {
+        rows = rows.filter((r) => r.day === peakDay);
+      }
+    }
     // Group by dose level, aggregate across sexes if needed
     const byDose = new Map<number, typeof rows[0][]>();
     for (const r of rows) {
