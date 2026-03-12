@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 function readSession(key: string | undefined): number | undefined {
   if (!key) return undefined;
@@ -22,11 +22,11 @@ interface ResizePanelOptions {
 }
 
 /**
- * Hook for resizable panels. Returns current width and a pointer-down handler
- * to attach to a resize handle element.
+ * Hook for resizable panels. Returns current width, a ref to attach to the
+ * resizable element, and a pointer-down handler for the resize handle.
  *
- * @param initial - default width in px
- * @param options - optional min/max/direction/storageKey
+ * During drag, width is updated via direct DOM manipulation (zero re-renders).
+ * React state + sessionStorage are committed only on pointer-up.
  */
 export function useResizePanel(
   initial: number,
@@ -38,46 +38,59 @@ export function useResizePanel(
   const storageKey = options?.storageKey;
 
   const [width, setWidth] = useState(() => readSession(storageKey) ?? initial);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startW = useRef(0);
+  const widthRef = useRef(width);
+
+  // Keep ref in sync with state (for when state changes outside of drag)
+  useEffect(() => { widthRef.current = width; }, [width]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const targetRef = useRef<any>(null);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      dragging.current = true;
-      startX.current = e.clientX;
-      startW.current = width;
+      const startX = e.clientX;
+      const startW = widthRef.current;
       const el = e.currentTarget as HTMLElement;
       el.setPointerCapture(e.pointerId);
 
+      // If targetRef is attached, use direct DOM updates (zero re-renders).
+      // Otherwise fall back to setState (for multi-element consumers like SubjectHeatmap).
+      const target = targetRef.current as HTMLElement | null;
+      const hasDomTarget = !!target;
+
       const onMove = (ev: PointerEvent) => {
-        if (!dragging.current) return;
-        const delta = ev.clientX - startX.current;
+        const delta = ev.clientX - startX;
         const newW =
           direction === "left"
-            ? startW.current + delta
-            : startW.current - delta;
-        setWidth(Math.max(min, Math.min(max, newW)));
+            ? startW + delta
+            : startW - delta;
+        const clamped = Math.max(min, Math.min(max, newW));
+        widthRef.current = clamped;
+        if (hasDomTarget) {
+          target!.style.width = clamped + "px";
+        } else {
+          setWidth(clamped);
+        }
       };
 
       const onUp = () => {
-        dragging.current = false;
         el.removeEventListener("pointermove", onMove);
         el.removeEventListener("pointerup", onUp);
         el.removeEventListener("pointercancel", onUp);
+        // Single state commit + sessionStorage write on drag end
+        setWidth(widthRef.current);
+        writeSession(storageKey, widthRef.current);
       };
 
       el.addEventListener("pointermove", onMove);
       el.addEventListener("pointerup", onUp);
       el.addEventListener("pointercancel", onUp);
     },
-    [width, min, max, direction],
+    [min, max, direction, storageKey],
   );
 
-  if (storageKey) writeSession(storageKey, width);
-
-  return { width, onPointerDown };
+  return { width, targetRef, onPointerDown };
 }
 
 interface ResizePanelYOptions {
@@ -87,7 +100,7 @@ interface ResizePanelYOptions {
 }
 
 /**
- * Vertical variant — returns current height and a pointer-down handler.
+ * Vertical variant — returns current height, a ref, and a pointer-down handler.
  * Dragging down increases height.
  */
 export function useResizePanelY(
@@ -99,40 +112,49 @@ export function useResizePanelY(
   const storageKey = options?.storageKey;
 
   const [height, setHeight] = useState(() => readSession(storageKey) ?? initial);
-  const dragging = useRef(false);
-  const startY = useRef(0);
-  const startH = useRef(0);
+  const heightRef = useRef(height);
+
+  useEffect(() => { heightRef.current = height; }, [height]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const targetRef = useRef<any>(null);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      dragging.current = true;
-      startY.current = e.clientY;
-      startH.current = height;
+      const startY = e.clientY;
+      const startH = heightRef.current;
       const el = e.currentTarget as HTMLElement;
       el.setPointerCapture(e.pointerId);
 
+      const target = targetRef.current as HTMLElement | null;
+      const hasDomTarget = !!target;
+
       const onMove = (ev: PointerEvent) => {
-        if (!dragging.current) return;
-        const delta = ev.clientY - startY.current;
-        setHeight(Math.max(min, Math.min(max, startH.current + delta)));
+        const delta = ev.clientY - startY;
+        const clamped = Math.max(min, Math.min(max, startH + delta));
+        heightRef.current = clamped;
+        if (hasDomTarget) {
+          target!.style.height = clamped + "px";
+        } else {
+          setHeight(clamped);
+        }
       };
 
       const onUp = () => {
-        dragging.current = false;
         el.removeEventListener("pointermove", onMove);
         el.removeEventListener("pointerup", onUp);
         el.removeEventListener("pointercancel", onUp);
+        setHeight(heightRef.current);
+        writeSession(storageKey, heightRef.current);
       };
 
       el.addEventListener("pointermove", onMove);
       el.addEventListener("pointerup", onUp);
       el.addEventListener("pointercancel", onUp);
     },
-    [height, min, max],
+    [min, max, storageKey],
   );
 
-  if (storageKey) writeSession(storageKey, height);
-
-  return { height, onPointerDown };
+  return { height, targetRef, onPointerDown };
 }

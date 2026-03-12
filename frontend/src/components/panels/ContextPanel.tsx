@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, Component, useState, useEffect } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
@@ -10,21 +11,86 @@ import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
-import { FindingsContextPanel } from "@/components/analysis/panes/FindingsContextPanel";
-import { StudyDetailsContextPanel } from "@/components/analysis/panes/StudyDetailsContextPanel";
-import { NoaelContextPanel } from "@/components/analysis/panes/NoaelContextPanel";
-import { DoseResponseContextPanel } from "@/components/analysis/panes/DoseResponseContextPanel";
-import { HistopathologyContextPanel } from "@/components/analysis/panes/HistopathologyContextPanel";
-import { ValidationContextPanel } from "@/components/analysis/panes/ValidationContextPanel";
-import { SubjectProfilePanel } from "@/components/analysis/panes/SubjectProfilePanel";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
-import { StudyPortfolioContextPanel } from "@/components/portfolio/StudyPortfolioContextPanel";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
-import { Wrench } from "lucide-react";
+import { Loader2, RefreshCw, Wrench } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy-loaded context panel panes — only the active pane is loaded
+const FindingsContextPanel = lazy(() => import("@/components/analysis/panes/FindingsContextPanel").then(m => ({ default: m.FindingsContextPanel })));
+const StudyDetailsContextPanel = lazy(() => import("@/components/analysis/panes/StudyDetailsContextPanel").then(m => ({ default: m.StudyDetailsContextPanel })));
+const NoaelContextPanel = lazy(() => import("@/components/analysis/panes/NoaelContextPanel").then(m => ({ default: m.NoaelContextPanel })));
+const DoseResponseContextPanel = lazy(() => import("@/components/analysis/panes/DoseResponseContextPanel").then(m => ({ default: m.DoseResponseContextPanel })));
+const HistopathologyContextPanel = lazy(() => import("@/components/analysis/panes/HistopathologyContextPanel").then(m => ({ default: m.HistopathologyContextPanel })));
+const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
+const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
+const StudyPortfolioContextPanel = lazy(() => import("@/components/portfolio/StudyPortfolioContextPanel").then(m => ({ default: m.StudyPortfolioContextPanel })));
+
+function PanelFallback() {
+  return (
+    <div className="space-y-3 p-4">
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Loading panel...</span>
+      </div>
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-3/4" />
+    </div>
+  );
+}
+
+class PaneErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Context pane chunk load failed:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center gap-2 p-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            Failed to load panel.
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function LazyPane({ children }: { children: ReactNode }) {
+  return (
+    <PaneErrorBoundary>
+      <Suspense fallback={<PanelFallback />}>{children}</Suspense>
+    </PaneErrorBoundary>
+  );
+}
 
 function MetadataRow({
   label,
@@ -373,11 +439,13 @@ export function ContextPanel() {
   // Subject profile takes priority over route-based panels
   if (selectedSubject && activeStudyId) {
     return (
-      <SubjectProfilePanel
-        studyId={activeStudyId}
-        usubjid={selectedSubject}
-        onBack={() => setSelectedSubject(null)}
-      />
+      <LazyPane>
+        <SubjectProfilePanel
+          studyId={activeStudyId}
+          usubjid={selectedSubject}
+          onBack={() => setSelectedSubject(null)}
+        />
+      </LazyPane>
     );
   }
 
@@ -399,36 +467,38 @@ export function ContextPanel() {
     const selectedStudy = allStudies.find((s) => s.id === selectedStudyId);
     if (selectedStudy) {
       return (
-        <StudyPortfolioContextPanel
-          selectedStudy={selectedStudy}
-          allStudies={allStudies}
-        />
+        <LazyPane>
+          <StudyPortfolioContextPanel
+            selectedStudy={selectedStudy}
+            allStudies={allStudies}
+          />
+        </LazyPane>
       );
     }
   }
 
   if (isFindingsRoute) {
-    return <FindingsContextPanel />;
+    return <LazyPane><FindingsContextPanel /></LazyPane>;
   }
 
   if (isNoaelRoute && activeStudyId) {
-    return <NoaelContextPanelWrapper studyId={activeStudyId} />;
+    return <LazyPane><NoaelContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isDoseResponseRoute && activeStudyId) {
-    return <DoseResponseContextPanelWrapper studyId={activeStudyId} />;
+    return <LazyPane><DoseResponseContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isHistopathologyRoute && activeStudyId) {
-    return <HistopathologyContextPanelWrapper studyId={activeStudyId} />;
+    return <LazyPane><HistopathologyContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isValidationRoute && activeStudyId) {
-    return <ValidationContextPanelWrapper studyId={activeStudyId} />;
+    return <LazyPane><ValidationContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isStudySummaryRoute && activeStudyId) {
-    return <StudySummaryContextPanelWrapper studyId={activeStudyId} />;
+    return <LazyPane><StudySummaryContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (!selectedStudyId) {
