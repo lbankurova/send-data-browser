@@ -207,10 +207,12 @@ class TestCorroborationQuality:
         assert heart_wt_f[0]["corroboration_status"] == "uncorroborated"
 
     def test_heart_weight_m_still_corroborated(self, findings: list[dict]):
-        """Heart weight (M) IS corroborated.
+        """Heart weight (M) is partially corroborated.
 
-        XS09 (Cardiac Toxicity) matches BW decrease which IS
-        treatment_related=True, providing valid cross-domain support.
+        XS09 (Target organ wasting) matches BW decrease + OM decrease, but the
+        MI supporting finding (mammary atrophy, direction=up) contradicts the
+        syndrome's expected direction (down). SLA-16 direction coherence gate
+        downgrades this to partially_corroborated.
         """
         heart_wt_m = [
             f for f in findings
@@ -219,7 +221,7 @@ class TestCorroborationQuality:
             and f["sex"] == "M"
         ]
         assert len(heart_wt_m) == 1
-        assert heart_wt_m[0]["corroboration_status"] == "corroborated"
+        assert heart_wt_m[0]["corroboration_status"] == "partially_corroborated"
 
     def test_alt_f_corroborated(self, findings: list[dict]):
         """ALT (F) corroborated by liver hypertrophy (both tr=True, XS01)."""
@@ -234,7 +236,10 @@ class TestCorroborationQuality:
 
     def test_all_findings_have_corroboration_status(self, findings: list[dict]):
         """Every finding must have a valid corroboration_status."""
-        valid = {"corroborated", "uncorroborated", "not_applicable"}
+        valid = {
+            "corroborated", "partially_corroborated",
+            "uncorroborated", "not_applicable",
+        }
         for f in findings:
             status = f.get("corroboration_status")
             assert status in valid, (
@@ -243,15 +248,18 @@ class TestCorroborationQuality:
             )
 
     def test_corroborated_count(self, findings: list[dict]):
-        """Total corroborated findings should be ~76 (±3 tolerance).
+        """Total corroborated + partially corroborated findings should be ~76.
 
         SLA-05 fix: incidence domain adversity classification changed from
-        B-factor Cohen's d gates to statistical+pattern-based gates, which
-        increased corroboration count from ~67 to ~76.
+        B-factor Cohen's d gates to statistical+pattern-based gates.
+        SLA-16 fix: direction coherence gate splits some corroborated into
+        partially_corroborated (61 full + 15 partial = 76 total).
         """
-        count = sum(1 for f in findings if f["corroboration_status"] == "corroborated")
-        assert 73 <= count <= 79, (
-            f"Corroborated count = {count}, expected 73–79"
+        full = sum(1 for f in findings if f["corroboration_status"] == "corroborated")
+        partial = sum(1 for f in findings if f["corroboration_status"] == "partially_corroborated")
+        total = full + partial
+        assert 73 <= total <= 79, (
+            f"Corroborated count = {full} full + {partial} partial = {total}, expected 73–79"
         )
 
     def test_edge_case_tr_true_severity_normal(self, findings: list[dict]):
