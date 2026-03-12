@@ -38,7 +38,7 @@ CONTINUOUS_DOMAINS: frozenset[str] = frozenset(
 
 
 def get_effect_size(finding: dict) -> float | None:
-    """Returns Cohen's d for continuous domains, None for all others.
+    """Returns effect size (Hedges' g by default) for continuous domains, None for all others.
 
     Falls back to data_type field when domain is not set (e.g. test fixtures).
     """
@@ -68,12 +68,12 @@ def effect_size_label(finding: dict) -> str:
     etype = DOMAIN_EFFECT_TYPE.get(domain)
     if etype == "incidence":
         return "odds ratio"
-    # Returns "Cohen's d" for consistency with existing codebase convention.
-    # The frontend uses "|d|" and cohens_d field names throughout.
-    # If stat method becomes configurable (Cohen's d vs Hedges' g), label and
-    # computation should change together. At typical group sizes (~10/group),
-    # difference is <2% — not currently meaningful to distinguish.
-    return "Cohen's d"
+    # Default effect size method is Hedges' g (small-sample-corrected Cohen's d).
+    # The cohens_d field name is a legacy misnomer — values are Hedges' g.
+    # When user switches to Cohen's d or Glass's delta via analysis settings,
+    # the parameterized pipeline recomputes values; this label is for the
+    # generation-time default only.
+    return "Hedges' g"
 
 # LBTESTCD → biomarker metadata
 BIOMARKER_MAP: dict[str, dict] = {
