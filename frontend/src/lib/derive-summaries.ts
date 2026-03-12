@@ -286,6 +286,7 @@ export function flattenFindingsToDRRows(
         dose_level: gs.dose_level,
         dose_label: dg?.label ?? `Dose ${gs.dose_level}`,
         sex: f.sex,
+        day: f.day,
         mean: gs.mean,
         sd: gs.sd,
         n: gs.n,
