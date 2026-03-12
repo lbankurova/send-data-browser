@@ -85,8 +85,8 @@ def _score_d1_statistical(f: dict) -> dict:
 # D2: Dose-response quality
 # ---------------------------------------------------------------------------
 
-_UPGRADE_PATTERNS = {"monotonic_up", "monotonic_down", "monotonic"}
-_NEUTRAL_PATTERNS = {"threshold", "threshold_up", "threshold_down"}
+_UPGRADE_PATTERNS = {"monotonic_increase", "monotonic_decrease", "monotonic_up", "monotonic_down", "monotonic"}
+_NEUTRAL_PATTERNS = {"threshold_increase", "threshold_decrease", "threshold_up", "threshold_down", "threshold"}
 _DOWNGRADE_PATTERNS = {"non_monotonic", "flat", "u_shaped", "inverted_u"}
 
 def _score_d2_dose_response(f: dict) -> dict:
