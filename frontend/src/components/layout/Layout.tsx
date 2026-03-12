@@ -83,6 +83,7 @@ export function Layout() {
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex min-h-0 flex-1">
                 <aside
+                  ref={left.targetRef}
                   className="shrink-0 overflow-y-auto"
                   style={{ width: left.width }}
                 >
@@ -99,6 +100,7 @@ export function Layout() {
                 </main>
                 <PanelResizeHandle onPointerDown={right.onPointerDown} />
                 <aside
+                  ref={right.targetRef}
                   className="shrink-0 overflow-y-auto"
                   style={{ width: right.width }}
                 >
