@@ -150,11 +150,12 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           <SettingsSelect
             value={organWeightMethod}
             options={[
-              { value: "absolute", label: "Absolute (default)" },
-              { value: "ratio-bw", label: "Ratio to BW" },
-              { value: "ratio-brain", label: "Ratio to brain" },
+              { value: "recommended", label: "Per-organ recommended" },
+              { value: "absolute", label: "Force absolute" },
+              { value: "ratio-bw", label: "Force ratio to BW" },
+              { value: "ratio-brain", label: "Force ratio to brain" },
             ]}
-            onChange={(v) => updateSetting("organWeightMethod", v as "absolute" | "ratio-bw" | "ratio-brain")}
+            onChange={(v) => updateSetting("organWeightMethod", v as "recommended" | "absolute" | "ratio-bw" | "ratio-brain")}
           />
         </SettingsRow>
         {/* Normalization measurements + rationale — shown when tier ≥ 2 and data cached */}

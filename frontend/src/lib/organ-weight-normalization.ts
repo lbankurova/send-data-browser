@@ -964,7 +964,7 @@ export function modeToSessionValue(mode: NormalizationDecision["mode"]): string 
     case "absolute": return "absolute";
     case "body_weight": return "ratio-bw";
     case "brain_weight": return "ratio-brain";
-    case "ancova": return "ratio-brain"; // Phase 1: best available fallback
+    case "ancova": return "absolute"; // ANCOVA not yet implemented as display metric; absolute is safest fallback
   }
 }
 

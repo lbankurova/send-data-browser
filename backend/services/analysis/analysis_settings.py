@@ -31,7 +31,7 @@ class AnalysisSettings:
     pairwise_test: Literal["dunnett", "williams", "steel"] = "dunnett"
     trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = "jonckheere"
     incidence_trend: Literal["cochran-armitage", "logistic-slope"] = "cochran-armitage"
-    organ_weight_method: Literal["absolute", "ratio-bw", "ratio-brain"] = "absolute"
+    organ_weight_method: Literal["recommended", "absolute", "ratio-bw", "ratio-brain"] = "recommended"
 
     def settings_hash(self) -> str:
         """Deterministic hash for cache keying. Uses sorted JSON -> SHA256."""
@@ -54,7 +54,7 @@ def parse_settings_from_query(
     pairwise_test: Literal["dunnett", "williams", "steel"] = Query("dunnett"),
     trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = Query("jonckheere"),
     incidence_trend: Literal["cochran-armitage", "logistic-slope"] = Query("cochran-armitage"),
-    organ_weight_method: Literal["absolute", "ratio-bw", "ratio-brain"] = Query("absolute"),
+    organ_weight_method: Literal["recommended", "absolute", "ratio-bw", "ratio-brain"] = Query("recommended"),
 ) -> AnalysisSettings:
     """FastAPI Depends() parser — reads all 10 query params with defaults."""
     return AnalysisSettings(

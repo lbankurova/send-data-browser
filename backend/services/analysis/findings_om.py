@@ -335,8 +335,10 @@ def compute_om_findings(
             "absolute": abs_arrays,
             "ratio_to_bw": bw_arrays,
         }
+        # Brain-ratio is meaningless for brain itself (brain/brain = 1.0 always)
+        is_brain = get_organ_category(str(specimen)) == "brain"
         has_brain_data = any(len(a) > 0 for a in brain_arrays)
-        if has_brain_data:
+        if has_brain_data and not is_brain:
             metric_map["ratio_to_brain"] = brain_arrays
 
         for metric_name, metric_arrays in metric_map.items():
@@ -355,6 +357,20 @@ def compute_om_findings(
                 "trend_p": alt_trend["p_value"],
                 "trend_stat": alt_trend["statistic"],
             }
+
+        # Invariant: alternatives = computable metrics minus the primary.
+        # This guarantees apply_organ_weight_method can swap to any metric.
+        assert recommended_metric in metric_map, (
+            f"{specimen}/{sex}: active_metric '{recommended_metric}' not in metric_map"
+        )
+        assert recommended_metric not in alternatives, (
+            f"{specimen}/{sex}: active_metric '{recommended_metric}' leaked into alternatives"
+        )
+        assert set(alternatives.keys()) == set(metric_map.keys()) - {recommended_metric}, (
+            f"{specimen}/{sex}: alternatives mismatch — "
+            f"expected {set(metric_map.keys()) - {recommended_metric}}, "
+            f"got {set(alternatives.keys())}"
+        )
 
         # ── Direction determination (from primary metric stats) ──
         direction = None
@@ -409,6 +425,7 @@ def compute_om_findings(
             # ── New: normalization + Williams' ──
             "normalization": {
                 "recommended_metric": norm_decision["metric"],
+                "active_metric": recommended_metric,  # pre-ANCOVA metric actually used for primary stats
                 "organ_category": norm_decision["category"],
                 "tier": norm_decision["tier"],
                 "confidence": norm_decision["confidence"],

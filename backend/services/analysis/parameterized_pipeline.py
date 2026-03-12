@@ -221,7 +221,7 @@ def apply_settings_transforms(
         apply_multiplicity_method(findings, settings.multiplicity)
         changed = True
 
-    if settings.organ_weight_method != "absolute":
+    if settings.organ_weight_method != "recommended":
         apply_organ_weight_method(findings, settings.organ_weight_method)
         changed = True
 
@@ -385,6 +385,7 @@ def apply_multiplicity_method(findings: list[dict], method: str):
 # ---------------------------------------------------------------------------
 
 _OM_METHOD_MAP = {
+    "absolute": "absolute",
     "ratio-bw": "ratio_to_bw",
     "ratio-brain": "ratio_to_brain",
 }
@@ -404,6 +405,12 @@ def apply_organ_weight_method(findings: list[dict], method: str):
     for f in findings:
         if f.get("domain") != "OM":
             continue
+
+        # Brain cannot be normalized to itself — skip ratio-to-brain for brain
+        if alt_key == "ratio_to_brain":
+            organ_cat = f.get("normalization", {}).get("organ_category", "")
+            if organ_cat == "brain":
+                continue
 
         alternatives = f.get("alternatives", {})
         alt_data = alternatives.get(alt_key)
