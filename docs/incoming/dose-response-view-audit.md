@@ -65,7 +65,7 @@ Full UX and domain audit of `DoseResponseView.tsx` (2872 lines), `DoseResponseCo
 The selected endpoint's identity (domain, organ system) appears in:
 1. **Summary header** — `DomainLabel · titleCase(organ_system)` (line 644-646)
 2. **Context panel header subtitle** — `DomainLabel · titleCase(organ_system) [· sex]` (line 170-173)
-3. **Causality worksheet header** (if Hypotheses > Causality is open) — `DomainLabel · organ_system` (line 2619-2623)
+3. **Causality worksheet header** (if Hypotheses > Causality is open) — `DomainLabel · titleCase(organ_system)` (line 2620-2622)
 
 **Impact:** Low. Some duplication is expected between center and right panel since they can be read independently. The causality worksheet header (3rd instance) is unnecessary since the user navigated there explicitly.
 
@@ -293,13 +293,15 @@ This averages male and female group means to produce a single "mean" per dose le
 
 **Recommendation:** Remove this aggregation. Show sex-stratified data, or remove the Statistics pane entirely (see R-02).
 
-### D-06: "Data: continuous" label should show statistical method
+### D-06: Summary header shows raw data type instead of statistical method
 
 Line 704-706: `Data: {selectedSummary.data_type}` shows "continuous" or "categorical." This tells the toxicologist nothing they don't already know from the endpoint domain. What they want is the **statistical method** used: "Dunnett" or "Williams" or "Fisher" — information that affects how they interpret the p-values.
 
-The Metrics tab column does show Method (line 472-477), but the summary header doesn't.
+The Metrics tab column (lines 472-477) already translates `data_type` to method names ("Dunnett"/"Fisher"), creating an inconsistency: the Metrics tab shows the method while the summary header shows the raw data type for the same endpoint.
 
-**Recommendation:** Replace "Data: continuous" with "Method: Dunnett" (or whatever `statMethods` specifies).
+**Impact:** Low-medium. The information is available in the Metrics tab but not surfaced in the header where it would be most useful.
+
+**Recommendation:** Replace "Data: continuous" with "Method: Dunnett" (or whatever `statMethods` specifies), matching the Metrics tab's existing translation.
 
 ### D-07: No fold change shown anywhere for continuous endpoints
 
@@ -389,7 +391,7 @@ The Causality worksheet is always shown in full form view — 5 computed criteri
 
 ## 6. Cross-cutting concerns
 
-### CC-01: DoseResponseView.tsx is 2872 lines
+### CC-01: DoseResponseView.tsx is 2871 lines
 
 This file contains:
 - Data derivation (`deriveEndpointSummaries`, `generateConclusion`, `computeSignalScore`)
@@ -454,7 +456,7 @@ These derive similar but different summaries from different source data. The loc
 | IA-04 | 3 of 6 hypothesis tools are non-functional placeholders | 1889-1896 | IA |
 | IA-05 | Pairwise/Metrics table shows always-empty columns | 380-480 | IA |
 | R-03 | Pattern shown in 3 places (badge, conclusion, pairwise column) | Multiple | Redundancy |
-| CC-01 | File is 2872 lines — should extract major sub-components | — | Code |
+| CC-01 | File is 2871 lines — should extract major sub-components | — | Code |
 | CC-02 | Two `deriveEndpointSummaries` functions with different schemas | 125, DS:281 | Code |
 | IA-06 | Summary header shows study-level NOAEL, not endpoint-level | 707-719 | IA |
 | R-01 | Endpoint identity shown 3 times (summary, CP, causality) | Multiple | Redundancy |
@@ -494,4 +496,32 @@ Remove Statistics pane (redundant with pairwise table). Move Insights to top sin
 ---
 
 *Created: 2026-03-11*
-*Source files: DoseResponseView.tsx (2872 lines), DoseResponseContextPanel.tsx (376 lines), dose-response-charts.ts, derive-summaries.ts*
+*Source files: DoseResponseView.tsx (2871 lines), DoseResponseContextPanel.tsx (376 lines), dose-response-charts.ts, derive-summaries.ts*
+
+---
+
+## 9. Validation against codebase (2026-03-11)
+
+All 19 findings validated against actual source code. Line numbers and code patterns checked by parallel agents.
+
+| Finding | Validation | Corrections |
+|---------|-----------|-------------|
+| R-01 | Confirmed | Causality header uses `titleCase(organ_system)`, not raw — line ref corrected to 2620-2622 |
+| R-02 | Confirmed | — |
+| R-03 | Confirmed | — |
+| R-04 | Confirmed | — |
+| R-05 | Confirmed | — |
+| R-06 | Confirmed | — |
+| D-01 | Confirmed | Code matches verbatim |
+| D-02 | Confirmed | — |
+| D-03 | Confirmed | — |
+| D-04 | Confirmed | — |
+| D-05 | Confirmed | — |
+| D-06 | Partially confirmed | Reclassified: Metrics tab already translates data_type→method name; issue is header/Metrics inconsistency, not absence |
+| D-07 | Confirmed | — |
+| D-08 | Confirmed | — |
+| D-09 | Confirmed | — |
+| IA-01–06 | Confirmed | — |
+| UX-01–05 | Confirmed | — |
+| CC-01 | Confirmed | Line count corrected: 2871 (not 2872) |
+| CC-02 | Confirmed | Local version: 15 fields; canonical: 21 fields — different schemas |

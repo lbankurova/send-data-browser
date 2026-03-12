@@ -1,6 +1,6 @@
 # Scientific Logic Review — SEND Data Browser
 
-**Generated:** 2026-03-10  
+**Generated:** 2026-03-12  
 **Study:** PointCross (RAT, SPRAGUE-DAWLEY, ORAL GAVAGE, 13-week subchronic)  
 **Pipeline:** 61 endpoint summaries → 10 detected syndromes (XS01, XS04, XS05, XS08, XS09, XC03a, XC04c, XS03, XS07, XC01a)
 
@@ -863,17 +863,11 @@ This section shows the system's actual output for each syndrome detected in the 
 | S | Organ weight ↓ | ✓ matched | HEART — HEART (WEIGHT) | OM | ↓ | -2.61 | <0.0001 | 0.68× | threshold_decrease |
 | S | Any atrophy | ○ not sig | GLAND, MAMMARY — ATROPHY | MI | ↑ | n/a | 0.061 | n/a | threshold_increase |
 
-**Directional gate:**
-- gate_fired: true
-- action: weak_against
-- certainty_cap: mechanism_uncertain
-- reason: OM_WT ↑ contradicts expected ↓ for XS09.
-
 ### Interpretation
 
 | Component | Result | Detail |
 |-----------|--------|--------|
-| Certainty | `mechanism_uncertain` | Required findings met. Contradicting evidence from directional gate (weak_against): OM_WT ↑ contradicts expected ↓ for XS09. |
+| Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
 | Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
 | Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |

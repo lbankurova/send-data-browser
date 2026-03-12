@@ -1,18 +1,19 @@
 # Histopathology View Audit
 
 **Date:** 2026-03-11
-**Scope:** Full UX + domain logic audit of HistopathologyView, HistopathologyContextPanel, SpecimenRailMode
+**Updated:** 2026-03-11 (verified against actual code)
+**Scope:** Full UX + domain logic audit of HistopathologyView, panes/HistopathologyContextPanel, SpecimenRailMode
 **Perspective:** Toxicologic pathologist workflow + UX information architecture
 
 ---
 
 ## Executive Summary
 
-The Histopathology view is the most complex surface in SENDEX (~5000 lines across main view + context panel). It is feature-rich and scientifically sophisticated, but has accumulated structural debt:
+The Histopathology view is the most complex surface in SENDEX (~5500 lines across main view + context panel). It is feature-rich and scientifically sophisticated, but has accumulated structural debt:
 
 - **6 redundancies** where the same data appears in multiple locations
 - **4 pane ordering problems** where the context panel doesn't match the pathologist's cognitive workflow
-- **5 missing capabilities** that a toxicologic pathologist would expect
+- **4 missing capabilities** that a toxicologic pathologist would expect
 - **3 structural issues** in information architecture
 - **2 scientific logic concerns** in how evidence is presented
 
@@ -24,36 +25,36 @@ Severity ratings: **S1** = actively misleading or blocks workflow, **S2** = crea
 
 ### R-01: Summary Strip duplicates Context Panel Overview (S2)
 
-**Location:** `HistopathologyView.tsx:2310-2411` (summary strip) vs `HistopathologyContextPanel.tsx:1088-1105` (Overview pane)
+**Location:** `HistopathologyView.tsx:2310-2411` (summary strip) vs `panes/HistopathologyContextPanel.tsx:1088-1105` (Overview pane)
 
 The specimen summary strip shows: name, domains, sex scope, adverse badge, peak incidence, max severity, pattern, findings count, sex skew, recovery status, lab signal, organ weight, syndrome, pattern alerts.
 
 The context panel's "Overview" pane renders the same information as chips: incidence, severity, sex, sex skew, dose relation, findings count, recovery flag.
 
-**Impact:** When both are visible simultaneously (the normal state), the user sees the same 7 metrics in two places. The context panel Overview pane adds no information beyond what the summary strip already shows.
+**Impact:** When both are visible simultaneously (the normal state), the user sees largely the same metrics in two places. The Overview pane adds minimal additional information: enhanced sex skew analysis (Fisher's exact p < 0.10 with 20pp incidence difference threshold vs the strip's plain "males higher"/"females higher"), explicit "non-adverse" labeling when no adverse findings exist, and a "recovery data available" flag. But ~80% of the content is redundant with the strip.
 
-**Recommendation:** Merge the Overview chips into the context panel header (they're conclusion-level data that belongs with identity, not in a collapsible pane). Or remove the Overview pane entirely and let the summary strip serve as the specimen-level conclusion display. The context panel's first pane should be Insights, not a restatement of what's already visible.
+**Recommendation:** Merge the Overview chips into the context panel header (they're conclusion-level data that belongs with identity, not in a collapsible pane). Or remove the Overview pane entirely and promote the enhanced sex skew analysis into the summary strip. The context panel's first pane should be Insights, not a near-restatement of what's already visible.
 
 ---
 
 ### R-02: Syndrome displayed in three locations (S3)
 
 **Location:**
-- Rail item: `SpecimenRailMode.tsx:173-177` (line 3 syndrome badge)
+- Rail item: `SpecimenRailMode.tsx:172-177` (line 3 syndrome badge)
 - Summary strip: `HistopathologyView.tsx:2394-2398`
-- Context panel: `HistopathologyContextPanel.tsx:1114-1141` (Syndrome detected pane)
+- Context panel: `panes/HistopathologyContextPanel.tsx:1114-1141` (Syndrome detected pane)
 
 All three show the syndrome name + required/supporting findings.
 
-**Impact:** Low severity since each location serves a different zoom level (rail = scan, strip = orient, panel = detail). But the context panel's "Syndrome detected" pane is nearly identical to the summary strip line with only slightly more detail (concordant groups, exclusion warning, related organs).
+**Impact:** Low severity since each location serves a different zoom level (rail = scan, strip = orient, panel = detail). The context panel version adds concordant dose groups, related organ matches, related endpoint matches, exclusion warnings, and interpretation notes beyond what the strip/rail show.
 
-**Recommendation:** Keep all three, but differentiate the context panel version more: add dose-group concordance detail, confidence level, and links to navigate to related findings. Currently it's just a text block.
+**Recommendation:** Keep all three. The context panel version already differentiates with concordance and related organ/endpoint data. Could further improve with clickable navigation to related findings.
 
 ---
 
 ### R-03: Adverse count in three locations (S3)
 
-**Location:** Rail item adverse count (`SpecimenRailMode.tsx:140-149`), summary strip badge (`HistopathologyView.tsx:2317-2320`), context panel header badge (`HistopathologyContextPanel.tsx:1066-1069`).
+**Location:** Rail item adverse count (`SpecimenRailMode.tsx:140-149`), summary strip badge (`HistopathologyView.tsx:2317-2320`), context panel header badge (`panes/HistopathologyContextPanel.tsx:1066-1069`).
 
 **Impact:** Negligible. Standard master-detail repetition. No action needed.
 
@@ -61,7 +62,7 @@ All three show the syndrome name + required/supporting findings.
 
 ### R-04: Finding-level Insights pane conflates three different evidence types (S2)
 
-**Location:** `HistopathologyContextPanel.tsx:1946-1985`
+**Location:** `panes/HistopathologyContextPanel.tsx:1946-1985`
 
 The finding-level "Insights" pane contains:
 1. Rule-based signal insights (treatment-related, clinical significance, decreased)
@@ -82,8 +83,8 @@ These answer three fundamentally different questions:
 ### R-05: Dose-response pattern in header AND dedicated pane (S3)
 
 **Location:**
-- Header metrics: `HistopathologyContextPanel.tsx:1939` ("Pattern: {doseTrend}")
-- Dose-response pattern pane: `HistopathologyContextPanel.tsx:1987-2006`
+- Header metrics: `panes/HistopathologyContextPanel.tsx:1939` ("Pattern: {doseTrend}")
+- Dose-response pattern pane: `panes/HistopathologyContextPanel.tsx:1987-2006`
 
 The header shows the pattern label. The pane shows pattern + confidence + confidence factors + alerts.
 
@@ -95,7 +96,7 @@ The header shows the pattern label. The pane shows pattern + confidence + confid
 
 ### R-06: Two annotation forms at finding-level with unclear differentiation (S2)
 
-**Location:** `HistopathologyContextPanel.tsx:2285-2293`
+**Location:** `panes/HistopathologyContextPanel.tsx:2285-2293`
 
 PathologyReviewForm and ToxFindingForm both appear at finding-level. The first is for peer review workflow (agree/disagree/resolution). The second is for toxicologist assessment (endpoint label, conclusion).
 
@@ -156,7 +157,7 @@ PathologyReviewForm and ToxFindingForm both appear at finding-level. The first i
 
 ### O-02: "Peer comparison" default-closed at specimen-level hides critical decision data (S2)
 
-**Location:** `HistopathologyContextPanel.tsx:1152-1157`
+**Location:** `panes/HistopathologyContextPanel.tsx:1152-1157`
 
 The Peer Comparison pane (HCD table) is `defaultOpen={false}`. Historical control comparison is one of the most important factors in determining whether a finding is spontaneous vs treatment-related. A pathologist ALWAYS checks background incidence.
 
@@ -167,8 +168,8 @@ The Peer Comparison pane (HCD table) is `defaultOpen={false}`. Historical contro
 ### O-03: Lab correlates default-closed despite high value (S3)
 
 **Location:**
-- Specimen-level: `HistopathologyContextPanel.tsx:1146`
-- Finding-level: `HistopathologyContextPanel.tsx:2252`
+- Specimen-level: `panes/HistopathologyContextPanel.tsx:1146`
+- Finding-level: `panes/HistopathologyContextPanel.tsx:2252`
 
 Both default to `defaultOpen={false}`. Lab-histopath correlation is a key part of weight-of-evidence assessment. The summary strip already hints at lab signals (signal dots), but the user has to manually open the pane to see which tests are affected.
 
@@ -178,7 +179,7 @@ Both default to `defaultOpen={false}`. Lab-histopath correlation is a key part o
 
 ### O-04: "Correlating evidence" placed too late at finding-level (S3)
 
-**Location:** `HistopathologyContextPanel.tsx:2198-2248` (pane #8 of 13)
+**Location:** `panes/HistopathologyContextPanel.tsx:2198-2248` (pane #8 of 13)
 
 Cross-organ coherence (same finding in other specimens) is important weight-of-evidence data. If the same finding appears in liver AND kidney, that changes interpretation. Currently this is buried below dose detail, SUPP modifiers, sex comparison, and recovery.
 
@@ -212,16 +213,6 @@ Cross-organ coherence (same finding in other specimens) is important weight-of-e
 
 ---
 
-### M-04: Cross-organ links in context panel don't preserve finding context (S3)
-
-**Location:** `HistopathologyContextPanel.tsx:2228-2235`
-
-Cross-organ matches are clickable links that navigate to the other specimen. But the finding is already pre-selected via `endpoint: selection.finding` in the `navigateTo` call, which does correctly preserve context.
-
-**Status:** Actually implemented correctly. The code at line 2234 passes `endpoint: selection.finding`. **Retracted** — this is working as expected.
-
----
-
 ### M-05: No aggregate "weight of evidence" summary at specimen-level (S2)
 
 **Impact:** A pathologist assessing a specimen needs to form a holistic conclusion: "Is this specimen affected by treatment?" The context panel shows individual pieces (insights, dose pattern, HCD, recovery, syndrome) but never synthesizes them into one conclusion. The "Overview" chips are descriptive (incidence: high, severity: adverse) but not interpretive (treatment-related: yes, based on dose-response + concordance + HCD comparison).
@@ -234,18 +225,19 @@ This is what CLAUDE.md calls "the system computes what it can" — the pieces ex
 
 ## 4. Structural Issues
 
-### S-01: HistopathologyContextPanel.tsx is too large (2403 lines) (S3)
+### S-01: panes/HistopathologyContextPanel.tsx is too large (2403 lines) (S3)
 
-The file contains:
+The file at `components/analysis/panes/HistopathologyContextPanel.tsx` contains:
 - LabCorrelatesPane (lines 54-133)
 - RecoveryAssessmentPane (lines 137-234)
 - PeerComparisonPane (lines 247-338)
-- Specimen insights derivation (lines 350-600+)
-- Recovery pane content (lines 1254-1600)
+- Specimen insights derivation (lines 340-582)
+- RecoveryInsightBlock (lines 584-624)
+- specimenToOrganSystem + lookup tables (lines 627-654)
 - SpecimenOverviewPane (lines 688-1250)
+- RecoveryPaneContent + RecoveryDoseBlock (lines 1254-1601)
 - FindingDetailPane (lines 1603-2341)
-- Main export (lines 2343-2403)
-- Plus the organ mapping function `specimenToOrganSystem` (exported, consumed by 3 other files)
+- Main export with usePaneHistory (lines 2343-2403)
 
 **Recommendation:** Extract into separate files:
 - `panes/histopath/LabCorrelatesPane.tsx`
@@ -255,7 +247,7 @@ The file contains:
 - `panes/histopath/RecoveryPaneContent.tsx`
 - `panes/histopath/SpecimenOverviewPane.tsx`
 - `panes/histopath/FindingDetailPane.tsx`
-- Move `specimenToOrganSystem` to `lib/histopathology-helpers.ts` where it belongs (it's a pure function, not a component)
+- Move `specimenToOrganSystem` to `lib/histopathology-helpers.ts` where it belongs (it's a pure function with two lookup tables, consumed by 4 external files)
 
 ---
 
@@ -267,16 +259,17 @@ The OverviewTab function alone contains ~15 `useMemo` hooks for data derivation 
 
 ---
 
-### S-03: `specimenToOrganSystem` is in the context panel but consumed by 3 other files (S2)
+### S-03: `specimenToOrganSystem` is in the context panel but consumed by 4 other files (S2)
 
-**Location:** `HistopathologyContextPanel.tsx:627-654`, imported by:
+**Location:** `panes/HistopathologyContextPanel.tsx:627-654`, imported by:
 - `HistopathologyView.tsx:58`
 - `SpecimenRailMode.tsx:31`
-- Internal context panel usage
+- `NoaelDeterminationView.tsx:69`
+- Internal context panel usage (lines 462, 1811, 2233)
 
-A pure mapping function lives in a React component file and is exported from there. Consumers import from the component module just to get this utility.
+A pure mapping function (with two lookup tables: `SPECIMEN_ORGAN_MAP` and `KEYWORD_ORGAN_MAP`) lives in a React component file and is exported from there. Four external consumers import from the component module just to get this utility.
 
-**Recommendation:** Move to `lib/histopathology-helpers.ts` alongside `deriveSpecimenSummaries`, `deriveFindingSummaries`, etc. Update imports in all consumers.
+**Recommendation:** Move to `lib/histopathology-helpers.ts` alongside `deriveSpecimenSummaries`, `deriveFindingSummaries`, etc. Update imports in all 4 consumers.
 
 ---
 
@@ -284,7 +277,7 @@ A pure mapping function lives in a React component file and is exported from the
 
 ### SL-01: Dose detail table uses color for severity classification (S1)
 
-**Location:** `HistopathologyContextPanel.tsx:2079-2085`
+**Location:** `panes/HistopathologyContextPanel.tsx:2079-2085`
 
 ```tsx
 style={{ color: row.severity === "adverse" ? "#dc2626" : row.severity === "warning" ? "#d97706" : "#16a34a" }}
@@ -295,15 +288,15 @@ The dose detail table in the finding-level context panel applies red/amber/green
 1. **"Color encodes signal strength only"** — This is using color for categorical classification (adverse vs warning vs normal), which is categorical identity.
 2. **"No decision red repetition per row"** — Multiple rows in the dose detail table can show red `adverse` labels.
 
-**Recommendation:** Replace colored text with neutral gray styling consistent with the main view's `signal.*` design tokens. The severity classification can use the existing token-based approach (`signal.adverse`, `signal.warning`, `signal.normal`) which use left-border-color, not text color.
+**Recommendation:** Replace colored text with neutral gray styling consistent with the main view's `signal.*` design tokens (from `lib/design-tokens.ts`). The severity classification can use the existing token-based approach (`signal.adverse`, `signal.warning`, `signal.normal`) which use left-border-color, not text color.
 
 ---
 
 ### SL-02: Peer comparison only at specimen-level, not finding-level (S2)
 
-**Location:** `HistopathologyContextPanel.tsx:1152-1157` (specimen-level only)
+**Location:** `panes/HistopathologyContextPanel.tsx:1152-1157` (specimen-level only)
 
-The peer comparison (historical control) pane with the full HCD table only appears in the specimen-level view. At finding-level, HCD data is relegated to a brief inline block inside the Insights pane (`HistopathologyContextPanel.tsx:1953-1984`).
+The peer comparison (historical control) pane with the full HCD table only appears in the specimen-level view. At finding-level, HCD data is relegated to a brief inline block inside the Insights pane (`panes/HistopathologyContextPanel.tsx:1953-1984`).
 
 **Impact:** When a pathologist drills into a specific finding, the peer comparison context is reduced from a structured table to a single sentence. The pathologist loses the ability to compare the control incidence against the HCD range, mean, and study count in a tabular format.
 
@@ -325,8 +318,8 @@ When a pane is collapsed, show a one-line summary in the header. E.g., "Lab corr
 ### Q-04: "Related views" links should be contextual at finding-level
 Currently the same 3 generic links appear at both levels. At finding-level, the links should carry context: "View {finding} in dose-response view" with the finding pre-selected.
 
-### Q-05: Recovery "not_examined" and "insufficient_n" verdicts don't need their own panes
-At finding-level, if the only recovery verdict is "not_examined," the full RecoveryPaneContent still renders with dose-level blocks. A single-line note ("Recovery tissue not examined") would suffice.
+### Q-05: Recovery guard verdicts already short-circuit but use heavyweight containers
+At finding-level, `not_examined`, `insufficient_n`, and `low_power` verdicts already short-circuit to 2-line messages (lines 1420-1448). However, they're wrapped in styled container divs (colored borders/backgrounds) per-dose-group when a single summary line for the entire finding would suffice. The per-dose-group rendering is only useful when SOME dose groups have real data and others don't — when ALL are guard verdicts, a single-line note would be cleaner.
 
 ---
 
@@ -334,8 +327,8 @@ At finding-level, if the only recovery verdict is "not_examined," the full Recov
 
 | ID | Category | Severity | Area | Description |
 |----|----------|----------|------|-------------|
-| R-01 | Redundancy | S2 | Context panel | Overview pane duplicates summary strip |
-| R-02 | Redundancy | S3 | All three | Syndrome in rail + strip + panel |
+| R-01 | Redundancy | S2 | Context panel | Overview pane ~80% duplicates summary strip (adds Fisher's sex skew) |
+| R-02 | Redundancy | S3 | All three | Syndrome in rail + strip + panel (panel adds concordance/related) |
 | R-03 | Redundancy | S3 | All three | Adverse count in rail + strip + panel |
 | R-04 | Redundancy | S2 | Context panel | Insights pane conflates three evidence types |
 | R-05 | Redundancy | S3 | Context panel | Pattern in header + dedicated pane |
@@ -350,16 +343,16 @@ At finding-level, if the only recovery verdict is "not_examined," the full Recov
 | M-05 | Missing | S2 | Context panel | No weight-of-evidence synthesis |
 | S-01 | Structure | S3 | Context panel | File too large (2403 lines) |
 | S-02 | Structure | S3 | Main view | Heavy computation in render (2550 lines) |
-| S-03 | Structure | S2 | Context panel | Pure function exported from component file |
+| S-03 | Structure | S2 | Context panel | Pure function exported from component file (4 external consumers) |
 | SL-01 | Science | S1 | Context panel | Color violation in dose detail table |
 | SL-02 | Science | S2 | Context panel | HCD only at specimen-level |
 | Q-01 | Quick win | S3 | Context panel | Add finding count to header |
 | Q-02 | Quick win | S3 | Context panel | Recovery period in pane title |
 | Q-03 | Quick win | S3 | Context panel | Summary in collapsed pane headers |
 | Q-04 | Quick win | S3 | Context panel | Contextual cross-view links |
-| Q-05 | Quick win | S3 | Context panel | Simplify guard verdict display |
+| Q-05 | Quick win | S3 | Context panel | Consolidate all-guard-verdict recovery into single line |
 
-**Totals:** 1 S1, 10 S2, 13 S3
+**Totals:** 1 S1, 10 S2, 12 S3 (M-04 removed — verified as already implemented correctly)
 
 ---
 
