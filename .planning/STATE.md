@@ -44,16 +44,16 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-11
-Stopped at: BUG-19 control-only pipeline leak fixed and committed (35c92aa).
+Last session: 2026-03-13
+Stopped at: Findings + D-R merge spec complete, ready for Phase A implementation.
 Completed this session:
-- BUG-19: 5 sub-bugs where control-only findings leaked through clinical catalog, insights, recovery, lab correlates, signal score, and confidence modifiers — all fixed
-- Backend clinical_catalog.py gated with treatment_related check
-- Frontend: controlOnlyFindings filtering in context panel, signal score zeroed, confidence modifiers suppressed, lab correlates guarded
-- docs/systems/insights-engine.md updated, spec archived
-- Post-implementation review completed, 1430 frontend tests + build pass
-Prior: SLA-01/06/12/13 accessor migration sweep (e3b5fc0), SLA-15/16 (ac748e5).
-Next: SLA-09 (incidence quality checks), SLA-18 (recovery vocab harmonization), or other TODO.md items.
+- Brainstormed view merge ideas → `docs/incoming/view-redesign-ideas.md` (gitignored, local)
+- Exhaustive gap analysis (30 features, 12 gaps, 11 nav links) → `docs/incoming/dr-findings-merge-analysis.md`
+- Full implementation spec (16 sections, 8 phases) → `docs/incoming/view-merge-spec.md`
+- Resolved all 6 open questions (Q1-Q6)
+- Created branch `merge-findings-dr`
+Prior: N-value integrity test (9b1b8d1), BW N-inflation fix (66c34c6), deck review.
+Next: Phase A — add CausalityWorksheet + InsightsList to FindingsContextPanel. See `.continue-here.md`.
 
 ---
-*Last updated: 2026-03-11 — BUG-19 control-only pipeline leak fixed*
+*Last updated: 2026-03-13 — Findings+D-R merge spec complete*
