@@ -6,7 +6,9 @@ The validation engine provides comprehensive SEND (Standard for Exchange of Nonc
 
 1. **CDISC CORE Engine** (400+ rules) — Official CDISC conformance validation (required variables, controlled terminology, referential integrity, metadata completeness). This is the regulatory gold standard.
 
-2. **Custom Study Design Rules** (7 rules) — Domain-specific enrichment rules that interpret trial design domains (DM, TA, TE, TX, EX) to build subject context and flag study design interpretation issues (orphaned subjects, ambiguous controls, dose inconsistencies).
+2. **Custom Rules** (14 rules) — Two rule sets:
+   - **Study Design** (SD-001 through SD-007) — Interpret trial design domains (DM, TA, TE, TX, EX) to build subject context and flag study design interpretation issues (orphaned subjects, ambiguous controls, dose inconsistencies).
+   - **FDA Data Quality** (FDA-001 through FDA-007) — Target common FDA reviewer data quality concerns (categorical data in numeric fields, timing variable alignment, BQL imputation documentation, controlled terminology, early-death bias, epoch linking, QTc correction documentation).
 
 Results are merged (CORE takes precedence on overlaps), cached as JSON, and consumed by a React frontend with a triage-and-dispatch UX.
 

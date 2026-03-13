@@ -38,7 +38,7 @@ SQLite database built from NTP Integrated Animal Data (IAD) organ weight records
 
 | Module | Scope |
 |---|---|
-| `cross-domain-syndromes.ts` | 10 rules (XS01–XS10) spanning clinical path, histopath, organ weights |
+| `cross-domain-syndromes.ts` | 33 syndromes (XS01–XS10 organ-focused + XC01a–XC12c extended) spanning clinical path, histopath, organ weights |
 | `syndrome-rules.ts` | 14 histopathology-specific syndrome rules |
 
 **Scoring and characterization**
