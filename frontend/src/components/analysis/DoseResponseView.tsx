@@ -510,7 +510,7 @@ export function DoseResponseView() {
           organ_system: row.organ_system,
         };
         setSelection(sel);
-        navigateTo({ endpoint: row.endpoint_label });
+        navigateTo({ endpoint: row.endpoint_label, organSystem: row.organ_system });
       }
     },
     [drData, navigateTo]
@@ -529,7 +529,7 @@ export function DoseResponseView() {
       setSelection(next);
       if (next) {
         setSelectedEndpoint(next.endpoint_label);
-        navigateTo({ endpoint: next.endpoint_label });
+        navigateTo({ endpoint: next.endpoint_label, organSystem: next.organ_system });
       }
     },
     [selection, navigateTo]
