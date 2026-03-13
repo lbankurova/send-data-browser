@@ -26,6 +26,9 @@ import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
+import { CausalityWorksheet } from "./CausalityWorksheet";
+import type { CausalitySummary } from "./CausalityWorksheet";
+import { InsightsList } from "./InsightsList";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +46,8 @@ import type { SexEndpointSummary, EndpointNoael, OrganCoherence } from "@/lib/de
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 
@@ -1046,6 +1051,12 @@ export function FindingsContextPanel() {
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
+  // Rule results + signal summary for CausalityWorksheet & InsightsList
+  const { data: ruleResultsData } = useRuleResults(studyId);
+  const { data: signalSummaryData } = useStudySignalSummary(studyId);
+  const ruleResults = ruleResultsData ?? [];
+  const signalSummary = signalSummaryData ?? [];
+
   // Recovery "not examined" detection — drives CollapsiblePane collapse + summary
   const { data: studyCtxForRecovery } = useStudyContext(studyId);
   const recoverySpecimens = useMemo(() => {
@@ -1152,6 +1163,25 @@ export function FindingsContextPanel() {
     const ep = analytics.endpoints.find((e) => e.endpoint_label === label);
     return ep?.endpointConfidence ?? null;
   }, [selectedFinding, analytics]);
+
+  // Build CausalitySummary for the CausalityWorksheet from UnifiedFinding + analytics
+  const causalitySummary = useMemo((): CausalitySummary | null => {
+    if (!selectedFinding) return null;
+    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
+    const ep = analytics.endpoints.find(e => e.endpoint_label === label);
+    const sexes = ep?.bySex ? [...ep.bySex.keys()].sort() : [selectedFinding.sex];
+    return {
+      endpoint_label: label,
+      organ_system: selectedFinding.organ_system ?? "",
+      domain: selectedFinding.domain,
+      data_type: selectedFinding.data_type === "incidence" ? "categorical" : "continuous",
+      dose_response_pattern: selectedFinding.dose_response_pattern,
+      min_trend_p: selectedFinding.trend_p,
+      max_effect_size: selectedFinding.max_effect_size,
+      min_p_value: selectedFinding.min_p_adj,
+      sexes,
+    };
+  }, [selectedFinding, analytics.endpoints]);
 
   // ── Sex selector state (Phase B7) ──
   // Default to sex with larger |effect|; fallback to selected finding's sex
@@ -1321,6 +1351,23 @@ export function FindingsContextPanel() {
               />
             )}
           </div>
+
+          {/* Causality worksheet — Bradford Hill assessment */}
+          <CollapsiblePane
+            title="Causality assessment"
+            defaultOpen={false}
+            keepMounted
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
+            <CausalityWorksheet
+              studyId={studyId}
+              selectedEndpoint={selectedFinding.endpoint_label ?? selectedFinding.finding}
+              selectedSummary={causalitySummary}
+              ruleResults={ruleResults}
+              signalSummary={signalSummary}
+            />
+          </CollapsiblePane>
 
           {/* Dose detail — Tier 1: always shows both sexes, above sex selector */}
           <CollapsiblePane
@@ -1596,6 +1643,27 @@ export function FindingsContextPanel() {
         })()}
       </CollapsiblePane>
       </div>
+
+      {/* Organ insights — rule-based signals filtered by organ/domain */}
+      {ruleResults.length > 0 && selectedFinding.organ_system && (
+        <CollapsiblePane
+          title="Organ insights"
+          defaultOpen={false}
+          keepMounted
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+          headerRight={
+            <span className="text-[9px] text-muted-foreground">
+              {ruleResults.filter(r => r.organ_system === selectedFinding.organ_system).length} rules
+            </span>
+          }
+        >
+          <InsightsList
+            rules={ruleResults.filter(r => r.organ_system === selectedFinding.organ_system)}
+            onEndpointClick={(organ) => selectGroup("organ", organ)}
+          />
+        </CollapsiblePane>
+      )}
 
       {/* Patterns pane — three states: syndromes only, convergence only, both */}
       {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
