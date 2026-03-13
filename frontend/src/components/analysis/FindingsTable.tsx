@@ -59,6 +59,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [dayMenu, setDayMenu] = useState<{ x: number; y: number } | null>(null);
   const dayMenuRef = useRef<HTMLDivElement>(null);
 
+  // Sparkline scale mode
+  type SparkScale = "row" | "global";
+  const [sparkScale, setSparkScale] = useState<SparkScale>("row");
+  const [sparkMenu, setSparkMenu] = useState<{ x: number; y: number } | null>(null);
+  const sparkMenuRef = useRef<HTMLDivElement>(null);
+
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
   useEffect(() => {
@@ -77,6 +83,37 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [dayMenu]);
+
+  // Close sparkline menu on outside click
+  useEffect(() => {
+    if (!sparkMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (sparkMenuRef.current && !sparkMenuRef.current.contains(e.target as Node)) setSparkMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sparkMenu]);
+
+  // Global max for sparkline scaling: max |delta from control| (continuous) or max incidence (categorical)
+  const globalSparkMax = useMemo(() => {
+    let maxCont = 1e-9;
+    let maxInc = 1e-9;
+    for (const f of findings) {
+      const stats = f.group_stats.slice().sort((a, b) => a.dose_level - b.dose_level);
+      if (stats.length < 2) continue;
+      if (f.data_type === "continuous") {
+        const control = stats[0]?.mean ?? 0;
+        for (const g of stats) {
+          if (g.mean != null) maxCont = Math.max(maxCont, Math.abs(g.mean - control));
+        }
+      } else {
+        for (const g of stats) {
+          if (g.incidence != null) maxInc = Math.max(maxInc, g.incidence);
+        }
+      }
+    }
+    return { continuous: maxCont, incidence: maxInc };
+  }, [findings]);
 
   const columns = useMemo(
     () => [
@@ -184,7 +221,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       col.display({
         id: "sparkline",
-        header: () => <span title="Mean (continuous) or incidence (categorical) by dose group">Sparkline</span>,
+        header: () => (
+          <span title={sparkScale === "global"
+            ? "Global scale — bar height reflects actual magnitude across all findings (e.g., 1 affected out of N=15 appears small). Right-click to change."
+            : "Row scale — each row scaled to its own max. Right-click to change."}>
+            Sparkline{sparkScale === "global" ? "*" : ""}
+          </span>
+        ),
         cell: (info) => {
           const f = info.row.original;
           const stats = f.group_stats;
@@ -196,9 +239,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             .map((g) => isCont ? g.mean : g.incidence);
           if (vals.every((v) => v == null)) return null;
           const nums = vals.map((v) => v ?? 0);
-          const max = Math.max(...nums.map(Math.abs), 1e-9);
-          // For continuous: show bars relative to control (first value)
           const control = isCont ? nums[0] : 0;
+          const max = sparkScale === "global"
+            ? (isCont ? globalSparkMax.continuous : globalSparkMax.incidence)
+            : Math.max(...nums.map((v) => Math.abs(isCont ? v - control : v)), 1e-9);
           const W = 28;
           const H = 14;
           const barW = Math.max(2, Math.floor((W - (nums.length - 1)) / nums.length));
@@ -281,7 +325,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, findings, clDayMode]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, findings, clDayMode, sparkScale, globalSparkMax]
   );
 
   const table = useReactTable({
@@ -337,6 +381,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setDayMenu({ x: rect.left, y: rect.bottom + 2 });
                     }
+                  } : undefined}
+                  onContextMenu={header.id === "sparkline" ? (e) => {
+                    e.preventDefault();
+                    setSparkMenu({ x: e.clientX, y: e.clientY });
                   } : undefined}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
@@ -440,6 +488,24 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <div className="mt-0.5 border-t border-border/40 px-2 py-1">
             <span className="text-[9px] italic text-muted-foreground/50">Applies to CL rows only</span>
           </div>
+        </div>
+      )}
+      {sparkMenu && (
+        <div ref={sparkMenuRef} className="fixed z-50 min-w-[180px] rounded border bg-popover py-0.5 shadow-md"
+          style={{ left: sparkMenu.x, top: sparkMenu.y }}>
+          {([
+            { value: "row" as const, label: "Row scale", desc: "Each row scaled independently" },
+            { value: "global" as const, label: "Global scale", desc: "All rows share one scale" },
+          ]).map((opt) => (
+            <button key={opt.value} type="button"
+              className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
+                sparkScale === opt.value && "bg-accent/30")}
+              onClick={() => { setSparkScale(opt.value); setSparkMenu(null); }}>
+              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
+              <span className="text-[11px] font-medium">{opt.label}</span>
+              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+            </button>
+          ))}
         </div>
       )}
     </div>
