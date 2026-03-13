@@ -45,15 +45,14 @@ Single source of truth: `docs/TODO.md` (74 open items)
 ## Session Continuity
 
 Last session: 2026-03-13
-Stopped at: Findings + D-R merge spec complete, ready for Phase A implementation.
+Stopped at: HELP.md draft + staleness fixes committed. Deck pivot decided (in-app help instead of PowerPoint).
 Completed this session:
-- Brainstormed view merge ideas → `docs/incoming/view-redesign-ideas.md` (gitignored, local)
-- Exhaustive gap analysis (30 features, 12 gaps, 11 nav links) → `docs/incoming/dr-findings-merge-analysis.md`
-- Full implementation spec (16 sections, 8 phases) → `docs/incoming/view-merge-spec.md`
-- Resolved all 6 open questions (Q1-Q6)
-- Created branch `merge-findings-dr`
-Prior: N-value integrity test (9b1b8d1), BW N-inflation fix (66c34c6), deck review.
-Next: Phase A — add CausalityWorksheet + InsightsList to FindingsContextPanel. See `.continue-here.md`.
+- Phase A of findings-dr-merge committed (32b97a2)
+- `docs/HELP.md` draft — Datagrok-style technical help page (68d902e)
+- Staleness fixes: README (syndromes 24->33), ARCHITECTURE (syndromes 10->33), validation-engine (7->14 custom rules)
+- Decision: deck frozen, content becomes in-app Help view
+Prior: Deck rules engine restructure (46 slides), findings+DR merge spec complete.
+Next: Three workstreams — (1) wire Help into app, (2) move deck folder to docs/deck/, (3) cross-check HELP.md against data-lineage.md. See `.continue-here.md`.
 
 ---
-*Last updated: 2026-03-13 — Findings+D-R merge spec complete*
+*Last updated: 2026-03-13 — HELP.md draft + doc staleness fixes*
