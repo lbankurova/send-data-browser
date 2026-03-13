@@ -211,6 +211,7 @@ def build_dose_response_metrics(findings: list[dict], dose_groups: list[dict]) -
                 "dose_response_pattern": finding.get("dose_response_pattern", ""),
                 "trend_p": finding.get("trend_p"),
                 "data_type": finding.get("data_type", "continuous"),
+                "day": finding.get("day"),
             }
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
