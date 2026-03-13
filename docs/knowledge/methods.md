@@ -56,7 +56,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Design note:** Pairwise Fisher's results are not Bonferroni-corrected for incidence domains (MI, MA, CL, TF, DS). The test is inherently conservative with small counts, and individual comparisons are the primary interest.
 
-**Consumers:** MI (`findings_mi.py:130`), MA (`findings_ma.py:109`), CL (`findings_cl.py:81`), TF (`findings_tf.py:156`), DS (`findings_ds.py:104`).
+**Consumers:** MI (`findings_mi.py:140`), MA (`findings_ma.py:119`), CL (`findings_cl.py:102`), TF (`findings_tf.py:166`), DS (`findings_ds.py:112`).
 
 ---
 
@@ -64,7 +64,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Test for monotonic dose-response trend across ordered dose groups for continuous endpoints.
 
-**Implementation:** `trend_test(groups)` — backend `statistics.py:46`. Computes the JT statistic (sum of Mann-Whitney U counts across all ordered dose-group pairs) with normal approximation for the p-value. Also called via `_jonckheere_terpstra_p()` in `domain_stats.py:75` (delegates to same function).
+**Implementation:** `trend_test(groups)` — backend `statistics.py:46`. Computes the JT statistic (sum of Mann-Whitney U counts across all ordered dose-group pairs) with normal approximation for the p-value. Also called via `_jonckheere_terpstra_p()` in `generator/domain_stats.py:81` (delegates to same function).
 
 **Parameters:** Input: list of numpy arrays, one per dose group (ordered low to high). NaN values dropped per group. Minimum 2 groups and 4 total observations. Returns standardized Z and two-sided p-value.
 
@@ -72,9 +72,9 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Why this method:** REM-29. The JT test is the standard nonparametric trend test for ordered independent groups in toxicology (Jonckheere 1954, Terpstra 1952). Directly tests for ordered alternatives without assuming equal spacing or normality. Replaces the previous Spearman rank correlation proxy (which was a reasonable approximation but not the standard method).
 
-**Alternatives considered:** Spearman rank proxy (previous implementation — simpler but not the standard method). Cuzick's trend test (requires equal spacing). Williams' test (parametric, optimal for monotonic dose-response but requires normality).
+**Alternatives considered:** Spearman rank proxy (previous implementation — simpler but not the standard method). Cuzick's trend test (requires equal spacing). Williams' trend test (STAT-14b, now implemented — parametric, optimal for monotonic dose-response; available as settings override via `trend_test: "williams-trend"`).
 
-**Consumers:** LB (`findings_lb.py`), BW (`findings_bw.py`), OM, EG, VS, BG, FW (`domain_stats.py`). Not used for incidence domains (use STAT-05 instead).
+**Consumers:** LB (`findings_lb.py`), BW (`findings_bw.py`), OM, EG, VS, BG, FW (`generator/domain_stats.py`). Not used for incidence domains (use STAT-05 instead).
 
 ---
 
@@ -82,7 +82,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Test for dose-dependent trend in binary incidence data across ordered dose groups.
 
-**Implementation:** Custom z-score computation — backend `statistics.py:65`. Dose scores: linear `[0, 1, 2, ..., k-1]`. P-value from standard normal CDF (two-tailed).
+**Implementation:** Custom z-score computation — backend `statistics.py:97`. Dose scores: linear `[0, 1, 2, ..., k-1]`. P-value from standard normal CDF (two-tailed).
 
 **Parameters:** `counts` = affected per dose group, `totals` = animals per dose group. Requires >= 2 groups, total n > 0, and global incidence 0 < p_bar < 1. Returns `{None, None}` if p_bar is 0 or 1 (all affected or none).
 
@@ -90,7 +90,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Alternatives considered:** Logistic regression slope (more complex, equivalent for linear trends). Exact conditional trend test (computationally intensive, unnecessary for routine screening).
 
-**Consumers:** MI (`findings_mi.py:146`), MA, CL (`findings_cl.py:95`), TF, DS. Result stored as `trend_p`.
+**Consumers:** MI (`findings_mi.py:156`), MA (`findings_ma.py:133`), CL (`findings_cl.py:116`), TF (`findings_tf.py:180`), DS (`findings_ds.py:121`). Result stored as `trend_p`.
 
 ---
 
@@ -98,7 +98,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Omnibus test of whether any dose group mean differs from the others for continuous endpoints.
 
-**Implementation:** `scipy.stats.f_oneway(*valid_groups)` — backend `domain_stats.py:41`.
+**Implementation:** `scipy.stats.f_oneway(*valid_groups)` — backend `generator/domain_stats.py:47`.
 
 **Parameters:** At least 2 groups with n >= 2 each. Groups failing the minimum are filtered before testing. Returns `None` on exception.
 
@@ -106,23 +106,23 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Alternatives considered:** Kruskal-Wallis (STAT-08, implemented for non-normal data). Welch's ANOVA (not in scipy's f_oneway, but irrelevant since pairwise Welch's t-tests drive classification).
 
-**Consumers:** Generator enrichment step (`domain_stats.py:222`). Result stored as `anova_p`. Supplementary — not used in severity classification, which relies on pairwise tests and trend.
+**Consumers:** Generator enrichment step (`generator/domain_stats.py`). Result stored as `anova_p`. Supplementary — not used in severity classification, which relies on pairwise tests and trend.
 
 ---
 
 ### STAT-07 — Dunnett's Test
 
-**Purpose:** Multiple comparisons of each treated dose group vs. a single control, with familywise error rate control.
+**Purpose:** Multiple comparisons of each treated dose group vs. a single control, with familywise error rate control. Primary pairwise test for all continuous domains (REM-28).
 
-**Implementation:** `scipy.stats.dunnett(*treated_groups, control=control)` — backend `domain_stats.py:53`.
+**Implementation:** `dunnett_pairwise(control, treated_groups)` — backend `statistics.py:184`. Calls `scipy.stats.dunnett(*treated_groups, control=control)` internally. Fallback: Welch's t-test + Bonferroni if scipy Dunnett fails. Returns list of dicts with `dose_level`, `p_value`, `p_value_adj` (same as p_value — Dunnett is already FWER-controlled), `statistic` (None), `cohens_d`.
 
 **Parameters:** Control must have n >= 2. Each treated group must have n >= 2 (filtered). Returns list of p-values aligned with original group indices; `None` for filtered-out groups.
 
-**Why this method:** Dunnett's test accounts for correlation between multiple control comparisons, providing higher power than Bonferroni while controlling FWER. This is the standard post-hoc test for many-to-one comparisons in tox study design.
+**Why this method:** REM-28. Dunnett's test accounts for correlation between multiple control comparisons, providing higher power than Bonferroni while controlling FWER. This is the standard post-hoc test for many-to-one comparisons in tox study design. Replaced Welch's t-test + Bonferroni as the primary pairwise method.
 
-**Alternatives considered:** Bonferroni (STAT-10, more conservative, already used for pairwise in the main pipeline). Holm-Sidak (step-down variant, marginal power gain).
+**Alternatives considered:** Welch + Bonferroni (previous primary — more conservative, now available as settings override via STAT-13). Williams' step-down (STAT-14, now implemented — available as settings override). Holm-Sidak (step-down variant, marginal power gain).
 
-**Consumers:** Generator enrichment step (`domain_stats.py:227`). Result stored as `dunnett_p` list. Supplementary — not used in primary classification.
+**Consumers:** All 7 continuous domain findings modules: BW (`findings_bw.py:113`), LB (`findings_lb.py:123`), OM (`findings_om.py:67`), EG (`findings_eg.py:111`), VS (`findings_vs.py:111`), BG (`findings_bg.py:145`), FW (via `generator/domain_stats.py`). Results stored as primary `pairwise[]` entries. Drives severity classification (CLASS-01) and treatment-relatedness (CLASS-05). User-switchable to Williams' (STAT-14) or Bonferroni (via STAT-13) at runtime.
 
 ---
 
@@ -130,7 +130,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Nonparametric omnibus test (alternative to one-way ANOVA) for ordinal or non-normal data.
 
-**Implementation:** `scipy.stats.kruskal(*valid_groups)` — backend `domain_stats.py:94`.
+**Implementation:** `scipy.stats.kruskal(*valid_groups)` — backend `generator/domain_stats.py:91`.
 
 **Parameters:** At least 2 groups with n >= 1 each. Returns `None` on exception.
 
@@ -147,8 +147,8 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 **Purpose:** Assess monotonic relationship between two variables without assuming linearity.
 
 **Implementation:** Two variants in backend `statistics.py`:
-- General: `spearman_correlation(x, y)` at line 112. Minimum 3 pairs.
-- Severity-specific: `severity_trend(dose_levels, avg_severities)` at line 124. Minimum 3 pairs, returns `{None, None}` if severity is constant.
+- General: `spearman_correlation(x, y)` at line 153. Minimum 3 pairs.
+- Severity-specific: `severity_trend(dose_levels, avg_severities)` at line 165. Minimum 3 pairs, returns `{None, None}` if severity is constant.
 
 **Parameters:** Paired observations with NaN mask. Both variants use `scipy.stats.spearmanr()`.
 
@@ -164,7 +164,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Control familywise error rate when performing multiple pairwise comparisons.
 
-**Implementation:** `bonferroni_correct(p_values, n_tests)` — backend `statistics.py:143`.
+**Implementation:** `bonferroni_correct(p_values, n_tests)` — backend `statistics.py:277`.
 
 **Parameters:** `p_adj = min(p_raw * n_tests, 1.0)`. Default `n_tests` = count of non-None p-values. Cap at 1.0. `None` values preserved.
 
@@ -172,7 +172,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Alternatives considered:** Holm-Sidak (step-down, more powerful but harder to explain). Benjamini-Hochberg FDR (controls false discovery rate, less conservative — inappropriate for safety-critical assessments). Dunnett's (STAT-07, used separately as enrichment).
 
-**Consumers:** LB (`findings_lb.py:125`), BW (`findings_bw.py:114`), OM, FW (`domain_stats.py:365`). **Not applied** to incidence domains (MI, MA, CL, DS, TF).
+**Consumers:** Available as an alternative multiplicity correction via `apply_multiplicity_method("bonferroni")` in `parameterized_pipeline.py:359`. Applied to raw Welch p-values (STAT-13) when the user selects Bonferroni in analysis settings. **Not applied** to incidence domains (MI, MA, CL, DS, TF). **Note:** No longer the primary multiplicity method — Dunnett's inherent FWER control (STAT-07, REM-28) replaced Bonferroni as the default.
 
 ---
 
@@ -180,7 +180,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Define an equivalence band for incidence data to absorb sampling noise in dose-response pattern classification.
 
-**Implementation:** `_binomial_tolerance(n, p)` — backend `classification.py:80`. Frontend mirror in `pattern-classification.ts:295`.
+**Implementation:** `_binomial_tolerance(n, p)` — backend `classification.py:206`. Frontend mirror in `pattern-classification.ts:295`.
 
 **Parameters:** `se = sqrt(p * (1 - p) / n)`. Tolerance = `max(1.5 * se, 0.02)`. Returns minimum tolerance (0.02) if n <= 0 or p not in (0, 1).
 
@@ -200,7 +200,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Standardized measure of the difference between two group means, in units of pooled standard deviation, with small-sample bias correction.
 
-**Implementation:** `cohens_d(group1, group2)` — backend `statistics.py:96`. Function name retained for backwards compatibility; JSON field remains `cohens_d`. The computation applies Hedges' correction factor `J = 1 - 3/(4*df - 1)` where `df = n1 + n2 - 2`.
+**Implementation:** `cohens_d(group1, group2)` — backend `statistics.py:128`. Function name retained for backwards compatibility; JSON field remains `cohens_d`. The computation applies Hedges' correction factor `J = 1 - 3/(4*df - 1)` where `df = n1 + n2 - 2`.
 
 **Parameters:** Pooled SD uses Bessel's correction (`ddof=1`). Minimum n=2 per group. Returns `None` if pooled SD = 0 (constant values). Formula: `g = d * J`, where `d = (mean1 - mean2) / SD_pooled`, `SD_pooled = sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))`, and `J = 1 - 3/(4*df - 1)`.
 
@@ -260,6 +260,112 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 ---
 
+### STAT-14 — Williams' Step-Down Test (Pairwise)
+
+**Purpose:** Step-down dose-response pairwise test with isotonic regression. Tests whether the highest dose differs from control, then works downward to identify the minimum effective dose (MED).
+
+**Implementation:** `williams_test(means, sds, ns, dose_labels, direction, alpha)` — backend `williams.py:290`. Convenience wrappers: `williams_from_dose_groups()` (line 403), `williams_from_group_stats()` (line 429). PAVA isotonic regression: `pava_increasing()` (line 42), `pava_decreasing()` (line 96).
+
+**Algorithm:**
+1. Compute pooled within-group variance: s²_pooled = Σ(nᵢ−1)sᵢ² / (N−k−1)
+2. Auto-detect direction (increase/decrease) from raw means if not specified
+3. Apply isotonic regression (PAVA) to group means under monotonicity constraint
+4. Step-down from highest dose: t = (constrained_mean_i − control_mean) / SE
+5. Compare t to critical value from published tables (Williams 1971, 1972; Bretz 2006) or Monte Carlo simulation (100,000 iterations) when tables lack coverage
+6. Stop at first non-significant dose — all lower doses are automatically non-significant
+
+**Parameters:** Input: means, SDs, and Ns per group (control + treated). Direction: `'increase'`, `'decrease'`, or `'auto'`. Alpha: 0.05 (default). Critical value lookup covers k ∈ {2,3,4,5}, df ∈ {5..120}, alpha ∈ {0.05, 0.01}; Monte Carlo fallback for other configurations.
+
+**Returns:** `WilliamsTestOutput` with `direction`, `pooled_variance`, `pooled_df`, `constrained_means`, `step_down_results` (list per dose: tested, significant, t_statistic, critical_value, p_value_approx), `minimum_effective_dose`, `all_groups_tested`.
+
+**Why this method:** Williams' test is optimal when the true dose-response is monotonic — isotonic regression borrows information across dose groups, increasing power compared to Dunnett's which treats each comparison independently. The step-down procedure inherently controls FWER. Particularly well-suited for organ weight analysis where monotonic dose-response is expected.
+
+**Alternatives considered:** Dunnett's (STAT-07, default — more robust when dose-response is non-monotonic). Steel's test (nonparametric many-to-one — not implemented). Shirley-Williams (nonparametric Williams' variant — not implemented).
+
+**Consumers:** Pre-computed alongside Dunnett for OM domain (`findings_om.py:298`). Available as settings override for all continuous domains via `apply_pairwise_williams()` in `parameterized_pipeline.py:449`. When selected: replaces Dunnett p-values in pairwise entries; non-tested doses (below MED cutoff) get p_value = 1.0 (conservative).
+
+**References:** Williams DA (1971, 1972). Bretz F (2006). Barlow RE et al. (1972).
+
+---
+
+### STAT-14b — Williams' Trend Test
+
+**Purpose:** Use Williams' step-down result as a trend test — the first (highest dose) step-down p-value serves as the trend significance.
+
+**Implementation:** `apply_trend_williams()` — backend `parameterized_pipeline.py:501`. If Williams' pairwise (STAT-14) was already applied, reuses the first step-down result. Otherwise runs `williams_from_group_stats()` independently.
+
+**Parameters:** Sets `trend_p` from the highest-dose step-down p-value. Available via `trend_test: "williams-trend"` in analysis settings.
+
+**Why this method:** When Williams' pairwise is selected, the first step-down result is mathematically a test of the overall dose-response trend (H₀: all means equal vs. H₁: means are monotonically ordered). This provides a parametric alternative to the nonparametric JT trend test (STAT-04).
+
+**Alternatives considered:** JT (STAT-04, default — nonparametric, no normality assumption). Cuzick's test (requires equal spacing — not implemented).
+
+---
+
+### STAT-15 — ANCOVA (Analysis of Covariance)
+
+**Purpose:** One-way ANCOVA for organ weights adjusting for body weight as a covariate: `organ_weight ~ C(dose_group) + body_weight`. Decomposes treatment effects into direct (drug → organ) and indirect (drug → BW → organ) components.
+
+**Implementation:** `run_ancova(organ_values, body_weights, groups, control_group, use_organ_free_bw, alpha)` — backend `ancova.py:65`. Convenience wrapper: `ancova_from_dose_groups()` (line 240). Internal helpers: `_fit_ols()` (line 28), `_f_compare()` (line 49).
+
+**Algorithm:**
+1. Build design matrix: [intercept, G₁..G_{k-1} (treatment coding), X_covariate]
+2. Fit OLS via `np.linalg.lstsq` (pseudoinverse fallback for singular matrices)
+3. Slope homogeneity test: interaction model (dose × covariate) vs. main-effects model, F-test
+4. Compute adjusted (LS) means at covariate = overall mean
+5. Pairwise contrasts: each treated group vs. control (t-test on adjusted means)
+6. Effect decomposition per group: total = raw difference, direct = ANCOVA-adjusted difference, indirect = total − direct. `direct_g` = direct effect in Hedges' g units
+
+**Parameters:** `use_organ_free_bw`: when True, covariate = BW − organ_weight (Lazic 2020), reducing organ-to-covariate collinearity. Minimum observations: n ≥ k+2. Alpha: 0.05 (default).
+
+**Returns:** Dict with `adjusted_means`, `pairwise` (contrasts with p-values), `slope` (covariate relationship), `slope_homogeneity` (parallelism assumption check), `effect_decomposition`, `model_r_squared`, `mse`.
+
+**Why this method:** When body weight differs significantly across dose groups (BW tier ≥ 3, |g| ≥ 1.0), organ-to-BW ratios are unreliable because the ratio distorts when the denominator is itself affected by treatment. ANCOVA properly separates the direct organ effect from the BW-mediated effect. The organ-free BW variant (Lazic 2020) further reduces collinearity when the organ constitutes a meaningful fraction of BW (e.g., liver).
+
+**Trigger:** Automatically computed for OM findings when BW effect tier ≥ 3 or brain is treatment-affected (`findings_om.py:321`). Results populate `NormalizationContext.effectDecomposition` on the frontend.
+
+**Alternatives considered:** Simple ratio normalization (METH-03, unreliable when BW is treatment-affected). Bayesian mediation analysis (Phase 3, deferred — PyMC). Allometric scaling (requires species-specific exponents, adds complexity without clear benefit for within-study analysis).
+
+**References:** Lazic SE et al. Sci Rep 2020;10:6625. Bailey SA et al. Toxicol Pathol 2004;32:448. Sellers RS et al. Toxicol Pathol 2007;35:751.
+
+---
+
+### STAT-DESIGN — Test Selection Strategy
+
+**Purpose:** Document the rationale for why the pipeline uses fixed-by-domain test assignment rather than adaptive normality-based test selection (Shapiro-Wilk → Levene → parametric/non-parametric decision tree).
+
+**The textbook approach:** Before running a pairwise comparison, test each endpoint's data for normality (Shapiro-Wilk) and variance homogeneity (Levene/Bartlett). If data passes both → Dunnett's. If normality fails → non-parametric (Kruskal-Wallis, Dunn's). If variance fails → Welch's ANOVA or non-parametric.
+
+**Our approach:** Fixed test assignment by data type, no pre-testing.
+
+| Data type | Pairwise | Trend | Rationale |
+|-----------|----------|-------|-----------|
+| Continuous | Dunnett's (FWER) | JT (nonparametric) | Dunnett's + Welch robustness; JT already nonparametric |
+| Incidence | Fisher's exact | Cochran-Armitage | Exact methods, no distributional assumptions |
+
+**Why we don't use adaptive normality-based selection:**
+
+1. **Welch's handles unequal variances without pre-testing.** The pipeline uses `equal_var=False` everywhere (STAT-01). Welch's t-test is valid under unequal variances and mild non-normality — it eliminates the need for Levene/Bartlett as a gate. Dunnett's (scipy implementation) also uses a Welch-type correction internally.
+
+2. **Small n makes normality tests uninformative.** Preclinical dose groups typically have n=3–10 per group. Shapiro-Wilk has very low power at these sample sizes — it almost never rejects H₀, even for substantially non-normal data. A normality pre-test that always passes is not a useful gate.
+
+3. **JT is already non-parametric.** The primary trend test (STAT-04, Jonckheere-Terpstra) makes no distributional assumption. There is nothing to gain from a normality pre-test for trend analysis — the test is already robust.
+
+4. **Pre-test bias ("testing the tester").** Using a normality test to choose between parametric and non-parametric inflates the overall Type I error rate. The conditional procedure (if normal → test A, else → test B) has different operating characteristics than either test alone. Modern statistical practice increasingly recommends choosing the test based on domain knowledge and study design, not on pre-tests of the same data.
+
+5. **Reproducibility.** Fixed test assignment means the same endpoint always gets the same analysis. Adaptive selection introduces analyst-degrees-of-freedom: different random samples from the same distribution could trigger different test paths, producing different conclusions.
+
+6. **User override when needed.** For endpoints where normality concerns are specific and known (e.g., organ weights with heteroscedastic ratios), the user can switch to Williams' test (STAT-14, which uses isotonic regression — naturally robust to non-normality) or the system triggers ANCOVA (STAT-15) automatically when BW confounding is detected.
+
+**What we do instead of pre-testing:**
+- **Variance heterogeneity detection (CLASS-23):** The ECI system checks SD ratio and CV ratio post-hoc — if JT's variance assumptions are violated, the endpoint's trend validity confidence is penalized (not the test switched). This is more honest than a binary switch.
+- **ANCOVA trigger (STAT-15):** When body weight confounding is substantial (tier ≥ 3), the system automatically runs ANCOVA for organ weights, which properly handles the covariance structure.
+- **Williams' as user option (STAT-14):** Isotonic regression provides robustness when the dose-response is expected to be monotonic.
+
+**References:** Zimmerman DW (2004), "A note on preliminary tests of equality of variances." Rasch D et al. (2011), "The two-sample t-test: pre-testing its assumptions does not pay off."
+
+---
+
 ### STAT-SUMMARY — Statistical Test Assignment by Endpoint Type (REM-06)
 
 This table documents which statistical test is applied to each endpoint type in the analysis pipeline.
@@ -268,23 +374,29 @@ This table documents which statistical test is applied to each endpoint type in 
 |--------|--------------|---------------|------------|-------------|----------|-------|
 | LB | Continuous (ALT, AST, etc.) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Primary: Dunnett + JT trend |
 | BW | Body weight | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Percent change from baseline (METH-02) |
-| OM | Organ weights (relative) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Organ-to-body ratio (METH-03) |
+| OM | Organ weights (relative) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | STAT-15 ANCOVA (tier ≥ 3) | Organ-to-body ratio (METH-03); Williams' (STAT-14) pre-computed alongside Dunnett |
 | FW | Food/water consumption | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 | MI | Histopath incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | No effect size for binary data |
 | MI | Histopath severity (ordinal) | STAT-02 Mann-Whitney U† | — | — | — | †Reserved, not in active pipeline |
 | MA | Macroscopic incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
-| CL | Clinical signs incidence | STAT-03 Fisher's exact | — | — | — | No trend test (signs are event-based) |
+| CL | Clinical signs incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
 | TF | Tumor findings incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
-| DS | Death/sacrifice | STAT-03 Fisher's exact | — | — | — | |
+| DS | Death/sacrifice | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
 | EG | ECG continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 | VS | Vital signs continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 
 **Limitations documented (REM-06):**
-- Williams' test (optimal for monotonic dose-response) and Steel's test (nonparametric many-to-one) are not implemented. Dunnett's (STAT-07, REM-28) handles the pairwise many-to-one case; JT (STAT-04, REM-29) handles the trend case.
+- Steel's test (nonparametric many-to-one) is not implemented. Dunnett's (STAT-07, REM-28) handles the pairwise many-to-one case; JT (STAT-04, REM-29) handles the trend case.
 - MI severity grading uses numerical avg_severity (1–5 scale) but no formal ordinal statistical test is applied to the grades in the active pipeline.
 - No multiplicity correction is applied within domains for incidence tests (see STAT-03 design note).
 
-**User-switchable methods:** Effect size (STAT-12 default, STAT-12b, STAT-12c) and multiplicity correction (STAT-07 Dunnett default, Bonferroni via STAT-13 raw Welch p-values) are switchable at runtime via the Study Details context panel. Frontend transforms recompute `pairwise[].cohens_d`, `max_effect_size`, `p_value_adj`, and `min_p_adj` from stored group_stats and p_value_welch. Severity classification and NOAEL may shift when methods change — this is intentional.
+**User-switchable methods:** The following are switchable at runtime via the Study Details context panel:
+- **Pairwise test:** Dunnett (STAT-07, default), Williams' step-down (STAT-14), Bonferroni (via STAT-13 raw Welch p-values)
+- **Trend test:** Jonckheere-Terpstra (STAT-04, default), Williams' trend (STAT-14b)
+- **Effect size:** Hedges' g (STAT-12, default), Cohen's d (STAT-12b), Glass's Δ (STAT-12c)
+- **Organ weight metric:** Recommended auto-selection (METH-03a, default), absolute, ratio-to-BW, ratio-to-brain
+
+Frontend transforms recompute `pairwise[].cohens_d`, `max_effect_size`, `p_value_adj`, and `min_p_adj` from stored group_stats and p_value_welch. Severity classification and NOAEL may shift when methods change — this is intentional. Settings transforms applied in `parameterized_pipeline.py:apply_settings_transforms()`.
 
 ---
 
@@ -372,7 +484,7 @@ Tie-breaking: latest day first, then males (males typically show larger absolute
 
 **References:** Bailey SA et al. Toxicol Pathol 2004;32:448. Sellers RS et al. Toxicol Pathol 2007;35:751. Lazic SE et al. Sci Rep 2020;10:6625.
 
-**Phase 2 (ANCOVA):** DONE — `backend/services/analysis/ancova.py` (Python statsmodels). Effect decomposition (directG vs totalG) populated in `NormalizationContext.effectDecomposition`. UI: `ANCOVADecompositionPane` in FindingsContextPanel. Phase 3 (deferred): Bayesian mediation (PyMC).
+**Phase 2 (ANCOVA):** DONE — see STAT-15 for full documentation. `backend/services/analysis/ancova.py` (OLS via numpy). Effect decomposition (directG vs totalG) populated in `NormalizationContext.effectDecomposition`. UI: `ANCOVADecompositionPane` in FindingsContextPanel. Phase 3 (deferred): Bayesian mediation (PyMC).
 
 ---
 

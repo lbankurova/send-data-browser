@@ -1071,6 +1071,7 @@ function ChartOverviewContent({
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/50">
                   <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dose</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
                   <th className="px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sex</th>
                   <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Mean</th>
                   <th className="px-2 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">SD</th>
@@ -1086,6 +1087,7 @@ function ChartOverviewContent({
                     <td className="px-2 py-1">
                       <DoseLabel level={row.dose_level} label={formatDoseShortLabel(row.dose_label)} />
                     </td>
+                    <td className="px-2 py-1 text-right text-muted-foreground">{row.day ?? "\u2014"}</td>
                     <td className="px-2 py-1">{row.sex}</td>
                     <td className="px-2 py-1 text-right font-mono">
                       {row.mean != null ? row.mean.toFixed(2) : "\u2014"}
@@ -1105,7 +1107,7 @@ function ChartOverviewContent({
                       </span>
                     </td>
                     <td className="px-2 py-1 text-muted-foreground">
-                      {row.dose_response_pattern.replace(/_/g, " ")}
+                      {row.dose_level > 0 ? row.dose_response_pattern.replace(/_/g, " ") : "\u2014"}
                     </td>
                   </tr>
                 ))}
