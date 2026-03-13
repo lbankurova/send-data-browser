@@ -408,6 +408,10 @@ export function DoseResponseView() {
         cell: (info) => <span>{info.getValue() ?? "\u2014"}</span>,
       }),
       col.accessor("sex", { header: "Sex" }),
+      col.accessor("day", {
+        header: "Day",
+        cell: (info) => <span className="text-muted-foreground">{info.getValue() ?? "\u2014"}</span>,
+      }),
       col.accessor("mean", {
         header: "Mean",
         cell: (info) => (
