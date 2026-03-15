@@ -29,6 +29,8 @@ import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { CausalityWorksheet } from "./CausalityWorksheet";
 import type { CausalitySummary } from "./CausalityWorksheet";
 import { InsightsList } from "./InsightsList";
+import { ToxFindingForm } from "./ToxFindingForm";
+import { deriveToxSuggestion } from "@/types/annotations";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1057,6 +1059,24 @@ export function FindingsContextPanel() {
   const ruleResults = ruleResultsData ?? [];
   const signalSummary = signalSummaryData ?? [];
 
+  // Signal row for the selected finding — used by ToxFindingForm system suggestion
+  const selectedSignalRow = useMemo(() => {
+    if (!selectedFinding) return null;
+    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
+    return signalSummary.find((r) => r.endpoint_label === label && r.sex === selectedFinding.sex) ?? null;
+  }, [selectedFinding, signalSummary]);
+
+  // InsightsList: filter by organ system + domain prefix (dual filter from D-R panel)
+  const endpointRules = useMemo(() => {
+    if (!selectedFinding) return [];
+    const domainPrefix = selectedFinding.domain ? selectedFinding.domain + "_" : null;
+    return ruleResults.filter((r) => {
+      if (selectedFinding.organ_system && r.organ_system === selectedFinding.organ_system) return true;
+      if (domainPrefix && r.scope === "endpoint" && r.context_key.startsWith(domainPrefix)) return true;
+      return false;
+    });
+  }, [ruleResults, selectedFinding]);
+
   // Recovery "not examined" detection — drives CollapsiblePane collapse + summary
   const { data: studyCtxForRecovery } = useStudyContext(studyId);
   const recoverySpecimens = useMemo(() => {
@@ -1308,7 +1328,41 @@ export function FindingsContextPanel() {
         canGoForward={nav.canGoForward}
         onBack={nav.onBack}
         onForward={nav.onForward}
-      />
+      >
+        {/* Incremental info: pattern badge + assessment status + NOAEL */}
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[9px]">
+          {selectedFinding.dose_response_pattern && (
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
+              {getPatternLabel(selectedFinding.dose_response_pattern)}
+            </span>
+          )}
+          {(() => {
+            const endpointKey = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const tox = toxAnnotations?.[endpointKey];
+            if (!tox) return null;
+            const status = tox.treatmentRelated === "Not Evaluated"
+              ? "Not evaluated"
+              : tox.treatmentRelated === "Yes"
+                ? "Treatment-related"
+                : tox.treatmentRelated === "No"
+                  ? "Not treatment-related"
+                  : null;
+            if (!status) return null;
+            return (
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
+                {status}
+              </span>
+            );
+          })()}
+          {noael && (
+            <span className="text-muted-foreground">
+              NOAEL: {noael.dose_value != null
+                ? `${noael.dose_value} ${noael.dose_unit}`
+                : `< lowest dose`}
+            </span>
+          )}
+        </div>
+      </ContextPanelHeader>
 
       {/* Context-dependent panes: Verdict + DoseDetail need useFindingContext */}
       {contextReady ? (
@@ -1369,7 +1423,243 @@ export function FindingsContextPanel() {
             />
           </CollapsiblePane>
 
-          {/* Dose detail — Tier 1: always shows both sexes, above sex selector */}
+          {/* Tox assessment form — system suggestion wired from signal summary */}
+          {studyId && (
+            <ToxFindingForm
+              studyId={studyId}
+              endpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
+              systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
+            />
+          )}
+
+          {/* Statistical Evidence — moved before Dose Detail per spec */}
+          <div ref={evidencePaneRef}>
+          <CollapsiblePane
+            title={hasSibling ? "Statistical Evidence:" : "Statistical Evidence"}
+            defaultOpen
+            keepMounted
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+            headerRight={hasSibling ? (
+              <>
+                {[selectedFinding.sex, siblingContext!.sex].map((s, i) => (
+                  <span key={s}>
+                    {i > 0 && <span className="mx-0.5 text-muted-foreground/30">|</span>}
+                    <span
+                      className={cn("cursor-pointer", activeSex === s ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
+                      onClick={() => setActiveSex(s)}
+                    >
+                      {s}
+                    </span>
+                  </span>
+                ))}
+              </>
+            ) : undefined}
+          >
+            <EvidencePane
+              finding={activeFinding!}
+              analytics={analytics}
+              statistics={sexAwareStatistics!}
+            />
+            {/* Normalization annotation for OM domain endpoints */}
+            {selectedFinding.domain === "OM" && (() => {
+              const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+              const category = specimen ? getOrganCorrelationCategory(specimen) : null;
+              const normCtx = specimen ? normalization.getContext(specimen) : null;
+
+              // Reproductive organs always show category-specific messaging
+              if (category === OrganCorrelationCategory.GONADAL) {
+                return (
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                    <div className="font-semibold text-amber-800">
+                      Testes — absolute weight primary (BW-spared)
+                    </div>
+                    <div className="mt-0.5 text-amber-700">
+                      Absolute weight is the primary endpoint for testes.
+                      Body weight ratios are not appropriate (Creasy 2013).
+                    </div>
+                    {normCtx && normCtx.tier >= 2 && (
+                      <div className="mt-1 font-semibold text-amber-800">
+                        BW-ratio testes weight will appear artificially increased
+                        (BW Tier {normCtx.tier}, g = {normCtx.bwG.toFixed(2)}).
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
+                const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
+                return (
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                    <div className="font-semibold text-amber-800">
+                      {organName} — androgen-dependent, not BW-dependent
+                    </div>
+                    <div className="mt-0.5 text-amber-700">
+                      Weight reflects androgen status. Correlate with histopathology
+                      and testes findings.
+                    </div>
+                    <button
+                      className="mt-1 text-[9px] text-blue-600 hover:underline"
+                      onClick={() => {
+                        // Navigate to MI domain findings for this organ
+                        navigate(`/study/${studyId}/findings`, {
+                          state: { domain: "MI", specimen: specimen },
+                        });
+                      }}
+                    >
+                      View MI findings for {organName} &rarr;
+                    </button>
+                  </div>
+                );
+              }
+              if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
+                const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
+                return (
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                    <div className="font-semibold text-amber-800">
+                      {organName} — low confidence (estrous cycle variability)
+                    </div>
+                    <div className="mt-0.5 text-amber-700">
+                      Low confidence — estrous cycle stage not controlled.
+                      Interpret with caution (CV 25–50%).
+                    </div>
+                  </div>
+                );
+              }
+
+              // Non-reproductive organs: show BW confounding at tier >= 2
+              if (!normCtx || normCtx.tier < 2) return null;
+              const modeLabels: Record<string, string> = {
+                absolute: "absolute weight",
+                body_weight: "ratio-to-BW",
+                brain_weight: "ratio-to-brain",
+                ancova: "ANCOVA",
+              };
+              return (
+                <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                  <div className="font-semibold text-amber-800">
+                    Body weight confounding (Tier {normCtx.tier})
+                  </div>
+                  <div className="mt-0.5 text-amber-700">
+                    BW effect: g = {normCtx.bwG.toFixed(2)}. {normCtx.tier >= 3
+                      ? "Organ-to-BW ratios unreliable for this dose group."
+                      : "Organ-to-BW ratios should be interpreted with caution."}
+                  </div>
+                  <div className="mt-0.5 text-amber-700">
+                    Active normalization: {modeLabels[normCtx.activeMode] ?? normCtx.activeMode}
+                    {normCtx.tier === 4 && " — ANCOVA recommended for definitive assessment"}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Normalization alternatives for OM domain (G2: grayed for GONADAL, G5: side-by-side for FEMALE) */}
+            {selectedFinding.domain === "OM" && (() => {
+              const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+              const cat = specimen ? getOrganCorrelationCategory(specimen) : null;
+              const decision = specimen ? normalization.getDecision(specimen) : null;
+              // Show alternatives for: GONADAL (grayed ratios), FEMALE_REPRODUCTIVE (always), tier >= 2 (showAlternatives)
+              const shouldShow = cat === OrganCorrelationCategory.GONADAL
+                || cat === OrganCorrelationCategory.FEMALE_REPRODUCTIVE
+                || (decision?.showAlternatives ?? false);
+              if (!shouldShow) return null;
+              const isGonadal = cat === OrganCorrelationCategory.GONADAL;
+              const gs = selectedFinding.group_stats;
+              const controlGs = gs.find(g => g.dose_level === 0 || g.dose_level === 1);
+              const highestGs = gs.length > 0 ? gs[gs.length - 1] : null;
+              if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
+              const ratioGrayed = isGonadal ? "opacity-40" : "";
+              return (
+                <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+                  <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Normalization alternatives (high dose vs control)
+                  </div>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-[9px] text-muted-foreground">
+                        <th className="py-0.5 text-left font-medium">Metric</th>
+                        <th className="py-0.5 text-right font-medium">Control</th>
+                        <th className="py-0.5 text-right font-medium">High dose</th>
+                        <th className="py-0.5 text-right font-medium">{"\u0394"}%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="py-0.5">Absolute (g)</td>
+                        <td className="py-0.5 text-right font-mono">{controlGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                        <td className="py-0.5 text-right font-mono">{highestGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                        <td className="py-0.5 text-right font-mono">
+                          {controlGs.mean && highestGs.mean
+                            ? `${(((highestGs.mean - controlGs.mean) / controlGs.mean) * 100).toFixed(1)}%`
+                            : "\u2014"}
+                        </td>
+                      </tr>
+                      <tr className={ratioGrayed}>
+                        <td className="py-0.5">
+                          Ratio-to-BW
+                          {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
+                        </td>
+                        <td className="py-0.5 text-right font-mono">{controlGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                        <td className="py-0.5 text-right font-mono">{highestGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                        <td className="py-0.5 text-right font-mono">
+                          {controlGs.mean_relative && highestGs.mean_relative
+                            ? `${(((highestGs.mean_relative - controlGs.mean_relative) / controlGs.mean_relative) * 100).toFixed(1)}%`
+                            : "\u2014"}
+                        </td>
+                      </tr>
+                      <tr className={ratioGrayed}>
+                        <td className="py-0.5">
+                          Ratio-to-brain
+                          {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
+                        </td>
+                        <td className="py-0.5 text-right font-mono text-muted-foreground" colSpan={3}>
+                          Not computed (Phase 2)
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+            {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
+            {activeFinding!.domain === "OM" && activeFinding!.ancova && (
+              <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
+            )}
+            {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
+            {(() => {
+              const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
+              const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
+              if (!ep?.endpointConfidence) return null;
+              return (
+                <div className="mt-3 border-t border-border/30 pt-2">
+                  <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
+                </div>
+              );
+            })()}
+          </CollapsiblePane>
+          </div>
+
+          {/* Organ insights — rule-based signals filtered by organ + domain prefix */}
+          {endpointRules.length > 0 && (
+            <CollapsiblePane
+              title="Organ insights"
+              defaultOpen={false}
+              keepMounted
+              expandAll={expandGen}
+              collapseAll={collapseGen}
+              headerRight={
+                <span className="text-[9px] text-muted-foreground">
+                  {endpointRules.length} rules
+                </span>
+              }
+            >
+              <InsightsList
+                rules={endpointRules}
+                onEndpointClick={(organ) => selectGroup("organ", organ)}
+              />
+            </CollapsiblePane>
+          )}
+
+          {/* Dose detail — Tier 1: always shows both sexes */}
           <CollapsiblePane
             title="Dose detail"
             defaultOpen
@@ -1399,7 +1689,7 @@ export function FindingsContextPanel() {
       {/* Independent panes — render immediately, have their own data hooks */}
 
       {/* Time course — between dose detail and recovery */}
-      {selectedFinding && selectedFinding.data_type === "continuous" && (
+      {selectedFinding && (selectedFinding.data_type === "continuous" || selectedFinding.domain === "CL") && (
         <TimeCoursePane
           finding={selectedFinding}
           doseGroups={findingsData?.dose_groups}
@@ -1436,235 +1726,9 @@ export function FindingsContextPanel() {
         </div>
       )}
 
-      {/* Statistical Evidence + Patterns + Correlations + Effect Ranking — need useFindingContext data */}
+      {/* Patterns + Correlations + Effect Ranking — need useFindingContext data */}
       {contextReady ? (
       <>
-      <div ref={evidencePaneRef}>
-      <CollapsiblePane
-        title={hasSibling ? "Statistical Evidence:" : "Statistical Evidence"}
-        defaultOpen
-        keepMounted
-        expandAll={expandGen}
-        collapseAll={collapseGen}
-        headerRight={hasSibling ? (
-          <>
-            {[selectedFinding.sex, siblingContext!.sex].map((s, i) => (
-              <span key={s}>
-                {i > 0 && <span className="mx-0.5 text-muted-foreground/30">|</span>}
-                <span
-                  className={cn("cursor-pointer", activeSex === s ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
-                  onClick={() => setActiveSex(s)}
-                >
-                  {s}
-                </span>
-              </span>
-            ))}
-          </>
-        ) : undefined}
-      >
-        <EvidencePane
-          finding={activeFinding!}
-          analytics={analytics}
-          statistics={sexAwareStatistics!}
-        />
-        {/* Normalization annotation for OM domain endpoints */}
-        {selectedFinding.domain === "OM" && (() => {
-          const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
-          const category = specimen ? getOrganCorrelationCategory(specimen) : null;
-          const normCtx = specimen ? normalization.getContext(specimen) : null;
-
-          // Reproductive organs always show category-specific messaging
-          if (category === OrganCorrelationCategory.GONADAL) {
-            return (
-              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
-                <div className="font-semibold text-amber-800">
-                  Testes — absolute weight primary (BW-spared)
-                </div>
-                <div className="mt-0.5 text-amber-700">
-                  Absolute weight is the primary endpoint for testes.
-                  Body weight ratios are not appropriate (Creasy 2013).
-                </div>
-                {normCtx && normCtx.tier >= 2 && (
-                  <div className="mt-1 font-semibold text-amber-800">
-                    BW-ratio testes weight will appear artificially increased
-                    (BW Tier {normCtx.tier}, g = {normCtx.bwG.toFixed(2)}).
-                  </div>
-                )}
-              </div>
-            );
-          }
-          if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
-            const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
-            return (
-              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
-                <div className="font-semibold text-amber-800">
-                  {organName} — androgen-dependent, not BW-dependent
-                </div>
-                <div className="mt-0.5 text-amber-700">
-                  Weight reflects androgen status. Correlate with histopathology
-                  and testes findings.
-                </div>
-                <button
-                  className="mt-1 text-[9px] text-blue-600 hover:underline"
-                  onClick={() => {
-                    // Navigate to MI domain findings for this organ
-                    navigate(`/study/${studyId}/findings`, {
-                      state: { domain: "MI", specimen: specimen },
-                    });
-                  }}
-                >
-                  View MI findings for {organName} &rarr;
-                </button>
-              </div>
-            );
-          }
-          if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
-            const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
-            return (
-              <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
-                <div className="font-semibold text-amber-800">
-                  {organName} — low confidence (estrous cycle variability)
-                </div>
-                <div className="mt-0.5 text-amber-700">
-                  Low confidence — estrous cycle stage not controlled.
-                  Interpret with caution (CV 25–50%).
-                </div>
-              </div>
-            );
-          }
-
-          // Non-reproductive organs: show BW confounding at tier >= 2
-          if (!normCtx || normCtx.tier < 2) return null;
-          const modeLabels: Record<string, string> = {
-            absolute: "absolute weight",
-            body_weight: "ratio-to-BW",
-            brain_weight: "ratio-to-brain",
-            ancova: "ANCOVA",
-          };
-          return (
-            <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
-              <div className="font-semibold text-amber-800">
-                Body weight confounding (Tier {normCtx.tier})
-              </div>
-              <div className="mt-0.5 text-amber-700">
-                BW effect: g = {normCtx.bwG.toFixed(2)}. {normCtx.tier >= 3
-                  ? "Organ-to-BW ratios unreliable for this dose group."
-                  : "Organ-to-BW ratios should be interpreted with caution."}
-              </div>
-              <div className="mt-0.5 text-amber-700">
-                Active normalization: {modeLabels[normCtx.activeMode] ?? normCtx.activeMode}
-                {normCtx.tier === 4 && " — ANCOVA recommended for definitive assessment"}
-              </div>
-            </div>
-          );
-        })()}
-        {/* Normalization alternatives for OM domain (G2: grayed for GONADAL, G5: side-by-side for FEMALE) */}
-        {selectedFinding.domain === "OM" && (() => {
-          const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
-          const cat = specimen ? getOrganCorrelationCategory(specimen) : null;
-          const decision = specimen ? normalization.getDecision(specimen) : null;
-          // Show alternatives for: GONADAL (grayed ratios), FEMALE_REPRODUCTIVE (always), tier >= 2 (showAlternatives)
-          const shouldShow = cat === OrganCorrelationCategory.GONADAL
-            || cat === OrganCorrelationCategory.FEMALE_REPRODUCTIVE
-            || (decision?.showAlternatives ?? false);
-          if (!shouldShow) return null;
-          const isGonadal = cat === OrganCorrelationCategory.GONADAL;
-          const gs = selectedFinding.group_stats;
-          const controlGs = gs.find(g => g.dose_level === 0 || g.dose_level === 1);
-          const highestGs = gs.length > 0 ? gs[gs.length - 1] : null;
-          if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
-          const ratioGrayed = isGonadal ? "opacity-40" : "";
-          return (
-            <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
-              <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Normalization alternatives (high dose vs control)
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-[9px] text-muted-foreground">
-                    <th className="py-0.5 text-left font-medium">Metric</th>
-                    <th className="py-0.5 text-right font-medium">Control</th>
-                    <th className="py-0.5 text-right font-medium">High dose</th>
-                    <th className="py-0.5 text-right font-medium">{"\u0394"}%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-0.5">Absolute (g)</td>
-                    <td className="py-0.5 text-right font-mono">{controlGs.mean?.toFixed(3) ?? "\u2014"}</td>
-                    <td className="py-0.5 text-right font-mono">{highestGs.mean?.toFixed(3) ?? "\u2014"}</td>
-                    <td className="py-0.5 text-right font-mono">
-                      {controlGs.mean && highestGs.mean
-                        ? `${(((highestGs.mean - controlGs.mean) / controlGs.mean) * 100).toFixed(1)}%`
-                        : "\u2014"}
-                    </td>
-                  </tr>
-                  <tr className={ratioGrayed}>
-                    <td className="py-0.5">
-                      Ratio-to-BW
-                      {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
-                    </td>
-                    <td className="py-0.5 text-right font-mono">{controlGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
-                    <td className="py-0.5 text-right font-mono">{highestGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
-                    <td className="py-0.5 text-right font-mono">
-                      {controlGs.mean_relative && highestGs.mean_relative
-                        ? `${(((highestGs.mean_relative - controlGs.mean_relative) / controlGs.mean_relative) * 100).toFixed(1)}%`
-                        : "\u2014"}
-                    </td>
-                  </tr>
-                  <tr className={ratioGrayed}>
-                    <td className="py-0.5">
-                      Ratio-to-brain
-                      {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
-                    </td>
-                    <td className="py-0.5 text-right font-mono text-muted-foreground" colSpan={3}>
-                      Not computed (Phase 2)
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          );
-        })()}
-        {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
-        {activeFinding!.domain === "OM" && activeFinding!.ancova && (
-          <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
-        )}
-        {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
-        {(() => {
-          const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
-          const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
-          if (!ep?.endpointConfidence) return null;
-          return (
-            <div className="mt-3 border-t border-border/30 pt-2">
-              <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
-            </div>
-          );
-        })()}
-      </CollapsiblePane>
-      </div>
-
-      {/* Organ insights — rule-based signals filtered by organ/domain */}
-      {ruleResults.length > 0 && selectedFinding.organ_system && (
-        <CollapsiblePane
-          title="Organ insights"
-          defaultOpen={false}
-          keepMounted
-          expandAll={expandGen}
-          collapseAll={collapseGen}
-          headerRight={
-            <span className="text-[9px] text-muted-foreground">
-              {ruleResults.filter(r => r.organ_system === selectedFinding.organ_system).length} rules
-            </span>
-          }
-        >
-          <InsightsList
-            rules={ruleResults.filter(r => r.organ_system === selectedFinding.organ_system)}
-            onEndpointClick={(organ) => selectGroup("organ", organ)}
-          />
-        </CollapsiblePane>
-      )}
-
       {/* Patterns pane — three states: syndromes only, convergence only, both */}
       {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
         <CollapsiblePane

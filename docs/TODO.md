@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 51 | 21 | Missing capability, no spec exists |
+| Gap | 57 | 21 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **76** | **56** | |
+| **Total open** | **82** | **56** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -663,6 +663,66 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Priority:** P3 — cosmetic correctness, no runtime impact
 - **Owner hint:** backend-dev + frontend-dev (coordinated rename)
+
+### GAP-74: ToxFindingForm missing from FindingsContextPanel (Phase A-3)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 4 (line 218)
+- **Dimension:** WHEN — component not rendered
+- **Spec quote:** "ToxFindingForm — already present. Ensure system suggestion is wired (check D-R version passes systemSuggestion prop)."
+- **Actual:** ToxFindingForm is not imported or rendered in FindingsContextPanel. Only present in DoseResponseContextPanel, HistopathologyContextPanel, NoaelContextPanel.
+- **Fix:** Import ToxFindingForm, render after CausalityWorksheet (before EvidencePane), wire `systemSuggestion` via `deriveToxSuggestion()` using selected finding's treatment_related + severity. Reference: DoseResponseContextPanel.tsx lines 342-348.
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`
+- **Status:** Open
+- **Priority:** P1 — blocks annotation workflow in Findings view
+- **Owner hint:** frontend-dev
+
+### GAP-75: Context panel header missing incremental info (Phase A-4)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 1 (lines 205-209)
+- **Dimension:** WHAT — 0 of 4 items implemented
+- **Spec quote:** "Add incremental info from D-R header: Pattern badge (PATTERN_LABELS/PATTERN_BG). Compact metrics (trend p, min p, max |d|, data type) if not redundant with VerdictPane. Assessment status badge. NOAEL indicator."
+- **Actual:** ContextPanelHeader renders only title (finding name) and subtitle (domain | day). No pattern badge, no metrics, no assessment status, no NOAEL. Data is available in scope (`selectedFinding.dose_response_pattern`, `noael` from useEffectiveNoael).
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1300-1310`
+- **Status:** Open
+- **Priority:** P2 — informational, doesn't block functionality
+- **Owner hint:** frontend-dev + ux-designer (decide which items to show)
+
+### GAP-76: InsightsList filters organ only, not domain prefix (Phase A-2)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 6 (lines 220-223)
+- **Dimension:** WHAT — partial filtering
+- **Spec quote:** "Rule-based insights filtered by organ system + domain prefix."
+- **Actual:** FindingsContextPanel.tsx line 1661 filters `ruleResults.filter(r => r.organ_system === selectedFinding.organ_system)` — organ only, no domain prefix. Reference: DoseResponseContextPanel.tsx lines 64-72 shows correct dual filter (organ_system OR domain prefix match).
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1661`
+- **Status:** Open
+- **Priority:** P2 — may show extra rules but not incorrect
+- **Owner hint:** frontend-dev
+
+### GAP-77: FindingsContextPanel pane ordering deviates from spec
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, lines 203-235
+- **Dimension:** WHEN — pane ordering mismatch
+- **Spec target order:** Header → Verdict → CausalityWorksheet → ToxFindingForm → EvidencePane → InsightsList → DoseDetailPane → ...
+- **Actual order:** Header → Verdict → CausalityWorksheet → DoseDetailPane → TimeCourse → Distribution → Recovery → EvidencePane → InsightsList → ...
+- **Issue:** DoseDetailPane comes before EvidencePane+InsightsList instead of after. ToxFindingForm missing entirely (see GAP-74). Requires user decision on whether spec ordering or current ordering is preferred.
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1355-1666`
+- **Status:** Open — needs user decision
+- **Priority:** P3 — UX preference, not a bug
+- **Owner hint:** ux-designer
+
+### GAP-78: Timepoint toggle (Terminal/Peak/Recovery) not in context panel
+- **Spec:** `docs/incoming/view-merge-spec.md` section 6, line 265
+- **Dimension:** WHAT — feature not implemented
+- **Spec quote:** "Timepoint toggle: Terminal / Peak / Recovery — consistent with central panel D-R charts."
+- **Actual:** TimeCoursePane uses `hoveredDay ?? terminalDay` with no toggle. Not included in Phase B spec — may be Phase C scope.
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Status:** Open — confirm if deferred to Phase C
+- **Priority:** P3 — enhancement, hover already serves as ad-hoc toggle
+- **Owner hint:** frontend-dev
+
+### GAP-79: Duplicate `shortDoseLabel()` function
+- **Source:** Data reuse audit, Phase B
+- **Issue:** Identical `shortDoseLabel()` function defined in both `TimeCoursePane.tsx` (lines 288-298) and `TimeCourseBarChart.tsx` (lines 79-87). Should be extracted to a shared utility (e.g., `src/lib/dose-formatting.ts`) or consolidated with existing `formatDoseShortLabel()` in severity-colors.ts.
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`, `frontend/src/components/analysis/panes/TimeCourseBarChart.tsx`
+- **Status:** Open
+- **Priority:** P3 — code quality
+- **Owner hint:** review
 
 ---
 
