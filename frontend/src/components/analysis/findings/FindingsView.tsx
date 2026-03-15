@@ -6,6 +6,7 @@ import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -14,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useSessionState } from "@/hooks/useSessionState";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
@@ -52,6 +54,14 @@ export function FindingsView() {
     return [{ id: "scatter", min: 80, max: 2000, defaultHeight: half }];
   }, []);
   const [scatterSection] = useAutoFitSections(containerRef, "findings", scatterSections);
+
+  // Central panel tab: "chart" (scatter+table) or "table" (full-height table)
+  type FindingsTab = "chart" | "table";
+  const [activeViewTab, setActiveViewTab] = useSessionState<FindingsTab>("pcc.findings.viewTab", "chart");
+  const findingsViewTabs = useMemo(() => [
+    { key: "chart", label: "Chart" },
+    { key: "table", label: "Table", closable: true },
+  ], []);
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -379,9 +389,15 @@ export function FindingsView() {
           </button>
         )}
       </FilterBar>
+      <ViewTabBar
+        tabs={findingsViewTabs}
+        value={activeViewTab}
+        onChange={(k) => setActiveViewTab(k as FindingsTab)}
+        onClose={() => setActiveViewTab("chart")}
+      />
 
-      {/* Quadrant scatter */}
-      {data && endpointSummaries.length > 0 && (
+      {/* Quadrant scatter — hidden in "table" tab */}
+      {activeViewTab === "chart" && data && endpointSummaries.length > 0 && (
         <ViewSection
           title={sectionTitle}
           headerRight={headerRight}
@@ -422,6 +438,7 @@ export function FindingsView() {
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
           activeGrouping={activeGrouping}
+          onOpenInTab={activeViewTab === "chart" ? () => setActiveViewTab("table") : undefined}
         />
       ) : null}
       </div>
