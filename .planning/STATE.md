@@ -44,15 +44,16 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-13
-Stopped at: HELP.md draft + staleness fixes committed. Deck pivot decided (in-app help instead of PowerPoint).
+Last session: 2026-03-15
+Stopped at: FindingsTable improvements — pivoted view, open-in-tab, ViewTabBar closable tabs. Two files uncommitted.
 Completed this session:
-- Phase A of findings-dr-merge committed (32b97a2)
-- `docs/HELP.md` draft — Datagrok-style technical help page (68d902e)
-- Staleness fixes: README (syndromes 24->33), ARCHITECTURE (syndromes 10->33), validation-engine (7->14 custom rules)
-- Decision: deck frozen, content becomes in-app Help view
-Prior: Deck rules engine restructure (46 slides), findings+DR merge spec complete.
-Next: Three workstreams — (1) wire Help into app, (2) move deck folder to docs/deck/, (3) cross-check HELP.md against data-lineage.md. See `.continue-here.md`.
+- Phase B + gap fixes committed (f944499), pane reorder + per-sex causality committed (77ce6f6)
+- FindingsTable: pivoted view (Standard/Pivoted toggle), open-in-tab icon, Type column tooltip, unitLabel removal (77ce6f6)
+- FindingsView: ViewTabBar with Chart/Table tabs, close-tab X on hover
+- ViewTabBar: closable tab support added to shared component
+- FindingsTable visibility issue resolved (Vite cache + dev server restart)
+Prior: Phase A committed (32b97a2), HELP.md draft (68d902e).
+Next: Commit FindingsView + ViewTabBar. Phase C of view-merge-spec. See `.continue-here.md`.
 
 ---
-*Last updated: 2026-03-13 — HELP.md draft + doc staleness fixes*
+*Last updated: 2026-03-15 — FindingsTable improvements, two files uncommitted*
