@@ -1,15 +1,21 @@
 /**
  * Custom SVG line chart for one sex panel in the Time Course pane.
  * Renders gridlines, zero line, terminal marker, dose-group polylines,
- * and synced hover crosshair + dots. Y-axis = effect size (Hedges' g)
- * vs concurrent control.
+ * and synced hover crosshair + dots. Y-axis value is determined by
+ * the parent's Y-axis mode (g, absolute, %change, %vs control).
  */
 import { useCallback } from "react";
-import type { TimeCoursePoint } from "@/hooks/useTimeCourseData";
 import type { DeathRecord } from "@/types/mortality";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 
 // ── Types ─────────────────────────────────────────────────
+
+export interface ChartPoint {
+  day: number;
+  y: number;
+  n: number;
+  nControl: number;
+}
 
 interface DoseGroupInfo {
   doseLevel: number;
@@ -23,8 +29,16 @@ interface PlotArea {
   height: number;
 }
 
+export interface SubjectTrace {
+  usubjid: string;
+  doseLevel: number;
+  points: { day: number; y: number }[];
+  /** Day where treatment ends and recovery begins (for dashed segment). */
+  terminalDay?: number | null;
+}
+
 export interface TimeCourseLineChartProps {
-  series: Record<number, TimeCoursePoint[]>; // doseLevel → points
+  series: Record<number, ChartPoint[]>; // doseLevel → points
   doseGroups: DoseGroupInfo[];
   xScale: (v: number) => number;
   yScale: (v: number) => number;
@@ -37,6 +51,8 @@ export interface TimeCourseLineChartProps {
   plotArea: PlotArea;
   allDays: number[]; // sorted unique days across all doses
   deaths: DeathRecord[];
+  yTickFormatter?: (v: number) => string;
+  subjectTraces?: SubjectTrace[];
 }
 
 // ── Constants ─────────────────────────────────────────────
@@ -56,8 +72,13 @@ function pickXTicks(days: number[]): number[] {
     result.push(days[Math.round(i * step)]);
   }
   result.push(days[days.length - 1]);
-  // deduplicate
   return [...new Set(result)];
+}
+
+/** Default Y-axis formatter (g mode: "C" at zero, "+/-N" elsewhere). */
+function defaultYTickFormatter(v: number): string {
+  if (v === 0) return "C";
+  return `${v > 0 ? "+" : ""}${v}`;
 }
 
 // ── Component ─────────────────────────────────────────────
@@ -75,7 +96,10 @@ export function TimeCourseLineChart({
   plotArea,
   allDays,
   deaths,
+  yTickFormatter: formatTick = defaultYTickFormatter,
+  subjectTraces,
 }: TimeCourseLineChartProps) {
+  const hasSubjects = subjectTraces && subjectTraces.length > 0;
 
   // Voronoi snap: convert mouse X → nearest day via midpoint boundaries
   const handleMouseMove = useCallback(
@@ -89,7 +113,6 @@ export function TimeCourseLineChart({
       const svgPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
       const mouseX = svgPt.x;
 
-      // Find day via midpoint Voronoi
       let best = allDays[0];
       for (let i = 0; i < allDays.length - 1; i++) {
         const mid = (xScale(allDays[i]) + xScale(allDays[i + 1])) / 2;
@@ -115,7 +138,7 @@ export function TimeCourseLineChart({
       style={{ overflow: "visible" }}
     >
 
-      {/* Baseline (0%) line */}
+      {/* Baseline (0) line */}
       <line
         x1={plotArea.left}
         x2={plotArea.left + plotArea.width}
@@ -138,12 +161,53 @@ export function TimeCourseLineChart({
         />
       )}
 
-      {/* Data lines — one polyline per dose group */}
-      {doseGroups.map(({ doseLevel }) => {
+      {/* Subject traces — thin per-animal polylines when subjects mode is ON */}
+      {hasSubjects && subjectTraces.map((trace) => {
+        if (trace.points.length < 2) return null;
+        const color = getDoseGroupColor(trace.doseLevel);
+        const tDay = trace.terminalDay;
+
+        // Split into treatment and recovery segments
+        const treatmentPts = tDay != null
+          ? trace.points.filter((p) => p.day <= tDay)
+          : trace.points;
+        const recoveryPts = tDay != null
+          ? trace.points.filter((p) => p.day >= tDay)
+          : [];
+
+        return (
+          <g key={trace.usubjid}>
+            {treatmentPts.length >= 2 && (
+              <polyline
+                points={treatmentPts.map((p) => `${xScale(p.day)},${yScale(p.y)}`).join(" ")}
+                fill="none"
+                stroke={color}
+                strokeWidth={0.5}
+                strokeLinejoin="round"
+                opacity={0.35}
+              />
+            )}
+            {recoveryPts.length >= 2 && (
+              <polyline
+                points={recoveryPts.map((p) => `${xScale(p.day)},${yScale(p.y)}`).join(" ")}
+                fill="none"
+                stroke={color}
+                strokeWidth={0.5}
+                strokeLinejoin="round"
+                strokeDasharray="2,1.5"
+                opacity={0.35}
+              />
+            )}
+          </g>
+        );
+      })}
+
+      {/* Data lines — one polyline per dose group (hidden when subjects mode is ON) */}
+      {!hasSubjects && doseGroups.map(({ doseLevel }) => {
         const pts = series[doseLevel];
         if (!pts || pts.length < 2) return null;
         const points = pts
-          .map((p) => `${xScale(p.day)},${yScale(p.g)}`)
+          .map((p) => `${xScale(p.day)},${yScale(p.y)}`)
           .join(" ");
         return (
           <polyline
@@ -163,23 +227,21 @@ export function TimeCourseLineChart({
       {deaths.map((d) => {
         const pts = series[d.dose_level];
         if (!pts || pts.length === 0 || d.study_day == null) return null;
-        // Find surrounding points for y-interpolation
-        let before: TimeCoursePoint | null = null;
-        let after: TimeCoursePoint | null = null;
+        let before: ChartPoint | null = null;
+        let after: ChartPoint | null = null;
         for (const pt of pts) {
           if (pt.day <= d.study_day) before = pt;
           else { after = pt; break; }
         }
         if (!before && !after) return null;
-        // Interpolate y between the two surrounding points
         let cy: number;
         if (!before) {
-          cy = yScale(after!.g);
+          cy = yScale(after!.y);
         } else if (!after || before.day === d.study_day) {
-          cy = yScale(before.g);
+          cy = yScale(before.y);
         } else {
           const t = (d.study_day - before.day) / (after.day - before.day);
-          cy = yScale(before.g + t * (after.g - before.g));
+          cy = yScale(before.y + t * (after.y - before.y));
         }
         const cx = xScale(d.study_day);
         const color = getDoseGroupColor(d.dose_level);
@@ -216,7 +278,7 @@ export function TimeCourseLineChart({
             <circle
               key={doseLevel}
               cx={xScale(pt.day)}
-              cy={yScale(pt.g)}
+              cy={yScale(pt.y)}
               r={2.5}
               fill={getDoseGroupColor(doseLevel)}
               stroke="white"
@@ -229,34 +291,20 @@ export function TimeCourseLineChart({
       {/* Y-axis labels (left panel only) */}
       {showYAxis && (
         <>
-          {/* "C" label at zero line */}
-          <text
-            x={plotArea.left - 2}
-            y={yScale(0)}
-            textAnchor="end"
-            dominantBaseline="central"
-            fill="#94a3b8"
-            fontSize={6}
-            fontWeight={600}
-          >
-            C
-          </text>
-          {yTicks
-            .filter((tick) => tick !== 0)
-            .map((tick) => (
-              <text
-                key={tick}
-                x={plotArea.left - 2}
-                y={yScale(tick)}
-                textAnchor="end"
-                dominantBaseline="central"
-                fill="#94a3b8"
-                fontSize={6}
-              >
-                {tick > 0 ? "+" : ""}
-                {tick}
-              </text>
-            ))}
+          {yTicks.map((tick) => (
+            <text
+              key={tick}
+              x={plotArea.left - 2}
+              y={yScale(tick)}
+              textAnchor="end"
+              dominantBaseline="central"
+              fill="#94a3b8"
+              fontSize={6}
+              fontWeight={tick === 0 ? 600 : 400}
+            >
+              {formatTick(tick)}
+            </text>
+          ))}
         </>
       )}
 
