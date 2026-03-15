@@ -456,6 +456,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
           <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
         </div>
       )}
+
     </div>
   );
 }

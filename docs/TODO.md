@@ -724,6 +724,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P3 — code quality
 - **Owner hint:** review
 
+### ~~GAP-80: Causality criteria — per-sex decomposition for gradient and strength~~
+- **Status:** Resolved
+- **Fix:** Per-sex gradient + strength annotations in DoseDetailPane (inline after conclusions per sex). CausalityWorksheet shows F/M breakdown under gradient and strength rows. Effect size label fixed from "d" to "g" (Hedges' g). `computeBiologicalGradient` and `computeStrength` exported from CausalityWorksheet for reuse.
+
 ---
 
 ## Archived Documentation

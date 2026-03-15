@@ -1251,6 +1251,32 @@ export function FindingsContextPanel() {
     return activeFindings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
   }, [hasSibling, siblingContext, activeSex, selectedFinding, activeFindings]);
 
+  // Per-sex CausalitySummary map for CausalityWorksheet per-sex breakdown (GAP-80)
+  const perSexSummaries = useMemo((): Record<string, CausalitySummary> | undefined => {
+    if (!causalitySummary || !selectedFinding || !hasSibling || !siblingContext) return undefined;
+    const sibFinding = findingsData?.findings.find(f => f.id === siblingContext.finding_id);
+    if (!sibFinding) return undefined;
+    const base = { ...causalitySummary };
+    return {
+      [selectedFinding.sex]: {
+        ...base,
+        dose_response_pattern: selectedFinding.dose_response_pattern,
+        min_trend_p: selectedFinding.trend_p,
+        max_effect_size: selectedFinding.max_effect_size,
+        min_p_value: selectedFinding.min_p_adj,
+        sexes: [selectedFinding.sex],
+      },
+      [sibFinding.sex]: {
+        ...base,
+        dose_response_pattern: sibFinding.dose_response_pattern,
+        min_trend_p: sibFinding.trend_p,
+        max_effect_size: sibFinding.max_effect_size,
+        min_p_value: sibFinding.min_p_adj,
+        sexes: [sibFinding.sex],
+      },
+    };
+  }, [causalitySummary, selectedFinding, hasSibling, siblingContext, findingsData]);
+
   // ── Early returns (after all hooks) ──
 
   // Priority 1: Endpoint selected → endpoint-level panel
@@ -1406,36 +1432,80 @@ export function FindingsContextPanel() {
             )}
           </div>
 
-          {/* Causality worksheet — Bradford Hill assessment */}
+          {/* Dose detail */}
           <CollapsiblePane
-            title="Causality assessment"
-            defaultOpen={false}
+            title="Dose detail"
+            defaultOpen
             keepMounted
             expandAll={expandGen}
             collapseAll={collapseGen}
           >
-            <CausalityWorksheet
-              studyId={studyId}
-              selectedEndpoint={selectedFinding.endpoint_label ?? selectedFinding.finding}
-              selectedSummary={causalitySummary}
-              ruleResults={ruleResults}
-              signalSummary={signalSummary}
+            <DoseDetailPane
+              statistics={activeStatistics!}
+              doseResponse={context!.dose_response}
+              sex={selectedFinding.sex}
+              siblingStatistics={hasSibling ? siblingContext!.statistics : undefined}
+              siblingDoseResponse={hasSibling ? syncBarsWithStats(siblingContext!.dose_response, siblingContext!.statistics) : undefined}
+              siblingSex={hasSibling ? siblingContext!.sex : undefined}
+              ancova={selectedFinding.ancova}
+              siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
             />
           </CollapsiblePane>
+        </>
+      ) : (
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      )}
 
-          {/* Tox assessment form — system suggestion wired from signal summary */}
-          {studyId && (
-            <ToxFindingForm
-              studyId={studyId}
-              endpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
-              systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
-            />
-          )}
+      {/* Independent panes — render immediately, have their own data hooks */}
 
-          {/* Statistical Evidence — moved before Dose Detail per spec */}
+      {/* Time course */}
+      {selectedFinding && (selectedFinding.data_type === "continuous" || selectedFinding.domain === "CL") && (
+        <TimeCoursePane
+          finding={selectedFinding}
+          doseGroups={findingsData?.dose_groups}
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        />
+      )}
+
+      {/* Distribution */}
+      {selectedFinding && (
+        <div ref={distributionPaneRef}>
+          <DistributionPane
+            finding={selectedFinding}
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+            scrollRef={distributionPaneRef}
+          />
+        </div>
+      )}
+
+      {/* Recovery */}
+      {hasRecovery && selectedFinding && (
+        <div ref={recoveryPaneRef}>
+          <CollapsiblePane
+            key={selectedFinding.id}
+            title="Recovery"
+            defaultOpen={!recoveryNotExamined}
+            summary={recoveryNotExamined ? "Not examined" : undefined}
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
+            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
+          </CollapsiblePane>
+        </div>
+      )}
+
+      {/* Analysis + determination panes — need useFindingContext data */}
+      {contextReady ? (
+      <>
+          {/* Statistical evidence */}
           <div ref={evidencePaneRef}>
           <CollapsiblePane
-            title={hasSibling ? "Statistical Evidence:" : "Statistical Evidence"}
+            title={hasSibling ? "Statistical evidence:" : "Statistical evidence"}
             defaultOpen
             keepMounted
             expandAll={expandGen}
@@ -1638,7 +1708,7 @@ export function FindingsContextPanel() {
           </CollapsiblePane>
           </div>
 
-          {/* Organ insights — rule-based signals filtered by organ + domain prefix */}
+          {/* Organ insights */}
           {endpointRules.length > 0 && (
             <CollapsiblePane
               title="Organ insights"
@@ -1659,76 +1729,6 @@ export function FindingsContextPanel() {
             </CollapsiblePane>
           )}
 
-          {/* Dose detail — Tier 1: always shows both sexes */}
-          <CollapsiblePane
-            title="Dose detail"
-            defaultOpen
-            keepMounted
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-          >
-            <DoseDetailPane
-              statistics={activeStatistics!}
-              doseResponse={context!.dose_response}
-              sex={selectedFinding.sex}
-              siblingStatistics={hasSibling ? siblingContext!.statistics : undefined}
-              siblingDoseResponse={hasSibling ? syncBarsWithStats(siblingContext!.dose_response, siblingContext!.statistics) : undefined}
-              siblingSex={hasSibling ? siblingContext!.sex : undefined}
-              ancova={selectedFinding.ancova}
-              siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
-            />
-          </CollapsiblePane>
-        </>
-      ) : (
-        <div className="space-y-3 p-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      )}
-
-      {/* Independent panes — render immediately, have their own data hooks */}
-
-      {/* Time course — between dose detail and recovery */}
-      {selectedFinding && (selectedFinding.data_type === "continuous" || selectedFinding.domain === "CL") && (
-        <TimeCoursePane
-          finding={selectedFinding}
-          doseGroups={findingsData?.dose_groups}
-          expandAll={expandGen}
-          collapseAll={collapseGen}
-        />
-      )}
-
-      {/* Distribution — individual values at terminal */}
-      {selectedFinding && (
-        <div ref={distributionPaneRef}>
-          <DistributionPane
-            finding={selectedFinding}
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-            scrollRef={distributionPaneRef}
-          />
-        </div>
-      )}
-
-      {/* Recovery insights — immediately after dose detail */}
-      {hasRecovery && selectedFinding && (
-        <div ref={recoveryPaneRef}>
-          <CollapsiblePane
-            key={selectedFinding.id}
-            title="Recovery"
-            defaultOpen={!recoveryNotExamined}
-            summary={recoveryNotExamined ? "Not examined" : undefined}
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-          >
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
-          </CollapsiblePane>
-        </div>
-      )}
-
-      {/* Patterns + Correlations + Effect Ranking — need useFindingContext data */}
-      {contextReady ? (
-      <>
       {/* Patterns pane — three states: syndromes only, convergence only, both */}
       {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
         <CollapsiblePane
@@ -1776,13 +1776,40 @@ export function FindingsContextPanel() {
         </CollapsiblePane>
       )}
 
-      <CollapsiblePane title="Effect Ranking" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Effect ranking" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
           effectSize={context!.effect_size}
           selectedFindingId={selectedFindingId}
           effectSizeMethod={effectSize}
         />
       </CollapsiblePane>
+
+      {/* Causality assessment — Bradford Hill criteria */}
+      <CollapsiblePane
+        title="Causality assessment"
+        defaultOpen={false}
+        keepMounted
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+      >
+        <CausalityWorksheet
+          studyId={studyId}
+          selectedEndpoint={selectedFinding.endpoint_label ?? selectedFinding.finding}
+          selectedSummary={causalitySummary}
+          ruleResults={ruleResults}
+          signalSummary={signalSummary}
+          perSexSummaries={perSexSummaries}
+        />
+      </CollapsiblePane>
+
+      {/* Tox assessment — treatment-related / adversity determination */}
+      {studyId && (
+        <ToxFindingForm
+          studyId={studyId}
+          endpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
+          systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
+        />
+      )}
       </>
       ) : null}
 

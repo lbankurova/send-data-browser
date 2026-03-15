@@ -64,7 +64,7 @@ const EXPERT_CRITERIA = [
 
 type Level = 0 | 1 | 2 | 3 | 4 | 5;
 
-function computeBiologicalGradient(ep: CausalitySummary): { level: Level; evidence: string } {
+export function computeBiologicalGradient(ep: CausalitySummary): { level: Level; evidence: string } {
   const pattern = ep.dose_response_pattern ?? "";
   let base = 1;
   if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") base = 4;
@@ -85,7 +85,7 @@ function computeBiologicalGradient(ep: CausalitySummary): { level: Level; eviden
 // continuous-domain magnitude evidence that Cohen's d provides.
 const CATEGORICAL_MAX_STRENGTH_LEVEL = 3 as const;
 
-function computeStrength(ep: CausalitySummary, esSymbol = "d"): { level: Level; evidence: string } {
+export function computeStrength(ep: CausalitySummary, esSymbol = "g"): { level: Level; evidence: string } {
   const d = ep.max_effect_size != null ? Math.abs(ep.max_effect_size) : 0;
   const isContinuous = ep.data_type === "continuous";
   let level: Level;
@@ -177,6 +177,8 @@ interface CausalityWorksheetProps {
   ruleResults: RuleResult[];
   signalSummary: SignalSummaryRow[];
   effectSizeSymbol?: string;
+  /** Per-sex summaries for gradient/strength breakdown. Keys are sex codes ("F", "M"). */
+  perSexSummaries?: Record<string, CausalitySummary>;
 }
 
 export function CausalityWorksheet({
@@ -185,7 +187,8 @@ export function CausalityWorksheet({
   selectedSummary,
   ruleResults,
   signalSummary,
-  effectSizeSymbol = "d",
+  effectSizeSymbol = "g",
+  perSexSummaries,
 }: CausalityWorksheetProps) {
   const { data: savedAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
   const saveMutation = useSaveAnnotation<CausalAssessment>(studyId, "causal-assessment");
@@ -234,19 +237,33 @@ export function CausalityWorksheet({
     );
   }
 
-  const gradient = computeBiologicalGradient(selectedSummary);
-  const strength = computeStrength(selectedSummary, effectSizeSymbol);
   const consistency = computeConsistency(selectedSummary);
   const specificity = computeSpecificity(selectedSummary, signalSummary);
   const coherence = computeCoherence(selectedSummary, ruleResults);
 
-  const computedCriteria = [
-    { key: "biological_gradient", label: "Biological gradient", ...gradient },
-    { key: "strength", label: "Strength of association", ...strength },
+  // Gradient and strength: per-sex rows when both sexes exist, single row otherwise
+  const sexCodes = perSexSummaries ? Object.keys(perSexSummaries).sort() : [];
+  const isPerSex = sexCodes.length >= 2;
+
+  const computedCriteria: { key: string; label: string; level: Level; evidence: string }[] = [];
+  if (isPerSex) {
+    for (const sex of sexCodes) {
+      const g = computeBiologicalGradient(perSexSummaries![sex]);
+      computedCriteria.push({ key: `biological_gradient_${sex}`, label: `Biological gradient (${sex})`, ...g });
+    }
+    for (const sex of sexCodes) {
+      const s = computeStrength(perSexSummaries![sex], effectSizeSymbol);
+      computedCriteria.push({ key: `strength_${sex}`, label: `Strength of association (${sex})`, ...s });
+    }
+  } else {
+    computedCriteria.push({ key: "biological_gradient", label: "Biological gradient", ...computeBiologicalGradient(selectedSummary) });
+    computedCriteria.push({ key: "strength", label: "Strength of association", ...computeStrength(selectedSummary, effectSizeSymbol) });
+  }
+  computedCriteria.push(
     { key: "consistency", label: "Consistency", ...consistency },
     { key: "specificity", label: "Specificity", ...specificity },
     { key: "coherence", label: "Coherence", ...coherence },
-  ];
+  );
 
   const handleSave = () => {
     if (!studyId || !selectedEndpoint) return;
