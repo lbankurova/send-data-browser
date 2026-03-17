@@ -81,6 +81,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
   const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
+  const resizingRef = useRef(false);
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
@@ -726,7 +727,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   key={header.id}
                   className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
-                  onClick={header.column.getToggleSortingHandler()}
+                  onClick={(e) => {
+                    if (resizingRef.current) return;
+                    header.column.getToggleSortingHandler()?.(e);
+                  }}
                   onContextMenu={
                     header.id === "day" ? (e) => {
                       if (findings.some(f => f.domain === "CL")) {
@@ -742,7 +746,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                   <div
-                    onMouseDown={header.getResizeHandler()}
+                    onMouseDown={(e) => {
+                      resizingRef.current = true;
+                      const clear = () => {
+                        setTimeout(() => { resizingRef.current = false; }, 0);
+                        document.removeEventListener("mouseup", clear);
+                      };
+                      document.addEventListener("mouseup", clear);
+                      header.getResizeHandler()(e);
+                    }}
                     onTouchStart={header.getResizeHandler()}
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
@@ -834,12 +846,23 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   key={header.id}
                   className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={pivColStyle(header.id)}
-                  onClick={header.column.getToggleSortingHandler()}
+                  onClick={(e) => {
+                    if (resizingRef.current) return;
+                    header.column.getToggleSortingHandler()?.(e);
+                  }}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                   <div
-                    onMouseDown={header.getResizeHandler()}
+                    onMouseDown={(e) => {
+                      resizingRef.current = true;
+                      const clear = () => {
+                        setTimeout(() => { resizingRef.current = false; }, 0);
+                        document.removeEventListener("mouseup", clear);
+                      };
+                      document.addEventListener("mouseup", clear);
+                      header.getResizeHandler()(e);
+                    }}
                     onTouchStart={header.getResizeHandler()}
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
