@@ -106,6 +106,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // Pivoted table sorting (separate from standard table)
   const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", []);
+  const [pivotedColumnSizing, setPivotedColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.pivotedColumnSizing", {});
 
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
@@ -274,13 +275,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
           if (!hasCl) return <span title={baseTooltip}>Day</span>;
           const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
-            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Click to change.` },
-            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Click to change.` },
+            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Right-click to change.` },
+            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Right-click to change.` },
           };
           const { label, tooltip } = labels[clDayMode];
           return (
             <span title={tooltip}>
-              {label} <span className="text-muted-foreground/40">{"\u25BE"}</span>
+              {label}
             </span>
           );
         },
@@ -601,10 +602,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const pivotedTable = useReactTable({
     data: pivotedRows,
     columns: pivotedColumns,
-    state: { sorting: pivotedSorting },
+    state: { sorting: pivotedSorting, columnSizing: pivotedColumnSizing },
     onSortingChange: setPivotedSorting,
+    onColumnSizingChange: setPivotedColumnSizing,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
   // Ref for the first sibling row (same endpoint) — used for scroll target
@@ -632,6 +636,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   }
 
   function pivColStyle(colId: string) {
+    const manualWidth = pivotedColumnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
     if (colId === PIVOTED_ABSORBER_ID) return { width: "100%" };
     return { width: 1, whiteSpace: "nowrap" as const };
   }
@@ -720,25 +726,27 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   key={header.id}
                   className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
-                  onDoubleClick={header.column.getToggleSortingHandler()}
-                  onClick={header.id === "day" ? (e) => {
-                    if (findings.some(f => f.domain === "CL")) {
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setDayMenu({ x: rect.left, y: rect.bottom + 2 });
-                    }
-                  } : undefined}
-                  onContextMenu={header.id === "sparkline" ? (e) => {
-                    e.preventDefault();
-                    setSparkMenu({ x: e.clientX, y: e.clientY });
-                  } : undefined}
+                  onClick={header.column.getToggleSortingHandler()}
+                  onContextMenu={
+                    header.id === "day" ? (e) => {
+                      if (findings.some(f => f.domain === "CL")) {
+                        e.preventDefault();
+                        setDayMenu({ x: e.clientX, y: e.clientY });
+                      }
+                    } : header.id === "sparkline" ? (e) => {
+                      e.preventDefault();
+                      setSparkMenu({ x: e.clientX, y: e.clientY });
+                    } : undefined
+                  }
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                   <div
                     onMouseDown={header.getResizeHandler()}
                     onTouchStart={header.getResizeHandler()}
+                    onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
                       header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                     )}
                   />
@@ -824,12 +832,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={pivColStyle(header.id)}
                   onClick={header.column.getToggleSortingHandler()}
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
+                  <div
+                    onMouseDown={header.getResizeHandler()}
+                    onTouchStart={header.getResizeHandler()}
+                    onClick={(e) => e.stopPropagation()}
+                    className={cn(
+                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
+                      header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                    )}
+                  />
                 </th>
               ))}
             </tr>
@@ -859,7 +876,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                     key={cell.id}
                     className={cn(
                       "px-1.5 py-px",
-                      cell.column.id === PIVOTED_ABSORBER_ID && "overflow-hidden text-ellipsis whitespace-nowrap",
+                      cell.column.id === PIVOTED_ABSORBER_ID && !pivotedColumnSizing[PIVOTED_ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
                     )}
                     style={pivColStyle(cell.column.id)}
                     data-evidence=""
