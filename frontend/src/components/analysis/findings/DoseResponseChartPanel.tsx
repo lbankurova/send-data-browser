@@ -39,7 +39,7 @@ const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor(
 const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
 
 // Compact grid + font sizes for findings panel context
-const COMPACT_GRID = { left: "15%", right: "4%", top: "8%", bottom: "22%", containLabel: true };
+const COMPACT_GRID = { left: 8, right: 4, top: 8, bottom: 4, containLabel: true };
 const COMPACT_AXIS_FONT = 8;
 
 /** Build rich x-axis labels with dose-group colors. */
