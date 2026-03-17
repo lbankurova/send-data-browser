@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
+import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,6 +76,7 @@ export function FindingsView() {
   const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
+  const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
 
   // Local UI state
@@ -136,12 +138,15 @@ export function FindingsView() {
         (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
       );
       if (epFindings.length > 0) {
-        selectFinding(pickBestFinding(epFindings));
+        const best = pickBestFinding(epFindings);
+        selectFinding(best);
+        setActiveDay(best.day);
         return;
       }
     }
     if (!endpointLabel) {
       selectFinding(null);
+      setActiveDay(null);
     }
   }, [data, selectFinding]);
 
@@ -396,28 +401,50 @@ export function FindingsView() {
         onClose={() => setActiveViewTab("chart")}
       />
 
-      {/* Quadrant scatter — hidden in "table" tab */}
-      {activeViewTab === "chart" && data && endpointSummaries.length > 0 && (
-        <ViewSection
-          title={sectionTitle}
-          headerRight={headerRight}
-          mode="fixed"
-          height={scatterSection.height}
-          onResizePointerDown={scatterSection.onPointerDown}
-          contentRef={scatterSection.contentRef}
-        >
-          <FindingsQuadrantScatter
-            endpoints={scatterEndpoints}
-            selectedEndpoint={activeEndpoint}
-            onSelect={handleEndpointSelect}
-            onExclude={handleExcludeEndpoint}
-            onSelectedPointChange={handleSelectedPointChange}
-            organCoherence={organCoherence}
-            syndromes={syndromes}
-            labMatches={labMatches}
-            effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
-          />
-        </ViewSection>
+      {/* Chart section — scope-dependent: D-R charts at endpoint level, scatter at group/overview */}
+      {activeViewTab === "chart" && data && (
+        activeEndpoint ? (
+          /* Endpoint selected → dose-response charts */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <DoseResponseChartPanel
+              endpointLabel={activeEndpoint}
+              findings={tableFindings}
+              doseGroups={data.dose_groups}
+              height={scatterSection.height - 32}
+              day={activeDay}
+              dayContext="worst"
+            />
+          </ViewSection>
+        ) : endpointSummaries.length > 0 ? (
+          /* Group / overview → scatter plot */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <FindingsQuadrantScatter
+              endpoints={scatterEndpoints}
+              selectedEndpoint={activeEndpoint}
+              onSelect={handleEndpointSelect}
+              onExclude={handleExcludeEndpoint}
+              onSelectedPointChange={handleSelectedPointChange}
+              organCoherence={organCoherence}
+              syndromes={syndromes}
+              labMatches={labMatches}
+              effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
+            />
+          </ViewSection>
+        ) : null
       )}
 
       {/* Table */}

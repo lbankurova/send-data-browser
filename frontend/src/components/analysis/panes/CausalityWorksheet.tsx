@@ -106,11 +106,40 @@ export function computeStrength(ep: CausalitySummary, esSymbol = "g"): { level: 
   return { level, evidence: `${metricLabel} = ${d.toFixed(2)}${pText}` };
 }
 
-function computeConsistency(ep: CausalitySummary): { level: Level; evidence: string } {
+export function computeConsistency(
+  ep: CausalitySummary,
+  perSexSummaries?: Record<string, CausalitySummary>,
+): { level: Level; evidence: string } {
   const both = ep.sexes.length >= 2;
+  if (!both) {
+    return {
+      level: 2,
+      evidence: `${ep.sexes[0] === "M" ? "Males" : "Females"} only`,
+    };
+  }
+
+  // Check direction agreement between sexes when per-sex data is available
+  if (perSexSummaries) {
+    const dirs = Object.entries(perSexSummaries).map(([sex, s]) => ({
+      sex,
+      dir: s.dose_response_pattern?.includes("increase") ? "up"
+        : s.dose_response_pattern?.includes("decrease") ? "down"
+        : null,
+    }));
+    const ups = dirs.filter(d => d.dir === "up");
+    const downs = dirs.filter(d => d.dir === "down");
+    if (ups.length > 0 && downs.length > 0) {
+      const parts = dirs.map(d => `${d.sex} ${d.dir === "up" ? "\u2191" : d.dir === "down" ? "\u2193" : "?"}`);
+      return {
+        level: 1,
+        evidence: `Opposite direction between sexes (${parts.join(", ")})`,
+      };
+    }
+  }
+
   return {
-    level: both ? 4 : 2,
-    evidence: both ? `Both sexes affected (${ep.sexes.join(", ")})` : `${ep.sexes[0] === "M" ? "Males" : "Females"} only`,
+    level: 4,
+    evidence: `Both sexes affected (${ep.sexes.join(", ")})`,
   };
 }
 
@@ -237,7 +266,7 @@ export function CausalityWorksheet({
     );
   }
 
-  const consistency = computeConsistency(selectedSummary);
+  const consistency = computeConsistency(selectedSummary, perSexSummaries);
   const specificity = computeSpecificity(selectedSummary, signalSummary);
   const coherence = computeCoherence(selectedSummary, ruleResults);
 

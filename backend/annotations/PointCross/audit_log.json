@@ -522,5 +522,26 @@
         "new": "flat"
       }
     }
+  },
+  {
+    "timestamp": "2026-03-15T18:56:58.912276+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": null,
+          "pathologist": "User",
+          "reviewDate": "2026-03-15T18:56:54.807270+00:00",
+          "pattern_note": ""
+        },
+        "new": null
+      }
+    }
   }
 ]

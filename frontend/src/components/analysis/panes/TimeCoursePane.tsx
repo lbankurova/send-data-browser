@@ -25,6 +25,7 @@ import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { DeathRecord } from "@/types/mortality";
 import type { TimecourseSubjectResponse } from "@/types/timecourse";
 import { Info } from "lucide-react";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
 // ── Y-axis mode types ────────────────────────────────────
 
@@ -479,6 +480,9 @@ function TimeCourseContent({
   onToggleDoseGroup: (dl: number) => void;
   subjData?: TimecourseSubjectResponse;
 }) {
+  const { setSelectedSubject } = useViewSelection();
+  const [hoveredSubject, setHoveredSubject] = useState<string | null>(null);
+
   // Transform series based on Y-axis mode
   const transformed = useMemo(
     () => transformSeries(data.raw, data.controlByDay, data.series, yAxisMode),
@@ -695,6 +699,9 @@ function TimeCourseContent({
                   deaths={sexDeaths}
                   yTickFormatter={tickFmt}
                   subjectTraces={sexTraces}
+                  onSubjectClick={showSubjects ? setSelectedSubject : undefined}
+                  hoveredSubject={hoveredSubject}
+                  onHoverSubject={showSubjects ? setHoveredSubject : undefined}
                 />
               </div>
             );
