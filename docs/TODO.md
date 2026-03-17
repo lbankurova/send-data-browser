@@ -728,6 +728,34 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Resolved
 - **Fix:** Per-sex gradient + strength annotations in DoseDetailPane (inline after conclusions per sex). CausalityWorksheet shows F/M breakdown under gradient and strength rows. Effect size label fixed from "d" to "g" (Hedges' g). `computeBiologicalGradient` and `computeStrength` exported from CausalityWorksheet for reuse.
 
+### GAP-81: Time-course SVG chart — add zoom and pan interactivity
+- **Files:** `frontend/src/components/analysis/panes/TimeCourseLineChart.tsx`
+- **Issue:** SVG chart has no zoom or pan. The previous ECharts implementation (D-R view) had built-in zoom/pan/tooltips. The custom SVG chart only has hover crosshair. Options: (a) Add SVG-native drag-to-zoom + pan via mouse events and viewBox manipulation. (b) Switch to ECharts for the context panel chart (would need resize handling for narrow pane). (c) Use a lightweight library (d3-zoom, visx).
+- **Status:** Open
+- **Priority:** P3 (interactivity enhancement — hover crosshair works for basic use)
+- **Owner hint:** frontend-dev
+
+### GAP-82: Time-course timepoint toggle — should filter chart data, not just default cursor
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Issue:** The Terminal/Peak/Recovery toggle currently only changes which day the detail row defaults to when not hovering. It does NOT filter the chart to show only that timepoint's data. The spec intended it to also re-scope the chart (e.g., Recovery mode should show only recovery-period data, Peak mode should highlight/center on peak day). Current behavior is a "default cursor position" selector, not a data scope filter.
+- **Status:** Open
+- **Priority:** P2 (interaction model mismatch with user expectations)
+- **Owner hint:** frontend-dev
+
+### GAP-83: Recovery pooling should come from study-level settings, not chart toggle
+- **Files:** `frontend/src/hooks/useRecoveryPooling.ts`, `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Issue:** Recovery pooling is currently a global toggle (`useRecoveryPooling` hook). Should be driven by study-level user settings on the Study Details page, not a per-chart toggle. The time-course chart should read the study-level setting rather than having its own state.
+- **Status:** Open
+- **Priority:** P3 (architectural — current toggle works, just wrong location)
+- **Owner hint:** frontend-dev
+
+### GAP-84: Component test harness for FindingsContextPanel
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/tests/`
+- **Issue:** FindingsContextPanel has 14 panes with complex cross-sex logic (header badges, verdict synthesis, recovery summary, opposite-direction callouts). Five of the six bugs found in the 2026-03-16 audit were wiring/rendering issues that only a component-level test could catch — e.g., header showing sex-specific NOAEL instead of combined, RecoveryVerdictLine only rendering one sex. Currently no way to mount the panel with mock data and assert what renders. Need a test harness that provides mock `FindingSelectionContext`, `FindingsAnalyticsContext`, `useAnnotations`, and `useFindingContext` responses, then asserts on rendered output for specific scenarios (opposite-direction endpoints, single-sex endpoints, OM normalization, recovery).
+- **Status:** Open
+- **Priority:** P3 (testing infrastructure — unit tests cover pure logic, this covers integration)
+- **Owner hint:** frontend-dev
+
 ---
 
 ## Archived Documentation

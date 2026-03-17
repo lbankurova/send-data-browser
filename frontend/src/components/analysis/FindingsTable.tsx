@@ -394,7 +394,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         ),
       }),
       col.accessor("trend_p", {
-        header: "Trend",
+        header: "Trend p",
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),

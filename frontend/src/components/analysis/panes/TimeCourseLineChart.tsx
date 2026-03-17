@@ -53,6 +53,12 @@ export interface TimeCourseLineChartProps {
   deaths: DeathRecord[];
   yTickFormatter?: (v: number) => string;
   subjectTraces?: SubjectTrace[];
+  /** Callback when a subject trace is clicked. */
+  onSubjectClick?: (usubjid: string) => void;
+  /** Currently hovered subject USUBJID — highlighted, others muted. */
+  hoveredSubject?: string | null;
+  /** Callback when mouse enters/leaves a subject trace. */
+  onHoverSubject?: (usubjid: string | null) => void;
 }
 
 // ── Constants ─────────────────────────────────────────────
@@ -98,14 +104,18 @@ export function TimeCourseLineChart({
   deaths,
   yTickFormatter: formatTick = defaultYTickFormatter,
   subjectTraces,
+  onSubjectClick,
+  hoveredSubject,
+  onHoverSubject,
 }: TimeCourseLineChartProps) {
   const hasSubjects = subjectTraces && subjectTraces.length > 0;
 
   // Voronoi snap: convert mouse X → nearest day via midpoint boundaries
   const handleMouseMove = useCallback(
-    (e: React.MouseEvent<SVGRectElement>) => {
+    (e: React.MouseEvent<SVGElement>) => {
       if (allDays.length === 0) return;
-      const svg = e.currentTarget.ownerSVGElement;
+      const el = e.currentTarget;
+      const svg = el instanceof SVGSVGElement ? el : el.ownerSVGElement;
       if (!svg) return;
       const pt = svg.createSVGPoint();
       pt.x = e.clientX;
@@ -135,7 +145,9 @@ export function TimeCourseLineChart({
       viewBox={`0 0 ${CHART_W} ${CHART_H}`}
       className="block w-full h-auto"
       preserveAspectRatio="xMinYMin meet"
-      style={{ overflow: "visible" }}
+      style={{ overflow: "visible", cursor: hasSubjects ? "pointer" : undefined }}
+      onMouseMove={hasSubjects ? handleMouseMove : undefined}
+      onMouseLeave={hasSubjects ? handleMouseLeave : undefined}
     >
 
       {/* Baseline (0) line */}
@@ -166,6 +178,11 @@ export function TimeCourseLineChart({
         if (trace.points.length < 2) return null;
         const color = getDoseGroupColor(trace.doseLevel);
         const tDay = trace.terminalDay;
+        const clickable = !!onSubjectClick;
+        const isHovered = hoveredSubject === trace.usubjid;
+        const anyHovered = hoveredSubject != null;
+        const traceOpacity = isHovered ? 0.9 : anyHovered ? 0.08 : 0.35;
+        const traceWidth = isHovered ? 1.5 : 0.5;
 
         // Split into treatment and recovery segments
         const treatmentPts = tDay != null
@@ -176,15 +193,22 @@ export function TimeCourseLineChart({
           : [];
 
         return (
-          <g key={trace.usubjid}>
+          <g
+            key={trace.usubjid}
+            style={{ cursor: clickable ? "pointer" : undefined }}
+            onClick={clickable ? (e) => { e.stopPropagation(); onSubjectClick(trace.usubjid); } : undefined}
+            onMouseEnter={() => onHoverSubject?.(trace.usubjid)}
+            onMouseLeave={() => onHoverSubject?.(null)}
+          >
+            <title>{`${trace.usubjid} (${trace.doseLevel === 0 ? "Control" : `Dose ${trace.doseLevel}`})`}</title>
             {treatmentPts.length >= 2 && (
               <polyline
                 points={treatmentPts.map((p) => `${xScale(p.day)},${yScale(p.y)}`).join(" ")}
                 fill="none"
                 stroke={color}
-                strokeWidth={0.5}
+                strokeWidth={traceWidth}
                 strokeLinejoin="round"
-                opacity={0.35}
+                opacity={traceOpacity}
               />
             )}
             {recoveryPts.length >= 2 && (
@@ -192,12 +216,19 @@ export function TimeCourseLineChart({
                 points={recoveryPts.map((p) => `${xScale(p.day)},${yScale(p.y)}`).join(" ")}
                 fill="none"
                 stroke={color}
-                strokeWidth={0.5}
+                strokeWidth={traceWidth}
                 strokeLinejoin="round"
                 strokeDasharray="2,1.5"
-                opacity={0.35}
+                opacity={traceOpacity}
               />
             )}
+            {/* Wider invisible hit area for easier clicking/hovering */}
+            <polyline
+              points={(treatmentPts.length >= 2 ? treatmentPts : trace.points).map((p) => `${xScale(p.day)},${yScale(p.y)}`).join(" ")}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={6}
+            />
           </g>
         );
       })}
@@ -223,28 +254,54 @@ export function TimeCourseLineChart({
         );
       })}
 
-      {/* Death markers — concentric circles at actual death day, y interpolated */}
+      {/* Death markers — concentric circles at death day */}
       {deaths.map((d) => {
-        const pts = series[d.dose_level];
-        if (!pts || pts.length === 0 || d.study_day == null) return null;
-        let before: ChartPoint | null = null;
-        let after: ChartPoint | null = null;
-        for (const pt of pts) {
-          if (pt.day <= d.study_day) before = pt;
-          else { after = pt; break; }
-        }
-        if (!before && !after) return null;
-        let cy: number;
-        if (!before) {
-          cy = yScale(after!.y);
-        } else if (!after || before.day === d.study_day) {
-          cy = yScale(before.y);
-        } else {
-          const t = (d.study_day - before.day) / (after.day - before.day);
-          cy = yScale(before.y + t * (after.y - before.y));
-        }
+        if (d.study_day == null) return null;
         const cx = xScale(d.study_day);
         const color = getDoseGroupColor(d.dose_level);
+        let cy: number | null = null;
+
+        // When subjects are shown, place marker on the actual subject's trace
+        if (hasSubjects && subjectTraces) {
+          const trace = subjectTraces.find((t) => t.usubjid === d.USUBJID);
+          if (trace) {
+            const exact = trace.points.find((p) => p.day === d.study_day);
+            if (exact) {
+              cy = yScale(exact.y);
+            } else {
+              // Interpolate on subject trace
+              let before: { day: number; y: number } | null = null;
+              for (const p of trace.points) {
+                if (p.day <= d.study_day) before = p;
+                else break;
+              }
+              if (before) cy = yScale(before.y);
+            }
+          }
+        }
+
+        // Fallback to group mean interpolation (when subjects OFF or subject not found)
+        if (cy == null) {
+          const pts = series[d.dose_level];
+          if (!pts || pts.length === 0) return null;
+          let before: ChartPoint | null = null;
+          let after: ChartPoint | null = null;
+          for (const pt of pts) {
+            if (pt.day <= d.study_day) before = pt;
+            else { after = pt; break; }
+          }
+          if (!before && !after) return null;
+          if (!before) {
+            cy = yScale(after!.y);
+          } else if (!after || before.day === d.study_day) {
+            cy = yScale(before.y);
+          } else {
+            const t = (d.study_day - before.day) / (after.day - before.day);
+            cy = yScale(before.y + t * (after.y - before.y));
+          }
+        }
+
+        if (cy == null) return null;
         return (
           <g key={d.USUBJID}>
             <title>{`${d.disposition} — ${d.USUBJID} D${d.study_day}`}</title>
@@ -327,17 +384,19 @@ export function TimeCourseLineChart({
         );
       })}
 
-      {/* Invisible hit area for hover — must be last for z-order */}
-      <rect
-        x={plotArea.left}
-        y={plotArea.top}
-        width={plotArea.width}
-        height={plotArea.height}
-        fill="transparent"
-        style={{ cursor: "crosshair" }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      />
+      {/* Invisible hit area for hover — pointer-events: all but rendered behind subject traces */}
+      {!hasSubjects && (
+        <rect
+          x={plotArea.left}
+          y={plotArea.top}
+          width={plotArea.width}
+          height={plotArea.height}
+          fill="transparent"
+          style={{ cursor: "crosshair" }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        />
+      )}
     </svg>
   );
 }

@@ -52,6 +52,7 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
 
@@ -759,8 +760,10 @@ function SexComparisonPane({
     return "\u2014";
   };
 
-  const m = bySex.get(sexes[0])!;
-  const f = bySex.get(sexes[1])!;
+  // sexes[0] = "F", sexes[1] = "M" (alphabetical). Name by column index to
+  // avoid the old m/f naming that inverted the sexes and invited future bugs.
+  const col0 = bySex.get(sexes[0])!;
+  const col1 = bySex.get(sexes[1])!;
 
   // Resolve per-sex findings for pattern override dropdowns
   const primarySex = finding.sex;
@@ -773,22 +776,22 @@ function SexComparisonPane({
   const effectLabel = isIncidence ? "avg sev" : "|g|";
 
   const rows: Array<{ label: string; values: [string, string] }> = [
-    { label: "Direction", values: [dirLabel(m), dirLabel(f)] },
+    { label: "Direction", values: [dirLabel(col0), dirLabel(col1)] },
     {
       label: effectLabel,
       values: [
-        m.maxEffectSize != null ? Math.abs(m.maxEffectSize).toFixed(2) : "\u2014",
-        f.maxEffectSize != null ? Math.abs(f.maxEffectSize).toFixed(2) : "\u2014",
+        col0.maxEffectSize != null ? Math.abs(col0.maxEffectSize).toFixed(2) : "\u2014",
+        col1.maxEffectSize != null ? Math.abs(col1.maxEffectSize).toFixed(2) : "\u2014",
       ],
     },
     {
       label: "Trend p",
       values: [
-        m.minPValue != null ? formatPValue(m.minPValue) : "\u2014",
-        f.minPValue != null ? formatPValue(f.minPValue) : "\u2014",
+        col0.minPValue != null ? formatPValue(col0.minPValue) : "\u2014",
+        col1.minPValue != null ? formatPValue(col1.minPValue) : "\u2014",
       ],
     },
-    { label: "Severity", values: [m.worstSeverity, f.worstSeverity] },
+    { label: "Severity", values: [col0.worstSeverity, col1.worstSeverity] },
   ];
   if (noaelBySex) {
     rows.push({
@@ -901,9 +904,11 @@ const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
 
 function RecoveryVerdictLine({
   finding,
+  siblingFinding,
   onSeeDetails,
 }: {
   finding: UnifiedFinding;
+  siblingFinding?: UnifiedFinding;
   onSeeDetails: () => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
@@ -935,42 +940,75 @@ function RecoveryVerdictLine({
   }
 
   if (finding.data_type === "continuous" && recoveryComp?.available) {
-    const rows = recoveryComp.rows.filter((r) => {
-      // For OM findings, match by specimen since OMTESTCD is always "WEIGHT"
-      const codeMatch = finding.specimen
-        ? r.test_code.toUpperCase() === finding.specimen.toUpperCase()
-        : r.test_code.toUpperCase() === finding.test_code.toUpperCase();
-      return codeMatch && r.sex === finding.sex;
-    });
-    if (rows.length === 0) return null;
-
-    const hasComparable = rows.some((r) => r.terminal_effect != null && r.effect_size != null);
-    if (!hasComparable) return null;
-
-    const allReversing = rows.every(
-      (r) => r.terminal_effect != null && r.effect_size != null &&
-        Math.abs(r.effect_size) < Math.abs(r.terminal_effect) * 0.5,
+    // Compute recovery summary per sex, then render all sexes
+    const sexFindings = [finding, ...(siblingFinding ? [siblingFinding] : [])].sort(
+      (a, b) => a.sex.localeCompare(b.sex),
     );
-    const anyWorsening = rows.some(
-      (r) => r.terminal_effect != null && r.effect_size != null &&
-        Math.abs(r.effect_size) > Math.abs(r.terminal_effect) * 1.1,
-    );
+    const sexResults: { sex: string; text: string; cls: string }[] = [];
 
-    const summaryText = allReversing
-      ? "Reversing (>50% reduction)"
-      : anyWorsening
-        ? "Persistent or worsening"
-        : "Partial recovery";
-    const summaryClass = allReversing
-      ? "text-emerald-700"
-      : anyWorsening
-        ? "text-amber-700"
-        : "text-muted-foreground";
+    for (const sf of sexFindings) {
+      const rows = recoveryComp.rows.filter((r) => {
+        const codeMatch = sf.specimen
+          ? r.test_code.toUpperCase() === sf.specimen.toUpperCase()
+          : r.test_code.toUpperCase() === sf.test_code.toUpperCase();
+        return codeMatch && r.sex === sf.sex;
+      });
+      if (rows.length === 0) continue;
+      const hasComparable = rows.some((r) => r.terminal_effect != null && r.effect_size != null);
+      if (!hasComparable) continue;
 
+      const allReversing = rows.every(
+        (r) => r.terminal_effect != null && r.effect_size != null &&
+          Math.abs(r.effect_size) < Math.abs(r.terminal_effect) * 0.5,
+      );
+      const anyWorsening = rows.some(
+        (r) => r.terminal_effect != null && r.effect_size != null &&
+          Math.abs(r.effect_size) > Math.abs(r.terminal_effect) * 1.1,
+      );
+
+      const text = allReversing
+        ? "Reversing"
+        : anyWorsening
+          ? "Persistent"
+          : "Partial";
+      const cls = allReversing
+        ? "text-emerald-700"
+        : anyWorsening
+          ? "text-amber-700"
+          : "text-muted-foreground";
+
+      sexResults.push({ sex: sf.sex, text, cls });
+    }
+
+    if (sexResults.length === 0) return null;
+
+    // Single sex — original compact format
+    if (sexResults.length === 1) {
+      const r = sexResults[0];
+      const fullText = r.text === "Reversing" ? "Reversing (>50% reduction)" : r.text === "Persistent" ? "Persistent or worsening" : "Partial recovery";
+      return (
+        <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+          <span className="text-muted-foreground">Recovery:</span>
+          <span className={`font-medium ${r.cls}`}>{fullText}</span>
+          <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+            See details
+          </button>
+        </div>
+      );
+    }
+
+    // Both sexes — show per-sex inline
     return (
       <div className="mt-1.5 flex items-center gap-2 text-[10px]">
         <span className="text-muted-foreground">Recovery:</span>
-        <span className={`font-medium ${summaryClass}`}>{summaryText}</span>
+        {sexResults.map((r, i) => (
+          <span key={r.sex}>
+            {i > 0 && <span className="text-muted-foreground/30 mx-0.5">|</span>}
+            <span className="text-muted-foreground">{r.sex}</span>
+            {" "}
+            <span className={`font-medium ${r.cls}`}>{r.text}</span>
+          </span>
+        ))}
         <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
           See details
         </button>
@@ -1356,8 +1394,12 @@ export function FindingsContextPanel() {
         onForward={nav.onForward}
       >
         {/* Incremental info: pattern badge + assessment status + NOAEL */}
+        {/* Pattern badge and NOAEL suppressed when sibling exists — they're sex-specific
+            and would contradict the combined VerdictPane synthesis (e.g., header shows
+            "threshold decrease, NOAEL 20 mg/kg" for M while verdict shows "opposite direction,
+            NOAEL 2 mg/kg combined"). VerdictPane handles cross-sex rendering correctly. */}
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[9px]">
-          {selectedFinding.dose_response_pattern && (
+          {!hasSibling && selectedFinding.dose_response_pattern && (
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               {getPatternLabel(selectedFinding.dose_response_pattern)}
             </span>
@@ -1380,7 +1422,7 @@ export function FindingsContextPanel() {
               </span>
             );
           })()}
-          {noael && (
+          {!hasSibling && noael && (
             <span className="text-muted-foreground">
               NOAEL: {noael.dose_value != null
                 ? `${noael.dose_value} ${noael.dose_unit}`
@@ -1417,6 +1459,7 @@ export function FindingsContextPanel() {
             {hasRecovery && !notEvaluated && (
               <RecoveryVerdictLine
                 finding={selectedFinding}
+                siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
                 onSeeDetails={() => {
                   recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
                 }}
@@ -1430,6 +1473,65 @@ export function FindingsContextPanel() {
                 doseGroups={findingsData?.dose_groups}
               />
             )}
+            {/* Opposite-direction callout: when sexes disagree on direction AND ANCOVA
+                resolves whether the effect is direct, surface this prominently */}
+            {(() => {
+              if (!hasSibling || !siblingContext) return null;
+              const sibFinding = findingsData?.findings.find(f => f.id === siblingContext.finding_id);
+              if (!sibFinding) return null;
+              const priDir = selectedFinding.direction;
+              const sibDir = sibFinding.direction;
+              const isOpposite = (priDir === "up" && sibDir === "down") || (priDir === "down" && sibDir === "up");
+              if (!isOpposite) return null;
+
+              const priAncova = selectedFinding.ancova;
+              const sibAncova = sibFinding.ancova;
+              const hasAnyAncova = priAncova != null || sibAncova != null;
+
+              // Compute % direct for each sex where ANCOVA is available
+              const directPcts: { sex: string; pct: number }[] = [];
+              for (const [sex, anc] of [[selectedFinding.sex, priAncova], [sibFinding.sex, sibAncova]] as const) {
+                if (!anc?.effect_decomposition?.length) continue;
+                // Use the highest dose group (last entry) for the summary
+                const highDose = anc.effect_decomposition[anc.effect_decomposition.length - 1];
+                if (highDose) {
+                  directPcts.push({ sex: sex as string, pct: highDose.proportion_direct * 100 });
+                }
+              }
+              const allAbove95 = directPcts.length >= 2 && directPcts.every(d => d.pct > 95);
+              const allAbove80 = directPcts.length >= 2 && directPcts.every(d => d.pct > 80);
+
+              return (
+                <div className="mt-2 rounded-md border border-amber-200 bg-amber-50/50 p-2 text-[10px]">
+                  <div className="font-semibold text-amber-800">
+                    Opposite-direction effect between sexes
+                  </div>
+                  <div className="mt-0.5 text-amber-700">
+                    {selectedFinding.sex} {priDir === "up" ? "\u2191" : "\u2193"}
+                    {" / "}
+                    {sibFinding.sex} {sibDir === "up" ? "\u2191" : "\u2193"}
+                    {" \u2014 "}
+                    {hasAnyAncova
+                      ? allAbove95
+                        ? "ANCOVA confirms direct effect in both sexes (>95% direct)"
+                        : allAbove80
+                          ? `ANCOVA: ${directPcts.map(d => `${d.sex} ${d.pct.toFixed(0)}% direct`).join(", ")}`
+                          : "ANCOVA available — check decomposition for BW confounding"
+                      : "No ANCOVA available. Consider BW confounding as a possible explanation."}
+                  </div>
+                  {hasAnyAncova && (
+                    <button
+                      className="mt-1 text-[9px] text-primary hover:underline"
+                      onClick={() => {
+                        evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                      }}
+                    >
+                      See ANCOVA decomposition
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Dose detail */}
@@ -1798,6 +1900,7 @@ export function FindingsContextPanel() {
           selectedSummary={causalitySummary}
           ruleResults={ruleResults}
           signalSummary={signalSummary}
+          effectSizeSymbol={getEffectSizeSymbol(effectSize)}
           perSexSummaries={perSexSummaries}
         />
       </CollapsiblePane>
