@@ -39,14 +39,16 @@ const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor(
 const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
 
 // Compact grid + font sizes for findings panel context
-const COMPACT_GRID = { left: 44, right: 8, top: 12, bottom: 28 };
+const COMPACT_GRID = { left: 44, right: 8, top: 12, bottom: 52 };
 const COMPACT_AXIS_FONT = 8;
 
 /** Build rich x-axis labels with dose-group colors. */
 function coloredAxisLabels(points: MergedPoint[]) {
   return {
     fontSize: COMPACT_AXIS_FONT,
-    margin: 4,
+    rotate: 45,
+    align: "right" as const,
+    margin: 2,
     formatter(value: string) {
       const pt = points.find((p) => String(p.dose_label) === value);
       const color = pt ? getDoseGroupColor(pt.dose_level as number) : "#6B7280";
