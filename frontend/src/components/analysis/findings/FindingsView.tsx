@@ -5,7 +5,6 @@ import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { FilterBar } from "@/components/ui/FilterBar";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
@@ -16,10 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
 import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { useSessionState } from "@/hooks/useSessionState";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
+import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
@@ -56,19 +55,22 @@ export function FindingsView() {
   }, []);
   const [scatterSection] = useAutoFitSections(containerRef, "findings", scatterSections);
 
-  // Central panel tab: "chart" (scatter+table) or "table" (full-height table)
-  type FindingsTab = "chart" | "table";
-  const [activeViewTab, setActiveViewTab] = useSessionState<FindingsTab>("pcc.findings.viewTab", "chart");
+  // Central panel tab: "findings" (scatter/DR+table) or "findings-table" (full-height table)
+  type FindingsTab = "findings" | "findings-table";
+  const FINDINGS_TABS = ["findings", "findings-table"] as const;
+  const [activeViewTab, setActiveViewTab] = useSessionState<FindingsTab>(
+    "pcc.findings.viewTab", "findings", isOneOf(FINDINGS_TABS),
+  );
   const findingsViewTabs = useMemo(() => [
-    { key: "chart", label: "Chart" },
-    { key: "table", label: "Table", closable: true },
+    { key: "findings", label: "Findings" },
+    { key: "findings-table", label: "Findings table", closable: true },
   ], []);
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
 
   // Scheduled-only exclusion context
-  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
+  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -367,42 +369,15 @@ export function FindingsView() {
     <FindingsAnalyticsProvider value={analytics}>
     <div ref={containerRef} className="relative flex h-full flex-col overflow-hidden">
       <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
-      {/* Header */}
-      <FilterBar>
-        <span className="text-xs font-semibold">Findings</span>
-        {data && (
-          <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="font-semibold underline decoration-dashed decoration-2 underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>{data.summary.total_adverse} adverse</span>
-            <span>{data.summary.total_warning} warning</span>
-            <span>{data.summary.total_normal} normal</span>
-          </span>
-        )}
-        {mortalityData?.has_mortality && mortalityData.early_death_details.length > 0 && (
-          <button
-            type="button"
-            className="ml-3 flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => setUseScheduledOnly(!isScheduledOnly)}
-            title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
-          >
-            <span className="font-semibold underline decoration-dashed decoration-2 underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>
-              {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
-              {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
-            </span>
-            <span className="text-muted-foreground/60">
-              ({isScheduledOnly ? "excl. from term.stats" : "in term.stats"})
-            </span>
-          </button>
-        )}
-      </FilterBar>
       <ViewTabBar
         tabs={findingsViewTabs}
         value={activeViewTab}
         onChange={(k) => setActiveViewTab(k as FindingsTab)}
-        onClose={() => setActiveViewTab("chart")}
+        onClose={() => setActiveViewTab("findings")}
       />
 
       {/* Chart section — scope-dependent: D-R charts at endpoint level, scatter at group/overview */}
-      {activeViewTab === "chart" && data && (
+      {activeViewTab === "findings" && data && (
         activeEndpoint ? (
           /* Endpoint selected → dose-response charts */
           <ViewSection
@@ -465,7 +440,7 @@ export function FindingsView() {
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
           activeGrouping={activeGrouping}
-          onOpenInTab={activeViewTab === "chart" ? () => setActiveViewTab("table") : undefined}
+          onOpenInTab={activeViewTab === "findings" ? () => setActiveViewTab("findings-table") : undefined}
         />
       ) : null}
       </div>

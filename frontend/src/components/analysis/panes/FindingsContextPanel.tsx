@@ -27,7 +27,7 @@ import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { CausalityWorksheet } from "./CausalityWorksheet";
-import type { CausalitySummary } from "./CausalityWorksheet";
+import type { CausalitySummary, CausalAssessment } from "./CausalityWorksheet";
 import { InsightsList } from "./InsightsList";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { deriveToxSuggestion } from "@/types/annotations";
@@ -1060,6 +1060,7 @@ export function FindingsContextPanel() {
   const evidencePaneRef = useRef<HTMLDivElement>(null);
   const distributionPaneRef = useRef<HTMLDivElement>(null);
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
+  const { data: causalAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // ── Navigation history (D1) ──
@@ -1893,6 +1894,12 @@ export function FindingsContextPanel() {
         keepMounted
         expandAll={expandGen}
         collapseAll={collapseGen}
+        summary={(() => {
+          const key = selectedFinding.endpoint_label ?? selectedFinding.finding;
+          const saved = causalAnnotations?.[key];
+          if (!saved || saved.overall === "Not assessed") return undefined;
+          return saved.overall;
+        })()}
       >
         <CausalityWorksheet
           studyId={studyId}

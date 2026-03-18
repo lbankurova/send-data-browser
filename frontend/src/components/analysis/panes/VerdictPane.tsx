@@ -475,6 +475,22 @@ export function VerdictPane({
         </div>
       )}
 
+      {/* Sex divergence callout — when both sexes present and effect sizes differ substantially */}
+      {bySex && bySex.size >= 2 && (() => {
+        const entries = [...bySex.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        const esValues = entries.map(([, s]) => Math.abs(s.maxEffectSize ?? 0));
+        const divergence = esValues.length >= 2 ? Math.abs(esValues[0] - esValues[1]) : 0;
+        if (divergence <= 0.5) return null;
+        const parts = entries.map(([sex, s]) =>
+          `${sex} |${isContinuous ? getEffectSizeSymbol(esMethod) : "d"}|=${Math.abs(s.maxEffectSize ?? 0).toFixed(2)}`
+        );
+        return (
+          <div className="mt-1 text-[9px] text-muted-foreground">
+            Sex divergence: {parts.join(", ")}
+          </div>
+        );
+      })()}
+
       {/* Line 5 -- Key numbers with "Largest effect" header */}
       {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
         <div className="mt-3 pt-2 border-t border-border/40">

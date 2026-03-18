@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 57 | 21 | Missing capability, no spec exists |
+| Gap | 58 | 31 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **82** | **56** | |
+| **Total open** | **83** | **66** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -756,10 +756,104 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P3 (testing infrastructure — unit tests cover pure logic, this covers integration)
 - **Owner hint:** frontend-dev
 
+### ~~GAP-85: Show fold change for continuous endpoints in merged Findings view~~ ✅
+- **Source:** `dose-response-view-audit.md` D-07 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/src/components/analysis/FindingsTable.tsx`
+- **Issue:** Fold change (treatment mean / control mean) is the most intuitive dose-response metric for toxicologists — it's how findings are discussed in study reports ("ALT elevated 3.2-fold at high dose"). The backend computes `max_fold_change` (FIELD-15) but it's never shown anywhere in the UI. Cohen's d / Hedges' g is rigorous but unfamiliar to most toxicologists.
+- **Fix:** Add fold change to the dose detail pane or findings table. Can be derived: `mean / controlMean` for dose_level > 0.
+- **Status:** ~~Open~~ Fixed — "Fold" column added to FindingsTable (standard + pivoted) and DoseDetailPane per-dose rows
+- **Priority:** P3 (domain UX improvement)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-86: Display sex divergence when significant in merged Findings view~~ ✅
+- **Source:** `dose-response-view-audit.md` D-08 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`
+- **Issue:** Sex divergence (`|d_M - d_F|`) is computed in `DoseResponseView.tsx:182-206` (local `deriveEndpointSummaries`) but never displayed. Sex-specific sensitivity is critical for NOAEL determination — if a liver enzyme shows d=1.5 in females but d=0.2 in males, the NOAEL may be sex-specific. After the D-R merge, this computation and display should live in the merged context panel.
+- **Fix:** Show sex divergence in the context panel header or verdict pane when |d_M - d_F| > 0.5, e.g., "Sex divergence: F >> M (|d| diff: 1.3)".
+- **Status:** ~~Open~~ Fixed — callout in VerdictPane shows per-sex effect sizes when divergence > 0.5
+- **Priority:** P3 (domain UX improvement)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-87: Visual distinction for control group row in dose tables~~ ✅
+- **Source:** `dose-response-view-audit.md` D-09 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx` (DoseDetailPane), `frontend/src/components/analysis/FindingsTable.tsx`
+- **Issue:** Dose level 0 (vehicle control) is rendered identically to treatment groups in all dose tables. The control group is the reference for all comparisons — it should be visually distinct. A toxicologist scanning a dose table should immediately identify the control row.
+- **Fix:** Add subtle background styling (`bg-muted/20`) or a "Vehicle" label for the control group row.
+- **Status:** ~~Open~~ Fixed — `bg-muted/15` on control rows in pivoted FindingsTable and DoseDetailPane (standard mode unchanged per user decision)
+- **Priority:** P3 (UX polish)
+- **Owner hint:** frontend-dev
+
+### GAP-88: Syndrome validation via cross-organ member correlations
+- **Source:** `correlation-context-strategy.md` (archived 2026-03-17)
+- **Files:** `backend/services/analysis/correlations.py`, `frontend/src/components/analysis/panes/SyndromeContextPanel.tsx`
+- **Issue:** Syndromes are detected by rule-matching (presence/direction of member endpoints), but rule-matched ≠ biologically correlated. A syndrome whose members have high pairwise rho is strongly supported; one whose members are statistically independent may be coincidental. Summary stat: median pairwise |rho| among syndrome members. The organ-level correlation matrix (Priority 1) was implemented, but syndrome-level validation (Priority 2) is blocked on cross-organ correlation computation — current `correlations.py` only computes within-organ pairs.
+- **Blocked on:** Architectural decision — lazy (on-request) vs. precomputed cross-organ correlations. Syndrome member list currently detected in frontend (`cross-domain-syndromes.ts`); precomputed approach requires partial backend detection.
+- **Status:** Open (blocked on architecture decision)
+- **Priority:** P3 (novel signal, non-trivial architecture)
+- **Owner hint:** backend-dev
+
+### ~~GAP-89: Peak detection for incidence endpoints should use argmin Fisher's p~~ ✅
+- **Source:** `view-merge-spec.md` §4 lines 162-165 vs `view-merge-post-implementation-review.md` SD-1
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:217-220`
+- **Issue:** Spec says continuous domains use `argmax |Hedges' g|` and incidence domains use `argmin Fisher's exact p-value` for peak day detection. Implementation uses `Math.abs(r.effect_size ?? 0)` for ALL data types. Low practical impact since incidence endpoints (MI, MA, CL) are almost always terminal-only — the peak toggle rarely surfaces.
+- **Status:** ~~Open~~ Fixed — branch on data_type: continuous uses argmax |effect_size|, incidence uses argmin p_value
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-90: Day stepper label format reversed from spec~~ ✅
+- **Source:** `view-merge-spec.md` §4 line 152 vs `view-merge-post-implementation-review.md` SD-2
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:418`
+- **Issue:** Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)" — reversed order with abbreviated day prefix. Minor UX inconsistency.
+- **Status:** ~~Open~~ Closed (accepted — current compact format preferred by user)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-91: Central panel tab naming and MetricsTable migration decision~~ ✅
+- **Source:** `view-merge-spec.md` §3 lines 70-71, §9 vs `view-merge-post-implementation-review.md` SD-3
+- **Files:** `frontend/src/components/analysis/findings/FindingsView.tsx:60-65`
+- **Issue:** Spec calls for "Evidence" and "Metrics" tabs; implementation has "Chart" and "Table". The full D-R MetricsTable (TanStack, 13 columns, sex/organ/type filter bar, sig-only toggle) has NOT been migrated. FindingsTable Pivoted mode partially covers this. User decision needed: is Pivoted FindingsTable sufficient or does the full MetricsTable need migrating?
+- **Status:** ~~Open~~ Fixed — tabs renamed to "Findings" / "Findings table". FilterBar removed from central panel. Death/mortality toggle moved to rail header. Pivoted FindingsTable covers metrics use case.
+- **Priority:** P2
+- **Owner hint:** frontend-dev / ux-designer
+
+### ~~GAP-92: Recovery day visual distinction on D-R charts
+- **Source:** `view-merge-spec.md` §4 line 160, `view-redesign-ideas.md` "Recovery visual distinction"
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:229`
+- **Issue:** Spec says "different color treatment or clear header label so user can't mistake recovery D-R for main study (N is smaller, interpretation is different)." Only the dropdown label "(recovery)" distinguishes it. No color treatment, no N-warning, no visual distinction on the chart itself.
+- **Status:** ~~Open~~ Fixed — recovery days removed from D-R chart stepper entirely. Recovery is told in context panel RecoveryPane + time-course subject mode (group-level recovery D-R is misleading — different cohort, different N)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-93: Migrate D-R organ correlations to OrganContextPanel~~ ✅
+- **Source:** `view-merge-spec.md` §5 item 9, `dr-findings-merge-analysis.md` G6
+- **Files:** `frontend/src/components/analysis/panes/OrganContextPanel.tsx`
+- **Issue:** D-R context panel showed "other endpoints in same organ system sorted by signal score" — a signal-score-ranked organ-neighbor view. Spec says migrate to OrganContextPanel. Not implemented. FindingsContextPanel CorrelationsPane shows subject-level statistical correlations (different data).
+- **Status:** ~~Open~~ Closed (won't-fix — redundant with FindingsRail organ grouping; CorrelationsPane provides statistically rigorous subject-level co-variance which is more informative)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-94: CausalityWorksheet collapsed summary badge~~ ✅
+- **Source:** `dose-response-view-audit.md` UX-05
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1890`
+- **Issue:** When CausalityWorksheet pane is collapsed, it shows only the title "Causality assessment" — no summary of the saved determination. A toxicologist who previously assessed an endpoint can't see the result at a glance. Should show a badge like "Likely causal" or "Not assessed" in the collapsed header.
+- **Status:** ~~Open~~ Fixed — `summary` prop on CollapsiblePane shows saved overall determination ("Likely causal" etc) when pane is collapsed. Reads from causal-assessment annotations.
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-95: NOAEL reference line on compact D-R charts~~ ✅
+- **Source:** `dr-findings-merge-analysis.md` G11, `dose-response-view-audit.md` item 6
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:108-123`
+- **Issue:** `compactify()` strips all NOAEL markLines from the central panel D-R charts. The NOAEL reference line shows WHERE the threshold sits relative to the dose-response curve — valuable for regulatory review. NOAEL text IS shown in context panel header and VerdictPane. Consider making the line optional or showing it only when chart height exceeds a threshold.
+- **Status:** ~~Open~~ Closed (won't-fix — NOAEL info accessible in context panel header + VerdictPane; chart space is at a premium)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
 ---
 
 ## Archived Documentation
 
+> **Incoming spec audit** (2026-03-17): MANIFEST updated (8 stale entries removed, 13 active specs listed with status). Knowledge extracted to GAP-85 through GAP-88 from D-R audit and correlation strategy analysis. No specs archived — all are active reference for ongoing merge work.
+>
 > **TOPIC hubs** (10 files) archived to `C:/pg/archive/pcc/docs/incoming/arch-overhaul/` on 2026-03-05. Gaps extracted to GAP-28 through GAP-45. TOPIC hubs are frozen historical references per CLAUDE.md rule 7.
 >
 > **Spec-cleanup tracker** (`spec-cleanup-b66dfd0.md`) archived same date. 92 open items migrated to GAP-46 through GAP-55 (themed batches). Many items may be resolved in commits after 2026-02-23 — verify against code before starting work. Full detail in archived file.
