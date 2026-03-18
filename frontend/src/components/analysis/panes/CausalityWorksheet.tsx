@@ -33,7 +33,7 @@ export interface CausalitySummary {
   sexes: string[];
 }
 
-interface CausalAssessment {
+export interface CausalAssessment {
   overrides: Record<string, { level: number; justification: string }>;
   expert: Record<string, { level: number; rationale: string }>;
   overall: string;

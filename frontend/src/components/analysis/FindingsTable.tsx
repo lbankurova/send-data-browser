@@ -57,6 +57,7 @@ interface PivotedRow {
   effect_size: number | null;
   trend_p: number | null;
   dose_response_pattern: string;
+  fold_change: number | null;
 }
 
 const pivCol = createColumnHelper<PivotedRow>();
@@ -197,9 +198,18 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
     const rows: PivotedRow[] = [];
     for (const f of displayFindings) {
+      // Control mean for fold change computation
+      const controlMean = f.data_type === "continuous"
+        ? (f.group_stats.find(g => g.dose_level === 0)?.mean ?? null)
+        : null;
       for (const gs of f.group_stats) {
         const dg = doseMap.get(gs.dose_level);
         const pw = f.pairwise.find(p => p.dose_level === gs.dose_level);
+        // Fold change = treated mean / control mean (continuous only, treated only)
+        let fold: number | null = null;
+        if (controlMean != null && controlMean !== 0 && gs.dose_level > 0 && gs.mean != null) {
+          fold = gs.mean / controlMean;
+        }
         rows.push({
           id: `${f.id}_${gs.dose_level}`,
           original: f,
@@ -222,6 +232,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           effect_size: pw?.cohens_d ?? null,
           trend_p: f.trend_p,
           dose_response_pattern: f.dose_response_pattern ?? "",
+          fold_change: fold,
         });
       }
     }
@@ -421,6 +432,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      col.accessor("max_fold_change", {
+        header: () => <span title="Fold change vs control (treatment mean / control mean). Continuous endpoints only.">Fold</span>,
+        cell: (info) => {
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
       col.accessor("severity", {
         header: "Severity",
         cell: (info) => {
@@ -543,6 +562,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               {formatEffectSize(v)}
             </span>
           );
+        },
+      }),
+      pivCol.accessor("fold_change", {
+        header: () => <span title="Fold change vs control (treated mean / control mean)">Fold</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
         },
       }),
       pivCol.accessor("trend_p", {
@@ -886,6 +915,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 key={row.id}
                 className={cn(
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  r.dose_level === 0 && "bg-muted/15",
                   isSelected && isSibling && "bg-primary/15 font-medium",
                   !isSelected && isSibling && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",

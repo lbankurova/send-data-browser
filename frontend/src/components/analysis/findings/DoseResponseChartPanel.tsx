@@ -201,32 +201,46 @@ export function DoseResponseChartPanel({
     // Only keep days with group data (control + at least one treated dose).
     // Death-day measurements have a single animal — no group comparison.
     const allDays = [...new Set(epRows.map((r) => r.day).filter((d): d is number => d != null))].sort((a, b) => a - b);
-    const days = allDays.filter((d) => {
+    const groupDays = allDays.filter((d) => {
       const dayRows = epRows.filter((r) => r.day === d);
       const dls = new Set(dayRows.map((r) => r.dose_level));
       return dls.has(0) && dls.size >= 2; // control + at least one treated
     });
-    if (days.length === 0) return { availableDays: days, peakDay: null, terminalDay: null, dayLabels: new Map<number, string>() };
+    if (groupDays.length === 0) return { availableDays: [] as number[], peakDay: null, terminalDay: null, dayLabels: new Map<number, string>() };
 
-    // Terminal = max day (last scheduled sacrifice in the dataset)
-    const terminal = days[days.length - 1];
+    // Terminal = last in-life scheduled sacrifice day.
+    // Recovery days (different cohort, different N) are excluded — recovery
+    // story is told in context panel RecoveryPane + time-course subject mode.
+    const terminal = groupDays[groupDays.length - 1];
+    const days = groupDays.filter((d) => d <= terminal);
+    if (days.length === 0) return { availableDays: [], peakDay: null, terminalDay: null, dayLabels: new Map<number, string>() };
 
-    // Peak = day with max |effect_size| across treated doses (dose_level > 0)
+    // Peak detection — domain-conditional:
+    //   Continuous: argmax |effect_size| (Hedges' g)
+    //   Incidence:  argmin p_value (Fisher's exact)
+    const dataType = epRows[0]?.data_type;
     let bestDay = terminal;
-    let bestAbs = -1;
-    for (const r of epRows) {
-      if (r.dose_level === 0 || r.day == null) continue;
-      const abs = Math.abs(r.effect_size ?? 0);
-      if (abs > bestAbs) { bestAbs = abs; bestDay = r.day; }
+    if (dataType === "continuous") {
+      let bestAbs = -1;
+      for (const r of epRows) {
+        if (r.dose_level === 0 || r.day == null || r.day > terminal) continue;
+        const abs = Math.abs(r.effect_size ?? 0);
+        if (abs > bestAbs) { bestAbs = abs; bestDay = r.day; }
+      }
+    } else {
+      let bestP = Infinity;
+      for (const r of epRows) {
+        if (r.dose_level === 0 || r.day == null || r.day > terminal || r.p_value == null) continue;
+        if (r.p_value < bestP) { bestP = r.p_value; bestDay = r.day; }
+      }
     }
     const peak = bestDay !== terminal ? bestDay : null;
 
-    // Build labels: terminal, peak (if different), recovery (if after terminal)
+    // Build labels: terminal, peak (if different)
     const labels = new Map<number, string>();
     for (const d of days) {
       if (d === terminal) labels.set(d, "terminal");
       else if (d === peak) labels.set(d, "peak");
-      else if (d > terminal) labels.set(d, "recovery");
     }
 
     return { availableDays: days, peakDay: peak, terminalDay: terminal, dayLabels: labels };

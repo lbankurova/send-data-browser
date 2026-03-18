@@ -51,12 +51,15 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
-import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useSyndromeCorrelationSummaries } from "@/hooks/useSyndromeCorrelationSummaries";
+import { useStudyMortality } from "@/hooks/useStudyMortality";
+import type { StudyMortality } from "@/types/mortality";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
 
 // ─── Props ─────────────────────────────────────────────────
@@ -105,6 +108,10 @@ export function FindingsRail({
   // Shared analytics derivation — single source of truth
   const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsLocal(studyId);
   const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
+
+  // Mortality data for rail header
+  const { data: mortalityData } = useStudyMortality(studyId);
+  const { useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
 
   // GAP-68: Eagerly fetch co-variation summaries for all syndromes in one batch request
   const { data: syndromeCovariation } = useSyndromeCorrelationSummaries(studyId, syndromes);
@@ -485,8 +492,13 @@ export function FindingsRail({
 
   return (
     <div className="flex h-full flex-col overflow-hidden" aria-label="Findings navigation">
-      {/* Zone 1: Signal summary (fixed) */}
-      <SignalSummarySection stats={signalSummary} />
+      {/* Zone 1: Signal summary + mortality (fixed) */}
+      <SignalSummarySection
+        stats={signalSummary}
+        mortalityData={mortalityData}
+        isScheduledOnly={isScheduledOnly}
+        onToggleScheduledOnly={() => setUseScheduledOnly(!isScheduledOnly)}
+      />
 
       {/* Zone 2: Scope indicator (conditional) */}
       {activeGroupScope && (
@@ -596,7 +608,13 @@ export function FindingsRail({
 
 // ─── Signal Summary ────────────────────────────────────────
 
-function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
+function SignalSummarySection({ stats, mortalityData, isScheduledOnly, onToggleScheduledOnly }: {
+  stats: SignalSummaryStats;
+  mortalityData?: StudyMortality | null;
+  isScheduledOnly?: boolean;
+  onToggleScheduledOnly?: () => void;
+}) {
+  const hasMortality = mortalityData?.has_mortality && (mortalityData.early_death_details?.length ?? 0) > 0;
   return (
     <div className="shrink-0 border-b px-3 pb-2 pt-3">
       {/* Header */}
@@ -635,8 +653,8 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
         </Popover>
       </div>
 
-      {/* Counts: classification badges */}
-      <div className="mt-1 flex items-center gap-2 text-xs">
+      {/* Counts: classification badges + mortality */}
+      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
           {stats.adverseCount} adverse
         </span>
@@ -646,6 +664,22 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
         <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
           {stats.trCount} TR
         </span>
+        {hasMortality && (
+          <button
+            type="button"
+            className="flex items-center gap-1 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600 transition-colors hover:bg-gray-200"
+            onClick={onToggleScheduledOnly}
+            title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
+          >
+            <span className="underline decoration-dashed decoration-1 underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>
+              {mortalityData!.total_deaths} death{mortalityData!.total_deaths !== 1 ? "s" : ""}
+              {mortalityData!.mortality_loael_label ? ` @ ${formatDoseShortLabel(mortalityData!.mortality_loael_label)}` : ""}
+            </span>
+            <span className="text-[9px] font-normal text-muted-foreground">
+              {isScheduledOnly ? "excl." : "incl."}
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );
