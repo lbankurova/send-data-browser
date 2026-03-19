@@ -743,7 +743,7 @@ function OverviewTab({
           <InsightsList rules={organRules} onEndpointClick={(organ) => {
             if (studyId) {
               navigateTo({ organSystem: organ });
-              navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+              navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: organ } });
             }
           }} />
         </div>

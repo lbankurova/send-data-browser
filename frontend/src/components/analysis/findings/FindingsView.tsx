@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
@@ -44,6 +44,7 @@ function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
 
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { selectStudy } = useSelection();
   const { selectFinding, setEndpointSexes } = useFindingSelection();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -168,6 +169,17 @@ export function FindingsView() {
     });
     return () => setFindingsRailCallback(null);
   }, [handleEndpointSelect, handleRestoreEndpoint]);
+
+  // Consume cross-view navigation state ({ endpoint_label, organ_system })
+  useEffect(() => {
+    const state = location.state as { endpoint_label?: string; organ_system?: string } | null;
+    if (!state) return;
+    if (state.endpoint_label) {
+      handleEndpointSelect(state.endpoint_label);
+    }
+    // Clear consumed state so it doesn't re-trigger on re-render
+    window.history.replaceState({}, "");
+  }, [location.state, handleEndpointSelect]);
 
   // Auto-select fallback: when data arrives while activeEndpoint is already set
   // (e.g., after initial load or stat method change). The synchronous path in

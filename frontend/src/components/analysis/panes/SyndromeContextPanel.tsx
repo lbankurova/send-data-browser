@@ -855,8 +855,8 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
         {/* Navigation links — 4 reviewer-relevant views */}
         <div className="space-y-1 text-[11px]">
           <a href="#" className="block text-primary hover:underline"
-             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`); }}>
-            View dose-response &#x2192;
+             onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/findings`); }}>
+            View findings &#x2192;
           </a>
           <a href="#" className="block text-primary hover:underline"
              onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`); }}>
