@@ -190,9 +190,16 @@ export function DoseResponseChartPanel({
   const chartRowRef = useRef<HTMLDivElement>(null);
 
   // ── Flatten findings → DoseResponseRow[] ──────────────────
+  // Pre-filter to selected endpoint BEFORE flattening — avoids O(N*D) work
+  // for all findings when only one endpoint's rows are needed.
   const drRows = useMemo(
-    () => flattenFindingsToDRRows(findings, doseGroups),
-    [findings, doseGroups],
+    () => {
+      const epFindings = findings.filter(
+        (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
+      );
+      return flattenFindingsToDRRows(epFindings, doseGroups);
+    },
+    [findings, doseGroups, endpointLabel],
   );
 
   // ── Available days + day classification for this endpoint ──

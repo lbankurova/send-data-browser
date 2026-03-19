@@ -131,13 +131,19 @@ export function FindingsView() {
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
           signalScores: signalScoreMap, endpointSexes } = analytics;
 
+  // Stable ref to data — avoids recreating handleEndpointSelect on every data change,
+  // which would cascade into event bus re-registration and rail state re-push.
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
+
   // Rail endpoint click → select finding in table
   // Synchronous: set activeEndpoint AND select the best finding in the same
   // render batch so the table never shows a stale selection from a different endpoint.
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
-    if (endpointLabel && data?.findings?.length) {
-      const epFindings = data.findings.filter(
+    const currentData = dataRef.current;
+    if (endpointLabel && currentData?.findings?.length) {
+      const epFindings = currentData.findings.filter(
         (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
       );
       if (epFindings.length > 0) {
@@ -151,7 +157,7 @@ export function FindingsView() {
       selectFinding(null);
       setActiveDay(null);
     }
-  }, [data, selectFinding]);
+  }, [selectFinding]);
 
   // Register event bus callback
   useEffect(() => {
