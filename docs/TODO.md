@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 58 | 31 | Missing capability, no spec exists |
+| Gap | 60 | 31 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **83** | **66** | |
+| **Total open** | **85** | **66** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -848,10 +848,28 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P3
 - **Owner hint:** frontend-dev
 
+### GAP-96: FindingsNavGrid — flat rail table replacing nested FindingsRail (Phase D)
+- **Source:** `view-merge-spec.md` §2 (archived), `view-redesign-ideas.md` (archived)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (1400+ lines)
+- **Issue:** Spec calls for a flat table/grid rail with group-by toggle (Findings/Organ/Specimen/Syndrome), replacing the current nested grouped-card layout. Columns replace badges/icons. Primary "what" is clickable blue text. Severity color-coding as cell background. Endpoint bookmarks migrated from deleted D-R EndpointPicker. Current FindingsRail works but uses collapsible nested sections instead of flat rows.
+- **Status:** Open
+- **Priority:** P2 (significant UX improvement, large refactor)
+- **Owner hint:** frontend-dev / ux-designer
+
+### GAP-97: Merge Pareto/volcano features into FindingsQuadrantScatter at group scope (Phase E)
+- **Source:** `view-merge-spec.md` §10 (archived), `dr-findings-merge-analysis.md` G3 (archived)
+- **Files:** `frontend/src/components/analysis/findings/FindingsQuadrantScatter.tsx`, `frontend/src/components/analysis/charts/dose-response-charts.ts` (buildVolcanoScatterOption)
+- **Issue:** D-R view had a volcano scatter (|effect size| vs -log10(trend p), colored by organ) in the Hypotheses tab. After merge, FindingsQuadrantScatter (effect size percentile vs p-value percentile) is the sole scatter. At group scope (organ/specimen/syndrome), any unique Pareto/volcano features (organ coloring, specific axis choices) should be merged into FindingsQuadrantScatter. The D-R volcano and Findings scatter use different axes — reconcile to the most informative scheme.
+- **Status:** Open
+- **Priority:** P3 (enhancement, not blocking)
+- **Owner hint:** frontend-dev
+
 ---
 
 ## Archived Documentation
 
+> **D-R → Findings merge** (2026-03-18): Merge complete. 5 specs archived: dose-response-view-audit.md, view-redesign-ideas.md, dr-findings-merge-analysis.md, view-merge-spec.md, view-merge-post-implementation-review.md. D-R view deleted (DoseResponseView.tsx, DoseResponseViewWrapper.tsx, DoseResponseEndpointPicker.tsx, DoseResponseContextPanel.tsx, useDoseResponseMetrics.ts). 11 cross-view links updated. Phase D (rail flat-table) and Phase E (scatter merge) deferred as GAP-96/97.
+>
 > **Incoming spec audit** (2026-03-17): MANIFEST updated (8 stale entries removed, 13 active specs listed with status). Knowledge extracted to GAP-85 through GAP-88 from D-R audit and correlation strategy analysis. No specs archived — all are active reference for ongoing merge work.
 >
 > **TOPIC hubs** (10 files) archived to `C:/pg/archive/pcc/docs/incoming/arch-overhaul/` on 2026-03-05. Gaps extracted to GAP-28 through GAP-45. TOPIC hubs are frozen historical references per CLAUDE.md rule 7.

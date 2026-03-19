@@ -1944,18 +1944,6 @@ export function FindingsContextPanel() {
             onClick={(e) => {
               e.preventDefault();
               if (studyId) {
-                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`);
-              }
-            }}
-          >
-            View dose-response &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
                 navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`);
               }
             }}

@@ -1824,6 +1824,38 @@ HED rounded to 4 decimals. MRSD rounded to 4 decimals. Status: "established" if 
 
 ---
 
+### DATA-02 — Time-Course Y-Axis Transformations
+
+**Purpose:** Transform group-mean time-course data into 4 Y-axis modes for dose-response temporal analysis.
+
+**Implementation:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx:transformSeries()` (lines 62-130). Pure function.
+
+**Modes:**
+
+| Mode | ID | Formula | Y-axis label | Use case |
+|------|-----|---------|-------------|----------|
+| Hedges' g | `g` | Pre-computed `series[sex][dl].g` | "g" (signed) | Default. Standardized effect relative to control. Not available in subject mode (group statistic). |
+| Absolute | `absolute` | `raw[sex][dl].mean` | Original units | Raw group means. Required for subject mode. |
+| % change from baseline | `pct_change` | `((mean - baseline) / baseline) * 100` | "%" | Baseline = first timepoint per dose/sex. Shows within-group temporal trend. |
+| % vs control | `pct_vs_control` | `((mean - ctrl) / ctrl) * 100` | "%" | ctrl from `controlByDay`. Shows treatment effect magnitude in intuitive terms. |
+
+**Constraints:**
+- `g` mode auto-disabled when subject traces are shown (g is a group statistic, meaningless per animal)
+- CL domain uses count-based bar charts — Y-axis mode toggle hidden
+- Subject-level transforms use per-subject baselines (% change) or group control means (% vs control)
+
+**Data sources:**
+- `useTimecourseGroup` → group-level means/SD/N per dose×sex×day
+- `useTimecourseSubject` → individual animal values per USUBJID×day
+- `useRecoveryPooling` → canonical treatment/recovery pooling decision
+- `useClinicalObservations` → CL domain temporal counts
+
+**Recovery continuity (subject mode):** Subject traces split at terminal day — solid stroke for treatment period, dashed (`strokeDasharray="2,1.5"`) for recovery period. Same animal's treatment→recovery data merged by USUBJID. Group-level recovery data clipped at terminal day (different cohort, different N — overlaying group means is misleading).
+
+**References:** Implemented from `docs/incoming/archive/phase-b-time-course-unification.md` (archived 2026-03-18). Parent spec: `docs/incoming/view-merge-spec.md` §6.
+
+---
+
 ## Endpoint Confidence Integrity (ECI) — SPEC-ECI-AMD-002
 
 ### CLASS-22 — Non-Monotonic Detection
