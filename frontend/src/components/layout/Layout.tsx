@@ -14,6 +14,7 @@ import { GlobalFilterProvider } from "@/contexts/GlobalFilterContext";
 import { RailModeProvider } from "@/contexts/RailModeContext";
 import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
 import { StudySettingsProvider } from "@/contexts/StudySettingsContext";
+import { FindingsAnalyticsLayer } from "@/contexts/FindingsAnalyticsLayer";
 import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -48,6 +49,7 @@ export function Layout() {
         <RailModeProvider studyId={studyId}>
         <ScheduledOnlyProvider>
         <StudySettingsProvider>
+        <FindingsAnalyticsLayer studyId={studyId || undefined}>
         <TreeControlProvider>
         <div className="flex h-screen flex-col">
           <Header />
@@ -130,6 +132,7 @@ export function Layout() {
           </div>
         </div>
         </TreeControlProvider>
+        </FindingsAnalyticsLayer>
         </StudySettingsProvider>
         </ScheduledOnlyProvider>
         </RailModeProvider>

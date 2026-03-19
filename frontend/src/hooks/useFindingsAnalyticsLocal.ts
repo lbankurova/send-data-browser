@@ -24,25 +24,13 @@ import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
-import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
-import type { FindingsFilters, FindingsResponse, UnifiedFinding } from "@/types/analysis";
+import type { FindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import type { FindingsFilters } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
   organ_system: null, endpoint_label: null, dose_response_pattern: null,
 };
-
-export interface FindingsAnalyticsResult {
-  analytics: FindingsAnalytics;
-  /** Raw API response — consumers that need UnifiedFinding[] or dose_groups access this. */
-  data: FindingsResponse | undefined;
-  /** Findings pre-transformed by the backend (settings already applied). */
-  activeFindings: UnifiedFinding[];
-  isLoading: boolean;
-  isFetching: boolean;
-  isPlaceholderData: boolean;
-  error: Error | null;
-}
 
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
   const { data, isLoading, isFetching, isPlaceholderData, error } = useFindings(studyId, 1, 10000, ALL_FILTERS);
