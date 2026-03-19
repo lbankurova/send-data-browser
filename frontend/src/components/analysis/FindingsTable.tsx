@@ -139,6 +139,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return () => document.removeEventListener("mousedown", handler);
   }, [sparkMenu]);
 
+  // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
+  const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
+
   // Global max for sparkline scaling: max |delta from control| (continuous) or max incidence (categorical)
   const globalSparkMax = useMemo(() => {
     let maxCont = 1e-9;
@@ -194,7 +197,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   }, [findings, tableMode]);
 
   // ─── Pivoted data: flatten finding × dose group into rows ───
+  // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
   const pivotedRows = useMemo(() => {
+    if (layoutMode !== "pivoted") return [];
     const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
     const rows: PivotedRow[] = [];
     for (const f of displayFindings) {
@@ -237,7 +242,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }
     }
     return rows;
-  }, [displayFindings, doseGroups]);
+  }, [displayFindings, doseGroups, layoutMode]);
 
   // ─── Standard columns ──────────────────────────────────────
   const columns = useMemo(
@@ -283,7 +288,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("sex", { header: "Sex" }),
       col.accessor("day", {
         header: () => {
-          const hasCl = findings.some(f => f.domain === "CL");
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
           if (!hasCl) return <span title={baseTooltip}>Day</span>;
           const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
@@ -470,7 +474,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, findings, clDayMode, sparkScale, globalSparkMax]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -762,7 +766,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   }}
                   onContextMenu={
                     header.id === "day" ? (e) => {
-                      if (findings.some(f => f.domain === "CL")) {
+                      if (hasCl) {
                         e.preventDefault();
                         setDayMenu({ x: e.clientX, y: e.clientY });
                       }

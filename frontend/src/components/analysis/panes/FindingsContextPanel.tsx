@@ -1149,7 +1149,7 @@ export function FindingsContextPanel() {
 
   // Derive finding-level NOAEL from statistics rows (highest dose where p > 0.05
   // for all doses at and below it). Falls back to study-level NOAEL if stats unavailable.
-  const noael = (() => {
+  const noael = useMemo(() => {
     // Try finding-level first from active statistics (respects scheduled-only toggle)
     if (activeStatistics?.rows && activeStatistics.rows.length >= 2) {
       const rows = activeStatistics.rows; // sorted by dose_level ascending
@@ -1190,7 +1190,7 @@ export function FindingsContextPanel() {
     );
     if (!row) return null;
     return { dose_value: row.noael_dose_value, dose_unit: row.noael_dose_unit ?? "mg/kg" };
-  })();
+  }, [activeStatistics, noaelRows, selectedFinding?.sex]);
 
   // Syndromes that include the currently selected endpoint
   const endpointSyndromes = useMemo(() => {
