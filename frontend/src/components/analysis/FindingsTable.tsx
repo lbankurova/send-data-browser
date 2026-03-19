@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, memo } from "react";
 import { useParams } from "react-router-dom";
 import {
   useReactTable,
@@ -62,6 +62,49 @@ interface PivotedRow {
 
 const pivCol = createColumnHelper<PivotedRow>();
 const PIVOTED_ABSORBER_ID = "piv_finding";
+
+// ─── Memoized sparkline cell ────────────────────────────────
+// Inline SVG generation is expensive in table renders. Memo prevents
+// re-rendering when only parent re-renders (sort, filter, selection).
+const SparklineCell = memo(function SparklineCell({
+  stats,
+  dataType,
+  sparkScale,
+  globalMax,
+}: {
+  stats: UnifiedFinding["group_stats"];
+  dataType: string;
+  sparkScale: "row" | "global";
+  globalMax: number;
+}) {
+  if (stats.length < 2) return null;
+  const isCont = dataType === "continuous";
+  const sorted = stats.slice().sort((a, b) => a.dose_level - b.dose_level);
+  const nums = sorted.map((g) => (isCont ? g.mean : g.incidence) ?? 0);
+  if (sorted.every((g) => (isCont ? g.mean : g.incidence) == null)) return null;
+  const control = isCont ? nums[0] : 0;
+  const max = sparkScale === "global"
+    ? globalMax
+    : Math.max(...nums.map((v) => Math.abs(isCont ? v - control : v)), 1e-9);
+  const W = 28;
+  const H = 14;
+  const barW = Math.max(2, Math.floor((W - (nums.length - 1)) / nums.length));
+  const gap = 1;
+  return (
+    <svg width={W} height={H} className="inline-block align-middle">
+      {nums.map((v, i) => {
+        const delta = isCont ? v - control : v;
+        const barH = max > 0 ? Math.max(1, Math.abs(delta) / max * (H / 2)) : 1;
+        const isUp = delta >= 0;
+        const x = i * (barW + gap);
+        const y = isUp ? H / 2 - barH : H / 2;
+        const fill = i === 0 ? "#9ca3af" : "#6b7280";
+        return <rect key={i} x={x} y={y} width={barW} height={barH} fill={fill} rx={0.5} />;
+      })}
+      <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="#d1d5db" strokeWidth={0.5} />
+    </svg>
+  );
+});
 
 interface FindingsTableProps {
   findings: UnifiedFinding[];
@@ -371,36 +414,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         ),
         cell: (info) => {
           const f = info.row.original;
-          const stats = f.group_stats;
-          if (stats.length < 2) return null;
           const isCont = f.data_type === "continuous";
-          const vals = stats
-            .slice()
-            .sort((a, b) => a.dose_level - b.dose_level)
-            .map((g) => isCont ? g.mean : g.incidence);
-          if (vals.every((v) => v == null)) return null;
-          const nums = vals.map((v) => v ?? 0);
-          const control = isCont ? nums[0] : 0;
-          const max = sparkScale === "global"
-            ? (isCont ? globalSparkMax.continuous : globalSparkMax.incidence)
-            : Math.max(...nums.map((v) => Math.abs(isCont ? v - control : v)), 1e-9);
-          const W = 28;
-          const H = 14;
-          const barW = Math.max(2, Math.floor((W - (nums.length - 1)) / nums.length));
-          const gap = 1;
           return (
-            <svg width={W} height={H} className="inline-block align-middle">
-              {nums.map((v, i) => {
-                const delta = isCont ? v - control : v;
-                const barH = max > 0 ? Math.max(1, Math.abs(delta) / max * (H / 2)) : 1;
-                const isUp = delta >= 0;
-                const x = i * (barW + gap);
-                const y = isUp ? H / 2 - barH : H / 2;
-                const fill = i === 0 ? "#9ca3af" : "#6b7280";
-                return <rect key={i} x={x} y={y} width={barW} height={barH} fill={fill} rx={0.5} />;
-              })}
-              <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="#d1d5db" strokeWidth={0.5} />
-            </svg>
+            <SparklineCell
+              stats={f.group_stats}
+              dataType={f.data_type}
+              sparkScale={sparkScale}
+              globalMax={isCont ? globalSparkMax.continuous : globalSparkMax.incidence}
+            />
           );
         },
       }),

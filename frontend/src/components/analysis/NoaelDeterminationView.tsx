@@ -68,7 +68,7 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
 import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { deriveWeightedNOAEL } from "@/lib/endpoint-confidence";
@@ -1590,8 +1590,8 @@ function SignalMetricsTabInline({ signalData, selection, onSelect, effectSizeSym
 
 // ─── Weighted NOAEL Card (ECI — SPEC-ECI-AMD-002) ──────────
 
-function WeightedNoaelCard({ studyId }: { studyId: string }) {
-  const { analytics, data } = useFindingsAnalyticsLocal(studyId);
+function WeightedNoaelCard() {
+  const { analytics, data } = useFindingsAnalyticsResult();
   const result = useMemo<WeightedNOAELResult | null>(() => {
     if (!analytics.endpoints.length || !data?.dose_groups) return null;
     const doseLevels = data.dose_groups
@@ -1713,7 +1713,7 @@ export function NoaelDeterminationView() {
   const { selection: studySelection, navigateTo } = useStudySelection();
   const { setSelection: setViewSelection } = useViewSelection();
   const { data: noaelData, isLoading: noaelLoading, error: noaelError } = useEffectiveNoael(studyId);
-  const { activeFindings, isLoading: aeLoading, isFetching, isPlaceholderData, error: aeError } = useFindingsAnalyticsLocal(studyId);
+  const { activeFindings, isLoading: aeLoading, isFetching, isPlaceholderData, error: aeError } = useFindingsAnalyticsResult();
   const aeData = useMemo(() => {
     if (!activeFindings.length) return undefined;
     return mapFindingsToRows(activeFindings);
@@ -1912,7 +1912,7 @@ export function NoaelDeterminationView() {
         {studyId && <ProtectiveSignalsBar rules={ruleResults ?? []} studyId={studyId} signalData={signalData} />}
 
         {/* Weighted NOAEL summary (ECI — SPEC-ECI-AMD-002) */}
-        {studyId && <WeightedNoaelCard studyId={studyId} />}
+        {studyId && <WeightedNoaelCard />}
 
         {/* Dose proportionality warning */}
         {pkData?.available && pkData.dose_proportionality?.assessment && pkData.dose_proportionality.assessment !== "linear" && pkData.dose_proportionality.assessment !== "insufficient_data" && (

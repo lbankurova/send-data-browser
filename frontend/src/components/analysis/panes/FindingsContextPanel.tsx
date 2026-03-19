@@ -2,8 +2,8 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
-import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import { useFindingContext } from "@/hooks/useFindingContext";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { useAnnotations } from "@/hooks/useAnnotations";
@@ -732,7 +732,7 @@ function SexComparisonPane({
 }: {
   finding: UnifiedFinding;
   siblingFinding?: UnifiedFinding;
-  analytics: ReturnType<typeof useFindingsAnalyticsLocal>["analytics"];
+  analytics: FindingsAnalytics;
   primaryRecoveryLabel?: string;
   siblingRecoveryLabel?: string;
   doseGroups?: DoseGroup[];
@@ -1043,7 +1043,7 @@ export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   const { selectedFindingId, selectedFinding: rawSelectedFinding, selectFinding, endpointSexes, selectedGroupType, selectedGroupKey, selectGroup } = useFindingSelection();
-  const { analytics, data: findingsData, activeFindings } = useFindingsAnalyticsLocal(studyId);
+  const { analytics, data: findingsData, activeFindings } = useFindingsAnalyticsResult();
 
   // Use the filtered finding (with recovery pooling / scheduled-only stats swapped)
   // instead of the raw selection context finding which has original pooled stats.
@@ -1326,10 +1326,10 @@ export function FindingsContextPanel() {
     // Check for group selection (Priority 2)
     // Wrap in provider so child panels can access analytics via useFindingsAnalytics()
     if (selectedGroupType === "organ" && selectedGroupKey) {
-      return <FindingsAnalyticsProvider value={analytics}><OrganContextPanel organKey={selectedGroupKey} nav={nav} /></FindingsAnalyticsProvider>;
+      return <OrganContextPanel organKey={selectedGroupKey} nav={nav} />;
     }
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
-      return <FindingsAnalyticsProvider value={analytics}><SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} /></FindingsAnalyticsProvider>;
+      return <SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} />;
     }
 
     // Priority 3: empty state — show normalization heatmap when OM data present

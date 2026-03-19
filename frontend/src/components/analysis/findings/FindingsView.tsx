@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
@@ -13,7 +13,6 @@ import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
@@ -125,9 +124,8 @@ export function FindingsView() {
     if (studyId) selectStudy(studyId);
   }, [studyId, selectStudy]);
 
-  // Shared analytics derivation — single source of truth for all findings consumers
-  // (hoisted above handleEndpointSelect so `data` is available for synchronous selection)
-  const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsLocal(studyId);
+  // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
+  const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
           signalScores: signalScoreMap, endpointSexes } = analytics;
 
@@ -384,7 +382,6 @@ export function FindingsView() {
   }
 
   return (
-    <FindingsAnalyticsProvider value={analytics}>
     <div ref={containerRef} className="relative flex h-full flex-col overflow-hidden">
       <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
       <ViewTabBar
@@ -463,6 +460,5 @@ export function FindingsView() {
       ) : null}
       </div>
     </div>
-    </FindingsAnalyticsProvider>
   );
 }

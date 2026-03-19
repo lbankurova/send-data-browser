@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
@@ -105,8 +105,8 @@ export function FindingsRail({
   excludedEndpoints,
   onRestoreEndpoint,
 }: FindingsRailProps) {
-  // Shared analytics derivation — single source of truth
-  const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
+  const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
 
   // Mortality data for rail header
