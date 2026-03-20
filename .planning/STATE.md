@@ -44,16 +44,15 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-15
-Stopped at: FindingsTable improvements — pivoted view, open-in-tab, ViewTabBar closable tabs. Two files uncommitted.
+Last session: 2026-03-20
+Stopped at: Performance audit complete, doc cleanup done. ARCH-01 discussion has 5 open questions.
 Completed this session:
-- Phase B + gap fixes committed (f944499), pane reorder + per-sex causality committed (77ce6f6)
-- FindingsTable: pivoted view (Standard/Pivoted toggle), open-in-tab icon, Type column tooltip, unitLabel removal (77ce6f6)
-- FindingsView: ViewTabBar with Chart/Table tabs, close-tab X on hover
-- ViewTabBar: closable tab support added to shared component
-- FindingsTable visibility issue resolved (Vite cache + dev server restart)
-Prior: Phase A committed (32b97a2), HELP.md draft (68d902e).
-Next: Commit FindingsView + ViewTabBar. Phase C of view-merge-spec. See `.continue-here.md`.
+- Phase G committed + merged to master (2dd1205) — D-R view fully deleted
+- 7 perf fixes: analytics dedup (Layout-level provider), sparkline memo, table virtualization, 4 targeted fixes
+- Doc cleanup: renamed adverse-effects.md → findings.md, MANIFEST + TODO updated
+- Commit checklist gap identified and remediated
+Prior: Phases A–C committed, ARCH-01 discussion (D1–D7 decided, Q1–Q5 open).
+Next: Continue ARCH-01 discussion or pick up TODO.md backlog. See `.continue-here.md`.
 
 ---
-*Last updated: 2026-03-15 — FindingsTable improvements, two files uncommitted*
+*Last updated: 2026-03-20 — perf audit complete, D-R merge fully merged to master*
