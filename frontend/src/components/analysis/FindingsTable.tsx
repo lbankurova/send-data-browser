@@ -851,7 +851,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </tr>
           ))}
         </thead>
-        <tbody style={{ height: stdVirtualizer.getTotalSize(), position: "relative" }}>
+        <tbody>
+          {stdVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: stdVirtualizer.getVirtualItems()[0].start, padding: 0, border: "none" }} /></tr>
+          )}
           {stdVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = stdRows[virtualRow.index];
             const isSelected = selectedFindingId === row.original.id;
@@ -865,12 +868,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 data-index={virtualRow.index}
                 ref={stdVirtualizer.measureElement}
                 className={cn(
-                  "absolute left-0 w-full cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
                   isPrimary && "bg-primary/15 font-medium",
                   isSecondary && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
-                style={{ transform: `translateY(${virtualRow.start}px)` }}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(row.original)}
                 onMouseEnter={() => prefetch(row.original.id)}
@@ -895,6 +897,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               </tr>
             );
           })}
+          {stdVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: stdVirtualizer.getTotalSize() - (stdVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0, border: "none" }} /></tr>
+          )}
         </tbody>
       </table>
       {displayFindings.length === 0 && (
@@ -946,7 +951,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </tr>
           ))}
         </thead>
-        <tbody style={{ height: pivVirtualizer.getTotalSize(), position: "relative" }}>
+        <tbody>
+          {pivVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: pivVirtualizer.getVirtualItems()[0].start, padding: 0, border: "none" }} /></tr>
+          )}
           {pivVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = pivRows[virtualRow.index];
             const r = row.original;
@@ -959,13 +967,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 data-index={virtualRow.index}
                 ref={pivVirtualizer.measureElement}
                 className={cn(
-                  "absolute left-0 w-full cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
                   r.dose_level === 0 && "bg-muted/15",
                   isSelected && isSibling && "bg-primary/15 font-medium",
                   !isSelected && isSibling && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
-                style={{ transform: `translateY(${virtualRow.start}px)` }}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(r.original)}
                 onMouseEnter={() => prefetch(r.original.id)}
@@ -986,6 +993,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               </tr>
             );
           })}
+          {pivVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: pivVirtualizer.getTotalSize() - (pivVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0, border: "none" }} /></tr>
+          )}
         </tbody>
       </table>
       {pivotedRows.length === 0 && (
