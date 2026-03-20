@@ -8,6 +8,7 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { EyeOff, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -124,7 +125,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
-  const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
   const resizingRef = useRef(false);
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
@@ -666,20 +666,50 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     columnResizeMode: "onChange",
   });
 
-  // Ref for the first sibling row (same endpoint) — used for scroll target
-  const firstSiblingRef = useRef<HTMLTableRowElement | null>(null);
-  // Autoscroll: when activeEndpoint changes, scroll the first sibling row into view;
-  // when only selectedFindingId changes (within same endpoint), scroll that row.
-  // Use RAF to let the render with updated refs complete first.
+  // ─── Virtualizer setup ────────────────────────────────────
+  const ROW_HEIGHT = 22;
+  const stdScrollRef = useRef<HTMLDivElement>(null);
+  const pivScrollRef = useRef<HTMLDivElement>(null);
+  const stdRows = table.getRowModel().rows;
+  const pivRows = pivotedTable.getRowModel().rows;
+
+  const stdVirtualizer = useVirtualizer({
+    count: stdRows.length,
+    getScrollElement: () => stdScrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  });
+
+  const pivVirtualizer = useVirtualizer({
+    count: pivRows.length,
+    getScrollElement: () => pivScrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  });
+
+  // Autoscroll: when activeEndpoint changes, scroll to the first matching row
   useEffect(() => {
+    if (!activeEndpoint && !selectedFindingId) return;
     requestAnimationFrame(() => {
-      if (firstSiblingRef.current) {
-        firstSiblingRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
-      } else if (selectedRowRef.current) {
-        selectedRowRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
+      if (layoutMode === "standard") {
+        for (let i = 0; i < stdRows.length; i++) {
+          const ep = stdRows[i].original.endpoint_label ?? stdRows[i].original.finding;
+          if ((activeEndpoint && ep === activeEndpoint) || (!activeEndpoint && selectedFindingId === stdRows[i].original.id)) {
+            stdVirtualizer.scrollToIndex(i, { align: "start", behavior: "smooth" });
+            return;
+          }
+        }
+      } else {
+        for (let i = 0; i < pivRows.length; i++) {
+          const ep = pivRows[i].original.endpoint_label;
+          if ((activeEndpoint && ep === activeEndpoint) || (!activeEndpoint && selectedFindingId === pivRows[i].original.original.id)) {
+            pivVirtualizer.scrollToIndex(i, { align: "start", behavior: "smooth" });
+            return;
+          }
+        }
       }
     });
-  }, [activeEndpoint, selectedFindingId]);
+  }, [activeEndpoint, selectedFindingId, layoutMode, stdVirtualizer, pivVirtualizer, stdRows, pivRows]);
 
   /** Content-hugging: non-absorber columns shrink to fit; absorber takes the rest.
    *  Manual resize overrides with an explicit width. */
@@ -769,9 +799,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         )}
       </div>
 
-      {/* ─── Standard table ─────────────────────────────────── */}
+      {/* ─── Standard table (virtualized) ─────────────────────── */}
       {layoutMode === "standard" && (
-      <div className="flex-1 overflow-auto">
+      <div ref={stdScrollRef} className="flex-1 overflow-auto">
       <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
@@ -821,38 +851,26 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </tr>
           ))}
         </thead>
-        <tbody>
-          {(() => {
-            let firstSiblingAssigned = false;
-            return table.getRowModel().rows.map((row) => {
+        <tbody style={{ height: stdVirtualizer.getTotalSize(), position: "relative" }}>
+          {stdVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = stdRows[virtualRow.index];
             const isSelected = selectedFindingId === row.original.id;
             const epLabel = row.original.endpoint_label ?? row.original.finding;
             const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
             const isPrimary = isSelected && isSibling;
             const isSecondary = !isSelected && isSibling;
-
-            // Assign firstSiblingRef to the first row in the active endpoint group
-            let refCb: ((el: HTMLTableRowElement | null) => void) | undefined;
-            if (isSibling && !firstSiblingAssigned) {
-              firstSiblingAssigned = true;
-              refCb = (el) => {
-                firstSiblingRef.current = el;
-                if (isSelected) selectedRowRef.current = el;
-              };
-            } else if (isSelected) {
-              refCb = (el) => { selectedRowRef.current = el; };
-            }
-
             return (
               <tr
                 key={row.id}
-                ref={refCb}
+                data-index={virtualRow.index}
+                ref={stdVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "absolute left-0 w-full cursor-pointer border-b transition-colors hover:bg-accent/50",
                   isPrimary && "bg-primary/15 font-medium",
                   isSecondary && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(row.original)}
                 onMouseEnter={() => prefetch(row.original.id)}
@@ -876,8 +894,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 })}
               </tr>
             );
-          });
-          })()}
+          })}
         </tbody>
       </table>
       {displayFindings.length === 0 && (
@@ -888,9 +905,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       </div>
       )}
 
-      {/* ─── Pivoted table ──────────────────────────────────── */}
+      {/* ─── Pivoted table (virtualized) ──────────────────────── */}
       {layoutMode === "pivoted" && (
-      <div className="flex-1 overflow-auto">
+      <div ref={pivScrollRef} className="flex-1 overflow-auto">
       <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {pivotedTable.getHeaderGroups().map((hg) => (
@@ -929,8 +946,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </tr>
           ))}
         </thead>
-        <tbody>
-          {pivotedTable.getRowModel().rows.map((row) => {
+        <tbody style={{ height: pivVirtualizer.getTotalSize(), position: "relative" }}>
+          {pivVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = pivRows[virtualRow.index];
             const r = row.original;
             const isSelected = selectedFindingId === r.original.id;
             const epLabel = r.endpoint_label;
@@ -938,13 +956,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             return (
               <tr
                 key={row.id}
+                data-index={virtualRow.index}
+                ref={pivVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "absolute left-0 w-full cursor-pointer border-b transition-colors hover:bg-accent/50",
                   r.dose_level === 0 && "bg-muted/15",
                   isSelected && isSibling && "bg-primary/15 font-medium",
                   !isSelected && isSibling && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
                 data-selected={isSelected || undefined}
                 onClick={() => selectFinding(r.original)}
                 onMouseEnter={() => prefetch(r.original.id)}
