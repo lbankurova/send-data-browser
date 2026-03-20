@@ -687,6 +687,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     overscan: 15,
   });
 
+  // Reset scroll when data source changes (all/worst toggle, layout switch)
+  useEffect(() => {
+    if (stdScrollRef.current) stdScrollRef.current.scrollTop = 0;
+  }, [tableMode, findings]);
+  useEffect(() => {
+    if (pivScrollRef.current) pivScrollRef.current.scrollTop = 0;
+  }, [tableMode, findings]);
+
   // Autoscroll: when activeEndpoint changes, scroll to the first matching row
   useEffect(() => {
     if (!activeEndpoint && !selectedFindingId) return;
