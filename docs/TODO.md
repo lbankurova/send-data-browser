@@ -247,7 +247,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~MF-09: Syndrome membership indicator on rail & context panel~~ ✅
 - **Spec:** `docs/incoming/arch-overhaul/syndrome-membership-indicator-spec.md`
-- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `EndpointSyndromePane.tsx`, `docs/views/adverse-effects.md`
+- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `EndpointSyndromePane.tsx`, `docs/views/findings.md`
 - **Issue:** Endpoints that belong to a fired syndrome (e.g., Body Weight → XS08, XS09) show no indicator in the rail (except in syndrome grouping mode) or context panel header. Users can't tell an endpoint is part of a syndrome, so they miss syndrome-specific context (e.g., food consumption pane in XS09). Fix: always show syndrome IDs on rail endpoint rows and add clickable syndrome links to the context panel sticky header.
 - **Status:** ~~Partial~~ Done — context panel Syndromes pane (27e97ce), rail syndrome IDs in all grouping modes, "both sexes" text already present.
 - **Owner hint:** frontend-dev
@@ -863,6 +863,18 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Priority:** P3 (enhancement, not blocking)
 - **Owner hint:** frontend-dev
+
+---
+
+## Resolved This Session (2026-03-20)
+
+- ~~**PERF-01: DoseResponseChartPanel O(N*D) flatten**~~ — Pre-filter to selected endpoint before flattening. `fbae9ed`
+- ~~**PERF-02: FindingsTable unconditional pivotedRows + hasCl dep**~~ — Skip pivotedRows in standard mode; extract hasCl boolean from columns useMemo. `fbae9ed`
+- ~~**PERF-03: FindingsView data→callback→event-bus cascade**~~ — Use ref for data in handleEndpointSelect. `fbae9ed`
+- ~~**PERF-04: FindingsContextPanel unmemoized NOAEL derivation**~~ — Wrap in useMemo. `fbae9ed`
+- ~~**PERF-05: Triple-redundant analytics derivation (3-5x)**~~ — FindingsAnalyticsLayer in Layout provides single derivation via context. `591855e`
+- ~~**PERF-06: Unmemoized sparkline SVG cells**~~ — Extract SparklineCell as React.memo component. `591855e`
+- ~~**PERF-07: No table virtualization (418 std / 1672 pivoted rows)**~~ — @tanstack/react-virtual with spacer-row pattern. `b11c108`, `569f630`, `2823f24`
 
 ---
 
