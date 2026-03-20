@@ -448,10 +448,10 @@ export function getDomainFullLabel(domain: string): string {
 // ─── Pattern labels ────────────────────────────────────────
 
 const PATTERN_LABELS: Record<string, string> = {
-  monotonic_increase: "Monotonic increase",
-  monotonic_decrease: "Monotonic decrease",
-  threshold_increase: "Threshold increase",
-  threshold_decrease: "Threshold decrease",
+  monotonic_increase: "Monotonic",
+  monotonic_decrease: "Monotonic",
+  threshold_increase: "Threshold",
+  threshold_decrease: "Threshold",
   threshold: "Threshold",  // backward compat
   non_monotonic: "Non-monotonic",
   u_shaped: "U-shaped",
