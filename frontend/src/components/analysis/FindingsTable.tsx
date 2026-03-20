@@ -25,7 +25,7 @@ import { DoseHeader, DoseLabel } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
-import { getSignalTier } from "@/lib/findings-rail-engine";
+import { getSignalTier, getPatternLabel } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
@@ -59,6 +59,7 @@ interface PivotedRow {
   trend_p: number | null;
   dose_response_pattern: string;
   fold_change: number | null;
+  direction: string | null;
 }
 
 const pivCol = createColumnHelper<PivotedRow>();
@@ -281,6 +282,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           trend_p: f.trend_p,
           dose_response_pattern: f.dose_response_pattern ?? "",
           fold_change: fold,
+          direction: f.direction,
         });
       }
     }
@@ -353,11 +355,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("data_type", {
-        header: () => <span title="Data type: continuous (group mean) or incidence (affected/N)">Type</span>,
+        header: () => <span title="Continuous: group mean ± SD per dose. Incidence: affected/N per dose.">Type</span>,
         cell: (info) => {
           const dt = info.getValue();
           return (
-            <span className="text-muted-foreground" title={dt === "continuous" ? "Continuous \u2014 dose columns show group mean" : "Incidence \u2014 dose columns show affected/N"}>
+            <span className="text-muted-foreground" title={dt === "continuous" ? "Continuous \u2014 dose columns show group mean (hover for N)" : "Incidence \u2014 dose columns show affected/N"}>
               {dt === "continuous" ? "cont" : "inc"}
             </span>
           );
@@ -390,7 +392,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               : null;
             if (f.data_type === "continuous") {
               return (
-                <span className="font-mono">
+                <span className="font-mono" title={`N=${gs.n}`}>
                   {gs.mean != null ? gs.mean.toFixed(2) : "\u2014"}{excludedMark}
                 </span>
               );
@@ -407,9 +409,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         id: "sparkline",
         header: () => (
           <span title={sparkScale === "global"
-            ? "Global scale — bar height reflects actual magnitude across all findings (e.g., 1 affected out of N=15 appears small). Right-click to change."
-            : "Row scale — each row scaled to its own max. Right-click to change."}>
-            Sparkline{sparkScale === "global" ? "*" : ""}
+            ? "Dose-response trend (delta from control). Global scale — bar height reflects actual magnitude across all findings. Right-click to change."
+            : "Dose-response trend (delta from control). Row scale — each row scaled to its own max. Right-click to change."}>
+            {"\u0394"}{sparkScale === "global" ? "*" : ""}
           </span>
         ),
         cell: (info) => {
@@ -426,27 +428,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("min_p_adj", {
-        header: "P-value",
+        header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
       }),
       col.accessor("trend_p", {
-        header: "Trend p",
+        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
       }),
-      col.accessor("direction", {
-        header: "Dir",
-        cell: (info) => (
-          <span className={getDirectionColor(info.getValue())}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
       col.accessor("max_effect_size", {
-        header: "Effect",
+        header: () => <span title="Largest effect size (Hedges' g) across dose groups">Max |g|</span>,
         cell: (info) => {
           const v = info.getValue();
           const domain = info.row.original.domain;
@@ -458,11 +452,27 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("max_fold_change", {
-        header: () => <span title="Fold change vs control (treatment mean / control mean). Continuous endpoints only.">Fold</span>,
+        header: () => <span title="Largest fold change vs control across dose groups. Continuous endpoints only.">Max fold</span>,
         cell: (info) => {
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
+      col.accessor("direction", {
+        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
+        cell: (info) => (
+          <span className={getDirectionColor(info.getValue())}>
+            {getDirectionSymbol(info.getValue())}
+          </span>
+        ),
+      }),
+      col.display({
+        id: "pattern",
+        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
+        cell: (info) => {
+          const v = info.row.original.dose_response_pattern;
+          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
         },
       }),
       col.accessor("severity", {
@@ -510,25 +520,69 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         header: "Finding",
         cell: (info) => {
           const r = info.row.original;
+          const epLabel = r.endpoint_label;
+          const isExcluded = excludedEndpoints?.has(epLabel);
           const full = r.specimen ? `${r.specimen}: ${r.finding}` : r.finding;
           return (
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={full}>
-              {r.specimen ? (
-                <>
-                  <span className="text-muted-foreground">{r.specimen}: </span>
-                  {r.finding}
-                </>
-              ) : (
-                r.finding
+            <div className="flex items-center gap-1 overflow-hidden">
+              {isExcluded && (
+                <button
+                  type="button"
+                  className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+                  title="Restore to scatter plot"
+                  onClick={(e) => { e.stopPropagation(); onToggleExclude?.(epLabel); }}
+                >
+                  <EyeOff className="h-3 w-3" />
+                </button>
               )}
-            </span>
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={full}>
+                {r.specimen ? (
+                  <>
+                    <span className="text-muted-foreground">{r.specimen}: </span>
+                    {r.finding}
+                  </>
+                ) : (
+                  r.finding
+                )}
+              </span>
+            </div>
           );
         },
       }),
       pivCol.accessor("sex", { header: "Sex" }),
       pivCol.accessor("day", {
-        header: "Day",
-        cell: (info) => <span className="text-muted-foreground">{info.getValue() ?? "\u2014"}</span>,
+        header: () => {
+          const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
+          if (!hasCl) return <span title={baseTooltip}>Day</span>;
+          const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
+            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Right-click to change.` },
+            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Right-click to change.` },
+          };
+          const { label, tooltip } = labels[clDayMode];
+          return (
+            <span title={tooltip}>
+              {label}
+            </span>
+          );
+        },
+        cell: (info) => {
+          const r = info.row.original;
+          const val = (r.original.domain === "CL" && clDayMode === "first_observed")
+            ? r.original.day_first ?? r.day
+            : r.day;
+          return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+        },
+      }),
+      pivCol.accessor("data_type", {
+        header: () => <span title="Continuous: group mean ± SD per dose. Incidence: affected/N per dose.">Type</span>,
+        cell: (info) => {
+          const dt = info.getValue();
+          return (
+            <span className="text-muted-foreground" title={dt === "continuous" ? "Continuous \u2014 Value column shows group mean" : "Incidence \u2014 Value column shows affected/N"}>
+              {dt === "continuous" ? "cont" : "inc"}
+            </span>
+          );
+        },
       }),
       pivCol.accessor("dose_level", {
         header: "Dose",
@@ -555,7 +609,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       pivCol.display({
         id: "sd_inc",
-        header: () => <span title="SD (continuous) or Incidence % (incidence)">SD/%</span>,
+        header: () => <span title="Standard deviation (continuous) or incidence percentage (incidence)">SD / Inc%</span>,
         cell: (info) => {
           const r = info.row.original;
           if (r.data_type === "continuous") {
@@ -569,15 +623,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       pivCol.accessor("p_value", {
-        header: "P-value",
+        header: () => <span title="Adjusted pairwise p-value for this dose group vs control">P-value</span>,
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
         },
       }),
+      pivCol.accessor("trend_p", {
+        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
+        cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
+      }),
       pivCol.accessor("effect_size", {
-        header: "Effect",
+        header: () => <span title="Effect size (Hedges' g) for this dose group vs control">|g|</span>,
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
@@ -599,15 +657,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
         },
       }),
-      pivCol.accessor("trend_p", {
-        header: "Trend p",
-        cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
+      pivCol.accessor("direction", {
+        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
+        cell: (info) => (
+          <span className={getDirectionColor(info.getValue())}>
+            {getDirectionSymbol(info.getValue())}
+          </span>
+        ),
       }),
       pivCol.accessor("dose_response_pattern", {
-        header: "Pattern",
+        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
         cell: (info) => {
           const v = info.getValue();
-          return <span className="text-muted-foreground">{v ? v.replace(/_/g, " ") : "\u2014"}</span>;
+          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
         },
       }),
       pivCol.accessor("severity", {
@@ -637,7 +699,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [signalScores]
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode]
   );
 
   // ─── Standard table instance ───────────────────────────────

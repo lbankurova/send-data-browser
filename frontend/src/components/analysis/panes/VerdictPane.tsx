@@ -182,15 +182,6 @@ function formatPattern(pattern: string, direction: string | null): string {
   return getPatternLabel(pattern);
 }
 
-/** Pattern type without direction word — used inside arrow-annotated lines where direction is already shown. */
-function patternTypeOnly(pattern: string): string {
-  if (pattern.startsWith("threshold")) return "threshold";
-  if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") return "monotonic";
-  if (pattern === "non_monotonic") return "non-monotonic";
-  if (pattern === "u_shaped") return "U-shaped";
-  if (pattern === "flat") return "no pattern";
-  return getPatternLabel(pattern);
-}
 
 /** Build combined sex + direction + pattern description for the verdict section. */
 function buildSexDirectionLine(
@@ -225,7 +216,7 @@ function buildSexDirectionLine(
       .filter(p => p.direction === "up" || p.direction === "down")
       .map(p => {
         const arrow = p.direction === "up" ? "\u2191" : "\u2193";
-        return `${arrow} ${p.sex} (${patternTypeOnly(p.pattern)})`;
+        return `${arrow} ${p.sex} (${getPatternLabel(p.pattern)})`;
       });
     return `${sexLabel} \u00b7 Opposite direction: ${parts.join(", ")}`;
   }

@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 60 | 31 | Missing capability, no spec exists |
+| Gap | 61 | 31 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **85** | **66** | |
+| **Total open** | **86** | **66** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -862,6 +862,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** D-R view had a volcano scatter (|effect size| vs -log10(trend p), colored by organ) in the Hypotheses tab. After merge, FindingsQuadrantScatter (effect size percentile vs p-value percentile) is the sole scatter. At group scope (organ/specimen/syndrome), any unique Pareto/volcano features (organ coloring, specific axis choices) should be merged into FindingsQuadrantScatter. The D-R volcano and Findings scatter use different axes — reconcile to the most informative scheme.
 - **Status:** Open
 - **Priority:** P3 (enhancement, not blocking)
+- **Owner hint:** frontend-dev
+
+### GAP-98: Histopath pattern-classification.ts PATTERN_LABELS still embed direction
+- **Source:** `findings-table-parity.md` post-implementation review
+- **Files:** `frontend/src/lib/pattern-classification.ts` (PATTERN_LABELS, L471-479)
+- **Issue:** `findings-rail-engine.ts` PATTERN_LABELS are now direction-independent (DOM-20), but `pattern-classification.ts` still uses `"Dose-dep ↑"` / `"Dose-dep ↓"`. These are separate systems (CLAUDE.md: "dual syndrome engines — do not merge"), and histopath views don't have a separate Dir column, so direction in the label is currently the only way it's shown. If histopath views later gain a Dir column, these labels should be aligned.
+- **Status:** Open
+- **Priority:** P4 (future alignment)
 - **Owner hint:** frontend-dev
 
 ---
