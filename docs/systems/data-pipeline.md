@@ -325,7 +325,7 @@ Primary method: `dunnett_pairwise(control_values, treated_groups)` (STAT-07, REM
 | `p_value` | Dunnett's test p-value (FWER-controlled) |
 | `p_value_adj` | Same as `p_value` (Dunnett's controls FWER inherently) |
 | `statistic` | `None` (Dunnett's doesn't provide per-comparison statistics) |
-| `cohens_d` | Hedges' g bias-corrected effect size (STAT-12) |
+| `effect_size` | Hedges' g bias-corrected effect size (STAT-12) |
 | `p_value_welch` | Raw Welch's t-test p-value (STAT-13, for alternative multiplicity corrections) |
 
 Minimum group size: control must have n >= 2 for any pairwise tests to run.
@@ -339,7 +339,7 @@ direction = "up" if pct_change > 0 else "down" if pct_change < 0 else "none"
 # Special case: if control_mean == 0 and LBDY exists, direction derived from sign of high_dose_mean
 ```
 
-**max_effect_size:** Maximum `abs(cohens_d)` across pairwise results (preserving sign of the max-abs value).
+**max_effect_size:** Maximum `abs(effect_size)` across pairwise results (preserving sign of the max-abs value).
 
 **min_p_adj:** Minimum `p_value_adj` across pairwise results.
 
@@ -554,7 +554,7 @@ Follows the MI incidence pattern: counts unique USUBJID per dose group, Fisher's
 
 | Effect type | Domains | `max_effect_size` value | Scale |
 |-------------|---------|------------------------|-------|
-| `cohens_d` | LB, BW, OM, EG, VS, BG, FW | Standardized mean difference | ~0–3+ |
+| `effect_size` | LB, BW, OM, EG, VS, BG, FW | Standardized mean difference | ~0–3+ |
 | `severity_grade` | MI | Average INHAND pathologist grade | 1–5 ordinal |
 | `incidence` | MA, CL, TF, DS | `null` | N/A |
 
@@ -804,7 +804,7 @@ Three-tier priority lookup:
 | `direction` | string or null | Finding |
 | `p_value` | float or null | Pairwise (adj preferred) |
 | `trend_p` | float or null | Finding |
-| `effect_size` | float or null | Pairwise cohens_d |
+| `effect_size` | float or null | Pairwise effect size |
 | `severity` | string | Finding |
 | `treatment_related` | boolean | Finding |
 | `dose_response_pattern` | string | Finding |
@@ -1253,7 +1253,7 @@ API response (UnifiedFinding[])
 scheduledFindings                      ← applyScheduledFilter() swaps group_stats/pairwise
   │                                      for terminal domains when mortality exclusion enabled
   ▼
-applyEffectSizeMethod(method)          ← recomputes pairwise[].cohens_d + max_effect_size
+applyEffectSizeMethod(method)          ← recomputes pairwise[].effect_size + max_effect_size
   │                                      from group_stats[].n, .mean, .sd
   │                                      Fast path: "hedges-g" returns input by reference (no-op)
   ▼
@@ -1298,7 +1298,7 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `services/analysis/findings_ma.py` | MA domain incidence analysis | `compute_ma_findings(study, subjects)` |
 | `services/analysis/findings_cl.py` | CL domain incidence analysis | `compute_cl_findings(study, subjects)` |
 | `services/analysis/findings_ds.py` | DS domain mortality incidence analysis | `compute_ds_findings(study, subjects)` |
-| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `cohens_d()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
+| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `compute_effect_size()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
 | `services/analysis/findings_pipeline.py` | Shared enrichment pipeline (pass merging, classification, labels) | `finding_key(f)`, `build_findings_map(findings, label)`, `process_findings(base, scheduled_map, separate_map, n_excluded)`, `enrich_findings(findings)`, `attach_scheduled_stats()`, `attach_separate_stats()` |

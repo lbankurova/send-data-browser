@@ -1149,7 +1149,7 @@ Not:         [common misreadings that lead to bugs]
 **Null means:** Insufficient statistical data to compute.
 
 **Not:**
-- Not the raw backend `cohens_d` field — this is the frontend-transformed value that respects the user's selected method.
+- Not the raw backend `effect_size` field — this is the frontend-transformed value that respects the user's selected method.
 
 ---
 

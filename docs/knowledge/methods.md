@@ -114,7 +114,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Multiple comparisons of each treated dose group vs. a single control, with familywise error rate control. Primary pairwise test for all continuous domains (REM-28).
 
-**Implementation:** `dunnett_pairwise(control, treated_groups)` — backend `statistics.py:184`. Calls `scipy.stats.dunnett(*treated_groups, control=control)` internally. Fallback: Welch's t-test + Bonferroni if scipy Dunnett fails. Returns list of dicts with `dose_level`, `p_value`, `p_value_adj` (same as p_value — Dunnett is already FWER-controlled), `statistic` (None), `cohens_d`.
+**Implementation:** `dunnett_pairwise(control, treated_groups)` — backend `statistics.py:184`. Calls `scipy.stats.dunnett(*treated_groups, control=control)` internally. Fallback: Welch's t-test + Bonferroni if scipy Dunnett fails. Returns list of dicts with `dose_level`, `p_value`, `p_value_adj` (same as p_value — Dunnett is already FWER-controlled), `statistic` (None), `effect_size`.
 
 **Parameters:** Control must have n >= 2. Each treated group must have n >= 2 (filtered). Returns list of p-values aligned with original group indices; `None` for filtered-out groups.
 
@@ -200,7 +200,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 **Purpose:** Standardized measure of the difference between two group means, in units of pooled standard deviation, with small-sample bias correction.
 
-**Implementation:** `cohens_d(group1, group2)` — backend `statistics.py:128`. Function name retained for backwards compatibility; JSON field remains `cohens_d`. The computation applies Hedges' correction factor `J = 1 - 3/(4*df - 1)` where `df = n1 + n2 - 2`.
+**Implementation:** `compute_effect_size(group1, group2)` — backend `statistics.py:128`. The computation applies Hedges' correction factor `J = 1 - 3/(4*df - 1)` where `df = n1 + n2 - 2`.
 
 **Parameters:** Pooled SD uses Bessel's correction (`ddof=1`). Minimum n=2 per group. Returns `None` if pooled SD = 0 (constant values). Formula: `g = d * J`, where `d = (mean1 - mean2) / SD_pooled`, `SD_pooled = sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1 + n2 - 2))`, and `J = 1 - 3/(4*df - 1)`.
 
@@ -396,7 +396,7 @@ This table documents which statistical test is applied to each endpoint type in 
 - **Effect size:** Hedges' g (STAT-12, default), Cohen's d (STAT-12b), Glass's Δ (STAT-12c)
 - **Organ weight metric:** Recommended auto-selection (METH-03a, default), absolute, ratio-to-BW, ratio-to-brain
 
-Frontend transforms recompute `pairwise[].cohens_d`, `max_effect_size`, `p_value_adj`, and `min_p_adj` from stored group_stats and p_value_welch. Severity classification and NOAEL may shift when methods change — this is intentional. Settings transforms applied in `parameterized_pipeline.py:apply_settings_transforms()`.
+Frontend transforms recompute `pairwise[].effect_size`, `max_effect_size`, `p_value_adj`, and `min_p_adj` from stored group_stats and p_value_welch. Severity classification and NOAEL may shift when methods change — this is intentional. Settings transforms applied in `parameterized_pipeline.py:apply_settings_transforms()`.
 
 ---
 
