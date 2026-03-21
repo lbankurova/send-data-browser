@@ -9,7 +9,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Types ─────────────────────────────────────────────────
 
-export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome";
+export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome" | "specimen";
 export type SortMode = "signal" | "pvalue" | "effect" | "az";
 
 export interface EndpointWithSignal extends EndpointSummary {
@@ -189,6 +189,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
+    case "specimen": return ep.organ_system; // stub — same as organ until histopath merge
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
