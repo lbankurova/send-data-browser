@@ -267,7 +267,7 @@ function StatisticalEvidenceContent({ finding, doseGroups }: { finding: UnifiedF
     .sort((a, b) => ((b.p_value_adj ?? b.p_value) ?? 1) - ((a.p_value_adj ?? a.p_value) ?? 1))[0];
 
   const bestEffectSize = finding.pairwise.reduce<{ g: number; doseLevel: number } | null>((best, p) => {
-    const g = Math.abs(p.cohens_d ?? 0);
+    const g = Math.abs(p.effect_size ?? 0);
     if (g > (best?.g ?? 0)) return { g, doseLevel: p.dose_level };
     return best;
   }, null);

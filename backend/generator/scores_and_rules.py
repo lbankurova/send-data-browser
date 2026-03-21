@@ -117,7 +117,7 @@ def evaluate_rules(
             p = pw.get("p_value_adj", pw.get("p_value"))
             if p is not None and p < 0.05:
                 pw_ctx = {**ctx, "dose_label": dose_label_map.get(pw["dose_level"], ""),
-                          "p_value": p, "effect_size": pw.get("cohens_d", 0) or 0}
+                          "p_value": p, "effect_size": pw.get("effect_size", 0) or 0}
                 results.append(_emit(RULES[1], pw_ctx, finding))
 
         # R03: Significant trend

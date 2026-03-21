@@ -47,7 +47,7 @@ def _continuous_finding(
             "dose_level": i,
             "p_value": 0.03 / i,
             "p_value_adj": min_p if i == n_groups - 1 else 0.1,
-            "cohens_d": max_d * i / (n_groups - 1),
+            "effect_size": max_d * i / (n_groups - 1),
         })
     return {
         "domain": domain,
@@ -101,8 +101,8 @@ def _om_finding_with_alternatives():
             {"dose_level": 2, "mean": 11.0, "sd": 1.0, "n": 10},
         ],
         "pairwise": [
-            {"dose_level": 1, "p_value": 0.2, "p_value_adj": 0.2, "cohens_d": 0.3},
-            {"dose_level": 2, "p_value": 0.04, "p_value_adj": 0.04, "cohens_d": 0.7},
+            {"dose_level": 1, "p_value": 0.2, "p_value_adj": 0.2, "effect_size": 0.3},
+            {"dose_level": 2, "p_value": 0.04, "p_value_adj": 0.04, "effect_size": 0.7},
         ],
         "min_p_adj": 0.04,
         "max_effect_size": 0.7,
@@ -120,8 +120,8 @@ def _om_finding_with_alternatives():
                     {"dose_level": 2, "mean": 0.042, "sd": 0.003, "n": 10},
                 ],
                 "pairwise": [
-                    {"dose_level": 1, "p_value": 0.15, "p_value_adj": 0.15, "cohens_d": 0.6},
-                    {"dose_level": 2, "p_value": 0.01, "p_value_adj": 0.01, "cohens_d": 1.5},
+                    {"dose_level": 1, "p_value": 0.15, "p_value_adj": 0.15, "effect_size": 0.6},
+                    {"dose_level": 2, "p_value": 0.01, "p_value_adj": 0.01, "effect_size": 1.5},
                 ],
                 "trend_p": 0.005,
             },
@@ -132,8 +132,8 @@ def _om_finding_with_alternatives():
                     {"dose_level": 2, "mean": 5.8, "sd": 0.5, "n": 10},
                 ],
                 "pairwise": [
-                    {"dose_level": 1, "p_value": 0.18, "p_value_adj": 0.18, "cohens_d": 0.4},
-                    {"dose_level": 2, "p_value": 0.02, "p_value_adj": 0.02, "cohens_d": 1.1},
+                    {"dose_level": 1, "p_value": 0.18, "p_value_adj": 0.18, "effect_size": 0.4},
+                    {"dose_level": 2, "p_value": 0.02, "p_value_adj": 0.02, "effect_size": 1.1},
                 ],
                 "trend_p": 0.008,
             },
@@ -190,12 +190,12 @@ class TestApplyPairwiseWilliams:
         new_min_p = findings[0]["min_p_adj"]
         assert new_min_p is not None
 
-    def test_preserves_cohens_d(self):
+    def test_preserves_effect_size(self):
         """Effect sizes are measurement-based, not test-dependent."""
         findings = [_continuous_finding()]
-        original_d = [pw["cohens_d"] for pw in findings[0]["pairwise"]]
+        original_d = [pw["effect_size"] for pw in findings[0]["pairwise"]]
         apply_pairwise_williams(findings)
-        new_d = [pw["cohens_d"] for pw in findings[0]["pairwise"]]
+        new_d = [pw["effect_size"] for pw in findings[0]["pairwise"]]
         assert original_d == new_d
 
     def test_skips_incidence(self):

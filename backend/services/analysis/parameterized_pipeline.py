@@ -306,7 +306,7 @@ def apply_recovery_separate(findings: list[dict]) -> list[dict]:
 
 
 def apply_effect_size_method(findings: list[dict], method: str):
-    """Recompute cohens_d on each pairwise entry in-place.
+    """Recompute effect_size on each pairwise entry in-place.
 
     - hedges-g: no-op (current values are already Hedges' g)
     - cohens-d: reverse the Hedges correction J = 1 - 3/(4*df - 1)
@@ -324,7 +324,7 @@ def apply_effect_size_method(findings: list[dict], method: str):
         control_gs = next((gs for gs in group_stats if gs.get("dose_level") == 0), None)
 
         for pw in pairwise:
-            hedges_g = pw.get("cohens_d")
+            hedges_g = pw.get("effect_size")
             if hedges_g is None:
                 continue
 
@@ -336,7 +336,7 @@ def apply_effect_size_method(findings: list[dict], method: str):
                     df = n_ctrl + n_treat - 2
                     j = 1 - 3 / (4 * df - 1)
                     if j > 0:
-                        pw["cohens_d"] = _safe_round(hedges_g / j)
+                        pw["effect_size"] = _safe_round(hedges_g / j)
 
             elif method == "glass-delta":
                 # glass = (treated_mean - control_mean) / control_sd
@@ -350,7 +350,7 @@ def apply_effect_size_method(findings: list[dict], method: str):
                     if treat_gs and ctrl_sd and ctrl_sd > 0 and ctrl_mean is not None:
                         treat_mean = treat_gs.get("mean")
                         if treat_mean is not None:
-                            pw["cohens_d"] = _safe_round((treat_mean - ctrl_mean) / ctrl_sd)
+                            pw["effect_size"] = _safe_round((treat_mean - ctrl_mean) / ctrl_sd)
 
         # Update max_effect_size from recomputed pairwise
         f["max_effect_size"] = _recompute_max_effect_size(pairwise)
@@ -450,7 +450,7 @@ def apply_pairwise_williams(findings: list[dict]):
     """Replace Dunnett pairwise p-values with Williams' step-down p-values.
 
     For each continuous finding with group_stats, runs Williams' test and
-    maps step-down results to pairwise entries. Preserves cohens_d (effect
+    maps step-down results to pairwise entries. Preserves effect_size (effect
     sizes are measurement-based, not test-dependent). Doses not reached
     in step-down get p_value = 1.0 (conservative).
     """
@@ -570,7 +570,7 @@ def _recompute_min_p_adj(pairwise: list[dict]) -> float | None:
 
 def _recompute_max_effect_size(pairwise: list[dict]) -> float | None:
     """Recompute max effect size (absolute) from pairwise entries."""
-    effects = [pw["cohens_d"] for pw in pairwise if pw.get("cohens_d") is not None]
+    effects = [pw["effect_size"] for pw in pairwise if pw.get("effect_size") is not None]
     if not effects:
         return None
     # Return the value with the largest absolute magnitude, preserving sign

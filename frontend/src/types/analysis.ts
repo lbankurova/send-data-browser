@@ -32,7 +32,7 @@ export interface PairwiseResult {
   p_value: number | null;
   p_value_adj: number | null;
   statistic: number | null;
-  cohens_d: number | null;
+  effect_size: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
   p_value_welch?: number | null;
@@ -316,7 +316,7 @@ export interface FindingContext {
       incidence?: number;
       p_value?: number | null;
       p_value_adj?: number | null;
-      cohens_d?: number | null;
+      effect_size?: number | null;
       odds_ratio?: number | null;
     }>;
     trend_p: number | null;
@@ -337,7 +337,7 @@ export interface FindingContext {
       incidence?: number;
       p_value?: number | null;
       p_value_adj?: number | null;
-      cohens_d?: number | null;
+      effect_size?: number | null;
       odds_ratio?: number | null;
     }>;
     /** Number of early-death subjects excluded from scheduled_rows. */

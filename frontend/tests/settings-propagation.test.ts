@@ -46,9 +46,9 @@ function rederiveSummaryFields(
   let maxAbs = 0;
   let minP: number | null = null;
   for (const p of pairwise) {
-    if (p.cohens_d != null) {
-      const abs = Math.abs(p.cohens_d);
-      if (abs > maxAbs) { maxAbs = abs; maxEffect = p.cohens_d; }
+    if (p.effect_size != null) {
+      const abs = Math.abs(p.effect_size);
+      if (abs > maxAbs) { maxAbs = abs; maxEffect = p.effect_size; }
     }
     if (p.p_value_adj != null && (minP == null || p.p_value_adj < minP)) {
       minP = p.p_value_adj;
@@ -114,9 +114,9 @@ function applyEffectSizeMethod(findings: UnifiedFinding[], method: EffectSizeMet
       const treatedStat = f.group_stats.find((gs) => gs.dose_level === pw.dose_level);
       if (!treatedStat) return pw;
       const newD = computeEffectSize(method, controlStat.mean, controlStat.sd, controlStat.n, treatedStat.mean, treatedStat.sd, treatedStat.n);
-      return { ...pw, cohens_d: newD };
+      return { ...pw, effect_size: newD };
     });
-    const effectSizes = newPairwise.map((pw) => pw.cohens_d).filter((d): d is number => d != null);
+    const effectSizes = newPairwise.map((pw) => pw.effect_size).filter((d): d is number => d != null);
     let newMaxEffect = f.max_effect_size;
     if (effectSizes.length > 0) {
       newMaxEffect = effectSizes.reduce((best, cur) => Math.abs(cur) > Math.abs(best) ? cur : best);
@@ -180,9 +180,9 @@ const BASE_GROUP_STATS: GroupStat[] = [
 ];
 
 const BASE_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: 1.5, cohens_d: -0.53, p_value_welch: 0.18 },
-  { dose_level: 2, p_value: 0.005, p_value_adj: 0.01, statistic: 3.0, cohens_d: -1.43, p_value_welch: 0.007 },
-  { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 5.0, cohens_d: -2.65, p_value_welch: 0.0002 },
+  { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: 1.5, effect_size: -0.53, p_value_welch: 0.18 },
+  { dose_level: 2, p_value: 0.005, p_value_adj: 0.01, statistic: 3.0, effect_size: -1.43, p_value_welch: 0.007 },
+  { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 5.0, effect_size: -2.65, p_value_welch: 0.0002 },
 ];
 
 /** Scheduled stats: different means → different effect sizes. */
@@ -194,9 +194,9 @@ const SCHEDULED_GROUP_STATS: GroupStat[] = [
 ];
 
 const SCHEDULED_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.18, p_value_adj: 0.35, statistic: 1.3, cohens_d: -0.56, p_value_welch: 0.21 },
-  { dose_level: 2, p_value: 0.006, p_value_adj: 0.012, statistic: 2.9, cohens_d: -1.35, p_value_welch: 0.008 },
-  { dose_level: 3, p_value: 0.00015, p_value_adj: 0.0004, statistic: 4.8, cohens_d: -2.53, p_value_welch: 0.00025 },
+  { dose_level: 1, p_value: 0.18, p_value_adj: 0.35, statistic: 1.3, effect_size: -0.56, p_value_welch: 0.21 },
+  { dose_level: 2, p_value: 0.006, p_value_adj: 0.012, statistic: 2.9, effect_size: -1.35, p_value_welch: 0.008 },
+  { dose_level: 3, p_value: 0.00015, p_value_adj: 0.0004, statistic: 4.8, effect_size: -2.53, p_value_welch: 0.00025 },
 ];
 
 /** Separate (main-only) stats: N drops from 15 to 10. */
@@ -208,9 +208,9 @@ const SEPARATE_GROUP_STATS: GroupStat[] = [
 ];
 
 const SEPARATE_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.20, p_value_adj: 0.38, statistic: 1.2, cohens_d: -0.54, p_value_welch: 0.23 },
-  { dose_level: 2, p_value: 0.004, p_value_adj: 0.009, statistic: 3.1, cohens_d: -1.51, p_value_welch: 0.006 },
-  { dose_level: 3, p_value: 0.00008, p_value_adj: 0.0002, statistic: 5.2, cohens_d: -2.76, p_value_welch: 0.00015 },
+  { dose_level: 1, p_value: 0.20, p_value_adj: 0.38, statistic: 1.2, effect_size: -0.54, p_value_welch: 0.23 },
+  { dose_level: 2, p_value: 0.004, p_value_adj: 0.009, statistic: 3.1, effect_size: -1.51, p_value_welch: 0.006 },
+  { dose_level: 3, p_value: 0.00008, p_value_adj: 0.0002, statistic: 5.2, effect_size: -2.76, p_value_welch: 0.00015 },
 ];
 
 function makeContinuousFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding {
@@ -272,9 +272,9 @@ function makeLabFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding
       { dose_level: 3, n: 15, mean: 75, sd: 10, median: 74 },
     ],
     pairwise: [
-      { dose_level: 1, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, cohens_d: 1.45, p_value_welch: 0.06 },
-      { dose_level: 2, p_value: 0.001, p_value_adj: 0.003, statistic: 4.0, cohens_d: 3.30, p_value_welch: 0.002 },
-      { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 6.0, cohens_d: 5.70, p_value_welch: 0.0002 },
+      { dose_level: 1, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, effect_size: 1.45, p_value_welch: 0.06 },
+      { dose_level: 2, p_value: 0.001, p_value_adj: 0.003, statistic: 4.0, effect_size: 3.30, p_value_welch: 0.002 },
+      { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 6.0, effect_size: 5.70, p_value_welch: 0.0002 },
     ],
     ...overrides,
   };
@@ -311,9 +311,9 @@ function makeTerminalFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFi
       { dose_level: 3, n: 15, mean: null, sd: null, median: null, affected: 12, incidence: 0.800 },
     ],
     pairwise: [
-      { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: null, cohens_d: null, odds_ratio: 4.4 },
-      { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: null, cohens_d: null, odds_ratio: 16.0 },
-      { dose_level: 3, p_value: 0.0002, p_value_adj: 0.0005, statistic: null, cohens_d: null, odds_ratio: 60.0 },
+      { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: null, effect_size: null, odds_ratio: 4.4 },
+      { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: null, effect_size: null, odds_ratio: 16.0 },
+      { dose_level: 3, p_value: 0.0002, p_value_adj: 0.0005, statistic: null, effect_size: null, odds_ratio: 60.0 },
     ],
     ...overrides,
   };
@@ -324,7 +324,7 @@ function makeTerminalFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFi
 // ══════════════════════════════════════════════════════════════
 
 describe("rederiveSummaryFields", () => {
-  test("max_effect_size = signed value of largest |cohens_d|", () => {
+  test("max_effect_size = signed value of largest |effect_size|", () => {
     const result = rederiveSummaryFields(BASE_PAIRWISE, BASE_GROUP_STATS, "down", "continuous");
     expect(result.max_effect_size).toBe(-2.65); // dose_level 3
   });
@@ -342,7 +342,7 @@ describe("rederiveSummaryFields", () => {
 
   test("max_fold_change null for incidence data", () => {
     const incPairwise: PairwiseResult[] = [
-      { dose_level: 1, p_value: 0.1, p_value_adj: 0.2, statistic: null, cohens_d: null },
+      { dose_level: 1, p_value: 0.1, p_value_adj: 0.2, statistic: null, effect_size: null },
     ];
     const incStats: GroupStat[] = [
       { dose_level: 0, n: 10, mean: null, sd: null, median: null, affected: 1, incidence: 0.1 },
@@ -352,9 +352,9 @@ describe("rederiveSummaryFields", () => {
     expect(result.max_fold_change).toBeNull();
   });
 
-  test("all null when pairwise has no cohens_d or p_value_adj", () => {
+  test("all null when pairwise has no effect_size or p_value_adj", () => {
     const emptyPairwise: PairwiseResult[] = [
-      { dose_level: 1, p_value: null, p_value_adj: null, statistic: null, cohens_d: null },
+      { dose_level: 1, p_value: null, p_value_adj: null, statistic: null, effect_size: null },
     ];
     const result = rederiveSummaryFields(emptyPairwise, BASE_GROUP_STATS, "down", "continuous");
     expect(result.max_effect_size).toBeNull();
@@ -382,9 +382,9 @@ describe("Setting: scheduled-only → EndpointSummary propagation", () => {
         { dose_level: 3, n: 13, mean: 78, sd: 11, median: 77 },
       ],
       scheduled_pairwise: [
-        { dose_level: 1, p_value: 0.06, p_value_adj: 0.12, statistic: 1.9, cohens_d: 1.41, p_value_welch: 0.07 },
-        { dose_level: 2, p_value: 0.0015, p_value_adj: 0.004, statistic: 3.8, cohens_d: 3.29, p_value_welch: 0.003 },
-        { dose_level: 3, p_value: 0.00012, p_value_adj: 0.0004, statistic: 5.8, cohens_d: 5.51, p_value_welch: 0.00025 },
+        { dose_level: 1, p_value: 0.06, p_value_adj: 0.12, statistic: 1.9, effect_size: 1.41, p_value_welch: 0.07 },
+        { dose_level: 2, p_value: 0.0015, p_value_adj: 0.004, statistic: 3.8, effect_size: 3.29, p_value_welch: 0.003 },
+        { dose_level: 3, p_value: 0.00012, p_value_adj: 0.0004, statistic: 5.8, effect_size: 5.51, p_value_welch: 0.00025 },
       ],
       scheduled_direction: "up",
       n_excluded: 2,
@@ -397,9 +397,9 @@ describe("Setting: scheduled-only → EndpointSummary propagation", () => {
         { dose_level: 3, n: 13, mean: null, sd: null, median: null, affected: 11, incidence: 0.846 },
       ],
       scheduled_pairwise: [
-        { dose_level: 1, p_value: 0.17, p_value_adj: 0.33, statistic: null, cohens_d: null, odds_ratio: 4.6 },
-        { dose_level: 2, p_value: 0.009, p_value_adj: 0.018, statistic: null, cohens_d: null, odds_ratio: 15.2 },
-        { dose_level: 3, p_value: 0.00025, p_value_adj: 0.0006, statistic: null, cohens_d: null, odds_ratio: 55.0 },
+        { dose_level: 1, p_value: 0.17, p_value_adj: 0.33, statistic: null, effect_size: null, odds_ratio: 4.6 },
+        { dose_level: 2, p_value: 0.009, p_value_adj: 0.018, statistic: null, effect_size: null, odds_ratio: 15.2 },
+        { dose_level: 3, p_value: 0.00025, p_value_adj: 0.0006, statistic: null, effect_size: null, odds_ratio: 55.0 },
       ],
       n_excluded: 2,
     }),
@@ -476,9 +476,9 @@ describe("Setting: recovery pooling → EndpointSummary propagation", () => {
         { dose_level: 3, n: 10, mean: 80, sd: 11.5, median: 79 },
       ],
       separate_pairwise: [
-        { dose_level: 1, p_value: 0.07, p_value_adj: 0.14, statistic: 1.8, cohens_d: 1.39, p_value_welch: 0.08 },
-        { dose_level: 2, p_value: 0.002, p_value_adj: 0.005, statistic: 3.5, cohens_d: 3.35, p_value_welch: 0.003 },
-        { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 5.5, cohens_d: 5.85, p_value_welch: 0.0002 },
+        { dose_level: 1, p_value: 0.07, p_value_adj: 0.14, statistic: 1.8, effect_size: 1.39, p_value_welch: 0.08 },
+        { dose_level: 2, p_value: 0.002, p_value_adj: 0.005, statistic: 3.5, effect_size: 3.35, p_value_welch: 0.003 },
+        { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: 5.5, effect_size: 5.85, p_value_welch: 0.0002 },
       ],
       separate_direction: "up",
     }),
@@ -921,7 +921,7 @@ describe("flattenFindingsToDRRows", () => {
     const high = rows.find(r => r.dose_level === 3)!;
     expect(high.mean).toBe(190.0);
     expect(high.p_value).toBe(0.0003); // p_value_adj from pairwise
-    expect(high.effect_size).toBe(-2.65); // cohens_d from pairwise
+    expect(high.effect_size).toBe(-2.65); // effect_size from pairwise
     expect(high.dose_label).toBe("High");
   });
 
@@ -959,7 +959,7 @@ describe("flattenFindingsToDRRows", () => {
     expect(baseHigh.p_value).not.toBe(schedHigh.p_value);
   });
 
-  test("effect size method → flattened DR rows reflect transformed cohens_d", () => {
+  test("effect size method → flattened DR rows reflect transformed effect_size", () => {
     const findings = [makeContinuousFinding()];
 
     const hedgesFindings = applyEffectSizeMethod(findings, "hedges-g");

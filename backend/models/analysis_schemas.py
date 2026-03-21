@@ -37,7 +37,7 @@ class PairwiseResult(BaseModel):
     p_value: float | None = None
     p_value_adj: float | None = None
     statistic: float | None = None
-    cohens_d: float | None = None
+    effect_size: float | None = None
     odds_ratio: float | None = None
     risk_ratio: float | None = None
     p_value_welch: float | None = None
