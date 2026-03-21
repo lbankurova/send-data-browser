@@ -23,6 +23,10 @@ Run every item before committing changes that alter system or view behavior. Eve
 
 - [ ] **8. System spec exists.** Does `docs/systems/` have a spec for the subsystem you touched? If yes, update it to reflect your changes. If no, create one from the code. Skip if commit only touches UI styling, docs, or tests.
 
+- [ ] **9. Frontend build passes.** Run `npm run build` in `frontend/`. TypeScript compilation must succeed with zero errors. Skip if commit only touches backend or docs.
+
+- [ ] **10. Nullable contract fields null-guarded at consumption.** If you added or changed a nullable field (check `api-field-contracts.md` BFIELD or `field-contracts.md` FIELD entries), verify every UI consumption site handles `null`/`undefined` — `?? fallback`, optional chaining, or conditional render. A nullable field rendered without a guard is a crash waiting for real-world data.
+
 ---
 
 **Data pipeline bug fix protocol:** Write the failing test FIRST, then apply the fix, then confirm all tests pass. Non-negotiable for: `derive-summaries.ts`, `lab-clinical-catalog.ts`, `cross-domain-syndromes.ts`, `findings-rail-engine.ts`, `syndrome-interpretation.ts`, `SyndromeContextPanel.tsx`, `recovery-classification.ts`, `finding-nature.ts`, `protective-signal.ts`, classification.py, or any findings_*.py module.

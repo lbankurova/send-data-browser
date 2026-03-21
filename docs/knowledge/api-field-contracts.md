@@ -56,7 +56,7 @@ One row per endpoint x dose x sex (includes control rows).
 | BFIELD-14 | `trend_p` | number | **Yes** | `generator/domain_stats.py:compute_all_findings()` | Jonckheere-Terpstra or Cochran-Armitage trend test p-value (0--1). Null when trend test not applicable or insufficient data (< 3 groups). |
 | BFIELD-15 | `scheduled_group_stats` | array | **Yes** | `generator/domain_stats.py` (dual-pass) | Group stats recomputed after excluding early-death subjects. Only present when early_death_subjects exist AND domain is terminal (BW, LB, OM). Array of `{dose_level, mean, sd, n, ...}`. |
 | BFIELD-16 | `scheduled_pairwise` | array | **Yes** | `generator/domain_stats.py` (dual-pass) | Pairwise comparisons recomputed after excluding early deaths. Same structure as base pairwise. Only present when scheduled_group_stats exists. |
-| BFIELD-17 | `scheduled_direction` | string | **Yes** | `generator/domain_stats.py` (dual-pass) | Direction from scheduled-only analysis. One of `"up"`, `"down"`, null. Only present when scheduled data computed. |
+| BFIELD-17 | `scheduled_direction` | string | **Yes** | `generator/domain_stats.py` (dual-pass) | Direction from scheduled-only analysis. One of `"up"`, `"down"`, `"none"`, null. Only present when scheduled data computed. |
 | BFIELD-18 | `n_excluded` | integer | **Yes** | `generator/domain_stats.py` (dual-pass) | Number of subjects excluded from scheduled stats. Null when no early-death exclusion applies. |
 
 ---

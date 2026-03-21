@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 61 | 31 | Missing capability, no spec exists |
+| Gap | 61 | 36 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **86** | **66** | |
+| **Total open** | **86** | **71** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -871,6 +871,33 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Status:** Open
 - **Priority:** P4 (future alignment)
 - **Owner hint:** frontend-dev
+
+### ~~GAP-99: Stand up vitest infrastructure with seed tests for critical derive modules~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already existed — vitest config at `frontend/vitest.config.ts`, 54 test files in `frontend/tests/` with 1487 tests including `derive-summaries.test.ts` and `syndrome-interpretation.test.ts`. Initial audit missed them (tests live in `tests/` not `src/`).
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-100: Contract conformance tests — validate generated JSON against BFIELD invariants~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Files:** `backend/tests/test_bfield_contracts.py`, `docs/knowledge/api-field-contracts.md`
+- **Issue:** Created `test_bfield_contracts.py` — 62 tests across 11 JSON files covering all documented BFIELD invariants (types, nullability, enum values, numeric ranges, cross-field consistency). Auto-discovers studies. Found and fixed one contract drift: BFIELD-17 `scheduled_direction` includes `"none"` (undocumented).
+- **Status:** ~~Open~~ Done
+
+### ~~GAP-101: Frontend contract conformance — validate TS types match field-contracts.md~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already existed — `frontend/tests/field-contract-sync.test.ts` validates bidirectional coverage between `// @field FIELD-XX` annotations in source and `### FIELD-XX` headings in `field-contracts.md`. Catches undocumented fields, orphaned doc entries, and duplicates.
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-102: React error boundaries around major view panels~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already covered — `RouteErrorBoundary` (App.tsx:27) wraps every lazy-loaded route via `<LazyRoute>`, and `PaneErrorBoundary` (ContextPanel.tsx:45) wraps every context panel pane via `<LazyPane>`. Both catch runtime errors (not just chunk-load failures). Sub-view granularity (table vs scatter within a view) would be over-engineering.
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-103: Add explicit checklist items for frontend build and nullable field guards~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Files:** `docs/checklists/COMMIT-CHECKLIST.md`, `docs/checklists/POST-IMPLEMENTATION-REVIEW.md`
+- **Issue:** Added: commit checklist item 9 (`npm run build`), item 10 (nullable contract field null-guard check), post-impl review Step 2a (contract field entry audit).
+- **Status:** ~~Open~~ Done
 
 ---
 

@@ -45,6 +45,14 @@ For every new function/computation/derived value:
 - Cross-reference `docs/knowledge/methods-index.md` and `docs/knowledge/field-contracts-index.md`
 - Flag duplications: "DUPLICATION — [new location] recomputes [value] already available from [existing source]"
 
+### Step 2a: Contract field entry audit
+
+For every new or changed computed field crossing the engine→UI boundary:
+- **Backend field:** Does `docs/knowledge/api-field-contracts.md` have a BFIELD-XX entry? Are the type, nullability, enum values, and invariants still accurate?
+- **Frontend field:** Does `docs/knowledge/field-contracts.md` have a FIELD-XX entry? Do the documented invariants match the code?
+- If no entry exists, create one (next available ID). If an entry exists but is stale, update it.
+- Flag: "CONTRACT DRIFT — [BFIELD-XX / FIELD-XX] documented as [X], code produces [Y]"
+
 ---
 
 ## Step 3: Create todo items for all gaps
