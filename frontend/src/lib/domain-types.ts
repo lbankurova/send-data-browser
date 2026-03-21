@@ -5,6 +5,9 @@
  * All consumers should use typed accessors instead of reading maxEffectSize directly.
  */
 
+import type { EffectSizeMethod } from "./stat-method-transforms";
+import { getEffectSizeLabel } from "./stat-method-transforms";
+
 /** Domains with binary/proportion incidence data (no magnitude scalar). */
 export const INCIDENCE_DOMAINS = new Set(["MA", "CL", "TF", "DS"]);
 
@@ -38,13 +41,12 @@ export function getSeverityGradeFromSummary(f: { domain?: string; maxEffectSize?
   return f.domain === "MI" ? (f.maxEffectSize ?? null) : null;
 }
 
-/** Return human-readable label for the effect-size metric of a given domain. */
-export function effectSizeLabel(domain: string): string {
+/** Return human-readable label for the effect-size metric of a given domain.
+ *  When `method` is provided, continuous domains use the settings-aware label
+ *  (e.g. "Hedges' g", "Cohen's d") instead of the generic "|g|". */
+export function effectSizeLabel(domain: string, method?: EffectSizeMethod): string {
   if (domain === "MI") return "avg severity";
   if (INCIDENCE_DOMAINS.has(domain)) return "odds ratio";
-  // Default effect size method is Hedges' g (small-sample-corrected Cohen's d).
-  // The cohens_d field name is a legacy misnomer — values are Hedges' g.
-  // For settings-aware labels, use getEffectSizeLabel/getEffectSizeSymbol
-  // from stat-method-transforms.ts instead.
+  if (method) return getEffectSizeLabel(method);
   return "|g|";
 }

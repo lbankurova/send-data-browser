@@ -456,6 +456,7 @@ export function FindingsView() {
           activeEndpoint={activeEndpoint}
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => setActiveViewTab("findings-table") : undefined}
+          effectSizeMethod={analytics.activeEffectSizeMethod}
         />
       ) : null}
       </div>
