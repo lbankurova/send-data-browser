@@ -11,6 +11,7 @@ import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { EyeOff, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
   getSeverityDotColor,
   formatPValue,
@@ -827,55 +828,23 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
         {/* All / Worst toggle */}
-        <div className="flex items-center overflow-hidden rounded-sm border border-border/50">
-          <button
-            type="button"
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-medium transition-colors",
-              tableMode === "all" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setTableMode("all")}
-            title="Show all measurements across all timepoints"
-          >
-            All
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-medium transition-colors",
-              tableMode === "worst" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setTableMode("worst")}
-            title="Show only the strongest timepoint per endpoint (both sexes)"
-          >
-            Worst
-          </button>
-        </div>
+        <PanePillToggle
+          value={tableMode}
+          options={[
+            { value: "all" as const, label: "All" },
+            { value: "worst" as const, label: "Worst" },
+          ]}
+          onChange={setTableMode}
+        />
         {/* Standard / Pivoted toggle */}
-        <div className="flex items-center overflow-hidden rounded-sm border border-border/50">
-          <button
-            type="button"
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-medium transition-colors",
-              layoutMode === "standard" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setLayoutMode("standard")}
-            title="Dose groups as columns — one row per finding"
-          >
-            Standard
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "px-2 py-0.5 text-[10px] font-medium transition-colors",
-              layoutMode === "pivoted" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-            )}
-            onClick={() => setLayoutMode("pivoted")}
-            title="Dose groups as rows — one row per finding per dose group"
-          >
-            Pivoted
-          </button>
-        </div>
+        <PanePillToggle
+          value={layoutMode}
+          options={[
+            { value: "standard" as const, label: "Standard" },
+            { value: "pivoted" as const, label: "Pivoted" },
+          ]}
+          onChange={setLayoutMode}
+        />
         <span className="text-[10px] text-muted-foreground">
           {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
         </span>
