@@ -899,6 +899,30 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Issue:** Added: commit checklist item 9 (`npm run build`), item 10 (nullable contract field null-guard check), post-impl review Step 2a (contract field entry audit).
 - **Status:** ~~Open~~ Done
 
+### GAP-104: FindingsRail specimen grouping mode (stub)
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx`, `frontend/src/lib/findings-rail-engine.ts`
+- **Issue:** "Specimen" toggle exists in rail header but is disabled (stub). Requires histopathology merge to implement properly — specimen grouping needs MI/MA specimen data propagated to endpoint summaries. Currently falls back to organ grouping in `groupKey()`.
+- **Status:** Open — blocked on histopath→findings merge
+- **Priority:** P2 (required for histopath merge)
+- **Owner hint:** frontend-dev
+
+### GAP-105: FindingsRail count badges for non-endpoint grouping modes
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (SignalSummarySection)
+- **Issue:** Adverse/warning endpoint counts are shown for Endpoint grouping only. For Organ System, Specimen, and Syndrome modes, only total endpoints are shown. Need to decide what summary to display — e.g., "N organs affected", "N syndromes detected", severity breakdown per group.
+- **Status:** Open — needs UX decision
+- **Priority:** P3 (UX polish)
+- **Owner hint:** ux-designer + frontend-dev
+
+### GAP-106: Multi-subject comparison tab for mortality "View all"
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (death dropdown "View all" stub)
+- **Issue:** The mortality dropdown has a "View all in tab" link that is currently disabled. Should open a tab (like findings-table tab) showing SubjectProfilePanel content for all dead subjects side-by-side or stacked. Effectively a filtered multi-subject view.
+- **Status:** Open
+- **Priority:** P3 (enhanced mortality review)
+- **Owner hint:** frontend-dev
+
 ---
 
 ## Resolved This Session (2026-03-20)
