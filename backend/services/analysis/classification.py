@@ -517,7 +517,7 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
     # -- Step 2: Adversity (B-factors, only reached if treatment-related) --
 
     # SLA-05: Branch on data_type BEFORE B-factor gates
-    if data_type != "continuous" and DOMAIN_EFFECT_TYPE.get(domain) != "cohens_d":
+    if data_type != "continuous" and DOMAIN_EFFECT_TYPE.get(domain) != "effect_size":
         # Incidence domains (CL, DS) and MI fallback path:
         # No magnitude scalar exists for CL/DS. MI severity grade is not
         # comparable to Cohen's d for B-factor gating.

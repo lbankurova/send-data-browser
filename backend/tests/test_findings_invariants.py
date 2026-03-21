@@ -409,7 +409,7 @@ class TestC_StatisticalConsistency:
     def test_C1_direction_matches_data(self, findings):
         """Direction must be consistent with the underlying data.
 
-        For continuous findings: direction matches sign of the max-|cohens_d|
+        For continuous findings: direction matches sign of the max-|effect_size|
         pairwise entry (the generator overrides initial direction with this).
         For incidence findings: direction matches highest-dose incidence vs
         control incidence.
@@ -421,12 +421,12 @@ class TestC_StatisticalConsistency:
                 continue
             pw = f.get("pairwise", [])
             cds = [
-                (p["cohens_d"], p.get("dose_level"))
+                (p["effect_size"], p.get("dose_level"))
                 for p in pw
-                if p.get("cohens_d") is not None
+                if p.get("effect_size") is not None
             ]
             if cds:
-                # Continuous path: direction = sign of max |cohens_d|
+                # Continuous path: direction = sign of max |effect_size|
                 max_cd, max_dl = max(cds, key=lambda x: abs(x[0]))
                 if abs(max_cd) < 0.01:
                     continue  # Near-zero — direction can go either way
@@ -491,11 +491,11 @@ class TestC_StatisticalConsistency:
             + "\n".join(violations)
         )
 
-    def test_C3_cohens_d_sign_convention(self, findings):
-        """cohens_d > 0 ↔ treatment mean > control mean.
+    def test_C3_effect_size_sign_convention(self, findings):
+        """effect_size > 0 ↔ treatment mean > control mean.
 
         Verifies the sign convention is consistent across all continuous
-        findings with both cohens_d and group means available.
+        findings with both effect_size and group means available.
         """
         violations = []
         for f in findings:
@@ -510,7 +510,7 @@ class TestC_StatisticalConsistency:
                 continue
             ctrl_mean = ctrl[0]["mean"]
             for pw in f.get("pairwise", []):
-                cd = pw.get("cohens_d")
+                cd = pw.get("effect_size")
                 dl = pw.get("dose_level")
                 if cd is None or dl is None or abs(cd) < 0.1:
                     continue  # Skip near-zero — rounding noise
@@ -532,7 +532,7 @@ class TestC_StatisticalConsistency:
                         f"trt({trt_mean}) > ctrl({ctrl_mean})"
                     )
         assert not violations, (
-            f"C3: {len(violations)} cohens_d sign convention violations:\n"
+            f"C3: {len(violations)} effect_size sign convention violations:\n"
             + "\n".join(violations)
         )
 
@@ -561,9 +561,9 @@ class TestC_StatisticalConsistency:
 
     def test_C5_max_effect_size_matches_pairwise(self, findings):
         """For continuous findings, abs(max_effect_size) must equal
-        max(|cohens_d|) across pairwise entries.
+        max(|effect_size|) across pairwise entries.
 
-        max_effect_size is the signed cohens_d with the largest absolute
+        max_effect_size is the signed effect_size with the largest absolute
         value. Incidence findings use avg_severity instead — excluded here.
         """
         violations = []
@@ -573,8 +573,8 @@ class TestC_StatisticalConsistency:
             reported = f.get("max_effect_size")
             pw = f.get("pairwise", [])
             cds = [
-                p["cohens_d"] for p in pw
-                if p.get("cohens_d") is not None
+                p["effect_size"] for p in pw
+                if p.get("effect_size") is not None
             ]
             if reported is None or not cds:
                 continue
@@ -918,7 +918,7 @@ class TestF_RecoveryData:
 
     def test_F3_separate_direction_consistent(self, findings):
         """When separate_direction is up/down, it must match the sign of
-        the max |cohens_d| in separate_pairwise (same rule as C1 for primary).
+        the max |effect_size| in separate_pairwise (same rule as C1 for primary).
         """
         violations = []
         for f in findings:
@@ -927,9 +927,9 @@ class TestF_RecoveryData:
                 continue
             sep_pw = f.get("separate_pairwise", [])
             cds = [
-                (p["cohens_d"], p.get("dose_level"))
+                (p["effect_size"], p.get("dose_level"))
                 for p in sep_pw
-                if p.get("cohens_d") is not None
+                if p.get("effect_size") is not None
             ]
             if not cds:
                 continue

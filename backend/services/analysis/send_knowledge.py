@@ -8,13 +8,13 @@ Pure data module — no imports required.
 # Consumers must use typed accessors below instead of reading max_effect_size directly.
 
 DOMAIN_EFFECT_TYPE: dict[str, str] = {
-    "LB": "cohens_d",       # continuous lab measurement
-    "BW": "cohens_d",
-    "OM": "cohens_d",
-    "EG": "cohens_d",
-    "VS": "cohens_d",
-    "BG": "cohens_d",
-    "FW": "cohens_d",
+    "LB": "effect_size",       # continuous lab measurement
+    "BW": "effect_size",
+    "OM": "effect_size",
+    "EG": "effect_size",
+    "VS": "effect_size",
+    "BG": "effect_size",
+    "FW": "effect_size",
     "MI": "severity_grade", # INHAND ordinal 1–5
     "MA": "incidence",      # binary/proportion — no magnitude scalar
     "CL": "incidence",
@@ -33,7 +33,7 @@ INCIDENCE_DOMAINS: frozenset[str] = frozenset(
 # rather than include: the failure mode of a missing entry is "no effect size
 # displayed," which is visible and correctable.
 CONTINUOUS_DOMAINS: frozenset[str] = frozenset(
-    d for d, t in DOMAIN_EFFECT_TYPE.items() if t == "cohens_d"
+    d for d, t in DOMAIN_EFFECT_TYPE.items() if t == "effect_size"
 )  # {"LB", "BW", "OM", "EG", "VS", "BG", "FW"}
 
 
@@ -44,7 +44,7 @@ def get_effect_size(finding: dict) -> float | None:
     """
     domain = finding.get("domain")
     if domain is not None:
-        if DOMAIN_EFFECT_TYPE.get(domain) == "cohens_d":
+        if DOMAIN_EFFECT_TYPE.get(domain) == "effect_size":
             return finding.get("max_effect_size")
         return None
     # Fallback: use data_type field
@@ -69,7 +69,6 @@ def effect_size_label(finding: dict) -> str:
     if etype == "incidence":
         return "odds ratio"
     # Default effect size method is Hedges' g (small-sample-corrected Cohen's d).
-    # The cohens_d field name is a legacy misnomer — values are Hedges' g.
     # When user switches to Cohen's d or Glass's delta via analysis settings,
     # the parameterized pipeline recomputes values; this label is for the
     # generation-time default only.

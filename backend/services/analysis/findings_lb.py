@@ -6,7 +6,7 @@ import pandas as pd
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
-    dunnett_pairwise, welch_pairwise, cohens_d, trend_test,
+    dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
 from services.analysis.phase_filter import (
     get_treatment_subjects, filter_treatment_period_records,
@@ -145,9 +145,9 @@ def compute_lb_findings(
         # Max effect size across pairwise
         max_d = None
         for pw in pairwise:
-            if pw["cohens_d"] is not None:
-                if max_d is None or abs(pw["cohens_d"]) > abs(max_d):
-                    max_d = pw["cohens_d"]
+            if pw["effect_size"] is not None:
+                if max_d is None or abs(pw["effect_size"]) > abs(max_d):
+                    max_d = pw["effect_size"]
 
         # Override direction with max_d sign — the strongest statistical signal
         # is more reliable than comparing high dose to control (which can be noise)

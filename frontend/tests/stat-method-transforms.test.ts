@@ -22,9 +22,9 @@ function applyEffectSizeMethod(findings: UnifiedFinding[], method: EffectSizeMet
       const treatedStat = f.group_stats.find((gs) => gs.dose_level === pw.dose_level);
       if (!treatedStat) return pw;
       const newD = computeEffectSize(method, controlStat.mean, controlStat.sd, controlStat.n, treatedStat.mean, treatedStat.sd, treatedStat.n);
-      return { ...pw, cohens_d: newD };
+      return { ...pw, effect_size: newD };
     });
-    const effectSizes = newPairwise.map((pw) => pw.cohens_d).filter((d): d is number => d != null);
+    const effectSizes = newPairwise.map((pw) => pw.effect_size).filter((d): d is number => d != null);
     let newMaxEffect = f.max_effect_size;
     if (effectSizes.length > 0) {
       newMaxEffect = effectSizes.reduce((best, cur) => Math.abs(cur) > Math.abs(best) ? cur : best);
@@ -82,9 +82,9 @@ function makeFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding {
       { dose_level: 3, n: 10, mean: 60, sd: 8, median: 59 },
     ],
     pairwise: [
-      { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, cohens_d: 0.91 },
-      { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, cohens_d: 2.47 },
-      { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: null, cohens_d: 4.50 },
+      { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, effect_size: 0.91 },
+      { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, effect_size: 2.47 },
+      { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: null, effect_size: 4.50 },
     ],
     ...overrides,
   };
@@ -117,9 +117,9 @@ function makeIncidenceFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedF
       { dose_level: 3, n: 10, mean: null, sd: null, median: null, affected: 8, incidence: 0.8 },
     ],
     pairwise: [
-      { dose_level: 1, p_value: 0.3, p_value_adj: 0.3, statistic: null, cohens_d: null, odds_ratio: 3.8 },
-      { dose_level: 2, p_value: 0.02, p_value_adj: 0.02, statistic: null, cohens_d: null, odds_ratio: 13.5 },
-      { dose_level: 3, p_value: 0.001, p_value_adj: 0.001, statistic: null, cohens_d: null, odds_ratio: 36.0 },
+      { dose_level: 1, p_value: 0.3, p_value_adj: 0.3, statistic: null, effect_size: null, odds_ratio: 3.8 },
+      { dose_level: 2, p_value: 0.02, p_value_adj: 0.02, statistic: null, effect_size: null, odds_ratio: 13.5 },
+      { dose_level: 3, p_value: 0.001, p_value_adj: 0.001, statistic: null, effect_size: null, odds_ratio: 36.0 },
     ],
     ...overrides,
   };
@@ -217,7 +217,7 @@ describe("applyEffectSizeMethod", () => {
       const trt = gs.find((g) => g.dose_level === pw.dose_level)!;
       if (ctrl.mean != null && ctrl.sd != null && trt.mean != null && trt.sd != null) {
         const expectedD = computeEffectSize("cohens-d", ctrl.mean, ctrl.sd, ctrl.n, trt.mean, trt.sd, trt.n);
-        expect(pw.cohens_d).toBeCloseTo(expectedD!, 4);
+        expect(pw.effect_size).toBeCloseTo(expectedD!, 4);
       }
     }
   });
@@ -233,8 +233,8 @@ describe("applyEffectSizeMethod", () => {
         { dose_level: 2, n: 10, mean: 40, sd: 6, median: 39 },
       ],
       pairwise: [
-        { dose_level: 1, p_value: 0.05, p_value_adj: 0.1, statistic: null, cohens_d: -1.3 },
-        { dose_level: 2, p_value: 0.001, p_value_adj: 0.002, statistic: null, cohens_d: -2.8 },
+        { dose_level: 1, p_value: 0.05, p_value_adj: 0.1, statistic: null, effect_size: -1.3 },
+        { dose_level: 2, p_value: 0.001, p_value_adj: 0.002, statistic: null, effect_size: -2.8 },
       ],
     });
     const result = applyEffectSizeMethod([finding], "cohens-d");
@@ -251,14 +251,14 @@ describe("applyEffectSizeMethod", () => {
         { dose_level: 1, n: 10, mean: 40, sd: 20, median: 38 },  // high variance treatment
       ],
       pairwise: [
-        { dose_level: 1, p_value: 0.1, p_value_adj: 0.2, statistic: null, cohens_d: 0.7 },
+        { dose_level: 1, p_value: 0.1, p_value_adj: 0.2, statistic: null, effect_size: 0.7 },
       ],
     });
     const glassResult = applyEffectSizeMethod([finding], "glass-delta");
     const cohensResult = applyEffectSizeMethod([finding], "cohens-d");
     // Glass's Δ should be larger because it uses the smaller control SD
-    expect(Math.abs(glassResult[0].pairwise[0].cohens_d!)).toBeGreaterThan(
-      Math.abs(cohensResult[0].pairwise[0].cohens_d!),
+    expect(Math.abs(glassResult[0].pairwise[0].effect_size!)).toBeGreaterThan(
+      Math.abs(cohensResult[0].pairwise[0].effect_size!),
     );
   });
 });
@@ -281,9 +281,9 @@ describe("applyMultiplicityMethod", () => {
   test("Bonferroni: p_adj = min(p_welch × k, 1.0)", () => {
     const finding = makeFinding({
       pairwise: [
-        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, cohens_d: 0.91, p_value_welch: 0.20 },
-        { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, cohens_d: 2.47, p_value_welch: 0.005 },
-        { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: null, cohens_d: 4.50, p_value_welch: 0.0002 },
+        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, effect_size: 0.91, p_value_welch: 0.20 },
+        { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, effect_size: 2.47, p_value_welch: 0.005 },
+        { dose_level: 3, p_value: 0.0001, p_value_adj: 0.0003, statistic: null, effect_size: 4.50, p_value_welch: 0.0002 },
       ],
     });
     const result = applyMultiplicityMethod([finding], "bonferroni");
@@ -296,7 +296,7 @@ describe("applyMultiplicityMethod", () => {
   test("Bonferroni caps at 1.0", () => {
     const finding = makeFinding({
       pairwise: [
-        { dose_level: 1, p_value: 0.5, p_value_adj: 0.8, statistic: null, cohens_d: 0.3, p_value_welch: 0.5 },
+        { dose_level: 1, p_value: 0.5, p_value_adj: 0.8, statistic: null, effect_size: 0.3, p_value_welch: 0.5 },
       ],
     });
     const result = applyMultiplicityMethod([finding], "bonferroni");
@@ -314,8 +314,8 @@ describe("applyMultiplicityMethod", () => {
     const finding = makeFinding({
       min_p_adj: 0.0003,
       pairwise: [
-        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, cohens_d: 0.91, p_value_welch: 0.20 },
-        { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, cohens_d: 2.47, p_value_welch: 0.005 },
+        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, effect_size: 0.91, p_value_welch: 0.20 },
+        { dose_level: 2, p_value: 0.003, p_value_adj: 0.008, statistic: null, effect_size: 2.47, p_value_welch: 0.005 },
       ],
     });
     const result = applyMultiplicityMethod([finding], "bonferroni");
@@ -346,7 +346,7 @@ describe("hasWelchPValues", () => {
   test("returns true when Welch p-values present", () => {
     const finding = makeFinding({
       pairwise: [
-        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, cohens_d: 0.91, p_value_welch: 0.20 },
+        { dose_level: 1, p_value: 0.15, p_value_adj: 0.35, statistic: null, effect_size: 0.91, p_value_welch: 0.20 },
       ],
     });
     expect(hasWelchPValues([finding])).toBe(true);
@@ -374,7 +374,7 @@ describe("scheduled + method interaction", () => {
         { dose_level: 1, n: 10, mean: 60, sd: 8, median: 59 },
       ],
       pairwise: [
-        { dose_level: 1, p_value: 0.001, p_value_adj: 0.001, statistic: null, cohens_d: 4.5 },
+        { dose_level: 1, p_value: 0.001, p_value_adj: 0.001, statistic: null, effect_size: 4.5 },
       ],
     });
 
@@ -382,9 +382,9 @@ describe("scheduled + method interaction", () => {
     const result = applyEffectSizeMethod([finding], "cohens-d");
     // Verify recomputation happened from group_stats
     const pw = result[0].pairwise[0];
-    expect(pw.cohens_d).not.toBeNull();
+    expect(pw.effect_size).not.toBeNull();
     // Should match computeEffectSize("cohens-d", 30, 5, 10, 60, 8, 10)
     const expected = computeEffectSize("cohens-d", 30, 5, 10, 60, 8, 10);
-    expect(pw.cohens_d!).toBeCloseTo(expected!, 4);
+    expect(pw.effect_size!).toBeCloseTo(expected!, 4);
   });
 });

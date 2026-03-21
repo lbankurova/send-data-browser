@@ -765,8 +765,8 @@ describe("food consumption context", () => {
       end_day: 92,
       days: 91,
       by_dose_sex: [
-        { dose_level: 0, sex: "M", n: 10, mean_fw: 5.09, mean_bw_gain: 186.22, mean_food_efficiency: 0.4006, food_efficiency_sd: 0.0658, food_efficiency_control: 0.4006, food_efficiency_reduced: false, fe_p_value: null, fe_cohens_d: null, fw_pct_change: 0.0, bw_pct_change: 0.0 },
-        { dose_level: 3, sex: "M", n: 9, mean_fw: 4.84, mean_bw_gain: 86.0, mean_food_efficiency: 0.1953, food_efficiency_sd: 0.0477, food_efficiency_control: 0.4006, food_efficiency_reduced: true, fe_p_value: 0.000002, fe_cohens_d: -3.5712, fw_pct_change: -4.9, bw_pct_change: -53.8 },
+        { dose_level: 0, sex: "M", n: 10, mean_fw: 5.09, mean_bw_gain: 186.22, mean_food_efficiency: 0.4006, food_efficiency_sd: 0.0658, food_efficiency_control: 0.4006, food_efficiency_reduced: false, fe_p_value: null, fe_effect_size: null, fw_pct_change: 0.0, bw_pct_change: 0.0 },
+        { dose_level: 3, sex: "M", n: 9, mean_fw: 4.84, mean_bw_gain: 86.0, mean_food_efficiency: 0.1953, food_efficiency_sd: 0.0477, food_efficiency_control: 0.4006, food_efficiency_reduced: true, fe_p_value: 0.000002, fe_effect_size: -3.5712, fw_pct_change: -4.9, bw_pct_change: -53.8 },
       ],
     }],
     overall_assessment: {

@@ -283,7 +283,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           affected: gs.affected ?? null,
           incidence: gs.incidence ?? null,
           p_value: pw?.p_value_adj ?? pw?.p_value ?? null,
-          effect_size: pw?.cohens_d ?? null,
+          effect_size: pw?.effect_size ?? null,
           trend_p: f.trend_p,
           dose_response_pattern: f.dose_response_pattern ?? "",
           fold_change: f.domain === "MI"

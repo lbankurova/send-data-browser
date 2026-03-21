@@ -82,7 +82,7 @@ def test_eg_findings():
     pw = f0.get("pairwise", [])
     if pw:
         check("EG pairwise have p_value", "p_value" in pw[0])
-        check("EG pairwise have cohens_d", "cohens_d" in pw[0])
+        check("EG pairwise have effect_size", "effect_size" in pw[0])
 
     # Check both sexes present
     sexes = {f["sex"] for f in findings}

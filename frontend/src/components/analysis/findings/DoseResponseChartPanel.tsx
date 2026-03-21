@@ -337,7 +337,7 @@ export function DoseResponseChartPanel({
         .filter((r) => r.dose_level > 0)
         .map((r) => ({
           dose_level: r.dose_level, p_value: r.p_value, p_value_adj: null,
-          statistic: null, cohens_d: r.effect_size,
+          statistic: null, effect_size: r.effect_size,
         }));
       const flag = checkNonMonotonic(groupStats, pairwise, chartData.pattern);
       if (flag.triggered) return flag;

@@ -43,7 +43,7 @@ function pw(doseLevel: number, pAdj: number): PairwiseResult {
     p_value: pAdj,
     p_value_adj: pAdj,
     statistic: null,
-    cohens_d: null,
+    effect_size: null,
   };
 }
 
