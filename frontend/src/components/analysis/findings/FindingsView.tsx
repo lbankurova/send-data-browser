@@ -61,10 +61,18 @@ export function FindingsView() {
   const [activeViewTab, setActiveViewTab] = useSessionState<FindingsTab>(
     "pcc.findings.viewTab", "findings", isOneOf(FINDINGS_TABS),
   );
-  const findingsViewTabs = useMemo(() => [
-    { key: "findings", label: "Findings" },
-    { key: "findings-table", label: "Findings table", closable: true },
-  ], []);
+  // Track whether the "Findings table" tab is open (separate from which is active,
+  // so user can switch between tabs without closing the table tab).
+  const [tableTabOpen, setTableTabOpen] = useState(activeViewTab === "findings-table");
+  const findingsViewTabs = useMemo(() => {
+    const tabs: { key: string; label: string; closable?: boolean }[] = [
+      { key: "findings", label: "Findings" },
+    ];
+    if (tableTabOpen) {
+      tabs.push({ key: "findings-table", label: "Findings table", closable: true });
+    }
+    return tabs;
+  }, [tableTabOpen]);
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -388,7 +396,7 @@ export function FindingsView() {
         tabs={findingsViewTabs}
         value={activeViewTab}
         onChange={(k) => setActiveViewTab(k as FindingsTab)}
-        onClose={() => setActiveViewTab("findings")}
+        onClose={() => { setTableTabOpen(false); setActiveViewTab("findings"); }}
       />
 
       {/* Chart section — scope-dependent: D-R charts at endpoint level, scatter at group/overview */}
@@ -455,7 +463,7 @@ export function FindingsView() {
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
           activeGrouping={activeGrouping}
-          onOpenInTab={activeViewTab === "findings" ? () => setActiveViewTab("findings-table") : undefined}
+          onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
         />
       ) : null}
