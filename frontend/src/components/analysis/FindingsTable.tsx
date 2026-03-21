@@ -21,6 +21,8 @@ import {
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
+import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { DoseHeader, DoseLabel } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
@@ -120,9 +122,11 @@ interface FindingsTableProps {
   activeGrouping?: GroupingMode | null;
   /** Callback to open the table in its own tab. */
   onOpenInTab?: () => void;
+  /** Active effect size method — controls header label for continuous endpoints. */
+  effectSizeMethod?: EffectSizeMethod;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g" }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -281,7 +285,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           effect_size: pw?.cohens_d ?? null,
           trend_p: f.trend_p,
           dose_response_pattern: f.dose_response_pattern ?? "",
-          fold_change: fold,
+          fold_change: f.domain === "MI"
+            ? (gs.avg_severity ?? null)
+            : f.data_type === "incidence"
+              ? (pw?.odds_ratio ?? null)
+              : fold,
           direction: f.direction,
         });
       }
@@ -427,6 +435,30 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      col.accessor("max_effect_size", {
+        header: () => {
+          const sym = getEffectSizeSymbol(effectSizeMethod);
+          return <span title={`Largest standardized effect size (|${sym}|) across dose groups. Continuous endpoints only.`}>Max |{sym}|</span>;
+        },
+        cell: (info) => {
+          const v = info.getValue();
+          const domain = info.row.original.domain;
+          const label = effectSizeLabel(domain, effectSizeMethod);
+          return (
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${label} = ${v.toFixed(3)}` : undefined}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
+      }),
+      col.accessor("max_fold_change", {
+        header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        cell: (info) => {
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
       col.accessor("min_p_adj", {
         header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
         cell: (info) => (
@@ -438,26 +470,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
-      }),
-      col.accessor("max_effect_size", {
-        header: () => <span title="Largest effect size (Hedges' g) across dose groups">Max |g|</span>,
-        cell: (info) => {
-          const v = info.getValue();
-          const domain = info.row.original.domain;
-          return (
-            <span className="ev font-mono text-muted-foreground" title={v != null ? `${effectSizeLabel(domain)} = ${v.toFixed(3)}` : undefined}>
-              {formatEffectSize(v)}
-            </span>
-          );
-        },
-      }),
-      col.accessor("max_fold_change", {
-        header: () => <span title="Largest fold change vs control across dose groups. Continuous endpoints only.">Max fold</span>,
-        cell: (info) => {
-          const v = info.getValue();
-          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
-        },
       }),
       col.accessor("direction", {
         header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
@@ -505,7 +517,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -622,6 +634,39 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      pivCol.accessor("effect_size", {
+        header: () => {
+          const sym = getEffectSizeSymbol(effectSizeMethod);
+          return <span title={`Standardized effect size (|${sym}|) for this dose group vs control. Continuous endpoints only.`}>|{sym}|</span>;
+        },
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          const label = effectSizeLabel(r.domain, effectSizeMethod);
+          return (
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${label} = ${v.toFixed(3)}` : undefined}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
+      }),
+      pivCol.accessor("fold_change", {
+        header: () => <span title="Magnitude vs control — fold change (continuous), odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          if (r.domain === "MI") {
+            return <span className="font-mono text-muted-foreground" title={`avg severity = ${v.toFixed(2)}`}>{v.toFixed(1)}</span>;
+          }
+          if (r.data_type === "incidence") {
+            return <span className="font-mono text-muted-foreground" title={`odds ratio = ${v.toFixed(2)}`}>{v.toFixed(1)}</span>;
+          }
+          return <span className="font-mono text-muted-foreground" title={`fold change = ${v.toFixed(2)}`}>{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
       pivCol.accessor("p_value", {
         header: () => <span title="Adjusted pairwise p-value for this dose group vs control">P-value</span>,
         cell: (info) => {
@@ -633,29 +678,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       pivCol.accessor("trend_p", {
         header: () => <span title="Dose-response trend test p-value">Trend p</span>,
         cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
-      }),
-      pivCol.accessor("effect_size", {
-        header: () => <span title="Effect size (Hedges' g) for this dose group vs control">|g|</span>,
-        cell: (info) => {
-          const r = info.row.original;
-          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const v = info.getValue();
-          return (
-            <span className="ev font-mono text-muted-foreground" title={v != null ? `${effectSizeLabel(r.domain)} = ${v.toFixed(3)}` : undefined}>
-              {formatEffectSize(v)}
-            </span>
-          );
-        },
-      }),
-      pivCol.accessor("fold_change", {
-        header: () => <span title="Fold change vs control (treated mean / control mean)">Fold</span>,
-        cell: (info) => {
-          const r = info.row.original;
-          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const v = info.getValue();
-          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
-        },
       }),
       pivCol.accessor("direction", {
         header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
@@ -699,7 +721,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode]
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
   );
 
   // ─── Standard table instance ───────────────────────────────
