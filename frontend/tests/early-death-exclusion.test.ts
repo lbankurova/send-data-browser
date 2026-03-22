@@ -135,13 +135,13 @@ const SCHEDULED_GROUP_STATS: GroupStat[] = [
 ];
 
 const BASE_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, cohens_d: 0.8 },
-  { dose_level: 2, p_value: 0.01, p_value_adj: 0.02, statistic: 3.0, cohens_d: 1.5 },
+  { dose_level: 1, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, effect_size: 0.8 },
+  { dose_level: 2, p_value: 0.01, p_value_adj: 0.02, statistic: 3.0, effect_size: 1.5 },
 ];
 
 const SCHEDULED_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.06, p_value_adj: 0.12, statistic: 1.9, cohens_d: 0.7 },
-  { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: 3.1, cohens_d: 1.6 },
+  { dose_level: 1, p_value: 0.06, p_value_adj: 0.12, statistic: 1.9, effect_size: 0.7 },
+  { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: 3.1, effect_size: 1.6 },
 ];
 
 const EARLY_DEATH_SUBJECTS: Record<string, string> = {

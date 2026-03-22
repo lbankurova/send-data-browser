@@ -125,12 +125,11 @@ def trend_test_incidence(counts: list[int], totals: list[int]) -> dict:
     return {"statistic": float(z), "p_value": float(p_val)}
 
 
-def cohens_d(group1: list | np.ndarray, group2: list | np.ndarray) -> float | None:
+def compute_effect_size(group1: list | np.ndarray, group2: list | np.ndarray) -> float | None:
     """Hedges' g effect size (bias-corrected Cohen's d for small samples).
 
     REM-05: Applies Hedges' correction factor J = 1 - 3/(4*df - 1) to
     reduce upward bias in Cohen's d when sample sizes are small (< 20).
-    The JSON field name is kept as 'cohens_d' for backwards compatibility.
     """
     a1 = np.array(group1, dtype=float)
     a2 = np.array(group2, dtype=float)
@@ -195,7 +194,7 @@ def dunnett_pairwise(
         control: Control group values.
         treated_groups: List of (dose_level, values) tuples for treated groups.
 
-    Returns list of dicts with: dose_level, p_value, p_value_adj, statistic, cohens_d.
+    Returns list of dicts with: dose_level, p_value, p_value_adj, statistic, effect_size.
     """
     ctrl = np.array(control, dtype=float)
     ctrl = ctrl[~np.isnan(ctrl)]
@@ -212,7 +211,7 @@ def dunnett_pairwise(
         arr = np.array(vals, dtype=float)
         arr = arr[~np.isnan(arr)]
         dose_levels.append(dose_level)
-        all_effect_sizes.append(cohens_d(arr, ctrl))
+        all_effect_sizes.append(compute_effect_size(arr, ctrl))
         if len(arr) >= 2:
             valid_arrays.append(arr)
             valid_indices.append(i)
@@ -242,7 +241,7 @@ def dunnett_pairwise(
             # Dunnett's p-values are already FWER-controlled — p_value_adj = p_value
             "p_value_adj": round(p, 6) if p is not None else None,
             "statistic": None,  # Dunnett's doesn't provide per-comparison test statistics
-            "cohens_d": round(d, 4) if d is not None else None,
+            "effect_size": round(d, 4) if d is not None else None,
         })
     return pairwise
 

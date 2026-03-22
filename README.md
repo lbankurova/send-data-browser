@@ -15,7 +15,7 @@ SENDEX structures the analytical workflow around the common tasks: detect
 treatment-related effects → characterize dose-response → assess causality →
 evaluate reversibility → determine NOAEL. At each step SENDEX pre-computes
 statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags
-cross-domain syndromes (24 rules), scores signals against ECETOC assessment
+cross-domain syndromes (33 rules), scores signals against ECETOC assessment
 tiers, and then puts the evidence in front of the reviewer to interpret.
 
 Dual-engine validation runs 400+ CDISC CORE conformance rules alongside 14

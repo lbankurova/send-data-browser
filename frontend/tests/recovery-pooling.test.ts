@@ -86,15 +86,15 @@ const SEPARATE_GROUP_STATS: GroupStat[] = [
 ];
 
 const POOLED_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: 1.5, cohens_d: -0.5 },
-  { dose_level: 2, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, cohens_d: -1.0 },
-  { dose_level: 3, p_value: 0.001, p_value_adj: 0.003, statistic: 4.0, cohens_d: -2.0 },
+  { dose_level: 1, p_value: 0.15, p_value_adj: 0.30, statistic: 1.5, effect_size: -0.5 },
+  { dose_level: 2, p_value: 0.05, p_value_adj: 0.10, statistic: 2.0, effect_size: -1.0 },
+  { dose_level: 3, p_value: 0.001, p_value_adj: 0.003, statistic: 4.0, effect_size: -2.0 },
 ];
 
 const SEPARATE_PAIRWISE: PairwiseResult[] = [
-  { dose_level: 1, p_value: 0.18, p_value_adj: 0.35, statistic: 1.3, cohens_d: -0.5 },
-  { dose_level: 2, p_value: 0.04, p_value_adj: 0.08, statistic: 2.1, cohens_d: -1.1 },
-  { dose_level: 3, p_value: 0.0005, p_value_adj: 0.001, statistic: 4.5, cohens_d: -2.5 },
+  { dose_level: 1, p_value: 0.18, p_value_adj: 0.35, statistic: 1.3, effect_size: -0.5 },
+  { dose_level: 2, p_value: 0.04, p_value_adj: 0.08, statistic: 2.1, effect_size: -1.1 },
+  { dose_level: 3, p_value: 0.0005, p_value_adj: 0.001, statistic: 4.5, effect_size: -2.5 },
 ];
 
 /** CL-style incidence stats — pooled includes recovery subjects. */

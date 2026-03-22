@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, memo } from "react";
 import { useParams } from "react-router-dom";
 import {
   useReactTable,
@@ -8,8 +8,10 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
-import { EyeOff } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { EyeOff, ExternalLink, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
   getSeverityDotColor,
   formatPValue,
@@ -20,18 +22,101 @@ import {
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
-import { DoseHeader } from "@/components/ui/DoseLabel";
+import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
+import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { DoseHeader, DoseLabel } from "@/components/ui/DoseLabel";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
-import { getSignalTier } from "@/lib/findings-rail-engine";
+import { getSignalTier, getPatternLabel } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import { FindingsTableFilterPanel } from "./findings/FindingsTableFilterPanel";
+import {
+  DEFAULT_FILTER_STATE,
+  countActiveFilters,
+  applyTableFilters,
+} from "./findings/table-filters";
+import type { TableFilterState } from "./findings/table-filters";
 
 const col = createColumnHelper<UnifiedFinding>();
 
 /** The absorber column — takes remaining space */
 const ABSORBER_ID = "finding";
+
+// ─── Pivoted row type ──────────────────────────────────────
+/** One row per finding × dose group (groups as rows instead of columns). */
+interface PivotedRow {
+  id: string;
+  original: UnifiedFinding;
+  domain: string;
+  finding: string;
+  specimen: string | null;
+  endpoint_label: string;
+  sex: string;
+  day: number | null;
+  data_type: "continuous" | "incidence";
+  severity: string;
+  dose_level: number;
+  dose_label: string;
+  n: number;
+  mean: number | null;
+  sd: number | null;
+  affected: number | null;
+  incidence: number | null;
+  p_value: number | null;
+  effect_size: number | null;
+  trend_p: number | null;
+  dose_response_pattern: string;
+  fold_change: number | null;
+  direction: string | null;
+}
+
+const pivCol = createColumnHelper<PivotedRow>();
+const PIVOTED_ABSORBER_ID = "piv_finding";
+
+// ─── Memoized sparkline cell ────────────────────────────────
+// Inline SVG generation is expensive in table renders. Memo prevents
+// re-rendering when only parent re-renders (sort, filter, selection).
+const SparklineCell = memo(function SparklineCell({
+  stats,
+  dataType,
+  sparkScale,
+  globalMax,
+}: {
+  stats: UnifiedFinding["group_stats"];
+  dataType: string;
+  sparkScale: "row" | "global";
+  globalMax: number;
+}) {
+  if (stats.length < 2) return null;
+  const isCont = dataType === "continuous";
+  const sorted = stats.slice().sort((a, b) => a.dose_level - b.dose_level);
+  const nums = sorted.map((g) => (isCont ? g.mean : g.incidence) ?? 0);
+  if (sorted.every((g) => (isCont ? g.mean : g.incidence) == null)) return null;
+  const control = isCont ? nums[0] : 0;
+  const max = sparkScale === "global"
+    ? globalMax
+    : Math.max(...nums.map((v) => Math.abs(isCont ? v - control : v)), 1e-9);
+  const W = 28;
+  const H = 14;
+  const barW = Math.max(2, Math.floor((W - (nums.length - 1)) / nums.length));
+  const gap = 1;
+  return (
+    <svg width={W} height={H} className="inline-block align-middle">
+      {nums.map((v, i) => {
+        const delta = isCont ? v - control : v;
+        const barH = max > 0 ? Math.max(1, Math.abs(delta) / max * (H / 2)) : 1;
+        const isUp = delta >= 0;
+        const x = i * (barW + gap);
+        const y = isUp ? H / 2 - barH : H / 2;
+        const fill = i === 0 ? "#9ca3af" : "#6b7280";
+        return <rect key={i} x={x} y={y} width={barW} height={barH} fill={fill} rx={0.5} />;
+      })}
+      <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="#d1d5db" strokeWidth={0.5} />
+    </svg>
+  );
+});
 
 interface FindingsTableProps {
   findings: UnifiedFinding[];
@@ -43,13 +128,21 @@ interface FindingsTableProps {
   activeEndpoint?: string | null;
   /** Current rail grouping mode — when "finding", table sorts by endpoint by default. */
   activeGrouping?: GroupingMode | null;
+  /** Callback to open the table in its own tab. */
+  onOpenInTab?: () => void;
+  /** Active effect size method — controls header label for continuous endpoints. */
+  effectSizeMethod?: EffectSizeMethod;
+  /** Day selected by the day stepper — filters table to this day when set. */
+  selectedDay?: number | null;
+  /** Callback to clear the day stepper filter from within the table. */
+  onClearDayFilter?: () => void;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", selectedDay, onClearDayFilter }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
-  const selectedRowRef = useRef<HTMLTableRowElement | null>(null);
+  const resizingRef = useRef(false);
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
@@ -58,6 +151,31 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [clDayMode, setClDayMode] = useState<ClDayMode>("mode");
   const [dayMenu, setDayMenu] = useState<{ x: number; y: number } | null>(null);
   const dayMenuRef = useRef<HTMLDivElement>(null);
+
+  // Sparkline scale mode
+  type SparkScale = "row" | "global";
+  const [sparkScale, setSparkScale] = useState<SparkScale>("row");
+  const [sparkMenu, setSparkMenu] = useState<{ x: number; y: number } | null>(null);
+  const sparkMenuRef = useRef<HTMLDivElement>(null);
+
+  // Table display mode: "all" shows every row; "worst" collapses to strongest timepoint per endpoint
+  type TableMode = "all" | "worst";
+  const [tableMode, setTableMode] = useState<TableMode>("all");
+
+  // Layout mode: "standard" (dose groups as columns) vs "pivoted" (dose groups as rows)
+  type LayoutMode = "standard" | "pivoted";
+  const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode", "standard");
+
+  // Pivoted table sorting (separate from standard table)
+  const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", []);
+  const [pivotedColumnSizing, setPivotedColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.pivotedColumnSizing", {});
+
+  // Filter panel state
+  const [filterState, setFilterState] = useSessionState<TableFilterState>(
+    "pcc.findings.tableFilters", DEFAULT_FILTER_STATE,
+  );
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFilterCount = countActiveFilters(filterState);
 
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
@@ -78,6 +196,147 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return () => document.removeEventListener("mousedown", handler);
   }, [dayMenu]);
 
+  // Close sparkline menu on outside click
+  useEffect(() => {
+    if (!sparkMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (sparkMenuRef.current && !sparkMenuRef.current.contains(e.target as Node)) setSparkMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sparkMenu]);
+
+  // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
+  const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
+
+  // Global max for sparkline scaling: max |delta from control| (continuous) or max incidence (categorical)
+  const globalSparkMax = useMemo(() => {
+    let maxCont = 1e-9;
+    let maxInc = 1e-9;
+    for (const f of findings) {
+      const stats = f.group_stats.slice().sort((a, b) => a.dose_level - b.dose_level);
+      if (stats.length < 2) continue;
+      if (f.data_type === "continuous") {
+        const control = stats[0]?.mean ?? 0;
+        for (const g of stats) {
+          if (g.mean != null) maxCont = Math.max(maxCont, Math.abs(g.mean - control));
+        }
+      } else {
+        for (const g of stats) {
+          if (g.incidence != null) maxInc = Math.max(maxInc, g.incidence);
+        }
+      }
+    }
+    return { continuous: maxCont, incidence: maxInc };
+  }, [findings]);
+
+  // "Worst" mode: for each endpoint, keep only the day with the strongest signal (both sexes)
+  const displayFindings = useMemo(() => {
+    if (tableMode === "all") return findings;
+
+    const byEndpoint = new Map<string, UnifiedFinding[]>();
+    for (const f of findings) {
+      const key = f.endpoint_label ?? f.finding;
+      if (!byEndpoint.has(key)) byEndpoint.set(key, []);
+      byEndpoint.get(key)!.push(f);
+    }
+
+    const result: UnifiedFinding[] = [];
+    for (const [, group] of byEndpoint) {
+      const days = new Set(group.map(f => f.day));
+      if (days.size <= 1) {
+        result.push(...group);
+        continue;
+      }
+      // Pick the finding with min p-value (primary), max |effect size| (tiebreaker)
+      const best = group.reduce((a, b) => {
+        const pA = a.min_p_adj ?? Infinity;
+        const pB = b.min_p_adj ?? Infinity;
+        if (pB < pA) return b;
+        if (pB === pA && Math.abs(b.max_effect_size ?? 0) > Math.abs(a.max_effect_size ?? 0)) return b;
+        return a;
+      });
+      // Keep all findings (both sexes) at the worst day
+      result.push(...group.filter(f => f.day === best.day));
+    }
+
+    return result;
+  }, [findings, tableMode]);
+
+  // Apply endpoint + day stepper filter (D6: stepper drives both charts and table)
+  const dayFilteredFindings = useMemo(() => {
+    let result = displayFindings;
+    // When an endpoint is selected, scope table to that endpoint
+    if (activeEndpoint) {
+      result = result.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
+    }
+    // When a day is selected via stepper, scope to that day
+    if (selectedDay != null) {
+      result = result.filter((f) => f.day === selectedDay);
+    }
+    return result;
+  }, [displayFindings, activeEndpoint, selectedDay]);
+
+  // Apply table column filters on top of day + all/worst selection
+  const filteredFindings = useMemo(() => {
+    if (activeFilterCount === 0) return dayFilteredFindings;
+    return applyTableFilters(dayFilteredFindings, filterState);
+  }, [dayFilteredFindings, filterState, activeFilterCount]);
+
+  // ─── Pivoted data: flatten finding × dose group into rows ───
+  // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
+  const pivotedRows = useMemo(() => {
+    if (layoutMode !== "pivoted") return [];
+    const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
+    const rows: PivotedRow[] = [];
+    for (const f of filteredFindings) {
+      // Control mean for fold change computation
+      const controlMean = f.data_type === "continuous"
+        ? (f.group_stats.find(g => g.dose_level === 0)?.mean ?? null)
+        : null;
+      for (const gs of f.group_stats) {
+        const dg = doseMap.get(gs.dose_level);
+        const pw = f.pairwise.find(p => p.dose_level === gs.dose_level);
+        // Fold change = treated mean / control mean (continuous only, treated only)
+        let fold: number | null = null;
+        if (controlMean != null && controlMean !== 0 && gs.dose_level > 0 && gs.mean != null) {
+          fold = gs.mean / controlMean;
+        }
+        rows.push({
+          id: `${f.id}_${gs.dose_level}`,
+          original: f,
+          domain: f.domain,
+          finding: f.finding,
+          specimen: f.specimen ?? null,
+          endpoint_label: f.endpoint_label ?? f.finding,
+          sex: f.sex,
+          day: f.day,
+          data_type: f.data_type,
+          severity: f.severity,
+          dose_level: gs.dose_level,
+          dose_label: dg ? (dg.dose_level === 0 ? "Control" : dg.label) : `Level ${gs.dose_level}`,
+          n: gs.n,
+          mean: gs.mean,
+          sd: gs.sd,
+          affected: gs.affected ?? null,
+          incidence: gs.incidence ?? null,
+          p_value: pw?.p_value_adj ?? pw?.p_value ?? null,
+          effect_size: pw?.effect_size ?? null,
+          trend_p: f.trend_p,
+          dose_response_pattern: f.dose_response_pattern ?? "",
+          fold_change: f.domain === "MI"
+            ? (gs.avg_severity ?? null)
+            : f.data_type === "incidence"
+              ? (pw?.odds_ratio ?? null)
+              : fold,
+          direction: f.direction,
+        });
+      }
+    }
+    return rows;
+  }, [filteredFindings, doseGroups, layoutMode]);
+
+  // ─── Standard columns ──────────────────────────────────────
   const columns = useMemo(
     () => [
       col.accessor("domain", {
@@ -121,17 +380,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("sex", { header: "Sex" }),
       col.accessor("day", {
         header: () => {
-          const hasCl = findings.some(f => f.domain === "CL");
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
           if (!hasCl) return <span title={baseTooltip}>Day</span>;
           const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
-            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Click to change.` },
-            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Click to change.` },
+            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Right-click to change.` },
+            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Right-click to change.` },
           };
           const { label, tooltip } = labels[clDayMode];
           return (
             <span title={tooltip}>
-              {label} <span className="text-muted-foreground/40">{"\u25BE"}</span>
+              {label}
             </span>
           );
         },
@@ -143,18 +401,30 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
         },
       }),
+      col.accessor("data_type", {
+        header: () => <span title="Continuous: group mean ± SD per dose. Incidence: affected/N per dose.">Type</span>,
+        cell: (info) => {
+          const dt = info.getValue();
+          return (
+            <span className="text-muted-foreground" title={dt === "continuous" ? "Continuous \u2014 dose columns show group mean (hover for N)" : "Incidence \u2014 dose columns show affected/N"}>
+              {dt === "continuous" ? "cont" : "inc"}
+            </span>
+          );
+        },
+      }),
       ...doseGroups.map((dg, idx) => {
         // Short labels: control → "C", non-zero → numeric only
         const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
         const fullLabel = dg.dose_value != null && dg.dose_unit
           ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
+        const headerTooltip = `${fullLabel}\nMean (continuous) \u00b7 Affected/N (incidence)`;
         return col.display({
           id: `dose_${dg.dose_level}`,
           header: () => (
             <DoseHeader
               level={dg.dose_level}
               label={shortLabel}
-              tooltip={fullLabel}
+              tooltip={headerTooltip}
             />
           ),
           cell: (info) => {
@@ -169,7 +439,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               : null;
             if (f.data_type === "continuous") {
               return (
-                <span className="font-mono">
+                <span className="font-mono" title={`N=${gs.n}`}>
                   {gs.mean != null ? gs.mean.toFixed(2) : "\u2014"}{excludedMark}
                 </span>
               );
@@ -182,36 +452,78 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           },
         });
       }),
+      col.display({
+        id: "sparkline",
+        header: () => (
+          <span title={sparkScale === "global"
+            ? "Dose-response trend (delta from control). Global scale — bar height reflects actual magnitude across all findings. Right-click to change."
+            : "Dose-response trend (delta from control). Row scale — each row scaled to its own max. Right-click to change."}>
+            {"\u0394"}{sparkScale === "global" ? "*" : ""}
+          </span>
+        ),
+        cell: (info) => {
+          const f = info.row.original;
+          const isCont = f.data_type === "continuous";
+          return (
+            <SparklineCell
+              stats={f.group_stats}
+              dataType={f.data_type}
+              sparkScale={sparkScale}
+              globalMax={isCont ? globalSparkMax.continuous : globalSparkMax.incidence}
+            />
+          );
+        },
+      }),
+      col.accessor("max_effect_size", {
+        header: () => {
+          const sym = getEffectSizeSymbol(effectSizeMethod);
+          return <span title={`Largest standardized effect size (|${sym}|) across dose groups. Continuous endpoints only.`}>Max |{sym}|</span>;
+        },
+        cell: (info) => {
+          const v = info.getValue();
+          const domain = info.row.original.domain;
+          const label = effectSizeLabel(domain, effectSizeMethod);
+          return (
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${label} = ${v.toFixed(3)}` : undefined}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
+      }),
+      col.accessor("max_fold_change", {
+        header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        cell: (info) => {
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
       col.accessor("min_p_adj", {
-        header: "P-value",
+        header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
       }),
       col.accessor("trend_p", {
-        header: "Trend",
+        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
       }),
       col.accessor("direction", {
-        header: "Dir",
+        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
         cell: (info) => (
           <span className={getDirectionColor(info.getValue())}>
             {getDirectionSymbol(info.getValue())}
           </span>
         ),
       }),
-      col.accessor("max_effect_size", {
-        header: "Effect",
+      col.display({
+        id: "pattern",
+        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
         cell: (info) => {
-          const v = info.getValue();
-          const domain = info.row.original.domain;
-          return (
-            <span className="ev font-mono text-muted-foreground" title={v != null ? `${effectSizeLabel(domain)} = ${v.toFixed(3)}` : undefined}>
-              {formatEffectSize(v)}
-            </span>
-          );
+          const v = info.row.original.dose_response_pattern;
+          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
         },
       }),
       col.accessor("severity", {
@@ -244,11 +556,216 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, findings, clDayMode]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod]
   );
 
+  // ─── Pivoted columns ──────────────────────────────────────
+  const pivotedColumns = useMemo(
+    () => [
+      pivCol.accessor("domain", {
+        header: "Domain",
+        cell: (info) => <DomainLabel domain={info.getValue()} />,
+      }),
+      pivCol.accessor("finding", {
+        id: PIVOTED_ABSORBER_ID,
+        header: "Finding",
+        cell: (info) => {
+          const r = info.row.original;
+          const epLabel = r.endpoint_label;
+          const isExcluded = excludedEndpoints?.has(epLabel);
+          const full = r.specimen ? `${r.specimen}: ${r.finding}` : r.finding;
+          return (
+            <div className="flex items-center gap-1 overflow-hidden">
+              {isExcluded && (
+                <button
+                  type="button"
+                  className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+                  title="Restore to scatter plot"
+                  onClick={(e) => { e.stopPropagation(); onToggleExclude?.(epLabel); }}
+                >
+                  <EyeOff className="h-3 w-3" />
+                </button>
+              )}
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={full}>
+                {r.specimen ? (
+                  <>
+                    <span className="text-muted-foreground">{r.specimen}: </span>
+                    {r.finding}
+                  </>
+                ) : (
+                  r.finding
+                )}
+              </span>
+            </div>
+          );
+        },
+      }),
+      pivCol.accessor("sex", { header: "Sex" }),
+      pivCol.accessor("day", {
+        header: () => {
+          const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
+          if (!hasCl) return <span title={baseTooltip}>Day</span>;
+          const labels: Record<ClDayMode, { label: string; tooltip: string }> = {
+            mode:           { label: "Day",         tooltip: `${baseTooltip} CL rows: peak prevalence day (mode). Right-click to change.` },
+            first_observed: { label: "Day (onset)", tooltip: `${baseTooltip} CL rows: earliest observation day (onset). Right-click to change.` },
+          };
+          const { label, tooltip } = labels[clDayMode];
+          return (
+            <span title={tooltip}>
+              {label}
+            </span>
+          );
+        },
+        cell: (info) => {
+          const r = info.row.original;
+          const val = (r.original.domain === "CL" && clDayMode === "first_observed")
+            ? r.original.day_first ?? r.day
+            : r.day;
+          return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+        },
+      }),
+      pivCol.accessor("data_type", {
+        header: () => <span title="Continuous: group mean ± SD per dose. Incidence: affected/N per dose.">Type</span>,
+        cell: (info) => {
+          const dt = info.getValue();
+          return (
+            <span className="text-muted-foreground" title={dt === "continuous" ? "Continuous \u2014 Value column shows group mean" : "Incidence \u2014 Value column shows affected/N"}>
+              {dt === "continuous" ? "cont" : "inc"}
+            </span>
+          );
+        },
+      }),
+      pivCol.accessor("dose_level", {
+        header: "Dose",
+        cell: (info) => {
+          const r = info.row.original;
+          const shortLabel = r.dose_level === 0 ? "C" : formatDoseShortLabel(r.dose_label);
+          return <DoseLabel level={r.dose_level} label={shortLabel} tooltip={r.dose_label} />;
+        },
+      }),
+      pivCol.accessor("n", {
+        header: "N",
+        cell: (info) => <span className="font-mono text-muted-foreground">{info.getValue()}</span>,
+      }),
+      pivCol.display({
+        id: "value",
+        header: () => <span title="Mean (continuous) or Affected/N (incidence)">Value</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.data_type === "continuous") {
+            return <span className="font-mono">{r.mean != null ? r.mean.toFixed(2) : "\u2014"}</span>;
+          }
+          return <span className="font-mono">{r.affected != null && r.n ? `${r.affected}/${r.n}` : "\u2014"}</span>;
+        },
+      }),
+      pivCol.display({
+        id: "sd_inc",
+        header: () => <span title="Standard deviation (continuous) or incidence percentage (incidence)">SD / Inc%</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.data_type === "continuous") {
+            return <span className="font-mono text-muted-foreground">{r.sd != null ? r.sd.toFixed(2) : "\u2014"}</span>;
+          }
+          return (
+            <span className="font-mono text-muted-foreground">
+              {r.incidence != null ? `${(r.incidence * 100).toFixed(0)}%` : "\u2014"}
+            </span>
+          );
+        },
+      }),
+      pivCol.accessor("effect_size", {
+        header: () => {
+          const sym = getEffectSizeSymbol(effectSizeMethod);
+          return <span title={`Standardized effect size (|${sym}|) for this dose group vs control. Continuous endpoints only.`}>|{sym}|</span>;
+        },
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          const label = effectSizeLabel(r.domain, effectSizeMethod);
+          return (
+            <span className="ev font-mono text-muted-foreground" title={v != null ? `${label} = ${v.toFixed(3)}` : undefined}>
+              {formatEffectSize(v)}
+            </span>
+          );
+        },
+      }),
+      pivCol.accessor("fold_change", {
+        header: () => <span title="Magnitude vs control — fold change (continuous), odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          if (r.domain === "MI") {
+            return <span className="font-mono text-muted-foreground" title={`avg severity = ${v.toFixed(2)}`}>{v.toFixed(1)}</span>;
+          }
+          if (r.data_type === "incidence") {
+            return <span className="font-mono text-muted-foreground" title={`odds ratio = ${v.toFixed(2)}`}>{v.toFixed(1)}</span>;
+          }
+          return <span className="font-mono text-muted-foreground" title={`fold change = ${v.toFixed(2)}`}>{`\u00d7${v.toFixed(1)}`}</span>;
+        },
+      }),
+      pivCol.accessor("p_value", {
+        header: () => <span title="Adjusted pairwise p-value for this dose group vs control">P-value</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
+        },
+      }),
+      pivCol.accessor("trend_p", {
+        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
+        cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
+      }),
+      pivCol.accessor("direction", {
+        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
+        cell: (info) => (
+          <span className={getDirectionColor(info.getValue())}>
+            {getDirectionSymbol(info.getValue())}
+          </span>
+        ),
+      }),
+      pivCol.accessor("dose_response_pattern", {
+        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
+        cell: (info) => {
+          const v = info.getValue();
+          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
+        },
+      }),
+      pivCol.accessor("severity", {
+        header: "Severity",
+        cell: (info) => {
+          const r = info.row.original;
+          const severity = info.getValue();
+          const signal = signalScores?.get(r.endpoint_label) ?? 0;
+          const tier = getSignalTier(signal);
+          const isNormal = severity === "normal";
+          const borderClass = isNormal
+            ? "border-l"
+            : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
+          const fontClass = isNormal
+            ? "text-muted-foreground"
+            : tier === 3 ? "font-semibold text-gray-600"
+            : tier === 2 ? "font-medium text-gray-600"
+            : "text-gray-600";
+          return (
+            <span
+              className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
+              style={{ borderLeftColor: getSeverityDotColor(severity) }}
+            >
+              {severity}
+            </span>
+          );
+        },
+      }),
+    ],
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
+  );
+
+  // ─── Standard table instance ───────────────────────────────
   const table = useReactTable({
-    data: findings,
+    data: filteredFindings,
     columns,
     state: { sorting, columnSizing },
     onSortingChange: setSorting,
@@ -259,20 +776,71 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     columnResizeMode: "onChange",
   });
 
-  // Ref for the first sibling row (same endpoint) — used for scroll target
-  const firstSiblingRef = useRef<HTMLTableRowElement | null>(null);
-  // Autoscroll: when activeEndpoint changes, scroll the first sibling row into view;
-  // when only selectedFindingId changes (within same endpoint), scroll that row.
-  // Use RAF to let the render with updated refs complete first.
+  // ─── Pivoted table instance ────────────────────────────────
+  const pivotedTable = useReactTable({
+    data: pivotedRows,
+    columns: pivotedColumns,
+    state: { sorting: pivotedSorting, columnSizing: pivotedColumnSizing },
+    onSortingChange: setPivotedSorting,
+    onColumnSizingChange: setPivotedColumnSizing,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+  });
+
+  // ─── Virtualizer setup ────────────────────────────────────
+  const ROW_HEIGHT = 22;
+  const stdScrollRef = useRef<HTMLDivElement>(null);
+  const pivScrollRef = useRef<HTMLDivElement>(null);
+  const stdRows = table.getRowModel().rows;
+  const pivRows = pivotedTable.getRowModel().rows;
+
+  const stdVirtualizer = useVirtualizer({
+    count: stdRows.length,
+    getScrollElement: () => stdScrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  });
+
+  const pivVirtualizer = useVirtualizer({
+    count: pivRows.length,
+    getScrollElement: () => pivScrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  });
+
+  // Reset scroll when data source changes (all/worst toggle, layout switch)
   useEffect(() => {
+    if (stdScrollRef.current) stdScrollRef.current.scrollTop = 0;
+  }, [tableMode, findings]);
+  useEffect(() => {
+    if (pivScrollRef.current) pivScrollRef.current.scrollTop = 0;
+  }, [tableMode, findings]);
+
+  // Autoscroll: when activeEndpoint changes, scroll to the first matching row
+  useEffect(() => {
+    if (!activeEndpoint && !selectedFindingId) return;
     requestAnimationFrame(() => {
-      if (firstSiblingRef.current) {
-        firstSiblingRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
-      } else if (selectedRowRef.current) {
-        selectedRowRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
+      if (layoutMode === "standard") {
+        for (let i = 0; i < stdRows.length; i++) {
+          const ep = stdRows[i].original.endpoint_label ?? stdRows[i].original.finding;
+          if ((activeEndpoint && ep === activeEndpoint) || (!activeEndpoint && selectedFindingId === stdRows[i].original.id)) {
+            stdVirtualizer.scrollToIndex(i, { align: "start", behavior: "smooth" });
+            return;
+          }
+        }
+      } else {
+        for (let i = 0; i < pivRows.length; i++) {
+          const ep = pivRows[i].original.endpoint_label;
+          if ((activeEndpoint && ep === activeEndpoint) || (!activeEndpoint && selectedFindingId === pivRows[i].original.original.id)) {
+            pivVirtualizer.scrollToIndex(i, { align: "start", behavior: "smooth" });
+            return;
+          }
+        }
       }
     });
-  }, [activeEndpoint, selectedFindingId]);
+  }, [activeEndpoint, selectedFindingId, layoutMode, stdVirtualizer, pivVirtualizer, stdRows, pivRows]);
 
   /** Content-hugging: non-absorber columns shrink to fit; absorber takes the rest.
    *  Manual resize overrides with an explicit width. */
@@ -283,8 +851,110 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
+  function pivColStyle(colId: string) {
+    const manualWidth = pivotedColumnSizing[colId];
+    if (manualWidth) return { width: manualWidth, maxWidth: manualWidth };
+    if (colId === PIVOTED_ABSORBER_ID) return { width: "100%" };
+    return { width: 1, whiteSpace: "nowrap" as const };
+  }
+
+  const rowCount = layoutMode === "pivoted" ? pivotedRows.length : filteredFindings.length;
+  const totalCount = layoutMode === "pivoted" ? findings.length * doseGroups.length : findings.length;
+
   return (
-    <div className="h-full overflow-auto">
+    <div className="flex h-full flex-col">
+      {/* Table header bar: mode toggles + count + open-in-tab */}
+      <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
+        {/* Filter toggle */}
+        <button
+          type="button"
+          className={cn(
+            "relative rounded p-0.5 transition-colors",
+            (selectedDay != null || activeFilterCount > 0)
+              ? "text-primary hover:text-primary/80"
+              : "text-muted-foreground hover:text-foreground",
+            showFilters && "bg-primary/10",
+          )}
+          onClick={() => setShowFilters((p) => !p)}
+          title="Toggle column filters"
+        >
+          <Filter className="h-3 w-3" />
+        </button>
+        {/* All / Worst toggle */}
+        <PanePillToggle
+          value={tableMode}
+          options={[
+            { value: "all" as const, label: "All" },
+            { value: "worst" as const, label: "Worst" },
+          ]}
+          onChange={setTableMode}
+        />
+        {/* Standard / Pivoted toggle */}
+        <PanePillToggle
+          value={layoutMode}
+          options={[
+            { value: "standard" as const, label: "Standard" },
+            { value: "pivoted" as const, label: "Pivoted" },
+          ]}
+          onChange={setLayoutMode}
+        />
+        <span className="text-[10px] text-muted-foreground">
+          {(() => {
+            const parts: string[] = [];
+            if (activeEndpoint) parts.push(activeEndpoint);
+            if (selectedDay != null) parts.push(`Day ${selectedDay}`);
+            if (filterState.sex) parts.push(filterState.sex.join(", "));
+            if (filterState.domain) parts.push(filterState.domain.join(", "));
+            if (filterState.severity) parts.push(filterState.severity.join(", "));
+            if (filterState.direction) parts.push(filterState.direction.map(d => d === "up" ? "\u2191" : "\u2193").join(""));
+            if (filterState.findingSearch) parts.push(`"${filterState.findingSearch}"`);
+            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) parts.push("p-value range");
+            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) parts.push("|g| range");
+
+            if (parts.length > 0) {
+              return (
+                <span className="flex items-center gap-1">
+                  <span>{parts.join(" \u00b7 ")}</span>
+                  <span className="text-muted-foreground/50">({rowCount})</span>
+                </span>
+              );
+            }
+            return (
+              <span>
+                {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
+              </span>
+            );
+          })()}
+        </span>
+        {onOpenInTab && (
+          <button
+            type="button"
+            className="ml-auto text-muted-foreground/60 transition-colors hover:text-foreground"
+            onClick={onOpenInTab}
+            title="Open table in its own tab"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Content row: optional filter panel + table */}
+      <div className="flex flex-1 min-h-0">
+        {showFilters && (
+          <div className="w-[200px] shrink-0 overflow-y-auto">
+            <FindingsTableFilterPanel
+              findings={findings}
+              filterState={filterState}
+              onFilterChange={setFilterState}
+              onClearDayFilter={onClearDayFilter}
+              activeDayLabel={selectedDay != null ? `Day ${selectedDay}` : null}
+            />
+          </div>
+        )}
+
+      {/* ─── Standard table (virtualized) ─────────────────────── */}
+      {layoutMode === "standard" && (
+      <div ref={stdScrollRef} className="flex-1 min-w-0 overflow-auto">
       <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
@@ -294,21 +964,38 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   key={header.id}
                   className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
-                  onDoubleClick={header.column.getToggleSortingHandler()}
-                  onClick={header.id === "day" ? (e) => {
-                    if (findings.some(f => f.domain === "CL")) {
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setDayMenu({ x: rect.left, y: rect.bottom + 2 });
-                    }
-                  } : undefined}
+                  onClick={(e) => {
+                    if (resizingRef.current) return;
+                    header.column.getToggleSortingHandler()?.(e);
+                  }}
+                  onContextMenu={
+                    header.id === "day" ? (e) => {
+                      if (hasCl) {
+                        e.preventDefault();
+                        setDayMenu({ x: e.clientX, y: e.clientY });
+                      }
+                    } : header.id === "sparkline" ? (e) => {
+                      e.preventDefault();
+                      setSparkMenu({ x: e.clientX, y: e.clientY });
+                    } : undefined
+                  }
                 >
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                   <div
-                    onMouseDown={header.getResizeHandler()}
+                    onMouseDown={(e) => {
+                      resizingRef.current = true;
+                      const clear = () => {
+                        setTimeout(() => { resizingRef.current = false; }, 0);
+                        document.removeEventListener("mouseup", clear);
+                      };
+                      document.addEventListener("mouseup", clear);
+                      header.getResizeHandler()(e);
+                    }}
                     onTouchStart={header.getResizeHandler()}
+                    onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none",
+                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
                       header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
                     )}
                   />
@@ -318,38 +1005,25 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           ))}
         </thead>
         <tbody>
-          {(() => {
-            let firstSiblingAssigned = false;
-            return table.getRowModel().rows.map((row) => {
+          {stdVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: stdVirtualizer.getVirtualItems()[0].start, padding: 0, border: "none" }} /></tr>
+          )}
+          {stdVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = stdRows[virtualRow.index];
             const isSelected = selectedFindingId === row.original.id;
             const epLabel = row.original.endpoint_label ?? row.original.finding;
             const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
             const isPrimary = isSelected && isSibling;
             const isSecondary = !isSelected && isSibling;
-
-            // Assign firstSiblingRef to the first row in the active endpoint group
-            let refCb: ((el: HTMLTableRowElement | null) => void) | undefined;
-            if (isSibling && !firstSiblingAssigned) {
-              firstSiblingAssigned = true;
-              refCb = (el) => {
-                firstSiblingRef.current = el;
-                if (isSelected) selectedRowRef.current = el;
-              };
-            } else if (isSelected) {
-              refCb = (el) => { selectedRowRef.current = el; };
-            }
-
             return (
               <tr
                 key={row.id}
-                ref={refCb}
+                data-index={virtualRow.index}
+                ref={stdVirtualizer.measureElement}
                 className={cn(
                   "cursor-pointer border-b transition-colors hover:bg-accent/50",
                   isPrimary && "bg-primary/15 font-medium",
                   isSecondary && "bg-accent/40",
-                  // Only show selected-row highlight for non-sibling rows when no
-                  // endpoint is active — prevents stale highlight from a previous
-                  // endpoint bleeding through during state transitions.
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
@@ -375,15 +1049,120 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 })}
               </tr>
             );
-          });
-          })()}
+          })}
+          {stdVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: stdVirtualizer.getTotalSize() - (stdVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0, border: "none" }} /></tr>
+          )}
         </tbody>
       </table>
-      {findings.length === 0 && (
+      {filteredFindings.length === 0 && (
         <div className="p-4 text-center text-xs text-muted-foreground">
           No findings match the current filters.
         </div>
       )}
+      </div>
+      )}
+
+      {/* ─── Pivoted table (virtualized) ──────────────────────── */}
+      {layoutMode === "pivoted" && (
+      <div ref={pivScrollRef} className="flex-1 min-w-0 overflow-auto">
+      <table className="w-full text-[10px]">
+        <thead className="sticky top-0 z-10 bg-background">
+          {pivotedTable.getHeaderGroups().map((hg) => (
+            <tr key={hg.id} className="border-b bg-muted/30">
+              {hg.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  style={pivColStyle(header.id)}
+                  onClick={(e) => {
+                    if (resizingRef.current) return;
+                    header.column.getToggleSortingHandler()?.(e);
+                  }}
+                >
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
+                  <div
+                    onMouseDown={(e) => {
+                      resizingRef.current = true;
+                      const clear = () => {
+                        setTimeout(() => { resizingRef.current = false; }, 0);
+                        document.removeEventListener("mouseup", clear);
+                      };
+                      document.addEventListener("mouseup", clear);
+                      header.getResizeHandler()(e);
+                    }}
+                    onTouchStart={header.getResizeHandler()}
+                    onClick={(e) => e.stopPropagation()}
+                    className={cn(
+                      "absolute -right-1 top-0 z-10 h-full w-3 cursor-col-resize select-none touch-none",
+                      header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30"
+                    )}
+                  />
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {pivVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: pivVirtualizer.getVirtualItems()[0].start, padding: 0, border: "none" }} /></tr>
+          )}
+          {pivVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = pivRows[virtualRow.index];
+            const r = row.original;
+            const isSelected = selectedFindingId === r.original.id;
+            const epLabel = r.endpoint_label;
+            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
+            return (
+              <tr
+                key={row.id}
+                data-index={virtualRow.index}
+                ref={pivVirtualizer.measureElement}
+                className={cn(
+                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  r.dose_level === 0 && "bg-muted/15",
+                  isSelected && isSibling && "bg-primary/15 font-medium",
+                  !isSelected && isSibling && "bg-accent/40",
+                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
+                )}
+                data-selected={isSelected || undefined}
+                onClick={() => selectFinding(r.original)}
+                onMouseEnter={() => prefetch(r.original.id)}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className={cn(
+                      "px-1.5 py-px",
+                      cell.column.id === PIVOTED_ABSORBER_ID && !pivotedColumnSizing[PIVOTED_ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                    )}
+                    style={pivColStyle(cell.column.id)}
+                    data-evidence=""
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+          {pivVirtualizer.getVirtualItems().length > 0 && (
+            <tr><td colSpan={999} style={{ height: pivVirtualizer.getTotalSize() - (pivVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0, border: "none" }} /></tr>
+          )}
+        </tbody>
+      </table>
+      {pivotedRows.length === 0 && (
+        <div className="p-4 text-center text-xs text-muted-foreground">
+          No findings match the current filters.
+        </div>
+      )}
+      </div>
+      )}
+
+      </div>
+      {/* end: content row */}
+
+      {/* Context menus */}
       {dayMenu && (
         <div ref={dayMenuRef} className="fixed z-50 min-w-[190px] rounded border bg-popover py-0.5 shadow-md"
           style={{ left: dayMenu.x, top: dayMenu.y }}>
@@ -403,6 +1182,24 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <div className="mt-0.5 border-t border-border/40 px-2 py-1">
             <span className="text-[9px] italic text-muted-foreground/50">Applies to CL rows only</span>
           </div>
+        </div>
+      )}
+      {sparkMenu && (
+        <div ref={sparkMenuRef} className="fixed z-50 min-w-[180px] rounded border bg-popover py-0.5 shadow-md"
+          style={{ left: sparkMenu.x, top: sparkMenu.y }}>
+          {([
+            { value: "row" as const, label: "Row scale", desc: "Each row scaled independently" },
+            { value: "global" as const, label: "Global scale", desc: "All rows share one scale" },
+          ]).map((opt) => (
+            <button key={opt.value} type="button"
+              className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
+                sparkScale === opt.value && "bg-accent/30")}
+              onClick={() => { setSparkScale(opt.value); setSparkMenu(null); }}>
+              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
+              <span className="text-[11px] font-medium">{opt.label}</span>
+              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+            </button>
+          ))}
         </div>
       )}
     </div>

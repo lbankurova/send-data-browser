@@ -40,11 +40,17 @@ function doseDisplayLabel(row: { dose_value: number | null; dose_unit: string | 
 
 // ─── Single-sex stat row ──────────────────────────────────
 
-function StatRowCells({ row, isContinuous, controlSd }: { row: StatRow; isContinuous: boolean; controlSd?: number | null }) {
+function StatRowCells({ row, isContinuous, controlSd, controlMean }: {
+  row: StatRow; isContinuous: boolean; controlSd?: number | null; controlMean?: number | null;
+}) {
   // Flag SD when it exceeds 2× the control group's SD (high within-group variance)
   const sdOutlier = isContinuous && row.sd != null && controlSd != null && controlSd > 0
     && row.dose_level > 0 && row.sd > controlSd * 2;
   const sdRatio = sdOutlier && controlSd ? row.sd! / controlSd : null;
+
+  // Fold change vs control (continuous treated only)
+  const fold = isContinuous && row.dose_level > 0 && row.mean != null && controlMean != null && controlMean !== 0
+    ? row.mean / controlMean : null;
 
   return (
     <>
@@ -76,6 +82,11 @@ function StatRowCells({ row, isContinuous, controlSd }: { row: StatRow; isContin
       <PaneTable.Td numeric className={getPValueColor(row.p_value_adj)}>
         {formatPValue(row.p_value_adj)}
       </PaneTable.Td>
+      {isContinuous && (
+        <PaneTable.Td numeric className="text-muted-foreground">
+          {fold != null ? `\u00d7${fold.toFixed(1)}` : "\u2014"}
+        </PaneTable.Td>
+      )}
     </>
   );
 }
@@ -163,9 +174,13 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
     }
   }
 
-  // Control group SD for outlier detection (per sex)
-  const controlSd = statistics.rows.find(r => r.dose_level === 0)?.sd ?? null;
-  const siblingControlSd = siblingStatistics?.rows.find(r => r.dose_level === 0)?.sd ?? null;
+  // Control group stats for outlier detection + fold change (per sex)
+  const controlRow = statistics.rows.find(r => r.dose_level === 0);
+  const controlSd = controlRow?.sd ?? null;
+  const controlMean = controlRow?.mean ?? null;
+  const siblingControlRow = siblingStatistics?.rows.find(r => r.dose_level === 0);
+  const siblingControlSd = siblingControlRow?.sd ?? null;
+  const siblingControlMean = siblingControlRow?.mean ?? null;
 
   // Column widths — measured from data so table-layout:fixed sizes correctly
   const colWidths = useMemo(() => {
@@ -221,6 +236,11 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
               <PaneTable.Th numeric style={{ width: colWidths.pAdj }} title="Adjusted p-value vs. control.">
                 p-adj
               </PaneTable.Th>
+              {isContinuous && (
+                <PaneTable.Th numeric title="Fold change vs control (treated mean / control mean).">
+                  Fold
+                </PaneTable.Th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -239,9 +259,12 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                     {pairs.map((p, i) => (
                       <tr
                         key={p.sexLabel}
-                        className={i === pairs.length - 1
-                          ? "border-b border-border/50"
-                          : "border-b border-border/20"}
+                        className={cn(
+                          i === pairs.length - 1
+                            ? "border-b border-border/50"
+                            : "border-b border-border/20",
+                          row.dose_level === 0 && "bg-muted/15",
+                        )}
                       >
                         {/* Group label only on first row of each dose level */}
                         {i === 0 ? (
@@ -261,6 +284,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                           row={p.data}
                           isContinuous={isContinuous}
                           controlSd={p.sexLabel === (sex ?? "M") ? controlSd : siblingControlSd}
+                          controlMean={p.sexLabel === (sex ?? "M") ? controlMean : siblingControlMean}
                         />
                       </tr>
                     ))}
@@ -270,7 +294,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
             ) : (
               // ── Single-sex rows (original layout) ──
               statistics.rows.map((row) => (
-                <tr key={row.dose_level} className="border-b border-border/50">
+                <tr key={row.dose_level} className={cn("border-b border-border/50", row.dose_level === 0 && "bg-muted/15")}>
                   <PaneTable.Td>
                     <DoseLabel
                       level={row.dose_level}
@@ -279,7 +303,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       className="text-[10px]"
                     />
                   </PaneTable.Td>
-                  <StatRowCells row={row} isContinuous={isContinuous} controlSd={controlSd} />
+                  <StatRowCells row={row} isContinuous={isContinuous} controlSd={controlSd} controlMean={controlMean} />
                 </tr>
               ))
             )}
@@ -456,6 +480,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
           <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
         </div>
       )}
+
     </div>
   );
 }

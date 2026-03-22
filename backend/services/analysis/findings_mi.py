@@ -102,12 +102,24 @@ def compute_mi_findings(
                 if len(sev_vals) > 0:
                     avg_sev = round(float(np.mean(sev_vals)), 2)
 
+            # Per-grade severity counts (for stacked severity chart)
+            sev_grade_counts = None
+            if severity_col and len(dose_grp) > 0:
+                sev_vals_int = dose_grp["sev_score"].dropna().values
+                if len(sev_vals_int) > 0:
+                    counts: dict[str, int] = {}
+                    for v in sev_vals_int:
+                        key = str(int(v))
+                        counts[key] = counts.get(key, 0) + 1
+                    sev_grade_counts = counts
+
             gs_entry = {
                 "dose_level": int(dose_level),
                 "n": total,
                 "affected": affected,
                 "incidence": round(affected / total, 4) if total > 0 else 0,
                 "avg_severity": avg_sev,
+                "severity_grade_counts": sev_grade_counts,
             }
 
             # Per-dose modifier counts

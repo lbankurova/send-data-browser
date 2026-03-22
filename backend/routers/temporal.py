@@ -1043,7 +1043,7 @@ async def get_recovery_comparison(study_id: str):
     p-value (Welch t-test) and effect size (Hedges' g) at recovery sacrifice.
     Also includes the terminal (main-arm) effect for comparison.
     """
-    from services.analysis.statistics import welch_t_test, cohens_d
+    from services.analysis.statistics import welch_t_test, compute_effect_size
 
     study = _get_study(study_id)
     subjects_df = _get_subjects_df(study, include_recovery=True)
@@ -1238,7 +1238,7 @@ async def get_recovery_comparison(study_id: str):
 
                     # Stats: recovery arm treated vs recovery arm control
                     t_result = welch_t_test(treat_vals, ctrl_vals)
-                    d = cohens_d(treat_vals, ctrl_vals)
+                    d = compute_effect_size(treat_vals, ctrl_vals)
 
                     # Terminal effect: main arm treated vs main arm control
                     terminal_d = None
@@ -1259,7 +1259,7 @@ async def get_recovery_comparison(study_id: str):
                             if len(mt_vals) >= 2:
                                 main_treated_mean = _safe_round(float(np.mean(mt_vals)), 4)
                             if len(mt_vals) >= 2 and len(mc_vals) >= 2:
-                                terminal_d = cohens_d(mt_vals, mc_vals)
+                                terminal_d = compute_effect_size(mt_vals, mc_vals)
                                 terminal_day_val = mt_day
 
                     # Peak effect: scan all main-arm timepoints for this dose
@@ -1273,7 +1273,7 @@ async def get_recovery_comparison(study_id: str):
                             mc_at_day = main_ctrl[main_ctrl[day_col] == tp_day]
                             mc_vals_day = mc_at_day[value_col].dropna().values if not mc_at_day.empty else np.array([])
                             if len(tp_vals) >= 2 and len(mc_vals_day) >= 2:
-                                tp_d = cohens_d(tp_vals, mc_vals_day)
+                                tp_d = compute_effect_size(tp_vals, mc_vals_day)
                                 if tp_d is not None and (peak_d is None or abs(tp_d) > abs(peak_d)):
                                     peak_d = tp_d
                                     peak_day_val = tp_day

@@ -140,7 +140,7 @@ def _build_stat_rows(group_stats: list, pairwise: list, data_type: str, dose_gro
         if pw:
             row["p_value"] = pw.get("p_value")
             row["p_value_adj"] = pw.get("p_value_adj")
-            row["cohens_d"] = pw.get("cohens_d")
+            row["effect_size"] = pw.get("effect_size")
             row["odds_ratio"] = pw.get("odds_ratio")
 
         rows.append(row)

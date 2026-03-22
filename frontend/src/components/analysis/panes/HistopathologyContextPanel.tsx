@@ -1301,11 +1301,11 @@ function SpecimenOverviewPane({
               e.preventDefault();
               if (studyId) {
                 navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: specimen } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: specimen } });
               }
             }}
           >
-            View dose-response &#x2192;
+            View findings &#x2192;
           </a>
           <a
             href="#"
@@ -2406,11 +2406,11 @@ function FindingDetailPane({
               e.preventDefault();
               if (studyId) {
                 navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: selection.specimen } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: selection.specimen } });
               }
             }}
           >
-            View dose-response &#x2192;
+            View findings &#x2192;
           </a>
           <a
             href="#"

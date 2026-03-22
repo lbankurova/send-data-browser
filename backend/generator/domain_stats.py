@@ -266,7 +266,7 @@ def _compute_fw_findings(
 ) -> list[dict]:
     """Compute findings from FW domain — mirrors BW pattern."""
     from services.xpt_processor import read_xpt
-    from services.analysis.statistics import dunnett_pairwise, cohens_d, trend_test
+    from services.analysis.statistics import dunnett_pairwise, compute_effect_size, trend_test
 
     if "fw" not in study.xpt_files:
         return []
@@ -388,9 +388,9 @@ def _compute_fw_findings(
 
         max_d = None
         for pw in pairwise:
-            if pw["cohens_d"] is not None:
-                if max_d is None or abs(pw["cohens_d"]) > abs(max_d):
-                    max_d = pw["cohens_d"]
+            if pw["effect_size"] is not None:
+                if max_d is None or abs(pw["effect_size"]) > abs(max_d):
+                    max_d = pw["effect_size"]
 
         # Override direction with max_d sign
         if max_d is not None and abs(max_d) > 0.01:

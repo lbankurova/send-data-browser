@@ -286,7 +286,7 @@ export function NoaelContextPanel({
           <InsightsList rules={noaelRules} onEndpointClick={(organ) => {
             if (studyId) {
               navigateTo({ organSystem: organ });
-              navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+              navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: organ } });
             }
           }} />
         </CollapsiblePane>
@@ -334,7 +334,7 @@ export function NoaelContextPanel({
             onEndpointClick={(organ) => {
               if (studyId) {
                 navigateTo({ organSystem: organ });
-                navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: organ } });
               }
             }}
           />
@@ -359,7 +359,7 @@ export function NoaelContextPanel({
                     className="cursor-pointer border-b border-dashed hover:bg-accent/30"
                     onClick={() => {
                       if (studyId) {
-                        navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
+                        navigate(`/studies/${encodeURIComponent(studyId)}/findings`, {
                           state: { organ_system: organSelection },
                         });
                       }
@@ -407,7 +407,7 @@ export function NoaelContextPanel({
         <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1 text-[11px]">
             {navLink(`View histopathology: ${titleCase(organSelection)}`, "/histopathology", { organ_system: organSelection })}
-            {navLink("View dose-response", "/dose-response", { organ_system: organSelection })}
+            {navLink("View findings", "/findings", { organ_system: organSelection })}
             {navLink("View study summary", "", organSelection ? { organ_system: organSelection } : undefined)}
           </div>
         </CollapsiblePane>
@@ -445,7 +445,7 @@ export function NoaelContextPanel({
         <InsightsList rules={endpointRules} tierFilter={tierFilter} onEndpointClick={(organ) => {
           if (studyId) {
             navigateTo({ organSystem: organ });
-            navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+            navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: organ } });
           }
         }} />
       </CollapsiblePane>
@@ -553,7 +553,7 @@ export function NoaelContextPanel({
                   className="cursor-pointer border-b border-dashed hover:bg-accent/30"
                   onClick={() => {
                     if (studyId && selectedOrganSystem) {
-                      navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, {
+                      navigate(`/studies/${encodeURIComponent(studyId)}/findings`, {
                         state: { endpoint_label: c.endpoint, organ_system: selectedOrganSystem },
                       });
                     }
@@ -585,7 +585,7 @@ export function NoaelContextPanel({
       {/* 7. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-[11px]">
-          {navLink("View dose-response", "/dose-response", {
+          {navLink("View findings", "/findings", {
             endpoint_label: selection!.endpoint_label,
             ...(selectedOrganSystem && { organ_system: selectedOrganSystem }),
           })}

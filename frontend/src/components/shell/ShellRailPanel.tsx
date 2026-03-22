@@ -22,9 +22,9 @@ import type { GroupingMode } from "@/lib/findings-rail-engine";
  */
 export function ShellRailPanel() {
   const { studyId, domainName } = useParams<{ studyId: string; domainName: string }>();
-  const { width, targetRef, onPointerDown } = useResizePanel(300, { direction: "left", storageKey: "pcc.layout.railWidth" });
+  const { width, targetRef, onPointerDown } = useResizePanel(260, { direction: "left", storageKey: "pcc.layout.railWidth" });
   const { pathname } = useLocation();
-  const { selection: studySelection, navigateTo } = useStudySelection();
+  const { selection: studySelection } = useStudySelection();
 
   // Rail-driven scope state (owned here, synced to view via callback or context)
   const [groupScope, setGroupScope] = useState<{ type: GroupingMode; value: string } | null>(() => {
@@ -38,9 +38,7 @@ export function ShellRailPanel() {
   );
 
   // Route detection
-  const isFindingsRoute = pathname.includes("/findings");
-  const isDRView = pathname.includes("/dose-response");
-  const isFindingsView = isFindingsRoute || isDRView;
+  const isFindingsView = pathname.includes("/findings");
 
   // Reset rail-driven state on study change
   const prevStudyRef = useRef(studyId);
@@ -83,44 +81,30 @@ export function ShellRailPanel() {
     } else {
       selectGroup(null, null);
     }
-    if (isFindingsRoute) {
-      // Scope change → rail's useEffect will send new visibleEndpointLabels.
-      // We just need to forward endpoint deselection.
+    if (isFindingsView) {
       getFindingsRailCallback()?.({ activeEndpoint: null });
-    } else if (isDRView) {
-      if (scope && scope.type === "organ") {
-        navigateTo({ organSystem: scope.value });
-      } else if (!scope) {
-        navigateTo({ organSystem: undefined });
-      }
     }
-  }, [isFindingsRoute, isDRView, navigateTo, selectGroup]);
+  }, [isFindingsView, selectGroup]);
 
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
-    if (isFindingsRoute) {
+    if (isFindingsView) {
       getFindingsRailCallback()?.({ activeEndpoint: endpointLabel });
-    } else if (isDRView) {
-      if (endpointLabel) {
-        navigateTo({ endpoint: endpointLabel });
-      }
     }
-  }, [isFindingsRoute, isDRView, navigateTo]);
+  }, [isFindingsView]);
 
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
-    if (isFindingsRoute) {
+    if (isFindingsView) {
       getFindingsRailCallback()?.({ activeGrouping: mode });
-    } else if (isDRView) {
-      navigateTo({ organSystem: undefined });
     }
-  }, [isFindingsRoute, isDRView, navigateTo]);
+  }, [isFindingsView]);
 
   // Rail sends fully-filtered visible endpoint set → forward to view
   const handleVisibleEndpointsChange = useCallback((state: RailVisibleState) => {
-    if (isFindingsRoute) {
+    if (isFindingsView) {
       getFindingsRailCallback()?.({ visibleEndpoints: state });
     }
-  }, [isFindingsRoute]);
+  }, [isFindingsView]);
 
   // Rail restore: excluded endpoint icon clicked → forward to view
   const handleRestoreEndpoint = useCallback((label: string) => {
@@ -135,21 +119,12 @@ export function ShellRailPanel() {
 
   // Findings path: table row click updates FindingSelectionContext → sync to rail
   useEffect(() => {
-    if (!isFindingsRoute) return;
+    if (!isFindingsView) return;
     const newEndpoint = selectedFinding?.endpoint_label ?? null;
     if (newEndpoint !== prevEndpointRef.current) {
       setActiveEndpoint(newEndpoint);
     }
-  }, [selectedFinding, isFindingsRoute]);
-
-  // D-R path: StudySelectionContext.endpoint changes → sync to rail
-  useEffect(() => {
-    if (!isDRView) return;
-    const newEndpoint = studySelection.endpoint ?? null;
-    if (newEndpoint !== prevEndpointRef.current) {
-      setActiveEndpoint(newEndpoint);
-    }
-  }, [studySelection.endpoint, isDRView]);
+  }, [selectedFinding, isFindingsView]);
 
   // Route detection — validation view, study summary details tab
   const isValidationRoute = pathname.includes("/validation");

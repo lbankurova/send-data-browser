@@ -5,6 +5,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import type { EffectSizeMethod, MultiplicityMethod } from "@/lib/stat-method-transforms";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
+import type { FindingsResponse, UnifiedFinding } from "@/types/analysis";
 
 export interface FindingsAnalytics {
   endpoints: EndpointSummary[];
@@ -24,7 +25,20 @@ export interface FindingsAnalytics {
   normalizationContexts?: NormalizationContext[];
 }
 
-const defaultValue: FindingsAnalytics = {
+/** Full result from the analytics derivation pipeline. */
+export interface FindingsAnalyticsResult {
+  analytics: FindingsAnalytics;
+  /** Raw API response — consumers that need UnifiedFinding[] or dose_groups access this. */
+  data: FindingsResponse | undefined;
+  /** Findings pre-transformed by the backend (settings already applied). */
+  activeFindings: UnifiedFinding[];
+  isLoading: boolean;
+  isFetching: boolean;
+  isPlaceholderData: boolean;
+  error: Error | null;
+}
+
+const defaultAnalytics: FindingsAnalytics = {
   endpoints: [],
   syndromes: [],
   organCoherence: new Map(),
@@ -33,7 +47,18 @@ const defaultValue: FindingsAnalytics = {
   endpointSexes: new Map(),
 };
 
-const FindingsAnalyticsContext = createContext<FindingsAnalytics>(defaultValue);
+const defaultResult: FindingsAnalyticsResult = {
+  analytics: defaultAnalytics,
+  data: undefined,
+  activeFindings: [],
+  isLoading: false,
+  isFetching: false,
+  isPlaceholderData: false,
+  error: null,
+};
+
+const FindingsAnalyticsContext = createContext<FindingsAnalytics>(defaultAnalytics);
+const FindingsAnalyticsResultContext = createContext<FindingsAnalyticsResult>(defaultResult);
 
 export function FindingsAnalyticsProvider({
   value,
@@ -52,3 +77,9 @@ export function FindingsAnalyticsProvider({
 export function useFindingsAnalytics(): FindingsAnalytics {
   return useContext(FindingsAnalyticsContext);
 }
+
+export function useFindingsAnalyticsResult(): FindingsAnalyticsResult {
+  return useContext(FindingsAnalyticsResultContext);
+}
+
+export { FindingsAnalyticsResultContext };
