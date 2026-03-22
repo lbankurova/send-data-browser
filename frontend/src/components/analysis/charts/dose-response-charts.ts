@@ -8,7 +8,7 @@ import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
 import type { NonMonotonicFlag } from "@/lib/endpoint-confidence";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { formatDoseShortLabel, getDoseGroupColor, getNeutralHeatColor } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
 
@@ -23,7 +23,7 @@ const AXIS_LABEL_SIZE = 10;
 const TOOLTIP_TEXT_SIZE = 11;
 const REF_LINE_LABEL_SIZE = 9;
 
-const BASE_GRID = { left: 44, right: 12, top: 16, bottom: 28 };
+
 
 function axisLabel(fontSize = AXIS_LABEL_SIZE) {
   return { fontSize, color: "#6B7280" };
@@ -233,11 +233,11 @@ export function buildDoseResponseLineOption(
   }
 
   return {
-    grid: BASE_GRID,
+    grid: { left: 48, right: 16, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
-      axisLabel: axisLabel(),
+      axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
     },
     yAxis: {
@@ -354,11 +354,11 @@ export function buildIncidenceBarOption(
   }
 
   return {
-    grid: BASE_GRID,
+    grid: { left: 48, right: 16, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
-      axisLabel: axisLabel(),
+      axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
     },
     yAxis: {
@@ -430,7 +430,10 @@ export function buildEffectSizeBarOption(
   effectSizeSymbol = "g",
   metricSubtitle?: string,
 ): EChartsOption {
-  const categories = mergedPoints.map((p) => String(p.dose_label));
+  // Use "Contr." for control dose label on x-axis
+  const categories = mergedPoints.map((p) =>
+    (p.dose_level as number) === 0 ? "Contr." : String(p.dose_label),
+  );
 
   const series: EChartsOption["series"] = [];
 
@@ -489,11 +492,11 @@ export function buildEffectSizeBarOption(
   }
 
   return {
-    grid: BASE_GRID,
+    grid: { left: 48, right: 16, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
-      axisLabel: axisLabel(),
+      axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
     },
     yAxis: {
@@ -1101,8 +1104,9 @@ export function buildVolcanoScatterOption(
 
 /**
  * Horizontal grouped bar chart showing mean ± SD per dose group per sex.
- * Doses on Y-axis, values extend right — matches DoseDetailPane layout.
- * Two bars per dose row (F pink, M blue). Significant bars get dark border.
+ * Doses on Y-axis with color-coded pipe markers, values extend right.
+ * Styled to match DoseDetailPane: pipes, method label, right-aligned value
+ * labels, sex-colored bars, no x-axis grid lines.
  */
 export function buildDoseResponseBarOption(
   mergedPoints: MergedPoint[],
@@ -1111,10 +1115,19 @@ export function buildDoseResponseBarOption(
   sexLabels: Record<string, string>,
   _noaelLabel?: string | null,
   _nonMonoFlag?: NonMonotonicFlag | null,
+  testLabel?: string | null,
 ): EChartsOption {
   // Reverse so control is at bottom (matching DoseDetailPane)
   const ordered = [...mergedPoints].reverse();
   const categories = ordered.map((p) => String(p.dose_label));
+
+  // ── Y-axis rich text: colored pipe + label ──
+  const pipeRich: Record<string, object> = {};
+  for (const pt of ordered) {
+    const c = getDoseGroupColor(pt.dose_level as number);
+    pipeRich[`p${c.replace("#", "")}`] = { color: c, fontSize: 11, fontWeight: "bold", fontFamily: "monospace" };
+  }
+  pipeRich.t = { color: "#374151", fontSize: 10, padding: [0, 0, 0, 2] };
 
   const series: EChartsOption["series"] = [];
 
@@ -1122,7 +1135,7 @@ export function buildDoseResponseBarOption(
     const seriesName = sexLabels[sex] ?? sex;
     const color = sexColors[sex] ?? "#666";
 
-    // Horizontal bar series for mean values
+    // Horizontal bar series for mean values with right-aligned value labels
     const barData = ordered.map((pt) => {
       const mean = pt[`mean_${sex}`] as number | null;
       const pVal = pt[`p_${sex}`] as number | null;
@@ -1143,6 +1156,19 @@ export function buildDoseResponseBarOption(
       name: seriesName,
       data: barData,
       barMaxWidth: 12,
+      label: {
+        show: true,
+        position: "right" as const,
+        distance: 4,
+        formatter(params: { value: unknown }) {
+          const v = params.value;
+          if (v == null) return "\u2014";
+          return Number(v).toFixed(2);
+        },
+        fontFamily: "monospace",
+        fontSize: 9,
+        color: "#6B7280",
+      },
     });
 
     // Custom error bar series (mean ± SD whiskers) — horizontal
@@ -1198,18 +1224,43 @@ export function buildDoseResponseBarOption(
   }
 
   return {
-    grid: { left: 60, right: 12, top: 8, bottom: 20 },
+    grid: { left: 70, right: 55, top: testLabel ? 22 : 8, bottom: 16 },
+    // Method label (italic, top-left) — matches DoseDetailPane test name label
+    ...(testLabel ? {
+      graphic: [{
+        type: "text",
+        left: 4,
+        top: 2,
+        style: {
+          text: testLabel,
+          fontSize: 9,
+          fill: "#9CA3AF",
+          fontStyle: "italic",
+        },
+      }],
+    } : {}),
     yAxis: {
       type: "category",
       data: categories,
-      axisLabel: axisLabel(),
-      axisTick: { alignWithLabel: true },
+      axisLabel: {
+        fontSize: 10,
+        formatter(value: string) {
+          const pt = ordered.find((p) => String(p.dose_label) === value);
+          const c = getDoseGroupColor((pt?.dose_level as number) ?? 0);
+          return `{p${c.replace("#", "")}|\u258E}{t|${value}}`;
+        },
+        rich: pipeRich,
+      },
+      axisTick: { show: false },
+      axisLine: { show: false },
       inverse: false,
     },
     xAxis: {
       type: "value",
-      axisLabel: axisLabel(),
-      splitLine: splitLineStyle(),
+      axisLabel: { ...axisLabel(), margin: 6 },
+      splitLine: { show: false },
+      axisLine: { show: false },
+      axisTick: { show: false },
     },
     tooltip: {
       ...baseTooltip(),
@@ -1245,8 +1296,9 @@ export function buildDoseResponseBarOption(
 // ─── 8. Stacked Severity Bar Chart ──────────────────────────
 
 const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
-// 5-step ramp with stronger contrast — each step is visually distinct
-const GRADE_COLORS = ["#E5E7EB", "#B0B5BD", "#7C828D", "#4B5563", "#1F2937"];
+// 5-step neutral grayscale ramp via shared getNeutralHeatColor()
+const GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9];
+const GRADE_COLORS = GRADE_SCORES.map((s) => getNeutralHeatColor(s).bg);
 
 /**
  * Vertical stacked bar chart showing severity grade distribution
@@ -1306,11 +1358,11 @@ export function buildStackedSeverityBarOption(
   }
 
   return {
-    grid: BASE_GRID,
+    grid: { left: 48, right: 16, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
-      axisLabel: axisLabel(),
+      axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
     },
     yAxis: {

@@ -15,8 +15,10 @@ import {
 } from "@/components/analysis/charts/dose-response-charts";
 import type { MergedPoint } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
-import { getSexColor, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { getSexColor, getDoseGroupColor, formatDoseNumericLabel, getNeutralHeatColor } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS } from "@/lib/build-settings-params";
+import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
@@ -32,7 +34,6 @@ interface Props {
   endpointLabel: string;
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
-  height: number;
   /** Study day to display. Managed by parent via DayStepper. */
   selectedDay: number | null;
 }
@@ -69,15 +70,36 @@ function coloredAxisLabels(points: MergedPoint[]) {
 /** Post-process an ECharts option for compact display. */
 function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
   const o = { ...opt };
-  o.grid = COMPACT_GRID;
 
-  // Shrink y-axis labels, color-code x-axis labels by dose group
-  const yStyle = { fontSize: COMPACT_AXIS_FONT, color: "#6B7280" };
-  if (o.xAxis && !Array.isArray(o.xAxis)) {
-    o.xAxis = { ...o.xAxis, axisLabel: coloredAxisLabels(points) as never };
-  }
-  if (o.yAxis && !Array.isArray(o.yAxis)) {
-    o.yAxis = { ...o.yAxis, axisLabel: yStyle, splitLine: { show: false } };
+  // Detect horizontal bar chart (y=category, x=value — e.g., D-R bar chart)
+  const yType = o.yAxis && !Array.isArray(o.yAxis) ? (o.yAxis as Record<string, unknown>).type : undefined;
+  const isHorizontalBar = yType === "category";
+
+  if (isHorizontalBar) {
+    // Horizontal bar: compact grid preserving room for pipe labels + value labels
+    o.grid = { left: 56, right: 50, top: (o.graphic ? 20 : 8), bottom: 12 };
+    // Y-axis already has pipe-rich formatting from builder — shrink font only
+    if (o.yAxis && !Array.isArray(o.yAxis)) {
+      const existing = (o.yAxis as Record<string, unknown>).axisLabel as Record<string, unknown> | undefined;
+      if (existing?.rich) {
+        // Preserve rich formatting, just scale down
+        o.yAxis = { ...o.yAxis, axisLabel: { ...existing, fontSize: COMPACT_AXIS_FONT } };
+      }
+    }
+    // X-axis: shrink labels
+    if (o.xAxis && !Array.isArray(o.xAxis)) {
+      o.xAxis = { ...o.xAxis, axisLabel: { fontSize: COMPACT_AXIS_FONT, color: "#6B7280" } };
+    }
+  } else {
+    // Vertical charts: compact grid, color-code x-axis labels, shrink y-axis
+    o.grid = COMPACT_GRID;
+    const yStyle = { fontSize: COMPACT_AXIS_FONT, color: "#6B7280" };
+    if (o.xAxis && !Array.isArray(o.xAxis)) {
+      o.xAxis = { ...o.xAxis, axisLabel: coloredAxisLabels(points) as never };
+    }
+    if (o.yAxis && !Array.isArray(o.yAxis)) {
+      o.yAxis = { ...o.yAxis, axisLabel: yStyle, splitLine: { show: false } };
+    }
   }
 
   // Thin lines + symbols, strip NOAEL markLine
@@ -179,7 +201,6 @@ export function DoseResponseChartPanel({
   endpointLabel,
   findings,
   doseGroups,
-  height,
   selectedDay,
 }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
@@ -187,11 +208,12 @@ export function DoseResponseChartPanel({
   const esSymbol = getEffectSizeSymbol(esMethod);
   const esLabel = getEffectSizeLabel(esMethod);
   const normalization = useOrganWeightNormalization(studyId);
+  const { settings: { pairwiseTest, multiplicity } } = useStudySettings();
   const [incidenceScale, setIncidenceScale] = useState<ChartDisplayMode>("scaled");
-  const DR_MODES = ["bar", "line"] as const;
+  const DR_MODES = ["line", "bar"] as const;
   type DRChartMode = typeof DR_MODES[number];
   const [drChartMode, setDrChartMode] = useSessionState<DRChartMode>(
-    "pcc.findings.drChartMode", "bar", isOneOf(DR_MODES),
+    "pcc.findings.drChartMode", "line", isOneOf(DR_MODES),
   );
   const [splitPct, setSplitPct] = useState(50);
   const chartRowRef = useRef<HTMLDivElement>(null);
@@ -233,7 +255,7 @@ export function DoseResponseChartPanel({
       const anyRow = rows.find((r) => r.dose_level === dl);
       const point: MergedPoint = {
         dose_level: dl,
-        dose_label: anyRow ? formatDoseShortLabel(anyRow.dose_label) : `Dose ${dl}`,
+        dose_label: anyRow ? formatDoseNumericLabel(anyRow.dose_label) : `Dose ${dl}`,
       };
       for (const sex of sexes) {
         const r = lookup.get(`${sex}_${dl}`);
@@ -324,19 +346,26 @@ export function DoseResponseChartPanel({
       : "Absolute weight";
   }, [chartData, normalization]);
 
+  // ── Method test label (matches DoseDetailPane) ─────────────
+  const methodLabel = useMemo(() => {
+    const testName = PAIRWISE_TEST_LABELS[pairwiseTest] ?? pairwiseTest;
+    const multName = MULTIPLICITY_LABELS[multiplicity] ?? multiplicity;
+    return `Pairwise: ${testName} (${multName})`;
+  }, [pairwiseTest, multiplicity]);
+
   // ── Build compact chart options ───────────────────────────
   const drOption = useMemo(() => {
     if (!chartData) return null;
     let raw: EChartsOption;
     if (chartData.dataType === "continuous") {
       raw = drChartMode === "bar"
-        ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag)
+        ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, methodLabel)
         : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag);
     } else {
       raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, effectiveCompact);
     }
     return compactify(raw, chartData.mergedPoints);
-  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact]);
+  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact, methodLabel]);
 
   const esOption = useMemo(() => {
     if (!chartData || !hasEffect) return null;
@@ -380,7 +409,7 @@ export function DoseResponseChartPanel({
 
   if (!chartData || !drOption) {
     return (
-      <div className="flex items-center justify-center text-xs text-muted-foreground" style={{ height }}>
+      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
         No dose-response data for this endpoint.
       </div>
     );
@@ -389,7 +418,7 @@ export function DoseResponseChartPanel({
   const isContinuous = chartData.dataType === "continuous";
 
   return (
-    <div style={{ height }} className="flex flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Charts row — resizable split */}
       <div ref={chartRowRef} className="flex flex-1 min-h-0">
         {/* Left: D-R chart */}
@@ -407,8 +436,8 @@ export function DoseResponseChartPanel({
                 <PanePillToggle
                   value={drChartMode}
                   options={[
-                    { value: "bar" as const, label: "Bar" },
                     { value: "line" as const, label: "Line" },
+                    { value: "bar" as const, label: "Bar" },
                   ]}
                   onChange={setDrChartMode}
                 />
@@ -454,7 +483,7 @@ export function DoseResponseChartPanel({
                   <span key={label} className="flex items-center gap-0.5">
                     <span
                       className="inline-block h-2 w-2 rounded-sm"
-                      style={{ backgroundColor: ["#E5E7EB", "#B0B5BD", "#7C828D", "#4B5563", "#1F2937"][i] }}
+                      style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
                     />
                     {label}
                   </span>

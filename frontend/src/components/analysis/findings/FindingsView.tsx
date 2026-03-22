@@ -70,7 +70,9 @@ export function FindingsView() {
       { key: "findings", label: "Findings" },
     ];
     if (tableTabOpen) {
-      tabs.push({ key: "findings-table", label: "Findings table", closable: true });
+      // Tab label reflects active rail card name (endpoint, syndrome, organ, etc.)
+      const tableLabel = activeEndpoint ?? "Findings table";
+      tabs.push({ key: "findings-table", label: tableLabel, closable: true });
     }
     return tabs;
   }, [tableTabOpen]);
@@ -291,18 +293,24 @@ export function FindingsView() {
     return { availableDays: days, peakDay, terminalDay: terminal, dayLabels };
   }, [activeEndpoint, tableFindings]);
 
-  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal
+  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal.
+  // dayCleared tracks when user explicitly clears the day filter — prevents useEffect from
+  // immediately re-setting it to the default.
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [dayCleared, setDayCleared] = useState(false);
   useEffect(() => {
+    if (dayCleared) return; // user cleared — don't auto-set
     if (dayMeta) {
       setSelectedDay(activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay);
     } else {
       setSelectedDay(null);
     }
-  }, [activeDay, dayMeta]);
-  // Effective day: fallback for first render before useEffect fires
-  const effectiveDay = selectedDay
-    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
+  }, [activeDay, dayMeta, dayCleared]);
+  // Reset dayCleared when endpoint changes (new endpoint = new day context)
+  useEffect(() => { setDayCleared(false); }, [activeEndpoint]);
+  // Effective day: null when user cleared, otherwise selected or fallback
+  const effectiveDay = dayCleared ? null : (selectedDay
+    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null));
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -434,7 +442,7 @@ export function FindingsView() {
         <DayStepper
           availableDays={dayMeta.availableDays}
           selectedDay={effectiveDay}
-          onDayChange={setSelectedDay}
+          onDayChange={(d) => { setSelectedDay(d); setDayCleared(false); }}
           dayLabels={dayMeta.dayLabels}
           peakDay={dayMeta.peakDay}
         />
@@ -501,7 +509,6 @@ export function FindingsView() {
               endpointLabel={activeEndpoint}
               findings={tableFindings}
               doseGroups={data.dose_groups}
-              height={scatterSection.height - 32}
               selectedDay={effectiveDay}
             />
           </ViewSection>
@@ -551,7 +558,7 @@ export function FindingsView() {
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
           selectedDay={activeEndpoint ? effectiveDay : undefined}
-          onClearDayFilter={() => setSelectedDay(null)}
+          onClearDayFilter={() => { setSelectedDay(null); setDayCleared(true); }}
         />
       ) : null}
       </div>
