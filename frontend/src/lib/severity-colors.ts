@@ -160,7 +160,7 @@ export function getDoseGroupColor(level: number): string {
 
 /** Sex color. */
 export function getSexColor(sex: string): string {
-  if (sex === "M") return "#3b82f6"; // blue-500
+  if (sex === "M") return "#0891b2"; // cyan-600
   if (sex === "F") return "#ec4899"; // pink-500
   return "#6b7280"; // gray-500
 }
