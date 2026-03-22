@@ -268,6 +268,21 @@ Right sidebar inspector. Route-aware component that renders different content ba
 - **View-specific context panel wrappers**: Each fetches data via hooks, casts shared selection to typed shape, and delegates to the view's context panel component.
 - **Empty states**: "Select a study to view details" when no study is selected. Demo guard message for non-PointCross studies.
 
+### DayStepper (`components/analysis/findings/DayStepper.tsx`)
+
+Section-level day navigation control mounted in the ViewSection header of the Findings view. Drives D-R charts to display data for a specific study day. Format: "Terminal (Day 92)", "Peak (Day 15)", "Day N". Non-interactive (disabled, no arrows) for single-timepoint endpoints (MI/MA). State managed by `FindingsView.tsx`, passed as props.
+
+### FindingsTableFilterPanel (`components/analysis/findings/FindingsTableFilterPanel.tsx`)
+
+200px panel on the left side of `FindingsTable`, toggled via a filter icon in the table header bar. Filter utilities in `components/analysis/findings/table-filters.ts`.
+
+**Filter types**:
+- Categorical (multi-select checkboxes): domain, sex, severity, direction, pattern, data type, day
+- Numerical (min/max range): pairwise p, trend p, effect size, fold change
+- Text search: finding name
+
+**State**: Persisted via `useSessionState("pcc.findings.tableFilters")`. Filters are independent from the chart day stepper -- table and charts have separate filter controls. Active filter count displayed as a badge on the filter icon.
+
 ### TreeNode (`components/tree/TreeNode.tsx`)
 
 Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `icon`, `isExpanded`, `isActive`, `onClick`. Renders with indentation based on depth.
@@ -317,6 +332,9 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 | `frontend/src/components/ui/PanelResizeHandle.tsx` | Visual drag handle (4px) placed between resizable panels |
 | `frontend/src/components/analysis/panes/ContextPanelHeader.tsx` | Shared sticky header for context panels (nav bar, title, subtitle, CollapseAll, headerActions) |
 | `frontend/src/hooks/usePaneHistory.ts` | Generic selection history hook for context panel back/forward navigation |
+| `frontend/src/components/analysis/findings/DayStepper.tsx` | Day navigation control for D-R charts in Findings view header |
+| `frontend/src/components/analysis/findings/FindingsTableFilterPanel.tsx` | Categorical/numerical/text filter panel for FindingsTable |
+| `frontend/src/components/analysis/findings/table-filters.ts` | Filter predicate utilities for FindingsTableFilterPanel |
 
 ## Datagrok Notes
 
@@ -333,6 +351,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 
 ## Changelog
 
+- 2026-03-21: Added DayStepper (day navigation for D-R charts) and FindingsTableFilterPanel (categorical/numerical/text filters for FindingsTable) components. Added table-filters.ts to code map.
 - 2026-03-11: Added Context Panel Header & Navigation section. New shared components: ContextPanelHeader (D9), usePaneHistory (D1). All context panels retrofitted with consistent headers, CollapseAll (D2), and back/forward navigation where applicable.
 - 2026-02-12: Added auto-fit sections documentation (useAutoFitSections hook, ViewSection component, content measurement algorithm, persistence model). Added to code map.
 - 2026-02-09: Added resizable panel system documentation (useResizePanel hook, PanelResizeHandle component, usage in Views 2-5). Added to code map and current state.

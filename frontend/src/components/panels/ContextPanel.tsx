@@ -23,7 +23,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 const FindingsContextPanel = lazy(() => import("@/components/analysis/panes/FindingsContextPanel").then(m => ({ default: m.FindingsContextPanel })));
 const StudyDetailsContextPanel = lazy(() => import("@/components/analysis/panes/StudyDetailsContextPanel").then(m => ({ default: m.StudyDetailsContextPanel })));
 const NoaelContextPanel = lazy(() => import("@/components/analysis/panes/NoaelContextPanel").then(m => ({ default: m.NoaelContextPanel })));
-const DoseResponseContextPanel = lazy(() => import("@/components/analysis/panes/DoseResponseContextPanel").then(m => ({ default: m.DoseResponseContextPanel })));
 const HistopathologyContextPanel = lazy(() => import("@/components/analysis/panes/HistopathologyContextPanel").then(m => ({ default: m.HistopathologyContextPanel })));
 const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
 const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
@@ -293,25 +292,6 @@ function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
   );
 }
 
-function DoseResponseContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection: studySel } = useStudySelection();
-  const { data: ruleResults } = useRuleResults(studyId);
-  const { data: signalData } = useStudySignalSummary(studyId);
-
-  const sel = studySel.endpoint
-    ? { endpoint_label: studySel.endpoint, organ_system: studySel.organSystem }
-    : null;
-
-  return (
-    <DoseResponseContextPanel
-      ruleResults={ruleResults ?? []}
-      signalData={signalData ?? []}
-      selection={sel}
-      studyId={studyId}
-    />
-  );
-}
-
 function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection, setSelection } = useViewSelection();
 
@@ -458,7 +438,6 @@ export function ContextPanel() {
     activeStudyId &&
     location.pathname === `/studies/${encodeURIComponent(activeStudyId)}`;
   const isNoaelRoute = /\/studies\/[^/]+\/noael-determination/.test(location.pathname);
-  const isDoseResponseRoute = /\/studies\/[^/]+\/dose-response/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
 
@@ -483,10 +462,6 @@ export function ContextPanel() {
 
   if (isNoaelRoute && activeStudyId) {
     return <LazyPane><NoaelContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
-  }
-
-  if (isDoseResponseRoute && activeStudyId) {
-    return <LazyPane><DoseResponseContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isHistopathologyRoute && activeStudyId) {

@@ -44,16 +44,15 @@ Single source of truth: `docs/TODO.md` (74 open items)
 
 ## Session Continuity
 
-Last session: 2026-03-11
-Stopped at: BUG-19 control-only pipeline leak fixed and committed (35c92aa).
+Last session: 2026-03-20
+Stopped at: Performance audit complete, doc cleanup done. ARCH-01 discussion has 5 open questions.
 Completed this session:
-- BUG-19: 5 sub-bugs where control-only findings leaked through clinical catalog, insights, recovery, lab correlates, signal score, and confidence modifiers — all fixed
-- Backend clinical_catalog.py gated with treatment_related check
-- Frontend: controlOnlyFindings filtering in context panel, signal score zeroed, confidence modifiers suppressed, lab correlates guarded
-- docs/systems/insights-engine.md updated, spec archived
-- Post-implementation review completed, 1430 frontend tests + build pass
-Prior: SLA-01/06/12/13 accessor migration sweep (e3b5fc0), SLA-15/16 (ac748e5).
-Next: SLA-09 (incidence quality checks), SLA-18 (recovery vocab harmonization), or other TODO.md items.
+- Phase G committed + merged to master (2dd1205) — D-R view fully deleted
+- 7 perf fixes: analytics dedup (Layout-level provider), sparkline memo, table virtualization, 4 targeted fixes
+- Doc cleanup: renamed adverse-effects.md → findings.md, MANIFEST + TODO updated
+- Commit checklist gap identified and remediated
+Prior: Phases A–C committed, ARCH-01 discussion (D1–D7 decided, Q1–Q5 open).
+Next: Continue ARCH-01 discussion or pick up TODO.md backlog. See `.continue-here.md`.
 
 ---
-*Last updated: 2026-03-11 — BUG-19 control-only pipeline leak fixed*
+*Last updated: 2026-03-20 — perf audit complete, D-R merge fully merged to master*

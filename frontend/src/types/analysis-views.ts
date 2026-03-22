@@ -180,6 +180,7 @@ export interface DoseResponseRow {
   dose_level: number;
   dose_label: string;
   sex: string;
+  day: number | null;
   mean: number | null;
   sd: number | null;
   n: number | null;

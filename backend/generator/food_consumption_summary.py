@@ -14,7 +14,7 @@ import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
-from services.analysis.statistics import welch_t_test, cohens_d
+from services.analysis.statistics import welch_t_test, compute_effect_size
 
 
 # Threshold: FW decrease < 10% is "not meaningfully decreased" (within normal variation)
@@ -278,7 +278,7 @@ def _compute_periods(fw_df: pd.DataFrame, bw_df: pd.DataFrame) -> list[dict]:
                 "food_efficiency_control": None,
                 "food_efficiency_reduced": None,
                 "fe_p_value": None,
-                "fe_cohens_d": None,
+                "fe_effect_size": None,
                 "fw_pct_change": None,
                 "bw_pct_change": None,
             }
@@ -328,9 +328,9 @@ def _compute_periods(fw_df: pd.DataFrame, bw_df: pd.DataFrame) -> list[dict]:
                     ]["food_efficiency"].values
                     if len(dose_fe) >= 2 and len(ctrl_vals) >= 2:
                         t_result = welch_t_test(dose_fe, ctrl_vals)
-                        d_result = cohens_d(dose_fe, ctrl_vals)
+                        d_result = compute_effect_size(dose_fe, ctrl_vals)
                         entry["fe_p_value"] = round(t_result["p_value"], 6) if t_result["p_value"] is not None else None
-                        entry["fe_cohens_d"] = round(d_result, 4) if d_result is not None else None
+                        entry["fe_effect_size"] = round(d_result, 4) if d_result is not None else None
 
         periods.append({
             "start_day": start_day,

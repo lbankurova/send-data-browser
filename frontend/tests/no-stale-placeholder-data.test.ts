@@ -33,7 +33,6 @@ const HOOKS_DIR = path.resolve(__dirname, "../src/hooks");
 const ALLOWLIST = new Set<string>([
   "useAdverseEffectSummary.ts", // study-level summary list
   "useAESummary.ts",            // study-level summary
-  "useDoseResponseMetrics.ts",  // study-level metrics list
   "useFindingDoseTrends.ts",    // study-level trends list
   "useFindings.ts",             // study-level findings list
   "useLesionSeveritySummary.ts",// study-level summary

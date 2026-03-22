@@ -286,6 +286,7 @@ export function flattenFindingsToDRRows(
         dose_level: gs.dose_level,
         dose_label: dg?.label ?? `Dose ${gs.dose_level}`,
         sex: f.sex,
+        day: f.day,
         mean: gs.mean,
         sd: gs.sd,
         n: gs.n,
@@ -294,7 +295,7 @@ export function flattenFindingsToDRRows(
         p_value: pw?.p_value_adj ?? null,
         // SLA-13: populate with domain-appropriate metric
         effect_size: f.data_type === "continuous"
-          ? (pw?.cohens_d ?? null)
+          ? (pw?.effect_size ?? null)
           : (pw?.odds_ratio ?? null),
         dose_response_pattern: f.dose_response_pattern ?? "flat",
         trend_p: f.trend_p,

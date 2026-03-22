@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
@@ -51,12 +51,16 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
-import { formatPValue, titleCase, getDirectionSymbol } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useSyndromeCorrelationSummaries } from "@/hooks/useSyndromeCorrelationSummaries";
+import { useStudyMortality } from "@/hooks/useStudyMortality";
+import type { StudyMortality } from "@/types/mortality";
+import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
 
 // ─── Props ─────────────────────────────────────────────────
@@ -102,9 +106,14 @@ export function FindingsRail({
   excludedEndpoints,
   onRestoreEndpoint,
 }: FindingsRailProps) {
-  // Shared analytics derivation — single source of truth
-  const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsLocal(studyId);
+  // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
+  const { analytics, activeFindings, isLoading, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, labMatches } = analytics;
+
+  // Mortality data for rail header
+  const { data: mortalityData } = useStudyMortality(studyId);
+  // Scheduled-only toggle moved to MethodologyPanel; mortality indicator now opens subject profile
+  useScheduledOnly(); // keep hook call for context subscription
 
   // GAP-68: Eagerly fetch co-variation summaries for all syndromes in one batch request
   const { data: syndromeCovariation } = useSyndromeCorrelationSummaries(studyId, syndromes);
@@ -143,7 +152,7 @@ export function FindingsRail({
   // Grouping & sort persist across view navigations (user preference)
   const [grouping, setGrouping] = useSessionState<GroupingMode>(
     "pcc.findings.rail.grouping", "syndrome",
-    isOneOf(["organ", "finding", "syndrome"] as const),
+    isOneOf(["organ", "finding", "syndrome", "specimen"] as const),
   );
   const [sortMode, setSortMode] = useSessionState<SortMode>(
     "pcc.findings.rail.sort", "signal",
@@ -325,6 +334,9 @@ export function FindingsRail({
       const sevLabels = [...railFilters.severity].map((s) => s.charAt(0).toUpperCase() + s.slice(1));
       labels.push(sevLabels.join(", "));
     }
+    if (railFilters.noaelRole) {
+      labels.push(`NOAEL: ${railFilters.noaelRole}`);
+    }
     return labels;
   }, [railFilters]);
 
@@ -485,8 +497,14 @@ export function FindingsRail({
 
   return (
     <div className="flex h-full flex-col overflow-hidden" aria-label="Findings navigation">
-      {/* Zone 1: Signal summary (fixed) */}
-      <SignalSummarySection stats={signalSummary} />
+      {/* Zone 1: Signal summary + mortality (fixed) */}
+      <SignalSummarySection
+        stats={signalSummary}
+        mortalityData={mortalityData}
+        grouping={grouping}
+        hasSyndromes={syndromes.length > 0}
+        onGroupingChange={handleGroupingChange}
+      />
 
       {/* Zone 2: Scope indicator (conditional) */}
       {activeGroupScope && (
@@ -513,10 +531,8 @@ export function FindingsRail({
         groupFilterOptions={groupFilterOptions}
         domainFilterOptions={domainFilterOptions}
         patternFilterOptions={patternFilterOptions}
-        hasSyndromes={syndromes.length > 0}
         hasClinicalEndpoints={clinicalEndpoints.size > 0}
         clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
-        onGroupingChange={handleGroupingChange}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
       />
@@ -596,15 +612,82 @@ export function FindingsRail({
 
 // ─── Signal Summary ────────────────────────────────────────
 
-function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
+const GROUPING_TOGGLES: { value: GroupingMode; label: string; stub?: boolean }[] = [
+  { value: "finding", label: "Endpoint" },
+  { value: "specimen", label: "Specimen", stub: true },
+  { value: "organ", label: "Organ" },
+  { value: "syndrome", label: "Syndrome" },
+];
+
+function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, onGroupingChange }: {
+  stats: SignalSummaryStats;
+  mortalityData?: StudyMortality | null;
+  grouping: GroupingMode;
+  hasSyndromes: boolean;
+  onGroupingChange: (mode: GroupingMode) => void;
+}) {
+  const { setSelectedSubject } = useViewSelection();
+  const [deathDropdownOpen, setDeathDropdownOpen] = useState(false);
+  const deathDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close death dropdown on outside click
+  useEffect(() => {
+    if (!deathDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (deathDropdownRef.current && !deathDropdownRef.current.contains(e.target as Node)) setDeathDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [deathDropdownOpen]);
+
+  const deaths = mortalityData?.deaths ?? [];
+  const mainDeaths = deaths.filter(d => !d.is_recovery);
+  const recovDeaths = deaths.filter(d => d.is_recovery);
+  const totalDeaths = mainDeaths.length + recovDeaths.length;
+  const [selectedDeaths, setSelectedDeaths] = useState<Set<string>>(new Set());
+  const allDeathIds = useMemo(() => deaths.map(d => d.USUBJID), [deaths]);
+  const allSelected = allDeathIds.length > 0 && allDeathIds.every(id => selectedDeaths.has(id));
+  const someSelected = allDeathIds.some(id => selectedDeaths.has(id));
+  const toggleDeath = (id: string) => setSelectedDeaths(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleAllDeaths = () => setSelectedDeaths(allSelected ? new Set() : new Set(allDeathIds));
+
+  /** Truncate USUBJID: strip study prefix, keep last segment */
+  const truncateId = (id: string) => {
+    const parts = id.split("-");
+    return parts.length > 1 ? `SUBJ-${parts[parts.length - 1]}` : id;
+  };
+
   return (
     <div className="shrink-0 border-b px-3 pb-2 pt-3">
-      {/* Header */}
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Findings
+      {/* Grouping toggles — serves as rail title */}
+      <div className="flex items-center gap-1">
+        <div className="flex flex-wrap rounded bg-muted/50 p-0.5">
+          {GROUPING_TOGGLES.filter(t => t.value !== "syndrome" || hasSyndromes).map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                grouping === t.value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+                t.stub && "cursor-not-allowed opacity-30",
+              )}
+              onClick={() => { if (!t.stub) onGroupingChange(t.value); }}
+              title={t.stub ? "Coming soon — requires histopathology merge" : `Group by ${t.label}`}
+              disabled={t.stub}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <Popover>
           <PopoverTrigger asChild>
-            <button className="text-muted-foreground/40 hover:text-muted-foreground transition-colors" aria-label="How to read the findings rail">
+            <button className="ml-auto text-muted-foreground/40 hover:text-muted-foreground transition-colors" aria-label="How to read the findings rail">
               <Info className="h-3 w-3" />
             </button>
           </PopoverTrigger>
@@ -620,12 +703,6 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
                 strength: thick = strong, thin = weak. Dark = adverse/warning, invisible = normal.
               </p>
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Effect size</span> is the largest magnitude
-                (continuous) or avg severity (incidence) across dose groups and sexes.
-                <span className="font-medium text-foreground"> Pattern glyph</span> shows dose-response
-                shape; when M and F diverge, per-sex glyphs appear below.
-              </p>
-              <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Click</span> a row to select it in the
                 context panel. <span className="font-medium text-foreground">Group cards</span> scope
                 the scatter plot and table to that group.
@@ -635,17 +712,88 @@ function SignalSummarySection({ stats }: { stats: SignalSummaryStats }) {
         </Popover>
       </div>
 
-      {/* Counts: classification badges */}
-      <div className="mt-1 flex items-center gap-2 text-xs">
-        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-          {stats.adverseCount} adverse
-        </span>
-        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-          {stats.warningCount} warning
-        </span>
-        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-semibold text-gray-600">
-          {stats.trCount} TR
-        </span>
+      {/* Counts + mortality — compact, color-coded */}
+      <div className="mt-1 flex items-center gap-2 text-[10px]">
+        {grouping === "finding" ? (
+          <>
+            <span title={`${stats.adverseCount} endpoints classified as adverse`}>
+              <span className="font-semibold" style={{ color: "#dc2626" }}>{stats.adverseCount}</span>
+              <span className="text-muted-foreground"> adverse</span>
+            </span>
+            <span title={`${stats.warningCount} endpoints classified as warning`}>
+              <span className="font-semibold" style={{ color: "#d97706" }}>{stats.warningCount}</span>
+              <span className="text-muted-foreground"> warning</span>
+            </span>
+            <span className="text-muted-foreground" title={`${stats.totalEndpoints} total endpoints`}>
+              {stats.totalEndpoints} endpoints
+            </span>
+          </>
+        ) : (
+          /* Reserve space for non-endpoint groupings — content TBD */
+          <span className="text-muted-foreground">{stats.totalEndpoints} endpoints</span>
+        )}
+
+        {/* Mortality indicator */}
+        {totalDeaths > 0 && (
+          <div className="relative ml-auto" ref={deathDropdownRef}>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setDeathDropdownOpen(!deathDropdownOpen)}
+              title={`${mainDeaths.length} main arm, ${recovDeaths.length} recovery arm`}
+            >
+              <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
+              <span>{totalDeaths} death{totalDeaths !== 1 ? "s" : ""}</span>
+              <ChevronDown className={cn("h-3 w-3 transition-transform", deathDropdownOpen && "rotate-180")} />
+            </button>
+
+            {deathDropdownOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 min-w-[240px] rounded border bg-popover shadow-md">
+                {/* Select all header */}
+                <div className="flex items-center gap-1.5 border-b border-border/40 px-2 py-1">
+                  <input
+                    type="checkbox"
+                    className="h-3 w-3 shrink-0 rounded border-gray-300"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                    onChange={toggleAllDeaths}
+                  />
+                  <span className="text-[10px] font-medium text-muted-foreground" title="Click a name to view in Context Panel. Check boxes to select for comparison.">Select all</span>
+                  <button
+                    type="button"
+                    className="ml-auto cursor-not-allowed text-[10px] text-muted-foreground/40"
+                    title="Coming soon — open selected subjects in a comparison tab"
+                    disabled
+                  >
+                    View in tab
+                  </button>
+                </div>
+                {/* Death rows */}
+                {[...mainDeaths.map(d => ({ ...d, armLabel: "main" as const })), ...recovDeaths.map(d => ({ ...d, armLabel: "recov." as const }))].map((d) => (
+                  <div
+                    key={d.USUBJID}
+                    className="flex w-full items-center gap-1.5 px-2 py-1 hover:bg-accent/50"
+                    title={`${d.disposition}${d.cause ? `, ${d.cause}` : ""} (day ${d.study_day ?? "?"})`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 shrink-0 rounded border-gray-300"
+                      checked={selectedDeaths.has(d.USUBJID)}
+                      onChange={() => toggleDeath(d.USUBJID)}
+                    />
+                    <button
+                      type="button"
+                      className="text-left text-[11px] text-blue-600 hover:underline"
+                      onClick={() => { setSelectedSubject(d.USUBJID); setDeathDropdownOpen(false); }}
+                    >
+                      {truncateId(d.USUBJID)} @ {formatDoseShortLabel(d.dose_label)} ({d.armLabel})
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -777,10 +925,8 @@ function RailFiltersSection({
   groupFilterOptions,
   domainFilterOptions,
   patternFilterOptions,
-  hasSyndromes,
   hasClinicalEndpoints,
   clinicalS2Plus,
-  onGroupingChange,
   onFiltersChange,
   onSortChange,
 }: {
@@ -790,40 +936,20 @@ function RailFiltersSection({
   groupFilterOptions: { key: string; label: string }[];
   domainFilterOptions: { key: string; label: string }[];
   patternFilterOptions: { key: string; label: string }[];
-  hasSyndromes: boolean;
   hasClinicalEndpoints: boolean;
   clinicalS2Plus: boolean;
-  onGroupingChange: (mode: GroupingMode) => void;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search */}
-      <FilterSearch
-        value={filters.search}
-        onChange={(v) => onFiltersChange({ ...filters, search: v })}
-        placeholder="Search findings…"
-      />
-
-      {/* Row 2: Group by + group filter + sort by */}
+      {/* Row 1: Search + sort */}
       <div className="flex items-center gap-1.5">
-        <FilterSelect
-          value={grouping}
-          onChange={(e) => onGroupingChange(e.target.value as GroupingMode)}
-        >
-          <option value="organ">Group: Organ</option>
-          <option value="finding">Group: Finding</option>
-          {hasSyndromes && <option value="syndrome">Group: Syndrome</option>}
-        </FilterSelect>
-        {grouping !== "finding" && (
-          <FilterMultiSelect
-            options={groupFilterOptions}
-            selected={filters.groupFilter}
-            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
-          />
-        )}
+        <FilterSearch
+          value={filters.search}
+          onChange={(v) => onFiltersChange({ ...filters, search: v })}
+          placeholder="Search…"
+        />
         <FilterSelect
           value={sortMode}
           onChange={(e) => onSortChange(e.target.value as SortMode)}
@@ -835,26 +961,8 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 3: Domain + Trend + Severity + Quick toggles */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <FilterMultiSelect
-          options={domainFilterOptions}
-          selected={filters.domains}
-          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
-          allLabel="All domains"
-        />
-        <FilterMultiSelect
-          options={patternFilterOptions}
-          selected={filters.pattern}
-          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
-          allLabel="All patterns"
-        />
-        <FilterMultiSelect
-          options={SEVERITY_OPTIONS}
-          selected={filters.severity}
-          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
-          allLabel="All classes"
-        />
+      {/* Row 2: Quick toggles + NOAEL role */}
+      <div className="flex items-center gap-1.5">
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"
@@ -884,6 +992,46 @@ function RailFiltersSection({
             S2+
           </label>
         )}
+        <FilterSelect
+          value={filters.noaelRole ?? ""}
+          onChange={(e) => onFiltersChange({ ...filters, noaelRole: (e.target.value || null) as RailFilters["noaelRole"] })}
+        >
+          <option value="">NOAEL: All</option>
+          <option value="determining">Determining</option>
+          <option value="contributing">Contributing</option>
+          <option value="supporting">Supporting</option>
+          <option value="excluded">Excluded</option>
+        </FilterSelect>
+      </div>
+
+      {/* Row 2: Group filter + domain + pattern + severity */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {grouping !== "finding" && (
+          <FilterMultiSelect
+            options={groupFilterOptions}
+            selected={filters.groupFilter}
+            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
+          />
+        )}
+        <FilterMultiSelect
+          options={domainFilterOptions}
+          selected={filters.domains}
+          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
+          allLabel="All domains"
+        />
+        <FilterMultiSelect
+          options={patternFilterOptions}
+          selected={filters.pattern}
+          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
+          allLabel="All patterns"
+        />
+        <FilterMultiSelect
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
+          allLabel="All classes"
+        />
       </div>
     </div>
   );

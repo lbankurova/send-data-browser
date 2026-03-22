@@ -1,6 +1,6 @@
 # Scientific Logic Review — SEND Data Browser
 
-**Generated:** 2026-03-12  
+**Generated:** 2026-03-22  
 **Study:** PointCross (RAT, SPRAGUE-DAWLEY, ORAL GAVAGE, 13-week subchronic)  
 **Pipeline:** 61 endpoint summaries → 10 detected syndromes (XS01, XS04, XS05, XS08, XS09, XC03a, XC04c, XS03, XS07, XC01a)
 

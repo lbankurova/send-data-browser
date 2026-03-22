@@ -56,7 +56,7 @@ One row per endpoint x dose x sex (includes control rows).
 | BFIELD-14 | `trend_p` | number | **Yes** | `generator/domain_stats.py:compute_all_findings()` | Jonckheere-Terpstra or Cochran-Armitage trend test p-value (0--1). Null when trend test not applicable or insufficient data (< 3 groups). |
 | BFIELD-15 | `scheduled_group_stats` | array | **Yes** | `generator/domain_stats.py` (dual-pass) | Group stats recomputed after excluding early-death subjects. Only present when early_death_subjects exist AND domain is terminal (BW, LB, OM). Array of `{dose_level, mean, sd, n, ...}`. |
 | BFIELD-16 | `scheduled_pairwise` | array | **Yes** | `generator/domain_stats.py` (dual-pass) | Pairwise comparisons recomputed after excluding early deaths. Same structure as base pairwise. Only present when scheduled_group_stats exists. |
-| BFIELD-17 | `scheduled_direction` | string | **Yes** | `generator/domain_stats.py` (dual-pass) | Direction from scheduled-only analysis. One of `"up"`, `"down"`, null. Only present when scheduled data computed. |
+| BFIELD-17 | `scheduled_direction` | string | **Yes** | `generator/domain_stats.py` (dual-pass) | Direction from scheduled-only analysis. One of `"up"`, `"down"`, `"none"`, null. Only present when scheduled data computed. |
 | BFIELD-18 | `n_excluded` | integer | **Yes** | `generator/domain_stats.py` (dual-pass) | Number of subjects excluded from scheduled stats. Null when no early-death exclusion applies. |
 
 ---
@@ -180,7 +180,7 @@ Single object. Cross-domain FW + BW food efficiency analysis.
 |----|-------|-----------|----------|--------|-----------|
 | BFIELD-59 | `available` | boolean | No | `food_consumption_summary.py` | False when no FW domain or no raw FW/BW data. When false, no other fields are present. |
 | BFIELD-60 | `caloric_dilution_risk` | boolean | No (when available) | `food_consumption_summary.py:_assess_caloric_dilution()` | True when study route (from TS ROUTE) contains "DIETARY", "DIET", "FEED", or "ADMIXTURE". Absent when available=false. |
-| BFIELD-61 | `periods` | array | No (when available) | `food_consumption_summary.py:_compute_periods()` | Per-measurement-period records. Each: `{start_day, end_day, days, epoch, label, by_dose_sex[]}`. `by_dose_sex` entries contain: `{dose_level, sex, n, mean_fw, mean_bw_gain, mean_food_efficiency, food_efficiency_sd, food_efficiency_control, food_efficiency_reduced, fe_p_value, fe_cohens_d, fw_pct_change, bw_pct_change}`. Empty array when no valid periods computed. |
+| BFIELD-61 | `periods` | array | No (when available) | `food_consumption_summary.py:_compute_periods()` | Per-measurement-period records. Each: `{start_day, end_day, days, epoch, label, by_dose_sex[]}`. `by_dose_sex` entries contain: `{dose_level, sex, n, mean_fw, mean_bw_gain, mean_food_efficiency, food_efficiency_sd, food_efficiency_control, food_efficiency_reduced, fe_p_value, fe_effect_size, fw_pct_change, bw_pct_change}`. Empty array when no valid periods computed. |
 | BFIELD-62 | `overall_assessment` | object | No (when available) | `food_consumption_summary.py:_compute_overall_assessment()` | 4-way BW/FW/FE classification. Fields: `{bw_decreased, fw_decreased, fe_reduced, assessment, temporal_onset, narrative}`. `assessment` is one of: `"secondary_to_food"`, `"primary_weight_loss"`, `"malabsorption"`, `"compensated"`, `"not_applicable"`, `"indeterminate"`. |
 | BFIELD-63 | `recovery` | object | **Yes** | `food_consumption_summary.py:_compute_recovery()` | Null when no recovery subjects exist. When present: `{available: true, fw_recovered: bool, bw_recovered: bool, interpretation: string}`. Recovery = within 10% of control mean. |
 
@@ -219,6 +219,7 @@ These fields are set by the shared enrichment pipeline (`findings_pipeline.py`) 
 | BFIELD-75 | `_tree_result` | object | **Yes** | `adaptive_trees.py` (6 trees) | Context-dependent MI findings only. Adaptive tree evaluation: `{tree_id: string, node_path?: string[], ecetoc_factors?: string[], rationale: string, human_relevance?: string}`. `tree_id` is one of LIVER, THYROID, ADRENAL, THYMUS_SPLEEN, KIDNEY, GASTRIC. Null/absent when no tree applies (finding not context_dependent or no matching tree). Liver tree: `ecetoc_factors` contains per-marker panel breakdown (e.g. "3/7 clean; changed: ALT,AST; missing: TP"). "Clean" = no significant change in any direction (p >= 0.05 AND fold < max_fold). |
 | BFIELD-76 | `_hcd_assessment` | object | **Yes** | `hcd.py:assess_a3()` | OM findings only. HCD reference range comparison: `{result: "within_hcd"|"outside_hcd"|"no_hcd", score: number, detail: string, n?: number, study_count?: number, source?: string, percentile_rank?: number}`. `score`: -0.5 (within), +0.5 (outside), 0.0 (no data). `detail`: human-readable comparison string. Extended fields present when SQLite-sourced: `n` = number of control animals, `study_count` = number of studies, `source` = "sqlite:base"\|"sqlite:dynamic"\|"json", `percentile_rank` = 0-100 rank against individual animal distribution. Null/absent for non-OM findings. Primary source: SQLite (`backend/data/hcd.db`, 7 strains, 16 organs, 3 durations from NTP DTT IAD). Fallback: static JSON (SD rat Envigo + Wistar Han NTP composite). |
 | BFIELD-77 | `_b6_result` | object | **Yes** | `progression_chains.py:evaluate_b6()` | MI/MA findings matching a progression chain. `{chain_id: string, stage: string, matched_term: string, fires: boolean, rationale: string, human_relevance?: {mechanism: string, relevance: string, note: string}, spontaneous_note?: string}`. `fires` = true when severity trigger met or obligate precursor. When fires = true, finding escalated to `tr_adverse`. Null/absent when no progression chain matches. |
+| BFIELD-78 | `severity_grade_counts` | object | **Yes** | `findings_mi.py` | Per-grade severity subject counts for MI findings. Keys are grade numbers as strings (`"1"`–`"5"` mapping to MINIMAL–SEVERE). Values are subject counts at that grade for the dose group. Null for non-MI domains and MI findings without severity data. Computed from MISEV column via `SEVERITY_SCORES` mapping. Consumed by `DoseResponseChartPanel.tsx` → `buildStackedSeverityBarOption()`. |
 
 ---
 
@@ -250,6 +251,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-74 -- BFIELD-75 | Per-finding assessment (Tier 2) | 2 |
 | BFIELD-76 | HCD assessment (Tier 3A) | 1 |
 | BFIELD-77 | B-6 progression chain (Tier 3B) | 1 |
-| BFIELD-78+ | Reserved for future fields | -- |
+| BFIELD-78 | GroupStat severity_grade_counts | 1 |
+| BFIELD-79+ | Reserved for future fields | -- |
 
-Total: 77 fields documented across 13 JSON output categories.
+Total: 78 fields documented across 13 JSON output categories.

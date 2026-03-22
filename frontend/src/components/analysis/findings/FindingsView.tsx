@@ -1,22 +1,24 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Info, EyeOff } from "lucide-react";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
-import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { FilterBar } from "@/components/ui/FilterBar";
+import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
+import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
+import { DayStepper } from "./DayStepper";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFitSections } from "@/hooks/useAutoFitSections";
-import { FindingsAnalyticsProvider } from "@/contexts/FindingsAnalyticsContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { formatPValue, formatEffectSize, formatDoseShortLabel } from "@/lib/severity-colors";
+import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
@@ -42,6 +44,7 @@ function pickBestFinding(findings: UnifiedFinding[]): UnifiedFinding {
 
 export function FindingsView() {
   const { studyId } = useParams<{ studyId: string }>();
+  const location = useLocation();
   const { selectStudy } = useSelection();
   const { selectFinding, setEndpointSexes } = useFindingSelection();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,11 +56,30 @@ export function FindingsView() {
   }, []);
   const [scatterSection] = useAutoFitSections(containerRef, "findings", scatterSections);
 
+  // Central panel tab: "findings" (scatter/DR+table) or "findings-table" (full-height table)
+  type FindingsTab = "findings" | "findings-table";
+  const FINDINGS_TABS = ["findings", "findings-table"] as const;
+  const [activeViewTab, setActiveViewTab] = useSessionState<FindingsTab>(
+    "pcc.findings.viewTab", "findings", isOneOf(FINDINGS_TABS),
+  );
+  // Track whether the "Findings table" tab is open (separate from which is active,
+  // so user can switch between tabs without closing the table tab).
+  const [tableTabOpen, setTableTabOpen] = useState(activeViewTab === "findings-table");
+  const findingsViewTabs = useMemo(() => {
+    const tabs: { key: string; label: string; closable?: boolean }[] = [
+      { key: "findings", label: "Findings" },
+    ];
+    if (tableTabOpen) {
+      tabs.push({ key: "findings-table", label: "Findings table", closable: true });
+    }
+    return tabs;
+  }, [tableTabOpen]);
+
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
 
   // Scheduled-only exclusion context
-  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly, setUseScheduledOnly } = useScheduledOnly();
+  const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -65,6 +87,7 @@ export function FindingsView() {
   const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
+  const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
 
   // Local UI state
@@ -110,30 +133,38 @@ export function FindingsView() {
     if (studyId) selectStudy(studyId);
   }, [studyId, selectStudy]);
 
-  // Shared analytics derivation — single source of truth for all findings consumers
-  // (hoisted above handleEndpointSelect so `data` is available for synchronous selection)
-  const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsLocal(studyId);
+  // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
+  const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
           signalScores: signalScoreMap, endpointSexes } = analytics;
+
+  // Stable ref to data — avoids recreating handleEndpointSelect on every data change,
+  // which would cascade into event bus re-registration and rail state re-push.
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
 
   // Rail endpoint click → select finding in table
   // Synchronous: set activeEndpoint AND select the best finding in the same
   // render batch so the table never shows a stale selection from a different endpoint.
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
-    if (endpointLabel && data?.findings?.length) {
-      const epFindings = data.findings.filter(
+    const currentData = dataRef.current;
+    if (endpointLabel && currentData?.findings?.length) {
+      const epFindings = currentData.findings.filter(
         (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
       );
       if (epFindings.length > 0) {
-        selectFinding(pickBestFinding(epFindings));
+        const best = pickBestFinding(epFindings);
+        selectFinding(best);
+        setActiveDay(best.day);
         return;
       }
     }
     if (!endpointLabel) {
       selectFinding(null);
+      setActiveDay(null);
     }
-  }, [data, selectFinding]);
+  }, [selectFinding]);
 
   // Register event bus callback
   useEffect(() => {
@@ -151,6 +182,17 @@ export function FindingsView() {
     });
     return () => setFindingsRailCallback(null);
   }, [handleEndpointSelect, handleRestoreEndpoint]);
+
+  // Consume cross-view navigation state ({ endpoint_label, organ_system })
+  useEffect(() => {
+    const state = location.state as { endpoint_label?: string; organ_system?: string } | null;
+    if (!state) return;
+    if (state.endpoint_label) {
+      handleEndpointSelect(state.endpoint_label);
+    }
+    // Clear consumed state so it doesn't re-trigger on re-render
+    window.history.replaceState({}, "");
+  }, [location.state, handleEndpointSelect]);
 
   // Auto-select fallback: when data arrives while activeEndpoint is already set
   // (e.g., after initial load or stat method change). The synchronous path in
@@ -192,6 +234,75 @@ export function FindingsView() {
     }
     return f;
   }, [data, visibleLabels, isScheduledOnly]);
+
+  // ── Day navigation metadata for DayStepper (D6) ──────────
+  const dayMeta = useMemo(() => {
+    if (!activeEndpoint || !tableFindings.length) return null;
+    const epFindings = tableFindings.filter(
+      (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
+    );
+    if (epFindings.length === 0) return null;
+
+    // Collect unique days with group data (control + at least one treated dose)
+    const dayDoseSets = new Map<number, Set<number>>();
+    for (const f of epFindings) {
+      if (f.day == null) continue;
+      for (const gs of f.group_stats) {
+        let set = dayDoseSets.get(f.day);
+        if (!set) { set = new Set(); dayDoseSets.set(f.day, set); }
+        set.add(gs.dose_level);
+      }
+    }
+    const groupDays = [...dayDoseSets.entries()]
+      .filter(([, dls]) => dls.has(0) && dls.size >= 2)
+      .map(([d]) => d)
+      .sort((a, b) => a - b);
+    if (groupDays.length === 0) return null;
+
+    const terminal = groupDays[groupDays.length - 1];
+    const days = groupDays.filter((d) => d <= terminal);
+    if (days.length === 0) return null;
+
+    // Peak detection
+    const dataType = epFindings[0].data_type;
+    let bestDay = terminal;
+    if (dataType === "continuous") {
+      let bestAbs = -1;
+      for (const f of epFindings) {
+        if (f.day == null || f.day > terminal) continue;
+        const abs = Math.abs(f.max_effect_size ?? 0);
+        if (abs > bestAbs) { bestAbs = abs; bestDay = f.day; }
+      }
+    } else {
+      let bestP = Infinity;
+      for (const f of epFindings) {
+        if (f.day == null || f.day > terminal || f.min_p_adj == null) continue;
+        if (f.min_p_adj < bestP) { bestP = f.min_p_adj; bestDay = f.day; }
+      }
+    }
+    const peakDay = bestDay !== terminal ? bestDay : null;
+
+    const dayLabels = new Map<number, string>();
+    for (const d of days) {
+      if (d === terminal) dayLabels.set(d, "terminal");
+      else if (d === peakDay) dayLabels.set(d, "peak");
+    }
+
+    return { availableDays: days, peakDay, terminalDay: terminal, dayLabels };
+  }, [activeEndpoint, tableFindings]);
+
+  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  useEffect(() => {
+    if (dayMeta) {
+      setSelectedDay(activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay);
+    } else {
+      setSelectedDay(null);
+    }
+  }, [activeDay, dayMeta]);
+  // Effective day: fallback for first render before useEffect fires
+  const effectiveDay = selectedDay
+    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -316,6 +427,22 @@ export function FindingsView() {
     </span>
   ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave, excludedChips]);
 
+  // Header right for D-R chart section: day stepper + excluded chips + info icon
+  const chartHeaderRight = useMemo(() => (
+    <span className="flex items-center gap-2">
+      {dayMeta && (
+        <DayStepper
+          availableDays={dayMeta.availableDays}
+          selectedDay={effectiveDay}
+          onDayChange={setSelectedDay}
+          dayLabels={dayMeta.dayLabels}
+          peakDay={dayMeta.peakDay}
+        />
+      )}
+      {excludedChips}
+    </span>
+  ), [dayMeta, effectiveDay, excludedChips]);
+
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
     setEndpointSexes(endpointSexes);
@@ -349,59 +476,58 @@ export function FindingsView() {
   }
 
   return (
-    <FindingsAnalyticsProvider value={analytics}>
     <div ref={containerRef} className="relative flex h-full flex-col overflow-hidden">
       <RecalculatingBanner isRecalculating={isFetching && isPlaceholderData} />
-      {/* Header */}
-      <FilterBar>
-        <span className="text-xs font-semibold">Findings</span>
-        {data && (
-          <span className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="font-semibold underline decoration-dashed decoration-2 underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>{data.summary.total_adverse} adverse</span>
-            <span>{data.summary.total_warning} warning</span>
-            <span>{data.summary.total_normal} normal</span>
-          </span>
-        )}
-        {mortalityData?.has_mortality && mortalityData.early_death_details.length > 0 && (
-          <button
-            type="button"
-            className="ml-3 flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => setUseScheduledOnly(!isScheduledOnly)}
-            title={isScheduledOnly ? "Click to include early-death subjects in terminal stats" : "Click to exclude early-death subjects from terminal stats"}
-          >
-            <span className="font-semibold underline decoration-dashed decoration-2 underline-offset-2" style={{ textDecorationColor: "#dc2626" }}>
-              {mortalityData.total_deaths}TR death{mortalityData.total_deaths !== 1 ? "s" : ""}
-              {mortalityData.mortality_loael_label ? ` at ${formatDoseShortLabel(mortalityData.mortality_loael_label)}` : ""}
-            </span>
-            <span className="text-muted-foreground/60">
-              ({isScheduledOnly ? "excl. from term.stats" : "in term.stats"})
-            </span>
-          </button>
-        )}
-      </FilterBar>
+      <ViewTabBar
+        tabs={findingsViewTabs}
+        value={activeViewTab}
+        onChange={(k) => setActiveViewTab(k as FindingsTab)}
+        onClose={() => { setTableTabOpen(false); setActiveViewTab("findings"); }}
+      />
 
-      {/* Quadrant scatter */}
-      {data && endpointSummaries.length > 0 && (
-        <ViewSection
-          title={sectionTitle}
-          headerRight={headerRight}
-          mode="fixed"
-          height={scatterSection.height}
-          onResizePointerDown={scatterSection.onPointerDown}
-          contentRef={scatterSection.contentRef}
-        >
-          <FindingsQuadrantScatter
-            endpoints={scatterEndpoints}
-            selectedEndpoint={activeEndpoint}
-            onSelect={handleEndpointSelect}
-            onExclude={handleExcludeEndpoint}
-            onSelectedPointChange={handleSelectedPointChange}
-            organCoherence={organCoherence}
-            syndromes={syndromes}
-            labMatches={labMatches}
-            effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
-          />
-        </ViewSection>
+      {/* Chart section — scope-dependent: D-R charts at endpoint level, scatter at group/overview */}
+      {activeViewTab === "findings" && data && (
+        activeEndpoint ? (
+          /* Endpoint selected → dose-response charts */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={chartHeaderRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <DoseResponseChartPanel
+              endpointLabel={activeEndpoint}
+              findings={tableFindings}
+              doseGroups={data.dose_groups}
+              height={scatterSection.height - 32}
+              selectedDay={effectiveDay}
+            />
+          </ViewSection>
+        ) : endpointSummaries.length > 0 ? (
+          /* Group / overview → scatter plot */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <FindingsQuadrantScatter
+              endpoints={scatterEndpoints}
+              selectedEndpoint={activeEndpoint}
+              onSelect={handleEndpointSelect}
+              onExclude={handleExcludeEndpoint}
+              onSelectedPointChange={handleSelectedPointChange}
+              organCoherence={organCoherence}
+              syndromes={syndromes}
+              labMatches={labMatches}
+              effectSizeSymbol={getEffectSizeSymbol(analytics.activeEffectSizeMethod ?? "hedges-g")}
+            />
+          </ViewSection>
+        ) : null
       )}
 
       {/* Table */}
@@ -422,10 +548,13 @@ export function FindingsView() {
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
           activeGrouping={activeGrouping}
+          onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
+          effectSizeMethod={analytics.activeEffectSizeMethod}
+          selectedDay={activeEndpoint ? effectiveDay : undefined}
+          onClearDayFilter={() => setSelectedDay(null)}
         />
       ) : null}
       </div>
     </div>
-    </FindingsAnalyticsProvider>
   );
 }

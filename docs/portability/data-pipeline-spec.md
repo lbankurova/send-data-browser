@@ -258,7 +258,7 @@ Only main-study subjects are included in analysis. Recovery-arm subjects (`is_re
 |-------|--------|
 | `p_value` | Welch's t-test (see Section 5.1) |
 | `statistic` | t-statistic from Welch's test |
-| `cohens_d` | Cohen's d effect size (see Section 5.5) |
+| `effect_size` | Standardized effect size — Hedges' g by default (see Section 5.5) |
 | `p_value_adj` | Bonferroni-corrected p-value (see Section 5.6) |
 
 **Trend test:** Spearman rank correlation as Jonckheere-Terpstra approximation (see Section 5.3).
@@ -498,7 +498,7 @@ pooled_std = sqrt(
     ((n1 - 1) * var(group1, ddof=1) + (n2 - 1) * var(group2, ddof=1))
     / (n1 + n2 - 2)
 )
-cohens_d = (mean(group1) - mean(group2)) / pooled_std
+effect_size = (mean(group1) - mean(group2)) / pooled_std
 ```
 
 **Minimum requirement:** At least 2 values per group. Returns null if pooled_std is 0.
@@ -733,7 +733,7 @@ Partial matching is supported: `"LYMPH NODE, INGUINAL"` matches `"LYMPH NODE"`.
 | `direction` | string or null | Finding direction |
 | `p_value` | float or null | Pairwise p_value_adj (preferred) or p_value |
 | `trend_p` | float or null | Finding trend_p |
-| `effect_size` | float or null | Pairwise cohens_d for this dose_level |
+| `effect_size` | float or null | Pairwise effect size for this dose_level |
 | `severity` | string | Finding severity classification |
 | `treatment_related` | boolean | Finding treatment_related |
 | `dose_response_pattern` | string | Finding dose_response_pattern |
@@ -1385,7 +1385,7 @@ The design spec (Section 10.8) defines additional rules not in the current R01-R
 | `fisher_exact_2x2(table)` | statistics | 2x2 contingency table | `{odds_ratio, p_value}` |
 | `trend_test(groups)` | statistics | List of arrays (ordered by dose) | `{statistic, p_value}` |
 | `trend_test_incidence(counts, totals)` | statistics | Affected counts, group totals | `{statistic, p_value}` |
-| `cohens_d(g1, g2)` | statistics | Two arrays of values | float or None |
+| `compute_effect_size(g1, g2)` | statistics | Two arrays of values | float or None |
 | `spearman_correlation(x, y)` | statistics | Two arrays of values | `{rho, p_value}` |
 | `bonferroni_correct(p_values)` | statistics | List of p-values | List of adjusted p-values |
 | `classify_severity(finding)` | classification | Finding dict | "adverse", "warning", or "normal" |

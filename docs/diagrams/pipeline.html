@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENDEX Data Pipeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f8f9fb; color: #1a1a2e; overflow: auto; }
+
+  .canvas {
+    position: relative;
+    width: 1520px;
+    min-height: 3000px;
+    margin: 32px auto;
+    padding: 24px 40px 40px;
+  }
+
+  h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+  .subtitle { font-size: 11px; color: #6b7280; margin-bottom: 28px; letter-spacing: 0.02em; }
+
+  .lane {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 1px solid #e5e7eb;
+  }
+  .lane-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    position: absolute;
+    left: 12px;
+    top: 8px;
+    z-index: 1;
+  }
+
+  svg.wires {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  svg.wires path { fill: none; stroke: #c5cad3; stroke-width: 1.5; }
+  svg.wires path.data-wire { stroke: #94a3b8; stroke-width: 1.5; }
+  svg.wires path.parallel-wire { stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 5 3; }
+  svg.wires path.feed-wire { stroke: #60a5fa; stroke-width: 1.5; }
+  svg.wires path.api-wire { stroke: #a78bfa; stroke-width: 1.5; }
+
+  .node {
+    position: absolute;
+    border-radius: 6px;
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    z-index: 2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+    cursor: default;
+  }
+  .node:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .node-header {
+    padding: 5px 10px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .node-body {
+    padding: 6px 10px 7px;
+    font-size: 10.5px;
+    line-height: 1.45;
+    color: #374151;
+  }
+  .node-body .label { font-weight: 600; color: #1f2937; display: block; margin-bottom: 2px; font-size: 11px; }
+  .node-body .detail { font-size: 9.5px; color: #6b7280; }
+  .node-body .output { font-size: 9px; color: #059669; font-weight: 600; margin-top: 3px; }
+  .node-body ul { padding-left: 12px; margin: 2px 0 0; }
+  .node-body li { font-size: 9.5px; color: #6b7280; line-height: 1.4; }
+
+  .t-input .node-header { background: #3b82f6; }
+  .t-input { border-color: #93c5fd; }
+  .t-mortality .node-header { background: #ef4444; }
+  .t-mortality { border-color: #fca5a5; }
+  .t-stats .node-header { background: #f59e0b; }
+  .t-stats { border-color: #fcd34d; }
+  .t-enrich .node-header { background: #8b5cf6; }
+  .t-enrich { border-color: #c4b5fd; }
+  .t-view .node-header { background: #10b981; }
+  .t-view { border-color: #6ee7b7; }
+  .t-output .node-header { background: #06b6d4; }
+  .t-output { border-color: #67e8f9; }
+  .t-api .node-header { background: #6366f1; }
+  .t-api { border-color: #a5b4fc; }
+  .t-derive .node-header { background: #ec4899; }
+  .t-derive { border-color: #f9a8d4; }
+  .t-render .node-header { background: #14b8a6; }
+  .t-render { border-color: #5eead4; }
+  .t-context .node-header { background: #64748b; }
+  .t-context { border-color: #cbd5e1; }
+
+  .group-box {
+    position: absolute;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 8px;
+    background: rgba(248,250,252,0.5);
+    z-index: 1;
+  }
+  .group-label {
+    position: absolute;
+    top: -9px;
+    left: 14px;
+    background: #f8f9fb;
+    padding: 0 6px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+  }
+
+  .legend {
+    position: absolute;
+    top: 58px;
+    right: 40px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    z-index: 5;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 9px; color: #6b7280; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+  .legend-line { width: 20px; height: 0; border-top: 1.5px solid #94a3b8; }
+  .legend-line.dashed { border-top-style: dashed; }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <h1>SENDEX Data Pipeline</h1>
+  <div class="subtitle">XPT &rarr; Backend Generator &rarr; REST API &rarr; Frontend Derivation &rarr; Views</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#3b82f6"></div>Input</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div>Mortality</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f59e0b"></div>Statistics</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#8b5cf6"></div>Enrichment</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#10b981"></div>View Assembly</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#06b6d4"></div>JSON Output</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#6366f1"></div>API</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ec4899"></div>Frontend Derive</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#14b8a6"></div>View</div>
+    <div class="legend-item"><div class="legend-line"></div>Sequential</div>
+    <div class="legend-item"><div class="legend-line dashed"></div>Parallel</div>
+  </div>
+
+  <!-- ═══ LANE 1: INGESTION (90) ═══ nodes ~70px tall → clear at 186 -->
+  <div class="lane" style="top:90px"><span class="lane-label">Ingestion</span></div>
+
+  <div class="node t-input" style="left:80px;top:116px;width:200px">
+    <div class="node-header">Input</div>
+    <div class="node-body">
+      <span class="label">XPT Files (SEND)</span>
+      <span class="detail">DM, TX, TS, LB, BW, OM, MI, MA,<br>CL, FW, DS, DD, BG, EG, VS, TF</span>
+    </div>
+  </div>
+
+  <div class="node t-input" style="left:340px;top:116px;width:180px">
+    <div class="node-header">Discovery</div>
+    <div class="node-body">
+      <span class="label">study_discovery.py</span>
+      <span class="detail">Scan send/{study_id}/<br>Build StudyInfo + domain map</span>
+    </div>
+  </div>
+
+  <div class="node t-input" style="left:580px;top:116px;width:190px">
+    <div class="node-header">Loader</div>
+    <div class="node-body">
+      <span class="label">xpt_processor.py</span>
+      <span class="detail">pyreadstat &rarr; DataFrame<br>CSV cache at cache/{study_id}/</span>
+    </div>
+  </div>
+
+  <div class="node t-input" style="left:830px;top:116px;width:200px">
+    <div class="node-header">Mapping</div>
+    <div class="node-body">
+      <span class="label">dose_groups.py</span>
+      <span class="detail">DM + TX &rarr; dose_level ordinals<br>TK satellite detection<br>Recovery vs main study split</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 2: PHASE 1 STATISTICS (210) ═══ -->
+  <div class="lane" style="top:210px"><span class="lane-label">Backend &mdash; Phase 1: Statistics</span></div>
+
+  <div class="node t-mortality" style="left:80px;top:240px;width:200px">
+    <div class="node-header">Phase 1a &middot; Mortality</div>
+    <div class="node-body">
+      <span class="label">mortality.py</span>
+      <span class="detail">DS + DD domains<br>Non-accidental deaths, LOAEL<br>Accidental reclassification</span>
+      <span class="output">&rarr; early_death_subjects{}</span>
+    </div>
+  </div>
+
+  <div class="node t-stats" style="left:340px;top:240px;width:310px">
+    <div class="node-header">Phase 1b &middot; Domain Statistics</div>
+    <div class="node-body">
+      <span class="label">domain_stats.py &rarr; 12 domain modules</span>
+      <span class="detail">Three-pass computation:</span>
+      <ul>
+        <li>Pass 1: All animals (baseline)</li>
+        <li>Pass 2: Scheduled-only (exclude early deaths)</li>
+        <li>Pass 3: Main-only (exclude recovery)</li>
+      </ul>
+      <span class="detail" style="margin-top:3px">Per-finding: group_stats[], pairwise[],<br>trend_p, direction, max_effect_size</span>
+      <span class="output">&rarr; ~500-1000 enriched findings</span>
+    </div>
+  </div>
+
+  <!-- Domain modules group — top:236, height:260 → bottom 496 -->
+  <div class="group-box" style="left:700px;top:236px;width:540px;height:260px">
+    <span class="group-label">12 Domain Modules (Sequential)</span>
+  </div>
+
+  <div class="node t-stats" style="left:720px;top:264px;width:150px">
+    <div class="node-header">Continuous</div>
+    <div class="node-body">
+      <span class="label">findings_lb.py</span>
+      <span class="detail">Laboratory (clinical chemistry, hematology, urinalysis)</span>
+    </div>
+  </div>
+  <div class="node t-stats" style="left:890px;top:264px;width:150px">
+    <div class="node-header">Continuous</div>
+    <div class="node-body">
+      <span class="label">findings_bw.py</span>
+      <span class="detail">Body weight<br>+ BG (gain), FW (food),<br>EG (ECG), VS (vitals)</span>
+    </div>
+  </div>
+  <div class="node t-stats" style="left:1060px;top:264px;width:160px">
+    <div class="node-header">Continuous</div>
+    <div class="node-body">
+      <span class="label">findings_om.py</span>
+      <span class="detail">Organ measurements<br>Williams' test, ANCOVA<br>Organ-specific thresholds</span>
+    </div>
+  </div>
+  <div class="node t-stats" style="left:720px;top:390px;width:150px">
+    <div class="node-header">Incidence</div>
+    <div class="node-body">
+      <span class="label">findings_mi.py</span>
+      <span class="detail">Microscopic pathology<br>Fisher's exact, severity</span>
+    </div>
+  </div>
+  <div class="node t-stats" style="left:890px;top:390px;width:150px">
+    <div class="node-header">Incidence</div>
+    <div class="node-body">
+      <span class="label">findings_ma.py</span>
+      <span class="detail">Macroscopic pathology<br>+ CL, DD (clinical, death dx)</span>
+    </div>
+  </div>
+  <div class="node t-stats" style="left:1060px;top:390px;width:160px">
+    <div class="node-header">Incidence</div>
+    <div class="node-body">
+      <span class="label">findings_tf.py</span>
+      <span class="detail">Tumor findings<br>+ DS (disposition)</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 3: PHASE 1c-1f (520) ═══ nodes ~90px → clear at 650 -->
+  <div class="lane" style="top:520px"><span class="lane-label">Backend &mdash; Phase 1c-1f: Parallel Context</span></div>
+
+  <div class="group-box" style="left:80px;top:545px;width:680px;height:110px">
+    <span class="group-label">ThreadPoolExecutor (parallel)</span>
+  </div>
+
+  <div class="node t-mortality" style="left:100px;top:568px;width:180px">
+    <div class="node-header">Phase 1c &middot; Context</div>
+    <div class="node-body">
+      <span class="label">subject_context.py</span>
+      <span class="detail">Cross-animal flags, COD</span>
+      <span class="output">&rarr; subject_context.json</span>
+    </div>
+  </div>
+
+  <div class="node t-stats" style="left:310px;top:568px;width:200px">
+    <div class="node-header">Phase 1d &middot; Tumors</div>
+    <div class="node-body">
+      <span class="label">tumor_summary.py</span>
+      <span class="detail">Type aggregation, progression<br>chains, combined analyses</span>
+      <span class="output">&rarr; tumor_summary.json</span>
+    </div>
+  </div>
+
+  <div class="node t-stats" style="left:540px;top:568px;width:200px">
+    <div class="node-header">Phase 1e &middot; Food</div>
+    <div class="node-body">
+      <span class="label">food_consumption_summary.py</span>
+      <span class="detail">FW+BW efficiency ratios<br>Caloric dilution, recovery</span>
+      <span class="output">&rarr; food_consumption_summary.json</span>
+    </div>
+  </div>
+
+  <div class="node t-mortality" style="left:830px;top:555px;width:200px">
+    <div class="node-header">Phase 1f &middot; Cross-Animal</div>
+    <div class="node-body">
+      <span class="label">cross_animal_flags.py</span>
+      <span class="detail">Tissue battery linkage<br>Tumor linkage, recovery narr.</span>
+      <span class="output">&rarr; cross_animal_flags.json</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 4: PHASE 2 ENRICHMENT (690) ═══ pipeline node ~160px → bottom 880 -->
+  <div class="lane" style="top:690px"><span class="lane-label">Backend &mdash; Phase 2: Shared Enrichment Pipeline</span></div>
+
+  <div class="node t-enrich" style="left:80px;top:720px;width:260px">
+    <div class="node-header">Phase 2 &middot; findings_pipeline.py</div>
+    <div class="node-body">
+      <span class="label">6-Step Enrichment</span>
+      <ul>
+        <li>Attach scheduled + separate stats</li>
+        <li>Severity classification</li>
+        <li>Dose-response pattern</li>
+        <li>Treatment-relatedness (ECETOC A)</li>
+        <li>Corroboration detection</li>
+        <li>GRADE confidence scoring</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="node t-enrich" style="left:380px;top:720px;width:180px">
+    <div class="node-header">Classification</div>
+    <div class="node-body">
+      <span class="label">classification.py</span>
+      <span class="detail">classify_severity()<br>classify_dose_response()<br>determine_treatment_related()<br>assess_finding_with_context()</span>
+    </div>
+  </div>
+
+  <div class="node t-enrich" style="left:600px;top:720px;width:170px">
+    <div class="node-header">Reference Data</div>
+    <div class="node-body">
+      <span class="label">hcd.py</span>
+      <span class="detail">Historical control DB<br>(SQLite: 7 strains, 16 organs)<br>assess_a3() &rarr; within/outside</span>
+    </div>
+  </div>
+
+  <div class="node t-enrich" style="left:810px;top:720px;width:180px">
+    <div class="node-header">Chains</div>
+    <div class="node-body">
+      <span class="label">progression_chains.py</span>
+      <span class="detail">B-6 progression evaluation<br>Precursor &rarr; tumor escalation</span>
+    </div>
+  </div>
+
+  <div class="node t-enrich" style="left:1030px;top:720px;width:180px">
+    <div class="node-header">Adaptive Trees</div>
+    <div class="node-body">
+      <span class="label">adaptive_trees.py</span>
+      <span class="detail">6 organ-specific trees<br>(liver, thyroid, adrenal, ...)<br>ECETOC factor evaluation</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 5: VIEW ASSEMBLY (900) ═══ nodes ~90px → bottom 1020 -->
+  <div class="lane" style="top:900px"><span class="lane-label">Backend &mdash; Phases 2b-5: View Assembly (Parallel)</span></div>
+
+  <div class="group-box" style="left:80px;top:926px;width:1160px;height:100px">
+    <span class="group-label">ThreadPoolExecutor (parallel)</span>
+  </div>
+
+  <div class="node t-view" style="left:100px;top:948px;width:170px">
+    <div class="node-header">Phase 2b &middot; Views</div>
+    <div class="node-body">
+      <span class="label">view_dataframes.py</span>
+      <span class="detail">8 view JSONs<br>(signal, organ, D-R, lesion,<br>adverse, NOAEL, trends, evidence)</span>
+    </div>
+  </div>
+
+  <div class="node t-view" style="left:300px;top:948px;width:160px">
+    <div class="node-header">Phase 3 &middot; PK</div>
+    <div class="node-body">
+      <span class="label">pk_integration.py</span>
+      <span class="detail">PC+PP+DM &rarr; TK design<br>Dose proportionality, HED</span>
+    </div>
+  </div>
+
+  <div class="node t-view" style="left:490px;top:948px;width:170px">
+    <div class="node-header">Phase 4 &middot; Rules</div>
+    <div class="node-body">
+      <span class="label">scores_and_rules.py</span>
+      <span class="detail">17 rules &times; findings<br>Signal scores, dampening</span>
+      <span class="output">&rarr; rule_results.json</span>
+    </div>
+  </div>
+
+  <div class="node t-view" style="left:690px;top:948px;width:170px">
+    <div class="node-header">Phase 5 &middot; Unified</div>
+    <div class="node-body">
+      <span class="label">unified_findings.py</span>
+      <span class="detail">Parameterized pipeline<br>All enriched findings + stats</span>
+      <span class="output">&rarr; unified_findings.json</span>
+    </div>
+  </div>
+
+  <div class="node t-view" style="left:890px;top:948px;width:170px">
+    <div class="node-header">Phase 5 &middot; Charts</div>
+    <div class="node-body">
+      <span class="label">static_charts.py</span>
+      <span class="detail">Target organ bar chart</span>
+      <span class="output">&rarr; static/*.html</span>
+    </div>
+  </div>
+
+  <div class="node t-view" style="left:1090px;top:948px;width:130px">
+    <div class="node-header">Metadata</div>
+    <div class="node-body">
+      <span class="label">Provenance</span>
+      <span class="detail">Audit trail<br>Study metadata</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 6: GENERATED OUTPUTS (1060) ═══ two rows of JSON nodes -->
+  <div class="lane" style="top:1060px"><span class="lane-label">Generated Outputs &mdash; backend/generated/{study_id}/ (18 JSON files)</span></div>
+
+  <div class="node t-output" style="left:80px;top:1088px;width:140px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">unified_findings</span>
+      <span class="detail">~1200 rows<br>All stats + enrichment</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:240px;top:1088px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">study_signal_summary</span>
+      <span class="detail">~900 rows</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:390px;top:1088px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">target_organ_summary</span>
+      <span class="detail">~14 rows</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:540px;top:1088px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">dose_response_metrics</span>
+      <span class="detail">~1300 rows</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:690px;top:1088px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">adverse_effect_summary</span>
+      <span class="detail">~350 rows</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:840px;top:1088px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">noael_summary</span>
+      <span class="detail">3 rows (M/F/Comb)</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:980px;top:1088px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">study_mortality</span>
+      <span class="detail">Deaths + early death</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:1120px;top:1088px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">rule_results</span>
+      <span class="detail">~900 rule emissions</span>
+    </div>
+  </div>
+  <!-- Row 2 -->
+  <div class="node t-output" style="left:80px;top:1152px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">lesion_severity_summary</span>
+      <span class="detail">~700 rows (MI/MA)</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:230px;top:1152px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">tumor_summary</span>
+      <span class="detail">Types + progression</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:370px;top:1152px;width:140px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">food_consumption_summary</span>
+      <span class="detail">FW+BW efficiency</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:530px;top:1152px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">pk_integration</span>
+      <span class="detail">TK + HED + dose prop.</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:670px;top:1152px;width:140px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">organ_evidence_detail</span>
+      <span class="detail">~350 rows</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:830px;top:1152px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">cross_animal_flags</span>
+      <span class="detail">Tissue + tumor links</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:980px;top:1152px;width:130px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">subject_context</span>
+      <span class="detail">Per-animal annotations</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:1130px;top:1152px;width:120px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">validation_results</span>
+      <span class="detail">Data quality audit</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 7: API (1250) ═══ -->
+  <div class="lane" style="top:1250px"><span class="lane-label">FastAPI &mdash; REST API Layer</span></div>
+
+  <div class="node t-api" style="left:80px;top:1280px;width:240px">
+    <div class="node-header">API &middot; Core</div>
+    <div class="node-body">
+      <span class="label">GET /api/.../unified-findings</span>
+      <span class="detail">Default &rarr; pre-generated JSON<br>Custom &rarr; ParameterizedPipeline<br>File-based lock + cache</span>
+    </div>
+  </div>
+
+  <div class="node t-api" style="left:340px;top:1280px;width:180px">
+    <div class="node-header">API &middot; Views</div>
+    <div class="node-body">
+      <span class="label">GET /api/.../analysis/{view}</span>
+      <span class="detail">Pre-generated view JSONs<br>(signal, organ, D-R, etc.)</span>
+    </div>
+  </div>
+
+  <div class="node t-api" style="left:540px;top:1280px;width:155px">
+    <div class="node-header">API &middot; Studies</div>
+    <div class="node-body">
+      <span class="label">GET /api/studies</span>
+      <span class="detail">Discovery, metadata<br>Portfolio (multi-study)</span>
+    </div>
+  </div>
+
+  <div class="node t-api" style="left:715px;top:1280px;width:145px">
+    <div class="node-header">API &middot; Temporal</div>
+    <div class="node-body">
+      <span class="label">GET /api/.../temporal</span>
+      <span class="detail">Time-course data<br>Longitudinal endpoints</span>
+    </div>
+  </div>
+
+  <div class="node t-api" style="left:880px;top:1280px;width:145px">
+    <div class="node-header">API &middot; Annotations</div>
+    <div class="node-body">
+      <span class="label">POST /api/annotations</span>
+      <span class="detail">CRUD review workflow<br>Pattern overrides</span>
+    </div>
+  </div>
+
+  <div class="node t-api" style="left:1045px;top:1280px;width:145px">
+    <div class="node-header">API &middot; Validation</div>
+    <div class="node-body">
+      <span class="label">GET /api/.../validation</span>
+      <span class="detail">CDISC + custom rules<br>Quality assessment</span>
+    </div>
+  </div>
+
+  <div class="node t-context" style="left:80px;top:1375px;width:220px">
+    <div class="node-header">On-Demand Pipeline</div>
+    <div class="node-body">
+      <span class="label">ParameterizedAnalysisPipeline</span>
+      <span class="detail">Non-default settings trigger<br>recomputation &rarr; cached result<br>Settings: effect size, multiplicity,<br>scheduled-only</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 8: FRONTEND INGESTION (1500) ═══ -->
+  <div class="lane" style="top:1500px"><span class="lane-label">Frontend &mdash; React Query Ingestion</span></div>
+
+  <div class="node t-derive" style="left:80px;top:1530px;width:220px">
+    <div class="node-header">React Query Hook</div>
+    <div class="node-body">
+      <span class="label">useFindings()</span>
+      <span class="detail">5-min stale cache<br>Paginated response<br>Shared across all consumers</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:340px;top:1530px;width:200px">
+    <div class="node-header">React Query Hook</div>
+    <div class="node-body">
+      <span class="label">useStudyMetadata()</span>
+      <span class="detail">Species, strain, route,<br>vehicle, dose groups</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:580px;top:1530px;width:200px">
+    <div class="node-header">React Query Hook</div>
+    <div class="node-body">
+      <span class="label">useAnalysisView()</span>
+      <span class="detail">Pre-generated view JSONs<br>(signal, organ, etc.)</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:820px;top:1530px;width:200px">
+    <div class="node-header">React Query Hook</div>
+    <div class="node-body">
+      <span class="label">useStudyMortality()</span>
+      <span class="detail">Death records, early death<br>subjects, severity tier</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 9: FRONTEND DERIVATION (1640) ═══ -->
+  <div class="lane" style="top:1640px"><span class="lane-label">Frontend &mdash; Derivation Layer (useMemo, &lt;100ms)</span></div>
+
+  <div class="node t-derive" style="left:80px;top:1670px;width:240px">
+    <div class="node-header">Orchestrator</div>
+    <div class="node-body">
+      <span class="label">useFindingsAnalyticsLocal()</span>
+      <span class="detail">Single orchestration call<br>Memoized &mdash; shared via context<br>FindingsAnalyticsLayer (Layout)</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:80px;top:1780px;width:180px">
+    <div class="node-header">Derive</div>
+    <div class="node-body">
+      <span class="label">derive-summaries.ts</span>
+      <span class="detail">mapFindingsToRows()<br>deriveEndpointSummaries()<br>deriveOrganSummaries()<br>deriveOrganCoherence()</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:290px;top:1780px;width:190px">
+    <div class="node-header">Detect</div>
+    <div class="node-body">
+      <span class="label">cross-domain-syndromes.ts</span>
+      <span class="detail">10 syndrome patterns<br>(XS01-XS10: liver, renal,<br>hematologic, cardiac, etc.)<br>Test code + specimen matching</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:510px;top:1780px;width:190px">
+    <div class="node-header">Interpret</div>
+    <div class="node-body">
+      <span class="label">syndrome-interpretation.ts</span>
+      <span class="detail">Certainty grading (ECETOC)<br>Treatment-relatedness (A-factors)<br>Adversity (B-factors)<br>Overall severity cascade<br>Translational confidence</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:730px;top:1780px;width:170px">
+    <div class="node-header">Score</div>
+    <div class="node-body">
+      <span class="label">endpoint-confidence.ts</span>
+      <span class="detail">ECI: 5-dimension GRADE<br>HIGH/MODERATE/LOW<br>per endpoint</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:930px;top:1780px;width:170px">
+    <div class="node-header">Build</div>
+    <div class="node-body">
+      <span class="label">findings-rail-engine.ts</span>
+      <span class="detail">Rail card data, grouping,<br>priority, classification</span>
+    </div>
+  </div>
+
+  <div class="node t-derive" style="left:1130px;top:1780px;width:160px">
+    <div class="node-header">Score</div>
+    <div class="node-body">
+      <span class="label">signals-panel-engine.ts</span>
+      <span class="detail">Signal scores, insights<br>Endpoint ranking</span>
+    </div>
+  </div>
+
+  <!-- Supporting modules -->
+  <div class="group-box" style="left:80px;top:1940px;width:1210px;height:68px">
+    <span class="group-label">Supporting Modules</span>
+  </div>
+
+  <div class="node t-context" style="left:100px;top:1958px;width:130px">
+    <div class="node-header">Catalog</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">lab-clinical-catalog</span></div>
+  </div>
+  <div class="node t-context" style="left:250px;top:1958px;width:130px">
+    <div class="node-header">Recovery</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">recovery-classification</span></div>
+  </div>
+  <div class="node t-context" style="left:400px;top:1958px;width:130px">
+    <div class="node-header">Nature</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">finding-nature</span></div>
+  </div>
+  <div class="node t-context" style="left:550px;top:1958px;width:130px">
+    <div class="node-header">Protective</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">protective-signal</span></div>
+  </div>
+  <div class="node t-context" style="left:700px;top:1958px;width:140px">
+    <div class="node-header">Normalization</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">organ-weight-norm</span></div>
+  </div>
+  <div class="node t-context" style="left:860px;top:1958px;width:130px">
+    <div class="node-header">Transforms</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">stat-method-transforms</span></div>
+  </div>
+  <div class="node t-context" style="left:1010px;top:1958px;width:130px">
+    <div class="node-header">Types</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">domain-types</span></div>
+  </div>
+  <div class="node t-context" style="left:1160px;top:1958px;width:110px">
+    <div class="node-header">Visual</div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">severity-colors</span></div>
+  </div>
+
+  <!-- ═══ LANE 10: CONTEXT PROVIDER (2050) ═══ -->
+  <div class="lane" style="top:2050px"><span class="lane-label">Frontend &mdash; Context Providers</span></div>
+
+  <div class="node t-derive" style="left:80px;top:2080px;width:280px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">FindingsAnalyticsContext</span>
+      <span class="detail">Single derivation shared across all views &amp; panels<br>FindingsAnalyticsLayer wraps app Layout</span>
+      <span class="output" style="color:#374151">endpoints[], syndromes[], organCoherence{},<br>signalScores{}, activeFindings[]</span>
+    </div>
+  </div>
+
+  <div class="node t-context" style="left:390px;top:2080px;width:175px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">FindingSelectionContext</span>
+      <span class="detail">Selected finding, endpoint,<br>sex &mdash; rail &harr; table &harr; panel</span>
+    </div>
+  </div>
+
+  <div class="node t-context" style="left:585px;top:2080px;width:175px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">SelectionContext</span>
+      <span class="detail">Cross-view study +<br>domain selection state</span>
+    </div>
+  </div>
+
+  <div class="node t-context" style="left:780px;top:2080px;width:175px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">StudySettingsContext</span>
+      <span class="detail">Effect size method,<br>multiplicity method</span>
+    </div>
+  </div>
+
+  <div class="node t-context" style="left:975px;top:2080px;width:175px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">ScheduledOnlyContext</span>
+      <span class="detail">Scheduled-only toggle<br>Early death exclusion</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 11: VIEWS (2210) ═══ -->
+  <div class="lane" style="top:2210px"><span class="lane-label">Frontend &mdash; Views (React Components)</span></div>
+
+  <div class="node t-render" style="left:80px;top:2240px;width:220px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">FindingsView</span>
+      <span class="detail">Findings table + scatter plot<br>D-R chart panel, rail sidebar<br>Tab: full-height table mode</span>
+    </div>
+  </div>
+
+  <div class="node t-render" style="left:330px;top:2240px;width:200px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">HistopathologyView</span>
+      <span class="detail">Severity heatmap matrix<br>Lesion dashboard<br>Subject profiles</span>
+    </div>
+  </div>
+
+  <div class="node t-render" style="left:560px;top:2240px;width:200px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">StudySummaryView</span>
+      <span class="detail">Overview, signals tab<br>Organ insights, PK, tumors</span>
+    </div>
+  </div>
+
+  <div class="node t-render" style="left:790px;top:2240px;width:200px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">NoaelDeterminationView</span>
+      <span class="detail">NOAEL decision table<br>Protective signals<br>Risk margin computation</span>
+    </div>
+  </div>
+
+  <div class="node t-render" style="left:1020px;top:2240px;width:180px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">ValidationView</span>
+      <span class="detail">CDISC CORE + 14 rules<br>Study quality assessment</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 12: CONTEXT PANELS (2370) ═══ -->
+  <div class="lane" style="top:2370px"><span class="lane-label">Frontend &mdash; Context Panels (Right Pane)</span></div>
+
+  <div class="node t-render" style="left:80px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">FindingsContextPanel</span>
+      <span class="detail">Per-finding evidence<br>Bradford Hill causality<br>D-R spectrum, NOAEL tier</span>
+    </div>
+  </div>
+  <div class="node t-render" style="left:285px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">OrganContextPanel</span>
+      <span class="detail">Organ metrics, endpoint list<br>Recovery assessment<br>Cross-domain convergence</span>
+    </div>
+  </div>
+  <div class="node t-render" style="left:490px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">SyndromeContextPanel</span>
+      <span class="detail">Syndrome evidence &amp; interp.<br>Certainty, adversity, severity<br>Translational confidence</span>
+    </div>
+  </div>
+  <div class="node t-render" style="left:695px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">SubjectProfilePanel</span>
+      <span class="detail">Per-animal cross-domain<br>Subject timeline, COD<br>Dose group comparison</span>
+    </div>
+  </div>
+  <div class="node t-render" style="left:900px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">HistopathContextPanel</span>
+      <span class="detail">Lesion severity, progression<br>Subject cross-reference<br>Modifier profile</span>
+    </div>
+  </div>
+  <div class="node t-render" style="left:1105px;top:2400px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">NoaelContextPanel</span>
+      <span class="detail">NOAEL derivation trace<br>Confidence penalties<br>Mortality cap detail</span>
+    </div>
+  </div>
+
+  <!-- ═══ LANE 13: SUB-PANES (2530) ═══ -->
+  <div class="lane" style="top:2530px"><span class="lane-label">Frontend &mdash; Context Panel Sub-Panes (Collapsible Sections)</span></div>
+
+  <!-- FindingsContextPanel sub-panes -->
+  <div class="group-box" style="left:30px;top:2555px;width:290px;height:345px">
+    <span class="group-label">FindingsContextPanel</span>
+  </div>
+  <div class="node t-render" style="left:50px;top:2578px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">VerdictPane</span><span class="detail">Clinical match, thresholds</span></div>
+  </div>
+  <div class="node t-render" style="left:185px;top:2578px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">EvidencePane</span><span class="detail">P-values, effect sizes</span></div>
+  </div>
+  <div class="node t-render" style="left:50px;top:2640px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">DoseDetailPane</span><span class="detail">ANCOVA, Williams'</span></div>
+  </div>
+  <div class="node t-render" style="left:185px;top:2640px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">RecoveryPane</span><span class="detail">Verdict, classification</span></div>
+  </div>
+  <div class="node t-render" style="left:50px;top:2700px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">TimeCoursePane</span><span class="detail">Line charts (F/M)</span></div>
+  </div>
+  <div class="node t-render" style="left:185px;top:2700px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">DistributionPane</span><span class="detail">Strip plot (subjects)</span></div>
+  </div>
+  <div class="node t-render" style="left:50px;top:2760px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">CorrelationsPane</span><span class="detail">Related endpoints</span></div>
+  </div>
+  <div class="node t-render" style="left:185px;top:2760px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">CausalityWorksheet</span><span class="detail">Bradford Hill (9 criteria)</span></div>
+  </div>
+  <div class="node t-render" style="left:50px;top:2822px;width:125px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">EndpointSyndromePane</span><span class="detail">Syndrome membership</span></div>
+  </div>
+
+  <!-- OrganContextPanel sub-panes -->
+  <div class="group-box" style="left:340px;top:2555px;width:170px;height:155px">
+    <span class="group-label">OrganContextPanel</span>
+  </div>
+  <div class="node t-render" style="left:355px;top:2578px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">NormalizationHeatmap</span><span class="detail">Organ &times; dose matrix</span></div>
+  </div>
+  <div class="node t-render" style="left:355px;top:2640px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">CorrelationMatrixPane</span><span class="detail">Endpoint heatmap</span></div>
+  </div>
+
+  <!-- SyndromeContextPanel sub-panes -->
+  <div class="group-box" style="left:530px;top:2555px;width:170px;height:155px">
+    <span class="group-label">SyndromeContextPanel</span>
+  </div>
+  <div class="node t-render" style="left:545px;top:2578px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">SyndromeCorrelationPane</span><span class="detail">Member correlations</span></div>
+  </div>
+  <div class="node t-render" style="left:545px;top:2640px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">InsightsList</span><span class="detail">Critical/Notable/Observed</span></div>
+  </div>
+
+  <!-- HistopathContextPanel sub-panes -->
+  <div class="group-box" style="left:720px;top:2555px;width:170px;height:155px">
+    <span class="group-label">HistopathContextPanel</span>
+  </div>
+  <div class="node t-render" style="left:735px;top:2578px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">PathologyReviewForm</span><span class="detail">Severity, disagreement</span></div>
+  </div>
+  <div class="node t-render" style="left:735px;top:2640px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">IncidenceDumbbellChart</span><span class="detail">Terminal &rarr; recovery %</span></div>
+  </div>
+
+  <!-- NoaelContextPanel sub-panes -->
+  <div class="group-box" style="left:910px;top:2555px;width:170px;height:155px">
+    <span class="group-label">NoaelContextPanel</span>
+  </div>
+  <div class="node t-render" style="left:925px;top:2578px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">InsightsList</span><span class="detail">Tier counts + badges</span></div>
+  </div>
+  <div class="node t-render" style="left:925px;top:2640px;width:140px">
+    <div class="node-header">Pane</div>
+    <div class="node-body"><span class="label" style="font-size:9px">ToxFindingForm</span><span class="detail">Adversity classification</span></div>
+  </div>
+
+  <!-- Shared panes -->
+  <div class="group-box" style="left:1100px;top:2555px;width:170px;height:215px">
+    <span class="group-label">Shared Panes</span>
+  </div>
+  <div class="node t-context" style="left:1115px;top:2578px;width:140px">
+    <div class="node-header">Shared</div>
+    <div class="node-body"><span class="label" style="font-size:9px">ToxFindingForm</span><span class="detail">Findings + Histopath +<br>NOAEL panels</span></div>
+  </div>
+  <div class="node t-context" style="left:1115px;top:2640px;width:140px">
+    <div class="node-header">Shared</div>
+    <div class="node-body"><span class="label" style="font-size:9px">RecoveryDumbbellChart</span><span class="detail">Terminal &rarr; recovery |g|</span></div>
+  </div>
+  <div class="node t-context" style="left:1115px;top:2700px;width:140px">
+    <div class="node-header">Shared</div>
+    <div class="node-body"><span class="label" style="font-size:9px">CollapsiblePane</span><span class="detail">Generic expand/collapse<br>Used in all panels</span></div>
+  </div>
+
+  <!-- ═══ SVG WIRES ═══ -->
+  <svg class="wires" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L6,3 L0,6 Z"/>
+      </marker>
+      <marker id="arrowBlue" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#60a5fa"/>
+      </marker>
+      <marker id="arrowPurple" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#a78bfa"/>
+      </marker>
+    </defs>
+
+    <!-- Ingestion flow (left→right) -->
+    <path class="data-wire" d="M280,148 L340,148" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M520,148 L580,148" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M770,148 L830,148" marker-end="url(#arrow)"/>
+
+    <!-- Ingestion → Phase 1 -->
+    <path class="data-wire" d="M180,186 L180,240" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M930,186 L930,216 L495,216 L495,240" marker-end="url(#arrow)"/>
+
+    <!-- Mortality → Domain Stats -->
+    <path class="feed-wire" d="M280,300 L340,300" marker-end="url(#arrowBlue)"/>
+    <!-- Domain Stats → Domain modules -->
+    <path class="data-wire" d="M650,300 L720,300" marker-end="url(#arrow)"/>
+
+    <!-- Phase 1 → Phase 1c-1f -->
+    <path class="parallel-wire" d="M180,370 L180,568" marker-end="url(#arrow)"/>
+    <path class="parallel-wire" d="M495,420 L410,530 L410,568" marker-end="url(#arrow)"/>
+    <path class="parallel-wire" d="M495,420 L640,530 L640,568" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M510,420 L930,520 L930,555" marker-end="url(#arrow)"/>
+
+    <!-- Phase 1 → Phase 2 Enrichment -->
+    <path class="data-wire" d="M495,430 L300,690 L210,720" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M340,370 L340,720" marker-end="url(#arrow)"/>
+
+    <!-- Phase 2 → View Assembly -->
+    <path class="data-wire" d="M210,880 L185,948" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M300,880 L380,948" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M340,880 L575,948" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M260,880 L775,948" marker-end="url(#arrow)"/>
+
+    <!-- View Assembly → JSON Outputs (fan out to both rows) -->
+    <path class="data-wire" d="M185,1028 L150,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M380,1028 L305,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M575,1028 L605,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M575,1028 L755,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M185,1028 L900,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M775,1028 L1040,1088" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M185,1028 L145,1152" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M380,1028 L590,1152" marker-end="url(#arrow)"/>
+
+    <!-- JSON Outputs → API -->
+    <path class="api-wire" d="M150,1155 L200,1280" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M455,1155 L430,1280" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M755,1155 L617,1280" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M1040,1155 L1117,1280" marker-end="url(#arrowPurple)"/>
+
+    <!-- API → Frontend hooks -->
+    <path class="api-wire" d="M200,1370 L190,1530" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M430,1370 L440,1530" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M617,1370 L680,1530" marker-end="url(#arrowPurple)"/>
+    <path class="api-wire" d="M200,1370 L920,1530" marker-end="url(#arrowPurple)"/>
+
+    <!-- Frontend hooks → Analytics orchestrator -->
+    <path class="data-wire" d="M190,1610 L200,1670" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M440,1610 L260,1670" marker-end="url(#arrow)"/>
+
+    <!-- Analytics → derive modules -->
+    <path class="data-wire" d="M140,1744 L170,1780" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M200,1744 L385,1780" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M250,1744 L605,1780" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M280,1744 L815,1780" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M300,1744 L1015,1780" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M310,1744 L1210,1780" marker-end="url(#arrow)"/>
+
+    <!-- Derive modules → Context provider -->
+    <path class="data-wire" d="M170,1910 L170,1930 L60,1930 L60,2035 L220,2080" marker-end="url(#arrow)"/>
+
+    <!-- Context provider → Views -->
+    <path class="data-wire" d="M220,2185 L190,2240" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M220,2185 L430,2240" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M220,2185 L660,2240" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M220,2185 L890,2240" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M220,2185 L1110,2240" marker-end="url(#arrow)"/>
+
+    <!-- Views → Context panels -->
+    <path class="data-wire" d="M190,2335 L172,2400" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M190,2335 L377,2400" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M190,2335 L582,2400" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M430,2335 L787,2400" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M430,2335 L992,2400" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M890,2335 L1197,2400" marker-end="url(#arrow)"/>
+
+    <!-- Context panels → Sub-panes -->
+    <path class="data-wire" d="M172,2500 L175,2555" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M377,2500 L425,2555" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M582,2500 L615,2555" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M992,2500 L805,2555" marker-end="url(#arrow)"/>
+    <path class="data-wire" d="M1197,2500 L995,2555" marker-end="url(#arrow)"/>
+  </svg>
+
+</div>
+</body>
+</html>

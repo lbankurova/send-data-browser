@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 51 | 21 | Missing capability, no spec exists |
+| Gap | 61 | 36 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **76** | **56** | |
+| **Total open** | **86** | **71** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -247,7 +247,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~MF-09: Syndrome membership indicator on rail & context panel~~ ✅
 - **Spec:** `docs/incoming/arch-overhaul/syndrome-membership-indicator-spec.md`
-- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `EndpointSyndromePane.tsx`, `docs/views/adverse-effects.md`
+- **Files:** `FindingsRail.tsx`, `FindingsContextPanel.tsx`, `EndpointSyndromePane.tsx`, `docs/views/findings.md`
 - **Issue:** Endpoints that belong to a fired syndrome (e.g., Body Weight → XS08, XS09) show no indicator in the rail (except in syndrome grouping mode) or context panel header. Users can't tell an endpoint is part of a syndrome, so they miss syndrome-specific context (e.g., food consumption pane in XS09). Fix: always show syndrome IDs on rail endpoint rows and add clickable syndrome links to the context panel sticky header.
 - **Status:** ~~Partial~~ Done — context panel Syndromes pane (27e97ce), rail syndrome IDs in all grouping modes, "both sexes" text already present.
 - **Owner hint:** frontend-dev
@@ -657,17 +657,292 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** ~~P2~~ Resolved
 - **Owner hint:** ~~backend-dev (SLA-18), frontend-dev (SLA-09, organ aggregate, SLA-02/07)~~
 
-### GAP-73: Rename `cohens_d` / `maxCohensD` field names to reflect Hedges' g
+### ~~GAP-73: Rename `cohens_d` / `maxCohensD` field names to reflect Hedges' g~~ ✅ c352242
 - **Files:** `backend/` (pairwise entries use `cohens_d` field), `frontend/src/types/analysis.ts`, `frontend/src/lib/derive-summaries.ts` (`maxCohensD`), `frontend/src/lib/domain-types.ts`, and ~50+ consumers
 - **Issue:** The `cohens_d` field name is a legacy misnomer — values are Hedges' g by default (the small-sample-corrected variant). Labels and comments were fixed (commit TBD), but the structural field names remain `cohens_d` / `maxCohensD` throughout backend JSON output and frontend types. Renaming requires coordinated backend JSON + frontend type + all consumer changes.
-- **Status:** Open
+- **Status:** ~~Open~~ Fixed — `cohens_d` → `effect_size` across 44 files (backend schema, all domain finders, generators, tests, frontend types, test fixtures, generated JSON). Function `cohens_d()` → `compute_effect_size()`. `fe_cohens_d` → `fe_effect_size`. Knowledge docs, system specs, portability spec updated.
 - **Priority:** P3 — cosmetic correctness, no runtime impact
 - **Owner hint:** backend-dev + frontend-dev (coordinated rename)
+
+### GAP-74: ToxFindingForm missing from FindingsContextPanel (Phase A-3)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 4 (line 218)
+- **Dimension:** WHEN — component not rendered
+- **Spec quote:** "ToxFindingForm — already present. Ensure system suggestion is wired (check D-R version passes systemSuggestion prop)."
+- **Actual:** ToxFindingForm is not imported or rendered in FindingsContextPanel. Only present in DoseResponseContextPanel, HistopathologyContextPanel, NoaelContextPanel.
+- **Fix:** Import ToxFindingForm, render after CausalityWorksheet (before EvidencePane), wire `systemSuggestion` via `deriveToxSuggestion()` using selected finding's treatment_related + severity. Reference: DoseResponseContextPanel.tsx lines 342-348.
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`
+- **Status:** Open
+- **Priority:** P1 — blocks annotation workflow in Findings view
+- **Owner hint:** frontend-dev
+
+### GAP-75: Context panel header missing incremental info (Phase A-4)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 1 (lines 205-209)
+- **Dimension:** WHAT — 0 of 4 items implemented
+- **Spec quote:** "Add incremental info from D-R header: Pattern badge (PATTERN_LABELS/PATTERN_BG). Compact metrics (trend p, min p, max |d|, data type) if not redundant with VerdictPane. Assessment status badge. NOAEL indicator."
+- **Actual:** ContextPanelHeader renders only title (finding name) and subtitle (domain | day). No pattern badge, no metrics, no assessment status, no NOAEL. Data is available in scope (`selectedFinding.dose_response_pattern`, `noael` from useEffectiveNoael).
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1300-1310`
+- **Status:** Open
+- **Priority:** P2 — informational, doesn't block functionality
+- **Owner hint:** frontend-dev + ux-designer (decide which items to show)
+
+### GAP-76: InsightsList filters organ only, not domain prefix (Phase A-2)
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 6 (lines 220-223)
+- **Dimension:** WHAT — partial filtering
+- **Spec quote:** "Rule-based insights filtered by organ system + domain prefix."
+- **Actual:** FindingsContextPanel.tsx line 1661 filters `ruleResults.filter(r => r.organ_system === selectedFinding.organ_system)` — organ only, no domain prefix. Reference: DoseResponseContextPanel.tsx lines 64-72 shows correct dual filter (organ_system OR domain prefix match).
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1661`
+- **Status:** Open
+- **Priority:** P2 — may show extra rules but not incorrect
+- **Owner hint:** frontend-dev
+
+### GAP-77: FindingsContextPanel pane ordering deviates from spec
+- **Spec:** `docs/incoming/view-merge-spec.md` section 5, lines 203-235
+- **Dimension:** WHEN — pane ordering mismatch
+- **Spec target order:** Header → Verdict → CausalityWorksheet → ToxFindingForm → EvidencePane → InsightsList → DoseDetailPane → ...
+- **Actual order:** Header → Verdict → CausalityWorksheet → DoseDetailPane → TimeCourse → Distribution → Recovery → EvidencePane → InsightsList → ...
+- **Issue:** DoseDetailPane comes before EvidencePane+InsightsList instead of after. ToxFindingForm missing entirely (see GAP-74). Requires user decision on whether spec ordering or current ordering is preferred.
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1355-1666`
+- **Status:** Open — needs user decision
+- **Priority:** P3 — UX preference, not a bug
+- **Owner hint:** ux-designer
+
+### GAP-78: Timepoint toggle (Terminal/Peak/Recovery) not in context panel
+- **Spec:** `docs/incoming/view-merge-spec.md` section 6, line 265
+- **Dimension:** WHAT — feature not implemented
+- **Spec quote:** "Timepoint toggle: Terminal / Peak / Recovery — consistent with central panel D-R charts."
+- **Actual:** TimeCoursePane uses `hoveredDay ?? terminalDay` with no toggle. Not included in Phase B spec — may be Phase C scope.
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Status:** Open — confirm if deferred to Phase C
+- **Priority:** P3 — enhancement, hover already serves as ad-hoc toggle
+- **Owner hint:** frontend-dev
+
+### GAP-79: Duplicate `shortDoseLabel()` function
+- **Source:** Data reuse audit, Phase B
+- **Issue:** Identical `shortDoseLabel()` function defined in both `TimeCoursePane.tsx` (lines 288-298) and `TimeCourseBarChart.tsx` (lines 79-87). Should be extracted to a shared utility (e.g., `src/lib/dose-formatting.ts`) or consolidated with existing `formatDoseShortLabel()` in severity-colors.ts.
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`, `frontend/src/components/analysis/panes/TimeCourseBarChart.tsx`
+- **Status:** Open
+- **Priority:** P3 — code quality
+- **Owner hint:** review
+
+### ~~GAP-80: Causality criteria — per-sex decomposition for gradient and strength~~
+- **Status:** Resolved
+- **Fix:** Per-sex gradient + strength annotations in DoseDetailPane (inline after conclusions per sex). CausalityWorksheet shows F/M breakdown under gradient and strength rows. Effect size label fixed from "d" to "g" (Hedges' g). `computeBiologicalGradient` and `computeStrength` exported from CausalityWorksheet for reuse.
+
+### GAP-81: Time-course SVG chart — add zoom and pan interactivity
+- **Files:** `frontend/src/components/analysis/panes/TimeCourseLineChart.tsx`
+- **Issue:** SVG chart has no zoom or pan. The previous ECharts implementation (D-R view) had built-in zoom/pan/tooltips. The custom SVG chart only has hover crosshair. Options: (a) Add SVG-native drag-to-zoom + pan via mouse events and viewBox manipulation. (b) Switch to ECharts for the context panel chart (would need resize handling for narrow pane). (c) Use a lightweight library (d3-zoom, visx).
+- **Status:** Open
+- **Priority:** P3 (interactivity enhancement — hover crosshair works for basic use)
+- **Owner hint:** frontend-dev
+
+### GAP-82: Time-course timepoint toggle — should filter chart data, not just default cursor
+- **Files:** `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Issue:** The Terminal/Peak/Recovery toggle currently only changes which day the detail row defaults to when not hovering. It does NOT filter the chart to show only that timepoint's data. The spec intended it to also re-scope the chart (e.g., Recovery mode should show only recovery-period data, Peak mode should highlight/center on peak day). Current behavior is a "default cursor position" selector, not a data scope filter.
+- **Status:** Open
+- **Priority:** P2 (interaction model mismatch with user expectations)
+- **Owner hint:** frontend-dev
+
+### GAP-83: Recovery pooling should come from study-level settings, not chart toggle
+- **Files:** `frontend/src/hooks/useRecoveryPooling.ts`, `frontend/src/components/analysis/panes/TimeCoursePane.tsx`
+- **Issue:** Recovery pooling is currently a global toggle (`useRecoveryPooling` hook). Should be driven by study-level user settings on the Study Details page, not a per-chart toggle. The time-course chart should read the study-level setting rather than having its own state.
+- **Status:** Open
+- **Priority:** P3 (architectural — current toggle works, just wrong location)
+- **Owner hint:** frontend-dev
+
+### GAP-84: Component test harness for FindingsContextPanel
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/tests/`
+- **Issue:** FindingsContextPanel has 14 panes with complex cross-sex logic (header badges, verdict synthesis, recovery summary, opposite-direction callouts). Five of the six bugs found in the 2026-03-16 audit were wiring/rendering issues that only a component-level test could catch — e.g., header showing sex-specific NOAEL instead of combined, RecoveryVerdictLine only rendering one sex. Currently no way to mount the panel with mock data and assert what renders. Need a test harness that provides mock `FindingSelectionContext`, `FindingsAnalyticsContext`, `useAnnotations`, and `useFindingContext` responses, then asserts on rendered output for specific scenarios (opposite-direction endpoints, single-sex endpoints, OM normalization, recovery).
+- **Status:** Open
+- **Priority:** P3 (testing infrastructure — unit tests cover pure logic, this covers integration)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-85: Show fold change for continuous endpoints in merged Findings view~~ ✅
+- **Source:** `dose-response-view-audit.md` D-07 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`, `frontend/src/components/analysis/FindingsTable.tsx`
+- **Issue:** Fold change (treatment mean / control mean) is the most intuitive dose-response metric for toxicologists — it's how findings are discussed in study reports ("ALT elevated 3.2-fold at high dose"). The backend computes `max_fold_change` (FIELD-15) but it's never shown anywhere in the UI. Cohen's d / Hedges' g is rigorous but unfamiliar to most toxicologists.
+- **Fix:** Add fold change to the dose detail pane or findings table. Can be derived: `mean / controlMean` for dose_level > 0.
+- **Status:** ~~Open~~ Fixed — "Fold" column added to FindingsTable (standard + pivoted) and DoseDetailPane per-dose rows
+- **Priority:** P3 (domain UX improvement)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-86: Display sex divergence when significant in merged Findings view~~ ✅
+- **Source:** `dose-response-view-audit.md` D-08 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`
+- **Issue:** Sex divergence (`|d_M - d_F|`) is computed in `DoseResponseView.tsx:182-206` (local `deriveEndpointSummaries`) but never displayed. Sex-specific sensitivity is critical for NOAEL determination — if a liver enzyme shows d=1.5 in females but d=0.2 in males, the NOAEL may be sex-specific. After the D-R merge, this computation and display should live in the merged context panel.
+- **Fix:** Show sex divergence in the context panel header or verdict pane when |d_M - d_F| > 0.5, e.g., "Sex divergence: F >> M (|d| diff: 1.3)".
+- **Status:** ~~Open~~ Fixed — callout in VerdictPane shows per-sex effect sizes when divergence > 0.5
+- **Priority:** P3 (domain UX improvement)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-87: Visual distinction for control group row in dose tables~~ ✅
+- **Source:** `dose-response-view-audit.md` D-09 (archived 2026-03-17)
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx` (DoseDetailPane), `frontend/src/components/analysis/FindingsTable.tsx`
+- **Issue:** Dose level 0 (vehicle control) is rendered identically to treatment groups in all dose tables. The control group is the reference for all comparisons — it should be visually distinct. A toxicologist scanning a dose table should immediately identify the control row.
+- **Fix:** Add subtle background styling (`bg-muted/20`) or a "Vehicle" label for the control group row.
+- **Status:** ~~Open~~ Fixed — `bg-muted/15` on control rows in pivoted FindingsTable and DoseDetailPane (standard mode unchanged per user decision)
+- **Priority:** P3 (UX polish)
+- **Owner hint:** frontend-dev
+
+### GAP-88: Syndrome validation via cross-organ member correlations
+- **Source:** `correlation-context-strategy.md` (archived 2026-03-17)
+- **Files:** `backend/services/analysis/correlations.py`, `frontend/src/components/analysis/panes/SyndromeContextPanel.tsx`
+- **Issue:** Syndromes are detected by rule-matching (presence/direction of member endpoints), but rule-matched ≠ biologically correlated. A syndrome whose members have high pairwise rho is strongly supported; one whose members are statistically independent may be coincidental. Summary stat: median pairwise |rho| among syndrome members. The organ-level correlation matrix (Priority 1) was implemented, but syndrome-level validation (Priority 2) is blocked on cross-organ correlation computation — current `correlations.py` only computes within-organ pairs.
+- **Blocked on:** Architectural decision — lazy (on-request) vs. precomputed cross-organ correlations. Syndrome member list currently detected in frontend (`cross-domain-syndromes.ts`); precomputed approach requires partial backend detection.
+- **Status:** Open (blocked on architecture decision)
+- **Priority:** P3 (novel signal, non-trivial architecture)
+- **Owner hint:** backend-dev
+
+### ~~GAP-89: Peak detection for incidence endpoints should use argmin Fisher's p~~ ✅
+- **Source:** `view-merge-spec.md` §4 lines 162-165 vs `view-merge-post-implementation-review.md` SD-1
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:217-220`
+- **Issue:** Spec says continuous domains use `argmax |Hedges' g|` and incidence domains use `argmin Fisher's exact p-value` for peak day detection. Implementation uses `Math.abs(r.effect_size ?? 0)` for ALL data types. Low practical impact since incidence endpoints (MI, MA, CL) are almost always terminal-only — the peak toggle rarely surfaces.
+- **Status:** ~~Open~~ Fixed — branch on data_type: continuous uses argmax |effect_size|, incidence uses argmin p_value
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-90: Day stepper label format reversed from spec~~ ✅
+- **Source:** `view-merge-spec.md` §4 line 152 vs `view-merge-post-implementation-review.md` SD-2
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:418`
+- **Issue:** Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)" — reversed order with abbreviated day prefix. Minor UX inconsistency.
+- **Status:** ~~Open~~ Closed (accepted — current compact format preferred by user)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-91: Central panel tab naming and MetricsTable migration decision~~ ✅
+- **Source:** `view-merge-spec.md` §3 lines 70-71, §9 vs `view-merge-post-implementation-review.md` SD-3
+- **Files:** `frontend/src/components/analysis/findings/FindingsView.tsx:60-65`
+- **Issue:** Spec calls for "Evidence" and "Metrics" tabs; implementation has "Chart" and "Table". The full D-R MetricsTable (TanStack, 13 columns, sex/organ/type filter bar, sig-only toggle) has NOT been migrated. FindingsTable Pivoted mode partially covers this. User decision needed: is Pivoted FindingsTable sufficient or does the full MetricsTable need migrating?
+- **Status:** ~~Open~~ Fixed — tabs renamed to "Findings" / "Findings table". FilterBar removed from central panel. Death/mortality toggle moved to rail header. Pivoted FindingsTable covers metrics use case.
+- **Priority:** P2
+- **Owner hint:** frontend-dev / ux-designer
+
+### ~~GAP-92: Recovery day visual distinction on D-R charts
+- **Source:** `view-merge-spec.md` §4 line 160, `view-redesign-ideas.md` "Recovery visual distinction"
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:229`
+- **Issue:** Spec says "different color treatment or clear header label so user can't mistake recovery D-R for main study (N is smaller, interpretation is different)." Only the dropdown label "(recovery)" distinguishes it. No color treatment, no N-warning, no visual distinction on the chart itself.
+- **Status:** ~~Open~~ Fixed — recovery days removed from D-R chart stepper entirely. Recovery is told in context panel RecoveryPane + time-course subject mode (group-level recovery D-R is misleading — different cohort, different N)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-93: Migrate D-R organ correlations to OrganContextPanel~~ ✅
+- **Source:** `view-merge-spec.md` §5 item 9, `dr-findings-merge-analysis.md` G6
+- **Files:** `frontend/src/components/analysis/panes/OrganContextPanel.tsx`
+- **Issue:** D-R context panel showed "other endpoints in same organ system sorted by signal score" — a signal-score-ranked organ-neighbor view. Spec says migrate to OrganContextPanel. Not implemented. FindingsContextPanel CorrelationsPane shows subject-level statistical correlations (different data).
+- **Status:** ~~Open~~ Closed (won't-fix — redundant with FindingsRail organ grouping; CorrelationsPane provides statistically rigorous subject-level co-variance which is more informative)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-94: CausalityWorksheet collapsed summary badge~~ ✅
+- **Source:** `dose-response-view-audit.md` UX-05
+- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx:1890`
+- **Issue:** When CausalityWorksheet pane is collapsed, it shows only the title "Causality assessment" — no summary of the saved determination. A toxicologist who previously assessed an endpoint can't see the result at a glance. Should show a badge like "Likely causal" or "Not assessed" in the collapsed header.
+- **Status:** ~~Open~~ Fixed — `summary` prop on CollapsiblePane shows saved overall determination ("Likely causal" etc) when pane is collapsed. Reads from causal-assessment annotations.
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### ~~GAP-95: NOAEL reference line on compact D-R charts~~ ✅
+- **Source:** `dr-findings-merge-analysis.md` G11, `dose-response-view-audit.md` item 6
+- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:108-123`
+- **Issue:** `compactify()` strips all NOAEL markLines from the central panel D-R charts. The NOAEL reference line shows WHERE the threshold sits relative to the dose-response curve — valuable for regulatory review. NOAEL text IS shown in context panel header and VerdictPane. Consider making the line optional or showing it only when chart height exceeds a threshold.
+- **Status:** ~~Open~~ Closed (won't-fix — NOAEL info accessible in context panel header + VerdictPane; chart space is at a premium)
+- **Priority:** P3
+- **Owner hint:** frontend-dev
+
+### GAP-96: FindingsNavGrid — flat rail table replacing nested FindingsRail (Phase D)
+- **Source:** `view-merge-spec.md` §2 (archived), `view-redesign-ideas.md` (archived)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (1400+ lines)
+- **Issue:** Spec calls for a flat table/grid rail with group-by toggle (Findings/Organ/Specimen/Syndrome), replacing the current nested grouped-card layout. Columns replace badges/icons. Primary "what" is clickable blue text. Severity color-coding as cell background. Endpoint bookmarks migrated from deleted D-R EndpointPicker. Current FindingsRail works but uses collapsible nested sections instead of flat rows.
+- **Status:** Open
+- **Priority:** P2 (significant UX improvement, large refactor)
+- **Owner hint:** frontend-dev / ux-designer
+
+### GAP-97: Merge Pareto/volcano features into FindingsQuadrantScatter at group scope (Phase E)
+- **Source:** `view-merge-spec.md` §10 (archived), `dr-findings-merge-analysis.md` G3 (archived)
+- **Files:** `frontend/src/components/analysis/findings/FindingsQuadrantScatter.tsx`, `frontend/src/components/analysis/charts/dose-response-charts.ts` (buildVolcanoScatterOption)
+- **Issue:** D-R view had a volcano scatter (|effect size| vs -log10(trend p), colored by organ) in the Hypotheses tab. After merge, FindingsQuadrantScatter (effect size percentile vs p-value percentile) is the sole scatter. At group scope (organ/specimen/syndrome), any unique Pareto/volcano features (organ coloring, specific axis choices) should be merged into FindingsQuadrantScatter. The D-R volcano and Findings scatter use different axes — reconcile to the most informative scheme.
+- **Status:** Open
+- **Priority:** P3 (enhancement, not blocking)
+- **Owner hint:** frontend-dev
+
+### GAP-98: Histopath pattern-classification.ts PATTERN_LABELS still embed direction
+- **Source:** `findings-table-parity.md` post-implementation review
+- **Files:** `frontend/src/lib/pattern-classification.ts` (PATTERN_LABELS, L471-479)
+- **Issue:** `findings-rail-engine.ts` PATTERN_LABELS are now direction-independent (DOM-20), but `pattern-classification.ts` still uses `"Dose-dep ↑"` / `"Dose-dep ↓"`. These are separate systems (CLAUDE.md: "dual syndrome engines — do not merge"), and histopath views don't have a separate Dir column, so direction in the label is currently the only way it's shown. If histopath views later gain a Dir column, these labels should be aligned.
+- **Status:** Open
+- **Priority:** P4 (future alignment)
+- **Owner hint:** frontend-dev
+
+### ~~GAP-99: Stand up vitest infrastructure with seed tests for critical derive modules~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already existed — vitest config at `frontend/vitest.config.ts`, 54 test files in `frontend/tests/` with 1487 tests including `derive-summaries.test.ts` and `syndrome-interpretation.test.ts`. Initial audit missed them (tests live in `tests/` not `src/`).
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-100: Contract conformance tests — validate generated JSON against BFIELD invariants~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Files:** `backend/tests/test_bfield_contracts.py`, `docs/knowledge/api-field-contracts.md`
+- **Issue:** Created `test_bfield_contracts.py` — 62 tests across 11 JSON files covering all documented BFIELD invariants (types, nullability, enum values, numeric ranges, cross-field consistency). Auto-discovers studies. Found and fixed one contract drift: BFIELD-17 `scheduled_direction` includes `"none"` (undocumented).
+- **Status:** ~~Open~~ Done
+
+### ~~GAP-101: Frontend contract conformance — validate TS types match field-contracts.md~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already existed — `frontend/tests/field-contract-sync.test.ts` validates bidirectional coverage between `// @field FIELD-XX` annotations in source and `### FIELD-XX` headings in `field-contracts.md`. Catches undocumented fields, orphaned doc entries, and duplicates.
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-102: React error boundaries around major view panels~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Issue:** Already covered — `RouteErrorBoundary` (App.tsx:27) wraps every lazy-loaded route via `<LazyRoute>`, and `PaneErrorBoundary` (ContextPanel.tsx:45) wraps every context panel pane via `<LazyPane>`. Both catch runtime errors (not just chunk-load failures). Sub-view granularity (table vs scatter within a view) would be over-engineering.
+- **Status:** ~~Open~~ Already existed
+
+### ~~GAP-103: Add explicit checklist items for frontend build and nullable field guards~~ ✅
+- **Source:** Checklist audit (2026-03-21)
+- **Files:** `docs/checklists/COMMIT-CHECKLIST.md`, `docs/checklists/POST-IMPLEMENTATION-REVIEW.md`
+- **Issue:** Added: commit checklist item 9 (`npm run build`), item 10 (nullable contract field null-guard check), post-impl review Step 2a (contract field entry audit).
+- **Status:** ~~Open~~ Done
+
+### GAP-104: FindingsRail specimen grouping mode (stub)
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx`, `frontend/src/lib/findings-rail-engine.ts`
+- **Issue:** "Specimen" toggle exists in rail header but is disabled (stub). Requires histopathology merge to implement properly — specimen grouping needs MI/MA specimen data propagated to endpoint summaries. Currently falls back to organ grouping in `groupKey()`.
+- **Status:** Open — blocked on histopath→findings merge
+- **Priority:** P2 (required for histopath merge)
+- **Owner hint:** frontend-dev
+
+### GAP-105: FindingsRail count badges for non-endpoint grouping modes
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (SignalSummarySection)
+- **Issue:** Adverse/warning endpoint counts are shown for Endpoint grouping only. For Organ System, Specimen, and Syndrome modes, only total endpoints are shown. Need to decide what summary to display — e.g., "N organs affected", "N syndromes detected", severity breakdown per group.
+- **Status:** Open — needs UX decision
+- **Priority:** P3 (UX polish)
+- **Owner hint:** ux-designer + frontend-dev
+
+### GAP-106: Multi-subject comparison tab for mortality "View all"
+- **Source:** ARCH-01 discussion (2026-03-21)
+- **Files:** `frontend/src/components/analysis/findings/FindingsRail.tsx` (death dropdown "View all" stub)
+- **Issue:** The mortality dropdown has a "View all in tab" link that is currently disabled. Should open a tab (like findings-table tab) showing SubjectProfilePanel content for all dead subjects side-by-side or stacked. Effectively a filtered multi-subject view.
+- **Status:** Open
+- **Priority:** P3 (enhanced mortality review)
+- **Owner hint:** frontend-dev
+
+---
+
+## Resolved This Session (2026-03-20)
+
+- ~~**PERF-01: DoseResponseChartPanel O(N*D) flatten**~~ — Pre-filter to selected endpoint before flattening. `fbae9ed`
+- ~~**PERF-02: FindingsTable unconditional pivotedRows + hasCl dep**~~ — Skip pivotedRows in standard mode; extract hasCl boolean from columns useMemo. `fbae9ed`
+- ~~**PERF-03: FindingsView data→callback→event-bus cascade**~~ — Use ref for data in handleEndpointSelect. `fbae9ed`
+- ~~**PERF-04: FindingsContextPanel unmemoized NOAEL derivation**~~ — Wrap in useMemo. `fbae9ed`
+- ~~**PERF-05: Triple-redundant analytics derivation (3-5x)**~~ — FindingsAnalyticsLayer in Layout provides single derivation via context. `591855e`
+- ~~**PERF-06: Unmemoized sparkline SVG cells**~~ — Extract SparklineCell as React.memo component. `591855e`
+- ~~**PERF-07: No table virtualization (418 std / 1672 pivoted rows)**~~ — @tanstack/react-virtual with spacer-row pattern. `b11c108`, `569f630`, `2823f24`
 
 ---
 
 ## Archived Documentation
 
+> **D-R → Findings merge** (2026-03-18): Merge complete. 5 specs archived: dose-response-view-audit.md, view-redesign-ideas.md, dr-findings-merge-analysis.md, view-merge-spec.md, view-merge-post-implementation-review.md. D-R view deleted (DoseResponseView.tsx, DoseResponseViewWrapper.tsx, DoseResponseEndpointPicker.tsx, DoseResponseContextPanel.tsx, useDoseResponseMetrics.ts). 11 cross-view links updated. Phase D (rail flat-table) and Phase E (scatter merge) deferred as GAP-96/97.
+>
+> **Incoming spec audit** (2026-03-17): MANIFEST updated (8 stale entries removed, 13 active specs listed with status). Knowledge extracted to GAP-85 through GAP-88 from D-R audit and correlation strategy analysis. No specs archived — all are active reference for ongoing merge work.
+>
 > **TOPIC hubs** (10 files) archived to `C:/pg/archive/pcc/docs/incoming/arch-overhaul/` on 2026-03-05. Gaps extracted to GAP-28 through GAP-45. TOPIC hubs are frozen historical references per CLAUDE.md rule 7.
 >
 > **Spec-cleanup tracker** (`spec-cleanup-b66dfd0.md`) archived same date. 92 open items migrated to GAP-46 through GAP-55 (themed batches). Many items may be resolved in commits after 2026-02-23 — verify against code before starting work. Full detail in archived file.

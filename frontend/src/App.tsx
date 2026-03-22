@@ -11,7 +11,6 @@ const StudySummaryViewWrapper = lazy(() => import("@/components/analysis/StudySu
 const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/FindingsViewWrapper").then(m => ({ default: m.FindingsViewWrapper })));
 
 // Lazy-loaded analysis views (code-split into separate chunks)
-const DoseResponseViewWrapper = lazy(() => import("@/components/analysis/DoseResponseViewWrapper").then(m => ({ default: m.DoseResponseViewWrapper })));
 const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
 const NoaelDeterminationViewWrapper = lazy(() => import("@/components/analysis/NoaelDeterminationViewWrapper").then(m => ({ default: m.NoaelDeterminationViewWrapper })));
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
@@ -97,7 +96,7 @@ const router = createBrowserRouter([
       // Analysis views
       {
         path: "/studies/:studyId/dose-response",
-        element: <LazyRoute><DoseResponseViewWrapper /></LazyRoute>,
+        element: <Navigate to="../findings" replace />,
       },
       {
         path: "/studies/:studyId/target-organs",

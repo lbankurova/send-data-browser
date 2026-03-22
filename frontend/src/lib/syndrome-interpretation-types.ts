@@ -197,7 +197,7 @@ export interface FoodConsumptionSummaryResponse {
       food_efficiency_control: number | null;
       food_efficiency_reduced: boolean | null;
       fe_p_value: number | null;
-      fe_cohens_d: number | null;
+      fe_effect_size: number | null;
       fw_pct_change: number | null;
       bw_pct_change: number | null;
     }[];

@@ -188,10 +188,12 @@ One column per dose group (from `data.dose_groups` array), rendered dynamically.
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| min_p_adj | P-value | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
-| trend_p | Trend | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
+| max_effect_size | Max \|{sym}\| | Left | `ev font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. Header symbol is dynamic via `getEffectSizeSymbol(effectSizeMethod)` (e.g. \|g\|, \|d\|, \|Δ\|). Continuous endpoints only. Interaction-driven color via `ev` CSS class. |
+| max_fold_change | Magnitude | Left | `font-mono text-muted-foreground`. Fold change for continuous (`×N.N`), odds ratio for MA/CL/TF, avg severity for MI. Em dash if null. |
+| min_p_adj | Pairwise p | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
+| trend_p | Trend p | Left | `ev font-mono text-muted-foreground` -- formatted via `formatPValue()`. Interaction-driven color via `ev` CSS class. |
 | direction | Dir | Left | Direction-specific color via `getDirectionColor()` + symbol via `getDirectionSymbol()` (see below) |
-| max_effect_size | Effect | Left | `ev font-mono text-muted-foreground` -- formatted via `formatEffectSize()`. Interaction-driven color via `ev` CSS class. |
+| pattern | Pattern | Left | `text-muted-foreground` -- direction-independent label via `getPatternLabel()`. Em dash if null. |
 | severity | Severity | Left | Left-border badge: `inline-block pl-1.5 py-0.5` with colored left border from `getSeverityDotColor()` via inline `style`. Border width and font weight vary by signal tier (see below). |
 
 **Note on p-value and effect-size columns:** Both p-value, trend, and effect-size cells use the `ev` CSS class for interaction-driven color: neutral `text-muted-foreground` at rest, `#DC2626` on row hover/selection. The `data-evidence=""` attribute is set on every `<td>`.

@@ -53,21 +53,21 @@
         "p_value": 0.724668,
         "p_value_adj": 0.724668,
         "statistic": null,
-        "cohens_d": -0.4427
+        "effect_size": -0.4427
       },
       {
         "dose_level": 2,
         "p_value": 0.041071,
         "p_value_adj": 0.041071,
         "statistic": null,
-        "cohens_d": -1.0037
+        "effect_size": -1.0037
       },
       {
         "dose_level": 3,
         "p_value": 2.7e-05,
         "p_value_adj": 2.7e-05,
         "statistic": null,
-        "cohens_d": -2.4679
+        "effect_size": -2.4679
       }
     ],
     "scheduled_direction": "down",
@@ -128,21 +128,21 @@
         "p_value": 0.724668,
         "p_value_adj": 0.724668,
         "statistic": null,
-        "cohens_d": -0.4427
+        "effect_size": -0.4427
       },
       {
         "dose_level": 2,
         "p_value": 0.041071,
         "p_value_adj": 0.041071,
         "statistic": null,
-        "cohens_d": -1.0037
+        "effect_size": -1.0037
       },
       {
         "dose_level": 3,
         "p_value": 2.7e-05,
         "p_value_adj": 2.7e-05,
         "statistic": null,
-        "cohens_d": -2.4679
+        "effect_size": -2.4679
       }
     ],
     "scheduled_direction": "down",
@@ -203,21 +203,21 @@
         "p_value": 0.724668,
         "p_value_adj": 0.724668,
         "statistic": null,
-        "cohens_d": -0.4427
+        "effect_size": -0.4427
       },
       {
         "dose_level": 2,
         "p_value": 0.041071,
         "p_value_adj": 0.041071,
         "statistic": null,
-        "cohens_d": -1.0037
+        "effect_size": -1.0037
       },
       {
         "dose_level": 3,
         "p_value": 2.7e-05,
         "p_value_adj": 2.7e-05,
         "statistic": null,
-        "cohens_d": -2.4679
+        "effect_size": -2.4679
       }
     ],
     "scheduled_direction": "down",
@@ -278,21 +278,21 @@
         "p_value": 0.976398,
         "p_value_adj": 0.976398,
         "statistic": null,
-        "cohens_d": -0.1348
+        "effect_size": -0.1348
       },
       {
         "dose_level": 2,
         "p_value": 0.017027,
         "p_value_adj": 0.017027,
         "statistic": null,
-        "cohens_d": -1.235
+        "effect_size": -1.235
       },
       {
         "dose_level": 3,
         "p_value": 0.000264,
         "p_value_adj": 0.000264,
         "statistic": null,
-        "cohens_d": -1.6925
+        "effect_size": -1.6925
       }
     ],
     "scheduled_direction": "down",
@@ -353,21 +353,21 @@
         "p_value": 0.976398,
         "p_value_adj": 0.976398,
         "statistic": null,
-        "cohens_d": -0.1348
+        "effect_size": -0.1348
       },
       {
         "dose_level": 2,
         "p_value": 0.017027,
         "p_value_adj": 0.017027,
         "statistic": null,
-        "cohens_d": -1.235
+        "effect_size": -1.235
       },
       {
         "dose_level": 3,
         "p_value": 0.000264,
         "p_value_adj": 0.000264,
         "statistic": null,
-        "cohens_d": -1.6925
+        "effect_size": -1.6925
       }
     ],
     "scheduled_direction": "down",
@@ -428,21 +428,21 @@
         "p_value": 0.976398,
         "p_value_adj": 0.976398,
         "statistic": null,
-        "cohens_d": -0.1348
+        "effect_size": -0.1348
       },
       {
         "dose_level": 2,
         "p_value": 0.017027,
         "p_value_adj": 0.017027,
         "statistic": null,
-        "cohens_d": -1.235
+        "effect_size": -1.235
       },
       {
         "dose_level": 3,
         "p_value": 0.000264,
         "p_value_adj": 0.000264,
         "statistic": null,
-        "cohens_d": -1.6925
+        "effect_size": -1.6925
       }
     ],
     "scheduled_direction": "down",
@@ -503,21 +503,21 @@
         "p_value": 0.062448,
         "p_value_adj": 0.062448,
         "statistic": null,
-        "cohens_d": 1.0435
+        "effect_size": 1.0435
       },
       {
         "dose_level": 2,
         "p_value": 0.118348,
         "p_value_adj": 0.118348,
         "statistic": null,
-        "cohens_d": 1.1881
+        "effect_size": 1.1881
       },
       {
         "dose_level": 3,
         "p_value": 0.997612,
         "p_value_adj": 0.997612,
         "statistic": null,
-        "cohens_d": 0.0654
+        "effect_size": 0.0654
       }
     ],
     "scheduled_direction": "up",
@@ -578,21 +578,21 @@
         "p_value": 0.062448,
         "p_value_adj": 0.062448,
         "statistic": null,
-        "cohens_d": 1.0435
+        "effect_size": 1.0435
       },
       {
         "dose_level": 2,
         "p_value": 0.118348,
         "p_value_adj": 0.118348,
         "statistic": null,
-        "cohens_d": 1.1881
+        "effect_size": 1.1881
       },
       {
         "dose_level": 3,
         "p_value": 0.997612,
         "p_value_adj": 0.997612,
         "statistic": null,
-        "cohens_d": 0.0654
+        "effect_size": 0.0654
       }
     ],
     "scheduled_direction": "up",
@@ -653,21 +653,21 @@
         "p_value": 0.062448,
         "p_value_adj": 0.062448,
         "statistic": null,
-        "cohens_d": 1.0435
+        "effect_size": 1.0435
       },
       {
         "dose_level": 2,
         "p_value": 0.118348,
         "p_value_adj": 0.118348,
         "statistic": null,
-        "cohens_d": 1.1881
+        "effect_size": 1.1881
       },
       {
         "dose_level": 3,
         "p_value": 0.997612,
         "p_value_adj": 0.997612,
         "statistic": null,
-        "cohens_d": 0.0654
+        "effect_size": 0.0654
       }
     ],
     "scheduled_direction": "up",
@@ -728,21 +728,21 @@
         "p_value": 0.282879,
         "p_value_adj": 0.282879,
         "statistic": null,
-        "cohens_d": -0.8771
+        "effect_size": -0.8771
       },
       {
         "dose_level": 2,
         "p_value": 0.106651,
         "p_value_adj": 0.106651,
         "statistic": null,
-        "cohens_d": 0.7851
+        "effect_size": 0.7851
       },
       {
         "dose_level": 3,
         "p_value": 2e-06,
         "p_value_adj": 2e-06,
         "statistic": null,
-        "cohens_d": 2.8113
+        "effect_size": 2.8113
       }
     ],
     "scheduled_direction": "up",
@@ -803,21 +803,21 @@
         "p_value": 0.282879,
         "p_value_adj": 0.282879,
         "statistic": null,
-        "cohens_d": -0.8771
+        "effect_size": -0.8771
       },
       {
         "dose_level": 2,
         "p_value": 0.106651,
         "p_value_adj": 0.106651,
         "statistic": null,
-        "cohens_d": 0.7851
+        "effect_size": 0.7851
       },
       {
         "dose_level": 3,
         "p_value": 2e-06,
         "p_value_adj": 2e-06,
         "statistic": null,
-        "cohens_d": 2.8113
+        "effect_size": 2.8113
       }
     ],
     "scheduled_direction": "up",
@@ -878,21 +878,21 @@
         "p_value": 0.282879,
         "p_value_adj": 0.282879,
         "statistic": null,
-        "cohens_d": -0.8771
+        "effect_size": -0.8771
       },
       {
         "dose_level": 2,
         "p_value": 0.106651,
         "p_value_adj": 0.106651,
         "statistic": null,
-        "cohens_d": 0.7851
+        "effect_size": 0.7851
       },
       {
         "dose_level": 3,
         "p_value": 2e-06,
         "p_value_adj": 2e-06,
         "statistic": null,
-        "cohens_d": 2.8113
+        "effect_size": 2.8113
       }
     ],
     "scheduled_direction": "up",
@@ -953,21 +953,21 @@
         "p_value": 0.370666,
         "p_value_adj": 0.370666,
         "statistic": null,
-        "cohens_d": 0.7208
+        "effect_size": 0.7208
       },
       {
         "dose_level": 2,
         "p_value": 0.033893,
         "p_value_adj": 0.033893,
         "statistic": null,
-        "cohens_d": 1.5908
+        "effect_size": 1.5908
       },
       {
         "dose_level": 3,
         "p_value": 0.00214,
         "p_value_adj": 0.00214,
         "statistic": null,
-        "cohens_d": 1.5123
+        "effect_size": 1.5123
       }
     ],
     "scheduled_direction": "up",
@@ -1028,21 +1028,21 @@
         "p_value": 0.370666,
         "p_value_adj": 0.370666,
         "statistic": null,
-        "cohens_d": 0.7208
+        "effect_size": 0.7208
       },
       {
         "dose_level": 2,
         "p_value": 0.033893,
         "p_value_adj": 0.033893,
         "statistic": null,
-        "cohens_d": 1.5908
+        "effect_size": 1.5908
       },
       {
         "dose_level": 3,
         "p_value": 0.00214,
         "p_value_adj": 0.00214,
         "statistic": null,
-        "cohens_d": 1.5123
+        "effect_size": 1.5123
       }
     ],
     "scheduled_direction": "up",
@@ -1103,21 +1103,21 @@
         "p_value": 0.370666,
         "p_value_adj": 0.370666,
         "statistic": null,
-        "cohens_d": 0.7208
+        "effect_size": 0.7208
       },
       {
         "dose_level": 2,
         "p_value": 0.033893,
         "p_value_adj": 0.033893,
         "statistic": null,
-        "cohens_d": 1.5908
+        "effect_size": 1.5908
       },
       {
         "dose_level": 3,
         "p_value": 0.00214,
         "p_value_adj": 0.00214,
         "statistic": null,
-        "cohens_d": 1.5123
+        "effect_size": 1.5123
       }
     ],
     "scheduled_direction": "up",
@@ -1178,21 +1178,21 @@
         "p_value": 0.262368,
         "p_value_adj": 0.262368,
         "statistic": null,
-        "cohens_d": -0.665
+        "effect_size": -0.665
       },
       {
         "dose_level": 2,
         "p_value": 0.006003,
         "p_value_adj": 0.006003,
         "statistic": null,
-        "cohens_d": 1.4477
+        "effect_size": 1.4477
       },
       {
         "dose_level": 3,
         "p_value": 0.000127,
         "p_value_adj": 0.000127,
         "statistic": null,
-        "cohens_d": 2.1348
+        "effect_size": 2.1348
       }
     ],
     "scheduled_direction": "up",
@@ -1253,21 +1253,21 @@
         "p_value": 0.262368,
         "p_value_adj": 0.262368,
         "statistic": null,
-        "cohens_d": -0.665
+        "effect_size": -0.665
       },
       {
         "dose_level": 2,
         "p_value": 0.006003,
         "p_value_adj": 0.006003,
         "statistic": null,
-        "cohens_d": 1.4477
+        "effect_size": 1.4477
       },
       {
         "dose_level": 3,
         "p_value": 0.000127,
         "p_value_adj": 0.000127,
         "statistic": null,
-        "cohens_d": 2.1348
+        "effect_size": 2.1348
       }
     ],
     "scheduled_direction": "up",
@@ -1328,21 +1328,21 @@
         "p_value": 0.262368,
         "p_value_adj": 0.262368,
         "statistic": null,
-        "cohens_d": -0.665
+        "effect_size": -0.665
       },
       {
         "dose_level": 2,
         "p_value": 0.006003,
         "p_value_adj": 0.006003,
         "statistic": null,
-        "cohens_d": 1.4477
+        "effect_size": 1.4477
       },
       {
         "dose_level": 3,
         "p_value": 0.000127,
         "p_value_adj": 0.000127,
         "statistic": null,
-        "cohens_d": 2.1348
+        "effect_size": 2.1348
       }
     ],
     "scheduled_direction": "up",
@@ -1403,21 +1403,21 @@
         "p_value": 0.931598,
         "p_value_adj": 0.931598,
         "statistic": null,
-        "cohens_d": -0.3807
+        "effect_size": -0.3807
       },
       {
         "dose_level": 2,
         "p_value": 0.875976,
         "p_value_adj": 0.875976,
         "statistic": null,
-        "cohens_d": -0.52
+        "effect_size": -0.52
       },
       {
         "dose_level": 3,
         "p_value": 0.007442,
         "p_value_adj": 0.007442,
         "statistic": null,
-        "cohens_d": 1.0852
+        "effect_size": 1.0852
       }
     ],
     "scheduled_direction": "up",
@@ -1478,21 +1478,21 @@
         "p_value": 0.931598,
         "p_value_adj": 0.931598,
         "statistic": null,
-        "cohens_d": -0.3807
+        "effect_size": -0.3807
       },
       {
         "dose_level": 2,
         "p_value": 0.875976,
         "p_value_adj": 0.875976,
         "statistic": null,
-        "cohens_d": -0.52
+        "effect_size": -0.52
       },
       {
         "dose_level": 3,
         "p_value": 0.007442,
         "p_value_adj": 0.007442,
         "statistic": null,
-        "cohens_d": 1.0852
+        "effect_size": 1.0852
       }
     ],
     "scheduled_direction": "up",
@@ -1553,21 +1553,21 @@
         "p_value": 0.931598,
         "p_value_adj": 0.931598,
         "statistic": null,
-        "cohens_d": -0.3807
+        "effect_size": -0.3807
       },
       {
         "dose_level": 2,
         "p_value": 0.875976,
         "p_value_adj": 0.875976,
         "statistic": null,
-        "cohens_d": -0.52
+        "effect_size": -0.52
       },
       {
         "dose_level": 3,
         "p_value": 0.007442,
         "p_value_adj": 0.007442,
         "statistic": null,
-        "cohens_d": 1.0852
+        "effect_size": 1.0852
       }
     ],
     "scheduled_direction": "up",
@@ -1628,21 +1628,21 @@
         "p_value": 0.97165,
         "p_value_adj": 0.97165,
         "statistic": null,
-        "cohens_d": 0.1908
+        "effect_size": 0.1908
       },
       {
         "dose_level": 2,
         "p_value": 8e-06,
         "p_value_adj": 8e-06,
         "statistic": null,
-        "cohens_d": 2.7943
+        "effect_size": 2.7943
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.8167
+        "effect_size": 3.8167
       }
     ],
     "scheduled_direction": "up",
@@ -1703,21 +1703,21 @@
         "p_value": 0.97165,
         "p_value_adj": 0.97165,
         "statistic": null,
-        "cohens_d": 0.1908
+        "effect_size": 0.1908
       },
       {
         "dose_level": 2,
         "p_value": 8e-06,
         "p_value_adj": 8e-06,
         "statistic": null,
-        "cohens_d": 2.7943
+        "effect_size": 2.7943
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.8167
+        "effect_size": 3.8167
       }
     ],
     "scheduled_direction": "up",
@@ -1778,21 +1778,21 @@
         "p_value": 0.97165,
         "p_value_adj": 0.97165,
         "statistic": null,
-        "cohens_d": 0.1908
+        "effect_size": 0.1908
       },
       {
         "dose_level": 2,
         "p_value": 8e-06,
         "p_value_adj": 8e-06,
         "statistic": null,
-        "cohens_d": 2.7943
+        "effect_size": 2.7943
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.8167
+        "effect_size": 3.8167
       }
     ],
     "scheduled_direction": "up",
@@ -1853,21 +1853,21 @@
         "p_value": 0.998929,
         "p_value_adj": 0.998929,
         "statistic": null,
-        "cohens_d": -0.0913
+        "effect_size": -0.0913
       },
       {
         "dose_level": 2,
         "p_value": 0.052856,
         "p_value_adj": 0.052856,
         "statistic": null,
-        "cohens_d": 1.7327
+        "effect_size": 1.7327
       },
       {
         "dose_level": 3,
         "p_value": 7.2e-05,
         "p_value_adj": 7.2e-05,
         "statistic": null,
-        "cohens_d": 1.5933
+        "effect_size": 1.5933
       }
     ],
     "scheduled_direction": "up",
@@ -1928,21 +1928,21 @@
         "p_value": 0.998929,
         "p_value_adj": 0.998929,
         "statistic": null,
-        "cohens_d": -0.0913
+        "effect_size": -0.0913
       },
       {
         "dose_level": 2,
         "p_value": 0.052856,
         "p_value_adj": 0.052856,
         "statistic": null,
-        "cohens_d": 1.7327
+        "effect_size": 1.7327
       },
       {
         "dose_level": 3,
         "p_value": 7.2e-05,
         "p_value_adj": 7.2e-05,
         "statistic": null,
-        "cohens_d": 1.5933
+        "effect_size": 1.5933
       }
     ],
     "scheduled_direction": "up",
@@ -2003,21 +2003,21 @@
         "p_value": 0.998929,
         "p_value_adj": 0.998929,
         "statistic": null,
-        "cohens_d": -0.0913
+        "effect_size": -0.0913
       },
       {
         "dose_level": 2,
         "p_value": 0.052856,
         "p_value_adj": 0.052856,
         "statistic": null,
-        "cohens_d": 1.7327
+        "effect_size": 1.7327
       },
       {
         "dose_level": 3,
         "p_value": 7.2e-05,
         "p_value_adj": 7.2e-05,
         "statistic": null,
-        "cohens_d": 1.5933
+        "effect_size": 1.5933
       }
     ],
     "scheduled_direction": "up",
@@ -2078,21 +2078,21 @@
         "p_value": 0.998719,
         "p_value_adj": 0.998719,
         "statistic": null,
-        "cohens_d": 0.0645
+        "effect_size": 0.0645
       },
       {
         "dose_level": 2,
         "p_value": 0.001229,
         "p_value_adj": 0.001229,
         "statistic": null,
-        "cohens_d": 2.0821
+        "effect_size": 2.0821
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.5494
+        "effect_size": 3.5494
       }
     ],
     "scheduled_direction": "up",
@@ -2153,21 +2153,21 @@
         "p_value": 0.998719,
         "p_value_adj": 0.998719,
         "statistic": null,
-        "cohens_d": 0.0645
+        "effect_size": 0.0645
       },
       {
         "dose_level": 2,
         "p_value": 0.001229,
         "p_value_adj": 0.001229,
         "statistic": null,
-        "cohens_d": 2.0821
+        "effect_size": 2.0821
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.5494
+        "effect_size": 3.5494
       }
     ],
     "scheduled_direction": "up",
@@ -2228,21 +2228,21 @@
         "p_value": 0.998719,
         "p_value_adj": 0.998719,
         "statistic": null,
-        "cohens_d": 0.0645
+        "effect_size": 0.0645
       },
       {
         "dose_level": 2,
         "p_value": 0.001229,
         "p_value_adj": 0.001229,
         "statistic": null,
-        "cohens_d": 2.0821
+        "effect_size": 2.0821
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": 3.5494
+        "effect_size": 3.5494
       }
     ],
     "scheduled_direction": "up",
@@ -2303,21 +2303,21 @@
         "p_value": 0.68262,
         "p_value_adj": 0.68262,
         "statistic": null,
-        "cohens_d": -0.3349
+        "effect_size": -0.3349
       },
       {
         "dose_level": 2,
         "p_value": 0.178571,
         "p_value_adj": 0.178571,
         "statistic": null,
-        "cohens_d": -1.1715
+        "effect_size": -1.1715
       },
       {
         "dose_level": 3,
         "p_value": 0.178782,
         "p_value_adj": 0.178782,
         "statistic": null,
-        "cohens_d": -0.9867
+        "effect_size": -0.9867
       }
     ],
     "scheduled_direction": "down",
@@ -2378,21 +2378,21 @@
         "p_value": 0.68262,
         "p_value_adj": 0.68262,
         "statistic": null,
-        "cohens_d": -0.3349
+        "effect_size": -0.3349
       },
       {
         "dose_level": 2,
         "p_value": 0.178571,
         "p_value_adj": 0.178571,
         "statistic": null,
-        "cohens_d": -1.1715
+        "effect_size": -1.1715
       },
       {
         "dose_level": 3,
         "p_value": 0.178782,
         "p_value_adj": 0.178782,
         "statistic": null,
-        "cohens_d": -0.9867
+        "effect_size": -0.9867
       }
     ],
     "scheduled_direction": "down",
@@ -2453,21 +2453,21 @@
         "p_value": 0.68262,
         "p_value_adj": 0.68262,
         "statistic": null,
-        "cohens_d": -0.3349
+        "effect_size": -0.3349
       },
       {
         "dose_level": 2,
         "p_value": 0.178571,
         "p_value_adj": 0.178571,
         "statistic": null,
-        "cohens_d": -1.1715
+        "effect_size": -1.1715
       },
       {
         "dose_level": 3,
         "p_value": 0.178782,
         "p_value_adj": 0.178782,
         "statistic": null,
-        "cohens_d": -0.9867
+        "effect_size": -0.9867
       }
     ],
     "scheduled_direction": "down",
@@ -2528,21 +2528,21 @@
         "p_value": 0.570874,
         "p_value_adj": 0.570874,
         "statistic": null,
-        "cohens_d": 0.536
+        "effect_size": 0.536
       },
       {
         "dose_level": 2,
         "p_value": 0.795251,
         "p_value_adj": 0.795251,
         "statistic": null,
-        "cohens_d": 0.267
+        "effect_size": 0.267
       },
       {
         "dose_level": 3,
         "p_value": 0.183772,
         "p_value_adj": 0.183772,
         "statistic": null,
-        "cohens_d": -1.1455
+        "effect_size": -1.1455
       }
     ],
     "scheduled_direction": "down",
@@ -2603,21 +2603,21 @@
         "p_value": 0.570874,
         "p_value_adj": 0.570874,
         "statistic": null,
-        "cohens_d": 0.536
+        "effect_size": 0.536
       },
       {
         "dose_level": 2,
         "p_value": 0.795251,
         "p_value_adj": 0.795251,
         "statistic": null,
-        "cohens_d": 0.267
+        "effect_size": 0.267
       },
       {
         "dose_level": 3,
         "p_value": 0.183772,
         "p_value_adj": 0.183772,
         "statistic": null,
-        "cohens_d": -1.1455
+        "effect_size": -1.1455
       }
     ],
     "scheduled_direction": "down",
@@ -2678,21 +2678,21 @@
         "p_value": 0.570874,
         "p_value_adj": 0.570874,
         "statistic": null,
-        "cohens_d": 0.536
+        "effect_size": 0.536
       },
       {
         "dose_level": 2,
         "p_value": 0.795251,
         "p_value_adj": 0.795251,
         "statistic": null,
-        "cohens_d": 0.267
+        "effect_size": 0.267
       },
       {
         "dose_level": 3,
         "p_value": 0.183772,
         "p_value_adj": 0.183772,
         "statistic": null,
-        "cohens_d": -1.1455
+        "effect_size": -1.1455
       }
     ],
     "scheduled_direction": "down",
@@ -2753,21 +2753,21 @@
         "p_value": 0.999998,
         "p_value_adj": 0.999998,
         "statistic": null,
-        "cohens_d": 0.0087
+        "effect_size": 0.0087
       },
       {
         "dose_level": 2,
         "p_value": 0.558708,
         "p_value_adj": 0.558708,
         "statistic": null,
-        "cohens_d": 0.5366
+        "effect_size": 0.5366
       },
       {
         "dose_level": 3,
         "p_value": 0.011161,
         "p_value_adj": 0.011161,
         "statistic": null,
-        "cohens_d": 1.2793
+        "effect_size": 1.2793
       }
     ],
     "scheduled_direction": "up",
@@ -2828,21 +2828,21 @@
         "p_value": 0.999998,
         "p_value_adj": 0.999998,
         "statistic": null,
-        "cohens_d": 0.0087
+        "effect_size": 0.0087
       },
       {
         "dose_level": 2,
         "p_value": 0.558708,
         "p_value_adj": 0.558708,
         "statistic": null,
-        "cohens_d": 0.5366
+        "effect_size": 0.5366
       },
       {
         "dose_level": 3,
         "p_value": 0.011161,
         "p_value_adj": 0.011161,
         "statistic": null,
-        "cohens_d": 1.2793
+        "effect_size": 1.2793
       }
     ],
     "scheduled_direction": "up",
@@ -2903,21 +2903,21 @@
         "p_value": 0.999998,
         "p_value_adj": 0.999998,
         "statistic": null,
-        "cohens_d": 0.0087
+        "effect_size": 0.0087
       },
       {
         "dose_level": 2,
         "p_value": 0.558708,
         "p_value_adj": 0.558708,
         "statistic": null,
-        "cohens_d": 0.5366
+        "effect_size": 0.5366
       },
       {
         "dose_level": 3,
         "p_value": 0.011161,
         "p_value_adj": 0.011161,
         "statistic": null,
-        "cohens_d": 1.2793
+        "effect_size": 1.2793
       }
     ],
     "scheduled_direction": "up",
@@ -2978,21 +2978,21 @@
         "p_value": 0.29551,
         "p_value_adj": 0.29551,
         "statistic": null,
-        "cohens_d": -0.7301
+        "effect_size": -0.7301
       },
       {
         "dose_level": 2,
         "p_value": 0.044575,
         "p_value_adj": 0.044575,
         "statistic": null,
-        "cohens_d": -1.299
+        "effect_size": -1.299
       },
       {
         "dose_level": 3,
         "p_value": 0.139728,
         "p_value_adj": 0.139728,
         "statistic": null,
-        "cohens_d": -0.8618
+        "effect_size": -0.8618
       }
     ],
     "scheduled_direction": "down",
@@ -3053,21 +3053,21 @@
         "p_value": 0.29551,
         "p_value_adj": 0.29551,
         "statistic": null,
-        "cohens_d": -0.7301
+        "effect_size": -0.7301
       },
       {
         "dose_level": 2,
         "p_value": 0.044575,
         "p_value_adj": 0.044575,
         "statistic": null,
-        "cohens_d": -1.299
+        "effect_size": -1.299
       },
       {
         "dose_level": 3,
         "p_value": 0.139728,
         "p_value_adj": 0.139728,
         "statistic": null,
-        "cohens_d": -0.8618
+        "effect_size": -0.8618
       }
     ],
     "scheduled_direction": "down",
@@ -3128,21 +3128,21 @@
         "p_value": 0.29551,
         "p_value_adj": 0.29551,
         "statistic": null,
-        "cohens_d": -0.7301
+        "effect_size": -0.7301
       },
       {
         "dose_level": 2,
         "p_value": 0.044575,
         "p_value_adj": 0.044575,
         "statistic": null,
-        "cohens_d": -1.299
+        "effect_size": -1.299
       },
       {
         "dose_level": 3,
         "p_value": 0.139728,
         "p_value_adj": 0.139728,
         "statistic": null,
-        "cohens_d": -0.8618
+        "effect_size": -0.8618
       }
     ],
     "scheduled_direction": "down",
@@ -3203,21 +3203,21 @@
         "p_value": 0.573106,
         "p_value_adj": 0.573106,
         "statistic": null,
-        "cohens_d": 0.4669
+        "effect_size": 0.4669
       },
       {
         "dose_level": 2,
         "p_value": 0.976075,
         "p_value_adj": 0.976075,
         "statistic": null,
-        "cohens_d": 0.2193
+        "effect_size": 0.2193
       },
       {
         "dose_level": 3,
         "p_value": 0.001189,
         "p_value_adj": 0.001189,
         "statistic": null,
-        "cohens_d": 1.6985
+        "effect_size": 1.6985
       }
     ],
     "scheduled_direction": "up",
@@ -3278,21 +3278,21 @@
         "p_value": 0.573106,
         "p_value_adj": 0.573106,
         "statistic": null,
-        "cohens_d": 0.4669
+        "effect_size": 0.4669
       },
       {
         "dose_level": 2,
         "p_value": 0.976075,
         "p_value_adj": 0.976075,
         "statistic": null,
-        "cohens_d": 0.2193
+        "effect_size": 0.2193
       },
       {
         "dose_level": 3,
         "p_value": 0.001189,
         "p_value_adj": 0.001189,
         "statistic": null,
-        "cohens_d": 1.6985
+        "effect_size": 1.6985
       }
     ],
     "scheduled_direction": "up",
@@ -3353,21 +3353,21 @@
         "p_value": 0.573106,
         "p_value_adj": 0.573106,
         "statistic": null,
-        "cohens_d": 0.4669
+        "effect_size": 0.4669
       },
       {
         "dose_level": 2,
         "p_value": 0.976075,
         "p_value_adj": 0.976075,
         "statistic": null,
-        "cohens_d": 0.2193
+        "effect_size": 0.2193
       },
       {
         "dose_level": 3,
         "p_value": 0.001189,
         "p_value_adj": 0.001189,
         "statistic": null,
-        "cohens_d": 1.6985
+        "effect_size": 1.6985
       }
     ],
     "scheduled_direction": "up",
@@ -3428,21 +3428,21 @@
         "p_value": 0.950341,
         "p_value_adj": 0.950341,
         "statistic": null,
-        "cohens_d": -0.2509
+        "effect_size": -0.2509
       },
       {
         "dose_level": 2,
         "p_value": 0.309604,
         "p_value_adj": 0.309604,
         "statistic": null,
-        "cohens_d": 0.5686
+        "effect_size": 0.5686
       },
       {
         "dose_level": 3,
         "p_value": 0.158577,
         "p_value_adj": 0.158577,
         "statistic": null,
-        "cohens_d": 1.0084
+        "effect_size": 1.0084
       }
     ],
     "scheduled_direction": "up",
@@ -3503,21 +3503,21 @@
         "p_value": 0.950341,
         "p_value_adj": 0.950341,
         "statistic": null,
-        "cohens_d": -0.2509
+        "effect_size": -0.2509
       },
       {
         "dose_level": 2,
         "p_value": 0.309604,
         "p_value_adj": 0.309604,
         "statistic": null,
-        "cohens_d": 0.5686
+        "effect_size": 0.5686
       },
       {
         "dose_level": 3,
         "p_value": 0.158577,
         "p_value_adj": 0.158577,
         "statistic": null,
-        "cohens_d": 1.0084
+        "effect_size": 1.0084
       }
     ],
     "scheduled_direction": "up",
@@ -3578,21 +3578,21 @@
         "p_value": 0.950341,
         "p_value_adj": 0.950341,
         "statistic": null,
-        "cohens_d": -0.2509
+        "effect_size": -0.2509
       },
       {
         "dose_level": 2,
         "p_value": 0.309604,
         "p_value_adj": 0.309604,
         "statistic": null,
-        "cohens_d": 0.5686
+        "effect_size": 0.5686
       },
       {
         "dose_level": 3,
         "p_value": 0.158577,
         "p_value_adj": 0.158577,
         "statistic": null,
-        "cohens_d": 1.0084
+        "effect_size": 1.0084
       }
     ],
     "scheduled_direction": "up",
@@ -3653,21 +3653,21 @@
         "p_value": 0.949154,
         "p_value_adj": 0.949154,
         "statistic": null,
-        "cohens_d": -0.2626
+        "effect_size": -0.2626
       },
       {
         "dose_level": 2,
         "p_value": 0.299688,
         "p_value_adj": 0.299688,
         "statistic": null,
-        "cohens_d": 0.5596
+        "effect_size": 0.5596
       },
       {
         "dose_level": 3,
         "p_value": 0.1817,
         "p_value_adj": 0.1817,
         "statistic": null,
-        "cohens_d": 0.8655
+        "effect_size": 0.8655
       }
     ],
     "scheduled_direction": "up",
@@ -3728,21 +3728,21 @@
         "p_value": 0.949154,
         "p_value_adj": 0.949154,
         "statistic": null,
-        "cohens_d": -0.2626
+        "effect_size": -0.2626
       },
       {
         "dose_level": 2,
         "p_value": 0.299688,
         "p_value_adj": 0.299688,
         "statistic": null,
-        "cohens_d": 0.5596
+        "effect_size": 0.5596
       },
       {
         "dose_level": 3,
         "p_value": 0.1817,
         "p_value_adj": 0.1817,
         "statistic": null,
-        "cohens_d": 0.8655
+        "effect_size": 0.8655
       }
     ],
     "scheduled_direction": "up",
@@ -3803,21 +3803,21 @@
         "p_value": 0.949154,
         "p_value_adj": 0.949154,
         "statistic": null,
-        "cohens_d": -0.2626
+        "effect_size": -0.2626
       },
       {
         "dose_level": 2,
         "p_value": 0.299688,
         "p_value_adj": 0.299688,
         "statistic": null,
-        "cohens_d": 0.5596
+        "effect_size": 0.5596
       },
       {
         "dose_level": 3,
         "p_value": 0.1817,
         "p_value_adj": 0.1817,
         "statistic": null,
-        "cohens_d": 0.8655
+        "effect_size": 0.8655
       }
     ],
     "scheduled_direction": "up",
@@ -3878,21 +3878,21 @@
         "p_value": 0.562807,
         "p_value_adj": 0.562807,
         "statistic": null,
-        "cohens_d": -0.5387
+        "effect_size": -0.5387
       },
       {
         "dose_level": 2,
         "p_value": 0.004048,
         "p_value_adj": 0.004048,
         "statistic": null,
-        "cohens_d": -1.6442
+        "effect_size": -1.6442
       },
       {
         "dose_level": 3,
         "p_value": 0.259743,
         "p_value_adj": 0.259743,
         "statistic": null,
-        "cohens_d": -0.8164
+        "effect_size": -0.8164
       }
     ],
     "scheduled_direction": "down",
@@ -3953,21 +3953,21 @@
         "p_value": 0.562807,
         "p_value_adj": 0.562807,
         "statistic": null,
-        "cohens_d": -0.5387
+        "effect_size": -0.5387
       },
       {
         "dose_level": 2,
         "p_value": 0.004048,
         "p_value_adj": 0.004048,
         "statistic": null,
-        "cohens_d": -1.6442
+        "effect_size": -1.6442
       },
       {
         "dose_level": 3,
         "p_value": 0.259743,
         "p_value_adj": 0.259743,
         "statistic": null,
-        "cohens_d": -0.8164
+        "effect_size": -0.8164
       }
     ],
     "scheduled_direction": "down",
@@ -4028,21 +4028,21 @@
         "p_value": 0.562807,
         "p_value_adj": 0.562807,
         "statistic": null,
-        "cohens_d": -0.5387
+        "effect_size": -0.5387
       },
       {
         "dose_level": 2,
         "p_value": 0.004048,
         "p_value_adj": 0.004048,
         "statistic": null,
-        "cohens_d": -1.6442
+        "effect_size": -1.6442
       },
       {
         "dose_level": 3,
         "p_value": 0.259743,
         "p_value_adj": 0.259743,
         "statistic": null,
-        "cohens_d": -0.8164
+        "effect_size": -0.8164
       }
     ],
     "scheduled_direction": "down",
@@ -4103,21 +4103,21 @@
         "p_value": 0.00434,
         "p_value_adj": 0.00434,
         "statistic": null,
-        "cohens_d": 1.3885
+        "effect_size": 1.3885
       },
       {
         "dose_level": 2,
         "p_value": 0.528512,
         "p_value_adj": 0.528512,
         "statistic": null,
-        "cohens_d": 0.5179
+        "effect_size": 0.5179
       },
       {
         "dose_level": 3,
         "p_value": 0.999276,
         "p_value_adj": 0.999276,
         "statistic": null,
-        "cohens_d": 0.0531
+        "effect_size": 0.0531
       }
     ],
     "scheduled_direction": "up",
@@ -4178,21 +4178,21 @@
         "p_value": 0.00434,
         "p_value_adj": 0.00434,
         "statistic": null,
-        "cohens_d": 1.3885
+        "effect_size": 1.3885
       },
       {
         "dose_level": 2,
         "p_value": 0.528512,
         "p_value_adj": 0.528512,
         "statistic": null,
-        "cohens_d": 0.5179
+        "effect_size": 0.5179
       },
       {
         "dose_level": 3,
         "p_value": 0.999276,
         "p_value_adj": 0.999276,
         "statistic": null,
-        "cohens_d": 0.0531
+        "effect_size": 0.0531
       }
     ],
     "scheduled_direction": "up",
@@ -4253,21 +4253,21 @@
         "p_value": 0.00434,
         "p_value_adj": 0.00434,
         "statistic": null,
-        "cohens_d": 1.3885
+        "effect_size": 1.3885
       },
       {
         "dose_level": 2,
         "p_value": 0.528512,
         "p_value_adj": 0.528512,
         "statistic": null,
-        "cohens_d": 0.5179
+        "effect_size": 0.5179
       },
       {
         "dose_level": 3,
         "p_value": 0.999276,
         "p_value_adj": 0.999276,
         "statistic": null,
-        "cohens_d": 0.0531
+        "effect_size": 0.0531
       }
     ],
     "scheduled_direction": "up",
@@ -4328,21 +4328,21 @@
         "p_value": 0.539734,
         "p_value_adj": 0.539734,
         "statistic": null,
-        "cohens_d": -0.5766
+        "effect_size": -0.5766
       },
       {
         "dose_level": 2,
         "p_value": 0.559479,
         "p_value_adj": 0.559479,
         "statistic": null,
-        "cohens_d": -0.4447
+        "effect_size": -0.4447
       },
       {
         "dose_level": 3,
         "p_value": 3e-06,
         "p_value_adj": 3e-06,
         "statistic": null,
-        "cohens_d": -4.4029
+        "effect_size": -4.4029
       }
     ],
     "scheduled_direction": "down",
@@ -4403,21 +4403,21 @@
         "p_value": 0.539734,
         "p_value_adj": 0.539734,
         "statistic": null,
-        "cohens_d": -0.5766
+        "effect_size": -0.5766
       },
       {
         "dose_level": 2,
         "p_value": 0.559479,
         "p_value_adj": 0.559479,
         "statistic": null,
-        "cohens_d": -0.4447
+        "effect_size": -0.4447
       },
       {
         "dose_level": 3,
         "p_value": 3e-06,
         "p_value_adj": 3e-06,
         "statistic": null,
-        "cohens_d": -4.4029
+        "effect_size": -4.4029
       }
     ],
     "scheduled_direction": "down",
@@ -4478,21 +4478,21 @@
         "p_value": 0.539734,
         "p_value_adj": 0.539734,
         "statistic": null,
-        "cohens_d": -0.5766
+        "effect_size": -0.5766
       },
       {
         "dose_level": 2,
         "p_value": 0.559479,
         "p_value_adj": 0.559479,
         "statistic": null,
-        "cohens_d": -0.4447
+        "effect_size": -0.4447
       },
       {
         "dose_level": 3,
         "p_value": 3e-06,
         "p_value_adj": 3e-06,
         "statistic": null,
-        "cohens_d": -4.4029
+        "effect_size": -4.4029
       }
     ],
     "scheduled_direction": "down",
@@ -4553,21 +4553,21 @@
         "p_value": 0.99731,
         "p_value_adj": 0.99731,
         "statistic": null,
-        "cohens_d": -0.0627
+        "effect_size": -0.0627
       },
       {
         "dose_level": 2,
         "p_value": 0.811656,
         "p_value_adj": 0.811656,
         "statistic": null,
-        "cohens_d": -0.3281
+        "effect_size": -0.3281
       },
       {
         "dose_level": 3,
         "p_value": 0.003161,
         "p_value_adj": 0.003161,
         "statistic": null,
-        "cohens_d": -1.6981
+        "effect_size": -1.6981
       }
     ],
     "scheduled_direction": "down",
@@ -4628,21 +4628,21 @@
         "p_value": 0.99731,
         "p_value_adj": 0.99731,
         "statistic": null,
-        "cohens_d": -0.0627
+        "effect_size": -0.0627
       },
       {
         "dose_level": 2,
         "p_value": 0.811656,
         "p_value_adj": 0.811656,
         "statistic": null,
-        "cohens_d": -0.3281
+        "effect_size": -0.3281
       },
       {
         "dose_level": 3,
         "p_value": 0.003161,
         "p_value_adj": 0.003161,
         "statistic": null,
-        "cohens_d": -1.6981
+        "effect_size": -1.6981
       }
     ],
     "scheduled_direction": "down",
@@ -4703,21 +4703,21 @@
         "p_value": 0.99731,
         "p_value_adj": 0.99731,
         "statistic": null,
-        "cohens_d": -0.0627
+        "effect_size": -0.0627
       },
       {
         "dose_level": 2,
         "p_value": 0.811656,
         "p_value_adj": 0.811656,
         "statistic": null,
-        "cohens_d": -0.3281
+        "effect_size": -0.3281
       },
       {
         "dose_level": 3,
         "p_value": 0.003161,
         "p_value_adj": 0.003161,
         "statistic": null,
-        "cohens_d": -1.6981
+        "effect_size": -1.6981
       }
     ],
     "scheduled_direction": "down",
@@ -4778,21 +4778,21 @@
         "p_value": 0.878949,
         "p_value_adj": 0.878949,
         "statistic": null,
-        "cohens_d": -0.2802
+        "effect_size": -0.2802
       },
       {
         "dose_level": 2,
         "p_value": 0.418168,
         "p_value_adj": 0.418168,
         "statistic": null,
-        "cohens_d": -0.5081
+        "effect_size": -0.5081
       },
       {
         "dose_level": 3,
         "p_value": 1.2e-05,
         "p_value_adj": 1.2e-05,
         "statistic": null,
-        "cohens_d": -2.531
+        "effect_size": -2.531
       }
     ],
     "scheduled_direction": "down",
@@ -4853,21 +4853,21 @@
         "p_value": 0.878949,
         "p_value_adj": 0.878949,
         "statistic": null,
-        "cohens_d": -0.2802
+        "effect_size": -0.2802
       },
       {
         "dose_level": 2,
         "p_value": 0.418168,
         "p_value_adj": 0.418168,
         "statistic": null,
-        "cohens_d": -0.5081
+        "effect_size": -0.5081
       },
       {
         "dose_level": 3,
         "p_value": 1.2e-05,
         "p_value_adj": 1.2e-05,
         "statistic": null,
-        "cohens_d": -2.531
+        "effect_size": -2.531
       }
     ],
     "scheduled_direction": "down",
@@ -4928,21 +4928,21 @@
         "p_value": 0.878949,
         "p_value_adj": 0.878949,
         "statistic": null,
-        "cohens_d": -0.2802
+        "effect_size": -0.2802
       },
       {
         "dose_level": 2,
         "p_value": 0.418168,
         "p_value_adj": 0.418168,
         "statistic": null,
-        "cohens_d": -0.5081
+        "effect_size": -0.5081
       },
       {
         "dose_level": 3,
         "p_value": 1.2e-05,
         "p_value_adj": 1.2e-05,
         "statistic": null,
-        "cohens_d": -2.531
+        "effect_size": -2.531
       }
     ],
     "scheduled_direction": "down",
@@ -5003,21 +5003,21 @@
         "p_value": 0.999932,
         "p_value_adj": 0.999932,
         "statistic": null,
-        "cohens_d": 0.0185
+        "effect_size": 0.0185
       },
       {
         "dose_level": 2,
         "p_value": 0.959034,
         "p_value_adj": 0.959034,
         "statistic": null,
-        "cohens_d": -0.1909
+        "effect_size": -0.1909
       },
       {
         "dose_level": 3,
         "p_value": 0.059243,
         "p_value_adj": 0.059243,
         "statistic": null,
-        "cohens_d": -1.1755
+        "effect_size": -1.1755
       }
     ],
     "scheduled_direction": "down",
@@ -5078,21 +5078,21 @@
         "p_value": 0.999932,
         "p_value_adj": 0.999932,
         "statistic": null,
-        "cohens_d": 0.0185
+        "effect_size": 0.0185
       },
       {
         "dose_level": 2,
         "p_value": 0.959034,
         "p_value_adj": 0.959034,
         "statistic": null,
-        "cohens_d": -0.1909
+        "effect_size": -0.1909
       },
       {
         "dose_level": 3,
         "p_value": 0.059243,
         "p_value_adj": 0.059243,
         "statistic": null,
-        "cohens_d": -1.1755
+        "effect_size": -1.1755
       }
     ],
     "scheduled_direction": "down",
@@ -5153,21 +5153,21 @@
         "p_value": 0.999932,
         "p_value_adj": 0.999932,
         "statistic": null,
-        "cohens_d": 0.0185
+        "effect_size": 0.0185
       },
       {
         "dose_level": 2,
         "p_value": 0.959034,
         "p_value_adj": 0.959034,
         "statistic": null,
-        "cohens_d": -0.1909
+        "effect_size": -0.1909
       },
       {
         "dose_level": 3,
         "p_value": 0.059243,
         "p_value_adj": 0.059243,
         "statistic": null,
-        "cohens_d": -1.1755
+        "effect_size": -1.1755
       }
     ],
     "scheduled_direction": "down",
@@ -5228,21 +5228,21 @@
         "p_value": 0.039515,
         "p_value_adj": 0.039515,
         "statistic": null,
-        "cohens_d": 0.9762
+        "effect_size": 0.9762
       },
       {
         "dose_level": 2,
         "p_value": 0.122247,
         "p_value_adj": 0.122247,
         "statistic": null,
-        "cohens_d": 1.0585
+        "effect_size": 1.0585
       },
       {
         "dose_level": 3,
         "p_value": 0.417058,
         "p_value_adj": 0.417058,
         "statistic": null,
-        "cohens_d": 0.6504
+        "effect_size": 0.6504
       }
     ],
     "scheduled_direction": "up",
@@ -5303,21 +5303,21 @@
         "p_value": 0.039515,
         "p_value_adj": 0.039515,
         "statistic": null,
-        "cohens_d": 0.9762
+        "effect_size": 0.9762
       },
       {
         "dose_level": 2,
         "p_value": 0.122247,
         "p_value_adj": 0.122247,
         "statistic": null,
-        "cohens_d": 1.0585
+        "effect_size": 1.0585
       },
       {
         "dose_level": 3,
         "p_value": 0.417058,
         "p_value_adj": 0.417058,
         "statistic": null,
-        "cohens_d": 0.6504
+        "effect_size": 0.6504
       }
     ],
     "scheduled_direction": "up",
@@ -5378,21 +5378,21 @@
         "p_value": 0.039515,
         "p_value_adj": 0.039515,
         "statistic": null,
-        "cohens_d": 0.9762
+        "effect_size": 0.9762
       },
       {
         "dose_level": 2,
         "p_value": 0.122247,
         "p_value_adj": 0.122247,
         "statistic": null,
-        "cohens_d": 1.0585
+        "effect_size": 1.0585
       },
       {
         "dose_level": 3,
         "p_value": 0.417058,
         "p_value_adj": 0.417058,
         "statistic": null,
-        "cohens_d": 0.6504
+        "effect_size": 0.6504
       }
     ],
     "scheduled_direction": "up",
@@ -5453,21 +5453,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       },
       {
         "dose_level": 2,
         "p_value": 0.03991,
         "p_value_adj": 0.03991,
         "statistic": null,
-        "cohens_d": 1.4276
+        "effect_size": 1.4276
       },
       {
         "dose_level": 3,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       }
     ],
     "scheduled_direction": "up",
@@ -5528,21 +5528,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       },
       {
         "dose_level": 2,
         "p_value": 0.03991,
         "p_value_adj": 0.03991,
         "statistic": null,
-        "cohens_d": 1.4276
+        "effect_size": 1.4276
       },
       {
         "dose_level": 3,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       }
     ],
     "scheduled_direction": "up",
@@ -5603,21 +5603,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       },
       {
         "dose_level": 2,
         "p_value": 0.03991,
         "p_value_adj": 0.03991,
         "statistic": null,
-        "cohens_d": 1.4276
+        "effect_size": 1.4276
       },
       {
         "dose_level": 3,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": null
+        "effect_size": null
       }
     ],
     "scheduled_direction": "up",
@@ -5678,21 +5678,21 @@
         "p_value": 0.011085,
         "p_value_adj": 0.011085,
         "statistic": null,
-        "cohens_d": -1.1673
+        "effect_size": -1.1673
       },
       {
         "dose_level": 2,
         "p_value": 0.043677,
         "p_value_adj": 0.043677,
         "statistic": null,
-        "cohens_d": -0.8948
+        "effect_size": -0.8948
       },
       {
         "dose_level": 3,
         "p_value": 0.002734,
         "p_value_adj": 0.002734,
         "statistic": null,
-        "cohens_d": -1.3859
+        "effect_size": -1.3859
       }
     ],
     "scheduled_direction": "down",
@@ -5753,21 +5753,21 @@
         "p_value": 0.011085,
         "p_value_adj": 0.011085,
         "statistic": null,
-        "cohens_d": -1.1673
+        "effect_size": -1.1673
       },
       {
         "dose_level": 2,
         "p_value": 0.043677,
         "p_value_adj": 0.043677,
         "statistic": null,
-        "cohens_d": -0.8948
+        "effect_size": -0.8948
       },
       {
         "dose_level": 3,
         "p_value": 0.002734,
         "p_value_adj": 0.002734,
         "statistic": null,
-        "cohens_d": -1.3859
+        "effect_size": -1.3859
       }
     ],
     "scheduled_direction": "down",
@@ -5828,21 +5828,21 @@
         "p_value": 0.011085,
         "p_value_adj": 0.011085,
         "statistic": null,
-        "cohens_d": -1.1673
+        "effect_size": -1.1673
       },
       {
         "dose_level": 2,
         "p_value": 0.043677,
         "p_value_adj": 0.043677,
         "statistic": null,
-        "cohens_d": -0.8948
+        "effect_size": -0.8948
       },
       {
         "dose_level": 3,
         "p_value": 0.002734,
         "p_value_adj": 0.002734,
         "statistic": null,
-        "cohens_d": -1.3859
+        "effect_size": -1.3859
       }
     ],
     "scheduled_direction": "down",
@@ -5903,21 +5903,21 @@
         "p_value": 0.838413,
         "p_value_adj": 0.838413,
         "statistic": null,
-        "cohens_d": 0.5034
+        "effect_size": 0.5034
       },
       {
         "dose_level": 2,
         "p_value": 0.032313,
         "p_value_adj": 0.032313,
         "statistic": null,
-        "cohens_d": 1.3047
+        "effect_size": 1.3047
       },
       {
         "dose_level": 3,
         "p_value": 0.004144,
         "p_value_adj": 0.004144,
         "statistic": null,
-        "cohens_d": 1.3504
+        "effect_size": 1.3504
       }
     ],
     "scheduled_direction": "up",
@@ -5978,21 +5978,21 @@
         "p_value": 0.838413,
         "p_value_adj": 0.838413,
         "statistic": null,
-        "cohens_d": 0.5034
+        "effect_size": 0.5034
       },
       {
         "dose_level": 2,
         "p_value": 0.032313,
         "p_value_adj": 0.032313,
         "statistic": null,
-        "cohens_d": 1.3047
+        "effect_size": 1.3047
       },
       {
         "dose_level": 3,
         "p_value": 0.004144,
         "p_value_adj": 0.004144,
         "statistic": null,
-        "cohens_d": 1.3504
+        "effect_size": 1.3504
       }
     ],
     "scheduled_direction": "up",
@@ -6053,21 +6053,21 @@
         "p_value": 0.838413,
         "p_value_adj": 0.838413,
         "statistic": null,
-        "cohens_d": 0.5034
+        "effect_size": 0.5034
       },
       {
         "dose_level": 2,
         "p_value": 0.032313,
         "p_value_adj": 0.032313,
         "statistic": null,
-        "cohens_d": 1.3047
+        "effect_size": 1.3047
       },
       {
         "dose_level": 3,
         "p_value": 0.004144,
         "p_value_adj": 0.004144,
         "statistic": null,
-        "cohens_d": 1.3504
+        "effect_size": 1.3504
       }
     ],
     "scheduled_direction": "up",
@@ -6128,21 +6128,21 @@
         "p_value": 0.063601,
         "p_value_adj": 0.063601,
         "statistic": null,
-        "cohens_d": -0.9395
+        "effect_size": -0.9395
       },
       {
         "dose_level": 2,
         "p_value": 0.042549,
         "p_value_adj": 0.042549,
         "statistic": null,
-        "cohens_d": -1.0725
+        "effect_size": -1.0725
       },
       {
         "dose_level": 3,
         "p_value": 0.009533,
         "p_value_adj": 0.009533,
         "statistic": null,
-        "cohens_d": -1.3099
+        "effect_size": -1.3099
       }
     ],
     "scheduled_direction": "down",
@@ -6203,21 +6203,21 @@
         "p_value": 0.063601,
         "p_value_adj": 0.063601,
         "statistic": null,
-        "cohens_d": -0.9395
+        "effect_size": -0.9395
       },
       {
         "dose_level": 2,
         "p_value": 0.042549,
         "p_value_adj": 0.042549,
         "statistic": null,
-        "cohens_d": -1.0725
+        "effect_size": -1.0725
       },
       {
         "dose_level": 3,
         "p_value": 0.009533,
         "p_value_adj": 0.009533,
         "statistic": null,
-        "cohens_d": -1.3099
+        "effect_size": -1.3099
       }
     ],
     "scheduled_direction": "down",
@@ -6278,21 +6278,21 @@
         "p_value": 0.063601,
         "p_value_adj": 0.063601,
         "statistic": null,
-        "cohens_d": -0.9395
+        "effect_size": -0.9395
       },
       {
         "dose_level": 2,
         "p_value": 0.042549,
         "p_value_adj": 0.042549,
         "statistic": null,
-        "cohens_d": -1.0725
+        "effect_size": -1.0725
       },
       {
         "dose_level": 3,
         "p_value": 0.009533,
         "p_value_adj": 0.009533,
         "statistic": null,
-        "cohens_d": -1.3099
+        "effect_size": -1.3099
       }
     ],
     "scheduled_direction": "down",
@@ -6353,21 +6353,21 @@
         "p_value": 0.819242,
         "p_value_adj": 0.819242,
         "statistic": null,
-        "cohens_d": -0.3219
+        "effect_size": -0.3219
       },
       {
         "dose_level": 2,
         "p_value": 0.056679,
         "p_value_adj": 0.056679,
         "statistic": null,
-        "cohens_d": -0.9657
+        "effect_size": -0.9657
       },
       {
         "dose_level": 3,
         "p_value": 0.002206,
         "p_value_adj": 0.002206,
         "statistic": null,
-        "cohens_d": -1.899
+        "effect_size": -1.899
       }
     ],
     "scheduled_direction": "down",
@@ -6428,21 +6428,21 @@
         "p_value": 0.819242,
         "p_value_adj": 0.819242,
         "statistic": null,
-        "cohens_d": -0.3219
+        "effect_size": -0.3219
       },
       {
         "dose_level": 2,
         "p_value": 0.056679,
         "p_value_adj": 0.056679,
         "statistic": null,
-        "cohens_d": -0.9657
+        "effect_size": -0.9657
       },
       {
         "dose_level": 3,
         "p_value": 0.002206,
         "p_value_adj": 0.002206,
         "statistic": null,
-        "cohens_d": -1.899
+        "effect_size": -1.899
       }
     ],
     "scheduled_direction": "down",
@@ -6503,21 +6503,21 @@
         "p_value": 0.819242,
         "p_value_adj": 0.819242,
         "statistic": null,
-        "cohens_d": -0.3219
+        "effect_size": -0.3219
       },
       {
         "dose_level": 2,
         "p_value": 0.056679,
         "p_value_adj": 0.056679,
         "statistic": null,
-        "cohens_d": -0.9657
+        "effect_size": -0.9657
       },
       {
         "dose_level": 3,
         "p_value": 0.002206,
         "p_value_adj": 0.002206,
         "statistic": null,
-        "cohens_d": -1.899
+        "effect_size": -1.899
       }
     ],
     "scheduled_direction": "down",
@@ -6578,21 +6578,21 @@
         "p_value": 0.628296,
         "p_value_adj": 0.628296,
         "statistic": null,
-        "cohens_d": -0.4796
+        "effect_size": -0.4796
       },
       {
         "dose_level": 2,
         "p_value": 0.066079,
         "p_value_adj": 0.066079,
         "statistic": null,
-        "cohens_d": -0.974
+        "effect_size": -0.974
       },
       {
         "dose_level": 3,
         "p_value": 0.000497,
         "p_value_adj": 0.000497,
         "statistic": null,
-        "cohens_d": -1.7722
+        "effect_size": -1.7722
       }
     ],
     "scheduled_direction": "down",
@@ -6653,21 +6653,21 @@
         "p_value": 0.628296,
         "p_value_adj": 0.628296,
         "statistic": null,
-        "cohens_d": -0.4796
+        "effect_size": -0.4796
       },
       {
         "dose_level": 2,
         "p_value": 0.066079,
         "p_value_adj": 0.066079,
         "statistic": null,
-        "cohens_d": -0.974
+        "effect_size": -0.974
       },
       {
         "dose_level": 3,
         "p_value": 0.000497,
         "p_value_adj": 0.000497,
         "statistic": null,
-        "cohens_d": -1.7722
+        "effect_size": -1.7722
       }
     ],
     "scheduled_direction": "down",
@@ -6728,21 +6728,21 @@
         "p_value": 0.628296,
         "p_value_adj": 0.628296,
         "statistic": null,
-        "cohens_d": -0.4796
+        "effect_size": -0.4796
       },
       {
         "dose_level": 2,
         "p_value": 0.066079,
         "p_value_adj": 0.066079,
         "statistic": null,
-        "cohens_d": -0.974
+        "effect_size": -0.974
       },
       {
         "dose_level": 3,
         "p_value": 0.000497,
         "p_value_adj": 0.000497,
         "statistic": null,
-        "cohens_d": -1.7722
+        "effect_size": -1.7722
       }
     ],
     "scheduled_direction": "down",
@@ -6803,21 +6803,21 @@
         "p_value": 0.149373,
         "p_value_adj": 0.149373,
         "statistic": null,
-        "cohens_d": -1.083
+        "effect_size": -1.083
       },
       {
         "dose_level": 2,
         "p_value": 0.858516,
         "p_value_adj": 0.858516,
         "statistic": null,
-        "cohens_d": -0.2822
+        "effect_size": -0.2822
       },
       {
         "dose_level": 3,
         "p_value": 0.37151,
         "p_value_adj": 0.37151,
         "statistic": null,
-        "cohens_d": 0.5467
+        "effect_size": 0.5467
       }
     ],
     "scheduled_direction": "down",
@@ -6878,21 +6878,21 @@
         "p_value": 0.149373,
         "p_value_adj": 0.149373,
         "statistic": null,
-        "cohens_d": -1.083
+        "effect_size": -1.083
       },
       {
         "dose_level": 2,
         "p_value": 0.858516,
         "p_value_adj": 0.858516,
         "statistic": null,
-        "cohens_d": -0.2822
+        "effect_size": -0.2822
       },
       {
         "dose_level": 3,
         "p_value": 0.37151,
         "p_value_adj": 0.37151,
         "statistic": null,
-        "cohens_d": 0.5467
+        "effect_size": 0.5467
       }
     ],
     "scheduled_direction": "down",
@@ -6953,21 +6953,21 @@
         "p_value": 0.149373,
         "p_value_adj": 0.149373,
         "statistic": null,
-        "cohens_d": -1.083
+        "effect_size": -1.083
       },
       {
         "dose_level": 2,
         "p_value": 0.858516,
         "p_value_adj": 0.858516,
         "statistic": null,
-        "cohens_d": -0.2822
+        "effect_size": -0.2822
       },
       {
         "dose_level": 3,
         "p_value": 0.37151,
         "p_value_adj": 0.37151,
         "statistic": null,
-        "cohens_d": 0.5467
+        "effect_size": 0.5467
       }
     ],
     "scheduled_direction": "down",
@@ -7028,21 +7028,21 @@
         "p_value": 0.959342,
         "p_value_adj": 0.959342,
         "statistic": null,
-        "cohens_d": -0.2405
+        "effect_size": -0.2405
       },
       {
         "dose_level": 2,
         "p_value": 0.071068,
         "p_value_adj": 0.071068,
         "statistic": null,
-        "cohens_d": 0.8301
+        "effect_size": 0.8301
       },
       {
         "dose_level": 3,
         "p_value": 0.086567,
         "p_value_adj": 0.086567,
         "statistic": null,
-        "cohens_d": 1.2756
+        "effect_size": 1.2756
       }
     ],
     "scheduled_direction": "up",
@@ -7103,21 +7103,21 @@
         "p_value": 0.959342,
         "p_value_adj": 0.959342,
         "statistic": null,
-        "cohens_d": -0.2405
+        "effect_size": -0.2405
       },
       {
         "dose_level": 2,
         "p_value": 0.071068,
         "p_value_adj": 0.071068,
         "statistic": null,
-        "cohens_d": 0.8301
+        "effect_size": 0.8301
       },
       {
         "dose_level": 3,
         "p_value": 0.086567,
         "p_value_adj": 0.086567,
         "statistic": null,
-        "cohens_d": 1.2756
+        "effect_size": 1.2756
       }
     ],
     "scheduled_direction": "up",
@@ -7178,21 +7178,21 @@
         "p_value": 0.959342,
         "p_value_adj": 0.959342,
         "statistic": null,
-        "cohens_d": -0.2405
+        "effect_size": -0.2405
       },
       {
         "dose_level": 2,
         "p_value": 0.071068,
         "p_value_adj": 0.071068,
         "statistic": null,
-        "cohens_d": 0.8301
+        "effect_size": 0.8301
       },
       {
         "dose_level": 3,
         "p_value": 0.086567,
         "p_value_adj": 0.086567,
         "statistic": null,
-        "cohens_d": 1.2756
+        "effect_size": 1.2756
       }
     ],
     "scheduled_direction": "up",
@@ -7253,21 +7253,21 @@
         "p_value": 0.337556,
         "p_value_adj": 0.337556,
         "statistic": null,
-        "cohens_d": 0.5657
+        "effect_size": 0.5657
       },
       {
         "dose_level": 2,
         "p_value": 0.214508,
         "p_value_adj": 0.214508,
         "statistic": null,
-        "cohens_d": 1.1513
+        "effect_size": 1.1513
       },
       {
         "dose_level": 3,
         "p_value": 0.001641,
         "p_value_adj": 0.001641,
         "statistic": null,
-        "cohens_d": 1.9502
+        "effect_size": 1.9502
       }
     ],
     "scheduled_direction": "up",
@@ -7328,21 +7328,21 @@
         "p_value": 0.337556,
         "p_value_adj": 0.337556,
         "statistic": null,
-        "cohens_d": 0.5657
+        "effect_size": 0.5657
       },
       {
         "dose_level": 2,
         "p_value": 0.214508,
         "p_value_adj": 0.214508,
         "statistic": null,
-        "cohens_d": 1.1513
+        "effect_size": 1.1513
       },
       {
         "dose_level": 3,
         "p_value": 0.001641,
         "p_value_adj": 0.001641,
         "statistic": null,
-        "cohens_d": 1.9502
+        "effect_size": 1.9502
       }
     ],
     "scheduled_direction": "up",
@@ -7403,21 +7403,21 @@
         "p_value": 0.337556,
         "p_value_adj": 0.337556,
         "statistic": null,
-        "cohens_d": 0.5657
+        "effect_size": 0.5657
       },
       {
         "dose_level": 2,
         "p_value": 0.214508,
         "p_value_adj": 0.214508,
         "statistic": null,
-        "cohens_d": 1.1513
+        "effect_size": 1.1513
       },
       {
         "dose_level": 3,
         "p_value": 0.001641,
         "p_value_adj": 0.001641,
         "statistic": null,
-        "cohens_d": 1.9502
+        "effect_size": 1.9502
       }
     ],
     "scheduled_direction": "up",
@@ -7478,21 +7478,21 @@
         "p_value": 0.000564,
         "p_value_adj": 0.000564,
         "statistic": null,
-        "cohens_d": -2.3355
+        "effect_size": -2.3355
       },
       {
         "dose_level": 2,
         "p_value": 0.000685,
         "p_value_adj": 0.000685,
         "statistic": null,
-        "cohens_d": -2.2343
+        "effect_size": -2.2343
       },
       {
         "dose_level": 3,
         "p_value": 0.00038,
         "p_value_adj": 0.00038,
         "statistic": null,
-        "cohens_d": -1.6735
+        "effect_size": -1.6735
       }
     ],
     "scheduled_direction": "down",
@@ -7553,21 +7553,21 @@
         "p_value": 0.000564,
         "p_value_adj": 0.000564,
         "statistic": null,
-        "cohens_d": -2.3355
+        "effect_size": -2.3355
       },
       {
         "dose_level": 2,
         "p_value": 0.000685,
         "p_value_adj": 0.000685,
         "statistic": null,
-        "cohens_d": -2.2343
+        "effect_size": -2.2343
       },
       {
         "dose_level": 3,
         "p_value": 0.00038,
         "p_value_adj": 0.00038,
         "statistic": null,
-        "cohens_d": -1.6735
+        "effect_size": -1.6735
       }
     ],
     "scheduled_direction": "down",
@@ -7628,21 +7628,21 @@
         "p_value": 0.000564,
         "p_value_adj": 0.000564,
         "statistic": null,
-        "cohens_d": -2.3355
+        "effect_size": -2.3355
       },
       {
         "dose_level": 2,
         "p_value": 0.000685,
         "p_value_adj": 0.000685,
         "statistic": null,
-        "cohens_d": -2.2343
+        "effect_size": -2.2343
       },
       {
         "dose_level": 3,
         "p_value": 0.00038,
         "p_value_adj": 0.00038,
         "statistic": null,
-        "cohens_d": -1.6735
+        "effect_size": -1.6735
       }
     ],
     "scheduled_direction": "down",
@@ -7703,21 +7703,21 @@
         "p_value": 0.975115,
         "p_value_adj": 0.975115,
         "statistic": null,
-        "cohens_d": 0.201
+        "effect_size": 0.201
       },
       {
         "dose_level": 2,
         "p_value": 0.15171,
         "p_value_adj": 0.15171,
         "statistic": null,
-        "cohens_d": 0.9131
+        "effect_size": 0.9131
       },
       {
         "dose_level": 3,
         "p_value": 0.048103,
         "p_value_adj": 0.048103,
         "statistic": null,
-        "cohens_d": 1.0637
+        "effect_size": 1.0637
       }
     ],
     "scheduled_direction": "up",
@@ -7778,21 +7778,21 @@
         "p_value": 0.975115,
         "p_value_adj": 0.975115,
         "statistic": null,
-        "cohens_d": 0.201
+        "effect_size": 0.201
       },
       {
         "dose_level": 2,
         "p_value": 0.15171,
         "p_value_adj": 0.15171,
         "statistic": null,
-        "cohens_d": 0.9131
+        "effect_size": 0.9131
       },
       {
         "dose_level": 3,
         "p_value": 0.048103,
         "p_value_adj": 0.048103,
         "statistic": null,
-        "cohens_d": 1.0637
+        "effect_size": 1.0637
       }
     ],
     "scheduled_direction": "up",
@@ -7853,21 +7853,21 @@
         "p_value": 0.975115,
         "p_value_adj": 0.975115,
         "statistic": null,
-        "cohens_d": 0.201
+        "effect_size": 0.201
       },
       {
         "dose_level": 2,
         "p_value": 0.15171,
         "p_value_adj": 0.15171,
         "statistic": null,
-        "cohens_d": 0.9131
+        "effect_size": 0.9131
       },
       {
         "dose_level": 3,
         "p_value": 0.048103,
         "p_value_adj": 0.048103,
         "statistic": null,
-        "cohens_d": 1.0637
+        "effect_size": 1.0637
       }
     ],
     "scheduled_direction": "up",
@@ -7928,21 +7928,21 @@
         "p_value": 0.328329,
         "p_value_adj": 0.328329,
         "statistic": null,
-        "cohens_d": 0.6669
+        "effect_size": 0.6669
       },
       {
         "dose_level": 2,
         "p_value": 0.061901,
         "p_value_adj": 0.061901,
         "statistic": null,
-        "cohens_d": 1.1078
+        "effect_size": 1.1078
       },
       {
         "dose_level": 3,
         "p_value": 0.068541,
         "p_value_adj": 0.068541,
         "statistic": null,
-        "cohens_d": 1.0498
+        "effect_size": 1.0498
       }
     ],
     "scheduled_direction": "up",
@@ -8003,21 +8003,21 @@
         "p_value": 0.328329,
         "p_value_adj": 0.328329,
         "statistic": null,
-        "cohens_d": 0.6669
+        "effect_size": 0.6669
       },
       {
         "dose_level": 2,
         "p_value": 0.061901,
         "p_value_adj": 0.061901,
         "statistic": null,
-        "cohens_d": 1.1078
+        "effect_size": 1.1078
       },
       {
         "dose_level": 3,
         "p_value": 0.068541,
         "p_value_adj": 0.068541,
         "statistic": null,
-        "cohens_d": 1.0498
+        "effect_size": 1.0498
       }
     ],
     "scheduled_direction": "up",
@@ -8078,21 +8078,21 @@
         "p_value": 0.328329,
         "p_value_adj": 0.328329,
         "statistic": null,
-        "cohens_d": 0.6669
+        "effect_size": 0.6669
       },
       {
         "dose_level": 2,
         "p_value": 0.061901,
         "p_value_adj": 0.061901,
         "statistic": null,
-        "cohens_d": 1.1078
+        "effect_size": 1.1078
       },
       {
         "dose_level": 3,
         "p_value": 0.068541,
         "p_value_adj": 0.068541,
         "statistic": null,
-        "cohens_d": 1.0498
+        "effect_size": 1.0498
       }
     ],
     "scheduled_direction": "up",
@@ -8153,21 +8153,21 @@
         "p_value": 0.06206,
         "p_value_adj": 0.06206,
         "statistic": null,
-        "cohens_d": -0.957
+        "effect_size": -0.957
       },
       {
         "dose_level": 2,
         "p_value": 0.07574,
         "p_value_adj": 0.07574,
         "statistic": null,
-        "cohens_d": -0.9544
+        "effect_size": -0.9544
       },
       {
         "dose_level": 3,
         "p_value": 0.000478,
         "p_value_adj": 0.000478,
         "statistic": null,
-        "cohens_d": -1.8444
+        "effect_size": -1.8444
       }
     ],
     "scheduled_direction": "down",
@@ -8228,21 +8228,21 @@
         "p_value": 0.06206,
         "p_value_adj": 0.06206,
         "statistic": null,
-        "cohens_d": -0.957
+        "effect_size": -0.957
       },
       {
         "dose_level": 2,
         "p_value": 0.07574,
         "p_value_adj": 0.07574,
         "statistic": null,
-        "cohens_d": -0.9544
+        "effect_size": -0.9544
       },
       {
         "dose_level": 3,
         "p_value": 0.000478,
         "p_value_adj": 0.000478,
         "statistic": null,
-        "cohens_d": -1.8444
+        "effect_size": -1.8444
       }
     ],
     "scheduled_direction": "down",
@@ -8303,21 +8303,21 @@
         "p_value": 0.06206,
         "p_value_adj": 0.06206,
         "statistic": null,
-        "cohens_d": -0.957
+        "effect_size": -0.957
       },
       {
         "dose_level": 2,
         "p_value": 0.07574,
         "p_value_adj": 0.07574,
         "statistic": null,
-        "cohens_d": -0.9544
+        "effect_size": -0.9544
       },
       {
         "dose_level": 3,
         "p_value": 0.000478,
         "p_value_adj": 0.000478,
         "statistic": null,
-        "cohens_d": -1.8444
+        "effect_size": -1.8444
       }
     ],
     "scheduled_direction": "down",
@@ -8378,21 +8378,21 @@
         "p_value": 0.497124,
         "p_value_adj": 0.497124,
         "statistic": null,
-        "cohens_d": -0.5195
+        "effect_size": -0.5195
       },
       {
         "dose_level": 2,
         "p_value": 0.998115,
         "p_value_adj": 0.998115,
         "statistic": null,
-        "cohens_d": 0.0506
+        "effect_size": 0.0506
       },
       {
         "dose_level": 3,
         "p_value": 0.051066,
         "p_value_adj": 0.051066,
         "statistic": null,
-        "cohens_d": 1.0181
+        "effect_size": 1.0181
       }
     ],
     "scheduled_direction": "up",
@@ -8453,21 +8453,21 @@
         "p_value": 0.497124,
         "p_value_adj": 0.497124,
         "statistic": null,
-        "cohens_d": -0.5195
+        "effect_size": -0.5195
       },
       {
         "dose_level": 2,
         "p_value": 0.998115,
         "p_value_adj": 0.998115,
         "statistic": null,
-        "cohens_d": 0.0506
+        "effect_size": 0.0506
       },
       {
         "dose_level": 3,
         "p_value": 0.051066,
         "p_value_adj": 0.051066,
         "statistic": null,
-        "cohens_d": 1.0181
+        "effect_size": 1.0181
       }
     ],
     "scheduled_direction": "up",
@@ -8528,21 +8528,21 @@
         "p_value": 0.497124,
         "p_value_adj": 0.497124,
         "statistic": null,
-        "cohens_d": -0.5195
+        "effect_size": -0.5195
       },
       {
         "dose_level": 2,
         "p_value": 0.998115,
         "p_value_adj": 0.998115,
         "statistic": null,
-        "cohens_d": 0.0506
+        "effect_size": 0.0506
       },
       {
         "dose_level": 3,
         "p_value": 0.051066,
         "p_value_adj": 0.051066,
         "statistic": null,
-        "cohens_d": 1.0181
+        "effect_size": 1.0181
       }
     ],
     "scheduled_direction": "up",
@@ -8603,21 +8603,21 @@
         "p_value": 0.298816,
         "p_value_adj": 0.298816,
         "statistic": null,
-        "cohens_d": -2.8152
+        "effect_size": -2.8152
       },
       {
         "dose_level": 2,
         "p_value": 0.132736,
         "p_value_adj": 0.132736,
         "statistic": null,
-        "cohens_d": 0.7788
+        "effect_size": 0.7788
       },
       {
         "dose_level": 3,
         "p_value": 5e-06,
         "p_value_adj": 5e-06,
         "statistic": null,
-        "cohens_d": 2.6984
+        "effect_size": 2.6984
       }
     ],
     "scheduled_direction": "down",
@@ -8678,21 +8678,21 @@
         "p_value": 0.298816,
         "p_value_adj": 0.298816,
         "statistic": null,
-        "cohens_d": -2.8152
+        "effect_size": -2.8152
       },
       {
         "dose_level": 2,
         "p_value": 0.132736,
         "p_value_adj": 0.132736,
         "statistic": null,
-        "cohens_d": 0.7788
+        "effect_size": 0.7788
       },
       {
         "dose_level": 3,
         "p_value": 5e-06,
         "p_value_adj": 5e-06,
         "statistic": null,
-        "cohens_d": 2.6984
+        "effect_size": 2.6984
       }
     ],
     "scheduled_direction": "down",
@@ -8753,21 +8753,21 @@
         "p_value": 0.298816,
         "p_value_adj": 0.298816,
         "statistic": null,
-        "cohens_d": -2.8152
+        "effect_size": -2.8152
       },
       {
         "dose_level": 2,
         "p_value": 0.132736,
         "p_value_adj": 0.132736,
         "statistic": null,
-        "cohens_d": 0.7788
+        "effect_size": 0.7788
       },
       {
         "dose_level": 3,
         "p_value": 5e-06,
         "p_value_adj": 5e-06,
         "statistic": null,
-        "cohens_d": 2.6984
+        "effect_size": 2.6984
       }
     ],
     "scheduled_direction": "down",
@@ -8828,21 +8828,21 @@
         "p_value": 0.997198,
         "p_value_adj": 0.997198,
         "statistic": null,
-        "cohens_d": 0.0758
+        "effect_size": 0.0758
       },
       {
         "dose_level": 2,
         "p_value": 0.635222,
         "p_value_adj": 0.635222,
         "statistic": null,
-        "cohens_d": 0.4664
+        "effect_size": 0.4664
       },
       {
         "dose_level": 3,
         "p_value": 0.188773,
         "p_value_adj": 0.188773,
         "statistic": null,
-        "cohens_d": -1.0168
+        "effect_size": -1.0168
       }
     ],
     "scheduled_direction": "down",
@@ -8903,21 +8903,21 @@
         "p_value": 0.997198,
         "p_value_adj": 0.997198,
         "statistic": null,
-        "cohens_d": 0.0758
+        "effect_size": 0.0758
       },
       {
         "dose_level": 2,
         "p_value": 0.635222,
         "p_value_adj": 0.635222,
         "statistic": null,
-        "cohens_d": 0.4664
+        "effect_size": 0.4664
       },
       {
         "dose_level": 3,
         "p_value": 0.188773,
         "p_value_adj": 0.188773,
         "statistic": null,
-        "cohens_d": -1.0168
+        "effect_size": -1.0168
       }
     ],
     "scheduled_direction": "down",
@@ -8978,21 +8978,21 @@
         "p_value": 0.997198,
         "p_value_adj": 0.997198,
         "statistic": null,
-        "cohens_d": 0.0758
+        "effect_size": 0.0758
       },
       {
         "dose_level": 2,
         "p_value": 0.635222,
         "p_value_adj": 0.635222,
         "statistic": null,
-        "cohens_d": 0.4664
+        "effect_size": 0.4664
       },
       {
         "dose_level": 3,
         "p_value": 0.188773,
         "p_value_adj": 0.188773,
         "statistic": null,
-        "cohens_d": -1.0168
+        "effect_size": -1.0168
       }
     ],
     "scheduled_direction": "down",
@@ -9053,21 +9053,21 @@
         "p_value": 0.209786,
         "p_value_adj": 0.209786,
         "statistic": null,
-        "cohens_d": 0.8567
+        "effect_size": 0.8567
       },
       {
         "dose_level": 2,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": 0.0028
+        "effect_size": 0.0028
       },
       {
         "dose_level": 3,
         "p_value": 0.081056,
         "p_value_adj": 0.081056,
         "statistic": null,
-        "cohens_d": -1.359
+        "effect_size": -1.359
       }
     ],
     "scheduled_direction": "down",
@@ -9128,21 +9128,21 @@
         "p_value": 0.209786,
         "p_value_adj": 0.209786,
         "statistic": null,
-        "cohens_d": 0.8567
+        "effect_size": 0.8567
       },
       {
         "dose_level": 2,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": 0.0028
+        "effect_size": 0.0028
       },
       {
         "dose_level": 3,
         "p_value": 0.081056,
         "p_value_adj": 0.081056,
         "statistic": null,
-        "cohens_d": -1.359
+        "effect_size": -1.359
       }
     ],
     "scheduled_direction": "down",
@@ -9203,21 +9203,21 @@
         "p_value": 0.209786,
         "p_value_adj": 0.209786,
         "statistic": null,
-        "cohens_d": 0.8567
+        "effect_size": 0.8567
       },
       {
         "dose_level": 2,
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": 0.0028
+        "effect_size": 0.0028
       },
       {
         "dose_level": 3,
         "p_value": 0.081056,
         "p_value_adj": 0.081056,
         "statistic": null,
-        "cohens_d": -1.359
+        "effect_size": -1.359
       }
     ],
     "scheduled_direction": "down",
@@ -9278,21 +9278,21 @@
         "p_value": 0.136253,
         "p_value_adj": 0.136253,
         "statistic": null,
-        "cohens_d": 1.1217
+        "effect_size": 1.1217
       },
       {
         "dose_level": 2,
         "p_value": 0.002101,
         "p_value_adj": 0.002101,
         "statistic": null,
-        "cohens_d": 1.4311
+        "effect_size": 1.4311
       },
       {
         "dose_level": 3,
         "p_value": 0.974038,
         "p_value_adj": 0.974038,
         "statistic": null,
-        "cohens_d": 0.1993
+        "effect_size": 0.1993
       }
     ],
     "scheduled_direction": "up",
@@ -9353,21 +9353,21 @@
         "p_value": 0.136253,
         "p_value_adj": 0.136253,
         "statistic": null,
-        "cohens_d": 1.1217
+        "effect_size": 1.1217
       },
       {
         "dose_level": 2,
         "p_value": 0.002101,
         "p_value_adj": 0.002101,
         "statistic": null,
-        "cohens_d": 1.4311
+        "effect_size": 1.4311
       },
       {
         "dose_level": 3,
         "p_value": 0.974038,
         "p_value_adj": 0.974038,
         "statistic": null,
-        "cohens_d": 0.1993
+        "effect_size": 0.1993
       }
     ],
     "scheduled_direction": "up",
@@ -9428,21 +9428,21 @@
         "p_value": 0.136253,
         "p_value_adj": 0.136253,
         "statistic": null,
-        "cohens_d": 1.1217
+        "effect_size": 1.1217
       },
       {
         "dose_level": 2,
         "p_value": 0.002101,
         "p_value_adj": 0.002101,
         "statistic": null,
-        "cohens_d": 1.4311
+        "effect_size": 1.4311
       },
       {
         "dose_level": 3,
         "p_value": 0.974038,
         "p_value_adj": 0.974038,
         "statistic": null,
-        "cohens_d": 0.1993
+        "effect_size": 0.1993
       }
     ],
     "scheduled_direction": "up",
@@ -9503,21 +9503,21 @@
         "p_value": 0.007098,
         "p_value_adj": 0.007098,
         "statistic": null,
-        "cohens_d": 1.6875
+        "effect_size": 1.6875
       },
       {
         "dose_level": 2,
         "p_value": 0.004215,
         "p_value_adj": 0.004215,
         "statistic": null,
-        "cohens_d": 1.3327
+        "effect_size": 1.3327
       },
       {
         "dose_level": 3,
         "p_value": 0.995792,
         "p_value_adj": 0.995792,
         "statistic": null,
-        "cohens_d": -0.0993
+        "effect_size": -0.0993
       }
     ],
     "scheduled_direction": "up",
@@ -9578,21 +9578,21 @@
         "p_value": 0.007098,
         "p_value_adj": 0.007098,
         "statistic": null,
-        "cohens_d": 1.6875
+        "effect_size": 1.6875
       },
       {
         "dose_level": 2,
         "p_value": 0.004215,
         "p_value_adj": 0.004215,
         "statistic": null,
-        "cohens_d": 1.3327
+        "effect_size": 1.3327
       },
       {
         "dose_level": 3,
         "p_value": 0.995792,
         "p_value_adj": 0.995792,
         "statistic": null,
-        "cohens_d": -0.0993
+        "effect_size": -0.0993
       }
     ],
     "scheduled_direction": "up",
@@ -9653,21 +9653,21 @@
         "p_value": 0.007098,
         "p_value_adj": 0.007098,
         "statistic": null,
-        "cohens_d": 1.6875
+        "effect_size": 1.6875
       },
       {
         "dose_level": 2,
         "p_value": 0.004215,
         "p_value_adj": 0.004215,
         "statistic": null,
-        "cohens_d": 1.3327
+        "effect_size": 1.3327
       },
       {
         "dose_level": 3,
         "p_value": 0.995792,
         "p_value_adj": 0.995792,
         "statistic": null,
-        "cohens_d": -0.0993
+        "effect_size": -0.0993
       }
     ],
     "scheduled_direction": "up",
@@ -9728,21 +9728,21 @@
         "p_value": 0.467479,
         "p_value_adj": 0.467479,
         "statistic": null,
-        "cohens_d": -0.5442
+        "effect_size": -0.5442
       },
       {
         "dose_level": 2,
         "p_value": 0.015759,
         "p_value_adj": 0.015759,
         "statistic": null,
-        "cohens_d": -1.4008
+        "effect_size": -1.4008
       },
       {
         "dose_level": 3,
         "p_value": 0.288174,
         "p_value_adj": 0.288174,
         "statistic": null,
-        "cohens_d": -0.7382
+        "effect_size": -0.7382
       }
     ],
     "scheduled_direction": "down",
@@ -9803,21 +9803,21 @@
         "p_value": 0.467479,
         "p_value_adj": 0.467479,
         "statistic": null,
-        "cohens_d": -0.5442
+        "effect_size": -0.5442
       },
       {
         "dose_level": 2,
         "p_value": 0.015759,
         "p_value_adj": 0.015759,
         "statistic": null,
-        "cohens_d": -1.4008
+        "effect_size": -1.4008
       },
       {
         "dose_level": 3,
         "p_value": 0.288174,
         "p_value_adj": 0.288174,
         "statistic": null,
-        "cohens_d": -0.7382
+        "effect_size": -0.7382
       }
     ],
     "scheduled_direction": "down",
@@ -9878,21 +9878,21 @@
         "p_value": 0.467479,
         "p_value_adj": 0.467479,
         "statistic": null,
-        "cohens_d": -0.5442
+        "effect_size": -0.5442
       },
       {
         "dose_level": 2,
         "p_value": 0.015759,
         "p_value_adj": 0.015759,
         "statistic": null,
-        "cohens_d": -1.4008
+        "effect_size": -1.4008
       },
       {
         "dose_level": 3,
         "p_value": 0.288174,
         "p_value_adj": 0.288174,
         "statistic": null,
-        "cohens_d": -0.7382
+        "effect_size": -0.7382
       }
     ],
     "scheduled_direction": "down",
@@ -9953,21 +9953,21 @@
         "p_value": 0.972949,
         "p_value_adj": 0.972949,
         "statistic": null,
-        "cohens_d": 0.1494
+        "effect_size": 0.1494
       },
       {
         "dose_level": 2,
         "p_value": 0.831252,
         "p_value_adj": 0.831252,
         "statistic": null,
-        "cohens_d": 0.3056
+        "effect_size": 0.3056
       },
       {
         "dose_level": 3,
         "p_value": 0.150688,
         "p_value_adj": 0.150688,
         "statistic": null,
-        "cohens_d": 1.0052
+        "effect_size": 1.0052
       }
     ],
     "scheduled_direction": "up",
@@ -10028,21 +10028,21 @@
         "p_value": 0.972949,
         "p_value_adj": 0.972949,
         "statistic": null,
-        "cohens_d": 0.1494
+        "effect_size": 0.1494
       },
       {
         "dose_level": 2,
         "p_value": 0.831252,
         "p_value_adj": 0.831252,
         "statistic": null,
-        "cohens_d": 0.3056
+        "effect_size": 0.3056
       },
       {
         "dose_level": 3,
         "p_value": 0.150688,
         "p_value_adj": 0.150688,
         "statistic": null,
-        "cohens_d": 1.0052
+        "effect_size": 1.0052
       }
     ],
     "scheduled_direction": "up",
@@ -10103,21 +10103,21 @@
         "p_value": 0.972949,
         "p_value_adj": 0.972949,
         "statistic": null,
-        "cohens_d": 0.1494
+        "effect_size": 0.1494
       },
       {
         "dose_level": 2,
         "p_value": 0.831252,
         "p_value_adj": 0.831252,
         "statistic": null,
-        "cohens_d": 0.3056
+        "effect_size": 0.3056
       },
       {
         "dose_level": 3,
         "p_value": 0.150688,
         "p_value_adj": 0.150688,
         "statistic": null,
-        "cohens_d": 1.0052
+        "effect_size": 1.0052
       }
     ],
     "scheduled_direction": "up",
@@ -10178,21 +10178,21 @@
         "p_value": 0.235085,
         "p_value_adj": 0.235085,
         "statistic": null,
-        "cohens_d": -0.6311
+        "effect_size": -0.6311
       },
       {
         "dose_level": 2,
         "p_value": 0.052688,
         "p_value_adj": 0.052688,
         "statistic": null,
-        "cohens_d": -1.0809
+        "effect_size": -1.0809
       },
       {
         "dose_level": 3,
         "p_value": 0.064434,
         "p_value_adj": 0.064434,
         "statistic": null,
-        "cohens_d": -0.9151
+        "effect_size": -0.9151
       }
     ],
     "scheduled_direction": "down",
@@ -10253,21 +10253,21 @@
         "p_value": 0.235085,
         "p_value_adj": 0.235085,
         "statistic": null,
-        "cohens_d": -0.6311
+        "effect_size": -0.6311
       },
       {
         "dose_level": 2,
         "p_value": 0.052688,
         "p_value_adj": 0.052688,
         "statistic": null,
-        "cohens_d": -1.0809
+        "effect_size": -1.0809
       },
       {
         "dose_level": 3,
         "p_value": 0.064434,
         "p_value_adj": 0.064434,
         "statistic": null,
-        "cohens_d": -0.9151
+        "effect_size": -0.9151
       }
     ],
     "scheduled_direction": "down",
@@ -10328,21 +10328,21 @@
         "p_value": 0.235085,
         "p_value_adj": 0.235085,
         "statistic": null,
-        "cohens_d": -0.6311
+        "effect_size": -0.6311
       },
       {
         "dose_level": 2,
         "p_value": 0.052688,
         "p_value_adj": 0.052688,
         "statistic": null,
-        "cohens_d": -1.0809
+        "effect_size": -1.0809
       },
       {
         "dose_level": 3,
         "p_value": 0.064434,
         "p_value_adj": 0.064434,
         "statistic": null,
-        "cohens_d": -0.9151
+        "effect_size": -0.9151
       }
     ],
     "scheduled_direction": "down",
@@ -10403,21 +10403,21 @@
         "p_value": 0.556809,
         "p_value_adj": 0.556809,
         "statistic": null,
-        "cohens_d": 0.5836
+        "effect_size": 0.5836
       },
       {
         "dose_level": 2,
         "p_value": 0.01517,
         "p_value_adj": 0.01517,
         "statistic": null,
-        "cohens_d": 1.6341
+        "effect_size": 1.6341
       },
       {
         "dose_level": 3,
         "p_value": 0.001302,
         "p_value_adj": 0.001302,
         "statistic": null,
-        "cohens_d": 1.6668
+        "effect_size": 1.6668
       }
     ],
     "scheduled_direction": "up",
@@ -10478,21 +10478,21 @@
         "p_value": 0.556809,
         "p_value_adj": 0.556809,
         "statistic": null,
-        "cohens_d": 0.5836
+        "effect_size": 0.5836
       },
       {
         "dose_level": 2,
         "p_value": 0.01517,
         "p_value_adj": 0.01517,
         "statistic": null,
-        "cohens_d": 1.6341
+        "effect_size": 1.6341
       },
       {
         "dose_level": 3,
         "p_value": 0.001302,
         "p_value_adj": 0.001302,
         "statistic": null,
-        "cohens_d": 1.6668
+        "effect_size": 1.6668
       }
     ],
     "scheduled_direction": "up",
@@ -10553,21 +10553,21 @@
         "p_value": 0.556809,
         "p_value_adj": 0.556809,
         "statistic": null,
-        "cohens_d": 0.5836
+        "effect_size": 0.5836
       },
       {
         "dose_level": 2,
         "p_value": 0.01517,
         "p_value_adj": 0.01517,
         "statistic": null,
-        "cohens_d": 1.6341
+        "effect_size": 1.6341
       },
       {
         "dose_level": 3,
         "p_value": 0.001302,
         "p_value_adj": 0.001302,
         "statistic": null,
-        "cohens_d": 1.6668
+        "effect_size": 1.6668
       }
     ],
     "scheduled_direction": "up",
@@ -10628,21 +10628,21 @@
         "p_value": 0.00157,
         "p_value_adj": 0.00157,
         "statistic": null,
-        "cohens_d": -1.5416
+        "effect_size": -1.5416
       },
       {
         "dose_level": 2,
         "p_value": 0.003047,
         "p_value_adj": 0.003047,
         "statistic": null,
-        "cohens_d": -1.2459
+        "effect_size": -1.2459
       },
       {
         "dose_level": 3,
         "p_value": 6.2e-05,
         "p_value_adj": 6.2e-05,
         "statistic": null,
-        "cohens_d": -1.9839
+        "effect_size": -1.9839
       }
     ],
     "scheduled_direction": "down",
@@ -10703,21 +10703,21 @@
         "p_value": 0.00157,
         "p_value_adj": 0.00157,
         "statistic": null,
-        "cohens_d": -1.5416
+        "effect_size": -1.5416
       },
       {
         "dose_level": 2,
         "p_value": 0.003047,
         "p_value_adj": 0.003047,
         "statistic": null,
-        "cohens_d": -1.2459
+        "effect_size": -1.2459
       },
       {
         "dose_level": 3,
         "p_value": 6.2e-05,
         "p_value_adj": 6.2e-05,
         "statistic": null,
-        "cohens_d": -1.9839
+        "effect_size": -1.9839
       }
     ],
     "scheduled_direction": "down",
@@ -10778,21 +10778,21 @@
         "p_value": 0.00157,
         "p_value_adj": 0.00157,
         "statistic": null,
-        "cohens_d": -1.5416
+        "effect_size": -1.5416
       },
       {
         "dose_level": 2,
         "p_value": 0.003047,
         "p_value_adj": 0.003047,
         "statistic": null,
-        "cohens_d": -1.2459
+        "effect_size": -1.2459
       },
       {
         "dose_level": 3,
         "p_value": 6.2e-05,
         "p_value_adj": 6.2e-05,
         "statistic": null,
-        "cohens_d": -1.9839
+        "effect_size": -1.9839
       }
     ],
     "scheduled_direction": "down",
@@ -12417,21 +12417,21 @@
         "p_value": 0.970988,
         "p_value_adj": 0.970988,
         "statistic": null,
-        "cohens_d": -0.6659
+        "effect_size": -0.6659
       },
       {
         "dose_level": 2,
         "p_value": 0.000555,
         "p_value_adj": 0.000555,
         "statistic": null,
-        "cohens_d": 1.6392
+        "effect_size": 1.6392
       },
       {
         "dose_level": 3,
         "p_value": 0.000367,
         "p_value_adj": 0.000367,
         "statistic": null,
-        "cohens_d": 2.0266
+        "effect_size": 2.0266
       }
     ],
     "scheduled_direction": "up",
@@ -12496,21 +12496,21 @@
         "p_value": 0.970988,
         "p_value_adj": 0.970988,
         "statistic": null,
-        "cohens_d": -0.6659
+        "effect_size": -0.6659
       },
       {
         "dose_level": 2,
         "p_value": 0.000555,
         "p_value_adj": 0.000555,
         "statistic": null,
-        "cohens_d": 1.6392
+        "effect_size": 1.6392
       },
       {
         "dose_level": 3,
         "p_value": 0.000367,
         "p_value_adj": 0.000367,
         "statistic": null,
-        "cohens_d": 2.0266
+        "effect_size": 2.0266
       }
     ],
     "scheduled_direction": "up",
@@ -12575,21 +12575,21 @@
         "p_value": 0.970988,
         "p_value_adj": 0.970988,
         "statistic": null,
-        "cohens_d": -0.6659
+        "effect_size": -0.6659
       },
       {
         "dose_level": 2,
         "p_value": 0.000555,
         "p_value_adj": 0.000555,
         "statistic": null,
-        "cohens_d": 1.6392
+        "effect_size": 1.6392
       },
       {
         "dose_level": 3,
         "p_value": 0.000367,
         "p_value_adj": 0.000367,
         "statistic": null,
-        "cohens_d": 2.0266
+        "effect_size": 2.0266
       }
     ],
     "scheduled_direction": "up",
@@ -12654,21 +12654,21 @@
         "p_value": 0.318187,
         "p_value_adj": 0.318187,
         "statistic": null,
-        "cohens_d": -0.6631
+        "effect_size": -0.6631
       },
       {
         "dose_level": 2,
         "p_value": 0.70273,
         "p_value_adj": 0.70273,
         "statistic": null,
-        "cohens_d": -0.5551
+        "effect_size": -0.5551
       },
       {
         "dose_level": 3,
         "p_value": 0.003431,
         "p_value_adj": 0.003431,
         "statistic": null,
-        "cohens_d": -1.4067
+        "effect_size": -1.4067
       }
     ],
     "scheduled_direction": "down",
@@ -12733,21 +12733,21 @@
         "p_value": 0.318187,
         "p_value_adj": 0.318187,
         "statistic": null,
-        "cohens_d": -0.6631
+        "effect_size": -0.6631
       },
       {
         "dose_level": 2,
         "p_value": 0.70273,
         "p_value_adj": 0.70273,
         "statistic": null,
-        "cohens_d": -0.5551
+        "effect_size": -0.5551
       },
       {
         "dose_level": 3,
         "p_value": 0.003431,
         "p_value_adj": 0.003431,
         "statistic": null,
-        "cohens_d": -1.4067
+        "effect_size": -1.4067
       }
     ],
     "scheduled_direction": "down",
@@ -12812,21 +12812,21 @@
         "p_value": 0.318187,
         "p_value_adj": 0.318187,
         "statistic": null,
-        "cohens_d": -0.6631
+        "effect_size": -0.6631
       },
       {
         "dose_level": 2,
         "p_value": 0.70273,
         "p_value_adj": 0.70273,
         "statistic": null,
-        "cohens_d": -0.5551
+        "effect_size": -0.5551
       },
       {
         "dose_level": 3,
         "p_value": 0.003431,
         "p_value_adj": 0.003431,
         "statistic": null,
-        "cohens_d": -1.4067
+        "effect_size": -1.4067
       }
     ],
     "scheduled_direction": "down",
@@ -12891,21 +12891,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": -0.0025
+        "effect_size": -0.0025
       },
       {
         "dose_level": 2,
         "p_value": 0.004226,
         "p_value_adj": 0.004226,
         "statistic": null,
-        "cohens_d": 1.3213
+        "effect_size": 1.3213
       },
       {
         "dose_level": 3,
         "p_value": 0.003626,
         "p_value_adj": 0.003626,
         "statistic": null,
-        "cohens_d": 1.6837
+        "effect_size": 1.6837
       }
     ],
     "scheduled_direction": "up",
@@ -12970,21 +12970,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": -0.0025
+        "effect_size": -0.0025
       },
       {
         "dose_level": 2,
         "p_value": 0.004226,
         "p_value_adj": 0.004226,
         "statistic": null,
-        "cohens_d": 1.3213
+        "effect_size": 1.3213
       },
       {
         "dose_level": 3,
         "p_value": 0.003626,
         "p_value_adj": 0.003626,
         "statistic": null,
-        "cohens_d": 1.6837
+        "effect_size": 1.6837
       }
     ],
     "scheduled_direction": "up",
@@ -13049,21 +13049,21 @@
         "p_value": 1.0,
         "p_value_adj": 1.0,
         "statistic": null,
-        "cohens_d": -0.0025
+        "effect_size": -0.0025
       },
       {
         "dose_level": 2,
         "p_value": 0.004226,
         "p_value_adj": 0.004226,
         "statistic": null,
-        "cohens_d": 1.3213
+        "effect_size": 1.3213
       },
       {
         "dose_level": 3,
         "p_value": 0.003626,
         "p_value_adj": 0.003626,
         "statistic": null,
-        "cohens_d": 1.6837
+        "effect_size": 1.6837
       }
     ],
     "scheduled_direction": "up",
@@ -13128,21 +13128,21 @@
         "p_value": 0.423893,
         "p_value_adj": 0.423893,
         "statistic": null,
-        "cohens_d": -1.1647
+        "effect_size": -1.1647
       },
       {
         "dose_level": 2,
         "p_value": 0.021631,
         "p_value_adj": 0.021631,
         "statistic": null,
-        "cohens_d": 1.1071
+        "effect_size": 1.1071
       },
       {
         "dose_level": 3,
         "p_value": 0.029735,
         "p_value_adj": 0.029735,
         "statistic": null,
-        "cohens_d": 1.3002
+        "effect_size": 1.3002
       }
     ],
     "scheduled_direction": "up",
@@ -13207,21 +13207,21 @@
         "p_value": 0.423893,
         "p_value_adj": 0.423893,
         "statistic": null,
-        "cohens_d": -1.1647
+        "effect_size": -1.1647
       },
       {
         "dose_level": 2,
         "p_value": 0.021631,
         "p_value_adj": 0.021631,
         "statistic": null,
-        "cohens_d": 1.1071
+        "effect_size": 1.1071
       },
       {
         "dose_level": 3,
         "p_value": 0.029735,
         "p_value_adj": 0.029735,
         "statistic": null,
-        "cohens_d": 1.3002
+        "effect_size": 1.3002
       }
     ],
     "scheduled_direction": "up",
@@ -13286,21 +13286,21 @@
         "p_value": 0.423893,
         "p_value_adj": 0.423893,
         "statistic": null,
-        "cohens_d": -1.1647
+        "effect_size": -1.1647
       },
       {
         "dose_level": 2,
         "p_value": 0.021631,
         "p_value_adj": 0.021631,
         "statistic": null,
-        "cohens_d": 1.1071
+        "effect_size": 1.1071
       },
       {
         "dose_level": 3,
         "p_value": 0.029735,
         "p_value_adj": 0.029735,
         "statistic": null,
-        "cohens_d": 1.3002
+        "effect_size": 1.3002
       }
     ],
     "scheduled_direction": "up",
@@ -13365,21 +13365,21 @@
         "p_value": 0.878005,
         "p_value_adj": 0.878005,
         "statistic": null,
-        "cohens_d": -0.2752
+        "effect_size": -0.2752
       },
       {
         "dose_level": 2,
         "p_value": 0.814291,
         "p_value_adj": 0.814291,
         "statistic": null,
-        "cohens_d": 0.299
+        "effect_size": 0.299
       },
       {
         "dose_level": 3,
         "p_value": 0.007883,
         "p_value_adj": 0.007883,
         "statistic": null,
-        "cohens_d": 1.1874
+        "effect_size": 1.1874
       }
     ],
     "scheduled_direction": "up",
@@ -13444,21 +13444,21 @@
         "p_value": 0.878005,
         "p_value_adj": 0.878005,
         "statistic": null,
-        "cohens_d": -0.2752
+        "effect_size": -0.2752
       },
       {
         "dose_level": 2,
         "p_value": 0.814291,
         "p_value_adj": 0.814291,
         "statistic": null,
-        "cohens_d": 0.299
+        "effect_size": 0.299
       },
       {
         "dose_level": 3,
         "p_value": 0.007883,
         "p_value_adj": 0.007883,
         "statistic": null,
-        "cohens_d": 1.1874
+        "effect_size": 1.1874
       }
     ],
     "scheduled_direction": "up",
@@ -13523,21 +13523,21 @@
         "p_value": 0.878005,
         "p_value_adj": 0.878005,
         "statistic": null,
-        "cohens_d": -0.2752
+        "effect_size": -0.2752
       },
       {
         "dose_level": 2,
         "p_value": 0.814291,
         "p_value_adj": 0.814291,
         "statistic": null,
-        "cohens_d": 0.299
+        "effect_size": 0.299
       },
       {
         "dose_level": 3,
         "p_value": 0.007883,
         "p_value_adj": 0.007883,
         "statistic": null,
-        "cohens_d": 1.1874
+        "effect_size": 1.1874
       }
     ],
     "scheduled_direction": "up",
@@ -13602,21 +13602,21 @@
         "p_value": 0.99716,
         "p_value_adj": 0.99716,
         "statistic": null,
-        "cohens_d": -0.0967
+        "effect_size": -0.0967
       },
       {
         "dose_level": 2,
         "p_value": 0.000284,
         "p_value_adj": 0.000284,
         "statistic": null,
-        "cohens_d": 2.1532
+        "effect_size": 2.1532
       },
       {
         "dose_level": 3,
         "p_value": 0.005016,
         "p_value_adj": 0.005016,
         "statistic": null,
-        "cohens_d": 1.4652
+        "effect_size": 1.4652
       }
     ],
     "scheduled_direction": "up",
@@ -13681,21 +13681,21 @@
         "p_value": 0.99716,
         "p_value_adj": 0.99716,
         "statistic": null,
-        "cohens_d": -0.0967
+        "effect_size": -0.0967
       },
       {
         "dose_level": 2,
         "p_value": 0.000284,
         "p_value_adj": 0.000284,
         "statistic": null,
-        "cohens_d": 2.1532
+        "effect_size": 2.1532
       },
       {
         "dose_level": 3,
         "p_value": 0.005016,
         "p_value_adj": 0.005016,
         "statistic": null,
-        "cohens_d": 1.4652
+        "effect_size": 1.4652
       }
     ],
     "scheduled_direction": "up",
@@ -13760,21 +13760,21 @@
         "p_value": 0.99716,
         "p_value_adj": 0.99716,
         "statistic": null,
-        "cohens_d": -0.0967
+        "effect_size": -0.0967
       },
       {
         "dose_level": 2,
         "p_value": 0.000284,
         "p_value_adj": 0.000284,
         "statistic": null,
-        "cohens_d": 2.1532
+        "effect_size": 2.1532
       },
       {
         "dose_level": 3,
         "p_value": 0.005016,
         "p_value_adj": 0.005016,
         "statistic": null,
-        "cohens_d": 1.4652
+        "effect_size": 1.4652
       }
     ],
     "scheduled_direction": "up",
@@ -13839,21 +13839,21 @@
         "p_value": 0.314545,
         "p_value_adj": 0.314545,
         "statistic": null,
-        "cohens_d": -0.6133
+        "effect_size": -0.6133
       },
       {
         "dose_level": 2,
         "p_value": 0.219965,
         "p_value_adj": 0.219965,
         "statistic": null,
-        "cohens_d": -0.7102
+        "effect_size": -0.7102
       },
       {
         "dose_level": 3,
         "p_value": 0.143696,
         "p_value_adj": 0.143696,
         "statistic": null,
-        "cohens_d": -0.6332
+        "effect_size": -0.6332
       }
     ],
     "scheduled_direction": "down",
@@ -13918,21 +13918,21 @@
         "p_value": 0.314545,
         "p_value_adj": 0.314545,
         "statistic": null,
-        "cohens_d": -0.6133
+        "effect_size": -0.6133
       },
       {
         "dose_level": 2,
         "p_value": 0.219965,
         "p_value_adj": 0.219965,
         "statistic": null,
-        "cohens_d": -0.7102
+        "effect_size": -0.7102
       },
       {
         "dose_level": 3,
         "p_value": 0.143696,
         "p_value_adj": 0.143696,
         "statistic": null,
-        "cohens_d": -0.6332
+        "effect_size": -0.6332
       }
     ],
     "scheduled_direction": "down",
@@ -13997,21 +13997,21 @@
         "p_value": 0.314545,
         "p_value_adj": 0.314545,
         "statistic": null,
-        "cohens_d": -0.6133
+        "effect_size": -0.6133
       },
       {
         "dose_level": 2,
         "p_value": 0.219965,
         "p_value_adj": 0.219965,
         "statistic": null,
-        "cohens_d": -0.7102
+        "effect_size": -0.7102
       },
       {
         "dose_level": 3,
         "p_value": 0.143696,
         "p_value_adj": 0.143696,
         "statistic": null,
-        "cohens_d": -0.6332
+        "effect_size": -0.6332
       }
     ],
     "scheduled_direction": "down",
@@ -14076,21 +14076,21 @@
         "p_value": 0.679463,
         "p_value_adj": 0.679463,
         "statistic": null,
-        "cohens_d": -1.0998
+        "effect_size": -1.0998
       },
       {
         "dose_level": 2,
         "p_value": 0.003158,
         "p_value_adj": 0.003158,
         "statistic": null,
-        "cohens_d": 1.2871
+        "effect_size": 1.2871
       },
       {
         "dose_level": 3,
         "p_value": 0.042134,
         "p_value_adj": 0.042134,
         "statistic": null,
-        "cohens_d": 1.418
+        "effect_size": 1.418
       }
     ],
     "scheduled_direction": "up",
@@ -14155,21 +14155,21 @@
         "p_value": 0.679463,
         "p_value_adj": 0.679463,
         "statistic": null,
-        "cohens_d": -1.0998
+        "effect_size": -1.0998
       },
       {
         "dose_level": 2,
         "p_value": 0.003158,
         "p_value_adj": 0.003158,
         "statistic": null,
-        "cohens_d": 1.2871
+        "effect_size": 1.2871
       },
       {
         "dose_level": 3,
         "p_value": 0.042134,
         "p_value_adj": 0.042134,
         "statistic": null,
-        "cohens_d": 1.418
+        "effect_size": 1.418
       }
     ],
     "scheduled_direction": "up",
@@ -14234,21 +14234,21 @@
         "p_value": 0.679463,
         "p_value_adj": 0.679463,
         "statistic": null,
-        "cohens_d": -1.0998
+        "effect_size": -1.0998
       },
       {
         "dose_level": 2,
         "p_value": 0.003158,
         "p_value_adj": 0.003158,
         "statistic": null,
-        "cohens_d": 1.2871
+        "effect_size": 1.2871
       },
       {
         "dose_level": 3,
         "p_value": 0.042134,
         "p_value_adj": 0.042134,
         "statistic": null,
-        "cohens_d": 1.418
+        "effect_size": 1.418
       }
     ],
     "scheduled_direction": "up",
@@ -14313,21 +14313,21 @@
         "p_value": 0.129273,
         "p_value_adj": 0.129273,
         "statistic": null,
-        "cohens_d": -0.9558
+        "effect_size": -0.9558
       },
       {
         "dose_level": 2,
         "p_value": 0.077982,
         "p_value_adj": 0.077982,
         "statistic": null,
-        "cohens_d": -0.958
+        "effect_size": -0.958
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": -2.5444
+        "effect_size": -2.5444
       }
     ],
     "scheduled_direction": "down",
@@ -14392,21 +14392,21 @@
         "p_value": 0.129273,
         "p_value_adj": 0.129273,
         "statistic": null,
-        "cohens_d": -0.9558
+        "effect_size": -0.9558
       },
       {
         "dose_level": 2,
         "p_value": 0.077982,
         "p_value_adj": 0.077982,
         "statistic": null,
-        "cohens_d": -0.958
+        "effect_size": -0.958
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": -2.5444
+        "effect_size": -2.5444
       }
     ],
     "scheduled_direction": "down",
@@ -14471,21 +14471,21 @@
         "p_value": 0.129273,
         "p_value_adj": 0.129273,
         "statistic": null,
-        "cohens_d": -0.9558
+        "effect_size": -0.9558
       },
       {
         "dose_level": 2,
         "p_value": 0.077982,
         "p_value_adj": 0.077982,
         "statistic": null,
-        "cohens_d": -0.958
+        "effect_size": -0.958
       },
       {
         "dose_level": 3,
         "p_value": 0.0,
         "p_value_adj": 0.0,
         "statistic": null,
-        "cohens_d": -2.5444
+        "effect_size": -2.5444
       }
     ],
     "scheduled_direction": "down",
@@ -14550,21 +14550,21 @@
         "p_value": 0.937319,
         "p_value_adj": 0.937319,
         "statistic": null,
-        "cohens_d": -0.5483
+        "effect_size": -0.5483
       },
       {
         "dose_level": 2,
         "p_value": 0.003071,
         "p_value_adj": 0.003071,
         "statistic": null,
-        "cohens_d": 1.3195
+        "effect_size": 1.3195
       },
       {
         "dose_level": 3,
         "p_value": 3.8e-05,
         "p_value_adj": 3.8e-05,
         "statistic": null,
-        "cohens_d": 2.6113
+        "effect_size": 2.6113
       }
     ],
     "scheduled_direction": "up",
@@ -14629,21 +14629,21 @@
         "p_value": 0.937319,
         "p_value_adj": 0.937319,
         "statistic": null,
-        "cohens_d": -0.5483
+        "effect_size": -0.5483
       },
       {
         "dose_level": 2,
         "p_value": 0.003071,
         "p_value_adj": 0.003071,
         "statistic": null,
-        "cohens_d": 1.3195
+        "effect_size": 1.3195
       },
       {
         "dose_level": 3,
         "p_value": 3.8e-05,
         "p_value_adj": 3.8e-05,
         "statistic": null,
-        "cohens_d": 2.6113
+        "effect_size": 2.6113
       }
     ],
     "scheduled_direction": "up",
@@ -14708,21 +14708,21 @@
         "p_value": 0.937319,
         "p_value_adj": 0.937319,
         "statistic": null,
-        "cohens_d": -0.5483
+        "effect_size": -0.5483
       },
       {
         "dose_level": 2,
         "p_value": 0.003071,
         "p_value_adj": 0.003071,
         "statistic": null,
-        "cohens_d": 1.3195
+        "effect_size": 1.3195
       },
       {
         "dose_level": 3,
         "p_value": 3.8e-05,
         "p_value_adj": 3.8e-05,
         "statistic": null,
-        "cohens_d": 2.6113
+        "effect_size": 2.6113
       }
     ],
     "scheduled_direction": "up",
@@ -14787,21 +14787,21 @@
         "p_value": 0.740554,
         "p_value_adj": 0.740554,
         "statistic": null,
-        "cohens_d": -0.3264
+        "effect_size": -0.3264
       },
       {
         "dose_level": 2,
         "p_value": 0.918888,
         "p_value_adj": 0.918888,
         "statistic": null,
-        "cohens_d": -0.2029
+        "effect_size": -0.2029
       },
       {
         "dose_level": 3,
         "p_value": 1e-05,
         "p_value_adj": 1e-05,
         "statistic": null,
-        "cohens_d": -1.9713
+        "effect_size": -1.9713
       }
     ],
     "scheduled_direction": "down",
@@ -14866,21 +14866,21 @@
         "p_value": 0.740554,
         "p_value_adj": 0.740554,
         "statistic": null,
-        "cohens_d": -0.3264
+        "effect_size": -0.3264
       },
       {
         "dose_level": 2,
         "p_value": 0.918888,
         "p_value_adj": 0.918888,
         "statistic": null,
-        "cohens_d": -0.2029
+        "effect_size": -0.2029
       },
       {
         "dose_level": 3,
         "p_value": 1e-05,
         "p_value_adj": 1e-05,
         "statistic": null,
-        "cohens_d": -1.9713
+        "effect_size": -1.9713
       }
     ],
     "scheduled_direction": "down",
@@ -14945,21 +14945,21 @@
         "p_value": 0.740554,
         "p_value_adj": 0.740554,
         "statistic": null,
-        "cohens_d": -0.3264
+        "effect_size": -0.3264
       },
       {
         "dose_level": 2,
         "p_value": 0.918888,
         "p_value_adj": 0.918888,
         "statistic": null,
-        "cohens_d": -0.2029
+        "effect_size": -0.2029
       },
       {
         "dose_level": 3,
         "p_value": 1e-05,
         "p_value_adj": 1e-05,
         "statistic": null,
-        "cohens_d": -1.9713
+        "effect_size": -1.9713
       }
     ],
     "scheduled_direction": "down",
@@ -15024,21 +15024,21 @@
         "p_value": 0.97737,
         "p_value_adj": 0.97737,
         "statistic": null,
-        "cohens_d": 0.3497
+        "effect_size": 0.3497
       },
       {
         "dose_level": 2,
         "p_value": 0.504632,
         "p_value_adj": 0.504632,
         "statistic": null,
-        "cohens_d": 0.6444
+        "effect_size": 0.6444
       },
       {
         "dose_level": 3,
         "p_value": 1e-06,
         "p_value_adj": 1e-06,
         "statistic": null,
-        "cohens_d": 2.2558
+        "effect_size": 2.2558
       }
     ],
     "scheduled_direction": "up",
@@ -15103,21 +15103,21 @@
         "p_value": 0.97737,
         "p_value_adj": 0.97737,
         "statistic": null,
-        "cohens_d": 0.3497
+        "effect_size": 0.3497
       },
       {
         "dose_level": 2,
         "p_value": 0.504632,
         "p_value_adj": 0.504632,
         "statistic": null,
-        "cohens_d": 0.6444
+        "effect_size": 0.6444
       },
       {
         "dose_level": 3,
         "p_value": 1e-06,
         "p_value_adj": 1e-06,
         "statistic": null,
-        "cohens_d": 2.2558
+        "effect_size": 2.2558
       }
     ],
     "scheduled_direction": "up",
@@ -15182,21 +15182,21 @@
         "p_value": 0.97737,
         "p_value_adj": 0.97737,
         "statistic": null,
-        "cohens_d": 0.3497
+        "effect_size": 0.3497
       },
       {
         "dose_level": 2,
         "p_value": 0.504632,
         "p_value_adj": 0.504632,
         "statistic": null,
-        "cohens_d": 0.6444
+        "effect_size": 0.6444
       },
       {
         "dose_level": 3,
         "p_value": 1e-06,
         "p_value_adj": 1e-06,
         "statistic": null,
-        "cohens_d": 2.2558
+        "effect_size": 2.2558
       }
     ],
     "scheduled_direction": "up",
@@ -15261,21 +15261,21 @@
         "p_value": 0.95634,
         "p_value_adj": 0.95634,
         "statistic": null,
-        "cohens_d": -0.3254
+        "effect_size": -0.3254
       },
       {
         "dose_level": 2,
         "p_value": 0.047349,
         "p_value_adj": 0.047349,
         "statistic": null,
-        "cohens_d": 0.9385
+        "effect_size": 0.9385
       },
       {
         "dose_level": 3,
         "p_value": 0.067456,
         "p_value_adj": 0.067456,
         "statistic": null,
-        "cohens_d": 1.0902
+        "effect_size": 1.0902
       }
     ],
     "scheduled_direction": "up",
@@ -15340,21 +15340,21 @@
         "p_value": 0.95634,
         "p_value_adj": 0.95634,
         "statistic": null,
-        "cohens_d": -0.3254
+        "effect_size": -0.3254
       },
       {
         "dose_level": 2,
         "p_value": 0.047349,
         "p_value_adj": 0.047349,
         "statistic": null,
-        "cohens_d": 0.9385
+        "effect_size": 0.9385
       },
       {
         "dose_level": 3,
         "p_value": 0.067456,
         "p_value_adj": 0.067456,
         "statistic": null,
-        "cohens_d": 1.0902
+        "effect_size": 1.0902
       }
     ],
     "scheduled_direction": "up",
@@ -15419,21 +15419,21 @@
         "p_value": 0.95634,
         "p_value_adj": 0.95634,
         "statistic": null,
-        "cohens_d": -0.3254
+        "effect_size": -0.3254
       },
       {
         "dose_level": 2,
         "p_value": 0.047349,
         "p_value_adj": 0.047349,
         "statistic": null,
-        "cohens_d": 0.9385
+        "effect_size": 0.9385
       },
       {
         "dose_level": 3,
         "p_value": 0.067456,
         "p_value_adj": 0.067456,
         "statistic": null,
-        "cohens_d": 1.0902
+        "effect_size": 1.0902
       }
     ],
     "scheduled_direction": "up",
@@ -15498,21 +15498,21 @@
         "p_value": 0.449227,
         "p_value_adj": 0.449227,
         "statistic": null,
-        "cohens_d": -1.3938
+        "effect_size": -1.3938
       },
       {
         "dose_level": 2,
         "p_value": 0.004563,
         "p_value_adj": 0.004563,
         "statistic": null,
-        "cohens_d": 1.4216
+        "effect_size": 1.4216
       },
       {
         "dose_level": 3,
         "p_value": 0.095979,
         "p_value_adj": 0.095979,
         "statistic": null,
-        "cohens_d": 0.9934
+        "effect_size": 0.9934
       }
     ],
     "scheduled_direction": "up",
@@ -15577,21 +15577,21 @@
         "p_value": 0.449227,
         "p_value_adj": 0.449227,
         "statistic": null,
-        "cohens_d": -1.3938
+        "effect_size": -1.3938
       },
       {
         "dose_level": 2,
         "p_value": 0.004563,
         "p_value_adj": 0.004563,
         "statistic": null,
-        "cohens_d": 1.4216
+        "effect_size": 1.4216
       },
       {
         "dose_level": 3,
         "p_value": 0.095979,
         "p_value_adj": 0.095979,
         "statistic": null,
-        "cohens_d": 0.9934
+        "effect_size": 0.9934
       }
     ],
     "scheduled_direction": "up",
@@ -15656,21 +15656,21 @@
         "p_value": 0.449227,
         "p_value_adj": 0.449227,
         "statistic": null,
-        "cohens_d": -1.3938
+        "effect_size": -1.3938
       },
       {
         "dose_level": 2,
         "p_value": 0.004563,
         "p_value_adj": 0.004563,
         "statistic": null,
-        "cohens_d": 1.4216
+        "effect_size": 1.4216
       },
       {
         "dose_level": 3,
         "p_value": 0.095979,
         "p_value_adj": 0.095979,
         "statistic": null,
-        "cohens_d": 0.9934
+        "effect_size": 0.9934
       }
     ],
     "scheduled_direction": "up",
@@ -15735,21 +15735,21 @@
         "p_value": 0.11289,
         "p_value_adj": 0.11289,
         "statistic": null,
-        "cohens_d": -0.7921
+        "effect_size": -0.7921
       },
       {
         "dose_level": 2,
         "p_value": 0.835966,
         "p_value_adj": 0.835966,
         "statistic": null,
-        "cohens_d": 0.2649
+        "effect_size": 0.2649
       },
       {
         "dose_level": 3,
         "p_value": 0.014916,
         "p_value_adj": 0.014916,
         "statistic": null,
-        "cohens_d": -1.6928
+        "effect_size": -1.6928
       }
     ],
     "scheduled_direction": "down",
@@ -15814,21 +15814,21 @@
         "p_value": 0.11289,
         "p_value_adj": 0.11289,
         "statistic": null,
-        "cohens_d": -0.7921
+        "effect_size": -0.7921
       },
       {
         "dose_level": 2,
         "p_value": 0.835966,
         "p_value_adj": 0.835966,
         "statistic": null,
-        "cohens_d": 0.2649
+        "effect_size": 0.2649
       },
       {
         "dose_level": 3,
         "p_value": 0.014916,
         "p_value_adj": 0.014916,
         "statistic": null,
-        "cohens_d": -1.6928
+        "effect_size": -1.6928
       }
     ],
     "scheduled_direction": "down",
@@ -15893,21 +15893,21 @@
         "p_value": 0.11289,
         "p_value_adj": 0.11289,
         "statistic": null,
-        "cohens_d": -0.7921
+        "effect_size": -0.7921
       },
       {
         "dose_level": 2,
         "p_value": 0.835966,
         "p_value_adj": 0.835966,
         "statistic": null,
-        "cohens_d": 0.2649
+        "effect_size": 0.2649
       },
       {
         "dose_level": 3,
         "p_value": 0.014916,
         "p_value_adj": 0.014916,
         "statistic": null,
-        "cohens_d": -1.6928
+        "effect_size": -1.6928
       }
     ],
     "scheduled_direction": "down",
@@ -15972,21 +15972,21 @@
         "p_value": 0.247337,
         "p_value_adj": 0.247337,
         "statistic": null,
-        "cohens_d": -1.069
+        "effect_size": -1.069
       },
       {
         "dose_level": 2,
         "p_value": 0.046727,
         "p_value_adj": 0.046727,
         "statistic": null,
-        "cohens_d": 0.9333
+        "effect_size": 0.9333
       },
       {
         "dose_level": 3,
         "p_value": 0.984116,
         "p_value_adj": 0.984116,
         "statistic": null,
-        "cohens_d": 0.1416
+        "effect_size": 0.1416
       }
     ],
     "scheduled_direction": "down",
@@ -16051,21 +16051,21 @@
         "p_value": 0.247337,
         "p_value_adj": 0.247337,
         "statistic": null,
-        "cohens_d": -1.069
+        "effect_size": -1.069
       },
       {
         "dose_level": 2,
         "p_value": 0.046727,
         "p_value_adj": 0.046727,
         "statistic": null,
-        "cohens_d": 0.9333
+        "effect_size": 0.9333
       },
       {
         "dose_level": 3,
         "p_value": 0.984116,
         "p_value_adj": 0.984116,
         "statistic": null,
-        "cohens_d": 0.1416
+        "effect_size": 0.1416
       }
     ],
     "scheduled_direction": "down",
@@ -16130,21 +16130,21 @@
         "p_value": 0.247337,
         "p_value_adj": 0.247337,
         "statistic": null,
-        "cohens_d": -1.069
+        "effect_size": -1.069
       },
       {
         "dose_level": 2,
         "p_value": 0.046727,
         "p_value_adj": 0.046727,
         "statistic": null,
-        "cohens_d": 0.9333
+        "effect_size": 0.9333
       },
       {
         "dose_level": 3,
         "p_value": 0.984116,
         "p_value_adj": 0.984116,
         "statistic": null,
-        "cohens_d": 0.1416
+        "effect_size": 0.1416
       }
     ],
     "scheduled_direction": "down",

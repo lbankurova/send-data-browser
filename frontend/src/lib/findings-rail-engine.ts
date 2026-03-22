@@ -9,7 +9,7 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Types ─────────────────────────────────────────────────
 
-export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome";
+export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome" | "specimen";
 export type SortMode = "signal" | "pvalue" | "effect" | "az";
 
 export interface EndpointWithSignal extends EndpointSummary {
@@ -189,6 +189,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
+    case "specimen": return ep.organ_system; // stub — same as organ until histopath merge
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
@@ -351,11 +352,13 @@ export interface RailFilters {
   severity: ReadonlySet<string> | null;  // subset of {"adverse","warning","normal"} or null (all)
   /** null = all selected (no filter). Set of group keys to include. */
   groupFilter: ReadonlySet<string> | null;
+  /** NOAEL contribution role filter. null = all. */
+  noaelRole: "determining" | "contributing" | "supporting" | "excluded" | null;
 }
 
 export const EMPTY_RAIL_FILTERS: RailFilters = {
   search: "", trOnly: false, sigOnly: false, clinicalS2Plus: false,
-  domains: null, pattern: null, severity: null, groupFilter: null,
+  domains: null, pattern: null, severity: null, groupFilter: null, noaelRole: null,
 };
 
 export function filterEndpoints(
@@ -393,11 +396,15 @@ export function filterEndpoints(
   if (filters.groupFilter !== null && grouping !== "finding") {
     result = result.filter((ep) => filters.groupFilter!.has(groupKey(ep, grouping)));
   }
+  if (filters.noaelRole) {
+    const role = filters.noaelRole;
+    result = result.filter((ep) => ep.endpointConfidence?.noaelContribution?.label === role);
+  }
   return result;
 }
 
 export function isFiltered(filters: RailFilters): boolean {
-  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || !!filters.domains || !!filters.pattern || !!filters.severity || filters.groupFilter !== null;
+  return filters.search !== "" || filters.trOnly || filters.sigOnly || !!filters.clinicalS2Plus || !!filters.domains || !!filters.pattern || !!filters.severity || filters.groupFilter !== null || !!filters.noaelRole;
 }
 
 // ─── Sort modes ────────────────────────────────────────────
@@ -448,10 +455,10 @@ export function getDomainFullLabel(domain: string): string {
 // ─── Pattern labels ────────────────────────────────────────
 
 const PATTERN_LABELS: Record<string, string> = {
-  monotonic_increase: "Monotonic increase",
-  monotonic_decrease: "Monotonic decrease",
-  threshold_increase: "Threshold increase",
-  threshold_decrease: "Threshold decrease",
+  monotonic_increase: "Monotonic",
+  monotonic_decrease: "Monotonic",
+  threshold_increase: "Threshold",
+  threshold_decrease: "Threshold",
   threshold: "Threshold",  // backward compat
   non_monotonic: "Non-monotonic",
   u_shaped: "U-shaped",

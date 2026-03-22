@@ -385,7 +385,7 @@ function OverviewTab({
             Insights
           </h4>
           <InsightsList rules={organRules} onEndpointClick={(organ) => {
-            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/dose-response`, { state: { organ_system: organ } });
+            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: organ } });
           }} />
         </div>
       )}

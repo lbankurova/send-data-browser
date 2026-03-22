@@ -54,7 +54,7 @@ def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) ->
 
             pw = pw_by_dose.get(dl, {})
             p_value = pw.get("p_value_adj", pw.get("p_value"))
-            effect_size = pw.get("cohens_d")
+            effect_size = pw.get("effect_size")
 
             signal_score = _compute_signal_score(
                 p_value=p_value,
@@ -207,10 +207,11 @@ def build_dose_response_metrics(findings: list[dict], dose_groups: list[dict]) -
                 "incidence": gs.get("incidence"),
                 "affected": gs.get("affected"),
                 "p_value": pw.get("p_value_adj", pw.get("p_value")),
-                "effect_size": pw.get("cohens_d"),
+                "effect_size": pw.get("effect_size"),
                 "dose_response_pattern": finding.get("dose_response_pattern", ""),
                 "trend_p": finding.get("trend_p"),
                 "data_type": finding.get("data_type", "continuous"),
+                "day": finding.get("day"),
             }
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
@@ -238,7 +239,7 @@ def build_organ_evidence_detail(findings: list[dict], dose_groups: list[dict]) -
                 "dose_label": dose_label_map.get(pw["dose_level"], ""),
                 "sex": finding.get("sex", ""),
                 "p_value": pw.get("p_value_adj", pw.get("p_value")),
-                "effect_size": pw.get("cohens_d"),
+                "effect_size": pw.get("effect_size"),
                 "direction": finding.get("direction"),
                 "severity": finding.get("severity", "normal"),
                 "treatment_related": finding.get("treatment_related", False),
@@ -330,7 +331,7 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "dose_label": dose_label_map.get(pw["dose_level"], ""),
                 "sex": finding.get("sex", ""),
                 "p_value": pw.get("p_value_adj", pw.get("p_value")),
-                "effect_size": pw.get("cohens_d"),
+                "effect_size": pw.get("effect_size"),
                 "direction": finding.get("direction"),
                 "severity": finding.get("severity"),
                 "treatment_related": finding.get("treatment_related", False),

@@ -13,6 +13,13 @@ export interface TimeCoursePoint {
   nControl: number;  // control group n at this timepoint
 }
 
+export interface RawGroupPoint {
+  day: number;
+  mean: number;
+  sd: number;
+  n: number;
+}
+
 export interface TimeCourseSeriesData {
   endpoint: string;
   domain: string;
@@ -23,6 +30,10 @@ export interface TimeCourseSeriesData {
   doseGroups: { doseLevel: number; doseLabel: string }[];  // treated only
   /** series[sex][doseLevel] = TimeCoursePoint[] — treated only */
   series: Record<string, Record<number, TimeCoursePoint[]>>;
+  /** raw[sex][doseLevel] = RawGroupPoint[] — all dose levels including control */
+  raw: Record<string, Record<number, RawGroupPoint[]>>;
+  /** controlByDay[sex] = Map<day, {mean,sd,n}> — concurrent control at each timepoint */
+  controlByDay: Record<string, Map<number, { mean: number; sd: number; n: number }>>;
   controlLabel: string;                               // e.g. "Control" or "Vehicle"
   totalTimepoints: number;
 }
@@ -109,17 +120,34 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
       ? Math.max(...data.timepoints.map((t) => t.day))
       : null);
 
-  // Clip post-terminal timepoints: recovery period is handled by Recovery pane.
-  // When includeRecovery is true, recovery animals are pooled during treatment
-  // but we don't want post-terminal days (D93+) on the chart.
+  // Clip post-terminal timepoints: recovery cohorts are different arms from
+  // treatment-period groups — group-level stats across the boundary are
+  // meaningless.  Recovery data only appears in subject-trace mode (separate
+  // hook: useTimecourseSubject).  Clip both derived g-series AND raw means
+  // so non-g Y-axis modes (absolute, %change, %vs control) stay consistent.
   if (terminalDay != null) {
     for (const sex of sexes) {
-      for (const dl of treatedDoseLevels) {
-        const pts = series[sex]?.[dl];
-        if (pts) {
-          series[sex][dl] = pts.filter((p) => p.day <= terminalDay);
-          if (series[sex][dl].length === 0) delete series[sex][dl];
+      for (const dl of doseLevels) {
+        // Clip raw (all dose levels including control)
+        const rawPts = raw[sex]?.[dl];
+        if (rawPts) {
+          raw[sex][dl] = rawPts.filter((p) => p.day <= terminalDay);
         }
+        // Clip derived g-series (treated only)
+        if (dl > 0) {
+          const pts = series[sex]?.[dl];
+          if (pts) {
+            series[sex][dl] = pts.filter((p) => p.day <= terminalDay);
+            if (series[sex][dl].length === 0) delete series[sex][dl];
+          }
+        }
+      }
+      // Rebuild controlByDay to match clipped raw
+      const ctrlRaw = raw[sex][0];
+      if (ctrlRaw) {
+        const map = new Map<number, { mean: number; sd: number; n: number }>();
+        for (const pt of ctrlRaw) map.set(pt.day, { mean: pt.mean, sd: pt.sd, n: pt.n });
+        controlByDay[sex] = map;
       }
     }
   }
@@ -151,6 +179,8 @@ export function derive(data: TimecourseResponse): TimeCourseSeriesData {
     sexes,
     doseGroups,
     series,
+    raw,
+    controlByDay,
     controlLabel,
     totalTimepoints: usableDays.size,
   };
