@@ -334,6 +334,9 @@ export function FindingsRail({
       const sevLabels = [...railFilters.severity].map((s) => s.charAt(0).toUpperCase() + s.slice(1));
       labels.push(sevLabels.join(", "));
     }
+    if (railFilters.noaelRole) {
+      labels.push(`NOAEL: ${railFilters.noaelRole}`);
+    }
     return labels;
   }, [railFilters]);
 
@@ -940,23 +943,13 @@ function RailFiltersSection({
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search */}
-      <FilterSearch
-        value={filters.search}
-        onChange={(v) => onFiltersChange({ ...filters, search: v })}
-        placeholder="Search findings…"
-      />
-
-      {/* Row 2: Group filter + sort by */}
+      {/* Row 1: Search + sort */}
       <div className="flex items-center gap-1.5">
-        {grouping !== "finding" && (
-          <FilterMultiSelect
-            options={groupFilterOptions}
-            selected={filters.groupFilter}
-            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
-          />
-        )}
+        <FilterSearch
+          value={filters.search}
+          onChange={(v) => onFiltersChange({ ...filters, search: v })}
+          placeholder="Search…"
+        />
         <FilterSelect
           value={sortMode}
           onChange={(e) => onSortChange(e.target.value as SortMode)}
@@ -968,26 +961,8 @@ function RailFiltersSection({
         </FilterSelect>
       </div>
 
-      {/* Row 3: Domain + Trend + Severity + Quick toggles */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <FilterMultiSelect
-          options={domainFilterOptions}
-          selected={filters.domains}
-          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
-          allLabel="All domains"
-        />
-        <FilterMultiSelect
-          options={patternFilterOptions}
-          selected={filters.pattern}
-          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
-          allLabel="All patterns"
-        />
-        <FilterMultiSelect
-          options={SEVERITY_OPTIONS}
-          selected={filters.severity}
-          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
-          allLabel="All classes"
-        />
+      {/* Row 2: Quick toggles + NOAEL role */}
+      <div className="flex items-center gap-1.5">
         <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
           <input
             type="checkbox"
@@ -1017,6 +992,46 @@ function RailFiltersSection({
             S2+
           </label>
         )}
+        <FilterSelect
+          value={filters.noaelRole ?? ""}
+          onChange={(e) => onFiltersChange({ ...filters, noaelRole: (e.target.value || null) as RailFilters["noaelRole"] })}
+        >
+          <option value="">NOAEL: All</option>
+          <option value="determining">Determining</option>
+          <option value="contributing">Contributing</option>
+          <option value="supporting">Supporting</option>
+          <option value="excluded">Excluded</option>
+        </FilterSelect>
+      </div>
+
+      {/* Row 2: Group filter + domain + pattern + severity */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {grouping !== "finding" && (
+          <FilterMultiSelect
+            options={groupFilterOptions}
+            selected={filters.groupFilter}
+            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
+          />
+        )}
+        <FilterMultiSelect
+          options={domainFilterOptions}
+          selected={filters.domains}
+          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
+          allLabel="All domains"
+        />
+        <FilterMultiSelect
+          options={patternFilterOptions}
+          selected={filters.pattern}
+          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
+          allLabel="All patterns"
+        />
+        <FilterMultiSelect
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
+          allLabel="All classes"
+        />
       </div>
     </div>
   );

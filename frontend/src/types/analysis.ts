@@ -25,6 +25,7 @@ export interface GroupStat {
   affected?: number | null;
   incidence?: number | null;
   avg_severity?: number | null;
+  severity_grade_counts?: Record<string, number> | null;
 }
 
 export interface PairwiseResult {

@@ -26,7 +26,7 @@ import { Info } from "lucide-react";
 
 // ── Visibility allowlist ──────────────────────────────────
 
-const ALLOWED_DOMAINS = new Set(["BW", "LB", "FW", "BG", "EG", "VS"]);
+const ALLOWED_DOMAINS = new Set(["BW", "LB", "OM", "FW", "BG", "EG", "VS"]);
 
 // Module-level flag — survives unmount/remount cycle when subject profile is shown
 let _pendingScrollBack = false;
