@@ -219,6 +219,7 @@ These fields are set by the shared enrichment pipeline (`findings_pipeline.py`) 
 | BFIELD-75 | `_tree_result` | object | **Yes** | `adaptive_trees.py` (6 trees) | Context-dependent MI findings only. Adaptive tree evaluation: `{tree_id: string, node_path?: string[], ecetoc_factors?: string[], rationale: string, human_relevance?: string}`. `tree_id` is one of LIVER, THYROID, ADRENAL, THYMUS_SPLEEN, KIDNEY, GASTRIC. Null/absent when no tree applies (finding not context_dependent or no matching tree). Liver tree: `ecetoc_factors` contains per-marker panel breakdown (e.g. "3/7 clean; changed: ALT,AST; missing: TP"). "Clean" = no significant change in any direction (p >= 0.05 AND fold < max_fold). |
 | BFIELD-76 | `_hcd_assessment` | object | **Yes** | `hcd.py:assess_a3()` | OM findings only. HCD reference range comparison: `{result: "within_hcd"|"outside_hcd"|"no_hcd", score: number, detail: string, n?: number, study_count?: number, source?: string, percentile_rank?: number}`. `score`: -0.5 (within), +0.5 (outside), 0.0 (no data). `detail`: human-readable comparison string. Extended fields present when SQLite-sourced: `n` = number of control animals, `study_count` = number of studies, `source` = "sqlite:base"\|"sqlite:dynamic"\|"json", `percentile_rank` = 0-100 rank against individual animal distribution. Null/absent for non-OM findings. Primary source: SQLite (`backend/data/hcd.db`, 7 strains, 16 organs, 3 durations from NTP DTT IAD). Fallback: static JSON (SD rat Envigo + Wistar Han NTP composite). |
 | BFIELD-77 | `_b6_result` | object | **Yes** | `progression_chains.py:evaluate_b6()` | MI/MA findings matching a progression chain. `{chain_id: string, stage: string, matched_term: string, fires: boolean, rationale: string, human_relevance?: {mechanism: string, relevance: string, note: string}, spontaneous_note?: string}`. `fires` = true when severity trigger met or obligate precursor. When fires = true, finding escalated to `tr_adverse`. Null/absent when no progression chain matches. |
+| BFIELD-78 | `severity_grade_counts` | object | **Yes** | `findings_mi.py` | Per-grade severity subject counts for MI findings. Keys are grade numbers as strings (`"1"`–`"5"` mapping to MINIMAL–SEVERE). Values are subject counts at that grade for the dose group. Null for non-MI domains and MI findings without severity data. Computed from MISEV column via `SEVERITY_SCORES` mapping. Consumed by `DoseResponseChartPanel.tsx` → `buildStackedSeverityBarOption()`. |
 
 ---
 
@@ -250,6 +251,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-74 -- BFIELD-75 | Per-finding assessment (Tier 2) | 2 |
 | BFIELD-76 | HCD assessment (Tier 3A) | 1 |
 | BFIELD-77 | B-6 progression chain (Tier 3B) | 1 |
-| BFIELD-78+ | Reserved for future fields | -- |
+| BFIELD-78 | GroupStat severity_grade_counts | 1 |
+| BFIELD-79+ | Reserved for future fields | -- |
 
-Total: 77 fields documented across 13 JSON output categories.
+Total: 78 fields documented across 13 JSON output categories.

@@ -1096,3 +1096,279 @@ export function buildVolcanoScatterOption(
     animationDuration: 300,
   };
 }
+
+// ─── 7. Dose-Response Bar Chart (Mean ± SD) ─────────────────
+
+/**
+ * Horizontal grouped bar chart showing mean ± SD per dose group per sex.
+ * Doses on Y-axis, values extend right — matches DoseDetailPane layout.
+ * Two bars per dose row (F pink, M blue). Significant bars get dark border.
+ */
+export function buildDoseResponseBarOption(
+  mergedPoints: MergedPoint[],
+  sexes: string[],
+  sexColors: Record<string, string>,
+  sexLabels: Record<string, string>,
+  _noaelLabel?: string | null,
+  _nonMonoFlag?: NonMonotonicFlag | null,
+): EChartsOption {
+  // Reverse so control is at bottom (matching DoseDetailPane)
+  const ordered = [...mergedPoints].reverse();
+  const categories = ordered.map((p) => String(p.dose_label));
+
+  const series: EChartsOption["series"] = [];
+
+  for (const sex of sexes) {
+    const seriesName = sexLabels[sex] ?? sex;
+    const color = sexColors[sex] ?? "#666";
+
+    // Horizontal bar series for mean values
+    const barData = ordered.map((pt) => {
+      const mean = pt[`mean_${sex}`] as number | null;
+      const pVal = pt[`p_${sex}`] as number | null;
+      const sig = pVal != null && pVal < 0.05;
+      return {
+        value: mean,
+        itemStyle: {
+          color,
+          borderColor: sig ? "#1F2937" : "transparent",
+          borderWidth: sig ? 1.5 : 0,
+          borderRadius: [0, 2, 2, 0],
+        },
+      };
+    });
+
+    series.push({
+      type: "bar",
+      name: seriesName,
+      data: barData,
+      barMaxWidth: 12,
+    });
+
+    // Custom error bar series (mean ± SD whiskers) — horizontal
+    const errorBarData = ordered.map((pt, idx) => {
+      const mean = pt[`mean_${sex}`] as number | null;
+      const sd = pt[`sd_${sex}`] as number | null;
+      if (mean == null || sd == null) return [idx, null, null, null];
+      return [idx, mean, mean - sd, mean + sd];
+    });
+
+    series.push({
+      type: "custom",
+      name: `${seriesName} SD`,
+      data: errorBarData,
+      z: 5,
+      silent: true,
+      renderItem(_params: CustomSeriesRenderItemParams, api: CustomSeriesRenderItemAPI) {
+        const catIdx = api.value(0) as number;
+        const lo = api.value(2) as number | null;
+        const hi = api.value(3) as number | null;
+        if (lo == null || hi == null) return;
+
+        // For horizontal bars: Y = category, X = value
+        const hiPt = api.coord([hi, catIdx]);
+        const loPt = api.coord([lo, catIdx]);
+        const capH = 3;
+
+        return {
+          type: "group",
+          children: [
+            // Horizontal whisker line
+            {
+              type: "line",
+              shape: { x1: loPt[0], y1: loPt[1], x2: hiPt[0], y2: hiPt[1] },
+              style: { stroke: color, lineWidth: 1 },
+            },
+            // Right cap (hi)
+            {
+              type: "line",
+              shape: { x1: hiPt[0], y1: hiPt[1] - capH, x2: hiPt[0], y2: hiPt[1] + capH },
+              style: { stroke: color, lineWidth: 1 },
+            },
+            // Left cap (lo)
+            {
+              type: "line",
+              shape: { x1: loPt[0], y1: loPt[1] - capH, x2: loPt[0], y2: loPt[1] + capH },
+              style: { stroke: color, lineWidth: 1 },
+            },
+          ],
+        };
+      },
+    });
+  }
+
+  return {
+    grid: { left: 60, right: 12, top: 8, bottom: 20 },
+    yAxis: {
+      type: "category",
+      data: categories,
+      axisLabel: axisLabel(),
+      axisTick: { alignWithLabel: true },
+      inverse: false,
+    },
+    xAxis: {
+      type: "value",
+      axisLabel: axisLabel(),
+      splitLine: splitLineStyle(),
+    },
+    tooltip: {
+      ...baseTooltip(),
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      formatter(params: unknown) {
+        const arr = Array.isArray(params) ? params : [params];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = arr as any[];
+        if (items.length === 0) return "";
+        const label = items[0].axisValueLabel ?? items[0].name ?? "";
+        let html = `<div style="font-size:11px;font-weight:600;margin-bottom:4px">${label}</div>`;
+        for (const item of items) {
+          if (String(item.seriesName ?? "").endsWith(" SD")) continue;
+          const val = item.value;
+          const displayed = val != null && typeof val === "object" ? val.value : val;
+          html += `<div style="display:flex;align-items:center;gap:6px;font-size:11px">`;
+          html += `${item.marker ?? ""}`;
+          html += `<span>${item.seriesName}</span>`;
+          html += `<span style="font-family:monospace;margin-left:auto">${displayed != null ? Number(displayed).toFixed(2) : "\u2014"}</span>`;
+          html += `</div>`;
+        }
+        return html;
+      },
+    },
+    series,
+    legend: { show: false },
+    animation: true,
+    animationDuration: 300,
+  };
+}
+
+// ─── 8. Stacked Severity Bar Chart ──────────────────────────
+
+const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
+// 5-step ramp with stronger contrast — each step is visually distinct
+const GRADE_COLORS = ["#E5E7EB", "#B0B5BD", "#7C828D", "#4B5563", "#1F2937"];
+
+/**
+ * Vertical stacked bar chart showing severity grade distribution
+ * per dose group per sex. Grades 1-5 are stacked, with separate
+ * stacks for each sex (side-by-side).
+ */
+export function buildStackedSeverityBarOption(
+  mergedPoints: MergedPoint[],
+  sexes: string[],
+  sexColors: Record<string, string>,
+  sexLabels: Record<string, string>,
+): EChartsOption {
+  const categories = mergedPoints.map((p) => String(p.dose_label));
+
+  // Compute total affected per dose × sex for percentage conversion
+  const totals = new Map<string, number>();
+  for (const pt of mergedPoints) {
+    for (const sex of sexes) {
+      const counts = pt[`sev_counts_${sex}`] as Record<string, number> | null;
+      if (!counts) continue;
+      let total = 0;
+      for (const v of Object.values(counts)) total += v;
+      totals.set(`${pt.dose_level}_${sex}`, total);
+    }
+  }
+
+  const series: EChartsOption["series"] = [];
+
+  for (const sex of sexes) {
+    const sexColor = sexColors[sex] ?? "#666";
+
+    for (let g = 0; g < 5; g++) {
+      const grade = g + 1;
+      const gradeLabel = GRADE_LABELS[g];
+      const gradeColor = GRADE_COLORS[g];
+
+      const data = mergedPoints.map((pt) => {
+        const counts = pt[`sev_counts_${sex}`] as Record<string, number> | null;
+        const n = counts?.[String(grade)] ?? 0;
+        const total = totals.get(`${pt.dose_level}_${sex}`) ?? 0;
+        return total > 0 ? n / total : 0;
+      });
+
+      series.push({
+        type: "bar",
+        name: gradeLabel,
+        stack: sex,
+        data,
+        barMaxWidth: 30,
+        itemStyle: {
+          color: gradeColor,
+          // Bottom segment (grade 1) gets a colored bottom border for sex identification
+          ...(g === 0 ? { borderColor: sexColor, borderWidth: 2 } : {})
+        },
+      });
+    }
+  }
+
+  return {
+    grid: BASE_GRID,
+    xAxis: {
+      type: "category",
+      data: categories,
+      axisLabel: axisLabel(),
+      axisTick: { alignWithLabel: true },
+    },
+    yAxis: {
+      type: "value",
+      min: 0,
+      max: 1,
+      axisLabel: {
+        ...axisLabel(),
+        formatter: (v: number) => `${(v * 100).toFixed(0)}%`,
+      },
+      splitLine: splitLineStyle(),
+    },
+    tooltip: {
+      ...baseTooltip(),
+      trigger: "axis",
+      formatter(params: unknown) {
+        const arr = Array.isArray(params) ? params : [params];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = arr as any[];
+        if (items.length === 0) return "";
+        const label = items[0].axisValueLabel ?? items[0].name ?? "";
+        let html = `<div style="font-size:11px;font-weight:600;margin-bottom:4px">${label}</div>`;
+
+        for (const sex of sexes) {
+          const sexLabel = sexLabels[sex] ?? sex;
+          const sexColor = sexColors[sex] ?? "#666";
+          html += `<div style="font-size:10px;font-weight:600;color:${sexColor};margin-top:4px">${sexLabel}</div>`;
+
+          const sexIdx = sexes.indexOf(sex);
+          // Compute total n for this dose × sex from the raw counts
+          let totalN = 0;
+          for (let g = 0; g < 5; g++) {
+            const item = items[sexIdx * 5 + g];
+            const pct = item?.value ?? 0;
+            // Reverse the percentage to get count (pct = count/total)
+            // We'll show the percentage and the raw fraction
+            if (pct > 0) totalN += 1; // approximate — real count shown below
+          }
+
+          for (let g = 0; g < 5; g++) {
+            const gradeLabel = GRADE_LABELS[g];
+            const gradeColor = GRADE_COLORS[g];
+            const item = items[sexIdx * 5 + g];
+            const pct = item?.value ?? 0;
+            if (pct === 0) continue;
+            html += `<div style="display:flex;align-items:center;gap:6px;font-size:11px">`;
+            html += `<span style="display:inline-block;width:8px;height:8px;border-radius:1px;background:${gradeColor}"></span>`;
+            html += `<span>${gradeLabel}</span>`;
+            html += `<span style="font-family:monospace;margin-left:auto">${(pct * 100).toFixed(0)}%</span>`;
+            html += `</div>`;
+          }
+        }
+        return html;
+      },
+    },
+    series,
+    legend: { show: false },
+    animation: true,
+    animationDuration: 300,
+  };
+}

@@ -9,6 +9,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
+import { DayStepper } from "./DayStepper";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -234,6 +235,75 @@ export function FindingsView() {
     return f;
   }, [data, visibleLabels, isScheduledOnly]);
 
+  // ── Day navigation metadata for DayStepper (D6) ──────────
+  const dayMeta = useMemo(() => {
+    if (!activeEndpoint || !tableFindings.length) return null;
+    const epFindings = tableFindings.filter(
+      (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
+    );
+    if (epFindings.length === 0) return null;
+
+    // Collect unique days with group data (control + at least one treated dose)
+    const dayDoseSets = new Map<number, Set<number>>();
+    for (const f of epFindings) {
+      if (f.day == null) continue;
+      for (const gs of f.group_stats) {
+        let set = dayDoseSets.get(f.day);
+        if (!set) { set = new Set(); dayDoseSets.set(f.day, set); }
+        set.add(gs.dose_level);
+      }
+    }
+    const groupDays = [...dayDoseSets.entries()]
+      .filter(([, dls]) => dls.has(0) && dls.size >= 2)
+      .map(([d]) => d)
+      .sort((a, b) => a - b);
+    if (groupDays.length === 0) return null;
+
+    const terminal = groupDays[groupDays.length - 1];
+    const days = groupDays.filter((d) => d <= terminal);
+    if (days.length === 0) return null;
+
+    // Peak detection
+    const dataType = epFindings[0].data_type;
+    let bestDay = terminal;
+    if (dataType === "continuous") {
+      let bestAbs = -1;
+      for (const f of epFindings) {
+        if (f.day == null || f.day > terminal) continue;
+        const abs = Math.abs(f.max_effect_size ?? 0);
+        if (abs > bestAbs) { bestAbs = abs; bestDay = f.day; }
+      }
+    } else {
+      let bestP = Infinity;
+      for (const f of epFindings) {
+        if (f.day == null || f.day > terminal || f.min_p_adj == null) continue;
+        if (f.min_p_adj < bestP) { bestP = f.min_p_adj; bestDay = f.day; }
+      }
+    }
+    const peakDay = bestDay !== terminal ? bestDay : null;
+
+    const dayLabels = new Map<number, string>();
+    for (const d of days) {
+      if (d === terminal) dayLabels.set(d, "terminal");
+      else if (d === peakDay) dayLabels.set(d, "peak");
+    }
+
+    return { availableDays: days, peakDay, terminalDay: terminal, dayLabels };
+  }, [activeEndpoint, tableFindings]);
+
+  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  useEffect(() => {
+    if (dayMeta) {
+      setSelectedDay(activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay);
+    } else {
+      setSelectedDay(null);
+    }
+  }, [activeDay, dayMeta]);
+  // Effective day: fallback for first render before useEffect fires
+  const effectiveDay = selectedDay
+    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
+
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
     scatterEndpoints.filter(ep => ep.maxEffectSize != null && ep.minPValue != null).length,
@@ -357,6 +427,22 @@ export function FindingsView() {
     </span>
   ), [showInfoTooltip, handleInfoMouseEnter, handleInfoMouseLeave, excludedChips]);
 
+  // Header right for D-R chart section: day stepper + excluded chips + info icon
+  const chartHeaderRight = useMemo(() => (
+    <span className="flex items-center gap-2">
+      {dayMeta && (
+        <DayStepper
+          availableDays={dayMeta.availableDays}
+          selectedDay={effectiveDay}
+          onDayChange={setSelectedDay}
+          dayLabels={dayMeta.dayLabels}
+          peakDay={dayMeta.peakDay}
+        />
+      )}
+      {excludedChips}
+    </span>
+  ), [dayMeta, effectiveDay, excludedChips]);
+
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
     setEndpointSexes(endpointSexes);
@@ -405,7 +491,7 @@ export function FindingsView() {
           /* Endpoint selected → dose-response charts */
           <ViewSection
             title={sectionTitle}
-            headerRight={headerRight}
+            headerRight={chartHeaderRight}
             mode="fixed"
             height={scatterSection.height}
             onResizePointerDown={scatterSection.onPointerDown}
@@ -416,8 +502,7 @@ export function FindingsView() {
               findings={tableFindings}
               doseGroups={data.dose_groups}
               height={scatterSection.height - 32}
-              day={activeDay}
-              dayContext="worst"
+              selectedDay={effectiveDay}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
@@ -465,6 +550,8 @@ export function FindingsView() {
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
+          selectedDay={activeEndpoint ? effectiveDay : undefined}
+          onClearDayFilter={() => setSelectedDay(null)}
         />
       ) : null}
       </div>

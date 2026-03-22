@@ -30,6 +30,7 @@ class GroupStat(BaseModel):
     affected: int | None = None
     incidence: float | None = None
     avg_severity: float | None = None
+    severity_grade_counts: dict[str, int] | None = None
 
 
 class PairwiseResult(BaseModel):

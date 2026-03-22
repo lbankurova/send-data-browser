@@ -8,8 +8,10 @@ import type { EChartsOption } from "echarts";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
 import {
   buildDoseResponseLineOption,
+  buildDoseResponseBarOption,
   buildIncidenceBarOption,
   buildEffectSizeBarOption,
+  buildStackedSeverityBarOption,
 } from "@/components/analysis/charts/dose-response-charts";
 import type { MergedPoint } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
@@ -19,8 +21,10 @@ import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
+import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
 import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
+import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { UnifiedFinding, DoseGroup, GroupStat, PairwiseResult } from "@/types/analysis";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
@@ -29,10 +33,8 @@ interface Props {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
   height: number;
-  /** Study day to display. When null, uses the terminal/latest day. */
-  day?: number | null;
-  /** Context label for the day (e.g., "terminal", "peak", "worst"). */
-  dayContext?: string;
+  /** Study day to display. Managed by parent via DayStepper. */
+  selectedDay: number | null;
 }
 
 const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor("F") };
@@ -178,7 +180,7 @@ export function DoseResponseChartPanel({
   findings,
   doseGroups,
   height,
-  day,
+  selectedDay,
 }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
   const { effectSize: esMethod } = useStatMethods(studyId);
@@ -186,6 +188,11 @@ export function DoseResponseChartPanel({
   const esLabel = getEffectSizeLabel(esMethod);
   const normalization = useOrganWeightNormalization(studyId);
   const [incidenceScale, setIncidenceScale] = useState<ChartDisplayMode>("scaled");
+  const DR_MODES = ["bar", "line"] as const;
+  type DRChartMode = typeof DR_MODES[number];
+  const [drChartMode, setDrChartMode] = useSessionState<DRChartMode>(
+    "pcc.findings.drChartMode", "bar", isOneOf(DR_MODES),
+  );
   const [splitPct, setSplitPct] = useState(50);
   const chartRowRef = useRef<HTMLDivElement>(null);
 
@@ -202,76 +209,13 @@ export function DoseResponseChartPanel({
     [findings, doseGroups, endpointLabel],
   );
 
-  // ── Available days + day classification for this endpoint ──
-  const { availableDays, peakDay, terminalDay, dayLabels } = useMemo(() => {
-    const epRows = drRows.filter((r) => r.endpoint_label === endpointLabel);
-    // Only keep days with group data (control + at least one treated dose).
-    // Death-day measurements have a single animal — no group comparison.
-    const allDays = [...new Set(epRows.map((r) => r.day).filter((d): d is number => d != null))].sort((a, b) => a - b);
-    const groupDays = allDays.filter((d) => {
-      const dayRows = epRows.filter((r) => r.day === d);
-      const dls = new Set(dayRows.map((r) => r.dose_level));
-      return dls.has(0) && dls.size >= 2; // control + at least one treated
-    });
-    if (groupDays.length === 0) return { availableDays: [] as number[], peakDay: null, terminalDay: null, dayLabels: new Map<number, string>() };
-
-    // Terminal = last in-life scheduled sacrifice day.
-    // Recovery days (different cohort, different N) are excluded — recovery
-    // story is told in context panel RecoveryPane + time-course subject mode.
-    const terminal = groupDays[groupDays.length - 1];
-    const days = groupDays.filter((d) => d <= terminal);
-    if (days.length === 0) return { availableDays: [], peakDay: null, terminalDay: null, dayLabels: new Map<number, string>() };
-
-    // Peak detection — domain-conditional:
-    //   Continuous: argmax |effect_size| (Hedges' g)
-    //   Incidence:  argmin p_value (Fisher's exact)
-    const dataType = epRows[0]?.data_type;
-    let bestDay = terminal;
-    if (dataType === "continuous") {
-      let bestAbs = -1;
-      for (const r of epRows) {
-        if (r.dose_level === 0 || r.day == null || r.day > terminal) continue;
-        const abs = Math.abs(r.effect_size ?? 0);
-        if (abs > bestAbs) { bestAbs = abs; bestDay = r.day; }
-      }
-    } else {
-      let bestP = Infinity;
-      for (const r of epRows) {
-        if (r.dose_level === 0 || r.day == null || r.day > terminal || r.p_value == null) continue;
-        if (r.p_value < bestP) { bestP = r.p_value; bestDay = r.day; }
-      }
-    }
-    const peak = bestDay !== terminal ? bestDay : null;
-
-    // Build labels: terminal, peak (if different)
-    const labels = new Map<number, string>();
-    for (const d of days) {
-      if (d === terminal) labels.set(d, "terminal");
-      else if (d === peak) labels.set(d, "peak");
-    }
-
-    return { availableDays: days, peakDay: peak, terminalDay: terminal, dayLabels: labels };
-  }, [drRows, endpointLabel]);
-
-  // Internal day state — initialized from prop or peak/terminal
-  const defaultDay = day ?? peakDay ?? terminalDay;
-  const [selectedDay, setSelectedDay] = useState<number | null>(defaultDay);
-  useEffect(() => {
-    setSelectedDay(day ?? peakDay ?? terminalDay);
-  }, [day, peakDay, terminalDay]);
-
-  const dayIdx = selectedDay != null ? availableDays.indexOf(selectedDay) : -1;
-  const canPrev = dayIdx > 0;
-  const canNext = dayIdx >= 0 && dayIdx < availableDays.length - 1;
-
   // ── Filter to selected endpoint + day, build MergedPoint[] ─
   const chartData = useMemo(() => {
     let rows = drRows.filter((r) => r.endpoint_label === endpointLabel);
     if (rows.length === 0) return null;
 
-    const targetDay = selectedDay ?? availableDays[availableDays.length - 1] ?? null;
-    if (targetDay == null) return null;
-    rows = rows.filter((r) => r.day === targetDay);
+    if (selectedDay == null) return null;
+    rows = rows.filter((r) => r.day === selectedDay);
     if (rows.length === 0) return null;
 
     const dataType = rows[0].data_type;
@@ -298,12 +242,18 @@ export function DoseResponseChartPanel({
         point[`p_${sex}`] = r?.p_value ?? null;
         point[`incidence_${sex}`] = r?.incidence ?? null;
         point[`effect_${sex}`] = r?.effect_size ?? null;
+        // Severity grade counts for MI stacked severity chart
+        const epFinding = findings.find(
+          (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex,
+        );
+        const gs = epFinding?.group_stats.find((g) => g.dose_level === dl);
+        point[`sev_counts_${sex}`] = gs?.severity_grade_counts ?? null;
       }
       return point;
     });
 
     return { dataType, domain, testCode, pattern, studyDay, sexes, doseLevels, mergedPoints, rows };
-  }, [drRows, endpointLabel, selectedDay, availableDays]);
+  }, [drRows, findings, endpointLabel, selectedDay]);
 
   // ── Auto-detect compact mode for low-incidence ────────────
   const maxIncidence = useMemo(() => {
@@ -353,6 +303,14 @@ export function DoseResponseChartPanel({
     );
   }, [chartData]);
 
+  // ── Has severity grade data? (for stacked severity chart) ─
+  const hasSeverityData = useMemo(() => {
+    if (!chartData || chartData.dataType === "continuous") return false;
+    return chartData.sexes.some((s) =>
+      chartData.mergedPoints.some((p) => p[`sev_counts_${s}`] != null),
+    );
+  }, [chartData]);
+
   // ── OM normalization subtitle ─────────────────────────────
   const omSubtitle = useMemo(() => {
     if (!chartData || chartData.domain !== "OM") return undefined;
@@ -369,11 +327,16 @@ export function DoseResponseChartPanel({
   // ── Build compact chart options ───────────────────────────
   const drOption = useMemo(() => {
     if (!chartData) return null;
-    const raw = chartData.dataType === "continuous"
-      ? buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag)
-      : buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, effectiveCompact);
+    let raw: EChartsOption;
+    if (chartData.dataType === "continuous") {
+      raw = drChartMode === "bar"
+        ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag)
+        : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag);
+    } else {
+      raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, effectiveCompact);
+    }
     return compactify(raw, chartData.mergedPoints);
-  }, [chartData, nonMonoFlag, effectiveCompact]);
+  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact]);
 
   const esOption = useMemo(() => {
     if (!chartData || !hasEffect) return null;
@@ -383,6 +346,17 @@ export function DoseResponseChartPanel({
     );
     return compactifyEffectSize(raw, chartData.mergedPoints);
   }, [chartData, hasEffect, esSymbol, omSubtitle]);
+
+  const sevOption = useMemo(() => {
+    if (!chartData || !hasSeverityData) return null;
+    const raw = buildStackedSeverityBarOption(
+      chartData.mergedPoints, chartData.sexes, sexColors, sexLabels,
+    );
+    return compactify(raw, chartData.mergedPoints);
+  }, [chartData, hasSeverityData]);
+
+  // Whether the right panel should show anything
+  const hasRightPanel = hasEffect || hasSeverityData;
 
   // ── Resize handle ─────────────────────────────────────────
   const onChartResize = useCallback((e: React.PointerEvent) => {
@@ -416,51 +390,12 @@ export function DoseResponseChartPanel({
 
   return (
     <div style={{ height }} className="flex flex-col overflow-hidden">
-      {/* Day stepper + dropdown — shared across both charts */}
-      {availableDays.length > 1 && (
-        <div className="flex items-center justify-center gap-0.5 py-0.5">
-          <button
-            type="button"
-            disabled={!canPrev}
-            className="px-1 text-[10px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
-            onClick={() => canPrev && setSelectedDay(availableDays[dayIdx - 1])}
-          >
-            &lsaquo;
-          </button>
-          <span className="relative inline-flex items-center">
-            <select
-              className="appearance-none border-none bg-transparent pr-3 text-center text-[9px] font-semibold tabular-nums text-foreground outline-none cursor-pointer"
-              value={selectedDay ?? ""}
-              onChange={(e) => setSelectedDay(Number(e.target.value))}
-            >
-              {availableDays.map((d) => {
-                const label = dayLabels.get(d);
-                return (
-                  <option key={d} value={d}>
-                    D{d}{label ? ` (${label})` : ""}
-                  </option>
-                );
-              })}
-            </select>
-            <span className="pointer-events-none absolute right-0 text-[7px] text-muted-foreground">&#x25BE;</span>
-          </span>
-          <button
-            type="button"
-            disabled={!canNext}
-            className="px-1 text-[10px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
-            onClick={() => canNext && setSelectedDay(availableDays[dayIdx + 1])}
-          >
-            &rsaquo;
-          </button>
-        </div>
-      )}
-
       {/* Charts row — resizable split */}
       <div ref={chartRowRef} className="flex flex-1 min-h-0">
         {/* Left: D-R chart */}
         <div
           className="flex shrink-0 flex-col overflow-hidden px-1"
-          style={{ width: hasEffect ? `${splitPct}%` : "100%" }}
+          style={{ width: hasRightPanel ? `${splitPct}%` : "100%" }}
         >
           {/* Title + legend */}
           <div className="flex shrink-0 items-center justify-between py-0.5">
@@ -468,6 +403,16 @@ export function DoseResponseChartPanel({
               <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {isContinuous ? "Mean \u00b1 SD" : "Incidence"}
               </span>
+              {isContinuous && (
+                <PanePillToggle
+                  value={drChartMode}
+                  options={[
+                    { value: "bar" as const, label: "Bar" },
+                    { value: "line" as const, label: "Line" },
+                  ]}
+                  onChange={setDrChartMode}
+                />
+              )}
               {!isContinuous && (
                 <ChartModeToggle mode={incidenceScale} onChange={setIncidenceScale} />
               )}
@@ -495,12 +440,33 @@ export function DoseResponseChartPanel({
         </div>
 
         {/* Resize handle */}
-        {hasEffect && <PanelResizeHandle onPointerDown={onChartResize} />}
+        {hasRightPanel && <PanelResizeHandle onPointerDown={onChartResize} />}
 
-        {/* Right: Effect size chart */}
-        {hasEffect && esOption && (
+        {/* Right panel: effect size (continuous) or stacked severity (incidence MI) */}
+        {hasSeverityData && sevOption ? (
           <div className="flex min-w-0 flex-1 flex-col px-1">
-            {/* Title + legend */}
+            <div className="flex shrink-0 items-center justify-between py-0.5">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Severity distribution
+              </span>
+              <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
+                {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
+                  <span key={label} className="flex items-center gap-0.5">
+                    <span
+                      className="inline-block h-2 w-2 rounded-sm"
+                      style={{ backgroundColor: ["#E5E7EB", "#B0B5BD", "#7C828D", "#4B5563", "#1F2937"][i] }}
+                    />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 min-h-0">
+              <EChartsWrapper option={sevOption} style={{ width: "100%", height: "100%" }} />
+            </div>
+          </div>
+        ) : hasEffect && esOption ? (
+          <div className="flex min-w-0 flex-1 flex-col px-1">
             <div className="flex shrink-0 items-center justify-between py-0.5">
               <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Effect size ({esLabel})
@@ -508,13 +474,11 @@ export function DoseResponseChartPanel({
               </span>
               <span className="text-[8px] text-muted-foreground/60">{esSymbol}=0.8 threshold</span>
             </div>
-
-            {/* Chart fills remaining space */}
             <div className="flex-1 min-h-0">
               <EChartsWrapper option={esOption} style={{ width: "100%", height: "100%" }} />
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

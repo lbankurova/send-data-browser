@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { EyeOff, ExternalLink } from "lucide-react";
+import { EyeOff, ExternalLink, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
@@ -31,6 +31,13 @@ import { useSessionState } from "@/hooks/useSessionState";
 import { getSignalTier, getPatternLabel } from "@/lib/findings-rail-engine";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import { FindingsTableFilterPanel } from "./findings/FindingsTableFilterPanel";
+import {
+  DEFAULT_FILTER_STATE,
+  countActiveFilters,
+  applyTableFilters,
+} from "./findings/table-filters";
+import type { TableFilterState } from "./findings/table-filters";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -125,9 +132,13 @@ interface FindingsTableProps {
   onOpenInTab?: () => void;
   /** Active effect size method — controls header label for continuous endpoints. */
   effectSizeMethod?: EffectSizeMethod;
+  /** Day selected by the day stepper — filters table to this day when set. */
+  selectedDay?: number | null;
+  /** Callback to clear the day stepper filter from within the table. */
+  onClearDayFilter?: () => void;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g" }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", selectedDay, onClearDayFilter }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -158,6 +169,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   // Pivoted table sorting (separate from standard table)
   const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", []);
   const [pivotedColumnSizing, setPivotedColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.pivotedColumnSizing", {});
+
+  // Filter panel state
+  const [filterState, setFilterState] = useSessionState<TableFilterState>(
+    "pcc.findings.tableFilters", DEFAULT_FILTER_STATE,
+  );
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFilterCount = countActiveFilters(filterState);
 
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
@@ -245,13 +263,33 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return result;
   }, [findings, tableMode]);
 
+  // Apply endpoint + day stepper filter (D6: stepper drives both charts and table)
+  const dayFilteredFindings = useMemo(() => {
+    let result = displayFindings;
+    // When an endpoint is selected, scope table to that endpoint
+    if (activeEndpoint) {
+      result = result.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
+    }
+    // When a day is selected via stepper, scope to that day
+    if (selectedDay != null) {
+      result = result.filter((f) => f.day === selectedDay);
+    }
+    return result;
+  }, [displayFindings, activeEndpoint, selectedDay]);
+
+  // Apply table column filters on top of day + all/worst selection
+  const filteredFindings = useMemo(() => {
+    if (activeFilterCount === 0) return dayFilteredFindings;
+    return applyTableFilters(dayFilteredFindings, filterState);
+  }, [dayFilteredFindings, filterState, activeFilterCount]);
+
   // ─── Pivoted data: flatten finding × dose group into rows ───
   // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
   const pivotedRows = useMemo(() => {
     if (layoutMode !== "pivoted") return [];
     const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
     const rows: PivotedRow[] = [];
-    for (const f of displayFindings) {
+    for (const f of filteredFindings) {
       // Control mean for fold change computation
       const controlMean = f.data_type === "continuous"
         ? (f.group_stats.find(g => g.dose_level === 0)?.mean ?? null)
@@ -296,7 +334,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }
     }
     return rows;
-  }, [displayFindings, doseGroups, layoutMode]);
+  }, [filteredFindings, doseGroups, layoutMode]);
 
   // ─── Standard columns ──────────────────────────────────────
   const columns = useMemo(
@@ -727,7 +765,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // ─── Standard table instance ───────────────────────────────
   const table = useReactTable({
-    data: displayFindings,
+    data: filteredFindings,
     columns,
     state: { sorting, columnSizing },
     onSortingChange: setSorting,
@@ -820,13 +858,28 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
-  const rowCount = layoutMode === "pivoted" ? pivotedRows.length : displayFindings.length;
+  const rowCount = layoutMode === "pivoted" ? pivotedRows.length : filteredFindings.length;
   const totalCount = layoutMode === "pivoted" ? findings.length * doseGroups.length : findings.length;
 
   return (
     <div className="flex h-full flex-col">
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
+        {/* Filter toggle */}
+        <button
+          type="button"
+          className={cn(
+            "relative rounded p-0.5 transition-colors",
+            (selectedDay != null || activeFilterCount > 0)
+              ? "text-primary hover:text-primary/80"
+              : "text-muted-foreground hover:text-foreground",
+            showFilters && "bg-primary/10",
+          )}
+          onClick={() => setShowFilters((p) => !p)}
+          title="Toggle column filters"
+        >
+          <Filter className="h-3 w-3" />
+        </button>
         {/* All / Worst toggle */}
         <PanePillToggle
           value={tableMode}
@@ -846,7 +899,32 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           onChange={setLayoutMode}
         />
         <span className="text-[10px] text-muted-foreground">
-          {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
+          {(() => {
+            const parts: string[] = [];
+            if (activeEndpoint) parts.push(activeEndpoint);
+            if (selectedDay != null) parts.push(`Day ${selectedDay}`);
+            if (filterState.sex) parts.push(filterState.sex.join(", "));
+            if (filterState.domain) parts.push(filterState.domain.join(", "));
+            if (filterState.severity) parts.push(filterState.severity.join(", "));
+            if (filterState.direction) parts.push(filterState.direction.map(d => d === "up" ? "\u2191" : "\u2193").join(""));
+            if (filterState.findingSearch) parts.push(`"${filterState.findingSearch}"`);
+            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) parts.push("p-value range");
+            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) parts.push("|g| range");
+
+            if (parts.length > 0) {
+              return (
+                <span className="flex items-center gap-1">
+                  <span>{parts.join(" \u00b7 ")}</span>
+                  <span className="text-muted-foreground/50">({rowCount})</span>
+                </span>
+              );
+            }
+            return (
+              <span>
+                {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
+              </span>
+            );
+          })()}
         </span>
         {onOpenInTab && (
           <button
@@ -860,9 +938,23 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         )}
       </div>
 
+      {/* Content row: optional filter panel + table */}
+      <div className="flex flex-1 min-h-0">
+        {showFilters && (
+          <div className="w-[200px] shrink-0 overflow-y-auto">
+            <FindingsTableFilterPanel
+              findings={findings}
+              filterState={filterState}
+              onFilterChange={setFilterState}
+              onClearDayFilter={onClearDayFilter}
+              activeDayLabel={selectedDay != null ? `Day ${selectedDay}` : null}
+            />
+          </div>
+        )}
+
       {/* ─── Standard table (virtualized) ─────────────────────── */}
       {layoutMode === "standard" && (
-      <div ref={stdScrollRef} className="flex-1 overflow-auto">
+      <div ref={stdScrollRef} className="flex-1 min-w-0 overflow-auto">
       <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
@@ -963,7 +1055,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           )}
         </tbody>
       </table>
-      {displayFindings.length === 0 && (
+      {filteredFindings.length === 0 && (
         <div className="p-4 text-center text-xs text-muted-foreground">
           No findings match the current filters.
         </div>
@@ -973,7 +1065,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
       {/* ─── Pivoted table (virtualized) ──────────────────────── */}
       {layoutMode === "pivoted" && (
-      <div ref={pivScrollRef} className="flex-1 overflow-auto">
+      <div ref={pivScrollRef} className="flex-1 min-w-0 overflow-auto">
       <table className="w-full text-[10px]">
         <thead className="sticky top-0 z-10 bg-background">
           {pivotedTable.getHeaderGroups().map((hg) => (
@@ -1066,6 +1158,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       )}
       </div>
       )}
+
+      </div>
+      {/* end: content row */}
 
       {/* Context menus */}
       {dayMenu && (
