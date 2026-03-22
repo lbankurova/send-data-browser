@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { EyeOff, ExternalLink, Filter } from "lucide-react";
+import { EyeOff, ExternalLink, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
@@ -25,6 +25,7 @@ import { effectSizeLabel } from "@/lib/domain-types";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { DoseHeader, DoseLabel } from "@/components/ui/DoseLabel";
+import { getSexColor } from "@/lib/severity-colors";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
@@ -177,6 +178,30 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [showFilters, setShowFilters] = useState(false);
   const activeFilterCount = countActiveFilters(filterState);
 
+  // D7-6: endpoint scope toggle — "all" shows all endpoints, "selected" shows only active endpoint
+  const [endpointScope, setEndpointScope] = useState<"all" | "selected">("selected");
+  // Reset scope to "selected" when endpoint changes
+  const prevEndpointRef = useRef(activeEndpoint);
+  useEffect(() => {
+    if (activeEndpoint !== prevEndpointRef.current) {
+      prevEndpointRef.current = activeEndpoint;
+      if (activeEndpoint) setEndpointScope("selected");
+    }
+  }, [activeEndpoint]);
+
+  // D7-2: auto-switch to pivoted when endpoint selected
+  const userOverrodeLayout = useRef(false);
+  useEffect(() => {
+    if (activeEndpoint && !userOverrodeLayout.current) {
+      setLayoutMode("pivoted");
+      // D7-4/5: default sort by dose_level ascending, then sex
+      setPivotedSorting([{ id: "dose_level", desc: false }]);
+    }
+    if (!activeEndpoint) {
+      userOverrodeLayout.current = false;
+    }
+  }, [activeEndpoint]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
   useEffect(() => {
@@ -266,8 +291,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   // Apply endpoint + day stepper filter (D6: stepper drives both charts and table)
   const dayFilteredFindings = useMemo(() => {
     let result = displayFindings;
-    // When an endpoint is selected, scope table to that endpoint
-    if (activeEndpoint) {
+    // When an endpoint is selected and scope is "selected", scope table to that endpoint
+    if (activeEndpoint && endpointScope === "selected") {
       result = result.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
     }
     // When a day is selected via stepper, scope to that day
@@ -377,7 +402,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
-      col.accessor("sex", { header: "Sex" }),
+      col.accessor("sex", {
+        header: "Sex",
+        cell: (info) => <span style={{ color: getSexColor(info.getValue()) }}>{info.getValue()}</span>,
+      }),
       col.accessor("day", {
         header: () => {
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
@@ -458,7 +486,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <span title={sparkScale === "global"
             ? "Dose-response trend (delta from control). Global scale — bar height reflects actual magnitude across all findings. Right-click to change."
             : "Dose-response trend (delta from control). Row scale — each row scaled to its own max. Right-click to change."}>
-            {"\u0394"}{sparkScale === "global" ? "*" : ""}
+            {"\u0394"}{sparkScale === "global" ? "*" : ""}<span className="ml-0.5 text-[7px] text-muted-foreground/50">{"\u25BE"}</span>
           </span>
         ),
         cell: (info) => {
@@ -600,7 +628,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
-      pivCol.accessor("sex", { header: "Sex" }),
+      pivCol.accessor("sex", {
+        header: "Sex",
+        cell: (info) => <span style={{ color: getSexColor(info.getValue()) }}>{info.getValue()}</span>,
+      }),
       pivCol.accessor("day", {
         header: () => {
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
@@ -880,50 +911,70 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         >
           <Filter className="h-3 w-3" />
         </button>
-        {/* All / Worst toggle */}
-        <PanePillToggle
-          value={tableMode}
-          options={[
-            { value: "all" as const, label: "All" },
-            { value: "worst" as const, label: "Worst" },
-          ]}
-          onChange={setTableMode}
-        />
+        {/* Clear all filters (visible when any filter is active, without opening panel) */}
+        {(selectedDay != null || activeFilterCount > 0) && (
+          <button
+            type="button"
+            className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            onClick={() => {
+              setFilterState(DEFAULT_FILTER_STATE);
+              onClearDayFilter?.();
+            }}
+            title="Clear all filters"
+          >
+            <X className="h-2.5 w-2.5" />
+            <span>Clear</span>
+          </button>
+        )}
+        {/* All days / Worst day toggle */}
+        <span title={tableMode === "all" ? "Showing all timepoints per endpoint" : "Showing only the most significant timepoint per endpoint"}>
+          <PanePillToggle
+            value={tableMode}
+            options={[
+              { value: "all" as const, label: "All days" },
+              { value: "worst" as const, label: "Worst day" },
+            ]}
+            onChange={setTableMode}
+          />
+        </span>
         {/* Standard / Pivoted toggle */}
-        <PanePillToggle
-          value={layoutMode}
-          options={[
-            { value: "standard" as const, label: "Standard" },
-            { value: "pivoted" as const, label: "Pivoted" },
-          ]}
-          onChange={setLayoutMode}
-        />
-        <span className="text-[10px] text-muted-foreground">
-          {(() => {
-            const parts: string[] = [];
-            if (activeEndpoint) parts.push(activeEndpoint);
-            if (selectedDay != null) parts.push(`Day ${selectedDay}`);
-            if (filterState.sex) parts.push(filterState.sex.join(", "));
-            if (filterState.domain) parts.push(filterState.domain.join(", "));
-            if (filterState.severity) parts.push(filterState.severity.join(", "));
-            if (filterState.direction) parts.push(filterState.direction.map(d => d === "up" ? "\u2191" : "\u2193").join(""));
-            if (filterState.findingSearch) parts.push(`"${filterState.findingSearch}"`);
-            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) parts.push("p-value range");
-            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) parts.push("|g| range");
-
-            if (parts.length > 0) {
-              return (
-                <span className="flex items-center gap-1">
-                  <span>{parts.join(" \u00b7 ")}</span>
-                  <span className="text-muted-foreground/50">({rowCount})</span>
-                </span>
-              );
-            }
-            return (
-              <span>
-                {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
+        <span title={layoutMode === "standard" ? "One row per finding" : "One row per dose group \u00d7 finding"}>
+          <PanePillToggle
+            value={layoutMode}
+            options={[
+              { value: "standard" as const, label: "Standard" },
+              { value: "pivoted" as const, label: "Pivoted" },
+            ]}
+            onChange={(v) => { setLayoutMode(v); if (activeEndpoint) userOverrodeLayout.current = true; }}
+          />
+        </span>
+        {/* D7-6: All endpoints / Selected toggle (only when endpoint is active) */}
+        {activeEndpoint && (
+          <span title={endpointScope === "selected" ? "Showing only the selected endpoint" : "Showing all endpoints"}>
+            <PanePillToggle
+              value={endpointScope}
+              options={[
+                { value: "selected" as const, label: "Selected" },
+                { value: "all" as const, label: "All endpoints" },
+              ]}
+              onChange={setEndpointScope}
+            />
+          </span>
+        )}
+        {/* Showing text + filter icon adjacent */}
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span>Showing {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""}</span>
+          {/* Show filtered-out domains as crossed-out text */}
+          {filterState.domain && (() => {
+            const allDomains = [...new Set(findings.map((f) => f.domain))].sort();
+            const excluded = allDomains.filter((d) => !filterState.domain!.includes(d));
+            return excluded.length > 0 ? (
+              <span className="text-[9px]">
+                {excluded.map((d) => (
+                  <span key={d} className="text-muted-foreground/40 line-through mr-1">{d}</span>
+                ))}
               </span>
-            );
+            ) : null;
           })()}
         </span>
         {onOpenInTab && (
@@ -948,6 +999,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               onFilterChange={setFilterState}
               onClearDayFilter={onClearDayFilter}
               activeDayLabel={selectedDay != null ? `Day ${selectedDay}` : null}
+              effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
             />
           </div>
         )}

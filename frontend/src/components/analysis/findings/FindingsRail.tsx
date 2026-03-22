@@ -151,7 +151,7 @@ export function FindingsRail({
   // ── Local state ────────────────────────────────────────
   // Grouping & sort persist across view navigations (user preference)
   const [grouping, setGrouping] = useSessionState<GroupingMode>(
-    "pcc.findings.rail.grouping", "syndrome",
+    "pcc.findings.rail.grouping", "finding",
     isOneOf(["organ", "finding", "syndrome", "specimen"] as const),
   );
   const [sortMode, setSortMode] = useSessionState<SortMode>(
@@ -943,27 +943,29 @@ function RailFiltersSection({
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search + sort */}
+      {/* Row 1: Search + sort (sort has fixed width to prevent jump when search expands) */}
       <div className="flex items-center gap-1.5">
         <FilterSearch
           value={filters.search}
           onChange={(v) => onFiltersChange({ ...filters, search: v })}
-          placeholder="Search…"
+          placeholder="Search\u2026"
         />
-        <FilterSelect
-          value={sortMode}
-          onChange={(e) => onSortChange(e.target.value as SortMode)}
-        >
-          <option value="signal">Sort: Signal</option>
-          <option value="pvalue">Sort: P-value</option>
-          <option value="effect">Sort: Effect</option>
-          <option value="az">Sort: A–Z</option>
-        </FilterSelect>
+        <div className="w-[110px] shrink-0">
+          <FilterSelect
+            value={sortMode}
+            onChange={(e) => onSortChange(e.target.value as SortMode)}
+          >
+            <option value="signal">Sort: Signal</option>
+            <option value="pvalue">Sort: P-value</option>
+            <option value="effect">Sort: Effect</option>
+            <option value="az">Sort: A{"\u2013"}Z</option>
+          </FilterSelect>
+        </div>
       </div>
 
       {/* Row 2: Quick toggles + NOAEL role */}
       <div className="flex items-center gap-1.5">
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Treatment-related endpoints only">
           <input
             type="checkbox"
             checked={filters.trOnly}
@@ -972,7 +974,7 @@ function RailFiltersSection({
           />
           TR
         </label>
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Statistically significant (p < 0.05) endpoints only">
           <input
             type="checkbox"
             checked={filters.sigOnly}
@@ -982,7 +984,7 @@ function RailFiltersSection({
           Sig
         </label>
         {hasClinicalEndpoints && (
-          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Clinical severity grade 2 or higher">
             <input
               type="checkbox"
               checked={clinicalS2Plus}
@@ -995,6 +997,7 @@ function RailFiltersSection({
         <FilterSelect
           value={filters.noaelRole ?? ""}
           onChange={(e) => onFiltersChange({ ...filters, noaelRole: (e.target.value || null) as RailFilters["noaelRole"] })}
+          title="Filter by NOAEL contribution role"
         >
           <option value="">NOAEL: All</option>
           <option value="determining">Determining</option>
