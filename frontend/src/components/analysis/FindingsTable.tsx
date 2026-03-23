@@ -178,6 +178,18 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [showFilters, setShowFilters] = useState(false);
   const activeFilterCount = countActiveFilters(filterState);
 
+  // Sync day stepper selection into the days filter
+  const prevSelectedDayRef = useRef(selectedDay);
+  useEffect(() => {
+    if (selectedDay !== prevSelectedDayRef.current) {
+      prevSelectedDayRef.current = selectedDay;
+      setFilterState((prev) => ({
+        ...prev,
+        days: selectedDay != null ? [selectedDay] : null,
+      }));
+    }
+  }, [selectedDay, setFilterState]);
+
   // D7-6: endpoint scope toggle — "all" shows all endpoints, "selected" shows only active endpoint
   const [endpointScope, setEndpointScope] = useState<"all" | "selected">("selected");
   // Reset scope to "selected" when endpoint changes
@@ -289,25 +301,17 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return result;
   }, [findings, tableMode]);
 
-  // Apply endpoint + day stepper filter (D6: stepper drives both charts and table)
-  const dayFilteredFindings = useMemo(() => {
-    let result = displayFindings;
-    // When an endpoint is selected and scope is "selected", scope table to that endpoint
-    if (activeEndpoint && endpointScope === "selected") {
-      result = result.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
-    }
-    // When a day is selected via stepper, scope to that day
-    if (selectedDay != null) {
-      result = result.filter((f) => f.day === selectedDay);
-    }
-    return result;
-  }, [displayFindings, activeEndpoint, selectedDay]);
+  // Apply endpoint scope filter (day filtering now handled via filterState.days)
+  const scopedFindings = useMemo(() => {
+    if (!activeEndpoint || endpointScope !== "selected") return displayFindings;
+    return displayFindings.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
+  }, [displayFindings, activeEndpoint, endpointScope]);
 
   // Apply table column filters on top of day + all/worst selection
   const filteredFindings = useMemo(() => {
-    if (activeFilterCount === 0) return dayFilteredFindings;
-    return applyTableFilters(dayFilteredFindings, filterState);
-  }, [dayFilteredFindings, filterState, activeFilterCount]);
+    if (activeFilterCount === 0) return scopedFindings;
+    return applyTableFilters(scopedFindings, filterState);
+  }, [scopedFindings, filterState, activeFilterCount]);
 
   // ─── Pivoted data: flatten finding × dose group into rows ───
   // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
@@ -897,7 +901,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             type="button"
             className={cn(
               "relative rounded p-0.5 transition-colors",
-              (selectedDay != null || activeFilterCount > 0)
+              activeFilterCount > 0
                 ? "text-primary hover:text-primary/80"
                 : "text-muted-foreground hover:text-foreground",
               showFilters && "bg-primary/10",
@@ -907,7 +911,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           >
             <Filter className="h-3 w-3" />
           </button>
-          {(selectedDay != null || activeFilterCount > 0) && (
+          {activeFilterCount > 0 && (
             <button
               type="button"
               className="flex items-center gap-0.5 rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -955,8 +959,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               filterState={filterState}
               onFilterChange={setFilterState}
               onClearDayFilter={onClearDayFilter}
-              activeDayLabel={selectedDay != null ? `Day ${selectedDay}` : null}
               effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
+              onClose={() => setShowFilters(false)}
             />
           </div>
         )}
