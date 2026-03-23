@@ -81,17 +81,18 @@ export function FindingsView() {
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
 
-  // Tab labels — depends on scopeLabel (any rail card: endpoint, syndrome, organ, etc.)
+  // Tab labels — reflects current rail selection (endpoint, syndrome, organ, etc.)
+  const mainTabLabel = activeEndpoint ?? scopeLabel ?? "Findings";
   const findingsViewTabs = useMemo(() => {
     const tabs: { key: string; label: string; closable?: boolean }[] = [
-      { key: "findings", label: "Findings" },
+      { key: "findings", label: mainTabLabel },
     ];
     if (tableTabOpen) {
       const tableLabel = scopeLabel ?? "Findings table";
       tabs.push({ key: "findings-table", label: tableLabel, closable: true });
     }
     return tabs;
-  }, [tableTabOpen, scopeLabel]);
+  }, [tableTabOpen, scopeLabel, mainTabLabel]);
 
   // Local UI state
   const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);
