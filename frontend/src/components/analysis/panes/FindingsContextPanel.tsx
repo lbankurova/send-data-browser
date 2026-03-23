@@ -851,7 +851,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-amber-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-50/40">
                   {sf ? (
                     <PatternOverrideDropdown key={sf.id} finding={sf} />
                   ) : (
@@ -867,7 +867,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-amber-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-50/40">
                   {sf && doseGroups ? (
                     <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (

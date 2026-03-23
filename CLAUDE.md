@@ -93,6 +93,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Dose group display — two components.** `DoseHeader` for column headers, `DoseLabel` for row/cell values (both in `components/ui/DoseLabel.tsx`). Never render raw dose group strings.
 - **Table column layout — content-hugging with absorber.** All columns except one absorber use `width: 1px; white-space: nowrap`.
 - **Expandable row content aligns under the label text, not the chevron.** Indent past chevron + gap.
+- **Inline override fields use `bg-violet-50/40`.** When a data value is user-overridable directly in a table or data display (not inside a form or settings panel), tint the cell with `bg-violet-50/40`. This signals "editable zone" without competing with amber (attention) or blue (selection). Reserved for this purpose only.
 - **Pre-edit hierarchy analysis for typography/spacing.** Before changing font size, margin, or padding: (1) map current hierarchy (control > supporting > micro); (2) verify change preserves tier relationships; (3) check spacing is proportional. See `docs/design-system/datagrok-visual-design-guide.md` §2.1.
 
 ## UI Casing Conventions

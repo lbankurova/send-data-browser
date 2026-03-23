@@ -60,6 +60,7 @@ export function OverridePill({
           type="button"
           className="flex h-4 w-3 items-center justify-center"
           title={tooltip}
+          onContextMenu={(e) => e.stopPropagation()}
         >
           <span
             className={cn(

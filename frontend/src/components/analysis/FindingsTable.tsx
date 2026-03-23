@@ -1205,7 +1205,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       className={cn(
                         "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                        isOverridable && "bg-amber-50/40",
+                        isOverridable && "bg-violet-50/40",
                       )}
                       style={style}
                       data-evidence=""
