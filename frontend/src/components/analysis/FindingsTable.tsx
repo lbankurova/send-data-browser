@@ -9,15 +9,15 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { EyeOff, ExternalLink, Filter, X } from "lucide-react";
+import { EyeOff, ExternalLink, Filter, Search, X } from "lucide-react";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { cn } from "@/lib/utils";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
   getSeverityDotColor,
   formatPValue,
   formatEffectSize,
-  getDirectionSymbol,
-  getDirectionColor,
   formatDoseShortLabel,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
@@ -133,13 +133,13 @@ interface FindingsTableProps {
   onOpenInTab?: () => void;
   /** Active effect size method — controls header label for continuous endpoints. */
   effectSizeMethod?: EffectSizeMethod;
-  /** Day selected by the day stepper — filters table to this day when set. */
-  selectedDay?: number | null;
-  /** Callback to clear the day stepper filter from within the table. */
-  onClearDayFilter?: () => void;
+  /** Current global day stepper value (one-way sync: global → table). */
+  globalDay?: number | null;
+  /** Day labels from the global stepper ("terminal" | "peak") — applied to matching days in the combo-box. */
+  globalDayLabels?: Map<number, string>;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", selectedDay, onClearDayFilter }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -159,9 +159,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [sparkMenu, setSparkMenu] = useState<{ x: number; y: number } | null>(null);
   const sparkMenuRef = useRef<HTMLDivElement>(null);
 
-  // Table display mode: "all" shows every row; "worst" collapses to strongest timepoint per endpoint
-  type TableMode = "all" | "worst";
-  const [tableMode, setTableMode] = useState<TableMode>("all");
+  // ── Sync checkbox + day combo-box ──────────────────────────
+  // syncWithCharts: true → table scopes to active endpoint + day follows stepper.
+  //                 false → table shows all endpoints, day is manual.
+  // manualDay: the day selected in the combo-box ("all" | "29" etc).
+  //            When synced, combo-box shows the global day but user can still pick.
+  const [syncWithCharts, setSyncWithCharts] = useState(true);
+  const [manualDay, setManualDay] = useState<string>("all");
+
+  // Day: when synced and user hasn't manually picked, follow global stepper.
+  // Once user picks a day in the combo, manualDay takes over regardless of sync.
+  const [dayIsManual, setDayIsManual] = useState(false);
+  const effectiveDay: string = dayIsManual
+    ? manualDay
+    : (globalDay != null ? String(globalDay) : "all");
+  const filterDay: number | null = effectiveDay === "all" ? null : Number(effectiveDay);
 
   // Layout mode: "standard" (dose groups as columns) vs "pivoted" (dose groups as rows)
   type LayoutMode = "standard" | "pivoted";
@@ -177,29 +189,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   );
   const [showFilters, setShowFilters] = useState(false);
   const activeFilterCount = countActiveFilters(filterState);
-
-  // Sync day stepper selection into the days filter
-  const prevSelectedDayRef = useRef(selectedDay);
-  useEffect(() => {
-    if (selectedDay !== prevSelectedDayRef.current) {
-      prevSelectedDayRef.current = selectedDay;
-      setFilterState((prev) => ({
-        ...prev,
-        days: selectedDay != null ? [selectedDay] : null,
-      }));
-    }
-  }, [selectedDay, setFilterState]);
-
-  // D7-6: endpoint scope toggle — "all" shows all endpoints, "selected" shows only active endpoint
-  const [endpointScope, setEndpointScope] = useState<"all" | "selected">("selected");
-  // Reset scope to "selected" when endpoint changes
-  const prevEndpointRef = useRef(activeEndpoint);
-  useEffect(() => {
-    if (activeEndpoint !== prevEndpointRef.current) {
-      prevEndpointRef.current = activeEndpoint;
-      if (activeEndpoint) setEndpointScope("selected");
-    }
-  }, [activeEndpoint]);
+  const filterResize = useResizePanel(140, { min: 100, max: 320, direction: "left", storageKey: "pcc.findings.filterPanelWidth" });
 
   // D7-2: auto-switch to pivoted when endpoint selected
   const userOverrodeLayout = useRef(false);
@@ -268,50 +258,41 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { continuous: maxCont, incidence: maxInc };
   }, [findings]);
 
-  // "Worst" mode: for each endpoint, keep only the day with the strongest signal (both sexes)
-  const displayFindings = useMemo(() => {
-    if (tableMode === "all") return findings;
+  // Pipeline: panel filters → endpoint scope (when synced) → available days → day filter.
+  const panelFilteredFindings = useMemo(() => {
+    if (activeFilterCount === 0) return findings;
+    return applyTableFilters(findings, filterState);
+  }, [findings, filterState, activeFilterCount]);
 
-    const byEndpoint = new Map<string, UnifiedFinding[]>();
-    for (const f of findings) {
-      const key = f.endpoint_label ?? f.finding;
-      if (!byEndpoint.has(key)) byEndpoint.set(key, []);
-      byEndpoint.get(key)!.push(f);
-    }
-
-    const result: UnifiedFinding[] = [];
-    for (const [, group] of byEndpoint) {
-      const days = new Set(group.map(f => f.day));
-      if (days.size <= 1) {
-        result.push(...group);
-        continue;
-      }
-      // Pick the finding with min p-value (primary), max |effect size| (tiebreaker)
-      const best = group.reduce((a, b) => {
-        const pA = a.min_p_adj ?? Infinity;
-        const pB = b.min_p_adj ?? Infinity;
-        if (pB < pA) return b;
-        if (pB === pA && Math.abs(b.max_effect_size ?? 0) > Math.abs(a.max_effect_size ?? 0)) return b;
-        return a;
-      });
-      // Keep all findings (both sexes) at the worst day
-      result.push(...group.filter(f => f.day === best.day));
-    }
-
-    return result;
-  }, [findings, tableMode]);
-
-  // Apply endpoint scope filter (day filtering now handled via filterState.days)
+  // When synced with charts AND an endpoint is active, scope table to that endpoint
   const scopedFindings = useMemo(() => {
-    if (!activeEndpoint || endpointScope !== "selected") return displayFindings;
-    return displayFindings.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
-  }, [displayFindings, activeEndpoint, endpointScope]);
+    if (!syncWithCharts || !activeEndpoint) return panelFilteredFindings;
+    return panelFilteredFindings.filter(
+      (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
+    );
+  }, [panelFilteredFindings, syncWithCharts, activeEndpoint]);
 
-  // Apply table column filters on top of day + all/worst selection
+  // Available days — only days with visible rows after panel + scope filters
+  const availableDays = useMemo(() => {
+    const days = new Set<number>();
+    for (const f of scopedFindings) {
+      if (f.day != null) days.add(f.day);
+    }
+    return [...days].sort((a, b) => a - b);
+  }, [scopedFindings]);
+
+  function formatDayOption(day: number): string {
+    const label = globalDayLabels?.get(day);
+    if (label === "terminal") return `D${day} (terminal)`;
+    if (label === "peak") return `D${day} (peak)`;
+    return `D${day}`;
+  }
+
+  // Apply day combo filter on top of scoped findings
   const filteredFindings = useMemo(() => {
-    if (activeFilterCount === 0) return scopedFindings;
-    return applyTableFilters(scopedFindings, filterState);
-  }, [scopedFindings, filterState, activeFilterCount]);
+    if (filterDay == null) return scopedFindings;
+    return scopedFindings.filter((f) => f.day === filterDay);
+  }, [scopedFindings, filterDay]);
 
   // ─── Pivoted data: flatten finding × dose group into rows ───
   // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
@@ -492,7 +473,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <span title={sparkScale === "global"
             ? "Dose-response trend (delta from control). Global scale — bar height reflects actual magnitude across all findings. Right-click to change."
             : "Dose-response trend (delta from control). Row scale — each row scaled to its own max. Right-click to change."}>
-            {"\u0394"}{sparkScale === "global" ? "*" : ""}<span className="ml-0.5 text-[7px] text-muted-foreground/50">{"\u25BE"}</span>
+            DR Trend{sparkScale === "global" ? "*" : ""}
           </span>
         ),
         cell: (info) => {
@@ -506,6 +487,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               globalMax={isCont ? globalSparkMax.continuous : globalSparkMax.incidence}
             />
           );
+        },
+      }),
+      col.display({
+        id: "pattern",
+        header: () => <span title="Dose-response pattern shape">Pattern</span>,
+        cell: (info) => {
+          const v = info.row.original.dose_response_pattern;
+          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
         },
       }),
       col.accessor("max_effect_size", {
@@ -543,22 +532,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => (
           <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
         ),
-      }),
-      col.accessor("direction", {
-        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
-        cell: (info) => (
-          <span className={getDirectionColor(info.getValue())}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
-      col.display({
-        id: "pattern",
-        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
-        cell: (info) => {
-          const v = info.row.original.dose_response_pattern;
-          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
-        },
       }),
       col.accessor("severity", {
         header: "Severity",
@@ -751,7 +724,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
         },
       }),
-      // Endpoint-level columns (trend_p, direction, pattern, severity) omitted from
+      // Endpoint-level columns (trend_p, pattern, severity) omitted from
       // pivoted view — each row is a dose group, not an endpoint. These are shown in
       // standard view only.
     ],
@@ -805,13 +778,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     overscan: 15,
   });
 
-  // Reset scroll when data source changes (all/worst toggle, layout switch)
+  // Reset scroll when data source changes (day filter, layout switch)
   useEffect(() => {
     if (stdScrollRef.current) stdScrollRef.current.scrollTop = 0;
-  }, [tableMode, findings]);
+  }, [filterDay, findings]);
   useEffect(() => {
     if (pivScrollRef.current) pivScrollRef.current.scrollTop = 0;
-  }, [tableMode, findings]);
+  }, [filterDay, findings]);
 
   // Autoscroll: when activeEndpoint changes, scroll to the first matching row
   useEffect(() => {
@@ -854,22 +827,48 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   }
 
   const rowCount = layoutMode === "pivoted" ? pivotedRows.length : filteredFindings.length;
-  const totalCount = layoutMode === "pivoted" ? findings.length * doseGroups.length : findings.length;
 
   return (
     <div className="flex h-full flex-col">
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
-        {/* All days / Worst day toggle */}
-        <span title={tableMode === "all" ? "Showing all timepoints per endpoint" : "Showing only the most significant timepoint per endpoint"}>
-          <PanePillToggle
-            value={tableMode}
-            options={[
-              { value: "all" as const, label: "All days" },
-              { value: "worst" as const, label: "Worst day" },
-            ]}
-            onChange={setTableMode}
-          />
+        {/* Day combo-box + sync checkbox */}
+        <span className="flex items-center gap-1.5">
+          <span className="relative inline-flex items-center" title={filterDay != null ? `Filtering to day ${filterDay}` : "Showing all timepoints"}>
+            <select
+              className="appearance-none rounded border border-border/40 bg-transparent py-0.5 pl-1.5 pr-4 text-[10px] font-medium tabular-nums text-foreground outline-none cursor-pointer hover:border-border"
+              value={effectiveDay}
+              onChange={(e) => {
+                setManualDay(e.target.value);
+                setDayIsManual(true);
+              }}
+            >
+              <option value="all">All days</option>
+              {availableDays.map((d) => (
+                <option key={d} value={String(d)}>
+                  {d === globalDay && dayIsManual ? "\u25CF " : ""}{formatDayOption(d)}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-1 text-[10px] text-muted-foreground">{"\u25BE"}</span>
+          </span>
+          {activeEndpoint && (
+            <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Sync table with chart selection (endpoint + day)">
+              <input
+                type="checkbox"
+                checked={syncWithCharts}
+                onChange={(e) => {
+                  setSyncWithCharts(e.target.checked);
+                  if (e.target.checked) {
+                    // Re-sync: reset day to follow stepper
+                    setDayIsManual(false);
+                  }
+                }}
+                className="h-2.5 w-2.5 accent-primary"
+              />
+              sync
+            </label>
+          )}
         </span>
         {/* Standard / Pivoted toggle */}
         <span title={layoutMode === "standard" ? "One row per endpoint — endpoint-level stats" : "One row per dose group — dose-level comparisons"}>
@@ -882,26 +881,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             onChange={(v) => { setLayoutMode(v); if (activeEndpoint) userOverrodeLayout.current = true; }}
           />
         </span>
-        {/* D7-6: All endpoints / Selected toggle (only when endpoint is active) */}
-        {activeEndpoint && (
-          <span title={endpointScope === "selected" ? "Showing only the selected endpoint" : "Showing all endpoints"}>
-            <PanePillToggle
-              value={endpointScope}
-              options={[
-                { value: "selected" as const, label: "Selected" },
-                { value: "all" as const, label: "All endpoints" },
-              ]}
-              onChange={setEndpointScope}
-            />
-          </span>
-        )}
         {/* Showing text + filter icon + clear — grouped together */}
         <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <button
             type="button"
             className={cn(
               "relative rounded p-0.5 transition-colors",
-              activeFilterCount > 0
+              (filterDay != null || activeFilterCount > 0)
                 ? "text-primary hover:text-primary/80"
                 : "text-muted-foreground hover:text-foreground",
               showFilters && "bg-primary/10",
@@ -911,20 +897,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           >
             <Filter className="h-3 w-3" />
           </button>
-          {activeFilterCount > 0 && (
+          {((dayIsManual && filterDay != null) || activeFilterCount > 0) && (
             <button
               type="button"
-              className="flex items-center gap-0.5 rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => {
                 setFilterState(DEFAULT_FILTER_STATE);
-                onClearDayFilter?.();
+                setSyncWithCharts(true);
+                setDayIsManual(false);
               }}
               title="Clear all filters"
             >
               <X className="h-2.5 w-2.5" />
             </button>
           )}
-          <span>Showing {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""}</span>
+          <span>Showing {rowCount}</span>
           {/* Show filtered-out domains as crossed-out text */}
           {filterState.domain && (() => {
             const allDomains = [...new Set(findings.map((f) => f.domain))].sort();
@@ -937,6 +924,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               </span>
             ) : null;
           })()}
+        </span>
+        <span className="relative flex items-center">
+          <Search className="absolute left-1 h-2.5 w-2.5 text-muted-foreground/50" />
+          <input
+            type="text"
+            value={filterState.findingSearch}
+            onChange={(e) => setFilterState((prev) => ({ ...prev, findingSearch: e.target.value }))}
+            placeholder="Search..."
+            className="w-24 rounded border border-border/40 bg-transparent py-0.5 pl-4 pr-1.5 text-[10px] outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 focus:w-36 transition-all"
+          />
         </span>
         {onOpenInTab && (
           <button
@@ -952,18 +949,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
       {/* Content row: optional filter panel + table */}
       <div className="flex flex-1 min-h-0">
-        {showFilters && (
-          <div className="w-[200px] shrink-0 overflow-y-auto">
+        {showFilters && (<>
+          <div ref={filterResize.targetRef} className="shrink-0 overflow-y-auto" style={{ width: filterResize.width }}>
             <FindingsTableFilterPanel
               findings={findings}
               filterState={filterState}
               onFilterChange={setFilterState}
-              onClearDayFilter={onClearDayFilter}
+              onClearDayFilter={() => { setSyncWithCharts(true); setDayIsManual(false); }}
+              activeDayLabel={dayIsManual && filterDay != null ? `Day ${filterDay}` : null}
               effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
               onClose={() => setShowFilters(false)}
             />
           </div>
-        )}
+          <PanelResizeHandle onPointerDown={filterResize.onPointerDown} />
+        </>)}
 
       {/* ─── Standard table (virtualized) ─────────────────────── */}
       {layoutMode === "standard" && (

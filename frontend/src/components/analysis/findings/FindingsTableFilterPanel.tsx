@@ -163,8 +163,10 @@ interface FindingsTableFilterPanelProps {
   findings: UnifiedFinding[];
   filterState: TableFilterState;
   onFilterChange: (next: TableFilterState) => void;
-  /** Called when "Clear all" is pressed — parent should also clear the day stepper filter. */
+  /** Called when "Clear all" is pressed — parent should also clear the day combo-box filter. */
   onClearDayFilter?: () => void;
+  /** Label for the active day combo-box filter (shown as clearable chip). */
+  activeDayLabel?: string | null;
   /** Effect size symbol for filter label (e.g., "g" for Hedges' g, "d" for Cohen's d). */
   effectSizeSymbol?: string;
   /** Called to close the filter panel. */
@@ -176,6 +178,7 @@ export function FindingsTableFilterPanel({
   filterState,
   onFilterChange,
   onClearDayFilter,
+  activeDayLabel,
   effectSizeSymbol = "g",
   onClose,
 }: FindingsTableFilterPanelProps) {
@@ -195,16 +198,6 @@ export function FindingsTableFilterPanel({
       ].sort(),
     [findings],
   );
-  const uniqueDays = useMemo(
-    () =>
-      [
-        ...new Set(
-          findings.map((f) => f.day).filter((d): d is number => d != null),
-        ),
-      ].sort((a, b) => a - b),
-    [findings],
-  );
-
   const clearAll = useCallback(() => {
     onFilterChange(DEFAULT_FILTER_STATE);
     onClearDayFilter?.();
@@ -227,13 +220,13 @@ export function FindingsTableFilterPanel({
   const fcEnabled = filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null;
 
   return (
-    <div className="flex flex-col gap-0 overflow-y-auto border-r bg-muted/10 px-2 py-1.5">
+    <div className="flex flex-col gap-0 overflow-y-auto bg-muted/10 px-2 py-1.5">
       {/* Header: Clear all + close */}
       <div className="mb-1.5 flex items-center justify-between">
         <button
           type="button"
           onClick={clearAll}
-          className="text-[10px] text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          className="text-[10px] text-primary/70 transition-colors hover:text-primary hover:underline"
         >
           Clear all
         </button>
@@ -249,16 +242,24 @@ export function FindingsTableFilterPanel({
         )}
       </div>
 
-      {/* Text search */}
-      <FilterSection title="Finding">
-        <input
-          type="text"
-          value={filterState.findingSearch}
-          onChange={(e) => update("findingSearch", e.target.value)}
-          placeholder="Search..."
-          className="w-full rounded border border-border/50 bg-transparent px-1.5 py-0.5 text-[10px] outline-none placeholder:text-muted-foreground/50"
-        />
-      </FilterSection>
+      {/* Active day filter from combo-box (clearable chip) */}
+      {activeDayLabel && (
+        <div className="mb-1 flex items-center gap-1.5">
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+            {activeDayLabel}
+          </span>
+          {onClearDayFilter && (
+            <button
+              type="button"
+              onClick={onClearDayFilter}
+              className="flex h-4 w-4 items-center justify-center rounded-full text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              title="Clear day filter"
+            >
+              {"\u00d7"}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Categorical filters */}
       <FilterSection title="Domain">
@@ -308,18 +309,6 @@ export function FindingsTableFilterPanel({
           onChange={(v) => update("dataType", v)}
         />
       </FilterSection>
-
-      {uniqueDays.length > 1 && (
-        <FilterSection title="Day">
-          <CategoricalFilter
-            values={uniqueDays.map(String)}
-            selected={filterState.days?.map(String) ?? null}
-            onChange={(v) =>
-              update("days", v ? v.map(Number) : null)
-            }
-          />
-        </FilterSection>
-      )}
 
       {/* Numerical range filters with enable checkbox + smart defaults */}
       <ToggleRangeFilter
