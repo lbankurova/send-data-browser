@@ -497,6 +497,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
         },
       }),
+      col.display({
+        id: "onset_dose",
+        header: () => <span title="Lowest dose level at which the effect is first observed (onset)">Onset</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          const level = f._pattern_override?.onset_dose_level ?? f.onset_dose_level;
+          if (level == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const dg = doseGroups.find(d => d.dose_level === level);
+          if (!dg) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const label = dg.dose_value != null ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim() : formatDoseShortLabel(dg.label);
+          return <span className="font-mono text-muted-foreground" title={`Onset at dose level ${level}: ${formatDoseShortLabel(dg.label)}`}>{label}</span>;
+        },
+      }),
       col.accessor("max_effect_size", {
         header: () => {
           const sym = getEffectSizeSymbol(effectSizeMethod);
