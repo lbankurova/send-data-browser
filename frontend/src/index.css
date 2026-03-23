@@ -125,22 +125,23 @@
 }
 
 /* ── Interaction-driven evidence color (spec §3.4, §5.2) ──
-   At rest: neutral. On hover/selection: #DC2626 for key values.
+   At rest: neutral. On hover/selection: use per-element --ev-color.
+   Elements without --ev-color fall back to #DC2626 (legacy).
    Applied to evidence tables via data attributes. */
 tr[data-selected] td[data-evidence] .ev {
-  color: #DC2626;
+  color: var(--ev-color, #DC2626);
 }
 tr:hover td[data-evidence] .ev {
-  color: #DC2626;
+  color: var(--ev-color, #DC2626);
 }
 /* Rail endpoint items: hover and selection activate evidence values */
 button[data-rail-item]:hover .ev,
 button[data-rail-item][data-selected] .ev {
-  color: #DC2626;
+  color: var(--ev-color, #DC2626);
 }
 /* Generic evidence rows (findings lists, non-table layouts) */
 [data-evidence-row]:hover .ev {
-  color: #DC2626;
+  color: var(--ev-color, #DC2626);
 }
 
 /* ── One-time hint fade (collapsible sections) ── */
