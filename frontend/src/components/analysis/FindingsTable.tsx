@@ -19,6 +19,7 @@ import {
   formatPValue,
   formatEffectSize,
   formatDoseShortLabel,
+  getPValueHex,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
@@ -180,12 +181,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [patternPreview, setPatternPreview] = useState<PreviewResult | null>(null);
   const patternPreviewAbortRef = useRef<AbortController | null>(null);
 
-  // ── Sync checkbox + day combo-box ──────────────────────────
-  // syncWithCharts: true → table scopes to active endpoint + day follows stepper.
-  //                 false → table shows all endpoints, day is manual.
-  // manualDay: the day selected in the combo-box ("all" | "29" etc).
-  //            When synced, combo-box shows the global day but user can still pick.
-  const [syncWithCharts, setSyncWithCharts] = useState(true);
+  // ── Follow rail checkbox + day combo-box ───────────────────
+  // followRail: true → two-way sync between rail and table (endpoint scope + row clicks update rail).
+  //             false → table independent, no rail interaction.
+  const [followRail, setFollowRail] = useState(true);
   const [manualDay, setManualDay] = useState<string>("all");
 
   // Reset day filter when endpoint changes — days differ across endpoints.
@@ -351,11 +350,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // When synced with charts AND an endpoint is active, scope table to that endpoint
   const scopedFindings = useMemo(() => {
-    if (!syncWithCharts || !activeEndpoint) return panelFilteredFindings;
+    if (!followRail || !activeEndpoint) return panelFilteredFindings;
     return panelFilteredFindings.filter(
       (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
     );
-  }, [panelFilteredFindings, syncWithCharts, activeEndpoint]);
+  }, [panelFilteredFindings, followRail, activeEndpoint]);
 
   // Available days — only days with visible rows after panel + scope filters
   const availableDays = useMemo(() => {
@@ -648,15 +647,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       col.accessor("min_p_adj", {
         header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
-        cell: (info) => (
-          <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
+        },
       }),
       col.accessor("trend_p", {
         header: () => <span title="Dose-response trend test p-value">Trend p</span>,
-        cell: (info) => (
-          <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
+        },
       }),
       col.accessor("severity", {
         header: "Severity",
@@ -846,7 +849,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
+          const v = info.getValue();
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
         },
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from
@@ -977,9 +982,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Sync table with chart selection (endpoint scope)">
               <input
                 type="checkbox"
-                checked={syncWithCharts}
+                checked={followRail}
                 onChange={(e) => {
-                  setSyncWithCharts(e.target.checked);
+                  setFollowRail(e.target.checked);
                   if (e.target.checked) setManualDay("all");
                 }}
                 className="h-2.5 w-2.5 accent-primary"
@@ -1021,7 +1026,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               className="flex items-center rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => {
                 setFilterState(DEFAULT_FILTER_STATE);
-                setSyncWithCharts(true);
+                setFollowRail(true);
                 setManualDay("all");
               }}
               title="Clear all filters"
@@ -1108,7 +1113,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               findings={findings}
               filterState={filterState}
               onFilterChange={setFilterState}
-              onClearDayFilter={() => { setSyncWithCharts(true); setManualDay("all"); }}
+              onClearDayFilter={() => { setFollowRail(true); setManualDay("all"); }}
               activeDayLabel={filterDay != null ? `Day ${filterDay}` : null}
               effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
               onClose={() => setShowFilters(false)}

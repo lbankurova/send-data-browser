@@ -69,9 +69,18 @@ export function getPValueColor(p: number | null | undefined): string {
   if (p == null) return "text-muted-foreground";
   if (p < 0.001) return "text-red-600 font-semibold";
   if (p < 0.01) return "text-red-500 font-medium";
-  if (p < 0.05) return "text-amber-600 font-medium";
+  if (p < 0.05) return "text-red-500";
   if (p < 0.1) return "text-amber-500";
   return "text-muted-foreground";
+}
+
+/** Hex color for p-value, used as CSS --ev-color for interaction-driven grids.
+ *  Returns undefined for non-significant values (p ≥ 0.1) — caller should omit `ev` class. */
+export function getPValueHex(p: number | null | undefined): string | undefined {
+  if (p == null || p >= 0.1) return undefined;
+  if (p < 0.01) return "#dc2626";   // red-600
+  if (p < 0.05) return "#ef4444";   // red-500
+  return "#f59e0b";                  // amber-500
 }
 
 export function getEffectSizeColor(d: number | null | undefined): string {
