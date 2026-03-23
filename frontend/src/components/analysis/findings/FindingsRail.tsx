@@ -51,7 +51,7 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
-import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel } from "@/lib/severity-colors";
+import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel, getSexColor } from "@/lib/severity-colors";
 import { PatternGlyph } from "@/components/ui/PatternGlyph";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -1562,7 +1562,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
                 <span className="ml-auto inline-flex items-center gap-1.5">
                   {sorted.map(([sex, s]) => (
                     <span key={sex} className="inline-flex items-center gap-0.5" title={`${sex === "M" ? "Males" : sex === "F" ? "Females" : sex}: ${getPatternLabel(s.pattern)} ${getDirectionSymbol(s.direction)}`}>
-                      <span className="font-mono text-[9px]">{sex}</span>
+                      <span className="font-mono text-[9px]" style={{ color: getSexColor(sex) }}>{sex}</span>
                       <PatternGlyph pattern={s.pattern} className="text-muted-foreground/70" />
                     </span>
                   ))}

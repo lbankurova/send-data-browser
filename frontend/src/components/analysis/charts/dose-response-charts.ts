@@ -233,17 +233,19 @@ export function buildDoseResponseLineOption(
   }
 
   return {
-    grid: { left: 48, right: 16, top: 20, bottom: 32 },
+    grid: { left: 48, right: 24, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
       axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
+      boundaryGap: true,
     },
     yAxis: {
       type: "value",
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
+      scale: true,
     },
     tooltip: {
       ...baseTooltip(),
@@ -354,12 +356,13 @@ export function buildIncidenceBarOption(
   }
 
   return {
-    grid: { left: 48, right: 16, top: 20, bottom: 32 },
+    grid: { left: 48, right: 24, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
       axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
+      boundaryGap: true,
     },
     yAxis: {
       type: "value",
@@ -492,17 +495,19 @@ export function buildEffectSizeBarOption(
   }
 
   return {
-    grid: { left: 48, right: 16, top: 20, bottom: 32 },
+    grid: { left: 48, right: 24, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
       axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
+      boundaryGap: true,
     },
     yAxis: {
       type: "value",
       axisLabel: axisLabel(),
       splitLine: splitLineStyle(),
+      scale: true,
       ...(metricSubtitle ? {
         name: metricSubtitle,
         nameLocation: "middle" as const,
@@ -1156,19 +1161,6 @@ export function buildDoseResponseBarOption(
       name: seriesName,
       data: barData,
       barMaxWidth: 12,
-      label: {
-        show: true,
-        position: "right" as const,
-        distance: 4,
-        formatter(params: { value: unknown }) {
-          const v = params.value;
-          if (v == null) return "\u2014";
-          return Number(v).toFixed(2);
-        },
-        fontFamily: "monospace",
-        fontSize: 9,
-        color: "#6B7280",
-      },
     });
 
     // Custom error bar series (mean ± SD whiskers) — horizontal
@@ -1223,8 +1215,22 @@ export function buildDoseResponseBarOption(
     });
   }
 
+  // ── Right-side value labels (secondary y-axis) — right-aligned scannable column ──
+  const valueRich: Record<string, object> = {};
+  for (const sex of sexes) {
+    valueRich[`v${sex}`] = { fontFamily: "monospace", fontSize: 9, color: sexColors[sex] ?? "#6B7280" };
+  }
+  valueRich.sp = { fontSize: 9, color: "#D1D5DB" };
+  const rightLabels = ordered.map((pt) =>
+    sexes.map((sex) => {
+      const mean = pt[`mean_${sex}`] as number | null;
+      const val = mean != null ? Number(mean).toFixed(2) : "\u2014";
+      return `{v${sex}|${val}}`;
+    }).join("{sp| }"),
+  );
+
   return {
-    grid: { left: 70, right: 55, top: testLabel ? 22 : 8, bottom: 16 },
+    grid: { left: 70, right: 70, top: testLabel ? 22 : 8, bottom: 16 },
     // Method label (italic, top-left) — matches DoseDetailPane test name label
     ...(testLabel ? {
       graphic: [{
@@ -1239,22 +1245,32 @@ export function buildDoseResponseBarOption(
         },
       }],
     } : {}),
-    yAxis: {
-      type: "category",
-      data: categories,
-      axisLabel: {
-        fontSize: 10,
-        formatter(value: string) {
-          const pt = ordered.find((p) => String(p.dose_label) === value);
-          const c = getDoseGroupColor((pt?.dose_level as number) ?? 0);
-          return `{p${c.replace("#", "")}|\u258E}{t|${value}}`;
+    yAxis: [
+      {
+        type: "category",
+        data: categories,
+        axisLabel: {
+          fontSize: 10,
+          formatter(value: string) {
+            const pt = ordered.find((p) => String(p.dose_label) === value);
+            const c = getDoseGroupColor((pt?.dose_level as number) ?? 0);
+            return `{p${c.replace("#", "")}|\u258E}{t|${value}}`;
+          },
+          rich: pipeRich,
         },
-        rich: pipeRich,
+        axisTick: { show: false },
+        axisLine: { show: false },
+        inverse: false,
       },
-      axisTick: { show: false },
-      axisLine: { show: false },
-      inverse: false,
-    },
+      {
+        type: "category",
+        data: rightLabels,
+        position: "right",
+        axisLabel: { rich: valueRich },
+        axisTick: { show: false },
+        axisLine: { show: false },
+      },
+    ],
     xAxis: {
       type: "value",
       axisLabel: { ...axisLabel(), margin: 6 },
@@ -1358,12 +1374,13 @@ export function buildStackedSeverityBarOption(
   }
 
   return {
-    grid: { left: 48, right: 16, top: 20, bottom: 32 },
+    grid: { left: 48, right: 24, top: 20, bottom: 32 },
     xAxis: {
       type: "category",
       data: categories,
       axisLabel: { ...axisLabel(), margin: 6 },
       axisTick: { alignWithLabel: true },
+      boundaryGap: true,
     },
     yAxis: {
       type: "value",

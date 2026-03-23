@@ -194,11 +194,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   useEffect(() => {
     if (activeEndpoint && !userOverrodeLayout.current) {
       setLayoutMode("pivoted");
-      // D7-4/5: default sort by dose_level ascending, then sex
-      setPivotedSorting([{ id: "dose_level", desc: false }]);
+      // D7-4/5: default sort by dose_level ascending, then sex (F before M)
+      setPivotedSorting([{ id: "dose_level", desc: false }, { id: "sex", desc: false }]);
     }
     if (!activeEndpoint) {
       userOverrodeLayout.current = false;
+      setLayoutMode("standard");
     }
   }, [activeEndpoint]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -896,36 +897,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     <div className="flex h-full flex-col">
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
-        {/* Filter toggle */}
-        <button
-          type="button"
-          className={cn(
-            "relative rounded p-0.5 transition-colors",
-            (selectedDay != null || activeFilterCount > 0)
-              ? "text-primary hover:text-primary/80"
-              : "text-muted-foreground hover:text-foreground",
-            showFilters && "bg-primary/10",
-          )}
-          onClick={() => setShowFilters((p) => !p)}
-          title="Toggle column filters"
-        >
-          <Filter className="h-3 w-3" />
-        </button>
-        {/* Clear all filters (visible when any filter is active, without opening panel) */}
-        {(selectedDay != null || activeFilterCount > 0) && (
-          <button
-            type="button"
-            className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            onClick={() => {
-              setFilterState(DEFAULT_FILTER_STATE);
-              onClearDayFilter?.();
-            }}
-            title="Clear all filters"
-          >
-            <X className="h-2.5 w-2.5" />
-            <span>Clear</span>
-          </button>
-        )}
         {/* All days / Worst day toggle */}
         <span title={tableMode === "all" ? "Showing all timepoints per endpoint" : "Showing only the most significant timepoint per endpoint"}>
           <PanePillToggle
@@ -961,8 +932,35 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             />
           </span>
         )}
-        {/* Showing text + filter icon adjacent */}
+        {/* Showing text + filter icon + clear — grouped together */}
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <button
+            type="button"
+            className={cn(
+              "relative rounded p-0.5 transition-colors",
+              (selectedDay != null || activeFilterCount > 0)
+                ? "text-primary hover:text-primary/80"
+                : "text-muted-foreground hover:text-foreground",
+              showFilters && "bg-primary/10",
+            )}
+            onClick={() => setShowFilters((p) => !p)}
+            title="Toggle column filters"
+          >
+            <Filter className="h-3 w-3" />
+          </button>
+          {(selectedDay != null || activeFilterCount > 0) && (
+            <button
+              type="button"
+              className="flex items-center gap-0.5 rounded px-0.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => {
+                setFilterState(DEFAULT_FILTER_STATE);
+                onClearDayFilter?.();
+              }}
+              title="Clear all filters"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          )}
           <span>Showing {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""}</span>
           {/* Show filtered-out domains as crossed-out text */}
           {filterState.domain && (() => {

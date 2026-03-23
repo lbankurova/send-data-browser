@@ -802,9 +802,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~GAP-90: Day stepper label format reversed from spec~~ ✅
 - **Source:** `view-merge-spec.md` §4 line 152 vs `view-merge-post-implementation-review.md` SD-2
-- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:418`
-- **Issue:** Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)" — reversed order with abbreviated day prefix. Minor UX inconsistency.
-- **Status:** ~~Open~~ Closed (accepted — current compact format preferred by user)
+- **Files:** `frontend/src/components/analysis/findings/DayStepper.tsx`
+- **Issue:** ~~Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)".~~ Now matches spec: "D92 (terminal)", "D15 (peak)", "D29". Filled triangles for arrows, chevron for dropdown.
+- **Status:** ~~Open~~ Resolved — DayStepper extracted to own component, format matches spec (merge-findings-dr)
 - **Priority:** P3
 - **Owner hint:** frontend-dev
 

@@ -71,21 +71,18 @@ function coloredAxisLabels(points: MergedPoint[]) {
 function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
   const o = { ...opt };
 
-  // Detect horizontal bar chart (y=category, x=value — e.g., D-R bar chart)
-  const yType = o.yAxis && !Array.isArray(o.yAxis) ? (o.yAxis as Record<string, unknown>).type : undefined;
-  const isHorizontalBar = yType === "category";
+  // Detect horizontal bar chart (y=category array with 2 axes — e.g., D-R bar chart)
+  const isHorizontalBar = Array.isArray(o.yAxis) && o.yAxis.length === 2;
 
   if (isHorizontalBar) {
     // Horizontal bar: compact grid preserving room for pipe labels + value labels
-    o.grid = { left: 56, right: 50, top: (o.graphic ? 20 : 8), bottom: 12 };
-    // Y-axis already has pipe-rich formatting from builder — shrink font only
-    if (o.yAxis && !Array.isArray(o.yAxis)) {
-      const existing = (o.yAxis as Record<string, unknown>).axisLabel as Record<string, unknown> | undefined;
-      if (existing?.rich) {
-        // Preserve rich formatting, just scale down
-        o.yAxis = { ...o.yAxis, axisLabel: { ...existing, fontSize: COMPACT_AXIS_FONT } };
-      }
-    }
+    o.grid = { left: 56, right: 60, top: (o.graphic ? 20 : 8), bottom: 12 };
+    // Shrink fonts on both y-axes but preserve rich formatting
+    o.yAxis = (o.yAxis as Record<string, unknown>[]).map((ax) => {
+      const existing = ax.axisLabel as Record<string, unknown> | undefined;
+      if (existing?.rich) return { ...ax, axisLabel: { ...existing, fontSize: COMPACT_AXIS_FONT } };
+      return ax;
+    });
     // X-axis: shrink labels
     if (o.xAxis && !Array.isArray(o.xAxis)) {
       o.xAxis = { ...o.xAxis, axisLabel: { fontSize: COMPACT_AXIS_FONT, color: "#6B7280" } };

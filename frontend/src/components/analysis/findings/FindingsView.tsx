@@ -65,17 +65,6 @@ export function FindingsView() {
   // Track whether the "Findings table" tab is open (separate from which is active,
   // so user can switch between tabs without closing the table tab).
   const [tableTabOpen, setTableTabOpen] = useState(activeViewTab === "findings-table");
-  const findingsViewTabs = useMemo(() => {
-    const tabs: { key: string; label: string; closable?: boolean }[] = [
-      { key: "findings", label: "Findings" },
-    ];
-    if (tableTabOpen) {
-      // Tab label reflects active rail card name (endpoint, syndrome, organ, etc.)
-      const tableLabel = activeEndpoint ?? "Findings table";
-      tabs.push({ key: "findings-table", label: tableLabel, closable: true });
-    }
-    return tabs;
-  }, [tableTabOpen]);
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -91,6 +80,18 @@ export function FindingsView() {
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
+
+  // Tab labels — depends on scopeLabel (any rail card: endpoint, syndrome, organ, etc.)
+  const findingsViewTabs = useMemo(() => {
+    const tabs: { key: string; label: string; closable?: boolean }[] = [
+      { key: "findings", label: "Findings" },
+    ];
+    if (tableTabOpen) {
+      const tableLabel = scopeLabel ?? "Findings table";
+      tabs.push({ key: "findings-table", label: tableLabel, closable: true });
+    }
+    return tabs;
+  }, [tableTabOpen, scopeLabel]);
 
   // Local UI state
   const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);

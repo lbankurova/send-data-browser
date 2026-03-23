@@ -270,7 +270,7 @@ Right sidebar inspector. Route-aware component that renders different content ba
 
 ### DayStepper (`components/analysis/findings/DayStepper.tsx`)
 
-Section-level day navigation control mounted in the ViewSection header of the Findings view. Drives D-R charts to display data for a specific study day. Format: "Terminal (Day 92)", "Peak (Day 15)", "Day N". Non-interactive (disabled, no arrows) for single-timepoint endpoints (MI/MA). State managed by `FindingsView.tsx`, passed as props.
+Section-level day navigation control mounted in the ViewSection header of the Findings view. Drives D-R charts and table to display data for a specific study day. Format: "D92 (terminal)", "D15 (peak)", "D29". Navigation arrows: filled triangles (U+25C0/U+25B6). Dropdown chevron: U+25BE. Non-interactive (disabled, no arrows) for single-timepoint endpoints (MI/MA). State managed by `FindingsView.tsx` with `dayCleared` flag to prevent auto-reset when user explicitly clears.
 
 ### FindingsTableFilterPanel (`components/analysis/findings/FindingsTableFilterPanel.tsx`)
 
@@ -278,10 +278,10 @@ Section-level day navigation control mounted in the ViewSection header of the Fi
 
 **Filter types**:
 - Categorical (multi-select checkboxes): domain, sex, severity, direction, pattern, data type, day
-- Numerical (min/max range): pairwise p, trend p, effect size, fold change
+- Numerical (`ToggleRangeFilter`): pairwise p, trend p, effect size, fold change. Each has enable checkbox with smart defaults (p max=0.05, |g| min=0.8, fold min=1.5). Effect size label adapts to active method via `effectSizeSymbol` prop.
 - Text search: finding name
 
-**State**: Persisted via `useSessionState("pcc.findings.tableFilters")`. Filters are independent from the chart day stepper -- table and charts have separate filter controls. Active filter count displayed as a badge on the filter icon.
+**State**: Persisted via `useSessionState("pcc.findings.tableFilters")`. Day stepper filter managed separately by `FindingsView.tsx`. "Clear all" button clears both table filters and day filter. Clear-all also available inline next to filter icon in table header bar (no need to open panel).
 
 ### TreeNode (`components/tree/TreeNode.tsx`)
 
@@ -351,6 +351,7 @@ Reusable tree node component used by BrowsingTree. Accepts `label`, `depth`, `ic
 
 ## Changelog
 
+- 2026-03-23: DayStepper format updated to D-prefix (D92 (terminal)), filled triangles, chevron. ToggleRangeFilter replaces plain RangeInput with enable checkbox + smart defaults. Clear-all available inline next to filter icon. dayCleared state prevents auto-reset.
 - 2026-03-21: Added DayStepper (day navigation for D-R charts) and FindingsTableFilterPanel (categorical/numerical/text filters for FindingsTable) components. Added table-filters.ts to code map.
 - 2026-03-11: Added Context Panel Header & Navigation section. New shared components: ContextPanelHeader (D9), usePaneHistory (D1). All context panels retrofitted with consistent headers, CollapseAll (D2), and back/forward navigation where applicable.
 - 2026-02-12: Added auto-fit sections documentation (useAutoFitSections hook, ViewSection component, content measurement algorithm, persistence model). Added to code map.
