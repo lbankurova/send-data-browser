@@ -13,7 +13,7 @@ export function useFindingContext(
     enabled: !!studyId && !!findingId,
     staleTime: 5 * 60 * 1000,
     // NOTE: keepPreviousData removed — it caused stale data from the previous
-    // finding to render in DoseDetailPane (wrong statistics, duplicated group
+    // finding to render in the context panel (wrong statistics, duplicated group
     // labels) while the new finding's context loaded.
   });
 }

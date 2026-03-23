@@ -14,7 +14,6 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
 import { EvidencePane } from "./EvidencePane";
-import { DoseDetailPane } from "./DoseDetailPane";
 import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
@@ -41,7 +40,7 @@ import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/org
 import { useStatMethods } from "@/hooks/useStatMethods";
 import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
-import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
+import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor, titleCase } from "@/lib/severity-colors";
 import { getPatternLabel, getPatternLabelDirectional } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael, OrganCoherence } from "@/lib/derive-summaries";
@@ -1351,21 +1350,6 @@ export function FindingsContextPanel() {
   // skeleton for context-dependent panes while useFindingContext loads.
   const contextReady = !isLoading && context != null;
 
-  // Sync dose-response bars for sibling (reuses same logic inline)
-  const syncBarsWithStats = (
-    dr: FindingContext["dose_response"],
-    stats: FindingContext["statistics"] | undefined,
-  ) => {
-    if (!isScheduledOnly || !hasEarlyDeaths || !stats) return dr;
-    const rowMap = new Map(stats.rows.map(r => [r.dose_level, r]));
-    const isContinuous = stats.data_type === "continuous";
-    const syncedBars = dr.bars.map(bar => {
-      const row = rowMap.get(bar.dose_level);
-      if (!row) return bar;
-      return { ...bar, value: isContinuous ? (row.mean ?? bar.value) : (row.incidence ?? bar.value) };
-    });
-    return { ...dr, bars: syncedBars };
-  };
 
   const notEvaluated = toxAnnotations && selectedFinding
     ? toxAnnotations[selectedFinding.endpoint_label ?? selectedFinding.finding]?.treatmentRelated === "Not Evaluated"
@@ -1425,7 +1409,7 @@ export function FindingsContextPanel() {
         </div>
       </ContextPanelHeader>
 
-      {/* Context-dependent panes: Verdict + DoseDetail need useFindingContext */}
+      {/* Context-dependent panes: Verdict + Evidence need useFindingContext */}
       {contextReady ? (
         <>
           {/* Verdict — always visible, not in CollapsiblePane */}
@@ -1527,25 +1511,6 @@ export function FindingsContextPanel() {
             })()}
           </div>
 
-          {/* Dose detail */}
-          <CollapsiblePane
-            title="Dose detail"
-            defaultOpen
-            keepMounted
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-          >
-            <DoseDetailPane
-              statistics={activeStatistics!}
-              doseResponse={context!.dose_response}
-              sex={selectedFinding.sex}
-              siblingStatistics={hasSibling ? siblingContext!.statistics : undefined}
-              siblingDoseResponse={hasSibling ? syncBarsWithStats(siblingContext!.dose_response, siblingContext!.statistics) : undefined}
-              siblingSex={hasSibling ? siblingContext!.sex : undefined}
-              ancova={selectedFinding.ancova}
-              siblingAncova={hasSibling ? (findingsData?.findings.find(f => f.id === siblingContext!.finding_id)?.ancova ?? null) : undefined}
-            />
-          </CollapsiblePane>
         </>
       ) : (
         <div className="space-y-3 p-4">

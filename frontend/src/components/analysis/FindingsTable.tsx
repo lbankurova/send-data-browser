@@ -75,6 +75,8 @@ interface PivotedRow {
   n: number;
   mean: number | null;
   sd: number | null;
+  /** True when SD > 2× control SD — high within-group variance flag. */
+  sdOutlier: boolean;
   affected: number | null;
   incidence: number | null;
   p_value: number | null;
@@ -202,7 +204,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // Layout mode: "standard" (dose groups as columns) vs "pivoted" (dose groups as rows)
   type LayoutMode = "standard" | "pivoted";
-  const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode", "standard");
+  const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode.v2", "standard");
 
   // Pivoted table sorting (separate from standard table)
   const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", [
@@ -218,18 +220,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const activeFilterCount = countActiveFilters(filterState);
   const filterResize = useResizePanel(140, { min: 100, max: 320, direction: "left", storageKey: "pcc.findings.filterPanelWidth" });
 
-  // D7-2: auto-switch to pivoted when endpoint selected
-  const userOverrodeLayout = useRef(false);
-  useEffect(() => {
-    if (activeEndpoint && !userOverrodeLayout.current) {
-      setLayoutMode("pivoted");
-      setPivotedSorting([{ id: "finding", desc: false }, { id: "day", desc: false }, { id: "dose_level", desc: false }, { id: "sex", desc: false }]);
-    }
-    if (!activeEndpoint) {
-      userOverrodeLayout.current = false;
-      setLayoutMode("standard");
-    }
-  }, [activeEndpoint]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Layout stays as user chose — no auto-switching on endpoint selection
 
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
@@ -385,10 +376,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
     const rows: PivotedRow[] = [];
     for (const f of filteredFindings) {
-      // Control mean for fold change computation
-      const controlMean = f.data_type === "continuous"
-        ? (f.group_stats.find(g => g.dose_level === 0)?.mean ?? null)
-        : null;
+      // Control stats for fold change + SD outlier detection
+      const controlGs = f.group_stats.find(g => g.dose_level === 0);
+      const controlMean = f.data_type === "continuous" ? (controlGs?.mean ?? null) : null;
+      const controlSd = f.data_type === "continuous" ? (controlGs?.sd ?? null) : null;
       for (const gs of f.group_stats) {
         const dg = doseMap.get(gs.dose_level);
         const pw = f.pairwise.find(p => p.dose_level === gs.dose_level);
@@ -397,6 +388,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         if (controlMean != null && controlMean !== 0 && gs.dose_level > 0 && gs.mean != null) {
           fold = gs.mean / controlMean;
         }
+        // SD outlier: treated SD > 2× control SD (high within-group variance)
+        const sdOutlier = f.data_type === "continuous"
+          && gs.sd != null && controlSd != null && controlSd > 0
+          && gs.dose_level > 0 && gs.sd > controlSd * 2;
         rows.push({
           id: `${f.id}_${gs.dose_level}`,
           original: f,
@@ -414,6 +409,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           n: gs.n,
           mean: gs.mean,
           sd: gs.sd,
+          sdOutlier,
           affected: gs.affected ?? null,
           incidence: gs.incidence ?? null,
           p_value: pw?.p_value_adj ?? pw?.p_value ?? null,
@@ -802,7 +798,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => {
           const r = info.row.original;
           if (r.data_type === "continuous") {
-            return <span className="font-mono text-muted-foreground">{r.sd != null ? r.sd.toFixed(2) : "\u2014"}</span>;
+            return (
+              <span
+                className="font-mono text-muted-foreground inline-flex items-baseline justify-end"
+                title={r.sdOutlier ? "SD > 2\u00d7 control SD \u2014 high within-group variance" : undefined}
+              >
+                <span>{r.sd != null ? r.sd.toFixed(2) : "\u2014"}</span>
+                <span className="w-2 pl-0.5 text-left text-[8px]">{r.sdOutlier ? "*" : ""}</span>
+              </span>
+            );
           }
           return (
             <span className="font-mono text-muted-foreground">
@@ -961,8 +965,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     <div className="flex h-full flex-col">
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
-        {/* Day combo-box + sync checkbox */}
+        {/* Follow rail checkbox + day combo-box */}
         <span className="flex items-center gap-1.5">
+          <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Two-way sync: rail click scopes table, table row click selects in rail">
+            <input
+              type="checkbox"
+              checked={followRail}
+              onChange={(e) => {
+                setFollowRail(e.target.checked);
+                if (e.target.checked) setManualDay("all");
+              }}
+              className="h-2.5 w-2.5 accent-primary"
+            />
+            follow rail
+          </label>
           <span className="relative inline-flex items-center" title={filterDay != null ? `Filtering to day ${filterDay}` : "Showing all timepoints"}>
             <select
               className="appearance-none rounded border border-border/40 bg-transparent py-0.5 pl-1.5 pr-4 text-[10px] font-medium tabular-nums text-foreground outline-none cursor-pointer hover:border-border"
@@ -978,20 +994,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </select>
             <span className="pointer-events-none absolute right-1 text-[10px] text-muted-foreground">{"\u25BE"}</span>
           </span>
-          {activeEndpoint && (
-            <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Sync table with chart selection (endpoint scope)">
-              <input
-                type="checkbox"
-                checked={followRail}
-                onChange={(e) => {
-                  setFollowRail(e.target.checked);
-                  if (e.target.checked) setManualDay("all");
-                }}
-                className="h-2.5 w-2.5 accent-primary"
-              />
-              sync
-            </label>
-          )}
         </span>
         {/* Standard / Pivoted toggle */}
         <span title={layoutMode === "standard" ? "One row per endpoint — endpoint-level stats" : "One row per dose group — dose-level comparisons"}>
@@ -1001,7 +1003,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               { value: "standard" as const, label: "Endpoint" },
               { value: "pivoted" as const, label: "Dose group" },
             ]}
-            onChange={(v) => { setLayoutMode(v); if (activeEndpoint) userOverrodeLayout.current = true; }}
+            onChange={setLayoutMode}
           />
         </span>
         {/* Showing text + filter icon + clear — grouped together */}
@@ -1191,14 +1193,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 data-index={virtualRow.index}
                 ref={stdVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "border-b transition-colors hover:bg-accent/50",
+                  followRail && "cursor-pointer",
                   isPrimary && "bg-primary/15 font-medium",
                   isSecondary && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
-                onClick={() => selectFinding(row.original)}
-                onMouseEnter={() => prefetch(row.original.id)}
+                onClick={() => { if (followRail) selectFinding(row.original); }}
+                onMouseEnter={() => { if (followRail) prefetch(row.original.id); }}
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
@@ -1301,15 +1304,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 data-index={virtualRow.index}
                 ref={pivVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "border-b transition-colors hover:bg-accent/50",
+                  followRail && "cursor-pointer",
                   r.dose_level === 0 && "bg-muted/15",
                   isSelected && isSibling && "bg-primary/15 font-medium",
                   !isSelected && isSibling && "bg-accent/40",
                   isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
-                onClick={() => selectFinding(r.original)}
-                onMouseEnter={() => prefetch(r.original.id)}
+                onClick={() => { if (followRail) selectFinding(r.original); }}
+                onMouseEnter={() => { if (followRail) prefetch(r.original.id); }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
