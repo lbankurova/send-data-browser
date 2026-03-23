@@ -923,59 +923,38 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </button>
           )}
           <span>Showing {rowCount}</span>
-          {/* Active filter indicators — show excluded values as strikethrough chips */}
+          {/* Active filter indicators — show included values as chips */}
           {activeFilterCount > 0 && (() => {
-            const chips: { label: string; excluded: string[] }[] = [];
-            if (filterState.domain) {
-              const all = [...new Set(findings.map((f) => f.domain))].sort();
-              const ex = all.filter((d) => !filterState.domain!.includes(d));
-              if (ex.length) chips.push({ label: "", excluded: ex });
-            }
-            if (filterState.sex) {
-              const ex = ["F", "M"].filter((s) => !filterState.sex!.includes(s));
-              if (ex.length) chips.push({ label: "sex", excluded: ex });
-            }
-            if (filterState.severity) {
-              const ex = ["adverse", "warning", "normal"].filter((s) => !filterState.severity!.includes(s));
-              if (ex.length) chips.push({ label: "sev", excluded: ex });
-            }
-            if (filterState.direction) {
-              const ex = ["up", "down"].filter((d) => !filterState.direction!.includes(d));
-              if (ex.length) chips.push({ label: "dir", excluded: ex });
-            }
-            if (filterState.pattern) {
-              chips.push({ label: "pattern", excluded: ["filtered"] });
-            }
-            if (filterState.dataType) {
-              const ex = ["continuous", "incidence"].filter((t) => !filterState.dataType!.includes(t));
-              if (ex.length) chips.push({ label: "type", excluded: ex });
-            }
+            const chips: { label: string; values: string[] }[] = [];
+            if (filterState.domain) chips.push({ label: "", values: filterState.domain });
+            if (filterState.sex) chips.push({ label: "sex", values: filterState.sex });
+            if (filterState.severity) chips.push({ label: "sev", values: filterState.severity });
+            if (filterState.direction) chips.push({ label: "dir", values: filterState.direction });
+            if (filterState.pattern) chips.push({ label: "pattern", values: filterState.pattern });
+            if (filterState.dataType) chips.push({ label: "type", values: filterState.dataType });
             if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) {
               const lo = filterState.pValueRange[0]; const hi = filterState.pValueRange[1];
-              chips.push({ label: "p", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+              chips.push({ label: "p", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
             }
             if (filterState.trendPRange[0] != null || filterState.trendPRange[1] != null) {
               const lo = filterState.trendPRange[0]; const hi = filterState.trendPRange[1];
-              chips.push({ label: "trend", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+              chips.push({ label: "trend", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
             }
             if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) {
               const lo = filterState.effectSizeRange[0]; const hi = filterState.effectSizeRange[1];
-              chips.push({ label: "|g|", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+              chips.push({ label: "|g|", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
             }
             if (filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null) {
               const lo = filterState.foldChangeRange[0]; const hi = filterState.foldChangeRange[1];
-              chips.push({ label: "FC", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
-            }
-            if (filterState.findingSearch) {
-              chips.push({ label: "search", excluded: [filterState.findingSearch] });
+              chips.push({ label: "FC", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
             }
             return chips.length > 0 ? (
               <span className="flex items-center gap-1 text-[10px]">
                 {chips.map((c, i) => (
-                  <span key={i} className="text-muted-foreground/50">
+                  <span key={i} className="text-primary/60">
                     {c.label ? <span className="mr-0.5">{c.label}:</span> : null}
-                    {c.excluded.map((v) => (
-                      <span key={v} className="line-through mr-0.5">{v}</span>
+                    {c.values.map((v) => (
+                      <span key={v} className="font-medium mr-0.5">{v}</span>
                     ))}
                   </span>
                 ))}
