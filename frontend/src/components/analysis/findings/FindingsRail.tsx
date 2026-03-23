@@ -20,16 +20,13 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
-import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
   withSignalScores,
   computeSignalSummary,
   groupEndpoints,
   groupEndpointsBySyndrome,
-  buildMultiSyndromeIndex,
   filterEndpoints,
   sortEndpoints,
   buildEndpointToGroupIndex,
@@ -51,8 +48,7 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
-import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel, getSexColor } from "@/lib/severity-colors";
-import { PatternGlyph } from "@/components/ui/PatternGlyph";
+import { titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -176,12 +172,6 @@ export function FindingsRail({
   const endpointsWithSignal = useMemo(
     () => withSignalScores(endpointSummaries),
     [endpointSummaries],
-  );
-
-  // Multi-syndrome index: endpoint_label → list of syndrome IDs
-  const multiSyndromeIndex = useMemo(
-    () => buildMultiSyndromeIndex(syndromes),
-    [syndromes],
   );
 
   // Clinical S2+ endpoints: endpoints with clinical severity >= S2
@@ -572,7 +562,6 @@ export function FindingsRail({
                   onRestore={onRestoreEndpoint}
                   ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
                   clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
-                  effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
                 />
               ))
             )}
@@ -593,12 +582,9 @@ export function FindingsRail({
               onEndpointClick={handleEndpointClick}
               onEndpointHover={handleEndpointHover}
               registerEndpointRef={registerEndpointRef}
-              multiSyndromeIndex={multiSyndromeIndex}
-              currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
               excludedEndpoints={excludedEndpoints}
               onRestoreEndpoint={onRestoreEndpoint}
               clinicalTierMap={clinicalTierMap}
-              effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
               normalizationContexts={analytics.normalizationContexts}
               syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
@@ -1102,12 +1088,9 @@ function CardSection({
   onEndpointClick,
   onEndpointHover,
   registerEndpointRef,
-  multiSyndromeIndex,
-  currentSyndromeId,
   excludedEndpoints,
   onRestoreEndpoint,
   clinicalTierMap,
-  effectSizeLabel,
   normalizationContexts,
   syndromeCovariation,
   syndromeConfidence,
@@ -1124,12 +1107,9 @@ function CardSection({
   onEndpointClick: (label: string) => void;
   onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
-  multiSyndromeIndex?: Map<string, string[]>;
-  currentSyndromeId?: string;
   excludedEndpoints?: ReadonlySet<string>;
   onRestoreEndpoint?: (label: string) => void;
   clinicalTierMap?: Map<string, string>;
-  effectSizeLabel?: string;
   normalizationContexts?: NormalizationContext[];
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
@@ -1163,12 +1143,6 @@ function CardSection({
       {isExpanded && (
         <div>
           {card.endpoints.map((ep) => {
-            // Show syndrome IDs this endpoint belongs to
-            // In syndrome mode: show other syndromes (exclude current group's syndrome)
-            // In other modes: show all syndromes
-            const otherSyndromes = multiSyndromeIndex
-              ? (multiSyndromeIndex.get(ep.endpoint_label) ?? []).filter((id) => id !== currentSyndromeId)
-              : undefined;
             return (
               <EndpointRow
                 key={ep.endpoint_label}
@@ -1179,9 +1153,7 @@ function CardSection({
                 onHover={onEndpointHover ? () => onEndpointHover(ep.endpoint_label) : undefined}
                 onRestore={onRestoreEndpoint}
                 ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
-                otherSyndromes={otherSyndromes}
                 clinicalTier={clinicalTierMap?.get(ep.endpoint_label)}
-                effectSizeLabel={effectSizeLabel}
               />
             );
           })}
@@ -1407,23 +1379,6 @@ function sevLabel(s: string): string {
   return s === "adverse" ? "Adverse" : s === "warning" ? "Warning" : "Normal";
 }
 
-/** Compact effect size: drop leading zero (.62 instead of 0.62) */
-function formatEffectCompact(d: number): string {
-  const s = d.toFixed(2);
-  if (s.startsWith("0.")) return s.slice(1);     // "0.62" → ".62"
-  if (s.startsWith("-0.")) return "-" + s.slice(2); // "-0.62" → "-.62"
-  return s; // "1.24" stays as-is
-}
-
-/** Effect size → typographic weight (bigger effect = heavier type) */
-function effectTypography(d: number | null): string {
-  if (d === null) return "text-muted-foreground";
-  const abs = Math.abs(d);
-  if (abs >= 0.8) return "font-semibold text-foreground";
-  if (abs >= 0.5) return "font-medium text-foreground/80";
-  return "text-muted-foreground";
-}
-
 const EndpointRow = forwardRef<HTMLButtonElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
@@ -1431,40 +1386,41 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   onClick: () => void;
   onHover?: () => void;
   onRestore?: (label: string) => void;
-  otherSyndromes?: string[];
   clinicalTier?: string;
-  effectSizeLabel?: string;
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, otherSyndromes, clinicalTier, effectSizeLabel }, ref) {
-  // Pipe weight from signal tier (matches FindingsTable severity column)
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, clinicalTier }, ref) {
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
   const pipeWeight = isNormal ? "border-l" : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-  // Severity pipe — color matches findings table severity column
   const pipeColor = endpoint.worstSeverity === "adverse" ? "#dc2626" : endpoint.worstSeverity === "warning" ? "#facc15" : "transparent";
   const tierLabel = tier === 3 ? "strong" : tier === 2 ? "moderate" : "weak";
   const pipeTooltip = isNormal ? "Normal" : `${sevLabel(endpoint.worstSeverity)} · ${tierLabel} signal`;
+
+  // Sex divergence: directions differ OR patterns differ
+  const bySex = endpoint.bySex;
+  const sexesDiffer = bySex && bySex.size >= 2 && (() => {
+    const vals = [...bySex.values()];
+    const dirs = vals.map(s => s.direction).filter(d => d === "up" || d === "down");
+    if (dirs.includes("up") && dirs.includes("down")) return true;
+    return new Set(vals.map(s => s.pattern)).size > 1;
+  })();
 
   return (
     <button
       ref={ref}
       className={cn(
-        "flex w-full flex-col cursor-pointer transition-colors",
+        "flex w-full items-center cursor-pointer transition-colors",
         isSelected ? "bg-accent" : "hover:bg-accent/30",
       )}
       onClick={onClick}
       onMouseEnter={onHover}
       aria-selected={isSelected}
     >
-      {/* Line 1: Name + right-aligned key signals (tier → TR → d → pattern) */}
-      <div className="flex w-full items-center gap-1 px-3 py-1 pl-6">
+      <div className="flex w-full items-center gap-1 px-3 py-1.5 pl-6">
         {isExcluded && (
-          <span
-            role="button"
-            tabIndex={0}
+          <span role="button" tabIndex={0}
             className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
             title="Restore to scatter plot"
-            onClick={(e) => { e.stopPropagation(); onRestore?.(endpoint.endpoint_label); }}
-          >
+            onClick={(e) => { e.stopPropagation(); onRestore?.(endpoint.endpoint_label); }}>
             <EyeOff className="h-3 w-3" />
           </span>
         )}
@@ -1479,99 +1435,16 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         >
           {endpoint.endpoint_label}
         </span>
-        {/* Clinical tier — sentinel safety marker */}
         {clinicalTier && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker (regulatory significance)`}>
+          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
             {clinicalTier}
           </span>
         )}
-        {/* TR — treatment-related assignment */}
-        {endpoint.treatmentRelated && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title="Treatment-related — assigned by study pathologist">
-            TR
+        {sexesDiffer && (
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
+            F≠M
           </span>
         )}
-        {/* Effect size — per-sex when directions diverge, single worst otherwise */}
-        {(() => {
-          const bySex = endpoint.bySex;
-          const hasDirectionDivergence = bySex && bySex.size >= 2 && (() => {
-            const dirs = [...bySex.values()].map(s => s.direction).filter(d => d === "up" || d === "down");
-            return dirs.includes("up") && dirs.includes("down");
-          })();
-          const metricLabel = !CONTINUOUS_DOMAINS.has(endpoint.domain) ? "avg severity" : (effectSizeLabel ?? "Hedges\u2019 g");
-          if (hasDirectionDivergence) {
-            const sorted = [...bySex!.entries()].sort(([a], [b]) => a.localeCompare(b));
-            return (
-              <span className="shrink-0 text-right font-mono text-[11px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${metricLabel} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
-                {sorted.map(([sex, s]) => (
-                  <span key={sex} className={cn("whitespace-nowrap", effectTypography(s.maxEffectSize))}>
-                    {sex}:{s.maxEffectSize !== null ? formatEffectCompact(s.maxEffectSize) : "—"}
-                  </span>
-                )).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep-${i}`} className="text-muted-foreground/30"> </span>, el], [])}
-              </span>
-            );
-          }
-          return (
-            <span
-              className={cn("w-6 shrink-0 text-right font-mono text-[11px]", effectTypography(endpoint.maxEffectSize))}
-              title={endpoint.maxEffectSize !== null ? `${metricLabel} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
-            >
-              {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
-            </span>
-          );
-        })()}
-        {/* Dose-response pattern (overall — follows strongest signal row) */}
-        <span className="shrink-0" title={(() => {
-          const base = `Dose-response pattern: ${getPatternLabel(endpoint.pattern)}`;
-          const bySex = endpoint.bySex;
-          const hasDivergence = bySex && bySex.size >= 2 && new Set([...bySex.values()].map(s => s.pattern)).size > 1;
-          return hasDivergence
-            ? `${base}\nPer-sex breakdown shown below — trends differ between sexes`
-            : `${base}\nSame pattern for both sexes`;
-        })()}>
-          <PatternGlyph pattern={endpoint.pattern} className="text-muted-foreground" />
-        </span>
-      </div>
-
-      {/* Line 2: Supporting evidence (p-value, domain, syndromes left — per-sex trends right-aligned under line 1 glyph) */}
-      <div className="flex items-center gap-2 px-3 pb-1.5 pt-0.5 pl-8 text-[11px] text-muted-foreground">
-        {endpoint.minPValue !== null && (
-          <span className="font-mono" title={`p = ${endpoint.minPValue.toExponential(2)}\nMost significant p-value across all dose groups and sexes`}>
-            p{formatPValue(endpoint.minPValue)}
-          </span>
-        )}
-        <span className="font-mono" title={`SEND domain: ${getDomainFullLabel(endpoint.domain)}`}>{endpoint.domain.toUpperCase()}</span>
-        {otherSyndromes && otherSyndromes.length > 0 && (
-          <span className="text-[8px] text-muted-foreground/50" title={`Syndromes: ${otherSyndromes.join(", ")}`}>
-            {otherSyndromes.join(" ")}
-          </span>
-        )}
-        {/* Per-sex pattern divergence — right-aligned under line 1 pattern glyph */}
-        {(() => {
-          const bySex = endpoint.bySex;
-          if (bySex && bySex.size >= 2) {
-            const patterns = [...bySex.values()].map(s => s.pattern);
-            if (new Set(patterns).size > 1) {
-              // Sort so the sex matching the overall pattern is rightmost (under line 1 glyph)
-              const sorted = [...bySex.entries()].sort(([, a], [, b]) => {
-                const aMatch = a.pattern === endpoint.pattern ? 1 : 0;
-                const bMatch = b.pattern === endpoint.pattern ? 1 : 0;
-                return aMatch - bMatch;
-              });
-              return (
-                <span className="ml-auto inline-flex items-center gap-1.5">
-                  {sorted.map(([sex, s]) => (
-                    <span key={sex} className="inline-flex items-center gap-0.5" title={`${sex === "M" ? "Males" : sex === "F" ? "Females" : sex}: ${getPatternLabel(s.pattern)} ${getDirectionSymbol(s.direction)}`}>
-                      <span className="font-mono text-[10px]" style={{ color: getSexColor(sex) }}>{sex}</span>
-                      <PatternGlyph pattern={s.pattern} className="text-muted-foreground/70" />
-                    </span>
-                  ))}
-                </span>
-              );
-            }
-          }
-          return null;
-        })()}
       </div>
     </button>
   );
