@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { X } from "lucide-react";
 import type { UnifiedFinding } from "@/types/analysis";
 import { DEFAULT_FILTER_STATE } from "./table-filters";
 import type { TableFilterState } from "./table-filters";
@@ -31,19 +32,21 @@ function CategoricalFilter({
   selected: string[] | null;
   onChange: (selected: string[] | null) => void;
 }) {
+  // Internal `selected` = included values (null = all included).
+  // Visual: checked = filtered out (excluded), unchecked = shown.
   const toggle = useCallback(
     (val: string) => {
       if (selected == null) {
-        // Currently "all" — deselect this one (filter it out)
+        // No filter active — exclude this value
         const next = values.filter((v) => v !== val);
         onChange(next.length === 0 ? null : next);
       } else if (selected.includes(val)) {
+        // Value is included (unchecked) — exclude it (check it)
         const next = selected.filter((v) => v !== val);
-        // If nothing selected, reset to null (= all)
         onChange(next.length === 0 ? null : next);
       } else {
+        // Value is excluded (checked) — include it (uncheck it)
         const next = [...selected, val];
-        // If all now selected, reset to null
         onChange(next.length === values.length ? null : next);
       }
     },
@@ -53,7 +56,8 @@ function CategoricalFilter({
   return (
     <div className="flex flex-col gap-0.5">
       {values.map((v) => {
-        const checked = selected == null || selected.includes(v);
+        // checked = filtered out (not in included set)
+        const checked = selected != null && !selected.includes(v);
         return (
           <label
             key={v}
@@ -65,7 +69,7 @@ function CategoricalFilter({
               onChange={() => toggle(v)}
               className="h-2.5 w-2.5 accent-primary"
             />
-            <span className="text-[10px] text-foreground/80">{v}</span>
+            <span className={`text-[10px] ${checked ? "text-muted-foreground line-through" : "text-foreground/80"}`}>{v}</span>
           </label>
         );
       })}
@@ -161,10 +165,10 @@ interface FindingsTableFilterPanelProps {
   onFilterChange: (next: TableFilterState) => void;
   /** Called when "Clear all" is pressed — parent should also clear the day stepper filter. */
   onClearDayFilter?: () => void;
-  /** Whether a day filter is active from the day stepper (shown as clearable chip). */
-  activeDayLabel?: string | null;
   /** Effect size symbol for filter label (e.g., "g" for Hedges' g, "d" for Cohen's d). */
   effectSizeSymbol?: string;
+  /** Called to close the filter panel. */
+  onClose?: () => void;
 }
 
 export function FindingsTableFilterPanel({
@@ -172,8 +176,8 @@ export function FindingsTableFilterPanel({
   filterState,
   onFilterChange,
   onClearDayFilter,
-  activeDayLabel,
   effectSizeSymbol = "g",
+  onClose,
 }: FindingsTableFilterPanelProps) {
   // Derive unique values from the full findings array
   const uniqueDomains = useMemo(
@@ -224,33 +228,26 @@ export function FindingsTableFilterPanel({
 
   return (
     <div className="flex flex-col gap-0 overflow-y-auto border-r bg-muted/10 px-2 py-1.5">
-      {/* Clear all */}
-      <button
-        type="button"
-        onClick={clearAll}
-        className="mb-1.5 rounded border border-border/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        Clear all filters
-      </button>
-
-      {/* Active day filter from stepper (clearable) */}
-      {activeDayLabel && (
-        <div className="mb-1 flex items-center gap-1.5">
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-            {activeDayLabel}
-          </span>
-          {onClearDayFilter && (
-            <button
-              type="button"
-              onClick={onClearDayFilter}
-              className="flex h-4 w-4 items-center justify-center rounded-full text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              title="Clear day filter"
-            >
-              {"\u00d7"}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Header: Clear all + close */}
+      <div className="mb-1.5 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={clearAll}
+          className="text-[10px] text-muted-foreground transition-colors hover:text-foreground hover:underline"
+        >
+          Clear all
+        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+            title="Close filters panel"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
 
       {/* Text search */}
       <FilterSection title="Finding">
