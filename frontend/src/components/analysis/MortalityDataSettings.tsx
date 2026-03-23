@@ -188,7 +188,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                               user={commentAnnotations?.[d.USUBJID]?.pathologist}
                               timestamp={commentAnnotations?.[d.USUBJID]?.reviewDate ? new Date(commentAnnotations[d.USUBJID].reviewDate!).toLocaleDateString() : undefined}
                               onSaveNote={(text) => saveComment(d.USUBJID, text)}
-                              placeholder="Death on D90 near terminal sacrifice \u2014 included in stats"
+                              placeholder="Death on D90 near terminal sacrifice — included in stats"
                               autoOpen={autoOpenComment === d.USUBJID}
                               onAutoOpened={() => setAutoOpenComment(null)}
                             />
