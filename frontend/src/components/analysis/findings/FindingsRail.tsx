@@ -700,7 +700,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Left border</span> encodes signal
-                strength: thick = strong, thin = weak. Dark = adverse/warning, invisible = normal.
+                strength: thick = strong, thin = weak. Red = adverse, amber = warning, invisible = normal.
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Click</span> a row to select it in the
@@ -1439,8 +1439,8 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
   const pipeWeight = isNormal ? "border-l" : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-  // Greyscale pipe — color encodes severity class, width encodes signal strength
-  const pipeColor = endpoint.worstSeverity === "adverse" ? "#4B5563" : endpoint.worstSeverity === "warning" ? "#D1D5DB" : "transparent";
+  // Severity pipe — color matches findings table severity column
+  const pipeColor = endpoint.worstSeverity === "adverse" ? "#dc2626" : endpoint.worstSeverity === "warning" ? "#facc15" : "transparent";
   const tierLabel = tier === 3 ? "strong" : tier === 2 ? "moderate" : "weak";
   const pipeTooltip = isNormal ? "Normal" : `${sevLabel(endpoint.worstSeverity)} · ${tierLabel} signal`;
 

@@ -48,7 +48,7 @@ export function getSeverityDotColor(severity: string): string {
     case "adverse":
       return "#dc2626"; // red-600
     case "warning":
-      return "#d97706"; // amber-600
+      return "#facc15"; // yellow-400 — bright lemon-yellow, distinct from dose-group-2 amber #f59e0b
     case "normal":
     default:
       return "#16a34a"; // green-600

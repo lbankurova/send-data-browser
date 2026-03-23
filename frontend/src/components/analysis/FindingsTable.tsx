@@ -29,7 +29,8 @@ import { getSexColor } from "@/lib/severity-colors";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
-import { getSignalTier, getPatternLabel } from "@/lib/findings-rail-engine";
+import { getSignalTier, getPatternLabelDirectional } from "@/lib/findings-rail-engine";
+import { resolveOnsetDose, formatOnsetDose } from "@/lib/onset-dose";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { FindingsTableFilterPanel } from "./findings/FindingsTableFilterPanel";
@@ -167,13 +168,18 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [syncWithCharts, setSyncWithCharts] = useState(true);
   const [manualDay, setManualDay] = useState<string>("all");
 
-  // Day: when synced and user hasn't manually picked, follow global stepper.
-  // Once user picks a day in the combo, manualDay takes over regardless of sync.
-  const [dayIsManual, setDayIsManual] = useState(false);
-  const effectiveDay: string = dayIsManual
-    ? manualDay
-    : (globalDay != null ? String(globalDay) : "all");
-  const filterDay: number | null = effectiveDay === "all" ? null : Number(effectiveDay);
+  // Reset day filter when endpoint changes — days differ across endpoints.
+  // Track whether we just reset so filterDay uses "all" in the same render pass.
+  const prevEndpointRef = useRef(activeEndpoint);
+  let currentDay = manualDay;
+  if (activeEndpoint !== prevEndpointRef.current) {
+    prevEndpointRef.current = activeEndpoint;
+    currentDay = "all";
+    setManualDay("all");
+  }
+
+  // Day combo-box only filters when the user explicitly picks a day.
+  const filterDay: number | null = currentDay === "all" ? null : Number(currentDay);
 
   // Layout mode: "standard" (dose groups as columns) vs "pivoted" (dose groups as rows)
   type LayoutMode = "standard" | "pivoted";
@@ -494,7 +500,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         header: () => <span title="Dose-response pattern shape">Pattern</span>,
         cell: (info) => {
           const v = info.row.original.dose_response_pattern;
-          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
+          return <span className="text-muted-foreground">{v ? getPatternLabelDirectional(v) : "\u2014"}</span>;
         },
       }),
       col.display({
@@ -502,12 +508,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         header: () => <span title="Lowest dose level at which the effect is first observed (onset)">Onset</span>,
         cell: (info) => {
           const f = info.row.original;
-          const level = f._pattern_override?.onset_dose_level ?? f.onset_dose_level;
-          if (level == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const dg = doseGroups.find(d => d.dose_level === level);
-          if (!dg) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const label = dg.dose_value != null ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim() : formatDoseShortLabel(dg.label);
-          return <span className="font-mono text-muted-foreground" title={`Onset at dose level ${level}: ${formatDoseShortLabel(dg.label)}`}>{label}</span>;
+          const onset = resolveOnsetDose(f);
+          if (!onset) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const label = formatOnsetDose(onset.doseLevel, doseGroups);
+          return <span className="font-mono text-muted-foreground" title={`Onset at dose level ${onset.doseLevel} (${onset.source})`}>{label}</span>;
         },
       }),
       col.accessor("max_effect_size", {
@@ -568,7 +572,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return (
             <span
               className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
-              style={{ borderLeftColor: getSeverityDotColor(severity) }}
+              style={{ borderLeftColor: isNormal ? "transparent" : getSeverityDotColor(severity) }}
             >
               {severity}
             </span>
@@ -850,32 +854,26 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <span className="relative inline-flex items-center" title={filterDay != null ? `Filtering to day ${filterDay}` : "Showing all timepoints"}>
             <select
               className="appearance-none rounded border border-border/40 bg-transparent py-0.5 pl-1.5 pr-4 text-[10px] font-medium tabular-nums text-foreground outline-none cursor-pointer hover:border-border"
-              value={effectiveDay}
-              onChange={(e) => {
-                setManualDay(e.target.value);
-                setDayIsManual(true);
-              }}
+              value={manualDay}
+              onChange={(e) => setManualDay(e.target.value)}
             >
               <option value="all">All days</option>
               {availableDays.map((d) => (
                 <option key={d} value={String(d)}>
-                  {d === globalDay && dayIsManual ? "\u25CF " : ""}{formatDayOption(d)}
+                  {d === globalDay ? "\u25CF " : ""}{formatDayOption(d)}
                 </option>
               ))}
             </select>
             <span className="pointer-events-none absolute right-1 text-[10px] text-muted-foreground">{"\u25BE"}</span>
           </span>
           {activeEndpoint && (
-            <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Sync table with chart selection (endpoint + day)">
+            <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Sync table with chart selection (endpoint scope)">
               <input
                 type="checkbox"
                 checked={syncWithCharts}
                 onChange={(e) => {
                   setSyncWithCharts(e.target.checked);
-                  if (e.target.checked) {
-                    // Re-sync: reset day to follow stepper
-                    setDayIsManual(false);
-                  }
+                  if (e.target.checked) setManualDay("all");
                 }}
                 className="h-2.5 w-2.5 accent-primary"
               />
@@ -910,14 +908,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           >
             <Filter className="h-3 w-3" />
           </button>
-          {((dayIsManual && filterDay != null) || activeFilterCount > 0) && (
+          {((filterDay != null) || activeFilterCount > 0) && (
             <button
               type="button"
               className="flex items-center rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => {
                 setFilterState(DEFAULT_FILTER_STATE);
                 setSyncWithCharts(true);
-                setDayIsManual(false);
+                setManualDay("all");
               }}
               title="Clear all filters"
             >
@@ -925,14 +923,61 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             </button>
           )}
           <span>Showing {rowCount}</span>
-          {/* Show filtered-out domains as crossed-out text */}
-          {filterState.domain && (() => {
-            const allDomains = [...new Set(findings.map((f) => f.domain))].sort();
-            const excluded = allDomains.filter((d) => !filterState.domain!.includes(d));
-            return excluded.length > 0 ? (
-              <span className="text-[10px]">
-                {excluded.map((d) => (
-                  <span key={d} className="text-muted-foreground/40 line-through mr-1">{d}</span>
+          {/* Active filter indicators — show excluded values as strikethrough chips */}
+          {activeFilterCount > 0 && (() => {
+            const chips: { label: string; excluded: string[] }[] = [];
+            if (filterState.domain) {
+              const all = [...new Set(findings.map((f) => f.domain))].sort();
+              const ex = all.filter((d) => !filterState.domain!.includes(d));
+              if (ex.length) chips.push({ label: "", excluded: ex });
+            }
+            if (filterState.sex) {
+              const ex = ["F", "M"].filter((s) => !filterState.sex!.includes(s));
+              if (ex.length) chips.push({ label: "sex", excluded: ex });
+            }
+            if (filterState.severity) {
+              const ex = ["adverse", "warning", "normal"].filter((s) => !filterState.severity!.includes(s));
+              if (ex.length) chips.push({ label: "sev", excluded: ex });
+            }
+            if (filterState.direction) {
+              const ex = ["up", "down"].filter((d) => !filterState.direction!.includes(d));
+              if (ex.length) chips.push({ label: "dir", excluded: ex });
+            }
+            if (filterState.pattern) {
+              chips.push({ label: "pattern", excluded: ["filtered"] });
+            }
+            if (filterState.dataType) {
+              const ex = ["continuous", "incidence"].filter((t) => !filterState.dataType!.includes(t));
+              if (ex.length) chips.push({ label: "type", excluded: ex });
+            }
+            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) {
+              const lo = filterState.pValueRange[0]; const hi = filterState.pValueRange[1];
+              chips.push({ label: "p", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+            }
+            if (filterState.trendPRange[0] != null || filterState.trendPRange[1] != null) {
+              const lo = filterState.trendPRange[0]; const hi = filterState.trendPRange[1];
+              chips.push({ label: "trend", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+            }
+            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) {
+              const lo = filterState.effectSizeRange[0]; const hi = filterState.effectSizeRange[1];
+              chips.push({ label: "|g|", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+            }
+            if (filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null) {
+              const lo = filterState.foldChangeRange[0]; const hi = filterState.foldChangeRange[1];
+              chips.push({ label: "FC", excluded: [`${lo ?? ""}–${hi ?? ""}`] });
+            }
+            if (filterState.findingSearch) {
+              chips.push({ label: "search", excluded: [filterState.findingSearch] });
+            }
+            return chips.length > 0 ? (
+              <span className="flex items-center gap-1 text-[10px]">
+                {chips.map((c, i) => (
+                  <span key={i} className="text-muted-foreground/50">
+                    {c.label ? <span className="mr-0.5">{c.label}:</span> : null}
+                    {c.excluded.map((v) => (
+                      <span key={v} className="line-through mr-0.5">{v}</span>
+                    ))}
+                  </span>
                 ))}
               </span>
             ) : null;
@@ -968,8 +1013,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               findings={findings}
               filterState={filterState}
               onFilterChange={setFilterState}
-              onClearDayFilter={() => { setSyncWithCharts(true); setDayIsManual(false); }}
-              activeDayLabel={dayIsManual && filterDay != null ? `Day ${filterDay}` : null}
+              onClearDayFilter={() => { setSyncWithCharts(true); setManualDay("all"); }}
+              activeDayLabel={filterDay != null ? `Day ${filterDay}` : null}
               effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
               onClose={() => setShowFilters(false)}
             />
