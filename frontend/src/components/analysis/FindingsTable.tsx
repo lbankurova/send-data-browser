@@ -206,7 +206,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode", "standard");
 
   // Pivoted table sorting (separate from standard table)
-  const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", []);
+  const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", [
+    { id: "finding", desc: false }, { id: "day", desc: false }, { id: "dose_level", desc: false }, { id: "sex", desc: false },
+  ]);
   const [pivotedColumnSizing, setPivotedColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.pivotedColumnSizing", {});
 
   // Filter panel state
@@ -222,8 +224,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   useEffect(() => {
     if (activeEndpoint && !userOverrodeLayout.current) {
       setLayoutMode("pivoted");
-      // D7-4/5: default sort by dose_level ascending, then sex (F before M)
-      setPivotedSorting([{ id: "dose_level", desc: false }, { id: "sex", desc: false }]);
+      setPivotedSorting([{ id: "finding", desc: false }, { id: "day", desc: false }, { id: "dose_level", desc: false }, { id: "sex", desc: false }]);
     }
     if (!activeEndpoint) {
       userOverrodeLayout.current = false;
