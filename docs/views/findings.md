@@ -46,8 +46,8 @@ Uses the shared `FilterBar` container component: `flex items-center gap-2 border
 
 The FilterBar contains (left to right):
 - "Findings" label: `text-xs font-semibold`
-- **Summary counts:** `flex items-center gap-2 text-[10px] text-muted-foreground` — adverse count is `font-semibold` with red dashed underline (`underline decoration-dashed decoration-2 underline-offset-2`, `textDecorationColor: #dc2626`); warning and normal counts are plain text.
-- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`ml-3 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg") — `font-semibold` with red dashed underline (same styling as adverse count). Status suffix in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
+- **Summary counts:** `flex items-center gap-2 text-[11px] text-muted-foreground` — adverse count is `font-semibold` with red dashed underline (`underline decoration-dashed decoration-2 underline-offset-2`, `textDecorationColor: #dc2626`); warning and normal counts are plain text.
+- **Mortality toggle** (conditional — when `mortalityData.has_mortality && early_death_details.length > 0`): clickable button (`ml-3 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground`). Label: `"{N}TR death{s} at {formatDoseShortLabel(mortality_loael_label)}"` (e.g., "1TR death at 200 mg/kg") — `font-semibold` with red dashed underline (same styling as adverse count). Status suffix in `text-muted-foreground/60`: `"(excl. from term.stats)"` when excluded, `"(in term.stats)"` when included. Click toggles `setUseScheduledOnly(!isScheduledOnly)`.
 
 **Note:** The `FindingsFilterBar` component exists separately but is **not** used in the main FindingsView. Filtering is handled through the FindingsRail (left panel) which manages finding grouping, scoping, and exclusion. The center panel FilterBar displays summary counts and the mortality exclusion toggle.
 
@@ -78,14 +78,14 @@ The `ViewSection` header displays a dynamic title (left) and action area (right)
 - **Filter labels** — active filter descriptions separated by ` · ` dividers. Styled `text-muted-foreground`.
 - **Selected point stats** (when a scatter dot is selected) — `★ {label} · {symbol}={effectSize} · p={pValue} ({testName})`. Label in `font-medium`, stats in `font-mono`, test name (Dunnett's for LB/BW/OM/FW, Fisher's otherwise) in `text-muted-foreground/60`.
 
-Metadata text uses `text-[10px] normal-case tracking-normal font-normal text-foreground`.
+Metadata text uses `text-[11px] normal-case tracking-normal font-normal text-foreground`.
 
 **Action area (right):** Contains excluded endpoint chips and info tooltip (see below).
 
 ### Excluded Endpoint Chips
 
 When endpoints are excluded via Ctrl+click on scatter dots, chips appear in the ViewSection `headerRight`:
-- Each chip: `inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70` with truncated label (`max-w-[80px]`) and `EyeOff` restore icon (`h-2.5 w-2.5 cursor-pointer hover:text-foreground`).
+- Each chip: `inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[10px] text-muted-foreground/70` with truncated label (`max-w-[80px]`) and `EyeOff` restore icon (`h-2.5 w-2.5 cursor-pointer hover:text-foreground`).
 - **Overflow:** When > 3 excluded, show first 2 labels + a "+{N} more" chip. The overflow chip's EyeOff clears all exclusions; individual chip EyeOff restores that single endpoint.
 
 ### Info Tooltip
@@ -151,7 +151,7 @@ Legend rendered as `flex items-center gap-2` inside `px-2 pt-0.5 pb-3` header (e
 
 ### Structure
 
-TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[10px]`. Wrapped in `flex-1 overflow-hidden` (fills remaining vertical space below scatter).
+TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[11px]`. Wrapped in `flex-1 overflow-hidden` (fills remaining vertical space below scatter).
 
 ### TanStack Table Features
 
@@ -163,14 +163,14 @@ TanStack React Table (`useReactTable`) with client-side sorting and column resiz
 
 - Wrapper `<thead>`: `sticky top-0 z-10 bg-background` (sticky header on vertical scroll)
 - Row `<tr>`: `border-b bg-muted/30`
-- Header cells `<th>`: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
+- Header cells `<th>`: `relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`
 - Sort trigger: `onDoubleClick` calls `header.column.getToggleSortingHandler()`
 
 ### Fixed Columns (Left)
 
 | Column | Header | Alignment | Cell Rendering |
 |--------|--------|-----------|----------------|
-| domain | Domain | Left | `DomainLabel` component: neutral monospace text, `font-mono text-[9px] font-semibold text-muted-foreground`. No color coding, no background, no border. Per CLAUDE.md hard rule: "Domain labels — neutral text only." |
+| domain | Domain | Left | `DomainLabel` component: neutral monospace text, `font-mono text-[10px] font-semibold text-muted-foreground`. No color coding, no background, no border. Per CLAUDE.md hard rule: "Domain labels — neutral text only." |
 | finding | Finding | Left (absorber) | `overflow-hidden text-ellipsis whitespace-nowrap` div with `title` tooltip for full name. If specimen exists: "{specimen}: {finding}" with specimen in `text-muted-foreground` |
 | sex | Sex | Left | Plain text |
 | day | Day | Left | `text-muted-foreground`, em dash if null. **CL day mode toggle:** when CL findings exist, header shows a `▾` indicator and clicking it opens a dropdown to switch between "Most frequent" (peak prevalence mode, default) and "First observed" (onset day). Header text changes to "Day (onset)" in onset mode. Dropdown: `fixed z-50 min-w-[190px] rounded border bg-popover py-0.5 shadow-md` with checkmark on active item and "Applies to CL rows only" footer. Cell value: CL rows use `day_first` in onset mode, `day` otherwise. |
@@ -273,7 +273,7 @@ Three selection priorities:
 - Row: `flex items-center justify-between`
 - Finding name: `text-sm font-semibold` (`<h3>`)
 - Expand/collapse all buttons: `CollapseAllButtons` component in the header row (right side)
-- Subtitle: "{domain} | Day {day}" (or "Terminal" if day is null) in `text-[10px] text-muted-foreground`
+- Subtitle: "{domain} | Day {day}" (or "Terminal" if day is null) in `text-[11px] text-muted-foreground`
 
 #### Verdict pane (always visible, not in CollapsiblePane)
 `VerdictPane` component — treatment-relatedness assessment with analytics, NOAEL context, dose-response data, and statistics. Rendered in a `border-b px-4 py-3` container outside of CollapsiblePane.
@@ -310,7 +310,7 @@ Three selection priorities:
 The "Organ weight normalization" pane in `OrganContextPanel` (tier >= 2 only) includes a user override mechanism. Components: `NormalizationModeDisplay` (read-only summary: active mode, tier, BW/brain g, category, rationale) + `NormalizationOverrideForm` (edit form). Storage: `normalization-overrides` annotation schema keyed by organ name (uppercase).
 
 - **Collapsed state:** Two links — "Override mode" (opens edit form) and "Clear override" (removes override, only shown when active). "Saved" flash (green-600, 2s) after mutation.
-- **Expanded state:** Mode selector buttons (pill-shaped, `bg-primary` when active), filtered by data availability (brain-ratio hidden when no brain data, ANCOVA hidden when tier < 3). Required reason textarea (`text-[10px]`, 2 rows). Save button (`bg-primary`, disabled when reason empty or saving). Cancel link.
+- **Expanded state:** Mode selector buttons (pill-shaped, `bg-primary` when active), filtered by data availability (brain-ratio hidden when no brain data, ANCOVA hidden when tier < 3). Required reason textarea (`text-[11px]`, 2 rows). Save button (`bg-primary`, disabled when reason empty or saving). Cancel link.
 - **Override indicator:** When `userOverridden === true`, label shows "(user override)" in amber-600 instead of "(auto-selected)".
 - **Data flow:** `useNormalizationOverrides(studyId)` hook wraps `useAnnotations` + `useSaveAnnotation` for the `normalization-overrides` schema. `useOrganWeightNormalization` fetches overrides via `useAnnotations` and applies them in `useMemo` via `applyOverrides()` — sets mode + `userOverridden: true` on all dose-group decisions/contexts for the organ. All 7 callers of the hook automatically see overrides.
 - **Audit trail:** Server-side via `_append_audit_entry()` in `annotations.py` — logs field-level diffs on every save.
@@ -334,7 +334,7 @@ Navigation links to other views. Explicitly passed `defaultOpen={false}`. Contai
 | View NOAEL determination → | `/studies/{studyId}/noael-determination` |
 | View study summary → | `/studies/{studyId}` |
 
-Links: `block text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1 text-[11px]`.
+Links: `block text-primary hover:underline`, use `<a href="#">` with `onClick` handler calling `navigate()`. Wrapped in `space-y-1 text-xs`.
 
 #### Pane Rendering
 All panes (except Verdict) use the `CollapsiblePane` component:

@@ -302,13 +302,13 @@ export function DistributionPane({
       {isLoading ? (
         <Skeleton className="h-40 w-full" />
       ) : isError || subjects.length === 0 ? (
-        <div className="text-[10px] text-muted-foreground/60 py-2">
+        <div className="text-[11px] text-muted-foreground/60 py-2">
           {mode === "recovery" ? "No recovery data available" : "No individual data available"}
         </div>
       ) : (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground shrink-0">{subtitle}{unit ? ` (${unit})` : ""}</span>
+            <span className="text-[11px] text-muted-foreground shrink-0">{subtitle}{unit ? ` (${unit})` : ""}</span>
             <div className="flex items-center gap-1.5">
               {showModeSelector && (
                 <PanePillToggle

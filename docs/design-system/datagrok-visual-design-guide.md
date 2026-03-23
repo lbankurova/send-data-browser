@@ -310,7 +310,7 @@ Functions: `getDomainBadgeColor()`, `getDomainDotColor()`.
 | FW | `bg-teal-100` / `text-teal-700` | `#14B8A6` |
 | fallback | `bg-gray-100` / `text-gray-700` | `#9CA3AF` |
 
-**Domain labels** are categorical identity and must never be color-coded. Render as neutral text: `text-[9px] font-semibold text-muted-foreground`. Never use colored text, dot badges, outline pills, or bordered treatments. (Hard rule — see CLAUDE.md.) The color table above is retained as reference for chart series only; domain text labels use neutral gray. Existing code using `getDomainBadgeColor()` for text should be migrated incrementally.
+**Domain labels** are categorical identity and must never be color-coded. Render as neutral text: `text-[10px] font-semibold text-muted-foreground`. Never use colored text, dot badges, outline pills, or bordered treatments. (Hard rule — see CLAUDE.md.) The color table above is retained as reference for chart series only; domain text labels use neutral gray. Existing code using `getDomainBadgeColor()` for text should be migrated incrementally.
 
 ### 1.8 Categorical Chart Palettes
 
@@ -409,7 +409,7 @@ Always `font-mono`, 2dp.
 2. **Neutral at rest.** Heatmap cells, evidence bars, domain badges are neutral gray at rest.
 3. **Interaction-only evidence colors.** Signal score colors fill cells only on hover.
 4. **Tier dots for severity.** Critical = red `#DC2626`, Notable = amber `#D97706`, Observed = no dot.
-5. **Domain labels: neutral text only** (this app). `text-[9px] font-semibold text-muted-foreground`. Domain codes are categorical identity — never color-coded. Domain colors (§1.7) are retained for chart series only.
+5. **Domain labels: neutral text only** (this app). `text-[10px] font-semibold text-muted-foreground`. Domain codes are categorical identity — never color-coded. Domain colors (§1.7) are retained for chart series only.
 6. **Decision Bar is the visual anchor.** `border-l-2 border-l-blue-500 bg-blue-50/30` — only element with persistent accent at rest in Signals tab.
 7. **One saturated color family per column at rest.** Everything else must be neutral, outlined, muted, or interaction-only.
 8. **Color budget test.** Grayscale must still make sense. ≤10% saturated pixels at rest. Only conclusions visually "shout."
@@ -440,20 +440,21 @@ Every derived information element belongs to exactly one category. Mixing catego
 
 All class strings: `ty.*` from `design-tokens.ts`.
 
-| Role | Token | Class |
-|------|-------|-------|
-| Page title (L1) | `ty.pageTitle` | `text-2xl font-bold` |
-| App title | `ty.appTitle` | `text-xl font-semibold tracking-tight` |
-| Section header | `ty.sectionHeader` | `text-sm font-semibold` |
-| Section header (upper) | `ty.sectionHeaderUpper` | `text-xs font-semibold uppercase tracking-wider text-muted-foreground` |
-| Table header | `ty.tableHeader` | `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` |
-| Table header (spacious) | `ty.tableHeaderSpacious` | `text-xs font-medium text-muted-foreground` |
-| Body | `ty.body` | `text-sm` |
-| Table cell | `ty.cell` | `text-xs` |
-| Caption | `ty.caption` | `text-xs text-muted-foreground` |
-| Mono data | `ty.mono` | `font-mono text-[11px]` |
-| Mono small | `ty.monoSm` | `font-mono text-xs` |
-| Micro | `ty.micro` | `text-[9px] font-medium` |
+| Role | Token | Class | px |
+|------|-------|-------|-----|
+| Page title (L1) | `ty.pageTitle` | `text-2xl font-bold` | 24 |
+| App title | `ty.appTitle` | `text-xl font-semibold tracking-tight` | 20 |
+| Section header | `ty.sectionHeader` | `text-sm font-semibold` | 14 |
+| Section header (upper) | `ty.sectionHeaderUpper` | `text-xs font-semibold uppercase tracking-wider text-muted-foreground` | 12 |
+| Body | `ty.body` | `text-sm` | 14 |
+| Table cell | `ty.cell` | `text-[13px]` | 13 |
+| Table header (spacious) | `ty.tableHeaderSpacious` | `text-xs font-medium text-muted-foreground` | 12 |
+| Caption | `ty.caption` | `text-xs text-muted-foreground` | 12 |
+| Mono data | `ty.mono` | `font-mono text-xs` | 12 |
+| Mono small | `ty.monoSm` | `font-mono text-xs` | 12 |
+| Table header | `ty.tableHeader` | `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground` | 11 |
+| Badge | `badge.*` | `text-[11px] font-medium` | 11 |
+| Micro | `ty.micro` | `text-[10px] font-medium` | 10 |
 
 **Weight rules:** `font-bold` = page titles only. `font-semibold` = section headers, badge text, highlighted values. `font-medium` = table headers, filter labels, buttons. `font-normal` = default.
 
@@ -465,12 +466,13 @@ Font sizes in context panel panes encode **information hierarchy**, not just vis
 
 | Tier | Size | Ratio | Role | Examples |
 |------|------|-------|------|----------|
-| Control | `text-xs` (12px) | 1.0× | Interactive elements the user acts on | SettingsRow label, FilterSelect dropdown, setting names |
-| Supporting | `text-[10px]` (10px) | 0.83× | Values, explanatory text, secondary controls | Auto-detected values, method descriptions, override checkbox/input, explanatory notes below settings |
-| Micro | `text-[9px]` (9px) | 0.75× | Categorical identity, tertiary metadata | Domain labels, tier pills, badge text |
+| Content | `text-[13px]` (13px) | 1.0× | Primary cell content, data values | Table cells, endpoint names, finding descriptions |
+| Control | `text-xs` (12px) | 0.92× | Interactive elements, labels, captions | SettingsRow label, FilterSelect dropdown, mono data values |
+| Supporting | `text-[11px]` (11px) | 0.85× | Table headers, badges, secondary controls | Column headers (uppercase), auto-detected values, method descriptions |
+| Micro | `text-[10px]` (10px) | 0.77× | Categorical identity, tertiary metadata | Domain labels, tier pills, badge text |
 
 **Spacing proportionality rules:**
-- Vertical padding should be proportional to the text size it surrounds. `py-1` (8px) is balanced for `text-xs` (12px) but generous for `text-[10px]` (10px). Use `py-0.5` (4px) for supporting-tier text.
+- Vertical padding should be proportional to the text size it surrounds. `py-1` (8px) is balanced for `text-xs` (12px) but generous for `text-[11px]` (11px). Use `py-0.5` (4px) for supporting-tier text.
 - Explanatory text below a setting uses `mb-0.5` (2px) — just enough to separate from the next setting without creating a visual gap equal to the setting row itself.
 - Indented sub-controls (e.g., override inputs) use `ml-5` (20px) — approximately 2× the supporting-tier line height, signaling visual subordination.
 

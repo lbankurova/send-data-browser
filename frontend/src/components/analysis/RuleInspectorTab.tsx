@@ -104,20 +104,20 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
       <div className="flex-1 overflow-y-auto">
         {/* Signal score formula */}
         <CollapsiblePane title="Signal score formula" defaultOpen>
-          <div className="space-y-2 text-[11px]">
-            <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[10px]">
+          <div className="space-y-2 text-xs">
+            <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[11px]">
               {SIGNAL_SCORE_WEIGHTS.pValue} &times; p-value + {SIGNAL_SCORE_WEIGHTS.trend} &times; trend + {SIGNAL_SCORE_WEIGHTS.effectSize} &times; effect size + {SIGNAL_SCORE_WEIGHTS.pattern} &times; pattern
             </div>
             <ComponentDetails />
             <div className="mt-2 border-t pt-2">
-              <div className="mb-1 text-[10px] font-medium text-muted-foreground">Evidence score formula</div>
-              <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[10px]">
+              <div className="mb-1 text-[11px] font-medium text-muted-foreground">Evidence score formula</div>
+              <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[11px]">
                 (total_signal / n_endpoints) &times; (1 + 0.2 &times; (n_domains &minus; 1))
               </div>
             </div>
             <div className="mt-2 border-t pt-2">
-              <div className="mb-1 text-[10px] font-medium text-muted-foreground">Target organ threshold</div>
-              <div className="font-mono text-[10px]">
+              <div className="mb-1 text-[11px] font-medium text-muted-foreground">Target organ threshold</div>
+              <div className="font-mono text-[11px]">
                 evidence &ge; 0.3 AND n_significant &ge; 1
               </div>
             </div>
@@ -140,7 +140,7 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
 
         {/* Thresholds */}
         <CollapsiblePane title="Thresholds" defaultOpen={false}>
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[11px]">
             <thead>
               <tr className="border-b text-muted-foreground">
                 <th className="pb-1 text-left font-medium">Name</th>
@@ -164,7 +164,7 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
 
         {/* Tier classification */}
         <CollapsiblePane title="Tier classification" defaultOpen={false}>
-          <div className="space-y-1.5 text-[11px]">
+          <div className="space-y-1.5 text-xs">
             {TIER_CLASSIFICATION.map((t) => (
               <div key={t.tier} className="flex items-baseline gap-2">
                 <span className="font-semibold">{t.tier}:</span>
@@ -176,7 +176,7 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
 
         {/* Priority bands */}
         <CollapsiblePane title="Priority bands" defaultOpen={false}>
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[11px]">
             <thead>
               <tr className="border-b text-muted-foreground">
                 <th className="pb-1 text-left font-medium">Range</th>
@@ -198,10 +198,10 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
 
         {/* NOAEL confidence */}
         <CollapsiblePane title="NOAEL confidence" defaultOpen={false}>
-          <div className="space-y-1.5 text-[11px]">
-            <div className="font-mono text-[10px]">Base: 1.00, penalized by:</div>
+          <div className="space-y-1.5 text-xs">
+            <div className="font-mono text-[11px]">Base: 1.00, penalized by:</div>
             {NOAEL_CONFIDENCE_PENALTIES.map((p) => (
-              <div key={p.key} className="flex items-baseline gap-2 font-mono text-[10px]">
+              <div key={p.key} className="flex items-baseline gap-2 font-mono text-[11px]">
                 <span className="text-muted-foreground">{p.name}:</span>
                 <span>{p.penalty.toFixed(2)}</span>
                 <span className="text-muted-foreground">({p.condition})</span>
@@ -230,13 +230,13 @@ function ComponentDetails() {
   return (
     <div>
       <button
-        className="text-[10px] text-primary hover:underline"
+        className="text-[11px] text-primary hover:underline"
         onClick={() => setOpen(!open)}
       >
         {open ? "\u25BC" : "\u25B6"} Component details
       </button>
       {open && (
-        <div className="mt-1.5 space-y-1 pl-3 text-[10px] text-muted-foreground">
+        <div className="mt-1.5 space-y-1 pl-3 text-[11px] text-muted-foreground">
           <div>&bull; p-value: min(&minus;log<sub>10</sub>(p) / 4.0, 1.0), cap at p = 0.0001</div>
           <div>&bull; Trend: min(&minus;log<sub>10</sub>(trend_p) / 4.0, 1.0)</div>
           <div>&bull; Effect size: min(|d| / 2.0, 1.0), cap at |d| = 2.0</div>
@@ -271,27 +271,27 @@ function RuleRow({
         className="flex w-full items-center gap-2 text-left"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="shrink-0 text-[10px] text-muted-foreground">
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {expanded ? "\u25BC" : "\u25B6"}
         </span>
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
           {rule.id}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[11px] font-medium">
+        <span className="min-w-0 flex-1 truncate text-xs font-medium">
           {rule.name}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
           {rule.scope}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
           {rule.severity}
         </span>
         {firedCount > 0 ? (
-          <span className="shrink-0 rounded-full bg-muted px-1.5 text-[9px] font-mono">
+          <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] font-mono">
             {firedCount} fired
           </span>
         ) : (
-          <span className="shrink-0 text-[9px] italic text-muted-foreground">
+          <span className="shrink-0 text-[10px] italic text-muted-foreground">
             not triggered
           </span>
         )}
@@ -299,18 +299,18 @@ function RuleRow({
 
       {expanded && (
         <div className="mt-1 space-y-1 pl-5">
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             <span className="font-medium">Condition:</span>{" "}
             <span className="font-mono">{rule.conditionHuman}</span>
           </div>
           {sample && (
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-[11px] text-muted-foreground">
               <span className="font-medium">Sample:</span>{" "}
               <span className="italic">&ldquo;{sample}&rdquo;</span>
             </div>
           )}
           {rule.thresholdRefs.length > 0 && (
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-[11px] text-muted-foreground">
               <span className="font-medium">Thresholds:</span>{" "}
               {rule.thresholdRefs
                 .map((ref) => THRESHOLDS.find((t) => t.key === ref)?.name ?? ref)

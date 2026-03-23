@@ -89,11 +89,11 @@ Container: `flex-1 overflow-y-auto p-4`
 - "% change" — percent change from baseline
 - "% vs control" — percent difference vs concurrent control mean
 
-Pill styling: `rounded-full px-2.5 py-1 text-[11px] font-medium` with active = `bg-foreground text-background`, inactive = `text-muted-foreground hover:bg-accent/50`.
+Pill styling: `rounded-full px-2.5 py-1 text-xs font-medium` with active = `bg-foreground text-background`, inactive = `text-muted-foreground hover:bg-accent/50`.
 
 **Chart layout:** `flex gap-4` — one chart per sex, each `flex-1`. Same sex-faceted pattern as existing Evidence tab.
 
-**Per-sex label:** `mb-1 text-center text-[10px] font-medium`, colored by sex (`#3b82f6` M, `#ec4899` F).
+**Per-sex label:** `mb-1 text-center text-[11px] font-medium`, colored by sex (`#3b82f6` M, `#ec4899` F).
 
 **Chart (Recharts `<LineChart>`):**
 - Container: `<ResponsiveContainer width="100%" height={300}>`

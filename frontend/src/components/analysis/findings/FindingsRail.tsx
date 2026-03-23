@@ -671,7 +671,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
               key={t.value}
               type="button"
               className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
                 grouping === t.value
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -713,7 +713,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
       </div>
 
       {/* Counts + mortality — compact, color-coded */}
-      <div className="mt-1 flex items-center gap-2 text-[10px]">
+      <div className="mt-1 flex items-center gap-2 text-[11px]">
         {grouping === "finding" ? (
           <>
             <span title={`${stats.adverseCount} endpoints classified as adverse`}>
@@ -738,7 +738,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
           <div className="relative ml-auto" ref={deathDropdownRef}>
             <button
               type="button"
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setDeathDropdownOpen(!deathDropdownOpen)}
               title={`${mainDeaths.length} main arm, ${recovDeaths.length} recovery arm`}
             >
@@ -758,10 +758,10 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                     ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
                     onChange={toggleAllDeaths}
                   />
-                  <span className="text-[10px] font-medium text-muted-foreground" title="Click a name to view in Context Panel. Check boxes to select for comparison.">Select all</span>
+                  <span className="text-[11px] font-medium text-muted-foreground" title="Click a name to view in Context Panel. Check boxes to select for comparison.">Select all</span>
                   <button
                     type="button"
-                    className="ml-auto cursor-not-allowed text-[10px] text-muted-foreground/40"
+                    className="ml-auto cursor-not-allowed text-[11px] text-muted-foreground/40"
                     title="Coming soon — open selected subjects in a comparison tab"
                     disabled
                   >
@@ -783,7 +783,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                     />
                     <button
                       type="button"
-                      className="text-left text-[11px] text-blue-600 hover:underline"
+                      className="text-left text-xs text-blue-600 hover:underline"
                       onClick={() => { setSelectedSubject(d.USUBJID); setDeathDropdownOpen(false); }}
                     >
                       {truncateId(d.USUBJID)} @ {formatDoseShortLabel(d.dose_label)} ({d.armLabel})
@@ -870,11 +870,11 @@ function AllEndpointsCard({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleExpand(); } }}
       >
         <span className="min-w-0 truncate font-semibold">All findings</span>
-        <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+        <span className="ml-auto font-mono text-[11px] text-muted-foreground">
           {showFilteredCount ? `${totalEndpoints}/${unfilteredTotal}` : adverseCount}
         </span>
         <span className="text-muted-foreground/40">&middot;</span>
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {trCount}
         </span>
         <button
@@ -965,7 +965,7 @@ function RailFiltersSection({
 
       {/* Row 2: Quick toggles + NOAEL role */}
       <div className="flex items-center gap-1.5">
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Treatment-related endpoints only">
+        <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Treatment-related endpoints only">
           <input
             type="checkbox"
             checked={filters.trOnly}
@@ -974,7 +974,7 @@ function RailFiltersSection({
           />
           TR
         </label>
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Statistically significant (p < 0.05) endpoints only">
+        <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Statistically significant (p < 0.05) endpoints only">
           <input
             type="checkbox"
             checked={filters.sigOnly}
@@ -984,7 +984,7 @@ function RailFiltersSection({
           Sig
         </label>
         {hasClinicalEndpoints && (
-          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground" title="Clinical severity grade 2 or higher">
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Clinical severity grade 2 or higher">
             <input
               type="checkbox"
               checked={clinicalS2Plus}
@@ -1236,11 +1236,11 @@ function CardHeader({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
       <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} />
-      <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
       <span className="text-muted-foreground/40">&middot;</span>
-      <span className="font-mono text-[10px] text-muted-foreground">
+      <span className="font-mono text-[11px] text-muted-foreground">
         {card.trCount}
       </span>
       <button
@@ -1303,7 +1303,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
     const domainCode = value.toUpperCase();
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate font-semibold">
-        <span className="text-[9px] font-semibold shrink-0 text-muted-foreground">
+        <span className="text-[10px] font-semibold shrink-0 text-muted-foreground">
           {domainCode}
         </span>
         <span className="truncate" title={getDomainFullLabel(domainCode)}>{getDomainFullLabel(domainCode)}</span>
@@ -1349,14 +1349,14 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
         <span className="truncate">{label}</span>
         {adjusted && (
           <span
-            className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+            className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
             style={{ borderBottom: `1.5px dashed ${RAG_COLOR[adjusted.level]}` }}
           >
             {CONF_SHORT[adjusted.level]}
           </span>
         )}
         {covLabel && covLabel !== "Insufficient data" && (
-          <span className="shrink-0 text-[9px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
+          <span className="shrink-0 text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
             {covLabel}
           </span>
         )}
@@ -1381,7 +1381,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
       <span className="truncate">{titleCase(value)}</span>
       {organConfidence && (
         <span
-          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
           style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
         >
           Conf: {CONF_SHORT[organConfidence.level]}
@@ -1389,7 +1389,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
       )}
       {organNorm && (
         <span
-          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
           style={{ borderBottom: `1.5px dashed ${NORM_TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
         >
           Norm: {organNorm.modeShort}
@@ -1481,13 +1481,13 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
         </span>
         {/* Clinical tier — sentinel safety marker */}
         {clinicalTier && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker (regulatory significance)`}>
+          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker (regulatory significance)`}>
             {clinicalTier}
           </span>
         )}
         {/* TR — treatment-related assignment */}
         {endpoint.treatmentRelated && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200" title="Treatment-related — assigned by study pathologist">
+          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title="Treatment-related — assigned by study pathologist">
             TR
           </span>
         )}
@@ -1502,7 +1502,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
           if (hasDirectionDivergence) {
             const sorted = [...bySex!.entries()].sort(([a], [b]) => a.localeCompare(b));
             return (
-              <span className="shrink-0 text-right font-mono text-[10px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${metricLabel} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
+              <span className="shrink-0 text-right font-mono text-[11px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${metricLabel} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
                 {sorted.map(([sex, s]) => (
                   <span key={sex} className={cn("whitespace-nowrap", effectTypography(s.maxEffectSize))}>
                     {sex}:{s.maxEffectSize !== null ? formatEffectCompact(s.maxEffectSize) : "—"}
@@ -1513,7 +1513,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
           }
           return (
             <span
-              className={cn("w-6 shrink-0 text-right font-mono text-[10px]", effectTypography(endpoint.maxEffectSize))}
+              className={cn("w-6 shrink-0 text-right font-mono text-[11px]", effectTypography(endpoint.maxEffectSize))}
               title={endpoint.maxEffectSize !== null ? `${metricLabel} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
             >
               {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
@@ -1534,7 +1534,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
       </div>
 
       {/* Line 2: Supporting evidence (p-value, domain, syndromes left — per-sex trends right-aligned under line 1 glyph) */}
-      <div className="flex items-center gap-2 px-3 pb-1.5 pt-0.5 pl-8 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-2 px-3 pb-1.5 pt-0.5 pl-8 text-[11px] text-muted-foreground">
         {endpoint.minPValue !== null && (
           <span className="font-mono" title={`p = ${endpoint.minPValue.toExponential(2)}\nMost significant p-value across all dose groups and sexes`}>
             p{formatPValue(endpoint.minPValue)}
@@ -1562,7 +1562,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
                 <span className="ml-auto inline-flex items-center gap-1.5">
                   {sorted.map(([sex, s]) => (
                     <span key={sex} className="inline-flex items-center gap-0.5" title={`${sex === "M" ? "Males" : sex === "F" ? "Females" : sex}: ${getPatternLabel(s.pattern)} ${getDirectionSymbol(s.direction)}`}>
-                      <span className="font-mono text-[9px]" style={{ color: getSexColor(sex) }}>{sex}</span>
+                      <span className="font-mono text-[10px]" style={{ color: getSexColor(sex) }}>{sex}</span>
                       <PatternGlyph pattern={s.pattern} className="text-muted-foreground/70" />
                     </span>
                   ))}

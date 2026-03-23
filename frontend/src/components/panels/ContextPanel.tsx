@@ -211,7 +211,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
           value={`${valRecordReviewed} / ${valTotal} reviewed`}
         />
         {validatedAt && (
-          <div className="mt-1 text-[10px] text-muted-foreground/60">
+          <div className="mt-1 text-[11px] text-muted-foreground/60">
             Last validated: {new Date(validatedAt).toLocaleDateString()}
           </div>
         )}
@@ -356,8 +356,8 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
               <div className="space-y-1">
                 {Object.entries(expected.expected_issues).map(([ruleId, info]) => (
                   <div key={ruleId} className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-[10px]">{ruleId}</span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                    <span className="font-mono text-[11px]">{ruleId}</span>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">
                       {info.severity} ({info.count})
                     </span>
                   </div>

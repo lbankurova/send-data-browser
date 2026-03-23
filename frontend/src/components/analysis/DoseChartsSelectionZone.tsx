@@ -57,7 +57,7 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
 
   if (selectedRow && heatmapData) {
     return (
-      <span className="flex items-center gap-0.5 font-mono text-[10px]">
+      <span className="flex items-center gap-0.5 font-mono text-[11px]">
         <span className="text-foreground/70">
           Incid{selectedRow.doseDirection === "decreasing" ? <span className="text-blue-600/70">{" \u2193"}</span> : selectedRow.doseDirection === "increasing" ? <span>{" \u2191"}</span> : ""}:
         </span>
@@ -168,7 +168,7 @@ export function DoseChartsSelectionZone({ findings, selectedRow, heatmapData, re
   const recPeakIncPct = Math.round(recPeakInc * 100);
 
   return (
-    <span className="flex items-center gap-0.5 font-mono text-[10px]">
+    <span className="flex items-center gap-0.5 font-mono text-[11px]">
       <span className="text-foreground/70">Peak incidence:{" "}</span>
       <span className={cn(incTypo(peakIncPct))}>{peakIncPct}%</span>
       {peakIncGroup && <span className="text-muted-foreground/60">{" "}({peakIncGroup})</span>}

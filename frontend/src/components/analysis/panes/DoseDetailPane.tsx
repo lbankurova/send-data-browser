@@ -119,7 +119,7 @@ function ConclusionBullets({
     : "p=\u2014";
 
   return (
-    <div className="mt-1.5 space-y-0.5 text-[9px] pl-[64px]">
+    <div className="mt-1.5 space-y-0.5 text-[10px] pl-[64px]">
       <div className={sigDoses.length > 0 ? "text-foreground/80" : "text-muted-foreground"}>
         {sigDoses.length > 0
           ? `Sig. at ${sigDoses.join(", ")}${sigMethod ? ` (${sigMethod})` : ""}`
@@ -213,7 +213,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
       <div>
         <PaneTable>
           {statistics.unit && (
-            <caption className="mb-1 text-right text-[9px] text-muted-foreground">{statistics.unit}</caption>
+            <caption className="mb-1 text-right text-[10px] text-muted-foreground">{statistics.unit}</caption>
           )}
           <thead>
             <tr className="border-b">
@@ -273,11 +273,11 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                               level={row.dose_level}
                               label={doseDisplayLabel(row)}
                               tooltip={row.label}
-                              className="text-[10px]"
+                              className="text-[11px]"
                             />
                           </PaneTable.Td>
                         ) : null}
-                        <PaneTable.Td className="text-[9px] text-muted-foreground">
+                        <PaneTable.Td className="text-[10px] text-muted-foreground">
                           {p.sexLabel}
                         </PaneTable.Td>
                         <StatRowCells
@@ -300,7 +300,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       level={row.dose_level}
                       label={doseDisplayLabel(row)}
                       tooltip={row.label}
-                      className="text-[10px]"
+                      className="text-[11px]"
                     />
                   </PaneTable.Td>
                   <StatRowCells row={row} isContinuous={isContinuous} controlSd={controlSd} controlMean={controlMean} />
@@ -312,7 +312,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
       </div>
 
       {/* Test name label */}
-      <div className="text-[9px] text-muted-foreground italic">{testLabel}</div>
+      <div className="text-[10px] text-muted-foreground italic">{testLabel}</div>
 
       {/* Significance summary footer (single-sex only) */}
       {!hasSibling && (() => {
@@ -322,11 +322,11 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
         const hasAncovaConfirmation = ancova?.pairwise.some(ap => ap.p_value < 0.05) ?? false;
         const method = hasAncovaConfirmation ? "ANCOVA-adjusted" : isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact";
         return sigDoses.length > 0 ? (
-          <div className="text-[10px] text-foreground/80">
+          <div className="text-[11px] text-foreground/80">
             Significant at {sigDoses.join(", ")} ({method}).
           </div>
         ) : (
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             No significant pairwise differences ({method}).
           </div>
         );
@@ -355,7 +355,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
               <div className="flex gap-2">
                 {/* Females: dose label + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
-                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">F</div>
+                  <div className="mb-0.5 text-center text-[10px] font-medium text-muted-foreground">F</div>
                   <div className="space-y-1">
                     {doseResponse.bars.map((refBar) => {
                       const bar = fBarMap.get(refBar.dose_level);
@@ -370,7 +370,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                                 ? `${refBar.dose_value} ${doseUnit}`.trim()
                                 : "Control"}
                               align="right"
-                              className="text-[9px]"
+                              className="text-[10px]"
                             />
                           </span>
                           <div className="flex-1 min-w-0">
@@ -379,7 +379,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                               style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: "#d1d5db" }}
                             />
                           </div>
-                          <span className="w-[38px] shrink-0 text-right font-mono text-[9px]">
+                          <span className="w-[38px] shrink-0 text-right font-mono text-[10px]">
                             {val != null ? val.toFixed(2) : "\u2014"}
                           </span>
                         </div>
@@ -391,7 +391,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
 
                 {/* Males: colored pipe + bar + value + conclusions */}
                 <div className="flex-1 min-w-0">
-                  <div className="mb-0.5 text-center text-[9px] font-medium text-muted-foreground">M</div>
+                  <div className="mb-0.5 text-center text-[10px] font-medium text-muted-foreground">M</div>
                   <div className="space-y-1">
                     {doseResponse.bars.map((refBar) => {
                       const bar = mBarMap.get(refBar.dose_level);
@@ -411,7 +411,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                               style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: "#d1d5db" }}
                             />
                           </div>
-                          <span className="w-[38px] shrink-0 text-right font-mono text-[9px]">
+                          <span className="w-[38px] shrink-0 text-right font-mono text-[10px]">
                             {val != null ? val.toFixed(2) : "\u2014"}
                           </span>
                         </div>
@@ -440,7 +440,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                       ? `${bar.dose_value} ${doseUnit}`.trim()
                       : "Control"}
                     align="right"
-                    className="text-[10px]"
+                    className="text-[11px]"
                   />
                 </span>
                 <div className="flex-1">
@@ -452,7 +452,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                     }}
                   />
                 </div>
-                <span className="w-[55px] shrink-0 text-right font-mono text-[10px]">
+                <span className="w-[55px] shrink-0 text-right font-mono text-[11px]">
                   {bar.value != null ? bar.value.toFixed(2) : "\u2014"}
                   {bar.count != null && bar.total != null && (
                     <span className="text-muted-foreground">
@@ -477,7 +477,7 @@ export function DoseDetailPane({ statistics, doseResponse, sex, siblingStatistic
                 : `p=${formatPValue(doseResponse.trend_p)}`)
               : "p=\u2014"}
           </span>
-          <span className="text-[9px] text-muted-foreground">&middot; {trendTestName}</span>
+          <span className="text-[10px] text-muted-foreground">&middot; {trendTestName}</span>
         </div>
       )}
 

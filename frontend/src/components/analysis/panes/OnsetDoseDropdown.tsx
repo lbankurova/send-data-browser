@@ -258,7 +258,7 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
                   key={g.dose_level}
                   onClick={() => handleSelect(g.dose_level)}
                   disabled={saveMutation.isPending}
-                  className={`flex w-full items-center px-3 py-1 text-left text-[10px] transition-colors ${
+                  className={`flex w-full items-center px-3 py-1 text-left text-[11px] transition-colors ${
                     onset && g.dose_level === onset.doseLevel
                       ? "bg-muted/50 font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -266,7 +266,7 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
                 >
                   <span>{formatOnsetDose(g.dose_level, doseGroups)}</span>
                   {isSystem && hasOnsetOverride && (
-                    <span className="ml-auto text-[9px] text-muted-foreground/50">system</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground/50">system</span>
                   )}
                 </button>
               );
@@ -275,7 +275,7 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
               <button
                 onClick={handleResetOnset}
                 disabled={saveMutation.isPending}
-                className="flex w-full items-center px-3 py-1 text-left text-[10px] text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40"
+                className="flex w-full items-center px-3 py-1 text-left text-[11px] text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40"
               >
                 Reset to system
               </button>

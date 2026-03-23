@@ -143,7 +143,7 @@ export function buildDoseResponseLineOption(
 
         const hiPt = api.coord([catIdx, hi]);
         const loPt = api.coord([catIdx, lo]);
-        const capW = 4;
+        const capW = 3;
 
         return {
           type: "group",
@@ -404,7 +404,7 @@ export function buildIncidenceBarOption(
             {
               type: "text",
               right: 8,
-              top: 2,
+              top: 14,
               style: {
                 text: `Scale: 0\u2013${(yAxisMax * 100).toFixed(0)}%`,
                 fontSize: 9,

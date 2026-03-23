@@ -60,11 +60,11 @@ export function NormalizationHeatmap({ contexts, onOrganClick }: NormalizationHe
 
   return (
     <div>
-      <p className="mb-1.5 text-[10px] leading-relaxed text-muted-foreground">
+      <p className="mb-1.5 text-[11px] leading-relaxed text-muted-foreground">
         Statistical metric used per organ and dose group. Higher tiers indicate greater body weight confounding.
       </p>
       <div className="overflow-x-auto">
-      <table className="w-full text-[9px]">
+      <table className="w-full text-[10px]">
         <thead>
           <tr className="text-muted-foreground">
             <th className="whitespace-nowrap py-0.5 pr-2 text-left font-medium" title="Organ with OM (organ measurement) findings">Organ</th>

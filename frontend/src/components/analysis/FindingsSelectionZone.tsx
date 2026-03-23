@@ -18,7 +18,7 @@ export function FindingsSelectionZone({ findings, selectedRow, isStrip, onStripR
   if (selectedRow) {
     const pct = `${Math.round(selectedRow.maxIncidence * 100)}%`;
     return (
-      <span className="text-[10px]">
+      <span className="text-[11px]">
         <span className="text-primary">&#x25B8;</span>{" "}
         <span
           className="cursor-pointer font-medium text-foreground/80 hover:underline"
@@ -51,7 +51,7 @@ export function FindingsSelectionZone({ findings, selectedRow, isStrip, onStripR
   const shown = flagged.slice(0, 3);
 
   return (
-    <span className="flex items-center gap-0 text-[10px]">
+    <span className="flex items-center gap-0 text-[11px]">
       {shown.map((f, i) => {
         const label = f.clinicalClass
           ? (f.clinicalClass === "Sentinel" ? "Sentinel" : f.clinicalClass === "HighConcern" ? "High concern" : f.severity)

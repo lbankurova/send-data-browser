@@ -152,11 +152,11 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
       collapseAll={collapseAll}
       headerRight={
         customRules.length > 0
-          ? <span className="text-[9px] font-mono text-muted-foreground">{customRules.length} defined</span>
+          ? <span className="text-[10px] font-mono text-muted-foreground">{customRules.length} defined</span>
           : undefined
       }
     >
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         {/* Existing custom rules */}
         {customRules.length > 0 && (
           <div className="rounded border">
@@ -175,7 +175,7 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
         {/* Add button */}
         {!showForm && (
           <button
-            className="rounded border border-dashed border-border/60 px-3 py-1.5 text-[10px] text-muted-foreground hover:border-border hover:bg-muted/30"
+            className="rounded border border-dashed border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground hover:border-border hover:bg-muted/30"
             onClick={() => { resetForm(); setShowForm(true); }}
           >
             + Add custom rule
@@ -185,16 +185,16 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
         {/* Form */}
         {showForm && (
           <div className="space-y-2 rounded border border-primary/20 bg-muted/10 p-3">
-            <div className="text-[10px] font-medium">
+            <div className="text-[11px] font-medium">
               {editingKey ? `Edit rule ${editingKey}` : `New rule ${nextId}`}
             </div>
 
             {/* Name */}
             <div className="flex items-center gap-2">
-              <label className="w-16 text-[10px] text-muted-foreground">Name</label>
+              <label className="w-16 text-[11px] text-muted-foreground">Name</label>
               <input
                 type="text"
-                className="flex-1 rounded border bg-background px-2 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-2 py-1 text-[11px]"
                 placeholder="e.g., High-dose kidney effect"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -204,9 +204,9 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
             {/* Scope + Severity */}
             <div className="flex gap-3">
               <div className="flex items-center gap-2">
-                <label className="w-16 text-[10px] text-muted-foreground">Scope</label>
+                <label className="w-16 text-[11px] text-muted-foreground">Scope</label>
                 <select
-                  className="rounded border bg-background px-1.5 py-1 text-[10px]"
+                  className="rounded border bg-background px-1.5 py-1 text-[11px]"
                   value={scope}
                   onChange={(e) => setScope(e.target.value as typeof scope)}
                 >
@@ -216,9 +216,9 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-muted-foreground">Severity</label>
+                <label className="text-[11px] text-muted-foreground">Severity</label>
                 <select
-                  className="rounded border bg-background px-1.5 py-1 text-[10px]"
+                  className="rounded border bg-background px-1.5 py-1 text-[11px]"
                   value={severity}
                   onChange={(e) => setSeverity(e.target.value as typeof severity)}
                 >
@@ -231,9 +231,9 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
 
             {/* Condition type */}
             <div className="flex items-center gap-2">
-              <label className="w-16 text-[10px] text-muted-foreground">Condition</label>
+              <label className="w-16 text-[11px] text-muted-foreground">Condition</label>
               <select
-                className="flex-1 rounded border bg-background px-1.5 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-1.5 py-1 text-[11px]"
                 value={conditionType}
                 onChange={(e) => handleConditionTypeChange(e.target.value)}
               >
@@ -246,10 +246,10 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
             {/* Condition value (for parameterized conditions) */}
             {conditionType !== "treatment_related" && conditionType !== "custom" && (
               <div className="flex items-center gap-2">
-                <label className="w-16 text-[10px] text-muted-foreground">Value</label>
+                <label className="w-16 text-[11px] text-muted-foreground">Value</label>
                 {conditionType === "specific_pattern" ? (
                   <select
-                    className="flex-1 rounded border bg-background px-1.5 py-1 text-[10px]"
+                    className="flex-1 rounded border bg-background px-1.5 py-1 text-[11px]"
                     value={conditionValue}
                     onChange={(e) => handleConditionValueChange(e.target.value)}
                   >
@@ -260,7 +260,7 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
                   </select>
                 ) : conditionType === "specific_domain" ? (
                   <select
-                    className="flex-1 rounded border bg-background px-1.5 py-1 text-[10px]"
+                    className="flex-1 rounded border bg-background px-1.5 py-1 text-[11px]"
                     value={conditionValue}
                     onChange={(e) => handleConditionValueChange(e.target.value)}
                   >
@@ -272,7 +272,7 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
                 ) : (
                   <input
                     type="text"
-                    className="flex-1 rounded border bg-background px-2 py-1 text-[10px] font-mono"
+                    className="flex-1 rounded border bg-background px-2 py-1 text-[11px] font-mono"
                     placeholder={conditionType.includes("p_") ? "0.05" : conditionType.includes("effect") ? "1.0" : "value"}
                     value={conditionValue}
                     onChange={(e) => handleConditionValueChange(e.target.value)}
@@ -283,17 +283,17 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
 
             {/* Condition preview */}
             <div className="flex items-center gap-2">
-              <label className="w-16 text-[10px] text-muted-foreground">Expression</label>
+              <label className="w-16 text-[11px] text-muted-foreground">Expression</label>
               {conditionType === "custom" ? (
                 <input
                   type="text"
-                  className="flex-1 rounded border bg-background px-2 py-1 font-mono text-[10px]"
+                  className="flex-1 rounded border bg-background px-2 py-1 font-mono text-[11px]"
                   placeholder='e.g., organ_system == "renal" AND p_value < 0.01'
                   value={conditionHuman}
                   onChange={(e) => setConditionHuman(e.target.value)}
                 />
               ) : (
-                <span className="flex-1 font-mono text-[10px] text-muted-foreground">
+                <span className="flex-1 font-mono text-[11px] text-muted-foreground">
                   {conditionHuman}
                 </span>
               )}
@@ -301,43 +301,43 @@ export function CustomInsightRuleBuilder({ studyId, expandAll, collapseAll }: Pr
 
             {/* Template */}
             <div className="flex items-start gap-2">
-              <label className="w-16 pt-1 text-[10px] text-muted-foreground">Template</label>
+              <label className="w-16 pt-1 text-[11px] text-muted-foreground">Template</label>
               <input
                 type="text"
-                className="flex-1 rounded border bg-background px-2 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-2 py-1 text-[11px]"
                 placeholder="Output text with {placeholders}"
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
               />
             </div>
-            <div className="pl-[72px] text-[9px] text-muted-foreground/60">
+            <div className="pl-[72px] text-[10px] text-muted-foreground/60">
               Placeholders: {"{endpoint_label}"}, {"{sex}"}, {"{domain}"}, {"{organ_system}"}, {"{p_value}"}, {"{effect_size}"}, {"{pattern}"}
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2 border-t pt-2">
               <button
-                className="rounded bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 onClick={handleSave}
                 disabled={!canSave || isPending}
               >
                 {isPending ? "Saving..." : editingKey ? "Update" : "Add rule"}
               </button>
               <button
-                className="rounded border px-3 py-1 text-[10px] text-muted-foreground hover:bg-muted/50"
+                className="rounded border px-3 py-1 text-[11px] text-muted-foreground hover:bg-muted/50"
                 onClick={resetForm}
               >
                 Cancel
               </button>
               {isSuccess && (
-                <span className="text-[10px] text-green-600">Saved</span>
+                <span className="text-[11px] text-green-600">Saved</span>
               )}
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <p className="text-[9px] text-muted-foreground/60">
+        <p className="text-[10px] text-muted-foreground/60">
           Custom rules document expert-defined criteria. Execution requires backend pipeline
           extensions and will be available in a future update.
         </p>
@@ -367,26 +367,26 @@ function CustomRuleRow({
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/30"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {expanded ? "\u25BC" : "\u25B6"}
         </span>
-        <span className="shrink-0 font-mono text-[10px] text-primary/70">{ruleId}</span>
-        <span className={cn("min-w-0 flex-1 truncate text-[11px] font-medium", !rule.enabled && "line-through")}>
+        <span className="shrink-0 font-mono text-[11px] text-primary/70">{ruleId}</span>
+        <span className={cn("min-w-0 flex-1 truncate text-xs font-medium", !rule.enabled && "line-through")}>
           {rule.name}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
           {rule.scope}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
           {rule.severity}
         </span>
-        <span className="shrink-0 rounded-sm border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[9px] text-primary/70">
+        <span className="shrink-0 rounded-sm border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary/70">
           custom
         </span>
       </button>
 
       {expanded && (
-        <div className="space-y-1 border-t bg-muted/10 px-4 py-2 text-[10px]">
+        <div className="space-y-1 border-t bg-muted/10 px-4 py-2 text-[11px]">
           <div>
             <span className="font-medium text-muted-foreground">Condition: </span>
             <span className="font-mono">{rule.conditionHuman}</span>
@@ -397,18 +397,18 @@ function CustomRuleRow({
           </div>
           <div className="flex items-center gap-3 pt-1">
             <button
-              className="text-[10px] text-primary hover:underline"
+              className="text-[11px] text-primary hover:underline"
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
             >
               Edit
             </button>
             <button
-              className="text-[10px] text-muted-foreground hover:underline"
+              className="text-[11px] text-muted-foreground hover:underline"
               onClick={(e) => { e.stopPropagation(); onToggleEnabled(); }}
             >
               {rule.enabled ? "Disable" : "Enable"}
             </button>
-            <span className="ml-auto text-[9px] text-muted-foreground">
+            <span className="ml-auto text-[10px] text-muted-foreground">
               {rule.createdBy} &middot; {new Date(rule.createdDate).toLocaleDateString()}
             </span>
           </div>

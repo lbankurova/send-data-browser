@@ -114,7 +114,7 @@ export function GlobalTooltip() {
 
   return createPortal(
     <div
-      className="pointer-events-none fixed z-[9999] rounded border bg-popover px-2 py-1 text-[10px] leading-relaxed text-popover-foreground shadow-md"
+      className="pointer-events-none fixed z-[9999] rounded border bg-popover px-2 py-1 text-[11px] leading-relaxed text-popover-foreground shadow-md"
       style={{
         left: pos.x,
         top: pos.y,

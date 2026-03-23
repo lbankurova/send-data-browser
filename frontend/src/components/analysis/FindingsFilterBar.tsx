@@ -31,7 +31,7 @@ export function FindingsFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-3">
       {scopeLabel && onClearScope && (
-        <span className="inline-flex items-center gap-1 rounded border border-border bg-accent/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground">
+        <span className="inline-flex items-center gap-1 rounded border border-border bg-accent/40 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
           {scopeLabel}
           <button
             className="ml-0.5 rounded-sm p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -45,7 +45,7 @@ export function FindingsFilterBar({
         </span>
       )}
       {clinicalFilterActive && onClearClinicalFilter && (
-        <span className="flex items-center gap-1 rounded-full border bg-accent/50 px-2 py-0.5 text-[10px] font-medium">
+        <span className="flex items-center gap-1 rounded-full border bg-accent/50 px-2 py-0.5 text-[11px] font-medium">
           Clinical S2+
           <button
             className="ml-0.5 h-3 w-3 rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"

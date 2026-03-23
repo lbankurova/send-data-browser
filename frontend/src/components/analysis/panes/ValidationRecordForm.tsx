@@ -78,11 +78,11 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         />
       }
     >
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Review status</label>
           <select
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={reviewStatus}
             onChange={(e) => setReviewStatus(e.target.value as ValidationRecordReview["reviewStatus"])}
           >
@@ -95,7 +95,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Fix status</label>
           <select
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={fixStatus}
             onChange={(e) => setFixStatus(e.target.value as ValidationRecordReview["fixStatus"])}
           >
@@ -108,7 +108,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Justification</label>
           <textarea
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             rows={2}
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
@@ -119,7 +119,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Assigned to</label>
           <input
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             placeholder="Name..."
@@ -129,7 +129,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Comment</label>
           <textarea
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             rows={2}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
@@ -138,7 +138,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         </div>
 
         <button
-          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
           onClick={handleSave}
           disabled={!dirty || isPending || isSuccess}
         >
@@ -146,7 +146,7 @@ export function ValidationRecordForm({ studyId, issueId, defaultOpen = true }: P
         </button>
 
         {(existing?.pathologist ?? existing?.reviewedBy) && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Reviewed by {existing?.pathologist ?? existing?.reviewedBy} on{" "}
             {new Date(existing?.reviewDate ?? "").toLocaleDateString()}
           </p>

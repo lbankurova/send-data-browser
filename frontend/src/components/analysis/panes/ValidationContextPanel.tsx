@@ -143,7 +143,7 @@ function RuleConfigPane({
       expandAll={expandGen}
       collapseAll={collapseGen}
     >
-      <div className="flex items-center gap-3 text-[11px]">
+      <div className="flex items-center gap-3 text-xs">
         <label className="flex items-center gap-2">
           <span className="text-muted-foreground">Rule status</span>
           <button
@@ -170,7 +170,7 @@ function RuleConfigPane({
         </label>
       </div>
       {!isEnabled && (
-        <p className="mt-1.5 text-[10px] text-muted-foreground">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           Disabled rules are skipped during validation runs.
         </p>
       )}
@@ -236,7 +236,7 @@ function RuleReviewSummary({
           <span className="flex items-center gap-2">
             <span>{selection.rule_id}</span>
             <span
-              className="text-[10px] font-semibold"
+              className="text-[11px] font-semibold"
               style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
             >
               {selection.severity}
@@ -256,7 +256,7 @@ function RuleReviewSummary({
       {/* Rule detail */}
       <CollapsiblePane title="Rule detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {detail ? (
-          <div className="space-y-2 text-[11px]">
+          <div className="space-y-2 text-xs">
             <div>
               <span className="font-medium text-muted-foreground">Standard: </span>
               <span>{detail.standard}</span>
@@ -278,7 +278,7 @@ function RuleReviewSummary({
             </div>
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground">No detail available for this rule.</p>
+          <p className="text-xs text-muted-foreground">No detail available for this rule.</p>
         )}
       </CollapsiblePane>
 
@@ -290,7 +290,7 @@ function RuleReviewSummary({
           const tierDef = FIX_TIER_DEFINITIONS.find((t) => t.tier === catalogRule.default_fix_tier);
           return (
             <CollapsiblePane title="Rule metadata" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-              <div className="space-y-2 text-[11px]">
+              <div className="space-y-2 text-xs">
                 <div>
                   <span className="font-medium text-muted-foreground">Applicable domains: </span>
                   <span className="inline-flex gap-1">
@@ -301,11 +301,11 @@ function RuleReviewSummary({
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">Evidence type: </span>
-                  <span className="font-mono text-[10px]">{catalogRule.evidence_type}</span>
+                  <span className="font-mono text-[11px]">{catalogRule.evidence_type}</span>
                 </div>
                 <div>
                   <span className="font-medium text-muted-foreground">Default fix tier: </span>
-                  <span className="font-mono text-[10px]">{catalogRule.default_fix_tier}</span>
+                  <span className="font-mono text-[11px]">{catalogRule.default_fix_tier}</span>
                   {tierDef && (
                     <span className="ml-1 text-muted-foreground">({tierDef.name})</span>
                   )}
@@ -328,7 +328,7 @@ function RuleReviewSummary({
         const source = ("source" in selection ? selection.source : undefined) ?? (selection.rule_id.startsWith("CORE-") ? "core" : "custom");
         return (
           <CollapsiblePane title="Rule metadata" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-            <div className="space-y-2 text-[11px]">
+            <div className="space-y-2 text-xs">
               <div>
                 <span className="font-medium text-muted-foreground">Source: </span>
                 <span>{source === "core" ? "CDISC CORE" : "Custom"}</span>
@@ -370,10 +370,10 @@ function RuleReviewSummary({
 
       {/* Review progress */}
       <CollapsiblePane title="Review progress" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-2.5 text-[11px]">
+        <div className="space-y-2.5 text-xs">
           {/* Progress bar */}
           <div>
-            <div className="mb-1 flex justify-between text-[10px] text-muted-foreground">
+            <div className="mb-1 flex justify-between text-[11px] text-muted-foreground">
               <span>{reviewedCount} of {records.length} reviewed</span>
               <span>{Math.round(progressPct)}%</span>
             </div>
@@ -388,7 +388,7 @@ function RuleReviewSummary({
             </div>
           </div>
           {/* Review status counts */}
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             {Object.entries(reviewCounts).map(([status, count], i) => (
               <span key={status}>
                 {i > 0 && <span className="mx-1">&middot;</span>}
@@ -407,7 +407,7 @@ function RuleReviewSummary({
             ))}
           </div>
           {/* Fix status counts */}
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             {Object.entries(fixCounts).map(([status, count], i) => (
               <span key={status}>
                 {i > 0 && <span className="mx-1">&middot;</span>}
@@ -516,9 +516,9 @@ function FixScriptDialog({
           {/* Script selector */}
           {applicableScripts.length > 0 ? (
             <div>
-              <label className="mb-0.5 block text-[11px] font-medium text-muted-foreground">Script</label>
+              <label className="mb-0.5 block text-xs font-medium text-muted-foreground">Script</label>
               <select
-                className="w-full rounded border bg-background px-2 py-1.5 text-[11px]"
+                className="w-full rounded border bg-background px-2 py-1.5 text-xs"
                 value={selectedScript}
                 onChange={(e) => setSelectedScript(e.target.value)}
               >
@@ -528,19 +528,19 @@ function FixScriptDialog({
               </select>
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground">No fix scripts available for this rule.</p>
+            <p className="text-xs text-muted-foreground">No fix scripts available for this rule.</p>
           )}
 
           {/* Description */}
           {script && (
-            <p className="text-[11px] text-muted-foreground">{script.description}</p>
+            <p className="text-xs text-muted-foreground">{script.description}</p>
           )}
 
           {/* Scope */}
           <div>
-            <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Scope</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Scope</label>
             <div className="space-y-1">
-              <label className="flex items-center gap-2 text-[11px]">
+              <label className="flex items-center gap-2 text-xs">
                 <input
                   type="radio"
                   name="scope"
@@ -550,7 +550,7 @@ function FixScriptDialog({
                 />
                 This record only ({record.subject_id})
               </label>
-              <label className="flex items-center gap-2 text-[11px]">
+              <label className="flex items-center gap-2 text-xs">
                 <input
                   type="radio"
                   name="scope"
@@ -569,9 +569,9 @@ function FixScriptDialog({
           {/* Preview table */}
           {preview.length > 0 && (
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">Preview</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Preview</label>
               <div className="max-h-40 overflow-auto rounded border">
-                <table className="w-full text-[10px]">
+                <table className="w-full text-[11px]">
                   <thead>
                     <tr className="border-b bg-muted/30">
                       <th className="px-2 py-1 text-left font-medium text-muted-foreground">Subject</th>
@@ -599,13 +599,13 @@ function FixScriptDialog({
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
           <button
-            className="rounded border px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
+            className="rounded border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted/50"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
-            className="rounded bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={!selectedScript || applicableScripts.length === 0}
             onClick={() => onRun(selectedScript, scope)}
           >
@@ -697,10 +697,10 @@ function InlineDiff({ actual, expected }: { actual: string; expected: string }) 
 
   if (mode === "missing") {
     return (
-      <div className="font-mono text-[11px]">
+      <div className="font-mono text-xs">
         <span className="text-muted-foreground">{actual || "(empty)"}</span>
         {expected && (
-          <span className="ml-1 text-[10px] text-muted-foreground">
+          <span className="ml-1 text-[11px] text-muted-foreground">
             — expected: {expected}
           </span>
         )}
@@ -710,13 +710,13 @@ function InlineDiff({ actual, expected }: { actual: string; expected: string }) 
 
   if (mode === "replacement") {
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-xs">
         <div>
-          <span className="mr-1.5 text-[10px] text-muted-foreground">From:</span>
+          <span className="mr-1.5 text-[11px] text-muted-foreground">From:</span>
           <span className="text-muted-foreground/70">{actual}</span>
         </div>
         <div>
-          <span className="mr-1.5 text-[10px] text-muted-foreground">
+          <span className="mr-1.5 text-[11px] text-muted-foreground">
             &nbsp;&nbsp;To:
           </span>
           <span>{expected}</span>
@@ -728,7 +728,7 @@ function InlineDiff({ actual, expected }: { actual: string; expected: string }) 
   // Character-level diff
   const segments = computeCharDiff(actual, expected);
   return (
-    <div className="font-mono text-[11px]">
+    <div className="font-mono text-xs">
       {segments.map((seg, idx) => {
         if (seg.type === "same") return <span key={idx}>{seg.text}</span>;
         if (seg.type === "insert")
@@ -768,15 +768,15 @@ function ValueCorrectionMultiEvidence({
 }) {
   return (
     <>
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         {candidates.length} possible matches found.
       </div>
-      <div className="font-mono text-[11px] text-muted-foreground/70">
+      <div className="font-mono text-xs text-muted-foreground/70">
         Current: {from}
       </div>
       <div className="space-y-1">
         {candidates.map((s) => (
-          <label key={s} className="flex items-center gap-2 text-[10px]">
+          <label key={s} className="flex items-center gap-2 text-[11px]">
             <input
               type="radio"
               name="candidate"
@@ -794,7 +794,7 @@ function ValueCorrectionMultiEvidence({
 
 function CodeMappingEvidence({ value, code }: { value: string; code: string }) {
   return (
-    <div className="font-mono text-[11px]">
+    <div className="font-mono text-xs">
       {value} <span className="text-muted-foreground">&rarr;</span> {code}
     </div>
   );
@@ -802,7 +802,7 @@ function CodeMappingEvidence({ value, code }: { value: string; code: string }) {
 
 function RangeCheckEvidence({ lines }: { lines: { label: string; value: string }[] }) {
   return (
-    <div className="space-y-0.5 text-[11px]">
+    <div className="space-y-0.5 text-xs">
       {lines.map((line, i) => (
         <div key={i} className="flex gap-2">
           <span className="text-muted-foreground">{line.label}:</span>
@@ -894,7 +894,7 @@ function MissingValueEvidence({
       ? ` (${derivation.replace(/^Derivable from\s+/i, "from ")})`
       : "";
     return (
-      <div className="text-[11px]">
+      <div className="text-xs">
         <span className="text-muted-foreground">Suggested: </span>
         <span className="font-mono">{suggested}</span>
         {source && (
@@ -909,7 +909,7 @@ function MissingValueEvidence({
   }
   if (lines && lines.length > 0) {
     return (
-      <div className="space-y-0.5 text-[11px]">
+      <div className="space-y-0.5 text-xs">
         {lines.map((line, i) => (
           <div key={i} className="flex gap-2">
             <span className="shrink-0 text-muted-foreground">{line.label}:</span>
@@ -920,7 +920,7 @@ function MissingValueEvidence({
     );
   }
   return (
-    <div className="font-mono text-[11px] text-muted-foreground/70">{variable}: (empty)</div>
+    <div className="font-mono text-xs text-muted-foreground/70">{variable}: (empty)</div>
   );
 }
 
@@ -932,7 +932,7 @@ function MetadataEvidence({
   studyId?: string;
 }) {
   return (
-    <div className="space-y-0.5 text-[11px]">
+    <div className="space-y-0.5 text-xs">
       {lines.map((line, i) => (
         <div key={i} className="flex gap-2">
           <span className="text-muted-foreground">{line.label}:</span>
@@ -1024,7 +1024,7 @@ function FindingSection({
     <div className="flex items-center gap-1.5">
       <StatusBadge status={currentFixStatus} styles={FIX_STATUS_STYLES} />
       {currentFixStatus === "Auto-fixed" && (
-        <span className="text-[10px] text-muted-foreground">on import</span>
+        <span className="text-[11px] text-muted-foreground">on import</span>
       )}
     </div>
   );
@@ -1033,7 +1033,7 @@ function FindingSection({
   if (fixResult) {
     return (
       <CollapsiblePane title="Finding" defaultOpen>
-        <div className="space-y-2 text-[11px]">
+        <div className="space-y-2 text-xs">
           {statusBadge}
           <p className="text-muted-foreground">{diagnosis}</p>
           <div className="rounded bg-green-50 p-2 font-medium text-green-800">
@@ -1048,13 +1048,13 @@ function FindingSection({
   if (showAcceptView) {
     return (
       <CollapsiblePane title="Finding" defaultOpen>
-        <div className="space-y-2 text-[11px]">
+        <div className="space-y-2 text-xs">
           {statusBadge}
           <p className="text-muted-foreground">{diagnosis}</p>
           <div>
-            <label className="mb-0.5 block text-[10px] text-muted-foreground">Justification</label>
+            <label className="mb-0.5 block text-[11px] text-muted-foreground">Justification</label>
             <input
-              className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+              className="w-full rounded border bg-background px-2 py-1 text-xs"
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               placeholder="Reason for accepting..."
@@ -1062,7 +1062,7 @@ function FindingSection({
           </div>
           <div className="flex items-center gap-2">
             <button
-              className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               disabled={!justification}
               onClick={() => {
                 save({
@@ -1079,7 +1079,7 @@ function FindingSection({
               Accept
             </button>
             <button
-              className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+              className="rounded border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
               onClick={() => setShowAcceptView(false)}
             >
               Back
@@ -1180,7 +1180,7 @@ function FindingSection({
     if (currentFixStatus === "Auto-fixed") {
       return (
         <button
-          className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+          className="rounded border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
           onClick={() => {
             save({
               entityKey: record.issue_id,
@@ -1198,7 +1198,7 @@ function FindingSection({
     if (currentFixStatus === "Manually fixed" || currentFixStatus === "Accepted as-is") {
       return (
         <button
-          className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+          className="rounded border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
           onClick={() => {
             save({
               entityKey: record.issue_id,
@@ -1266,7 +1266,7 @@ function FindingSection({
       <div className="flex items-center gap-2">
         <div className="relative" ref={dropdownRef}>
           <button
-            className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90"
+            className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
             onClick={() => setFixDropdownOpen(!fixDropdownOpen)}
           >
             Fix ▾
@@ -1276,7 +1276,7 @@ function FindingSection({
               {fixOptions.map((opt) => (
                 <button
                   key={opt.label}
-                  className="w-full px-3 py-1.5 text-left text-[10px] hover:bg-muted/50"
+                  className="w-full px-3 py-1.5 text-left text-[11px] hover:bg-muted/50"
                   onClick={() => {
                     setFixDropdownOpen(false);
                     opt.action();
@@ -1289,7 +1289,7 @@ function FindingSection({
           )}
         </div>
         <button
-          className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+          className="rounded border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
           onClick={() => setShowAcceptView(true)}
         >
           Accept
@@ -1337,7 +1337,7 @@ function FindingSection({
   return (
     <>
       <CollapsiblePane title="Finding" defaultOpen>
-        <div className="space-y-2 text-[11px]">
+        <div className="space-y-2 text-xs">
           {statusBadge}
           <p className="text-muted-foreground">{diagnosis}</p>
           {renderEvidence()}
@@ -1345,7 +1345,7 @@ function FindingSection({
           {showEnterValue && (
             <div className="space-y-1.5">
               <input
-                className="w-full rounded border bg-background px-2 py-1 font-mono text-[11px]"
+                className="w-full rounded border bg-background px-2 py-1 font-mono text-xs"
                 value={manualValue}
                 onChange={(e) => setManualValue(e.target.value)}
                 placeholder={`Enter ${selection.variable} value...`}
@@ -1353,14 +1353,14 @@ function FindingSection({
               />
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   disabled={!manualValue}
                   onClick={applyManualValue}
                 >
                   Apply
                 </button>
                 <button
-                  className="rounded border px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50"
+                  className="rounded border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50"
                   onClick={() => {
                     setShowEnterValue(false);
                     setManualValue("");
@@ -1439,12 +1439,12 @@ function InlineReviewSection({
 
   return (
     <CollapsiblePane title="Review" defaultOpen>
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         {/* Review status */}
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Review status</label>
           <select
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={reviewStatus}
             onChange={(e) => setReviewStatus(e.target.value as ValidationRecordReview["reviewStatus"])}
           >
@@ -1458,7 +1458,7 @@ function InlineReviewSection({
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Assigned to</label>
           <input
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             placeholder="Name..."
@@ -1469,7 +1469,7 @@ function InlineReviewSection({
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">Comment</label>
           <textarea
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             rows={2}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
@@ -1480,7 +1480,7 @@ function InlineReviewSection({
         {/* Save */}
         <button
           className={cn(
-            "rounded px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50",
+            "rounded px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
             isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"
           )}
           onClick={handleSave}
@@ -1490,7 +1490,7 @@ function InlineReviewSection({
         </button>
 
         {existing?.reviewedBy && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Reviewed by {existing.reviewedBy} on{" "}
             {existing.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : "unknown date"}
           </p>
@@ -1552,7 +1552,7 @@ function RulePopover({
           onMouseEnter={handleEnter}
           onMouseLeave={handleLeave}
         >
-          <div className="space-y-1.5 text-[11px]">
+          <div className="space-y-1.5 text-xs">
             <div>
               <span className="font-medium text-muted-foreground">Standard: </span>
               <span>{detail.standard}</span>
@@ -1616,7 +1616,7 @@ function IssueReview({
           <span className="flex items-center gap-2">
             <span>{selection.issue_id}</span>
             <span
-              className="text-[10px] font-semibold"
+              className="text-[11px] font-semibold"
               style={{ color: selection.severity === "Error" ? "#dc2626" : selection.severity === "Warning" ? "#d97706" : "#16a34a" }}
             >
               {selection.severity}
@@ -1637,7 +1637,7 @@ function IssueReview({
 
       {/* Record context */}
       <CollapsiblePane title="Record context" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <div>
             <span className="font-medium text-muted-foreground">Subject ID: </span>
             <span className="font-mono">{selection.subject_id}</span>
@@ -1727,22 +1727,22 @@ export function ValidationContextPanel({ selection, studyId, setSelection }: Pro
     return (
       <div>
         <CollapsiblePane title="Overview" defaultOpen>
-          <div className="space-y-2 text-[11px]">
+          <div className="space-y-2 text-xs">
             <p className="text-muted-foreground">
               SEND compliance validation checks the dataset against CDISC SENDIG
               implementation rules and controlled terminology requirements.
             </p>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">&#x2716;</span>
+                <span className="text-[11px] text-muted-foreground">&#x2716;</span>
                 <span><strong>Error</strong> — Must fix before submission</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">&#x26A0;</span>
+                <span className="text-[11px] text-muted-foreground">&#x26A0;</span>
                 <span><strong>Warning</strong> — Review recommended</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">&#x2139;</span>
+                <span className="text-[11px] text-muted-foreground">&#x2139;</span>
                 <span><strong>Info</strong> — Best practice suggestion</span>
               </div>
             </div>

@@ -30,21 +30,21 @@ function MethodSection({
   return (
     <div className="border-b border-border/30 last:border-b-0">
       <button
-        className="flex w-full items-center gap-2 py-1.5 text-left text-[11px] hover:text-foreground"
+        className="flex w-full items-center gap-2 py-1.5 text-left text-xs hover:text-foreground"
         onClick={() => setOpen(!open)}
       >
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {open ? "\u25BC" : "\u25B6"}
         </span>
         <span className="font-medium">{title}</span>
       </button>
-      {open && <div className="pb-2 pl-5 text-[10px] text-muted-foreground space-y-1">{children}</div>}
+      {open && <div className="pb-2 pl-5 text-[11px] text-muted-foreground space-y-1">{children}</div>}
     </div>
   );
 }
 
 function Ref({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono text-[9px] text-muted-foreground/70">[{children}]</span>;
+  return <span className="font-mono text-[10px] text-muted-foreground/70">[{children}]</span>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
       expandAll={expandAll}
       collapseAll={collapseAll}
     >
-      <div className="space-y-0 text-[11px]">
+      <div className="space-y-0 text-xs">
         {/* Pairwise comparisons */}
         <MethodSection title="Pairwise comparisons">
           <div>
@@ -94,19 +94,19 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
             <span className="font-medium text-foreground">Hedges&apos; g</span> (bias-corrected pooled SD):
             g = d &times; J, where d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>,
             J = 1 &minus; 3/(4df &minus; 1).
-            {esMethod === "hedges-g" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
+            {esMethod === "hedges-g" && <span className="ml-1 text-[10px] text-primary">(active)</span>}
           </div>
           <div className={esMethod === "cohens-d" ? "border-l-2 border-primary pl-2" : "pl-2 opacity-60"}>
             <span className="font-medium text-foreground">Cohen&apos;s d</span> (uncorrected pooled SD):
             d = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>pooled</sub>.
             No bias correction. May overestimate for small n.
-            {esMethod === "cohens-d" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
+            {esMethod === "cohens-d" && <span className="ml-1 text-[10px] text-primary">(active)</span>}
           </div>
           <div className={esMethod === "glass-delta" ? "border-l-2 border-primary pl-2" : "pl-2 opacity-60"}>
             <span className="font-medium text-foreground">Glass&apos;s &Delta;</span> (control SD only):
             &Delta; = (mean<sub>treated</sub> &minus; mean<sub>control</sub>) / s<sub>control</sub>.
             Preferred when treatment affects variance.
-            {esMethod === "glass-delta" && <span className="ml-1 text-[9px] text-primary">(active)</span>}
+            {esMethod === "glass-delta" && <span className="ml-1 text-[10px] text-primary">(active)</span>}
           </div>
           <div>
             s<sub>pooled</sub> = &radic;(((n<sub>1</sub>&minus;1)&sdot;s<sub>1</sub>&sup2; + (n<sub>2</sub>&minus;1)&sdot;s<sub>2</sub>&sup2;) / (n<sub>1</sub>+n<sub>2</sub>&minus;2)).
@@ -150,7 +150,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
           <div>
             Patterns assigned based on dose-response shape analysis:
           </div>
-          <div className="font-mono text-[9px] space-y-0.5 mt-1">
+          <div className="font-mono text-[10px] space-y-0.5 mt-1">
             <div>&bull; <span className="text-foreground">monotonic_increase</span> / <span className="text-foreground">monotonic_decrease</span>: Consistent directional change across dose groups</div>
             <div>&bull; <span className="text-foreground">threshold</span>: Response appears at specific dose level and above</div>
             <div>&bull; <span className="text-foreground">non_monotonic</span>: Inconsistent direction across dose groups</div>
@@ -177,7 +177,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
           <div>
             Weighted composite score (0–1.0) combining four components:
           </div>
-          <div className="mt-1 rounded bg-muted/30 px-2 py-1 font-mono text-[9px]">
+          <div className="mt-1 rounded bg-muted/30 px-2 py-1 font-mono text-[10px]">
             0.35 &times; p-value + 0.20 &times; trend + 0.25 &times; effect + 0.20 &times; pattern
           </div>
           <div className="space-y-0.5 mt-1">
@@ -193,7 +193,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
           <div>
             Aggregate score per organ system combining signal strength and cross-domain convergence:
           </div>
-          <div className="mt-1 rounded bg-muted/30 px-2 py-1 font-mono text-[9px]">
+          <div className="mt-1 rounded bg-muted/30 px-2 py-1 font-mono text-[10px]">
             evidence = (total_signal / n_endpoints) &times; (1 + 0.2 &times; (n_domains &minus; 1))
           </div>
           <div className="mt-1">

@@ -104,9 +104,9 @@ Container: `shrink-0 border-r` with `useResizePanel(300, 180, 500)`.
 - Selected: `bg-blue-50/60`
 - Not selected: `hover:bg-accent/30`
 
-**Row 1:** Finding name (`text-xs font-medium`, truncated) + total count badge (`text-[10px] font-mono text-muted-foreground`)
+**Row 1:** Finding name (`text-xs font-medium`, truncated) + total count badge (`text-[11px] font-mono text-muted-foreground`)
 
-**Row 2:** `mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground`
+**Row 2:** `mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground`
 - Subjects affected: "{N} subjects"
 - Day range: "Days {first}-{last}"
 - Dose groups: "{N} groups" (dose groups with ≥1 occurrence)
@@ -121,7 +121,7 @@ Container: `shrink-0 border-r` with `useResizePanel(300, 180, 500)`.
 
 **With observation selected:**
 - Finding name: `text-sm font-semibold`
-- Category: `text-[11px] text-muted-foreground` — e.g., "CLINICAL SIGNS"
+- Category: `text-xs text-muted-foreground` — e.g., "CLINICAL SIGNS"
 - Summary line: `mt-1 text-xs text-foreground/80` — "{N} occurrences across {M} subjects, first observed Day {D}. {dose_text}."
   - dose_text: "Observed in all dose groups" or "Observed in high-dose only" or "Dose-related increase" (computed from count patterns)
 
@@ -134,7 +134,7 @@ Container: `border-b p-4`
 
 **Chart layout:** `flex gap-4` — one chart per sex (M / F), each `flex-1`. Same sex-faceted pattern as all other views.
 
-**Per-sex label:** `mb-1 text-center text-[10px] font-medium`, colored by sex.
+**Per-sex label:** `mb-1 text-center text-[11px] font-medium`, colored by sex.
 
 **Chart (Recharts `<BarChart>`):**
 - Container: `<ResponsiveContainer width="100%" height={250}>`
@@ -149,7 +149,7 @@ Container: `border-b p-4`
 **When no observation selected (all observations mode):**
 - Chart shows total non-NORMAL observation count per day per dose group (aggregated across all finding types)
 - Y-axis label: "Total observations"
-- Subtitle above chart: `text-[11px] text-muted-foreground` — "All observations (excluding NORMAL)"
+- Subtitle above chart: `text-xs text-muted-foreground` — "All observations (excluding NORMAL)"
 
 **When observation selected:**
 - Chart shows count of subjects with THAT specific finding per day per dose group
@@ -172,7 +172,7 @@ Container: `border-b p-4`
 
 **Row styling:** `border-b border-dashed text-xs`. Days with zero total observations across all groups are rendered with `text-muted-foreground/50` (dim but visible).
 
-**Column headers:** `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`. Dose group headers colored with dose-group colors (plain colored text per design system, not colored badges).
+**Column headers:** `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground`. Dose group headers colored with dose-group colors (plain colored text per design system, not colored badges).
 
 ### Context Panel
 

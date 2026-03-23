@@ -285,7 +285,7 @@ function CLDetailRow({
   doseGroupsMeta?: DoseGroup[];
 }) {
   return (
-    <div className="flex gap-2 text-[9px] leading-[14px]">
+    <div className="flex gap-2 text-[10px] leading-[14px]">
       <div className="shrink-0 font-medium tabular-nums pt-0.5" style={{ width: 40, color: "#334155" }}>
         D{day}
       </div>

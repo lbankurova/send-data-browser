@@ -61,7 +61,7 @@ Four `FilterSelect` dropdowns (wrapped in flex row):
 - Source filter: All / Custom / CDISC CORE
 
 ### Rule Cards
-Scrollable container, rules grouped by sort key. Each rule rendered as `ValidationRuleCard`. Group headers shown as `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`. In "evidence" sort mode with a single group, group headers are hidden.
+Scrollable container, rules grouped by sort key. Each rule rendered as `ValidationRuleCard`. Group headers shown as `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground`. In "evidence" sort mode with a single group, group headers are hidden.
 
 ### Sorting & Grouping
 Rules sorted by `sortMode` callback, then secondary sort by `records_affected` desc, then `rule_id` asc. Groups: in "evidence" mode → "Triggered" / "Clean / disabled"; in other modes → group key label.
@@ -85,13 +85,13 @@ Rules sorted by `sortMode` callback, then secondary sort by `records_affected` d
 
 Always visible at the top of the center panel (all states: loading, no results, no rule, clean rule, disabled rule, main view).
 
-Shows: `{total} rules · {enabled} enabled · {triggered} triggered` (left) + `Last run: {N}m ago ({elapsed}s)` (right). Uses `text-[10px] text-muted-foreground`.
+Shows: `{total} rules · {enabled} enabled · {triggered} triggered` (left) + `Last run: {N}m ago ({elapsed}s)` (right). Uses `text-[11px] text-muted-foreground`.
 
 ---
 
 ## Rule Header (conditional)
 
-Shown when a rule is selected. Displays: `[rule_id] [severity-tag] [domain] [description] {record_count} rec`. Severity tag: `border-l-2 pl-1.5 text-[10px] font-semibold text-gray-600` with colored `borderLeftColor`: `#dc2626` (Error), `#d97706` (Warning), `#16a34a` (Info).
+Shown when a rule is selected. Displays: `[rule_id] [severity-tag] [domain] [description] {record_count} rec`. Severity tag: `border-l-2 pl-1.5 text-[11px] font-semibold text-gray-600` with colored `borderLeftColor`: `#dc2626` (Error), `#d97706` (Warning), `#16a34a` (Info).
 
 ---
 
@@ -115,7 +115,7 @@ Filters are applied client-side. Filters reset when a different rule is selected
 
 ### Structure
 
-TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[10px]`. Wrapped in `h-full overflow-auto` (fills remaining vertical space).
+TanStack React Table (`useReactTable`) with client-side sorting and column resizing. Table element: `<table>` with `w-full text-[11px]`. Wrapped in `h-full overflow-auto` (fills remaining vertical space).
 
 ### TanStack Table Features
 
@@ -127,7 +127,7 @@ TanStack React Table (`useReactTable`) with client-side sorting and column resiz
 
 - Wrapper `<thead>`: `sticky top-0 z-10 bg-background`
 - Row `<tr>`: `border-b bg-muted/30`
-- Header cells `<th>`: `relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`
+- Header cells `<th>`: `relative cursor-pointer select-none px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground`
 
 ### Columns
 
@@ -168,7 +168,7 @@ Default fix status is derived from `autoFixed` flag: `ann?.fixStatus ?? (rec.aut
 
 ### StatusBadge Component
 
-Shared between both status columns: `inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold`. Falls back to gray styling for unknown status values.
+Shared between both status columns: `inline-block rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold`. Falls back to gray styling for unknown status values.
 
 ### Record Data
 Records are enriched with live annotation data (`fixStatus`, `reviewStatus`, `assignedTo`) from `useAnnotations<ValidationRecordReview>(studyId, "validation-records")`.
@@ -204,7 +204,7 @@ The `ValidationContextPanelWrapper` in `ContextPanel.tsx` casts `ViewSelectionCo
 ### No Selection State
 
 **Pane 1: Overview (default open)**
-- Explanation text: `text-[11px] text-muted-foreground` -- describes what SEND compliance validation does
+- Explanation text: `text-xs text-muted-foreground` -- describes what SEND compliance validation does
 - Three severity level descriptions with unicode symbols:
   - `&#x2716;` Error: "Must fix before submission"
   - `&#x26A0;` Warning: "Review recommended"
@@ -216,11 +216,11 @@ The `ValidationContextPanelWrapper` in `ContextPanel.tsx` casts `ViewSelectionCo
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[10px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`) + CollapseAllButtons (right-aligned via `ml-auto`)
+- `flex items-center gap-2`: rule_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[11px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`) + CollapseAllButtons (right-aligned via `ml-auto`)
 - Subtitle: "{domain} . {category}" in `mt-1 text-xs text-muted-foreground`
 
 #### Pane 1: Rule detail (default open)
-Key-value pairs in `text-[11px]`:
+Key-value pairs in `text-xs`:
 - Standard: e.g., "SENDIG v3.1.1"
 - Section: e.g., "Section 4.1 -- Demographics (DM)"
 - Description: shown with gray left border (`border-l-2 border-l-gray-400` for all severity levels)
@@ -229,11 +229,11 @@ Key-value pairs in `text-[11px]`:
 - Empty state: "No detail available for this rule."
 
 #### Pane 2: Rule metadata (default open for all rules)
-Shown for ALL rules. When `getValidationRuleDef(rule_id)` matches, shows rich metadata; otherwise shows fallback with source, applicable domains, standard, and how-to-fix from API detail. `CollapsiblePane` key-value pairs in `text-[11px]`:
+Shown for ALL rules. When `getValidationRuleDef(rule_id)` matches, shows rich metadata; otherwise shows fallback with source, applicable domains, standard, and how-to-fix from API detail. `CollapsiblePane` key-value pairs in `text-xs`:
 - Source: rule source identifier
 - Applicable domains: list of `DomainLabel` components
-- Evidence type: `font-mono text-[10px]`
-- Default fix tier: `font-mono text-[10px]` with tier name from `FIX_TIER_DEFINITIONS`
+- Evidence type: `font-mono text-[11px]`
+- Default fix tier: `font-mono text-[11px]` with tier name from `FIX_TIER_DEFINITIONS`
 - Auto-fixable: "Yes" / "No"
 - CDISC reference: shown only when present
 
@@ -244,9 +244,9 @@ Shown for ALL rules. When `getValidationRuleDef(rule_id)` matches, shows rich me
 Uses `useAffectedRecords` and `useAnnotations` to compute live counts.
 
 - **Progress bar**: `h-1 w-full rounded-full bg-gray-200` with tri-color fill: `bg-green-500` (>=70%), `bg-amber-500` (>=30%), `bg-red-500` (<30%)
-- **Progress header**: "N of M reviewed" + "N%" in `text-[10px] text-muted-foreground`
-- **Review status counts**: "Not reviewed N . Reviewed N . Approved N" in `text-[10px]` -- count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordReviewStatusFilter` to the center panel via `setSelection`
-- **Fix status counts**: "Not fixed N . Auto-fixed N . Manually fixed N . Accepted as-is N . Flagged N" in `text-[10px]` -- count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordFixStatusFilter` to the center panel via `setSelection`
+- **Progress header**: "N of M reviewed" + "N%" in `text-[11px] text-muted-foreground`
+- **Review status counts**: "Not reviewed N . Reviewed N . Approved N" in `text-[11px]` -- count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordReviewStatusFilter` to the center panel via `setSelection`
+- **Fix status counts**: "Not fixed N . Auto-fixed N . Manually fixed N . Accepted as-is N . Flagged N" in `text-[11px]` -- count numbers are clickable `<button>` elements (`font-medium hover:underline`) that push `recordFixStatusFilter` to the center panel via `setSelection`
 
 Review/fix count text uses `text-foreground font-mono` for all status values (neutral, no per-status colors).
 
@@ -257,18 +257,18 @@ Review/fix count text uses `text-foreground font-mono` for all status values (ne
 - Resolution dropdown (enabled only when status is Resolved or Exception): (none) / Fixed in source / Auto-fixed / Documented exception / Not applicable
 - Disposition dropdown: (none) / Accept all / Needs fix / Partial fix / Not applicable
 - Comment: textarea
-- SAVE button: `rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50` with success flash ("SAVING..." -> "SAVED" -> "SAVE"), uses `cn()` for conditional classes. Success state: `bg-green-600 text-white`. Normal state: `bg-primary text-primary-foreground hover:bg-primary/90`.
+- SAVE button: `rounded px-3 py-1 text-xs font-medium disabled:opacity-50` with success flash ("SAVING..." -> "SAVED" -> "SAVE"), uses `cn()` for conditional classes. Success state: `bg-green-600 text-white`. Normal state: `bg-primary text-primary-foreground hover:bg-primary/90`.
 - Stored via `useAnnotations(studyId, "validation-issues")`
 
 ### Mode 2: Issue Review (when a specific record is selected)
 
 #### Header
 - `sticky top-0 z-10 border-b bg-background px-4 py-3`
-- issue_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[10px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`)
+- issue_id in `font-mono text-sm font-semibold` + severity as colored text (`text-[11px] font-semibold` with inline `style.color`: Error = `#dc2626`, Warning = `#d97706`, Info = `#16a34a`)
 - **Rule popover**: "Rule {rule_id} . {domain} . {category}" with dotted underline (`underline decoration-dotted underline-offset-2`). Hover shows portal-based popover (`createPortal` to `document.body`, rendered as `fixed z-[9999] w-72`) with full rule detail (standard, section, description with gray border `border-l-gray-400`, rationale, how to fix). No click-to-navigate -- the rule ID is informational only (`cursor-default`).
 
 #### Pane 1: Record context (default open)
-CollapsiblePane with key-value pairs in `text-[11px]`:
+CollapsiblePane with key-value pairs in `text-xs`:
 - Subject ID: `font-mono`
 - Visit
 - Domain: `font-mono`
@@ -348,7 +348,7 @@ Triggered from "Run script..." in the Fix dropdown. Rendered as `FixScriptDialog
 - Review status dropdown: Not reviewed / Reviewed / Approved
 - Assigned to: text input
 - Comment: textarea
-- SAVE button with success flash (`rounded px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50`)
+- SAVE button with success flash (`rounded px-3 py-1.5 text-xs font-semibold disabled:opacity-50`)
 - Footer: "Reviewed by {name} on {date}" if exists
 - Stored via `useAnnotations(studyId, "validation-records")`
 
@@ -361,7 +361,7 @@ Located at `panes/ValidationRecordForm.tsx`. A standalone record-level annotatio
 - Justification: textarea ("Reason for accepting / flagging...")
 - Assigned to: text input
 - Comment: textarea
-- SAVE button: `rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50`
+- SAVE button: `rounded px-3 py-1 text-xs font-medium disabled:opacity-50`
 - Footer: "Reviewed by {name} on {date}" if exists (checks both `reviewedBy` and `pathologist` fields)
 - Stored via `useAnnotations(studyId, "validation-records")`
 

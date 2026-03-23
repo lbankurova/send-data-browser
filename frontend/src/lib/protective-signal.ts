@@ -171,9 +171,9 @@ function isCompositionalAdaptive(finding: string): boolean {
 // ─── Badge styling ────────────────────────────────────────
 
 const BADGE_STYLES: Record<ProtectiveClassification, string> = {
-  pharmacological: "bg-blue-100 text-blue-700 text-[9px] font-medium",
-  "treatment-decrease": "bg-slate-100 text-slate-600 text-[9px] font-medium",
-  background: "bg-gray-100 text-gray-500 text-[9px] font-medium",
+  pharmacological: "bg-blue-100 text-blue-700 text-[10px] font-medium",
+  "treatment-decrease": "bg-slate-100 text-slate-600 text-[10px] font-medium",
+  background: "bg-gray-100 text-gray-500 text-[10px] font-medium",
 };
 
 export function getProtectiveBadgeStyle(classification: ProtectiveClassification): string {

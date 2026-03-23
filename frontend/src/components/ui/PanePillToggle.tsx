@@ -25,7 +25,7 @@ export function PanePillToggle<T extends string>({
           type="button"
           disabled={opt.disabled}
           className={cn(
-            "px-1.5 py-0.5 text-[9px] rounded transition-colors",
+            "px-1.5 py-0.5 text-[10px] rounded transition-colors",
             value === opt.value
               ? "bg-background text-foreground shadow-sm font-medium"
               : "text-muted-foreground hover:text-foreground",

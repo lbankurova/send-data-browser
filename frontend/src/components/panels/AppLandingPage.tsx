@@ -566,21 +566,21 @@ export function AppLandingPage() {
           </div>
         ) : allStudies.length > 0 || scenarioStudies.length > 0 ? (
           <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-[11px]">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
                   <th className="w-8 px-1.5 py-1"></th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-                  <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
-                  <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
-                  <th className="pl-4 pr-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
+                  <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
+                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
+                  <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
+                  <th className="pl-4 pr-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -715,7 +715,7 @@ export function AppLandingPage() {
         {/* Design mode toggle */}
         <div className="mt-3 flex items-center gap-2">
           <Wrench className="h-3 w-3 text-muted-foreground/50" />
-          <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <input
               type="checkbox"
               checked={designMode}

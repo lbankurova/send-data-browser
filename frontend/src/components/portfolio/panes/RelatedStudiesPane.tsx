@@ -21,7 +21,7 @@ export function RelatedStudiesPane({ study, allStudies }: Props) {
     <CollapsiblePane title="Related studies" defaultOpen={false}>
       <div className="space-y-2">
         {relatedStudies.map((s) => (
-          <div key={s.id} className="text-[11px]">
+          <div key={s.id} className="text-xs">
             <div className="flex items-center gap-2">
               <div
                 className="h-2 w-2 flex-shrink-0 rounded-full"
@@ -29,7 +29,7 @@ export function RelatedStudiesPane({ study, allStudies }: Props) {
               />
               <span className="font-medium text-foreground">{s.id}</span>
             </div>
-            <div className="ml-4 mt-0.5 text-[10px] text-muted-foreground">
+            <div className="ml-4 mt-0.5 text-[11px] text-muted-foreground">
               {s.species} · {s.duration_weeks}w · {s.pipeline_stage.replace("_", " ")}
             </div>
           </div>

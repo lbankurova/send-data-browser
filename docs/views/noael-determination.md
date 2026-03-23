@@ -72,33 +72,33 @@ Container: `shrink-0 border-b bg-muted/20 px-4 py-3`
 Outer: `rounded-lg border p-3` — neutral background, no colored fill.
 
 **Status indicator color logic (text-only, no background):**
-- Established (`noael_dose_value != null`, including Control at dose 0): `text-[10px] font-medium` with `color: #15803d`
-- Not established (`noael_dose_value` is null): `text-[10px] font-medium` with `color: #dc2626`
+- Established (`noael_dose_value != null`, including Control at dose 0): `text-[11px] font-medium` with `color: #15803d`
+- Not established (`noael_dose_value` is null): `text-[11px] font-medium` with `color: #dc2626`
 
 Card surface is always neutral (plain `border`). Color is confined to the status text.
 
 **Row 1:** `mb-1 flex items-center justify-between`
 - Sex label: `text-xs font-semibold` — "Combined" / "Males" / "Females"
 - Status area: `flex items-center gap-1.5`
-  - If override exists: `text-[10px] font-medium text-blue-600` — "Overridden"
-  - If no override: `text-[10px] font-medium` — "Established" (green `#15803d`) or "Not established" (red `#dc2626`)
+  - If override exists: `text-[11px] font-medium text-blue-600` — "Overridden"
+  - If no override: `text-[11px] font-medium` — "Established" (green `#15803d`) or "Not established" (red `#dc2626`)
   - Pencil edit button: `text-muted-foreground/40 hover:text-muted-foreground`, Lucide `Pencil` icon (h-3 w-3). Toggles inline override form.
 
-**Row 2+:** `space-y-0.5 text-[11px]`
-- NOAEL: `flex justify-between` — label `text-muted-foreground`, value `font-medium`. If override: shows override value + original value in `text-[10px] text-muted-foreground line-through` strikethrough.
+**Row 2+:** `space-y-0.5 text-xs`
+- NOAEL: `flex justify-between` — label `text-muted-foreground`, value `font-medium`. If override: shows override value + original value in `text-[11px] text-muted-foreground line-through` strikethrough.
 - LOAEL: label `text-muted-foreground`, value `font-medium` — `formatDoseShortLabel(loael_label)`
 - Adverse at LOAEL: label `text-muted-foreground`, value `font-medium` — count
-- Override rationale (if override exists and not editing): `mt-0.5 text-[10px] italic text-muted-foreground line-clamp-2` with `title` tooltip for full text
-- LOAEL dose-limiting findings (if present): `mt-0.5 text-[10px] text-muted-foreground` — up to 3 finding buttons (`hover:text-foreground hover:underline`) with DomainLabel chips, separated by `·`. Each clicks `onFindingClick`. "+N more" overflow if > 3.
+- Override rationale (if override exists and not editing): `mt-0.5 text-[11px] italic text-muted-foreground line-clamp-2` with `title` tooltip for full text
+- LOAEL dose-limiting findings (if present): `mt-0.5 text-[11px] text-muted-foreground` — up to 3 finding buttons (`hover:text-foreground hover:underline`) with DomainLabel chips, separated by `·`. Each clicks `onFindingClick`. "+N more" overflow if > 3.
 - Confidence (if `noael_confidence != null` and no override): label `text-muted-foreground`, value wrapped in `ConfidencePopover` — clickable `font-medium` with color (`text-green-700` >= 80%, `text-amber-700` >= 60%, `text-red-700` < 60%) showing percentage. Popover shows confidence breakdown and comparison across sexes.
 - Domain badges (if `adverse_domains_at_loael` not empty and no override): `mt-1 flex flex-wrap gap-1` — `DomainLabel` components (plain colored text, no background)
 
 **Inline override form (conditional, when editing):**
 - Container: `mt-2 rounded-md border border-dashed border-primary/30 bg-muted/10 p-2`
-- Title: `mb-1.5 text-[10px] font-semibold` — "Override NOAEL determination"
-- Dose select: `w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary` — options from unique dose labels in aeData + "Not established"
+- Title: `mb-1.5 text-[11px] font-semibold` — "Override NOAEL determination"
+- Dose select: `w-full rounded border bg-background px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary` — options from unique dose labels in aeData + "Not established"
 - Rationale textarea: same styling, `rows={2}`, placeholder "Required — explain why..."
-- Buttons: Cancel (`text-muted-foreground hover:bg-muted/40`), Save (`bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground disabled:opacity-50`). Save disabled if no rationale or no change.
+- Buttons: Cancel (`text-muted-foreground hover:bg-muted/40`), Save (`bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground disabled:opacity-50`). Save disabled if no rationale or no change.
 
 **Narrative summary (below cards):**
 - Container: `mt-2 line-clamp-3 text-xs leading-relaxed text-foreground/80`
@@ -109,7 +109,7 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 **PK Exposure integration (conditional):**
 When `usePkIntegration(studyId)` returns `pkData?.available` and a "Combined" sex NOAEL row exists, the Combined card includes an `ExposureSection` component displaying:
 - Cmax, AUC, HED (Human Equivalent Dose), MRSD (Maximum Recommended Starting Dose) from PK data
-- Each metric as label + value in `text-[10px]`
+- Each metric as label + value in `text-[11px]`
 
 **Safety Margin Calculator (conditional):**
 Rendered below the banner cards when PK exposure data is available (`pkData.noael_exposure || pkData.loael_exposure`). Container: `shrink-0 border-b px-4 py-2`. `SafetyMarginCalculator` component provides:
@@ -136,9 +136,9 @@ Container: `shrink-0 border-b px-4 py-2`
 
 Each statement rendered as: `flex items-start gap-2 text-sm leading-relaxed`
 - **StatementIcon** mapped by `icon` field:
-  - `"fact"` — bullet `U+25CF` in `text-[10px] text-muted-foreground`
-  - `"warning"` — triangle `U+25B2` in `text-[10px] text-amber-600`
-  - `"review-flag"` — warning sign `U+26A0` in `text-[10px] text-amber-600`
+  - `"fact"` — bullet `U+25CF` in `text-[11px] text-muted-foreground`
+  - `"warning"` — triangle `U+25B2` in `text-[11px] text-amber-600`
+  - `"review-flag"` — warning sign `U+26A0` in `text-[11px] text-amber-600`
 - Text: `<span>{s.text}</span>`
 
 ### Study Modifiers
@@ -148,7 +148,7 @@ Filtered to items where `organSystem` is falsy (study-level only, not organ-scop
 Container: `mt-1 space-y-0.5`
 
 Each modifier: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
-- Icon: amber triangle `U+25B2` in `text-[10px] text-amber-600`
+- Icon: amber triangle `U+25B2` in `text-[11px] text-amber-600`
 - Text span
 
 ### Study Caveats
@@ -158,7 +158,7 @@ Same filter as modifiers: only items where `organSystem` is falsy.
 Container: `mt-1 space-y-0.5`
 
 Each caveat: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
-- Icon: warning sign `U+26A0` in `text-[10px] text-amber-600`
+- Icon: warning sign `U+26A0` in `text-[11px] text-amber-600`
 - Text span
 
 ---
@@ -178,8 +178,8 @@ Container: `shrink-0 border-b px-4 py-2`
 ### Header
 
 `mb-1.5 flex items-center gap-2`
-- Label: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Protective signals"
-- Count summary: `text-[10px] text-muted-foreground` — "{N} finding(s) with decreased incidence" + optional ` · {N} pharmacological · {N} treatment-related`
+- Label: `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground` — "Protective signals"
+- Count summary: `text-[11px] text-muted-foreground` — "{N} finding(s) with decreased incidence" + optional ` · {N} pharmacological · {N} treatment-related`
 
 ### Three-Tier Classification
 
@@ -187,21 +187,21 @@ Findings are classified via `classifyProtectiveSignal()` from `lib/protective-si
 
 **Pharmacological items** (prominent):
 - Container: `border-l-2 border-l-blue-400 py-1 pl-2.5`
-- Row 1: finding name (`text-[11px] font-semibold hover:underline`, clickable — navigates to histopathology view with specimen + finding) + sex (`text-[10px] font-medium text-muted-foreground`) + classification badge (`getProtectiveBadgeStyle("pharmacological")`)
-- Row 2: incidence text `text-[10px] leading-snug text-muted-foreground` — "{ctrl}% control -> {high}% high dose in {specimens}"
-- Row 3 (conditional): cross-domain correlates `text-[10px] text-muted-foreground/70` — "Correlated: {label} {dir}, ..." (up to 5)
+- Row 1: finding name (`text-xs font-semibold hover:underline`, clickable — navigates to histopathology view with specimen + finding) + sex (`text-[11px] font-medium text-muted-foreground`) + classification badge (`getProtectiveBadgeStyle("pharmacological")`)
+- Row 2: incidence text `text-[11px] leading-snug text-muted-foreground` — "{ctrl}% control -> {high}% high dose in {specimens}"
+- Row 3 (conditional): cross-domain correlates `text-[11px] text-muted-foreground/70` — "Correlated: {label} {dir}, ..." (up to 5)
 
 **Treatment-decrease items** (medium prominence):
 - Container: `border-l-2 border-l-slate-400 py-0.5 pl-2.5`
-- Row 1: finding name (`text-[11px] font-medium hover:underline`, clickable) + sex + classification badge + right-aligned incidence `font-mono text-[10px] text-muted-foreground`
-- Row 2 (conditional): specimens `text-[9px] text-muted-foreground/70`
+- Row 1: finding name (`text-xs font-medium hover:underline`, clickable) + sex + classification badge + right-aligned incidence `font-mono text-[11px] text-muted-foreground`
+- Row 2 (conditional): specimens `text-[10px] text-muted-foreground/70`
 - Row 3 (conditional): cross-domain correlates (same format as pharmacological)
 
 **Background items** (compact):
-- Sub-header: `text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50` — "Other decreased findings"
+- Sub-header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50` — "Other decreased findings"
 - Container: `border-l-2 border-l-gray-300 py-0.5 pl-2.5`
-- Row: finding name (`text-[11px] font-medium hover:underline`, clickable) + sex + right-aligned incidence
-- Capped at 5 items with overflow: `pl-2.5 text-[10px] text-muted-foreground/50` — "+{N} more"
+- Row: finding name (`text-xs font-medium hover:underline`, clickable) + sex + right-aligned incidence
+- Capped at 5 items with overflow: `pl-2.5 text-[11px] text-muted-foreground/50` — "+{N} more"
 
 ---
 
@@ -222,10 +222,10 @@ When the user clicks an organ in the shell rail, the view reads the selection an
 `shrink-0 border-b px-4 py-3`
 
 - Organ name: `text-sm font-semibold` (displayed via `titleCase()` from `severity-colors.ts`)
-- Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching S-05 badge padding)
-- Recovery badge (if recovery data present and organ has an overall verdict): `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground` — shows verdict arrow + verdict text (e.g., "reversed", "persistent"). Uses `verdictArrow()` from `recovery-assessment.ts`.
+- Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching S-05 badge padding)
+- Recovery badge (if recovery data present and organ has an overall verdict): `rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground` — shows verdict arrow + verdict text (e.g., "reversed", "persistent"). Uses `verdictArrow()` from `recovery-assessment.ts`.
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
-- Compact metrics: `mt-2 flex flex-wrap gap-3 text-[11px]` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
+- Compact metrics: `mt-2 flex flex-wrap gap-3 text-xs` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
 
 ---
 
@@ -253,15 +253,15 @@ This matches the canonical tab bar pattern (CLAUDE.md hard rule).
 Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Endpoint summary"
 
 Each endpoint is a clickable `<button>` row:
-- Container: `group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] hover:bg-accent/30`
+- Container: `group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/30`
 - Selected: `bg-accent`
-- Domain code: `<DomainLabel>` component — plain colored text `text-[9px] font-semibold` with `getDomainBadgeColor().text`
+- Domain code: `<DomainLabel>` component — plain colored text `text-[10px] font-semibold` with `getDomainBadgeColor().text`
 - Endpoint name: `min-w-0 flex-1 truncate`
-- Direction symbol: `shrink-0 text-[10px] text-muted-foreground` — via `getDirectionSymbol()`
-- Max effect size: `shrink-0 font-mono text-[10px] text-muted-foreground`
-- Severity label: `shrink-0 text-[9px] text-muted-foreground` — plain text (adverse/warning/normal)
-- TR badge (if treatment-related): `shrink-0 text-[9px] font-medium text-muted-foreground` — "TR"
-- Recovery verdict (if recovery data present, MI/MA domain endpoints only): `shrink-0 text-[9px] text-muted-foreground` — shows verdict arrow + verdict text via `verdictArrow()`. Only shown for endpoints with meaningful recovery verdicts (not "not_observed" or "no_data").
+- Direction symbol: `shrink-0 text-[11px] text-muted-foreground` — via `getDirectionSymbol()`
+- Max effect size: `shrink-0 font-mono text-[11px] text-muted-foreground`
+- Severity label: `shrink-0 text-[10px] text-muted-foreground` — plain text (adverse/warning/normal)
+- TR badge (if treatment-related): `shrink-0 text-[10px] font-medium text-muted-foreground` — "TR"
+- Recovery verdict (if recovery data present, MI/MA domain endpoints only): `shrink-0 text-[10px] text-muted-foreground` — shows verdict arrow + verdict text via `verdictArrow()`. Only shown for endpoints with meaningful recovery verdicts (not "not_observed" or "no_data").
 
 All evidence columns use neutral muted text except domain codes, which use colored text via `<DomainLabel>` per the domain label hard rule.
 
@@ -296,11 +296,11 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 **Structure:** `overflow-x-auto` > `inline-block` — horizontal scrollable flex layout.
 
-**Header row:** Endpoint label column `w-48 shrink-0` + dose columns each `w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground`. Dose headers use `DoseHeader` component, showing actual dose labels (from allAeData), falling back to "Dose {level}".
+**Header row:** Endpoint label column `w-48 shrink-0` + dose columns each `w-16 shrink-0 text-center text-[11px] font-medium text-muted-foreground`. Dose headers use `DoseHeader` component, showing actual dose labels (from allAeData), falling back to "Dose {level}".
 
 **Data rows:** Only endpoints with at least one adverse + treatment_related finding. Sort: first adverse dose level ascending, then alphabetically by endpoint label.
 - Each `flex border-t` row
-- Endpoint label: `w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]`, truncated at 35 chars
+- Endpoint label: `w-48 shrink-0 truncate py-0.5 pr-2 text-[11px]`, truncated at 35 chars
 - Cells: `flex h-5 w-16 shrink-0 items-center justify-center` with severity-colored inner box (`h-4 w-12 rounded-sm`)
 
 **Aggregation:** Takes worst severity per endpoint x dose across sexes.
@@ -324,9 +324,9 @@ Each cell has a tooltip: `"{endpoint} at {dose}: {severity} [(TR)]"`.
 
 Rendered inside `ViewSection mode="flex"` with title "Adverse effect summary ({N})" where N is the filtered count.
 
-TanStack React Table, `w-full text-[10px]`, client-side sorting with column resizing and content-hugging + absorber pattern. Scoped to selected organ.
+TanStack React Table, `w-full text-[11px]`, client-side sorting with column resizing and content-hugging + absorber pattern. Scoped to selected organ.
 
-**Table styling:** Header: `sticky top-0 z-10 bg-background`, `<tr>` with `border-b bg-muted/30`. Header cells: `relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`. Body cells: `px-1.5 py-px`. Sort on double-click, sort indicators up/down arrows. Resize handles: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none` with `bg-primary` when resizing, `hover:bg-primary/30` otherwise.
+**Table styling:** Header: `sticky top-0 z-10 bg-background`, `<tr>` with `border-b bg-muted/30`. Header cells: `relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50`. Body cells: `px-1.5 py-px`. Sort on double-click, sort indicators up/down arrows. Resize handles: `absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none` with `bg-primary` when resizing, `hover:bg-primary/30` otherwise.
 
 **Content-hugging + absorber:** All columns except `endpoint_label` (the absorber) use `width: 1px; white-space: nowrap`. The absorber uses `width: 100%`. Manual resize overrides with explicit width + maxWidth.
 
@@ -335,7 +335,7 @@ TanStack React Table, `w-full text-[10px]`, client-side sorting with column resi
 | Column | Header | Cell Rendering |
 |--------|--------|----------------|
 | endpoint_label | Endpoint | Truncated at 30 chars with ellipsis, `title` tooltip |
-| domain | Domain | Plain colored text: `text-[9px] font-semibold` with `getDomainBadgeColor().text` |
+| domain | Domain | Plain colored text: `text-[10px] font-semibold` with `getDomainBadgeColor().text` |
 | dose_level | Dose | Shows `DoseLabel` component with dose level + first segment of `dose_label` |
 | sex | Sex | Plain text |
 | p_value | P-value | `ev font-mono` — interaction-driven evidence color (neutral at rest, `#DC2626` on row hover/selection via `ev` CSS class) |
@@ -344,7 +344,7 @@ TanStack React Table, `w-full text-[10px]`, client-side sorting with column resi
 | severity | Severity | `text-muted-foreground` (plain text) |
 | treatment_related | TR | `text-muted-foreground` — "Yes" or "No" |
 | dose_response_pattern | Pattern | `text-muted-foreground`, underscores replaced with spaces |
-| recovery | Recovery | **Conditional column** — only present when `recovery.hasRecovery` is true. For MI/MA domain rows: shows verdict arrow + verdict text (`text-[9px]`, `font-medium text-foreground/70` for persistent/progressing, else `text-muted-foreground`). Tooltip shows full recovery assessment details via `buildRecoveryTooltip()`. For non-MI/MA rows: em dash. |
+| recovery | Recovery | **Conditional column** — only present when `recovery.hasRecovery` is true. For MI/MA domain rows: shows verdict arrow + verdict text (`text-[10px]`, `font-medium text-foreground/70` for persistent/progressing, else `text-muted-foreground`). Tooltip shows full recovery assessment details via `buildRecoveryTooltip()`. For non-MI/MA rows: em dash. |
 
 Row cap: 200 rows with truncation message ("Showing first 200 of {N} rows. Use filters to narrow results."). Row interactions: `cursor-pointer border-b transition-colors hover:bg-accent/50`, `bg-accent font-medium` on selection. Click to select/deselect. Empty state: "No rows match the current filters."
 
@@ -392,7 +392,7 @@ Row count indicator: `FilterBarCount` — "{N} rows".
 
 ### Table
 
-TanStack React Table, `w-full text-[10px]`, client-side sorting with column resizing and content-hugging + absorber pattern.
+TanStack React Table, `w-full text-[11px]`, client-side sorting with column resizing and content-hugging + absorber pattern.
 
 **Content-hugging + absorber:** `endpoint_label` is the absorber column (`width: 100%`). All other columns use `width: 1px; white-space: nowrap`. Manual resize overrides with explicit width + maxWidth.
 
@@ -409,7 +409,7 @@ TanStack React Table, `w-full text-[10px]`, client-side sorting with column resi
 | p_value | p-value | 65 | `font-mono`, `font-semibold` if < 0.01 |
 | trend_p | Trend p | 65 | `font-mono`, `font-semibold` if < 0.01 |
 | effect_size | \|d\| | 55 | `font-mono`, `font-semibold` if abs >= 0.8 |
-| severity | Severity | 70 | `rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium` |
+| severity | Severity | 70 | `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium` |
 | treatment_related | TR | 35 | `Y` (`font-semibold text-foreground`) or `N` (`text-muted-foreground/50`) |
 | dose_response_pattern | Pattern | 90 | Underscores replaced with spaces; "none"/"flat" rendered as em dash in `text-muted-foreground/50` |
 
@@ -450,7 +450,7 @@ The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleR
 Header: `flex items-center justify-end border-b px-4 py-1.5` with `CollapseAllButtons` (right-aligned, no title).
 
 Panes:
-1. **NOAEL rationale** (CollapsiblePane, default open) — narrative text from `generateNoaelNarrative()` in `text-[11px] leading-relaxed text-foreground/80`. Below: "Dose-limiting findings at LOAEL" section (if present) with clickable finding buttons: `flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] hover:bg-muted/40` — finding name (`font-medium`) + `DomainLabel` + right-aligned stats (`ml-auto text-muted-foreground` — "|d|={ES}, p={P}").
+1. **NOAEL rationale** (CollapsiblePane, default open) — narrative text from `generateNoaelNarrative()` in `text-xs leading-relaxed text-foreground/80`. Below: "Dose-limiting findings at LOAEL" section (if present) with clickable finding buttons: `flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] hover:bg-muted/40` — finding name (`font-medium`) + `DomainLabel` + right-aligned stats (`ml-auto text-muted-foreground` — "|d|={ES}, p={P}").
 2. **Insights** (CollapsiblePane, default open) — `InsightsList` with rules where `scope === "study"`. `onEndpointClick` navigates to dose-response view.
 3. Footer: `px-4 py-3 text-xs text-muted-foreground` — "Select an endpoint to view adversity rationale."
 

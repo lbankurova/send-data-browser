@@ -38,7 +38,7 @@ function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
 
   if (sorted.length < 2) {
     return (
-      <div className="text-[11px] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {sorted.length === 1
           ? `BW: ${sorted[0].value} ${sorted[0].unit} (Day ${sorted[0].day})`
           : "No body weight data"}
@@ -81,9 +81,9 @@ function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
 
   return (
     <div>
-      <div className="mb-0.5 text-[11px] font-medium">Body weight</div>
+      <div className="mb-0.5 text-xs font-medium">Body weight</div>
       <div className="flex items-end gap-2">
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {first.value}
         </span>
         <svg width={W} height={H} className="shrink-0">
@@ -122,7 +122,7 @@ function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
             </text>
           )}
         </svg>
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {last.value} {last.unit}
         </span>
       </div>
@@ -153,15 +153,15 @@ function LBTable({
 
   return (
     <div>
-      <table className="w-full text-[11px]">
+      <table className="w-full text-xs">
         <thead>
           <tr className="border-b">
-            <th className="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Test</th>
-            <th className="py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
-            <th className="py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
+            <th className="py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Test</th>
+            <th className="py-0.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
+            <th className="py-0.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Value</th>
             {hasFlagged && (
               <th
-                className="py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="py-0.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
                 title="Fold-change vs concurrent control group mean (same sex, terminal timepoint)"
               >vs ctrl</th>
             )}
@@ -182,10 +182,10 @@ function LBTable({
               <td className="py-0.5 text-right font-mono text-muted-foreground">{lab.day}</td>
               <td className={cn("py-0.5 text-right font-mono", lab.flag ? "font-medium" : "text-muted-foreground")}>
                 {lab.value}
-                {lab.unit && <span className="text-[9px] text-muted-foreground"> {lab.unit}</span>}
+                {lab.unit && <span className="text-[10px] text-muted-foreground"> {lab.unit}</span>}
               </td>
               {hasFlagged && (
-                <td className="py-0.5 text-right font-mono text-[10px] text-muted-foreground">
+                <td className="py-0.5 text-right font-mono text-[11px] text-muted-foreground">
                   {lab.flag === "up" && (
                     <span>{"↑"}{lab.ratio != null ? ` ${lab.ratio}x` : ""}</span>
                   )}
@@ -200,7 +200,7 @@ function LBTable({
       </table>
       {hasMore && (
         <button
-          className="mt-1 text-[10px] text-primary hover:underline"
+          className="mt-1 text-[11px] text-primary hover:underline"
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? "Show less" : `${flagged.length - 10} more tests...`}
@@ -254,11 +254,11 @@ function CLTimeline({
   if (nonNormal.length === 0) {
     return (
       <div>
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-xs text-muted-foreground">
           All observations normal ({sorted.length} days)
         </div>
         {isDeath && (
-          <div className="mt-1 flex items-start gap-1 text-[10px] text-muted-foreground italic">
+          <div className="mt-1 flex items-start gap-1 text-[11px] text-muted-foreground italic">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
             <span>
               No clinical signs recorded — unexpected for {disposition?.toLowerCase()}.
@@ -277,7 +277,7 @@ function CLTimeline({
       {sortedByRelevance.map((o, i) => (
         <div
           key={`${o.day}-${i}`}
-          className="flex gap-2 border-b border-dashed border-border/30 py-1 text-[11px] rounded bg-amber-50 px-1"
+          className="flex gap-2 border-b border-dashed border-border/30 py-1 text-xs rounded bg-amber-50 px-1"
         >
           <span className="w-10 shrink-0 font-mono text-muted-foreground">
             Day {o.day}
@@ -286,19 +286,19 @@ function CLTimeline({
             {o.finding}
           </span>
           {o.isProximate && isDeath && (
-            <span className="ml-auto shrink-0 text-[9px] text-muted-foreground">
+            <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
               near death
             </span>
           )}
         </div>
       ))}
       {normalCount > 0 && (
-        <div className="pt-1 text-[10px] text-muted-foreground">
+        <div className="pt-1 text-[11px] text-muted-foreground">
           {normalCount} normal observations
         </div>
       )}
       {isDeath && nonNormal.length > 0 && sorted.length === nonNormal.length && (
-        <div className="mt-1 flex items-start gap-1 text-[10px] text-muted-foreground italic">
+        <div className="mt-1 flex items-start gap-1 text-[11px] text-muted-foreground italic">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
           <span>All recorded observations are abnormal.</span>
         </div>
@@ -319,7 +319,7 @@ function TissueBatteryWarning({ flag }: {
   );
 
   return (
-    <div className="mb-2 border-l-2 bg-amber-50/50 px-2 py-1.5 text-[10px]" style={{ borderLeftColor: "#D97706" }}>
+    <div className="mb-2 border-l-2 bg-amber-50/50 px-2 py-1.5 text-[11px]" style={{ borderLeftColor: "#D97706" }}>
       <button
         className="flex w-full items-start gap-1 text-left"
         onClick={() => setExpanded(!expanded)}
@@ -333,7 +333,7 @@ function TissueBatteryWarning({ flag }: {
         </span>
       </button>
       {expanded && flag.missing_specimens.length > 0 && (
-        <div className="mt-1 pl-4 text-[9px] leading-relaxed">
+        <div className="mt-1 pl-4 text-[10px] leading-relaxed">
           <div className="text-foreground/70">
             Missing tissues ({flag.missing_specimens.length} of {flag.expected_count} expected):
           </div>
@@ -385,7 +385,7 @@ function HistopathFindings({
 
   if (classified.length === 0 && normalFindings.length === 0) {
     return (
-      <div className="text-[11px] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         No microscopic findings recorded
       </div>
     );
@@ -394,12 +394,12 @@ function HistopathFindings({
   return (
     <div>
       {classified.length > 0 && (
-        <table className="w-full text-[11px]">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
-              <th className="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Specimen</th>
-              <th className="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Finding</th>
-              <th className="py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
+              <th className="py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Specimen</th>
+              <th className="py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Finding</th>
+              <th className="py-0.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Severity</th>
             </tr>
           </thead>
           <tbody>
@@ -435,25 +435,25 @@ function HistopathFindings({
                     <span>{f.finding}</span>
                     {/* MIRESCAT classification — plain text, quiet metadata */}
                     {f.result_category?.toUpperCase() === "MALIGNANT" && (
-                      <span className="ml-1.5 text-[9px] text-muted-foreground">Malignant</span>
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">Malignant</span>
                     )}
                     {f.result_category?.toUpperCase() === "BENIGN" && (
-                      <span className="ml-1.5 text-[9px] text-muted-foreground">Benign</span>
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">Benign</span>
                     )}
                     {/* COD badge — Tier 1 conclusion, red text */}
                     {f.isCOD && (
-                      <span className="ml-1.5 text-[9px] font-semibold text-[#DC2626]">
+                      <span className="ml-1.5 text-[10px] font-semibold text-[#DC2626]">
                         Cause of death
                       </span>
                     )}
                     {f.isPresumptiveCOD && (
-                      <span className="ml-1.5 text-[9px] font-semibold text-[#DC2626]/60">
+                      <span className="ml-1.5 text-[10px] font-semibold text-[#DC2626]/60">
                         Presumptive COD
                       </span>
                     )}
                     {/* Tumor cross-reference for COD/malignant findings */}
                     {isCODRow && tumorCrossRef && (
-                      <div className="mt-0.5 pl-2 text-[9px] text-muted-foreground">
+                      <div className="mt-0.5 pl-2 text-[10px] text-muted-foreground">
                         <span>Also in: </span>
                         {tumorCrossRef.others.map((o, idx) => (
                           <span key={o.id}>
@@ -482,14 +482,14 @@ function HistopathFindings({
                   <td className="py-0.5 text-right">
                     {f.severity ? (
                       <span
-                        className="inline-block rounded-sm px-1 py-0.5 text-[9px] font-medium"
+                        className="inline-block rounded-sm px-1 py-0.5 text-[10px] font-medium"
                         style={colors ? { backgroundColor: colors.bg, color: colors.text } : undefined}
                       >
                         {f.severity}
                       </span>
                     ) : f.result_category ? (
                       <span
-                        className="text-[9px] text-muted-foreground"
+                        className="text-[10px] text-muted-foreground"
                         title="Severity grading not applicable to neoplasms"
                       >
                         N/A
@@ -509,7 +509,7 @@ function HistopathFindings({
       {normalFindings.length > 0 && (
         <div className="mt-1">
           <button
-            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
             onClick={() => setNormalsExpanded(!normalsExpanded)}
           >
             <ChevronRight
@@ -520,7 +520,7 @@ function HistopathFindings({
             </span>
           </button>
           {normalsExpanded && (
-            <div className="mt-1 pl-4 text-[10px] leading-relaxed text-muted-foreground">
+            <div className="mt-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">
               {normalFindings.map((f) => f.specimen).sort().join(", ")}
             </div>
           )}
@@ -543,7 +543,7 @@ function MacroscopicFindings({ findings }: { findings: SubjectFinding[] }) {
 
   if (sorted.length === 0) {
     return (
-      <div className="text-[11px] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {normalCount > 0
           ? `No notable macroscopic findings (${normalCount} tissues normal)`
           : "No macroscopic findings recorded"}
@@ -553,11 +553,11 @@ function MacroscopicFindings({ findings }: { findings: SubjectFinding[] }) {
 
   return (
     <div>
-      <table className="w-full text-[11px]">
+      <table className="w-full text-xs">
         <thead>
           <tr className="border-b">
-            <th className="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Specimen</th>
-            <th className="py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Finding</th>
+            <th className="py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Specimen</th>
+            <th className="py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Finding</th>
           </tr>
         </thead>
         <tbody>
@@ -570,7 +570,7 @@ function MacroscopicFindings({ findings }: { findings: SubjectFinding[] }) {
         </tbody>
       </table>
       {normalCount > 0 && (
-        <div className="mt-1 text-[10px] text-muted-foreground">
+        <div className="mt-1 text-[11px] text-muted-foreground">
           {normalCount} tissues normal
         </div>
       )}
@@ -722,7 +722,7 @@ function SubjectProfileContent({
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
         subtitle={
-          <div className="space-y-0.5 text-[10px]">
+          <div className="space-y-0.5 text-[11px]">
             <div className="flex flex-wrap gap-x-3 gap-y-0.5">
               <span>
                 <span className="text-muted-foreground">Sex: </span>
@@ -764,7 +764,7 @@ function SubjectProfileContent({
                   {causeLine}
                 </span>
                 {isAccidental && (
-                  <span className="ml-1.5 text-[9px] text-muted-foreground">(accidental)</span>
+                  <span className="ml-1.5 text-[10px] text-muted-foreground">(accidental)</span>
                 )}
               </div>
             )}
@@ -795,7 +795,7 @@ function SubjectProfileContent({
               />
             )}
             {bw.length === 0 && lb.length === 0 && (
-              <div className="text-[11px] text-muted-foreground">No measurement data available</div>
+              <div className="text-xs text-muted-foreground">No measurement data available</div>
             )}
           </CollapsiblePane>
         )}
@@ -815,7 +815,7 @@ function SubjectProfileContent({
           }
         >
           {cl.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               No clinical observation data
             </div>
           ) : (
@@ -846,7 +846,7 @@ function SubjectProfileContent({
             <TissueBatteryWarning flag={batteryFlag} />
           )}
           {mi.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               No microscopic findings recorded
             </div>
           ) : (

@@ -165,13 +165,13 @@ function NoaelBanner({ data }: { data: NoaelSummaryRow[] }) {
                   {r.sex === "Combined" ? "Combined" : r.sex === "M" ? "Males" : "Females"}
                 </span>
                 <span
-                  className="text-[10px] font-medium"
+                  className="text-[11px] font-medium"
                   style={{ color: established ? "#15803d" : "#dc2626" }}
                 >
                   {established ? "Established" : "Not established"}
                 </span>
               </div>
-              <div className="space-y-0.5 text-[11px]">
+              <div className="space-y-0.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">NOAEL</span>
                   <span className="font-medium">
@@ -229,12 +229,12 @@ function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: 
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
             {summary.adverseCount} adverse
           </span>
         )}
         {recovery?.hasRecovery && recovery.overall && (
-          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
             {verdictArrow(recovery.overall)} {recovery.overall}
           </span>
         )}
@@ -247,7 +247,7 @@ function OrganHeader({ summary, recovery }: { summary: OrganSummary; recovery?: 
       </p>
 
       {/* SLA-01: Show per-metric-type max instead of mixed maxEffectSize */}
-      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+      <div className="mt-2 flex flex-wrap gap-3 text-xs">
         {summary.maxCohensD != null && (
           <div>
             <span className="text-muted-foreground">Max |d|: </span>
@@ -328,7 +328,7 @@ function OverviewTab({
           Endpoint summary
         </h4>
         {endpointSummaries.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
+          <p className="text-xs text-muted-foreground">No endpoints for this organ.</p>
         ) : (
           <div className="space-y-0.5">
             {endpointSummaries.map((ep) => {
@@ -337,7 +337,7 @@ function OverviewTab({
                 <button
                   key={ep.endpoint_label}
                   className={cn(
-                    "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
+                    "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent/30",
                     isSelected && "bg-accent"
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
@@ -347,26 +347,26 @@ function OverviewTab({
                     {ep.endpoint_label}
                   </span>
                   {ep.direction && (
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       {getDirectionSymbol(ep.direction)}
                     </span>
                   )}
                   {ep.maxEffectSize != null && (
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`${effectSizeLabel(ep.domain)} = ${ep.maxEffectSize.toFixed(3)}`}>
+                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground" title={`${effectSizeLabel(ep.domain)} = ${ep.maxEffectSize.toFixed(3)}`}>
                       {ep.maxEffectSize.toFixed(2)}
                     </span>
                   )}
-                  <span className="shrink-0 text-[9px] text-muted-foreground">
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
                     {ep.worstSeverity}
                   </span>
                   {ep.treatmentRelated && (
-                    <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
+                    <span className="shrink-0 text-[10px] font-medium text-muted-foreground">TR</span>
                   )}
                   {recovery?.hasRecovery && (ep.domain === "MI" || ep.domain === "MA") && (() => {
                     const v = recovery.byEndpointLabel.get(ep.endpoint_label);
                     if (!v || v === "not_observed" || v === "no_data") return null;
                     return (
-                      <span className="shrink-0 text-[9px] text-muted-foreground">
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
                         {verdictArrow(v)} {v}
                       </span>
                     );
@@ -572,7 +572,7 @@ function AdversityMatrixTab({
             return (
               <span
                 className={cn(
-                  "text-[9px]",
+                  "text-[10px]",
                   emphasis ? "font-medium text-foreground/70" : "text-muted-foreground",
                 )}
                 title={buildRecoveryTooltip(assessment, recDays)}
@@ -643,7 +643,7 @@ function AdversityMatrixTab({
                   {matrixData.doseLevels.map((dl) => (
                     <div
                       key={dl}
-                      className="w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
+                      className="w-16 shrink-0 text-center text-[11px] font-medium text-muted-foreground"
                     >
                       <DoseHeader level={dl} label={matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`} />
                     </div>
@@ -652,7 +652,7 @@ function AdversityMatrixTab({
                 {matrixData.endpoints.map((ep) => (
                   <div key={ep} className="flex border-t">
                     <div
-                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]"
+                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[11px]"
                       title={ep}
                     >
                       {ep.length > 35 ? ep.slice(0, 35) + "\u2026" : ep}
@@ -687,7 +687,7 @@ function AdversityMatrixTab({
                 ))}
               </div>
             </div>
-            <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
+            <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
               {[
                 { label: "Adverse (TR)", score: 0.9 },
                 { label: "Warning", score: 0.5 },
@@ -719,7 +719,7 @@ function AdversityMatrixTab({
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                        className="relative cursor-pointer px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                         style={{ width: header.getSize() }}
                         onDoubleClick={header.column.getToggleSortingHandler()}
                       >
@@ -771,7 +771,7 @@ function AdversityMatrixTab({
               </tbody>
             </table>
             {filteredData.length > 200 && (
-              <div className="p-2 text-center text-[10px] text-muted-foreground">
+              <div className="p-2 text-center text-[11px] text-muted-foreground">
                 Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
               </div>
             )}

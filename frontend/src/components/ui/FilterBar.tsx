@@ -134,7 +134,7 @@ export function FilterMultiSelect({
           <div className="flex items-center justify-between px-2.5 py-1">
             <button
               type="button"
-              className={cn("text-[10px]", isAllSelected ? "text-muted-foreground/50" : "text-primary hover:underline")}
+              className={cn("text-[11px]", isAllSelected ? "text-muted-foreground/50" : "text-primary hover:underline")}
               onClick={selectAll}
               disabled={isAllSelected}
             >
@@ -142,7 +142,7 @@ export function FilterMultiSelect({
             </button>
             <button
               type="button"
-              className={cn("text-[10px]", !isAllSelected && selectedCount === 1 ? "text-muted-foreground/50" : "text-primary hover:underline")}
+              className={cn("text-[11px]", !isAllSelected && selectedCount === 1 ? "text-muted-foreground/50" : "text-primary hover:underline")}
               onClick={clearAll}
               disabled={!isAllSelected && selectedCount === 1}
             >
@@ -153,7 +153,7 @@ export function FilterMultiSelect({
           {[...groups.entries()].map(([groupName, groupOpts]) => (
             <div key={groupName}>
               {groupName && (
-                <div className="px-2.5 pb-0.5 pt-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="px-2.5 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {groupName}
                 </div>
               )}
@@ -190,7 +190,7 @@ export function FilterBarCount({
   className?: string;
 }) {
   return (
-    <span className={cn("ml-auto text-[10px] text-muted-foreground", className)}>
+    <span className={cn("ml-auto text-[11px] text-muted-foreground", className)}>
       {children}
     </span>
   );
@@ -226,7 +226,7 @@ export function FilterSearch({
             ref.current?.blur();
           }
         }}
-        className="w-20 border-none bg-transparent px-0 text-[10px] text-foreground placeholder:text-muted-foreground/30 focus:w-28 focus:outline-none"
+        className="w-20 border-none bg-transparent px-0 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:w-28 focus:outline-none"
       />
     </div>
   );
@@ -247,7 +247,7 @@ export function FilterClearButton({
   return (
     <button
       type="button"
-      className={cn("flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] text-muted-foreground/60 hover:bg-accent/50 hover:text-foreground", className)}
+      className={cn("flex items-center gap-0.5 rounded px-1 py-0.5 text-[11px] text-muted-foreground/60 hover:bg-accent/50 hover:text-foreground", className)}
       onClick={onClear}
       title="Clear all filters"
     >
@@ -267,7 +267,7 @@ export function FilterShowingLine({
 }) {
   const display = parts && parts.length > 0 ? parts.join(" \u00b7 ") : "All";
   return (
-    <div className={cn("text-[10px] text-muted-foreground", className)}>
+    <div className={cn("text-[11px] text-muted-foreground", className)}>
       <span className="font-medium">Showing: </span>{display}
     </div>
   );

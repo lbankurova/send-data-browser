@@ -74,7 +74,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **SubjectProfilePanel design is frozen.** `SubjectProfilePanel.tsx` requires explicit user approval before any changes. Bug fixes that don't affect visual design are exempt.
 - **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons for back/forward.
 - **Mode 2 (issue pane) never recreates rule context.** Shows only: record identity, finding evidence, action buttons, review form. Rationale/guidance belongs in Mode 1.
-- **Domain labels — neutral text only.** Never color-coded. Render as: `text-[9px] font-semibold text-muted-foreground`.
+- **Domain labels — neutral text only.** Never color-coded. Render as: `text-[10px] font-semibold text-muted-foreground`.
 - **No colored badges for categorical identity.** Color encodes signal strength only. Categorical identity (dose group, domain, sex, severity, fix/review/workflow state) uses neutral gray (`bg-gray-100 text-gray-600 border-gray-200`).
 - **Canonical tab bar pattern.** Active: `h-0.5 bg-primary` underline, `text-foreground`. Inactive: `text-muted-foreground`. Padding: `px-4 py-1.5`. Text: `text-xs font-medium`. Container: `bg-muted/30`.
 - **Evidence panel background.** All evidence panels use `bg-muted/5`.

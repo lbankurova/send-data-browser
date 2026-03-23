@@ -352,7 +352,7 @@ export function PatternOverrideDropdown({ finding }: Props) {
                   onClick={() => handleSelect(opt.value)}
                   onMouseEnter={() => setHoveredOption(opt.value)}
                   disabled={saveMutation.isPending}
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] transition-colors ${
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
                     isActive
                       ? "bg-muted/50 font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
@@ -360,7 +360,7 @@ export function PatternOverrideDropdown({ finding }: Props) {
                 >
                   <span>{opt.label}</span>
                   {isSystem && patternChanged && (
-                    <span className="ml-auto text-[9px] text-muted-foreground/50">system</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground/50">system</span>
                   )}
                 </button>
               );
@@ -370,14 +370,14 @@ export function PatternOverrideDropdown({ finding }: Props) {
               <button
                 onClick={handleReset}
                 disabled={saveMutation.isPending}
-                className="flex w-full items-center px-3 py-1.5 text-left text-[11px] text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40"
+                className="flex w-full items-center px-3 py-1.5 text-left text-xs text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40"
               >
                 Reset to system
               </button>
             )}
             {/* Inline preview */}
             {previewText && (
-              <div className="border-t border-border/40 px-3 py-1.5 text-[9px] text-muted-foreground">
+              <div className="border-t border-border/40 px-3 py-1.5 text-[10px] text-muted-foreground">
                 {previewText}
               </div>
             )}

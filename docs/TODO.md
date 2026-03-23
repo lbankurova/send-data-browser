@@ -539,7 +539,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle~~ ✅
 - **Files:** `frontend/src/components/ui/PanePillToggle.tsx` (extracted component), `frontend/src/components/analysis/panes/DistributionPane.tsx` (first adopter)
-- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Extracted as a generic `PanePillToggle<T>` in `components/ui/`. Pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[9px] px-1.5 py-0.5`. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
+- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Extracted as a generic `PanePillToggle<T>` in `components/ui/`. Pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[10px] px-1.5 py-0.5`. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
 - **Status:** ~~Open~~ Done
 - **Priority:** P3 (design system consistency)
 - **Dependencies:** Related to GAP-56 (PaneTable) — both standardize pane internals

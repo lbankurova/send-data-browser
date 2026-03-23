@@ -47,7 +47,7 @@ export function DayStepper({
       )}
       <span className="relative inline-flex items-center">
         <select
-          className="appearance-none border-none bg-transparent pr-3 text-center text-[9px] font-semibold tabular-nums text-foreground outline-none cursor-pointer disabled:cursor-default disabled:opacity-70"
+          className="appearance-none border-none bg-transparent pr-3 text-center text-[10px] font-semibold tabular-nums text-foreground outline-none cursor-pointer disabled:cursor-default disabled:opacity-70"
           value={selectedDay ?? ""}
           onChange={(e) => onDayChange(Number(e.target.value))}
           disabled={!interactive}

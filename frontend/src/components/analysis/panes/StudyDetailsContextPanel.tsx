@@ -133,7 +133,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               />
             </SettingsRow>
             {(controlGroups.length > 1 || recoveryControlsExcluded) && (
-              <div className="mb-1 flex items-start gap-1 text-[10px] text-amber-700">
+              <div className="mb-1 flex items-start gap-1 text-[11px] text-amber-700">
                 <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                 <span>
                   {allControlCount} control groups detected.{" "}
@@ -187,7 +187,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             : "absolute";
           const rationale = buildNormalizationRationale(highestTier, worstBrainG, speciesStrain);
           return (
-            <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+            <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
               <div className="flex items-baseline gap-1.5">
                 <span>BW effect:</span>
                 <span className="font-mono font-medium text-foreground">g = {worstBwG.toFixed(2)}</span>
@@ -239,7 +239,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 confirmMessage="Changing pooling mode will affect all treatment-period statistics. Continue?"
               />
             </SettingsRow>
-            <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+            <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
               {recoveryPooling === "pool"
                 ? "Recovery arms included in treatment-period statistics (recommended)"
                 : "Recovery animals excluded from treatment-period statistics"}
@@ -280,7 +280,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={(v) => updateSetting("multiplicity", v as "dunnett-fwer" | "bonferroni")}
           />
         </SettingsRow>
-        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
           {pairwiseTest === "williams"
             ? "Williams\u2019 step-down controls FWER inherently. Multiplicity setting has no effect."
             : multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
@@ -310,7 +310,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={(v) => updateSetting("incidenceTrend", v as "cochran-armitage" | "logistic-slope")}
           />
         </SettingsRow>
-        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
           Chi-square linear contrast approximation with ordinal dose scores
         </div>
         <SettingsRow label="Effect size">
@@ -324,7 +324,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={(v) => updateSetting("effectSize", v as EffectSizeMethod)}
           />
         </SettingsRow>
-        <div className="mb-0.5 pl-[7.75rem] text-[10px] leading-snug text-muted-foreground">
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
           {effectSize === "hedges-g" && "Bias-corrected for small samples (J = 1 \u2212 3/(4df \u2212 1))"}
           {effectSize === "cohens-d" && "Uncorrected pooled SD. May overestimate for small n."}
           {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
@@ -351,7 +351,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         />
         <div className="mt-1 flex items-center justify-between">
           <button
-            className="rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={displayNote === currentNote || saveNote.isPending}
             onClick={() => {
               saveNote.mutate({
@@ -367,7 +367,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             {saveNote.isPending ? "Saving..." : "Save"}
           </button>
           {lastEdited && (
-            <span className="text-[9px] text-muted-foreground/60">
+            <span className="text-[10px] text-muted-foreground/60">
               Last edited: {new Date(lastEdited).toLocaleDateString()}
             </span>
           )}

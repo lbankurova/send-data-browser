@@ -291,11 +291,11 @@ Six rules govern color usage:
 | Page title (L1) | `text-2xl font-bold` |
 | Section header | `text-sm font-semibold` |
 | Section header (uppercase) | `text-xs font-semibold uppercase tracking-wider text-muted-foreground` |
-| Table header | `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` |
+| Table header | `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground` |
 | Body text | `text-sm` |
 | Table cell | `text-xs` |
 | Caption/label | `text-xs text-muted-foreground` |
-| Micro text | `text-[9px] font-medium` |
+| Micro text | `text-[10px] font-medium` |
 
 Monospace (`font-mono`) for: p-values, effect sizes, rule IDs, issue IDs, subject IDs, domain codes, any formatted numeric value. Add `tabular-nums` for aligned number columns.
 

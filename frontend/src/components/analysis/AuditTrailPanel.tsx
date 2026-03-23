@@ -61,16 +61,16 @@ function AuditEntry({ entry }: { entry: AuditLogEntry }) {
   return (
     <div className="border-b last:border-b-0">
       <button
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] hover:bg-muted/30"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted/30"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {expanded ? "\u25BC" : "\u25B6"}
         </span>
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
           {formatTimestamp(entry.timestamp)}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-semibold text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
           {entry.action}
         </span>
         <span className="min-w-0 flex-1 truncate">
@@ -80,17 +80,17 @@ function AuditEntry({ entry }: { entry: AuditLogEntry }) {
           <span className="mx-1 text-muted-foreground/50">&middot;</span>
           <span className="font-medium">{entry.entityKey}</span>
         </span>
-        <span className="shrink-0 text-[9px] text-muted-foreground">
+        <span className="shrink-0 text-[10px] text-muted-foreground">
           {changeCount} field{changeCount !== 1 ? "s" : ""}
         </span>
-        <span className="shrink-0 text-[10px] text-muted-foreground">
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {entry.user}
         </span>
       </button>
 
       {expanded && (
         <div className="border-t bg-muted/10 px-4 py-2">
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[11px]">
             <thead>
               <tr className="text-muted-foreground">
                 <th className="pb-1 text-left font-medium">Field</th>
@@ -156,7 +156,7 @@ export function AuditTrailPanel({ studyId, entityFilter, schemaFilter, expandAll
       collapseAll={collapseAll}
       headerRight={
         entries ? (
-          <span className="text-[9px] font-mono text-muted-foreground">
+          <span className="text-[10px] font-mono text-muted-foreground">
             {entries.length} entries
           </span>
         ) : undefined
@@ -187,14 +187,14 @@ export function AuditTrailPanel({ studyId, entityFilter, schemaFilter, expandAll
             Loading audit log...
           </div>
         ) : !entries || entries.length === 0 ? (
-          <p className="py-2 text-[11px] text-muted-foreground">
+          <p className="py-2 text-xs text-muted-foreground">
             No changes recorded yet. Changes will appear here as annotations are saved.
           </p>
         ) : (
           <div className="space-y-3">
             {groupedEntries.map(([date, dayEntries]) => (
               <div key={date}>
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {date}
                 </div>
                 <div className="rounded border">
@@ -207,7 +207,7 @@ export function AuditTrailPanel({ studyId, entityFilter, schemaFilter, expandAll
           </div>
         )}
 
-        <p className="text-[9px] text-muted-foreground/60">
+        <p className="text-[10px] text-muted-foreground/60">
           Audit trail records all annotation changes with field-level diffs.
           User identity is placeholder until authentication is implemented.
         </p>

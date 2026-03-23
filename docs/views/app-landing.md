@@ -162,7 +162,7 @@ Container: `px-8 py-6`
 ### Table
 `max-h-[60vh] overflow-auto rounded-md border bg-card`
 
-Plain HTML table, `w-full text-[10px]`
+Plain HTML table, `w-full text-[11px]`
 
 **Header:** `<thead>` with `sticky top-0 z-10 bg-background`
 
@@ -183,7 +183,7 @@ Plain HTML table, `w-full text-[10px]`
 | noael_value | NOAEL | Right | auto |
 | status | Status | Left | auto |
 
-Header cells: `px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`
+Header cells: `px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground`
 (Actions column header: `w-8 px-1.5 py-1`, no text)
 (Status column header: `pl-4 pr-1.5 py-1` instead of standard padding)
 
@@ -242,7 +242,7 @@ When design mode is active, scenario studies appear below a dashed separator (`b
 ### Design Mode Toggle
 Below the table: `mt-3 flex items-center gap-2`
 - `Wrench h-3 w-3 text-muted-foreground/50` icon
-- Checkbox label: `text-[10px] text-muted-foreground` -- "Design mode"
+- Checkbox label: `text-[11px] text-muted-foreground` -- "Design mode"
 - Wired to `useDesignMode()` context (`designMode`, `toggleDesignMode`)
 
 ---

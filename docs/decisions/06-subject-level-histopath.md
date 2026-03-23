@@ -70,7 +70,7 @@ Position: in the Severity Matrix filter bar, after existing sex and min-severity
 
 Segmented control: two pills — "Group" (current default) and "Subject" (new).
 
-Pill styling: `rounded-full px-2.5 py-1 text-[11px] font-medium` — active: `bg-foreground text-background`, inactive: `text-muted-foreground hover:bg-accent/50`.
+Pill styling: `rounded-full px-2.5 py-1 text-xs font-medium` — active: `bg-foreground text-background`, inactive: `text-muted-foreground hover:bg-accent/50`.
 
 ### Subject-level heatmap
 
@@ -81,12 +81,12 @@ Replaces the group-summary heatmap when "Subject" mode is active.
 **Column headers (two-tier):**
 
 Tier 1 (dose group headers): span across all subjects in that dose group.
-- `text-[10px] font-semibold text-center border-b` + dose-colored left border (`border-l-2`)
+- `text-[11px] font-semibold text-center border-b` + dose-colored left border (`border-l-2`)
 - Label: dose label (e.g., "0 mg/kg/day") + subject count in parens
 - Dose group color: thin top bar or left border using `getDoseGroupColor()`
 
 Tier 2 (subject IDs): one column per subject.
-- `text-[9px] font-mono text-center text-muted-foreground w-8`
+- `text-[10px] font-mono text-center text-muted-foreground w-8`
 - Show last 3-4 digits of USUBJID (e.g., "1001") with full ID as tooltip
 - Clickable: selects subject → context panel shows subject profile
 - Sorted within dose group: by USUBJID ascending
@@ -97,7 +97,7 @@ Tier 2 (subject IDs): one column per subject.
 - Size: `w-8 h-6` (narrow — need to fit many subjects)
 - Content: severity number (1-5) or em dash (examined, no finding) or blank (not examined)
 - Color: neutral heat scale (`getNeutralHeatColor()`) — same as current heatmap
-- Text: `text-[9px] font-mono text-center`
+- Text: `text-[10px] font-mono text-center`
 - Hover: shows tooltip "{USUBJID}: {finding} — {severity_label}" (e.g., "PC201708-1001: FAT VACUOLES — MILD")
 - Selected column: `bg-blue-50/50` highlight on entire column
 
@@ -110,7 +110,7 @@ Tier 2 (subject IDs): one column per subject.
 
 ### "Examined" header row
 
-Below subject IDs, a special row: `text-[9px] text-muted-foreground bg-muted/20`
+Below subject IDs, a special row: `text-[10px] text-muted-foreground bg-muted/20`
 - Shows "E" (examined) or blank for each subject × specimen combination
 - Based on whether the subject has ANY record for this specimen in MI (including NORMAL/UNREMARKABLE)
 - This matters because not all subjects are examined for all tissues (satellite groups, early deaths)
@@ -119,7 +119,7 @@ Below subject IDs, a special row: `text-[9px] text-muted-foreground bg-muted/20`
 
 Below the filter bar, when in Subject mode:
 
-`text-[10px] text-muted-foreground` — "Showing {N} subjects across {M} dose groups · Scroll horizontally →"
+`text-[11px] text-muted-foreground` — "Showing {N} subjects across {M} dose groups · Scroll horizontally →"
 
 ### Edge states
 

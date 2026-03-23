@@ -121,7 +121,7 @@ Long-press or right-click on bookmarked star: shows a minimal popover with a 1-l
 
 Position: in the filter bar / rail header area of views that have endpoint rails.
 
-Rendering: `rounded-full border px-2 py-0.5 text-[10px] font-medium cursor-pointer`
+Rendering: `rounded-full border px-2 py-0.5 text-[11px] font-medium cursor-pointer`
 - Active: `bg-amber-100 border-amber-300 text-amber-800` + filled star icon
 - Inactive: `border-border text-muted-foreground` + outline star icon
 - Count: `font-mono` — shows number of bookmarked endpoints visible in current view

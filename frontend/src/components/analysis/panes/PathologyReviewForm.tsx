@@ -189,7 +189,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
         />
       }
     >
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         {/* Step 1: Review decision */}
         <div>
           <label className="mb-1 block font-medium text-muted-foreground">Review decision</label>
@@ -199,7 +199,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 key={s}
                 type="button"
                 className={cn(
-                  "flex-1 rounded-sm px-2 py-1 text-[10px] font-medium transition-colors",
+                  "flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors",
                   peerReviewStatus === s
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:text-foreground",
@@ -218,7 +218,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
             <div>
               <label className="mb-0.5 block font-medium text-muted-foreground">Notes</label>
               <textarea
-                className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                className="w-full rounded border bg-background px-2 py-1 text-xs"
                 rows={2}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
@@ -235,7 +235,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
               <label className="mb-0.5 block font-medium text-muted-foreground">Disagreement category</label>
               <div className="space-y-0.5">
                 {DISAGREEMENT_CATEGORIES.map((cat) => (
-                  <label key={cat.value} className="flex items-center gap-1.5 text-[11px]">
+                  <label key={cat.value} className="flex items-center gap-1.5 text-xs">
                     <input
                       type="radio"
                       name="disagree-cat"
@@ -254,7 +254,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 <div>
                   <label className="mb-0.5 block font-medium text-muted-foreground">Original diagnosis</label>
                   <input
-                    className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                    className="w-full rounded border bg-background px-2 py-1 text-xs"
                     value={originalDiagnosis}
                     onChange={(e) => setOriginalDiagnosis(e.target.value)}
                     placeholder="Original pathologist's diagnosis..."
@@ -263,7 +263,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 <div>
                   <label className="mb-0.5 block font-medium text-muted-foreground">Peer diagnosis</label>
                   <input
-                    className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                    className="w-full rounded border bg-background px-2 py-1 text-xs"
                     value={peerDiagnosis}
                     onChange={(e) => setPeerDiagnosis(e.target.value)}
                     placeholder="Peer reviewer's diagnosis..."
@@ -277,7 +277,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 <div>
                   <label className="mb-0.5 block font-medium text-muted-foreground">Original severity</label>
                   <select
-                    className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                    className="w-full rounded border bg-background px-2 py-1 text-xs"
                     value={originalSeverity}
                     onChange={(e) => setOriginalSeverity(Number(e.target.value))}
                   >
@@ -290,7 +290,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 <div>
                   <label className="mb-0.5 block font-medium text-muted-foreground">Peer severity</label>
                   <select
-                    className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                    className="w-full rounded border bg-background px-2 py-1 text-xs"
                     value={peerSeverity}
                     onChange={(e) => setPeerSeverity(Number(e.target.value))}
                   >
@@ -308,7 +308,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 Notes <span className="text-muted-foreground/60">(required)</span>
               </label>
               <textarea
-                className={cn("w-full rounded border bg-background px-2 py-1 text-[11px]", notesRequiredButMissing && "border-red-300")}
+                className={cn("w-full rounded border bg-background px-2 py-1 text-xs", notesRequiredButMissing && "border-red-300")}
                 rows={2}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
@@ -325,7 +325,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
               <label className="mb-0.5 block font-medium text-muted-foreground">Resolution</label>
               <div className="space-y-0.5">
                 {RESOLUTION_OPTIONS.map((opt) => (
-                  <label key={opt.value} className="flex items-center gap-1.5 text-[11px]">
+                  <label key={opt.value} className="flex items-center gap-1.5 text-xs">
                     <input
                       type="radio"
                       name="resolution"
@@ -343,7 +343,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
               <div>
                 <label className="mb-0.5 block font-medium text-muted-foreground">Resolution notes</label>
                 <textarea
-                  className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                  className="w-full rounded border bg-background px-2 py-1 text-xs"
                   rows={2}
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
@@ -359,7 +359,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
           <div>
             <label className="mb-0.5 block font-medium text-muted-foreground">Reason for deferral</label>
             <textarea
-              className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+              className="w-full rounded border bg-background px-2 py-1 text-xs"
               rows={2}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
@@ -374,7 +374,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
             <div className="flex-1">
               <label className="mb-0.5 block font-medium text-muted-foreground">Role</label>
               <select
-                className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                className="w-full rounded border bg-background px-2 py-1 text-xs"
                 value={reviewerRole}
                 onChange={(e) => setReviewerRole(e.target.value)}
               >
@@ -387,7 +387,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
             <div className="flex-1">
               <label className="mb-0.5 block font-medium text-muted-foreground">Name</label>
               <input
-                className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+                className="w-full rounded border bg-background px-2 py-1 text-xs"
                 value={reviewerName}
                 onChange={(e) => setReviewerName(e.target.value)}
                 placeholder="Reviewer name..."
@@ -400,7 +400,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
         {peerReviewStatus !== "Not Reviewed" && (
           <button
             className={cn(
-              "rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50",
+              "rounded px-3 py-1 text-xs font-medium disabled:opacity-50",
               isSuccess
                 ? "bg-green-600 text-white"
                 : "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -416,7 +416,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
         {peerReviewStatus !== "Not Reviewed" && (
           <button
             type="button"
-            className="ml-2 text-[10px] text-muted-foreground hover:text-foreground"
+            className="ml-2 text-[11px] text-muted-foreground hover:text-foreground"
             onClick={() => handleStatusSelect("Not Reviewed")}
           >
             Reset
@@ -425,7 +425,7 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
 
         {/* Footer */}
         {existing?.reviewedAt && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {existing.reviewerRole && <>{existing.reviewerRole}: </>}
             {existing.reviewerName || existing.pathologist || "User"} on{" "}
             {new Date(existing.reviewedAt || existing.reviewDate).toLocaleDateString()}
