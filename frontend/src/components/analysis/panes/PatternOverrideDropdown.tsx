@@ -49,10 +49,10 @@ const CLASS_LABELS: Record<string, string> = {
 
 const PATTERN_LABELS: Record<string, string> = {
   flat: "No change",
-  monotonic_increase: "Monotonic",
-  monotonic_decrease: "Monotonic",
-  threshold_increase: "Threshold",
-  threshold_decrease: "Threshold",
+  monotonic_increase: "Monotonic \u2191",
+  monotonic_decrease: "Monotonic \u2193",
+  threshold_increase: "Threshold \u2191",
+  threshold_decrease: "Threshold \u2193",
   non_monotonic: "Non-monotonic",
   u_shaped: "U-shaped",
 };
@@ -287,8 +287,14 @@ export function PatternOverrideDropdown({ finding }: Props) {
     });
   }
 
-  const currentLabel = OVERRIDE_OPTIONS.find(o => o.value === currentOverrideKey)?.label
-    ?? finding.dose_response_pattern ?? "\u2014";
+  const currentLabel = (() => {
+    const base = OVERRIDE_OPTIONS.find(o => o.value === currentOverrideKey)?.label
+      ?? finding.dose_response_pattern ?? "\u2014";
+    // Append direction arrow for directional patterns
+    if (direction === "up" && (currentOverrideKey === "monotonic" || currentOverrideKey === "threshold")) return `${base} \u2191`;
+    if (direction === "down" && (currentOverrideKey === "monotonic" || currentOverrideKey === "threshold")) return `${base} \u2193`;
+    return base;
+  })();
 
   // Original pattern label for tooltip
   const originalLabel = originalPattern

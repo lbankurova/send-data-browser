@@ -43,7 +43,7 @@ import type { EndpointConfidenceResult, ConfidenceLevel } from "@/lib/endpoint-c
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import type { DoseGroup, FindingContext, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor, titleCase } from "@/lib/severity-colors";
-import { getPatternLabel } from "@/lib/findings-rail-engine";
+import { getPatternLabel, getPatternLabelDirectional } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael, OrganCoherence } from "@/lib/derive-summaries";
 import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
@@ -747,11 +747,8 @@ function SexComparisonPane({
   const sexes = ["F", "M"].filter(s => bySex.has(s));
   if (sexes.length < 2) return null;
 
-  const dirLabel = (s: SexEndpointSummary) =>
-    s.direction === "up" ? "\u2191 increase" : s.direction === "down" ? "\u2193 decrease" : "\u2014";
-
   const patLabel = (s: SexEndpointSummary) =>
-    s.pattern ? getPatternLabel(s.pattern) : "\u2014";
+    s.pattern ? getPatternLabelDirectional(s.pattern) : "\u2014";
 
   const noaelLabel = (n: EndpointNoael | undefined) => {
     if (!n) return "\u2014";
@@ -776,7 +773,6 @@ function SexComparisonPane({
   const effectLabel = isIncidence ? "avg sev" : "|g|";
 
   const rows: Array<{ label: string; values: [string, string] }> = [
-    { label: "Direction", values: [dirLabel(col0), dirLabel(col1)] },
     {
       label: effectLabel,
       values: [
@@ -842,40 +838,36 @@ function SexComparisonPane({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <Fragment key={r.label}>
-              <tr className="border-b border-border/30">
-                <td className="py-0.5 text-muted-foreground">{r.label}</td>
-                <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
-                <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
-              </tr>
-              {/* Insert Pattern row after Trend p (index 2) */}
-              {i === 2 && (
-                <tr className="border-b border-border/30">
-                  <td className="py-0.5 text-muted-foreground">Pattern</td>
-                  {sexes.map(s => {
-                    const sf = findingForSex[s];
-                    return (
-                      <td key={s} className="py-0.5 text-right">
-                        {sf ? (
-                          <PatternOverrideDropdown key={sf.id} finding={sf} />
-                        ) : (
-                          <span className="font-mono">{patLabel(bySex.get(s)!)}</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              )}
-            </Fragment>
+          {rows.map((r) => (
+            <tr key={r.label} className="border-b border-border/30">
+              <td className="py-0.5 text-muted-foreground">{r.label}</td>
+              <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
+              <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
+            </tr>
           ))}
+          {/* Pattern row — editable via dropdown, directional labels */}
+          <tr className="border-b border-border/30">
+            <td className="py-0.5 text-muted-foreground">Pattern</td>
+            {sexes.map(s => {
+              const sf = findingForSex[s];
+              return (
+                <td key={s} className="py-0.5 text-right bg-amber-50/40">
+                  {sf ? (
+                    <PatternOverrideDropdown key={sf.id} finding={sf} />
+                  ) : (
+                    <span className="font-mono">{patLabel(bySex.get(s)!)}</span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
           {/* Onset dose row — always shows dropdown for override */}
           <tr className="border-b border-border/30">
             <td className="py-0.5 text-muted-foreground">Onset dose</td>
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right">
+                <td key={s} className="py-0.5 text-right bg-amber-50/40">
                   {sf && doseGroups ? (
                     <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (
