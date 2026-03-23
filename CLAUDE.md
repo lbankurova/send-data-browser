@@ -85,6 +85,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Data label casing — two-tier.** Organ system names: `titleCase()`. All other data labels: raw values (preserves abbreviations).
 - **Sex ordering — alphabetical, always.** F precedes M in every axis.
 - **Color discipline.** Position > Grouping > Typography > Color. ≤10% saturated pixels at rest. One saturated color family per column. Only conclusions "shout."
+- **Reserved color palette — no reuse.** Certain colors are reserved for specific semantic roles and must not be used (or approximated within ~30 hue degrees) for other purposes. Reserved: dose groups (`#6b7280` gray, `#3b82f6` blue, `#f59e0b` amber, `#ef4444` red-400), sex (`#0891b2` cyan-M, `#ec4899` pink-F), severity (`#dc2626` red-adverse, `#facc15` yellow-warning). Before introducing a new color, check `severity-colors.ts` for conflicts.
 - **Information hierarchy.** Six categories (Decision, Finding, Qualifier, Caveat, Evidence, Context) — never mix in one visual unit. Emphasis tiers: 1 (colored at rest) = conclusions, 2 (visible, muted) = labels, 3 (on interaction) = evidence.
 - **No decision red repetition per row.** `#DC2626` at most once per table row.
 - **Heatmap matrices use neutral grayscale heat.** 5-step gray ramp, always-on. `getNeutralHeatColor()` in `severity-colors.ts`.
