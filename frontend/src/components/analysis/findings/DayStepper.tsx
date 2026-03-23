@@ -59,7 +59,7 @@ export function DayStepper({
           ))}
         </select>
         {interactive && (
-          <span className="pointer-events-none absolute right-0 text-[7px] text-muted-foreground">{"\u25BE"}</span>
+          <span className="pointer-events-none absolute right-0 text-[10px] text-muted-foreground">{"\u25BE"}</span>
         )}
       </span>
       {interactive && (
