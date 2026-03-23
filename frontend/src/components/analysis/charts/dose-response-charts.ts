@@ -1107,11 +1107,21 @@ export function buildVolcanoScatterOption(
 
 // ─── 7. Dose-Response Bar Chart (Mean ± SD) ─────────────────
 
+/** Per-sex verdict info for bar chart footer notes. */
+export interface BarVerdictInfo {
+  sex: string;
+  sigDoseLabels: string[];
+  trendP: number | null;
+  trendTestName: string;
+}
+
 /**
- * Horizontal grouped bar chart showing mean ± SD per dose group per sex.
- * Doses on Y-axis with color-coded pipe markers, values extend right.
- * Styled to match DoseDetailPane: pipes, method label, right-aligned value
- * labels, sex-colored bars, no x-axis grid lines.
+ * Horizontal grouped bar chart matching DoseDetailPane style:
+ * - Y-axis: dose label + colored pipe (right of label)
+ * - No error bars, no x-axis labels
+ * - Sex-colored bars, thick border for p<0.05
+ * - Method label top-left, verdict notes bottom-left
+ * - Right-aligned value column via secondary y-axis
  */
 export function buildDoseResponseBarOption(
   mergedPoints: MergedPoint[],
@@ -1120,19 +1130,20 @@ export function buildDoseResponseBarOption(
   sexLabels: Record<string, string>,
   _noaelLabel?: string | null,
   _nonMonoFlag?: NonMonotonicFlag | null,
-  testLabel?: string | null,
+  _testLabel?: string | null,
+  _verdicts?: BarVerdictInfo[],
 ): EChartsOption {
   // Reverse so control is at bottom (matching DoseDetailPane)
   const ordered = [...mergedPoints].reverse();
   const categories = ordered.map((p) => String(p.dose_label));
 
-  // ── Y-axis rich text: colored pipe + label ──
+  // ── Y-axis rich text: label + colored pipe (pipe to the RIGHT of label) ──
   const pipeRich: Record<string, object> = {};
   for (const pt of ordered) {
     const c = getDoseGroupColor(pt.dose_level as number);
-    pipeRich[`p${c.replace("#", "")}`] = { color: c, fontSize: 11, fontWeight: "bold", fontFamily: "monospace" };
+    pipeRich[`p${c.replace("#", "")}`] = { color: c, fontSize: 22, lineHeight: 22, fontWeight: "normal", fontFamily: "monospace", verticalAlign: "middle" };
   }
-  pipeRich.t = { color: "#374151", fontSize: 10, padding: [0, 0, 0, 2] };
+  pipeRich.t = { color: "#374151", fontSize: 10, padding: [0, 8, 0, 0] };
 
   const series: EChartsOption["series"] = [];
 
@@ -1140,7 +1151,7 @@ export function buildDoseResponseBarOption(
     const seriesName = sexLabels[sex] ?? sex;
     const color = sexColors[sex] ?? "#666";
 
-    // Horizontal bar series for mean values with right-aligned value labels
+    // Horizontal bar series — no error bars (matching DoseDetailPane clean style)
     const barData = ordered.map((pt) => {
       const mean = pt[`mean_${sex}`] as number | null;
       const pVal = pt[`p_${sex}`] as number | null;
@@ -1162,57 +1173,6 @@ export function buildDoseResponseBarOption(
       data: barData,
       barMaxWidth: 12,
     });
-
-    // Custom error bar series (mean ± SD whiskers) — horizontal
-    const errorBarData = ordered.map((pt, idx) => {
-      const mean = pt[`mean_${sex}`] as number | null;
-      const sd = pt[`sd_${sex}`] as number | null;
-      if (mean == null || sd == null) return [idx, null, null, null];
-      return [idx, mean, mean - sd, mean + sd];
-    });
-
-    series.push({
-      type: "custom",
-      name: `${seriesName} SD`,
-      data: errorBarData,
-      z: 5,
-      silent: true,
-      renderItem(_params: CustomSeriesRenderItemParams, api: CustomSeriesRenderItemAPI) {
-        const catIdx = api.value(0) as number;
-        const lo = api.value(2) as number | null;
-        const hi = api.value(3) as number | null;
-        if (lo == null || hi == null) return;
-
-        // For horizontal bars: Y = category, X = value
-        const hiPt = api.coord([hi, catIdx]);
-        const loPt = api.coord([lo, catIdx]);
-        const capH = 3;
-
-        return {
-          type: "group",
-          children: [
-            // Horizontal whisker line
-            {
-              type: "line",
-              shape: { x1: loPt[0], y1: loPt[1], x2: hiPt[0], y2: hiPt[1] },
-              style: { stroke: color, lineWidth: 1 },
-            },
-            // Right cap (hi)
-            {
-              type: "line",
-              shape: { x1: hiPt[0], y1: hiPt[1] - capH, x2: hiPt[0], y2: hiPt[1] + capH },
-              style: { stroke: color, lineWidth: 1 },
-            },
-            // Left cap (lo)
-            {
-              type: "line",
-              shape: { x1: loPt[0], y1: loPt[1] - capH, x2: loPt[0], y2: loPt[1] + capH },
-              style: { stroke: color, lineWidth: 1 },
-            },
-          ],
-        };
-      },
-    });
   }
 
   // ── Right-side value labels (secondary y-axis) — right-aligned scannable column ──
@@ -1230,21 +1190,7 @@ export function buildDoseResponseBarOption(
   );
 
   return {
-    grid: { left: 70, right: 70, top: testLabel ? 22 : 8, bottom: 16 },
-    // Method label (italic, top-left) — matches DoseDetailPane test name label
-    ...(testLabel ? {
-      graphic: [{
-        type: "text",
-        left: 4,
-        top: 2,
-        style: {
-          text: testLabel,
-          fontSize: 9,
-          fill: "#9CA3AF",
-          fontStyle: "italic",
-        },
-      }],
-    } : {}),
+    grid: { left: 68, right: 70, top: 8, bottom: 8 },
     yAxis: [
       {
         type: "category",
@@ -1254,7 +1200,8 @@ export function buildDoseResponseBarOption(
           formatter(value: string) {
             const pt = ordered.find((p) => String(p.dose_label) === value);
             const c = getDoseGroupColor((pt?.dose_level as number) ?? 0);
-            return `{p${c.replace("#", "")}|\u258E}{t|${value}}`;
+            // Pipe to the RIGHT of the dose label
+            return `{t|${value}}{p${c.replace("#", "")}|\u258F}`;
           },
           rich: pipeRich,
         },
@@ -1273,7 +1220,7 @@ export function buildDoseResponseBarOption(
     ],
     xAxis: {
       type: "value",
-      axisLabel: { ...axisLabel(), margin: 6 },
+      axisLabel: { show: false },
       splitLine: { show: false },
       axisLine: { show: false },
       axisTick: { show: false },

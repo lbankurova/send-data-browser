@@ -57,7 +57,7 @@ interface PivotedRow {
   sex: string;
   day: number | null;
   data_type: "continuous" | "incidence";
-  severity: string;
+  severity: string | null;
   dose_level: number;
   dose_label: string;
   n: number;
@@ -338,7 +338,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           sex: f.sex,
           day: f.day,
           data_type: f.data_type,
-          severity: f.severity,
+          // Endpoint-level fields nulled in pivoted mode — each row is a dose group, not an endpoint
+          severity: null,
           dose_level: gs.dose_level,
           dose_label: dg ? (dg.dose_level === 0 ? "Control" : dg.label) : `Level ${gs.dose_level}`,
           n: gs.n,
@@ -348,14 +349,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           incidence: gs.incidence ?? null,
           p_value: pw?.p_value_adj ?? pw?.p_value ?? null,
           effect_size: pw?.effect_size ?? null,
-          trend_p: f.trend_p,
-          dose_response_pattern: f.dose_response_pattern ?? "",
+          trend_p: null,
+          dose_response_pattern: "",
           fold_change: f.domain === "MI"
             ? (gs.avg_severity ?? null)
             : f.data_type === "incidence"
               ? (pw?.odds_ratio ?? null)
               : fold,
-          direction: f.direction,
+          direction: null,
         });
       }
     }
@@ -746,51 +747,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
         },
       }),
-      pivCol.accessor("trend_p", {
-        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
-        cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
-      }),
-      pivCol.accessor("direction", {
-        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
-        cell: (info) => (
-          <span className={getDirectionColor(info.getValue())}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
-      pivCol.accessor("dose_response_pattern", {
-        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
-        cell: (info) => {
-          const v = info.getValue();
-          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
-        },
-      }),
-      pivCol.accessor("severity", {
-        header: "Severity",
-        cell: (info) => {
-          const r = info.row.original;
-          const severity = info.getValue();
-          const signal = signalScores?.get(r.endpoint_label) ?? 0;
-          const tier = getSignalTier(signal);
-          const isNormal = severity === "normal";
-          const borderClass = isNormal
-            ? "border-l"
-            : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-          const fontClass = isNormal
-            ? "text-muted-foreground"
-            : tier === 3 ? "font-semibold text-gray-600"
-            : tier === 2 ? "font-medium text-gray-600"
-            : "text-gray-600";
-          return (
-            <span
-              className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
-              style={{ borderLeftColor: getSeverityDotColor(severity) }}
-            >
-              {severity}
-            </span>
-          );
-        },
-      }),
+      // Endpoint-level columns (trend_p, direction, pattern, severity) omitted from
+      // pivoted view — each row is a dose group, not an endpoint. These are shown in
+      // standard view only.
     ],
     [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
   );
@@ -909,12 +868,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           />
         </span>
         {/* Standard / Pivoted toggle */}
-        <span title={layoutMode === "standard" ? "One row per finding" : "One row per dose group \u00d7 finding"}>
+        <span title={layoutMode === "standard" ? "One row per endpoint — endpoint-level stats" : "One row per dose group — dose-level comparisons"}>
           <PanePillToggle
             value={layoutMode}
             options={[
-              { value: "standard" as const, label: "Standard" },
-              { value: "pivoted" as const, label: "Pivoted" },
+              { value: "standard" as const, label: "Endpoint" },
+              { value: "pivoted" as const, label: "Dose group" },
             ]}
             onChange={(v) => { setLayoutMode(v); if (activeEndpoint) userOverrodeLayout.current = true; }}
           />

@@ -13,11 +13,11 @@ import {
   buildEffectSizeBarOption,
   buildStackedSeverityBarOption,
 } from "@/components/analysis/charts/dose-response-charts";
-import type { MergedPoint } from "@/components/analysis/charts/dose-response-charts";
+import type { MergedPoint, BarVerdictInfo } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import { getSexColor, getDoseGroupColor, formatDoseNumericLabel, getNeutralHeatColor } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
-import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS } from "@/lib/build-settings-params";
+import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { checkNonMonotonic } from "@/lib/endpoint-confidence";
 import { useStatMethods } from "@/hooks/useStatMethods";
@@ -75,17 +75,18 @@ function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
   const isHorizontalBar = Array.isArray(o.yAxis) && o.yAxis.length === 2;
 
   if (isHorizontalBar) {
-    // Horizontal bar: compact grid preserving room for pipe labels + value labels
-    o.grid = { left: 56, right: 60, top: (o.graphic ? 20 : 8), bottom: 12 };
+    // Horizontal bar: tight grid — method label + verdict notes rendered as React elements outside chart
+    o.grid = { left: 54, right: 60, top: 4, bottom: 4 };
     // Shrink fonts on both y-axes but preserve rich formatting
     o.yAxis = (o.yAxis as Record<string, unknown>[]).map((ax) => {
       const existing = ax.axisLabel as Record<string, unknown> | undefined;
       if (existing?.rich) return { ...ax, axisLabel: { ...existing, fontSize: COMPACT_AXIS_FONT } };
       return ax;
     });
-    // X-axis: shrink labels
+    // X-axis: preserve existing config (builder already set show:false), just shrink font
     if (o.xAxis && !Array.isArray(o.xAxis)) {
-      o.xAxis = { ...o.xAxis, axisLabel: { fontSize: COMPACT_AXIS_FONT, color: "#6B7280" } };
+      const existingXLabel = (o.xAxis as Record<string, unknown>).axisLabel as Record<string, unknown> | undefined;
+      o.xAxis = { ...o.xAxis, axisLabel: { ...existingXLabel, fontSize: COMPACT_AXIS_FONT } };
     }
   } else {
     // Vertical charts: compact grid, color-code x-axis labels, shrink y-axis
@@ -205,7 +206,7 @@ export function DoseResponseChartPanel({
   const esSymbol = getEffectSizeSymbol(esMethod);
   const esLabel = getEffectSizeLabel(esMethod);
   const normalization = useOrganWeightNormalization(studyId);
-  const { settings: { pairwiseTest, multiplicity } } = useStudySettings();
+  const { settings: { pairwiseTest, multiplicity, trendTest, incidenceTrend } } = useStudySettings();
   const [incidenceScale, setIncidenceScale] = useState<ChartDisplayMode>("scaled");
   const DR_MODES = ["line", "bar"] as const;
   type DRChartMode = typeof DR_MODES[number];
@@ -350,19 +351,51 @@ export function DoseResponseChartPanel({
     return `Pairwise: ${testName} (${multName})`;
   }, [pairwiseTest, multiplicity]);
 
+  // ── Trend test name ───────────────────────────────────────
+  const trendTestName = useMemo(() => {
+    if (!chartData) return "";
+    return chartData.dataType === "continuous"
+      ? (TREND_TEST_LABELS[trendTest] ?? "Jonckheere-Terpstra")
+      : (INCIDENCE_TREND_LABELS[incidenceTrend] ?? "Cochran-Armitage");
+  }, [chartData, trendTest, incidenceTrend]);
+
+  // ── Verdict info for bar chart footer notes ───────────────
+  const barVerdicts = useMemo((): BarVerdictInfo[] | undefined => {
+    if (!chartData) return undefined;
+    return chartData.sexes.map((sex) => {
+      // Find significant dose labels (p<0.05, dose_level > 0)
+      const sigLabels: string[] = [];
+      for (const pt of chartData.mergedPoints) {
+        if ((pt.dose_level as number) === 0) continue;
+        const p = pt[`p_${sex}`] as number | null;
+        if (p != null && p < 0.05) sigLabels.push(String(pt.dose_label));
+      }
+      // Trend p from the finding for this sex at the selected day
+      const epFinding = findings.find(
+        (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex && f.day === selectedDay,
+      );
+      return {
+        sex,
+        sigDoseLabels: sigLabels,
+        trendP: epFinding?.trend_p ?? null,
+        trendTestName,
+      };
+    });
+  }, [chartData, findings, endpointLabel, selectedDay, trendTestName]);
+
   // ── Build compact chart options ───────────────────────────
   const drOption = useMemo(() => {
     if (!chartData) return null;
     let raw: EChartsOption;
     if (chartData.dataType === "continuous") {
       raw = drChartMode === "bar"
-        ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, methodLabel)
+        ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, methodLabel, barVerdicts)
         : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag);
     } else {
       raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, effectiveCompact);
     }
     return compactify(raw, chartData.mergedPoints);
-  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact, methodLabel]);
+  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact, methodLabel, barVerdicts]);
 
   const esOption = useMemo(() => {
     if (!chartData || !hasEffect) return null;
@@ -463,6 +496,31 @@ export function DoseResponseChartPanel({
           <div className="flex-1 min-h-0">
             <EChartsWrapper option={drOption} style={{ width: "100%", height: "100%" }} />
           </div>
+
+          {/* Method label + verdict notes below chart — bar mode only (matches DoseDetailPane) */}
+          {isContinuous && drChartMode === "bar" && (
+            <div className="shrink-0">
+              <div className="text-[9px] italic text-muted-foreground">{methodLabel}</div>
+              {barVerdicts && barVerdicts.map((v) => {
+                const sigPart = v.sigDoseLabels.length > 0
+                  ? `Sig. at ${v.sigDoseLabels.join(", ")}`
+                  : "No sig. differences";
+                const trendFmt = v.trendP != null
+                  ? (v.trendP < 0.001 ? "p<0.001" : `p=${v.trendP.toFixed(3)}`)
+                  : "p=\u2014";
+                return (
+                  <div key={v.sex} className="text-[8px] text-muted-foreground">
+                    <span style={{ color: getSexColor(v.sex) }}>{v.sex}</span>
+                    {": "}
+                    <span className={v.sigDoseLabels.length > 0 ? "text-foreground/80" : ""}>{sigPart}</span>
+                    {". Trend: "}
+                    <span className="font-mono">{trendFmt}</span>
+                    {` (${v.trendTestName})`}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Resize handle */}
