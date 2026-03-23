@@ -948,7 +948,7 @@ function RailFiltersSection({
         <FilterSearch
           value={filters.search}
           onChange={(v) => onFiltersChange({ ...filters, search: v })}
-          placeholder="Search\u2026"
+          placeholder="Search…"
         />
         <div className="w-[110px] shrink-0">
           <FilterSelect
