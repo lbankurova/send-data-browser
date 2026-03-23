@@ -185,7 +185,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // Filter panel state
   const [filterState, setFilterState] = useSessionState<TableFilterState>(
-    "pcc.findings.tableFilters", DEFAULT_FILTER_STATE,
+    "pcc.findings.tableFilters.v2", DEFAULT_FILTER_STATE,
   );
   const [showFilters, setShowFilters] = useState(false);
   const activeFilterCount = countActiveFilters(filterState);
