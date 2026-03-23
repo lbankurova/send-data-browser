@@ -10,7 +10,7 @@ export function DesignRationalePane({ study }: Props) {
 
   return (
     <CollapsiblePane title="Design Rationale" defaultOpen>
-      <p className="text-[11px] leading-relaxed text-foreground">
+      <p className="text-xs leading-relaxed text-foreground">
         {study.design_rationale}
       </p>
     </CollapsiblePane>

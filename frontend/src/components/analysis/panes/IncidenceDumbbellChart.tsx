@@ -273,7 +273,7 @@ function IncidenceDumbbellPanel({
   return (
     <div ref={containerRef} className="flex-1 min-w-0 flex flex-col">
       {/* Sex header */}
-      <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+      <div className="text-center text-[10px] font-medium text-muted-foreground mb-0.5">
         {sex}
       </div>
 
@@ -429,13 +429,13 @@ function IncidenceDumbbellPanel({
       {/* Axis labels below panel */}
       <div className="relative h-3">
         <span
-          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
+          className="absolute text-[10px] text-muted-foreground/50 leading-none whitespace-nowrap"
           style={{ left: `${(zeroX / chartWidth) * 100}%`, transform: "translateX(-50%)" }}
         >
           0%
         </span>
         <span
-          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
+          className="absolute text-[10px] text-muted-foreground/50 leading-none whitespace-nowrap"
           style={{ left: `${(scale(xMax) / chartWidth) * 100}%`, transform: "translateX(-50%)" }}
         >
           {Math.round(xMax)}%
@@ -448,7 +448,7 @@ function IncidenceDumbbellPanel({
           // Edge cases
           if (cr.isEdge === "not_examined" || cr.isEdge === "insufficient_n" || cr.isEdge === "low_power") {
             return (
-              <div key={cr.assessment.doseLevel} className="text-[9px] leading-relaxed">
+              <div key={cr.assessment.doseLevel} className="text-[10px] leading-relaxed">
                 <span className="inline-flex items-center gap-1">
                   <span
                     className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -465,7 +465,7 @@ function IncidenceDumbbellPanel({
 
           const desc = formatIncidenceNoteDesc(cr.assessment);
           return (
-            <div key={cr.assessment.doseLevel} className="text-[9px] leading-relaxed">
+            <div key={cr.assessment.doseLevel} className="text-[10px] leading-relaxed">
               <span className="inline-flex items-center gap-1">
                 <span
                   className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -533,7 +533,7 @@ export function IncidenceDumbbellChart({
   return (
     <div className="space-y-1">
       {/* Legend */}
-      <div className="text-[9px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
+      <div className="text-[10px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
         <span className="inline-flex items-center gap-1">
           <svg width="8" height="8" viewBox="0 0 8 8">
             <circle cx="4" cy="4" r="2.5" fill="#94A3B8" />
@@ -564,7 +564,7 @@ export function IncidenceDumbbellChart({
                 label={cr.doseLabel}
                 tooltip={cr.assessment.doseGroupLabel}
                 align="right"
-                className="text-[9px]"
+                className="text-[10px]"
               />
             </div>
           ))}

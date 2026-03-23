@@ -42,16 +42,14 @@ const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor(
 const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
 
 // Compact grid + font sizes for findings panel context
-const COMPACT_GRID = { left: 44, right: 8, top: 12, bottom: 52 };
+const COMPACT_GRID = { left: 44, right: 8, top: 12, bottom: 16, containLabel: true };
 const COMPACT_AXIS_FONT = 8;
 
 /** Build rich x-axis labels with dose-group colors. */
 function coloredAxisLabels(points: MergedPoint[]) {
   return {
     fontSize: COMPACT_AXIS_FONT,
-    rotate: 45,
-    align: "right" as const,
-    margin: 2,
+    margin: 4,
     formatter(value: string) {
       const pt = points.find((p) => String(p.dose_label) === value);
       const color = pt ? getDoseGroupColor(pt.dose_level as number) : "#6B7280";
@@ -76,7 +74,7 @@ function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
 
   if (isHorizontalBar) {
     // Horizontal bar: tight grid — method label + verdict notes rendered as React elements outside chart
-    o.grid = { left: 54, right: 60, top: 4, bottom: 4 };
+    o.grid = { left: 54, right: 72, top: 4, bottom: 4, containLabel: true };
     // Shrink fonts on both y-axes but preserve rich formatting
     o.yAxis = (o.yAxis as Record<string, unknown>[]).map((ax) => {
       const existing = ax.axisLabel as Record<string, unknown> | undefined;
@@ -459,7 +457,7 @@ export function DoseResponseChartPanel({
           {/* Title + legend */}
           <div className="flex shrink-0 items-center justify-between py-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {isContinuous ? "Mean \u00b1 SD" : "Incidence"}
               </span>
               {isContinuous && (
@@ -500,7 +498,7 @@ export function DoseResponseChartPanel({
           {/* Method label + verdict notes below chart — bar mode only (matches DoseDetailPane) */}
           {isContinuous && drChartMode === "bar" && (
             <div className="shrink-0">
-              <div className="text-[9px] italic text-muted-foreground">{methodLabel}</div>
+              <div className="text-[10px] italic text-muted-foreground">{methodLabel}</div>
               {barVerdicts && barVerdicts.map((v) => {
                 const sigPart = v.sigDoseLabels.length > 0
                   ? `Sig. at ${v.sigDoseLabels.join(", ")}`
@@ -530,7 +528,7 @@ export function DoseResponseChartPanel({
         {hasSeverityData && sevOption ? (
           <div className="flex min-w-0 flex-1 flex-col px-1">
             <div className="flex shrink-0 items-center justify-between py-0.5">
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Severity distribution
               </span>
               <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
@@ -552,7 +550,7 @@ export function DoseResponseChartPanel({
         ) : hasEffect && esOption ? (
           <div className="flex min-w-0 flex-1 flex-col px-1">
             <div className="flex shrink-0 items-center justify-between py-0.5">
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Effect size ({esLabel})
                 {omSubtitle && <span className="normal-case"> &mdash; {omSubtitle}</span>}
               </span>

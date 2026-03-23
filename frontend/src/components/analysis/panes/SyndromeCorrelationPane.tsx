@@ -36,7 +36,7 @@ function ExcludedMembersList({ excluded }: { excluded: ExcludedMember[] }) {
   }
 
   return (
-    <div className="text-[10px] text-muted-foreground space-y-0.5">
+    <div className="text-[11px] text-muted-foreground space-y-0.5">
       {[...byReason.entries()].map(([reason, members]) => (
         <div key={reason}>
           {members.length} member{members.length > 1 ? "s" : ""} excluded ({REASON_LABELS[reason] ?? reason}):{" "}

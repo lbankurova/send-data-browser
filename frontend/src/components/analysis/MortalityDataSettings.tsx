@@ -135,7 +135,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   if (!hasMortality) {
     return (
       <CollapsiblePane title="Mortality" defaultOpen={false} expandAll={expandAll} collapseAll={collapseAll}>
-        <div className="text-[10px] text-muted-foreground">No mortality events recorded.</div>
+        <div className="text-[11px] text-muted-foreground">No mortality events recorded.</div>
       </CollapsiblePane>
     );
   }
@@ -145,16 +145,16 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">
-          <table className="w-full text-[11px]">
+          <table className="w-full text-xs">
             <thead>
               <tr className="border-b">
-                <th className="px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Include</th>
-                <th className="px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Subject</th>
-                <th className="px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Group</th>
-                <th className="px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sex</th>
-                <th className="px-1.5 py-0.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
-                <th className="px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                <th className="px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Cause</th>
+                <th className="px-1.5 py-0.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Include</th>
+                <th className="px-1.5 py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Subject</th>
+                <th className="px-1.5 py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Group</th>
+                <th className="px-1.5 py-0.5 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sex</th>
+                <th className="px-1.5 py-0.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Day</th>
+                <th className="px-1.5 py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                <th className="px-1.5 py-0.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cause</th>
               </tr>
             </thead>
             <tbody>
@@ -227,7 +227,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                   {pendingRevert === d.USUBJID && (
                     <tr className="bg-muted/40">
                       <td colSpan={7} className="px-2 py-1.5">
-                        <div className="flex items-center gap-2 text-[10px]">
+                        <div className="flex items-center gap-2 text-[11px]">
                           <span className="text-muted-foreground">Override note exists. Select what happens to it:</span>
                           <button
                             type="button"

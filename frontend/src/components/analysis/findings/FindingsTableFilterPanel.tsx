@@ -13,7 +13,7 @@ function FilterSection({
 }) {
   return (
     <div className="border-t border-border/30 py-1.5">
-      <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </div>
       {children}
@@ -65,7 +65,7 @@ function CategoricalFilter({
               onChange={() => toggle(v)}
               className="h-2.5 w-2.5 accent-primary"
             />
-            <span className="text-[9px] text-foreground/80">{v}</span>
+            <span className="text-[10px] text-foreground/80">{v}</span>
           </label>
         );
       })}
@@ -115,7 +115,7 @@ function ToggleRangeFilter({
           }}
           className="h-2.5 w-2.5 accent-primary"
         />
-        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
       </label>
@@ -132,7 +132,7 @@ function ToggleRangeFilter({
               ])
             }
             placeholder={minPlaceholder ?? "min"}
-            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[9px] outline-none"
+            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[10px] outline-none"
           />
           <span className="text-[8px] text-muted-foreground">{"\u2013"}</span>
           <input
@@ -146,7 +146,7 @@ function ToggleRangeFilter({
               ])
             }
             placeholder={maxPlaceholder ?? "max"}
-            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[9px] outline-none"
+            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[10px] outline-none"
           />
         </div>
       )}
@@ -228,7 +228,7 @@ export function FindingsTableFilterPanel({
       <button
         type="button"
         onClick={clearAll}
-        className="mb-1.5 rounded border border-border/50 px-2 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="mb-1.5 rounded border border-border/50 px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         Clear all filters
       </button>
@@ -236,7 +236,7 @@ export function FindingsTableFilterPanel({
       {/* Active day filter from stepper (clearable) */}
       {activeDayLabel && (
         <div className="mb-1 flex items-center gap-1.5">
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             {activeDayLabel}
           </span>
           {onClearDayFilter && (
@@ -259,7 +259,7 @@ export function FindingsTableFilterPanel({
           value={filterState.findingSearch}
           onChange={(e) => update("findingSearch", e.target.value)}
           placeholder="Search..."
-          className="w-full rounded border border-border/50 bg-transparent px-1.5 py-0.5 text-[9px] outline-none placeholder:text-muted-foreground/50"
+          className="w-full rounded border border-border/50 bg-transparent px-1.5 py-0.5 text-[10px] outline-none placeholder:text-muted-foreground/50"
         />
       </FilterSection>
 

@@ -62,7 +62,7 @@ export function CorrelationMatrixPane({ data, onCellClick }: Props) {
     <div className="space-y-2">
       {/* Matrix */}
       <div className="overflow-auto">
-        <table className="border-collapse text-[9px]">
+        <table className="border-collapse text-[10px]">
           {/* Column headers (vertical text) */}
           <thead>
             <tr>
@@ -146,7 +146,7 @@ export function CorrelationMatrixPane({ data, onCellClick }: Props) {
       </div>
 
       {/* Summary */}
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         {summary.strong_pairs} of {summary.total_pairs} pairs strongly correlated
         (|ρ| ≥ 0.7). Median |ρ| = {summary.median_abs_rho.toFixed(2)}.
       </div>
@@ -160,7 +160,7 @@ export function CorrelationMatrixPane({ data, onCellClick }: Props) {
 
       {/* Legend */}
       {n >= 3 && (
-        <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <span>|ρ|:</span>
           {[0.1, 0.2, 0.4, 0.6, 0.8].map((v) => {
             const heat = getNeutralHeatColor(v);

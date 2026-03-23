@@ -182,20 +182,20 @@ function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: strin
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium">{sexSymbol}:</span>
-            <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
+            <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[11px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
               {match.severity} {match.severityLabel}
             </span>
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground">Rule {match.ruleId}</span>
+          <span className="text-[11px] font-mono text-muted-foreground">Rule {match.ruleId}</span>
         </div>
         {fc != null && canonical && (
-          <div className="mt-1 text-[10px] text-foreground/80">
+          <div className="mt-1 text-[11px] text-foreground/80">
             {canonical} <span className="font-mono">{fc.toFixed(1)}{"\u00d7"}</span> vs control
             {sexData?.direction && <span className="text-muted-foreground"> ({sexData.direction === "up" ? "\u2191" : "\u2193"})</span>}
           </div>
         )}
         {thresholdDesc && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">Threshold: {thresholdDesc}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">Threshold: {thresholdDesc}</div>
         )}
       </div>
     );
@@ -206,10 +206,10 @@ function PerSexCard({ entry, canonical }: { entry: PerSexEntry; canonical: strin
     <div className="rounded p-2 border-l-2 border-gray-200 bg-gray-50/50">
       <div className="flex items-center gap-1.5">
         <span className="text-xs font-medium">{sexSymbol}:</span>
-        <span className="text-[10px] text-muted-foreground">No threshold reached</span>
+        <span className="text-[11px] text-muted-foreground">No threshold reached</span>
       </div>
       {sexData && canonical && (
-        <div className="mt-1 text-[10px] text-muted-foreground">
+        <div className="mt-1 text-[11px] text-muted-foreground">
           {canonical} <span className="font-mono">{(sexData.maxFoldChange ?? 0).toFixed(1)}{"\u00d7"}</span> vs control
           {sexData.direction && <span> ({sexData.direction === "up" ? "\u2191" : "\u2193"})</span>}
         </div>
@@ -227,7 +227,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
   if (perSexMatches && perSexMatches.length > 0) {
     return (
       <div className="mt-3 space-y-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Clinical significance (per sex)
         </div>
         <div className="space-y-1.5">
@@ -246,14 +246,14 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
 
     return (
       <div className="mt-3 space-y-1">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Clinical significance
         </div>
         <div className="text-xs text-muted-foreground">
           No clinical thresholds reached
         </div>
         {evaluated.length > 0 && canonical && (
-          <div className="text-[10px] text-muted-foreground space-y-0.5">
+          <div className="text-[11px] text-muted-foreground space-y-0.5">
             {evaluated.map((r) => {
               const t = getThresholdNumericValue(r.id, canonical);
               const thresholdText = t ? ` \u2014 threshold \u2265${t.value}\u00d7` : "";
@@ -296,17 +296,17 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
 
   return (
     <div className="mt-3 space-y-2">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         Clinical significance
       </div>
 
       {/* Rule citation card */}
       <div className={`rounded p-2.5 ${getClinicalTierCardBorderClass(match.severity)} ${getClinicalTierCardBgClass(match.severity)}`}>
         <div className="flex items-center justify-between">
-          <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
+          <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[11px] font-semibold ${getClinicalTierBadgeClasses(match.severity)}`}>
             {match.severity} {match.severityLabel}
           </span>
-          <span className="text-[10px] font-mono text-muted-foreground">Rule {match.ruleId}</span>
+          <span className="text-[11px] font-mono text-muted-foreground">Rule {match.ruleId}</span>
         </div>
 
         {foldChange != null && canonical && (
@@ -316,17 +316,17 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
         )}
 
         {thresholdDesc && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             Threshold: {thresholdDesc}
           </div>
         )}
 
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
           Source: {match.source}
         </div>
 
         {nextThreshold && (
-          <div className="mt-1.5 text-[10px] text-muted-foreground/80">
+          <div className="mt-1.5 text-[11px] text-muted-foreground/80">
             Next threshold: {nextThreshold.threshold} {"\u2192"} {nextThreshold.severity} {nextThreshold.severityLabel}
           </div>
         )}
@@ -335,7 +335,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
       {/* Related rules section */}
       {(hysLawRules.length > 0 || otherNonFired.length > 0) && (
         <div className="space-y-1">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Related rules
           </div>
           {hysLawRules.map((r) => {
@@ -345,7 +345,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
               : null;
             const subsumed = reason?.startsWith("Conditions met");
             return (
-              <div key={r.id} className="text-[10px] text-muted-foreground">
+              <div key={r.id} className="text-[11px] text-muted-foreground">
                 <span className="font-mono">{r.id}</span> {r.name}:{" "}
                 {approaching
                   ? <span className="font-medium text-amber-600">APPROACHING</span>
@@ -353,7 +353,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
                     ? <span className="text-muted-foreground/60">SUBSUMED</span>
                     : <span className="font-medium text-green-600">NOT triggered</span>}
                 {reason && !subsumed && (
-                  <div className="ml-3 text-[9px]">
+                  <div className="ml-3 text-[10px]">
                     {reason}
                   </div>
                 )}
@@ -363,7 +363,7 @@ function ClinicalSignificanceSection({ section, analytics }: { section: Clinical
           {otherNonFired.map((r) => {
             const approaching = approachingSet.has(r.id);
             return (
-              <div key={r.id} className="text-[10px] text-muted-foreground">
+              <div key={r.id} className="text-[11px] text-muted-foreground">
                 <span className="font-mono">{r.id}</span> {r.name}:{" "}
                 {approaching
                   ? <span className="font-medium text-amber-600">APPROACHING</span>

@@ -54,7 +54,7 @@ export function ViewSection(props: ViewSectionProps) {
         ) : (
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {title}
         </span>
         {headerRight && (

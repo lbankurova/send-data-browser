@@ -195,7 +195,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
       {!isSingleSex && (
         <div className="flex" style={{ paddingLeft: LEFT_MARGIN }}>
           {sexes.map((sex) => (
-            <div key={sex} className="flex-1 text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+            <div key={sex} className="flex-1 text-center text-[10px] font-medium text-muted-foreground mb-0.5">
               {sex}
             </div>
           ))}
@@ -207,7 +207,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
         {sexes.map((sex, idx) => (
           <div key={sex} className="flex-1 min-w-0">
             {isSingleSex && (
-              <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+              <div className="text-center text-[10px] font-medium text-muted-foreground mb-0.5">
                 {sex}
               </div>
             )}
@@ -226,7 +226,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
             />
             {/* Per-sex dose legend — aligned with SVG columns */}
             <div
-              className="mt-1 text-[9px] leading-[14px]"
+              className="mt-1 text-[10px] leading-[14px]"
               style={{ paddingLeft: idx === 0 ? LEFT_MARGIN : 6, paddingRight: PLOT_RIGHT }}
             >
               {doseGroups
@@ -275,7 +275,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
 
       {tooltip && (
         <div
-          className="absolute pointer-events-none bg-popover text-popover-foreground border border-border rounded px-1.5 py-0.5 text-[9px] shadow-sm whitespace-nowrap z-10"
+          className="absolute pointer-events-none bg-popover text-popover-foreground border border-border rounded px-1.5 py-0.5 text-[10px] shadow-sm whitespace-nowrap z-10"
           style={{ left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -100%)" }}
         >
           {tooltip.text}
@@ -383,7 +383,7 @@ function SexPanel({
               <text
                 x={cx} y={PLOT_TOP + PLOT_HEIGHT / 2}
                 textAnchor="middle" dominantBaseline="central"
-                className="text-[9px]" fill="var(--muted-foreground)" opacity={0.4}
+                className="text-[10px]" fill="var(--muted-foreground)" opacity={0.4}
               >
                 —
               </text>

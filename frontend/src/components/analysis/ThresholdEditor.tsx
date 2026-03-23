@@ -165,14 +165,14 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
       defaultOpen={false}
       expandAll={expandAll}
       collapseAll={collapseAll}
-      headerRight={isModified ? <span className="text-[9px] text-amber-600">(customized)</span> : undefined}
+      headerRight={isModified ? <span className="text-[10px] text-amber-600">(customized)</span> : undefined}
     >
-      <div className="space-y-3 text-[11px]">
+      <div className="space-y-3 text-xs">
         {/* Signal score weights */}
         <div>
           <div className="mb-1.5 flex items-baseline gap-2">
-            <span className="text-[10px] font-medium text-muted-foreground">Signal score weights</span>
-            <span className={`text-[9px] font-mono ${weightSumValid ? "text-muted-foreground/60" : "text-red-600"}`}>
+            <span className="text-[11px] font-medium text-muted-foreground">Signal score weights</span>
+            <span className={`text-[10px] font-mono ${weightSumValid ? "text-muted-foreground/60" : "text-red-600"}`}>
               sum = {weightSum.toFixed(2)}{!weightSumValid && " (must = 1.00)"}
             </span>
           </div>
@@ -190,7 +190,7 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
 
         {/* Pattern scores */}
         <div>
-          <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">Pattern scores</div>
+          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">Pattern scores</div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             {Object.entries(DEFAULT_CONFIG.patternScores).map(([key, def]) => (
               <WeightInput
@@ -208,7 +208,7 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
 
         {/* Key thresholds */}
         <div>
-          <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">Key thresholds</div>
+          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">Key thresholds</div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             <WeightInput label="P-value significance" value={pValSig} defaultValue={0.05}
               onChange={setPValSig} step={0.01} min={0.001} max={0.1} />
@@ -225,7 +225,7 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
 
         {/* NOAEL confidence penalties */}
         <div>
-          <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">NOAEL confidence penalties</div>
+          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">NOAEL confidence penalties</div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             {NOAEL_CONFIDENCE_PENALTIES.map((p) => {
               const key = p.key as keyof typeof penalties;
@@ -248,14 +248,14 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
         {/* Actions */}
         <div className="flex items-center gap-2 border-t pt-2">
           <button
-            className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+            className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
             onClick={handleSave}
             disabled={!isDirty || !weightSumValid || isPending || isSuccess}
           >
             {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
           </button>
           <button
-            className="rounded border px-3 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
+            className="rounded border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
             onClick={handleReset}
             disabled={!isModified}
           >
@@ -265,13 +265,13 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
 
         {/* Footer */}
         {existing?.modifiedBy && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Last modified by {existing.modifiedBy} on{" "}
             {new Date(existing.modifiedDate).toLocaleDateString()}
           </p>
         )}
 
-        <p className="text-[9px] text-muted-foreground/60">
+        <p className="text-[10px] text-muted-foreground/60">
           Configuration is saved per-study. Changes do not re-run the analysis pipeline —
           they document expert-preferred thresholds for regulatory review.
         </p>
@@ -305,10 +305,10 @@ function WeightInput({
 
   return (
     <div className="flex items-center gap-1.5">
-      <label className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground">{label}</label>
+      <label className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{label}</label>
       <input
         type="number"
-        className={`w-14 rounded border bg-background px-1.5 py-0.5 text-right font-mono text-[10px] ${modified ? "border-amber-300" : ""}`}
+        className={`w-14 rounded border bg-background px-1.5 py-0.5 text-right font-mono text-[11px] ${modified ? "border-amber-300" : ""}`}
         value={value}
         onChange={(e) => {
           const n = parseFloat(e.target.value);

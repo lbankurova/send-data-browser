@@ -99,12 +99,12 @@ function OrganRailItem({
           {titleCase(organ.organ_system)}
         </span>
         {signalStats?.dominantDirection && (
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-[11px] text-muted-foreground/60">
             {signalStats.dominantDirection}
           </span>
         )}
         {organ.target_organ_flag && (
-          <span className="text-[9px] font-semibold uppercase text-[#DC2626]">
+          <span className="text-[10px] font-semibold uppercase text-[#DC2626]">
             TARGET
           </span>
         )}
@@ -128,7 +128,7 @@ function OrganRailItem({
         </div>
         <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <EvidenceScorePopover organ={organ}>
-            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] text-muted-foreground hover:bg-accent">
+            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] text-muted-foreground hover:bg-accent">
               ?
             </span>
           </EvidenceScorePopover>
@@ -137,7 +137,7 @@ function OrganRailItem({
 
       {/* Row 3: signal metrics */}
       {stats && (
-        <div className="mt-1 flex items-center gap-2 text-[10px]">
+        <div className="mt-1 flex items-center gap-2 text-[11px]">
           {stats.minPValue !== null && (
             <span
               className={cn(
@@ -168,7 +168,7 @@ function OrganRailItem({
           )}
           <span
             className={cn(
-              "text-[9px] text-muted-foreground",
+              "text-[10px] text-muted-foreground",
               getDoseConsistencyWeight(stats.doseConsistency),
             )}
           >
@@ -178,7 +178,7 @@ function OrganRailItem({
       )}
 
       {/* Row 4: stats + domain labels */}
-      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
         <span>{organ.n_significant} sig</span>
         <span>&middot;</span>
         <span>{organ.n_treatment_related} TR</span>
@@ -193,7 +193,7 @@ function OrganRailItem({
 
       {/* Row 5: max |d| and trend p from signal data */}
       {signalStats && (
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] tabular-nums text-muted-foreground">
           <span
             className={cn(
               "font-mono",
@@ -359,7 +359,7 @@ export function OrganRailMode() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as OrganSortMode)}
-          className="h-5 w-full rounded border bg-background px-1 text-[10px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          className="h-5 w-full rounded border bg-background px-1 text-[11px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="evidence">Sort: Evidence (default)</option>
           <option value="adverse">Sort: Adverse count</option>
@@ -394,7 +394,7 @@ export function OrganRailMode() {
         {sortedOrgans.map((organ, i) => (
           <div key={organ.organ_system}>
             {i === separatorIdx + 1 && separatorIdx >= 0 && (
-              <div className="border-b px-3 py-1.5 text-[9px] uppercase tracking-wider text-muted-foreground/50">
+              <div className="border-b px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50">
                 Other organs
               </div>
             )}
@@ -409,7 +409,7 @@ export function OrganRailMode() {
           </div>
         ))}
         {sortedOrgans.length === 0 && (
-          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+          <div className="px-3 py-4 text-center text-xs text-muted-foreground">
             {filters.search
               ? `No matches for \u201C${filters.search}\u201D`
               : "No organ data available"}

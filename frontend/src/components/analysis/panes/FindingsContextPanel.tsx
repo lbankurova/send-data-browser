@@ -86,7 +86,7 @@ function WilliamsStepDownTable({ results, finding, doseGroups }: {
   return (
     <table className="mt-1.5 w-full">
       <thead>
-        <tr className="text-[9px] text-muted-foreground">
+        <tr className="text-[10px] text-muted-foreground">
           <th className="py-0.5 text-left font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Red = included in step-down testing.">Group</th>
           <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Strength of dose effect vs. control. Significant when t̃ ≥ CV.">t&#x0303;</th>
           <th className="py-0.5 text-right font-medium" style={{ width: "1px", whiteSpace: "nowrap" }} title="Significance threshold for this study's design (α = 0.05).">CV</th>
@@ -155,16 +155,16 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
   const punchline = punchlineParts.length > 0 ? punchlineParts.join(". ") + "." : null;
 
   return (
-    <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
+    <div className="mt-2 rounded-md border border-border/50 p-2 text-[11px]">
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           ANCOVA decomposition
         </span>
-        <span className="text-[9px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground">
           R&sup2; = {ancova.model_r_squared.toFixed(2)}
         </span>
         {!slopeHomogeneous && (
-          <span className="text-[9px] font-medium text-amber-600">
+          <span className="text-[10px] font-medium text-amber-600">
             Non-parallel slopes
           </span>
         )}
@@ -186,7 +186,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
       {/* Effect decomposition per dose group */}
       <table className="w-full">
         <thead>
-          <tr className="text-[9px] text-muted-foreground">
+          <tr className="text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Group</th>
             <th className="py-0.5 text-right font-medium">Total</th>
             <th className="py-0.5 text-right font-medium">Direct</th>
@@ -199,7 +199,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
           {ancova.effect_decomposition.map((d) => (
             <tr key={d.group} className={d.direct_p < 0.05 ? "text-red-600" : ""}>
               <td className="py-0.5">
-                <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[10px]" />
+                <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[11px]" />
               </td>
               <td className="py-0.5 text-right font-mono">{d.total_effect.toFixed(3)}</td>
               <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
@@ -213,11 +213,11 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 
       {/* Adjusted means */}
       <div className="mt-1.5">
-        <div className="mb-0.5 text-[9px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
+        <div className="mb-0.5 text-[10px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
           {ancova.adjusted_means.map((m) => (
             <span key={m.group} className="inline-flex items-center gap-1 font-mono">
-              <DoseLabel level={m.group} label={resolveDoseLabel(m.group)} className="text-[10px]" />
+              <DoseLabel level={m.group} label={resolveDoseLabel(m.group)} className="text-[11px]" />
               <span>{m.adjusted_mean.toFixed(2)}</span>
               <span className="text-muted-foreground">(raw {m.raw_mean.toFixed(2)})</span>
             </span>
@@ -321,7 +321,7 @@ function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: Endpo
       {hasSyndromes && syndromes.map((syn) => (
         <div key={syn.id}>
           <div>Part of {syn.name} ({syn.confidence.toLowerCase()}):</div>
-          <div className="pl-3 text-[9px]">
+          <div className="pl-3 text-[10px]">
             {syn.matchedEndpoints.map((m) => m.endpoint_label).join(", ")}
           </div>
         </div>
@@ -482,7 +482,7 @@ function TrendConcordanceContent({ finding, doseGroups }: { eci: EndpointConfide
 
   return (
     <div className="space-y-0.5 text-muted-foreground">
-      <table className="text-[10px]">
+      <table className="text-[11px]">
         <tbody>
           <tr>
             <td className="pr-3 whitespace-nowrap" style={{ width: "1px" }}>Jonckheere-Terpstra</td>
@@ -504,11 +504,11 @@ function TrendConcordanceContent({ finding, doseGroups }: { eci: EndpointConfide
         <span className={`inline-block h-1.5 w-1.5 rounded-full ${concordant ? "bg-emerald-500" : "bg-amber-500"}`} />
         <span className="font-medium text-foreground">{concordant ? "Concordant" : "Discordant"}</span>
       </div>
-      <div className="text-[9px]">{concordanceNote}</div>
+      <div className="text-[10px]">{concordanceNote}</div>
       {williams && williams.step_down_results.length > 0 && (
         <div className="mt-1">
           <button
-            className="text-[9px] text-blue-600 hover:underline"
+            className="text-[10px] text-blue-600 hover:underline"
             onClick={() => setShowStepDown((v) => !v)}
           >
             {showStepDown ? "Hide" : "Show"} Williams&apos; step-down detail
@@ -620,7 +620,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
   ], [eci, finding, integrated, trendNA, concordanceNA]);
 
   return (
-    <div className="mt-2 text-[10px]">
+    <div className="mt-2 text-[11px]">
       {/* Collapsed summary line */}
       <div className="flex items-baseline gap-1 flex-wrap">
         <span className="text-muted-foreground">Confidence:</span>
@@ -657,7 +657,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
 
       {/* Toggle link */}
       <button
-        className="mt-0.5 text-[9px] text-primary hover:underline"
+        className="mt-0.5 text-[10px] text-primary hover:underline"
         onClick={() => setShowDecomp((v) => !v)}
       >
         {showDecomp ? "Hide decomposition" : "Show decomposition"}
@@ -665,7 +665,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
 
       {/* Expanded decomposition — per-dimension expandable rows */}
       {showDecomp && (
-        <table className="mt-1.5 w-full text-[10px]">
+        <table className="mt-1.5 w-full text-[11px]">
           <tbody>
             {dims.map((d) => {
               const isExpanded = expandedDims.has(d.key);
@@ -678,7 +678,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
                     onClick={isExpandable ? () => toggleDim(d.key) : undefined}
                   >
                     <td
-                      className={`py-0.5 pr-1.5 uppercase text-[9px] ${
+                      className={`py-0.5 pr-1.5 uppercase text-[10px] ${
                         d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
                       }`}
                       style={{ width: "1px", whiteSpace: "nowrap" }}
@@ -697,7 +697,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
                         )}
                         {d.label}
                         {d.notApplicable && (
-                          <span className="ml-1 text-[9px] font-normal text-muted-foreground/50">(not applicable)</span>
+                          <span className="ml-1 text-[10px] font-normal text-muted-foreground/50">(not applicable)</span>
                         )}
                       </span>
                     </td>
@@ -705,7 +705,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
                   {isExpanded && d.renderContent && (
                     <tr>
                       <td />
-                      <td className="pb-1.5 pl-[14px] pt-0.5 text-[10px]">
+                      <td className="pb-1.5 pl-[14px] pt-0.5 text-[11px]">
                         {d.renderContent()}
                       </td>
                     </tr>
@@ -827,12 +827,12 @@ function SexComparisonPane({
 
   return (
     <div className="mt-2 pr-6">
-      <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
         Sex comparison
       </div>
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead>
-          <tr className="border-b text-[9px] text-muted-foreground">
+          <tr className="border-b text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium" />
             {sexes.map(s => (
               <th key={s} className="py-0.5 text-right font-medium">
@@ -927,12 +927,12 @@ function RecoveryVerdictLine({
     const verdict = organRecovery.byEndpointLabel.get(label);
     if (!verdict || verdict === "not_observed" || verdict === "no_data" || verdict === "not_examined") return null;
     return (
-      <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+      <div className="mt-1.5 flex items-center gap-2 text-[11px]">
         <span className="text-muted-foreground">Recovery:</span>
         <span className={`font-medium ${RECOVERY_VERDICT_CLASS[verdict] ?? "text-muted-foreground"}`}>
           {verdictLabel(verdict)}
         </span>
-        <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+        <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
           See details
         </button>
       </div>
@@ -987,10 +987,10 @@ function RecoveryVerdictLine({
       const r = sexResults[0];
       const fullText = r.text === "Reversing" ? "Reversing (>50% reduction)" : r.text === "Persistent" ? "Persistent or worsening" : "Partial recovery";
       return (
-        <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+        <div className="mt-1.5 flex items-center gap-2 text-[11px]">
           <span className="text-muted-foreground">Recovery:</span>
           <span className={`font-medium ${r.cls}`}>{fullText}</span>
-          <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+          <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
             See details
           </button>
         </div>
@@ -999,7 +999,7 @@ function RecoveryVerdictLine({
 
     // Both sexes — show per-sex inline
     return (
-      <div className="mt-1.5 flex items-center gap-2 text-[10px]">
+      <div className="mt-1.5 flex items-center gap-2 text-[11px]">
         <span className="text-muted-foreground">Recovery:</span>
         {sexResults.map((r, i) => (
           <span key={r.sex}>
@@ -1009,7 +1009,7 @@ function RecoveryVerdictLine({
             <span className={`font-medium ${r.cls}`}>{r.text}</span>
           </span>
         ))}
-        <button className="text-[9px] text-primary hover:underline" onClick={onSeeDetails}>
+        <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
           See details
         </button>
       </div>
@@ -1024,7 +1024,7 @@ function RecoveryVerdictLine({
 function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
   const totalEndpoints = coherence.adverseEndpoints + coherence.warningEndpoints;
   return (
-    <div className="rounded border border-border/40 bg-muted/10 p-2 text-[10px]">
+    <div className="rounded border border-border/40 bg-muted/10 p-2 text-[11px]">
       <div className="font-medium text-foreground">
         {coherence.convergenceLabel} in {titleCase(coherence.organ_system)}
       </div>
@@ -1399,7 +1399,7 @@ export function FindingsContextPanel() {
             and would contradict the combined VerdictPane synthesis (e.g., header shows
             "threshold decrease, NOAEL 20 mg/kg" for M while verdict shows "opposite direction,
             NOAEL 2 mg/kg combined"). VerdictPane handles cross-sex rendering correctly. */}
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[9px]">
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px]">
           {!hasSibling && selectedFinding.dose_response_pattern && (
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               {getPatternLabel(selectedFinding.dose_response_pattern)}
@@ -1503,7 +1503,7 @@ export function FindingsContextPanel() {
               const allAbove80 = directPcts.length >= 2 && directPcts.every(d => d.pct > 80);
 
               return (
-                <div className="mt-2 rounded-md border border-amber-200 bg-amber-50/50 p-2 text-[10px]">
+                <div className="mt-2 rounded-md border border-amber-200 bg-amber-50/50 p-2 text-[11px]">
                   <div className="font-semibold text-amber-800">
                     Opposite-direction effect between sexes
                   </div>
@@ -1522,7 +1522,7 @@ export function FindingsContextPanel() {
                   </div>
                   {hasAnyAncova && (
                     <button
-                      className="mt-1 text-[9px] text-primary hover:underline"
+                      className="mt-1 text-[10px] text-primary hover:underline"
                       onClick={() => {
                         evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
                       }}
@@ -1643,7 +1643,7 @@ export function FindingsContextPanel() {
               // Reproductive organs always show category-specific messaging
               if (category === OrganCorrelationCategory.GONADAL) {
                 return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
                     <div className="font-semibold text-amber-800">
                       Testes — absolute weight primary (BW-spared)
                     </div>
@@ -1663,7 +1663,7 @@ export function FindingsContextPanel() {
               if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
                 const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
                 return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
                     <div className="font-semibold text-amber-800">
                       {organName} — androgen-dependent, not BW-dependent
                     </div>
@@ -1672,7 +1672,7 @@ export function FindingsContextPanel() {
                       and testes findings.
                     </div>
                     <button
-                      className="mt-1 text-[9px] text-blue-600 hover:underline"
+                      className="mt-1 text-[10px] text-blue-600 hover:underline"
                       onClick={() => {
                         // Navigate to MI domain findings for this organ
                         navigate(`/study/${studyId}/findings`, {
@@ -1688,7 +1688,7 @@ export function FindingsContextPanel() {
               if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
                 const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
                 return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
                     <div className="font-semibold text-amber-800">
                       {organName} — low confidence (estrous cycle variability)
                     </div>
@@ -1709,7 +1709,7 @@ export function FindingsContextPanel() {
                 ancova: "ANCOVA",
               };
               return (
-                <div className="mt-2 rounded-md bg-amber-50 p-2 text-[10px]">
+                <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
                   <div className="font-semibold text-amber-800">
                     Body weight confounding (Tier {normCtx.tier})
                   </div>
@@ -1742,13 +1742,13 @@ export function FindingsContextPanel() {
               if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
               const ratioGrayed = isGonadal ? "opacity-40" : "";
               return (
-                <div className="mt-2 rounded-md border border-border/50 p-2 text-[10px]">
-                  <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mt-2 rounded-md border border-border/50 p-2 text-[11px]">
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Normalization alternatives (high dose vs control)
                   </div>
                   <table className="w-full">
                     <thead>
-                      <tr className="text-[9px] text-muted-foreground">
+                      <tr className="text-[10px] text-muted-foreground">
                         <th className="py-0.5 text-left font-medium">Metric</th>
                         <th className="py-0.5 text-right font-medium">Control</th>
                         <th className="py-0.5 text-right font-medium">High dose</th>
@@ -1820,7 +1820,7 @@ export function FindingsContextPanel() {
               expandAll={expandGen}
               collapseAll={collapseGen}
               headerRight={
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   {endpointRules.length} rules
                 </span>
               }
@@ -1841,11 +1841,11 @@ export function FindingsContextPanel() {
           collapseAll={collapseGen}
           headerRight={
             endpointSyndromes.length > 0 ? (
-              <span className="text-[9px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground">
                 {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
               </span>
             ) : (
-              <span className="text-[9px] text-muted-foreground">convergence</span>
+              <span className="text-[10px] text-muted-foreground">convergence</span>
             )
           }
         >
@@ -1925,7 +1925,7 @@ export function FindingsContextPanel() {
 
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <a
             href="#"
             className="block text-primary hover:underline"

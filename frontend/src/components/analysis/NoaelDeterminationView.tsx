@@ -90,11 +90,11 @@ interface NoaelSelection {
 function StatementIcon({ icon }: { icon: PanelStatement["icon"] }) {
   switch (icon) {
     case "fact":
-      return <span className="mt-0.5 shrink-0 text-[10px] text-muted-foreground">{"\u25CF"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[11px] text-muted-foreground">{"\u25CF"}</span>;
     case "warning":
-      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u25B2"}</span>;
     case "review-flag":
-      return <span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span>;
+      return <span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u26A0"}</span>;
   }
 }
 
@@ -105,8 +105,8 @@ function StudyStatementsBar({ statements, modifiers, caveats }: { statements: Pa
   return (
     <div className="shrink-0 border-b px-4 py-2">
       {statements.map((s, i) => (<div key={i} className="flex items-start gap-2 text-sm leading-relaxed"><StatementIcon icon={s.icon} /><span>{s.text}</span></div>))}
-      {studyModifiers.length > 0 && (<div className="mt-1 space-y-0.5">{studyModifiers.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u25B2"}</span><span>{s.text}</span></div>))}</div>)}
-      {studyCaveats.length > 0 && (<div className="mt-1 space-y-0.5">{studyCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[10px] text-amber-600">{"\u26A0"}</span><span>{s.text}</span></div>))}</div>)}
+      {studyModifiers.length > 0 && (<div className="mt-1 space-y-0.5">{studyModifiers.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u25B2"}</span><span>{s.text}</span></div>))}</div>)}
+      {studyCaveats.length > 0 && (<div className="mt-1 space-y-0.5">{studyCaveats.map((s, i) => (<div key={i} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80"><span className="mt-0.5 shrink-0 text-[11px] text-amber-600">{"\u26A0"}</span><span>{s.text}</span></div>))}</div>)}
     </div>
   );
 }
@@ -133,11 +133,11 @@ function ExposureSection({ pkData }: { pkData: PkIntegration }) {
     <div className="mt-1.5 border-t pt-1.5">
       {atControl ? (
         <>
-          <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {exposureLabel}
           </div>
           {exposure && (
-            <div className="space-y-px text-[10px]">
+            <div className="space-y-px text-[11px]">
               {exposure.cmax && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">C<sub>max</sub></span>
@@ -152,18 +152,18 @@ function ExposureSection({ pkData }: { pkData: PkIntegration }) {
               )}
             </div>
           )}
-          <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 border-t pt-1 text-[11px] text-muted-foreground">
             No safe starting dose can be derived from this study using standard allometric scaling
             (adverse effects at all tested doses). LOAEL-based margin shown as alternative.
           </div>
         </>
       ) : (
         <>
-          <div className="mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Exposure at NOAEL
           </div>
           {noaelExp && (
-            <div className="space-y-px text-[10px]">
+            <div className="space-y-px text-[11px]">
               {noaelExp.cmax && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">C<sub>max</sub></span>
@@ -179,7 +179,7 @@ function ExposureSection({ pkData }: { pkData: PkIntegration }) {
             </div>
           )}
           {hed && (
-            <div className="mt-1 space-y-px border-t pt-1 text-[10px]">
+            <div className="mt-1 space-y-px border-t pt-1 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">HED</span>
                 <span className="font-medium">{hed.hed_mg_kg.toFixed(2)} mg/kg</span>
@@ -219,7 +219,7 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
 
   return (
     <div className="rounded-lg border p-3">
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         Safety margin calculator
         {atControl && (
           <span className="ml-1.5 normal-case font-normal text-muted-foreground/70">
@@ -227,9 +227,9 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
           </span>
         )}
       </div>
-      <div className="flex items-end gap-4 text-[11px]">
+      <div className="flex items-end gap-4 text-xs">
         <div className="flex-1">
-          <label className="mb-0.5 block text-[10px] text-muted-foreground">
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">
             Human C<sub>max</sub> ({refExposure.cmax?.unit ?? "ng/mL"})
           </label>
           <input
@@ -237,11 +237,11 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
             value={humanCmax}
             onChange={(e) => setHumanCmax(e.target.value)}
             placeholder="0"
-            className="w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded border bg-background px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
         <div className="flex-1">
-          <label className="mb-0.5 block text-[10px] text-muted-foreground">
+          <label className="mb-0.5 block text-[11px] text-muted-foreground">
             Human AUC ({refExposure.auc?.unit ?? "h*ng/mL"})
           </label>
           <input
@@ -249,10 +249,10 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
             value={humanAuc}
             onChange={(e) => setHumanAuc(e.target.value)}
             placeholder="0"
-            className="w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded border bg-background px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
-        <div className="flex-1 text-[11px]">
+        <div className="flex-1 text-xs">
           {(cmaxMargin != null && isFinite(cmaxMargin) && cmaxMargin > 0) || (aucMargin != null && isFinite(aucMargin) && aucMargin > 0) ? (
             <div className="space-y-0.5">
               {cmaxMargin != null && isFinite(cmaxMargin) && cmaxMargin > 0 && (
@@ -274,7 +274,7 @@ function SafetyMarginCalculator({ pkData }: { pkData: PkIntegration }) {
         </div>
       </div>
       {pkData.tk_design?.has_satellite_groups && !pkData.tk_design.individual_correlation_possible && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           TK data from satellite animals (n={pkData.tk_design.n_tk_subjects}). Individual exposure-toxicity correlation not available.
         </p>
       )}
@@ -400,10 +400,10 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
                 </span>
                 <div className="flex items-center gap-1.5">
                   {override ? (
-                    <span className="text-[10px] font-medium text-blue-600">Overridden</span>
+                    <span className="text-[11px] font-medium text-blue-600">Overridden</span>
                   ) : (
                     <span
-                      className="text-[10px] font-medium"
+                      className="text-[11px] font-medium"
                       style={{ color: established ? "#15803d" : "#dc2626" }}
                     >
                       {established ? "Established" : "Not established"}
@@ -419,14 +419,14 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
                   </button>
                 </div>
               </div>
-              <div className="space-y-0.5 text-[11px]">
+              <div className="space-y-0.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">NOAEL</span>
                   <span className="font-medium">
                     {override ? (
                       <>
                         {override.override_dose_value}
-                        <span className="ml-1.5 text-[10px] text-muted-foreground line-through">
+                        <span className="ml-1.5 text-[11px] text-muted-foreground line-through">
                           {r.noael_dose_value} {r.noael_dose_unit}
                         </span>
                       </>
@@ -445,13 +445,13 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
                 </div>
                 {/* Override rationale display */}
                 {override && !isEditing && (
-                  <div className="mt-0.5 text-[10px] italic text-muted-foreground line-clamp-2" title={override.rationale}>
+                  <div className="mt-0.5 text-[11px] italic text-muted-foreground line-clamp-2" title={override.rationale}>
                     {override.rationale}
                   </div>
                 )}
                 {/* LOAEL dose-limiting findings callout (#4) */}
                 {cardNarr && cardNarr.loael_findings.length > 0 && (
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {cardNarr.loael_details.slice(0, 3).map((f, i) => {
                       const organSystem = aeData.find(a => a.endpoint_label === f.finding)?.organ_system;
                       return (
@@ -503,14 +503,14 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
               {/* Inline override form */}
               {isEditing && (
                 <div className="mt-2 rounded-md border border-dashed border-primary/30 bg-muted/10 p-2">
-                  <div className="mb-1.5 text-[10px] font-semibold">Override NOAEL determination</div>
+                  <div className="mb-1.5 text-[11px] font-semibold">Override NOAEL determination</div>
                   <div className="space-y-1.5">
                     <div>
-                      <label className="mb-0.5 block text-[10px] text-muted-foreground">NOAEL dose</label>
+                      <label className="mb-0.5 block text-[11px] text-muted-foreground">NOAEL dose</label>
                       <select
                         value={overrideDose}
                         onChange={(e) => setOverrideDose(e.target.value)}
-                        className="w-full rounded border bg-background px-1.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full rounded border bg-background px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         {doseOptions.map((d) => (
                           <option key={d.level} value={d.label}>{d.label}</option>
@@ -519,19 +519,19 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
                       </select>
                     </div>
                     <div>
-                      <label className="mb-0.5 block text-[10px] text-muted-foreground">Rationale</label>
+                      <label className="mb-0.5 block text-[11px] text-muted-foreground">Rationale</label>
                       <textarea
                         value={overrideRationale}
                         onChange={(e) => setOverrideRationale(e.target.value)}
                         placeholder="Required — explain why the system determination is being overridden"
                         rows={2}
-                        className="w-full rounded border bg-background px-1.5 py-1 text-[11px] placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full rounded border bg-background px-1.5 py-1 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <button
                         type="button"
-                        className="rounded px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/40"
+                        className="rounded px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/40"
                         onClick={() => setEditingSex(null)}
                       >
                         Cancel
@@ -544,7 +544,7 @@ function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: { data: 
                             overrideDose === override.override_dose_value &&
                             overrideRationale.trim() === override.rationale)
                         }
-                        className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground disabled:opacity-50"
+                        className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground disabled:opacity-50"
                         onClick={() => handleSave(r.sex, r)}
                       >
                         Save
@@ -584,12 +584,12 @@ function OrganHeader({ summary, recovery, effectSizeSymbol = "d" }: { summary: O
           {titleCase(summary.organ_system)}
         </h3>
         {summary.adverseCount > 0 && (
-          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
             {summary.adverseCount} adverse
           </span>
         )}
         {recovery?.hasRecovery && recovery.overall && (
-          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
             {verdictArrow(recovery.overall)} {recovery.overall.replace(/_/g, " ")}
           </span>
         )}
@@ -602,7 +602,7 @@ function OrganHeader({ summary, recovery, effectSizeSymbol = "d" }: { summary: O
       </p>
 
       {/* SLA-01: Show per-metric-type max instead of mixed maxEffectSize */}
-      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+      <div className="mt-2 flex flex-wrap gap-3 text-xs">
         {summary.maxCohensD != null && (
           <div>
             <span className="text-muted-foreground">Max |{effectSizeSymbol}|: </span>
@@ -684,7 +684,7 @@ function OverviewTab({
           Endpoint summary
         </h4>
         {endpointSummaries.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No endpoints for this organ.</p>
+          <p className="text-xs text-muted-foreground">No endpoints for this organ.</p>
         ) : (
           <div className="space-y-0.5">
             {endpointSummaries.map((ep) => {
@@ -693,7 +693,7 @@ function OverviewTab({
                 <button
                   key={ep.endpoint_label}
                   className={cn(
-                    "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] transition-colors hover:bg-accent/30",
+                    "group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent/30",
                     isSelected && "bg-accent font-medium"
                   )}
                   onClick={() => onEndpointClick(ep.endpoint_label)}
@@ -703,26 +703,26 @@ function OverviewTab({
                     {ep.endpoint_label}
                   </span>
                   {ep.direction && (
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       {getDirectionSymbol(ep.direction)}
                     </span>
                   )}
                   {ep.maxEffectSize != null && (
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground" title={`${effectSizeLabel(ep.domain)} = ${ep.maxEffectSize.toFixed(3)}`}>
+                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground" title={`${effectSizeLabel(ep.domain)} = ${ep.maxEffectSize.toFixed(3)}`}>
                       {ep.maxEffectSize.toFixed(2)}
                     </span>
                   )}
-                  <span className="shrink-0 text-[9px] text-muted-foreground">
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
                     {ep.worstSeverity}
                   </span>
                   {ep.treatmentRelated && (
-                    <span className="shrink-0 text-[9px] font-medium text-muted-foreground">TR</span>
+                    <span className="shrink-0 text-[10px] font-medium text-muted-foreground">TR</span>
                   )}
                   {recovery?.hasRecovery && (ep.domain === "MI" || ep.domain === "MA") && (() => {
                     const v = recovery.byEndpointLabel.get(ep.endpoint_label);
                     if (!v || v === "not_observed" || v === "no_data") return null;
                     return (
-                      <span className="shrink-0 text-[9px] text-muted-foreground">
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
                         {verdictArrow(v)} {v.replace(/_/g, " ")}
                       </span>
                     );
@@ -931,7 +931,7 @@ function AdversityMatrixTab({
             return (
               <span
                 className={cn(
-                  "text-[9px]",
+                  "text-[10px]",
                   emphasis ? "font-medium text-foreground/70" : "text-muted-foreground",
                 )}
                 title={buildRecoveryTooltip(assessment, recDays)}
@@ -1010,7 +1010,7 @@ function AdversityMatrixTab({
                   {matrixData.doseLevels.map((dl) => (
                     <div
                       key={dl}
-                      className="w-16 shrink-0 text-center text-[10px] font-medium text-muted-foreground"
+                      className="w-16 shrink-0 text-center text-[11px] font-medium text-muted-foreground"
                     >
                       <DoseHeader level={dl} label={matrixData.doseLabels?.get(dl) ?? `Dose ${dl}`} />
                     </div>
@@ -1019,7 +1019,7 @@ function AdversityMatrixTab({
                 {matrixData.endpoints.map((ep) => (
                   <div key={ep} className="flex border-t">
                     <div
-                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[10px]"
+                      className="w-48 shrink-0 truncate py-0.5 pr-2 text-[11px]"
                       title={ep}
                     >
                       {ep.length > 35 ? ep.slice(0, 35) + "\u2026" : ep}
@@ -1054,7 +1054,7 @@ function AdversityMatrixTab({
                 ))}
               </div>
             </div>
-            <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
+            <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
               {[
                 { label: "Adverse (TR)", score: 0.9 },
                 { label: "Warning", score: 0.5 },
@@ -1079,14 +1079,14 @@ function AdversityMatrixTab({
           collapseGen={collapseGen}
         >
         <div className="h-full overflow-auto">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-[11px]">
               <thead className="sticky top-0 z-10 bg-background">
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id} className="border-b bg-muted/30">
                     {hg.headers.map((header) => (
                       <th
                         key={header.id}
-                        className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                        className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                         style={colStyle(header.id)}
                         onDoubleClick={header.column.getToggleSortingHandler()}
                       >
@@ -1141,7 +1141,7 @@ function AdversityMatrixTab({
               </tbody>
             </table>
             {filteredData.length > 200 && (
-              <div className="p-2 text-center text-[10px] text-muted-foreground">
+              <div className="p-2 text-center text-[11px] text-muted-foreground">
                 Showing first 200 of {filteredData.length} rows. Use filters to narrow results.
               </div>
             )}
@@ -1267,10 +1267,10 @@ function ProtectiveSignalsBar({
   return (
     <div className="shrink-0 border-b px-4 py-2">
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Protective signals
         </span>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {findings.length} finding{findings.length !== 1 ? "s" : ""} with decreased incidence
           {classifiedCount > 0 && ` \u00b7 ${pharmacological.length} pharmacological \u00b7 ${treatmentDecrease.length} treatment-related`}
         </span>
@@ -1281,7 +1281,7 @@ function ProtectiveSignalsBar({
           <div key={`ph-${f.finding}`} className="border-l-2 border-l-blue-400 py-1 pl-2.5">
             <div className="flex items-baseline gap-2">
               <button
-                className="text-[11px] font-semibold hover:underline"
+                className="text-xs font-semibold hover:underline"
                 onClick={() => {
                   const spec = f.specimens[0];
                   if (spec) {
@@ -1292,14 +1292,14 @@ function ProtectiveSignalsBar({
               >
                 {f.finding}
               </button>
-              <span className="text-[10px] font-medium text-muted-foreground">{f.sexes}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{f.sexes}</span>
               <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("pharmacological"))}>pharmacological</span>
             </div>
-            <div className="text-[10px] leading-snug text-muted-foreground">
+            <div className="text-[11px] leading-snug text-muted-foreground">
               {f.ctrlPct}% control {"\u2192"} {f.highPct}% high dose in {f.specimens.join(", ")}
             </div>
             {correlatesByFinding.get(f.finding) && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+              <div className="mt-0.5 text-[11px] text-muted-foreground/70">
                 Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
                   <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
                 ))}
@@ -1312,7 +1312,7 @@ function ProtectiveSignalsBar({
           <div key={`td-${f.finding}`} className="border-l-2 border-l-slate-400 py-0.5 pl-2.5">
             <div className="flex items-baseline gap-2">
               <button
-                className="text-[11px] font-medium hover:underline"
+                className="text-xs font-medium hover:underline"
                 onClick={() => {
                   const spec = f.specimens[0];
                   if (spec) {
@@ -1323,17 +1323,17 @@ function ProtectiveSignalsBar({
               >
                 {f.finding}
               </button>
-              <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
+              <span className="text-[11px] text-muted-foreground">{f.sexes}</span>
               <span className={cn("rounded px-1.5 py-0.5", getProtectiveBadgeStyle("treatment-decrease"))}>treatment decrease</span>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+              <span className="ml-auto font-mono text-[11px] text-muted-foreground">
                 {f.ctrlPct}% {"\u2192"} {f.highPct}%
               </span>
             </div>
             {f.specimens.length > 0 && (
-              <div className="text-[9px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
+              <div className="text-[10px] text-muted-foreground/70">{f.specimens.join(", ")}</div>
             )}
             {correlatesByFinding.get(f.finding) && (
-              <div className="text-[10px] text-muted-foreground/70">
+              <div className="text-[11px] text-muted-foreground/70">
                 Correlated: {correlatesByFinding.get(f.finding)!.map((c, i) => (
                   <span key={c.label}>{i > 0 && ", "}{c.label} {c.direction}</span>
                 ))}
@@ -1344,14 +1344,14 @@ function ProtectiveSignalsBar({
         {/* Background (other decreased) */}
         {background.length > 0 && (
           <div className="space-y-0.5">
-            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
               Other decreased findings
             </div>
             {background.slice(0, 5).map((f) => (
               <div key={`bg-${f.finding}`} className="border-l-2 border-l-gray-300 py-0.5 pl-2.5">
                 <div className="flex items-baseline gap-2">
                   <button
-                    className="text-[11px] font-medium hover:underline"
+                    className="text-xs font-medium hover:underline"
                     onClick={() => {
                       const spec = f.specimens[0];
                       if (spec) {
@@ -1362,15 +1362,15 @@ function ProtectiveSignalsBar({
                   >
                     {f.finding}
                   </button>
-                  <span className="text-[10px] text-muted-foreground">{f.sexes}</span>
-                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground">{f.sexes}</span>
+                  <span className="ml-auto font-mono text-[11px] text-muted-foreground">
                     {f.ctrlPct}% {"\u2192"} {f.highPct}%
                   </span>
                 </div>
               </div>
             ))}
             {background.length > 5 && (
-              <div className="pl-2.5 text-[10px] text-muted-foreground/50">
+              <div className="pl-2.5 text-[11px] text-muted-foreground/50">
                 +{background.length - 5} more
               </div>
             )}
@@ -1460,7 +1460,7 @@ function buildSignalMetricsColumns(esSymbol = "d") { return [
   signalColHelper.accessor("severity", {
     header: "Severity",
     size: 70,
-    cell: (info) => <span className="rounded-sm border border-border px-1.5 py-0.5 text-[9px] font-medium">{info.getValue()}</span>,
+    cell: (info) => <span className="rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium">{info.getValue()}</span>,
   }),
   signalColHelper.accessor("treatment_related", {
     header: "TR",
@@ -1552,12 +1552,12 @@ function SignalMetricsTabInline({ signalData, selection, onSelect, effectSizeSym
         <FilterBarCount>{filteredData.length} rows</FilterBarCount>
       </FilterBar>
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b bg-muted/30">
                 {hg.headers.map((header) => (
-                  <th key={header.id} className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={colStyle(header.id)} onDoubleClick={header.column.getToggleSortingHandler()}>
+                  <th key={header.id} className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50" style={colStyle(header.id)} onDoubleClick={header.column.getToggleSortingHandler()}>
                     {flexRender(header.column.columnDef.header, header.getContext())}
                     {{ asc: " \u2191", desc: " \u2193" }[header.column.getIsSorted() as string] ?? ""}
                     <div onMouseDown={header.getResizeHandler()} onTouchStart={header.getResizeHandler()} className={cn("absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize select-none touch-none", header.column.getIsResizing() ? "bg-primary" : "hover:bg-primary/30")} />
@@ -1644,10 +1644,10 @@ function WeightedNoaelCard() {
 
   return (
     <div className="shrink-0 border-b px-4 py-2">
-      <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         Weighted NOAEL (ECI)
       </div>
-      <div className="flex items-baseline gap-4 text-[11px]">
+      <div className="flex items-baseline gap-4 text-xs">
         <span>
           <span className="text-muted-foreground">NOAEL: </span>
           <span className="font-semibold">
@@ -1661,7 +1661,7 @@ function WeightedNoaelCard() {
           </span>
         )}
       </div>
-      <div className="mt-1 space-y-1 text-[10px]">
+      <div className="mt-1 space-y-1 text-[11px]">
         {hasDetermining && (
           <div>
             <span className="font-semibold text-muted-foreground">Determining: </span>
@@ -1916,7 +1916,7 @@ export function NoaelDeterminationView() {
 
         {/* Dose proportionality warning */}
         {pkData?.available && pkData.dose_proportionality?.assessment && pkData.dose_proportionality.assessment !== "linear" && pkData.dose_proportionality.assessment !== "insufficient_data" && (
-          <div className="shrink-0 border-b bg-amber-50 px-4 py-1.5 text-[11px] text-amber-800">
+          <div className="shrink-0 border-b bg-amber-50 px-4 py-1.5 text-xs text-amber-800">
             <div>
               {"\u26a0"}{" "}
               {pkData.dose_proportionality.non_monotonic
@@ -1925,7 +1925,7 @@ export function NoaelDeterminationView() {
               }
             </div>
             {pkData.dose_proportionality.interpretation && (
-              <div className="mt-0.5 text-[10px] text-amber-700">
+              <div className="mt-0.5 text-[11px] text-amber-700">
                 {pkData.dose_proportionality.interpretation}
               </div>
             )}

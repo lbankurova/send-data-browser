@@ -433,14 +433,14 @@ export function VerdictPane({
 
       {/* Line 2 -- Clinical tier + rule (only when a clinical rule matched) */}
       {clinicalLineText && (
-        <div className={`mt-0.5 text-[10px] font-medium ${clinicalLineClass}`}>
+        <div className={`mt-0.5 text-[11px] font-medium ${clinicalLineClass}`}>
           {clinicalLineText}
         </div>
       )}
 
       {/* Line 3 -- Metadata: confidence · NOAEL weight · NOAEL */}
       {(confidence || noaelWeight || noaelStr) && (
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[10px] text-muted-foreground">
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[11px] text-muted-foreground">
           {confidence && <span>{confidence} confidence</span>}
           {confidence && noaelWeight && <span>&middot;</span>}
           {noaelWeight && (
@@ -460,7 +460,7 @@ export function VerdictPane({
 
       {/* Line 4 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
       {sexDirectionLine && (
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] font-medium text-foreground/80">
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-foreground/80">
           <span>{sexDirectionLine}</span>
           {!hasSibling && !notEvaluated && <PatternOverrideDropdown finding={finding} />}
         </div>
@@ -476,7 +476,7 @@ export function VerdictPane({
           `${sex} |${isContinuous ? getEffectSizeSymbol(esMethod) : "d"}|=${Math.abs(s.maxEffectSize ?? 0).toFixed(2)}`
         );
         return (
-          <div className="mt-1 text-[9px] text-muted-foreground">
+          <div className="mt-1 text-[10px] text-muted-foreground">
             Sex divergence: {parts.join(", ")}
           </div>
         );
@@ -485,37 +485,37 @@ export function VerdictPane({
       {/* Line 5 -- Key numbers with "Largest effect" header */}
       {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
         <div className="mt-3 pt-2 border-t border-border/40">
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             Largest effect ({bestEffectSex}):
           </div>
-          <div className="mt-1.5 flex gap-x-6 text-[10px]">
+          <div className="mt-1.5 flex gap-x-6 text-[11px]">
             {effectSize != null && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">|{isContinuous ? getEffectSizeSymbol(esMethod) : "d"}| = {Math.abs(effectSize).toFixed(2)}</span>
-                <span className="text-[9px] text-muted-foreground">{effectLabel}</span>
-                {effectMag && <span className="text-[9px] text-muted-foreground">({effectMag})</span>}
+                <span className="text-[10px] text-muted-foreground">{effectLabel}</span>
+                {effectMag && <span className="text-[10px] text-muted-foreground">({effectMag})</span>}
               </div>
             )}
 
             {trendP != null && (
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">p {formatPValue(trendP) === "<0.0001" ? "< 0.0001" : `= ${formatPValue(trendP)}`}</span>
-                <span className="text-[9px] text-muted-foreground">{trendTestName}</span>
-                <span className="text-[9px] text-muted-foreground">trend</span>
+                <span className="text-[10px] text-muted-foreground">{trendTestName}</span>
+                <span className="text-[10px] text-muted-foreground">trend</span>
               </div>
             )}
 
             {foldChangeDisplay != null ? (
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">{foldChangeDisplay}</span>
-                <span className="text-[9px] text-muted-foreground">vs control</span>
-                {foldChangeContext && <span className="text-[9px] text-muted-foreground">{foldChangeContext}</span>}
+                <span className="text-[10px] text-muted-foreground">vs control</span>
+                {foldChangeContext && <span className="text-[10px] text-muted-foreground">{foldChangeContext}</span>}
               </div>
             ) : pctChange != null ? (
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold font-mono">{pctChange}</span>
-                <span className="text-[9px] text-muted-foreground">vs control</span>
-                {pctDoseLabel && <span className="text-[9px] text-muted-foreground">{pctDoseLabel}</span>}
+                <span className="text-[10px] text-muted-foreground">vs control</span>
+                {pctDoseLabel && <span className="text-[10px] text-muted-foreground">{pctDoseLabel}</span>}
               </div>
             ) : null}
           </div>
@@ -524,7 +524,7 @@ export function VerdictPane({
 
       {/* Line 6 -- ANCOVA punchline */}
       {ancovaLine && (
-        <div className="mt-2 text-[10px] text-foreground/80">{ancovaLine}</div>
+        <div className="mt-2 text-[11px] text-foreground/80">{ancovaLine}</div>
       )}
     </div>
   );

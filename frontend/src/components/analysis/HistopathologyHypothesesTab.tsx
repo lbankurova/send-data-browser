@@ -45,9 +45,9 @@ function HypViewerPlaceholder({
     <div className="flex h-28 items-center justify-center rounded-md border bg-muted/30">
       <div className="text-center">
         <Icon className="mx-auto mb-1.5 h-6 w-6 text-muted-foreground/25" />
-        <p className="text-[11px] text-muted-foreground/50">{viewerType}</p>
+        <p className="text-xs text-muted-foreground/50">{viewerType}</p>
         {context && (
-          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/35">{context}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground/35">{context}</p>
         )}
       </div>
     </div>
@@ -56,7 +56,7 @@ function HypViewerPlaceholder({
 
 function HypConfigLine({ items }: { items: [string, string][] }) {
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px]">
+    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px]">
       {items.map(([k, v]) => (
         <span key={k}>
           <span className="text-muted-foreground">{k}: </span>
@@ -81,7 +81,7 @@ function SeverityDistributionPlaceholder({ specimenName, findingCount, selectedF
         Stacked bars show the proportion of each grade per dose level, highlighting dose-related severity escalation.
       </p>
       <div className="rounded-md border bg-card p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Viewer settings</p>
         <HypConfigLine items={[
           ["X", "dose group"],
           ["Y", "finding count"],
@@ -103,7 +103,7 @@ function TreatmentRelatedPlaceholder({ specimenName, selectedFinding }: { specim
           : "Classification tool for pathologists to assess each finding as treatment-related, incidental, or spontaneous. Uses dose-response pattern, historical control incidence, severity progression, and biological plausibility as evidence columns."}
       </p>
       <div className="rounded-md border bg-card p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Viewer settings</p>
         <HypConfigLine items={[
           ["Rows", "findings in specimen"],
           ["Columns", "dose pattern, HCD incidence, severity trend, classification"],
@@ -128,7 +128,7 @@ function DoseSeverityTrendPlaceholder({ specimenName, selectedFinding }: { speci
         threshold effects or incidental findings.
       </p>
       <div className="rounded-md border bg-card p-3">
-        <p className="mb-1.5 text-[10px] font-medium text-muted-foreground">Viewer settings</p>
+        <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Viewer settings</p>
         <HypConfigLine items={[
           ["X", "dose level"],
           ["Y (left)", "average severity"],
@@ -217,7 +217,7 @@ export function HistopathHypothesesTab({
             <button
               key={tool.value}
               className={cn(
-                "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
                 intent === tool.value
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -237,7 +237,7 @@ export function HistopathHypothesesTab({
         {/* Add tool dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
-            className="flex items-center gap-0.5 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-0.5 rounded-full px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             onClick={() => { setDropdownOpen(!dropdownOpen); setDropdownSearch(""); }}
             title="Browse tools"
           >
@@ -288,7 +288,7 @@ export function HistopathHypothesesTab({
                       <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">{tool.label}</div>
-                        <div className="truncate text-[10px] text-muted-foreground">{tool.description}</div>
+                        <div className="truncate text-[11px] text-muted-foreground">{tool.description}</div>
                       </div>
                       {isFav && <Pin className="h-3 w-3 shrink-0 fill-muted-foreground/50 text-muted-foreground/50" />}
                     </button>
@@ -299,7 +299,7 @@ export function HistopathHypothesesTab({
           )}
         </div>
 
-        <span className="ml-auto text-[10px] italic text-muted-foreground">
+        <span className="ml-auto text-[11px] italic text-muted-foreground">
           Does not affect conclusions
         </span>
       </div>

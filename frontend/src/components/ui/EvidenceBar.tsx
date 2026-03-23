@@ -28,7 +28,7 @@ export function EvidenceBar({
       </div>
       <span
         className={cn(
-          "shrink-0 font-mono text-[10px] tabular-nums",
+          "shrink-0 font-mono text-[11px] tabular-nums",
           labelClassName
         )}
       >

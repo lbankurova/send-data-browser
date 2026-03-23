@@ -222,7 +222,7 @@ export function EndpointSyndromePane({
   // ── Render ──
 
   return (
-    <div className="space-y-3 text-[10px]">
+    <div className="space-y-3 text-[11px]">
       {syndromes.map((syn) => {
         const interp = interpretations.get(syn.id);
         const otherEndpoints = syn.matchedEndpoints
@@ -246,15 +246,15 @@ export function EndpointSyndromePane({
               <span className="font-semibold text-foreground">{syn.name}</span>
               {interp ? (
                 <>
-                  <span className={`text-[9px] ${getSeverityTextClass(interp.overallSeverity)}`}>
+                  <span className={`text-[10px] ${getSeverityTextClass(interp.overallSeverity)}`}>
                     {SEVERITY_LABELS[interp.overallSeverity]}
                   </span>
-                  <span className="text-[9px] text-muted-foreground">
+                  <span className="text-[10px] text-muted-foreground">
                     · {getMechanismLabel(interp.mechanismCertainty)}
                   </span>
                 </>
               ) : (
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   {syn.confidence}
                 </span>
               )}
@@ -262,7 +262,7 @@ export function EndpointSyndromePane({
 
             {/* Role of current endpoint */}
             {currentMatch && (
-              <div className="mt-0.5 text-[9px] text-muted-foreground">
+              <div className="mt-0.5 text-[10px] text-muted-foreground">
                 This endpoint: {currentMatch.role}
                 {syn.sexes.length > 0 && (
                   <> · {syn.sexes.length === 1 ? `${syn.sexes[0]} only` : "both sexes"}</>
@@ -274,7 +274,7 @@ export function EndpointSyndromePane({
             {otherEndpoints.length > 0 && (
               <table className="mt-1.5 w-full">
                 <thead>
-                  <tr className="text-[9px] text-muted-foreground">
+                  <tr className="text-[10px] text-muted-foreground">
                     <th className="py-0.5 text-left font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Domain</th>
                     <th className="py-0.5 text-left font-medium">Endpoint</th>
                     <th className="py-0.5 text-center font-medium" style={{ width: "1px", whiteSpace: "nowrap" }}>Dir</th>
@@ -284,7 +284,7 @@ export function EndpointSyndromePane({
                 <tbody>
                   {otherEndpoints.map((m, i) => (
                     <tr key={`${m.endpoint_label}-${m.domain}-${i}`} className="border-t border-border/20">
-                      <td className="py-0.5 pr-2 text-[9px] font-semibold text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                      <td className="py-0.5 pr-2 text-[10px] font-semibold text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }}>
                         {m.domain}
                       </td>
                       <td className="py-0.5">
@@ -310,7 +310,7 @@ export function EndpointSyndromePane({
 
             {/* View full syndrome link */}
             <button
-              className="mt-1 text-[9px] text-primary hover:underline"
+              className="mt-1 text-[10px] text-primary hover:underline"
               onClick={() => onViewSyndrome(syn.id)}
             >
               View full syndrome &rarr;

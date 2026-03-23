@@ -33,7 +33,7 @@ export function ToxSummaryPane({ study, showDerivedOnly = false }: Props) {
         {/* Target Organs */}
         {organs.length > 0 && (
           <div>
-            <div className="mb-1 text-[10px] font-medium text-muted-foreground">
+            <div className="mb-1 text-[11px] font-medium text-muted-foreground">
               Target organs
             </div>
             <div className="flex flex-wrap items-center gap-1">
@@ -47,11 +47,11 @@ export function ToxSummaryPane({ study, showDerivedOnly = false }: Props) {
                 </span>
               ))}
               {showDerivedOnly && study.target_organs_derived && !study.target_organs_reported && (
-                <span className="text-[9px] text-muted-foreground">(derived from data)</span>
+                <span className="text-[10px] text-muted-foreground">(derived from data)</span>
               )}
             </div>
             {hasOrganDisc && (
-              <div className="mt-1 flex items-start gap-1 text-[10px] text-amber-700">
+              <div className="mt-1 flex items-start gap-1 text-[11px] text-amber-700">
                 <AlertCircle className="mt-0.5 h-3 w-3 flex-shrink-0" />
                 <span>Discrepancy between report and data — see Delta section</span>
               </div>
@@ -68,15 +68,15 @@ export function ToxSummaryPane({ study, showDerivedOnly = false }: Props) {
                 className="flex-1 rounded p-2"
                 style={{ backgroundColor: "#8CD4A2" }}
               >
-                <div className="text-[10px] font-medium text-gray-700">NOAEL</div>
+                <div className="text-[11px] font-medium text-gray-700">NOAEL</div>
                 <div className="text-sm font-bold text-gray-900">
                   {resolvedNoael.dose} {resolvedNoael.unit}
                 </div>
-                <div className="mt-1 text-[10px] italic leading-tight text-gray-600">
+                <div className="mt-1 text-[11px] italic leading-tight text-gray-600">
                   {resolvedNoael.basisOrMethod}
                 </div>
                 {hasNoaelDisc && study.noael_derived && (
-                  <div className="mt-1 text-[9px] font-semibold text-amber-800">
+                  <div className="mt-1 text-[10px] font-semibold text-amber-800">
                     ✓ Reported (derived: {study.noael_derived.dose})
                   </div>
                 )}
@@ -89,12 +89,12 @@ export function ToxSummaryPane({ study, showDerivedOnly = false }: Props) {
                 className="flex-1 rounded p-2"
                 style={{ backgroundColor: "#E8D47C" }}
               >
-                <div className="text-[10px] font-medium text-gray-700">LOAEL</div>
+                <div className="text-[11px] font-medium text-gray-700">LOAEL</div>
                 <div className="text-sm font-bold text-gray-900">
                   {resolvedLoael.dose} {resolvedLoael.unit}
                 </div>
                 {hasLoaelDisc && study.loael_derived && (
-                  <div className="mt-1 text-[9px] font-semibold text-amber-800">
+                  <div className="mt-1 text-[10px] font-semibold text-amber-800">
                     ✓ Reported (derived: {study.loael_derived.dose})
                   </div>
                 )}

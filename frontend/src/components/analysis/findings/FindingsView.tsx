@@ -309,9 +309,11 @@ export function FindingsView() {
   }, [activeDay, dayMeta, dayCleared]);
   // Reset dayCleared when endpoint changes (new endpoint = new day context)
   useEffect(() => { setDayCleared(false); }, [activeEndpoint]);
-  // Effective day: null when user cleared, otherwise selected or fallback
-  const effectiveDay = dayCleared ? null : (selectedDay
-    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null));
+  // Chart day: always resolves to a day (charts need a specific day to plot)
+  const chartDay = selectedDay
+    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
+  // Table day: null when user cleared (shows all days), otherwise same as chartDay
+  const tableDay = dayCleared ? null : chartDay;
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -346,7 +348,7 @@ export function FindingsView() {
     return (
       <span className="flex items-baseline gap-1.5">
         <span>{titleText}</span>
-        <span className="truncate text-[10px] normal-case tracking-normal font-normal text-foreground">
+        <span className="truncate text-[11px] normal-case tracking-normal font-normal text-foreground">
           <span className="text-muted-foreground/50">{countText}</span>
           {hasFilters && filterLabels.map((label) => (
             <span key={label}>
@@ -388,7 +390,7 @@ export function FindingsView() {
         {showLabels.map((label) => (
           <span
             key={label}
-            className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70"
+            className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[10px] text-muted-foreground/70"
           >
             <span className="max-w-[80px] truncate">{label}</span>
             <EyeOff
@@ -398,7 +400,7 @@ export function FindingsView() {
           </span>
         ))}
         {overflow > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70">
+          <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[10px] text-muted-foreground/70">
             <span>+{overflow} more</span>
             <EyeOff
               className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
@@ -422,7 +424,7 @@ export function FindingsView() {
         <Info className="h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
         {showInfoTooltip && (
           <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
-            <div className="text-[11px] leading-relaxed text-popover-foreground">
+            <div className="text-xs leading-relaxed text-popover-foreground">
               <p>One dot per finding, showing the strongest signal across timepoints and sexes.</p>
               <p className="mt-1.5"><span className="text-muted-foreground">&rarr;</span> Effect size percentile <span className="text-muted-foreground">(continuous and incidence ranked separately)</span></p>
               <p><span className="text-muted-foreground">&uarr;</span> Lower p-value (pairwise vs. control)</p>
@@ -442,7 +444,7 @@ export function FindingsView() {
       {dayMeta && (
         <DayStepper
           availableDays={dayMeta.availableDays}
-          selectedDay={effectiveDay}
+          selectedDay={chartDay}
           onDayChange={(d) => { setSelectedDay(d); setDayCleared(false); }}
           dayLabels={dayMeta.dayLabels}
           peakDay={dayMeta.peakDay}
@@ -450,7 +452,7 @@ export function FindingsView() {
       )}
       {excludedChips}
     </span>
-  ), [dayMeta, effectiveDay, excludedChips]);
+  ), [dayMeta, chartDay, excludedChips]);
 
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
@@ -510,7 +512,7 @@ export function FindingsView() {
               endpointLabel={activeEndpoint}
               findings={tableFindings}
               doseGroups={data.dose_groups}
-              selectedDay={effectiveDay}
+              selectedDay={chartDay}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
@@ -558,7 +560,7 @@ export function FindingsView() {
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
-          selectedDay={activeEndpoint ? effectiveDay : undefined}
+          selectedDay={activeEndpoint ? tableDay : undefined}
           onClearDayFilter={() => { setSelectedDay(null); setDayCleared(true); }}
         />
       ) : null}

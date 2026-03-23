@@ -255,7 +255,7 @@ function NormalizationModeDisplay({
         <span className="font-semibold">Tier: </span>
         {decision.tier} — {getTierSeverityLabel(decision.tier)} BW effect
       </div>
-      <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+      <div className="mt-1 space-y-0.5 text-[11px] text-muted-foreground">
         <div>BW effect (worst group): g = {normalization.worstBwG.toFixed(2)}</div>
         <div>
           Brain weight: {normalization.worstBrainG != null
@@ -266,15 +266,15 @@ function NormalizationModeDisplay({
       </div>
       {decision.rationale.length > 0 && (
         <div className="mt-2 border-t pt-2">
-          <div className="mb-1 text-[10px] font-semibold text-muted-foreground">Rationale</div>
-          <ul className="space-y-0.5 text-[10px] text-muted-foreground">
+          <div className="mb-1 text-[11px] font-semibold text-muted-foreground">Rationale</div>
+          <ul className="space-y-0.5 text-[11px] text-muted-foreground">
             {decision.rationale.map((r, i) => (
               <li key={i}>• {r}</li>
             ))}
           </ul>
         </div>
       )}
-      <div className="text-[9px] text-muted-foreground/60">
+      <div className="text-[10px] text-muted-foreground/60">
         Ref: Bailey et al. 2004, Sellers et al. 2007, Creasy 2013
       </div>
     </>
@@ -348,7 +348,7 @@ function NormalizationOverrideForm({
         <div className="flex items-center justify-between">
           <button
             type="button"
-            className="text-[10px] font-medium text-primary hover:underline"
+            className="text-[11px] font-medium text-primary hover:underline"
             onClick={() => setEditing(true)}
           >
             {isOverridden ? "Edit override" : "Override mode"}
@@ -356,25 +356,25 @@ function NormalizationOverrideForm({
           {isOverridden && (
             <button
               type="button"
-              className="text-[10px] text-muted-foreground hover:text-destructive"
+              className="text-[11px] text-muted-foreground hover:text-destructive"
               onClick={handleClear}
             >
               Clear override
             </button>
           )}
           {saved && (
-            <span className="text-[10px] font-medium text-green-600">Saved</span>
+            <span className="text-[11px] font-medium text-green-600">Saved</span>
           )}
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="text-[10px] font-semibold text-muted-foreground">Override normalization mode</div>
+          <div className="text-[11px] font-semibold text-muted-foreground">Override normalization mode</div>
           <div className="flex flex-wrap gap-1">
             {availableModes.map(m => (
               <button
                 key={m}
                 type="button"
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
                   selectedMode === m
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -386,7 +386,7 @@ function NormalizationOverrideForm({
             ))}
           </div>
           <textarea
-            className="w-full rounded border border-border bg-background px-2 py-1 text-[10px] placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-[11px] placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
             rows={2}
             placeholder="Reason for override (required)"
             value={reason}
@@ -396,14 +396,14 @@ function NormalizationOverrideForm({
             <button
               type="button"
               disabled={!reason.trim() || overrides.isSaving}
-              className="rounded bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground disabled:opacity-50"
+              className="rounded bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-50"
               onClick={handleSave}
             >
               {overrides.isSaving ? "Saving..." : "Save"}
             </button>
             <button
               type="button"
-              className="text-[10px] text-muted-foreground hover:underline"
+              className="text-[11px] text-muted-foreground hover:underline"
               onClick={() => {
                 setEditing(false);
                 setSelectedMode(existingOverride?.mode ?? (currentAutoMode as NormalizationOverride["mode"]));
@@ -414,7 +414,7 @@ function NormalizationOverrideForm({
             </button>
           </div>
           {isOverridden && existingOverride.reviewDate && (
-            <div className="text-[9px] text-muted-foreground/60">
+            <div className="text-[10px] text-muted-foreground/60">
               Last overridden: {new Date(existingOverride.reviewDate).toLocaleString()}
               {existingOverride.pathologist && ` by ${existingOverride.pathologist}`}
             </div>
@@ -632,13 +632,13 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
         <div className="mb-2 text-xs font-semibold">{convergenceLabel}</div>
         {domainBreakdown.map(({ domain, endpoints, count }) => (
           <div key={domain} className="flex items-start gap-2 py-0.5">
-            <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+            <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
               {domain.toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={endpoints.join(", ")}>
               {endpoints.join(", ")}
             </span>
-            <span className="shrink-0 text-[10px] text-muted-foreground">
+            <span className="shrink-0 text-[11px] text-muted-foreground">
               {count} endpt
             </span>
           </div>
@@ -658,7 +658,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
-            <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+            <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
               {corrMatrix.summary.coherence_label}
             </span>
           }
@@ -751,7 +751,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
               NOAEL: {noaelData.organNoael}
             </div>
             {noaelData.drivingEndpoint && (
-              <div className="text-[10px] text-muted-foreground">
+              <div className="text-[11px] text-muted-foreground">
                 (driven by {noaelData.drivingEndpoint} — lowest endpoint NOAEL)
               </div>
             )}
@@ -774,11 +774,11 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
                     <span className="min-w-0 flex-1 truncate">{ep.endpoint_label}</span>
                     <span className="shrink-0">{ep.noaelLabel}</span>
                     {clinical ? (
-                      <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinical.tier)}`}>
+                      <span className={`shrink-0 font-mono text-[10px] ${getClinicalTierTextClass(clinical.tier)}`}>
                         {clinical.tier} {clinical.ruleId}
                       </span>
                     ) : (
-                      <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground/40">{"\u2014"}</span>
                     )}
                   </div>
                 );
@@ -870,12 +870,12 @@ function RelatedSyndromeRow({
           >
             {name} ({syndromeId})
           </button>
-          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+          <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
             {detected.confidence}
           </span>
         </div>
         {memberEps.length > 0 && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {memberEps.join(", ")}
           </div>
         )}
@@ -895,12 +895,12 @@ function RelatedSyndromeRow({
         >
           {name} ({syndromeId})
         </button>
-        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+        <span className="rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
           not detected
         </span>
       </div>
       {nearMiss && (
-        <div className="mt-0.5 space-y-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-0.5 space-y-0.5 text-[11px] text-muted-foreground">
           <div>Would require: {nearMiss.wouldRequire}</div>
           {nearMiss.matched.length > 0 && nearMiss.missing.length > 0 && (
             <div>
@@ -929,7 +929,7 @@ function MemberEndpointRow({
       className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-xs hover:bg-accent/50 transition-colors"
       onClick={onClick}
     >
-      <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+      <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
         {endpoint.domain.toUpperCase()}
       </span>
       <span className="min-w-0 flex-1 truncate" title={endpoint.endpoint_label}>
@@ -937,12 +937,12 @@ function MemberEndpointRow({
       </span>
       <span className="shrink-0 text-muted-foreground">{dirSymbol}</span>
       {endpoint.maxEffectSize != null && (
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
           |d|={formatEffectSize(endpoint.maxEffectSize)}
         </span>
       )}
       {endpoint.minPValue != null && (
-        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
           p={formatPValue(endpoint.minPValue)}
         </span>
       )}

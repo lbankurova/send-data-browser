@@ -892,7 +892,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           </span>
         )}
         {/* Showing text + filter icon + clear — grouped together */}
-        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <button
             type="button"
             className={cn(
@@ -910,7 +910,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           {(selectedDay != null || activeFilterCount > 0) && (
             <button
               type="button"
-              className="flex items-center gap-0.5 rounded px-0.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-0.5 rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               onClick={() => {
                 setFilterState(DEFAULT_FILTER_STATE);
                 onClearDayFilter?.();
@@ -926,7 +926,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             const allDomains = [...new Set(findings.map((f) => f.domain))].sort();
             const excluded = allDomains.filter((d) => !filterState.domain!.includes(d));
             return excluded.length > 0 ? (
-              <span className="text-[9px]">
+              <span className="text-[10px]">
                 {excluded.map((d) => (
                   <span key={d} className="text-muted-foreground/40 line-through mr-1">{d}</span>
                 ))}
@@ -964,14 +964,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       {/* ─── Standard table (virtualized) ─────────────────────── */}
       {layoutMode === "standard" && (
       <div ref={stdScrollRef} className="flex-1 min-w-0 overflow-auto">
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onClick={(e) => {
                     if (resizingRef.current) return;
@@ -1075,14 +1075,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       {/* ─── Pivoted table (virtualized) ──────────────────────── */}
       {layoutMode === "pivoted" && (
       <div ref={pivScrollRef} className="flex-1 min-w-0 overflow-auto">
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 z-10 bg-background">
           {pivotedTable.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={pivColStyle(header.id)}
                   onClick={(e) => {
                     if (resizingRef.current) return;
@@ -1183,13 +1183,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
                 clDayMode === opt.value && "bg-accent/30")}
               onClick={() => { setClDayMode(opt.value); setDayMenu(null); }}>
-              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{clDayMode === opt.value ? "\u2713" : ""}</span>
-              <span className="text-[11px] font-medium">{opt.label}</span>
-              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              <span className="w-3 shrink-0 text-[11px] text-muted-foreground">{clDayMode === opt.value ? "\u2713" : ""}</span>
+              <span className="text-xs font-medium">{opt.label}</span>
+              <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
             </button>
           ))}
           <div className="mt-0.5 border-t border-border/40 px-2 py-1">
-            <span className="text-[9px] italic text-muted-foreground/50">Applies to CL rows only</span>
+            <span className="text-[10px] italic text-muted-foreground/50">Applies to CL rows only</span>
           </div>
         </div>
       )}
@@ -1204,9 +1204,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
                 sparkScale === opt.value && "bg-accent/30")}
               onClick={() => { setSparkScale(opt.value); setSparkMenu(null); }}>
-              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
-              <span className="text-[11px] font-medium">{opt.label}</span>
-              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              <span className="w-3 shrink-0 text-[11px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
+              <span className="text-xs font-medium">{opt.label}</span>
+              <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
             </button>
           ))}
         </div>

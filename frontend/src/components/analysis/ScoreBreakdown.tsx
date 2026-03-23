@@ -46,7 +46,7 @@ export function SignalScorePopover({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
         <div className="mb-2 text-xs font-semibold">Signal score breakdown</div>
-        <table className="w-full text-[10px] font-mono tabular-nums">
+        <table className="w-full text-[11px] font-mono tabular-nums">
           <thead>
             <tr className="border-b text-muted-foreground">
               <th className="pb-1 text-left font-medium">Component</th>
@@ -77,7 +77,7 @@ export function SignalScorePopover({
             <tr className="border-b border-border/30">
               <td className="py-0.5">Pattern</td>
               <td className="py-0.5 text-right">{SIGNAL_SCORE_WEIGHTS.pattern}</td>
-              <td className="py-0.5 text-right text-[9px]">
+              <td className="py-0.5 text-right text-[10px]">
                 {breakdown.patternRaw?.replace(/_/g, " ") ?? "\u2014"}
               </td>
               <td className="py-0.5 text-right">{breakdown.patternComponent.toFixed(3)}</td>
@@ -88,7 +88,7 @@ export function SignalScorePopover({
             </tr>
           </tbody>
         </table>
-        <div className="mt-2 text-[9px] text-muted-foreground">
+        <div className="mt-2 text-[10px] text-muted-foreground">
           formula: min(&minus;log<sub>10</sub>(p)/4, 1) &times; weight
         </div>
       </PopoverContent>
@@ -122,7 +122,7 @@ export function EvidenceScorePopover({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
         <div className="mb-2 text-xs font-semibold">Evidence score breakdown</div>
-        <div className="space-y-1.5 text-[10px] font-mono tabular-nums">
+        <div className="space-y-1.5 text-[11px] font-mono tabular-nums">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Avg signal per endpoint</span>
             <span>{breakdown.avgSignalPerEndpoint.toFixed(3)}</span>
@@ -149,7 +149,7 @@ export function EvidenceScorePopover({
             <span>Evidence score</span>
             <span>{breakdown.evidenceScore.toFixed(3)}</span>
           </div>
-          <div className="flex justify-between text-[9px]">
+          <div className="flex justify-between text-[10px]">
             <span className="text-muted-foreground">Target organ</span>
             <span>
               evidence &ge; 0.3{" "}
@@ -197,7 +197,7 @@ export function ConfidencePopover({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="start">
         <div className="mb-2 text-xs font-semibold">NOAEL confidence breakdown</div>
-        <div className="space-y-1 text-[10px] font-mono tabular-nums">
+        <div className="space-y-1 text-[11px] font-mono tabular-nums">
           <div className="flex justify-between">
             <span>Base</span>
             <span>{breakdown.base.toFixed(2)}</span>
@@ -248,7 +248,7 @@ function PenaltyRow({
       <span className="text-muted-foreground">&minus; {label}</span>
       <span className="flex items-baseline gap-1.5">
         <span>{value.toFixed(2)}</span>
-        <span className="text-[9px] text-muted-foreground">({detail})</span>
+        <span className="text-[10px] text-muted-foreground">({detail})</span>
       </span>
     </div>
   );

@@ -48,10 +48,10 @@ function EffectList({ entries, currentLabel, label, total, unit }: {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
-        <span className="shrink-0 text-[10px] font-mono text-muted-foreground">{unit}</span>
+        <span className="shrink-0 text-[11px] font-mono text-muted-foreground">{unit}</span>
       </div>
       <div className="space-y-0.5">
         {visible.map((e, i) => {
@@ -65,18 +65,18 @@ function EffectList({ entries, currentLabel, label, total, unit }: {
             <div
               key={e.endpoint_label}
               className={cn(
-                "flex items-center gap-1 text-[11px]",
+                "flex items-center gap-1 text-xs",
                 isCurrent && "bg-accent font-medium rounded"
               )}
             >
-              <span className="w-5 shrink-0 text-right text-[10px] text-muted-foreground">
+              <span className="w-5 shrink-0 text-right text-[11px] text-muted-foreground">
                 #{i + 1}
               </span>
               <DomainLabel domain={e.domain} />
               <span className="flex-1 truncate" title={peakLabel ? `Peak: ${peakLabel}` : undefined}>
                 {e.finding}
                 {peakLabel && (
-                  <span className="ml-1 text-[9px] text-muted-foreground">
+                  <span className="ml-1 text-[10px] text-muted-foreground">
                     ({peakLabel})
                   </span>
                 )}
@@ -96,7 +96,7 @@ function EffectList({ entries, currentLabel, label, total, unit }: {
       {canExpand && (
         <button
           type="button"
-          className="mt-1 text-[10px] text-primary hover:underline"
+          className="mt-1 text-[11px] text-primary hover:underline"
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? "Show top 10" : `Show all ${total}`}

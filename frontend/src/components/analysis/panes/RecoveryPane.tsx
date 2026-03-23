@@ -50,7 +50,7 @@ const VERDICT_COLORS: Partial<Record<RecoveryVerdict, string>> = {
 function VerdictBadge({ verdict }: { verdict: RecoveryVerdict }) {
   const color = VERDICT_COLORS[verdict] ?? "text-muted-foreground bg-muted/50";
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${color}`}>
+    <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${color}`}>
       {verdictLabel(verdict)}
     </span>
   );
@@ -64,7 +64,7 @@ function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Lo
     : confidence === "Moderate"
       ? "text-amber-700"
       : "text-muted-foreground";
-  return <span className={`text-[10px] font-medium ${color}`}>{confidence} confidence</span>;
+  return <span className={`text-[11px] font-medium ${color}`}>{confidence} confidence</span>;
 }
 
 // ── Continuous recovery section ──────────────────────────
@@ -82,7 +82,7 @@ function ContinuousRecoverySection({
 
   if (!recovery || !recovery.available) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         No recovery comparison data available.
       </div>
     );
@@ -99,7 +99,7 @@ function ContinuousRecoverySection({
 
   if (allRows.length === 0) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         No recovery data for {finding.finding}.
       </div>
     );
@@ -107,7 +107,7 @@ function ContinuousRecoverySection({
 
   return (
     <div className="space-y-3">
-      <div className="text-[10px] text-muted-foreground flex items-center justify-between">
+      <div className="text-[11px] text-muted-foreground flex items-center justify-between">
         <span>
           {allRows[0]?.terminal_day != null && <>Day {allRows[0].terminal_day} (terminal) → </>}
           {recovery.recovery_day != null && <>Day {recovery.recovery_day} (recovery)</>}
@@ -158,7 +158,7 @@ function HistopathRecoveryAllSexes({
 
   if (sections.length === 0) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         No recovery arm data for this specimen.
       </div>
     );
@@ -175,7 +175,7 @@ function HistopathRecoveryAllSexes({
   });
   if (allNotExamined) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Tissue not examined in recovery arm.
       </div>
     );
@@ -214,7 +214,7 @@ function HistopathRecoveryAllSexes({
     <div className="space-y-3">
       {/* Recovery duration adequacy line */}
       {adequacy && adequacy.findingNature && (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground">
           Recovery: {Math.round(adequacy.actualWeeks)} weeks
           {" | "}Finding nature: {adequacy.findingNature}
           {" | "}{reversibilityLabel(nature)}
@@ -271,13 +271,13 @@ function HistopathMetaSection({
   if (!assessment || !verdict) {
     return showSexHeader ? (
       <div>
-        <div className="text-[10px] font-semibold text-foreground mb-1">{sex}</div>
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] font-semibold text-foreground mb-1">{sex}</div>
+        <div className="text-[11px] text-muted-foreground">
           Finding not observed in recovery-arm subjects.
         </div>
       </div>
     ) : (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Finding not observed in recovery-arm subjects.
       </div>
     );
@@ -298,15 +298,15 @@ function HistopathMetaSection({
   return (
     <div className="space-y-2">
       {showSexHeader && (
-        <div className="text-[10px] font-semibold text-foreground">{sex}</div>
+        <div className="text-[11px] font-semibold text-foreground">{sex}</div>
       )}
 
       {/* Overall verdict + recovery days */}
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground">Verdict:</span>
+        <span className="text-[11px] text-muted-foreground">Verdict:</span>
         <VerdictBadge verdict={verdict} />
         {recoveryDays != null && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             ({recoveryDays}d recovery)
           </span>
         )}
@@ -331,21 +331,21 @@ function ClassificationSection({ classification }: { classification: RecoveryCla
   return (
     <div className={`pl-2 ${borderClass}`}>
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-medium">
+        <span className="text-[11px] font-medium">
           {CLASSIFICATION_LABELS[classification.classification]}
         </span>
         <ConfidenceBadge confidence={classification.confidence} />
       </div>
-      <div className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
+      <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
         {classification.rationale}
       </div>
       {classification.qualifiers.length > 0 && (
-        <div className="mt-0.5 text-[10px] text-muted-foreground/80">
+        <div className="mt-0.5 text-[11px] text-muted-foreground/80">
           {classification.qualifiers.join(". ")}
         </div>
       )}
       {classification.recommendedAction && (
-        <div className="mt-0.5 text-[10px] italic text-muted-foreground/70">
+        <div className="mt-0.5 text-[11px] italic text-muted-foreground/70">
           {classification.recommendedAction}
         </div>
       )}
@@ -360,14 +360,14 @@ function FindingNatureSection({ nature }: { nature: FindingNatureInfo }) {
 
   return (
     <div className="space-y-0.5">
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         <span className="font-medium text-foreground">Finding nature: </span>
         {nature.nature}
         {nature.source === "ct_mapped" && nature.normalizedTerm && (
           <span className="text-muted-foreground/60"> ({nature.normalizedTerm})</span>
         )}
       </div>
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         <span className="font-medium text-foreground">Reversibility: </span>
         {reversibilityLabel(nature)}
       </div>
@@ -406,7 +406,7 @@ function ConcordanceNote({
   if (!message) return null;
 
   return (
-    <div className="text-[9px] text-muted-foreground/70 leading-snug">
+    <div className="text-[10px] text-muted-foreground/70 leading-snug">
       {message}
     </div>
   );
@@ -453,7 +453,7 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
 
   if (!recovery || !recovery.available) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         No recovery comparison data available.
       </div>
     );
@@ -471,7 +471,7 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
 
   if (matched.length === 0) {
     return (
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         No recovery data for {finding.finding}.
       </div>
     );
@@ -490,7 +490,7 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
   return (
     <div className="space-y-2">
       {recovery.recovery_day != null && (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground">
           Recovery sacrifice: Day {recovery.recovery_day}
         </div>
       )}
@@ -582,7 +582,7 @@ export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
   }
 
   return (
-    <div className="text-[10px] text-muted-foreground">
+    <div className="text-[11px] text-muted-foreground">
       Recovery assessment not available for {finding.domain} domain.
     </div>
   );

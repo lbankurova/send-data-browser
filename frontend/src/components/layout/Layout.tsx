@@ -126,7 +126,7 @@ export function Layout() {
               </div>
               {/* Status bar */}
               <div className="flex h-5 shrink-0 items-center border-t px-3" style={{ background: "#f5f4f2" }}>
-                <span className="text-[10px] text-muted-foreground">Ready</span>
+                <span className="text-[11px] text-muted-foreground">Ready</span>
               </div>
             </div>
           </div>

@@ -55,14 +55,14 @@ export function SectionHeader({
         </span>
       )}
       {count != null && (
-        <span className="shrink-0 text-[10px] text-muted-foreground">({count})</span>
+        <span className="shrink-0 text-[11px] text-muted-foreground">({count})</span>
       )}
 
       {/* Separator */}
       <span className="mx-1.5 shrink-0 text-muted-foreground/30">&middot;</span>
 
       {/* Selection zone */}
-      <div className="flex min-w-0 flex-1 items-center gap-1 truncate text-[10px]">
+      <div className="flex min-w-0 flex-1 items-center gap-1 truncate text-[11px]">
         {selectionZone}
       </div>
 
