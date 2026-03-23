@@ -29,6 +29,24 @@ function axisLabel(fontSize = AXIS_LABEL_SIZE) {
   return { fontSize, color: "#6B7280" };
 }
 
+/**
+ * Adaptive decimal precision based on value magnitudes.
+ * Hematology params (basophils ~0.03) need 3 decimals; body weights (~400) need 1.
+ */
+export function adaptivePrecision(values: (number | null | undefined)[]): number {
+  const abs = values.filter((v): v is number => v != null).map(Math.abs);
+  if (abs.length === 0) return 2;
+  const maxAbs = Math.max(...abs);
+  if (maxAbs < 0.1) return 3;
+  if (maxAbs < 1) return 2;
+  if (maxAbs < 100) return 1;
+  return 0;
+}
+
+function formatVal(v: number | null | undefined, prec: number): string {
+  return v != null ? Number(v).toFixed(prec) : "\u2014";
+}
+
 function splitLineStyle() {
   return { lineStyle: { color: GRID_LINE_COLOR, type: "dashed" as const } };
 }
@@ -40,6 +58,7 @@ function baseTooltip(): EChartsOption["tooltip"] {
     backgroundColor: "rgba(255,255,255,0.96)",
     borderColor: "#e5e7eb",
     borderWidth: 1,
+    appendToBody: true,
   };
 }
 
@@ -118,15 +137,17 @@ export function buildDoseResponseLineOption(
       smooth: false,
       lineStyle: { color, width: 2 },
       connectNulls: true,
-      emphasis: { focus: "series" },
+      emphasis: { focus: "none" },
     });
 
-    // Custom error bar series (mean-sd to mean+sd)
+    // Custom error bar series (mean-sd to mean+sd).
+    // Clamp lower bound at 0 when mean >= 0 (lab values, weights can't be negative).
     const errorBarData = mergedPoints.map((pt, idx) => {
       const mean = pt[`mean_${sex}`] as number | null;
       const sd = pt[`sd_${sex}`] as number | null;
       if (mean == null || sd == null) return [idx, null, null, null];
-      return [idx, mean, mean - sd, mean + sd];
+      const lo = mean >= 0 ? Math.max(0, mean - sd) : mean - sd;
+      return [idx, mean, lo, mean + sd];
     });
 
     series.push({
@@ -134,6 +155,7 @@ export function buildDoseResponseLineOption(
       name: `${seriesName} SD`,
       data: errorBarData,
       z: 1,
+      clip: false,
       silent: true,
       renderItem(_params: CustomSeriesRenderItemParams, api: CustomSeriesRenderItemAPI) {
         const catIdx = api.value(0) as number;
@@ -232,6 +254,48 @@ export function buildDoseResponseLineOption(
     }
   }
 
+  // Compute y-axis range from mean ± SD so error bars stay within the plot area.
+  // Round to nice boundaries so tick labels stay clean (no excess decimals).
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (const pt of mergedPoints) {
+    for (const sex of sexes) {
+      const mean = pt[`mean_${sex}`] as number | null;
+      const sd = pt[`sd_${sex}`] as number | null;
+      if (mean == null) continue;
+      const lo = sd != null ? (mean >= 0 ? Math.max(0, mean - sd) : mean - sd) : mean;
+      const hi = sd != null ? mean + sd : mean;
+      if (lo < yMin) yMin = lo;
+      if (hi > yMax) yMax = hi;
+    }
+  }
+  let niceYMin: number | undefined;
+  let niceYMax: number | undefined;
+  if (isFinite(yMin) && isFinite(yMax)) {
+    const range = yMax - yMin;
+    const rawStep = (range > 0 ? range : 1) / 6;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const r = rawStep / mag;
+    const step = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * mag;
+    niceYMin = Math.floor(yMin / step) * step;
+    niceYMax = Math.ceil(yMax / step) * step;
+  }
+
+  // Adaptive precision from all mean values in this endpoint
+  const allMeans = mergedPoints.flatMap((pt) =>
+    sexes.map((s) => pt[`mean_${s}`] as number | null),
+  );
+  const prec = adaptivePrecision(allMeans);
+
+  // Build SD lookup for tooltip (keyed by seriesName + categoryIndex)
+  const sdLookup = new Map<string, number | null>();
+  for (const sex of sexes) {
+    const name = sexLabels[sex] ?? sex;
+    mergedPoints.forEach((pt, i) => {
+      sdLookup.set(`${name}_${i}`, pt[`sd_${sex}`] as number | null);
+    });
+  }
+
   return {
     grid: { left: 48, right: 24, top: 20, bottom: 32 },
     xAxis: {
@@ -243,9 +307,10 @@ export function buildDoseResponseLineOption(
     },
     yAxis: {
       type: "value",
-      axisLabel: axisLabel(),
+      axisLabel: { ...axisLabel(), formatter: (v: number) => formatVal(v, prec) },
       splitLine: splitLineStyle(),
-      scale: true,
+      min: niceYMin,
+      max: niceYMax,
     },
     tooltip: {
       ...baseTooltip(),
@@ -257,14 +322,16 @@ export function buildDoseResponseLineOption(
         const label = items[0].axisValueLabel ?? items[0].name ?? "";
         let html = `<div style="font-size:11px;font-weight:600;margin-bottom:4px">${label}</div>`;
         for (const item of items) {
-          // Skip error bar series (they have " SD" suffix)
           if (String(item.seriesName ?? "").endsWith(" SD")) continue;
           const val = item.value;
           const displayed = val != null && typeof val === "object" ? val.value : val;
+          const sd = sdLookup.get(`${item.seriesName}_${item.dataIndex}`) ?? null;
+          const meanStr = formatVal(displayed != null ? Number(displayed) : null, prec);
+          const sdStr = sd != null ? ` \u00b1 ${formatVal(sd, prec)}` : "";
           html += `<div style="display:flex;align-items:center;gap:6px;font-size:11px">`;
           html += `${item.marker ?? ""}`;
           html += `<span>${item.seriesName}</span>`;
-          html += `<span style="font-family:monospace;margin-left:auto">${displayed != null ? Number(displayed).toFixed(2) : "\u2014"}</span>`;
+          html += `<span style="font-family:monospace;margin-left:auto">${meanStr}${sdStr}</span>`;
           html += `</div>`;
         }
         return html;
@@ -1116,7 +1183,7 @@ export interface BarVerdictInfo {
 }
 
 /**
- * Horizontal grouped bar chart matching DoseDetailPane style:
+ * Horizontal grouped bar chart:
  * - Y-axis: dose label + colored pipe (right of label)
  * - No error bars, no x-axis labels
  * - Sex-colored bars, thick border for p<0.05
@@ -1133,7 +1200,7 @@ export function buildDoseResponseBarOption(
   _testLabel?: string | null,
   _verdicts?: BarVerdictInfo[],
 ): EChartsOption {
-  // Reverse so control is at bottom (matching DoseDetailPane)
+  // Reverse so control is at bottom
   const ordered = [...mergedPoints].reverse();
   const categories = ordered.map((p) => String(p.dose_label));
 
@@ -1151,7 +1218,7 @@ export function buildDoseResponseBarOption(
     const seriesName = sexLabels[sex] ?? sex;
     const color = sexColors[sex] ?? "#666";
 
-    // Horizontal bar series — no error bars (matching DoseDetailPane clean style)
+    // Horizontal bar series — no error bars, clean style
     const barData = ordered.map((pt) => {
       const mean = pt[`mean_${sex}`] as number | null;
       const pVal = pt[`p_${sex}`] as number | null;

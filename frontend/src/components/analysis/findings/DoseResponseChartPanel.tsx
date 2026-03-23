@@ -42,7 +42,7 @@ const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor(
 const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
 
 // Compact grid + font sizes for findings panel context
-const COMPACT_GRID = { left: 44, right: 8, top: 12, bottom: 16, containLabel: true };
+const COMPACT_GRID = { left: 4, right: 8, top: 12, bottom: 16, containLabel: true };
 const COMPACT_AXIS_FONT = 8;
 
 /** Build rich x-axis labels with dose-group colors. */
@@ -342,7 +342,7 @@ export function DoseResponseChartPanel({
       : "Absolute weight";
   }, [chartData, normalization]);
 
-  // ── Method test label (matches DoseDetailPane) ─────────────
+  // ── Method test label ──────────────────────────────────────
   const methodLabel = useMemo(() => {
     const testName = PAIRWISE_TEST_LABELS[pairwiseTest] ?? pairwiseTest;
     const multName = MULTIPLICITY_LABELS[multiplicity] ?? multiplicity;
@@ -495,7 +495,7 @@ export function DoseResponseChartPanel({
             <EChartsWrapper option={drOption} style={{ width: "100%", height: "100%" }} />
           </div>
 
-          {/* Method label + verdict notes below chart — bar mode only (matches DoseDetailPane) */}
+          {/* Method label + verdict notes below chart — bar mode only */}
           {isContinuous && drChartMode === "bar" && (
             <div className="shrink-0">
               <div className="text-[10px] italic text-muted-foreground">{methodLabel}</div>
