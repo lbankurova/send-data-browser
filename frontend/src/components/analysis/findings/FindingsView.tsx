@@ -151,6 +151,12 @@ export function FindingsView() {
   // render batch so the table never shows a stale selection from a different endpoint.
   const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
     setActiveEndpoint(endpointLabel);
+    // Reset selectedDay so chartDay falls through to the computed fallback
+    // (activeDay ?? peakDay ?? terminal) on the first render — prevents a
+    // transient frame where the stale selectedDay from the previous endpoint
+    // drives the day filter and drops findings for the new endpoint.
+    setSelectedDay(null);
+    setDayCleared(false);
     const currentData = dataRef.current;
     if (endpointLabel && currentData?.findings?.length) {
       const epFindings = currentData.findings.filter(
@@ -226,6 +232,12 @@ export function FindingsView() {
   const tableFindings = useMemo(() => {
     if (!data?.findings) return [];
     let f = data.findings;
+    // Exclude fragmentary findings (< 2 dose groups). These arise from
+    // single-animal interim sacrifices with only control or only one treated
+    // group — no dose-response comparison is possible, and they create a
+    // misleading sex imbalance in the table (e.g. 3 M rows vs 1 F row for
+    // Albumin when the extra M rows are empty interim timepoints).
+    f = f.filter((row) => row.group_stats.length >= 2);
     if (visibleLabels) {
       f = f.filter((row) => visibleLabels.has(row.endpoint_label ?? row.finding));
     }
@@ -312,8 +324,7 @@ export function FindingsView() {
   // Chart day: always resolves to a day (charts need a specific day to plot)
   const chartDay = selectedDay
     ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
-  // Table day: null when user cleared (shows all days), otherwise same as chartDay
-  const tableDay = dayCleared ? null : chartDay;
+  // (tableDay removed — day filtering now handled by FindingsTable's internal combo-box)
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -560,8 +571,8 @@ export function FindingsView() {
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
-          selectedDay={activeEndpoint ? tableDay : undefined}
-          onClearDayFilter={() => { setSelectedDay(null); setDayCleared(true); }}
+          globalDay={activeEndpoint ? chartDay : undefined}
+          globalDayLabels={dayMeta?.dayLabels}
         />
       ) : null}
       </div>

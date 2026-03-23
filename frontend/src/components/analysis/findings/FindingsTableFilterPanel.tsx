@@ -32,21 +32,22 @@ function CategoricalFilter({
   selected: string[] | null;
   onChange: (selected: string[] | null) => void;
 }) {
-  // Internal `selected` = included values (null = all included).
-  // Visual: checked = filtered out (excluded), unchecked = shown.
+  // Internal `selected` = included values (null = no filter, all shown).
+  // Visual: unchecked = no filter. Checked = show only checked items.
   const toggle = useCallback(
     (val: string) => {
       if (selected == null) {
-        // No filter active — exclude this value
-        const next = values.filter((v) => v !== val);
-        onChange(next.length === 0 ? null : next);
+        // No filter active — check this value to filter to it only
+        onChange([val]);
       } else if (selected.includes(val)) {
-        // Value is included (unchecked) — exclude it (check it)
+        // Already included — uncheck it
         const next = selected.filter((v) => v !== val);
+        // If nothing left, clear filter entirely
         onChange(next.length === 0 ? null : next);
       } else {
-        // Value is excluded (checked) — include it (uncheck it)
+        // Not included — add it
         const next = [...selected, val];
+        // If all values now selected, clear filter (= no filter)
         onChange(next.length === values.length ? null : next);
       }
     },
@@ -56,8 +57,8 @@ function CategoricalFilter({
   return (
     <div className="flex flex-col gap-0.5">
       {values.map((v) => {
-        // checked = filtered out (not in included set)
-        const checked = selected != null && !selected.includes(v);
+        // checked = this value is in the active include list
+        const checked = selected != null && selected.includes(v);
         return (
           <label
             key={v}
@@ -69,7 +70,7 @@ function CategoricalFilter({
               onChange={() => toggle(v)}
               className="h-2.5 w-2.5 accent-primary"
             />
-            <span className={`text-[10px] ${checked ? "text-muted-foreground line-through" : "text-foreground/80"}`}>{v}</span>
+            <span className={`text-[10px] ${checked ? "text-primary font-medium" : "text-foreground/80"}`}>{v}</span>
           </label>
         );
       })}

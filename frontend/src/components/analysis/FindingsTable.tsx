@@ -29,8 +29,18 @@ import { getSexColor } from "@/lib/severity-colors";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
-import { getSignalTier, getPatternLabelDirectional } from "@/lib/findings-rail-engine";
-import { resolveOnsetDose, formatOnsetDose } from "@/lib/onset-dose";
+import { getSignalTier } from "@/lib/findings-rail-engine";
+import { formatOnsetDose } from "@/lib/onset-dose";
+import {
+  usePatternOverrideActions,
+  derivePatternState,
+  deriveOnsetState,
+  buildPreviewText,
+  getSystemOnsetLevel,
+  OVERRIDE_OPTIONS,
+} from "@/hooks/usePatternOverrideActions";
+import type { PreviewResult } from "@/hooks/usePatternOverrideActions";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { FindingsTableFilterPanel } from "./findings/FindingsTableFilterPanel";
@@ -160,6 +170,16 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [sparkMenu, setSparkMenu] = useState<{ x: number; y: number } | null>(null);
   const sparkMenuRef = useRef<HTMLDivElement>(null);
 
+  // Pattern & onset override context menus
+  const overrideActions = usePatternOverrideActions(studyId);
+  const [patternMenu, setPatternMenu] = useState<{ x: number; y: number; finding: UnifiedFinding } | null>(null);
+  const patternMenuRef = useRef<HTMLDivElement>(null);
+  const [onsetMenu, setOnsetMenu] = useState<{ x: number; y: number; finding: UnifiedFinding } | null>(null);
+  const onsetMenuRef = useRef<HTMLDivElement>(null);
+  const [hoveredPatternOption, setHoveredPatternOption] = useState<string | null>(null);
+  const [patternPreview, setPatternPreview] = useState<PreviewResult | null>(null);
+  const patternPreviewAbortRef = useRef<AbortController | null>(null);
+
   // ── Sync checkbox + day combo-box ──────────────────────────
   // syncWithCharts: true → table scopes to active endpoint + day follows stepper.
   //                 false → table shows all endpoints, day is manual.
@@ -239,6 +259,64 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [sparkMenu]);
+
+  // Close pattern menu on outside click
+  useEffect(() => {
+    if (!patternMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (patternMenuRef.current && !patternMenuRef.current.contains(e.target as Node)) setPatternMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [patternMenu]);
+
+  // Close onset menu on outside click
+  useEffect(() => {
+    if (!onsetMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (onsetMenuRef.current && !onsetMenuRef.current.contains(e.target as Node)) setOnsetMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onsetMenu]);
+
+  // Escape closes any open override menu
+  useEffect(() => {
+    if (!patternMenu && !onsetMenu) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setPatternMenu(null); setOnsetMenu(null); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [patternMenu, onsetMenu]);
+
+  // Close override menus on scroll
+  useEffect(() => {
+    if (!patternMenu && !onsetMenu) return;
+    const el = stdScrollRef.current;
+    if (!el) return;
+    const handler = () => { setPatternMenu(null); setOnsetMenu(null); };
+    el.addEventListener("scroll", handler);
+    return () => el.removeEventListener("scroll", handler);
+  }, [patternMenu, onsetMenu]);
+
+  // Preview fetch for pattern menu
+  useEffect(() => {
+    if (!patternMenu || !hoveredPatternOption) { setPatternPreview(null); return; }
+    const ps = derivePatternState(patternMenu.finding, overrideActions.annotations);
+    if (hoveredPatternOption === ps.currentOverrideKey) { setPatternPreview(null); return; }
+    patternPreviewAbortRef.current?.abort();
+    const ac = new AbortController();
+    patternPreviewAbortRef.current = ac;
+    overrideActions.fetchPreview(patternMenu.finding.id, hoveredPatternOption, ac.signal)
+      .then(r => { if (r && !ac.signal.aborted) setPatternPreview(r); });
+    return () => ac.abort();
+  }, [hoveredPatternOption, patternMenu, overrideActions]);
+
+  // Clear preview when pattern menu closes
+  useEffect(() => {
+    if (!patternMenu) { setPatternPreview(null); setHoveredPatternOption(null); }
+  }, [patternMenu]);
 
   // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
   const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
@@ -497,21 +575,50 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       col.display({
         id: "pattern",
-        header: () => <span title="Dose-response pattern shape">Pattern</span>,
+        header: () => <span title="Dose-response pattern shape. Right-click to override.">Pattern</span>,
         cell: (info) => {
-          const v = info.row.original.dose_response_pattern;
-          return <span className="text-muted-foreground">{v ? getPatternLabelDirectional(v) : "\u2014"}</span>;
+          const f = info.row.original;
+          const ps = derivePatternState(f, overrideActions.annotations);
+          return (
+            <div className="flex items-center gap-0.5" title="Right-click to override">
+              <span className="text-muted-foreground">{ps.currentLabel || "\u2014"}</span>
+              <OverridePill
+                isOverridden={ps.patternChanged}
+                note={ps.annotation?.pattern_note}
+                user={ps.annotation?.pathologist}
+                timestamp={ps.annotation?.reviewDate ? new Date(ps.annotation.reviewDate).toLocaleDateString() : undefined}
+                onSaveNote={(text) => overrideActions.savePatternNote(f, text)}
+                placeholder="Consistent downward drift from first dose"
+                popoverSide="left"
+                popoverAlign="start"
+              />
+            </div>
+          );
         },
       }),
       col.display({
         id: "onset_dose",
-        header: () => <span title="Lowest dose level at which the effect is first observed (onset)">Onset</span>,
+        header: () => <span title="Lowest dose at which the effect is first observed. Right-click to override.">Onset</span>,
         cell: (info) => {
           const f = info.row.original;
-          const onset = resolveOnsetDose(f);
-          if (!onset) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const label = formatOnsetDose(onset.doseLevel, doseGroups);
-          return <span className="font-mono text-muted-foreground" title={`Onset at dose level ${onset.doseLevel} (${onset.source})`}>{label}</span>;
+          const os = deriveOnsetState(f, doseGroups, overrideActions.annotations);
+          return (
+            <div className={cn("flex items-center gap-0.5", os.needsAttention && "border-b border-red-500")} title={os.needsAttention ? "Onset dose needs selection" : os.overrideTooltip ?? "Right-click to override"}>
+              <span className={cn("font-mono", os.onset ? "text-muted-foreground" : "text-muted-foreground/40")}>
+                {os.displayLabel}
+              </span>
+              <OverridePill
+                isOverridden={os.isOverridden}
+                note={os.annotation?.onset_note}
+                user={os.annotation?.pathologist}
+                timestamp={os.annotation?.reviewDate ? new Date(os.annotation.reviewDate).toLocaleDateString() : undefined}
+                onSaveNote={(text) => overrideActions.saveOnsetNote(f, text)}
+                placeholder="Onset at dose 2 — earliest statistically significant effect"
+                popoverSide="left"
+                popoverAlign="start"
+              />
+            </div>
+          );
         },
       }),
       col.accessor("max_effect_size", {
@@ -580,7 +687,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -843,7 +950,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
-  const rowCount = layoutMode === "pivoted" ? pivotedRows.length : filteredFindings.length;
 
   return (
     <div className="flex h-full flex-col">
@@ -922,10 +1028,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               <X className="h-2.5 w-2.5" />
             </button>
           )}
-          <span>Showing {rowCount}</span>
-          {/* Active filter indicators — show included values as chips */}
-          {activeFilterCount > 0 && (() => {
+          {/* Active filter indicators — only when filters are set */}
+          {(activeFilterCount > 0 || filterDay != null) && (() => {
             const chips: { label: string; values: string[] }[] = [];
+            if (filterDay != null) chips.push({ label: "day", values: [`D${filterDay}`] });
             if (filterState.domain) chips.push({ label: "", values: filterState.domain });
             if (filterState.sex) chips.push({ label: "sex", values: filterState.sex });
             if (filterState.severity) chips.push({ label: "sev", values: filterState.severity });
@@ -934,22 +1040,31 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             if (filterState.dataType) chips.push({ label: "type", values: filterState.dataType });
             if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) {
               const lo = filterState.pValueRange[0]; const hi = filterState.pValueRange[1];
-              chips.push({ label: "p", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "p", values: [fmt] });
             }
             if (filterState.trendPRange[0] != null || filterState.trendPRange[1] != null) {
               const lo = filterState.trendPRange[0]; const hi = filterState.trendPRange[1];
-              chips.push({ label: "trend", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "trend", values: [fmt] });
             }
             if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) {
               const lo = filterState.effectSizeRange[0]; const hi = filterState.effectSizeRange[1];
-              chips.push({ label: "|g|", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "|g|", values: [fmt] });
             }
             if (filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null) {
               const lo = filterState.foldChangeRange[0]; const hi = filterState.foldChangeRange[1];
-              chips.push({ label: "FC", values: [`${lo ?? "*"}\u2013${hi ?? "*"}`] });
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "FC", values: [fmt] });
             }
             return chips.length > 0 ? (
               <span className="flex items-center gap-1 text-[10px]">
+                <span className="text-muted-foreground">Showing:</span>
                 {chips.map((c, i) => (
                   <span key={i} className="text-primary/60">
                     {c.label ? <span className="mr-0.5">{c.label}:</span> : null}
@@ -1081,6 +1196,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
+                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose";
                   const style = colStyle(cell.column.id);
                   return (
                     <td
@@ -1088,9 +1204,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       className={cn(
                         "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                        isOverridable && "bg-amber-50/40",
                       )}
                       style={style}
                       data-evidence=""
+                      onContextMenu={
+                        cell.column.id === "pattern" ? (e) => {
+                          e.preventDefault();
+                          setPatternMenu({ x: e.clientX, y: e.clientY, finding: row.original });
+                        } : cell.column.id === "onset_dose" ? (e) => {
+                          e.preventDefault();
+                          setOnsetMenu({ x: e.clientX, y: e.clientY, finding: row.original });
+                        } : undefined
+                      }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -1251,6 +1377,86 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           ))}
         </div>
       )}
+      {/* Pattern override context menu */}
+      {patternMenu && (() => {
+        const ps = derivePatternState(patternMenu.finding, overrideActions.annotations);
+        const pvText = buildPreviewText(patternPreview);
+        return (
+          <div ref={patternMenuRef} className="fixed z-50 min-w-[160px] rounded border bg-popover py-0.5 shadow-md"
+            style={{ left: patternMenu.x, top: patternMenu.y }}>
+            {OVERRIDE_OPTIONS.map((opt) => {
+              const isActive = opt.value === ps.currentOverrideKey;
+              const isSystem = opt.value === ps.originalKey;
+              return (
+                <button key={opt.value} type="button"
+                  onMouseEnter={() => setHoveredPatternOption(opt.value)}
+                  onClick={() => { overrideActions.selectPattern(patternMenu.finding, opt.value); setPatternMenu(null); }}
+                  disabled={overrideActions.isPending}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors",
+                    isActive ? "bg-muted/50 font-medium text-foreground" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  )}>
+                  <span>{opt.label}</span>
+                  {isSystem && ps.patternChanged && (
+                    <span className="ml-auto text-[11px] text-muted-foreground/50">system</span>
+                  )}
+                </button>
+              );
+            })}
+            {ps.patternChanged && (
+              <button type="button"
+                onClick={() => { overrideActions.resetPattern(patternMenu.finding); setPatternMenu(null); }}
+                disabled={overrideActions.isPending}
+                className="flex w-full items-center px-3 py-1.5 text-left text-xs text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40">
+                Reset to system
+              </button>
+            )}
+            {pvText && (
+              <div className="border-t border-border/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+                {pvText}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      {/* Onset dose override context menu */}
+      {onsetMenu && (() => {
+        const os = deriveOnsetState(onsetMenu.finding, doseGroups, overrideActions.annotations);
+        const treatmentGroups = doseGroups.filter(g => g.dose_level > 0);
+        const systemLevel = getSystemOnsetLevel(onsetMenu.finding);
+        const hasOnsetOverride = os.onset?.source === "override";
+        return (
+          <div ref={onsetMenuRef} className="fixed z-50 min-w-[120px] rounded border bg-popover py-0.5 shadow-md"
+            style={{ left: onsetMenu.x, top: onsetMenu.y }}>
+            {treatmentGroups.map((g) => {
+              const isSystem = g.dose_level === systemLevel;
+              const isCurrent = os.onset && g.dose_level === os.onset.doseLevel;
+              return (
+                <button key={g.dose_level} type="button"
+                  onClick={() => { overrideActions.selectOnset(onsetMenu.finding, g.dose_level); setOnsetMenu(null); }}
+                  disabled={overrideActions.isPending}
+                  className={cn(
+                    "flex w-full items-center px-3 py-1 text-left text-[11px] transition-colors",
+                    isCurrent ? "bg-muted/50 font-medium text-foreground" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  )}>
+                  <span>{formatOnsetDose(g.dose_level, doseGroups)}</span>
+                  {isSystem && hasOnsetOverride && (
+                    <span className="ml-auto text-[11px] text-muted-foreground/50">system</span>
+                  )}
+                </button>
+              );
+            })}
+            {hasOnsetOverride && (
+              <button type="button"
+                onClick={() => { overrideActions.resetOnset(onsetMenu.finding); setOnsetMenu(null); }}
+                disabled={overrideActions.isPending}
+                className="flex w-full items-center px-3 py-1 text-left text-[11px] text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40">
+                Reset to system
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
