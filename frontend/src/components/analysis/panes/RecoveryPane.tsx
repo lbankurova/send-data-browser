@@ -88,14 +88,26 @@ function ContinuousRecoverySection({
     );
   }
 
-  // Get ALL rows for this endpoint (both sexes).
+  // Get rows for this endpoint (both sexes), filtered to the MAX recovery day
+  // per dose/sex.  The backend now returns multi-day rows (Phase 2 — multi-day
+  // recovery stats); the dumbbell chart expects one row per dose_level×sex.
   // For OM findings, match by specimen (organ) since OMTESTCD is always "WEIGHT".
-  const allRows = recovery.rows.filter((r) => {
-    if (finding.specimen) {
-      return r.test_code.toUpperCase() === finding.specimen.toUpperCase();
+  const allRows = (() => {
+    const matched = recovery.rows.filter((r) => {
+      if (finding.specimen) {
+        return r.test_code.toUpperCase() === finding.specimen.toUpperCase();
+      }
+      return r.test_code.toUpperCase() === finding.test_code.toUpperCase();
+    });
+    // Keep only the max-day row per dose_level × sex (backward compat)
+    const best = new Map<string, typeof matched[number]>();
+    for (const r of matched) {
+      const key = `${r.sex}_${r.dose_level}`;
+      const prev = best.get(key);
+      if (!prev || (r.day ?? 0) > (prev.day ?? 0)) best.set(key, r);
     }
-    return r.test_code.toUpperCase() === finding.test_code.toUpperCase();
-  });
+    return [...best.values()];
+  })();
 
   if (allRows.length === 0) {
     return (

@@ -94,10 +94,16 @@ export function fetchSubjectComparison(
 export interface RecoveryComparisonResponse {
   available: boolean;
   recovery_day: number | null;
+  /** Last dosing day (treatment/recovery boundary). */
+  last_dosing_day: number | null;
+  /** Available recovery-period days per endpoint per sex, for day stepper. */
+  recovery_days_available: Record<string, Record<string, number[]>>;
   rows: {
     endpoint_label: string;
     test_code: string;
     sex: string;
+    /** Study day this row's stats were computed at. */
+    day: number;
     recovery_day: number;
     dose_level: number;
     mean: number;

@@ -26,8 +26,12 @@ import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
+import { CenterDistribution } from "./CenterDistribution";
 import type { UnifiedFinding, DoseGroup, GroupStat, PairwiseResult } from "@/types/analysis";
 import type { DoseResponseRow } from "@/types/analysis-views";
+
+// Domain allowlist for distribution (continuous domains with individual subject data)
+const DISTRIBUTION_DOMAINS = new Set(["BW", "LB", "OM", "FW", "BG", "EG", "VS"]);
 
 interface Props {
   endpointLabel: string;
@@ -212,6 +216,19 @@ export function DoseResponseChartPanel({
   const { selectedFinding } = useFindingSelection();
   const [splitPct, setSplitPct] = useState(50);
   const chartRowRef = useRef<HTMLDivElement>(null);
+
+  // Right sub-panel tab: effect size chart or distribution strip plots
+  const RIGHT_TABS = ["effect", "distribution"] as const;
+  type RightTab = typeof RIGHT_TABS[number];
+  const [rightTab, setRightTab] = useSessionState<RightTab>(
+    "pcc.findings.rightTab", "effect", isOneOf(RIGHT_TABS),
+  );
+
+  // Distribution available when endpoint is continuous with individual data
+  const hasDistribution = !!(
+    selectedFinding?.data_type === "continuous" &&
+    DISTRIBUTION_DOMAINS.has(selectedFinding.domain)
+  );
 
   // ── Flatten findings → DoseResponseRow[] ──────────────────
   // Pre-filter to selected endpoint BEFORE flattening — avoids O(N*D) work
@@ -404,7 +421,14 @@ export function DoseResponseChartPanel({
   }, [chartData, hasSeverityData]);
 
   // Whether the right panel should show anything
-  const hasRightPanel = hasEffect || hasSeverityData;
+  const hasRightPanel = hasEffect || hasSeverityData || hasDistribution;
+  // Show tab bar when both metric chart and distribution are available
+  const showRightTabs = hasDistribution && (hasEffect || hasSeverityData);
+  // Active right content: if only one thing available, show it regardless of tab state
+  const activeRightContent: RightTab =
+    showRightTabs ? rightTab
+    : hasDistribution ? "distribution"
+    : "effect";
 
   // ── Resize handle ─────────────────────────────────────────
   const onChartResize = useCallback((e: React.PointerEvent) => {
@@ -512,43 +536,89 @@ export function DoseResponseChartPanel({
         {/* Resize handle */}
         {hasRightPanel && <PanelResizeHandle onPointerDown={onChartResize} />}
 
-        {/* Right panel: effect size (continuous) or stacked severity (incidence MI) */}
-        {hasSeverityData && sevOption ? (
+        {/* Right sub-panel: tabbed between metric chart + distribution */}
+        {hasRightPanel && (
           <div className="flex min-w-0 flex-1 flex-col px-1">
-            <div className="flex shrink-0 items-center justify-between py-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Severity distribution
-              </span>
-              <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
-                {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
-                  <span key={label} className="flex items-center gap-0.5">
-                    <span
-                      className="inline-block h-2 w-2 rounded-sm"
-                      style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
-                    />
-                    {label}
-                  </span>
+            {/* Tab bar — only when both metric chart and distribution are available */}
+            {showRightTabs && (
+              <div className="flex shrink-0 items-center gap-0 border-b border-border/50">
+                {(["effect", "distribution"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setRightTab(tab)}
+                    className={`relative px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                      activeRightContent === tab
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground/70"
+                    }`}
+                  >
+                    {tab === "effect"
+                      ? (hasSeverityData ? "Severity" : "Effect")
+                      : "Distribution"}
+                    {activeRightContent === tab && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                    )}
+                  </button>
                 ))}
               </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <EChartsWrapper option={sevOption} style={{ width: "100%", height: "100%" }} />
-            </div>
+            )}
+
+            {/* Right panel content */}
+            {activeRightContent === "distribution" && selectedFinding ? (
+              /* Distribution strip plots */
+              <div className="flex flex-1 min-h-0 flex-col pt-0.5">
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Individual values
+                  </span>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <CenterDistribution
+                    finding={selectedFinding}
+                    selectedDay={selectedDay}
+                  />
+                </div>
+              </div>
+            ) : hasSeverityData && sevOption ? (
+              /* Stacked severity (incidence MI) */
+              <>
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Severity distribution
+                  </span>
+                  <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
+                    {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
+                      <span key={label} className="flex items-center gap-0.5">
+                        <span
+                          className="inline-block h-2 w-2 rounded-sm"
+                          style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
+                        />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <EChartsWrapper option={sevOption} style={{ width: "100%", height: "100%" }} />
+                </div>
+              </>
+            ) : hasEffect && esOption ? (
+              /* Effect size bar chart */
+              <>
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Effect size ({esLabel})
+                    {omSubtitle && <span className="normal-case"> &mdash; {omSubtitle}</span>}
+                  </span>
+                  <span className="text-[8px] text-muted-foreground/60">{esSymbol}=0.8 threshold</span>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <EChartsWrapper option={esOption} style={{ width: "100%", height: "100%" }} />
+                </div>
+              </>
+            ) : null}
           </div>
-        ) : hasEffect && esOption ? (
-          <div className="flex min-w-0 flex-1 flex-col px-1">
-            <div className="flex shrink-0 items-center justify-between py-0.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Effect size ({esLabel})
-                {omSubtitle && <span className="normal-case"> &mdash; {omSubtitle}</span>}
-              </span>
-              <span className="text-[8px] text-muted-foreground/60">{esSymbol}=0.8 threshold</span>
-            </div>
-            <div className="flex-1 min-h-0">
-              <EChartsWrapper option={esOption} style={{ width: "100%", height: "100%" }} />
-            </div>
-          </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
