@@ -117,26 +117,26 @@ class TestRecoveryDaysAvailable:
     """recovery_days_available must also exclude main-study-period days."""
 
     def test_bwgain_no_available_days(self, recovery_result):
-        """Body Weight Gain should have empty available days."""
+        """BG (body weight gains) should have empty available days."""
         rda = recovery_result.get("recovery_days_available", {})
-        bg_days = rda.get("Body Weight Gain", {})
+        bg_days = rda.get("BWGAIN", {})
         for sex, days in bg_days.items():
             assert len(days) == 0, (
-                f"Body Weight Gain {sex} should have no recovery days but got {days}"
+                f"BWGAIN {sex} should have no recovery days but got {days}"
             )
 
     def test_food_consumption_no_available_days(self, recovery_result):
         rda = recovery_result.get("recovery_days_available", {})
-        fc_days = rda.get("Food Consumption", {})
+        fc_days = rda.get("FC", {})
         for sex, days in fc_days.items():
             assert len(days) == 0, (
-                f"Food Consumption {sex} should have no recovery days but got {days}"
+                f"FC {sex} should have no recovery days but got {days}"
             )
 
     def test_bw_has_recovery_days(self, recovery_result):
-        """Body Weight should have days 99, 106 (post-terminal)."""
+        """BW should have days 99, 106 (post-terminal)."""
         rda = recovery_result.get("recovery_days_available", {})
-        bw_days = rda.get("Body Weight", {})
+        bw_days = rda.get("BW", {})
         assert "F" in bw_days or "M" in bw_days, "BW should have recovery days"
         for sex, days in bw_days.items():
             assert all(d > 92 for d in days), (
@@ -146,10 +146,26 @@ class TestRecoveryDaysAvailable:
 
     def test_albumin_has_recovery_days(self, recovery_result):
         rda = recovery_result.get("recovery_days_available", {})
-        alb_days = rda.get("Albumin", {})
-        assert "F" in alb_days or "M" in alb_days, "Albumin should have recovery days"
+        alb_days = rda.get("ALB", {})
+        assert "F" in alb_days or "M" in alb_days, "ALB should have recovery days"
         for sex, days in alb_days.items():
-            assert 106 in days, f"Albumin {sex} missing terminal recovery day 106"
+            assert 106 in days, f"ALB {sex} missing terminal recovery day 106"
+
+    def test_rda_keyed_by_test_code(self, recovery_result):
+        """recovery_days_available keys must be test_codes (e.g. 'ALB', 'BW',
+        'BRAIN') — not display names — so the frontend can look them up from
+        unified finding test_code/specimen."""
+        rda = recovery_result.get("recovery_days_available", {})
+        # These are the test_codes the backend emits after OMSPEC remapping
+        assert "BW" in rda, "BW key missing"
+        assert "ALB" in rda, "ALB key missing"
+        # OM specimens should appear as direct keys
+        assert "BRAIN" in rda, "BRAIN (OM specimen) key missing"
+        assert "LIVER" in rda, "LIVER (OM specimen) key missing"
+        assert "HEART" in rda, "HEART (OM specimen) key missing"
+        # Display names should NOT be keys
+        assert "Body Weight" not in rda, "Display name 'Body Weight' should not be a key"
+        assert "Brain Weight" not in rda, "Display name 'Brain Weight' should not be a key"
 
 
 # ── Incidence (MI/MA) unaffected ──────────────────────────

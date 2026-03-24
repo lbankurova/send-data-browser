@@ -1223,9 +1223,14 @@ async def get_recovery_comparison(study_id: str):
                             break
                     if has_group:
                         valid_days.append(int(d))
-                if test_name not in recovery_days_available:
-                    recovery_days_available[test_name] = {}
-                recovery_days_available[test_name][str(sex_val)] = valid_days
+                # Key by test_code (not test_name) so the frontend can look up
+                # by the same identifier used in unified findings.  For OM this
+                # is the specimen name (e.g. "BRAIN"), for LB the LBTESTCD
+                # (e.g. "ALB"), for BW "BW".
+                rda_key = str(test_code)
+                if rda_key not in recovery_days_available:
+                    recovery_days_available[rda_key] = {}
+                recovery_days_available[rda_key][str(sex_val)] = valid_days
 
                 # Main-arm terminal effect (for comparison) — computed once per
                 # test_code/sex, reused across all days and dose groups.
