@@ -276,6 +276,8 @@ describe("finding_class in unified_findings.json", () => {
           (f.min_p_adj !== null && f.min_p_adj < 0.2) ||
           (f.trend_p !== null && f.trend_p < 0.2) ||
           (f.max_effect_size !== null && Math.abs(f.max_effect_size) >= 0.3) ||
+          // MI: avg_severity is the domain-appropriate magnitude (not effect size)
+          (f.avg_severity !== null && f.avg_severity !== undefined && f.avg_severity > 0) ||
           (f.dose_response_pattern !== null &&
             !["flat", "insufficient_data"].includes(f.dose_response_pattern));
         if (!hasAnySignal) {

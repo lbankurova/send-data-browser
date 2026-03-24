@@ -307,7 +307,7 @@ def _build_finding_context(finding: dict, dose_label_map: dict) -> dict:
         "finding": finding.get("finding", ""),
         "organ_system": finding.get("organ_system", ""),
         "p_value": finding.get("min_p_adj", 0) or 0,
-        "effect_size": finding.get("max_effect_size", 0) or 0,
+        "effect_size": (finding.get("max_effect_size") or finding.get("avg_severity") or 0),
         "effect_metric": effect_size_label(finding),
         "trend_p": finding.get("trend_p", 0) or 0,
     }
@@ -340,7 +340,7 @@ def _emit(rule: dict, ctx: dict, finding: dict, params=None) -> dict:
         "treatment_related": finding.get("treatment_related", False),
         "p_value": finding.get("min_p_adj"),
         "trend_p": finding.get("trend_p"),
-        "effect_size": finding.get("max_effect_size"),
+        "effect_size": finding.get("max_effect_size") or finding.get("avg_severity"),
         "n_affected": n_affected_treated,
         "max_n": max_n,
     }
