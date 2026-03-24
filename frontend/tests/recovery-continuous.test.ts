@@ -4,7 +4,7 @@
  * Tests the pure functions in:
  * - recovery-verdict.ts: classifyContinuousRecovery (verdict classification)
  * - RecoveryDumbbellChart.tsx: buildChartRows, hasPeakQualifier, formatVerdictDesc,
- *   connectorStyle, computeAxisBounds
+ *   connectorStyle
  */
 import { describe, test, expect } from "vitest";
 import {
@@ -17,7 +17,6 @@ import {
   hasPeakQualifier,
   formatVerdictDesc,
   connectorStyle,
-  computeAxisBounds,
 } from "@/components/analysis/panes/RecoveryDumbbellChart";
 import type { ChartRow } from "@/components/analysis/panes/RecoveryDumbbellChart";
 
@@ -251,11 +250,11 @@ describe("buildChartRows — confidence field", () => {
 // ═════════════════════════════════════════════════════════
 
 describe("buildChartRows", () => {
-  test("normal row: terminalVal = |terminal_effect|, recoveryVal = |effect_size|", () => {
+  test("normal row: terminalVal and recoveryVal are signed", () => {
     const rows = buildChartRows([makeRow({ terminal_effect: -1.5, effect_size: -0.8 })], undefined);
     expect(rows).toHaveLength(1);
-    expect(rows[0].terminalVal).toBeCloseTo(1.5);
-    expect(rows[0].recoveryVal).toBeCloseTo(0.8);
+    expect(rows[0].terminalVal).toBeCloseTo(-1.5);
+    expect(rows[0].recoveryVal).toBeCloseTo(-0.8);
     expect(rows[0].isEdge).toBeNull();
   });
 
@@ -408,60 +407,3 @@ describe("connectorStyle", () => {
   });
 });
 
-// ═════════════════════════════════════════════════════════
-// computeAxisBounds
-// ═════════════════════════════════════════════════════════
-
-describe("computeAxisBounds", () => {
-  function makeChartRow(overrides: Partial<ChartRow> = {}): ChartRow {
-    return {
-      row: makeRow(),
-      doseLabel: "10 mg/kg",
-      verdict: "reversing",
-      terminalVal: 1.5,
-      recoveryVal: 0.8,
-      peakVal: null,
-      isEdge: null,
-      ...overrides,
-    };
-  }
-
-  test("globalXMax includes 10% padding", () => {
-    const chartRowsBySex = {
-      M: [makeChartRow({ terminalVal: 2.0, recoveryVal: 1.0 })],
-    };
-    const { globalXMax } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // max = 2.0, pad = 2.0 * 0.1 = 0.2 → globalXMax = 2.2
-    expect(globalXMax).toBeCloseTo(2.2);
-  });
-
-  test("xMin = 0 when no overcorrection", () => {
-    const chartRowsBySex = {
-      F: [makeChartRow({ terminalVal: 1.5, recoveryVal: 0.8 })],
-    };
-    const { xMinBySex } = computeAxisBounds(chartRowsBySex, ["F"]);
-    expect(xMinBySex["F"]).toBe(0);
-  });
-
-  test("xMin extends negative for overcorrection (with padding)", () => {
-    const chartRowsBySex = {
-      M: [makeChartRow({ terminalVal: 1.5, recoveryVal: -0.8, verdict: "overcorrected" })],
-    };
-    const { xMinBySex } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // min = -0.8, negPad = 0.8 * 0.1 = 0.08 → xMin = -0.88
-    expect(xMinBySex["M"]).toBeCloseTo(-0.88);
-    expect(xMinBySex["M"]).toBeLessThan(-0.8);
-  });
-
-  test("edge rows excluded from bounds", () => {
-    const chartRowsBySex = {
-      M: [
-        makeChartRow({ terminalVal: 1.5, recoveryVal: 0.8 }),
-        makeChartRow({ terminalVal: 10.0, recoveryVal: 8.0, isEdge: "insufficient_n" }),
-      ],
-    };
-    const { globalXMax } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // edge row should be excluded, max = 1.5
-    expect(globalXMax).toBeCloseTo(1.65); // 1.5 + 0.15
-  });
-});
