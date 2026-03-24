@@ -9,6 +9,7 @@ import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcl
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";
+import { CohortRail } from "@/components/analysis/cohort/CohortRail";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
@@ -129,8 +130,9 @@ export function ShellRailPanel() {
     }
   }, [selectedFinding, isFindingsView]);
 
-  // Route detection — validation view, study summary details tab
+  // Route detection — validation view, cohort view, study summary details tab
   const isValidationRoute = pathname.includes("/validation");
+  const isCohortRoute = pathname.includes("/cohort");
   const isStudySummaryRoute = studyId && pathname === `/studies/${encodeURIComponent(studyId)}`;
   const [summaryTab] = useStudySummaryTab();
 
@@ -175,7 +177,9 @@ export function ShellRailPanel() {
         className="shrink-0 overflow-hidden border-r"
         style={{ width }}
       >
-        {isValidationRoute ? (
+        {isCohortRoute ? (
+          <CohortRail />
+        ) : isValidationRoute ? (
           <ValidationRuleRail
             studyId={studyId}
             selectedRuleId={selectedRuleId}

@@ -27,6 +27,7 @@ const HistopathologyContextPanel = lazy(() => import("@/components/analysis/pane
 const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
 const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
 const StudyPortfolioContextPanel = lazy(() => import("@/components/portfolio/StudyPortfolioContextPanel").then(m => ({ default: m.StudyPortfolioContextPanel })));
+const CohortContextPanel = lazy(() => import("@/components/analysis/panes/CohortContextPanel").then(m => ({ default: m.CohortContextPanel })));
 
 function PanelFallback() {
   return (
@@ -440,6 +441,7 @@ export function ContextPanel() {
   const isNoaelRoute = /\/studies\/[^/]+\/noael-determination/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
+  const isCohortRoute = /\/studies\/[^/]+\/cohort/.test(location.pathname);
 
   // Landing page with study selected - show portfolio context panel
   if (isLandingPageRoute && selectedStudyId && allStudies) {
@@ -470,6 +472,12 @@ export function ContextPanel() {
 
   if (isValidationRoute && activeStudyId) {
     return <LazyPane><ValidationContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
+  }
+
+  if (isCohortRoute) {
+    // Cohort: subject click → SubjectProfilePanel (handled above via selectedSubject),
+    // otherwise show cohort summary
+    return <LazyPane><CohortContextPanel /></LazyPane>;
   }
 
   if (isStudySummaryRoute && activeStudyId) {
