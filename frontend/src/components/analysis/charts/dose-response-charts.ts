@@ -152,7 +152,7 @@ export function buildDoseResponseLineOption(
 
     series.push({
       type: "custom",
-      name: seriesName,
+      name: `${seriesName} SD`,
       data: errorBarData,
       z: 1,
       clip: false,
@@ -1342,17 +1342,33 @@ export function buildStackedSeverityBarOption(
         return total > 0 ? n / total : 0;
       });
 
+      // Side-border gradient: F = left edge, M = right edge (outer edges).
+      // ~12% of bar width gives a visible 2px stripe on 16px compactified bars.
+      const isF = sex === "F";
+      const stripe = {
+        type: "linear" as const, x: 0, y: 0, x2: 1, y2: 0,
+        colorStops: isF
+          ? [
+              { offset: 0, color: sexColor },
+              { offset: 0.12, color: sexColor },
+              { offset: 0.12, color: gradeColor },
+              { offset: 1, color: gradeColor },
+            ]
+          : [
+              { offset: 0, color: gradeColor },
+              { offset: 0.88, color: gradeColor },
+              { offset: 0.88, color: sexColor },
+              { offset: 1, color: sexColor },
+            ],
+      };
+
       series.push({
         type: "bar",
         name: gradeLabel,
         stack: sex,
         data,
         barMaxWidth: 30,
-        itemStyle: {
-          color: gradeColor,
-          // Bottom segment (grade 1) gets a colored bottom border for sex identification
-          ...(g === 0 ? { borderColor: sexColor, borderWidth: 2 } : {})
-        },
+        itemStyle: { color: stripe },
       });
     }
   }
