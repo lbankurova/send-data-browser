@@ -16,7 +16,7 @@ import {
 import type { MergedPoint, BarVerdictInfo } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { getSexColor, getDoseGroupColor, formatDoseNumericLabel, getNeutralHeatColor } from "@/lib/severity-colors";
+import { getSexColor, getDoseGroupColor, formatDoseShortLabel, getNeutralHeatColor } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
@@ -298,7 +298,7 @@ export function DoseResponseChartPanel({
       const anyRow = rows.find((r) => r.dose_level === dl);
       const point: MergedPoint = {
         dose_level: dl,
-        dose_label: anyRow ? formatDoseNumericLabel(anyRow.dose_label) : `Dose ${dl}`,
+        dose_label: anyRow ? formatDoseShortLabel(anyRow.dose_label) : `Dose ${dl}`,
       };
       for (const sex of sexes) {
         const r = lookup.get(`${sex}_${dl}`);

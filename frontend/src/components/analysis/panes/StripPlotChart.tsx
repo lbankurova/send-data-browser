@@ -46,7 +46,6 @@ export interface StripPlotChartProps {
 const PLOT_HEIGHT = 165;
 const PLOT_TOP = 4;
 const PLOT_BOTTOM = 26; // dose labels + unit
-const PLOT_BOTTOM_INTERLEAVED = 36; // dose labels + sex sub-labels
 const LEFT_MARGIN = 30; // Y-axis tick labels (first panel only uses it)
 const PLOT_RIGHT = 6;
 const DOT_RADIUS = 2.5;
@@ -373,7 +372,7 @@ function InterleavedPanel({
   }, []);
 
   const { width, height } = dims;
-  const bottomMargin = sexes.length > 1 ? PLOT_BOTTOM_INTERLEAVED : PLOT_BOTTOM;
+  const bottomMargin = PLOT_BOTTOM;
   const plotHeight = Math.max(60, height - PLOT_TOP - bottomMargin);
   const plotWidth = width - LEFT_MARGIN - PLOT_RIGHT;
   const numCols = doseGroups.length;
@@ -524,26 +523,14 @@ function InterleavedPanel({
               );
             })}
 
-            {/* Dose label centered on full column */}
+            {/* Dose label centered on full column — color-coded by group */}
             <text
               x={cx} y={plotBottom + 10}
               textAnchor="middle" dominantBaseline="central"
-              className="text-[8px]" fill="var(--muted-foreground)"
+              className="text-[10px] font-medium" fill={getDoseGroupColor(dg.doseLevel)}
             >
               {formatDoseShortLabel(dg.doseLabel)}
             </text>
-
-            {/* Sex sub-labels below dose label */}
-            {sexes.length > 1 && sexes.map((sex) => (
-              <text
-                key={sex}
-                x={cx + subColOffset(sex)} y={plotBottom + 22}
-                textAnchor="middle" dominantBaseline="central"
-                className="text-[7px]" fill={getSexColor(sex)} opacity={0.6}
-              >
-                {sex}
-              </text>
-            ))}
           </g>
         );
       })}
@@ -735,7 +722,7 @@ function SexPanel({
             key={dg.doseLevel}
             x={cx} y={plotBottom + 10}
             textAnchor="middle" dominantBaseline="central"
-            className="text-[8px]" fill="var(--muted-foreground)"
+            className="text-[10px]" fill="var(--muted-foreground)"
           >
             {label}
           </text>
