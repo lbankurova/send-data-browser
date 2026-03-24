@@ -78,6 +78,7 @@ export function FindingsView() {
   const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
+  const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
 
@@ -150,8 +151,9 @@ export function FindingsView() {
   // Rail endpoint click → select finding in table
   // Synchronous: set activeEndpoint AND select the best finding in the same
   // render batch so the table never shows a stale selection from a different endpoint.
-  const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
+  const handleEndpointSelect = useCallback((endpointLabel: string | null, domain?: string) => {
     setActiveEndpoint(endpointLabel);
+    setActiveDomain(domain);
     // Reset selectedDay so chartDay falls through to the computed fallback
     // (activeDay ?? peakDay ?? terminal) on the first render — prevents a
     // transient frame where the stale selectedDay from the previous endpoint
@@ -160,9 +162,11 @@ export function FindingsView() {
     setDayCleared(false);
     const currentData = dataRef.current;
     if (endpointLabel && currentData?.findings?.length) {
-      const epFindings = currentData.findings.filter(
+      let epFindings = currentData.findings.filter(
         (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
       );
+      // Scope to clicked domain for multi-domain endpoints (MI + MA)
+      if (domain) epFindings = epFindings.filter((f) => f.domain === domain);
       if (epFindings.length > 0) {
         const best = pickBestFinding(epFindings);
         selectFinding(best);
@@ -179,7 +183,7 @@ export function FindingsView() {
   // Register event bus callback
   useEffect(() => {
     setFindingsRailCallback((state) => {
-      if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+      if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint, state.activeDomain);
       if (state.activeGrouping !== undefined) setActiveGrouping(state.activeGrouping);
       if (state.restoreEndpoint !== undefined) handleRestoreEndpoint(state.restoreEndpoint);
       if (state.visibleEndpoints !== undefined) {
@@ -569,6 +573,7 @@ export function FindingsView() {
           excludedEndpoints={excludedEndpoints}
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
+          activeDomain={activeDomain}
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}

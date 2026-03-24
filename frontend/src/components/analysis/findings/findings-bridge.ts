@@ -12,6 +12,8 @@ import type { RailVisibleState } from "./FindingsRail";
 
 export interface FindingsCallbackState {
   activeEndpoint?: string | null;
+  /** Domain of the clicked rail entry (for multi-domain endpoints like MI + MA). */
+  activeDomain?: string;
   activeGrouping?: GroupingMode;
   visibleEndpoints?: RailVisibleState;
   restoreEndpoint?: string;

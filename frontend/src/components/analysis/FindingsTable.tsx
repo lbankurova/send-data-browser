@@ -141,6 +141,8 @@ interface FindingsTableProps {
   onToggleExclude?: (label: string) => void;
   /** Active endpoint label — all rows matching this endpoint get a subtle highlight. */
   activeEndpoint?: string | null;
+  /** Domain of the active endpoint (for multi-domain endpoints like MI + MA). */
+  activeDomain?: string;
   /** Current rail grouping mode — when "finding", table sorts by endpoint by default. */
   activeGrouping?: GroupingMode | null;
   /** Callback to open the table in its own tab. */
@@ -153,7 +155,7 @@ interface FindingsTableProps {
   globalDayLabels?: Map<number, string>;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -342,10 +344,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   // When synced with charts AND an endpoint is active, scope table to that endpoint
   const scopedFindings = useMemo(() => {
     if (!followRail || !activeEndpoint) return panelFilteredFindings;
-    return panelFilteredFindings.filter(
+    let scoped = panelFilteredFindings.filter(
       (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
     );
-  }, [panelFilteredFindings, followRail, activeEndpoint]);
+    // Multi-domain endpoints (MI + MA): scope to the clicked domain
+    if (activeDomain) scoped = scoped.filter((f) => f.domain === activeDomain);
+    return scoped;
+  }, [panelFilteredFindings, followRail, activeEndpoint, activeDomain]);
 
   // Available days — only days with visible rows after panel + scope filters
   const availableDays = useMemo(() => {
