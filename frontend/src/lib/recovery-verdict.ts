@@ -64,6 +64,13 @@ export function classifyContinuousRecovery(
 
   // Recovery effect below trivial threshold (|g| < 0.5)
   if (Math.abs(recoveryG) < 0.5) {
+    // Sign flip with sub-threshold residual: the terminal effect was marginal and
+    // the parameter crossed zero. The residual is trivial — classify as resolved
+    // rather than "reversed" (BUG-21: avoids misleading verdict when cross-arm
+    // control baseline shift inflates terminal g).
+    if (Math.sign(terminalG) !== Math.sign(recoveryG)) {
+      return { verdict: "resolved", pctRecovered: null, confidence };
+    }
     // Effect grew but both below 0.5 — no meaningful effect at either timepoint
     if (pct < 0) return { verdict: "resolved", pctRecovered: null, confidence };
     return { verdict: pct >= 80 ? "resolved" : "reversed", pctRecovered: pct, confidence };

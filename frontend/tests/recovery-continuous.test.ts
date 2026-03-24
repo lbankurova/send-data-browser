@@ -122,11 +122,28 @@ describe("classifyContinuousRecovery", () => {
     expect(v.pctRecovered).toBeNull();
   });
 
-  test("sign flip + |recovery| < 0.5 → resolved (trivial)", () => {
+  test("sign flip + |recovery| < 0.5, pct >= 80 → resolved (trivial)", () => {
     // positive terminal, negative recovery but trivial magnitude
     const v = classifyContinuousRecovery(1.5, -0.3);
-    // |recovery| < 0.5 branch: pct = (1.5-0.3)/1.5 * 100 = 80% → resolved
+    // Sign-flip guard in sub-threshold branch → resolved (BUG-21 fix)
     expect(v.verdict).toBe("resolved");
+    expect(v.pctRecovered).toBeNull();
+  });
+
+  test("sign flip + |recovery| < 0.5, pct < 80 → resolved (BUG-21)", () => {
+    // The BW Males 2 mg/kg case: terminal slightly positive, recovery slightly negative
+    // Before BUG-21 fix: pct = (0.78-0.19)/0.78 = 76% → "reversed" (wrong)
+    // After fix: sign-flip in sub-threshold branch → "resolved"
+    const v = classifyContinuousRecovery(0.78, -0.19);
+    expect(v.verdict).toBe("resolved");
+    expect(v.pctRecovered).toBeNull();
+  });
+
+  test("sign flip + |recovery| < 0.5 (negative terminal) → resolved", () => {
+    // Mirror case: negative terminal, positive recovery (sub-threshold)
+    const v = classifyContinuousRecovery(-1.2, 0.3);
+    expect(v.verdict).toBe("resolved");
+    expect(v.pctRecovered).toBeNull();
   });
 
   test("both below 0.5, pct < 0 → resolved", () => {

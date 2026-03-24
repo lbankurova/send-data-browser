@@ -91,6 +91,46 @@ export function buildChartRows(
   return result;
 }
 
+// ── Dose-response consistency check (Option C, BUG-21) ──
+
+/**
+ * Detect when all evaluated dose groups for a sex show the same directional
+ * recovery effect (all positive or all negative g), indicating a dose-consistent
+ * pattern that per-dose verdicts alone may not communicate.
+ *
+ * Returns a human-readable note per sex, or null if no pattern detected.
+ */
+function checkDoseConsistency(
+  chartRowsBySex: Record<string, ChartRow[]>,
+  sexes: string[],
+): Map<string, string> {
+  const notes = new Map<string, string>();
+  for (const sex of sexes) {
+    const rows = (chartRowsBySex[sex] ?? []).filter(
+      (cr) => !cr.isEdge && cr.recoveryVal != null,
+    );
+    if (rows.length < 2) continue;
+
+    const signs = rows.map((cr) => Math.sign(cr.recoveryVal!));
+    const allPositive = signs.every((s) => s > 0);
+    const allNegative = signs.every((s) => s < 0);
+    if (!allPositive && !allNegative) continue;
+
+    // Check if any verdict contradicts the consistent direction
+    // (e.g., "resolved"/"reversed" when all doses show same-direction effect)
+    const positiveVerdicts = new Set<ContinuousVerdictType>(["resolved", "reversed", "reversing"]);
+    const negativeVerdicts = new Set<ContinuousVerdictType>(["worsening", "persistent"]);
+    const hasPositive = rows.some((cr) => positiveVerdicts.has(cr.verdict));
+    const hasNegative = rows.some((cr) => negativeVerdicts.has(cr.verdict));
+
+    if (hasPositive && hasNegative) {
+      const dir = allNegative ? "below" : "above";
+      notes.set(sex, `All dose groups ${dir} control at recovery (dose-consistent pattern)`);
+    }
+  }
+  return notes;
+}
+
 // ── Helpers ──────────────────────────────────────────────
 
 function computeNiceTicks(min: number, max: number, maxTicks = 6): number[] {
@@ -272,6 +312,12 @@ export function RecoveryDumbbellChart({
   }, [chartRowsBySex, sexes]);
 
   const yTicks = useMemo(() => computeNiceTicks(yMin, yMax), [yMin, yMax]);
+
+  // Dose-response consistency notes (Option C, BUG-21)
+  const doseConsistencyNotes = useMemo(
+    () => checkDoseConsistency(chartRowsBySex, sexes),
+    [chartRowsBySex, sexes],
+  );
 
   const handleDoseClick = useCallback(
     (dose: number) => onDoseClick?.(dose),
@@ -543,6 +589,7 @@ export function RecoveryDumbbellChart({
         sexes={sexes}
         chartRowLookup={chartRowLookup}
         effectSymbol={effectSymbol}
+        doseConsistencyNotes={doseConsistencyNotes}
       />
 
       {/* Control group drift warning */}
@@ -580,12 +627,14 @@ function RecoveryDataTable({
   sexes,
   chartRowLookup,
   effectSymbol,
+  doseConsistencyNotes,
 }: {
   allDoseLevels: number[];
   doseLabelMap: Map<number, string>;
   sexes: string[];
   chartRowLookup: Map<string, ChartRow>;
   effectSymbol: string;
+  doseConsistencyNotes: Map<string, string>;
 }) {
   const multiSex = sexes.length > 1;
 
@@ -682,6 +731,21 @@ function RecoveryDataTable({
           </tr>
         ))}
       </tbody>
+      {/* Dose-consistency notes (Option C, BUG-21) */}
+      {doseConsistencyNotes.size > 0 && (
+        <tfoot>
+          <tr>
+            <td colSpan={1 + sexes.length * 4} className="pt-1.5">
+              {[...doseConsistencyNotes.entries()].map(([sex, note]) => (
+                <div key={sex} className="text-[10px] text-muted-foreground/70">
+                  {sexes.length > 1 && <span style={{ color: getSexColor(sex) }}>{sex}: </span>}
+                  {note}
+                </div>
+              ))}
+            </td>
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }
