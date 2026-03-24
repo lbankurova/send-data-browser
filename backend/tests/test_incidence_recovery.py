@@ -42,9 +42,9 @@ class TestComputeIncidenceVerdict:
     def test_new_in_recovery_when_main_zero(self):
         assert compute_incidence_verdict(0.0, 0.4) == "new_in_recovery"
 
-    def test_resolved_when_both_zero(self):
-        # Both arms zero → rec_inc == 0 → resolved (no finding to persist)
-        assert compute_incidence_verdict(0.0, 0.0) == "resolved"
+    def test_none_when_both_zero(self):
+        # Both arms zero → nothing observed in either period → None
+        assert compute_incidence_verdict(0.0, 0.0) is None
 
     def test_worsening_boundary_just_above(self):
         # rec slightly > main → worsening
@@ -327,8 +327,8 @@ class TestComputeIncidenceRecovery:
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 0  # All observations are normal
 
-    def test_control_dose_excluded(self):
-        """Dose level 0 (control) should not appear in results."""
+    def test_control_dose_included_with_no_verdict(self):
+        """Dose level 0 (control) appears in results but has verdict=None."""
         subjects_rows = [
             {"USUBJID": "C1", "SEX": "M", "dose_level": 0, "dose_label": "0 mg/kg", "is_recovery": False},
             {"USUBJID": "C2", "SEX": "M", "dose_level": 0, "dose_label": "0 mg/kg", "is_recovery": True},
@@ -343,8 +343,9 @@ class TestComputeIncidenceRecovery:
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
-        dose_levels = {r["dose_level"] for r in rows}
-        assert 0 not in dose_levels
+        control_rows = [r for r in rows if r["dose_level"] == 0]
+        assert len(control_rows) > 0  # control included for reference
+        assert all(r["verdict"] is None for r in control_rows)
 
     def test_orres_fallback(self):
         """Uses CLORRES when CLSTRESC is absent."""

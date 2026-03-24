@@ -14,6 +14,9 @@ from __future__ import annotations
 
 import pandas as pd
 
+# Severity text → numeric grade mapping (matches findings_mi.py)
+SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5}
+
 # ── Normal-observation terms to exclude ──────────────────────
 NORMAL_TERMS = frozenset({
     "NORMAL", "WITHIN NORMAL LIMITS", "WNL",
@@ -43,6 +46,8 @@ def compute_incidence_verdict(
     """
     if rec_n is not None and rec_n < MIN_RECOVERY_N:
         return "insufficient_n"
+    if main_inc == 0 and rec_inc == 0:
+        return None  # nothing observed in either period — not a recovery outcome
     if rec_inc == 0:
         return "resolved"
     if rec_inc < main_inc:
@@ -56,6 +61,21 @@ def compute_incidence_verdict(
     return None
 
 
+def _count_severity_grades(match_df: pd.DataFrame, sev_col: str) -> dict[str, int] | None:
+    """Count severity grades (1-5) from matched rows. Returns None if no grades."""
+    if sev_col not in match_df.columns:
+        return None
+    sev_vals = match_df[sev_col].astype(str).str.strip().str.upper().map(SEVERITY_SCORES)
+    sev_vals = sev_vals.dropna()
+    if len(sev_vals) == 0:
+        return None
+    counts: dict[str, int] = {}
+    for v in sev_vals:
+        key = str(int(v))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def compute_incidence_recovery(
     cl_df: pd.DataFrame,
     subjects_df: pd.DataFrame,
@@ -63,16 +83,23 @@ def compute_incidence_recovery(
     day_col: str,
     last_dosing_day: int | None = None,
     recovery_day: int | None = None,
+    specimen_col: str | None = None,
+    sev_col: str | None = None,
 ) -> list[dict]:
     """Compute incidence recovery rows for a CL-like domain.
 
     Args:
         cl_df: Raw CL domain DataFrame (must have USUBJID, observation column, day_col).
         subjects_df: Subject roster with USUBJID, SEX, dose_level, dose_label, is_recovery.
-        domain_key: Domain identifier (e.g. "cl").
+        domain_key: Domain identifier (e.g. "cl", "mi").
         day_col: Column name for study day (e.g. "CLDY").
         last_dosing_day: Treatment/recovery boundary day. None disables time-period filtering.
         recovery_day: Recovery sacrifice day (for output metadata).
+        specimen_col: Optional specimen/organ column (e.g. "MISPEC"). When set, rows
+            are grouped by (specimen, finding) and include a ``specimen`` field.
+        sev_col: Optional severity column (e.g. "MISEV"). When set, each row includes
+            ``main_severity_counts`` and ``recovery_severity_counts`` dicts mapping
+            grade (1-5) to count.
 
     Returns:
         List of incidence recovery row dicts.
@@ -91,6 +118,11 @@ def compute_incidence_recovery(
     df = df[~df[obs_col].isin(NORMAL_TERMS)]
     if df.empty:
         return []
+
+    # Normalise specimen column if provided
+    has_specimen = specimen_col is not None and specimen_col in df.columns
+    if has_specimen:
+        df[specimen_col] = df[specimen_col].astype(str).str.strip().str.upper()
 
     # Join dose info
     df = df.merge(
@@ -114,69 +146,90 @@ def compute_incidence_recovery(
         dose_label=("dose_label", "first"),
     ).reset_index()
 
-    # Get unique findings
+    # Build iteration axes
     all_findings = sorted(set(main_df[obs_col].unique()) | set(rec_df[obs_col].unique()))
+    all_specimens: list[str | None] = [None]
+    if has_specimen:
+        all_specimens = sorted(
+            set(main_df[specimen_col].unique()) | set(rec_df[specimen_col].unique())
+        )
 
     rows: list[dict] = []
 
-    for finding_name in all_findings:
-        for sex_val in ["F", "M"]:
-            for dose_level in sorted(subjects_df["dose_level"].unique()):
-                if dose_level == 0:
-                    continue
+    for specimen_val in all_specimens:
+        for finding_name in all_findings:
+            for sex_val in ["F", "M"]:
+                for dose_level in sorted(subjects_df["dose_level"].unique()):
+                    main_mask = (
+                        (main_df[obs_col] == finding_name) &
+                        (main_df["SEX"] == sex_val) &
+                        (main_df["dose_level"] == dose_level)
+                    )
+                    rec_mask = (
+                        (rec_df[obs_col] == finding_name) &
+                        (rec_df["SEX"] == sex_val) &
+                        (rec_df["dose_level"] == dose_level)
+                    )
+                    if has_specimen and specimen_val is not None:
+                        main_mask = main_mask & (main_df[specimen_col] == specimen_val)
+                        rec_mask = rec_mask & (rec_df[specimen_col] == specimen_val)
 
-                main_match = main_df[
-                    (main_df[obs_col] == finding_name) &
-                    (main_df["SEX"] == sex_val) &
-                    (main_df["dose_level"] == dose_level)
-                ]
-                main_affected = main_match["USUBJID"].nunique()
+                    main_match = main_df[main_mask]
+                    rec_match = rec_df[rec_mask]
 
-                rec_match = rec_df[
-                    (rec_df[obs_col] == finding_name) &
-                    (rec_df["SEX"] == sex_val) &
-                    (rec_df["dose_level"] == dose_level)
-                ]
-                rec_affected = rec_match["USUBJID"].nunique()
+                    main_affected = main_match["USUBJID"].nunique()
+                    rec_affected = rec_match["USUBJID"].nunique()
 
-                main_roster = roster[
-                    (roster["SEX"] == sex_val) &
-                    (roster["dose_level"] == dose_level) &
-                    (~roster["is_recovery"])
-                ]
-                rec_roster = roster[
-                    (roster["SEX"] == sex_val) &
-                    (roster["dose_level"] == dose_level) &
-                    (roster["is_recovery"])
-                ]
-                main_n = int(main_roster["n"].iloc[0]) if not main_roster.empty else 0
-                rec_n = int(rec_roster["n"].iloc[0]) if not rec_roster.empty else 0
+                    main_roster = roster[
+                        (roster["SEX"] == sex_val) &
+                        (roster["dose_level"] == dose_level) &
+                        (~roster["is_recovery"])
+                    ]
+                    rec_roster = roster[
+                        (roster["SEX"] == sex_val) &
+                        (roster["dose_level"] == dose_level) &
+                        (roster["is_recovery"])
+                    ]
+                    main_n = int(main_roster["n"].iloc[0]) if not main_roster.empty else 0
+                    rec_n = int(rec_roster["n"].iloc[0]) if not rec_roster.empty else 0
 
-                dose_label = ""
-                if not main_roster.empty:
-                    dose_label = str(main_roster["dose_label"].iloc[0])
-                elif not rec_roster.empty:
-                    dose_label = str(rec_roster["dose_label"].iloc[0])
+                    dose_label_str = ""
+                    if not main_roster.empty:
+                        dose_label_str = str(main_roster["dose_label"].iloc[0])
+                    elif not rec_roster.empty:
+                        dose_label_str = str(rec_roster["dose_label"].iloc[0])
 
-                if main_n == 0 and rec_n == 0:
-                    continue
+                    if main_n == 0 and rec_n == 0:
+                        continue
+                    if main_affected == 0 and rec_affected == 0:
+                        continue
 
-                main_inc = main_affected / main_n if main_n > 0 else 0
-                rec_inc = rec_affected / rec_n if rec_n > 0 else 0
-                verdict = compute_incidence_verdict(main_inc, rec_inc, rec_n)
+                    main_inc = main_affected / main_n if main_n > 0 else 0
+                    rec_inc = rec_affected / rec_n if rec_n > 0 else 0
+                    # Control group: no recovery verdict (background rate only)
+                    verdict = None if dose_level == 0 else compute_incidence_verdict(main_inc, rec_inc, rec_n)
 
-                rows.append({
-                    "domain": domain_key.upper(),
-                    "finding": finding_name,
-                    "sex": sex_val,
-                    "dose_level": int(dose_level),
-                    "dose_label": dose_label,
-                    "main_affected": main_affected,
-                    "main_n": main_n,
-                    "recovery_affected": rec_affected,
-                    "recovery_n": rec_n,
-                    "recovery_day": recovery_day,
-                    "verdict": verdict,
-                })
+                    row: dict = {
+                        "domain": domain_key.upper(),
+                        "finding": finding_name,
+                        "sex": sex_val,
+                        "dose_level": int(dose_level),
+                        "dose_label": dose_label_str,
+                        "main_affected": main_affected,
+                        "main_n": main_n,
+                        "recovery_affected": rec_affected,
+                        "recovery_n": rec_n,
+                        "recovery_day": recovery_day,
+                        "verdict": verdict,
+                    }
+
+                    if has_specimen and specimen_val is not None:
+                        row["specimen"] = specimen_val
+
+                    if sev_col:
+                        row["main_severity_counts"] = _count_severity_grades(main_match, sev_col)
+                        row["recovery_severity_counts"] = _count_severity_grades(rec_match, sev_col)
+
+                    rows.append(row)
 
     return rows
