@@ -641,9 +641,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("max_fold_change", {
         header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
         cell: (info) => {
+          const f = info.row.original;
+          // Domain-appropriate magnitude — mirrors pivoted view logic at endpoint level
+          if (f.domain === "MI") {
+            const sev = f.avg_severity;
+            if (sev == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            return <span className="font-mono text-muted-foreground" title={`avg severity = ${sev.toFixed(2)}`}>{sev.toFixed(1)}</span>;
+          }
+          if (f.data_type === "incidence") {
+            const inc = f.max_incidence;
+            if (inc == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            return <span className="font-mono text-muted-foreground" title={`max incidence = ${(inc * 100).toFixed(0)}%`}>{`${(inc * 100).toFixed(0)}%`}</span>;
+          }
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+          return <span className="font-mono text-muted-foreground" title={`fold change = ${v.toFixed(2)}`}>{`\u00d7${v.toFixed(1)}`}</span>;
         },
       }),
       col.accessor("min_p_adj", {
