@@ -211,6 +211,9 @@ def compute_all_findings(
             finding.get("specimen"),
             finding.get("test_code"),
         )
+        # CL: use body-system classification for organ_name
+        if finding.get("domain") == "CL" and finding.get("cl_body_system"):
+            finding["organ_name"] = finding["cl_body_system"].title()
 
         if finding.get("data_type") == "continuous":
             raw_values = finding.get("raw_values")

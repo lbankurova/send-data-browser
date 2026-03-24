@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Loader2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSubjectProfile } from "@/hooks/useSubjectProfile";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
@@ -630,6 +631,8 @@ function SubjectProfileContent({
   onBack: () => void;
   crossAnimalFlags?: CrossAnimalFlags;
 }) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const navigate = useNavigate();
   const { setSelectedSubject } = useViewSelection();
   const bw = profile.domains.BW?.measurements ?? [];
   const lb = profile.domains.LB?.measurements ?? [];
@@ -773,6 +776,16 @@ function SubjectProfileContent({
               <div>
                 Recovery: {recoveryNarrative.narrative}
               </div>
+            )}
+
+            {studyId && (
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground underline hover:text-foreground"
+                onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}/cohort?preset=all&dose=${profile.dose_level}`)}
+              >
+                View dose group cohort
+              </button>
             )}
           </div>
         }

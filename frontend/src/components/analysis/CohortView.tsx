@@ -15,11 +15,11 @@ import { useCallback } from "react";
 export function CohortView() {
   const { studyId } = useParams<{ studyId: string }>();
   const cohort = useCohort();
-  const { setSelection } = useViewSelection();
+  const { setSelection, setSelectedSubject } = useViewSelection();
 
   const handleSubjectClick = useCallback((usubjid: string) => {
-    setSelection({ _view: "cohort", mode: "subject", usubjid });
-  }, [setSelection]);
+    setSelectedSubject(usubjid);
+  }, [setSelectedSubject]);
 
   const handleFindingClick = useCallback((findingId: string) => {
     setSelection({ _view: "cohort", mode: "finding", findingId });
@@ -50,6 +50,7 @@ export function CohortView() {
         onSubjectClick={handleSubjectClick}
         onFindingClick={handleFindingClick}
         truncated={cohort.truncated}
+        missingExamMap={cohort.missingExamMap}
       />
       <CohortCharts
         studyId={studyId!}

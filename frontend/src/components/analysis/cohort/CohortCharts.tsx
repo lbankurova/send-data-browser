@@ -103,6 +103,21 @@ function buildLabBarChart(
   const bars: { name: string; data: (number | null)[] }[] = [];
   const subjectIds = subjects.map((s) => s.usubjid);
 
+  // Collect group means per test code for reference line
+  const groupMeans: (number | null)[] = [];
+
+  for (const tc of testCodes) {
+    const f = findings.find((f) => f.test_code === tc && f.domain === "LB");
+    // Compute group mean from all non-control group_stats
+    if (f?.group_stats) {
+      const treated = f.group_stats.filter((gs) => gs.dose_level > 0 && gs.mean != null);
+      const mean = treated.length > 0 ? treated.reduce((sum, gs) => sum + gs.mean!, 0) / treated.length : null;
+      groupMeans.push(mean);
+    } else {
+      groupMeans.push(null);
+    }
+  }
+
   for (let si = 0; si < Math.min(subjectIds.length, 10); si++) {
     const id = subjectIds[si];
     const values: (number | null)[] = [];
@@ -127,16 +142,34 @@ function buildLabBarChart(
   return {
     tooltip: { trigger: "axis" },
     legend: { show: false },
-    grid: { left: 40, right: 10, top: 10, bottom: 20, containLabel: false },
-    xAxis: { type: "category", data: testCodes, axisLabel: { fontSize: 9 } },
-    yAxis: { type: "value", axisLabel: { fontSize: 9 } },
-    series: bars.map((b, i) => ({
-      name: b.name,
-      type: "bar" as const,
-      data: b.data,
-      itemStyle: { color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] },
-      barMaxWidth: 12,
-    })),
+    grid: { left: 10, right: 20, top: 10, bottom: 20, containLabel: true },
+    yAxis: { type: "category", data: testCodes, axisLabel: { fontSize: 9 } },
+    xAxis: { type: "value", axisLabel: { fontSize: 9 } },
+    series: [
+      ...bars.map((b, i) => ({
+        name: b.name,
+        type: "bar" as const,
+        data: b.data,
+        itemStyle: { color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] },
+        barMaxWidth: 10,
+      })),
+      // Group mean reference line
+      {
+        name: "Group mean",
+        type: "bar" as const,
+        data: groupMeans,
+        barMaxWidth: 0,
+        itemStyle: { color: "transparent" },
+        markLine: {
+          symbol: "none",
+          lineStyle: { color: "#6b7280", type: "dashed" as const, width: 1 },
+          data: groupMeans
+            .map((m, i) => m != null ? { xAxis: m, name: testCodes[i] } : null)
+            .filter((d): d is { xAxis: number; name: string } => d != null),
+          label: { show: false },
+        },
+      },
+    ],
   };
 }
 
@@ -169,18 +202,27 @@ function buildOrganWeightChart(
 
   if (data.length === 0) return null;
 
+  // Compute group mean for reference line
+  const groupMean = data.reduce((sum, d) => sum + d.value, 0) / data.length;
+
   return {
     tooltip: { trigger: "axis" },
-    grid: { left: 40, right: 10, top: 10, bottom: 20 },
-    xAxis: { type: "category", data: data.map((d) => d.name), axisLabel: { fontSize: 9 } },
-    yAxis: { type: "value", axisLabel: { fontSize: 9, formatter: "{value}%" } },
+    grid: { left: 10, right: 20, top: 10, bottom: 20, containLabel: true },
+    yAxis: { type: "category", data: data.map((d) => d.name), axisLabel: { fontSize: 9 } },
+    xAxis: { type: "value", axisLabel: { fontSize: 9, formatter: "{value}%" } },
     series: [{
       type: "bar" as const,
       data: data.map((d, i) => ({
         value: d.value,
         itemStyle: { color: SUBJECT_COLORS[i % SUBJECT_COLORS.length] },
       })),
-      barMaxWidth: 16,
+      barMaxWidth: 12,
+      markLine: {
+        symbol: "none",
+        lineStyle: { color: "#6b7280", type: "dashed" as const, width: 1 },
+        data: [{ xAxis: groupMean }],
+        label: { show: false },
+      },
     }],
   };
 }

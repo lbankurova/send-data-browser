@@ -58,18 +58,29 @@ export function buildCohortSubjects(
   }
 
   // Histopath qualification
-  const histoReasons = computeHistoReasons(findings, crossAnimalFlags);
+  const histoResult = computeHistoReasons(findings, crossAnimalFlags);
 
   // Sex derivation
   const sexMap = deriveSexMap(mortality, findings);
 
   return subjectContext.map((sc) => {
     const isTrs = trsIds.has(sc.USUBJID);
-    const histoReason = histoReasons.get(sc.USUBJID) ?? null;
 
-    // Badge priority: TRS > pattern > rec > tk
+    // Determine histopath reason for this subject
+    let histoReason: HistoReason | null = histoResult.reasons.get(sc.USUBJID) ?? null;
+    // Criterion 1: MI adverse at subject's dose level (non-control)
+    if (!histoReason && !sc.IS_CONTROL && histoResult.miAdverseDoseLevels.has(sc.DOSE_GROUP_ORDER)) {
+      histoReason = "adverse";
+    }
+    // Criterion 3: MI findings in ≥2 organs at subject's dose level (non-control)
+    if (!histoReason && !sc.IS_CONTROL && histoResult.multiOrganDoseLevels.has(sc.DOSE_GROUP_ORDER)) {
+      histoReason = "pattern";
+    }
+
+    // Badge priority: TRS > adverse > pattern > rec > tk
     let badge: CohortSubject["badge"] = null;
     if (isTrs) badge = "trs";
+    else if (histoReason === "adverse" || histoReason === "cod") badge = "adverse";
     else if (histoReason === "pattern") badge = "pattern";
     else if (sc.HAS_RECOVERY && !sc.IS_CONTROL) badge = "rec";
     else if (sc.IS_TK) badge = "tk";
@@ -120,19 +131,29 @@ function deriveSexMap(
   return map;
 }
 
+interface HistoReasonResult {
+  reasons: Map<string, HistoReason>;
+  miAdverseDoseLevels: Set<number>;
+  multiOrganDoseLevels: Set<number>;
+}
+
 function computeHistoReasons(
   findings: UnifiedFinding[],
   crossAnimalFlags: CrossAnimalFlags | null,
-): Map<string, HistoReason> {
+): HistoReasonResult {
   const reasons = new Map<string, HistoReason>();
 
-  // Criterion 1: ≥1 MI finding at severity ≥ "adverse" for dose groups with subjects
-  // Since MI lacks raw_subject_values, we use group_stats: any MI adverse finding
-  // at a non-control dose level qualifies subjects at that dose
+  // Criterion 1: ≥1 MI finding at severity ≥ "adverse"
+  // MI lacks raw_subject_values, so we use group_stats: any MI adverse finding
+  // at a non-control dose level — collect the dose levels with MI adverse signal
+  const miAdverseDoseLevels = new Set<number>();
   for (const f of findings) {
     if (f.domain !== "MI" || f.severity !== "adverse") continue;
-    // Mark by dose level presence — subjects at those dose levels qualify
-    // We'll refine per-subject later; for now, mark the finding exists
+    for (const gs of f.group_stats ?? []) {
+      if (gs.dose_level > 0 && (gs.affected ?? 0) > 0) {
+        miAdverseDoseLevels.add(gs.dose_level);
+      }
+    }
   }
 
   // Criterion 2: COD-related flags
@@ -144,12 +165,25 @@ function computeHistoReasons(
     }
   }
 
-  // Criterion 3: MI findings in ≥2 distinct organs — since MI lacks raw_subject_values,
-  // we can't determine per-subject organ count. Mark all non-control subjects at
-  // dose levels where MI findings span ≥2 organs.
-  // (This is an approximation; proper per-subject MI requires histopath endpoint)
+  // Criterion 3: MI findings in ≥2 distinct organs per dose level
+  const miOrgansByDose = new Map<number, Set<string>>();
+  for (const f of findings) {
+    if (f.domain !== "MI") continue;
+    const organ = f.organ_name ?? f.organ_system ?? null;
+    if (!organ) continue;
+    for (const gs of f.group_stats ?? []) {
+      if (gs.dose_level > 0 && (gs.affected ?? 0) > 0) {
+        if (!miOrgansByDose.has(gs.dose_level)) miOrgansByDose.set(gs.dose_level, new Set());
+        miOrgansByDose.get(gs.dose_level)!.add(organ);
+      }
+    }
+  }
+  const multiOrganDoseLevels = new Set<number>();
+  for (const [dl, organs] of miOrgansByDose) {
+    if (organs.size >= 2) multiOrganDoseLevels.add(dl);
+  }
 
-  return reasons;
+  return { reasons, miAdverseDoseLevels, multiOrganDoseLevels };
 }
 
 // ── Preset filtering ─────────────────────────────────────────
@@ -168,7 +202,7 @@ export function computePresetSubjects(
       break;
     case "histo":
       for (const s of allSubjects) {
-        if (s.histoReason !== null || s.badge === "trs") ids.add(s.usubjid);
+        if (s.histoReason !== null) ids.add(s.usubjid);
       }
       break;
     case "recovery":
@@ -215,8 +249,19 @@ export function computeOrganSignals(
         }
         if (relevant) break;
       }
+    } else if (f.domain === "CL" && f.raw_subject_onset_days) {
+      // CL with per-subject onset days: check directly
+      for (const entry of f.raw_subject_onset_days) {
+        for (const id of Object.keys(entry)) {
+          if (subjectIds.has(id) && entry[id] != null) {
+            relevant = true;
+            break;
+          }
+        }
+        if (relevant) break;
+      }
     } else {
-      // Incidence domains (MI, MA, CL) or missing raw values:
+      // Incidence domains (MI, MA) or missing raw values:
       // Relevant if finding has group_stats at a cohort dose level
       // AND matches cohort sex (findings are per-sex)
       if (f.sex && !cohortSexes.has(f.sex)) continue;
@@ -273,7 +318,7 @@ export function buildCohortFindingRows(
     // Sex filter: only include findings matching cohort sexes
     if (f.sex && !cohortSexes.has(f.sex)) continue;
 
-    // Build subject values map (only for continuous domains)
+    // Build subject values map
     const subjectValues: Record<string, number | string | null> = {};
     if (CONTINUOUS_DOMAINS.has(f.domain) && f.raw_subject_values) {
       for (const entry of f.raw_subject_values) {
@@ -284,8 +329,18 @@ export function buildCohortFindingRows(
         }
       }
     }
+    // CL: use onset days as per-subject values
+    if (f.domain === "CL" && f.raw_subject_onset_days) {
+      for (const entry of f.raw_subject_onset_days) {
+        for (const [id, val] of Object.entries(entry)) {
+          if (subjectIds.has(id)) {
+            subjectValues[id] = val;
+          }
+        }
+      }
+    }
 
-    // For incidence domains without raw_subject_values: include if group_stats
+    // For incidence domains without per-subject data: include if group_stats
     // show data at cohort dose levels
     let hasRelevantData = Object.keys(subjectValues).length > 0;
     if (!hasRelevantData && !CONTINUOUS_DOMAINS.has(f.domain)) {

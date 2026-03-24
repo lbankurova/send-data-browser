@@ -148,6 +148,10 @@ export interface UnifiedFinding {
   };
   /** Per-subject raw values — array of {USUBJID: value} maps. Used by Cohort View. */
   raw_subject_values?: Record<string, number | string | null>[];
+  /** Per-subject CL onset days — array of {USUBJID: day} maps. CL domain only. */
+  raw_subject_onset_days?: Record<string, number | null>[];
+  /** CL body-system category (CNS, GI, integument, general). CL domain only. */
+  cl_body_system?: string;
   /** Human-readable organ name (e.g., "Liver", "Kidney"). */
   organ_name?: string | null;
 }

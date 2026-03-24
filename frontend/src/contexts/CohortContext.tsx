@@ -24,6 +24,8 @@ export interface CohortContextValue {
   // Raw data
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
+  /** Subjects with missing organ examinations — USUBJID → set of missing organ/specimen names. */
+  missingExamMap: Map<string, Set<string>>;
   // Subject roster
   allSubjects: CohortSubject[];
   filteredSubjects: CohortSubject[];
@@ -74,13 +76,14 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const initialPreset = (searchParams.get("preset") as CohortPreset) || "all";
   const initialDose = searchParams.get("dose");
   const initialSubjects = searchParams.get("subjects");
+  const initialOrgan = searchParams.get("organ");
 
   // ── State ──────────────────────────────────────────────────
   const [preset, setPreset] = useState<CohortPreset>(initialPreset);
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(
     () => initialSubjects ? new Set(initialSubjects.split(",")) : new Set<string>(),
   );
-  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(null);
+  const [selectedOrgan, setSelectedOrgan] = useState<string | null>(initialOrgan);
   const [includeTK, setIncludeTK] = useState(false);
   const [doseFilter, setDoseFilter] = useState<Set<number> | null>(
     () => initialDose != null ? new Set([Number(initialDose)]) : null,
@@ -99,6 +102,19 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
   const isLoading = findingsLoading || scLoading;
+
+  // ── Derived: tissue battery gap map ───────────────────────
+  const missingExamMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    if (!crossAnimalFlags) return map;
+    for (const a of crossAnimalFlags.tissue_battery.flagged_animals) {
+      if (a.missing_target_organs.length > 0 || a.missing_specimens.length > 0) {
+        const organs = new Set([...a.missing_target_organs, ...a.missing_specimens]);
+        map.set(a.animal_id, organs);
+      }
+    }
+    return map;
+  }, [crossAnimalFlags]);
 
   // ── Derived: subject roster ────────────────────────────────
   const allSubjects = useMemo(
@@ -155,8 +171,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     [findings, activeSubjects],
   );
 
-  // Auto-select highest-signal organ
-  const organAutoSelected = useRef(false);
+  // Auto-select highest-signal organ (skip if entry point specified one)
+  const organAutoSelected = useRef(initialOrgan != null);
   if (!organAutoSelected.current && selectedOrgan === null && organSignals.length > 0) {
     organAutoSelected.current = true;
     const best = organSignals.reduce((a, b) => {
@@ -206,6 +222,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     isLoading,
     findings,
     doseGroups,
+    missingExamMap,
     allSubjects,
     filteredSubjects,
     activeSubjects,
@@ -231,7 +248,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     setSearchQuery,
     setHoveredRow,
   }), [
-    isLoading, findings, doseGroups, allSubjects, filteredSubjects,
+    isLoading, findings, doseGroups, missingExamMap, allSubjects, filteredSubjects,
     activeSubjects, displaySubjects, preset, selectedSubjects,
     selectedOrgan, includeTK, doseFilter, sexFilter, searchQuery,
     hoveredRow, organSignals, findingRows, sharedFindings, toggleSubject,
