@@ -27,6 +27,9 @@ import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { CenterDistribution } from "./CenterDistribution";
+import { RecoveryDumbbellChart } from "../panes/RecoveryDumbbellChart";
+import { RECOVERY_VERDICT_LABEL } from "@/lib/recovery-labels";
+import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { UnifiedFinding, DoseGroup, GroupStat, PairwiseResult } from "@/types/analysis";
 import type { DoseResponseRow } from "@/types/analysis-views";
 
@@ -39,6 +42,13 @@ interface Props {
   doseGroups: DoseGroup[];
   /** Study day to display. Managed by parent via DayStepper. */
   selectedDay: number | null;
+  /** Left panel tab: dose-response or recovery dumbbell. */
+  leftTab: "dr" | "recovery";
+  onLeftTabChange: (tab: "dr" | "recovery") => void;
+  /** Whether recovery data exists for this study. */
+  hasRecovery: boolean;
+  /** Recovery comparison data (multi-day). */
+  recoveryData?: RecoveryComparisonResponse;
 }
 
 const sexColors: Record<string, string> = { M: getSexColor("M"), F: getSexColor("F") };
@@ -201,6 +211,10 @@ export function DoseResponseChartPanel({
   findings,
   doseGroups,
   selectedDay,
+  leftTab,
+  onLeftTabChange,
+  hasRecovery,
+  recoveryData,
 }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
   const { effectSize: esMethod } = useStatMethods(studyId);
@@ -217,8 +231,8 @@ export function DoseResponseChartPanel({
   const [splitPct, setSplitPct] = useState(50);
   const chartRowRef = useRef<HTMLDivElement>(null);
 
-  // Right sub-panel tab: effect size chart or distribution strip plots
-  const RIGHT_TABS = ["effect", "distribution"] as const;
+  // Right sub-panel tab: effect size chart, distribution, or recovery (CL/MA)
+  const RIGHT_TABS = ["effect", "distribution", "recovery"] as const;
   type RightTab = typeof RIGHT_TABS[number];
   const [rightTab, setRightTab] = useSessionState<RightTab>(
     "pcc.findings.rightTab", "effect", isOneOf(RIGHT_TABS),
@@ -228,6 +242,14 @@ export function DoseResponseChartPanel({
   const hasDistribution = !!(
     selectedFinding?.data_type === "continuous" &&
     DISTRIBUTION_DOMAINS.has(selectedFinding.domain)
+  );
+
+  // Incidence recovery in right panel — CL and MA only
+  const INCIDENCE_RECOVERY_DOMAINS = new Set(["CL", "MA"]);
+  const hasRightRecovery = !!(
+    selectedFinding &&
+    INCIDENCE_RECOVERY_DOMAINS.has(selectedFinding.domain) &&
+    hasRecovery
   );
 
   // ── Flatten findings → DoseResponseRow[] ──────────────────
@@ -420,15 +442,70 @@ export function DoseResponseChartPanel({
     return compactify(raw, chartData.mergedPoints);
   }, [chartData, hasSeverityData]);
 
-  // Whether the right panel should show anything
-  const hasRightPanel = hasEffect || hasSeverityData || hasDistribution;
-  // Show tab bar when both metric chart and distribution are available
-  const showRightTabs = hasDistribution && (hasEffect || hasSeverityData);
-  // Active right content: if only one thing available, show it regardless of tab state
-  const activeRightContent: RightTab =
-    showRightTabs ? rightTab
-    : hasDistribution ? "distribution"
-    : "effect";
+  // ── Recovery dumbbell chart data ─────────────────────────
+  // Filter recovery rows to the selected endpoint + day for the dumbbell chart
+  const recoveryDumbbellRows = useMemo(() => {
+    if (!recoveryData?.available || leftTab !== "recovery") return [];
+    const testCode = selectedFinding?.test_code ?? "";
+    const specimen = selectedFinding?.specimen;
+    const matched = recoveryData.rows.filter((r) => {
+      if (specimen) return r.test_code.toUpperCase() === specimen.toUpperCase();
+      return r.test_code.toUpperCase() === testCode.toUpperCase();
+    });
+    // When viewing at a specific day, filter to that day; otherwise show max day
+    if (selectedDay != null) {
+      const atDay = matched.filter((r) => r.day === selectedDay);
+      if (atDay.length > 0) return atDay;
+    }
+    // Fallback: max day per dose_level × sex
+    const best = new Map<string, typeof matched[number]>();
+    for (const r of matched) {
+      const key = `${r.sex}_${r.dose_level}`;
+      const prev = best.get(key);
+      if (!prev || (r.day ?? 0) > (prev.day ?? 0)) best.set(key, r);
+    }
+    return [...best.values()];
+  }, [recoveryData, leftTab, selectedDay, selectedFinding?.test_code, selectedFinding?.specimen]);
+
+  // Incidence recovery rows (CL domain) filtered to this endpoint
+  const incidenceRecoveryRows = useMemo(() => {
+    if (!recoveryData?.incidence_rows?.length || !selectedFinding) return [];
+    const finding = selectedFinding.finding;
+    const testCode = selectedFinding.test_code;
+    return recoveryData.incidence_rows.filter(
+      (r) => (r.finding === finding || r.finding === testCode)
+        && (r.main_affected > 0 || r.recovery_affected > 0), // skip 0→0 (nothing observed)
+    );
+  }, [recoveryData, selectedFinding]);
+
+  // Available right-panel tabs for this endpoint.
+  // CL/MA: only recovery (no effect/distribution — incidence endpoints).
+  const availableRightTabs = useMemo(() => {
+    const tabs: { key: RightTab; label: string }[] = [];
+    if (!hasRightRecovery) {
+      // Continuous / MI endpoints: effect + distribution tabs
+      if (hasEffect || hasSeverityData)
+        tabs.push({ key: "effect", label: hasSeverityData ? "Severity" : "Effect size" });
+      if (hasDistribution)
+        tabs.push({ key: "distribution", label: "Distribution" });
+    } else {
+      // CL/MA: always show recovery side-by-side with treatment chart
+      tabs.push({ key: "recovery", label: "Recovery" });
+    }
+    return tabs;
+  }, [hasEffect, hasSeverityData, hasDistribution, hasRightRecovery, incidenceRecoveryRows.length]);
+
+  const showRightTabs = availableRightTabs.length > 1;
+  // Resolve active tab: if current selection isn't available, fall back to first available
+  const activeRightContent: RightTab = availableRightTabs.some((t) => t.key === rightTab)
+    ? rightTab
+    : (availableRightTabs[0]?.key ?? "effect");
+  // Whether the right panel has actual renderable content
+  const hasRightPanel = availableRightTabs.length > 0 && (
+    (activeRightContent === "distribution" && !!selectedFinding) ||
+    (activeRightContent === "effect" && ((hasSeverityData && !!sevOption) || (hasEffect && !!esOption))) ||
+    (activeRightContent === "recovery" && hasRightRecovery)
+  );
 
   // ── Resize handle ─────────────────────────────────────────
   const onChartResize = useCallback((e: React.PointerEvent) => {
@@ -450,65 +527,151 @@ export function DoseResponseChartPanel({
     document.addEventListener("pointerup", onUp);
   }, [splitPct]);
 
-  if (!chartData || !drOption) {
-    return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        No dose-response data for this endpoint.
-      </div>
-    );
-  }
-
-  const isContinuous = chartData.dataType === "continuous";
+  // No early return — the tab bar must always render so users can switch tabs.
+  // "No data" states are shown inside each tab's content area instead.
+  const isContinuous = chartData?.dataType === "continuous";
+  const noDRData = !chartData || !drOption;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Charts row — resizable split */}
       <div ref={chartRowRef} className="flex flex-1 min-h-0">
-        {/* Left: D-R chart */}
+        {/* Left sub-panel */}
         <div
           className="flex shrink-0 flex-col overflow-hidden px-1"
           style={{ width: hasRightPanel ? `${splitPct}%` : "100%" }}
         >
-          {/* Title + legend */}
-          <div className="flex shrink-0 items-center justify-between py-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {isContinuous ? "Mean \u00b1 SD" : "Incidence"}
-              </span>
-              {isContinuous && (
-                <PanePillToggle
-                  value={drChartMode}
-                  options={[
-                    { value: "line" as const, label: "Line" },
-                    { value: "bar" as const, label: "Bar" },
-                  ]}
-                  onChange={setDrChartMode}
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
-              {chartData.sexes.map((sex) => (
-                <span key={sex} className="flex items-center gap-0.5">
-                  <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sexColors[sex] ?? "#666" }} />
-                  {sexLabels[sex] ?? sex}
+          {/* Left panel content: D-R chart or Recovery dumbbell */}
+          {leftTab === "recovery" && hasRecovery ? (
+            /* Recovery tab content */
+            <div className="flex flex-1 min-h-0 flex-col">
+              <div className="flex shrink-0 items-center justify-between py-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Recovery — terminal → recovery
                 </span>
-              ))}
-              {isContinuous && (
-                <span className="flex items-center gap-0.5">
-                  <span className="inline-block h-2 w-2 rounded-full border border-gray-700 bg-gray-400" />
-                  p&lt;0.05
-                </span>
-              )}
+              </div>
+              <div className="flex-1 min-h-0 overflow-auto">
+                {recoveryDumbbellRows.length > 0 ? (
+                  /* Continuous: dumbbell chart */
+                  <RecoveryDumbbellChart
+                    rows={recoveryDumbbellRows}
+                    doseGroups={doseGroups}
+                    terminalDay={recoveryDumbbellRows[0]?.terminal_day}
+                    recoveryDay={selectedDay}
+                  />
+                ) : incidenceRecoveryRows.length > 0 ? (
+                  /* Incidence (CL): inline per-dose comparison bars */
+                  <div className="flex h-full flex-col gap-2 px-2 py-2 overflow-auto">
+                    {(() => {
+                      const sexes = [...new Set(incidenceRecoveryRows.map((r) => r.sex))].sort();
+                      return sexes.map((sex) => {
+                        const sexRows = incidenceRecoveryRows
+                          .filter((r) => r.sex === sex)
+                          .sort((a, b) => a.dose_level - b.dose_level);
+                        return (
+                          <div key={sex} className="space-y-1">
+                            {sexes.length > 1 && (
+                              <div className="text-[10px] font-medium text-muted-foreground">{sex}</div>
+                            )}
+                            {sexRows.map((r) => {
+                              const termPct = r.main_n > 0 ? (r.main_affected / r.main_n) * 100 : 0;
+                              const recPct = r.recovery_n > 0 ? (r.recovery_affected / r.recovery_n) * 100 : 0;
+                              const verdictLabel = r.verdict ? (RECOVERY_VERDICT_LABEL[r.verdict] ?? r.verdict) : null;
+                              return (
+                                <div key={`${r.sex}_${r.dose_level}`} className="flex items-center gap-2 text-[10px]">
+                                  <span className="w-14 shrink-0 truncate text-muted-foreground" title={r.dose_label}>
+                                    {r.dose_label}
+                                  </span>
+                                  <div className="flex flex-1 items-center gap-1 min-w-0">
+                                    {/* Terminal bar */}
+                                    <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Terminal: ${r.main_affected}/${r.main_n}`}>
+                                      <div className="h-full bg-foreground/25 rounded-sm" style={{ width: `${termPct}%` }} />
+                                    </div>
+                                    {/* Recovery bar */}
+                                    <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Recovery: ${r.recovery_affected}/${r.recovery_n}`}>
+                                      <div className="h-full bg-primary/30 rounded-sm" style={{ width: `${recPct}%` }} />
+                                    </div>
+                                  </div>
+                                  <span className="w-16 shrink-0 text-right tabular-nums font-mono text-muted-foreground">
+                                    {Math.round(termPct)}&rarr;{Math.round(recPct)}%
+                                  </span>
+                                  {verdictLabel && (
+                                    <span className="shrink-0 rounded-sm bg-gray-100 px-1 py-0.5 text-[9px] text-gray-600 border border-gray-200">
+                                      {verdictLabel}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      });
+                    })()}
+                    {/* Legend */}
+                    <div className="flex items-center gap-3 pt-1 text-[9px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-4 rounded-sm bg-foreground/25" /> Terminal
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="inline-block h-2 w-4 rounded-sm bg-primary/30" /> Recovery
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                    No recovery data for this endpoint
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* D-R chart (default) */
+            noDRData ? (
+              <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+                No dose-response data for this endpoint.
+              </div>
+            ) : (
+            <>
+              {/* Title + legend */}
+              <div className="flex shrink-0 items-center justify-between py-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {isContinuous ? "Mean \u00b1 SD" : "Incidence"}
+                  </span>
+                  {isContinuous && (
+                    <PanePillToggle
+                      value={drChartMode}
+                      options={[
+                        { value: "line" as const, label: "Line" },
+                        { value: "bar" as const, label: "Bar" },
+                      ]}
+                      onChange={setDrChartMode}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
+                  {chartData?.sexes.map((sex) => (
+                    <span key={sex} className="flex items-center gap-0.5">
+                      <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sexColors[sex] ?? "#666" }} />
+                      {sexLabels[sex] ?? sex}
+                    </span>
+                  ))}
+                  {isContinuous && (
+                    <span className="flex items-center gap-0.5">
+                      <span className="inline-block h-2 w-2 rounded-full border border-gray-700 bg-gray-400" />
+                      p&lt;0.05
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          {/* Chart fills remaining space */}
-          <div className="flex-1 min-h-0">
-            <EChartsWrapper option={drOption} style={{ width: "100%", height: "100%" }} />
-          </div>
+              {/* Chart fills remaining space */}
+              <div className="flex-1 min-h-0">
+                {drOption && <EChartsWrapper option={drOption} style={{ width: "100%", height: "100%" }} />}
+              </div>
 
-          {/* Method label + verdict notes below chart — bar mode only */}
-          {isContinuous && drChartMode === "bar" && (
+              {/* Method label + verdict notes below chart — bar mode only */}
+              {isContinuous && drChartMode === "bar" && (
             <div className="shrink-0">
               <div className="text-[10px] italic text-muted-foreground">{methodLabel}</div>
               {barVerdicts && barVerdicts.map((v) => {
@@ -531,6 +694,29 @@ export function DoseResponseChartPanel({
               })}
             </div>
           )}
+            </>
+            )
+          )}
+
+          {/* Left tab bar (bottom, Excel-style) — D-R | Recovery.
+              Hidden for CL/MA: recovery shown directly in right panel. */}
+          {hasRecovery && !hasRightRecovery && (
+            <div className="flex shrink-0 items-end gap-px border-t border-border/40 bg-muted/20">
+              {(["dr", "recovery"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => onLeftTabChange(tab)}
+                  className={`px-3 py-0.5 text-[10px] font-medium transition-colors ${
+                    leftTab === tab
+                      ? "bg-background text-foreground border-t-2 border-t-primary -mt-px"
+                      : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
+                  }`}
+                >
+                  {tab === "dr" ? "Dose-response" : "Recovery"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Resize handle */}
@@ -539,31 +725,7 @@ export function DoseResponseChartPanel({
         {/* Right sub-panel: tabbed between metric chart + distribution */}
         {hasRightPanel && (
           <div className="flex min-w-0 flex-1 flex-col px-1">
-            {/* Tab bar — only when both metric chart and distribution are available */}
-            {showRightTabs && (
-              <div className="flex shrink-0 items-center gap-0 border-b border-border/50">
-                {(["effect", "distribution"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setRightTab(tab)}
-                    className={`relative px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                      activeRightContent === tab
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground/70"
-                    }`}
-                  >
-                    {tab === "effect"
-                      ? (hasSeverityData ? "Severity" : "Effect")
-                      : "Distribution"}
-                    {activeRightContent === tab && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Right panel content */}
+            {/* Right panel content — routed by activeRightContent */}
             {activeRightContent === "distribution" && selectedFinding ? (
               /* Distribution strip plots */
               <div className="flex flex-1 min-h-0 flex-col pt-0.5">
@@ -576,10 +738,84 @@ export function DoseResponseChartPanel({
                   <CenterDistribution
                     finding={selectedFinding}
                     selectedDay={selectedDay}
+                    isRecoveryMode={leftTab === "recovery"}
                   />
                 </div>
               </div>
-            ) : hasSeverityData && sevOption ? (
+            ) : activeRightContent === "recovery" && hasRightRecovery ? (
+              /* Incidence recovery (CL/MA) — always shown side-by-side with treatment chart */
+              <div className="flex flex-1 min-h-0 flex-col pt-0.5">
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Recovery — incidence
+                  </span>
+                  {recoveryData?.recovery_day != null && (
+                    <span className="text-[9px] tabular-nums text-muted-foreground/70">
+                      Day {recoveryData.recovery_day}
+                    </span>
+                  )}
+                </div>
+                {incidenceRecoveryRows.length > 0 ? (
+                <div className="flex-1 min-h-0 overflow-auto px-1 py-1">
+                  {(() => {
+                    const sexes = [...new Set(incidenceRecoveryRows.map((r) => r.sex))].sort();
+                    return sexes.map((sex) => {
+                      const sexRows = incidenceRecoveryRows
+                        .filter((r) => r.sex === sex)
+                        .sort((a, b) => a.dose_level - b.dose_level);
+                      return (
+                        <div key={sex} className="space-y-1 mb-2">
+                          {sexes.length > 1 && (
+                            <div className="text-[10px] font-medium text-muted-foreground">{sex}</div>
+                          )}
+                          {sexRows.map((r) => {
+                            const termPct = r.main_n > 0 ? (r.main_affected / r.main_n) * 100 : 0;
+                            const recPct = r.recovery_n > 0 ? (r.recovery_affected / r.recovery_n) * 100 : 0;
+                            const verdictLabel = r.verdict ? (RECOVERY_VERDICT_LABEL[r.verdict] ?? r.verdict) : null;
+                            return (
+                              <div key={`${r.sex}_${r.dose_level}`} className="flex items-center gap-2 text-[10px]">
+                                <span className="w-14 shrink-0 truncate text-muted-foreground" title={r.dose_label}>
+                                  {r.dose_label}
+                                </span>
+                                <div className="flex flex-1 items-center gap-1 min-w-0">
+                                  <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Terminal: ${r.main_affected}/${r.main_n}`}>
+                                    <div className="h-full bg-foreground/25 rounded-sm" style={{ width: `${termPct}%` }} />
+                                  </div>
+                                  <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Recovery: ${r.recovery_affected}/${r.recovery_n}`}>
+                                    <div className="h-full bg-primary/30 rounded-sm" style={{ width: `${recPct}%` }} />
+                                  </div>
+                                </div>
+                                <span className="w-16 shrink-0 text-right tabular-nums font-mono text-muted-foreground">
+                                  {Math.round(termPct)}&rarr;{Math.round(recPct)}%
+                                </span>
+                                {verdictLabel && (
+                                  <span className="shrink-0 rounded-sm bg-gray-100 px-1 py-0.5 text-[9px] text-gray-600 border border-gray-200">
+                                    {verdictLabel}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div className="flex items-center gap-3 pt-1 text-[9px] text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block h-2 w-4 rounded-sm bg-foreground/25" /> Terminal
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block h-2 w-4 rounded-sm bg-primary/30" /> Recovery
+                    </span>
+                  </div>
+                </div>
+                ) : (
+                  <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground">
+                    Tissue not examined in recovery arm.
+                  </div>
+                )}
+              </div>
+            ) : activeRightContent === "effect" && hasSeverityData && sevOption ? (
               /* Stacked severity (incidence MI) */
               <>
                 <div className="flex shrink-0 items-center justify-between py-0.5">
@@ -602,7 +838,7 @@ export function DoseResponseChartPanel({
                   <EChartsWrapper option={sevOption} style={{ width: "100%", height: "100%" }} />
                 </div>
               </>
-            ) : hasEffect && esOption ? (
+            ) : activeRightContent === "effect" && hasEffect && esOption ? (
               /* Effect size bar chart */
               <>
                 <div className="flex shrink-0 items-center justify-between py-0.5">
@@ -617,6 +853,25 @@ export function DoseResponseChartPanel({
                 </div>
               </>
             ) : null}
+
+            {/* Right tab bar (bottom, Excel-style) */}
+            {showRightTabs && (
+              <div className="flex shrink-0 items-end gap-px border-t border-border/40 bg-muted/20">
+                {availableRightTabs.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setRightTab(t.key)}
+                    className={`px-3 py-0.5 text-[10px] font-medium transition-colors ${
+                      activeRightContent === t.key
+                        ? "bg-background text-foreground border-t-2 border-t-primary -mt-px"
+                        : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
