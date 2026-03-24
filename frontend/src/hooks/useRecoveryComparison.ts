@@ -5,6 +5,8 @@ import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 const EMPTY: RecoveryComparisonResponse = {
   available: false,
   recovery_day: null,
+  last_dosing_day: null,
+  recovery_days_available: {},
   rows: [],
 };
 

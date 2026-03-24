@@ -149,7 +149,7 @@ function buildOrganGroups(
 
 function DomainChip({ domain }: { domain: string }) {
   return (
-    <span className="inline-flex items-center rounded border border-border px-1 py-0.5 font-mono text-[9px] font-medium text-muted-foreground">
+    <span className="inline-flex items-center rounded border border-border px-1 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
       {domain}
     </span>
   );
@@ -268,13 +268,13 @@ export function OrganGroupedHeatmap({
         className="sticky top-0 z-10 inline-grid bg-background"
         style={{ gridTemplateColumns: gridCols }}
       >
-        <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">
+        <div className="px-2 py-1.5 text-[11px] font-semibold text-muted-foreground">
           Organ / endpoint
         </div>
         {doseLabels.map((dl) => (
           <div
             key={dl.level}
-            className="px-1 py-1.5 text-center text-[10px] font-semibold text-muted-foreground"
+            className="px-1 py-1.5 text-center text-[11px] font-semibold text-muted-foreground"
           >
             <DoseHeader level={dl.level} label={dl.label} />
           </div>
@@ -312,7 +312,7 @@ export function OrganGroupedHeatmap({
                 />
               </button>
               <span className="text-xs font-semibold">{group.displayName}</span>
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                 {group.evidenceScore.toFixed(1)}
               </span>
               <div className="flex flex-wrap gap-0.5">
@@ -321,12 +321,12 @@ export function OrganGroupedHeatmap({
                 ))}
               </div>
               {group.isTarget && (
-                <span className="text-[10px] text-amber-600" title="Target organ">
+                <span className="text-[11px] text-amber-600" title="Target organ">
                   {"\u2605"}
                 </span>
               )}
               <Sparkline data={group.sparkline} />
-              <span className="ml-auto text-[10px] text-muted-foreground">
+              <span className="ml-auto text-[11px] text-muted-foreground">
                 {group.endpoints.length} endpoints
               </span>
             </div>)}
@@ -348,7 +348,7 @@ export function OrganGroupedHeatmap({
                       {/* Endpoint label */}
                       <div
                         className={cn(
-                          "truncate pl-7 pr-2 py-1 text-[11px]",
+                          "truncate pl-7 pr-2 py-1 text-xs",
                           isEndpointSelected && "bg-blue-50 dark:bg-blue-950/20"
                         )}
                         title={ep.label}
@@ -369,7 +369,7 @@ export function OrganGroupedHeatmap({
                         return (
                           <div
                             key={dl.level}
-                            className="flex cursor-pointer items-center justify-center py-1 text-[10px] font-medium tabular-nums transition-colors"
+                            className="flex cursor-pointer items-center justify-center py-1 text-[11px] font-medium tabular-nums transition-colors"
                             style={{
                               backgroundColor: getNeutralHeatColor(score).bg,
                               color: getNeutralHeatColor(score).text,
@@ -407,7 +407,7 @@ export function OrganGroupedHeatmap({
                                   </span>
                                 )}
                                 {stars && stars !== "ns" && (
-                                  <span className="ml-0.5 text-[9px]">
+                                  <span className="ml-0.5 text-[10px]">
                                     {stars}
                                   </span>
                                 )}

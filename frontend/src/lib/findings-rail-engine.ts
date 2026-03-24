@@ -469,6 +469,22 @@ export function getPatternLabel(pattern: string): string {
   return PATTERN_LABELS[pattern] ?? pattern;
 }
 
+/** Pattern label with direction arrow for monotonic/threshold patterns. */
+const PATTERN_LABELS_DIRECTIONAL: Record<string, string> = {
+  monotonic_increase: "Monotonic \u2191",
+  monotonic_decrease: "Monotonic \u2193",
+  threshold_increase: "Threshold \u2191",
+  threshold_decrease: "Threshold \u2193",
+  threshold: "Threshold",
+  non_monotonic: "Non-monotonic",
+  u_shaped: "U-shaped",
+  flat: "Flat",
+};
+
+export function getPatternLabelDirectional(pattern: string): string {
+  return PATTERN_LABELS_DIRECTIONAL[pattern] ?? pattern;
+}
+
 // ─── Reverse lookup: endpoint → group key ──────────────────
 
 export function buildEndpointToGroupIndex(

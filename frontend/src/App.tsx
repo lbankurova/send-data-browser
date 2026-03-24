@@ -14,6 +14,7 @@ const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/Fi
 const HistopathologyViewWrapper = lazy(() => import("@/components/analysis/HistopathologyViewWrapper").then(m => ({ default: m.HistopathologyViewWrapper })));
 const NoaelDeterminationViewWrapper = lazy(() => import("@/components/analysis/NoaelDeterminationViewWrapper").then(m => ({ default: m.NoaelDeterminationViewWrapper })));
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
+const CohortViewWrapper = lazy(() => import("@/components/analysis/CohortViewWrapper").then(m => ({ default: m.CohortViewWrapper })));
 
 
 function ViewLoading() {
@@ -117,6 +118,10 @@ const router = createBrowserRouter([
       {
         path: "/studies/:studyId/validation",
         element: <LazyRoute><ValidationViewWrapper /></LazyRoute>,
+      },
+      {
+        path: "/studies/:studyId/cohort",
+        element: <LazyRoute><CohortViewWrapper /></LazyRoute>,
       },
       {
         path: "/studies/:studyId/analyses/:analysisType",

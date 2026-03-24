@@ -40,7 +40,7 @@ export function DataTable({ columns, rows, totalRows, storageKeyPrefix }: DataTa
         <div>
           <div>{col.name}</div>
           {col.label && (
-            <div className="text-[9px] font-normal normal-case tracking-normal text-muted-foreground/70">
+            <div className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground/70">
               {col.label}
             </div>
           )}
@@ -187,7 +187,7 @@ export function DataTable({ columns, rows, totalRows, storageKeyPrefix }: DataTa
         </Popover>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead className="sticky top-0 z-10 bg-background">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b bg-muted/30">

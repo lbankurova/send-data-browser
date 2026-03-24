@@ -75,7 +75,7 @@ function SpecimenRailItem({
         </span>
         {reviewStatus === "Confirmed" && (
           <span
-            className="shrink-0 text-[9px] text-muted-foreground"
+            className="shrink-0 text-[10px] text-muted-foreground"
             title={reviewTooltip}
           >
             {"\u2713"}
@@ -83,7 +83,7 @@ function SpecimenRailItem({
         )}
         {reviewStatus === "Revised" && (
           <span
-            className="shrink-0 text-[9px] text-muted-foreground"
+            className="shrink-0 text-[10px] text-muted-foreground"
             title={reviewTooltip}
           >
             {"\u007E"}
@@ -91,7 +91,7 @@ function SpecimenRailItem({
         )}
         {reviewStatus === "Under dispute" && (
           <span
-            className="shrink-0 text-[9px] text-muted-foreground"
+            className="shrink-0 text-[10px] text-muted-foreground"
             title={reviewTooltip}
           >
             !
@@ -99,7 +99,7 @@ function SpecimenRailItem({
         )}
         {reviewStatus === "PWG pending" && (
           <span
-            className="shrink-0 text-[9px] text-muted-foreground"
+            className="shrink-0 text-[10px] text-muted-foreground"
             title={reviewTooltip}
           >
             P
@@ -107,7 +107,7 @@ function SpecimenRailItem({
         )}
         {reviewStatus === "In review" && (
           <span
-            className="shrink-0 text-[9px] text-muted-foreground/40"
+            className="shrink-0 text-[10px] text-muted-foreground/40"
             title={reviewTooltip}
           >
             {"\u00B7"}
@@ -117,28 +117,28 @@ function SpecimenRailItem({
           <SparklineGlyph values={summary.pattern.sparkline} pattern={summary.pattern.pattern} />
         </span>
         <span
-          className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          className="ml-2 w-7 shrink-0 rounded-sm text-center font-mono text-[10px]"
           style={{ backgroundColor: sevColors.bg, color: sevColors.text }}
           title={`Max severity: ${summary.maxSeverity.toFixed(1)} (scale 1\u20135)`}
         >
           {summary.maxSeverity.toFixed(1)}
         </span>
         <span
-          className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[9px]"
+          className="ml-1 w-8 shrink-0 rounded-sm text-center font-mono text-[10px]"
           style={{ backgroundColor: incColors.bg, color: incColors.text }}
           title={`Peak incidence: ${incPct}%`}
         >
           {incPct}%
         </span>
         <span
-          className="w-3 shrink-0 text-right font-mono text-[9px] text-muted-foreground"
+          className="w-3 shrink-0 text-right font-mono text-[10px] text-muted-foreground"
           title={`${summary.findingCount} findings`}
         >
           {summary.findingCount}
         </span>
         <span
           className={cn(
-            "w-4 shrink-0 text-right font-mono text-[9px]",
+            "w-4 shrink-0 text-right font-mono text-[10px]",
             summary.adverseCount > 0
               ? "text-muted-foreground"
               : "text-muted-foreground/40",
@@ -149,7 +149,7 @@ function SpecimenRailItem({
         </span>
         {summary.hasSentinel && (
           <span
-            className="ml-0.5 shrink-0 rounded bg-gray-200 px-0.5 font-mono text-[9px] text-muted-foreground"
+            className="ml-0.5 shrink-0 rounded bg-gray-200 px-0.5 font-mono text-[10px] text-muted-foreground"
             title={`Contains sentinel finding(s) — highest clinical class: ${summary.highestClinicalClass ?? "Sentinel"}`}
           >
             S
@@ -159,10 +159,10 @@ function SpecimenRailItem({
 
       {/* Line 2: pattern label + organ system + domains */}
       <div className="mt-0.5 flex items-center gap-2">
-        <span className="truncate text-[10px] text-muted-foreground">
+        <span className="truncate text-[11px] text-muted-foreground">
           {formatPatternLabel(summary.pattern)}
         </span>
-        <span className="text-[10px] text-muted-foreground/60">
+        <span className="text-[11px] text-muted-foreground/60">
           {titleCase(specimenToOrganSystem(summary.specimen))}
         </span>
         {summary.domains.map((d) => (
@@ -171,7 +171,7 @@ function SpecimenRailItem({
       </div>
       {/* Line 3: syndrome badge (when detected) */}
       {summary.pattern.syndrome && (
-        <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70">
+        <div className="mt-0.5 truncate text-[11px] text-muted-foreground/70">
           {"\uD83D\uDD17"} {summary.pattern.syndrome.syndrome.syndrome_name}
         </div>
       )}
@@ -417,7 +417,7 @@ export function SpecimenRailMode() {
       {/* Organ filter breadcrumb chip */}
       {selection.organSystem && !selection.specimen && (
         <div className="border-b px-2.5 py-1">
-          <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
             Filtered to: {titleCase(selection.organSystem)}
             <button
               className="ml-0.5 rounded p-0.5 hover:bg-accent"
@@ -451,10 +451,10 @@ export function SpecimenRailMode() {
                 return (
                   <div key={g.system}>
                     <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-2.5 py-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {titleCase(g.system)}
                       </span>
-                      <span className="text-[9px] text-muted-foreground/60">
+                      <span className="text-[10px] text-muted-foreground/60">
                         {g.items.length} specimen
                         {g.items.length !== 1 ? "s" : ""}
                         {advCount > 0 && <> &middot; {advCount} adverse</>}
@@ -501,7 +501,7 @@ export function SpecimenRailMode() {
               />
             ))}
         {filtered.length === 0 && (
-          <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+          <div className="px-3 py-4 text-center text-xs text-muted-foreground">
             {filters.search
               ? `No matches for \u201C${filters.search}\u201D`
               : "No specimen data available"}

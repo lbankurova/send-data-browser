@@ -212,7 +212,7 @@ def compute_mi_findings(
             "trend_p": trend_result["p_value"],
             "trend_stat": trend_result["statistic"],
             "direction": direction,
-            "max_effect_size": all_sev,  # use avg severity as "effect size" for incidence
+            "max_effect_size": None,  # incidence — no standardized effect size
             "min_p_adj": min_p,
             "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
             "avg_severity": all_sev,

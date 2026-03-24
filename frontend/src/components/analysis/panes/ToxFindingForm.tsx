@@ -94,19 +94,19 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
         />
       }
     >
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         {/* Treatment Related */}
         <div>
           <div className="mb-0.5 flex items-baseline gap-1.5">
             <label className="font-medium text-muted-foreground">Treatment related</label>
             {systemSuggestion?.treatmentRelated != null && (
-              <span className="text-[10px] text-muted-foreground/70">
+              <span className="text-[11px] text-muted-foreground/70">
                 System: {systemSuggestion.treatmentRelated}
               </span>
             )}
           </div>
           <select
-            className="w-full rounded border bg-background px-2 py-1 text-[11px]"
+            className="w-full rounded border bg-background px-2 py-1 text-xs"
             value={treatmentRelated}
             onChange={(e) => setTreatmentRelated(e.target.value as ToxFinding["treatmentRelated"])}
           >
@@ -121,13 +121,13 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
           <div className="mb-0.5 flex items-baseline gap-1.5">
             <label className="font-medium text-muted-foreground">Adversity</label>
             {systemSuggestion?.adversity != null && (
-              <span className="text-[10px] text-muted-foreground/70">
+              <span className="text-[11px] text-muted-foreground/70">
                 System: {systemSuggestion.adversity}
               </span>
             )}
           </div>
           <select
-            className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${treatmentRelated === "No" ? "opacity-40" : ""}`}
+            className={`w-full rounded border bg-background px-2 py-1 text-xs ${treatmentRelated === "No" ? "opacity-40" : ""}`}
             value={adversity}
             onChange={(e) => setAdversity(e.target.value as ToxFinding["adversity"])}
           >
@@ -139,7 +139,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* Override justification hint */}
         {hasOverride && !comment.trim() && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Consider adding a justification for overriding the system suggestion.
           </p>
         )}
@@ -150,7 +150,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
             {hasOverride ? "Justification / comment" : "Comment"}
           </label>
           <textarea
-            className={`w-full rounded border bg-background px-2 py-1 text-[11px] ${hasOverride && !comment.trim() ? "border-muted-foreground/50" : ""}`}
+            className={`w-full rounded border bg-background px-2 py-1 text-xs ${hasOverride && !comment.trim() ? "border-muted-foreground/50" : ""}`}
             rows={2}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
@@ -160,7 +160,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* Save */}
         <button
-          className={`rounded px-3 py-1 text-[11px] font-medium disabled:opacity-50 ${isSuccess ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+          className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
           onClick={handleSave}
           disabled={!dirty || isPending || isSuccess}
         >
@@ -169,7 +169,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* Footer */}
         {existing?.reviewedBy && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Reviewed by {existing.reviewedBy} on{" "}
             {new Date(existing.reviewedDate).toLocaleDateString()}
           </p>
@@ -177,7 +177,7 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
 
         {/* System basis tooltip */}
         {systemSuggestion && (
-          <p className="text-[9px] text-muted-foreground/60">
+          <p className="text-[10px] text-muted-foreground/60">
             {systemSuggestion.basis}
           </p>
         )}

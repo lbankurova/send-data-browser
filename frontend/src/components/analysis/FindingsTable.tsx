@@ -9,26 +9,39 @@ import {
 } from "@tanstack/react-table";
 import type { SortingState, ColumnSizingState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { EyeOff, ExternalLink, Filter } from "lucide-react";
+import { EyeOff, ExternalLink, Filter, Search, X } from "lucide-react";
+import { useResizePanel } from "@/hooks/useResizePanel";
+import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { cn } from "@/lib/utils";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import {
   getSeverityDotColor,
   formatPValue,
   formatEffectSize,
-  getDirectionSymbol,
-  getDirectionColor,
   formatDoseShortLabel,
+  getPValueHex,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { DoseHeader, DoseLabel } from "@/components/ui/DoseLabel";
+import { getSexColor } from "@/lib/severity-colors";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
 import { useSessionState } from "@/hooks/useSessionState";
-import { getSignalTier, getPatternLabel } from "@/lib/findings-rail-engine";
+import { getSignalTier } from "@/lib/findings-rail-engine";
+import { formatOnsetDose } from "@/lib/onset-dose";
+import {
+  usePatternOverrideActions,
+  derivePatternState,
+  deriveOnsetState,
+  buildPreviewText,
+  getSystemOnsetLevel,
+  OVERRIDE_OPTIONS,
+} from "@/hooks/usePatternOverrideActions";
+import type { PreviewResult } from "@/hooks/usePatternOverrideActions";
+import { OverridePill } from "@/components/ui/OverridePill";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { FindingsTableFilterPanel } from "./findings/FindingsTableFilterPanel";
@@ -56,12 +69,14 @@ interface PivotedRow {
   sex: string;
   day: number | null;
   data_type: "continuous" | "incidence";
-  severity: string;
+  severity: string | null;
   dose_level: number;
   dose_label: string;
   n: number;
   mean: number | null;
   sd: number | null;
+  /** True when SD > 2× control SD — high within-group variance flag. */
+  sdOutlier: boolean;
   affected: number | null;
   incidence: number | null;
   p_value: number | null;
@@ -126,19 +141,21 @@ interface FindingsTableProps {
   onToggleExclude?: (label: string) => void;
   /** Active endpoint label — all rows matching this endpoint get a subtle highlight. */
   activeEndpoint?: string | null;
+  /** Domain of the active endpoint (for multi-domain endpoints like MI + MA). */
+  activeDomain?: string;
   /** Current rail grouping mode — when "finding", table sorts by endpoint by default. */
   activeGrouping?: GroupingMode | null;
   /** Callback to open the table in its own tab. */
   onOpenInTab?: () => void;
   /** Active effect size method — controls header label for continuous endpoints. */
   effectSizeMethod?: EffectSizeMethod;
-  /** Day selected by the day stepper — filters table to this day when set. */
-  selectedDay?: number | null;
-  /** Callback to clear the day stepper filter from within the table. */
-  onClearDayFilter?: () => void;
+  /** Current global day stepper value (one-way sync: global → table). */
+  globalDay?: number | null;
+  /** Day labels from the global stepper ("terminal" | "peak") — applied to matching days in the combo-box. */
+  globalDayLabels?: Map<number, string>;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", selectedDay, onClearDayFilter }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -158,24 +175,54 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [sparkMenu, setSparkMenu] = useState<{ x: number; y: number } | null>(null);
   const sparkMenuRef = useRef<HTMLDivElement>(null);
 
-  // Table display mode: "all" shows every row; "worst" collapses to strongest timepoint per endpoint
-  type TableMode = "all" | "worst";
-  const [tableMode, setTableMode] = useState<TableMode>("all");
+  // Pattern & onset override context menus
+  const overrideActions = usePatternOverrideActions(studyId);
+  const [patternMenu, setPatternMenu] = useState<{ x: number; y: number; finding: UnifiedFinding } | null>(null);
+  const patternMenuRef = useRef<HTMLDivElement>(null);
+  const [onsetMenu, setOnsetMenu] = useState<{ x: number; y: number; finding: UnifiedFinding } | null>(null);
+  const onsetMenuRef = useRef<HTMLDivElement>(null);
+  const [hoveredPatternOption, setHoveredPatternOption] = useState<string | null>(null);
+  const [patternPreview, setPatternPreview] = useState<PreviewResult | null>(null);
+  const patternPreviewAbortRef = useRef<AbortController | null>(null);
+
+  // ── Follow rail checkbox + day combo-box ───────────────────
+  // followRail: true → two-way sync between rail and table (endpoint scope + row clicks update rail).
+  //             false → table independent, no rail interaction.
+  const [followRail, setFollowRail] = useState(true);
+  const [manualDay, setManualDay] = useState<string>("all");
+
+  // Reset day filter when endpoint changes — days differ across endpoints.
+  // Track whether we just reset so filterDay uses "all" in the same render pass.
+  const prevEndpointRef = useRef(activeEndpoint);
+  let currentDay = manualDay;
+  if (activeEndpoint !== prevEndpointRef.current) {
+    prevEndpointRef.current = activeEndpoint;
+    currentDay = "all";
+    setManualDay("all");
+  }
+
+  // Day combo-box only filters when the user explicitly picks a day.
+  const filterDay: number | null = currentDay === "all" ? null : Number(currentDay);
 
   // Layout mode: "standard" (dose groups as columns) vs "pivoted" (dose groups as rows)
   type LayoutMode = "standard" | "pivoted";
-  const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode", "standard");
+  const [layoutMode, setLayoutMode] = useSessionState<LayoutMode>("pcc.findings.layoutMode.v2", "standard");
 
   // Pivoted table sorting (separate from standard table)
-  const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", []);
+  const [pivotedSorting, setPivotedSorting] = useSessionState<SortingState>("pcc.findings.pivotedSorting", [
+    { id: "finding", desc: false }, { id: "day", desc: false }, { id: "dose_level", desc: false }, { id: "sex", desc: false },
+  ]);
   const [pivotedColumnSizing, setPivotedColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.pivotedColumnSizing", {});
 
   // Filter panel state
   const [filterState, setFilterState] = useSessionState<TableFilterState>(
-    "pcc.findings.tableFilters", DEFAULT_FILTER_STATE,
+    "pcc.findings.tableFilters.v2", DEFAULT_FILTER_STATE,
   );
   const [showFilters, setShowFilters] = useState(false);
   const activeFilterCount = countActiveFilters(filterState);
+  const filterResize = useResizePanel(140, { min: 100, max: 320, direction: "left", storageKey: "pcc.findings.filterPanelWidth" });
+
+  // Layout stays as user chose — no auto-switching on endpoint selection
 
   // When grouping switches to "finding" (endpoint mode), sort by endpoint name ascending
   const prevGroupingRef = useRef(activeGrouping);
@@ -206,6 +253,64 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return () => document.removeEventListener("mousedown", handler);
   }, [sparkMenu]);
 
+  // Close pattern menu on outside click
+  useEffect(() => {
+    if (!patternMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (patternMenuRef.current && !patternMenuRef.current.contains(e.target as Node)) setPatternMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [patternMenu]);
+
+  // Close onset menu on outside click
+  useEffect(() => {
+    if (!onsetMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (onsetMenuRef.current && !onsetMenuRef.current.contains(e.target as Node)) setOnsetMenu(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onsetMenu]);
+
+  // Escape closes any open override menu
+  useEffect(() => {
+    if (!patternMenu && !onsetMenu) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setPatternMenu(null); setOnsetMenu(null); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [patternMenu, onsetMenu]);
+
+  // Close override menus on scroll
+  useEffect(() => {
+    if (!patternMenu && !onsetMenu) return;
+    const el = stdScrollRef.current;
+    if (!el) return;
+    const handler = () => { setPatternMenu(null); setOnsetMenu(null); };
+    el.addEventListener("scroll", handler);
+    return () => el.removeEventListener("scroll", handler);
+  }, [patternMenu, onsetMenu]);
+
+  // Preview fetch for pattern menu
+  useEffect(() => {
+    if (!patternMenu || !hoveredPatternOption) { setPatternPreview(null); return; }
+    const ps = derivePatternState(patternMenu.finding, overrideActions.annotations);
+    if (hoveredPatternOption === ps.currentOverrideKey) { setPatternPreview(null); return; }
+    patternPreviewAbortRef.current?.abort();
+    const ac = new AbortController();
+    patternPreviewAbortRef.current = ac;
+    overrideActions.fetchPreview(patternMenu.finding.id, hoveredPatternOption, ac.signal)
+      .then(r => { if (r && !ac.signal.aborted) setPatternPreview(r); });
+    return () => ac.abort();
+  }, [hoveredPatternOption, patternMenu, overrideActions]);
+
+  // Clear preview when pattern menu closes
+  useEffect(() => {
+    if (!patternMenu) { setPatternPreview(null); setHoveredPatternOption(null); }
+  }, [patternMenu]);
+
   // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
   const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
 
@@ -230,58 +335,44 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { continuous: maxCont, incidence: maxInc };
   }, [findings]);
 
-  // "Worst" mode: for each endpoint, keep only the day with the strongest signal (both sexes)
-  const displayFindings = useMemo(() => {
-    if (tableMode === "all") return findings;
+  // Pipeline: panel filters → endpoint scope (when synced) → available days → day filter.
+  const panelFilteredFindings = useMemo(() => {
+    if (activeFilterCount === 0) return findings;
+    return applyTableFilters(findings, filterState);
+  }, [findings, filterState, activeFilterCount]);
 
-    const byEndpoint = new Map<string, UnifiedFinding[]>();
-    for (const f of findings) {
-      const key = f.endpoint_label ?? f.finding;
-      if (!byEndpoint.has(key)) byEndpoint.set(key, []);
-      byEndpoint.get(key)!.push(f);
+  // When synced with charts AND an endpoint is active, scope table to that endpoint
+  const scopedFindings = useMemo(() => {
+    if (!followRail || !activeEndpoint) return panelFilteredFindings;
+    let scoped = panelFilteredFindings.filter(
+      (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
+    );
+    // Multi-domain endpoints (MI + MA): scope to the clicked domain
+    if (activeDomain) scoped = scoped.filter((f) => f.domain === activeDomain);
+    return scoped;
+  }, [panelFilteredFindings, followRail, activeEndpoint, activeDomain]);
+
+  // Available days — only days with visible rows after panel + scope filters
+  const availableDays = useMemo(() => {
+    const days = new Set<number>();
+    for (const f of scopedFindings) {
+      if (f.day != null) days.add(f.day);
     }
+    return [...days].sort((a, b) => a - b);
+  }, [scopedFindings]);
 
-    const result: UnifiedFinding[] = [];
-    for (const [, group] of byEndpoint) {
-      const days = new Set(group.map(f => f.day));
-      if (days.size <= 1) {
-        result.push(...group);
-        continue;
-      }
-      // Pick the finding with min p-value (primary), max |effect size| (tiebreaker)
-      const best = group.reduce((a, b) => {
-        const pA = a.min_p_adj ?? Infinity;
-        const pB = b.min_p_adj ?? Infinity;
-        if (pB < pA) return b;
-        if (pB === pA && Math.abs(b.max_effect_size ?? 0) > Math.abs(a.max_effect_size ?? 0)) return b;
-        return a;
-      });
-      // Keep all findings (both sexes) at the worst day
-      result.push(...group.filter(f => f.day === best.day));
-    }
+  function formatDayOption(day: number): string {
+    const label = globalDayLabels?.get(day);
+    if (label === "terminal") return `D${day} (terminal)`;
+    if (label === "peak") return `D${day} (peak)`;
+    return `D${day}`;
+  }
 
-    return result;
-  }, [findings, tableMode]);
-
-  // Apply endpoint + day stepper filter (D6: stepper drives both charts and table)
-  const dayFilteredFindings = useMemo(() => {
-    let result = displayFindings;
-    // When an endpoint is selected, scope table to that endpoint
-    if (activeEndpoint) {
-      result = result.filter((f) => (f.endpoint_label ?? f.finding) === activeEndpoint);
-    }
-    // When a day is selected via stepper, scope to that day
-    if (selectedDay != null) {
-      result = result.filter((f) => f.day === selectedDay);
-    }
-    return result;
-  }, [displayFindings, activeEndpoint, selectedDay]);
-
-  // Apply table column filters on top of day + all/worst selection
+  // Apply day combo filter on top of scoped findings
   const filteredFindings = useMemo(() => {
-    if (activeFilterCount === 0) return dayFilteredFindings;
-    return applyTableFilters(dayFilteredFindings, filterState);
-  }, [dayFilteredFindings, filterState, activeFilterCount]);
+    if (filterDay == null) return scopedFindings;
+    return scopedFindings.filter((f) => f.day === filterDay);
+  }, [scopedFindings, filterDay]);
 
   // ─── Pivoted data: flatten finding × dose group into rows ───
   // Only compute when pivoted layout is active (avoids O(N*D) work in standard mode)
@@ -290,10 +381,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     const doseMap = new Map(doseGroups.map(dg => [dg.dose_level, dg]));
     const rows: PivotedRow[] = [];
     for (const f of filteredFindings) {
-      // Control mean for fold change computation
-      const controlMean = f.data_type === "continuous"
-        ? (f.group_stats.find(g => g.dose_level === 0)?.mean ?? null)
-        : null;
+      // Control stats for fold change + SD outlier detection
+      const controlGs = f.group_stats.find(g => g.dose_level === 0);
+      const controlMean = f.data_type === "continuous" ? (controlGs?.mean ?? null) : null;
+      const controlSd = f.data_type === "continuous" ? (controlGs?.sd ?? null) : null;
       for (const gs of f.group_stats) {
         const dg = doseMap.get(gs.dose_level);
         const pw = f.pairwise.find(p => p.dose_level === gs.dose_level);
@@ -302,6 +393,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         if (controlMean != null && controlMean !== 0 && gs.dose_level > 0 && gs.mean != null) {
           fold = gs.mean / controlMean;
         }
+        // SD outlier: treated SD > 2× control SD (high within-group variance)
+        const sdOutlier = f.data_type === "continuous"
+          && gs.sd != null && controlSd != null && controlSd > 0
+          && gs.dose_level > 0 && gs.sd > controlSd * 2;
         rows.push({
           id: `${f.id}_${gs.dose_level}`,
           original: f,
@@ -312,24 +407,26 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           sex: f.sex,
           day: f.day,
           data_type: f.data_type,
-          severity: f.severity,
+          // Endpoint-level fields nulled in pivoted mode — each row is a dose group, not an endpoint
+          severity: null,
           dose_level: gs.dose_level,
           dose_label: dg ? (dg.dose_level === 0 ? "Control" : dg.label) : `Level ${gs.dose_level}`,
           n: gs.n,
           mean: gs.mean,
           sd: gs.sd,
+          sdOutlier,
           affected: gs.affected ?? null,
           incidence: gs.incidence ?? null,
           p_value: pw?.p_value_adj ?? pw?.p_value ?? null,
           effect_size: pw?.effect_size ?? null,
-          trend_p: f.trend_p,
-          dose_response_pattern: f.dose_response_pattern ?? "",
+          trend_p: null,
+          dose_response_pattern: "",
           fold_change: f.domain === "MI"
             ? (gs.avg_severity ?? null)
             : f.data_type === "incidence"
               ? (pw?.odds_ratio ?? null)
               : fold,
-          direction: f.direction,
+          direction: null,
         });
       }
     }
@@ -377,7 +474,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
-      col.accessor("sex", { header: "Sex" }),
+      col.accessor("sex", {
+        header: "Sex",
+        cell: (info) => <span style={{ color: getSexColor(info.getValue()) }}>{info.getValue()}</span>,
+      }),
       col.accessor("day", {
         header: () => {
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
@@ -458,7 +558,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           <span title={sparkScale === "global"
             ? "Dose-response trend (delta from control). Global scale — bar height reflects actual magnitude across all findings. Right-click to change."
             : "Dose-response trend (delta from control). Row scale — each row scaled to its own max. Right-click to change."}>
-            {"\u0394"}{sparkScale === "global" ? "*" : ""}
+            DR Trend{sparkScale === "global" ? "*" : ""}
           </span>
         ),
         cell: (info) => {
@@ -471,6 +571,54 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               sparkScale={sparkScale}
               globalMax={isCont ? globalSparkMax.continuous : globalSparkMax.incidence}
             />
+          );
+        },
+      }),
+      col.display({
+        id: "pattern",
+        header: () => <span title="Dose-response pattern shape. Right-click to override.">Pattern</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          const ps = derivePatternState(f, overrideActions.annotations);
+          return (
+            <div className="flex items-center gap-0.5" title="Right-click to override">
+              <span className="text-muted-foreground">{ps.currentLabel || "\u2014"}</span>
+              <OverridePill
+                isOverridden={ps.patternChanged}
+                note={ps.annotation?.pattern_note}
+                user={ps.annotation?.pathologist}
+                timestamp={ps.annotation?.reviewDate ? new Date(ps.annotation.reviewDate).toLocaleDateString() : undefined}
+                onSaveNote={(text) => overrideActions.savePatternNote(f, text)}
+                placeholder="Consistent downward drift from first dose"
+                popoverSide="left"
+                popoverAlign="start"
+              />
+            </div>
+          );
+        },
+      }),
+      col.display({
+        id: "onset_dose",
+        header: () => <span title="Lowest dose at which the effect is first observed. Right-click to override.">Onset</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          const os = deriveOnsetState(f, doseGroups, overrideActions.annotations);
+          return (
+            <div className={cn("flex items-center gap-0.5", os.needsAttention && "border-b border-red-500")} title={os.needsAttention ? "Onset dose needs selection" : os.overrideTooltip ?? "Right-click to override"}>
+              <span className={cn("font-mono", os.onset ? "text-muted-foreground" : "text-muted-foreground/40")}>
+                {os.displayLabel}
+              </span>
+              <OverridePill
+                isOverridden={os.isOverridden}
+                note={os.annotation?.onset_note}
+                user={os.annotation?.pathologist}
+                timestamp={os.annotation?.reviewDate ? new Date(os.annotation.reviewDate).toLocaleDateString() : undefined}
+                onSaveNote={(text) => overrideActions.saveOnsetNote(f, text)}
+                placeholder="Onset at dose 2 — earliest statistically significant effect"
+                popoverSide="left"
+                popoverAlign="start"
+              />
+            </div>
           );
         },
       }),
@@ -493,37 +641,37 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("max_fold_change", {
         header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
         cell: (info) => {
+          const f = info.row.original;
+          // Domain-appropriate magnitude — mirrors pivoted view logic at endpoint level
+          if (f.domain === "MI") {
+            const sev = f.avg_severity;
+            if (sev == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            return <span className="font-mono text-muted-foreground" title={`avg severity = ${sev.toFixed(2)}`}>{sev.toFixed(1)}</span>;
+          }
+          if (f.data_type === "incidence") {
+            const inc = f.max_incidence;
+            if (inc == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+            return <span className="font-mono text-muted-foreground" title={`max incidence = ${(inc * 100).toFixed(0)}%`}>{`${(inc * 100).toFixed(0)}%`}</span>;
+          }
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="font-mono text-muted-foreground">{`\u00d7${v.toFixed(1)}`}</span>;
+          return <span className="font-mono text-muted-foreground" title={`fold change = ${v.toFixed(2)}`}>{`\u00d7${v.toFixed(1)}`}</span>;
         },
       }),
       col.accessor("min_p_adj", {
         header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
-        cell: (info) => (
-          <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
-        ),
+        cell: (info) => {
+          const v = info.getValue();
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
+        },
       }),
       col.accessor("trend_p", {
         header: () => <span title="Dose-response trend test p-value">Trend p</span>,
-        cell: (info) => (
-          <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>
-        ),
-      }),
-      col.accessor("direction", {
-        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
-        cell: (info) => (
-          <span className={getDirectionColor(info.getValue())}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
-      col.display({
-        id: "pattern",
-        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
         cell: (info) => {
-          const v = info.row.original.dose_response_pattern;
-          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
+          const v = info.getValue();
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
         },
       }),
       col.accessor("severity", {
@@ -548,7 +696,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return (
             <span
               className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
-              style={{ borderLeftColor: getSeverityDotColor(severity) }}
+              style={{ borderLeftColor: isNormal ? "transparent" : getSeverityDotColor(severity) }}
             >
               {severity}
             </span>
@@ -556,7 +704,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -600,7 +748,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
-      pivCol.accessor("sex", { header: "Sex" }),
+      pivCol.accessor("sex", {
+        header: "Sex",
+        cell: (info) => <span style={{ color: getSexColor(info.getValue()) }}>{info.getValue()}</span>,
+      }),
       pivCol.accessor("day", {
         header: () => {
           const baseTooltip = "Longitudinal domains: actual study day. Terminal domains: most frequent observation day (mode).";
@@ -664,7 +815,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => {
           const r = info.row.original;
           if (r.data_type === "continuous") {
-            return <span className="font-mono text-muted-foreground">{r.sd != null ? r.sd.toFixed(2) : "\u2014"}</span>;
+            return (
+              <span
+                className="font-mono text-muted-foreground inline-flex items-baseline justify-end"
+                title={r.sdOutlier ? "SD > 2\u00d7 control SD \u2014 high within-group variance" : undefined}
+              >
+                <span>{r.sd != null ? r.sd.toFixed(2) : "\u2014"}</span>
+                <span className="w-2 pl-0.5 text-left text-[8px]">{r.sdOutlier ? "*" : ""}</span>
+              </span>
+            );
           }
           return (
             <span className="font-mono text-muted-foreground">
@@ -711,54 +870,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          return <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>;
-        },
-      }),
-      pivCol.accessor("trend_p", {
-        header: () => <span title="Dose-response trend test p-value">Trend p</span>,
-        cell: (info) => <span className="ev font-mono text-muted-foreground">{formatPValue(info.getValue())}</span>,
-      }),
-      pivCol.accessor("direction", {
-        header: () => <span title="Overall direction of effect across dose groups">Dir</span>,
-        cell: (info) => (
-          <span className={getDirectionColor(info.getValue())}>
-            {getDirectionSymbol(info.getValue())}
-          </span>
-        ),
-      }),
-      pivCol.accessor("dose_response_pattern", {
-        header: () => <span title="Dose-response pattern shape (direction shown separately in Dir column)">Pattern</span>,
-        cell: (info) => {
           const v = info.getValue();
-          return <span className="text-muted-foreground">{v ? getPatternLabel(v) : "\u2014"}</span>;
+          const hex = getPValueHex(v);
+          return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
         },
       }),
-      pivCol.accessor("severity", {
-        header: "Severity",
-        cell: (info) => {
-          const r = info.row.original;
-          const severity = info.getValue();
-          const signal = signalScores?.get(r.endpoint_label) ?? 0;
-          const tier = getSignalTier(signal);
-          const isNormal = severity === "normal";
-          const borderClass = isNormal
-            ? "border-l"
-            : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-          const fontClass = isNormal
-            ? "text-muted-foreground"
-            : tier === 3 ? "font-semibold text-gray-600"
-            : tier === 2 ? "font-medium text-gray-600"
-            : "text-gray-600";
-          return (
-            <span
-              className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
-              style={{ borderLeftColor: getSeverityDotColor(severity) }}
-            >
-              {severity}
-            </span>
-          );
-        },
-      }),
+      // Endpoint-level columns (trend_p, pattern, severity) omitted from
+      // pivoted view — each row is a dose group, not an endpoint. These are shown in
+      // standard view only.
     ],
     [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
   );
@@ -810,13 +929,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     overscan: 15,
   });
 
-  // Reset scroll when data source changes (all/worst toggle, layout switch)
+  // Reset scroll when data source changes (day filter, layout switch)
   useEffect(() => {
     if (stdScrollRef.current) stdScrollRef.current.scrollTop = 0;
-  }, [tableMode, findings]);
+  }, [filterDay, findings]);
   useEffect(() => {
     if (pivScrollRef.current) pivScrollRef.current.scrollTop = 0;
-  }, [tableMode, findings]);
+  }, [filterDay, findings]);
 
   // Autoscroll: when activeEndpoint changes, scroll to the first matching row
   useEffect(() => {
@@ -858,73 +977,140 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     return { width: 1, whiteSpace: "nowrap" as const };
   }
 
-  const rowCount = layoutMode === "pivoted" ? pivotedRows.length : filteredFindings.length;
-  const totalCount = layoutMode === "pivoted" ? findings.length * doseGroups.length : findings.length;
 
   return (
     <div className="flex h-full flex-col">
       {/* Table header bar: mode toggles + count + open-in-tab */}
       <div className="flex items-center gap-3 border-b bg-muted/20 px-2 py-1">
-        {/* Filter toggle */}
-        <button
-          type="button"
-          className={cn(
-            "relative rounded p-0.5 transition-colors",
-            (selectedDay != null || activeFilterCount > 0)
-              ? "text-primary hover:text-primary/80"
-              : "text-muted-foreground hover:text-foreground",
-            showFilters && "bg-primary/10",
-          )}
-          onClick={() => setShowFilters((p) => !p)}
-          title="Toggle column filters"
-        >
-          <Filter className="h-3 w-3" />
-        </button>
-        {/* All / Worst toggle */}
-        <PanePillToggle
-          value={tableMode}
-          options={[
-            { value: "all" as const, label: "All" },
-            { value: "worst" as const, label: "Worst" },
-          ]}
-          onChange={setTableMode}
-        />
+        {/* Follow rail checkbox + day combo-box */}
+        <span className="flex items-center gap-1.5">
+          <label className="flex cursor-pointer items-center gap-0.5 text-[10px] text-muted-foreground select-none" title="Two-way sync: rail click scopes table, table row click selects in rail">
+            <input
+              type="checkbox"
+              checked={followRail}
+              onChange={(e) => {
+                setFollowRail(e.target.checked);
+                if (e.target.checked) setManualDay("all");
+              }}
+              className="h-2.5 w-2.5 accent-primary"
+            />
+            follow rail
+          </label>
+          <span className="relative inline-flex items-center" title={filterDay != null ? `Filtering to day ${filterDay}` : "Showing all timepoints"}>
+            <select
+              className="appearance-none rounded border border-border/40 bg-transparent py-0.5 pl-1.5 pr-4 text-[10px] font-medium tabular-nums text-foreground outline-none cursor-pointer hover:border-border"
+              value={manualDay}
+              onChange={(e) => setManualDay(e.target.value)}
+            >
+              <option value="all">All days</option>
+              {availableDays.map((d) => (
+                <option key={d} value={String(d)}>
+                  {d === globalDay ? "\u25CF " : ""}{formatDayOption(d)}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-1 text-[10px] text-muted-foreground">{"\u25BE"}</span>
+          </span>
+        </span>
         {/* Standard / Pivoted toggle */}
-        <PanePillToggle
-          value={layoutMode}
-          options={[
-            { value: "standard" as const, label: "Standard" },
-            { value: "pivoted" as const, label: "Pivoted" },
-          ]}
-          onChange={setLayoutMode}
-        />
-        <span className="text-[10px] text-muted-foreground">
-          {(() => {
-            const parts: string[] = [];
-            if (activeEndpoint) parts.push(activeEndpoint);
-            if (selectedDay != null) parts.push(`Day ${selectedDay}`);
-            if (filterState.sex) parts.push(filterState.sex.join(", "));
-            if (filterState.domain) parts.push(filterState.domain.join(", "));
-            if (filterState.severity) parts.push(filterState.severity.join(", "));
-            if (filterState.direction) parts.push(filterState.direction.map(d => d === "up" ? "\u2191" : "\u2193").join(""));
-            if (filterState.findingSearch) parts.push(`"${filterState.findingSearch}"`);
-            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) parts.push("p-value range");
-            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) parts.push("|g| range");
-
-            if (parts.length > 0) {
-              return (
-                <span className="flex items-center gap-1">
-                  <span>{parts.join(" \u00b7 ")}</span>
-                  <span className="text-muted-foreground/50">({rowCount})</span>
-                </span>
-              );
+        <span title={layoutMode === "standard" ? "One row per endpoint — endpoint-level stats" : "One row per dose group — dose-level comparisons"}>
+          <PanePillToggle
+            value={layoutMode}
+            options={[
+              { value: "standard" as const, label: "Endpoint" },
+              { value: "pivoted" as const, label: "Dose group" },
+            ]}
+            onChange={setLayoutMode}
+          />
+        </span>
+        {/* Showing text + filter icon + clear — grouped together */}
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <button
+            type="button"
+            className={cn(
+              "relative rounded p-0.5 transition-colors",
+              (filterDay != null || activeFilterCount > 0)
+                ? "text-primary hover:text-primary/80"
+                : "text-muted-foreground hover:text-foreground",
+              showFilters && "bg-primary/10",
+            )}
+            onClick={() => setShowFilters((p) => !p)}
+            title="Toggle column filters"
+          >
+            <Filter className="h-3 w-3" />
+          </button>
+          {((filterDay != null) || activeFilterCount > 0) && (
+            <button
+              type="button"
+              className="flex items-center rounded px-0.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => {
+                setFilterState(DEFAULT_FILTER_STATE);
+                setFollowRail(true);
+                setManualDay("all");
+              }}
+              title="Clear all filters"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          )}
+          {/* Active filter indicators — only when filters are set */}
+          {(activeFilterCount > 0 || filterDay != null) && (() => {
+            const chips: { label: string; values: string[] }[] = [];
+            if (filterDay != null) chips.push({ label: "day", values: [`D${filterDay}`] });
+            if (filterState.domain) chips.push({ label: "", values: filterState.domain });
+            if (filterState.sex) chips.push({ label: "sex", values: filterState.sex });
+            if (filterState.severity) chips.push({ label: "sev", values: filterState.severity });
+            if (filterState.direction) chips.push({ label: "dir", values: filterState.direction });
+            if (filterState.pattern) chips.push({ label: "pattern", values: filterState.pattern });
+            if (filterState.dataType) chips.push({ label: "type", values: filterState.dataType });
+            if (filterState.pValueRange[0] != null || filterState.pValueRange[1] != null) {
+              const lo = filterState.pValueRange[0]; const hi = filterState.pValueRange[1];
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "p", values: [fmt] });
             }
-            return (
-              <span>
-                {rowCount}{tableMode === "worst" && rowCount !== totalCount ? `/${totalCount}` : ""} {layoutMode === "pivoted" ? "rows" : (rowCount === 1 ? "finding" : "findings")}
+            if (filterState.trendPRange[0] != null || filterState.trendPRange[1] != null) {
+              const lo = filterState.trendPRange[0]; const hi = filterState.trendPRange[1];
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "trend", values: [fmt] });
+            }
+            if (filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null) {
+              const lo = filterState.effectSizeRange[0]; const hi = filterState.effectSizeRange[1];
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "|g|", values: [fmt] });
+            }
+            if (filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null) {
+              const lo = filterState.foldChangeRange[0]; const hi = filterState.foldChangeRange[1];
+              const fmt = lo != null && hi != null ? `${lo}\u2013${hi}`
+                : hi != null ? `\u2264${hi}` : `\u2265${lo}`;
+              chips.push({ label: "FC", values: [fmt] });
+            }
+            return chips.length > 0 ? (
+              <span className="flex items-center gap-1 text-[10px]">
+                <span className="text-muted-foreground">Showing:</span>
+                {chips.map((c, i) => (
+                  <span key={i} className="text-primary/60">
+                    {c.label ? <span className="mr-0.5">{c.label}:</span> : null}
+                    {c.values.map((v) => (
+                      <span key={v} className="font-medium mr-0.5">{v}</span>
+                    ))}
+                  </span>
+                ))}
               </span>
-            );
+            ) : null;
           })()}
+        </span>
+        <span className="relative flex items-center">
+          <Search className="absolute left-1 h-2.5 w-2.5 text-muted-foreground/50" />
+          <input
+            type="text"
+            value={filterState.findingSearch}
+            onChange={(e) => setFilterState((prev) => ({ ...prev, findingSearch: e.target.value }))}
+            placeholder="Search..."
+            className="w-24 rounded border border-border/40 bg-transparent py-0.5 pl-4 pr-1.5 text-[10px] outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 focus:w-36 transition-all"
+          />
         </span>
         {onOpenInTab && (
           <button
@@ -940,29 +1126,32 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
       {/* Content row: optional filter panel + table */}
       <div className="flex flex-1 min-h-0">
-        {showFilters && (
-          <div className="w-[200px] shrink-0 overflow-y-auto">
+        {showFilters && (<>
+          <div ref={filterResize.targetRef} className="shrink-0 overflow-y-auto" style={{ width: filterResize.width }}>
             <FindingsTableFilterPanel
               findings={findings}
               filterState={filterState}
               onFilterChange={setFilterState}
-              onClearDayFilter={onClearDayFilter}
-              activeDayLabel={selectedDay != null ? `Day ${selectedDay}` : null}
+              onClearDayFilter={() => { setFollowRail(true); setManualDay("all"); }}
+              activeDayLabel={filterDay != null ? `Day ${filterDay}` : null}
+              effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)}
+              onClose={() => setShowFilters(false)}
             />
           </div>
-        )}
+          <PanelResizeHandle onPointerDown={filterResize.onPointerDown} />
+        </>)}
 
       {/* ─── Standard table (virtualized) ─────────────────────── */}
       {layoutMode === "standard" && (
       <div ref={stdScrollRef} className="flex-1 min-w-0 overflow-auto">
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 z-10 bg-background">
           {table.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={colStyle(header.id)}
                   onClick={(e) => {
                     if (resizingRef.current) return;
@@ -1011,27 +1200,23 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           {stdVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = stdRows[virtualRow.index];
             const isSelected = selectedFindingId === row.original.id;
-            const epLabel = row.original.endpoint_label ?? row.original.finding;
-            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
-            const isPrimary = isSelected && isSibling;
-            const isSecondary = !isSelected && isSibling;
             return (
               <tr
                 key={row.id}
                 data-index={virtualRow.index}
                 ref={stdVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
-                  isPrimary && "bg-primary/15 font-medium",
-                  isSecondary && "bg-accent/40",
-                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
+                  "border-b transition-colors hover:bg-accent/50",
+                  followRail && "cursor-pointer",
+                  isSelected && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
-                onClick={() => selectFinding(row.original)}
-                onMouseEnter={() => prefetch(row.original.id)}
+                onClick={() => { if (followRail) selectFinding(row.original); }}
+                onMouseEnter={() => { if (followRail) prefetch(row.original.id); }}
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
+                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose";
                   const style = colStyle(cell.column.id);
                   return (
                     <td
@@ -1039,9 +1224,19 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       className={cn(
                         "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
+                        isOverridable && "bg-violet-50/40",
                       )}
                       style={style}
                       data-evidence=""
+                      onContextMenu={
+                        cell.column.id === "pattern" ? (e) => {
+                          e.preventDefault();
+                          setPatternMenu({ x: e.clientX, y: e.clientY, finding: row.original });
+                        } : cell.column.id === "onset_dose" ? (e) => {
+                          e.preventDefault();
+                          setOnsetMenu({ x: e.clientX, y: e.clientY, finding: row.original });
+                        } : undefined
+                      }
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -1066,14 +1261,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       {/* ─── Pivoted table (virtualized) ──────────────────────── */}
       {layoutMode === "pivoted" && (
       <div ref={pivScrollRef} className="flex-1 min-w-0 overflow-auto">
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 z-10 bg-background">
           {pivotedTable.getHeaderGroups().map((hg) => (
             <tr key={hg.id} className="border-b bg-muted/30">
               {hg.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative cursor-pointer px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
+                  className="relative cursor-pointer px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-accent/50"
                   style={pivColStyle(header.id)}
                   onClick={(e) => {
                     if (resizingRef.current) return;
@@ -1112,23 +1307,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             const row = pivRows[virtualRow.index];
             const r = row.original;
             const isSelected = selectedFindingId === r.original.id;
-            const epLabel = r.endpoint_label;
-            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
             return (
               <tr
                 key={row.id}
                 data-index={virtualRow.index}
                 ref={pivVirtualizer.measureElement}
                 className={cn(
-                  "cursor-pointer border-b transition-colors hover:bg-accent/50",
+                  "border-b transition-colors hover:bg-accent/50",
+                  followRail && "cursor-pointer",
                   r.dose_level === 0 && "bg-muted/15",
-                  isSelected && isSibling && "bg-primary/15 font-medium",
-                  !isSelected && isSibling && "bg-accent/40",
-                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
+                  isSelected && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
-                onClick={() => selectFinding(r.original)}
-                onMouseEnter={() => prefetch(r.original.id)}
+                onClick={() => { if (followRail) selectFinding(r.original); }}
+                onMouseEnter={() => { if (followRail) prefetch(r.original.id); }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td
@@ -1174,13 +1366,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
                 clDayMode === opt.value && "bg-accent/30")}
               onClick={() => { setClDayMode(opt.value); setDayMenu(null); }}>
-              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{clDayMode === opt.value ? "\u2713" : ""}</span>
-              <span className="text-[11px] font-medium">{opt.label}</span>
-              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              <span className="w-3 shrink-0 text-[11px] text-muted-foreground">{clDayMode === opt.value ? "\u2713" : ""}</span>
+              <span className="text-xs font-medium">{opt.label}</span>
+              <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
             </button>
           ))}
           <div className="mt-0.5 border-t border-border/40 px-2 py-1">
-            <span className="text-[9px] italic text-muted-foreground/50">Applies to CL rows only</span>
+            <span className="text-[10px] italic text-muted-foreground/50">Applies to CL rows only</span>
           </div>
         </div>
       )}
@@ -1195,13 +1387,93 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               className={cn("flex w-full items-baseline gap-1.5 px-2 py-1 text-left hover:bg-accent/50",
                 sparkScale === opt.value && "bg-accent/30")}
               onClick={() => { setSparkScale(opt.value); setSparkMenu(null); }}>
-              <span className="w-3 shrink-0 text-[10px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
-              <span className="text-[11px] font-medium">{opt.label}</span>
-              <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+              <span className="w-3 shrink-0 text-[11px] text-muted-foreground">{sparkScale === opt.value ? "\u2713" : ""}</span>
+              <span className="text-xs font-medium">{opt.label}</span>
+              <span className="text-[10px] text-muted-foreground">{opt.desc}</span>
             </button>
           ))}
         </div>
       )}
+      {/* Pattern override context menu */}
+      {patternMenu && (() => {
+        const ps = derivePatternState(patternMenu.finding, overrideActions.annotations);
+        const pvText = buildPreviewText(patternPreview);
+        return (
+          <div ref={patternMenuRef} className="fixed z-50 min-w-[160px] rounded border bg-popover py-0.5 shadow-md"
+            style={{ left: patternMenu.x, top: patternMenu.y }}>
+            {OVERRIDE_OPTIONS.map((opt) => {
+              const isActive = opt.value === ps.currentOverrideKey;
+              const isSystem = opt.value === ps.originalKey;
+              return (
+                <button key={opt.value} type="button"
+                  onMouseEnter={() => setHoveredPatternOption(opt.value)}
+                  onClick={() => { overrideActions.selectPattern(patternMenu.finding, opt.value); setPatternMenu(null); }}
+                  disabled={overrideActions.isPending}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors",
+                    isActive ? "bg-muted/50 font-medium text-foreground" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  )}>
+                  <span>{opt.label}</span>
+                  {isSystem && ps.patternChanged && (
+                    <span className="ml-auto text-[11px] text-muted-foreground/50">system</span>
+                  )}
+                </button>
+              );
+            })}
+            {ps.patternChanged && (
+              <button type="button"
+                onClick={() => { overrideActions.resetPattern(patternMenu.finding); setPatternMenu(null); }}
+                disabled={overrideActions.isPending}
+                className="flex w-full items-center px-3 py-1.5 text-left text-xs text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40">
+                Reset to system
+              </button>
+            )}
+            {pvText && (
+              <div className="border-t border-border/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+                {pvText}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+      {/* Onset dose override context menu */}
+      {onsetMenu && (() => {
+        const os = deriveOnsetState(onsetMenu.finding, doseGroups, overrideActions.annotations);
+        const treatmentGroups = doseGroups.filter(g => g.dose_level > 0);
+        const systemLevel = getSystemOnsetLevel(onsetMenu.finding);
+        const hasOnsetOverride = os.onset?.source === "override";
+        return (
+          <div ref={onsetMenuRef} className="fixed z-50 min-w-[120px] rounded border bg-popover py-0.5 shadow-md"
+            style={{ left: onsetMenu.x, top: onsetMenu.y }}>
+            {treatmentGroups.map((g) => {
+              const isSystem = g.dose_level === systemLevel;
+              const isCurrent = os.onset && g.dose_level === os.onset.doseLevel;
+              return (
+                <button key={g.dose_level} type="button"
+                  onClick={() => { overrideActions.selectOnset(onsetMenu.finding, g.dose_level); setOnsetMenu(null); }}
+                  disabled={overrideActions.isPending}
+                  className={cn(
+                    "flex w-full items-center px-3 py-1 text-left text-[11px] transition-colors",
+                    isCurrent ? "bg-muted/50 font-medium text-foreground" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  )}>
+                  <span>{formatOnsetDose(g.dose_level, doseGroups)}</span>
+                  {isSystem && hasOnsetOverride && (
+                    <span className="ml-auto text-[11px] text-muted-foreground/50">system</span>
+                  )}
+                </button>
+              );
+            })}
+            {hasOnsetOverride && (
+              <button type="button"
+                onClick={() => { overrideActions.resetOnset(onsetMenu.finding); setOnsetMenu(null); }}
+                disabled={overrideActions.isPending}
+                className="flex w-full items-center px-3 py-1 text-left text-[11px] text-muted-foreground/60 hover:bg-muted/30 hover:text-foreground transition-colors border-t border-border/40">
+                Reset to system
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -616,7 +616,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
               {SEVERITY_LABELS[syndromeInterp.overallSeverity]}
             </div>
             {/* Line 2: Mechanism certainty · Recovery */}
-            <div className="mt-0.5 text-[10px]">
+            <div className="mt-0.5 text-[11px]">
               <span className={mechanismClass} title={mechanismTooltip}>{mechanismText}</span>
               {recoveryText && (
                 <>
@@ -627,7 +627,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
             </div>
             {/* Line 3: TR/ADV · optional NOAEL cap */}
             {trLabel && advLabel && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
                 {trLabel} · {advLabel}
                 {mortalityCap != null && (
                   <span className="text-foreground"> · NOAEL capped by mortality</span>
@@ -636,7 +636,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
             )}
             {/* Line 4: Organ proportionality narrative (XS09 only) */}
             {xs09Active && organProportionality?.narrative && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
                 {organProportionality.narrative}
               </div>
             )}
@@ -675,7 +675,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
-            <span className="text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1.5 py-0.5">
+            <span className="text-[11px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1.5 py-0.5">
               {syndromeCorrelation.matrix.summary.coherence_label}
             </span>
           }
@@ -719,7 +719,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
                 const affected = maxDose.males.affected + maxDose.females.affected;
                 const bothSexes = maxDose.males.affected > 0 && maxDose.females.affected > 0;
                 return (
-                  <div key={`${t.specimen}-${t.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+                  <div key={`${t.specimen}-${t.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[11px]">
                     <AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> {t.finding.toLowerCase()} at {maxDose.dose_label} ({affected} animal{affected !== 1 ? "s" : ""}{bothSexes ? ", both sexes" : ""})
                     <span className="ml-1 text-muted-foreground">— consistent with progression from hepatocellular injury to neoplasia</span>
                   </div>
@@ -728,7 +728,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
           }
           {/* §8D: Reactive confounder check — tumor-bearing animals in group stats */}
           {tumorConfounders.length > 0 && tumorConfounders.map((c) => (
-            <div key={`confounder-${c.specimen}-${c.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[10px]">
+            <div key={`confounder-${c.specimen}-${c.finding}`} className="mt-2 border-l-2 border-amber-400 bg-amber-50/50 px-2 py-1.5 text-[11px]">
               <div><AlertTriangle className="inline h-3 w-3 shrink-0 align-text-bottom" style={{ color: "#D97706" }} /> {c.includedCount} animal{c.includedCount !== 1 ? "s" : ""} with {c.finding} included in group stats</div>
               <div className="text-muted-foreground ml-3">Group means at {c.doseLabel} may reflect tumor burden</div>
             </div>
@@ -835,16 +835,16 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
         {interpretation && (
           <div className="space-y-3">
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Description</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Description</div>
               <p className="mt-0.5 text-xs leading-relaxed text-foreground/80">{interpretation.description}</p>
             </div>
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Regulatory significance</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Regulatory significance</div>
               <p className="mt-0.5 text-xs leading-relaxed text-foreground/80">{interpretation.regulatory}</p>
             </div>
             {interpretation.discriminator && (
               <div>
-                <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Key discriminator</div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Key discriminator</div>
                 <p className="mt-0.5 text-xs leading-relaxed text-foreground/80">{interpretation.discriminator}</p>
               </div>
             )}
@@ -853,7 +853,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
         {/* Separator */}
         {interpretation && <div className="my-3 border-t" />}
         {/* Navigation links — 4 reviewer-relevant views */}
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <a href="#" className="block text-primary hover:underline"
              onClick={(e) => { e.preventDefault(); if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}/findings`); }}>
             View findings &#x2192;
@@ -964,7 +964,7 @@ function EvidencePane({
       {/* ── Discriminating evidence (merged differential) ── */}
       {syndromeInterp.discriminatingEvidence.length > 0 && (
         <div>
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Discriminating{differential ? ` (vs ${differential.vsName})` : ""}
           </div>
           <p className="mt-0.5 mb-1.5 text-xs leading-relaxed text-foreground/80">
@@ -1002,7 +1002,7 @@ function EvidencePane({
       {syndromeInterp.upgradeEvidence && syndromeInterp.upgradeEvidence.levelsLifted >= 0 && (
         <div>
           <button
-            className="text-[10px] text-primary cursor-pointer hover:underline"
+            className="text-[11px] text-primary cursor-pointer hover:underline"
             onClick={() => setUpgradeOpen(!upgradeOpen)}
           >
             {upgradeOpen ? "Hide" : "Show"} upgrade evidence ({syndromeInterp.upgradeEvidence.tier.toUpperCase()} tier
@@ -1044,29 +1044,29 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
   if (entry.status === "matched") {
     return (
       <div>
-        <div className="flex items-center gap-1.5 text-[10px] font-medium text-foreground">
-          <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[9px] text-muted-foreground"> ({entry.sex})</span>}</span>
-          <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+          <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}{entry.sex && <span className="text-[10px] text-muted-foreground"> ({entry.sex})</span>}</span>
+          <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
             {entry.domain}
           </span>
           {entry.pValue != null && (
-            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
               {formatPValueWithPrefix(entry.pValue)}
             </span>
           )}
           {entry.severity && (
-            <span className="shrink-0 text-[9px] text-muted-foreground">{entry.severity}</span>
+            <span className="shrink-0 text-[10px] text-muted-foreground">{entry.severity}</span>
           )}
           {clinicalTag ? (
-            <span className={`shrink-0 font-mono text-[9px] ${getClinicalTierTextClass(clinicalTag.severity)}`}>
+            <span className={`shrink-0 font-mono text-[10px] ${getClinicalTierTextClass(clinicalTag.severity)}`}>
               {clinicalTag.severity} {clinicalTag.ruleId}
             </span>
           ) : (
-            <span className="shrink-0 font-mono text-[9px] text-muted-foreground/40">{"\u2014"}</span>
+            <span className="shrink-0 font-mono text-[10px] text-muted-foreground/40">{"\u2014"}</span>
           )}
         </div>
         {entry.magnitudeFloorNote && entry.domain === "OM" && (
-          <div className="ml-2 mt-0.5 text-[9px] text-amber-700">
+          <div className="ml-2 mt-0.5 text-[10px] text-amber-700">
             {entry.magnitudeFloorNote}
           </div>
         )}
@@ -1077,36 +1077,36 @@ function TermChecklistRow({ entry, labMatches }: { entry: TermReportEntry; labMa
   if (entry.status === "opposite") {
     const dirArrow = entry.foundDirection === "up" ? "\u2191" : entry.foundDirection === "down" ? "\u2193" : "";
     return (
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-        <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+        <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
           {entry.domain}
         </span>
-        <span className="shrink-0 text-[9px] italic">found {dirArrow} (argues against)</span>
+        <span className="shrink-0 text-[10px] italic">found {dirArrow} (argues against)</span>
       </div>
     );
   }
 
   if (entry.status === "not_significant") {
     return (
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-        <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+        <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
           {entry.domain}
         </span>
-        <span className="shrink-0 text-[9px] italic text-muted-foreground">present, not significant</span>
+        <span className="shrink-0 text-[10px] italic text-muted-foreground">present, not significant</span>
       </div>
     );
   }
 
   // not_measured
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
       <span className="min-w-0 flex-1 truncate" title={entry.label}>{entry.label}</span>
-      <span className="shrink-0 text-[9px] font-semibold text-muted-foreground">
+      <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">
         {entry.domain}
       </span>
-      <span className="shrink-0 text-[9px] italic text-muted-foreground">not measured</span>
+      <span className="shrink-0 text-[10px] italic text-muted-foreground">not measured</span>
     </div>
   );
 }
@@ -1138,7 +1138,7 @@ function DiscriminatingEvidenceRow({ disc, differential }: {
       : "text-muted-foreground";
 
   return (
-    <div className={`flex items-start gap-1.5 text-[10px] ${textClass}`}>
+    <div className={`flex items-start gap-1.5 text-[11px] ${textClass}`}>
       <span className="min-w-0 flex-1">
         <span>{disc.endpoint}</span>
         <span className="ml-1 text-muted-foreground">
@@ -1153,7 +1153,7 @@ function DiscriminatingEvidenceRow({ disc, differential }: {
           <span className="ml-1 text-muted-foreground/60"> {"\u2192"} {diffText}</span>
         )}
       </span>
-      <span className="shrink-0 text-[9px] text-muted-foreground">
+      <span className="shrink-0 text-[10px] text-muted-foreground">
         {disc.weight === "strong" ? "STRONG" : "moderate"}
       </span>
     </div>
@@ -1188,7 +1188,7 @@ function DifferentialAssessmentLine({
   }
 
   return (
-    <div className="mt-1.5 text-[10px] font-medium text-foreground/80">
+    <div className="mt-1.5 text-[11px] font-medium text-foreground/80">
       Assessment: {assessment}
     </div>
   );
@@ -1348,7 +1348,7 @@ function HysLawFiltered({
     // (no NOT TRIGGERED results at all)
     if (notEvaluated.length > 0 && ruleStatuses.every(r => r.status !== "NOT TRIGGERED")) {
       return (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground">
           Hy&apos;s Law: cannot evaluate ({notEvaluated.map(r => r.explanation).filter(Boolean).join("; ") || "required endpoints not measured"})
         </div>
       );
@@ -1368,11 +1368,11 @@ function HysLawFiltered({
             className={`${isTrig ? "border-l-4" : "border-l-2"} pl-1.5 py-0.5`}
             style={{ borderLeftColor: isTrig ? "#DC2626" : "#D97706" }}
           >
-            <div className={`text-[10px] ${isTrig ? "font-semibold" : "font-medium"} text-foreground`}>
+            <div className={`text-[11px] ${isTrig ? "font-semibold" : "font-medium"} text-foreground`}>
               Hy&apos;s Law: {rs.status} ({rs.ruleId})
             </div>
             {rs.explanation && (
-              <div className="text-[10px] text-muted-foreground">{rs.explanation}</div>
+              <div className="text-[11px] text-muted-foreground">{rs.explanation}</div>
             )}
           </div>
         );
@@ -1403,18 +1403,18 @@ function UpgradeEvidenceContent({ evidence }: { evidence: UpgradeEvidenceResult 
             : ""}
         </span>
       </div>
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Score {evidence.totalScore.toFixed(1)} ({metCount}/{evidence.items.length} items met)
       </div>
       <div className="space-y-0.5">
         {evidence.items.map((item) => (
-          <div key={item.id} className={`flex items-start gap-1.5 text-[10px] ${item.met ? "font-medium text-foreground" : "text-muted-foreground/60"}`}>
+          <div key={item.id} className={`flex items-start gap-1.5 text-[11px] ${item.met ? "font-medium text-foreground" : "text-muted-foreground/60"}`}>
             <span className="min-w-0 flex-1">
               <span>{item.id} {item.label}</span>
               <span className="ml-1 text-muted-foreground/60">
                 ({item.strength}, {item.score.toFixed(1)})
               </span>
-              <span className="ml-1 text-[10px] text-muted-foreground/50">
+              <span className="ml-1 text-[11px] text-muted-foreground/50">
                 {item.detail}
               </span>
             </span>
@@ -1468,12 +1468,12 @@ function DoseResponseRecoveryPane({
     <div className="space-y-3">
       {/* ── Dose-response summary ── */}
       <div className="space-y-0.5">
-        <div className="flex items-baseline gap-1.5 text-[10px]">
+        <div className="flex items-baseline gap-1.5 text-[11px]">
           <span className="text-muted-foreground">Dose-response:</span>
           <span className="font-mono font-medium text-foreground underline decoration-dotted decoration-muted-foreground/40 underline-offset-2" title={drTooltip}>{tr.doseResponse}</span>
         </div>
         {leadEp && (
-          <div className="flex items-baseline gap-1.5 text-[10px]">
+          <div className="flex items-baseline gap-1.5 text-[11px]">
             <span className="text-muted-foreground">Lead endpoint:</span>
             <span className="font-medium text-foreground">{leadEp.endpoint_label}</span>
             {leadEp.minPValue != null && (
@@ -1484,7 +1484,7 @@ function DoseResponseRecoveryPane({
             )}
           </div>
         )}
-        <div className="flex items-baseline gap-1.5 text-[10px]">
+        <div className="flex items-baseline gap-1.5 text-[11px]">
           <span className="text-muted-foreground">Magnitude:</span>
           <span className="font-medium text-foreground">
             {adv.magnitudeLevel}
@@ -1495,9 +1495,9 @@ function DoseResponseRecoveryPane({
 
       {/* ── Recovery with border-left blocks ── */}
       <div>
-        <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Recovery</div>
         {recovery.status === "not_examined" ? (
-          <p className="mt-1 text-[10px] text-muted-foreground italic">No recovery arm in study</p>
+          <p className="mt-1 text-[11px] text-muted-foreground italic">No recovery arm in study</p>
         ) : recovery.endpoints.length > 0 ? (
           <div className="mt-1 space-y-0.5">
             {recovery.endpoints.map((ep, i) => {
@@ -1509,10 +1509,10 @@ function DoseResponseRecoveryPane({
                   ? "border-l-2 border-l-amber-300/40 pl-2"
                   : "border-l-2 border-l-amber-400/60 pl-2";
               const textClass = isRecovered
-                ? "text-[10px] text-muted-foreground"
+                ? "text-[11px] text-muted-foreground"
                 : isPartial
-                  ? "text-[10px] text-foreground/80"
-                  : "text-[10px] font-medium text-foreground";
+                  ? "text-[11px] text-foreground/80"
+                  : "text-[11px] font-medium text-foreground";
 
               return (
                 <div key={i} className={`${borderClass} ${textClass}`}>
@@ -1527,12 +1527,12 @@ function DoseResponseRecoveryPane({
             })}
 
             {/* Conclusion line */}
-            <div className="mt-1 text-[10px] text-muted-foreground">
+            <div className="mt-1 text-[11px] text-muted-foreground">
               {recovery.summary}
             </div>
           </div>
         ) : (
-          <p className="mt-1 text-[10px] text-muted-foreground">{recovery.summary}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{recovery.summary}</p>
         )}
 
         {/* Organ weight recovery rows (XS09) */}
@@ -1550,7 +1550,7 @@ function DoseResponseRecoveryPane({
 
           return (
             <div className="mt-2">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Organ weight recovery</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Organ weight recovery</div>
               <div className="mt-1 space-y-0.5">
                 {organRecRows.map((r, i) => {
                   const isRec = r.recoveryStatus === "recovered";
@@ -1561,10 +1561,10 @@ function DoseResponseRecoveryPane({
                       ? "border-l-2 border-l-amber-300/40 pl-2"
                       : "border-l-2 border-l-amber-400/60 pl-2";
                   const textClass = isRec
-                    ? "text-[10px] text-muted-foreground"
+                    ? "text-[11px] text-muted-foreground"
                     : isPart
-                      ? "text-[10px] text-foreground/80"
-                      : "text-[10px] font-medium text-foreground";
+                      ? "text-[11px] text-foreground/80"
+                      : "text-[11px] font-medium text-foreground";
                   const persistent = !isRec && bwRecovered;
 
                   return (
@@ -1591,7 +1591,7 @@ function DoseResponseRecoveryPane({
       {/* ── Collapsible "All A/B factors" ── */}
       <div>
         <button
-          className="text-[10px] text-primary cursor-pointer hover:underline"
+          className="text-[11px] text-primary cursor-pointer hover:underline"
           onClick={() => setFactorsOpen(!factorsOpen)}
         >
           {factorsOpen ? "Hide" : "Show"} all A/B factors {factorsOpen ? "\u25be" : "\u25b8"}
@@ -1634,7 +1634,7 @@ function DoseResponseRecoveryPane({
 
 function EcetocFactorRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline gap-1.5 text-[10px]">
+    <div className="flex items-baseline gap-1.5 text-[11px]">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-foreground">{value}</span>
     </div>
@@ -1673,20 +1673,20 @@ function HistopathContextPane({
             </div>
 
             {!ref.examined && (
-              <p className="ml-2 text-[10px] text-muted-foreground italic">Not examined in study</p>
+              <p className="ml-2 text-[11px] text-muted-foreground italic">Not examined in study</p>
             )}
 
             {ref.examined && (
               <div className="ml-2 mt-1">
                 {ref.expectedFindings.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground">
                     Expected: {ref.expectedFindings.join(", ").toLowerCase()}
                   </p>
                 )}
                 {ref.observedFindings.length > 0 && (
                   <div className="mt-0.5 space-y-0.5">
                     {ref.observedFindings.filter(o => o.peakIncidence > 0).map((obs, i) => (
-                      <div key={i} className="text-[10px]">
+                      <div key={i} className="text-[11px]">
                         <span className="text-foreground">
                           {obs.finding}
                         </span>
@@ -1694,7 +1694,7 @@ function HistopathContextPane({
                           peak {Math.round(obs.peakIncidence * 100)}%, {obs.doseResponse}
                         </span>
                         {obs.proxy && (
-                          <span className="ml-1 text-[9px] text-muted-foreground italic">
+                          <span className="ml-1 text-[10px] text-muted-foreground italic">
                             (proxy: {obs.proxy.relationship.split(".")[0].toLowerCase()})
                           </span>
                         )}
@@ -1702,14 +1702,14 @@ function HistopathContextPane({
                     ))}
                   </div>
                 )}
-                <div className="mt-1 text-[10px] font-medium">
+                <div className="mt-1 text-[11px] font-medium">
                   <span className={ref.assessment === "inconclusive" ? "text-muted-foreground" : "text-foreground"}>
                     Assessment: {ref.assessment.replace(/_/g, " ")}
                   </span>
                 </div>
                 {/* OPI concordance line */}
                 {opiRows.length > 0 && (
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
                     Concordance: {opiRows[0].concordance.replace(/_/g, " ").replace(/^(\w+) /, "$1 \u2014 ")}
                     {opiRows.length === 1
                       ? ` (${opiRows[0].sex} OPI ${opiRows[0].opi?.toFixed(2) ?? "n/a"})`
@@ -1730,7 +1730,7 @@ function ClinicalObservationsPane({ support }: { support: SyndromeInterpretation
   return (
     <div className="space-y-0.5">
       {support.correlatingObservations.map((obs, i) => (
-        <div key={i} className={`text-[10px] ${obs.incidenceDoseDependent ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+        <div key={i} className={`text-[11px] ${obs.incidenceDoseDependent ? "font-medium text-foreground" : "text-muted-foreground"}`}>
           <span>{obs.observation}</span>
           <span className="ml-1.5 text-muted-foreground">
             {obs.incidenceDoseDependent ? "dose-dependent" : ""}
@@ -1761,7 +1761,7 @@ function MortalityContextPane({ mortality, mortalityRaw }: { mortality: Mortalit
   return (
     <div>
       {mortality.mortalityNoaelCap != null && (
-        <div className="mb-2 text-[10px] font-medium text-foreground">
+        <div className="mb-2 text-[11px] font-medium text-foreground">
           {noaelCapLabel ?? `NOAEL cap: dose level ${mortality.mortalityNoaelCap}`}
           {mortality.mortalityNoaelCapRelevant === false && (
             <span className="ml-1 font-normal text-muted-foreground">(unrelated)</span>
@@ -1774,7 +1774,7 @@ function MortalityContextPane({ mortality, mortalityRaw }: { mortality: Mortalit
       {mortality.deathDetails.length > 0 && (
         <div className="space-y-0.5">
           {mortality.deathDetails.map((d, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
+            <div key={i} className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
               <span className="shrink-0">{d.animalId}</span>
               <span className="shrink-0">{d.doseLabel ?? `dose ${d.doseGroup}`}</span>
               <span className="shrink-0">day {d.dispositionDay}</span>
@@ -1947,7 +1947,7 @@ function FoodConsumptionPane({
     <div>
       {/* ── Verdict description only ── */}
       {verdict.description && (
-        <div className="text-[10px] text-muted-foreground">{verdict.description}</div>
+        <div className="text-[11px] text-muted-foreground">{verdict.description}</div>
       )}
 
       {/* ── Key stats — per-sex, aligned inline (§5.3) ── */}
@@ -1962,7 +1962,7 @@ function FoodConsumptionPane({
               return <span className={Math.abs(v) >= threshold ? "font-medium text-foreground" : "text-muted-foreground"}>{text}</span>;
             };
             return (
-              <div key={s.sex} className="text-[10px]">
+              <div key={s.sex} className="text-[11px]">
                 <span className="inline-block font-medium text-foreground" style={{ width: 46 }}>{s.sex === "M" ? "Males" : "Females"}</span>
                 {s.bwPct != null && (
                   <span className="inline-block" style={{ width: 52 }}>
@@ -2013,7 +2013,7 @@ function FoodConsumptionPane({
             );
           })}
           {!keyStats.recoverySex && rawData?.recovery && !rawData.recovery.available && (
-            <div className="text-[10px] text-muted-foreground italic">Recovery: no recovery arm</div>
+            <div className="text-[11px] text-muted-foreground italic">Recovery: no recovery arm</div>
           )}
         </div>
       )}
@@ -2021,9 +2021,9 @@ function FoodConsumptionPane({
       {/* ── FE dose-response by period (§5.6) — table layout ── */}
       {periodData.length > 0 && (
         <div className="mt-2.5">
-          <table className="w-full text-[10px] border-collapse">
+          <table className="w-full text-[11px] border-collapse">
             <thead>
-              <tr className="text-[9px] text-muted-foreground">
+              <tr className="text-[10px] text-muted-foreground">
                 <th
                   className="text-left font-semibold uppercase tracking-wider pr-2 pb-0.5"
                   title="Food efficiency = body weight gain / food consumed per period. Values shown as mean FE with % change vs control."
@@ -2036,7 +2036,7 @@ function FoodConsumptionPane({
                   </th>
                 ))}
               </tr>
-              <tr className="text-[9px] text-muted-foreground/60 border-b border-muted-foreground/15">
+              <tr className="text-[10px] text-muted-foreground/60 border-b border-muted-foreground/15">
                 <th className="pb-0.5" />
                 {periodData.map((_p, pi) => (
                   <Fragment key={pi}>
@@ -2096,7 +2096,7 @@ function FoodConsumptionPane({
       {/* ── Raw metrics toggle (§5.7) ── */}
       <div className="mt-2">
         <button
-          className="text-[10px] text-primary cursor-pointer hover:underline"
+          className="text-[11px] text-primary cursor-pointer hover:underline"
           onClick={() => setShowRaw(!showRaw)}
           aria-expanded={showRaw}
         >
@@ -2129,9 +2129,9 @@ function RawMetricsTable({ title, data, getDoseLabel }: {
   if (data.periods.length === 0) return null;
   return (
     <div>
-      <table className="w-full text-[10px] border-collapse">
+      <table className="w-full text-[11px] border-collapse">
         <thead>
-          <tr className="text-[9px] text-muted-foreground">
+          <tr className="text-[10px] text-muted-foreground">
             <th className="text-left font-semibold uppercase tracking-wider pr-2 pb-0.5">{title}</th>
             {data.periods.map((p, pi) => (
               <th key={pi} colSpan={data.sexes.length} className="text-right font-medium pb-0.5 pl-1 pr-0.5">
@@ -2139,7 +2139,7 @@ function RawMetricsTable({ title, data, getDoseLabel }: {
               </th>
             ))}
           </tr>
-          <tr className="text-[9px] text-muted-foreground/60 border-b border-muted-foreground/15">
+          <tr className="text-[10px] text-muted-foreground/60 border-b border-muted-foreground/15">
             <th className="pb-0.5" />
             {data.periods.map((_p, pi) => (
               <Fragment key={pi}>
@@ -2186,12 +2186,12 @@ function TranslationalConfidencePane({ confidence }: { confidence: Translational
       <div className="text-sm font-medium text-foreground">
         {confidence.tier.charAt(0).toUpperCase() + confidence.tier.slice(1)}
       </div>
-      <p className="text-[11px] text-foreground leading-relaxed">{confidence.summary}</p>
+      <p className="text-xs text-foreground leading-relaxed">{confidence.summary}</p>
 
       {confidence.endpointLRPlus.length > 0 && (
         <div className="space-y-0.5">
           {confidence.endpointLRPlus.map((pt) => (
-            <div key={`${pt.endpoint}-${pt.species}`} className="flex items-baseline gap-1 text-[10px]">
+            <div key={`${pt.endpoint}-${pt.species}`} className="flex items-baseline gap-1 text-[11px]">
               <span className="text-muted-foreground">{pt.endpoint}:</span>
               <span className="text-foreground">LR+ {pt.lrPlus}</span>
               <span className="text-muted-foreground">({pt.species})</span>
@@ -2201,12 +2201,12 @@ function TranslationalConfidencePane({ confidence }: { confidence: Translational
       )}
 
       {confidence.absenceCaveat && (
-        <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+        <p className="text-[11px] text-muted-foreground leading-relaxed italic">
           {confidence.absenceCaveat}
         </p>
       )}
 
-      <p className="text-[9px] text-muted-foreground/60">Data: {confidence.dataVersion}</p>
+      <p className="text-[10px] text-muted-foreground/60">Data: {confidence.dataVersion}</p>
     </div>
   );
 }
@@ -2351,18 +2351,18 @@ function OrganProportionalityPane({
           onClick={() => setExpandedKey(isExpanded ? null : key)}
         >
           <td
-            className={`py-0.5 pr-2 text-[10px] ${borderClass}`}
+            className={`py-0.5 pr-2 text-[11px] ${borderClass}`}
             style={borderColor ? { borderLeftColor: borderColor } : undefined}
           >
-            {row.organ}{row.concordance === "mi_only" && <span className="ml-1 text-[9px] text-muted-foreground italic">MI-only</span>}
+            {row.organ}{row.concordance === "mi_only" && <span className="ml-1 text-[10px] text-muted-foreground italic">MI-only</span>}
           </td>
-          <td className="py-0.5 px-1 text-[9px] text-muted-foreground">{row.sex}</td>
-          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtDelta(row.bwDeltaPct)}</td>
-          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtDelta(row.organWtDeltaPct)}</td>
-          <td className="py-0.5 px-1 text-[10px] font-mono tabular-nums text-right">{fmtOpi(row.opi)}</td>
-          <td className="py-0.5 px-1 text-[10px]">{row.classification.replace(/_/g, " ")}</td>
-          <td className="py-0.5 px-1 text-[10px] text-center">{getMiGlyph(row.miStatus, row.miFindings)}</td>
-          <td className="py-0.5 px-1 text-[10px]">{getRecoveryIndicator(row)}</td>
+          <td className="py-0.5 px-1 text-[10px] text-muted-foreground">{row.sex}</td>
+          <td className="py-0.5 px-1 text-[11px] font-mono tabular-nums text-right">{fmtDelta(row.bwDeltaPct)}</td>
+          <td className="py-0.5 px-1 text-[11px] font-mono tabular-nums text-right">{fmtDelta(row.organWtDeltaPct)}</td>
+          <td className="py-0.5 px-1 text-[11px] font-mono tabular-nums text-right">{fmtOpi(row.opi)}</td>
+          <td className="py-0.5 px-1 text-[11px]">{row.classification.replace(/_/g, " ")}</td>
+          <td className="py-0.5 px-1 text-[11px] text-center">{getMiGlyph(row.miStatus, row.miFindings)}</td>
+          <td className="py-0.5 px-1 text-[11px]">{getRecoveryIndicator(row)}</td>
         </tr>
 
         {/* Expandable detail */}
@@ -2382,7 +2382,7 @@ function OrganProportionalityPane({
     if (!s) return null;
     return (
       <tr key={`header-${sex}`}>
-        <td colSpan={8} className="pt-2 pb-0.5 text-[9px] font-semibold text-muted-foreground">
+        <td colSpan={8} className="pt-2 pb-0.5 text-[10px] font-semibold text-muted-foreground">
           ── {sex === "F" ? "Females" : "Males"} (BW {fmtDelta(s.bwDeltaPct)}) ──
         </td>
       </tr>
@@ -2398,7 +2398,7 @@ function OrganProportionalityPane({
             const s = result.bySex[sex];
             if (!s) return null;
             return (
-              <div key={sex} className="text-[10px] text-muted-foreground">
+              <div key={sex} className="text-[11px] text-muted-foreground">
                 {sex === "F" ? "F" : "M"} (BW {fmtDelta(s.bwDeltaPct)}): {s.totalAssessed} organs · {s.disproportionateCount + s.inverseCount} disprop · {s.proportionateCount} prop
                 {s.partiallyProportionateCount > 0 && ` · ${s.partiallyProportionateCount} borderline`}
                 {s.notApplicableCount > 0 && ` · ${s.notApplicableCount} n/a`}
@@ -2407,7 +2407,7 @@ function OrganProportionalityPane({
           })}
         </div>
       ) : (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground">
           {(() => {
             const totals = sexes.reduce(
               (acc, sex) => {
@@ -2437,15 +2437,15 @@ function OrganProportionalityPane({
       {result.caveats.length > 0 && (
         <div className="mt-1.5 space-y-0.5">
           {result.caveats.map((c, i) => (
-            <p key={i} className="text-[10px] italic text-foreground/80">{c}</p>
+            <p key={i} className="text-[11px] italic text-foreground/80">{c}</p>
           ))}
         </div>
       )}
 
       {/* Organ ranking table */}
-      <table className="mt-2 w-full border-collapse text-[10px]">
+      <table className="mt-2 w-full border-collapse text-[11px]">
         <thead>
-          <tr className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             <th className="py-0.5 pr-2 text-left">Organ</th>
             <th className="py-0.5 px-1 text-left">Sex</th>
             <th className="py-0.5 px-1 text-right">BW Δ%</th>
@@ -2498,7 +2498,7 @@ function OrganProportionalityPane({
 
         return (
           <div className="mt-3 space-y-1">
-            <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Interpretive summary</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Interpretive summary</div>
             {[...byOrgan.entries()].map(([key, rows]) => {
               const bothSexes = rows.length >= 2;
               const borderColor = rows.some((r) => r.classification === "inverse") ? "#DC2626" : "#D97706";
@@ -2515,7 +2515,7 @@ function OrganProportionalityPane({
                 return (
                   <div
                     key={key}
-                    className="border-l-4 pl-1.5 text-[10px] text-foreground"
+                    className="border-l-4 pl-1.5 text-[11px] text-foreground"
                     style={{ borderLeftColor: borderColor }}
                   >
                     {rows[0].organ}: OPI {opiText}{doseText} — {rows[0].classification.replace(/_/g, " ")} in both sexes
@@ -2542,7 +2542,7 @@ function OrganProportionalityPane({
               return (
                 <div
                   key={key}
-                  className="border-l-4 pl-1.5 text-[10px] text-foreground"
+                  className="border-l-4 pl-1.5 text-[11px] text-foreground"
                   style={{ borderLeftColor: borderColor }}
                 >
                   {r.organ} ({r.sex}): OPI {r.opi?.toFixed(2) ?? "n/a"}{doseText} — {r.classification.replace(/_/g, " ")}
@@ -2570,10 +2570,10 @@ function OrganDetailExpanded({
       {/* Dose-by-dose OPI */}
       {row.byDose.length > 0 && (
         <div>
-          <div className="text-[9px] font-semibold text-muted-foreground">Dose-by-dose</div>
+          <div className="text-[10px] font-semibold text-muted-foreground">Dose-by-dose</div>
           <div className="mt-0.5 space-y-0.5">
             {row.byDose.map((d) => (
-              <div key={d.doseLevel} className="flex items-baseline gap-2 text-[10px] font-mono tabular-nums">
+              <div key={d.doseLevel} className="flex items-baseline gap-2 text-[11px] font-mono tabular-nums">
                 <span className="text-muted-foreground" style={{ width: 70 }}>{getDoseLabel(d.doseLevel)}</span>
                 <span className="text-muted-foreground" style={{ width: 50 }}>Wt {d.organWtDeltaPct != null ? `${d.organWtDeltaPct >= 0 ? "+" : ""}${d.organWtDeltaPct.toFixed(1)}%` : "—"}</span>
                 <span className={`font-medium ${d.classification === "disproportionate" || d.classification === "inverse" ? "text-foreground" : "text-muted-foreground"}`} style={{ width: 40 }}>
@@ -2588,7 +2588,7 @@ function OrganDetailExpanded({
 
       {/* MI detail */}
       {row.miStatus === "finding_present" && (
-        <div className="text-[10px]">
+        <div className="text-[11px]">
           <span className="text-muted-foreground">MI: </span>
           <span className="text-foreground">{row.miFindings.join(", ")}</span>
           {row.miIncidence && (
@@ -2601,7 +2601,7 @@ function OrganDetailExpanded({
       )}
 
       {/* Concordance */}
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Concordance: {row.concordance.replace(/_/g, " ")}
         {row.opi != null && ` (OPI ${row.opi.toFixed(2)}`}
         {row.opi != null && row.miStatus === "finding_present" && row.miFindings.length > 0
@@ -2612,7 +2612,7 @@ function OrganDetailExpanded({
 
       {/* Recovery */}
       {row.recoveryStatus != null && (
-        <div className="text-[10px] text-muted-foreground">
+        <div className="text-[11px] text-muted-foreground">
           Recovery: {row.recoveryStatus.replace(/_/g, " ")}
           {row.recoveryResolutionPct != null && ` (${Math.round(row.recoveryResolutionPct)}% resolved)`}
         </div>

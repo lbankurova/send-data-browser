@@ -27,7 +27,7 @@ export function ReportedVsDerivedDeltaPane({ study }: Props) {
 
   return (
     <CollapsiblePane title="Reported vs Derived" defaultOpen>
-      <div className="space-y-3 text-[11px]">
+      <div className="space-y-3 text-xs">
         {/* Target Organ Discrepancy */}
         {hasOrganDisc && (
           <div>
@@ -42,12 +42,12 @@ export function ReportedVsDerivedDeltaPane({ study }: Props) {
                 {study.target_organs_derived?.join(", ") || "—"}
               </div>
               {derivedOnlyOrgans.length > 0 && (
-                <div className="mt-1 text-[10px] text-amber-700">
+                <div className="mt-1 text-[11px] text-amber-700">
                   → Data suggests: {derivedOnlyOrgans.join(", ")}
                 </div>
               )}
               {reportedOnlyOrgans.length > 0 && (
-                <div className="mt-1 text-[10px] text-blue-700">
+                <div className="mt-1 text-[11px] text-blue-700">
                   → Report includes: {reportedOnlyOrgans.join(", ")}
                 </div>
               )}
@@ -70,12 +70,12 @@ export function ReportedVsDerivedDeltaPane({ study }: Props) {
                 {study.noael_derived.method})
               </div>
               {study.noael_derived.dose < study.noael_reported.dose && (
-                <div className="mt-1 text-[10px] text-amber-700">
+                <div className="mt-1 text-[11px] text-amber-700">
                   → Statistical analysis more conservative
                 </div>
               )}
               {study.noael_derived.dose > study.noael_reported.dose && (
-                <div className="mt-1 text-[10px] text-blue-700">
+                <div className="mt-1 text-[11px] text-blue-700">
                   → Study director more conservative
                 </div>
               )}

@@ -19,14 +19,14 @@ export function InsightBlock({ insights }: Props) {
         return accent ? (
           <div
             key={i}
-            className={`border-l-2 ${accent} pl-2 text-[11px] leading-snug text-foreground`}
+            className={`border-l-2 ${accent} pl-2 text-xs leading-snug text-foreground`}
           >
             {insight.text}
           </div>
         ) : (
           <div
             key={i}
-            className="pl-2 text-[11px] leading-snug text-muted-foreground"
+            className="pl-2 text-xs leading-snug text-muted-foreground"
           >
             {insight.text}
           </div>

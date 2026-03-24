@@ -10,6 +10,7 @@
  * Subjects are grouped by dose group + arm (main/recovery) in all sections.
  */
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
@@ -119,6 +120,7 @@ export function CompareTab({
   onEditSelection,
   onFindingClick,
 }: CompareTabProps) {
+  const navigate = useNavigate();
   const { data: compData, isLoading } = useSubjectComparison(studyId, subjectIds);
   const { data: histopathData } = useHistopathSubjects(studyId, specimen);
   const subjData: SubjectHistopathEntry[] | null = histopathData?.subjects ?? null;
@@ -168,11 +170,19 @@ export function CompareTab({
           <div className="text-xs font-semibold text-foreground">
             Comparing {subjectIds.length} subjects in {specimen.replace(/_/g, " ")}
           </div>
-          <button onClick={onEditSelection} className="text-xs text-primary hover:underline">
-            Edit
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/studies/${studyId}/cohort?preset=histo&subjects=${subjectIds.join(",")}`)}
+              className="text-xs text-primary hover:underline cursor-pointer"
+            >
+              Open in Cohort view
+            </button>
+            <button onClick={onEditSelection} className="text-xs text-primary hover:underline">
+              Edit
+            </button>
+          </div>
         </div>
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
           {groups.map((g, i) => (
             <span key={`${g.doseLevel}-${g.isRecovery}`}>
               {i > 0 && " \u00B7 "}
@@ -329,7 +339,7 @@ function FindingConcordance({
   return (
     <div>
       {/* Sort + filter toolbar */}
-      <div className="mb-1.5 flex items-center gap-3 text-[10px]">
+      <div className="mb-1.5 flex items-center gap-3 text-[11px]">
         <div className="flex items-center gap-1">
           <span className="text-muted-foreground">Sort:</span>
           {(["severity", "concordance", "alpha"] as const).map((m) => (
@@ -367,13 +377,13 @@ function FindingConcordance({
         <EmptyState message="No findings match the current filter." />
       ) : (
       <div className="overflow-x-auto">
-      <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 44 + 260 }}>
+      <table className="text-xs" style={{ minWidth: orderedSubjects.length * 44 + 260 }}>
         <thead>
           {/* Row 1: Group spanning headers */}
           <tr>
             <th
               rowSpan={2}
-              className="sticky left-0 z-[1] min-w-[140px] bg-background pb-1 pr-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              className="sticky left-0 z-[1] min-w-[140px] bg-background pb-1 pr-2 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
             >
               Finding
             </th>
@@ -381,14 +391,14 @@ function FindingConcordance({
               <th
                 key={`${g.doseLevel}-${g.isRecovery}`}
                 colSpan={g.subjects.length}
-                className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+                className="border-b border-l border-border/30 pb-0.5 text-center text-[10px] font-medium text-muted-foreground"
               >
                 {g.doseLabel} {g.isRecovery ? "rec" : "main"}
               </th>
             ))}
             <th
               rowSpan={2}
-              className="min-w-[50px] pb-1 text-center text-[9px] font-semibold uppercase tracking-wider text-muted-foreground"
+              className="min-w-[50px] pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
             >
               N
             </th>
@@ -403,7 +413,7 @@ function FindingConcordance({
                   groupStartSet.has(s.usubjid) && "border-l border-border/30",
                 )}
               >
-                <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                <div className="text-[11px] font-medium leading-tight">{s.short_id}</div>
                 <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
               </th>
             ))}
@@ -422,7 +432,7 @@ function FindingConcordance({
                 className="cursor-pointer border-t border-border/20 hover:bg-accent/20"
                 onClick={() => onFindingClick(finding)}
               >
-                <td className="sticky left-0 z-[1] truncate bg-background py-0.5 pr-2 text-[10px]" title={finding}>
+                <td className="sticky left-0 z-[1] truncate bg-background py-0.5 pr-2 text-[11px]" title={finding}>
                   {finding}
                 </td>
                 {orderedIds.map((id) => {
@@ -443,26 +453,26 @@ function FindingConcordance({
                     >
                       {sevNum > 0 ? (
                         <div
-                          className="mx-auto flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
+                          className="mx-auto flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[10px]"
                           style={{ backgroundColor: colors!.bg, color: colors!.text }}
                         >
                           {sevNum}
                         </div>
                       ) : hasEntry && isGraded ? (
-                        <span className="text-[9px] text-muted-foreground">&mdash;</span>
+                        <span className="text-[10px] text-muted-foreground">&mdash;</span>
                       ) : hasEntry ? (
-                        <span className="text-[10px] text-gray-400">&#x25CF;</span>
+                        <span className="text-[11px] text-gray-400">&#x25CF;</span>
                       ) : null}
                     </td>
                   );
                 })}
                 <td className="py-0.5 text-center">
                   {count === N ? (
-                    <span className="text-[9px] font-medium text-foreground/70">
+                    <span className="text-[10px] font-medium text-foreground/70">
                       all ({N}/{N})
                     </span>
                   ) : (
-                    <span className={cn("text-[9px]", count === 1 ? "text-muted-foreground/50" : "text-muted-foreground")}>
+                    <span className={cn("text-[10px]", count === 1 ? "text-muted-foreground/50" : "text-muted-foreground")}>
                       {count}/{N}
                     </span>
                   )}
@@ -582,7 +592,7 @@ function LabValuesComparison({
       {/* Timepoint selector */}
       {availableTimepoints.length > 1 && (
         <div className="mb-2 flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground">Timepoint:</span>
+          <span className="text-[11px] text-muted-foreground">Timepoint:</span>
           <FilterSelect
             value={String(activeDay ?? "")}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -599,36 +609,36 @@ function LabValuesComparison({
       )}
 
       <div className="overflow-x-auto">
-        <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 52 + 240 }}>
+        <table className="text-xs" style={{ minWidth: orderedSubjects.length * 52 + 240 }}>
           <thead>
             {/* Row 1: Group spanning headers */}
             <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 z-[1] bg-background pb-1 pr-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="sticky left-0 z-[1] bg-background pb-1 pr-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
                 style={{ width: 1, whiteSpace: "nowrap" }}
               >
                 Test
               </th>
               <th
                 rowSpan={2}
-                className="pb-1 pr-3 text-left text-[10px] text-muted-foreground"
+                className="pb-1 pr-3 text-left text-[11px] text-muted-foreground"
                 style={{ width: 1, whiteSpace: "nowrap" }}
               >
                 Unit
               </th>
               <th
                 rowSpan={2}
-                className="min-w-[80px] pb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="min-w-[80px] pb-1 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Control
-                <div className="font-normal normal-case tracking-normal text-[9px] text-muted-foreground/70">(mean{"\u00B1"}SD)</div>
+                <div className="font-normal normal-case tracking-normal text-[10px] text-muted-foreground/70">(mean{"\u00B1"}SD)</div>
               </th>
               {groups.map((g) => (
                 <th
                   key={`${g.doseLevel}-${g.isRecovery}`}
                   colSpan={g.subjects.length}
-                  className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+                  className="border-b border-l border-border/30 pb-0.5 text-center text-[10px] font-medium text-muted-foreground"
                 >
                   {g.doseLabel} {g.isRecovery ? "rec" : "main"}
                 </th>
@@ -644,7 +654,7 @@ function LabValuesComparison({
                     groupStartSet.has(s.usubjid) && "border-l border-border/30",
                   )}
                 >
-                  <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                  <div className="text-[11px] font-medium leading-tight">{s.short_id}</div>
                   <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
                 </th>
               ))}
@@ -653,13 +663,13 @@ function LabValuesComparison({
           <tbody>
             {rows.map((row) => (
               <tr key={row.test} className="border-t border-border/20">
-                <td className="sticky left-0 z-[1] whitespace-nowrap bg-background py-0.5 pr-3 font-mono text-[10px] font-medium">
+                <td className="sticky left-0 z-[1] whitespace-nowrap bg-background py-0.5 pr-3 font-mono text-[11px] font-medium">
                   {row.test}
                 </td>
-                <td className="whitespace-nowrap py-0.5 pr-3 text-[10px] text-muted-foreground">
+                <td className="whitespace-nowrap py-0.5 pr-3 text-[11px] text-muted-foreground">
                   {row.unit}
                 </td>
-                <td className="py-0.5 text-center font-mono text-[10px] text-muted-foreground">
+                <td className="py-0.5 text-center font-mono text-[11px] text-muted-foreground">
                   {row.ctrl ? (
                     row.ctrl.by_sex ? (
                       <span className="flex flex-col items-center leading-tight">
@@ -679,7 +689,7 @@ function LabValuesComparison({
                       <td
                         key={id}
                         className={cn(
-                          "py-0.5 text-center font-mono text-[10px] text-muted-foreground",
+                          "py-0.5 text-center font-mono text-[11px] text-muted-foreground",
                           groupStartSet.has(id) && "border-l border-border/30",
                         )}
                       >
@@ -694,7 +704,7 @@ function LabValuesComparison({
                     <td
                       key={id}
                       className={cn(
-                        "py-0.5 text-center font-mono text-[11px]",
+                        "py-0.5 text-center font-mono text-xs",
                         isHigh ? "font-medium text-red-600/70" : isLow ? "font-medium text-blue-600/70" : "text-foreground",
                         groupStartSet.has(id) && "border-l border-border/30",
                       )}
@@ -712,7 +722,7 @@ function LabValuesComparison({
       {/* Show all toggle */}
       <button
         onClick={() => setShowAll(!showAll)}
-        className="mt-1 text-[10px] text-primary hover:underline"
+        className="mt-1 text-[11px] text-primary hover:underline"
       >
         {showAll ? "Show relevant only" : `Show all ${testSet.size} tests`}
       </button>
@@ -757,7 +767,7 @@ function BodyWeightSection({
             <button
               key={m}
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
                 mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent/50",
               )}
               onClick={() => setMode(m)}
@@ -767,7 +777,7 @@ function BodyWeightSection({
           ))}
         </div>
         {subjects.length > 8 && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
             {groups.map((g) => (
               <span key={`${g.doseLevel}-${g.isRecovery}`} className="flex items-center gap-1">
                 <span
@@ -851,7 +861,7 @@ function ClinicalObsDiff({
         {matrix.length > 0 && (
           <button
             onClick={() => setShowAll(true)}
-            className="text-[10px] text-primary hover:underline"
+            className="text-[11px] text-primary hover:underline"
           >
             Show all {matrix.length} days
           </button>
@@ -863,13 +873,13 @@ function ClinicalObsDiff({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="text-[11px]" style={{ minWidth: orderedSubjects.length * 52 + 60 }}>
+        <table className="text-xs" style={{ minWidth: orderedSubjects.length * 52 + 60 }}>
           <thead>
             {/* Row 1: Group spanning headers */}
             <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 z-[1] min-w-[40px] bg-background pb-1 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                className="sticky left-0 z-[1] min-w-[40px] bg-background pb-1 text-left font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
               >
                 Day
               </th>
@@ -877,7 +887,7 @@ function ClinicalObsDiff({
                 <th
                   key={`${g.doseLevel}-${g.isRecovery}`}
                   colSpan={g.subjects.length}
-                  className="border-b border-l border-border/30 pb-0.5 text-center text-[9px] font-medium text-muted-foreground"
+                  className="border-b border-l border-border/30 pb-0.5 text-center text-[10px] font-medium text-muted-foreground"
                 >
                   {g.doseLabel} {g.isRecovery ? "rec" : "main"}
                 </th>
@@ -893,7 +903,7 @@ function ClinicalObsDiff({
                     groupStartSet.has(s.usubjid) && "border-l border-border/30",
                   )}
                 >
-                  <div className="text-[10px] font-medium leading-tight">{s.short_id}</div>
+                  <div className="text-[11px] font-medium leading-tight">{s.short_id}</div>
                   <div className="text-[8px] text-muted-foreground/60">{s.sex}</div>
                 </th>
               ))}
@@ -902,7 +912,7 @@ function ClinicalObsDiff({
           <tbody>
             {visibleRows.map((row) => (
               <tr key={row.day} className="border-t border-border/20">
-                <td className="sticky left-0 z-[1] bg-background py-0.5 font-mono text-[10px] text-muted-foreground">
+                <td className="sticky left-0 z-[1] bg-background py-0.5 font-mono text-[11px] text-muted-foreground">
                   {row.day}
                 </td>
                 {orderedIds.map((id) => {
@@ -912,7 +922,7 @@ function ClinicalObsDiff({
                       <td
                         key={id}
                         className={cn(
-                          "py-0.5 text-[10px] text-muted-foreground/30",
+                          "py-0.5 text-[11px] text-muted-foreground/30",
                           groupStartSet.has(id) && "border-l border-border/30",
                         )}
                       >
@@ -929,7 +939,7 @@ function ClinicalObsDiff({
                     <td
                       key={id}
                       className={cn(
-                        "py-0.5 text-[10px]",
+                        "py-0.5 text-[11px]",
                         isNormal
                           ? "text-muted-foreground/40"
                           : isFoundDead
@@ -953,7 +963,7 @@ function ClinicalObsDiff({
       {/* Show all toggle */}
       <button
         onClick={() => setShowAll(!showAll)}
-        className="mt-1 text-[10px] text-primary hover:underline"
+        className="mt-1 text-[11px] text-primary hover:underline"
       >
         {showAll ? "Show abnormal only" : `Show all ${matrix.length} days`}
       </button>

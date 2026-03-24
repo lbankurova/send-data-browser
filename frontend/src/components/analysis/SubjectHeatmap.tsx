@@ -269,7 +269,7 @@ export function SubjectHeatmap({
 
       {/* Severity legend */}
       {!isLoading && subjData && (
-        <div className="flex items-center gap-1 px-3 pb-2 pt-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1 px-3 pb-2 pt-1 text-[11px] text-muted-foreground">
           <span>Severity:</span>
           {[
             { label: "1 Minimal", color: getNeutralHeatColor(1).bg },
@@ -284,7 +284,7 @@ export function SubjectHeatmap({
             </span>
           ))}
           <span className="ml-2 flex items-center gap-1">
-            <span className="text-[10px] text-gray-400">●</span>
+            <span className="text-[11px] text-gray-400">●</span>
             = present (no grade)
           </span>
           <span className="ml-2">&mdash; = examined, no finding</span>
@@ -330,7 +330,7 @@ export function SubjectHeatmap({
               >
                 <div className="text-center" style={{ width: dg.subjects.length * 32 }}>
                   <div className="h-0.5 rounded-full" style={{ backgroundColor: getDoseGroupColor(dg.doseLevel) }} />
-                  <div className="flex items-center justify-center gap-1 px-1 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  <div className="flex items-center justify-center gap-1 px-1 py-0.5 text-[11px] font-semibold text-muted-foreground">
                     {comparisonSubjects && onComparisonChange && (
                       <input
                         type="checkbox"
@@ -360,7 +360,7 @@ export function SubjectHeatmap({
                   <button
                     key={subj.usubjid}
                     className={cn(
-                      "w-8 shrink-0 cursor-pointer py-0.5 text-center font-mono text-[9px] text-muted-foreground hover:bg-accent/30",
+                      "w-8 shrink-0 cursor-pointer py-0.5 text-center font-mono text-[10px] text-muted-foreground hover:bg-accent/30",
                       colTint(subj.usubjid),
                     )}
                     onClick={() => {
@@ -461,7 +461,7 @@ export function SubjectHeatmap({
 
           {/* Examined row */}
           <div className="flex border-b">
-            <div className="sticky left-0 z-10 shrink-0 bg-background py-0.5 text-right pr-2 text-[9px] text-muted-foreground" style={{ width: labelColW }}>
+            <div className="sticky left-0 z-10 shrink-0 bg-background py-0.5 text-right pr-2 text-[10px] text-muted-foreground" style={{ width: labelColW }}>
               Examined
             </div>
             {doseGroups.map((dg, gi) => (
@@ -472,7 +472,7 @@ export function SubjectHeatmap({
                     <div
                       key={subj.usubjid}
                       className={cn(
-                        "flex h-4 w-8 shrink-0 items-center justify-center text-[9px] text-muted-foreground",
+                        "flex h-4 w-8 shrink-0 items-center justify-center text-[10px] text-muted-foreground",
                         colTint(subj.usubjid),
                       )}
                       title={hasAny ? `${subj.usubjid}: examined, has findings` : `${subj.usubjid}: no findings recorded`}
@@ -497,7 +497,7 @@ export function SubjectHeatmap({
             >
               {/* Finding label — sticky */}
               <div
-                className="sticky left-0 z-10 shrink-0 truncate bg-background py-0.5 pr-2 text-[10px]"
+                className="sticky left-0 z-10 shrink-0 truncate bg-background py-0.5 pr-2 text-[11px]"
                 style={{ width: labelColW }}
                 title={finding}
               >
@@ -527,7 +527,7 @@ export function SubjectHeatmap({
                       >
                         {sevNum > 0 ? (
                           <div
-                            className="relative flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[9px]"
+                            className="relative flex h-5 w-6 items-center justify-center rounded-sm font-mono text-[10px]"
                             style={{ backgroundColor: colors!.bg, color: colors!.text }}
                           >
                             {sevNum}
@@ -544,9 +544,9 @@ export function SubjectHeatmap({
                             })()}
                           </div>
                         ) : hasEntry && findingGradeMap.get(finding) ? (
-                          <span className="text-[9px] text-muted-foreground">&mdash;</span>
+                          <span className="text-[10px] text-muted-foreground">&mdash;</span>
                         ) : hasEntry ? (
-                          <span className="relative text-[10px] text-gray-400">
+                          <span className="relative text-[11px] text-gray-400">
                             ●
                             {showLaterality && entry?.laterality && (() => {
                               const lat = entry.laterality!.toUpperCase();

@@ -183,12 +183,12 @@ export function SourceRecordsExpander({
         expandAll={expandAll}
         collapseAll={collapseAll}
       >
-        <div className="space-y-2 text-[11px]">
+        <div className="space-y-2 text-xs">
           <p className="text-muted-foreground">
             Source record drill-down for {domain} (qualitative domain) is available in the domain browser.
           </p>
           <button
-            className="text-[10px] text-primary hover:underline"
+            className="text-[11px] text-primary hover:underline"
             onClick={() =>
               navigate(
                 `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain.toLowerCase())}`,
@@ -216,13 +216,13 @@ export function SourceRecordsExpander({
           Loading {domain} records...
         </div>
       ) : records.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           No source records found for {testCode} in {domain}.
         </p>
       ) : (
         <div className="space-y-2">
           {/* Record count */}
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             {records.length} record{records.length !== 1 ? "s" : ""}
             {sex && <> &middot; {sex}</>}
             {doseLevel !== undefined && records[0] && (
@@ -232,7 +232,7 @@ export function SourceRecordsExpander({
 
           {/* Records table */}
           <div className="max-h-48 overflow-auto rounded border">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-[11px]">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
                   <th className="px-2 py-1 text-left font-semibold uppercase tracking-wider text-muted-foreground">
@@ -295,7 +295,7 @@ export function SourceRecordsExpander({
 
           {/* Summary stats */}
           {summary && (
-            <p className="text-[10px] font-mono text-muted-foreground">
+            <p className="text-[11px] font-mono text-muted-foreground">
               n={summary.n} &middot; mean={summary.mean.toFixed(3)}
               {summary.sd > 0 && <> &middot; SD={summary.sd.toFixed(3)}</>}
             </p>
@@ -303,7 +303,7 @@ export function SourceRecordsExpander({
 
           {/* Link to domain browser */}
           <button
-            className="text-[10px] text-primary hover:underline"
+            className="text-[11px] text-primary hover:underline"
             onClick={() =>
               navigate(
                 `/studies/${encodeURIComponent(studyId)}/domains/${encodeURIComponent(domain.toLowerCase())}`,

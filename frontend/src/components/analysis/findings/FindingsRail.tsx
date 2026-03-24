@@ -20,16 +20,13 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { usePrefetchFindingContext } from "@/hooks/usePrefetchFindingContext";
-import { getEffectSizeLabel } from "@/lib/stat-method-transforms";
 import {
   withSignalScores,
   computeSignalSummary,
   groupEndpoints,
   groupEndpointsBySyndrome,
-  buildMultiSyndromeIndex,
   filterEndpoints,
   sortEndpoints,
   buildEndpointToGroupIndex,
@@ -51,8 +48,7 @@ import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
-import { formatPValue, titleCase, getDirectionSymbol, formatDoseShortLabel } from "@/lib/severity-colors";
-import { PatternGlyph } from "@/components/ui/PatternGlyph";
+import { titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -79,10 +75,12 @@ interface FindingsRailProps {
   activeGroupScope?: { type: GroupingMode; value: string } | null;
   /** Active endpoint selection — set by rail click or center panel. */
   activeEndpoint?: string | null;
+  /** Domain of the active endpoint (for multi-domain endpoints like MI + MA). */
+  activeDomain?: string;
   /** Callback when a group card is clicked (for table filtering). */
   onGroupScopeChange?: (scope: { type: GroupingMode; value: string } | null) => void;
   /** Callback when an endpoint row is clicked (for table filtering + context panel). */
-  onEndpointSelect?: (endpointLabel: string | null) => void;
+  onEndpointSelect?: (endpointLabel: string | null, domain?: string) => void;
   /** Callback when the grouping mode changes (for context). */
   onGroupingChange?: (mode: GroupingMode) => void;
   /** Callback with the rail's fully-filtered visible endpoint set + display metadata. */
@@ -99,6 +97,7 @@ export function FindingsRail({
   studyId,
   activeGroupScope = null,
   activeEndpoint = null,
+  activeDomain,
   onGroupScopeChange,
   onEndpointSelect,
   onGroupingChange,
@@ -151,7 +150,7 @@ export function FindingsRail({
   // ── Local state ────────────────────────────────────────
   // Grouping & sort persist across view navigations (user preference)
   const [grouping, setGrouping] = useSessionState<GroupingMode>(
-    "pcc.findings.rail.grouping", "syndrome",
+    "pcc.findings.rail.grouping", "finding",
     isOneOf(["organ", "finding", "syndrome", "specimen"] as const),
   );
   const [sortMode, setSortMode] = useSessionState<SortMode>(
@@ -176,12 +175,6 @@ export function FindingsRail({
   const endpointsWithSignal = useMemo(
     () => withSignalScores(endpointSummaries),
     [endpointSummaries],
-  );
-
-  // Multi-syndrome index: endpoint_label → list of syndrome IDs
-  const multiSyndromeIndex = useMemo(
-    () => buildMultiSyndromeIndex(syndromes),
-    [syndromes],
   );
 
   // Clinical S2+ endpoints: endpoints with clinical severity >= S2
@@ -424,11 +417,13 @@ export function FindingsRail({
     });
 
     // Scroll endpoint into view (defer to next frame so expansion renders)
+    // Multi-domain endpoints use composite keys in endpointRefs
+    const refKey = activeDomain ? `${activeEndpoint}\0${activeDomain}` : activeEndpoint;
     requestAnimationFrame(() => {
-      const el = endpointRefs.current.get(activeEndpoint);
+      const el = endpointRefs.current.get(refKey);
       el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
-  }, [activeEndpoint, endpointToGroup]);
+  }, [activeEndpoint, activeDomain, endpointToGroup]);
 
   // ── Handlers ───────────────────────────────────────────
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
@@ -456,9 +451,9 @@ export function FindingsRail({
     });
   }, []);
 
-  const handleEndpointClick = useCallback((endpointLabel: string) => {
+  const handleEndpointClick = useCallback((endpointLabel: string, domain?: string) => {
     // Always select (no toggle-off)
-    onEndpointSelect?.(endpointLabel);
+    onEndpointSelect?.(endpointLabel, domain);
   }, [onEndpointSelect]);
 
   // ── Loading / Error / Empty states ─────────────────────
@@ -563,16 +558,15 @@ export function FindingsRail({
             {sortedCards.flatMap((card) =>
               card.endpoints.map((ep) => (
                 <EndpointRow
-                  key={ep.endpoint_label}
+                  key={ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label}
                   endpoint={ep}
-                  isSelected={activeEndpoint === ep.endpoint_label}
+                  isSelected={activeEndpoint === ep.endpoint_label && (!ep.domains || activeDomain === ep.domain)}
                   isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
-                  onClick={() => handleEndpointClick(ep.endpoint_label)}
+                  onClick={() => handleEndpointClick(ep.endpoint_label, ep.domains ? ep.domain : undefined)}
                   onHover={() => handleEndpointHover(ep.endpoint_label)}
                   onRestore={onRestoreEndpoint}
-                  ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+                  ref={(el) => registerEndpointRef(ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label, el)}
                   clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
-                  effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
                 />
               ))
             )}
@@ -586,6 +580,7 @@ export function FindingsRail({
               isExpanded={expanded.has(card.key)}
               isScoped={activeGroupScope?.value === card.key}
               activeEndpoint={activeEndpoint}
+              activeDomain={activeDomain}
               unfilteredTotal={unfilteredGroupTotals.get(card.key) ?? card.totalEndpoints}
               showFilteredCount={railIsFiltered}
               onHeaderSelect={() => handleCardSelect(card)}
@@ -593,12 +588,9 @@ export function FindingsRail({
               onEndpointClick={handleEndpointClick}
               onEndpointHover={handleEndpointHover}
               registerEndpointRef={registerEndpointRef}
-              multiSyndromeIndex={multiSyndromeIndex}
-              currentSyndromeId={grouping === "syndrome" ? card.key : undefined}
               excludedEndpoints={excludedEndpoints}
               onRestoreEndpoint={onRestoreEndpoint}
               clinicalTierMap={clinicalTierMap}
-              effectSizeLabel={getEffectSizeLabel(analytics.activeEffectSizeMethod ?? "hedges-g")}
               normalizationContexts={analytics.normalizationContexts}
               syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
@@ -671,7 +663,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
               key={t.value}
               type="button"
               className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
                 grouping === t.value
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -700,7 +692,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Left border</span> encodes signal
-                strength: thick = strong, thin = weak. Dark = adverse/warning, invisible = normal.
+                strength: thick = strong, thin = weak. Red = adverse, amber = warning, invisible = normal.
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Click</span> a row to select it in the
@@ -713,7 +705,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
       </div>
 
       {/* Counts + mortality — compact, color-coded */}
-      <div className="mt-1 flex items-center gap-2 text-[10px]">
+      <div className="mt-1 flex items-center gap-2 text-[11px]">
         {grouping === "finding" ? (
           <>
             <span title={`${stats.adverseCount} endpoints classified as adverse`}>
@@ -738,7 +730,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
           <div className="relative ml-auto" ref={deathDropdownRef}>
             <button
               type="button"
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setDeathDropdownOpen(!deathDropdownOpen)}
               title={`${mainDeaths.length} main arm, ${recovDeaths.length} recovery arm`}
             >
@@ -758,10 +750,10 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                     ref={(el) => { if (el) el.indeterminate = someSelected && !allSelected; }}
                     onChange={toggleAllDeaths}
                   />
-                  <span className="text-[10px] font-medium text-muted-foreground" title="Click a name to view in Context Panel. Check boxes to select for comparison.">Select all</span>
+                  <span className="text-[11px] font-medium text-muted-foreground" title="Click a name to view in Context Panel. Check boxes to select for comparison.">Select all</span>
                   <button
                     type="button"
-                    className="ml-auto cursor-not-allowed text-[10px] text-muted-foreground/40"
+                    className="ml-auto cursor-not-allowed text-[11px] text-muted-foreground/40"
                     title="Coming soon — open selected subjects in a comparison tab"
                     disabled
                   >
@@ -783,7 +775,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                     />
                     <button
                       type="button"
-                      className="text-left text-[11px] text-blue-600 hover:underline"
+                      className="text-left text-xs text-blue-600 hover:underline"
                       onClick={() => { setSelectedSubject(d.USUBJID); setDeathDropdownOpen(false); }}
                     >
                       {truncateId(d.USUBJID)} @ {formatDoseShortLabel(d.dose_label)} ({d.armLabel})
@@ -870,11 +862,11 @@ function AllEndpointsCard({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleExpand(); } }}
       >
         <span className="min-w-0 truncate font-semibold">All findings</span>
-        <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+        <span className="ml-auto font-mono text-[11px] text-muted-foreground">
           {showFilteredCount ? `${totalEndpoints}/${unfilteredTotal}` : adverseCount}
         </span>
         <span className="text-muted-foreground/40">&middot;</span>
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {trCount}
         </span>
         <button
@@ -943,27 +935,29 @@ function RailFiltersSection({
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search + sort */}
+      {/* Row 1: Search + sort (sort has fixed width to prevent jump when search expands) */}
       <div className="flex items-center gap-1.5">
         <FilterSearch
           value={filters.search}
           onChange={(v) => onFiltersChange({ ...filters, search: v })}
           placeholder="Search…"
         />
-        <FilterSelect
-          value={sortMode}
-          onChange={(e) => onSortChange(e.target.value as SortMode)}
-        >
-          <option value="signal">Sort: Signal</option>
-          <option value="pvalue">Sort: P-value</option>
-          <option value="effect">Sort: Effect</option>
-          <option value="az">Sort: A–Z</option>
-        </FilterSelect>
+        <div className="w-[110px] shrink-0">
+          <FilterSelect
+            value={sortMode}
+            onChange={(e) => onSortChange(e.target.value as SortMode)}
+          >
+            <option value="signal">Sort: Signal</option>
+            <option value="pvalue">Sort: P-value</option>
+            <option value="effect">Sort: Effect</option>
+            <option value="az">Sort: A{"\u2013"}Z</option>
+          </FilterSelect>
+        </div>
       </div>
 
       {/* Row 2: Quick toggles + NOAEL role */}
       <div className="flex items-center gap-1.5">
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Treatment-related endpoints only">
           <input
             type="checkbox"
             checked={filters.trOnly}
@@ -972,7 +966,7 @@ function RailFiltersSection({
           />
           TR
         </label>
-        <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+        <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Statistically significant (p < 0.05) endpoints only">
           <input
             type="checkbox"
             checked={filters.sigOnly}
@@ -982,7 +976,7 @@ function RailFiltersSection({
           Sig
         </label>
         {hasClinicalEndpoints && (
-          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Clinical severity grade 2 or higher">
             <input
               type="checkbox"
               checked={clinicalS2Plus}
@@ -995,6 +989,7 @@ function RailFiltersSection({
         <FilterSelect
           value={filters.noaelRole ?? ""}
           onChange={(e) => onFiltersChange({ ...filters, noaelRole: (e.target.value || null) as RailFilters["noaelRole"] })}
+          title="Filter by NOAEL contribution role"
         >
           <option value="">NOAEL: All</option>
           <option value="determining">Determining</option>
@@ -1092,6 +1087,7 @@ function CardSection({
   isExpanded,
   isScoped,
   activeEndpoint,
+  activeDomain,
   unfilteredTotal,
   showFilteredCount,
   onHeaderSelect,
@@ -1099,12 +1095,9 @@ function CardSection({
   onEndpointClick,
   onEndpointHover,
   registerEndpointRef,
-  multiSyndromeIndex,
-  currentSyndromeId,
   excludedEndpoints,
   onRestoreEndpoint,
   clinicalTierMap,
-  effectSizeLabel,
   normalizationContexts,
   syndromeCovariation,
   syndromeConfidence,
@@ -1114,19 +1107,17 @@ function CardSection({
   isExpanded: boolean;
   isScoped: boolean;
   activeEndpoint: string | null;
+  activeDomain?: string;
   unfilteredTotal: number;
   showFilteredCount: boolean;
   onHeaderSelect: () => void;
   onToggleExpand: () => void;
-  onEndpointClick: (label: string) => void;
+  onEndpointClick: (label: string, domain?: string) => void;
   onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
-  multiSyndromeIndex?: Map<string, string[]>;
-  currentSyndromeId?: string;
   excludedEndpoints?: ReadonlySet<string>;
   onRestoreEndpoint?: (label: string) => void;
   clinicalTierMap?: Map<string, string>;
-  effectSizeLabel?: string;
   normalizationContexts?: NormalizationContext[];
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
@@ -1160,25 +1151,17 @@ function CardSection({
       {isExpanded && (
         <div>
           {card.endpoints.map((ep) => {
-            // Show syndrome IDs this endpoint belongs to
-            // In syndrome mode: show other syndromes (exclude current group's syndrome)
-            // In other modes: show all syndromes
-            const otherSyndromes = multiSyndromeIndex
-              ? (multiSyndromeIndex.get(ep.endpoint_label) ?? []).filter((id) => id !== currentSyndromeId)
-              : undefined;
             return (
               <EndpointRow
-                key={ep.endpoint_label}
+                key={ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label}
                 endpoint={ep}
-                isSelected={activeEndpoint === ep.endpoint_label}
+                isSelected={activeEndpoint === ep.endpoint_label && (!ep.domains || activeDomain === ep.domain)}
                 isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
-                onClick={() => onEndpointClick(ep.endpoint_label)}
+                onClick={() => onEndpointClick(ep.endpoint_label, ep.domains ? ep.domain : undefined)}
                 onHover={onEndpointHover ? () => onEndpointHover(ep.endpoint_label) : undefined}
                 onRestore={onRestoreEndpoint}
-                ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
-                otherSyndromes={otherSyndromes}
+                ref={(el) => registerEndpointRef(ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label, el)}
                 clinicalTier={clinicalTierMap?.get(ep.endpoint_label)}
-                effectSizeLabel={effectSizeLabel}
               />
             );
           })}
@@ -1233,11 +1216,11 @@ function CardHeader({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
       <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} />
-      <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
         {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
       </span>
       <span className="text-muted-foreground/40">&middot;</span>
-      <span className="font-mono text-[10px] text-muted-foreground">
+      <span className="font-mono text-[11px] text-muted-foreground">
         {card.trCount}
       </span>
       <button
@@ -1300,7 +1283,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
     const domainCode = value.toUpperCase();
     return (
       <span className="flex min-w-0 items-center gap-1.5 truncate font-semibold">
-        <span className="text-[9px] font-semibold shrink-0 text-muted-foreground">
+        <span className="text-[10px] font-semibold shrink-0 text-muted-foreground">
           {domainCode}
         </span>
         <span className="truncate" title={getDomainFullLabel(domainCode)}>{getDomainFullLabel(domainCode)}</span>
@@ -1346,14 +1329,14 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
         <span className="truncate">{label}</span>
         {adjusted && (
           <span
-            className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+            className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
             style={{ borderBottom: `1.5px dashed ${RAG_COLOR[adjusted.level]}` }}
           >
             {CONF_SHORT[adjusted.level]}
           </span>
         )}
         {covLabel && covLabel !== "Insufficient data" && (
-          <span className="shrink-0 text-[9px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
+          <span className="shrink-0 text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
             {covLabel}
           </span>
         )}
@@ -1378,7 +1361,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
       <span className="truncate">{titleCase(value)}</span>
       {organConfidence && (
         <span
-          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
           style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
         >
           Conf: {CONF_SHORT[organConfidence.level]}
@@ -1386,7 +1369,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
       )}
       {organNorm && (
         <span
-          className="shrink-0 text-[9px] font-medium text-muted-foreground pb-px"
+          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
           style={{ borderBottom: `1.5px dashed ${NORM_TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
         >
           Norm: {organNorm.modeShort}
@@ -1404,23 +1387,6 @@ function sevLabel(s: string): string {
   return s === "adverse" ? "Adverse" : s === "warning" ? "Warning" : "Normal";
 }
 
-/** Compact effect size: drop leading zero (.62 instead of 0.62) */
-function formatEffectCompact(d: number): string {
-  const s = d.toFixed(2);
-  if (s.startsWith("0.")) return s.slice(1);     // "0.62" → ".62"
-  if (s.startsWith("-0.")) return "-" + s.slice(2); // "-0.62" → "-.62"
-  return s; // "1.24" stays as-is
-}
-
-/** Effect size → typographic weight (bigger effect = heavier type) */
-function effectTypography(d: number | null): string {
-  if (d === null) return "text-muted-foreground";
-  const abs = Math.abs(d);
-  if (abs >= 0.8) return "font-semibold text-foreground";
-  if (abs >= 0.5) return "font-medium text-foreground/80";
-  return "text-muted-foreground";
-}
-
 const EndpointRow = forwardRef<HTMLButtonElement, {
   endpoint: EndpointWithSignal;
   isSelected: boolean;
@@ -1428,40 +1394,41 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   onClick: () => void;
   onHover?: () => void;
   onRestore?: (label: string) => void;
-  otherSyndromes?: string[];
   clinicalTier?: string;
-  effectSizeLabel?: string;
-}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, otherSyndromes, clinicalTier, effectSizeLabel }, ref) {
-  // Pipe weight from signal tier (matches FindingsTable severity column)
+}>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, clinicalTier }, ref) {
   const tier = getSignalTier(endpoint.signal);
   const isNormal = endpoint.worstSeverity === "normal";
   const pipeWeight = isNormal ? "border-l" : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
-  // Greyscale pipe — color encodes severity class, width encodes signal strength
-  const pipeColor = endpoint.worstSeverity === "adverse" ? "#4B5563" : endpoint.worstSeverity === "warning" ? "#D1D5DB" : "transparent";
+  const pipeColor = endpoint.worstSeverity === "adverse" ? "#dc2626" : endpoint.worstSeverity === "warning" ? "#facc15" : "transparent";
   const tierLabel = tier === 3 ? "strong" : tier === 2 ? "moderate" : "weak";
   const pipeTooltip = isNormal ? "Normal" : `${sevLabel(endpoint.worstSeverity)} · ${tierLabel} signal`;
+
+  // Sex divergence: directions differ OR patterns differ
+  const bySex = endpoint.bySex;
+  const sexesDiffer = bySex && bySex.size >= 2 && (() => {
+    const vals = [...bySex.values()];
+    const dirs = vals.map(s => s.direction).filter(d => d === "up" || d === "down");
+    if (dirs.includes("up") && dirs.includes("down")) return true;
+    return new Set(vals.map(s => s.pattern)).size > 1;
+  })();
 
   return (
     <button
       ref={ref}
       className={cn(
-        "flex w-full flex-col cursor-pointer transition-colors",
+        "flex w-full items-center cursor-pointer transition-colors",
         isSelected ? "bg-accent" : "hover:bg-accent/30",
       )}
       onClick={onClick}
       onMouseEnter={onHover}
       aria-selected={isSelected}
     >
-      {/* Line 1: Name + right-aligned key signals (tier → TR → d → pattern) */}
-      <div className="flex w-full items-center gap-1 px-3 py-1 pl-6">
+      <div className="flex w-full items-center gap-1 px-3 py-1.5 pl-6">
         {isExcluded && (
-          <span
-            role="button"
-            tabIndex={0}
+          <span role="button" tabIndex={0}
             className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
             title="Restore to scatter plot"
-            onClick={(e) => { e.stopPropagation(); onRestore?.(endpoint.endpoint_label); }}
-          >
+            onClick={(e) => { e.stopPropagation(); onRestore?.(endpoint.endpoint_label); }}>
             <EyeOff className="h-3 w-3" />
           </span>
         )}
@@ -1472,103 +1439,23 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             isExcluded && "text-muted-foreground/50",
           )}
           style={{ borderLeftColor: pipeColor }}
-          title={`${endpoint.endpoint_label}\n${pipeTooltip}`}
+          title={`${endpoint.endpoint_label}${endpoint.domains ? ` (${endpoint.domains.join(" · ")})` : ""}\n${pipeTooltip}`}
         >
+          {endpoint.domains && (
+            <span className="text-[10px] font-semibold text-muted-foreground mr-1">{endpoint.domain}</span>
+          )}
           {endpoint.endpoint_label}
         </span>
-        {/* Clinical tier — sentinel safety marker */}
         {clinicalTier && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker (regulatory significance)`}>
+          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
             {clinicalTier}
           </span>
         )}
-        {/* TR — treatment-related assignment */}
-        {endpoint.treatmentRelated && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 border border-gray-200" title="Treatment-related — assigned by study pathologist">
-            TR
+        {sexesDiffer && (
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
+            F≠M
           </span>
         )}
-        {/* Effect size — per-sex when directions diverge, single worst otherwise */}
-        {(() => {
-          const bySex = endpoint.bySex;
-          const hasDirectionDivergence = bySex && bySex.size >= 2 && (() => {
-            const dirs = [...bySex.values()].map(s => s.direction).filter(d => d === "up" || d === "down");
-            return dirs.includes("up") && dirs.includes("down");
-          })();
-          const metricLabel = !CONTINUOUS_DOMAINS.has(endpoint.domain) ? "avg severity" : (effectSizeLabel ?? "Hedges\u2019 g");
-          if (hasDirectionDivergence) {
-            const sorted = [...bySex!.entries()].sort(([a], [b]) => a.localeCompare(b));
-            return (
-              <span className="shrink-0 text-right font-mono text-[10px] text-muted-foreground" title={sorted.map(([sex, s]) => `${sex}: ${metricLabel} = ${s.maxEffectSize?.toFixed(3) ?? "—"}`).join("\n") + "\nOpposite directions between sexes"}>
-                {sorted.map(([sex, s]) => (
-                  <span key={sex} className={cn("whitespace-nowrap", effectTypography(s.maxEffectSize))}>
-                    {sex}:{s.maxEffectSize !== null ? formatEffectCompact(s.maxEffectSize) : "—"}
-                  </span>
-                )).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep-${i}`} className="text-muted-foreground/30"> </span>, el], [])}
-              </span>
-            );
-          }
-          return (
-            <span
-              className={cn("w-6 shrink-0 text-right font-mono text-[10px]", effectTypography(endpoint.maxEffectSize))}
-              title={endpoint.maxEffectSize !== null ? `${metricLabel} = ${endpoint.maxEffectSize.toFixed(3)}\nLargest effect size across all dose groups and sexes` : undefined}
-            >
-              {endpoint.maxEffectSize !== null ? formatEffectCompact(endpoint.maxEffectSize) : ""}
-            </span>
-          );
-        })()}
-        {/* Dose-response pattern (overall — follows strongest signal row) */}
-        <span className="shrink-0" title={(() => {
-          const base = `Dose-response pattern: ${getPatternLabel(endpoint.pattern)}`;
-          const bySex = endpoint.bySex;
-          const hasDivergence = bySex && bySex.size >= 2 && new Set([...bySex.values()].map(s => s.pattern)).size > 1;
-          return hasDivergence
-            ? `${base}\nPer-sex breakdown shown below — trends differ between sexes`
-            : `${base}\nSame pattern for both sexes`;
-        })()}>
-          <PatternGlyph pattern={endpoint.pattern} className="text-muted-foreground" />
-        </span>
-      </div>
-
-      {/* Line 2: Supporting evidence (p-value, domain, syndromes left — per-sex trends right-aligned under line 1 glyph) */}
-      <div className="flex items-center gap-2 px-3 pb-1.5 pt-0.5 pl-8 text-[10px] text-muted-foreground">
-        {endpoint.minPValue !== null && (
-          <span className="font-mono" title={`p = ${endpoint.minPValue.toExponential(2)}\nMost significant p-value across all dose groups and sexes`}>
-            p{formatPValue(endpoint.minPValue)}
-          </span>
-        )}
-        <span className="font-mono" title={`SEND domain: ${getDomainFullLabel(endpoint.domain)}`}>{endpoint.domain.toUpperCase()}</span>
-        {otherSyndromes && otherSyndromes.length > 0 && (
-          <span className="text-[8px] text-muted-foreground/50" title={`Syndromes: ${otherSyndromes.join(", ")}`}>
-            {otherSyndromes.join(" ")}
-          </span>
-        )}
-        {/* Per-sex pattern divergence — right-aligned under line 1 pattern glyph */}
-        {(() => {
-          const bySex = endpoint.bySex;
-          if (bySex && bySex.size >= 2) {
-            const patterns = [...bySex.values()].map(s => s.pattern);
-            if (new Set(patterns).size > 1) {
-              // Sort so the sex matching the overall pattern is rightmost (under line 1 glyph)
-              const sorted = [...bySex.entries()].sort(([, a], [, b]) => {
-                const aMatch = a.pattern === endpoint.pattern ? 1 : 0;
-                const bMatch = b.pattern === endpoint.pattern ? 1 : 0;
-                return aMatch - bMatch;
-              });
-              return (
-                <span className="ml-auto inline-flex items-center gap-1.5">
-                  {sorted.map(([sex, s]) => (
-                    <span key={sex} className="inline-flex items-center gap-0.5" title={`${sex === "M" ? "Males" : sex === "F" ? "Females" : sex}: ${getPatternLabel(s.pattern)} ${getDirectionSymbol(s.direction)}`}>
-                      <span className="font-mono text-[9px]">{sex}</span>
-                      <PatternGlyph pattern={s.pattern} className="text-muted-foreground/70" />
-                    </span>
-                  ))}
-                </span>
-              );
-            }
-          }
-          return null;
-        })()}
       </div>
     </button>
   );

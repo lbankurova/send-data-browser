@@ -48,7 +48,7 @@ export function getSeverityDotColor(severity: string): string {
     case "adverse":
       return "#dc2626"; // red-600
     case "warning":
-      return "#d97706"; // amber-600
+      return "#facc15"; // yellow-400 — bright lemon-yellow, distinct from dose-group-2 amber #f59e0b
     case "normal":
     default:
       return "#16a34a"; // green-600
@@ -69,9 +69,18 @@ export function getPValueColor(p: number | null | undefined): string {
   if (p == null) return "text-muted-foreground";
   if (p < 0.001) return "text-red-600 font-semibold";
   if (p < 0.01) return "text-red-500 font-medium";
-  if (p < 0.05) return "text-amber-600 font-medium";
+  if (p < 0.05) return "text-red-500";
   if (p < 0.1) return "text-amber-500";
   return "text-muted-foreground";
+}
+
+/** Hex color for p-value, used as CSS --ev-color for interaction-driven grids.
+ *  Returns undefined for non-significant values (p ≥ 0.1) — caller should omit `ev` class. */
+export function getPValueHex(p: number | null | undefined): string | undefined {
+  if (p == null || p >= 0.1) return undefined;
+  if (p < 0.01) return "#dc2626";   // red-600
+  if (p < 0.05) return "#ef4444";   // red-500
+  return "#f59e0b";                  // amber-500
 }
 
 export function getEffectSizeColor(d: number | null | undefined): string {
@@ -160,7 +169,7 @@ export function getDoseGroupColor(level: number): string {
 
 /** Sex color. */
 export function getSexColor(sex: string): string {
-  if (sex === "M") return "#3b82f6"; // blue-500
+  if (sex === "M") return "#0891b2"; // cyan-600
   if (sex === "F") return "#ec4899"; // pink-500
   return "#6b7280"; // gray-500
 }
@@ -246,6 +255,18 @@ export function formatDoseShortLabel(rawLabel: string): string {
   // "200 mg/kg PCDRUG" → "200 mg/kg"
   const match = detail.match(/^([\d.]+\s*\S+\/\S+)/);
   return match ? match[1] : detail;
+}
+
+/** Parse raw dose labels into numeric-only display labels (no units).
+ *  "Group 2, 2 mg/kg PCDRUG" → "2"
+ *  "Group 1, Control"         → "Control"
+ *  Already-short "2 mg/kg"    → "2"
+ */
+export function formatDoseNumericLabel(rawLabel: string): string {
+  const short = formatDoseShortLabel(rawLabel);
+  if (/control/i.test(short)) return "Control";
+  const match = short.match(/^([\d.]+)/);
+  return match ? match[1] : short;
 }
 
 /** Convert endpoint labels to title case: "ALBUMIN" → "Albumin", "LIVER_VACUOLIZATION" → "Liver Vacuolization" */

@@ -27,7 +27,7 @@ export function ProgramNoaelsPane({ study, allStudies }: Props) {
     <CollapsiblePane title={`Program NOAELs (${study.test_article})`} defaultOpen>
       <div className="space-y-2">
         {studiesWithNoael.map(({ study: s, noael: n }) => (
-          <div key={s.id} className="text-[11px]">
+          <div key={s.id} className="text-xs">
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-medium text-foreground">{s.id}</span>
               <span
@@ -37,7 +37,7 @@ export function ProgramNoaelsPane({ study, allStudies }: Props) {
                 {n!.dose} {n!.unit}
               </span>
             </div>
-            <div className="mt-0.5 text-[10px] text-muted-foreground">
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
               {s.species} · {s.duration_weeks}w
             </div>
           </div>

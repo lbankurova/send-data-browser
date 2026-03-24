@@ -15,6 +15,7 @@ import { RailModeProvider } from "@/contexts/RailModeContext";
 import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
 import { StudySettingsProvider } from "@/contexts/StudySettingsContext";
 import { FindingsAnalyticsLayer } from "@/contexts/FindingsAnalyticsLayer";
+import { CohortProvider } from "@/contexts/CohortContext";
 import { ShellRailPanel } from "@/components/shell/ShellRailPanel";
 import { GlobalTooltip } from "@/components/ui/GlobalTooltip";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -50,6 +51,7 @@ export function Layout() {
         <ScheduledOnlyProvider>
         <StudySettingsProvider>
         <FindingsAnalyticsLayer studyId={studyId || undefined}>
+        <CohortProvider studyId={studyId || undefined}>
         <TreeControlProvider>
         <div className="flex h-screen flex-col">
           <Header />
@@ -126,12 +128,13 @@ export function Layout() {
               </div>
               {/* Status bar */}
               <div className="flex h-5 shrink-0 items-center border-t px-3" style={{ background: "#f5f4f2" }}>
-                <span className="text-[10px] text-muted-foreground">Ready</span>
+                <span className="text-[11px] text-muted-foreground">Ready</span>
               </div>
             </div>
           </div>
         </div>
         </TreeControlProvider>
+        </CohortProvider>
         </FindingsAnalyticsLayer>
         </StudySettingsProvider>
         </ScheduledOnlyProvider>

@@ -247,12 +247,12 @@ export function NoaelContextPanel({
         {/* NOAEL rationale narrative */}
         {narrative && (
           <CollapsiblePane title="NOAEL rationale" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <p className="text-[11px] leading-relaxed text-foreground/80">
+            <p className="text-xs leading-relaxed text-foreground/80">
               {narrative.summary}
             </p>
             {narrative.loael_details.length > 0 && (
               <div className="mt-2">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Dose-limiting findings at LOAEL
                 </div>
                 <div className="space-y-0.5">
@@ -260,7 +260,7 @@ export function NoaelContextPanel({
                     <button
                       key={f.finding}
                       type="button"
-                      className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] hover:bg-muted/40"
+                      className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] hover:bg-muted/40"
                       onClick={() => {
                         if (studyId) {
                           navigateTo({ endpoint: f.finding });
@@ -343,9 +343,9 @@ export function NoaelContextPanel({
         {/* 2. Contributing endpoints */}
         {organSignalSummary && organSignalSummary.endpoints.length > 0 && (
           <CollapsiblePane title="Contributing endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <table className="w-full text-[10px]">
+            <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="py-0.5 pr-2">Endpoint</th>
                   <th className="py-0.5 pr-2">Dom</th>
                   <th className="py-0.5 pr-2 text-right">Signal</th>
@@ -379,7 +379,7 @@ export function NoaelContextPanel({
         {/* 3. Evidence breakdown */}
         {organSignalSummary && (
           <CollapsiblePane title="Evidence breakdown" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <div className="space-y-1.5 text-[11px]">
+            <div className="space-y-1.5 text-xs">
               {/* Domains */}
               <div className="flex items-center gap-1">
                 <span className="text-muted-foreground">Domains:</span>
@@ -405,7 +405,7 @@ export function NoaelContextPanel({
 
         {/* 4. Related views */}
         <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1 text-[11px]">
+          <div className="space-y-1 text-xs">
             {navLink(`View histopathology: ${titleCase(organSelection)}`, "/histopathology", { organ_system: organSelection })}
             {navLink("View findings", "/findings", { organ_system: organSelection })}
             {navLink("View study summary", "", organSelection ? { organ_system: organSelection } : undefined)}
@@ -453,7 +453,7 @@ export function NoaelContextPanel({
       {/* 2. Statistics */}
       {selectedSignalRow && (
         <CollapsiblePane title="Statistics" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1 text-[11px]">
+          <div className="space-y-1 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Signal score</span>
               <SignalScorePopover row={selectedSignalRow}>
@@ -495,9 +495,9 @@ export function NoaelContextPanel({
       {/* 3. Adversity rationale */}
       <CollapsiblePane title="Adversity rationale" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {selectedRows.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No data for selected endpoint.</p>
+          <p className="text-xs text-muted-foreground">No data for selected endpoint.</p>
         ) : (
-          <div className="space-y-1.5 text-[11px]">
+          <div className="space-y-1.5 text-xs">
             {selectedRows.map((row, i) => (
               <div key={i} className="flex items-center justify-between">
                 <span className="text-muted-foreground">
@@ -507,7 +507,7 @@ export function NoaelContextPanel({
                   <span className="font-mono">{formatPValue(row.p_value)}</span>
                   <span className="font-mono">{formatEffectSize(row.effect_size)}</span>
                   <span
-                    className="text-[10px] font-medium"
+                    className="text-[11px] font-medium"
                     style={{ color: getSeverityDotColor(row.severity) }}
                   >
                     {row.severity}
@@ -535,11 +535,11 @@ export function NoaelContextPanel({
       {/* 5. Correlations */}
       <CollapsiblePane title={`Other findings in ${selectedOrganSystem ? titleCase(selectedOrganSystem) : "this organ"}`} defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {correlations.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No correlations in this organ system.</p>
+          <p className="text-xs text-muted-foreground">No correlations in this organ system.</p>
         ) : (
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[11px]">
             <thead>
-              <tr className="border-b text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="py-0.5 pr-2">Endpoint</th>
                 <th className="py-0.5 pr-2">Dom</th>
                 <th className="py-0.5 pr-2 text-right">Signal</th>
@@ -584,7 +584,7 @@ export function NoaelContextPanel({
 
       {/* 7. Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           {navLink("View findings", "/findings", {
             endpoint_label: selection!.endpoint_label,
             ...(selectedOrganSystem && { organ_system: selectedOrganSystem }),

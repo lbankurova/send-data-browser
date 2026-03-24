@@ -1079,6 +1079,8 @@ async def get_recovery_comparison(study_id: str):
         last_dosing_day = None
 
     rows: list[dict] = []
+    # { endpoint_label: { sex: [day1, day2, ...] } }
+    recovery_days_available: dict[str, dict[str, list[int]]] = {}
 
     def _safe_round(v: float | None, ndigits: int) -> float | None:
         """Round a value, converting NaN/Inf to None for JSON safety."""
@@ -1148,20 +1150,20 @@ async def get_recovery_comparison(study_id: str):
             test_name = str(test_group[name_col].iloc[0]) if name_col in test_group.columns else str(test_code)
 
             for sex_val, sex_group in test_group.groupby("SEX"):
-                # Recovery control: dose_level=0, same sex, terminal timepoint
+                # Recovery control: dose_level=0, same sex
                 rec_control = sex_group[sex_group["dose_level"] == 0]
-                # Use max day as terminal timepoint for recovery arm
-                has_concurrent_control = not rec_control.empty
-                ctrl_vals = np.array([])
-                if has_concurrent_control:
-                    rec_ctrl_day = rec_control[day_col].max()
-                    rec_ctrl_terminal = rec_control[rec_control[day_col] == rec_ctrl_day]
-                    ctrl_vals = rec_ctrl_terminal[value_col].dropna().values
 
-                    if len(ctrl_vals) < 2:
-                        has_concurrent_control = False
+                # Collect all unique days across ALL dose groups (treated + control)
+                # for this endpoint/sex to populate recovery_days_available.
+                all_days_in_sex = sorted(sex_group[day_col].dropna().unique())
+                if test_name not in recovery_days_available:
+                    recovery_days_available[test_name] = {}
+                recovery_days_available[test_name][str(sex_val)] = [
+                    int(d) for d in all_days_in_sex
+                ]
 
-                # Main-arm terminal effect (for comparison)
+                # Main-arm terminal effect (for comparison) — computed once per
+                # test_code/sex, reused across all days and dose groups.
                 main_test = main_df[
                     (main_df[testcd_col].str.upper() == str(test_code).upper()) &
                     (main_df["SEX"] == sex_val)
@@ -1177,79 +1179,27 @@ async def get_recovery_comparison(study_id: str):
                     if len(mc_vals_all) >= 2:
                         main_ctrl_mean = _safe_round(float(np.mean(mc_vals_all)), 4)
 
+                # Pre-compute terminal effect and peak effect per dose_level
+                # (these depend only on main arm, independent of recovery day).
+                _terminal_cache: dict[int, tuple] = {}  # dose_level -> (terminal_d, terminal_day_val, main_treated_mean, ci_lower_term, ci_upper_term, pct_diff_term)
+                _peak_cache: dict[int, tuple] = {}  # dose_level -> (peak_d, peak_day_val)
+
                 for dose_level, dose_group in sex_group.groupby("dose_level"):
                     if dose_level == 0:
                         continue
 
-                    # Recovery arm: treated group at terminal timepoint
-                    dose_day = dose_group[day_col].max()
-                    dose_terminal = dose_group[dose_group[day_col] == dose_day]
-                    treat_vals = dose_terminal[value_col].dropna().values
-
-                    base_fields = {
-                        "endpoint_label": test_name,
-                        "test_code": str(test_code),
-                        "sex": str(sex_val),
-                        "recovery_day": recovery_day or int(dose_day),
-                        "dose_level": int(dose_level),
-                    }
-
-                    # §10.5: n<2 — emit flagged row instead of skipping
-                    if len(treat_vals) < 2:
-                        rows.append({
-                            **base_fields,
-                            "mean": _safe_round(float(np.mean(treat_vals)), 4) if len(treat_vals) else None,
-                            "sd": None,
-                            "p_value": None,
-                            "effect_size": None,
-                            "terminal_effect": None,
-                            "terminal_day": None,
-                            "peak_effect": None,
-                            "peak_day": None,
-                            "insufficient_n": True,
-                            "treated_n": len(treat_vals),
-                            "control_mean": None,
-                            "control_n": None,
-                            "treated_mean_terminal": None,
-                            "control_mean_terminal": None,
-                        })
-                        continue
-
-                    # §10.4: No concurrent control — emit row with flag, raw values only
-                    if not has_concurrent_control:
-                        rows.append({
-                            **base_fields,
-                            "mean": _safe_round(float(np.mean(treat_vals)), 4),
-                            "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
-                            "p_value": None,
-                            "effect_size": None,
-                            "terminal_effect": None,
-                            "terminal_day": None,
-                            "peak_effect": None,
-                            "peak_day": None,
-                            "no_concurrent_control": True,
-                            "treated_n": len(treat_vals),
-                            "control_mean": None,
-                            "control_n": None,
-                            "treated_mean_terminal": None,
-                            "control_mean_terminal": None,
-                        })
-                        continue
-
-                    # Stats: recovery arm treated vs recovery arm control
-                    t_result = welch_t_test(treat_vals, ctrl_vals)
-                    d = compute_effect_size(treat_vals, ctrl_vals)
-
-                    # Terminal effect: main arm treated vs main arm control
+                    # --- Terminal effect (main arm) ---
                     terminal_d = None
                     terminal_day_val = None
                     main_treated_mean = None
+                    ci_lower_term = None
+                    ci_upper_term = None
+                    pct_diff_term = None
                     if main_ctrl_day is not None:
                         main_treated = main_test[
                             (main_test["dose_level"] == dose_level) &
                             (main_test[day_col] == main_ctrl_day if main_ctrl_day == main_test[day_col].max() else True)
                         ]
-                        # Use max day for main arm treated
                         if not main_treated.empty:
                             mt_day = main_treated[day_col].max()
                             mt_terminal = main_treated[main_treated[day_col] == mt_day]
@@ -1261,9 +1211,28 @@ async def get_recovery_comparison(study_id: str):
                             if len(mt_vals) >= 2 and len(mc_vals) >= 2:
                                 terminal_d = compute_effect_size(mt_vals, mc_vals)
                                 terminal_day_val = mt_day
+                                # CI + % diff for terminal
+                                from scipy import stats as sp_stats
+                                mt_mean = float(np.mean(mt_vals))
+                                mc_mean = float(np.mean(mc_vals))
+                                mt_sd = float(np.std(mt_vals, ddof=1))
+                                mc_sd = float(np.std(mc_vals, ddof=1))
+                                se_t = np.sqrt(mt_sd**2 / len(mt_vals) + mc_sd**2 / len(mc_vals))
+                                num_t = (mt_sd**2 / len(mt_vals) + mc_sd**2 / len(mc_vals)) ** 2
+                                den_t = (mt_sd**2 / len(mt_vals)) ** 2 / (len(mt_vals) - 1) + (mc_sd**2 / len(mc_vals)) ** 2 / (len(mc_vals) - 1)
+                                df_t = num_t / den_t if den_t > 0 else len(mt_vals) + len(mc_vals) - 2
+                                t_crit_t = sp_stats.t.ppf(0.975, df_t) if df_t > 0 else 1.96
+                                md_t = mt_mean - mc_mean
+                                ci_lower_term = _safe_round(md_t - t_crit_t * se_t, 4)
+                                ci_upper_term = _safe_round(md_t + t_crit_t * se_t, 4)
+                                if abs(mc_mean) > 1e-10:
+                                    pct_diff_term = _safe_round((mt_mean - mc_mean) / mc_mean * 100, 2)
+                    _terminal_cache[int(dose_level)] = (
+                        terminal_d, terminal_day_val, main_treated_mean,
+                        ci_lower_term, ci_upper_term, pct_diff_term,
+                    )
 
-                    # Peak effect: scan all main-arm timepoints for this dose
-                    # to find the largest |g| vs control (annotation context).
+                    # --- Peak effect (main arm) ---
                     peak_d = None
                     peak_day_val = None
                     main_dose = main_test[main_test["dose_level"] == dose_level]
@@ -1277,81 +1246,135 @@ async def get_recovery_comparison(study_id: str):
                                 if tp_d is not None and (peak_d is None or abs(tp_d) > abs(peak_d)):
                                     peak_d = tp_d
                                     peak_day_val = tp_day
+                    _peak_cache[int(dose_level)] = (peak_d, peak_day_val)
 
-                    # CI for recovery: mean_diff ± t_crit * SE_diff
-                    from scipy import stats as sp_stats
-                    treat_mean_rec = float(np.mean(treat_vals))
-                    ctrl_mean_rec = float(np.mean(ctrl_vals))
-                    treat_sd_rec = float(np.std(treat_vals, ddof=1))
-                    ctrl_sd_rec = float(np.std(ctrl_vals, ddof=1))
-                    n1, n2 = len(treat_vals), len(ctrl_vals)
-                    se_diff_rec = np.sqrt(treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2)
-                    # Welch-Satterthwaite df
-                    num = (treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2) ** 2
-                    denom = (treat_sd_rec**2 / n1) ** 2 / (n1 - 1) + (ctrl_sd_rec**2 / n2) ** 2 / (n2 - 1)
-                    df_rec = num / denom if denom > 0 else n1 + n2 - 2
-                    t_crit_rec = sp_stats.t.ppf(0.975, df_rec) if df_rec > 0 else 1.96
-                    mean_diff_rec = treat_mean_rec - ctrl_mean_rec
-                    ci_lower_rec = _safe_round(mean_diff_rec - t_crit_rec * se_diff_rec, 4)
-                    ci_upper_rec = _safe_round(mean_diff_rec + t_crit_rec * se_diff_rec, 4)
+                    # --- Iterate over ALL unique days for this dose group ---
+                    unique_days = sorted(dose_group[day_col].dropna().unique())
 
-                    # % diff: (treated - control) / control * 100
-                    pct_diff_rec = _safe_round(
-                        (treat_mean_rec - ctrl_mean_rec) / ctrl_mean_rec * 100, 2
-                    ) if abs(ctrl_mean_rec) > 1e-10 else None
+                    for current_day in unique_days:
+                        dose_at_day = dose_group[dose_group[day_col] == current_day]
+                        treat_vals = dose_at_day[value_col].dropna().values
 
-                    # CI + % diff for terminal (main arm)
-                    ci_lower_term = None
-                    ci_upper_term = None
-                    pct_diff_term = None
-                    if main_ctrl_day is not None and main_treated_mean is not None:
-                        main_treated_term = main_test[
-                            (main_test["dose_level"] == dose_level)
-                        ]
-                        if not main_treated_term.empty:
-                            mt_d = main_treated_term[day_col].max()
-                            mt_t = main_treated_term[main_treated_term[day_col] == mt_d]
-                            mc_t = main_ctrl[main_ctrl[day_col] == main_ctrl_day]
-                            mt_v = mt_t[value_col].dropna().values
-                            mc_v = mc_t[value_col].dropna().values
-                            if len(mt_v) >= 2 and len(mc_v) >= 2:
-                                mt_mean = float(np.mean(mt_v))
-                                mc_mean = float(np.mean(mc_v))
-                                mt_sd = float(np.std(mt_v, ddof=1))
-                                mc_sd = float(np.std(mc_v, ddof=1))
-                                se_t = np.sqrt(mt_sd**2 / len(mt_v) + mc_sd**2 / len(mc_v))
-                                num_t = (mt_sd**2 / len(mt_v) + mc_sd**2 / len(mc_v)) ** 2
-                                den_t = (mt_sd**2 / len(mt_v)) ** 2 / (len(mt_v) - 1) + (mc_sd**2 / len(mc_v)) ** 2 / (len(mc_v) - 1)
-                                df_t = num_t / den_t if den_t > 0 else len(mt_v) + len(mc_v) - 2
-                                t_crit_t = sp_stats.t.ppf(0.975, df_t) if df_t > 0 else 1.96
-                                md_t = mt_mean - mc_mean
-                                ci_lower_term = _safe_round(md_t - t_crit_t * se_t, 4)
-                                ci_upper_term = _safe_round(md_t + t_crit_t * se_t, 4)
-                                if abs(mc_mean) > 1e-10:
-                                    pct_diff_term = _safe_round((mt_mean - mc_mean) / mc_mean * 100, 2)
+                        # Recovery control at this specific day
+                        has_concurrent_control_day = False
+                        ctrl_vals_day = np.array([])
+                        if not rec_control.empty:
+                            ctrl_at_day = rec_control[rec_control[day_col] == current_day]
+                            ctrl_vals_day = ctrl_at_day[value_col].dropna().values
+                            if len(ctrl_vals_day) >= 2:
+                                has_concurrent_control_day = True
 
-                    rows.append({
-                        **base_fields,
-                        "mean": _safe_round(float(np.mean(treat_vals)), 4),
-                        "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
-                        "p_value": _safe_round(t_result["p_value"], 6),
-                        "effect_size": _safe_round(d, 4),
-                        "terminal_effect": _safe_round(terminal_d, 4),
-                        "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
-                        "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
-                        "peak_day": int(peak_day_val) if peak_day_val is not None else None,
-                        "control_mean": _safe_round(float(np.mean(ctrl_vals)), 4),
-                        "control_n": len(ctrl_vals),
-                        "treated_n": len(treat_vals),
-                        "treated_mean_terminal": main_treated_mean,
-                        "control_mean_terminal": main_ctrl_mean,
-                        "pct_diff_terminal": pct_diff_term,
-                        "pct_diff_recovery": pct_diff_rec,
-                        "ci_lower": ci_lower_rec,
-                        "ci_upper": ci_upper_rec,
-                        "ci_lower_terminal": ci_lower_term,
-                        "ci_upper_terminal": ci_upper_term,
-                    })
+                        # Retrieve cached terminal/peak (independent of recovery day)
+                        t_cache = _terminal_cache[int(dose_level)]
+                        p_cache = _peak_cache[int(dose_level)]
+                        terminal_d = t_cache[0]
+                        terminal_day_val = t_cache[1]
+                        main_treated_mean = t_cache[2]
+                        ci_lower_term = t_cache[3]
+                        ci_upper_term = t_cache[4]
+                        pct_diff_term = t_cache[5]
+                        peak_d = p_cache[0]
+                        peak_day_val = p_cache[1]
+
+                        base_fields = {
+                            "endpoint_label": test_name,
+                            "test_code": str(test_code),
+                            "sex": str(sex_val),
+                            "day": int(current_day),
+                            "recovery_day": recovery_day or int(dose_group[day_col].max()),
+                            "dose_level": int(dose_level),
+                        }
+
+                        # §10.5: n<2 — emit flagged row instead of skipping
+                        if len(treat_vals) < 2:
+                            rows.append({
+                                **base_fields,
+                                "mean": _safe_round(float(np.mean(treat_vals)), 4) if len(treat_vals) else None,
+                                "sd": None,
+                                "p_value": None,
+                                "effect_size": None,
+                                "terminal_effect": _safe_round(terminal_d, 4),
+                                "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
+                                "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
+                                "peak_day": int(peak_day_val) if peak_day_val is not None else None,
+                                "insufficient_n": True,
+                                "treated_n": len(treat_vals),
+                                "control_mean": None,
+                                "control_n": None,
+                                "treated_mean_terminal": main_treated_mean,
+                                "control_mean_terminal": main_ctrl_mean,
+                            })
+                            continue
+
+                        # §10.4: No concurrent control at this day — emit row with flag
+                        if not has_concurrent_control_day:
+                            rows.append({
+                                **base_fields,
+                                "mean": _safe_round(float(np.mean(treat_vals)), 4),
+                                "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
+                                "p_value": None,
+                                "effect_size": None,
+                                "terminal_effect": _safe_round(terminal_d, 4),
+                                "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
+                                "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
+                                "peak_day": int(peak_day_val) if peak_day_val is not None else None,
+                                "no_concurrent_control": True,
+                                "treated_n": len(treat_vals),
+                                "control_mean": None,
+                                "control_n": None,
+                                "treated_mean_terminal": main_treated_mean,
+                                "control_mean_terminal": main_ctrl_mean,
+                            })
+                            continue
+
+                        # Stats: recovery arm treated vs recovery arm control at this day
+                        t_result = welch_t_test(treat_vals, ctrl_vals_day)
+                        d = compute_effect_size(treat_vals, ctrl_vals_day)
+
+                        # CI for recovery: mean_diff ± t_crit * SE_diff
+                        from scipy import stats as sp_stats
+                        treat_mean_rec = float(np.mean(treat_vals))
+                        ctrl_mean_rec = float(np.mean(ctrl_vals_day))
+                        treat_sd_rec = float(np.std(treat_vals, ddof=1))
+                        ctrl_sd_rec = float(np.std(ctrl_vals_day, ddof=1))
+                        n1, n2 = len(treat_vals), len(ctrl_vals_day)
+                        se_diff_rec = np.sqrt(treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2)
+                        # Welch-Satterthwaite df
+                        num = (treat_sd_rec**2 / n1 + ctrl_sd_rec**2 / n2) ** 2
+                        denom = (treat_sd_rec**2 / n1) ** 2 / (n1 - 1) + (ctrl_sd_rec**2 / n2) ** 2 / (n2 - 1)
+                        df_rec = num / denom if denom > 0 else n1 + n2 - 2
+                        t_crit_rec = sp_stats.t.ppf(0.975, df_rec) if df_rec > 0 else 1.96
+                        mean_diff_rec = treat_mean_rec - ctrl_mean_rec
+                        ci_lower_rec = _safe_round(mean_diff_rec - t_crit_rec * se_diff_rec, 4)
+                        ci_upper_rec = _safe_round(mean_diff_rec + t_crit_rec * se_diff_rec, 4)
+
+                        # % diff: (treated - control) / control * 100
+                        pct_diff_rec = _safe_round(
+                            (treat_mean_rec - ctrl_mean_rec) / ctrl_mean_rec * 100, 2
+                        ) if abs(ctrl_mean_rec) > 1e-10 else None
+
+                        rows.append({
+                            **base_fields,
+                            "mean": _safe_round(float(np.mean(treat_vals)), 4),
+                            "sd": _safe_round(float(np.std(treat_vals, ddof=1)), 4),
+                            "p_value": _safe_round(t_result["p_value"], 6),
+                            "effect_size": _safe_round(d, 4),
+                            "terminal_effect": _safe_round(terminal_d, 4),
+                            "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
+                            "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
+                            "peak_day": int(peak_day_val) if peak_day_val is not None else None,
+                            "control_mean": _safe_round(float(np.mean(ctrl_vals_day)), 4),
+                            "control_n": len(ctrl_vals_day),
+                            "treated_n": len(treat_vals),
+                            "treated_mean_terminal": main_treated_mean,
+                            "control_mean_terminal": main_ctrl_mean,
+                            "pct_diff_terminal": pct_diff_term,
+                            "pct_diff_recovery": pct_diff_rec,
+                            "ci_lower": ci_lower_rec,
+                            "ci_upper": ci_upper_rec,
+                            "ci_lower_terminal": ci_lower_term,
+                            "ci_upper_terminal": ci_upper_term,
+                        })
 
     # Process all continuous domains that have recovery data
     for dk, (testcd_col, val_col, _unit_col, day_col, name_col) in _DOMAIN_COLS.items():
@@ -1380,6 +1403,8 @@ async def get_recovery_comparison(study_id: str):
     return {
         "available": len(rows) > 0 or len(incidence_rows) > 0,
         "recovery_day": recovery_day,
+        "last_dosing_day": last_dosing_day,
+        "recovery_days_available": recovery_days_available,
         "rows": rows,
         "incidence_rows": incidence_rows,
     }

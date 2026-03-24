@@ -18,7 +18,7 @@ export function DoseLabel({ level, label, tooltip, align = "left", className }: 
   return (
     <span
       className={cn(
-        "font-mono text-[11px]",
+        "font-mono text-xs",
         align === "right" ? "border-r-2 pr-1.5 text-right" : "border-l-2 pl-1.5",
         className,
       )}
@@ -50,7 +50,7 @@ export function DoseHeader({ level, label, tooltip, unitLabel, className }: Dose
         style={{ backgroundColor: getDoseGroupColor(level) }}
       />
       {unitLabel && (
-        <span className="text-[9px] leading-none text-muted-foreground/50">{unitLabel}</span>
+        <span className="text-[10px] leading-none text-muted-foreground/50">{unitLabel}</span>
       )}
     </div>
   );

@@ -42,7 +42,7 @@ export function ViewTabBar({
           >
             {label}
             {count != null && count > 0 && (
-              <span className="ml-1.5 text-[10px] text-muted-foreground">
+              <span className="ml-1.5 text-[11px] text-muted-foreground">
                 ({count})
               </span>
             )}

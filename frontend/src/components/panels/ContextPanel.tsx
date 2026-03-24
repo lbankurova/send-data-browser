@@ -27,6 +27,7 @@ const HistopathologyContextPanel = lazy(() => import("@/components/analysis/pane
 const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
 const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
 const StudyPortfolioContextPanel = lazy(() => import("@/components/portfolio/StudyPortfolioContextPanel").then(m => ({ default: m.StudyPortfolioContextPanel })));
+const CohortContextPanel = lazy(() => import("@/components/analysis/panes/CohortContextPanel").then(m => ({ default: m.CohortContextPanel })));
 
 function PanelFallback() {
   return (
@@ -211,7 +212,7 @@ function StudyInspector({ studyId }: { studyId: string }) {
           value={`${valRecordReviewed} / ${valTotal} reviewed`}
         />
         {validatedAt && (
-          <div className="mt-1 text-[10px] text-muted-foreground/60">
+          <div className="mt-1 text-[11px] text-muted-foreground/60">
             Last validated: {new Date(validatedAt).toLocaleDateString()}
           </div>
         )}
@@ -356,8 +357,8 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
               <div className="space-y-1">
                 {Object.entries(expected.expected_issues).map(([ruleId, info]) => (
                   <div key={ruleId} className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-[10px]">{ruleId}</span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                    <span className="font-mono text-[11px]">{ruleId}</span>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">
                       {info.severity} ({info.count})
                     </span>
                   </div>
@@ -411,7 +412,7 @@ export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
-  const { selectedSubject, setSelectedSubject } = useViewSelection();
+  const { selectedSubject, setSelectedSubject, selection } = useViewSelection();
   const { data: allStudies } = useStudyPortfolio();
 
   const activeStudyId = studyId ?? selectedStudyId;
@@ -440,6 +441,7 @@ export function ContextPanel() {
   const isNoaelRoute = /\/studies\/[^/]+\/noael-determination/.test(location.pathname);
   const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
+  const isCohortRoute = /\/studies\/[^/]+\/cohort/.test(location.pathname);
 
   // Landing page with study selected - show portfolio context panel
   if (isLandingPageRoute && selectedStudyId && allStudies) {
@@ -470,6 +472,15 @@ export function ContextPanel() {
 
   if (isValidationRoute && activeStudyId) {
     return <LazyPane><ValidationContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
+  }
+
+  if (isCohortRoute) {
+    // Cohort: subject click → SubjectProfilePanel (handled above via selectedSubject),
+    // finding click → FindingsContextPanel, otherwise → cohort summary
+    if (selection?._view === "cohort" && selection.mode === "finding") {
+      return <LazyPane><FindingsContextPanel /></LazyPane>;
+    }
+    return <LazyPane><CohortContextPanel /></LazyPane>;
   }
 
   if (isStudySummaryRoute && activeStudyId) {

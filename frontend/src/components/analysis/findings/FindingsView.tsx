@@ -65,15 +65,6 @@ export function FindingsView() {
   // Track whether the "Findings table" tab is open (separate from which is active,
   // so user can switch between tabs without closing the table tab).
   const [tableTabOpen, setTableTabOpen] = useState(activeViewTab === "findings-table");
-  const findingsViewTabs = useMemo(() => {
-    const tabs: { key: string; label: string; closable?: boolean }[] = [
-      { key: "findings", label: "Findings" },
-    ];
-    if (tableTabOpen) {
-      tabs.push({ key: "findings-table", label: "Findings table", closable: true });
-    }
-    return tabs;
-  }, [tableTabOpen]);
 
   // Mortality data
   const { data: mortalityData } = useStudyMortality(studyId);
@@ -87,8 +78,22 @@ export function FindingsView() {
   const [scopeType, setScopeType] = useState<string | null>(null);
   const [filterLabels, setFilterLabels] = useState<string[]>([]);
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(null);
+  const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
+
+  // Tab labels — reflects current rail selection (endpoint, syndrome, organ, etc.)
+  const mainTabLabel = activeEndpoint ?? scopeLabel ?? "Findings";
+  const findingsViewTabs = useMemo(() => {
+    const tabs: { key: string; label: string; closable?: boolean }[] = [
+      { key: "findings", label: mainTabLabel },
+    ];
+    if (tableTabOpen) {
+      const tableLabel = scopeLabel ?? "Findings table";
+      tabs.push({ key: "findings-table", label: tableLabel, closable: true });
+    }
+    return tabs;
+  }, [tableTabOpen, scopeLabel, mainTabLabel]);
 
   // Local UI state
   const [selectedPointData, setSelectedPointData] = useState<ScatterSelectedPoint | null>(null);
@@ -146,13 +151,22 @@ export function FindingsView() {
   // Rail endpoint click → select finding in table
   // Synchronous: set activeEndpoint AND select the best finding in the same
   // render batch so the table never shows a stale selection from a different endpoint.
-  const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
+  const handleEndpointSelect = useCallback((endpointLabel: string | null, domain?: string) => {
     setActiveEndpoint(endpointLabel);
+    setActiveDomain(domain);
+    // Reset selectedDay so chartDay falls through to the computed fallback
+    // (activeDay ?? peakDay ?? terminal) on the first render — prevents a
+    // transient frame where the stale selectedDay from the previous endpoint
+    // drives the day filter and drops findings for the new endpoint.
+    setSelectedDay(null);
+    setDayCleared(false);
     const currentData = dataRef.current;
     if (endpointLabel && currentData?.findings?.length) {
-      const epFindings = currentData.findings.filter(
+      let epFindings = currentData.findings.filter(
         (f) => (f.endpoint_label ?? f.finding) === endpointLabel,
       );
+      // Scope to clicked domain for multi-domain endpoints (MI + MA)
+      if (domain) epFindings = epFindings.filter((f) => f.domain === domain);
       if (epFindings.length > 0) {
         const best = pickBestFinding(epFindings);
         selectFinding(best);
@@ -169,7 +183,7 @@ export function FindingsView() {
   // Register event bus callback
   useEffect(() => {
     setFindingsRailCallback((state) => {
-      if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint);
+      if (state.activeEndpoint !== undefined) handleEndpointSelect(state.activeEndpoint, state.activeDomain);
       if (state.activeGrouping !== undefined) setActiveGrouping(state.activeGrouping);
       if (state.restoreEndpoint !== undefined) handleRestoreEndpoint(state.restoreEndpoint);
       if (state.visibleEndpoints !== undefined) {
@@ -223,6 +237,12 @@ export function FindingsView() {
   const tableFindings = useMemo(() => {
     if (!data?.findings) return [];
     let f = data.findings;
+    // Exclude fragmentary findings (< 2 dose groups). These arise from
+    // single-animal interim sacrifices with only control or only one treated
+    // group — no dose-response comparison is possible, and they create a
+    // misleading sex imbalance in the table (e.g. 3 M rows vs 1 F row for
+    // Albumin when the extra M rows are empty interim timepoints).
+    f = f.filter((row) => row.group_stats.length >= 2);
     if (visibleLabels) {
       f = f.filter((row) => visibleLabels.has(row.endpoint_label ?? row.finding));
     }
@@ -291,18 +311,25 @@ export function FindingsView() {
     return { availableDays: days, peakDay, terminalDay: terminal, dayLabels };
   }, [activeEndpoint, tableFindings]);
 
-  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal
+  // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal.
+  // dayCleared tracks when user explicitly clears the day filter — prevents useEffect from
+  // immediately re-setting it to the default.
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [dayCleared, setDayCleared] = useState(false);
   useEffect(() => {
+    if (dayCleared) return; // user cleared — don't auto-set
     if (dayMeta) {
       setSelectedDay(activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay);
     } else {
       setSelectedDay(null);
     }
-  }, [activeDay, dayMeta]);
-  // Effective day: fallback for first render before useEffect fires
-  const effectiveDay = selectedDay
+  }, [activeDay, dayMeta, dayCleared]);
+  // Reset dayCleared when endpoint changes (new endpoint = new day context)
+  useEffect(() => { setDayCleared(false); }, [activeEndpoint]);
+  // Chart day: always resolves to a day (charts need a specific day to plot)
+  const chartDay = selectedDay
     ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
+  // (tableDay removed — day filtering now handled by FindingsTable's internal combo-box)
 
   // Plottable count: endpoints with both effect size and p-value
   const plottableCount = useMemo(() =>
@@ -337,7 +364,7 @@ export function FindingsView() {
     return (
       <span className="flex items-baseline gap-1.5">
         <span>{titleText}</span>
-        <span className="truncate text-[10px] normal-case tracking-normal font-normal text-foreground">
+        <span className="truncate text-[11px] normal-case tracking-normal font-normal text-foreground">
           <span className="text-muted-foreground/50">{countText}</span>
           {hasFilters && filterLabels.map((label) => (
             <span key={label}>
@@ -379,7 +406,7 @@ export function FindingsView() {
         {showLabels.map((label) => (
           <span
             key={label}
-            className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70"
+            className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[10px] text-muted-foreground/70"
           >
             <span className="max-w-[80px] truncate">{label}</span>
             <EyeOff
@@ -389,7 +416,7 @@ export function FindingsView() {
           </span>
         ))}
         {overflow > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[9px] text-muted-foreground/70">
+          <span className="inline-flex items-center gap-0.5 rounded bg-muted px-1 py-0 text-[10px] text-muted-foreground/70">
             <span>+{overflow} more</span>
             <EyeOff
               className="h-2.5 w-2.5 shrink-0 cursor-pointer hover:text-foreground"
@@ -413,7 +440,7 @@ export function FindingsView() {
         <Info className="h-3 w-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
         {showInfoTooltip && (
           <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-md border bg-popover px-3 py-2 shadow-md">
-            <div className="text-[11px] leading-relaxed text-popover-foreground">
+            <div className="text-xs leading-relaxed text-popover-foreground">
               <p>One dot per finding, showing the strongest signal across timepoints and sexes.</p>
               <p className="mt-1.5"><span className="text-muted-foreground">&rarr;</span> Effect size percentile <span className="text-muted-foreground">(continuous and incidence ranked separately)</span></p>
               <p><span className="text-muted-foreground">&uarr;</span> Lower p-value (pairwise vs. control)</p>
@@ -433,15 +460,15 @@ export function FindingsView() {
       {dayMeta && (
         <DayStepper
           availableDays={dayMeta.availableDays}
-          selectedDay={effectiveDay}
-          onDayChange={setSelectedDay}
+          selectedDay={chartDay}
+          onDayChange={(d) => { setSelectedDay(d); setDayCleared(false); }}
           dayLabels={dayMeta.dayLabels}
           peakDay={dayMeta.peakDay}
         />
       )}
       {excludedChips}
     </span>
-  ), [dayMeta, effectiveDay, excludedChips]);
+  ), [dayMeta, chartDay, excludedChips]);
 
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
@@ -501,8 +528,7 @@ export function FindingsView() {
               endpointLabel={activeEndpoint}
               findings={tableFindings}
               doseGroups={data.dose_groups}
-              height={scatterSection.height - 32}
-              selectedDay={effectiveDay}
+              selectedDay={chartDay}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
@@ -547,11 +573,12 @@ export function FindingsView() {
           excludedEndpoints={excludedEndpoints}
           onToggleExclude={handleRestoreEndpoint}
           activeEndpoint={activeEndpoint}
+          activeDomain={activeDomain}
           activeGrouping={activeGrouping}
           onOpenInTab={activeViewTab === "findings" ? () => { setTableTabOpen(true); setActiveViewTab("findings-table"); } : undefined}
           effectSizeMethod={analytics.activeEffectSizeMethod}
-          selectedDay={activeEndpoint ? effectiveDay : undefined}
-          onClearDayFilter={() => setSelectedDay(null)}
+          globalDay={activeEndpoint ? chartDay : undefined}
+          globalDayLabels={dayMeta?.dayLabels}
         />
       ) : null}
       </div>

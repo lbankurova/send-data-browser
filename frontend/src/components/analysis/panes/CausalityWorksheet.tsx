@@ -325,7 +325,7 @@ export function CausalityWorksheet({
 
       {/* Computed evidence section */}
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Computed evidence
         </p>
         <div className="rounded-md border">
@@ -350,7 +350,7 @@ export function CausalityWorksheet({
                       placeholder="Reason for overriding computed score"
                     />
                     <DotGauge level={displayLevel} />
-                    <span className="w-20 text-right text-[10px] font-medium text-muted-foreground">
+                    <span className="w-20 text-right text-[11px] font-medium text-muted-foreground">
                       {STRENGTH_LABELS[displayLevel]}
                     </span>
                     <button
@@ -374,13 +374,13 @@ export function CausalityWorksheet({
                 </div>
 
                 {/* Evidence line */}
-                <p className="mt-0.5 text-[10px] text-muted-foreground">{c.evidence}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{c.evidence}</p>
 
                 {/* Override editor */}
                 {isEditing && (
                   <div className="mt-2 space-y-1.5 rounded border bg-muted/20 p-2">
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-muted-foreground">Override:</label>
+                      <label className="text-[11px] text-muted-foreground">Override:</label>
                       <select
                         className="rounded border bg-background px-1.5 py-0.5 text-xs"
                         value={override?.level ?? c.level}
@@ -398,7 +398,7 @@ export function CausalityWorksheet({
                         ))}
                       </select>
                       <button
-                        className="text-[10px] text-muted-foreground hover:text-foreground"
+                        className="text-[11px] text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setOverrides((prev) => {
                             const next = { ...prev };
@@ -435,7 +435,7 @@ export function CausalityWorksheet({
 
       {/* Expert assessment section */}
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Expert assessment
         </p>
         <div className="rounded-md border">
@@ -483,14 +483,14 @@ export function CausalityWorksheet({
                       <option key={v} value={v}>{STRENGTH_LABELS[v]}</option>
                     ))}
                   </select>
-                  <span className="text-[10px] font-medium text-muted-foreground">
+                  <span className="text-[11px] font-medium text-muted-foreground">
                     {STRENGTH_LABELS[val.level as keyof typeof STRENGTH_LABELS] ?? "Not assessed"}
                   </span>
                 </div>
 
                 {/* Guidance text */}
                 {isGuidanceOpen && (
-                  <p className="mt-0.5 text-[10px] italic text-muted-foreground">{c.guidance}</p>
+                  <p className="mt-0.5 text-[11px] italic text-muted-foreground">{c.guidance}</p>
                 )}
 
                 {/* Rationale text area */}
@@ -515,7 +515,7 @@ export function CausalityWorksheet({
 
       {/* Overall assessment section */}
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Overall assessment
         </p>
         <div className="rounded-md border px-3 py-2.5">
@@ -552,7 +552,7 @@ export function CausalityWorksheet({
           <div className="mt-3 flex items-center justify-between">
             <button
               className={cn(
-                "rounded bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase text-primary-foreground transition-colors hover:bg-primary/90",
+                "rounded bg-primary px-2.5 py-1 text-[11px] font-semibold uppercase text-primary-foreground transition-colors hover:bg-primary/90",
                 (!dirty || saveMutation.isPending) && "cursor-not-allowed opacity-50"
               )}
               disabled={!dirty || saveMutation.isPending}
@@ -561,7 +561,7 @@ export function CausalityWorksheet({
               {saveMutation.isPending ? "Saving..." : "SAVE"}
             </button>
             {lastSaved && (
-              <span className="text-[10px] text-muted-foreground">{lastSaved}</span>
+              <span className="text-[11px] text-muted-foreground">{lastSaved}</span>
             )}
           </div>
         </div>

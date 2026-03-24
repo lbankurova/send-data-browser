@@ -12,12 +12,12 @@ export function CollectionProgressPane({ study }: Props) {
   return (
     <CollapsiblePane title="Data Collection" defaultOpen>
       <div className="space-y-2">
-        <p className="text-[11px]">
+        <p className="text-xs">
           <span className="font-semibold">{collected} / {planned}</span> domains collected
         </p>
 
         {study.interim_observations && (
-          <div className="rounded bg-blue-50 p-2 text-[10px] leading-relaxed text-blue-900">
+          <div className="rounded bg-blue-50 p-2 text-[11px] leading-relaxed text-blue-900">
             {study.interim_observations}
           </div>
         )}

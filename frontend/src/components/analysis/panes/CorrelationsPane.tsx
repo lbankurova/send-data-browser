@@ -32,7 +32,7 @@ export function CorrelationsPane({ data, organSystem, dataType }: Props) {
       <InsightBlock insights={data.insights} />
 
       <div className="max-h-60 overflow-auto">
-        <table className="w-full text-[11px]">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
               <th className="py-1 text-left font-medium">Endpoint</th>
@@ -100,12 +100,12 @@ export function CorrelationsPane({ data, organSystem, dataType }: Props) {
 
       {/* Warnings */}
       {data.related.some((c) => c.basis === "group_means") && (
-        <div className="text-[9px] italic text-muted-foreground/60">
+        <div className="text-[10px] italic text-muted-foreground/60">
           Correlations computed on dose-group means, not individual animals. Small n values may produce spurious correlations.
         </div>
       )}
 
-      <div className="text-[10px] text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         {data.total_correlations} cross-endpoint correlations computed
       </div>
     </div>

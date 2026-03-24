@@ -27,7 +27,7 @@ export function PolymorphicRail() {
             <button
               key={m}
               className={cn(
-                "flex-1 rounded-sm px-2 py-1 text-[10px] font-medium transition-colors",
+                "flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors",
                 mode === m
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -43,7 +43,7 @@ export function PolymorphicRail() {
       {/* Global filter bar */}
       <div className="shrink-0 border-b px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground">Sex:</span>
+          <span className="text-[11px] text-muted-foreground">Sex:</span>
           <FilterSelect
             value={filters.sex ?? ""}
             onChange={(e) => setFilters({ sex: e.target.value || null })}
@@ -52,7 +52,7 @@ export function PolymorphicRail() {
             <option value="M">M</option>
             <option value="F">F</option>
           </FilterSelect>
-          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
             <input
               type="checkbox"
               checked={filters.adverseOnly}
@@ -61,7 +61,7 @@ export function PolymorphicRail() {
             />
             Adv
           </label>
-          <label className="flex cursor-pointer items-center gap-1 text-[10px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
             <input
               type="checkbox"
               checked={filters.significantOnly}

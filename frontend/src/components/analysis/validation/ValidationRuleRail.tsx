@@ -84,7 +84,7 @@ function ExportDropdown({
   return (
     <div className="relative" ref={ref}>
       <button
-        className="flex h-6 items-center gap-1 rounded border bg-background px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+        className="flex h-6 items-center gap-1 rounded border bg-background px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
         onClick={() => setOpen(!open)}
         title="Export CSV"
       >
@@ -95,14 +95,14 @@ function ExportDropdown({
       {open && (
         <div className="absolute right-0 top-full z-20 mt-1 min-w-[140px] rounded border bg-background py-1 shadow-md">
           <button
-            className="flex w-full items-center px-3 py-1.5 text-left text-[11px] hover:bg-accent/50"
+            className="flex w-full items-center px-3 py-1.5 text-left text-xs hover:bg-accent/50"
             onClick={() => { downloadRulesCsv(allRules, "validation-all-rules.csv"); setOpen(false); }}
           >
             All rules ({allRules.length})
           </button>
           {hasFilters && (
             <button
-              className="flex w-full items-center px-3 py-1.5 text-left text-[11px] hover:bg-accent/50"
+              className="flex w-full items-center px-3 py-1.5 text-left text-xs hover:bg-accent/50"
               onClick={() => { downloadRulesCsv(filteredRules, "validation-filtered-rules.csv"); setOpen(false); }}
             >
               Visible only ({filteredRules.length})
@@ -259,7 +259,7 @@ export function ValidationRuleRail({
         <div className="flex items-center gap-1.5">
           <ExportDropdown allRules={rulesWithStatus} filteredRules={filtered} />
           <button
-            className="rounded bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={isValidating}
             onClick={() => runValidation()}
           >
@@ -282,7 +282,7 @@ export function ValidationRuleRail({
         <FilterSelect
           value={sortMode}
           onChange={(e) => setSortMode(e.target.value as SortMode)}
-          className="text-[10px]"
+          className="text-[11px]"
         >
           <option value="evidence">Sort: Evidence</option>
           <option value="domain">Sort: Domain</option>
@@ -293,7 +293,7 @@ export function ValidationRuleRail({
         <FilterSelect
           value={showFilter}
           onChange={(e) => setShowFilter(e.target.value as ShowFilter)}
-          className="text-[10px]"
+          className="text-[11px]"
         >
           <option value="">Show: All</option>
           <option value="triggered">Triggered</option>
@@ -304,7 +304,7 @@ export function ValidationRuleRail({
         <FilterSelect
           value={sevFilter}
           onChange={(e) => setSevFilter(e.target.value as SevFilter)}
-          className="text-[10px]"
+          className="text-[11px]"
         >
           <option value="">Sev: All</option>
           <option value="Error">Error</option>
@@ -314,7 +314,7 @@ export function ValidationRuleRail({
         <FilterSelect
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
-          className="text-[10px]"
+          className="text-[11px]"
         >
           <option value="">Source: All</option>
           <option value="custom">Custom</option>
@@ -337,7 +337,7 @@ export function ValidationRuleRail({
             <div key={groupKey} className="mb-2">
               {/* Group header — only show if not the default "evidence" sort with single group */}
               {(sortMode !== "evidence" || grouped.size > 1) && (
-                <div className="mb-1 px-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mb-1 px-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {groupKey === "0-triggered"
                     ? "Triggered"
                     : groupKey === "1-other"

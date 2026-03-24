@@ -211,7 +211,7 @@ export function StudyTimeline({
     <section>
       {/* ── Legend (above chart) ─────────────────────────────── */}
       {showLegend && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground" style={{ maxWidth: "960px" }}>
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground" style={{ maxWidth: "960px" }}>
           <span className="inline-flex items-center gap-1">
             <svg width="18" height="8" className="shrink-0">
               <line

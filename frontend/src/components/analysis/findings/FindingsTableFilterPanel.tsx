@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { X } from "lucide-react";
 import type { UnifiedFinding } from "@/types/analysis";
 import { DEFAULT_FILTER_STATE } from "./table-filters";
 import type { TableFilterState } from "./table-filters";
@@ -13,7 +14,7 @@ function FilterSection({
 }) {
   return (
     <div className="border-t border-border/30 py-1.5">
-      <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </div>
       {children}
@@ -31,19 +32,22 @@ function CategoricalFilter({
   selected: string[] | null;
   onChange: (selected: string[] | null) => void;
 }) {
+  // Internal `selected` = included values (null = no filter, all shown).
+  // Visual: unchecked = no filter. Checked = show only checked items.
   const toggle = useCallback(
     (val: string) => {
       if (selected == null) {
-        // Currently "all" — select only the others (deselect this one)
-        const next = values.filter((v) => v !== val);
-        onChange(next.length === 0 ? null : next);
+        // No filter active — check this value to filter to it only
+        onChange([val]);
       } else if (selected.includes(val)) {
+        // Already included — uncheck it
         const next = selected.filter((v) => v !== val);
-        // If nothing is selected, reset to null (= all)
+        // If nothing left, clear filter entirely
         onChange(next.length === 0 ? null : next);
       } else {
+        // Not included — add it
         const next = [...selected, val];
-        // If all are now selected, reset to null
+        // If all values now selected, clear filter (= no filter)
         onChange(next.length === values.length ? null : next);
       }
     },
@@ -53,7 +57,8 @@ function CategoricalFilter({
   return (
     <div className="flex flex-col gap-0.5">
       {values.map((v) => {
-        const checked = selected == null || selected.includes(v);
+        // checked = this value is in the active include list
+        const checked = selected != null && selected.includes(v);
         return (
           <label
             key={v}
@@ -65,7 +70,7 @@ function CategoricalFilter({
               onChange={() => toggle(v)}
               className="h-2.5 w-2.5 accent-primary"
             />
-            <span className="text-[9px] text-foreground/80">{v}</span>
+            <span className={`text-[10px] ${checked ? "text-primary font-medium" : "text-foreground/80"}`}>{v}</span>
           </label>
         );
       })}
@@ -73,45 +78,83 @@ function CategoricalFilter({
   );
 }
 
-// ─── RangeInput ───────────────────────────────────────────────
-function RangeInput({
+// ─── ToggleRangeFilter ───────────────────────────────────────
+/** Numerical range filter with enable checkbox and smart defaults. */
+function ToggleRangeFilter({
+  label,
+  enabled,
   value,
+  defaultValue,
+  onToggle,
   onChange,
   step,
+  minPlaceholder,
+  maxPlaceholder,
 }: {
+  label: string;
+  enabled: boolean;
   value: [number | null, number | null];
+  defaultValue: [number | null, number | null];
+  onToggle: (on: boolean) => void;
   onChange: (v: [number | null, number | null]) => void;
   step: number;
+  minPlaceholder?: string;
+  maxPlaceholder?: string;
 }) {
   return (
-    <div className="flex items-center gap-1">
-      <input
-        type="number"
-        step={step}
-        value={value[0] ?? ""}
-        onChange={(e) =>
-          onChange([
-            e.target.value ? Number(e.target.value) : null,
-            value[1],
-          ])
-        }
-        placeholder="min"
-        className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[9px] outline-none"
-      />
-      <span className="text-[8px] text-muted-foreground">{"\u2013"}</span>
-      <input
-        type="number"
-        step={step}
-        value={value[1] ?? ""}
-        onChange={(e) =>
-          onChange([
-            value[0],
-            e.target.value ? Number(e.target.value) : null,
-          ])
-        }
-        placeholder="max"
-        className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[9px] outline-none"
-      />
+    <div className="py-1.5 border-t border-border/30">
+      <label className="mb-1 flex cursor-pointer items-center gap-1.5">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={() => {
+            if (enabled) {
+              // Turning off — clear range
+              onChange([null, null]);
+              onToggle(false);
+            } else {
+              // Turning on — apply defaults
+              onChange(defaultValue);
+              onToggle(true);
+            }
+          }}
+          className="h-2.5 w-2.5 accent-primary"
+        />
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+      </label>
+      {enabled && (
+        <div className="flex items-center gap-1 pl-4">
+          <input
+            type="number"
+            step={step}
+            value={value[0] ?? ""}
+            onChange={(e) =>
+              onChange([
+                e.target.value ? Number(e.target.value) : null,
+                value[1],
+              ])
+            }
+            placeholder={minPlaceholder ?? "min"}
+            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[10px] outline-none"
+          />
+          <span className="text-[8px] text-muted-foreground">{"\u2013"}</span>
+          <input
+            type="number"
+            step={step}
+            value={value[1] ?? ""}
+            onChange={(e) =>
+              onChange([
+                value[0],
+                e.target.value ? Number(e.target.value) : null,
+              ])
+            }
+            placeholder={maxPlaceholder ?? "max"}
+            className="w-14 rounded border border-border/50 bg-transparent px-1 py-0.5 text-[10px] outline-none"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -121,10 +164,14 @@ interface FindingsTableFilterPanelProps {
   findings: UnifiedFinding[];
   filterState: TableFilterState;
   onFilterChange: (next: TableFilterState) => void;
-  /** Called when "Clear all" is pressed — parent should also clear the day stepper filter. */
+  /** Called when "Clear all" is pressed — parent should also clear the day combo-box filter. */
   onClearDayFilter?: () => void;
-  /** Whether a day filter is active from the day stepper (shown as clearable chip). */
+  /** Label for the active day combo-box filter (shown as clearable chip). */
   activeDayLabel?: string | null;
+  /** Effect size symbol for filter label (e.g., "g" for Hedges' g, "d" for Cohen's d). */
+  effectSizeSymbol?: string;
+  /** Called to close the filter panel. */
+  onClose?: () => void;
 }
 
 export function FindingsTableFilterPanel({
@@ -133,6 +180,8 @@ export function FindingsTableFilterPanel({
   onFilterChange,
   onClearDayFilter,
   activeDayLabel,
+  effectSizeSymbol = "g",
+  onClose,
 }: FindingsTableFilterPanelProps) {
   // Derive unique values from the full findings array
   const uniqueDomains = useMemo(
@@ -150,16 +199,6 @@ export function FindingsTableFilterPanel({
       ].sort(),
     [findings],
   );
-  const uniqueDays = useMemo(
-    () =>
-      [
-        ...new Set(
-          findings.map((f) => f.day).filter((d): d is number => d != null),
-        ),
-      ].sort((a, b) => a - b),
-    [findings],
-  );
-
   const clearAll = useCallback(() => {
     onFilterChange(DEFAULT_FILTER_STATE);
     onClearDayFilter?.();
@@ -175,46 +214,53 @@ export function FindingsTableFilterPanel({
     [filterState, onFilterChange],
   );
 
-  return (
-    <div className="flex flex-col gap-0 overflow-y-auto border-r bg-muted/10 px-2 py-1.5">
-      {/* Clear all */}
-      <button
-        type="button"
-        onClick={clearAll}
-        className="mb-1.5 rounded border border-border/50 px-2 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        Clear all filters
-      </button>
+  // Track which numerical filters are toggled on
+  const pEnabled = filterState.pValueRange[0] != null || filterState.pValueRange[1] != null;
+  const trendEnabled = filterState.trendPRange[0] != null || filterState.trendPRange[1] != null;
+  const esEnabled = filterState.effectSizeRange[0] != null || filterState.effectSizeRange[1] != null;
+  const fcEnabled = filterState.foldChangeRange[0] != null || filterState.foldChangeRange[1] != null;
 
-      {/* Active day filter from stepper (clearable) */}
+  return (
+    <div className="flex flex-col gap-0 overflow-y-auto bg-muted/10 px-2 py-1.5">
+      {/* Header: Clear all + close */}
+      <div className="mb-1.5 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={clearAll}
+          className="text-[10px] text-primary/70 transition-colors hover:text-primary hover:underline"
+        >
+          Clear all
+        </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+            title="Close filters panel"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Active day filter from combo-box (clearable chip) */}
       {activeDayLabel && (
-        <div className="mb-1 flex items-center gap-1">
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+        <div className="mb-1 flex items-center gap-1.5">
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
             {activeDayLabel}
           </span>
           {onClearDayFilter && (
             <button
               type="button"
               onClick={onClearDayFilter}
-              className="text-[9px] text-muted-foreground hover:text-foreground"
+              className="flex h-4 w-4 items-center justify-center rounded-full text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Clear day filter"
             >
-              &times;
+              {"\u00d7"}
             </button>
           )}
         </div>
       )}
-
-      {/* Text search */}
-      <FilterSection title="Finding">
-        <input
-          type="text"
-          value={filterState.findingSearch}
-          onChange={(e) => update("findingSearch", e.target.value)}
-          placeholder="Search..."
-          className="w-full rounded border border-border/50 bg-transparent px-1.5 py-0.5 text-[9px] outline-none placeholder:text-muted-foreground/50"
-        />
-      </FilterSection>
 
       {/* Categorical filters */}
       <FilterSection title="Domain">
@@ -265,50 +311,50 @@ export function FindingsTableFilterPanel({
         />
       </FilterSection>
 
-      {uniqueDays.length > 1 && (
-        <FilterSection title="Day">
-          <CategoricalFilter
-            values={uniqueDays.map(String)}
-            selected={filterState.days?.map(String) ?? null}
-            onChange={(v) =>
-              update("days", v ? v.map(Number) : null)
-            }
-          />
-        </FilterSection>
-      )}
+      {/* Numerical range filters with enable checkbox + smart defaults */}
+      <ToggleRangeFilter
+        label="Pairwise p"
+        enabled={pEnabled}
+        value={filterState.pValueRange}
+        defaultValue={[null, 0.05]}
+        onToggle={() => {}}
+        onChange={(v) => update("pValueRange", v)}
+        step={0.001}
+        maxPlaceholder="0.05"
+      />
 
-      {/* Numerical range filters */}
-      <FilterSection title="Pairwise p">
-        <RangeInput
-          value={filterState.pValueRange}
-          onChange={(v) => update("pValueRange", v)}
-          step={0.001}
-        />
-      </FilterSection>
+      <ToggleRangeFilter
+        label="Trend p"
+        enabled={trendEnabled}
+        value={filterState.trendPRange}
+        defaultValue={[null, 0.05]}
+        onToggle={() => {}}
+        onChange={(v) => update("trendPRange", v)}
+        step={0.001}
+        maxPlaceholder="0.05"
+      />
 
-      <FilterSection title="Trend p">
-        <RangeInput
-          value={filterState.trendPRange}
-          onChange={(v) => update("trendPRange", v)}
-          step={0.001}
-        />
-      </FilterSection>
+      <ToggleRangeFilter
+        label={`|${effectSizeSymbol}| effect size`}
+        enabled={esEnabled}
+        value={filterState.effectSizeRange}
+        defaultValue={[0.8, null]}
+        onToggle={() => {}}
+        onChange={(v) => update("effectSizeRange", v)}
+        step={0.1}
+        minPlaceholder="0.8"
+      />
 
-      <FilterSection title="Effect size">
-        <RangeInput
-          value={filterState.effectSizeRange}
-          onChange={(v) => update("effectSizeRange", v)}
-          step={0.1}
-        />
-      </FilterSection>
-
-      <FilterSection title="Fold change">
-        <RangeInput
-          value={filterState.foldChangeRange}
-          onChange={(v) => update("foldChangeRange", v)}
-          step={0.1}
-        />
-      </FilterSection>
+      <ToggleRangeFilter
+        label="Fold change"
+        enabled={fcEnabled}
+        value={filterState.foldChangeRange}
+        defaultValue={[1.5, null]}
+        onToggle={() => {}}
+        onChange={(v) => update("foldChangeRange", v)}
+        step={0.1}
+        minPlaceholder="1.5"
+      />
     </div>
   );
 }
