@@ -1183,10 +1183,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           {stdVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = stdRows[virtualRow.index];
             const isSelected = selectedFindingId === row.original.id;
-            const epLabel = row.original.endpoint_label ?? row.original.finding;
-            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
-            const isPrimary = isSelected && isSibling;
-            const isSecondary = !isSelected && isSibling;
             return (
               <tr
                 key={row.id}
@@ -1195,9 +1191,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 className={cn(
                   "border-b transition-colors hover:bg-accent/50",
                   followRail && "cursor-pointer",
-                  isPrimary && "bg-primary/15 font-medium",
-                  isSecondary && "bg-accent/40",
-                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
+                  isSelected && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => { if (followRail) selectFinding(row.original); }}
@@ -1296,8 +1290,6 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             const row = pivRows[virtualRow.index];
             const r = row.original;
             const isSelected = selectedFindingId === r.original.id;
-            const epLabel = r.endpoint_label;
-            const isSibling = activeEndpoint != null && epLabel === activeEndpoint;
             return (
               <tr
                 key={row.id}
@@ -1307,9 +1299,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                   "border-b transition-colors hover:bg-accent/50",
                   followRail && "cursor-pointer",
                   r.dose_level === 0 && "bg-muted/15",
-                  isSelected && isSibling && "bg-primary/15 font-medium",
-                  !isSelected && isSibling && "bg-accent/40",
-                  isSelected && !isSibling && !activeEndpoint && "bg-accent font-medium",
+                  isSelected && "bg-accent font-medium",
                 )}
                 data-selected={isSelected || undefined}
                 onClick={() => { if (followRail) selectFinding(r.original); }}
