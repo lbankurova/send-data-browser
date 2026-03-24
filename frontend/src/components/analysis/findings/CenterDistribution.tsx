@@ -8,7 +8,7 @@
  * driven by the parent chart panel's stepper.  A Recovery checkbox
  * (Phase 3) will swap the displayed population to recovery-arm animals.
  */
-import { useMemo, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
@@ -26,35 +26,48 @@ interface CenterDistributionProps {
   finding: UnifiedFinding;
   /** Study day to display — from the global DayStepper. */
   selectedDay: number | null;
+  /** Whether the left chart tab is in recovery mode — auto-checks the recovery checkbox. */
+  isRecoveryMode?: boolean;
 }
 
-export function CenterDistribution({ finding, selectedDay }: CenterDistributionProps) {
+export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: CenterDistributionProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { setSelectedSubject } = useViewSelection();
+  const [recoveryChecked, setRecoveryChecked] = useState(false);
 
   const isVisible =
     finding.data_type === "continuous" && ALLOWED_DOMAINS.has(finding.domain);
 
   // Canonical recovery-pooling and mortality exclusion (shared with other panes)
-  const { includeRecovery } = useRecoveryPooling();
+  const { hasRecovery, includeRecovery } = useRecoveryPooling();
   const { excludedSubjects } = useScheduledOnly();
 
+  // Auto-check recovery when parent enters recovery mode
+  const showRecoveryAnimals = recoveryChecked || !!isRecoveryMode;
+
+  // Always fetch with recovery subjects included so the checkbox can toggle them.
+  // (includeRecovery from pooling settings controls default behavior; we need
+  // the data available regardless for the Recovery checkbox.)
   const { data: subjectData, isLoading, isError } = useTimecourseSubject(
     isVisible ? studyId : undefined,
     isVisible ? finding.domain : undefined,
     isVisible ? finding.test_code : undefined,
     undefined, // all sexes
-    includeRecovery,
+    true, // always include recovery subjects in fetch
   );
 
   const shouldIncludeSubject = useCallback(
     (s: TimecourseSubject) => {
       if (excludedSubjects.has(s.usubjid)) return false;
-      // In default (non-recovery) mode, exclude recovery-arm subjects
+      if (showRecoveryAnimals) {
+        // Recovery mode: show only recovery-arm subjects
+        return !!s.is_recovery;
+      }
+      // Default: exclude recovery-arm subjects unless pooled
       if (s.is_recovery && !includeRecovery) return false;
       return true;
     },
-    [includeRecovery, excludedSubjects],
+    [showRecoveryAnimals, includeRecovery, excludedSubjects],
   );
 
   // Dose groups from visible subjects
@@ -127,13 +140,32 @@ export function CenterDistribution({ finding, selectedDay }: CenterDistributionP
   }
 
   return (
-    <StripPlotChart
-      subjects={subjects}
-      unit={unit}
-      sexes={sexes}
-      doseGroups={doseGroupsForChart}
-      onSubjectClick={handleSubjectClick}
-      mode="terminal"
-    />
+    <div className="flex h-full flex-col">
+      {/* Recovery checkbox — only when study has recovery arm */}
+      {hasRecovery && (
+        <div className="flex shrink-0 items-center gap-1.5 pb-1">
+          <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground/70">
+            <input
+              type="checkbox"
+              checked={showRecoveryAnimals}
+              onChange={(e) => setRecoveryChecked(e.target.checked)}
+              className="h-3 w-3 rounded border-gray-300 accent-primary"
+            />
+            Recovery animals
+          </label>
+        </div>
+      )}
+      <div className="flex-1 min-h-0">
+        <StripPlotChart
+          subjects={subjects}
+          unit={unit}
+          sexes={sexes}
+          doseGroups={doseGroupsForChart}
+          onSubjectClick={handleSubjectClick}
+          mode={showRecoveryAnimals ? "recovery" : "terminal"}
+          interleaved
+        />
+      </div>
+    </div>
   );
 }

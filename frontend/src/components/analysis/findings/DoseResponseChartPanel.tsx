@@ -698,21 +698,24 @@ export function DoseResponseChartPanel({
             )
           )}
 
-          {/* Left tab bar (bottom, Excel-style) — D-R | Recovery.
+          {/* Left tab bar — D-R | Recovery.
               Hidden for CL/MA: recovery shown directly in right panel. */}
           {hasRecovery && !hasRightRecovery && (
-            <div className="flex shrink-0 items-end gap-px border-t border-border/40 bg-muted/20">
+            <div className="flex shrink-0 items-end gap-px bg-muted/30">
               {(["dr", "recovery"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => onLeftTabChange(tab)}
-                  className={`px-3 py-0.5 text-[10px] font-medium transition-colors ${
+                  className={`relative px-3 py-1 text-xs font-medium transition-colors ${
                     leftTab === tab
-                      ? "bg-background text-foreground border-t-2 border-t-primary -mt-px"
-                      : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground/70"
                   }`}
                 >
                   {tab === "dr" ? "Dose-response" : "Recovery"}
+                  {leftTab === tab && (
+                    <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />
+                  )}
                 </button>
               ))}
             </div>
@@ -854,20 +857,23 @@ export function DoseResponseChartPanel({
               </>
             ) : null}
 
-            {/* Right tab bar (bottom, Excel-style) */}
+            {/* Right tab bar */}
             {showRightTabs && (
-              <div className="flex shrink-0 items-end gap-px border-t border-border/40 bg-muted/20">
+              <div className="flex shrink-0 items-end gap-px bg-muted/30">
                 {availableRightTabs.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setRightTab(t.key)}
-                    className={`px-3 py-0.5 text-[10px] font-medium transition-colors ${
+                    className={`relative px-3 py-1 text-xs font-medium transition-colors ${
                       activeRightContent === t.key
-                        ? "bg-background text-foreground border-t-2 border-t-primary -mt-px"
-                        : "text-muted-foreground hover:text-foreground/70 hover:bg-muted/40"
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground/70"
                     }`}
                   >
                     {t.label}
+                    {activeRightContent === t.key && (
+                      <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />
+                    )}
                   </button>
                 ))}
               </div>

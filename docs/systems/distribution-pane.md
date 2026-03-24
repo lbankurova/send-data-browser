@@ -1,6 +1,8 @@
 # Distribution Pane
 
-Context panel collapsible pane showing individual subject values as vertical strip/dot plots for continuous endpoints.
+> **Note:** Distribution has moved from the context panel to the center panel `Distribution` tab (see `CenterDistribution.tsx`). The old `DistributionPane.tsx` is dead code. `StripPlotChart` now supports an `interleaved` mode for the center panel layout.
+
+Center panel tab showing individual subject values as vertical strip/dot plots for continuous endpoints.
 
 ## Visibility
 

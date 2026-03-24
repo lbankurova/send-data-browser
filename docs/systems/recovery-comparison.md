@@ -1,6 +1,6 @@
 # Recovery Comparison System
 
-Last validated: 2026-03-10
+Last validated: 2026-03-24
 
 ## Overview
 
@@ -16,22 +16,28 @@ The recovery comparison system compares terminal (main-arm) sacrifice data with 
 {
   "available": true,
   "recovery_day": 106,
-  "rows": [ /* continuous domain rows */ ],
+  "last_dosing_day": 28,
+  "recovery_days_available": { "Body Weight": { "F": [35, 42, 49, 57], "M": [35, 42, 49, 57] } },
+  "rows": [ /* continuous domain rows — one per endpoint/sex/dose/day */ ],
   "incidence_rows": [ /* incidence domain rows */ ]
 }
 ```
+
+- `last_dosing_day`: Last day of dosing (treatment/recovery boundary). Override via `pattern_overrides.json`.
+- `recovery_days_available`: Available recovery-period days per endpoint per sex, for day stepper population. Days filtered to those with concurrent controls and n >= 2 treated subjects.
 
 ### Continuous domains (`rows[]`)
 
 Domains processed: all entries in `_DOMAIN_COLS` (BW, LB, OM, FW, BG, EG, VS).
 
-Each row = one (endpoint, sex, dose_level) tuple. Fields:
+Each row = one (endpoint, sex, dose_level, day) tuple. Multi-day: one row per unique recovery-period day (not just final sacrifice).
 
 | Field | Type | Description |
 |-------|------|-------------|
 | endpoint_label | string | Human-readable test name |
 | test_code | string | SEND test code (e.g., ALB, HR, BW) |
 | sex | "F" \| "M" | |
+| day | int | Study day this row's stats were computed at |
 | dose_level | int | 1-based dose group index |
 | recovery_day | int | Study day of recovery sacrifice |
 | mean | float | Recovery-arm treated group mean |
@@ -114,15 +120,34 @@ With n=2, Hedges' g has a 95% CI of roughly g +/- 2.0. The verdict label makes t
 
 The backend `get_histopath_subjects` endpoint also sets `ma_examined` per subject (true when the MA domain has a record for that specimen+subject), but this field is not used for the examined count — MI findings are the ground truth for microscopic examination status.
 
+## Frontend rendering
+
+### Center panel (DoseResponseChartPanel)
+
+- **Continuous/MI endpoints:** Left sub-panel has D-R | Recovery tabs (bottom bar). Recovery tab shows `RecoveryDumbbellChart`. Right sub-panel has Effect | Distribution tabs.
+- **CL/MA endpoints:** Left sub-panel shows treatment incidence bar chart. Right sub-panel always shows recovery incidence comparison (side-by-side, no tab switching). Empty state "Tissue not examined in recovery arm." when no data. Recovery sacrifice day shown in header.
+- Tab bars use canonical pattern: `h-0.5 bg-primary` underline, `text-xs font-medium`, `bg-muted/30` container.
+
+### Distribution (CenterDistribution)
+
+Distribution strip plots moved from context panel to center panel Distribution tab. Uses interleaved sex layout: single SVG with F/M sub-lanes per dose column, sex-colored dots (cyan M / pink F), shared Y-axis. Dynamic height fills container.
+
+### Context panel (RecoveryPane)
+
+Routes by domain: MI/MA → `HistopathRecoveryAllSexes` (useOrganRecovery), continuous → `ContinuousRecoverySection` (useRecoveryComparison → RecoveryDumbbellChart), CL → `IncidenceRecoverySection` (useRecoveryComparison → table).
+
 ## Data flow
 
 ```
 XPT files → temporal.py get_recovery_comparison()
-  → _compute_domain_recovery() for each continuous domain
-  → _compute_incidence_recovery() for CL
-  → JSON response { rows, incidence_rows }
+  → _compute_domain_recovery() for each continuous domain (multi-day iteration)
+  → compute_incidence_recovery() for CL (incidence_recovery.py)
+  → JSON response { rows, incidence_rows, recovery_days_available, last_dosing_day }
 
 Frontend:
   useRecoveryComparison(studyId) → React Query cache
-  RecoveryPane routes by domain/data_type → appropriate section component
+  DoseResponseChartPanel — CL/MA: side-by-side incidence + recovery
+  DoseResponseChartPanel — Continuous: D-R/Recovery tabs + Effect/Distribution tabs
+  CenterDistribution — interleaved StripPlotChart
+  RecoveryPane — context panel evidence + override surface
 ```

@@ -223,6 +223,21 @@ These fields are set by the shared enrichment pipeline (`findings_pipeline.py`) 
 
 ---
 
+## 13. Recovery Comparison API (`/studies/{id}/recovery-comparison`)
+
+Live API endpoint (not generated JSON). Returns multi-day recovery statistics for continuous endpoints and incidence recovery verdicts for CL domain.
+
+**Source:** `routers/temporal.py:recovery_comparison()`, `services/analysis/incidence_recovery.py`
+
+| ID | Field | JSON type | Nullable | Source | Invariant |
+|----|-------|-----------|----------|--------|-----------|
+| BFIELD-79 | `recovery_days_available` | object | No | `temporal.py:_compute_domain_recovery()` | Map of `{endpoint_label: {sex: number[]}}`. Lists unique study days with valid recovery data per endpoint per sex. Days filtered to those with concurrent controls and n >= 2 treated subjects. Empty object when no recovery data. |
+| BFIELD-80 | `last_dosing_day` | integer | **Yes** | `temporal.py:compute_last_dosing_day()` | Last day of dosing (treatment/recovery boundary). Derived from EX domain `EXENDY` max, falling back to DS-based recovery day minus 1. Null when no dosing data. Override via `annotations/PointCross/pattern_overrides.json` key `last_dosing_day`. |
+| BFIELD-81 | `rows[].day` | integer | No | `temporal.py:_compute_domain_recovery()` | Study day at which this row's recovery statistics were computed. Multi-day iteration produces one row per unique day per dose_level per sex. |
+| BFIELD-82 | `incidence_rows` | array | No (empty when no CL data) | `incidence_recovery.py:compute_incidence_recovery()` | CL domain incidence recovery verdicts. Each: `{domain, finding, sex, dose_level, dose_label, main_affected, main_n, recovery_affected, recovery_n, recovery_day, verdict}`. `verdict` is one of: `"resolved"`, `"improving"`, `"persistent"`, `"worsening"`, `"new_in_recovery"`, `"insufficient_n"`, or null (control group). `insufficient_n` when recovery N < 3 (SLA-15 guard). NORMAL_TERMS excluded from findings. |
+
+---
+
 ## Cross-cutting fields
 
 These fields are propagated identically across multiple JSON outputs via `_propagate_scheduled_fields()`:
@@ -252,6 +267,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-76 | HCD assessment (Tier 3A) | 1 |
 | BFIELD-77 | B-6 progression chain (Tier 3B) | 1 |
 | BFIELD-78 | GroupStat severity_grade_counts | 1 |
-| BFIELD-79+ | Reserved for future fields | -- |
+| BFIELD-79 -- BFIELD-82 | Recovery comparison API | 4 |
+| BFIELD-83+ | Reserved for future fields | -- |
 
-Total: 78 fields documented across 13 JSON output categories.
+Total: 82 fields documented across 14 JSON output categories.
