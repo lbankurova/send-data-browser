@@ -27,16 +27,16 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 11 | 9 | Incorrect behavior that should be fixed |
+| Bug | 12 | 9 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 61 | 36 | Missing capability, no spec exists |
+| Gap | 61 | 38 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **86** | **71** | |
+| **Total open** | **87** | **73** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -164,6 +164,13 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `backend/validation/scripts/registry.py`
 - **Issue:** `get_script()` returns first match then None for all subsequent calls due to early return in loop. Not called by router currently, so no runtime impact.
 - **Status:** Not a bug — code is correct (loop re-enters from top on each call; `return s` inside `if` is standard find-first pattern)
+
+### BUG-20: D-R line chart error bars disappear on hover (ECharts blur)
+- **Files:** `frontend/src/components/analysis/charts/dose-response-charts.ts`
+- **Issue:** Line series use `emphasis: { focus: "series" }` which causes ECharts to blur all other series on hover. Error bars are a separate custom series, so they get blurred (faded to near-invisible). Attempted fixes (`emphasis.disabled`, `blur.itemStyle.opacity`, explicit `opacity:1` on renderItem children) all failed — ECharts applies blur at a level above individual element styles for custom series.
+- **Fix:** Likely needs one of: (a) render error bars via ECharts `graphic` component (outside series system entirely), (b) use `zlevel` separation if blur doesn't cross canvas layers, (c) abandon `focus: "series"` and implement manual dimming via ECharts event API (`highlight`/`downplay` actions targeting specific series indices).
+- **Owner:** frontend-dev
+- **Status:** Open
 
 ---
 
@@ -539,7 +546,7 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~GAP-57: Extract PanePillToggle component as canonical chart/table mode toggle~~ ✅
 - **Files:** `frontend/src/components/ui/PanePillToggle.tsx` (extracted component), `frontend/src/components/analysis/panes/DistributionPane.tsx` (first adopter)
-- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Extracted as a generic `PanePillToggle<T>` in `components/ui/`. Pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[9px] px-1.5 py-0.5`. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
+- **Issue:** The pill-style mode toggle in `DistributionPane` (Terminal / Peak / Recovery) is the intended pattern for all chart and table mode toggles in panes. Extracted as a generic `PanePillToggle<T>` in `components/ui/`. Pattern: container `flex gap-0.5 bg-muted/30 rounded p-0.5`, active button `bg-background text-foreground shadow-sm font-medium`, inactive `text-muted-foreground hover:text-foreground`, size `text-[10px] px-1.5 py-0.5`. Excludes section/pane headers (which use the canonical tab bar pattern per CLAUDE.md).
 - **Status:** ~~Open~~ Done
 - **Priority:** P3 (design system consistency)
 - **Dependencies:** Related to GAP-56 (PaneTable) — both standardize pane internals
@@ -802,9 +809,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### ~~GAP-90: Day stepper label format reversed from spec~~ ✅
 - **Source:** `view-merge-spec.md` §4 line 152 vs `view-merge-post-implementation-review.md` SD-2
-- **Files:** `frontend/src/components/analysis/findings/DoseResponseChartPanel.tsx:418`
-- **Issue:** Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)" — reversed order with abbreviated day prefix. Minor UX inconsistency.
-- **Status:** ~~Open~~ Closed (accepted — current compact format preferred by user)
+- **Files:** `frontend/src/components/analysis/findings/DayStepper.tsx`
+- **Issue:** ~~Spec says "Terminal (Day 92)". Implementation shows "D92 (terminal)".~~ Now matches spec: "D92 (terminal)", "D15 (peak)", "D29". Filled triangles for arrows, chevron for dropdown.
+- **Status:** ~~Open~~ Resolved — DayStepper extracted to own component, format matches spec (merge-findings-dr)
 - **Priority:** P3
 - **Owner hint:** frontend-dev
 
@@ -934,6 +941,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - ~~**PERF-05: Triple-redundant analytics derivation (3-5x)**~~ — FindingsAnalyticsLayer in Layout provides single derivation via context. `591855e`
 - ~~**PERF-06: Unmemoized sparkline SVG cells**~~ — Extract SparklineCell as React.memo component. `591855e`
 - ~~**PERF-07: No table virtualization (418 std / 1672 pivoted rows)**~~ — @tanstack/react-virtual with spacer-row pattern. `b11c108`, `569f630`, `2823f24`
+
+### ~~GAP-107: CL onset day derivation + body-system grouping (backend pipeline)~~ ✅
+
+Implemented: `raw_subject_onset_days` per CL finding in `findings_cl.py`, `cl_body_system` classification (CNS/GI/integument/general), `organ_name` override in `domain_stats.py`. Frontend uses onset days in cohort evidence table CL cells.
+
+### ~~GAP-108: SubjectProfilePanel "View dose group cohort" entry point~~ ✅
+
+Implemented: "View dose group cohort" text link in SubjectProfilePanel subtitle, navigates to `/studies/:studyId/cohort?preset=all&dose=N`. User approved frozen design change.
 
 ---
 

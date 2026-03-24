@@ -31,7 +31,7 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
   );
 
   if (rules.length === 0) {
-    return <p className="text-[11px] text-muted-foreground">No insights available.</p>;
+    return <p className="text-xs text-muted-foreground">No insights available.</p>;
   }
 
   return (
@@ -44,11 +44,11 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
             {/* Organ header: tier + name + endpoint count */}
             <div className="mb-1 flex items-baseline gap-1.5">
               <TierBadge tier={g.tier} />
-              <span className="text-[11px] font-semibold">
+              <span className="text-xs font-semibold">
                 {g.displayName}
               </span>
               {g.endpointCount > 0 && (
-                <span className="text-[9px] text-muted-foreground/50">
+                <span className="text-[10px] text-muted-foreground/50">
                   <EpCount group={g} onEndpointClick={onEndpointClick} />
                   {g.domainCount > 0 && (
                     <span title={g.domains.join(", ")} className="cursor-default">
@@ -68,7 +68,7 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
 
             {g.rules.length > 0 && (
               <button
-                className="mt-1 pl-1 text-[10px] text-muted-foreground hover:text-foreground"
+                className="mt-1 pl-1 text-[11px] text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   const next = new Set(expandedGroups);
                   if (expanded) next.delete(g.organ);
@@ -87,7 +87,7 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
                 {g.rules.map((rule, i) => (
                   <div
                     key={`${rule.rule_id}-${i}`}
-                    className="text-[10px] leading-snug text-muted-foreground"
+                    className="text-[11px] leading-snug text-muted-foreground"
                   >
                     <span className="font-mono text-muted-foreground/50">
                       {rule.rule_id}
@@ -102,7 +102,7 @@ export function InsightsList({ rules, tierFilter, onEndpointClick }: Props) {
       })}
 
       {visible.length === 0 && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           No signals available.
         </p>
       )}
@@ -162,7 +162,7 @@ function SynthLineItem({ line }: { line: SynthLine }) {
         ))}
         {hasMore && (
           <button
-            className="pl-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground"
+            className="pl-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground"
             onClick={() => setExpanded(!expanded)}
           >
             {expanded ? "Show less" : `+${extraCount} more`}
@@ -173,7 +173,7 @@ function SynthLineItem({ line }: { line: SynthLine }) {
             {line.qualifiers.map((q) => (
               <span
                 key={q}
-                className="rounded border border-border px-1 py-0.5 text-[9px] text-muted-foreground"
+                className="rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground"
               >
                 {q}
               </span>
@@ -188,12 +188,12 @@ function SynthLineItem({ line }: { line: SynthLine }) {
   if (line.listItems && line.listItems.length > 0) {
     return (
       <div className="pl-1">
-        <div className="mb-0.5 text-[10px] font-medium text-muted-foreground/70">
+        <div className="mb-0.5 text-[11px] font-medium text-muted-foreground/70">
           {line.text}
         </div>
         <div className="space-y-1">
           {line.listItems.map((item, j) => (
-            <div key={j} className="text-[11px] leading-snug text-foreground">
+            <div key={j} className="text-xs leading-snug text-foreground">
               <HistopathItem text={item} />
             </div>
           ))}
@@ -206,14 +206,14 @@ function SynthLineItem({ line }: { line: SynthLine }) {
   if (line.chips) {
     return (
       <div className="pl-1">
-        <div className="mb-1 text-[10px] text-muted-foreground/70">
+        <div className="mb-1 text-[11px] text-muted-foreground/70">
           {line.text}
         </div>
         <div className="flex flex-wrap gap-1">
           {line.chips.map((chip, j) => (
             <span
               key={j}
-              className="rounded bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground"
+              className="rounded bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground"
             >
               {chip}
             </span>
@@ -227,7 +227,7 @@ function SynthLineItem({ line }: { line: SynthLine }) {
   return (
     <div
       className={cn(
-        "pl-1 text-[11px] leading-snug",
+        "pl-1 text-xs leading-snug",
         line.isWarning ? "font-medium text-foreground" : "text-muted-foreground"
       )}
     >
@@ -242,7 +242,7 @@ function EndpointRow({ ep }: { ep: SynthEndpoint }) {
   const mVal = bySex.get("M");
 
   return (
-    <div className="flex items-baseline gap-1.5 py-px pl-1 text-[11px]">
+    <div className="flex items-baseline gap-1.5 py-px pl-1 text-xs">
       <span className="min-w-0 truncate font-medium" title={ep.name}>
         {ep.name}
       </span>
@@ -250,7 +250,7 @@ function EndpointRow({ ep }: { ep: SynthEndpoint }) {
         <span className="shrink-0 text-[#9CA3AF]">{ep.direction}</span>
       )}
       {(fVal != null || mVal != null) && (
-        <span className="ml-auto shrink-0 font-mono text-[10px]">
+        <span className="ml-auto shrink-0 font-mono text-[11px]">
           <span className="inline-block w-[32px] text-right">
             {fVal != null ? (
               <>
@@ -298,7 +298,7 @@ const TIER_COLOR: Record<Tier, string> = {
 
 function TierBadge({ tier }: { tier: Tier }) {
   return (
-    <span className={cn("text-[9px] font-semibold uppercase", TIER_COLOR[tier])}>
+    <span className={cn("text-[10px] font-semibold uppercase", TIER_COLOR[tier])}>
       {tier}
     </span>
   );

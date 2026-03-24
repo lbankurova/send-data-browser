@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENDEX Classification Algorithms</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+  .canvas { position: relative; width: 1650px; margin: 24px auto; padding: 20px 30px 60px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .subtitle { font-size: 11px; color: #6b7280; margin-bottom: 20px; }
+
+  .lane { position: absolute; left: 0; right: 0; border-top: 1.5px solid #d1d5db; }
+  .lane-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #9ca3af; position: absolute; left: 10px; top: 6px; z-index: 1; }
+
+  svg.wires { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  .nd { position: absolute; border-radius: 5px; background: #fff; border: 1.5px solid #d1d5db; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+  .nd:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.13); z-index: 10; }
+  .nd .hd { padding: 4px 8px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; white-space: nowrap; }
+  .nd .bd { padding: 5px 8px 6px; font-size: 9.5px; line-height: 1.4; color: #374151; }
+  .nd .bd .lb { font-weight: 600; color: #1f2937; display: block; margin-bottom: 1px; font-size: 10px; }
+  .nd .bd .dt { font-size: 8.5px; color: #6b7280; }
+  .nd .bd .fm { font-size: 8px; color: #7c3aed; font-family: 'Consolas','Menlo',monospace; margin-top: 2px; display: block; }
+  .nd .bd .th { font-size: 8px; color: #059669; font-weight: 600; margin-top: 2px; display: block; }
+  .nd .bd .out { font-size: 8px; color: #0284c7; font-weight: 600; margin-top: 2px; display: block; }
+  .nd .bd ul { padding-left: 10px; margin: 2px 0 0; }
+  .nd .bd li { font-size: 8.5px; color: #6b7280; line-height: 1.35; }
+  .nd .bd .src { font-size: 7.5px; color: #a78bfa; display: block; margin-top: 3px; border-top: 1px solid #f3f4f6; padding-top: 2px; }
+  .nd .bd .src b { color: #7c3aed; font-weight: 600; }
+
+  .term { position: absolute; border-radius: 14px; z-index: 3; padding: 4px 10px; font-size: 9px; font-weight: 700; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.3; white-space: nowrap; }
+  .term.adverse { background: #dc2626; color: #fff; border: 1.5px solid #b91c1c; }
+  .term.equivocal { background: #f59e0b; color: #1a1a2e; border: 1.5px solid #d97706; }
+  .term.non-adverse { background: #3b82f6; color: #fff; border: 1.5px solid #2563eb; }
+  .term.adaptive { background: #06b6d4; color: #fff; border: 1.5px solid #0891b2; }
+  .term.ntr { background: #22c55e; color: #fff; border: 1.5px solid #16a34a; }
+  .term.warning { background: #fb923c; color: #1a1a2e; border: 1.5px solid #ea580c; }
+  .term.normal { background: #d1d5db; color: #374151; border: 1.5px solid #9ca3af; }
+
+  .c-dispatch .hd { background: #475569; } .c-dispatch { border-color: #94a3b8; }
+  .c-class .hd { background: #ef4444; } .c-class { border-color: #fca5a5; }
+  .c-gate .hd { background: #64748b; } .c-gate { border-color: #cbd5e1; }
+  .c-enrich .hd { background: #8b5cf6; } .c-enrich { border-color: #c4b5fd; }
+  .c-score .hd { background: #06b6d4; } .c-score { border-color: #67e8f9; }
+  .c-noael .hd { background: #0d9488; } .c-noael { border-color: #5eead4; }
+  .c-signal .hd { background: #3b82f6; } .c-signal { border-color: #93c5fd; }
+  .c-organ .hd { background: #ec4899; } .c-organ { border-color: #f9a8d4; }
+  .c-tree .hd { background: #f59e0b; } .c-tree { border-color: #fcd34d; }
+  .c-dict .hd { background: #dc2626; } .c-dict { border-color: #fca5a5; }
+
+  .gbox { position: absolute; border: 1.5px dashed #cbd5e1; border-radius: 7px; background: rgba(248,250,252,0.4); z-index: 1; }
+  .gbox-label { position: absolute; top: -8px; left: 12px; background: #f0f2f5; padding: 0 5px; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; }
+
+  .legend { position: absolute; top: 48px; right: 30px; display: flex; gap: 12px; flex-wrap: wrap; z-index: 5; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 8px; color: #6b7280; }
+  .legend-sw { width: 9px; height: 9px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <h1>SENDEX Classification Algorithms</h1>
+  <div class="subtitle">Every decision tree the analysis engine uses to classify findings &mdash; from raw statistics to NOAEL determination</div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-sw" style="background:#dc2626;border-radius:10px"></div>tr_adverse</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#f59e0b;border-radius:10px"></div>equivocal</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#06b6d4;border-radius:10px"></div>tr_adaptive</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#3b82f6;border-radius:10px"></div>tr_non_adverse</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#22c55e;border-radius:10px"></div>not_treatment_related</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#64748b"></div>Gate/Route</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#ef4444"></div>Classification</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#8b5cf6"></div>Enrichment</div>
+    <div class="legend-item"><div class="legend-sw" style="background:#0d9488"></div>NOAEL</div>
+  </div>
+
+  <svg class="wires" id="wires" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#64748b"/></marker>
+      <marker id="ar-y" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#dc2626"/></marker>
+      <marker id="ar-n" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#22c55e"/></marker>
+    </defs>
+  </svg>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §1 MASTER DISPATCH                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:80px"><span class="lane-label">§1 &mdash; Master Dispatch &mdash; assess_finding_with_context() &mdash; classification.py:795</span></div>
+
+  <div class="nd c-dispatch" id="d-entry" style="left:40px;top:108px;width:170px">
+    <div class="hd">Entry Point</div>
+    <div class="bd">
+      <span class="lb">Finding enters</span>
+      <span class="dt">Every finding passes through<br>assess_finding_with_context()</span>
+      <span class="src"><b>classification.py:795</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="d-om" style="left:270px;top:108px;width:155px">
+    <div class="hd">Route</div>
+    <div class="bd">
+      <span class="lb">Domain = OM?</span>
+      <span class="dt">Organ weight &rarr;<br>specialized two-gate</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" id="d-a3" style="left:490px;top:108px;width:150px">
+    <div class="hd">A-3 HCD</div>
+    <div class="bd">
+      <span class="lb">Compute HCD score</span>
+      <span class="fm">within: &minus;0.5<br>outside: +0.5<br>no_hcd: 0</span>
+      <span class="src"><b>hcd.py</b> | <b>hcd_database.py</b><br>Data: shared/hcd-reference-ranges.json<br>+ backend/data/hcd.db (SQLite)</span>
+    </div>
+  </div>
+
+  <div class="nd c-class" id="d-twogate" style="left:700px;top:108px;width:165px">
+    <div class="hd">&rarr; §4 OM Two-Gate</div>
+    <div class="bd">
+      <span class="lb">_assess_om_two_gate()</span>
+      <span class="dt">Stat gate &times; mag gate &times; HCD</span>
+      <span class="src"><b>classification.py:609</b><br>Thresholds: shared/organ-weight-thresholds.json</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="d-histo" style="left:270px;top:210px;width:155px">
+    <div class="hd">Route</div>
+    <div class="bd">
+      <span class="lb">Domain &isin; MI/MA/TF?</span>
+      <span class="dt">Histopath &rarr; adaptive<br>trees + B-6 chains</span>
+    </div>
+  </div>
+
+  <div class="nd c-class" id="d-histoclass" style="left:490px;top:210px;width:150px">
+    <div class="hd">&rarr; §5 Histopath</div>
+    <div class="bd">
+      <span class="lb">_classify_histopath()</span>
+      <span class="dt">Dictionary &rarr; trees</span>
+      <span class="src"><b>classification.py:854</b><br>Dict: shared/adversity-dictionary.json</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" id="d-b6" style="left:700px;top:210px;width:165px">
+    <div class="hd">B-6 Chains</div>
+    <div class="bd">
+      <span class="lb">evaluate_b6()</span>
+      <span class="dt">14 progression chains<br>May escalate to tr_adverse</span>
+      <span class="src"><b>progression_chains.py</b><br>Data: shared/progression-chains.yaml</span>
+    </div>
+  </div>
+
+  <div class="term adverse" id="d-result1" style="left:920px;top:225px">finding_class</div>
+
+  <div class="nd c-class" id="d-base" style="left:490px;top:310px;width:150px">
+    <div class="hd">&rarr; §3 Base ECETOC</div>
+    <div class="bd">
+      <span class="lb">assess_finding()</span>
+      <span class="dt">A-factor + B-factor<br>5-class output</span>
+      <span class="src"><b>classification.py:487</b></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §2 SEVERITY CLASSIFICATION                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:400px"><span class="lane-label">§2 &mdash; Severity Classification &mdash; classify_severity() &mdash; classification.py:23</span></div>
+
+  <!-- Continuous -->
+  <div class="gbox" style="left:35px;top:425px;width:820px;height:245px">
+    <span class="gbox-label">Continuous Endpoints (default: grade-ge-2-or-dose-dep)</span>
+  </div>
+
+  <div class="nd c-class" id="s-p" style="left:55px;top:452px;width:130px">
+    <div class="hd">Gate 1</div>
+    <div class="bd">
+      <span class="lb">p_adj &lt; 0.05?</span>
+      <span class="src"><b>classification.py:23</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="s-d1" style="left:250px;top:445px;width:115px">
+    <div class="hd">Effect Size</div>
+    <div class="bd"><span class="lb">|d| &ge; 0.5?</span></div>
+  </div>
+  <div class="term adverse" id="s-adv1" style="left:420px;top:445px">ADVERSE</div>
+  <div class="term warning" id="s-w1" style="left:420px;top:478px">WARNING</div>
+
+  <div class="nd c-class" id="s-t" style="left:250px;top:510px;width:115px">
+    <div class="hd">Gate 2</div>
+    <div class="bd"><span class="lb">trend_p &lt; 0.05?</span></div>
+  </div>
+
+  <div class="nd c-gate" id="s-d2" style="left:420px;top:510px;width:115px">
+    <div class="hd">Effect Size</div>
+    <div class="bd"><span class="lb">|d| &ge; 0.8?</span></div>
+  </div>
+  <div class="term adverse" id="s-adv2" style="left:590px;top:510px">ADVERSE</div>
+  <div class="term warning" id="s-w2" style="left:590px;top:543px">WARNING</div>
+
+  <div class="nd c-gate" id="s-d3" style="left:420px;top:580px;width:115px">
+    <div class="hd">Fallback</div>
+    <div class="bd"><span class="lb">|d| &ge; 1.0?</span></div>
+  </div>
+  <div class="term warning" id="s-w3" style="left:590px;top:580px">WARNING</div>
+  <div class="term normal" id="s-norm" style="left:590px;top:613px">NORMAL</div>
+
+  <!-- Incidence -->
+  <div class="gbox" style="left:880px;top:425px;width:520px;height:290px">
+    <span class="gbox-label">Incidence Endpoints (direction-aware)</span>
+  </div>
+
+  <div class="nd c-gate" id="si-dir" style="left:900px;top:452px;width:140px">
+    <div class="hd">Direction</div>
+    <div class="bd">
+      <span class="lb">Direction?</span>
+      <span class="dt">up = toxicologically relevant<br>down = protective (max warning)</span>
+      <span class="src"><b>classification.py:73</b></span>
+    </div>
+  </div>
+
+  <!-- Up: stepwise cascade -->
+  <div class="nd c-class" id="si-up" style="left:1060px;top:445px;width:120px">
+    <div class="hd">Up: Gate 1</div>
+    <div class="bd"><span class="lb">p_adj &lt; 0.05?</span></div>
+  </div>
+  <div class="term adverse" id="si-adv" style="left:1240px;top:445px">ADVERSE</div>
+
+  <div class="nd c-class" id="si-up2" style="left:1060px;top:498px;width:120px">
+    <div class="hd">Up: Gate 2</div>
+    <div class="bd"><span class="lb">trend_p &lt; 0.05?</span></div>
+  </div>
+  <div class="term warning" id="si-w" style="left:1240px;top:498px">WARNING</div>
+
+  <div class="nd c-gate" id="si-up3" style="left:1060px;top:548px;width:120px">
+    <div class="hd">Up: Gate 3</div>
+    <div class="bd"><span class="lb">p_adj &lt; 0.10?</span></div>
+  </div>
+  <div class="term warning" id="si-w2" style="left:1240px;top:548px">WARNING</div>
+  <div class="term normal" id="si-n" style="left:1240px;top:581px">NORMAL</div>
+
+  <!-- Down: never adverse -->
+  <div class="nd c-class" id="si-dn" style="left:1060px;top:615px;width:175px">
+    <div class="hd">Down (protective)</div>
+    <div class="bd">
+      <span class="lb">Never adverse</span>
+      <span class="fm">p&lt;0.05 &rarr; warning<br>trend&lt;0.05 &rarr; warning<br>else &rarr; normal</span>
+    </div>
+  </div>
+  <div class="term warning" id="si-wdn" style="left:1300px;top:620px">WARNING</div>
+  <div class="term normal" id="si-ndn" style="left:1300px;top:653px">NORMAL</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §3 ECETOC ADVERSITY ASSESSMENT                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:700px"><span class="lane-label">§3 &mdash; ECETOC Adversity Assessment &mdash; assess_finding() &mdash; classification.py:487 &mdash; 5-class output</span></div>
+
+  <!-- Step 0 -->
+  <div class="gbox" style="left:35px;top:725px;width:630px;height:100px">
+    <span class="gbox-label">Step 0: Intrinsic Adversity Override (MI/MA/TF only)</span>
+  </div>
+
+  <div class="nd c-dict" id="e0-dict" style="left:55px;top:748px;width:155px">
+    <div class="hd">Dictionary</div>
+    <div class="bd">
+      <span class="lb">always_adverse?</span>
+      <span class="dt">necrosis, carcinoma, sarcoma&hellip;</span>
+      <span class="src"><b>adversity_dictionary.py</b><br>Data: shared/adversity-dictionary.json<br>22 terms across 3 tiers</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="e0-ascore" style="left:270px;top:748px;width:130px">
+    <div class="hd">A-score</div>
+    <div class="bd"><span class="lb">A-score &ge; 1.0?</span></div>
+  </div>
+
+  <div class="term adverse" id="e0-adv" style="left:460px;top:748px">tr_adverse</div>
+  <div class="term equivocal" id="e0-eq" style="left:460px;top:781px">equivocal</div>
+
+  <!-- Step 1 -->
+  <div class="gbox" style="left:35px;top:845px;width:630px;height:105px">
+    <span class="gbox-label">Step 1: Treatment-Relatedness (A-factors, 0&ndash;4 scale)</span>
+  </div>
+
+  <div class="nd c-enrich" id="e1-afactor" style="left:55px;top:865px;width:330px">
+    <div class="hd">A-Factor Scoring</div>
+    <div class="bd">
+      <span class="fm">A-1 (D-R): monotonic +2 | threshold +1.5 | non-mono +0.5<br>A-2 (Corroboration): corroborated +1<br>A-3 (HCD): within &minus;0.5 | outside +0.5<br>A-6 (Stats): p&lt;0.05 +1 | trend&lt;0.05 +0.5</span>
+      <span class="src"><b>classification.py:449</b><br>A-2 &larr; corroboration.py + shared/syndrome-definitions.json<br>A-3 &larr; hcd.py + hcd.db</span>
+    </div>
+  </div>
+
+  <div class="term ntr" id="e1-ntr" style="left:460px;top:878px">A &lt; 1.0 &rarr; NTR</div>
+
+  <!-- Step 2: Continuous B-factors -->
+  <div class="gbox" style="left:35px;top:980px;width:630px;height:245px">
+    <span class="gbox-label">Step 2: B-Factor Gates &mdash; Continuous (LB, BW, OM, EG, VS)</span>
+  </div>
+
+  <div class="nd c-class" id="eb-1" style="left:55px;top:1005px;width:185px">
+    <div class="hd">B-1: Large Magnitude</div>
+    <div class="bd">
+      <span class="lb">|d| &ge; 1.5?</span>
+      <span class="src"><b>classification.py:555</b><br>|d| via send_knowledge.py get_effect_size()</span>
+    </div>
+  </div>
+  <div class="term adverse" id="eb-1a" style="left:310px;top:1007px">tr_adverse</div>
+
+  <div class="nd c-class" id="eb-2" style="left:55px;top:1055px;width:185px">
+    <div class="hd">B-2: Moderate + Corroborated</div>
+    <div class="bd"><span class="lb">|d| &ge; 0.8 AND corroborated?</span></div>
+  </div>
+  <div class="term adverse" id="eb-2a" style="left:310px;top:1057px">tr_adverse</div>
+
+  <div class="nd c-class" id="eb-3" style="left:55px;top:1107px;width:185px">
+    <div class="hd">B-3: Small Effect</div>
+    <div class="bd"><span class="lb">|d| &lt; 0.5?</span></div>
+  </div>
+  <div class="term non-adverse" id="eb-3a" style="left:310px;top:1109px">tr_non_adverse</div>
+
+  <div class="nd c-class" id="eb-4" style="left:55px;top:1157px;width:185px">
+    <div class="hd">B-4: Fallback</div>
+    <div class="bd"><span class="lb">0.5 &le; |d| &lt; 1.5, not corroborated</span></div>
+  </div>
+  <div class="term equivocal" id="eb-4a" style="left:310px;top:1159px">equivocal</div>
+
+  <!-- Step 2: Incidence branch -->
+  <div class="gbox" style="left:700px;top:725px;width:560px;height:265px">
+    <span class="gbox-label">Incidence Branch (CL, DS, MI fallback)</span>
+  </div>
+
+  <div class="nd c-gate" id="ei-mi" style="left:720px;top:750px;width:120px">
+    <div class="hd">Domain</div>
+    <div class="bd"><span class="lb">MI fallback?</span></div>
+  </div>
+  <div class="term equivocal" id="ei-mi-eq" style="left:900px;top:755px">equivocal (no magnitude scalar)</div>
+
+  <div class="nd c-class" id="ei-cl" style="left:720px;top:815px;width:165px">
+    <div class="hd">CL/DS Gate</div>
+    <div class="bd">
+      <span class="lb">p &lt; 0.05 + monotonic<br>or threshold?</span>
+    </div>
+  </div>
+  <div class="term adverse" id="ei-cl-adv" style="left:940px;top:812px">tr_adverse</div>
+  <div class="term equivocal" id="ei-cl-eq" style="left:940px;top:845px">equivocal</div>
+
+  <div class="nd c-class" id="ei-nop" style="left:720px;top:890px;width:165px">
+    <div class="hd">No p &lt; 0.05</div>
+    <div class="bd"><span class="lb">A-score &ge; 1.0?</span></div>
+  </div>
+  <div class="term equivocal" id="ei-nop-eq" style="left:940px;top:890px">equivocal</div>
+  <div class="term non-adverse" id="ei-nop-na" style="left:940px;top:923px">tr_non_adverse</div>
+
+  <!-- B-0 Dictionary overrides -->
+  <div class="gbox" style="left:700px;top:1010px;width:560px;height:225px">
+    <span class="gbox-label">B-0: Dictionary Override (MI/MA/TF histopath)</span>
+  </div>
+
+  <div class="nd c-dict" id="eb0-likely" style="left:720px;top:1035px;width:160px">
+    <div class="hd">likely_adverse</div>
+    <div class="bd">
+      <span class="lb">atrophy, degeneration,<br>hemorrhage, inflammation</span>
+    </div>
+  </div>
+  <div class="term adverse" id="eb0-likely-a" style="left:940px;top:1042px">tr_adverse</div>
+
+  <div class="nd c-dict" id="eb0-cd" style="left:720px;top:1115px;width:160px">
+    <div class="hd">context_dependent</div>
+    <div class="bd">
+      <span class="lb">hypertrophy, hyperplasia</span>
+      <span class="fm">|d|&ge;1.5 &rarr; adverse<br>|d|&lt;1.5 &rarr; adaptive</span>
+    </div>
+  </div>
+  <div class="term adverse" id="eb0-cd-a" style="left:940px;top:1115px">|d|&ge;1.5 &rarr; tr_adverse</div>
+  <div class="term adaptive" id="eb0-cd-ad" style="left:940px;top:1148px">|d|&lt;1.5 &rarr; tr_adaptive</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §4 OM TWO-GATE                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:1320px"><span class="lane-label">§4 &mdash; OM Two-Gate Classification &mdash; _assess_om_two_gate() &mdash; classification.py:609</span></div>
+
+  <!-- Brain -->
+  <div class="nd c-gate" id="om-brain" style="left:40px;top:1348px;width:155px">
+    <div class="hd">Brain Special Case</div>
+    <div class="bd">
+      <span class="lb">floor = 0%</span>
+      <span class="dt">Most sensitive organ:<br>any stat sig &rarr; adverse</span>
+      <span class="src"><b>classification.py:669</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-class" id="om-brain-p" style="left:250px;top:1348px;width:120px">
+    <div class="hd">Stat Gate</div>
+    <div class="bd"><span class="lb">p &lt; 0.05?</span></div>
+  </div>
+  <div class="term adverse" id="om-brain-adv" style="left:425px;top:1348px">tr_adverse</div>
+
+  <div class="nd c-class" id="om-brain-t" style="left:250px;top:1402px;width:120px">
+    <div class="hd">Trend</div>
+    <div class="bd"><span class="lb">trend &lt; 0.05?</span></div>
+  </div>
+  <div class="term equivocal" id="om-brain-eq" style="left:425px;top:1405px">equivocal</div>
+  <div class="term ntr" id="om-brain-ntr" style="left:425px;top:1438px">NTR</div>
+
+  <!-- Strong adverse -->
+  <div class="nd c-class" id="om-strong" style="left:40px;top:1480px;width:210px">
+    <div class="hd">Strong Adverse Override</div>
+    <div class="bd">
+      <span class="lb">|pct| &ge; strong_adverse AND p &lt; 0.05</span>
+      <span class="dt">HCD cannot override strong signal</span>
+      <span class="src"><b>classification.py:682</b></span>
+    </div>
+  </div>
+  <div class="term adverse" id="om-strong-adv" style="left:310px;top:1490px">tr_adverse</div>
+
+  <!-- Gate matrix -->
+  <div class="nd c-class" id="om-matrix" style="left:40px;top:1580px;width:440px">
+    <div class="hd">Two-Gate Decision Matrix</div>
+    <div class="bd">
+      <ul>
+        <li><b>Stat + Mag &ge; floor + NOT within HCD</b> &rarr; <b style="color:#dc2626">tr_adverse</b></li>
+        <li><b>Stat + Mag &ge; floor + within HCD</b> &rarr; <b style="color:#d97706">equivocal</b> (HCD downgrade)</li>
+        <li><b>Stat + ceiling &le; Mag &lt; floor</b> &rarr; <b style="color:#d97706">equivocal</b> (moderate)</li>
+        <li><b>Stat + Mag &lt; ceiling</b> &rarr; <b style="color:#2563eb">tr_non_adverse</b></li>
+        <li>&nbsp;&nbsp;Exception: p&lt;0.001 + Mag&gt;ceil/2 &rarr; <b style="color:#d97706">equivocal</b></li>
+        <li>&nbsp;&nbsp;Exception: outside HCD &rarr; <b style="color:#d97706">equivocal</b> (upgrade)</li>
+        <li><b>NO stat + Mag &ge; floor</b> &rarr; <b style="color:#d97706">equivocal</b> (+ trend tiebreaker)</li>
+        <li><b>NO stat + NO mag</b> &rarr; <b style="color:#16a34a">not_treatment_related</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Threshold table -->
+  <div class="nd c-score" id="om-thresholds" style="left:540px;top:1348px;width:280px">
+    <div class="hd">Organ-Specific Thresholds</div>
+    <div class="bd">
+      <span class="lb">Variation Ceiling | Adverse Floor | Strong</span>
+      <span class="fm" style="line-height:1.7">
+Brain:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0%&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;0%&nbsp;|&nbsp;&nbsp;&nbsp;0%&nbsp;&nbsp;(any sig)<br>
+Heart:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5%&nbsp;&nbsp;|&nbsp;&nbsp;10%&nbsp;|&nbsp;&nbsp;20%<br>
+Liver:&nbsp;&nbsp;&nbsp;&nbsp;10%&nbsp;&nbsp;|&nbsp;&nbsp;15%&nbsp;|&nbsp;&nbsp;30%<br>
+Kidney:&nbsp;&nbsp;&nbsp;&nbsp;8%&nbsp;&nbsp;|&nbsp;&nbsp;15%&nbsp;|&nbsp;&nbsp;30%<br>
+Spleen:&nbsp;&nbsp;&nbsp;15%&nbsp;&nbsp;|&nbsp;&nbsp;25%&nbsp;|&nbsp;&nbsp;50%<br>
+Thymus:&nbsp;&nbsp;&nbsp;20%&nbsp;&nbsp;|&nbsp;&nbsp;30%&nbsp;|&nbsp;&nbsp;60%<br>
+Default:&nbsp;&nbsp;&nbsp;5%&nbsp;&nbsp;|&nbsp;&nbsp;15%&nbsp;|&nbsp;&nbsp;30%
+      </span>
+      <span class="src"><b>organ_thresholds.py</b><br>Data: shared/organ-weight-thresholds.json<br>61 specimen mappings, species-aware<br>Default floor: 15%</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §5 HISTOPATH + ADAPTIVE TREES                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:1740px"><span class="lane-label">§5 &mdash; Histopath Classification &mdash; _classify_histopath() + Adaptive Trees + B-6</span></div>
+
+  <div class="nd c-dict" id="h-dict" style="left:40px;top:1770px;width:175px">
+    <div class="hd">Intrinsic Lookup</div>
+    <div class="bd">
+      <span class="lb">3-Tier Dictionary</span>
+      <ul>
+        <li><b style="color:#dc2626">always_adverse</b><br>necrosis, carcinoma, sarcoma</li>
+        <li><b style="color:#ea580c">likely_adverse</b><br>atrophy, degeneration</li>
+        <li><b style="color:#d97706">context_dependent</b><br>hypertrophy, hyperplasia</li>
+      </ul>
+      <span class="src"><b>adversity_dictionary.py</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="h-route" style="left:270px;top:1770px;width:145px">
+    <div class="hd">Route by Tier</div>
+    <div class="bd">
+      <span class="th">always &rarr; Step 0 override<br>likely &rarr; B-0 tr_adverse<br>context &rarr; adaptive trees<br>None &rarr; base ECETOC</span>
+      <span class="src"><b>classification.py:854</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-tree" id="h-trees" style="left:470px;top:1770px;width:260px">
+    <div class="hd">6 Adaptive Decision Trees</div>
+    <div class="bd">
+      <span class="lb">evaluate_adaptive_trees()</span>
+      <span class="dt">Context-dependent terms only. Uses<br>ConcurrentFindingIndex for cross-references.</span>
+      <ul>
+        <li><b>LIVER</b>: ALT/AST/ALP/GGT panel<br>&bull; concurrent necrosis &rarr; adverse</li>
+        <li><b>THYROID</b>: T3/T4/TSH cascade</li>
+        <li><b>ADRENAL</b>: cortisol/ACTH</li>
+        <li><b>THYMUS/SPLEEN</b>: lymphoid</li>
+        <li><b>KIDNEY</b>: BUN/CREAT/UrProt</li>
+        <li><b>GASTRIC</b>: forestomach specific</li>
+      </ul>
+      <span class="src"><b>adaptive_trees.py</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-class" id="h-out" style="left:790px;top:1770px;width:190px">
+    <div class="hd">Tree Outcomes</div>
+    <div class="bd">
+      <ul>
+        <li><b style="color:#dc2626">tr_adverse</b>: concurrent<br>damage indicators present</li>
+        <li><b style="color:#0891b2">tr_adaptive</b>: clean panel,<br>low severity, compensatory</li>
+        <li><b style="color:#d97706">equivocal</b>: mixed signals,<br>dirty panel, high severity</li>
+      </ul>
+      <span class="th">No tree matched &rarr; equivocal<br>(never adaptive from mag alone)</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" id="h-b6" style="left:1040px;top:1770px;width:230px">
+    <div class="hd">B-6 Progression Chains</div>
+    <div class="bd">
+      <span class="lb">14 organ-specific chains</span>
+      <span class="fm">normal &rarr; hyperplasia &rarr;<br>adenoma &rarr; carcinoma</span>
+      <ul>
+        <li>Obligate precursor &rarr; always fires</li>
+        <li>severity &ge; trigger &rarr; fires</li>
+        <li>B-6 fires + treatment-related &rarr;<br><b style="color:#dc2626">ESCALATE to tr_adverse</b></li>
+      </ul>
+      <span class="src"><b>progression_chains.py</b></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §6 DOSE-RESPONSE PATTERN                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:2050px"><span class="lane-label">§6 &mdash; Dose-Response Pattern &mdash; classify_dose_response() &mdash; classification.py:300</span></div>
+
+  <div class="nd c-class" id="dr-method" style="left:40px;top:2080px;width:200px">
+    <div class="hd">Equivalence-Band Method</div>
+    <div class="bd">
+      <span class="lb">Step-by-step dose comparison</span>
+      <span class="fm">band = frac &times; pooled_SD<br><br>For each pair:<br>&nbsp;|&Delta;| &le; band &rarr; "flat"<br>&nbsp;&Delta; &gt; 0 &rarr; "up"<br>&nbsp;&Delta; &lt; 0 &rarr; "down"</span>
+      <span class="src"><b>classification.py:300</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-score" id="dr-tiers" style="left:280px;top:2080px;width:200px">
+    <div class="hd">CV-Tiered Fractions</div>
+    <div class="bd">
+      <span class="lb">Noise tolerance</span>
+      <ul>
+        <li><b>Tier 1</b> (CV&lt;10%): <b>0.5 SD</b><br>BW, RBC, HGB, brain, heart</li>
+        <li><b>Tier 2</b> (CV 10-20%): <b>0.5 SD</b><br>ALT, AST, liver, kidney</li>
+        <li><b>Tier 3</b> (CV&gt;20%): <b>0.75 SD</b><br>WBC, TRIG, spleen, thymus</li>
+      </ul>
+      <span class="fm">Incidence: max(1.5&times;SE, 2pp)</span>
+      <span class="src"><b>classification.py:113</b><br>_HIGH_CV_TESTS, _MODERATE_CV_TESTS,<br>_KNOWN_TIER1_TESTS, _HIGH_CV_SPECIMENS</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="dr-classify" style="left:520px;top:2080px;width:200px">
+    <div class="hd">Step Classification</div>
+    <div class="bd">
+      <span class="lb">Map steps &rarr; pattern</span>
+      <ul>
+        <li>All same dir, no flats &rarr; <b>monotonic</b></li>
+        <li>Same dir + lead flats &rarr; <b>threshold</b><br>(+ onset_dose_level)</li>
+        <li>Mixed &rarr; <b>non_monotonic</b></li>
+        <li>All flat &rarr; <b>flat</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="nd c-score" id="dr-conf" style="left:760px;top:2080px;width:195px">
+    <div class="hd">Confidence (Continuous)</div>
+    <div class="bd">
+      <span class="lb">Two-factor scoring</span>
+      <ul>
+        <li><b>F1</b>: Max |d| from control<br>&ge;2.0 &rarr; +2 | &ge;0.8 &rarr; +1</li>
+        <li><b>F2</b>: Naturally monotonic<br>without band &rarr; +1</li>
+      </ul>
+      <span class="th">&ge;3 &rarr; HIGH | &ge;1 &rarr; MOD | 0 &rarr; LOW</span>
+    </div>
+  </div>
+
+  <div class="nd c-class" id="dr-out" style="left:995px;top:2080px;width:175px">
+    <div class="hd">Output</div>
+    <div class="bd">
+      <span class="lb">Pattern + Confidence</span>
+      <span class="out">&rarr; pattern: enum<br>&rarr; confidence: H/M/L<br>&rarr; onset_dose_level: int?</span>
+      <span class="dt" style="margin-top:93px">Feeds: A-1 factor, signal<br>score, treatment-related</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §7 TREATMENT-RELATED                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:2310px"><span class="lane-label">§7 &mdash; Treatment-Related Determination &mdash; determine_treatment_related() &mdash; classification.py:408</span></div>
+
+  <div class="nd c-class" id="tr-g1" style="left:40px;top:2338px;width:230px">
+    <div class="hd">Gate 1: Strong Convergence</div>
+    <div class="bd">
+      <span class="lb">p_adj &lt; 0.05 AND trend_p &lt; 0.05?</span>
+      <span class="src"><b>classification.py:408</b></span>
+    </div>
+  </div>
+  <div class="term adverse" id="tr-g1-t" style="left:330px;top:2343px">TRUE</div>
+
+  <div class="nd c-class" id="tr-g2" style="left:40px;top:2395px;width:230px">
+    <div class="hd">Gate 2: Adverse + Monotonic</div>
+    <div class="bd"><span class="lb">severity=adverse AND monotonic?</span></div>
+  </div>
+  <div class="term adverse" id="tr-g2-t" style="left:330px;top:2400px">TRUE</div>
+
+  <div class="nd c-class" id="tr-g3" style="left:40px;top:2452px;width:230px">
+    <div class="hd">Gate 3: Very Significant</div>
+    <div class="bd"><span class="lb">p_adj &lt; 0.01?</span></div>
+  </div>
+  <div class="term adverse" id="tr-g3-t" style="left:330px;top:2457px">TRUE</div>
+
+  <div class="term ntr" id="tr-false" style="left:330px;top:2505px">FALSE (none met)</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §8 NOAEL DERIVATION                                             -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:2560px"><span class="lane-label">§8 &mdash; NOAEL Derivation &mdash; build_noael_summary() &mdash; generator/view_dataframes.py:352</span></div>
+
+  <div class="nd c-noael" id="n-filter" style="left:40px;top:2588px;width:155px">
+    <div class="hd">Step 1: Filter</div>
+    <div class="bd">
+      <span class="lb">Exclude derived</span>
+      <span class="dt">Ratios/indices excluded &mdash;<br>artifactually low NOAEL</span>
+    </div>
+  </div>
+
+  <div class="nd c-noael" id="n-loael" style="left:230px;top:2588px;width:175px">
+    <div class="hd">Step 2: Find LOAEL</div>
+    <div class="bd">
+      <span class="lb">Adverse dose levels</span>
+      <span class="fm">finding_class = tr_adverse<br>pairwise p_adj &lt; 0.05</span>
+      <span class="th">LOAEL = min(adverse doses)</span>
+      <span class="src"><b>view_dataframes.py:352</b><br>_is_loael_driving() for finding_class gate</span>
+    </div>
+  </div>
+
+  <div class="nd c-noael" id="n-noael" style="left:440px;top:2588px;width:150px">
+    <div class="hd">Step 3: NOAEL</div>
+    <div class="bd">
+      <span class="lb">NOAEL = LOAEL &minus; 1</span>
+      <span class="dt">LOAEL at lowest dose &rarr;<br>NOAEL not established</span>
+    </div>
+  </div>
+
+  <div class="nd c-noael" id="n-mort" style="left:625px;top:2588px;width:155px">
+    <div class="hd">Step 4: Mortality Cap</div>
+    <div class="bd">
+      <span class="lb">NOAEL &ge; mort LOAEL?</span>
+      <span class="dt">Cap to mort_LOAEL &minus; 1</span>
+      <span class="out">&rarr; mortality_cap_applied</span>
+    </div>
+  </div>
+
+  <div class="nd c-score" id="n-conf" style="left:815px;top:2588px;width:185px">
+    <div class="hd">Step 5: Confidence</div>
+    <div class="bd">
+      <span class="lb">Penalty system (base 1.0)</span>
+      <ul>
+        <li>&minus;0.20 single endpoint at LOAEL</li>
+        <li>&minus;0.20 sex inconsistency</li>
+        <li>&minus;0.20 large |d| but p&ge;0.05</li>
+        <li>&minus;0.15 all uncorroborated</li>
+      </ul>
+      <span class="th">Floor: 0.0 | Max: 1.0</span>
+      <span class="src"><b>view_dataframes.py:499</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-noael" id="n-sched" style="left:1035px;top:2588px;width:165px">
+    <div class="hd">Step 6: Scheduled</div>
+    <div class="bd">
+      <span class="lb">Dual-pass comparison</span>
+      <span class="dt">Repeat with scheduled_pairwise<br>(early deaths excluded)</span>
+      <span class="th">Flag if differs from base</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §9 SIGNAL SCORE                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:2770px"><span class="lane-label">§9 &mdash; Signal Score &mdash; _compute_signal_score() &mdash; generator/view_dataframes.py:567</span></div>
+
+  <div class="nd c-score" id="ss-cont" style="left:40px;top:2800px;width:280px">
+    <div class="hd">Continuous (4 factors)</div>
+    <div class="bd">
+      <span class="fm">score = 0.35 &times; min(&minus;log<sub>10</sub>(p)/4, 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.20 &times; min(&minus;log<sub>10</sub>(trend)/4, 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.25 &times; min(|d|/2, 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.20 &times; pattern_score</span>
+      <span class="dt" style="margin-top:93px">Pattern: monotonic 1.0 | threshold 0.7<br>non_monotonic 0.3 | flat 0.0</span>
+      <span class="src"><b>view_dataframes.py:567</b></span>
+    </div>
+  </div>
+
+  <div class="nd c-score" id="ss-inc" style="left:360px;top:2800px;width:280px">
+    <div class="hd">Incidence (redistributed)</div>
+    <div class="bd">
+      <span class="fm">score = 0.45 &times; min(&minus;log<sub>10</sub>(p)/4, 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.30 &times; min(&minus;log<sub>10</sub>(trend)/4, 1)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.25 &times; pattern_score<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.10 &times; MI_severity_bonus</span>
+      <span class="th">Capped at 1.0</span>
+    </div>
+  </div>
+
+  <div class="nd c-signal" id="ss-feeds" style="left:680px;top:2800px;width:175px">
+    <div class="hd">Feeds Into</div>
+    <div class="bd">
+      <span class="lb">Signal score 0.0&ndash;1.0</span>
+      <span class="dt">&bull; Target organ evidence<br>&bull; Study signal summary<br>&bull; Sorting priority<br>&bull; Rail grouping</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §10 TARGET ORGAN                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:2990px"><span class="lane-label">§10 &mdash; Target Organ &mdash; build_target_organ_summary() &mdash; generator/view_dataframes.py:109</span></div>
+
+  <div class="nd c-organ" id="to-agg" style="left:40px;top:3020px;width:195px">
+    <div class="hd">Step 1: Aggregate</div>
+    <div class="bd">
+      <span class="lb">Per organ_system</span>
+      <span class="dt">&bull; signal_score per endpoint<br>&bull; Dedup by endpoint key<br>&nbsp;&nbsp;(max signal per key)<br>&bull; Track domains</span>
+      <span class="src"><b>view_dataframes.py:109</b><br>Organ mapping: send_knowledge.py<br>ORGAN_SYSTEM_MAP (100+ specimens)</span>
+    </div>
+  </div>
+
+  <div class="nd c-organ" id="to-evidence" style="left:280px;top:3020px;width:225px">
+    <div class="hd">Step 2: Evidence Score</div>
+    <div class="bd">
+      <span class="fm">avg_signal = mean(deduped signals)<br><br>convergence_groups:<br>&nbsp;MI+MA+TF = 1 "PATHOLOGY" group<br>&nbsp;each other domain = 1 group<br><br>evidence = avg_signal &times;<br>&nbsp;(1 + 0.2 &times; (n_groups &minus; 1))</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="to-flag" style="left:550px;top:3020px;width:185px">
+    <div class="hd">Step 3: Flag Decision</div>
+    <div class="bd">
+      <span class="lb">target_organ_flag =</span>
+      <span class="fm">evidence_score &ge; 0.3<br>AND n_significant &ge; 1</span>
+      <span class="dt" style="margin-top:93px">Both conditions required</span>
+    </div>
+  </div>
+
+  <div class="term adverse" id="to-true" style="left:790px;top:3030px">target_organ = TRUE</div>
+  <div class="term normal" id="to-false" style="left:790px;top:3070px">target_organ = FALSE</div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- §11 CORROBORATION                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:3180px"><span class="lane-label">§11 &mdash; Corroboration &mdash; compute_corroboration() &mdash; corroboration.py</span></div>
+
+  <div class="nd c-enrich" id="co-match" style="left:40px;top:3210px;width:195px">
+    <div class="hd">Step 1: Term Matching</div>
+    <div class="bd">
+      <span class="lb">Match finding &rarr; syndromes</span>
+      <span class="dt">6 strategies (priority order):<br>1. Domain exact match<br>2. Direction (if specified)<br>3. Test code (LB, EG, VS)<br>4. Canonical label<br>5. Specimen + finding (MI/MA)<br>6. Organ weight specimen (OM)</span>
+      <span class="src"><b>corroboration.py:84</b><br>Data: shared/syndrome-definitions.json<br>33 syndromes (10 XS + 23 XC chains)</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" id="co-search" style="left:280px;top:3210px;width:195px">
+    <div class="hd">Step 2: Cross-Domain</div>
+    <div class="bd">
+      <span class="lb">Find supporting evidence</span>
+      <span class="dt">For each matched syndrome:<br>&bull; Same-sex findings only<br>&bull; Other terms in syndrome<br>&bull; Quality gate:</span>
+      <span class="th">Supporting finding must have<br>treatment_related = True</span>
+      <span class="src"><b>corroboration.py:64</b><br>passes_corroboration_gate()</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" id="co-status" style="left:520px;top:3210px;width:175px">
+    <div class="hd">Step 3: Status</div>
+    <div class="bd">
+      <ul>
+        <li><b style="color:#16a34a">corroborated</b><br>&ge;2 terms, diff domains, TR gate</li>
+        <li><b style="color:#d97706">uncorroborated</b><br>Matches term, no support</li>
+        <li><b style="color:#6b7280">not_applicable</b><br>No syndrome match</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="nd c-signal" id="co-impact" style="left:740px;top:3210px;width:195px">
+    <div class="hd">Classification Impact</div>
+    <div class="bd">
+      <span class="lb">Corroboration feeds:</span>
+      <ul>
+        <li><b>A-2</b>: corroborated = +1.0</li>
+        <li><b>B-2</b>: |d|&ge;0.8 + corr &rarr; adverse</li>
+        <li><b>NOAEL conf</b>: all uncorr at<br>LOAEL = &minus;0.15 penalty</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- COMPLETE PIPELINE                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:3470px"><span class="lane-label">Complete Pipeline &mdash; End-to-End Flow</span></div>
+
+  <div class="gbox" style="left:35px;top:3495px;width:1350px;height:215px">
+    <span class="gbox-label">From Raw Finding to All Output Classifications</span>
+  </div>
+
+  <!-- Row 1: main classification path -->
+  <div class="nd c-dispatch" id="p-input" style="left:55px;top:3520px;width:90px">
+    <div class="hd">Input</div>
+    <div class="bd"><span class="lb">Raw<br>finding</span></div>
+  </div>
+
+  <div class="nd c-score" id="p-stats" style="left:185px;top:3520px;width:100px">
+    <div class="hd">Stats</div>
+    <div class="bd"><span class="lb">p, trend,<br>effect size</span></div>
+  </div>
+
+  <div class="nd c-class" id="p-dr" style="left:330px;top:3515px;width:95px">
+    <div class="hd">&sect;6</div>
+    <div class="bd"><span class="lb">Dose-Resp</span></div>
+  </div>
+  <div class="nd c-class" id="p-sev" style="left:440px;top:3515px;width:80px">
+    <div class="hd">&sect;2</div>
+    <div class="bd"><span class="lb">Severity</span></div>
+  </div>
+  <div class="nd c-enrich" id="p-corr" style="left:535px;top:3515px;width:80px">
+    <div class="hd">&sect;11</div>
+    <div class="bd"><span class="lb">Corrobor.</span></div>
+  </div>
+  <div class="nd c-class" id="p-tr" style="left:630px;top:3515px;width:80px">
+    <div class="hd">&sect;7</div>
+    <div class="bd"><span class="lb">Treat-Rel</span></div>
+  </div>
+
+  <div class="nd c-class" id="p-ecetoc" style="left:760px;top:3515px;width:135px">
+    <div class="hd">&sect;1 Dispatch</div>
+    <div class="bd">
+      <span class="lb">ECETOC</span>
+      <span class="dt">&sect;4 OM | &sect;5 Histo | &sect;3 Base</span>
+    </div>
+  </div>
+
+  <div class="nd c-dict" id="p-class" style="left:945px;top:3515px;width:115px">
+    <div class="hd">Output</div>
+    <div class="bd">
+      <span class="lb">finding_class</span>
+      <span class="dt" style="line-height:1.5"><span style="color:#dc2626">tr_adverse</span><br><span style="color:#0891b2">tr_adaptive</span><br><span style="color:#2563eb">tr_non_adverse</span><br><span style="color:#d97706">equivocal</span><br><span style="color:#16a34a">NTR</span></span>
+    </div>
+  </div>
+
+  <!-- Row 2: scoring path -->
+  <div class="nd c-score" id="p-sig" style="left:330px;top:3620px;width:95px">
+    <div class="hd">&sect;9</div>
+    <div class="bd"><span class="lb">Signal<br>Score</span></div>
+  </div>
+
+  <div class="nd c-organ" id="p-to" style="left:470px;top:3620px;width:95px">
+    <div class="hd">&sect;10</div>
+    <div class="bd"><span class="lb">Target<br>Organ</span></div>
+  </div>
+
+  <div class="nd c-noael" id="p-noael" style="left:1110px;top:3530px;width:115px">
+    <div class="hd">&sect;8</div>
+    <div class="bd">
+      <span class="lb">NOAEL</span>
+      <span class="dt">finding_class +<br>target organ</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- REFERENCE: SOURCE FILES & LOOKUP TABLES                         -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="lane" style="top:3740px"><span class="lane-label">Reference &mdash; Source Files, Lookup Tables &amp; Configuration Data</span></div>
+
+  <div class="gbox" style="left:35px;top:3765px;width:660px;height:385px">
+    <span class="gbox-label">Shared Data Files (shared/)</span>
+  </div>
+
+  <div class="nd c-dict" style="left:55px;top:3790px;width:300px">
+    <div class="hd">adversity-dictionary.json</div>
+    <div class="bd">
+      <span class="lb">3-tier intrinsic adversity lookup</span>
+      <span class="dt">22 terms: 11 always_adverse (necrosis, carcinoma, sarcoma&hellip;),
+        6 likely_adverse (atrophy, degeneration&hellip;),
+        5 context_dependent (hypertrophy, hyperplasia&hellip;)</span>
+      <span class="th">Used by: &sect;3 Step 0, &sect;3 B-0, &sect;5 histopath routing</span>
+    </div>
+  </div>
+
+  <div class="nd c-score" style="left:375px;top:3790px;width:300px">
+    <div class="hd">organ-weight-thresholds.json</div>
+    <div class="bd">
+      <span class="lb">OM two-gate thresholds per organ</span>
+      <span class="dt">13 organs: brain (0/0/0%), heart (5/10/20%),
+        liver (10/15/30%), kidney (8/15/30%),
+        spleen (15/25/50%), thymus (20/30/60%)&hellip;<br>
+        Species-aware (rat/mouse/other for adrenal)</span>
+      <span class="th">Used by: &sect;4 OM two-gate</span>
+    </div>
+  </div>
+
+  <div class="nd c-signal" style="left:55px;top:3920px;width:300px">
+    <div class="hd">hcd-reference-ranges.json + hcd.db</div>
+    <div class="bd">
+      <span class="lb">Historical Control Data (A-3 factor)</span>
+      <span class="dt">Strains: Hsd:Sprague Dawley (28/90-day),
+        Crl:WI(Han) (90-day NTP composite)<br>
+        20+ organs &times; sex &times; duration<br>
+        SQLite: hcd_aggregates, animal_organ_weights, strain_aliases</span>
+      <span class="th">Used by: &sect;1 dispatch (OM A-3), &sect;3 A-factor (A-3)</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" style="left:375px;top:3920px;width:300px">
+    <div class="hd">syndrome-definitions.json</div>
+    <div class="bd">
+      <span class="lb">33 syndromes: 10 XS cross-domain + 23 XC organ chains</span>
+      <span class="dt">XS01 Hepatocellular, XS02 Cholestatic,
+        XS03 Nephrotoxicity, XS04 Myelosuppression,
+        XS05 Hemolytic anemia&hellip; + XC01a-XC12c organ chains<br>
+        Each: requiredLogic, minDomains, terms with<br>
+        testCodes, specimenTerms, direction gates</span>
+      <span class="th">Used by: &sect;11 corroboration, &sect;3 A-2 factor</span>
+    </div>
+  </div>
+
+  <div class="nd c-tree" style="left:55px;top:4050px;width:300px">
+    <div class="hd">progression-chains.yaml</div>
+    <div class="bd">
+      <span class="lb">14 organ-specific neoplastic chains (B-6)</span>
+      <span class="dt">LIVER_NEOPLASTIC, KIDNEY_CPN, KIDNEY_ALPHA2U,
+        THYROID_FOLLICULAR, ADRENAL_PHEO&hellip;<br>
+        Stages: normal &rarr; hyperplasia &rarr; adenoma &rarr; carcinoma<br>
+        Severity triggers, obligate_precursor flags,<br>
+        species/strain/sex filters, human_relevance</span>
+      <span class="th">Used by: &sect;5 B-6 progression chain evaluation</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" style="left:375px;top:4050px;width:300px">
+    <div class="hd">send-terminology-alignment.json</div>
+    <div class="bd">
+      <span class="lb">SEND &harr; internal term mappings</span>
+      <span class="dt">78 MI nonneo terms &rarr; NCI codes<br>
+        28 LB test alignments (LBTESTCD &rarr; internal)<br>
+        13 OM organ alignments, 19 MI specimen maps<br>
+        47 CL clinical observation alignments</span>
+      <span class="th">Used by: &sect;11 corroboration term matching</span>
+    </div>
+  </div>
+
+  <!-- Python modules -->
+  <div class="gbox" style="left:720px;top:3765px;width:600px;height:385px">
+    <span class="gbox-label">Python Modules (services/analysis/)</span>
+  </div>
+
+  <div class="nd c-class" style="left:740px;top:3790px;width:270px">
+    <div class="hd">classification.py (34.5 KB)</div>
+    <div class="bd">
+      <span class="lb">Core classification engine</span>
+      <span class="dt">classify_severity() :23 | classify_dose_response() :300<br>
+        determine_treatment_related() :408<br>
+        _score_treatment_relatedness() :449<br>
+        assess_finding() :487 | _assess_om_two_gate() :609<br>
+        _compute_a3_for_om() :734 | _evaluate_b6_for_finding() :761<br>
+        assess_finding_with_context() :795<br>
+        _classify_histopath() :854</span>
+      <span class="th">Tier CV constants: _HIGH_CV_TESTS,<br>_MODERATE_CV_TESTS, _KNOWN_TIER1_TESTS,<br>_HIGH_CV_SPECIMENS, _MODERATE_CV_SPECIMENS</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" style="left:1030px;top:3790px;width:270px">
+    <div class="hd">send_knowledge.py (16.9 KB)</div>
+    <div class="bd">
+      <span class="lb">SEND domain registry &amp; biomarker profiles</span>
+      <span class="dt">DOMAIN_EFFECT_TYPE: maps domains &rarr; effect metric<br>
+        CONTINUOUS_DOMAINS / INCIDENCE_DOMAINS: frozensets<br>
+        BIOMARKER_MAP: 165 test codes &rarr; organ, system, direction<br>
+        ORGAN_SYSTEM_MAP: 100+ specimens &rarr; system<br>
+        DOMAIN_EFFECT_THRESHOLDS: per-domain Cohen's d quintiles<br>
+        &bull; LB/OM: 0.3/0.6/1.0/1.5 | BW/FW: 0.2/0.5/0.8/1.2</span>
+      <span class="th">Used by: all classification functions via get_effect_size()</span>
+    </div>
+  </div>
+
+  <div class="nd c-noael" style="left:740px;top:3970px;width:270px">
+    <div class="hd">generator/view_dataframes.py</div>
+    <div class="bd">
+      <span class="lb">View-specific JSON builders</span>
+      <span class="dt">build_study_signal_summary() :36<br>
+        build_target_organ_summary() :109<br>
+        build_dose_response_metrics() :186<br>
+        build_organ_evidence_detail() :222<br>
+        build_lesion_severity_summary() :251<br>
+        build_adverse_effect_summary() :315<br>
+        build_noael_summary() :352<br>
+        _compute_noael_confidence() :499<br>
+        _compute_signal_score() :567</span>
+      <span class="th">Convergence groups, signal weights,<br>NOAEL penalty system, LOAEL driver logic</span>
+    </div>
+  </div>
+
+  <div class="nd c-score" style="left:1030px;top:3970px;width:270px">
+    <div class="hd">confidence.py (12 KB)</div>
+    <div class="bd">
+      <span class="lb">GRADE-style 6-dimension confidence</span>
+      <span class="dt">D1 Statistical: p/trend thresholds<br>
+        D2 Dose-response: pattern quality<br>
+        D3 Concordance: corroboration status<br>
+        D4 HCD: within/outside range<br>
+        D5 Cross-sex: sex concordance<br>
+        D6 Tier 2 equivocal: CV band check</span>
+      <span class="th">&ge;2 &rarr; HIGH | 0&ndash;1 &rarr; MODERATE | &le;&minus;1 &rarr; LOW</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" style="left:740px;top:4065px;width:270px">
+    <div class="hd">analysis_settings.py</div>
+    <div class="bd">
+      <span class="lb">10 user-configurable settings</span>
+      <span class="dt">adversity_threshold: grade-ge-2-or-dose-dep (default)<br>
+        effect_size: hedges-g | cohens-d | glass-delta<br>
+        pairwise_test: dunnett | williams | steel<br>
+        trend_test: jonckheere | cuzick<br>
+        organ_weight_method: recommended | absolute | ratio</span>
+      <span class="th">Parameterizes classify_severity() threshold mode</span>
+    </div>
+  </div>
+
+  <div class="nd c-enrich" style="left:740px;top:4165px;width:270px">
+    <div class="hd">findings_pipeline.py</div>
+    <div class="bd">
+      <span class="lb">Shared enrichment orchestration</span>
+      <span class="dt">process_findings(): main enrichment pipeline<br>
+        enrich_findings(): attach all classification<br>
+        attach_scheduled_stats(): dual-pass merge</span>
+      <span class="th">Used by generator and live API path</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" style="left:1030px;top:4165px;width:270px">
+    <div class="hd">incidence_recovery.py</div>
+    <div class="bd">
+      <span class="lb">Recovery analysis for incidence data</span>
+      <span class="dt">compute_incidence_verdict() :29<br>
+        compute_incidence_recovery() :61<br>
+        Post-treatment period classification<br>
+        Recovery verdicts per finding</span>
+      <span class="th">Used by temporal API for on-demand recovery</span>
+    </div>
+  </div>
+
+  <div class="nd c-class" style="left:1030px;top:4065px;width:270px">
+    <div class="hd">scores_and_rules.py</div>
+    <div class="bd">
+      <span class="lb">19 canonical rules (R01&ndash;R19)</span>
+      <span class="dt">R01&ndash;R03: signal detection (TR, p, trend)<br>
+        R04&ndash;R07: severity &amp; pattern<br>
+        R08&ndash;R09: target organ (convergence)<br>
+        R10&ndash;R13: effect magnitude &amp; histopath<br>
+        R14&ndash;R15: NOAEL status<br>
+        R16&ndash;R19: correlation, mortality, protective</span>
+      <span class="th">Emits rule_results.json for frontend</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Auto-wire: draw SVG arrows between nodes using IDs
+// Format: [fromId, toId, exitSide, enterSide, label, style]
+// Sides: r=right, l=left, b=bottom, t=top
+// Styles: flow, yes, no
+
+const WIRES = [
+  // §1 Master Dispatch
+  ["d-entry","d-om","r","l","","flow"],
+  ["d-om","d-a3","r","l","Y","yes"],
+  ["d-a3","d-twogate","r","l","","flow"],
+  ["d-om","d-histo","b","t","N","no"],
+  ["d-histo","d-histoclass","r","l","Y","yes"],
+  ["d-histoclass","d-b6","r","l","","flow"],
+  ["d-b6","d-result1","r","l","","flow"],
+  ["d-histo","d-base","b","t","N","no"],
+
+  // §2 Severity — continuous
+  ["s-p","s-d1","r","l","Y","yes"],
+  ["s-d1","s-adv1","r","l","Y","yes"],
+  ["s-d1","s-w1","r","l","N","no"],
+  ["s-p","s-t","b","t","N","no"],
+  ["s-t","s-d2","r","l","Y","yes"],
+  ["s-d2","s-adv2","r","l","Y","yes"],
+  ["s-d2","s-w2","r","l","N","no"],
+  ["s-t","s-d3","b","t","N","no"],
+  ["s-d3","s-w3","r","l","Y","yes"],
+  ["s-d3","s-norm","r","l","N","no"],
+
+  // §2 Severity — incidence (up: stepwise cascade)
+  ["si-dir","si-up","r","l","up","yes"],
+  ["si-up","si-adv","r","l","Y","yes"],
+  ["si-up","si-up2","b","t","N","no"],
+  ["si-up2","si-w","r","l","Y","yes"],
+  ["si-up2","si-up3","b","t","N","no"],
+  ["si-up3","si-w2","r","l","Y","yes"],
+  ["si-up3","si-n","r","l","N","no"],
+  // §2 Severity — incidence (down)
+  ["si-dir","si-dn","r","l","down","no"],
+  ["si-dn","si-wdn","r","l","","flow"],
+  ["si-dn","si-ndn","r","l","","flow"],
+
+  // §3 ECETOC — Step 0
+  ["e0-dict","e0-ascore","r","l","Y","yes"],
+  ["e0-ascore","e0-adv","r","l","Y","yes"],
+  ["e0-ascore","e0-eq","r","l","N","no"],
+  // Step 1
+  ["e1-afactor","e1-ntr","r","l","<1","no"],
+  // Step 2 B-factors
+  ["eb-1","eb-1a","r","l","Y","yes"],
+  ["eb-1","eb-2","b","t","N","no"],
+  ["eb-2","eb-2a","r","l","Y","yes"],
+  ["eb-2","eb-3","b","t","N","no"],
+  ["eb-3","eb-3a","r","l","Y","yes"],
+  ["eb-3","eb-4","b","t","N","no"],
+  ["eb-4","eb-4a","r","l","","flow"],
+
+  // Incidence branch
+  ["ei-mi","ei-mi-eq","r","l","MI","yes"],
+  ["ei-mi","ei-cl","b","t","CL/DS","no"],
+  ["ei-cl","ei-cl-adv","r","l","Y","yes"],
+  ["ei-cl","ei-cl-eq","r","l","N","no"],
+  ["ei-cl","ei-nop","b","t","","no"],
+  ["ei-nop","ei-nop-eq","r","l","Y","yes"],
+  ["ei-nop","ei-nop-na","r","l","N","no"],
+
+  // B-0 overrides
+  ["eb0-likely","eb0-likely-a","r","l","","yes"],
+  ["eb0-cd","eb0-cd-a","r","l","Y","yes"],
+  ["eb0-cd","eb0-cd-ad","r","l","N","no"],
+
+  // §4 OM Two-Gate
+  ["om-brain","om-brain-p","r","l","","flow"],
+  ["om-brain-p","om-brain-adv","r","l","Y","yes"],
+  ["om-brain-p","om-brain-t","b","t","N","no"],
+  ["om-brain-t","om-brain-eq","r","l","Y","yes"],
+  ["om-brain-t","om-brain-ntr","r","l","N","no"],
+  ["om-brain","om-strong","b","t","","flow"],
+  ["om-strong","om-strong-adv","r","l","Y","yes"],
+
+  // §5 Histopath
+  ["h-dict","h-route","r","l","","flow"],
+  ["h-route","h-trees","r","l","context","yes"],
+  ["h-trees","h-out","r","l","","flow"],
+  ["h-out","h-b6","r","l","","flow"],
+
+  // §6 Dose-Response
+  ["dr-method","dr-tiers","r","l","","flow"],
+  ["dr-tiers","dr-classify","r","l","","flow"],
+  ["dr-classify","dr-conf","r","l","","flow"],
+  ["dr-conf","dr-out","r","l","","flow"],
+
+  // §7 Treatment-Related
+  ["tr-g1","tr-g1-t","r","l","Y","yes"],
+  ["tr-g1","tr-g2","b","t","N","no"],
+  ["tr-g2","tr-g2-t","r","l","Y","yes"],
+  ["tr-g2","tr-g3","b","t","N","no"],
+  ["tr-g3","tr-g3-t","r","l","Y","yes"],
+  ["tr-g3","tr-false","b","l","N","no"],
+
+  // §8 NOAEL
+  ["n-filter","n-loael","r","l","","flow"],
+  ["n-loael","n-noael","r","l","","flow"],
+  ["n-noael","n-mort","r","l","","flow"],
+  ["n-mort","n-conf","r","l","","flow"],
+  ["n-conf","n-sched","r","l","","flow"],
+
+  // §9 Signal Score
+  ["ss-cont","ss-feeds","r","l","","flow"],
+  ["ss-inc","ss-feeds","r","l","","flow"],
+
+  // §10 Target Organ
+  ["to-agg","to-evidence","r","l","","flow"],
+  ["to-evidence","to-flag","r","l","","flow"],
+  ["to-flag","to-true","r","l","Y","yes"],
+  ["to-flag","to-false","r","l","N","no"],
+
+  // §11 Corroboration
+  ["co-match","co-search","r","l","","flow"],
+  ["co-search","co-status","r","l","","flow"],
+  ["co-status","co-impact","r","l","","flow"],
+
+  // Pipeline — Row 1: classification path
+  ["p-input","p-stats","r","l","","flow"],
+  ["p-stats","p-dr","r","l","","flow"],
+  ["p-dr","p-sev","r","l","","flow"],
+  ["p-sev","p-corr","r","l","","flow"],
+  ["p-corr","p-tr","r","l","","flow"],
+  ["p-tr","p-ecetoc","r","l","","flow"],
+  ["p-ecetoc","p-class","r","l","","yes"],
+  ["p-class","p-noael","r","l","","flow"],
+  // Pipeline — Row 2: scoring path
+  ["p-stats","p-sig","b","t","","flow"],
+  ["p-sig","p-to","r","l","","flow"],
+  ["p-to","p-noael","r","l","","flow"],
+];
+
+const COLORS = { flow:"#64748b", yes:"#dc2626", no:"#22c55e" };
+const MARKERS = { flow:"ar", yes:"ar-y", no:"ar-n" };
+
+function getAnchor(el, side) {
+  const r = el.getBoundingClientRect();
+  const canvas = document.getElementById("canvas").getBoundingClientRect();
+  const ox = -canvas.left, oy = -canvas.top;
+  switch(side) {
+    case "r": return { x: r.right+ox, y: r.top+oy+r.height/2 };
+    case "l": return { x: r.left+ox, y: r.top+oy+r.height/2 };
+    case "b": return { x: r.left+ox+r.width/2, y: r.bottom+oy };
+    case "t": return { x: r.left+ox+r.width/2, y: r.top+oy };
+  }
+}
+
+function drawWires() {
+  const svg = document.getElementById("wires");
+  // Clear old paths/labels (keep defs)
+  svg.querySelectorAll("path.wire, text.wlabel").forEach(e => e.remove());
+
+  for (const [fid, tid, fside, tside, label, style] of WIRES) {
+    const fromEl = document.getElementById(fid);
+    const toEl = document.getElementById(tid);
+    if (!fromEl || !toEl) continue;
+
+    const a = getAnchor(fromEl, fside);
+    const b = getAnchor(toEl, tside);
+
+    // Build cubic bezier path
+    let d;
+    if ((fside === "r" && tside === "l") || (fside === "l" && tside === "r")) {
+      const mx = (a.x + b.x) / 2;
+      d = `M${a.x},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x},${b.y}`;
+    } else if (fside === "b" && tside === "t") {
+      const my = (a.y + b.y) / 2;
+      d = `M${a.x},${a.y} C${a.x},${my} ${b.x},${my} ${b.x},${b.y}`;
+    } else if (fside === "b" && tside === "l") {
+      d = `M${a.x},${a.y} L${a.x},${b.y} L${b.x},${b.y}`;
+    } else {
+      d = `M${a.x},${a.y} L${b.x},${b.y}`;
+    }
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d", d);
+    path.setAttribute("class","wire");
+    path.setAttribute("stroke", COLORS[style]);
+    path.setAttribute("stroke-width", style === "yes" ? "1.5" : style === "no" ? "1.2" : "1.3");
+    path.setAttribute("fill", "none");
+    path.setAttribute("marker-end", `url(#${MARKERS[style]})`);
+    svg.appendChild(path);
+
+    // Label
+    if (label) {
+      const tx = a.x + (b.x - a.x) * 0.3;
+      const ty = a.y + (b.y - a.y) * 0.3 - 5;
+      const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+      text.setAttribute("x", tx);
+      text.setAttribute("y", ty);
+      text.setAttribute("class","wlabel");
+      text.setAttribute("font-size","8");
+      text.setAttribute("font-weight","700");
+      text.setAttribute("fill", COLORS[style]);
+      text.setAttribute("font-family","'Segoe UI',system-ui,sans-serif");
+      text.textContent = label;
+      svg.appendChild(text);
+    }
+  }
+}
+
+// Set canvas height from content
+function setCanvasHeight() {
+  const canvas = document.getElementById("canvas");
+  let maxBottom = 0;
+  canvas.querySelectorAll(".nd,.term,.gbox,.lane").forEach(el => {
+    const r = el.getBoundingClientRect();
+    const cr = canvas.getBoundingClientRect();
+    const bot = r.bottom - cr.top;
+    if (bot > maxBottom) maxBottom = bot;
+  });
+  canvas.style.minHeight = (maxBottom + 60) + "px";
+  const svg = document.getElementById("wires");
+  svg.setAttribute("height", canvas.style.minHeight);
+}
+
+window.addEventListener("load", () => { setCanvasHeight(); drawWires(); });
+window.addEventListener("resize", () => { drawWires(); });
+</script>
+</body>
+</html>

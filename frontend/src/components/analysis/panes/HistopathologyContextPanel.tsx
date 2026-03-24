@@ -86,10 +86,10 @@ function LabCorrelatesPane({
   finding?: string;
 }) {
   if (isLoading) {
-    return <p className="text-[11px] text-muted-foreground">Loading lab data...</p>;
+    return <p className="text-xs text-muted-foreground">Loading lab data...</p>;
   }
   if (correlations.length === 0) {
-    return <p className="text-[11px] text-muted-foreground">No clinical pathology data available.</p>;
+    return <p className="text-xs text-muted-foreground">No clinical pathology data available.</p>;
   }
 
   const organLabel = specimen?.replace(/_/g, " ") ?? "";
@@ -98,13 +98,13 @@ function LabCorrelatesPane({
   if (finding) {
     return (
       <div className="space-y-0.5">
-        <p className="text-[10px] text-muted-foreground">Most relevant for {finding}</p>
+        <p className="text-[11px] text-muted-foreground">Most relevant for {finding}</p>
         {correlations.filter((c) => c.signal > 0 || c.isRelevant).slice(0, 8).map((c) => (
-          <div key={c.test} className="text-[10px]">
+          <div key={c.test} className="text-[11px]">
             <span className={c.isRelevant ? "font-medium text-foreground" : "text-muted-foreground"}>
               {c.test}: {c.pctChange >= 0 ? "+" : ""}{c.pctChange.toFixed(0)}% at high dose ({c.controlMean.toFixed(0)} {"\u2192"} {c.highDoseMean.toFixed(0)} {c.unit})
             </span>
-            {c.signal > 0 && <span className="ml-1 font-mono text-[9px] text-muted-foreground">{signalDots(c.signal)}</span>}
+            {c.signal > 0 && <span className="ml-1 font-mono text-[10px] text-muted-foreground">{signalDots(c.signal)}</span>}
           </div>
         ))}
       </div>
@@ -114,9 +114,9 @@ function LabCorrelatesPane({
   // Specimen-level: full table format per spec §3
   return (
     <div className="space-y-0.5">
-      {organLabel && <p className="text-[10px] text-muted-foreground">Organ-relevant tests for {organLabel}</p>}
+      {organLabel && <p className="text-[11px] text-muted-foreground">Organ-relevant tests for {organLabel}</p>}
       {/* Header row */}
-      <div className="flex items-center gap-1 text-[9px] font-medium text-muted-foreground/60">
+      <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/60">
         <span className="w-12">Test</span>
         <span className="w-20 text-right">Control</span>
         <span className="w-14 text-right">High dose</span>
@@ -126,28 +126,28 @@ function LabCorrelatesPane({
       {correlations.map((c) => (
         <div
           key={c.test}
-          className={`flex items-center gap-1 rounded px-0.5 py-0.5 text-[10px] ${c.isRelevant ? "bg-muted/20" : ""}`}
+          className={`flex items-center gap-1 rounded px-0.5 py-0.5 text-[11px] ${c.isRelevant ? "bg-muted/20" : ""}`}
           title={`${c.test}: control ${c.controlMean.toFixed(2)} \u00B1 ${c.controlSD.toFixed(2)}, high dose ${c.highDoseMean.toFixed(2)} (${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(0)}%)`}
         >
-          <span className={`w-12 truncate font-mono text-[9px] ${c.isRelevant ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+          <span className={`w-12 truncate font-mono text-[10px] ${c.isRelevant ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
             {c.test}
           </span>
-          <span className="w-20 text-right font-mono text-[9px] text-muted-foreground">
+          <span className="w-20 text-right font-mono text-[10px] text-muted-foreground">
             {c.controlMean.toFixed(1)} {"\u00B1"} {c.controlSD.toFixed(1)}
           </span>
-          <span className="w-14 text-right font-mono text-[9px] text-muted-foreground">
+          <span className="w-14 text-right font-mono text-[10px] text-muted-foreground">
             {c.highDoseMean.toFixed(1)}
           </span>
-          <span className={`w-16 text-right font-mono text-[9px] ${c.signal > 0 ? "text-foreground" : "text-muted-foreground/60"}`}>
+          <span className={`w-16 text-right font-mono text-[10px] ${c.signal > 0 ? "text-foreground" : "text-muted-foreground/60"}`}>
             {c.direction === "up" ? "+" : ""}{c.pctChange.toFixed(0)}%{c.signal > 0 ? (c.direction === "up" ? " \u2191" : " \u2193") : ""}
           </span>
-          <span className="w-8 text-center font-mono text-[9px] text-muted-foreground">
+          <span className="w-8 text-center font-mono text-[10px] text-muted-foreground">
             {signalDots(c.signal)}
           </span>
         </div>
       ))}
       {organLabel && (
-        <p className="mt-1 text-[9px] text-muted-foreground/50">
+        <p className="mt-1 text-[10px] text-muted-foreground/50">
           {"\u24D8"} Tests from CL/LB domains mapped to {organLabel}.
         </p>
       )}
@@ -189,10 +189,10 @@ function RecoveryAssessmentPane({
       {/* Specimen-level summary */}
       {specimenRecoveryClassification && (
         <div className={cn("py-1 pl-2", CLASSIFICATION_BORDER[specimenRecoveryClassification.classification])}>
-          <div className="text-[11px] font-medium">
+          <div className="text-xs font-medium">
             {CLASSIFICATION_LABELS[specimenRecoveryClassification.classification]} ({specimenRecoveryClassification.confidence} confidence)
           </div>
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
             {concerningCount > 0
               ? `${concerningCount} of ${recoveryClassifications.length} findings show incomplete or delayed recovery.`
               : `${recoveryClassifications.length} findings assessed \u2014 no concerning recovery patterns.`}
@@ -201,13 +201,13 @@ function RecoveryAssessmentPane({
       )}
 
       {/* Findings table */}
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
-            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Nature</th>
-            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Classification</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Confidence</th>
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Nature</th>
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Classification</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Confidence</th>
           </tr>
         </thead>
         <tbody>
@@ -239,17 +239,17 @@ function RecoveryAssessmentPane({
 
       {/* Missing inputs */}
       {allMissing.length > 0 && (
-        <div className="border-l border-border/40 pl-2 text-[10px] text-muted-foreground/50">
+        <div className="border-l border-border/40 pl-2 text-[11px] text-muted-foreground/50">
           {allMissing.map((m) => (
             <div key={m}>{m.replace(/_/g, " ")} not available</div>
           ))}
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground/50">
+      <p className="text-[11px] text-muted-foreground/50">
         Classification method: Rule-based (5 categories)
       </p>
-      <p className="text-[10px] italic text-muted-foreground/50">
+      <p className="text-[11px] italic text-muted-foreground/50">
         Include historical controls (toggle disabled {"\u2014"} requires peer comparison data)
       </p>
     </div>
@@ -273,18 +273,18 @@ function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-[11px] text-muted-foreground">
         Control group incidence compared against historical control data (HCD) for the same strain.
         Findings above the HCD range may indicate treatment-related effects rather than spontaneous background.
       </p>
 
-      <table className="w-full text-[10px]">
+      <table className="w-full text-[11px]">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Finding</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Study ctrl</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">HCD range</th>
-            <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Status</th>
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Study ctrl</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">HCD range</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -297,7 +297,7 @@ function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
             const hasData = hcdResult != null || hcd != null;
             return (
               <tr key={finding} className="border-b border-dashed">
-                <td className="max-w-[120px] truncate py-1 text-[11px] font-medium" title={finding}>
+                <td className="max-w-[120px] truncate py-1 text-xs font-medium" title={finding}>
                   {finding}
                 </td>
                 <td className="py-1 text-right font-mono text-muted-foreground">
@@ -308,7 +308,7 @@ function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
                     <span title={`n=${nStudies} studies, mean=${meanPct}%${contextLabel ? `\n${contextLabel}` : ""}`}>
                       <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
                       <br />
-                      <span className="text-[9px] text-muted-foreground/60">mean {meanPct}%, n={nStudies}</span>
+                      <span className="text-[10px] text-muted-foreground/60">mean {meanPct}%, n={nStudies}</span>
                     </span>
                   ) : (
                     <span className="text-muted-foreground/40">{"\u2014"}</span>
@@ -319,7 +319,7 @@ function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
                     <span className="text-muted-foreground/40">No data</span>
                   ) : (
                     <span className={cn(
-                      "text-[9px]",
+                      "text-[10px]",
                       status === "above_range"
                         ? "font-medium text-foreground"
                         : status === "at_upper"
@@ -341,19 +341,19 @@ function PeerComparisonPane({ peerRows }: { peerRows: PeerRow[] }) {
       {/* Source badge */}
       {hasPublishedSource ? (
         <div className="flex items-center gap-2">
-          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700">published</span>
-          <span className="text-[9px] text-muted-foreground/50">
+          <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">published</span>
+          <span className="text-[10px] text-muted-foreground/50">
             {peerRows.find(r => r.hcdResult && !r.hcdResult.isMock)?.hcdResult?.contextLabel ?? "Charles River reference data"}
           </span>
         </div>
       ) : hasMockSource ? (
         <div className="flex items-center gap-2">
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">mock</span>
-          <span className="text-[9px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">mock</span>
+          <span className="text-[10px] text-muted-foreground/50">Simulated historical control data (SD rat, 14-24 studies)</span>
         </div>
       ) : null}
 
-      <p className="text-[10px] italic text-muted-foreground/50">
+      <p className="text-[11px] italic text-muted-foreground/50">
         Production version will query facility-specific historical control database with strain, age, and laboratory matching.
       </p>
     </div>
@@ -537,7 +537,7 @@ function SpecimenInsights({ rules, specimen, signalData, controlOnlyFindings }: 
   const blocks = useMemo(() => deriveSpecimenInsights(rules, specimen, signalData, controlOnlyFindings), [rules, specimen, signalData, controlOnlyFindings]);
 
   if (blocks.length === 0) {
-    return <p className="text-[11px] text-muted-foreground">No insights for this specimen.</p>;
+    return <p className="text-xs text-muted-foreground">No insights for this specimen.</p>;
   }
 
   // Group by kind for section headers
@@ -567,7 +567,7 @@ function SpecimenInsights({ rules, specimen, signalData, controlOnlyFindings }: 
 function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock[] }) {
   return (
     <div>
-      <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
         {label}
       </div>
       <div className="space-y-1">
@@ -579,16 +579,16 @@ function InsightSection({ label, blocks }: { label: string; blocks: InsightBlock
               className={cn("border-l-2 py-0.5 pl-2", style.border)}
             >
               <div className="flex items-baseline gap-1.5">
-                <span className="text-[11px] font-medium">{b.finding}</span>
+                <span className="text-xs font-medium">{b.finding}</span>
                 {b.sexes && (
-                  <span className="text-[10px] font-medium text-muted-foreground">{b.sexes}</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{b.sexes}</span>
                 )}
               </div>
-              <div className="text-[10px] leading-snug text-muted-foreground">
+              <div className="text-[11px] leading-snug text-muted-foreground">
                 {b.detail}
               </div>
               {b.correlates && (
-                <div className="text-[9px] leading-snug text-muted-foreground/60 italic">
+                <div className="text-[10px] leading-snug text-muted-foreground/60 italic">
                   {b.correlates}
                 </div>
               )}
@@ -614,32 +614,32 @@ function RecoveryInsightBlock({ classification }: { classification: RecoveryClas
 
   return (
     <div>
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         Recovery assessment
       </div>
       <div className={cn("py-0.5 pl-2", border)}>
-        <div className="text-[11px] font-medium text-foreground">
+        <div className="text-xs font-medium text-foreground">
           {label} &middot; {classification.confidence} confidence
         </div>
-        <div className="mt-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
           {classification.rationale}
         </div>
         {classification.inputsUsed.length > 0 && (
-          <div className="mt-1 border-l border-border/40 pl-2 text-[10px] text-muted-foreground/60">
+          <div className="mt-1 border-l border-border/40 pl-2 text-[11px] text-muted-foreground/60">
             {classification.inputsUsed.join(" \u00b7 ")}
           </div>
         )}
         {classification.qualifiers.length > 0 && (
           <div className="mt-0.5 space-y-0.5">
             {classification.qualifiers.map((q, i) => (
-              <div key={i} className="text-[10px] italic text-muted-foreground/50">
+              <div key={i} className="text-[11px] italic text-muted-foreground/50">
                 {q}
               </div>
             ))}
           </div>
         )}
         {classification.recommendedAction && (
-          <div className="mt-1 text-[10px] font-medium text-foreground/70">
+          <div className="mt-1 text-[11px] font-medium text-foreground/70">
             {classification.recommendedAction}
           </div>
         )}
@@ -1070,17 +1070,17 @@ function SpecimenOverviewPane({
           <span className="flex items-end gap-2">
             <span className="leading-none">{specimen.replace(/_/g, " ")}</span>
             <span
-              className={`text-[10px] font-normal leading-none ${reviewStatus === "Revised" ? "text-purple-600" : "text-muted-foreground"}`}
+              className={`text-[11px] font-normal leading-none ${reviewStatus === "Revised" ? "text-purple-600" : "text-muted-foreground"}`}
               title={REVIEW_STATUS_TOOLTIPS[reviewStatus]}
             >
               {reviewStatus}
             </span>
             {summary.adverseCount > 0 ? (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-normal text-muted-foreground">
+              <span className="rounded border border-border px-1 py-0.5 text-[11px] font-normal text-muted-foreground">
                 {summary.adverseCount} adverse
               </span>
             ) : (
-              <span className="rounded border border-border px-1 py-0.5 text-[10px] font-normal text-muted-foreground">
+              <span className="rounded border border-border px-1 py-0.5 text-[11px] font-normal text-muted-foreground">
                 non-adverse
               </span>
             )}
@@ -1102,7 +1102,7 @@ function SpecimenOverviewPane({
         onForward={nav?.onForward}
       >
         {/* Key metrics line */}
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
           <span>Peak incidence: <span className="font-mono font-medium">{Math.round(summary.maxIncidence * 100)}%</span></span>
           <span>Max sev: <span className="font-mono font-medium">{summary.maxSeverity.toFixed(1)}</span></span>
           <span className="inline-flex items-center gap-1">
@@ -1131,7 +1131,7 @@ function SpecimenOverviewPane({
           const sexEntries = Array.from(bySex.entries()).sort(([a], [b]) => a.localeCompare(b));
           const hasBothSexes = sexEntries.length > 1;
           return (
-            <div className="mt-0.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+            <div className="mt-0.5 flex items-center gap-3 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <DomainLabel domain="OM" />
                 <span>weight {arrow}</span>
@@ -1163,14 +1163,14 @@ function SpecimenOverviewPane({
         })()}
         {/* Syndrome line (conditional) */}
         {summary.pattern.syndrome && (
-          <div className="mt-0.5 truncate text-[10px] text-muted-foreground/70" title={`${summary.pattern.syndrome.syndrome.syndrome_name}: ${summary.pattern.syndrome.requiredFinding}${summary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${summary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>
+          <div className="mt-0.5 truncate text-[11px] text-muted-foreground/70" title={`${summary.pattern.syndrome.syndrome.syndrome_name}: ${summary.pattern.syndrome.requiredFinding}${summary.pattern.syndrome.supportingFindings.length > 0 ? ` + ${summary.pattern.syndrome.supportingFindings.join(", ")}` : ""}`}>
             {"\uD83D\uDD17"} {summary.pattern.syndrome.syndrome.syndrome_name}: {summary.pattern.syndrome.requiredFinding}
             {summary.pattern.syndrome.supportingFindings.length > 0 && ` + ${summary.pattern.syndrome.supportingFindings.join(", ")}`}
           </div>
         )}
         {/* Pattern alerts (conditional) */}
         {summary.pattern.alerts.length > 0 && (
-          <div className="mt-0.5 text-[10px] text-muted-foreground/70">
+          <div className="mt-0.5 text-[11px] text-muted-foreground/70">
             {summary.pattern.alerts.map((a, i) => (
               <span key={a.id}>
                 {i > 0 && " \u00B7 "}
@@ -1196,7 +1196,7 @@ function SpecimenOverviewPane({
         if (!syndromeMatch) return null;
         return (
           <CollapsiblePane title="Syndrome detected" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-            <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+            <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[11px] leading-relaxed text-muted-foreground">
               <div className="font-medium">{"\uD83D\uDD17"} {syndromeMatch.syndrome.syndrome_name}</div>
               <div className="mt-0.5 pl-2">
                 {syndromeMatch.requiredFinding}
@@ -1248,14 +1248,14 @@ function SpecimenOverviewPane({
       {lateralityInfo && (
         <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1">
-            <p className="text-[10px] text-muted-foreground italic">
+            <p className="text-[11px] text-muted-foreground italic">
               Laterality: Predominantly {lateralityInfo.isUnilateral
                 ? `${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantCount}/${lateralityInfo.affected} affected subjects)`
                 : `${lateralitySummary(lateralityInfo.total)}`
               }
             </p>
             {lateralityInfo.isUnilateral && (
-              <p className="text-[10px] text-muted-foreground italic">
+              <p className="text-[11px] text-muted-foreground italic">
                 Unilateral findings in paired organs may suggest local etiology rather than systemic treatment effect.
               </p>
             )}
@@ -1263,8 +1263,8 @@ function SpecimenOverviewPane({
               <div className="mt-1 space-y-0.5">
                 {lateralityInfo.perFinding.map((pf) => (
                   <div key={pf.finding} className="flex items-baseline gap-1.5">
-                    <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground/70">{pf.finding}</span>
-                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{lateralitySummary(pf.agg)}</span>
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground/70">{pf.finding}</span>
+                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{lateralitySummary(pf.agg)}</span>
                   </div>
                 ))}
               </div>
@@ -1280,7 +1280,7 @@ function SpecimenOverviewPane({
 
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <a
             href="#"
             className="block text-primary hover:underline"
@@ -1485,11 +1485,11 @@ function RecoveryDoseBlock({
     <div>
       {/* E-4: Enhanced dose label typography */}
       <div className="mb-1 pt-0.5">
-        <span className="text-[11px] font-medium text-foreground">{a.doseGroupLabel}</span>
+        <span className="text-xs font-medium text-foreground">{a.doseGroupLabel}</span>
         {periodLabel && (
           <>
             <span className="mx-1 text-muted-foreground/30">{"\u00b7"}</span>
-            <span className="text-[10px] text-muted-foreground">{periodLabel}</span>
+            <span className="text-[11px] text-muted-foreground">{periodLabel}</span>
           </>
         )}
       </div>
@@ -1497,35 +1497,35 @@ function RecoveryDoseBlock({
       {/* v3: not_examined — no data exists, short-circuit */}
       {a.verdict === "not_examined" ? (
         <div className="mt-1.5">
-          <div className="text-[10px] font-medium text-foreground/70">
+          <div className="text-[11px] font-medium text-foreground/70">
             {"\u2205"} Tissue not examined in recovery arm.
           </div>
-          <div className="text-[10px] text-muted-foreground italic">
+          <div className="text-[11px] text-muted-foreground italic">
             None of the {a.recovery.n} recovery subject{a.recovery.n !== 1 ? "s" : ""} had this tissue evaluated. No reversibility assessment is possible.
           </div>
         </div>
       ) : a.verdict === "insufficient_n" ? (
         <div className="mt-1.5">
-          <div className="text-[10px] font-medium text-foreground/70">
+          <div className="text-[11px] font-medium text-foreground/70">
             {"\u2020"} Insufficient sample: only {a.recovery.examined} recovery subject{a.recovery.examined !== 1 ? "s" : ""} examined.
           </div>
-          <div className="text-[10px] text-muted-foreground italic">
+          <div className="text-[11px] text-muted-foreground italic">
             Ratios with fewer than {MIN_RECOVERY_N} examined subjects are unreliable.
           </div>
         </div>
       ) : a.verdict === "low_power" ? (
         <div className="mt-1.5">
-          <div className="text-[10px] font-medium text-foreground/70">
+          <div className="text-[11px] font-medium text-foreground/70">
             ~ Low statistical power.
           </div>
-          <div className="text-[10px] text-muted-foreground italic">
+          <div className="text-[11px] text-muted-foreground italic">
             Main-arm incidence ({Math.round(a.main.incidence * 100)}%) too low to assess reversibility with {a.recovery.examined} examined recovery subject{a.recovery.examined !== 1 ? "s" : ""}. Expected {"\u2248"}{(a.main.incidence * a.recovery.examined).toFixed(1)} affected; {a.recovery.affected} observed is not informative.
           </div>
         </div>
       ) : (
         <>
           {/* E-2: Inline delta comparison lines */}
-          <div className="space-y-1 text-[10px]">
+          <div className="space-y-1 text-[11px]">
             {/* Incidence line: main → recovery with delta (v3: examination-aware fractions) */}
             <div className="flex items-center flex-wrap gap-x-1">
               <span className="text-muted-foreground shrink-0">Incidence</span>
@@ -1580,7 +1580,7 @@ function RecoveryDoseBlock({
           </div>
 
           {/* Assessment */}
-          <div className="mt-1.5 text-[10px]">
+          <div className="mt-1.5 text-[11px]">
             <span className="text-muted-foreground">Assessment: </span>
             <span className="font-medium">{a.verdict}</span>
           </div>
@@ -1588,17 +1588,17 @@ function RecoveryDoseBlock({
           {/* E-5: Anomaly explanation text (two-line format) */}
           {a.verdict === "anomaly" && (
             <div className="mt-1.5">
-              <div className="text-[10px] font-medium text-foreground/70">
+              <div className="text-[11px] font-medium text-foreground/70">
                 {"\u26A0"} Anomaly: recovery incidence {Math.round(a.recovery.incidence * 100)}% at a dose level where main arm had 0%.
               </div>
-              <div className="text-[10px] text-muted-foreground italic">
+              <div className="text-[11px] text-muted-foreground italic">
                 This may indicate delayed onset or a data quality issue. Requires pathologist assessment.
               </div>
             </div>
           )}
 
           {/* E-3/E-6: Recovery subjects with severity trajectories and collapsible list */}
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {subjects.length > 0 ? (
               <>
                 Recovery subjects:{" "}
@@ -1637,7 +1637,7 @@ function RecoveryDoseBlock({
                   <>
                     {" "}
                     <button
-                      className="text-[10px] text-primary hover:underline"
+                      className="text-[11px] text-primary hover:underline"
                       onClick={() => setExpanded((p) => !p)}
                     >
                       {expanded ? "Show fewer" : `+${hiddenCount} more`}
@@ -1652,7 +1652,7 @@ function RecoveryDoseBlock({
 
           {/* E-1: Compare action links */}
           {onCompareSubjects && subjects.length > 0 && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
               <button
                 className="text-primary hover:underline cursor-pointer"
                 onClick={handleCompareRecovery}
@@ -2024,7 +2024,7 @@ function FindingDetailPane({
         onForward={nav?.onForward}
       >
         {headerMetrics && (
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span>Peak incidence: <span className="font-mono font-medium">{headerMetrics.incPct}%</span></span>
             <span>Max sev: <span className="font-mono font-medium">{headerMetrics.maxSev.toFixed(1)}</span></span>
             <span>Pattern: <span className="font-medium">{headerMetrics.doseTrend}</span></span>
@@ -2052,7 +2052,7 @@ function FindingDetailPane({
           const contextLabel = r?.contextLabel ?? null;
           return (
             <div className="mt-2.5 border-l-2 border-l-gray-300/40 py-0.5 pl-2">
-              <div className="text-[10px] leading-snug text-muted-foreground">
+              <div className="text-[11px] leading-snug text-muted-foreground">
                 {(historicalContext.status === "above_range" || historicalContext.status === "at_upper") && (
                   <span className="mr-1">{"\u26A0"}</span>
                 )}
@@ -2067,7 +2067,7 @@ function FindingDetailPane({
                 mean {meanPct}%,
                 n={nStudies} studies)
                 {contextLabel && (
-                  <span className="block mt-0.5 text-[9px] text-muted-foreground/60">{contextLabel}</span>
+                  <span className="block mt-0.5 text-[10px] text-muted-foreground/60">{contextLabel}</span>
                 )}
               </div>
             </div>
@@ -2078,7 +2078,7 @@ function FindingDetailPane({
       {/* Dose-response pattern block (§6e) */}
       {headerMetrics?.findingPattern && (
         <CollapsiblePane title="Dose-response pattern" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="border-l-2 border-l-muted-foreground/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+          <div className="border-l-2 border-l-muted-foreground/30 pl-2 py-1 text-[11px] leading-relaxed text-muted-foreground">
             <div>Pattern: <span className="font-medium">{headerMetrics.findingPattern.detail ?? headerMetrics.findingPattern.pattern.replace(/_/g, " ").toLowerCase()}</span></div>
             <div>Confidence: <span className="font-medium">{headerMetrics.findingPattern.confidence.toLowerCase()}</span>
               {headerMetrics.findingPattern.confidenceFactors.length > 0 && (
@@ -2099,7 +2099,7 @@ function FindingDetailPane({
       {/* Concordant findings block (§6e) — when syndrome detected */}
       {findingSyndromeMatch && (
         <CollapsiblePane title="Concordant findings" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[10px] leading-relaxed text-muted-foreground">
+          <div className="border-l-2 border-l-primary/30 pl-2 py-1 text-[11px] leading-relaxed text-muted-foreground">
             <div className="font-medium">{"\uD83D\uDD17"} {findingSyndromeMatch.syndrome.syndrome_name}</div>
             <div className="mt-0.5 pl-2">
               Primary: <span className="font-medium">{findingSyndromeMatch.requiredFinding}</span>
@@ -2127,17 +2127,17 @@ function FindingDetailPane({
       {/* Dose detail */}
       <CollapsiblePane title="Dose detail" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {findingRows.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No data.</p>
+          <p className="text-xs text-muted-foreground">No data.</p>
         ) : (
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[11px]">
             <thead className="bg-background">
               <tr className="border-b text-muted-foreground">
-                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Dose</th>
-                <th className="pb-0.5 text-left text-[10px] font-semibold uppercase tracking-wider">Sex</th>
-                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Incid.</th>
-                <th className="w-12 pb-0.5 text-[10px] font-semibold uppercase tracking-wider" />
-                <th className="pb-0.5 text-right text-[10px] font-semibold uppercase tracking-wider">Avg sev</th>
-                <th className="pb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider">Sev</th>
+                <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Dose</th>
+                <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Sex</th>
+                <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Incid.</th>
+                <th className="w-12 pb-0.5 text-[11px] font-semibold uppercase tracking-wider" />
+                <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Avg sev</th>
+                <th className="pb-0.5 text-center text-[11px] font-semibold uppercase tracking-wider">Sev</th>
               </tr>
             </thead>
             <tbody>
@@ -2162,13 +2162,13 @@ function FindingDetailPane({
                       </div>
                     </td>
                     <td className="py-0.5 text-right">
-                      <span className="rounded px-1 font-mono text-[9px]">
+                      <span className="rounded px-1 font-mono text-[10px]">
                         {row.avg_severity != null ? row.avg_severity.toFixed(1) : "\u2014"}
                       </span>
                     </td>
                     <td className="py-0.5 text-center">
                       <span
-                        className="text-[9px] font-medium"
+                        className="text-[10px] font-medium"
                         style={{ color: row.severity === "adverse" ? "#dc2626" : row.severity === "warning" ? "#d97706" : "#16a34a" }}
                       >
                         {row.severity}
@@ -2204,25 +2204,25 @@ function FindingDetailPane({
         const rawValues = modRow.modifier_raw ?? [];
         return (
           <CollapsiblePane title="Result modifiers (SUPP)" expandAll={expandGen} collapseAll={collapseGen}>
-            <div className="space-y-1 text-[11px]">
+            <div className="space-y-1 text-xs">
               {hasDist && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground/70">Distribution</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground/70">Distribution</span>
+                  <span className="text-[11px] text-muted-foreground">
                     {Object.entries(distCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}
                   </span>
                 </div>
               )}
               {hasTemp && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground/70">Temporality</span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="w-16 shrink-0 text-[11px] text-muted-foreground/70">Temporality</span>
+                  <span className="text-[11px] text-muted-foreground">
                     {Object.entries(tempCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}
                   </span>
                 </div>
               )}
               {rawValues.length > 0 && (
-                <p className="text-[9px] italic text-muted-foreground/50">
+                <p className="text-[10px] italic text-muted-foreground/50">
                   Source: {rawValues.length} unique modifier value{rawValues.length !== 1 ? "s" : ""} from SUPP{modRow.domain}
                 </p>
               )}
@@ -2234,7 +2234,7 @@ function FindingDetailPane({
       {/* Sex summary */}
       {sexSummary && sexSummary.size > 1 && (
         <CollapsiblePane title="Sex comparison" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1 text-[11px]">
+          <div className="space-y-1 text-xs">
             {[...sexSummary.entries()].map(([sex, stats]) => (
               <div key={sex} className="flex items-center justify-between">
                 <span className="text-muted-foreground">{sex === "M" ? "Males" : sex === "F" ? "Females" : sex}</span>
@@ -2242,7 +2242,7 @@ function FindingDetailPane({
                   {stats.affected}/{stats.total} affected
                   {stats.maxSev > 0 && (
                     <span
-                      className="ml-1.5 rounded px-1 font-mono text-[9px]"
+                      className="ml-1.5 rounded px-1 font-mono text-[10px]"
                       style={{ backgroundColor: getNeutralHeatColor(stats.maxSev).bg, color: getNeutralHeatColor(stats.maxSev).text }}
                     >
                       sev {stats.maxSev.toFixed(1)}
@@ -2253,7 +2253,7 @@ function FindingDetailPane({
             ))}
             {sexFisherP !== null && sexFisherP < 0.05 && (
               <div className={cn(
-                "mt-1 font-mono text-[10px]",
+                "mt-1 font-mono text-[11px]",
                 sexFisherP < 0.01
                   ? "font-medium text-foreground/70"
                   : "font-medium text-muted-foreground",
@@ -2290,16 +2290,16 @@ function FindingDetailPane({
       <CollapsiblePane title="Correlating evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         {/* In this specimen */}
         {correlating.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">No other findings in this specimen.</p>
+          <p className="text-xs text-muted-foreground">No other findings in this specimen.</p>
         ) : (
           <div className="space-y-0.5">
             {correlating.map(([finding, info]) => (
-              <div key={finding} className="flex items-center justify-between text-[11px]">
+              <div key={finding} className="flex items-center justify-between text-xs">
                 <span className="truncate" title={finding}>
                   {finding.length > 25 ? finding.slice(0, 25) + "\u2026" : finding}
                 </span>
                 <span
-                  className="rounded px-1 font-mono text-[9px]"
+                  className="rounded px-1 font-mono text-[10px]"
                   style={{ backgroundColor: getNeutralHeatColor(info.maxSev).bg, color: getNeutralHeatColor(info.maxSev).text }}
                 >
                   {info.maxSev.toFixed(1)}
@@ -2311,7 +2311,7 @@ function FindingDetailPane({
         {/* In other specimens (same finding) — R16 cross-organ */}
         {crossOrganMatches.length > 0 && (
           <div className="mt-2">
-            <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
               In other specimens (same finding)
             </div>
             <div className="space-y-0.5">
@@ -2319,7 +2319,7 @@ function FindingDetailPane({
                 <button
                   key={m.specimen}
                   type="button"
-                  className="w-full text-left text-[11px] transition-colors hover:bg-muted/40"
+                  className="w-full text-left text-xs transition-colors hover:bg-muted/40"
                   onClick={() => {
                     const organ = specimenToOrganSystem(m.specimen);
                     navigateTo({ organSystem: organ, specimen: m.specimen, endpoint: selection.finding });
@@ -2330,7 +2330,7 @@ function FindingDetailPane({
                     {m.specimen.length > 20 ? m.specimen.slice(0, 20) + "\u2026" : m.specimen}
                   </span>
                   <span className="text-muted-foreground">: {selection.finding}</span>
-                  <span className="text-[9px] text-muted-foreground"> {"\u00B7"} {Math.round(m.incidence * 100)}% incidence, max sev {m.maxSev.toFixed(1)}</span>
+                  <span className="text-[10px] text-muted-foreground"> {"\u00B7"} {Math.round(m.incidence * 100)}% incidence, max sev {m.maxSev.toFixed(1)}</span>
                 </button>
               ))}
             </div>
@@ -2357,14 +2357,14 @@ function FindingDetailPane({
         return (
           <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
             <div className="space-y-1">
-              <p className="text-[10px] text-muted-foreground italic">
+              <p className="text-[11px] text-muted-foreground italic">
                 Laterality: {isUnilateral
                   ? `Predominantly ${dominantSide}-sided (${dominantCount}/${affected} affected subjects)`
                   : lateralitySummary(agg)
                 }
               </p>
               {isUnilateral && (
-                <p className="text-[10px] text-muted-foreground italic">
+                <p className="text-[11px] text-muted-foreground italic">
                   Unilateral findings in paired organs may suggest local etiology rather than systemic treatment effect.
                 </p>
               )}
@@ -2385,7 +2385,7 @@ function FindingDetailPane({
 
       {/* Cross-view links */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <a
             href="#"
             className="block text-primary hover:underline"

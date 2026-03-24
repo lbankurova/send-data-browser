@@ -23,21 +23,21 @@ export const ty = {
   /** Section header rendered uppercase via CSS */
   sectionHeaderUpper: "text-xs font-semibold uppercase tracking-wider text-muted-foreground",
   /** Table header — compact analysis grids */
-  tableHeader: "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+  tableHeader: "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
   /** Table header — spacious tables (validation, landing) */
   tableHeaderSpacious: "text-xs font-medium text-muted-foreground",
   /** Body text */
   body: "text-sm",
-  /** Table cell */
-  cell: "text-xs",
+  /** Table cell — primary content (13px) */
+  cell: "text-[13px]",
   /** Caption / label */
   caption: "text-xs text-muted-foreground",
   /** Tiny text */
-  tiny: "text-[10px]",
+  tiny: "text-[11px]",
   /** Micro text — tier pills */
-  micro: "text-[9px] font-medium",
+  micro: "text-[10px] font-medium",
   /** Monospace data value — p-values, effect sizes, IDs */
-  mono: "font-mono text-[11px]",
+  mono: "font-mono text-xs",
   /** Monospace small — rule IDs, issue IDs, subject IDs, domain codes */
   monoSm: "font-mono text-xs",
 } as const;
@@ -79,19 +79,19 @@ export const sp = {
 
 export const badge = {
   /** Severity badge base: bg + text + border from getSeverityColor() */
-  severity: "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
+  severity: "inline-block rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold",
   /** Score badge: colored bg + white text */
   score: "rounded px-1.5 py-0.5 text-xs font-semibold text-white",
   /** Category badge: light bg + dark text (domain colors) */
-  category: "rounded px-1.5 py-0.5 text-[10px] font-medium",
+  category: "rounded px-1.5 py-0.5 text-[11px] font-medium",
   /** Tier filter pill: rounded-full, toggle via opacity */
-  tierPill: "rounded-full px-2 py-0.5 text-[9px] font-medium",
+  tierPill: "rounded-full px-2 py-0.5 text-[10px] font-medium",
   /** Tier pill inactive state */
   tierPillInactive: "opacity-30",
   /** Domain chip (study details) */
   domainChip: "rounded-md bg-muted px-2 py-0.5 font-mono text-xs hover:bg-primary/20 transition-colors",
   /** Dose badge: colored bg + white text */
-  dose: "rounded px-1.5 py-0.5 text-[10px] font-medium text-white",
+  dose: "rounded px-1.5 py-0.5 text-[11px] font-medium text-white",
   /** Standard badge padding */
   pad: "px-1.5 py-0.5",
   /** Domain chip padding */
@@ -106,7 +106,7 @@ export const badge = {
 
 export const filter = {
   /** Filter select — compact bordered dropdown, canonical style */
-  select: "h-5 rounded border bg-background px-1 text-[10px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary",
+  select: "h-5 rounded border bg-background px-1 text-[11px] text-muted-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary",
   /** Filter label wrapping a select */
   label: "flex items-center gap-1.5 text-xs text-muted-foreground",
 } as const;
@@ -119,13 +119,13 @@ export const btn = {
   /** Primary big — single per view */
   primaryBig: "bg-primary text-primary-foreground",
   /** Primary small — context panel actions (APPLY FIX, SAVE) */
-  primary: "rounded bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase text-primary-foreground hover:bg-primary/90",
+  primary: "rounded bg-primary px-2.5 py-1 text-[11px] font-semibold uppercase text-primary-foreground hover:bg-primary/90",
   /** Secondary / outlined */
-  secondary: "rounded border px-2.5 py-1 text-[10px] font-semibold uppercase text-muted-foreground hover:bg-muted/50",
+  secondary: "rounded border px-2.5 py-1 text-[11px] font-semibold uppercase text-muted-foreground hover:bg-muted/50",
   /** Ghost / text */
-  ghost: "rounded border px-2.5 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50",
+  ghost: "rounded border px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/50",
   /** Danger (destructive) */
-  danger: "rounded bg-red-600 px-2.5 py-1 text-[10px] font-semibold uppercase text-white hover:bg-red-700",
+  danger: "rounded bg-red-600 px-2.5 py-1 text-[11px] font-semibold uppercase text-white hover:bg-red-700",
   /** Disabled modifier — add to any button */
   disabled: "opacity-50 cursor-not-allowed",
 } as const;
@@ -175,7 +175,7 @@ export const link = {
   /** Inline navigation link class */
   color: "text-primary",
   /** Cross-view link in context panel */
-  crossView: "block text-primary text-[11px] hover:underline",
+  crossView: "block text-primary text-xs hover:underline",
   /** Issue ID link */
   issueId: "font-mono text-xs hover:underline",
 } as const;
@@ -190,7 +190,7 @@ export const emptyState = {
   /** Centered "no filter matches" */
   noMatches: "text-sm text-muted-foreground text-center",
   /** Truncated list indicator */
-  truncated: "p-2 text-center text-[10px] text-muted-foreground",
+  truncated: "p-2 text-center text-[11px] text-muted-foreground",
   /** Error box */
   errorBox: "rounded border border-red-200 bg-red-50 p-4",
 } as const;
@@ -211,7 +211,7 @@ export const menu = {
 // ---------------------------------------------------------------------------
 
 export const workflowBadge = {
-  base: "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600 border-gray-200",
+  base: "inline-block rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold bg-gray-100 text-gray-600 border-gray-200",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ export const status = {
 export const progress = {
   track: "h-1 w-full rounded-full bg-gray-200",
   fill: "bg-green-500",
-  label: "text-[10px] text-muted-foreground",
+  label: "text-[11px] text-muted-foreground",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -269,18 +269,18 @@ export const layout = {
 
 export const signal = {
   /** Adverse (data-driven) — red border, medium weight */
-  adverse: "inline-block border-l-2 border-l-red-600 pl-1.5 py-px text-[9px] font-medium text-gray-600",
+  adverse: "inline-block border-l-2 border-l-red-600 pl-1.5 py-px text-[10px] font-medium text-gray-600",
   /** Warning (data-driven) — amber border, medium weight */
-  warning: "inline-block border-l-2 border-l-amber-600 pl-1.5 py-px text-[9px] font-medium text-gray-600",
+  warning: "inline-block border-l-2 border-l-amber-600 pl-1.5 py-px text-[10px] font-medium text-gray-600",
   /** Statistical normal (no clinical catalog match) — muted emerald border, quiet text */
-  normal: "inline-block border-l-2 border-l-emerald-400/40 pl-1.5 py-px text-[9px] text-muted-foreground",
+  normal: "inline-block border-l-2 border-l-emerald-400/40 pl-1.5 py-px text-[10px] text-muted-foreground",
   /** Decreased (direction-aware) — blue border, quiet text */
-  decreased: "inline-block border-l-2 border-l-blue-400 pl-1.5 py-px text-[9px] font-medium text-blue-700/70",
+  decreased: "inline-block border-l-2 border-l-blue-400 pl-1.5 py-px text-[10px] font-medium text-blue-700/70",
   /** Clinical override (any catalog class) — gray border, typographic emphasis.
    *  Label differentiates severity (Sentinel > High concern > Moderate > Flag), not styling.
    *  font-medium + text-foreground gives the clinical label more weight than plain "normal"
    *  without introducing color — correct priority after "adverse." */
-  clinicalOverride: "inline-block border-l-2 border-l-gray-400 pl-1.5 py-px text-[9px] font-medium text-foreground",
+  clinicalOverride: "inline-block border-l-2 border-l-gray-400 pl-1.5 py-px text-[10px] font-medium text-foreground",
 } as const;
 
 // ---------------------------------------------------------------------------

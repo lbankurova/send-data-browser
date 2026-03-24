@@ -400,7 +400,7 @@ export function TimeCoursePane({
     return (
       <CollapsiblePane title="Time course" defaultOpen expandAll={expandAll} collapseAll={collapseAll}>
         <div className="space-y-1.5">
-          <div className="text-[10px] text-muted-foreground flex items-center justify-between">
+          <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>Observation count over time</span>
             <span title="Count of subjects with this clinical observation at each study day.">
               <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
@@ -595,7 +595,7 @@ function TimeCourseContent({
     >
       <div className="space-y-1.5">
         {/* Subtitle with Y-axis mode toggle + subjects toggle + info icon */}
-        <div className="text-[10px] text-muted-foreground flex items-center justify-between gap-1">
+        <div className="text-[11px] text-muted-foreground flex items-center justify-between gap-1">
           <div className="flex items-center gap-1.5">
             <PanePillToggle
               options={yAxisOptions}
@@ -604,7 +604,7 @@ function TimeCourseContent({
             />
             <button
               type="button"
-              className={`px-1.5 py-0.5 text-[9px] rounded transition-colors ${
+              className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
                 showSubjects
                   ? "bg-background text-foreground shadow-sm font-medium"
                   : "text-muted-foreground hover:text-foreground bg-muted/30"
@@ -680,7 +680,7 @@ function TimeCourseContent({
 
             return (
               <div key={sex} className={isSingleSex ? "w-full" : "flex-1 min-w-0"}>
-                <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+                <div className="text-center text-[10px] font-medium text-muted-foreground mb-0.5">
                   {sex}
                 </div>
                 <TimeCourseLineChart
@@ -710,7 +710,7 @@ function TimeCourseContent({
 
         {/* Detail row or subject summary */}
         {showSubjects ? (
-          <div className="text-[9px] text-muted-foreground">
+          <div className="text-[10px] text-muted-foreground">
             Showing {totalSubjectCount} subject{totalSubjectCount !== 1 ? "s" : ""}
             {selectedDoseGroups.length > 0 ? ` (${selectedDoseGroups.length} dose group${selectedDoseGroups.length !== 1 ? "s" : ""})` : ""}
           </div>
@@ -759,7 +759,7 @@ function DetailRow({
 
   return (
     <div
-      className="flex gap-2 text-[9px] leading-[14px] transition-colors duration-150"
+      className="flex gap-2 text-[10px] leading-[14px] transition-colors duration-150"
       style={{ minHeight: `${(data.doseGroups.length + 1) * 14 + 4}px` }}
     >
       {/* Day label */}

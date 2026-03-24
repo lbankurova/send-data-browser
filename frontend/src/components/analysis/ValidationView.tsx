@@ -115,7 +115,7 @@ export function StatusBadge({ status, styles }: { status: string; styles: Record
   return (
     <span
       className={cn(
-        "inline-block rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold",
+        "inline-block rounded-sm border px-1.5 py-0.5 text-[11px] font-semibold",
         styles[status] ?? "bg-gray-100 text-gray-600 border-gray-200"
       )}
     >
@@ -471,14 +471,14 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
       {/* Records table — full height */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead className="sticky top-0 z-10 bg-background">
             {recordTable.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b bg-muted/30">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                    className="relative cursor-pointer select-none px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
                     style={recordColStyle(header.id)}
                     onDoubleClick={header.column.getToggleSortingHandler()}
                   >
@@ -566,12 +566,12 @@ function CatalogStatsBar({ stats }: {
 }) {
   return (
     <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5">
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-[11px] text-muted-foreground">
         {stats.total} rules &middot; {stats.enabled} enabled &middot;{" "}
         {stats.triggered} triggered
       </span>
       {stats.lastRun && (
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           Last run: {stats.lastRun.ago}m ago
           {stats.lastRun.elapsed != null && ` (${stats.lastRun.elapsed}s)`}
         </span>
@@ -587,14 +587,14 @@ function RuleHeader({ rule, recordCount }: { rule: ValidationRuleResult; recordC
     <div className="flex items-center gap-3 border-b px-4 py-2">
       <span className="font-mono text-xs font-semibold">{rule.rule_id}</span>
       <span
-        className="border-l-2 pl-1.5 text-[10px] font-semibold text-gray-600"
+        className="border-l-2 pl-1.5 text-[11px] font-semibold text-gray-600"
         style={{ borderLeftColor: SEVERITY_BORDER_COLORS[rule.severity] ?? "#6B7280" }}
       >
         {rule.severity}
       </span>
       <DomainLabel domain={rule.domain} />
       <span className="text-xs text-muted-foreground">{rule.description}</span>
-      <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
         {recordCount} rec
       </span>
     </div>

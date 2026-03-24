@@ -55,7 +55,7 @@ export function MatrixSelectionZone({
   isStrip,
   onStripRestore,
 }: MatrixSelectionZoneProps) {
-  if (!heatmapData) return <span className="text-[10px] text-muted-foreground">No data</span>;
+  if (!heatmapData) return <span className="text-[11px] text-muted-foreground">No data</span>;
 
   if (selectedRow) {
     // Use subject-level data for sex breakdown when available
@@ -70,7 +70,7 @@ export function MatrixSelectionZone({
 
       if (affected.length === 0) {
         return (
-          <span className="text-[10px]">
+          <span className="text-[11px]">
             <span className="text-primary">&#x25B8;</span>{" "}
             <span className="font-medium text-foreground/80">{selectedRow.finding}</span>:{" "}
             <span className="text-muted-foreground">no affected subjects</span>
@@ -83,7 +83,7 @@ export function MatrixSelectionZone({
       const others = affected.slice(0, -1);
 
       return (
-        <span className="text-[10px]">
+        <span className="text-[11px]">
           <span className="text-primary">&#x25B8;</span>{" "}
           <span
             className="cursor-pointer font-medium text-foreground/80 hover:underline"
@@ -120,7 +120,7 @@ export function MatrixSelectionZone({
 
     if (groups.length === 0) {
       return (
-        <span className="text-[10px]">
+        <span className="text-[11px]">
           <span className="text-primary">&#x25B8;</span>{" "}
           <span className="font-medium text-foreground/80">{selectedRow.finding}</span>:{" "}
           <span className="text-muted-foreground">no affected subjects</span>
@@ -133,7 +133,7 @@ export function MatrixSelectionZone({
     const others = groups.slice(0, -1);
 
     return (
-      <span className="text-[10px]">
+      <span className="text-[11px]">
         <span className="text-primary">&#x25B8;</span>{" "}
         <span
           className="cursor-pointer font-medium text-foreground/80 hover:underline"
@@ -207,7 +207,7 @@ export function MatrixSelectionZone({
     const top = groupTotals.slice(0, 2).filter((g) => g.affected > 0);
 
     return (
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-[11px] text-muted-foreground">
         {top.map((g, i) => (
           <span key={g.dl}>
             {i > 0 && <StripSep />}
@@ -234,7 +234,7 @@ export function MatrixSelectionZone({
   const top = groupTotals.slice(0, 2).filter((g) => g.affected > 0);
 
   return (
-    <span className="text-[10px] text-muted-foreground">
+    <span className="text-[11px] text-muted-foreground">
       {top.map((g, i) => (
         <span key={g.dl}>
           {i > 0 && <StripSep />}

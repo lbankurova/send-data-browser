@@ -23,7 +23,7 @@ interface StudyBannerProps {
 /**
  * Compact study identity bar for analysis views.
  * Shows species+strain, duration+route, dose group count, GLP status.
- * Matches MortalityBanner pattern: bg-muted/30, text-[11px], border-b border-border/40.
+ * Matches MortalityBanner pattern: bg-muted/30, text-xs, border-b border-border/40.
  */
 export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags }: StudyBannerProps) {
   const { species, strain, dosingDurationWeeks, recoveryPeriodDays, route, glpCompliant } = studyContext;
@@ -74,7 +74,7 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
   })();
 
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
       <span className="font-semibold">{speciesStrain}</span>
       <span className="text-muted-foreground/40">|</span>
       <span>{durationRoute}</span>
@@ -236,11 +236,11 @@ function MortalityPopover({ mortality, crossAnimalFlags }: { mortality: StudyMor
 
   return (
     <div>
-      <table className="border-collapse text-[10px]">
+      <table className="border-collapse text-[11px]">
         <tbody>
           {rows.map((row) => (
             <tr key={row.label}>
-              <td className="whitespace-nowrap pr-3 py-px text-[9px] text-muted-foreground" title={row.labelTitle}>{row.label}</td>
+              <td className="whitespace-nowrap pr-3 py-px text-[10px] text-muted-foreground" title={row.labelTitle}>{row.label}</td>
               {allDeaths.map((d) => {
                 const cell = row.cells(d);
                 return (

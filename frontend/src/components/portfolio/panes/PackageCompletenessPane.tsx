@@ -11,7 +11,7 @@ export function PackageCompletenessPane({ study }: Props) {
     <CollapsiblePane title="Package Completeness" defaultOpen>
       <div className="space-y-2">
         {/* File presence */}
-        <div className="space-y-1 text-[11px]">
+        <div className="space-y-1 text-xs">
           <FileStatus label="nSDRG" present={study.has_nsdrg} />
           <FileStatus label="define.xml" present={study.has_define} />
           <FileStatus label="XPT domains" present={study.has_xpt} />
@@ -20,15 +20,15 @@ export function PackageCompletenessPane({ study }: Props) {
         {/* Validation summary */}
         {study.validation && (
           <div className="mt-3 rounded bg-muted/50 p-2">
-            <div className="mb-1 text-[10px] font-medium text-muted-foreground">
+            <div className="mb-1 text-[11px] font-medium text-muted-foreground">
               Validation
             </div>
-            <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-3 text-xs">
               <span className="text-red-600">{study.validation.errors} errors</span>
               <span className="text-amber-600">{study.validation.warnings} warnings</span>
             </div>
             {study.validation.all_addressed && (
-              <div className="mt-1 text-[10px] text-green-700">All addressed</div>
+              <div className="mt-1 text-[11px] text-green-700">All addressed</div>
             )}
           </div>
         )}

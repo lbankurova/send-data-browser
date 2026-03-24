@@ -8,7 +8,6 @@ export interface TableFilterState {
   direction: string[] | null;
   pattern: string[] | null;
   dataType: string[] | null;
-  days: number[] | null;
   findingSearch: string;
   pValueRange: [number | null, number | null];
   trendPRange: [number | null, number | null];
@@ -23,7 +22,6 @@ export const DEFAULT_FILTER_STATE: TableFilterState = {
   direction: null,
   pattern: null,
   dataType: null,
-  days: null,
   findingSearch: "",
   pValueRange: [null, null],
   trendPRange: [null, null],
@@ -40,7 +38,6 @@ export function countActiveFilters(fs: TableFilterState): number {
   if (fs.direction) count++;
   if (fs.pattern) count++;
   if (fs.dataType) count++;
-  if (fs.days) count++;
   if (fs.findingSearch) count++;
   if (fs.pValueRange[0] != null || fs.pValueRange[1] != null) count++;
   if (fs.trendPRange[0] != null || fs.trendPRange[1] != null) count++;
@@ -71,8 +68,6 @@ export function applyTableFilters(
     );
   if (fs.dataType)
     result = result.filter((f) => fs.dataType!.includes(f.data_type));
-  if (fs.days)
-    result = result.filter((f) => f.day != null && fs.days!.includes(f.day));
   if (fs.findingSearch) {
     const q = fs.findingSearch.toLowerCase();
     result = result.filter(

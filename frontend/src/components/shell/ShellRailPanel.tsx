@@ -9,6 +9,7 @@ import { getFindingsRailCallback, setFindingsClearScopeCallback, setFindingsExcl
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { ValidationRuleRail } from "@/components/analysis/validation/ValidationRuleRail";
+import { CohortRail } from "@/components/analysis/cohort/CohortRail";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
@@ -36,6 +37,7 @@ export function ShellRailPanel() {
   const [activeEndpoint, setActiveEndpoint] = useState<string | null>(
     () => studySelection.endpoint ?? null
   );
+  const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
 
   // Route detection
   const isFindingsView = pathname.includes("/findings");
@@ -86,10 +88,11 @@ export function ShellRailPanel() {
     }
   }, [isFindingsView, selectGroup]);
 
-  const handleEndpointSelect = useCallback((endpointLabel: string | null) => {
+  const handleEndpointSelect = useCallback((endpointLabel: string | null, domain?: string) => {
     setActiveEndpoint(endpointLabel);
+    setActiveDomain(domain);
     if (isFindingsView) {
-      getFindingsRailCallback()?.({ activeEndpoint: endpointLabel });
+      getFindingsRailCallback()?.({ activeEndpoint: endpointLabel, activeDomain: domain });
     }
   }, [isFindingsView]);
 
@@ -123,11 +126,13 @@ export function ShellRailPanel() {
     const newEndpoint = selectedFinding?.endpoint_label ?? null;
     if (newEndpoint !== prevEndpointRef.current) {
       setActiveEndpoint(newEndpoint);
+      setActiveDomain(selectedFinding?.domain);
     }
   }, [selectedFinding, isFindingsView]);
 
-  // Route detection — validation view, study summary details tab
+  // Route detection — validation view, cohort view, study summary details tab
   const isValidationRoute = pathname.includes("/validation");
+  const isCohortRoute = pathname.includes("/cohort");
   const isStudySummaryRoute = studyId && pathname === `/studies/${encodeURIComponent(studyId)}`;
   const [summaryTab] = useStudySummaryTab();
 
@@ -172,7 +177,9 @@ export function ShellRailPanel() {
         className="shrink-0 overflow-hidden border-r"
         style={{ width }}
       >
-        {isValidationRoute ? (
+        {isCohortRoute ? (
+          <CohortRail />
+        ) : isValidationRoute ? (
           <ValidationRuleRail
             studyId={studyId}
             selectedRuleId={selectedRuleId}
@@ -183,6 +190,7 @@ export function ShellRailPanel() {
             studyId={studyId}
             activeGroupScope={groupScope}
             activeEndpoint={activeEndpoint}
+            activeDomain={activeDomain}
             onGroupScopeChange={handleGroupScopeChange}
             onEndpointSelect={handleEndpointSelect}
             onGroupingChange={handleGroupingChange}

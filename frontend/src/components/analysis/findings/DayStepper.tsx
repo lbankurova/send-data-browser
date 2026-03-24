@@ -1,6 +1,7 @@
 /**
  * DayStepper — section-level day navigation control for the findings view.
  * Drives the D-R charts to show data for a specific study day.
+ * Format: ◀ D15 (peak) ▾ ▶
  */
 
 interface DayStepperProps {
@@ -14,9 +15,9 @@ interface DayStepperProps {
 }
 
 function formatDayLabel(day: number, label: string | undefined): string {
-  if (label === "terminal") return `Terminal (Day ${day})`;
-  if (label === "peak") return `Peak (Day ${day})`;
-  return `Day ${day}`;
+  if (label === "terminal") return `D${day} (terminal)`;
+  if (label === "peak") return `D${day} (peak)`;
+  return `D${day}`;
 }
 
 export function DayStepper({
@@ -38,15 +39,15 @@ export function DayStepper({
         <button
           type="button"
           disabled={!canPrev}
-          className="px-1 text-[10px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
+          className="px-0.5 text-[8px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
           onClick={() => onDayChange(availableDays[dayIdx - 1])}
         >
-          &lsaquo;
+          {"\u25C0"}
         </button>
       )}
       <span className="relative inline-flex items-center">
         <select
-          className="appearance-none border-none bg-transparent pr-3 text-center text-[9px] font-semibold tabular-nums text-foreground outline-none cursor-pointer disabled:cursor-default disabled:opacity-70"
+          className="appearance-none border-none bg-transparent pr-3 text-center text-[10px] font-semibold tabular-nums text-foreground outline-none cursor-pointer disabled:cursor-default disabled:opacity-70"
           value={selectedDay ?? ""}
           onChange={(e) => onDayChange(Number(e.target.value))}
           disabled={!interactive}
@@ -58,17 +59,17 @@ export function DayStepper({
           ))}
         </select>
         {interactive && (
-          <span className="pointer-events-none absolute right-0 text-[7px] text-muted-foreground">&#x25BE;</span>
+          <span className="pointer-events-none absolute right-0 text-[10px] text-muted-foreground">{"\u25BE"}</span>
         )}
       </span>
       {interactive && (
         <button
           type="button"
           disabled={!canNext}
-          className="px-1 text-[10px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
+          className="px-0.5 text-[8px] text-muted-foreground disabled:opacity-20 hover:text-foreground"
           onClick={() => onDayChange(availableDays[dayIdx + 1])}
         >
-          &rsaquo;
+          {"\u25B6"}
         </button>
       )}
     </div>

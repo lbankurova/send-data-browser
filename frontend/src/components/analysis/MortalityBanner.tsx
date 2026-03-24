@@ -37,7 +37,7 @@ export function MortalityBanner({ mortality }: MortalityBannerProps) {
       : "";
 
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
       <span className="font-semibold">Mortality:</span>
       <span>
         {mortality.total_deaths} treatment-related death{mortality.total_deaths !== 1 ? "s" : ""}
@@ -70,7 +70,7 @@ function EarlyDeathToggle({
   return (
     <button
       type="button"
-      className="ml-auto flex items-center gap-1.5 rounded border border-border/60 bg-background px-2 py-0.5 text-[10px] transition-colors hover:bg-muted/60"
+      className="ml-auto flex items-center gap-1.5 rounded border border-border/60 bg-background px-2 py-0.5 text-[11px] transition-colors hover:bg-muted/60"
       onClick={() => setUseScheduledOnly(!isScheduledOnly)}
       title={tooltip}
     >

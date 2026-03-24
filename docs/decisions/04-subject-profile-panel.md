@@ -90,7 +90,7 @@ Right-side context panel (280px), replacing the current endpoint-mode content wh
 - Back button: `<` icon button, returns to endpoint-mode context panel
 - USUBJID: `text-sm font-semibold font-mono`
 
-**Metadata row:** `mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]`
+**Metadata row:** `mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs`
 - Sex: `text-muted-foreground` label + value (colored: `#1565C0` M, `#C62828` F)
 - Dose: `text-muted-foreground` label + dose label in `font-mono`
 - Disposition: `text-muted-foreground` label + value
@@ -99,14 +99,14 @@ Right-side context panel (280px), replacing the current endpoint-mode content wh
 ### Pane 1: Measurements (CollapsiblePane, default open)
 
 **BW sparkline** (if BW data exists):
-- Label: "Body weight" — `text-[11px] font-medium`
+- Label: "Body weight" — `text-xs font-medium`
 - Sparkline: 60px tall inline SVG, x = day, y = value. Line in dose-group color, strokeWidth 1.5. No axes, no grid — just the shape.
-- Value annotation: start and end values shown as `font-mono text-[10px]` at left and right edges. Unit shown once.
+- Value annotation: start and end values shown as `font-mono text-[11px]` at left and right edges. Unit shown once.
 
 **LB table** (if LB data exists):
 - Compact table: 3 columns (Test, Day, Value)
-- Header: `text-[10px] font-medium uppercase tracking-wider text-muted-foreground`
-- Rows: `text-[11px]`, test code in plain text, day in `font-mono`, value in `font-mono` with unit
+- Header: `text-[11px] font-medium uppercase tracking-wider text-muted-foreground`
+- Rows: `text-xs`, test code in plain text, day in `font-mono`, value in `font-mono` with unit
 - Grouped by test code, sorted by day within each test
 - If many tests: show first 10, then "{N} more..." expandable link
 - Highlight abnormal values: values that fall outside the control group mean ± 2 SD for that test are shown in `text-red-600 font-medium` (requires group statistics from the timecourse endpoint)
@@ -114,7 +114,7 @@ Right-side context panel (280px), replacing the current endpoint-mode content wh
 ### Pane 2: Clinical observations (CollapsiblePane, auto-expand if non-NORMAL findings)
 
 - Timeline: vertical list sorted by day
-- Each entry: `flex gap-2 text-[11px] border-b border-dashed py-1`
+- Each entry: `flex gap-2 text-xs border-b border-dashed py-1`
   - Day: `shrink-0 w-10 font-mono text-muted-foreground` — "Day {N}"
   - Finding: plain text. "NORMAL" in `text-muted-foreground`. Non-normal findings in `font-medium`
 - If all NORMAL: collapsed with summary "All observations normal ({N} days)"
@@ -124,8 +124,8 @@ Right-side context panel (280px), replacing the current endpoint-mode content wh
 
 - Compact table of MI findings for this subject
 - Columns: Specimen, Finding, Severity
-- Header: `text-[10px] font-medium uppercase tracking-wider text-muted-foreground`
-- Rows: `text-[11px]`
+- Header: `text-[11px] font-medium uppercase tracking-wider text-muted-foreground`
+- Rows: `text-xs`
   - Specimen: plain text, truncated at 25 chars with tooltip
   - Finding: plain text. "NORMAL"/"UNREMARKABLE" in `text-muted-foreground`, others in `font-medium`
   - Severity: severity-colored text (from `getNeutralHeatColor` or just semantic badge) if present, em dash if absent

@@ -74,13 +74,13 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
         }}
       >
         {/* Header row */}
-        <div className="sticky left-0 z-10 bg-background px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+        <div className="sticky left-0 z-10 bg-background px-2 py-1 text-[11px] font-semibold text-muted-foreground">
           Endpoint
         </div>
         {doseLabels.map((dl) => (
           <div
             key={dl.level}
-            className="px-1 py-1 text-center text-[10px] font-semibold text-muted-foreground"
+            className="px-1 py-1 text-center text-[11px] font-semibold text-muted-foreground"
           >
             <DoseHeader level={dl.level} label={dl.label} />
           </div>
@@ -91,7 +91,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
           <>
             <div
               key={`label-${ep}`}
-              className="sticky left-0 z-10 truncate bg-background px-2 py-1 text-[11px]"
+              className="sticky left-0 z-10 truncate bg-background px-2 py-1 text-xs"
               title={ep}
             >
               {ep}
@@ -109,7 +109,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
               return (
                 <div
                   key={`cell-${ep}-${dl.level}`}
-                  className="flex cursor-pointer items-center justify-center py-1 text-[10px] font-medium transition-opacity hover:opacity-80"
+                  className="flex cursor-pointer items-center justify-center py-1 text-[11px] font-medium transition-opacity hover:opacity-80"
                   style={{
                     backgroundColor: getSignalScoreHeatmapColor(score),
                     color: score >= 0.5 ? "#fff" : "#374151",
@@ -139,7 +139,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
                     <>
                       <span>{score.toFixed(2)}</span>
                       {stars && stars !== "ns" && (
-                        <span className="ml-0.5 text-[9px]">{stars}</span>
+                        <span className="ml-0.5 text-[10px]">{stars}</span>
                       )}
                     </>
                   ) : (
@@ -153,7 +153,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
       </div>
 
       {endpoints.length > 30 && (
-        <div className="mt-1 px-2 text-[10px] text-muted-foreground">
+        <div className="mt-1 px-2 text-[11px] text-muted-foreground">
           Showing top 30 of {endpoints.length} endpoints
         </div>
       )}

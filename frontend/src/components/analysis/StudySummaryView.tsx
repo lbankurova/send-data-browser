@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
@@ -212,7 +212,7 @@ function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
           <p className="text-xs text-muted-foreground">
             Cross-study insights are not available for this study.
           </p>
-          <p className="mt-1 text-[10px] text-muted-foreground">
+          <p className="mt-1 text-[11px] text-muted-foreground">
             (Only portfolio studies with metadata have insights)
           </p>
         </div>
@@ -273,17 +273,17 @@ function InsightCard({ insight }: { insight: Insight }) {
       <div className="flex items-baseline justify-between">
         <span className="text-xs font-semibold">{insight.title}</span>
         {insight.ref_study && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {insight.ref_study}
           </span>
         )}
         {!insight.ref_study && (
-          <span className="text-[10px] italic text-muted-foreground">
+          <span className="text-[11px] italic text-muted-foreground">
             (this study)
           </span>
         )}
       </div>
-      <p className="mt-1 text-[11px] text-foreground">{insight.detail}</p>
+      <p className="mt-1 text-xs text-foreground">{insight.detail}</p>
     </div>
   );
 }
@@ -480,6 +480,7 @@ function DomainTable({
   interpretationNotes: import("@/lib/species-vehicle-context").ContextNote[];
 }) {
   const [showFolded, setShowFolded] = useState(false);
+  const navigate = useNavigate();
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
@@ -573,22 +574,22 @@ function DomainTable({
   return (
     <>
       <div className="h-full overflow-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-[11px]">
           <thead className="sticky top-0 z-10 bg-background">
             <tr className="border-b bg-muted/30">
-              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Domain
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Subjects
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Signals
               </th>
-              <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+              <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                 Adverse
               </th>
-              <th className="px-1.5 py-1 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "100%" }}>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground" style={{ width: "100%" }}>
                 Notes
               </th>
             </tr>
@@ -607,10 +608,19 @@ function DomainTable({
                     {row.code.toUpperCase()}
                   </Link>
                   <span className="ml-1.5 text-muted-foreground">{row.fullName}</span>
-                  <span className="ml-1.5 text-[9px] text-muted-foreground">{row.rowCount.toLocaleString()} records</span>
+                  <span className="ml-1.5 text-[10px] text-muted-foreground">{row.rowCount.toLocaleString()} records</span>
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {formatSubjectsCell(row)}
+                  {row.code.toLowerCase() === "ds" && mortalityData?.has_mortality && (
+                    <button
+                      type="button"
+                      className="ml-1.5 text-xs text-primary hover:underline cursor-pointer"
+                      onClick={() => navigate(`/studies/${studyId}/cohort?preset=trs`)}
+                    >
+                      View TRS animals
+                    </button>
+                  )}
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.trCount > 0 ? `${row.trCount} TR` : "\u2014"}
@@ -639,7 +649,7 @@ function DomainTable({
       </div>
       {belowFold.length > 0 && !showFolded && (
         <button
-          className="mt-1 text-[10px] text-primary hover:underline"
+          className="mt-1 text-[11px] text-primary hover:underline"
           onClick={() => setShowFolded(true)}
         >
           + {belowFold.length} more domains
@@ -647,7 +657,7 @@ function DomainTable({
       )}
       {showFolded && belowFold.length > 0 && (
         <button
-          className="mt-1 text-[10px] text-primary hover:underline"
+          className="mt-1 text-[11px] text-primary hover:underline"
           onClick={() => setShowFolded(false)}
         >
           Restore compact view
@@ -727,7 +737,7 @@ function AnomaliesList({
 
   return (
     <div className="mb-2">
-      <div className="mb-0.5 text-[10px] font-medium text-muted-foreground">
+      <div className="mb-0.5 text-[11px] font-medium text-muted-foreground">
         Anomalies
       </div>
       <div className="space-y-0.5">
@@ -735,7 +745,7 @@ function AnomaliesList({
           item.type === "warning" ? (
             <div
               key={item.key}
-              className="flex items-start gap-1 text-[10px] text-amber-700"
+              className="flex items-start gap-1 text-[11px] text-amber-700"
             >
               <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
               <span>{item.msg.message}</span>
@@ -743,7 +753,7 @@ function AnomaliesList({
           ) : (
             <div
               key={item.key}
-              className="flex items-start gap-1 text-[10px] text-amber-700"
+              className="flex items-start gap-1 text-[11px] text-amber-700"
             >
               <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
               <span>
@@ -755,7 +765,7 @@ function AnomaliesList({
       </div>
       {hasMore && !expanded && (
         <button
-          className="mt-0.5 text-[10px] text-primary hover:underline"
+          className="mt-0.5 text-[11px] text-primary hover:underline"
           onClick={() => setExpanded(true)}
         >
           +{allItems.length - 5} more
@@ -948,7 +958,7 @@ function DetailsTab({
                 )}
               </span>
             </div>
-            <div className="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+            <div className="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
               <div>
                 Groups: {doseLabels.join(", ")}
               </div>
@@ -973,7 +983,7 @@ function DetailsTab({
                 {noaelLabel && (
                   <>
                     <span className="font-semibold">NOAEL: {noaelLabel}</span>
-                    {noaelSexNote && <span className="text-[10px] text-muted-foreground">({noaelSexNote})</span>}
+                    {noaelSexNote && <span className="text-[11px] text-muted-foreground">({noaelSexNote})</span>}
                   </>
                 )}
                 {noaelLabel && loaelLabel && <span className="text-border">|</span>}
@@ -981,7 +991,7 @@ function DetailsTab({
                   <span className="font-semibold">LOAEL: {loaelLabel}</span>
                 )}
                 {(noaelLabel || loaelLabel) && (targetOrganCount > 0 || domainsWithSignals > 0 || noaelConfidence != null) && <span className="text-border">|</span>}
-                <span className="text-[10px] font-normal text-muted-foreground">
+                <span className="text-[11px] font-normal text-muted-foreground">
                   {targetOrganCount > 0 && <>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</>}
                   {targetOrganCount > 0 && domainsWithSignals > 0 && " · "}
                   {domainsWithSignals > 0 && <>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</>}
@@ -1000,14 +1010,14 @@ function DetailsTab({
               if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
               if (parts.length === 0) return null;
               return (
-                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
                   <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
                 </div>
               );
             })()}
             {/* HED / MRSD */}
             {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
                 <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
                 {" \u00b7 "}
                 <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
@@ -1017,14 +1027,14 @@ function DetailsTab({
             {pkData?.dose_proportionality &&
               pkData.dose_proportionality.assessment !== "linear" &&
               pkData.dose_proportionality.assessment !== "insufficient_data" && (
-              <div className="mt-0.5 flex items-start gap-1 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 flex items-start gap-1 text-[11px] text-muted-foreground">
                 <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
                 <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
               </div>
             )}
             {/* Study-level interpretation notes (cross-domain) */}
             {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
-              <div key={i} className="mt-0.5 flex items-start gap-1 text-[10px]">
+              <div key={i} className="mt-0.5 flex items-start gap-1 text-[11px]">
                 {n.severity === "caution"
                   ? <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
                   : <Info className="mt-0.5 h-2.5 w-2.5 shrink-0 text-muted-foreground" />
@@ -1042,7 +1052,7 @@ function DetailsTab({
           {filteredProv.map((msg) => (
             <div
               key={msg.rule_id + msg.message}
-              className="flex items-start gap-2 text-[10px] leading-snug"
+              className="flex items-start gap-2 text-[11px] leading-snug"
             >
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
               <span className="text-amber-700">
@@ -1109,14 +1119,14 @@ function DetailsTab({
         <div className="space-y-2">
           {/* Domain completeness — exception-only */}
           <div>
-            <div className="text-[10px] font-medium text-muted-foreground">
+            <div className="text-[11px] font-medium text-muted-foreground">
               Domain completeness <span className="font-normal">({domainProfile.label})</span>
               {missingRequired.length === 0 && missingOptional.length === 0 && (
                 <span className="ml-1.5 font-normal">&mdash; no exceptions noted</span>
               )}
             </div>
             {missingRequired.length > 0 && (
-              <div className="mt-0.5 space-y-0.5 text-[10px]">
+              <div className="mt-0.5 space-y-0.5 text-[11px]">
                 <div
                   className="flex items-start gap-1.5 border-l-4 pl-1.5 font-medium text-foreground"
                   style={{ borderLeftColor: "#DC2626" }}
@@ -1135,7 +1145,7 @@ function DetailsTab({
               </div>
             )}
             {missingRequired.length === 0 && missingOptional.length > 0 && (
-              <div className="mt-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
                 Optional not submitted: {missingOptional.map(d => d.toUpperCase()).join(", ")}
               </div>
             )}
@@ -1158,18 +1168,18 @@ function DetailsTab({
             const noIssues = flaggedCount === 0;
             return (
               <div>
-                <div className="text-[10px] font-medium text-muted-foreground">
+                <div className="text-[11px] font-medium text-muted-foreground">
                   Tissue battery:
                   {countsInline && <span className="ml-1 font-normal">{countsInline}</span>}
                   {noIssues && <span className="ml-1 font-normal">&mdash; all animals meet expected count</span>}
                 </div>
                 {batteryNote && (
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {batteryNote}
                   </div>
                 )}
                 {flaggedCount > 0 && (
-                  <div className="mt-0.5 flex items-center gap-1 text-[10px] text-amber-700">
+                  <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-700">
                     <AlertTriangle className="h-2.5 w-2.5" />
                     {flaggedCount} animal{flaggedCount !== 1 ? "s" : ""} below expected tissue count
                   </div>
@@ -1184,7 +1194,7 @@ function DetailsTab({
           )}
 
           {/* Validation issues */}
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             <span className="font-medium">Validation issues:</span>
             {valLoading && <span className="ml-1">loading&hellip;</span>}
             {!valLoading && !valData && <span className="ml-1">not available</span>}

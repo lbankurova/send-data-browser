@@ -60,6 +60,7 @@ export function OverridePill({
           type="button"
           className="flex h-4 w-3 items-center justify-center"
           title={tooltip}
+          onContextMenu={(e) => e.stopPropagation()}
         >
           <span
             className={cn(
@@ -72,9 +73,9 @@ export function OverridePill({
         </button>
       </PopoverTrigger>
       <PopoverContent align={popoverAlign} side={popoverSide} className="w-56 p-2">
-        <div className="mb-1 text-[10px] font-medium text-muted-foreground">Override note</div>
+        <div className="mb-1 text-[11px] font-medium text-muted-foreground">Override note</div>
         <textarea
-          className="w-full rounded border bg-background px-1.5 py-1 text-[11px] leading-snug placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full rounded border bg-background px-1.5 py-1 text-xs leading-snug placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
           rows={3}
           placeholder={placeholder ? `e.g., ${placeholder}` : undefined}
           value={draft}
@@ -95,14 +96,14 @@ export function OverridePill({
         <div className="mt-1 flex justify-end gap-1">
           <button
             type="button"
-            className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+            className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
             onClick={() => setOpen(false)}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded bg-primary px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={draft === (note ?? "")}
             onClick={() => { onSaveNote(draft); setOpen(false); }}
           >

@@ -14,7 +14,7 @@ export function PaneTable({
   ...rest
 }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <table className={cn("w-full table-fixed text-[10px] tabular-nums", className)} {...rest}>
+    <table className={cn("w-full table-fixed text-[11px] tabular-nums", className)} {...rest}>
       {children}
     </table>
   );

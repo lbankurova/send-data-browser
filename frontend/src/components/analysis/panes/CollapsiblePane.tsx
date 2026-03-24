@@ -101,7 +101,7 @@ export function CollapsiblePane({
         )}
         {badge && <span className="ml-auto">{badge}</span>}
         {!isOpen && summary && (
-          <span className="ml-auto truncate text-[10px] text-muted-foreground">
+          <span className="ml-auto truncate text-[11px] text-muted-foreground">
             {summary}
           </span>
         )}

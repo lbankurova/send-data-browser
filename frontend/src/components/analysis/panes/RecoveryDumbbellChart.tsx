@@ -258,7 +258,7 @@ function DumbbellPanel({
   return (
     <div ref={containerRef} className="flex-1 min-w-0 flex flex-col">
       {/* Sex header */}
-      <div className="text-center text-[9px] font-medium text-muted-foreground mb-0.5">
+      <div className="text-center text-[10px] font-medium text-muted-foreground mb-0.5">
         {sex}
       </div>
 
@@ -551,7 +551,7 @@ function DumbbellPanel({
       <div className="relative h-3">
         {showNegThresholdLine && (
           <span
-            className="absolute text-[9px] leading-none whitespace-nowrap"
+            className="absolute text-[10px] leading-none whitespace-nowrap"
             style={{
               left: `${(negThresholdX / chartWidth) * 100}%`,
               transform: "translateX(-100%)",
@@ -563,7 +563,7 @@ function DumbbellPanel({
           </span>
         )}
         <span
-          className="absolute text-[9px] text-muted-foreground/50 leading-none whitespace-nowrap"
+          className="absolute text-[10px] text-muted-foreground/50 leading-none whitespace-nowrap"
           style={{
             left: `${(zeroX / chartWidth) * 100}%`,
             transform: "translateX(-100%)",
@@ -574,7 +574,7 @@ function DumbbellPanel({
         </span>
         {showThresholdLine && (
           <span
-            className="absolute text-[9px] leading-none whitespace-nowrap"
+            className="absolute text-[10px] leading-none whitespace-nowrap"
             style={{
               left: `${(thresholdX / chartWidth) * 100}%`,
               color: LARGE_EFFECT_COLOR,
@@ -591,7 +591,7 @@ function DumbbellPanel({
         {chartRows.map((cr) => {
           if (cr.isEdge === "insufficient_n") {
             return (
-              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
                 <span className="inline-flex items-center gap-1">
                   <span
                     className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -607,7 +607,7 @@ function DumbbellPanel({
           }
           if (cr.isEdge === "no_concurrent_control") {
             return (
-              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
                 <span className="inline-flex items-center gap-1">
                   <span
                     className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -626,7 +626,7 @@ function DumbbellPanel({
           const rAbs = cr.row.effect_size != null ? Math.abs(cr.row.effect_size) : 0;
           if (tAbs < 0.5 && rAbs < 0.5) {
             return (
-              <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
                 <span className="inline-flex items-center gap-1">
                   <span
                     className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -643,7 +643,7 @@ function DumbbellPanel({
 
           const desc = formatVerdictDesc(cr.row.terminal_effect, cr.row.effect_size, v.pctRecovered, cr.row.p_value, effectSymbol);
           return (
-            <div key={cr.row.dose_level} className="text-[9px] leading-relaxed">
+            <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
               <span className="inline-flex items-center gap-1">
                 <span
                   className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
@@ -676,7 +676,7 @@ function DumbbellPanel({
         const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
         if (driftPct <= 15) return null;
         return (
-          <div className="text-[9px] text-muted-foreground/70 mt-1">
+          <div className="text-[10px] text-muted-foreground/70 mt-1">
             Control group shifted {Math.round(driftPct)}% between terminal and recovery
             ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}).
             Interpretation may be affected.
@@ -786,7 +786,7 @@ export function RecoveryDumbbellChart({
   return (
     <div className="space-y-1">
       {/* Legend */}
-      <div className="text-[9px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
+      <div className="text-[10px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
         <span className="inline-flex items-center gap-1">
           <svg width="8" height="8" viewBox="0 0 8 8">
             <circle cx="4" cy="4" r="2.5" fill="#94A3B8" />
@@ -833,7 +833,7 @@ export function RecoveryDumbbellChart({
                 level={cr.row.dose_level}
                 label={cr.doseLabel}
                 align="right"
-                className="text-[9px]"
+                className="text-[10px]"
               />
             </div>
           ))}

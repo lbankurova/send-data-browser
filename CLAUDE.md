@@ -74,7 +74,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **SubjectProfilePanel design is frozen.** `SubjectProfilePanel.tsx` requires explicit user approval before any changes. Bug fixes that don't affect visual design are exempt.
 - **No breadcrumb navigation in context panel panes.** Use `< >` icon buttons for back/forward.
 - **Mode 2 (issue pane) never recreates rule context.** Shows only: record identity, finding evidence, action buttons, review form. Rationale/guidance belongs in Mode 1.
-- **Domain labels — neutral text only.** Never color-coded. Render as: `text-[9px] font-semibold text-muted-foreground`.
+- **Domain labels — neutral text only.** Never color-coded. Render as: `text-[10px] font-semibold text-muted-foreground`.
 - **No colored badges for categorical identity.** Color encodes signal strength only. Categorical identity (dose group, domain, sex, severity, fix/review/workflow state) uses neutral gray (`bg-gray-100 text-gray-600 border-gray-200`).
 - **Canonical tab bar pattern.** Active: `h-0.5 bg-primary` underline, `text-foreground`. Inactive: `text-muted-foreground`. Padding: `px-4 py-1.5`. Text: `text-xs font-medium`. Container: `bg-muted/30`.
 - **Evidence panel background.** All evidence panels use `bg-muted/5`.
@@ -85,6 +85,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Data label casing — two-tier.** Organ system names: `titleCase()`. All other data labels: raw values (preserves abbreviations).
 - **Sex ordering — alphabetical, always.** F precedes M in every axis.
 - **Color discipline.** Position > Grouping > Typography > Color. ≤10% saturated pixels at rest. One saturated color family per column. Only conclusions "shout."
+- **Reserved color palette — no reuse.** Certain colors are reserved for specific semantic roles and must not be used (or approximated within ~30 hue degrees) for other purposes. Reserved: dose groups (`#6b7280` gray, `#3b82f6` blue, `#f59e0b` amber, `#ef4444` red-400), sex (`#0891b2` cyan-M, `#ec4899` pink-F), severity (`#dc2626` red-adverse, `#facc15` yellow-warning). Before introducing a new color, check `severity-colors.ts` for conflicts.
 - **Information hierarchy.** Six categories (Decision, Finding, Qualifier, Caveat, Evidence, Context) — never mix in one visual unit. Emphasis tiers: 1 (colored at rest) = conclusions, 2 (visible, muted) = labels, 3 (on interaction) = evidence.
 - **No decision red repetition per row.** `#DC2626` at most once per table row.
 - **Heatmap matrices use neutral grayscale heat.** 5-step gray ramp, always-on. `getNeutralHeatColor()` in `severity-colors.ts`.
@@ -92,6 +93,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Dose group display — two components.** `DoseHeader` for column headers, `DoseLabel` for row/cell values (both in `components/ui/DoseLabel.tsx`). Never render raw dose group strings.
 - **Table column layout — content-hugging with absorber.** All columns except one absorber use `width: 1px; white-space: nowrap`.
 - **Expandable row content aligns under the label text, not the chevron.** Indent past chevron + gap.
+- **Inline override fields use `bg-violet-50/40`.** When a data value is user-overridable directly in a table or data display (not inside a form or settings panel), tint the cell with `bg-violet-50/40`. This signals "editable zone" without competing with amber (attention) or blue (selection). Reserved for this purpose only.
 - **Pre-edit hierarchy analysis for typography/spacing.** Before changing font size, margin, or padding: (1) map current hierarchy (control > supporting > micro); (2) verify change preserves tier relationships; (3) check spacing is proportional. See `docs/design-system/datagrok-visual-design-guide.md` §2.1.
 
 ## UI Casing Conventions

@@ -56,13 +56,13 @@ export function ValidationRuleCard({
       <div className="flex items-center justify-between gap-1">
         <span
           className={cn(
-            "font-mono text-[11px] font-semibold",
+            "font-mono text-xs font-semibold",
             isDisabled && "line-through",
           )}
         >
           {rule.rule_id}
         </span>
-        <span className={cn("text-[11px]", SEV_COLOR[rule.severity])}>
+        <span className={cn("text-xs", SEV_COLOR[rule.severity])}>
           {SEV_ICON[rule.severity]}
         </span>
       </div>
@@ -70,14 +70,14 @@ export function ValidationRuleCard({
       {/* Row 2: description */}
       <p
         className={cn(
-          "mt-0.5 line-clamp-2 text-[10px] text-muted-foreground",
+          "mt-0.5 line-clamp-2 text-[11px] text-muted-foreground",
           isDisabled && "italic",
         )}
       >
         {rule.description}
       </p>
       {isDisabled && (
-        <span className="mt-0.5 inline-block text-[9px] italic text-muted-foreground/60">
+        <span className="mt-0.5 inline-block text-[10px] italic text-muted-foreground/60">
           disabled
         </span>
       )}
@@ -98,7 +98,7 @@ export function ValidationRuleCard({
               style={{ width: `${barWidth}%` }}
             />
           </div>
-          <span className="shrink-0 font-mono text-[9px] text-muted-foreground">
+          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
             {rule.records_affected} rec
           </span>
         </div>

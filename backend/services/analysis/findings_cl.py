@@ -12,6 +12,31 @@ from services.analysis.day_utils import mode_day, min_day
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE", "NONE"}
 
+# ── CL body-system classification ─────────────────────────
+# Maps CL finding keywords to body-system categories for grouping noisy
+# CL coding variability. Checked in order; first match wins.
+CL_BODY_SYSTEM_RULES: list[tuple[str, list[str]]] = [
+    ("CNS", ["TREMOR", "CONVULS", "SEIZURE", "LETHARGY", "LETHARG", "HYPOACTIV",
+             "HYPERACTIV", "ATAXIA", "PARALYS", "PTOSIS", "PILOERECT", "PROSTRAT",
+             "DECREAS.*ACTIV", "INCREAS.*ACTIV", "SALIVAT", "LACRIMAT", "CHROMODACRY"]),
+    ("GI", ["DIARRHEA", "DIARRHOEA", "EMESIS", "VOMIT", "SOFT STOOL", "LOOSE STOOL",
+            "DISCOLOR.*FECES", "ABNORMAL.*FECES", "FECAL", "STOOL"]),
+    ("integument", ["ALOPECIA", "CRUST", "SCAB", "ERYTHEMA", "SWELLING", "EDEMA",
+                    "OEDEMA", "RASH", "LESION", "WOUND", "INJECTION SITE",
+                    "DERMATIT", "SKIN", "DESQUAM", "ULCER", "NODULE", "MASS"]),
+]
+
+
+def classify_cl_body_system(finding: str) -> str:
+    """Map a CL finding term to a body-system category."""
+    upper = finding.upper()
+    import re
+    for system, patterns in CL_BODY_SYSTEM_RULES:
+        for pat in patterns:
+            if re.search(pat, upper):
+                return system
+    return "general"
+
 
 def compute_cl_findings(
     study: StudyInfo,
@@ -62,6 +87,15 @@ def compute_cl_findings(
         finding_str = str(finding_str).strip()
         if not finding_str or finding_str.upper() in NORMAL_TERMS:
             continue
+
+        # Per-subject onset day: min(CLDY) per USUBJID
+        onset_days: list[dict[str, int | None]] = []
+        for subj_id, subj_grp in grp.groupby("USUBJID"):
+            day_vals = subj_grp["CLDY"].dropna()
+            onset = int(day_vals.min()) if len(day_vals) > 0 else None
+            onset_days.append({str(subj_id): onset})
+
+        body_system = classify_cl_body_system(finding_str)
 
         group_stats = []
         control_affected = 0
@@ -146,6 +180,8 @@ def compute_cl_findings(
             "max_effect_size": None,
             "min_p_adj": min_p,
             "has_recovery_subjects": has_any_recovery_cl,
+            "raw_subject_onset_days": onset_days,
+            "cl_body_system": body_system,
         })
 
     return findings

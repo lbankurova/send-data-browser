@@ -24,19 +24,15 @@ The view itself is a two-panel master-detail layout with a resizable rail (match
 
 ```
 +--[300px*]-+-+----------------------------------[flex-1]-----------+
-|            |R| Summary strip                                       |
-| Specimen   |e|  specimen name, domains, sex, adverse badge         |
-| Rail       |s|  incidence, max sev, pattern, findings count        |
-|            |i|  lab correlation, syndrome, alerts                   |
-| search     |z+----------------------------------------------------+
-| specimen 1 |e| [Evidence] [Hypotheses] [Compare]     <── tab bar   |
-| specimen 2 | +----------------------------------------------------+
-| specimen 3 | | Tab content:                                       |
-| ...        | |  Evidence: findings table ─ resize ─               |
-|            | |    dose-incidence chart ─ resize ─                  |
-|            | |    severity matrix (group/subject toggle)            |
-|            | |  Hypotheses: exploratory tools                      |
-|            | |  Compare: multi-subject comparison (2+ selected)    |
+|            |R| [Evidence] [Hypotheses] [Compare]     <── tab bar   |
+| Specimen   |e+----------------------------------------------------+
+| Rail       |s| Tab content:                                       |
+|            |i|  Evidence: findings table ─ resize ─               |
+| search     |z|    dose-incidence chart ─ resize ─                  |
+| specimen 1 |e|    severity matrix (group/subject toggle)            |
+| specimen 2 | |  Hypotheses: exploratory tools                      |
+| specimen 3 | |  Compare: multi-subject comparison (2+ selected)    |
+| ...        | |                                                     |
 +------------+-+----------------------------------------------------+
              ^ PanelResizeHandle (4px)
 * default 300px, resizable 180-500px via useResizePanel
@@ -64,11 +60,11 @@ Container: `shrink-0 border-r` with `style={{ width: railWidth }}` where `railWi
 
 Each `SpecimenRailItem` is a `<button>` using design tokens from `rail` (`rail.itemBase`, `rail.itemSelected`, `rail.itemIdle`) with `px-2.5 py-2`.
 
-**Row 1 (name + quantitative indicators):** Specimen name (`text-xs font-semibold`, underscores replaced with spaces) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[9px] text-muted-foreground`) + `SparklineGlyph` (mini pattern visualization from `pattern.sparkline`) + max severity badge (`font-mono text-[9px]`, `getNeutralHeatColor(maxSeverity)` background) + max incidence badge (`font-mono text-[9px]`, `getNeutralHeatColor01(maxIncidence)` background) + finding count (`font-mono text-[9px]`) + adverse count with "A" suffix (`font-mono text-[9px]`).
+**Row 1 (name + quantitative indicators):** Specimen name (`text-xs font-semibold`, underscores replaced with spaces) + review status glyph (Confirmed: `✓`, Revised: `~`, Preliminary/In review: no glyph — `text-[10px] text-muted-foreground`) + `SparklineGlyph` (mini pattern visualization from `pattern.sparkline`) + max severity badge (`font-mono text-[10px]`, `getNeutralHeatColor(maxSeverity)` background) + max incidence badge (`font-mono text-[10px]`, `getNeutralHeatColor01(maxIncidence)` background) + finding count (`font-mono text-[10px]`) + adverse count with "A" suffix (`font-mono text-[10px]`).
 
-**Row 2 (organ system + domains):** `mt-0.5` — organ system label (`text-[10px] text-muted-foreground/60`, `titleCase(specimenToOrganSystem())`) + domain labels (`<DomainLabel>` for each domain).
+**Row 2 (organ system + domains):** `mt-0.5` — organ system label (`text-[11px] text-muted-foreground/60`, `titleCase(specimenToOrganSystem())`) + domain labels (`<DomainLabel>` for each domain).
 
-**Row 3 (syndrome badge, conditional):** `mt-0.5 text-[10px] text-muted-foreground/70` — link emoji + syndrome name. Only shown when `summary.pattern.syndrome` is detected.
+**Row 3 (syndrome badge, conditional):** `mt-0.5 text-[11px] text-muted-foreground/70` — link emoji + syndrome name. Only shown when `summary.pattern.syndrome` is detected.
 
 ### Sorting
 
@@ -119,36 +115,11 @@ On data load, auto-selects the top specimen (highest signal score) via `StudySel
 
 ---
 
-## Specimen Summary Strip
+## Specimen Summary (Rail Items)
 
-`shrink-0 border-b bg-background px-3 py-1.5` — sticky above the tab bar.
+Specimen-level summary metrics are rendered in the **Specimen Rail** items (see §Specimen Rail above). The rail items show specimen name, severity/incidence badges, pattern sparkline, domain labels, organ system, syndrome badges, and review status. There is no separate summary strip above the tab bar — the view goes directly from specimen selection to the tab bar.
 
-### Title row (flex, items-center, gap-2)
-
-- Specimen name: `text-sm font-semibold` (underscores replaced with spaces)
-- Domain labels: `<DomainLabel>` for each domain
-- Sex scope: `text-[10px] text-muted-foreground` — from `deriveSexLabel(specimenData)`
-- Adverse badge (if adverseCount > 0): `rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground` — "{N} adverse"
-
-### Metrics row (mt-1, flex, items-center, gap-4, text-[10px], text-muted-foreground)
-
-| Metric | Format |
-|--------|--------|
-| Peak incidence | `{pct}%` — font-mono font-medium |
-| Max sev | `{n.n}` — font-mono font-medium |
-| Pattern | `SparklineGlyph` (mini sparkline) + `formatPatternLabel(pattern)` — font-medium |
-| Findings | `{findingCount}` — font-mono font-medium, with `({adverseCount}adv/{warningCount}warn)` suffix when warningCount > 0 |
-| Sex skew | (conditional) `{males higher|females higher|balanced}` — shown when `sexSkew` is not null |
-| Recovery | (conditional) shown when `specimenRecoveryOverall` is non-null and not "reversed" — `{specimenRecoveryOverall}` |
-| Lab | (conditional) shown when `labCorrelation.hasData && topSignal && signal >= 2` — clickable, shows `●●●` or `●●` signal dots + test name + `±X%` change. Tooltip: "Top lab signal: {test} ±X% vs control — click to view lab correlates". Click scrolls to `[data-pane="lab-correlates"]` in context panel. |
-
-### Syndrome line (conditional)
-
-Shown when `selectedSummary.pattern.syndrome` exists. `mt-0.5 truncate text-[10px] text-muted-foreground/70` — displays syndrome name + required finding + supporting findings (e.g., "🔗 Hepatotoxicity syndrome: HEPATOCELLULAR NECROSIS + BILE DUCT HYPERPLASIA"). Full details in tooltip.
-
-### Pattern alerts (conditional)
-
-Shown when `pattern.alerts.length > 0`. `mt-0.5 text-[10px] text-muted-foreground/70` — dot-separated list of alert messages with priority icons (⚠ for HIGH/MEDIUM, ⓘ for LOW).
+The `SectionHeader` selection zones in the Evidence tab provide inline context for the selected finding/specimen within each section header, making a dedicated summary strip unnecessary.
 
 ---
 
@@ -163,6 +134,8 @@ The **Compare** tab only appears when 2+ subjects are selected for comparison. I
 Active tab: `text-foreground` + `absolute inset-x-0 bottom-0 h-0.5 bg-primary` underline
 Inactive tab: `text-muted-foreground hover:text-foreground`
 All tabs: `relative px-4 py-1.5 text-xs font-medium transition-colors`
+
+**Mount strategy:** The `OverviewTab` stays mounted (hidden via `hidden` class) when other tabs are active, preserving scroll position, selection, and section layout state. Hypotheses and Compare tabs unmount when not active.
 
 ---
 
@@ -219,18 +192,19 @@ Uses subject-level data for sex breakdown when `subjects` prop is available.
 
 TanStack React Table with sortable, resizable columns. Section header uses `SectionHeader` with title "Observed findings" and `FindingsSelectionZone`.
 
-**Header right:** "Hide zero severity" checkbox — filters out findings with `maxSeverity === 0`. Count shows: `({filtered} of {total})` when active, `({count})` otherwise.
+**Header right:** "Hide zero severity" checkbox — filters out findings with `maxSeverity === 0`. Count string shows: `"{N} of {total} findings"` when hide-zero-severity is active, `"{N} findings"` otherwise. Appends `", peak sev {n.n}"` when peak > 0 and `", {N} adverse"` when adverse count > 0.
 
 **Columns:**
 
 | Column | Header | Size | Cell Rendering |
 |--------|--------|------|----------------|
-| finding | Finding | 120px (60-260) | Severity micro-cell (`h-2.5 w-2.5 rounded-sm`, `getNeutralHeatColor(maxSev).bg`) + truncated name (weight escalates: `font-medium` -> `font-semibold` at sev 2+ -> `font-bold` at sev 4+) |
-| maxSeverity | Peak sev | 50px (40-80) | `font-mono text-[10px]`, weight/opacity escalates with value. En dash for zero. Tooltip "Max severity: {n.n} (scale 1-5)" |
-| incidence | Incid. | 50px (42-80) | `font-mono text-[10px]`, percentage format. Weight/opacity escalates at 10%/30% thresholds. En dash for zero. |
-| severity | Signal | 60px (48-100) | **Clinical-aware severity cell** using `signal.*` design tokens. When statistical severity is "normal" but a clinical catalog match exists, replaces "normal" with clinical class label (Sentinel / High concern / Moderate / Flag) via `signal.clinicalOverride` (`border-l-2 border-l-gray-400`, `text-[9px] font-medium text-foreground`). Tooltip shows both clinical and statistical classification. For adverse/warning/normal without clinical override: `signal.adverse` (`border-l-red-600`), `signal.warning` (`border-l-amber-600`), `signal.normal` (`border-l-emerald-400/40`, `text-muted-foreground`). **Decreased** severity (dose direction = decreasing, severity = warning): renders "decreased" with `signal.decreased` tokens + tooltip showing control% → high dose% incidence drop. |
-| isDoseDriven | Dose-dep. `▾` | 80-100px (55-140) | **Switchable dose-dependence method.** Clicking the column header opens a context menu with 5 methods grouped as Heuristic (Moderate+, Strong only) and Statistical (CA trend, J-T trend, Fisher vs ctrl). Header label changes to reflect active method. Cell shows `✓` when criterion met; for statistical methods, shows p-value in tooltip or "–" with reason when not significant/no data. **Fisher's pairwise** shows per-group compact display: `G1:✓✓ G2:✓ G3:–` (double checkmark for p < 0.01, single for p < 0.05, dash for not significant). Tooltip lists all pairwise p-values. **Non-monotonic** findings show `⚡` glyph instead of ✓/–. When mortality masking is detected (high-dose mortality correlates with lower incidence), tooltip adds "⚠ High-dose mortality may mask findings at top dose." |
-| recoveryVerdict | Recovery | 70px (55-120) | **Conditional column** — only present when `specimenHasRecovery` is true. Cell: verdict arrow (`verdictArrow()`) + verdict label (`text-[9px]`). Special verdicts: `not_examined` → "∅ not examined" (`font-medium text-foreground/70`); `low_power` → "~ low power" (`text-muted-foreground/50`); `insufficient_n` → "† (N<3)" (`text-muted-foreground/50`). `persistent`, `progressing`, `anomaly` get `font-medium text-foreground/70`; others get `text-muted-foreground`. Em dash for `not_observed`/`no_data`/null. Tooltip from `buildRecoveryTooltip()`. Sortable via custom `verdictPriority()` comparator. |
+| finding | Finding | 120px (60-260) | Severity micro-cell (`h-2.5 w-2.5 rounded-sm`, `getNeutralHeatColor(maxSev).bg`) + truncated name (weight escalates: `font-medium` -> `font-semibold` at sev 2+ -> `font-bold` at sev 4+). Tooltip includes dominant temporality when present (e.g., `"{finding} ({temporality})"`) |
+| distribution | Dist. | 55px (40-70) | **Distribution qualifier** from SUPP domain (`dominant_distribution`). Short abbreviated labels: F (focal), MF (multifocal), F/MF (focal/multifocal), D (diffuse), S (segmental), mix (mixed), PV (perivascular), PP (periportal), CL (centrilobular), G (global), Z (zonal). Unknown distributions truncated to first 3 chars. Em dash when no data. Tooltip: `"Distribution: {full label}"` + raw modifier values if available. `text-[10px] text-muted-foreground`. |
+| maxSeverity | Peak sev | 50px (40-80) | `font-mono text-[11px]`, weight/opacity escalates with value. En dash for zero. Tooltip "Max severity: {n.n} (scale 1-5)" |
+| incidence | Incid. | 50px (42-80) | `font-mono text-[11px]`, percentage format. Weight/opacity escalates at 10%/30% thresholds. En dash for zero. |
+| severity | Signal | 60px (48-100) | **Clinical-aware severity cell** using `signal.*` design tokens. When statistical severity is "normal" but a clinical catalog match exists, replaces "normal" with clinical class label (Sentinel / High concern / Moderate / Flag) via `signal.clinicalOverride` (`border-l-2 border-l-gray-400`, `text-[10px] font-medium text-foreground`). Tooltip shows both clinical and statistical classification. For adverse/warning/normal without clinical override: `signal.adverse` (`border-l-red-600`), `signal.warning` (`border-l-amber-600`), `signal.normal` (`border-l-emerald-400/40`, `text-muted-foreground`). **Decreased** severity (dose direction = decreasing, severity = warning): renders "decreased" with `signal.decreased` tokens + tooltip showing control% → high dose% incidence drop. |
+| isDoseDriven | Dose-dep. `▾` | 80-100px (55-140) | **Switchable dose-dependence method.** Clicking the column header opens a context menu with 5 methods grouped in 3 sections: **Heuristic** (Moderate+, Strong only), **Statistical (trend)** (Cochran-Armitage trend, Jonckheere-Terpstra trend), **Statistical (pairwise)** (Fisher's exact vs control). Sections separated by `border-t border-border/40` dividers with `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50` group labels. Header label changes to reflect active method. Cell shows `✓` when criterion met; for statistical methods, shows p-value in tooltip or "–" with reason when not significant/no data. **Fisher's pairwise** uses column size 100px (80-140) and shows per-group compact display: `G1:✓✓ G2:✓ G3:–` (double checkmark for p < 0.01, single for p < 0.05, dash for not significant). Tooltip lists all pairwise p-values. **Non-monotonic** findings show `⚡` glyph instead of ✓/–. When mortality masking is detected (high-dose mortality correlates with lower incidence), tooltip adds "⚠ High-dose mortality may mask findings at top dose." **Multiplicity footnote:** When any statistical method is active, a footnote appears below the table about multiplicity correction (references `studySettings.multiplicity`). |
+| recoveryVerdict | Recovery | 70px (55-120) | **Conditional column** — only present when `specimenHasRecovery` is true. Cell: verdict arrow (`verdictArrow()`) + verdict label (`text-[10px]`). Special verdicts: `not_examined` → "∅ not examined" (`font-medium text-foreground/70`); `low_power` → "~ low power" (`text-muted-foreground/50`); `insufficient_n` → "† (N<3)" (`text-muted-foreground/50`). `persistent`, `progressing`, `anomaly` get `font-medium text-foreground/70`; others get `text-muted-foreground`. Em dash for `not_observed`/`no_data`/null. Tooltip from `buildRecoveryTooltip()`. Sortable via custom `verdictPriority()` comparator. |
 | laterality | Lat. | 60px (40-90) | **Conditional column** — only present when specimen is a paired organ (`isPairedOrgan()`) AND has laterality data in subject records (`specimenHasLaterality()`). Shows aggregated laterality across subjects: `B` (bilateral, `text-foreground`), `L` (left only, `text-muted-foreground`), `R` (right only, `text-muted-foreground`), `mixed` (both unilateral and bilateral, `text-amber-600/70`). Count in parens when > 1 subject. Tooltip: "Bilateral: N, Left only: N, Right only: N". |
 | relatedOrgans | Also in `ⓘ` | 140px (50-300) | Absorber column. Clickable organ links (`text-primary/70 hover:underline`) with incidence % in parens from R16 cross-organ coherence + lesion data join. Click navigates to the related specimen via `onSpecimenNavigate()`. Tooltip on header explains R16 matching. |
 
@@ -244,7 +218,7 @@ Sorted by max avg_severity descending. Click sets finding-level selection (updat
 
 Side-by-side ECharts bar charts — **Incidence** (left, `border-r border-border/30`) and **Severity** (right). Built by `buildDoseIncidenceBarOption()` and `buildDoseSeverityBarOption()` from `charts/histopathology-charts.ts`.
 
-Each chart has a **Compact/Scaled mode toggle** (`ChartModeToggle`) — "C" (compact: auto-scale to data range) and "S" (scaled: fixed axis range 0-100% / 0-5). Toggle pills: `rounded-sm px-1 py-px text-[9px] font-semibold`, active: `bg-foreground text-background`, inactive: `text-muted-foreground/50`.
+Each chart has a **Compact/Scaled mode toggle** (`ChartModeToggle`) — "C" (compact: auto-scale to data range) and "S" (scaled: fixed axis range 0-100% / 0-5). Toggle pills: `rounded-sm px-1 py-px text-[10px] font-semibold`, active: `bg-foreground text-background`, inactive: `text-muted-foreground/50`.
 
 **Section title:** Dynamic — "Dose charts: {finding}" when finding selected, "Dose charts (specimen aggregate)" otherwise. Uses `SectionHeader` with `DoseChartsSelectionZone`.
 
@@ -290,7 +264,7 @@ Filter controls render below the section header via `FilterBar`. Each mode inclu
 - Severity graded only: checkbox — filters findings to those with `hasSeverityData === true`
 
 **Group mode adds:**
-- Severity/Incidence toggle: segmented control (`rounded-full` pills `text-[11px]`, active: `bg-foreground text-background`)
+- Severity/Incidence toggle: segmented control (`rounded-full` pills `text-xs`, active: `bg-foreground text-background`)
 - `FilterShowingLine` shown when `severityGradedOnly` is active (includes parts for sex filter, min severity)
 
 **Subject mode adds:**
@@ -310,19 +284,19 @@ Matrix mode, affected only, subject sort, dose group filter, and severity graded
 
 Rendered when `heatmapData` exists and has findings.
 
-**Description text:** `mb-0.5 text-[10px] text-muted-foreground` — "Cells show average severity grade per dose group. Non-graded findings show incidence." (severity mode) or "Cells show % animals affected per dose group." (incidence mode).
+**Description text:** `mb-0.5 text-[11px] text-muted-foreground` — "Cells show average severity grade per dose group. Non-graded findings show incidence." (severity mode) or "Cells show % animals affected per dose group." (incidence mode).
 
 **Legend:** 5 color swatches with labeled numeric prefixes. Severity mode: "1 Minimal", "2 Mild", "3 Moderate", "4 Marked", "5 Severe". Incidence mode: "1-19%", "20-39%", "40-59%", "60-79%", "80-100%". Swatches use `getNeutralHeatColor()` / hardcoded hex for incidence; transparent swatches get `border border-border`.
 
 **Structure:** `overflow-x-auto` > `inline-block` — horizontal scrollable flex layout.
 
-**Header row:** Finding label column `w-52 shrink-0` + dose columns each `w-20 shrink-0 text-center text-[10px] font-medium text-muted-foreground` using `<DoseHeader>` component. When `recoveryHeatmapData` exists, a `w-px bg-border mx-0.5` vertical separator followed by a "Recovery" group header (`text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50`) and recovery dose columns each `w-20` with `text-muted-foreground/60` and "(R)" suffix.
+**Header row:** Finding label column `w-52 shrink-0` + dose columns each `w-20 shrink-0 text-center text-[11px] font-medium text-muted-foreground` using `<DoseHeader>` component. When `recoveryHeatmapData` exists, a `w-px bg-border mx-0.5` vertical separator followed by a "Recovery" group header (`text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50`) and recovery dose columns each `w-20` with `text-muted-foreground/60` and "(R)" suffix.
 
 **Data rows:** No finding cap (specimens typically have 1-11 findings each).
 - Each `flex cursor-pointer border-t hover:bg-accent/20`, selected: `ring-1 ring-primary`
-- Finding label: `w-52 shrink-0 truncate py-0.5 pr-2 text-[10px]`, truncated at 40 chars
+- Finding label: `w-52 shrink-0 truncate py-0.5 pr-2 text-[11px]`, truncated at 40 chars
 - **Graded cells (severity mode):** `flex h-6 w-20 shrink-0 items-center justify-center` with `h-5 w-16 rounded-sm` inner block colored by `getNeutralHeatColor(avg_severity)`. Cell label: severity value (n.n) when > 0, or `{affected}/{n}` fraction when severity is 0. Gray placeholder (`h-5 w-16 bg-gray-100`) when no data. **Outlier detection**: max_severity ≥ 3 AND (max - avg) ≥ 2 → white `▴` triangle marker at top-right of cell.
-- **Non-graded cells (severity mode):** `h-5 w-12 rounded-sm font-mono text-[10px] text-muted-foreground` showing `{pct}%` incidence. Uses diagonal hatch pattern (`repeating-linear-gradient(-45deg, #E5E7EB, #E5E7EB 2px, #F3F4F6 2px, #F3F4F6 6px)`) instead of solid background. Narrower (`w-12`) than graded cells to visually distinguish.
+- **Non-graded cells (severity mode):** `h-5 w-12 rounded-sm font-mono text-[11px] text-muted-foreground` showing `{pct}%` incidence. Uses diagonal hatch pattern (`repeating-linear-gradient(-45deg, #E5E7EB, #E5E7EB 2px, #F3F4F6 2px, #F3F4F6 6px)`) instead of solid background. Narrower (`w-12`) than graded cells to visually distinguish.
 - **Incidence cells:** Percentage format colored by `getNeutralHeatColor01(incidence)`.
 - **Recovery cells:** Separated by `w-px bg-border mx-0.5` vertical line. Five special cases checked in order:
   1. **Not examined** (`recovery.examined === 0`): renders `∅` with `text-muted-foreground/30`, tooltip "Not examined in recovery arm".
@@ -351,9 +325,9 @@ Subject data always fetched via `useHistopathSubjects(studyId, specimen)` (not l
 6. **Examined row** — "E" if subject has any findings, empty otherwise. `border-b`.
 
 **Data rows:** One per finding (sorted: graded findings first by max severity desc, then non-graded alphabetical; filtered by `minSeverity` and `severityGradedOnly`). Each cell (`w-8 h-6`):
-- Severity > 0: block (`h-5 w-6 rounded-sm font-mono text-[9px]`) with severity number, color from `getNeutralHeatColor(sevNum)` — minimal (grade 1) renders transparent, grades 2-5 get progressively darker gray. **Laterality dots** (when `showLaterality` and entry has laterality): small dot at left edge for "LEFT" (`left-0`), right edge for "RIGHT" (`right-0`), no dot for "BILATERAL".
-- Entry with severity 0 but finding is graded (has grades in other subjects): em dash (`text-[9px] text-muted-foreground`)
-- Entry present but finding is non-graded: gray dot (`text-[10px] text-gray-400` `●`). **Laterality dots** applied same as severity cells.
+- Severity > 0: block (`h-5 w-6 rounded-sm font-mono text-[10px]`) with severity number, color from `getNeutralHeatColor(sevNum)` — minimal (grade 1) renders transparent, grades 2-5 get progressively darker gray. **Laterality dots** (when `showLaterality` and entry has laterality): small dot at left edge for "LEFT" (`left-0`), right edge for "RIGHT" (`right-0`), no dot for "BILATERAL".
+- Entry with severity 0 but finding is graded (has grades in other subjects): em dash (`text-[10px] text-muted-foreground`)
+- Entry present but finding is non-graded: gray dot (`text-[11px] text-gray-400` `●`). **Laterality dots** applied same as severity cells.
 - No entry: empty cell
 
 **Column highlighting:**
@@ -380,7 +354,7 @@ Pathologist-oriented exploratory tools, matching the Hypotheses tab pattern from
 ### Finding-aware context (D-3)
 
 The tab accepts `selectedFinding` from the parent's `selection?.finding`. When a finding is selected:
-- **Auto-switch intent:** `useEffect` switches intent with priority logic: if the finding has a non-UNCLASSIFIABLE recovery classification, switches to "recovery"; otherwise falls back to "treatment".
+- **Auto-switch intent:** `useEffect` switches intent to `"treatment"` when a finding is selected.
 - **Contextual placeholders:** Each tool placeholder enriches its display text:
   - `SeverityDistributionPlaceholder`: context line appends `"· Focus: {finding}"`
   - `TreatmentRelatedPlaceholder`: description changes to `"Assess whether "{finding}" is treatment-related..."`
@@ -401,27 +375,11 @@ Right-click on pills opens context menu for pin/unpin from favorites.
 |------|------|-----------|-------------|
 | Severity distribution | `BarChart3` | Yes | Severity grade distribution across dose groups |
 | Treatment-related assessment | `Microscope` | Yes | Classify findings as treatment-related, incidental, or spontaneous |
-| Peer comparison | `Users` | Yes | Compare against historical control incidence data (HCD comparison table) |
 | Dose-severity trend | `TrendingUp` | Yes | Severity and incidence changes across dose groups |
-| Recovery assessment | `Undo2` | Conditional | Classify recovery patterns across all findings in specimen |
-
-The **Recovery assessment** tool is available only when the specimen has recovery data (`specimenHasRecovery`). It is not a default favorite — accessible via the "+" dropdown.
 
 Default favorites: Severity distribution, Treatment-related assessment.
 
-Each tool renders a `HypViewerPlaceholder` (DG viewer type label), descriptive text, and a `HypConfigLine` settings block in a `rounded-md border bg-card p-3` card. Unavailable tools show a `HypProductionNote` explaining the dependency.
-
-### Recovery Assessment Tool Content
-
-Rendered when `intent === "recovery"`. Shows specimen-level and per-finding recovery classifications from the interpretive layer (`lib/recovery-classification.ts`).
-
-**Specimen-level summary:** Left-bordered block (color from `CLASSIFICATION_BORDER[type]`) with classification label + confidence. Below: summary sentence "N of M findings show incomplete or delayed recovery."
-
-**Findings table:** Sorted by `CLASSIFICATION_PRIORITY` (most concerning first). Columns: Finding, Nature (from `classifyFindingNature()` with `titleCase()`, tooltip shows `reversibilityLabel()`), Classification, Confidence. Proliferative findings get "not applicable" in the Classification column and dimmed styling. Rows are clickable — fire `onFindingClick` to select the finding.
-
-**Missing inputs:** Deduplicated list of `inputsMissing` across all classifications, shown at bottom when present.
-
-**Footer:** `HypConfigLine`: "Classification method: Rule-based (5 categories)". `HypProductionNote`: disabled toggle for "Include historical controls".
+Each tool renders a `HypViewerPlaceholder` (DG viewer type label), descriptive text, and a `HypConfigLine` settings block in a `rounded-md border bg-card p-3` card.
 
 ---
 
@@ -433,8 +391,10 @@ Multi-subject comparison surface. Appears only when 2+ subjects are selected in 
 
 Sticky (`sticky top-0 z-10 border-b bg-background px-4 py-2`):
 - Title: `text-xs font-semibold text-foreground` — "Comparing {N} subjects in {specimen}"
-- Edit button: `text-xs text-primary hover:underline` — switches back to Evidence tab (via `onEditSelection` which calls `setActiveTab("overview")`).
-- Subject summary line: `text-[10px] text-muted-foreground` — `{shortId} ({sex}, {doseLabel})` for each subject, joined by ` · `.
+- Action links (right side):
+  - "Open in Cohort view": `text-xs text-primary hover:underline cursor-pointer` — navigates to `/studies/{studyId}/cohort?preset=histo&subjects={subjectIds}` for cross-domain analysis
+  - "Edit": `text-xs text-primary hover:underline` — switches back to Evidence tab and scrolls to severity matrix (via `onEditSelection` which calls `setActiveTab("overview")` + smooth scroll to `#severity-matrix-section`)
+- Subject summary line: `text-[11px] text-muted-foreground` — `{doseLabel} {main|recovery} ({count})` for each group, joined by ` · `.
 
 ### Four Collapsible Sections
 
@@ -446,7 +406,7 @@ Matrix of subjects (columns) vs. findings (rows), derived from `useHistopathSubj
 
 **Sort controls:** `SortMode` — `"severity"` (default, severity-graded first by max severity desc, then non-graded alphabetical), `"concordance"` (by concordance count desc), `"alpha"` (alphabetical).
 
-**Filter controls:** `FilterMode` — `"all"` (default, all findings), `"shared"` (only findings present in 2+ subjects), `"graded"` (only severity-graded findings).
+**Filter controls:** `FilterMode` — `"all"` (default, all findings), `"shared"` / `"≥50%"` (only findings present in ≥50% of selected subjects, i.e., `count >= Math.ceil(N / 2)`), `"graded"` (only severity-graded findings).
 
 - Header row: "Finding" + per-subject columns (short ID + `sex / dose_label`) + "Concordance" column.
 - Severity > 0: `h-5 w-6 rounded-sm` color block from `getNeutralHeatColor(sevNum)`.
@@ -459,9 +419,9 @@ Matrix of subjects (columns) vs. findings (rows), derived from `useHistopathSubj
 
 Fetched via `useSubjectComparison(studyId, subjectIds)`. Organ-relevant tests mapped via `ORGAN_RELEVANT_TESTS` (e.g., LIVER -> ALT, AST, ALP, ...). Shows relevant + abnormal tests by default, with "Show all {N} tests" toggle.
 
-- Timepoint selector (when multiple available): `FilterSelect` with "Day {N}" options, default to terminal (max day).
+- Timepoint selector (when multiple available): `FilterSelect` with "Day {N}" options, default to the day with the most subjects represented (falls back to terminal/max day).
 - Control column: sex-specific `mean±SD` when available, or combined stats.
-- Subject values: `font-mono text-[11px]`. Abnormal values (>2 SD from sex-specific control mean): high values in `text-red-600/70` with `↑` prefix, low values in `text-blue-600/70` with `↓` prefix.
+- Subject values: `font-mono text-xs`. Abnormal values (>2 SD from sex-specific control mean): high values in `text-red-600/70` with `↑` prefix, low values in `text-blue-600/70` with `↓` prefix.
 - Sort: relevant tests first (in ORGAN_RELEVANT_TESTS order), then abnormal, then alphabetical.
 
 #### 3. Body Weight
@@ -497,7 +457,7 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 
 ### Types
 
-- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "anomaly" | "insufficient_n" | "not_examined" | "low_power" | "not_observed" | "no_data" | "recovery_too_short"`
+- `RecoveryVerdict`: `"reversed" | "reversing" | "persistent" | "progressing" | "anomaly" | "insufficient_n" | "not_examined" | "low_power" | "not_observed" | "no_data"`
 - `RecoveryAssessment`: per-finding with array of `RecoveryDoseAssessment` (one per shared dose level, plus `no_data` entries for recovery-only dose levels) + `overall` (worst verdict across dose levels)
 - `RecoveryDoseAssessment`: per-dose-level with main/recovery stats (incidence, n, examined, affected, avgSeverity, maxSeverity) + verdict + recovery subject details
 - `MIN_RECOVERY_N = 3`: minimum recovery-arm subjects for meaningful comparison
@@ -528,11 +488,11 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 
 ### Verdict Display
 
-- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `?` anomaly, `—` insufficient_n/not_observed/no_data, `∅` not_examined, `~` low_power, blue timer icon for `recovery_too_short`
-- `verdictPriority()`: anomaly (0) > not_examined (1) > progressing (2) > persistent (3) > recovery_too_short (3.5) > low_power (4) > reversing (5) > reversed (6) > insufficient_n (7) > not_observed (8) > no_data (9)
-- `specimenRecoveryLabel()`: filters out `insufficient_n`/`not_observed`/`no_data`/`not_examined`/`low_power`/`recovery_too_short`; "reversed" if all reversed; "partial" if mixed or sole "reversing"; "assessment limited" if all substantive verdicts are `recovery_too_short`; otherwise worst verdict (maps "reversing" → "partial" per §7.2)
+- `verdictArrow()`: `↓` reversed, `↘` reversing, `→` persistent, `↑` progressing, `⚠` anomaly, `†` insufficient_n, `—` not_observed/no_data, `∅` not_examined, `~` low_power
+- `verdictPriority()`: anomaly (0) > not_examined (1) > low_power (2) > progressing (3) > persistent (4) > reversing (5) > reversed (6) > insufficient_n (7) > not_observed (8) > no_data (9)
+- `specimenRecoveryLabel()`: special v3 labels: "not examined" if all verdicts are `not_examined`; "inconclusive" if all are `low_power`/`not_examined`/`insufficient_n`; "incomplete" if any are `not_examined` mixed with substantive verdicts. Then filters out `insufficient_n`/`not_observed`/`no_data`/`not_examined`/`low_power` for standard logic; "reversed" if sole substantive verdict is `reversed`; "partial" if sole is `reversing` or if mixed with `reversed`; otherwise worst verdict (maps "reversing" → "partial")
 
-**Findings table cell rendering** (`text-[9px]`):
+**Findings table cell rendering** (`text-[10px]`):
 
 | Verdict | Display | Style |
 |---|---|---|
@@ -540,11 +500,10 @@ Recovery reversibility assessment logic lives in `lib/recovery-assessment.ts`. W
 | `reversing` | `↘ reversing` | `text-muted-foreground` |
 | `persistent` | `→ persistent` | `font-medium text-foreground/70` |
 | `progressing` | `↑ progressing` | `font-medium text-foreground/70` |
-| `anomaly` | `? anomaly` | `font-medium text-foreground/70` |
+| `anomaly` | `⚠ anomaly` | `font-medium text-foreground/70` |
 | `not_examined` | `∅ not examined` | `font-medium text-foreground/70` |
 | `low_power` | `~ low power` | `text-muted-foreground/50` |
 | `insufficient_n` | `† (N<3)` | `text-muted-foreground/50` |
-| `recovery_too_short` | blue timer icon + "too short" | `text-blue-500/70` |
 | `not_observed`/`no_data` | `—` | `text-muted-foreground/40` |
 
 Arrow icon rendered in a fixed-width `w-[10px] text-center` container for alignment across rows.
@@ -572,14 +531,13 @@ Lines are indented with 2 spaces. `formatDoseGroupLabel()` converts "Group 2,2 m
 - **Selection zone:** Recovery verdict shown in `FindingsSelectionZone` for selected finding
 - **Dose charts:** Recovery bars in both incidence and severity charts
 - **Group heatmap:** Recovery columns next to main columns
-- **Specimen summary strip:** `specimenRecoveryOverall` metric (hidden when "reversed")
 - **Context panel (finding-level):** Recovery pane with per-dose-group comparison details
 - **Context panel (Insights pane):** Recovery classification block via interpretive layer
-- **Hypotheses tab:** Recovery assessment tool with specimen-wide classification summary
+- **Context panel (specimen-level):** `RecoveryAssessmentPane` with per-finding classifications and specimen-level summary
 
 ### Recovery Classification (Interpretive Layer)
 
-Pure logic in `lib/recovery-classification.ts`. Consumes mechanical verdicts from `recovery-assessment.ts` and produces pathologist-meaningful categories. Surfaces ONLY on interpretive surfaces (Insights pane, Hypotheses tab) — never on Evidence surfaces (findings table, dose charts, heatmaps).
+Pure logic in `lib/recovery-classification.ts`. Consumes mechanical verdicts from `recovery-assessment.ts` and produces pathologist-meaningful categories. Surfaces ONLY on interpretive surfaces (Insights pane, context panel Recovery Assessment pane) — never on Evidence surfaces (findings table, dose charts, heatmaps).
 
 **Architecture:** DATA LAYER (`recovery-assessment.ts` — mechanical verdicts like "reversed", "persistent") → INTERPRETIVE LAYER (`recovery-classification.ts` — classifications like "Expected reversibility"). The data layer has ZERO modifications; the interpretive layer is purely additive.
 
@@ -618,10 +576,10 @@ Base score (0–7): sample size (+0/+1/+2), effect size (+0/+1/+2), severity cha
 
 Rendered inside the Insights CollapsiblePane in `FindingDetailPane`, after `<SpecimenInsights>`. Visibility gate (`showRecoveryInsight`): shown when classification exists AND (not UNCLASSIFIABLE, OR UNCLASSIFIABLE with `not_examined`/`low_power` verdict).
 
-- Section header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Recovery assessment"
+- Section header: `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground` — "Recovery assessment"
 - Left-bordered block: `border-l-2 pl-2 py-1` with color from `CLASSIFICATION_BORDER[type]`
-- Line 1: classification label + confidence badge (`text-[11px] font-medium`)
-- Line 2: rationale (`text-[10px] text-muted-foreground`)
+- Line 1: classification label + confidence badge (`text-xs font-medium`)
+- Line 2: rationale (`text-[11px] text-muted-foreground`)
 - Evidence summary: `inputsUsed` joined by ` · ` with `border-l` treatment
 - Qualifiers: italic, each on own line
 - Recommended action: `font-medium text-foreground/70`
@@ -661,7 +619,7 @@ From `lib/syndrome-rules.ts`. Detects multi-organ toxicology syndromes (e.g., he
 ### `deriveSpecimenConclusion(summary, specimenData, specimenRules): string`
 Builds a deterministic 1-line conclusion from incidence range, severity, sex, and dose relationship.
 
-### `deriveSpecimenInsights(rules, specimen): InsightBlock[]`
+### `deriveSpecimenInsights(rules, specimen, signalData?, controlOnlyFindings?): InsightBlock[]`
 Context panel insight synthesis. Groups rules by finding (collapsed across sexes) into sections:
 1. **Adverse (treatment-related):** Per-finding with evidence qualifiers (p-value, effect size, incidence/severity increase) and inline clinical catalog annotations
 2. **Clinical significance:** Non-adverse findings matched by clinical catalog (C01-C15)
@@ -677,8 +635,8 @@ Aggregates peer review annotations across all findings in a specimen. Returns on
 - **Under dispute**: escalated disagreement requiring resolution
 - **PWG pending**: awaiting Pathology Working Group review
 
-### `deriveRecoveryAssessments(findingNames, subjects, thresholds?): RecoveryAssessment[]`
-Splits subjects into main and recovery arms, identifies shared dose levels, computes per-finding per-dose verdict via `computeVerdict()`, derives overall worst verdict per finding.
+### `deriveRecoveryAssessmentsSexAware(findingNames, subjects, thresholds?, recoveryPeriodDays?, organ?, species?): RecoveryAssessment[]`
+Sex-aware version. Determines sexes present in recovery arm and runs per-sex assessment. Splits subjects into main and recovery arms, identifies shared dose levels, computes per-finding per-dose verdict via `computeVerdict()`, derives overall worst verdict per finding. The `organ` and `species` parameters enable organ-specific recovery period thresholds.
 
 ### `specimenRecoveryLabel(assessments): string | null`
 Returns specimen-level recovery summary: "reversed" if all reversed, "partial" if mixed, otherwise worst verdict. Returns null if no meaningful verdicts.
@@ -743,7 +701,7 @@ Review status is derived via `deriveSpecimenReviewStatus(findingNames, pathRevie
 
 Header: sticky, finding name (`text-sm font-semibold`) + `CollapseAllButtons`, specimen name below (`text-xs text-muted-foreground`).
 
-**Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground`): Four inline metrics computed from finding rows — Peak incidence (`{pct}%`), Max sev (`{n.n}`), Pattern (via `formatPatternLabel()`, e.g., "Monotonic increase (HIGH)"), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
+**Header metrics line** (`mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground`): Four inline metrics computed from finding rows — Peak incidence (`{pct}%`), Max sev (`{n.n}`), Pattern (via `formatPatternLabel()`, e.g., "Monotonic increase (HIGH)"), Sex (`{M|F|M/F}`). Makes the panel presentation-ready without scrolling.
 
 Panes in order (follows design system priority: insights > stats > related > annotation > navigation):
 1. **Insights** (default open) — `SpecimenInsights` with finding-scoped rules. Includes clinical catalog annotations when present. When recovery data exists, a **Recovery assessment** block (`RecoveryInsightBlock`) appears after `SpecimenInsights`. Also includes **historical context** inline.
@@ -798,7 +756,7 @@ Panes in order (follows design system priority: insights > stats > related > ann
 | Finding consistency | Derived | `useMemo` — Map<finding, PatternClassification> from `classifyFindingPattern()` per finding |
 | Recovery assessments | Derived | `useMemo` — from `deriveRecoveryAssessments()` using subject data |
 | Recovery heatmap data | Derived | `useMemo` — group heatmap cells for recovery dose levels |
-| Specimen recovery overall | Derived | `useMemo` — `specimenRecoveryLabel()` for summary strip |
+| Specimen recovery overall | Derived | `useMemo` — `specimenRecoveryLabel()` for context panel |
 | All recovery classifications | Derived | `useMemo` — `classifyRecovery()` per finding, builds `RecoveryContext` from rules, dose trends, dose consistency. Array of `{ finding, classification }` |
 | Specimen recovery classification | Derived | `useMemo` — `classifySpecimenRecovery()` aggregating all per-finding classifications to specimen level |
 | Syndrome matches | Derived | `useMemo` — `detectSyndromes()` from organ map + signal data, cached per study |
@@ -847,8 +805,8 @@ useSpecimenLabCorrelation(studyId, specimen) ──> labCorrelation (composite h
                         deriveSexLabel()
                         classifyFindingPattern() per finding
                         findingClinical (clinical catalog lookup)
-                        deriveRecoveryAssessments() (from subjData)
-                        specimenRecoveryLabel() (for summary strip)
+                        deriveRecoveryAssessmentsSexAware() (from subjData)
+                        specimenRecoveryLabel() (for context panel)
                         classifyRecovery() per finding (interpretive layer)
                         classifySpecimenRecovery() (specimen summary)
                         fishersExact2x2() per finding (pairwise)
@@ -856,12 +814,12 @@ useSpecimenLabCorrelation(studyId, specimen) ──> labCorrelation (composite h
                         aggregateFindingLaterality() per finding (paired organs)
                            /          |           \
                   OverviewTab    HypothesesTab   CompareTab
-                  (findings +    (selectedFinding (useSubjectComparison
-                   dose charts + auto-focus,       from temporal API)
-                   severity matrix + recovery
-                   recovery         classifications
-                   integration +    per finding)
-                   laterality +
+                  (findings +    (placeholder     (useSubjectComparison
+                   dose charts +  exploratory      from temporal API)
+                   severity matrix tools for
+                   recovery        severity,
+                   integration +   treatment,
+                   laterality +    dose-sev trend)
                    Fisher's pairwise)
                         \         |          /
                     HistopathSelection (shared)
@@ -908,7 +866,9 @@ useSpecimenLabCorrelation(studyId, specimen) ──> labCorrelation (composite h
 | State | Display |
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading histopathology data..." |
+| Recalculating (settings changed) | `RecalculatingBanner` — subtle banner shown when `isFetching && isPlaceholderData` (stale data displayed while fresh data loads) |
 | Error (no generated data) | Red box with instructions to run generator command |
+| No specimen selected — organ system selected | Organ-level aggregate view: organ system header with specimen count, finding count, adverse count, and peak signal score. Below: clickable specimen list with signal scores, finding counts, adverse badges, and pattern labels. Each specimen navigates to that specimen. |
 | No specimen selected (but data exists) | "Select a specimen from the rail to view histopathology details." |
 | No data at all | "No histopathology data available." |
 | Empty search results (rail) | "No matches for '{search}'" |
@@ -955,7 +915,7 @@ Specimen-level and per-finding dose-response pattern detection via `lib/pattern-
 
 Cross-organ syndrome detection via `lib/syndrome-rules.ts`. Runs once per study (memoized). Input: organ map (specimens → lesion rows) + signal data (organ-level context). Output: array of `SyndromeMatch` objects identifying multi-organ toxicology patterns (e.g., hepatotoxicity syndrome requiring necrosis + bile duct hyperplasia).
 
-Syndromes boost specimen signal scores via `syndromeBoost` in the signal score formula and are displayed in the specimen summary strip when detected.
+Syndromes boost specimen signal scores via `syndromeBoost` in the signal score formula and are displayed in the specimen rail items when detected.
 
 ---
 
@@ -976,7 +936,7 @@ Specimen-level clinical pathology correlation via `useSpecimenLabCorrelation(stu
 
 - **Signal strength:** 0–3 dots based on percent change magnitude (>100%: 3 dots, >50%: 2 dots, >25%: 1 dot)
 - **Relevance mapping:** Tests are marked as "relevant" if they appear in organ-test-mapping for the specimen
-- **Summary strip display:** Only shown when `hasData && topSignal && signal >= 2` — clickable to scroll to lab correlates pane in context panel
+- **Rail item display:** Lab correlation badge shown in rail items when `hasData && topSignal && signal >= 2`
 - **Context panel:** Lab correlates pane (conditional) shows full test table with control stats, high-dose values, and signal indicators
 
 ---

@@ -8,7 +8,7 @@ interface ContextPanelHeaderProps {
   title: ReactNode;
   /** Extra className on the h3 wrapper (e.g., "font-mono") */
   titleClassName?: string;
-  /** Subtitle content — rendered in a text-[10px] text-muted-foreground container */
+  /** Subtitle content — rendered in a text-[11px] text-muted-foreground container */
   subtitle?: ReactNode;
   /** Extra content below subtitle (e.g., TierCountBadges) */
   children?: ReactNode;
@@ -95,7 +95,7 @@ export function ContextPanelHeader({
           </div>
         </div>
         {subtitle && (
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-[11px] text-muted-foreground">
             {subtitle}
           </div>
         )}

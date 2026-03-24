@@ -59,7 +59,7 @@ Position: right side of chart header area, inline with Y-axis toggle.
 [ Absolute | % change | % vs control ]  ·····  [ ] Show subjects
 ```
 
-Toggle: `rounded-full border px-2.5 py-1 text-[11px] font-medium` — toggled on: `bg-foreground text-background`, off: `text-muted-foreground border-border`.
+Toggle: `rounded-full border px-2.5 py-1 text-xs font-medium` — toggled on: `bg-foreground text-background`, off: `text-muted-foreground border-border`.
 
 ### Chart overlay rendering
 
@@ -91,7 +91,7 @@ Custom tooltip on subject line hover:
 └─────────────────────────┘
 ```
 
-Styling: `rounded border bg-popover px-2 py-1.5 text-[11px] shadow-sm`
+Styling: `rounded border bg-popover px-2 py-1.5 text-xs shadow-sm`
 
 ### Subject selection interaction
 
@@ -106,7 +106,7 @@ Styling: `rounded border bg-popover px-2 py-1.5 text-[11px] shadow-sm`
 
 When toggle is ON, show below the chart legend:
 
-`text-[10px] text-muted-foreground` — "Showing {N} subjects · Click a line to view subject profile"
+`text-[11px] text-muted-foreground` — "Showing {N} subjects · Click a line to view subject profile"
 
 ### Empty / edge states
 

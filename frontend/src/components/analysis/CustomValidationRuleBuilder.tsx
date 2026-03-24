@@ -127,11 +127,11 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
       collapseAll={collapseAll}
       headerRight={
         customRules.length > 0
-          ? <span className="text-[9px] font-mono text-muted-foreground">{customRules.length} defined</span>
+          ? <span className="text-[10px] font-mono text-muted-foreground">{customRules.length} defined</span>
           : undefined
       }
     >
-      <div className="space-y-2 text-[11px]">
+      <div className="space-y-2 text-xs">
         {/* Existing custom rules */}
         {customRules.length > 0 && (
           <div className="rounded border">
@@ -150,7 +150,7 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
         {/* Add button */}
         {!showForm && (
           <button
-            className="rounded border border-dashed border-border/60 px-3 py-1.5 text-[10px] text-muted-foreground hover:border-border hover:bg-muted/30"
+            className="rounded border border-dashed border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground hover:border-border hover:bg-muted/30"
             onClick={() => { resetForm(); setShowForm(true); }}
           >
             + Add custom validation rule
@@ -160,16 +160,16 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
         {/* Form */}
         {showForm && (
           <div className="space-y-2 rounded border border-primary/20 bg-muted/10 p-3">
-            <div className="text-[10px] font-medium">
+            <div className="text-[11px] font-medium">
               {editingKey ? `Edit rule ${editingKey}` : `New rule ${nextId}`}
             </div>
 
             {/* Name */}
             <div className="flex items-center gap-2">
-              <label className="w-20 text-[10px] text-muted-foreground">Name</label>
+              <label className="w-20 text-[11px] text-muted-foreground">Name</label>
               <input
                 type="text"
-                className="flex-1 rounded border bg-background px-2 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-2 py-1 text-[11px]"
                 placeholder="e.g., Missing dose units"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -179,9 +179,9 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
             {/* Severity + Category */}
             <div className="flex gap-3">
               <div className="flex items-center gap-2">
-                <label className="w-20 text-[10px] text-muted-foreground">Severity</label>
+                <label className="w-20 text-[11px] text-muted-foreground">Severity</label>
                 <select
-                  className="rounded border bg-background px-1.5 py-1 text-[10px]"
+                  className="rounded border bg-background px-1.5 py-1 text-[11px]"
                   value={severity}
                   onChange={(e) => setSeverity(e.target.value as typeof severity)}
                 >
@@ -191,9 +191,9 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-muted-foreground">Category</label>
+                <label className="text-[11px] text-muted-foreground">Category</label>
                 <select
-                  className="rounded border bg-background px-1.5 py-1 text-[10px]"
+                  className="rounded border bg-background px-1.5 py-1 text-[11px]"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
@@ -206,13 +206,13 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
 
             {/* Applicable domains */}
             <div className="flex items-start gap-2">
-              <label className="w-20 pt-0.5 text-[10px] text-muted-foreground">Domains</label>
+              <label className="w-20 pt-0.5 text-[11px] text-muted-foreground">Domains</label>
               <div className="flex flex-wrap gap-1">
                 {ALL_DOMAINS.map((d) => (
                   <button
                     key={d}
                     className={cn(
-                      "rounded border px-1.5 py-0.5 text-[9px] transition-colors",
+                      "rounded border px-1.5 py-0.5 text-[10px] transition-colors",
                       selectedDomains.includes(d)
                         ? "border-primary/40 bg-primary/10"
                         : "border-border/40 text-muted-foreground hover:border-border",
@@ -227,9 +227,9 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
 
             {/* Description */}
             <div className="flex items-start gap-2">
-              <label className="w-20 pt-1 text-[10px] text-muted-foreground">Description</label>
+              <label className="w-20 pt-1 text-[11px] text-muted-foreground">Description</label>
               <textarea
-                className="flex-1 rounded border bg-background px-2 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-2 py-1 text-[11px]"
                 rows={3}
                 placeholder="What does this rule check? When does it fire?"
                 value={description}
@@ -239,9 +239,9 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
 
             {/* Fix guidance */}
             <div className="flex items-start gap-2">
-              <label className="w-20 pt-1 text-[10px] text-muted-foreground">Fix guidance</label>
+              <label className="w-20 pt-1 text-[11px] text-muted-foreground">Fix guidance</label>
               <textarea
-                className="flex-1 rounded border bg-background px-2 py-1 text-[10px]"
+                className="flex-1 rounded border bg-background px-2 py-1 text-[11px]"
                 rows={2}
                 placeholder="How should the user resolve this issue?"
                 value={fixGuidance}
@@ -252,27 +252,27 @@ export function CustomValidationRuleBuilder({ studyId, expandAll, collapseAll }:
             {/* Actions */}
             <div className="flex items-center gap-2 border-t pt-2">
               <button
-                className="rounded bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 onClick={handleSave}
                 disabled={!canSave || isPending}
               >
                 {isPending ? "Saving..." : editingKey ? "Update" : "Add rule"}
               </button>
               <button
-                className="rounded border px-3 py-1 text-[10px] text-muted-foreground hover:bg-muted/50"
+                className="rounded border px-3 py-1 text-[11px] text-muted-foreground hover:bg-muted/50"
                 onClick={resetForm}
               >
                 Cancel
               </button>
               {isSuccess && (
-                <span className="text-[10px] text-green-600">Saved</span>
+                <span className="text-[11px] text-green-600">Saved</span>
               )}
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <p className="text-[9px] text-muted-foreground/60">
+        <p className="text-[10px] text-muted-foreground/60">
           Custom validation rules document organization-specific quality checks.
           Execution requires validation engine extensions and will be available in a future update.
         </p>
@@ -302,16 +302,16 @@ function CustomValidationRuleRow({
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/30"
         onClick={() => setExpanded(!expanded)}
       >
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {expanded ? "\u25BC" : "\u25B6"}
         </span>
-        <span className={cn("font-mono text-[11px] font-semibold text-primary/70", !rule.enabled && "line-through")}>
+        <span className={cn("font-mono text-xs font-semibold text-primary/70", !rule.enabled && "line-through")}>
           {ruleId}
         </span>
-        <span className={cn("min-w-0 flex-1 truncate text-[11px]", !rule.enabled && "line-through")}>
+        <span className={cn("min-w-0 flex-1 truncate text-xs", !rule.enabled && "line-through")}>
           {rule.name}
         </span>
-        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-600">
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
           {rule.severity}
         </span>
         <span className="flex items-center gap-0.5">
@@ -319,18 +319,18 @@ function CustomValidationRuleRow({
             <DomainLabel key={d} domain={d} />
           ))}
           {rule.applicableDomains.length > 3 && (
-            <span className="text-[9px] text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground">
               +{rule.applicableDomains.length - 3}
             </span>
           )}
         </span>
-        <span className="shrink-0 rounded-sm border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[9px] text-primary/70">
+        <span className="shrink-0 rounded-sm border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary/70">
           custom
         </span>
       </button>
 
       {expanded && (
-        <div className="space-y-1.5 border-t bg-muted/10 px-4 py-2 text-[10px]">
+        <div className="space-y-1.5 border-t bg-muted/10 px-4 py-2 text-[11px]">
           <div>
             <span className="font-medium text-muted-foreground">Condition: </span>
             <span>{rule.description}</span>
@@ -341,7 +341,7 @@ function CustomValidationRuleRow({
               <span>{rule.fixGuidance}</span>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
             <div>
               <span className="text-muted-foreground">Category: </span>
               <span>{rule.category}</span>
@@ -353,18 +353,18 @@ function CustomValidationRuleRow({
           </div>
           <div className="flex items-center gap-3 pt-1">
             <button
-              className="text-[10px] text-primary hover:underline"
+              className="text-[11px] text-primary hover:underline"
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
             >
               Edit
             </button>
             <button
-              className="text-[10px] text-muted-foreground hover:underline"
+              className="text-[11px] text-muted-foreground hover:underline"
               onClick={(e) => { e.stopPropagation(); onToggleEnabled(); }}
             >
               {rule.enabled ? "Disable" : "Enable"}
             </button>
-            <span className="ml-auto text-[9px] text-muted-foreground">
+            <span className="ml-auto text-[10px] text-muted-foreground">
               {rule.createdBy} &middot; {new Date(rule.createdDate).toLocaleDateString()}
             </span>
           </div>
