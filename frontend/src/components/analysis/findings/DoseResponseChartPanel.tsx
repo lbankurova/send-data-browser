@@ -2,7 +2,7 @@
  * DoseResponseChartPanel — compact D-R + effect size charts for FindingsView.
  * Post-processes ECharts options from shared builders for tighter layout.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { EChartsOption } from "echarts";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
@@ -24,8 +24,6 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
-import { ChartModeToggle } from "@/components/ui/ChartModeToggle";
-import type { ChartDisplayMode } from "@/components/ui/ChartModeToggle";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import type { UnifiedFinding, DoseGroup, GroupStat, PairwiseResult } from "@/types/analysis";
 import type { DoseResponseRow } from "@/types/analysis-views";
@@ -205,7 +203,6 @@ export function DoseResponseChartPanel({
   const esLabel = getEffectSizeLabel(esMethod);
   const normalization = useOrganWeightNormalization(studyId);
   const { settings: { pairwiseTest, multiplicity, trendTest, incidenceTrend } } = useStudySettings();
-  const [incidenceScale, setIncidenceScale] = useState<ChartDisplayMode>("scaled");
   const DR_MODES = ["line", "bar"] as const;
   type DRChartMode = typeof DR_MODES[number];
   const [drChartMode, setDrChartMode] = useSessionState<DRChartMode>(
@@ -273,24 +270,6 @@ export function DoseResponseChartPanel({
     return { dataType, domain, testCode, pattern, studyDay, sexes, doseLevels, mergedPoints, rows };
   }, [drRows, findings, endpointLabel, selectedDay]);
 
-  // ── Auto-detect compact mode for low-incidence ────────────
-  const maxIncidence = useMemo(() => {
-    if (!chartData || chartData.dataType !== "categorical") return 1;
-    let max = 0;
-    for (const pt of chartData.mergedPoints) {
-      for (const sex of chartData.sexes) {
-        const v = pt[`incidence_${sex}`] as number | null;
-        if (v != null && v > max) max = v;
-      }
-    }
-    return max;
-  }, [chartData]);
-
-  useEffect(() => {
-    setIncidenceScale(maxIncidence < 0.3 ? "compact" : "scaled");
-  }, [maxIncidence]);
-
-  const effectiveCompact = incidenceScale === "compact" || maxIncidence < 0.3;
 
   // ── Non-monotonic flag ────────────────────────────────────
   const nonMonoFlag = useMemo(() => {
@@ -390,10 +369,10 @@ export function DoseResponseChartPanel({
         ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, methodLabel, barVerdicts)
         : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag);
     } else {
-      raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, effectiveCompact);
+      raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels);
     }
     return compactify(raw, chartData.mergedPoints);
-  }, [chartData, drChartMode, nonMonoFlag, effectiveCompact, methodLabel, barVerdicts]);
+  }, [chartData, drChartMode, nonMonoFlag, methodLabel, barVerdicts]);
 
   const esOption = useMemo(() => {
     if (!chartData || !hasEffect) return null;
@@ -469,9 +448,6 @@ export function DoseResponseChartPanel({
                   ]}
                   onChange={setDrChartMode}
                 />
-              )}
-              {!isContinuous && (
-                <ChartModeToggle mode={incidenceScale} onChange={setIncidenceScale} />
               )}
             </div>
             <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
