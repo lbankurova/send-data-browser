@@ -11,7 +11,7 @@
   .canvas {
     position: relative;
     width: 1520px;
-    min-height: 3000px;
+    min-height: 3130px;
     margin: 32px auto;
     padding: 24px 40px 40px;
   }
@@ -208,7 +208,7 @@
   <div class="node t-stats" style="left:340px;top:240px;width:310px">
     <div class="node-header">Phase 1b &middot; Domain Statistics</div>
     <div class="node-body">
-      <span class="label">domain_stats.py &rarr; 12 domain modules</span>
+      <span class="label">domain_stats.py &rarr; 11 domain modules</span>
       <span class="detail">Three-pass computation:</span>
       <ul>
         <li>Pass 1: All animals (baseline)</li>
@@ -222,7 +222,7 @@
 
   <!-- Domain modules group — top:236, height:260 → bottom 496 -->
   <div class="group-box" style="left:700px;top:236px;width:540px;height:260px">
-    <span class="group-label">12 Domain Modules (Sequential)</span>
+    <span class="group-label">11 Domain Modules (Sequential)</span>
   </div>
 
   <div class="node t-stats" style="left:720px;top:264px;width:150px">
@@ -236,7 +236,7 @@
     <div class="node-header">Continuous</div>
     <div class="node-body">
       <span class="label">findings_bw.py</span>
-      <span class="detail">Body weight<br>+ BG (gain), FW (food),<br>EG (ECG), VS (vitals)</span>
+      <span class="detail">Body weight<br>+ findings_bg, _eg, _vs<br>(separate modules)</span>
     </div>
   </div>
   <div class="node t-stats" style="left:1060px;top:264px;width:160px">
@@ -257,14 +257,14 @@
     <div class="node-header">Incidence</div>
     <div class="node-body">
       <span class="label">findings_ma.py</span>
-      <span class="detail">Macroscopic pathology<br>+ CL, DD (clinical, death dx)</span>
+      <span class="detail">Macroscopic pathology<br>+ findings_cl (separate module)</span>
     </div>
   </div>
   <div class="node t-stats" style="left:1060px;top:390px;width:160px">
     <div class="node-header">Incidence</div>
     <div class="node-body">
       <span class="label">findings_tf.py</span>
-      <span class="detail">Tumor findings<br>+ DS (disposition)</span>
+      <span class="detail">Tumor findings<br>+ findings_ds (separate module)</span>
     </div>
   </div>
 
@@ -388,7 +388,7 @@
     <div class="node-header">Phase 4 &middot; Rules</div>
     <div class="node-body">
       <span class="label">scores_and_rules.py</span>
-      <span class="detail">17 rules &times; findings<br>Signal scores, dampening</span>
+      <span class="detail">19 rules (R01-R19) &times; findings<br>Signal scores, dampening</span>
       <span class="output">&rarr; rule_results.json</span>
     </div>
   </div>
@@ -420,7 +420,7 @@
   </div>
 
   <!-- ═══ LANE 6: GENERATED OUTPUTS (1060) ═══ two rows of JSON nodes -->
-  <div class="lane" style="top:1060px"><span class="lane-label">Generated Outputs &mdash; backend/generated/{study_id}/ (18 JSON files)</span></div>
+  <div class="lane" style="top:1060px"><span class="lane-label">Generated Outputs &mdash; backend/generated/{study_id}/ (19 JSON files)</span></div>
 
   <div class="node t-output" style="left:80px;top:1088px;width:140px">
     <div class="node-header">JSON</div>
@@ -537,9 +537,33 @@
   </div>
 
   <!-- ═══ LANE 7: API (1250) ═══ -->
-  <div class="lane" style="top:1250px"><span class="lane-label">FastAPI &mdash; REST API Layer</span></div>
+  
+  <!-- Row 3 -->
+  <div class="node t-output" style="left:80px;top:1216px;width:140px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">finding_dose_trends</span>
+      <span class="detail">Per-finding D-R trends</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:240px;top:1216px;width:140px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">provenance_messages</span>
+      <span class="detail">Data lineage audit trail</span>
+    </div>
+  </div>
+  <div class="node t-output" style="left:400px;top:1216px;width:160px">
+    <div class="node-header">JSON</div>
+    <div class="node-body">
+      <span class="label">study_metadata_enriched</span>
+      <span class="detail">Computed study metadata</span>
+    </div>
+  </div>
 
-  <div class="node t-api" style="left:80px;top:1280px;width:240px">
+  <div class="lane" style="top:1320px"><span class="lane-label">FastAPI &mdash; REST API Layer</span></div>
+
+  <div class="node t-api" style="left:80px;top:1350px;width:240px">
     <div class="node-header">API &middot; Core</div>
     <div class="node-body">
       <span class="label">GET /api/.../unified-findings</span>
@@ -547,7 +571,7 @@
     </div>
   </div>
 
-  <div class="node t-api" style="left:340px;top:1280px;width:180px">
+  <div class="node t-api" style="left:340px;top:1350px;width:180px">
     <div class="node-header">API &middot; Views</div>
     <div class="node-body">
       <span class="label">GET /api/.../analysis/{view}</span>
@@ -555,7 +579,7 @@
     </div>
   </div>
 
-  <div class="node t-api" style="left:540px;top:1280px;width:155px">
+  <div class="node t-api" style="left:540px;top:1350px;width:155px">
     <div class="node-header">API &middot; Studies</div>
     <div class="node-body">
       <span class="label">GET /api/studies</span>
@@ -563,7 +587,7 @@
     </div>
   </div>
 
-  <div class="node t-api" style="left:715px;top:1280px;width:145px">
+  <div class="node t-api" style="left:715px;top:1350px;width:145px">
     <div class="node-header">API &middot; Temporal</div>
     <div class="node-body">
       <span class="label">GET /api/.../temporal</span>
@@ -571,7 +595,7 @@
     </div>
   </div>
 
-  <div class="node t-api" style="left:880px;top:1280px;width:145px">
+  <div class="node t-api" style="left:880px;top:1350px;width:145px">
     <div class="node-header">API &middot; Annotations</div>
     <div class="node-body">
       <span class="label">POST /api/annotations</span>
@@ -579,7 +603,7 @@
     </div>
   </div>
 
-  <div class="node t-api" style="left:1045px;top:1280px;width:145px">
+  <div class="node t-api" style="left:1045px;top:1350px;width:145px">
     <div class="node-header">API &middot; Validation</div>
     <div class="node-body">
       <span class="label">GET /api/.../validation</span>
@@ -587,7 +611,7 @@
     </div>
   </div>
 
-  <div class="node t-context" style="left:80px;top:1375px;width:220px">
+  <div class="node t-context" style="left:80px;top:1445px;width:220px">
     <div class="node-header">On-Demand Pipeline</div>
     <div class="node-body">
       <span class="label">ParameterizedAnalysisPipeline</span>
@@ -596,9 +620,9 @@
   </div>
 
   <!-- ═══ LANE 8: FRONTEND INGESTION (1500) ═══ -->
-  <div class="lane" style="top:1500px"><span class="lane-label">Frontend &mdash; React Query Ingestion</span></div>
+  <div class="lane" style="top:1570px"><span class="lane-label">Frontend &mdash; React Query Ingestion</span></div>
 
-  <div class="node t-derive" style="left:80px;top:1530px;width:220px">
+  <div class="node t-derive" style="left:80px;top:1600px;width:220px">
     <div class="node-header">React Query Hook</div>
     <div class="node-body">
       <span class="label">useFindings()</span>
@@ -606,7 +630,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:340px;top:1530px;width:200px">
+  <div class="node t-derive" style="left:340px;top:1600px;width:200px">
     <div class="node-header">React Query Hook</div>
     <div class="node-body">
       <span class="label">useStudyMetadata()</span>
@@ -614,7 +638,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:580px;top:1530px;width:200px">
+  <div class="node t-derive" style="left:580px;top:1600px;width:200px">
     <div class="node-header">React Query Hook</div>
     <div class="node-body">
       <span class="label">useAnalysisView()</span>
@@ -622,7 +646,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:820px;top:1530px;width:200px">
+  <div class="node t-derive" style="left:820px;top:1600px;width:200px">
     <div class="node-header">React Query Hook</div>
     <div class="node-body">
       <span class="label">useStudyMortality()</span>
@@ -630,10 +654,18 @@
     </div>
   </div>
 
-  <!-- ═══ LANE 9: FRONTEND DERIVATION (1640) ═══ -->
-  <div class="lane" style="top:1640px"><span class="lane-label">Frontend &mdash; Derivation Layer (useMemo, &lt;100ms)</span></div>
+  <div class="node t-derive" style="left:1060px;top:1600px;width:200px">
+    <div class="node-header">API Client</div>
+    <div class="node-body">
+      <span class="label">temporal-api.ts</span>
+      <span class="detail">On-demand subject-level<br>time-course + recovery data</span>
+    </div>
+  </div>
 
-  <div class="node t-derive" style="left:80px;top:1670px;width:240px">
+  <!-- ═══ LANE 9: FRONTEND DERIVATION (1640) ═══ -->
+  <div class="lane" style="top:1710px"><span class="lane-label">Frontend &mdash; Derivation Layer (useMemo, &lt;100ms)</span></div>
+
+  <div class="node t-derive" style="left:80px;top:1740px;width:240px">
     <div class="node-header">Orchestrator</div>
     <div class="node-body">
       <span class="label">useFindingsAnalyticsLocal()</span>
@@ -641,7 +673,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:80px;top:1780px;width:180px">
+  <div class="node t-derive" style="left:80px;top:1850px;width:180px">
     <div class="node-header">Derive</div>
     <div class="node-body">
       <span class="label">derive-summaries.ts</span>
@@ -649,15 +681,15 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:290px;top:1780px;width:190px">
+  <div class="node t-derive" style="left:290px;top:1850px;width:190px">
     <div class="node-header">Detect</div>
     <div class="node-body">
       <span class="label">cross-domain-syndromes.ts</span>
-      <span class="detail">10 syndrome patterns<br>(XS01-XS10: liver, renal,<br>hematologic, cardiac, etc.)<br>Test code + specimen matching</span>
+      <span class="detail">10 XS syndromes + 23 XC chains<br>(XS01-XS10: liver, renal,<br>hematologic, cardiac, etc.)<br>Test code + specimen matching</span>
     </div>
   </div>
 
-  <div class="node t-derive" style="left:510px;top:1780px;width:190px">
+  <div class="node t-derive" style="left:510px;top:1850px;width:190px">
     <div class="node-header">Interpret</div>
     <div class="node-body">
       <span class="label">syndrome-interpretation.ts</span>
@@ -665,7 +697,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:730px;top:1780px;width:170px">
+  <div class="node t-derive" style="left:730px;top:1850px;width:170px">
     <div class="node-header">Score</div>
     <div class="node-body">
       <span class="label">endpoint-confidence.ts</span>
@@ -673,7 +705,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:930px;top:1780px;width:170px">
+  <div class="node t-derive" style="left:930px;top:1850px;width:170px">
     <div class="node-header">Build</div>
     <div class="node-body">
       <span class="label">findings-rail-engine.ts</span>
@@ -681,7 +713,7 @@
     </div>
   </div>
 
-  <div class="node t-derive" style="left:1130px;top:1780px;width:160px">
+  <div class="node t-derive" style="left:1130px;top:1850px;width:160px">
     <div class="node-header">Score</div>
     <div class="node-body">
       <span class="label">signals-panel-engine.ts</span>
@@ -689,48 +721,56 @@
     </div>
   </div>
 
+  <div class="node t-derive" style="left:80px;top:1980px;width:190px">
+    <div class="node-header">Cohort</div>
+    <div class="node-body">
+      <span class="label">cohort-engine.ts</span>
+      <span class="detail">Multi-subject analysis<br>Organ-centric evidence<br>Cross-animal comparison</span>
+    </div>
+  </div>
+
   <!-- Supporting modules -->
-  <div class="group-box" style="left:80px;top:1940px;width:1210px;height:68px">
+  <div class="group-box" style="left:80px;top:2070px;width:1210px;height:68px">
     <span class="group-label">Supporting Modules</span>
   </div>
 
-  <div class="node t-context" style="left:100px;top:1958px;width:130px">
+  <div class="node t-context" style="left:100px;top:2088px;width:130px">
     <div class="node-header">Catalog</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">lab-clinical-catalog</span></div>
   </div>
-  <div class="node t-context" style="left:250px;top:1958px;width:130px">
+  <div class="node t-context" style="left:250px;top:2088px;width:130px">
     <div class="node-header">Recovery</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">recovery-classification</span></div>
   </div>
-  <div class="node t-context" style="left:400px;top:1958px;width:130px">
+  <div class="node t-context" style="left:400px;top:2088px;width:130px">
     <div class="node-header">Nature</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">finding-nature</span></div>
   </div>
-  <div class="node t-context" style="left:550px;top:1958px;width:130px">
+  <div class="node t-context" style="left:550px;top:2088px;width:130px">
     <div class="node-header">Protective</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">protective-signal</span></div>
   </div>
-  <div class="node t-context" style="left:700px;top:1958px;width:140px">
+  <div class="node t-context" style="left:700px;top:2088px;width:140px">
     <div class="node-header">Normalization</div>
-    <div class="node-body"><span class="label" style="font-size:9.5px">organ-weight-norm</span></div>
+    <div class="node-body"><span class="label" style="font-size:9.5px">organ-weight-normalization</span></div>
   </div>
-  <div class="node t-context" style="left:860px;top:1958px;width:130px">
+  <div class="node t-context" style="left:860px;top:2088px;width:130px">
     <div class="node-header">Transforms</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">stat-method-transforms</span></div>
   </div>
-  <div class="node t-context" style="left:1010px;top:1958px;width:130px">
+  <div class="node t-context" style="left:1010px;top:2088px;width:130px">
     <div class="node-header">Types</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">domain-types</span></div>
   </div>
-  <div class="node t-context" style="left:1160px;top:1958px;width:110px">
+  <div class="node t-context" style="left:1160px;top:2088px;width:110px">
     <div class="node-header">Visual</div>
     <div class="node-body"><span class="label" style="font-size:9.5px">severity-colors</span></div>
   </div>
 
   <!-- ═══ LANE 10: CONTEXT PROVIDER (2050) ═══ -->
-  <div class="lane" style="top:2050px"><span class="lane-label">Frontend &mdash; Context Providers</span></div>
+  <div class="lane" style="top:2180px"><span class="lane-label">Frontend &mdash; Context Providers</span></div>
 
-  <div class="node t-derive" style="left:80px;top:2080px;width:280px">
+  <div class="node t-derive" style="left:80px;top:2210px;width:280px">
     <div class="node-header">React Context</div>
     <div class="node-body">
       <span class="label">FindingsAnalyticsContext</span>
@@ -739,7 +779,7 @@
     </div>
   </div>
 
-  <div class="node t-context" style="left:390px;top:2080px;width:175px">
+  <div class="node t-context" style="left:390px;top:2210px;width:175px">
     <div class="node-header">React Context</div>
     <div class="node-body">
       <span class="label">FindingSelectionContext</span>
@@ -747,7 +787,7 @@
     </div>
   </div>
 
-  <div class="node t-context" style="left:585px;top:2080px;width:175px">
+  <div class="node t-context" style="left:585px;top:2210px;width:175px">
     <div class="node-header">React Context</div>
     <div class="node-body">
       <span class="label">SelectionContext</span>
@@ -755,7 +795,7 @@
     </div>
   </div>
 
-  <div class="node t-context" style="left:780px;top:2080px;width:175px">
+  <div class="node t-context" style="left:780px;top:2210px;width:175px">
     <div class="node-header">React Context</div>
     <div class="node-body">
       <span class="label">StudySettingsContext</span>
@@ -763,7 +803,7 @@
     </div>
   </div>
 
-  <div class="node t-context" style="left:975px;top:2080px;width:175px">
+  <div class="node t-context" style="left:975px;top:2210px;width:175px">
     <div class="node-header">React Context</div>
     <div class="node-body">
       <span class="label">ScheduledOnlyContext</span>
@@ -772,9 +812,18 @@
   </div>
 
   <!-- ═══ LANE 11: VIEWS (2210) ═══ -->
-  <div class="lane" style="top:2210px"><span class="lane-label">Frontend &mdash; Views (React Components)</span></div>
+  <div class="lane" style="top:2340px"><span class="lane-label">Frontend &mdash; Views (React Components)</span></div>
 
-  <div class="node t-render" style="left:80px;top:2240px;width:220px">
+  <div class="node t-derive" style="left:1170px;top:2210px;width:175px">
+    <div class="node-header">React Context</div>
+    <div class="node-body">
+      <span class="label">CohortContext</span>
+      <span class="detail">Multi-subject selection<br>Organ focus, evidence state</span>
+    </div>
+  </div>
+
+
+  <div class="node t-render" style="left:80px;top:2370px;width:220px">
     <div class="node-header">View</div>
     <div class="node-body">
       <span class="label">FindingsView</span>
@@ -782,7 +831,7 @@
     </div>
   </div>
 
-  <div class="node t-render" style="left:330px;top:2240px;width:200px">
+  <div class="node t-render" style="left:330px;top:2370px;width:200px">
     <div class="node-header">View</div>
     <div class="node-body">
       <span class="label">HistopathologyView</span>
@@ -790,7 +839,7 @@
     </div>
   </div>
 
-  <div class="node t-render" style="left:560px;top:2240px;width:200px">
+  <div class="node t-render" style="left:560px;top:2370px;width:200px">
     <div class="node-header">View</div>
     <div class="node-body">
       <span class="label">StudySummaryView</span>
@@ -798,7 +847,7 @@
     </div>
   </div>
 
-  <div class="node t-render" style="left:790px;top:2240px;width:200px">
+  <div class="node t-render" style="left:790px;top:2370px;width:200px">
     <div class="node-header">View</div>
     <div class="node-body">
       <span class="label">NoaelDeterminationView</span>
@@ -806,7 +855,7 @@
     </div>
   </div>
 
-  <div class="node t-render" style="left:1020px;top:2240px;width:180px">
+  <div class="node t-render" style="left:1020px;top:2370px;width:180px">
     <div class="node-header">View</div>
     <div class="node-body">
       <span class="label">ValidationView</span>
@@ -815,44 +864,53 @@
   </div>
 
   <!-- ═══ LANE 12: CONTEXT PANELS (2370) ═══ -->
-  <div class="lane" style="top:2370px"><span class="lane-label">Frontend &mdash; Context Panels (Right Pane)</span></div>
+  <div class="lane" style="top:2500px"><span class="lane-label">Frontend &mdash; Context Panels (Right Pane)</span></div>
 
-  <div class="node t-render" style="left:80px;top:2400px;width:185px">
+  <div class="node t-render" style="left:1220px;top:2370px;width:180px">
+    <div class="node-header">View</div>
+    <div class="node-body">
+      <span class="label">CohortView</span>
+      <span class="detail">Multi-subject analysis<br>Organ-centric evidence<br>Cross-animal comparison</span>
+    </div>
+  </div>
+
+
+  <div class="node t-render" style="left:80px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">FindingsContextPanel</span>
       <span class="detail">Per-finding evidence<br>Bradford Hill causality<br>D-R spectrum, NOAEL tier</span>
     </div>
   </div>
-  <div class="node t-render" style="left:285px;top:2400px;width:185px">
+  <div class="node t-render" style="left:285px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">OrganContextPanel</span>
       <span class="detail">Organ metrics, endpoint list<br>Recovery assessment<br>Cross-domain convergence</span>
     </div>
   </div>
-  <div class="node t-render" style="left:490px;top:2400px;width:185px">
+  <div class="node t-render" style="left:490px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">SyndromeContextPanel</span>
       <span class="detail">Syndrome evidence &amp; interp.<br>Certainty, adversity, severity<br>Translational confidence</span>
     </div>
   </div>
-  <div class="node t-render" style="left:695px;top:2400px;width:185px">
+  <div class="node t-render" style="left:695px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">SubjectProfilePanel</span>
       <span class="detail">Per-animal cross-domain<br>Subject timeline, COD<br>Dose group comparison</span>
     </div>
   </div>
-  <div class="node t-render" style="left:900px;top:2400px;width:185px">
+  <div class="node t-render" style="left:900px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">HistopathContextPanel</span>
       <span class="detail">Lesion severity, progression<br>Subject cross-reference<br>Modifier profile</span>
     </div>
   </div>
-  <div class="node t-render" style="left:1105px;top:2400px;width:185px">
+  <div class="node t-render" style="left:1105px;top:2530px;width:185px">
     <div class="node-header">Context Panel</div>
     <div class="node-body">
       <span class="label">NoaelContextPanel</span>
@@ -861,114 +919,123 @@
   </div>
 
   <!-- ═══ LANE 13: SUB-PANES (2530) ═══ -->
-  <div class="lane" style="top:2530px"><span class="lane-label">Frontend &mdash; Context Panel Sub-Panes (Collapsible Sections)</span></div>
+  <div class="lane" style="top:2660px"><span class="lane-label">Frontend &mdash; Context Panel Sub-Panes (Collapsible Sections)</span></div>
+
+  <div class="node t-render" style="left:1300px;top:2530px;width:185px">
+    <div class="node-header">Context Panel</div>
+    <div class="node-body">
+      <span class="label">CohortContextPanel</span>
+      <span class="detail">Cohort evidence summary<br>Organ-centric drill-down<br>Subject comparison</span>
+    </div>
+  </div>
+
 
   <!-- FindingsContextPanel sub-panes -->
-  <div class="group-box" style="left:30px;top:2555px;width:290px;height:345px">
+  <div class="group-box" style="left:30px;top:2685px;width:290px;height:345px">
     <span class="group-label">FindingsContextPanel</span>
   </div>
-  <div class="node t-render" style="left:50px;top:2578px;width:125px">
+  <div class="node t-render" style="left:50px;top:2708px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">VerdictPane</span><span class="detail">Clinical match, thresholds</span></div>
   </div>
-  <div class="node t-render" style="left:185px;top:2578px;width:125px">
+  <div class="node t-render" style="left:185px;top:2708px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">EvidencePane</span><span class="detail">P-values, effect sizes</span></div>
   </div>
-  <div class="node t-render" style="left:50px;top:2640px;width:125px">
+  <div class="node t-render" style="left:50px;top:2770px;width:125px">
     <div class="node-header">Pane</div>
-    <div class="node-body"><span class="label" style="font-size:9px">DoseDetailPane</span><span class="detail">ANCOVA, Williams'</span></div>
+    <div class="node-body"><span class="label" style="font-size:9px">ContextPane</span><span class="detail">Rule detail, thresholds</span></div>
   </div>
-  <div class="node t-render" style="left:185px;top:2640px;width:125px">
+  <div class="node t-render" style="left:185px;top:2770px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">RecoveryPane</span><span class="detail">Verdict, classification</span></div>
   </div>
-  <div class="node t-render" style="left:50px;top:2700px;width:125px">
+  <div class="node t-render" style="left:50px;top:2830px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">TimeCoursePane</span><span class="detail">Line charts (F/M)</span></div>
   </div>
-  <div class="node t-render" style="left:185px;top:2700px;width:125px">
+  <div class="node t-render" style="left:185px;top:2830px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">DistributionPane</span><span class="detail">Strip plot (subjects)</span></div>
   </div>
-  <div class="node t-render" style="left:50px;top:2760px;width:125px">
+  <div class="node t-render" style="left:50px;top:2890px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">CorrelationsPane</span><span class="detail">Related endpoints</span></div>
   </div>
-  <div class="node t-render" style="left:185px;top:2760px;width:125px">
+  <div class="node t-render" style="left:185px;top:2890px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">CausalityWorksheet</span><span class="detail">Bradford Hill (9 criteria)</span></div>
   </div>
-  <div class="node t-render" style="left:50px;top:2822px;width:125px">
+  <div class="node t-render" style="left:50px;top:2952px;width:125px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">EndpointSyndromePane</span><span class="detail">Syndrome membership</span></div>
   </div>
 
   <!-- OrganContextPanel sub-panes -->
-  <div class="group-box" style="left:340px;top:2555px;width:170px;height:155px">
+  <div class="group-box" style="left:340px;top:2685px;width:170px;height:155px">
     <span class="group-label">OrganContextPanel</span>
   </div>
-  <div class="node t-render" style="left:355px;top:2578px;width:140px">
+  <div class="node t-render" style="left:355px;top:2708px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">NormalizationHeatmap</span><span class="detail">Organ &times; dose matrix</span></div>
   </div>
-  <div class="node t-render" style="left:355px;top:2640px;width:140px">
+  <div class="node t-render" style="left:355px;top:2770px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">CorrelationMatrixPane</span><span class="detail">Endpoint heatmap</span></div>
   </div>
 
   <!-- SyndromeContextPanel sub-panes -->
-  <div class="group-box" style="left:530px;top:2555px;width:170px;height:155px">
+  <div class="group-box" style="left:530px;top:2685px;width:170px;height:155px">
     <span class="group-label">SyndromeContextPanel</span>
   </div>
-  <div class="node t-render" style="left:545px;top:2578px;width:140px">
+  <div class="node t-render" style="left:545px;top:2708px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">SyndromeCorrelationPane</span><span class="detail">Member correlations</span></div>
   </div>
-  <div class="node t-render" style="left:545px;top:2640px;width:140px">
+  <div class="node t-render" style="left:545px;top:2770px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">InsightsList</span><span class="detail">Critical/Notable/Observed</span></div>
   </div>
 
   <!-- HistopathContextPanel sub-panes -->
-  <div class="group-box" style="left:720px;top:2555px;width:170px;height:155px">
+  <div class="group-box" style="left:720px;top:2685px;width:170px;height:155px">
     <span class="group-label">HistopathContextPanel</span>
   </div>
-  <div class="node t-render" style="left:735px;top:2578px;width:140px">
+  <div class="node t-render" style="left:735px;top:2708px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">PathologyReviewForm</span><span class="detail">Severity, disagreement</span></div>
   </div>
-  <div class="node t-render" style="left:735px;top:2640px;width:140px">
+  <div class="node t-render" style="left:735px;top:2770px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">IncidenceDumbbellChart</span><span class="detail">Terminal &rarr; recovery %</span></div>
   </div>
 
   <!-- NoaelContextPanel sub-panes -->
-  <div class="group-box" style="left:910px;top:2555px;width:170px;height:155px">
+  <div class="group-box" style="left:910px;top:2685px;width:170px;height:155px">
     <span class="group-label">NoaelContextPanel</span>
   </div>
-  <div class="node t-render" style="left:925px;top:2578px;width:140px">
+  <div class="node t-render" style="left:925px;top:2708px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">InsightsList</span><span class="detail">Tier counts + badges</span></div>
   </div>
-  <div class="node t-render" style="left:925px;top:2640px;width:140px">
+  <div class="node t-render" style="left:925px;top:2770px;width:140px">
     <div class="node-header">Pane</div>
     <div class="node-body"><span class="label" style="font-size:9px">ToxFindingForm</span><span class="detail">Adversity classification</span></div>
   </div>
 
   <!-- Shared panes -->
-  <div class="group-box" style="left:1100px;top:2555px;width:170px;height:215px">
+  <div class="group-box" style="left:1100px;top:2685px;width:170px;height:215px">
     <span class="group-label">Shared Panes</span>
   </div>
-  <div class="node t-context" style="left:1115px;top:2578px;width:140px">
+  <div class="node t-context" style="left:1115px;top:2708px;width:140px">
     <div class="node-header">Shared</div>
     <div class="node-body"><span class="label" style="font-size:9px">ToxFindingForm</span><span class="detail">Findings + Histopath +<br>NOAEL panels</span></div>
   </div>
-  <div class="node t-context" style="left:1115px;top:2640px;width:140px">
+  <div class="node t-context" style="left:1115px;top:2770px;width:140px">
     <div class="node-header">Shared</div>
     <div class="node-body"><span class="label" style="font-size:9px">RecoveryDumbbellChart</span><span class="detail">Terminal &rarr; recovery |g|</span></div>
   </div>
-  <div class="node t-context" style="left:1115px;top:2700px;width:140px">
+  <div class="node t-context" style="left:1115px;top:2830px;width:140px">
     <div class="node-header">Shared</div>
     <div class="node-body"><span class="label" style="font-size:9px">CollapsiblePane</span><span class="detail">Generic expand/collapse<br>Used in all panels</span></div>
   </div>

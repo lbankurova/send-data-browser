@@ -7,7 +7,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; }
-  .canvas { position: relative; width: 1600px; min-height: 5200px; margin: 24px auto; padding: 20px 30px 60px; }
+  .canvas { position: relative; width: 1600px; min-height: 5660px; margin: 24px auto; padding: 20px 30px 60px; }
   h1 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
   .subtitle { font-size: 11px; color: #6b7280; margin-bottom: 20px; }
 
@@ -486,16 +486,46 @@
     </div>
   </div>
 
+  <div class="nd c-gate" style="left:40px;top:1430px;width:210px">
+    <div class="hd">Orchestrator</div>
+    <div class="bd">
+      <span class="lb">parameterized_pipeline.py</span>
+      <span class="dt">Wraps Stages 1-6 with user settings:<br>stat method, multiplicity correction,<br>effect size, recovery filtering</span>
+      <span class="out">&rarr; ParameterizedAnalysisPipeline</span>
+      <span class="src">parameterized_pipeline.py</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" style="left:280px;top:1430px;width:210px">
+    <div class="hd">Recovery Analysis</div>
+    <div class="bd">
+      <span class="lb">incidence_recovery.py</span>
+      <span class="dt">Recovery verdict for incidence data:<br>compute_incidence_verdict()<br>compute_incidence_recovery()</span>
+      <span class="out">&rarr; recovery verdicts per finding</span>
+      <span class="src">incidence_recovery.py</span>
+    </div>
+  </div>
+
+  <div class="nd c-gate" style="left:520px;top:1430px;width:210px">
+    <div class="hd">Findings Pipeline</div>
+    <div class="bd">
+      <span class="lb">findings_pipeline.py</span>
+      <span class="dt">Shared enrichment orchestration:<br>process_findings(), enrich_findings(),<br>attach_scheduled_stats()</span>
+      <span class="out">&rarr; enriched unified findings</span>
+      <span class="src">findings_pipeline.py</span>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 7: RULES ENGINE                                      -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:1440px"><span class="lane-label">Stage 7 &mdash; Rules Engine (R01-R19)</span></div>
+  <div class="lane" style="top:1580px"><span class="lane-label">Stage 7 &mdash; Rules Engine (R01-R19)</span></div>
 
-  <div class="gbox" style="left:35px;top:1465px;width:740px;height:210px">
+  <div class="gbox" style="left:35px;top:1605px;width:740px;height:210px">
     <span class="gbox-label">Endpoint-Scoped Rules</span>
   </div>
 
-  <div class="nd c-rule" style="left:55px;top:1488px;width:165px">
+  <div class="nd c-rule" style="left:55px;top:1628px;width:165px">
     <div class="hd">R01-R03</div>
     <div class="bd">
       <span class="lb">Signal Detection</span>
@@ -509,7 +539,7 @@
     </div>
   </div>
 
-  <div class="nd c-rule" style="left:240px;top:1488px;width:165px">
+  <div class="nd c-rule" style="left:240px;top:1628px;width:165px">
     <div class="hd">R04-R07</div>
     <div class="bd">
       <span class="lb">Severity &amp; Pattern</span>
@@ -522,7 +552,7 @@
     </div>
   </div>
 
-  <div class="nd c-rule" style="left:425px;top:1488px;width:165px">
+  <div class="nd c-rule" style="left:425px;top:1628px;width:165px">
     <div class="hd">R10-R13</div>
     <div class="bd">
       <span class="lb">Effect &amp; Histopath</span>
@@ -535,7 +565,7 @@
     </div>
   </div>
 
-  <div class="nd c-rule" style="left:610px;top:1488px;width:150px">
+  <div class="nd c-rule" style="left:610px;top:1628px;width:150px">
     <div class="hd">R18-R19</div>
     <div class="bd">
       <span class="lb">Protective / Repurpose</span>
@@ -546,11 +576,11 @@
     </div>
   </div>
 
-  <div class="gbox" style="left:800px;top:1465px;width:460px;height:130px">
+  <div class="gbox" style="left:800px;top:1605px;width:460px;height:130px">
     <span class="gbox-label">Organ &amp; Study-Scoped Rules</span>
   </div>
 
-  <div class="nd c-rule" style="left:820px;top:1488px;width:140px">
+  <div class="nd c-rule" style="left:820px;top:1628px;width:140px">
     <div class="hd">R08-R09</div>
     <div class="bd">
       <span class="lb">Target Organ</span>
@@ -561,7 +591,7 @@
     </div>
   </div>
 
-  <div class="nd c-rule" style="left:980px;top:1488px;width:140px">
+  <div class="nd c-rule" style="left:980px;top:1628px;width:140px">
     <div class="hd">R14-R15, R16</div>
     <div class="bd">
       <span class="lb">NOAEL &amp; Correlation</span>
@@ -573,7 +603,7 @@
     </div>
   </div>
 
-  <div class="nd c-rule" style="left:1140px;top:1488px;width:100px">
+  <div class="nd c-rule" style="left:1140px;top:1628px;width:100px">
     <div class="hd">R17</div>
     <div class="bd">
       <span class="lb">Mortality</span>
@@ -585,9 +615,9 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 8: SCORING & CONFIDENCE                              -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:1700px"><span class="lane-label">Stage 8 &mdash; Signal Scoring &amp; Confidence</span></div>
+  <div class="lane" style="top:1840px"><span class="lane-label">Stage 8 &mdash; Signal Scoring &amp; Confidence</span></div>
 
-  <div class="nd c-score" style="left:40px;top:1730px;width:250px">
+  <div class="nd c-score" style="left:40px;top:1870px;width:250px">
     <div class="hd">Signal Score (0.0 - 1.0)</div>
     <div class="bd">
       <span class="lb">Continuous Domains</span>
@@ -597,7 +627,7 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:320px;top:1730px;width:230px">
+  <div class="nd c-score" style="left:320px;top:1870px;width:230px">
     <div class="hd">Signal Score (Incidence)</div>
     <div class="bd">
       <span class="lb">Incidence Domains</span>
@@ -607,7 +637,7 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:580px;top:1730px;width:260px">
+  <div class="nd c-score" style="left:580px;top:1870px;width:260px">
     <div class="hd">GRADE-Style Confidence</div>
     <div class="bd">
       <span class="lb">6-Dimension Scoring</span>
@@ -624,7 +654,7 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:870px;top:1730px;width:230px">
+  <div class="nd c-score" style="left:870px;top:1870px;width:230px">
     <div class="hd">Target Organ Score</div>
     <div class="bd">
       <span class="lb">build_target_organ_summary()</span>
@@ -638,9 +668,9 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 9: NOAEL DETERMINATION                               -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:1920px"><span class="lane-label">Stage 9 &mdash; NOAEL Determination</span></div>
+  <div class="lane" style="top:2060px"><span class="lane-label">Stage 9 &mdash; NOAEL Determination</span></div>
 
-  <div class="nd c-noael" style="left:40px;top:1950px;width:220px">
+  <div class="nd c-noael" style="left:40px;top:2090px;width:220px">
     <div class="hd">NOAEL Derivation</div>
     <div class="bd">
       <span class="lb">build_noael_summary()</span>
@@ -655,7 +685,7 @@
     </div>
   </div>
 
-  <div class="nd c-noael" style="left:290px;top:1950px;width:210px">
+  <div class="nd c-noael" style="left:290px;top:2090px;width:210px">
     <div class="hd">NOAEL Confidence (0-1)</div>
     <div class="bd">
       <span class="lb">Penalty System</span>
@@ -664,7 +694,7 @@
     </div>
   </div>
 
-  <div class="nd c-noael" style="left:530px;top:1950px;width:200px">
+  <div class="nd c-noael" style="left:530px;top:2090px;width:200px">
     <div class="hd">Mortality Cap</div>
     <div class="bd">
       <span class="lb">NOAEL &le; Mortality LOAEL</span>
@@ -674,7 +704,7 @@
     </div>
   </div>
 
-  <div class="nd c-noael" style="left:760px;top:1950px;width:210px">
+  <div class="nd c-noael" style="left:760px;top:2090px;width:210px">
     <div class="hd">Scheduled NOAEL</div>
     <div class="bd">
       <span class="lb">Dual-Pass Comparison</span>
@@ -687,51 +717,95 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 10: GENERATED JSON OUTPUTS                           -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:2110px"><span class="lane-label">Stage 10 &mdash; Generated JSON Outputs (backend/generated/)</span></div>
+  <div class="lane" style="top:2250px"><span class="lane-label">Stage 10 &mdash; Generated JSON Outputs (backend/generated/) &mdash; 19 files</span></div>
 
-  <div class="nd c-out" style="left:40px;top:2140px;width:140px">
+  <div class="nd c-out" style="left:40px;top:2280px;width:140px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">unified_findings</span><span class="dt">All stats + enrichment<br>~1200 findings</span></div>
   </div>
-  <div class="nd c-out" style="left:200px;top:2140px;width:130px">
+  <div class="nd c-out" style="left:200px;top:2280px;width:130px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">signal_summary</span><span class="dt">Signal scores<br>~900 rows</span></div>
   </div>
-  <div class="nd c-out" style="left:350px;top:2140px;width:120px">
+  <div class="nd c-out" style="left:350px;top:2280px;width:120px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">target_organ</span><span class="dt">Evidence scores<br>~14 rows</span></div>
   </div>
-  <div class="nd c-out" style="left:490px;top:2140px;width:120px">
+  <div class="nd c-out" style="left:490px;top:2280px;width:120px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">dose_response</span><span class="dt">All doses<br>~1300 rows</span></div>
   </div>
-  <div class="nd c-out" style="left:630px;top:2140px;width:110px">
+  <div class="nd c-out" style="left:630px;top:2280px;width:110px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">adverse_effects</span><span class="dt">Non-normal<br>~350 rows</span></div>
   </div>
-  <div class="nd c-out" style="left:760px;top:2140px;width:100px">
+  <div class="nd c-out" style="left:760px;top:2280px;width:100px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">noael</span><span class="dt">M/F/Combined<br>3 rows</span></div>
   </div>
-  <div class="nd c-out" style="left:880px;top:2140px;width:100px">
+  <div class="nd c-out" style="left:880px;top:2280px;width:100px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">rule_results</span><span class="dt">~900 rule<br>emissions</span></div>
   </div>
-  <div class="nd c-out" style="left:1000px;top:2140px;width:100px">
+  <div class="nd c-out" style="left:1000px;top:2280px;width:100px">
     <div class="hd">JSON</div>
     <div class="bd"><span class="lb">mortality</span><span class="dt">Deaths +<br>early death</span></div>
   </div>
-  <div class="nd c-out" style="left:1120px;top:2140px;width:120px">
+  <div class="nd c-out" style="left:1120px;top:2280px;width:120px">
     <div class="hd">JSON</div>
-    <div class="bd"><span class="lb">+ 8 more</span><span class="dt">lesion, tumor, food,<br>PK, evidence, flags,<br>subject, validation</span></div>
+    <div class="bd"><span class="lb">lesion_severity</span><span class="dt">~700 rows<br>(MI/MA)</span></div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="nd c-out" style="left:40px;top:2375px;width:130px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">tumor_summary</span><span class="dt">Types +<br>progression</span></div>
+  </div>
+  <div class="nd c-out" style="left:190px;top:2375px;width:140px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">food_consumption</span><span class="dt">FW+BW<br>efficiency</span></div>
+  </div>
+  <div class="nd c-out" style="left:350px;top:2375px;width:120px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">pk_integration</span><span class="dt">TK + HED +<br>dose prop.</span></div>
+  </div>
+  <div class="nd c-out" style="left:490px;top:2375px;width:130px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">organ_evidence</span><span class="dt">~350 rows<br>per organ</span></div>
+  </div>
+  <div class="nd c-out" style="left:640px;top:2375px;width:140px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">cross_animal_flags</span><span class="dt">Tissue +<br>tumor links</span></div>
+  </div>
+  <div class="nd c-out" style="left:800px;top:2375px;width:130px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">subject_context</span><span class="dt">Per-animal<br>annotations</span></div>
+  </div>
+
+  <!-- Row 3 -->
+  <div class="nd c-out" style="left:40px;top:2470px;width:130px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">validation_results</span><span class="dt">Data quality<br>audit</span></div>
+  </div>
+  <div class="nd c-out" style="left:190px;top:2470px;width:140px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">finding_dose_trends</span><span class="dt">Per-finding<br>D-R trends</span></div>
+  </div>
+  <div class="nd c-out" style="left:350px;top:2470px;width:150px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">provenance_messages</span><span class="dt">Data lineage<br>audit trail</span></div>
+  </div>
+  <div class="nd c-out" style="left:520px;top:2470px;width:165px">
+    <div class="hd">JSON</div>
+    <div class="bd"><span class="lb">study_metadata_enriched</span><span class="dt">Computed study<br>metadata</span></div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 11: FRONTEND DERIVATION                              -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:2250px"><span class="lane-label">Stage 11 &mdash; Frontend Derivation (in-browser, &lt;100ms)</span></div>
+  <div class="lane" style="top:2580px"><span class="lane-label">Stage 11 &mdash; Frontend Derivation (in-browser, &lt;100ms)</span></div>
 
-  <div class="nd c-score" style="left:40px;top:2280px;width:200px">
+  <div class="nd c-score" style="left:40px;top:2610px;width:200px">
     <div class="hd">Aggregate</div>
     <div class="bd">
       <span class="lb">deriveEndpointSummaries()</span>
@@ -747,7 +821,7 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:270px;top:2280px;width:200px">
+  <div class="nd c-score" style="left:270px;top:2610px;width:200px">
     <div class="hd">Aggregate</div>
     <div class="bd">
       <span class="lb">deriveOrganSummaries()</span>
@@ -762,10 +836,10 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:500px;top:2280px;width:190px">
+  <div class="nd c-score" style="left:500px;top:2610px;width:190px">
     <div class="hd">Per-Endpoint NOAEL</div>
     <div class="bd">
-      <span class="lb">computeEndpointNoael()</span>
+      <span class="lb">computeEndpointNoaelMap()</span>
       <span class="dt">Per endpoint:</span>
       <ul>
         <li>Find lowest dose with p&lt;0.05</li>
@@ -777,7 +851,7 @@
     </div>
   </div>
 
-  <div class="nd c-score" style="left:720px;top:2280px;width:200px">
+  <div class="nd c-score" style="left:720px;top:2610px;width:200px">
     <div class="hd">Score</div>
     <div class="bd">
       <span class="lb">Endpoint Confidence (ECI)</span>
@@ -790,13 +864,13 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 12: SYNDROME DETECTION                               -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:2470px"><span class="lane-label">Stage 12 &mdash; Cross-Domain Syndrome Detection (frontend)</span></div>
+  <div class="lane" style="top:2800px"><span class="lane-label">Stage 12 &mdash; Cross-Domain Syndrome Detection (frontend)</span></div>
 
-  <div class="nd c-synd" style="left:40px;top:2500px;width:240px">
+  <div class="nd c-synd" style="left:40px;top:2830px;width:240px">
     <div class="hd">Syndrome Matching</div>
     <div class="bd">
       <span class="lb">detectCrossDomainSyndromes()</span>
-      <span class="dt">Match endpoint summaries against<br>10 syndrome definitions:</span>
+      <span class="dt">Match endpoint summaries against<br>33 syndrome definitions (10 XS + 23 XC):</span>
       <ul>
         <li>Domain match (case-insensitive)</li>
         <li>Direction match (up/down/any)</li>
@@ -808,59 +882,95 @@
     </div>
   </div>
 
-  <div class="gbox" style="left:310px;top:2495px;width:960px;height:210px">
-    <span class="gbox-label">10 Cross-Domain Syndromes (XS01-XS10)</span>
+  <div class="gbox" style="left:310px;top:2825px;width:960px;height:340px">
+    <span class="gbox-label">33 Syndromes: 10 XS (cross-domain) + 23 XC (organ chains)</span>
   </div>
 
-  <div class="nd c-synd" style="left:330px;top:2520px;width:145px">
+  <div class="nd c-synd" style="left:330px;top:2850px;width:145px">
     <div class="hd">XS01</div>
     <div class="bd">
       <span class="lb">Hepatocellular</span>
       <span class="dt">ANY(ALT, AST)<br>minDomains: 2<br>+ OM liver weight<br>+ MI liver findings</span>
     </div>
   </div>
-  <div class="nd c-synd" style="left:490px;top:2520px;width:145px">
+  <div class="nd c-synd" style="left:490px;top:2850px;width:145px">
     <div class="hd">XS02</div>
     <div class="bd">
       <span class="lb">Cholestatic</span>
       <span class="dt">ALP AND (GGT OR 5NT)<br>minDomains: 2<br>+ bile duct findings</span>
     </div>
   </div>
-  <div class="nd c-synd" style="left:650px;top:2520px;width:145px">
+  <div class="nd c-synd" style="left:650px;top:2850px;width:145px">
     <div class="hd">XS03</div>
     <div class="bd">
       <span class="lb">Nephrotoxicity</span>
       <span class="dt">ANY(CREAT+BUN,<br>CREAT+kidney_wt,<br>CREAT+MI_kidney)<br>minDomains: 2</span>
     </div>
   </div>
-  <div class="nd c-synd" style="left:810px;top:2520px;width:145px">
+  <div class="nd c-synd" style="left:810px;top:2850px;width:145px">
     <div class="hd">XS04</div>
     <div class="bd">
       <span class="lb">Myelosuppression</span>
       <span class="dt">ANY(NEUT, PLAT,<br>RBC+HGB)<br>minDomains: 1</span>
     </div>
   </div>
-  <div class="nd c-synd" style="left:970px;top:2520px;width:145px">
+  <div class="nd c-synd" style="left:970px;top:2850px;width:145px">
     <div class="hd">XS05</div>
     <div class="bd">
       <span class="lb">Hemolytic Anemia</span>
       <span class="dt">RBC&darr; AND RETIC&uarr;<br>minDomains: 1<br>+ bilirubin, spleen</span>
     </div>
   </div>
-  <div class="nd c-synd" style="left:1130px;top:2520px;width:120px">
-    <div class="hd">XS06-XS10</div>
+  <!-- Syndrome Row 2 -->
+  <div class="nd c-synd" style="left:330px;top:2970px;width:130px">
+    <div class="hd">XS06</div>
     <div class="bd">
-      <span class="lb">5 More Syndromes</span>
-      <span class="dt">Phospholipidosis,<br>Immunotoxicity,<br>Stress, Wasting,<br>Metabolic</span>
+      <span class="lb">Phospholipidosis</span>
+      <span class="dt">ANY(PL, MI, OM)<br>minDomains: 2</span>
+    </div>
+  </div>
+  <div class="nd c-synd" style="left:475px;top:2970px;width:130px">
+    <div class="hd">XS07</div>
+    <div class="bd">
+      <span class="lb">Immunotoxicity</span>
+      <span class="dt">ANY(WBC, LYMPH,<br>thymus_wt, spleen_wt)<br>minDomains: 2</span>
+    </div>
+  </div>
+  <div class="nd c-synd" style="left:620px;top:2970px;width:130px">
+    <div class="hd">XS08</div>
+    <div class="bd">
+      <span class="lb">Stress Response</span>
+      <span class="dt">ADRENAL_WT AND<br>(BW OR THYMUS<br>OR LYMPH)<br>minDomains: 2</span>
+    </div>
+  </div>
+  <div class="nd c-synd" style="left:765px;top:2970px;width:130px">
+    <div class="hd">XS09</div>
+    <div class="bd">
+      <span class="lb">Target Organ Wasting</span>
+      <span class="dt">ANY(BW&darr;, OM&darr;,<br>MI atrophy)<br>minDomains: 2</span>
+    </div>
+  </div>
+  <div class="nd c-synd" style="left:910px;top:2970px;width:130px">
+    <div class="hd">XS10</div>
+    <div class="bd">
+      <span class="lb">Cardiovascular</span>
+      <span class="dt">ANY(QTc, PR, RR,<br>HR, BP)<br>minDomains: 1</span>
+    </div>
+  </div>
+  <div class="nd c-synd" style="left:1055px;top:2970px;width:195px">
+    <div class="hd">XC01a&ndash;XC12c</div>
+    <div class="bd">
+      <span class="lb">23 Organ Chains</span>
+      <span class="dt">Liver, kidney, thyroid,<br>adrenal, lymphoid, gastric&hellip;<br>Organ-specific corroboration<br>with chain-aware direction gates</span>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 13: SYNDROME INTERPRETATION                          -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:2730px"><span class="lane-label">Stage 13 &mdash; Syndrome Interpretation Cascade</span></div>
+  <div class="lane" style="top:3160px"><span class="lane-label">Stage 13 &mdash; Syndrome Interpretation Cascade</span></div>
 
-  <div class="nd c-interp" style="left:40px;top:2760px;width:215px">
+  <div class="nd c-interp" style="left:40px;top:3190px;width:215px">
     <div class="hd">Certainty Grading</div>
     <div class="bd">
       <span class="lb">assessCertainty()</span>
@@ -874,7 +984,7 @@
     </div>
   </div>
 
-  <div class="nd c-interp" style="left:280px;top:2760px;width:215px">
+  <div class="nd c-interp" style="left:280px;top:3190px;width:215px">
     <div class="hd">Certainty Caps</div>
     <div class="bd">
       <span class="lb">applyCertaintyCaps()</span>
@@ -889,7 +999,7 @@
     </div>
   </div>
 
-  <div class="nd c-interp" style="left:520px;top:2760px;width:210px">
+  <div class="nd c-interp" style="left:520px;top:3190px;width:210px">
     <div class="hd">Treatment-Relatedness (Syndrome)</div>
     <div class="bd">
       <span class="lb">computeTreatmentRelatedness()</span>
@@ -905,7 +1015,7 @@
     </div>
   </div>
 
-  <div class="nd c-interp" style="left:755px;top:2760px;width:210px">
+  <div class="nd c-interp" style="left:755px;top:3190px;width:210px">
     <div class="hd">Adversity (Syndrome)</div>
     <div class="bd">
       <span class="lb">computeAdversity()</span>
@@ -922,7 +1032,7 @@
     </div>
   </div>
 
-  <div class="nd c-interp" style="left:990px;top:2760px;width:255px">
+  <div class="nd c-interp" style="left:990px;top:3190px;width:255px">
     <div class="hd">Overall Severity Cascade</div>
     <div class="bd">
       <span class="lb">deriveOverallSeverity()</span>
@@ -943,9 +1053,9 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- STAGE 14: TRANSLATIONAL CONFIDENCE                         -->
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <div class="lane" style="top:3010px"><span class="lane-label">Stage 14 &mdash; Translational Confidence &amp; Final Output</span></div>
+  <div class="lane" style="top:3440px"><span class="lane-label">Stage 14 &mdash; Translational Confidence &amp; Final Output</span></div>
 
-  <div class="nd c-synd" style="left:40px;top:3040px;width:200px">
+  <div class="nd c-synd" style="left:40px;top:3470px;width:200px">
     <div class="hd">Species Normalization</div>
     <div class="bd">
       <span class="lb">normalizeSpecies()</span>
@@ -953,7 +1063,7 @@
     </div>
   </div>
 
-  <div class="nd c-synd" style="left:270px;top:3040px;width:200px">
+  <div class="nd c-synd" style="left:270px;top:3470px;width:200px">
     <div class="hd">SOC Lookup</div>
     <div class="bd">
       <span class="lb">lookupSOCLRPlus()</span>
@@ -963,7 +1073,7 @@
     </div>
   </div>
 
-  <div class="nd c-synd" style="left:500px;top:3040px;width:200px">
+  <div class="nd c-synd" style="left:500px;top:3470px;width:200px">
     <div class="hd">Translational Tier</div>
     <div class="bd">
       <span class="lb">assignTranslationalTier()</span>
@@ -977,7 +1087,7 @@
     </div>
   </div>
 
-  <div class="nd c-out" style="left:730px;top:3040px;width:260px">
+  <div class="nd c-out" style="left:730px;top:3470px;width:260px">
     <div class="hd">Final Syndrome Interpretation</div>
     <div class="bd">
       <span class="lb">interpretSyndrome()</span>
@@ -994,7 +1104,7 @@
     </div>
   </div>
 
-  <div class="nd c-out" style="left:1020px;top:3040px;width:230px">
+  <div class="nd c-out" style="left:1020px;top:3470px;width:230px">
     <div class="hd">Key Thresholds Summary</div>
     <div class="bd">
       <span class="lb">Constants Used Throughout</span>
@@ -1049,41 +1159,42 @@
     <path class="main" d="M445,1170 L367,1225" marker-end="url(#ar)"/>
     <path class="main" d="M697,1170 L600,1225" marker-end="url(#ar)"/>
 
-    <!-- Stage 6 → Stage 7 -->
-    <path class="main" d="M400,1415 L400,1465" marker-end="url(#ar)"/>
+    <!-- Stage 6 → Orchestrators → Stage 7 -->
+    <path class="main" d="M400,1395 L400,1430" marker-end="url(#ar)"/>
+    <path class="main" d="M400,1550 L400,1605" marker-end="url(#ar)"/>
 
     <!-- Stage 7 → Stage 8 -->
-    <path class="main" d="M400,1680 L165,1730" marker-end="url(#ar)"/>
-    <path class="main" d="M400,1680 L435,1730" marker-end="url(#ar)"/>
-    <path class="main" d="M400,1680 L710,1730" marker-end="url(#ar)"/>
-    <path class="main" d="M900,1600 L985,1730" marker-end="url(#ar)"/>
+    <path class="main" d="M400,1820 L165,1870" marker-end="url(#ar)"/>
+    <path class="main" d="M400,1820 L435,1870" marker-end="url(#ar)"/>
+    <path class="main" d="M400,1820 L710,1870" marker-end="url(#ar)"/>
+    <path class="main" d="M900,1740 L985,1870" marker-end="url(#ar)"/>
 
     <!-- Stage 8 → Stage 9 -->
-    <path class="main" d="M165,1900 L150,1950" marker-end="url(#ar)"/>
-    <path class="main" d="M710,1900 L395,1950" marker-end="url(#ar)"/>
+    <path class="main" d="M165,2040 L150,2090" marker-end="url(#ar)"/>
+    <path class="main" d="M710,2040 L395,2090" marker-end="url(#ar)"/>
 
     <!-- Stage 9 → Stage 10 -->
-    <path class="main" d="M400,2080 L400,2115 L700,2115 L700,2140" marker-end="url(#ar)"/>
+    <path class="main" d="M400,2220 L400,2255 L700,2255 L700,2280" marker-end="url(#ar)"/>
 
     <!-- Stage 10 → Stage 11 -->
-    <path class="main" d="M110,2200 L140,2280" marker-end="url(#ar)"/>
-    <path class="main" d="M550,2200 L590,2280" marker-end="url(#ar)"/>
+    <path class="main" d="M110,2540 L140,2610" marker-end="url(#ar)"/>
+    <path class="main" d="M550,2540 L590,2610" marker-end="url(#ar)"/>
 
     <!-- Stage 11 → Stage 12 -->
-    <path class="main" d="M140,2430 L160,2500" marker-end="url(#ar)"/>
-    <path class="main" d="M370,2430 L160,2500" marker-end="url(#ar)"/>
+    <path class="main" d="M140,2760 L160,2830" marker-end="url(#ar)"/>
+    <path class="main" d="M370,2760 L160,2830" marker-end="url(#ar)"/>
 
     <!-- Stage 12 → Stage 13 -->
-    <path class="main" d="M160,2680 L147,2760" marker-end="url(#ar)"/>
-    <path class="main" d="M600,2710 L387,2760" marker-end="url(#ar)"/>
-    <path class="main" d="M600,2710 L625,2760" marker-end="url(#ar)"/>
-    <path class="main" d="M600,2710 L860,2760" marker-end="url(#ar)"/>
-    <path class="main" d="M600,2710 L1117,2760" marker-end="url(#ar)"/>
+    <path class="main" d="M160,3110 L147,3190" marker-end="url(#ar)"/>
+    <path class="main" d="M600,3110 L387,3190" marker-end="url(#ar)"/>
+    <path class="main" d="M600,3110 L625,3190" marker-end="url(#ar)"/>
+    <path class="main" d="M600,3110 L860,3190" marker-end="url(#ar)"/>
+    <path class="main" d="M600,3110 L1117,3190" marker-end="url(#ar)"/>
 
     <!-- Stage 13 → Stage 14 -->
-    <path class="main" d="M147,2960 L130,3040" marker-end="url(#ar)"/>
-    <path class="main" d="M1117,2960 L860,3040" marker-end="url(#ar)"/>
-    <path class="main" d="M625,2990 L600,3040" marker-end="url(#ar)"/>
+    <path class="main" d="M147,3390 L130,3470" marker-end="url(#ar)"/>
+    <path class="main" d="M1117,3390 L860,3470" marker-end="url(#ar)"/>
+    <path class="main" d="M625,3420 L600,3470" marker-end="url(#ar)"/>
   </svg>
 
 </div>
