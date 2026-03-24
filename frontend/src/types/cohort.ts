@@ -29,7 +29,7 @@ export interface CohortSubject {
   recoveryStartDay: number | null;
   arm: string;
   /** Badge reason for display in the rail. */
-  badge: "trs" | "rec" | "pattern" | "tk" | null;
+  badge: "trs" | "adverse" | "rec" | "pattern" | "tk" | null;
   /** Histopath preset qualification reason, if applicable. */
   histoReason: HistoReason | null;
 }

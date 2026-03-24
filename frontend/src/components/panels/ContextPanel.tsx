@@ -412,7 +412,7 @@ export function ContextPanel() {
   const { selectedStudyId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
-  const { selectedSubject, setSelectedSubject } = useViewSelection();
+  const { selectedSubject, setSelectedSubject, selection } = useViewSelection();
   const { data: allStudies } = useStudyPortfolio();
 
   const activeStudyId = studyId ?? selectedStudyId;
@@ -476,7 +476,10 @@ export function ContextPanel() {
 
   if (isCohortRoute) {
     // Cohort: subject click → SubjectProfilePanel (handled above via selectedSubject),
-    // otherwise show cohort summary
+    // finding click → FindingsContextPanel, otherwise → cohort summary
+    if (selection?._view === "cohort" && selection.mode === "finding") {
+      return <LazyPane><FindingsContextPanel /></LazyPane>;
+    }
     return <LazyPane><CohortContextPanel /></LazyPane>;
   }
 

@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 61 | 36 | Missing capability, no spec exists |
+| Gap | 61 | 38 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **87** | **71** | |
+| **Total open** | **87** | **73** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -941,6 +941,14 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - ~~**PERF-05: Triple-redundant analytics derivation (3-5x)**~~ — FindingsAnalyticsLayer in Layout provides single derivation via context. `591855e`
 - ~~**PERF-06: Unmemoized sparkline SVG cells**~~ — Extract SparklineCell as React.memo component. `591855e`
 - ~~**PERF-07: No table virtualization (418 std / 1672 pivoted rows)**~~ — @tanstack/react-virtual with spacer-row pattern. `b11c108`, `569f630`, `2823f24`
+
+### ~~GAP-107: CL onset day derivation + body-system grouping (backend pipeline)~~ ✅
+
+Implemented: `raw_subject_onset_days` per CL finding in `findings_cl.py`, `cl_body_system` classification (CNS/GI/integument/general), `organ_name` override in `domain_stats.py`. Frontend uses onset days in cohort evidence table CL cells.
+
+### ~~GAP-108: SubjectProfilePanel "View dose group cohort" entry point~~ ✅
+
+Implemented: "View dose group cohort" text link in SubjectProfilePanel subtitle, navigates to `/studies/:studyId/cohort?preset=all&dose=N`. User approved frozen design change.
 
 ---
 

@@ -3,7 +3,7 @@
 **Route:** `/studies/:studyId/noael-determination`
 **Component:** `NoaelDeterminationView.tsx` (wrapped by `NoaelDeterminationViewWrapper.tsx`)
 **Scientific question:** "What is the NOAEL and what are the dose-limiting adverse findings?"
-**Role:** Definitive results and conclusions view. Absorbs signal content from the former Study Summary Signals tab to provide a complete picture: NOAEL determination, study-level statements, protective signals, adversity assessment, signal matrix, metrics, and rule inspection -- all scoped to the selected organ. Two-panel master-detail layout with persistent NOAEL banner, shell-level organ rail, and a 5-tab evidence panel.
+**Role:** Definitive results and conclusions view. Absorbs signal content from the former Study Summary Signals tab to provide a complete picture: NOAEL determination, study-level statements, protective signals, weighted NOAEL (ECI), adversity assessment, signal matrix, metrics, and rule inspection -- all scoped to the selected organ. Two-panel master-detail layout with persistent NOAEL banner, shell-level organ rail, and a 5-tab evidence panel.
 
 ---
 
@@ -20,36 +20,34 @@ The view lives in the center panel of the 3-panel shell:
 +------------+----------------------------+------------+
 ```
 
-The view itself is a flex column: persistent NOAEL Banner at top, then StudyStatementsBar, ProtectiveSignalsBar, optional PK warnings, then the evidence panel below. Organ selection is provided by the shell-level organ rail (not embedded in the view):
+The view itself is a flex column split into two zones: a scrollable top section (capped at `max-h-[45%]` so the evidence panel always remains visible) and a flex-1 evidence panel below. A `RecalculatingBanner` overlays the top when data is being recalculated. Organ selection is provided by the shell-level organ rail (not embedded in the view):
 
 ```
 +-----------------------------------------------------------+
-|  NOAEL Determination (persistent, non-scrolling)           |
-|  [Combined card] [Males card] [Females card]               |
+| RecalculatingBanner (conditional overlay)                  |
 +-----------------------------------------------------------+
-|  StudyStatementsBar (conditional — study-level statements,  |
-|  modifiers, caveats from signals panel engine)              |
+| <-- scrollable top section, max-h-[45%] -->               |
+|  NOAEL Banner (persistent — Combined/Males/Females cards) |
+|  StudyStatementsBar (conditional)                         |
+|  ProtectiveSignalsBar (conditional — R18/R19)             |
+|  WeightedNoaelCard (conditional — ECI summary)            |
+|  Dose proportionality warning (conditional — PK)          |
+|  Safety margin calculator (conditional — PK exposure)     |
 +-----------------------------------------------------------+
-|  ProtectiveSignalsBar (conditional — R18/R19 protective     |
-|  findings, three-tier classification)                       |
+| <-- flex-1 evidence panel -->                             |
+| OrganHeader                                               |
+|  organ name, adverse count, recovery badge, summary text, |
+|  compact metrics (max |d|, max avg sev, min p)            |
 +-----------------------------------------------------------+
-|  Dose proportionality warning (conditional — PK non-linear) |
+| [Evidence] [Adversity matrix] [Signal matrix] [Metrics]   |
+| [Rules]  <── tab bar (5 tabs)                             |
 +-----------------------------------------------------------+
-|  Safety margin calculator (conditional — PK exposure data)  |
-+-----------------------------------------------------------+
-| OrganHeader                                                |
-|  organ name, adverse count, recovery badge, summary text,  |
-|  compact metrics (max |d|, min p)                          |
-+-----------------------------------------------------------+
-| [Evidence] [Adversity matrix] [Signal matrix] [Metrics]    |
-| [Rules]  <── tab bar (5 tabs)                              |
-+-----------------------------------------------------------+
-| Tab content:                                               |
-|  Evidence: endpoint summary, insights                      |
-|  Adversity matrix: filters, matrix, grid                   |
-|  Signal matrix: filters, organ-scoped heatmap              |
-|  Metrics: sortable signal metrics table                    |
-|  Rules: rule inspector with threshold editor               |
+| Tab content:                                              |
+|  Evidence: endpoint summary, insights                     |
+|  Adversity matrix: filters, matrix, grid                  |
+|  Signal matrix: filters, organ-scoped heatmap             |
+|  Metrics: sortable signal metrics table                   |
+|  Rules: rule inspector with threshold editor              |
 +-----------------------------------------------------------+
 ```
 
@@ -57,7 +55,7 @@ The shell organ rail (`OrganRailMode`) lives in the left rail panel of the three
 
 ---
 
-## NOAEL Banner (persistent, non-scrolling)
+## NOAEL Banner (scrollable top section)
 
 Container: `shrink-0 border-b bg-muted/20 px-4 py-3`
 
@@ -97,7 +95,7 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 - Container: `mt-2 rounded-md border border-dashed border-primary/30 bg-muted/10 p-2`
 - Title: `mb-1.5 text-[11px] font-semibold` — "Override NOAEL determination"
 - Dose select: `w-full rounded border bg-background px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary` — options from unique dose labels in aeData + "Not established"
-- Rationale textarea: same styling, `rows={2}`, placeholder "Required — explain why..."
+- Rationale textarea: same styling, `rows={2}`, placeholder "Required — explain why the system determination is being overridden"
 - Buttons: Cancel (`text-muted-foreground hover:bg-muted/40`), Save (`bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground disabled:opacity-50`). Save disabled if no rationale or no change.
 
 **Narrative summary (below cards):**
@@ -107,18 +105,11 @@ Card surface is always neutral (plain `border`). Color is confined to the status
 - Otherwise: shows single combined narrative
 
 **PK Exposure integration (conditional):**
-When `usePkIntegration(studyId)` returns `pkData?.available` and a "Combined" sex NOAEL row exists, the Combined card includes an `ExposureSection` component displaying:
-- Cmax, AUC, HED (Human Equivalent Dose), MRSD (Maximum Recommended Starting Dose) from PK data
-- Each metric as label + value in `text-[11px]`
-
-**Safety Margin Calculator (conditional):**
-Rendered below the banner cards when PK exposure data is available (`pkData.noael_exposure || pkData.loael_exposure`). Container: `shrink-0 border-b px-4 py-2`. `SafetyMarginCalculator` component provides:
-- Interactive inputs for human Cmax and AUC values
-- Computes NOAEL-based or LOAEL-based safety margins
-- Displays calculated margins with interpretation
-
-**Dose proportionality warning (conditional):**
-Shown between the safety margin calculator and organ header when PK data indicates non-linear pharmacokinetics (supralinear, sublinear, or non-monotonic). Amber-colored warning bar: `shrink-0 border-b bg-amber-50 px-4 py-1.5`.
+When `usePkIntegration(studyId)` returns `pkData?.available` and exposure data exists and the card is for the "Combined" sex, the Combined card includes an `ExposureSection` component displaying:
+- Section header: `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Exposure at NOAEL" or "Exposure at LOAEL" (fallback)
+- Cmax and AUC as label + value rows in `text-[11px]`, values formatted with `mean ± sd unit`
+- When `hed.noael_status === "at_control"`: explanatory text about LOAEL-based margin
+- Otherwise: HED and MRSD values in a separate bordered section
 
 ---
 
@@ -136,9 +127,9 @@ Container: `shrink-0 border-b px-4 py-2`
 
 Each statement rendered as: `flex items-start gap-2 text-sm leading-relaxed`
 - **StatementIcon** mapped by `icon` field:
-  - `"fact"` — bullet `U+25CF` in `text-[11px] text-muted-foreground`
-  - `"warning"` — triangle `U+25B2` in `text-[11px] text-amber-600`
-  - `"review-flag"` — warning sign `U+26A0` in `text-[11px] text-amber-600`
+  - `"fact"` — bullet U+25CF in `text-[11px] text-muted-foreground`
+  - `"warning"` — triangle U+25B2 in `text-[11px] text-amber-600`
+  - `"review-flag"` — warning sign U+26A0 in `text-[11px] text-amber-600`
 - Text: `<span>{s.text}</span>`
 
 ### Study Modifiers
@@ -148,7 +139,7 @@ Filtered to items where `organSystem` is falsy (study-level only, not organ-scop
 Container: `mt-1 space-y-0.5`
 
 Each modifier: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
-- Icon: amber triangle `U+25B2` in `text-[11px] text-amber-600`
+- Icon: amber triangle U+25B2 in `text-[11px] text-amber-600`
 - Text span
 
 ### Study Caveats
@@ -158,14 +149,12 @@ Same filter as modifiers: only items where `organSystem` is falsy.
 Container: `mt-1 space-y-0.5`
 
 Each caveat: `flex items-start gap-2 text-xs leading-relaxed text-foreground/80`
-- Icon: warning sign `U+26A0` in `text-[11px] text-amber-600`
+- Icon: warning sign U+26A0 in `text-[11px] text-amber-600`
 - Text span
 
 ---
 
 ## Protective Signals Bar (conditional)
-
-> **Status: Not yet implemented.** This section describes planned functionality that has not been built.
 
 **Component:** `ProtectiveSignalsBar` (defined inline in `NoaelDeterminationView.tsx`)
 
@@ -205,6 +194,50 @@ Findings are classified via `classifyProtectiveSignal()` from `lib/protective-si
 
 ---
 
+## Weighted NOAEL Card (conditional — ECI)
+
+**Component:** `WeightedNoaelCard` (defined inline in `NoaelDeterminationView.tsx`)
+
+Rendered after the ProtectiveSignalsBar. Only renders when `deriveWeightedNOAEL()` produces a non-null result from endpoint confidence data.
+
+Container: `shrink-0 border-b px-4 py-2`
+
+**Header:** `text-[10px] font-semibold uppercase tracking-wider text-muted-foreground` — "Weighted NOAEL (ECI)"
+
+**NOAEL/LOAEL line:** `flex items-baseline gap-4 text-xs` — "NOAEL: {dose}" (`font-semibold`) and optional "LOAEL: {dose}" (`font-semibold`).
+
+**Endpoint breakdown:** `mt-1 space-y-1 text-[11px]` — three categories:
+- **Determining:** `font-semibold text-muted-foreground` label + comma-separated endpoints with `(domain)` in `text-muted-foreground`
+- **Contributing:** same format
+- **Supporting:** same format
+
+Data source: `useFindingsAnalyticsResult()` provides endpoint-level confidence data; `deriveWeightedNOAEL()` from `lib/endpoint-confidence.ts` classifies endpoints into determining/contributing/supporting tiers.
+
+---
+
+## Safety Margin Calculator (conditional)
+
+**Component:** `SafetyMarginCalculator` (defined inline in `NoaelDeterminationView.tsx`)
+
+Rendered below the dose proportionality warning when PK exposure data is available (`pkData.noael_exposure || pkData.loael_exposure`). Outer container: `shrink-0 border-b px-4 py-2`. Inner: `rounded-lg border p-3`.
+
+**Header:** `text-[11px] font-semibold uppercase tracking-wider text-muted-foreground` — "Safety margin calculator". When NOAEL is at control (adverse effects at all doses): appends `" — LOAEL-based, NOAEL not established above control"` in `normal-case font-normal text-muted-foreground/70`.
+
+**Inputs:** `flex items-end gap-4 text-xs` — two number inputs (Human Cmax and Human AUC) with unit labels from PK data, plus a results area showing computed margins:
+- `Cmax{suffix}: {margin}×` and `AUC{suffix}: {margin}×` (font-semibold)
+- Suffix is "(LOAEL)" when NOAEL is at control
+- Empty state: "Enter values to compute margin"
+
+**TK design note (conditional):** When `has_satellite_groups && !individual_correlation_possible`: `text-[11px] text-muted-foreground` — "TK data from satellite animals (n={n_tk_subjects}). Individual exposure-toxicity correlation not available."
+
+---
+
+## Dose Proportionality Warning (conditional)
+
+Rendered between the ProtectiveSignalsBar/WeightedNoaelCard and the safety margin calculator when PK data indicates non-linear pharmacokinetics (supralinear, sublinear, or non-monotonic). Container: `shrink-0 border-b bg-amber-50 px-4 py-1.5 text-xs text-amber-800`. Warning symbol U+26A0 prefix. Shows slope and R-squared for non-monotonic, or slope for supra/sublinear. Interpretation text below in `text-[11px] text-amber-700`.
+
+---
+
 ## Organ Selection (shell-level rail)
 
 The NOAEL view does **not** embed its own organ rail. Instead, it declares a preference for the shell-level organ rail via `useRailModePreference("organ")` in `NoaelDeterminationViewWrapper`. The organ rail (`OrganRailMode` in `components/shell/`) provides organ selection, search, and sorting — shared with the study summary and target organs contexts.
@@ -225,7 +258,7 @@ When the user clicks an organ in the shell rail, the view reads the selection an
 - Adverse badge (if adverseCount > 0): `rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground` — "{N} adverse" (neutral bordered pill, matching S-05 badge padding)
 - Recovery badge (if recovery data present and organ has an overall verdict): `rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground` — shows verdict arrow + verdict text (e.g., "reversed", "persistent"). Uses `verdictArrow()` from `recovery-assessment.ts`.
 - Summary text: `mt-1 text-xs leading-relaxed text-muted-foreground` — "{N} endpoints across {D} domains, {M} adverse, {T} treatment-related."
-- Compact metrics: `mt-2 flex flex-wrap gap-3 text-xs` — max |d| (font-mono, font-semibold if >= 0.8), min p (font-mono, font-semibold if < 0.01). Typography-only, no color.
+- Compact metrics: `mt-2 flex flex-wrap gap-3 text-xs` — max |{esSymbol}| (font-mono, font-semibold if >= 0.8), max avg sev (font-mono, font-semibold if >= 3.0), min p (font-mono, font-semibold if < 0.01). Effect size symbol is dynamic based on the active effect size method. Typography-only, no color.
 
 ---
 
@@ -254,11 +287,11 @@ Section header: `text-xs font-semibold uppercase tracking-wider text-muted-foreg
 
 Each endpoint is a clickable `<button>` row:
 - Container: `group/ep flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/30`
-- Selected: `bg-accent`
+- Selected: `bg-accent font-medium`
 - Domain code: `<DomainLabel>` component — plain colored text `text-[10px] font-semibold` with `getDomainBadgeColor().text`
 - Endpoint name: `min-w-0 flex-1 truncate`
 - Direction symbol: `shrink-0 text-[11px] text-muted-foreground` — via `getDirectionSymbol()`
-- Max effect size: `shrink-0 font-mono text-[11px] text-muted-foreground`
+- Max effect size: `shrink-0 font-mono text-[11px] text-muted-foreground` with tooltip showing domain-aware label (e.g., "Hedges' g = 1.234")
 - Severity label: `shrink-0 text-[10px] text-muted-foreground` — plain text (adverse/warning/normal)
 - TR badge (if treatment-related): `shrink-0 text-[10px] font-medium text-muted-foreground` — "TR"
 - Recovery verdict (if recovery data present, MI/MA domain endpoints only): `shrink-0 text-[10px] text-muted-foreground` — shows verdict arrow + verdict text via `verdictArrow()`. Only shown for endpoints with meaningful recovery verdicts (not "not_observed" or "no_data").
@@ -269,7 +302,7 @@ Sorted by: severity (adverse first) -> treatment-related -> max effect size desc
 
 ### Insights
 
-Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key). `onEndpointClick` callback navigates to dose-response view with the clicked organ system.
+Only shown when organ-scoped rule results exist. Section header: "Insights". Uses `InsightsList` component with rules filtered to the selected organ (matches on `organ_system`, `output_text` containing organ name, or `context_key` containing organ key). `onEndpointClick` callback navigates to findings view with the clicked organ system.
 
 ---
 
@@ -408,10 +441,12 @@ TanStack React Table, `w-full text-[11px]`, client-side sorting with column resi
 | direction | Dir | 35 | `text-muted-foreground` via `getDirectionSymbol()` |
 | p_value | p-value | 65 | `font-mono`, `font-semibold` if < 0.01 |
 | trend_p | Trend p | 65 | `font-mono`, `font-semibold` if < 0.01 |
-| effect_size | \|d\| | 55 | `font-mono`, `font-semibold` if abs >= 0.8 |
+| effect_size | \|{esSymbol}\| | 55 | `font-mono`, `font-semibold` if abs >= 0.8 |
 | severity | Severity | 70 | `rounded-sm border border-border px-1.5 py-0.5 text-[10px] font-medium` |
 | treatment_related | TR | 35 | `Y` (`font-semibold text-foreground`) or `N` (`text-muted-foreground/50`) |
 | dose_response_pattern | Pattern | 90 | Underscores replaced with spaces; "none"/"flat" rendered as em dash in `text-muted-foreground/50` |
+
+Note: The effect size column header uses a dynamic symbol (`esSymbol`) based on the active effect size method (e.g., "g" for Hedges' g, "d" for Cohen's d).
 
 **Sorting:** Session-persisted via `useSessionState<SortingState>("pcc.noael.signals.sorting", [{ id: "signal_score", desc: true }])`. Default sort: signal_score descending. Sort on double-click.
 
@@ -447,11 +482,11 @@ The `NoaelContextPanelWrapper` in `ContextPanel.tsx` fetches `aeData` and `ruleR
 
 ### No Selection State
 
-Header: `flex items-center justify-end border-b px-4 py-1.5` with `CollapseAllButtons` (right-aligned, no title).
+Header: `ContextPanelHeader` with title "NOAEL determination", `CollapseAllButtons`, and `< >` navigation buttons (via `usePaneHistory`).
 
 Panes:
 1. **NOAEL rationale** (CollapsiblePane, default open) — narrative text from `generateNoaelNarrative()` in `text-xs leading-relaxed text-foreground/80`. Below: "Dose-limiting findings at LOAEL" section (if present) with clickable finding buttons: `flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] hover:bg-muted/40` — finding name (`font-medium`) + `DomainLabel` + right-aligned stats (`ml-auto text-muted-foreground` — "|d|={ES}, p={P}").
-2. **Insights** (CollapsiblePane, default open) — `InsightsList` with rules where `scope === "study"`. `onEndpointClick` navigates to dose-response view.
+2. **Insights** (CollapsiblePane, default open) — `InsightsList` with rules where `scope === "study"`. `onEndpointClick` navigates to findings view.
 3. Footer: `px-4 py-3 text-xs text-muted-foreground` — "Select an endpoint to view adversity rationale."
 
 Note: NOAEL summary table and confidence factors were removed (RED-02) — the persistent banner already shows sex x NOAEL x LOAEL x confidence numerics. Duplicating them in the context panel added no interpretive value.
@@ -460,26 +495,26 @@ Note: NOAEL summary table and confidence factors were removed (RED-02) — the p
 
 Shown when an organ is selected via the shell rail but no endpoint is selected.
 
-Header: sticky, organ name (`text-sm font-semibold` via `titleCase()`) + `CollapseAllButtons`. Below: `{totalCount} signals · {N} domain(s)`. `TierCountBadges` for tier filtering.
+Header: `ContextPanelHeader` with organ name (`titleCase()`) as title, subtitle showing `{totalCount} signals · {N} domain(s)`, `CollapseAllButtons`, and `< >` navigation buttons. `TierCountBadges` below for tier filtering.
 
 Panes:
-1. **Organ insights** (default open) — `InsightsList` with organ-scoped rules. `onEndpointClick` navigates to dose-response view with organ_system state.
-2. **Contributing endpoints** (default open, conditional — when endpoints exist) — table with columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows are clickable → navigate to dose-response with organ_system state.
+1. **Organ insights** (default open) — `InsightsList` with organ-scoped rules. `onEndpointClick` navigates to findings view with organ_system state.
+2. **Contributing endpoints** (default open, conditional — when endpoints exist) — table with columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows are clickable, navigating to findings view with organ_system state.
 3. **Evidence breakdown** (default open, conditional) — domains list (`DomainLabel` per domain), significant count (N/total), treatment-related count, sex comparison (Males/Females sig counts).
-4. **Related views** (default closed) — "View histopathology: {Organ}", "View dose-response", "View study summary" (all with organ_system state).
+4. **Related views** (default closed) — "View histopathology: {Organ}", "View findings", "View study summary" (all with organ_system state).
 
 ### Endpoint-Selected State
 
-Header: sticky, endpoint name (`text-sm font-semibold`) + `CollapseAllButtons`. Below: sex + dose level info. `TierCountBadges` for tier filtering.
+Header: `ContextPanelHeader` with endpoint name as title, subtitle showing sex + dose level, `CollapseAllButtons`, and `< >` navigation buttons. `TierCountBadges` below for tier filtering.
 
 Panes (ordered per design system priority — insights -> stats -> annotation -> navigation):
 1. **Insights** (default open) — `InsightsList` with endpoint-scoped rules + `tierFilter` from header badges
 2. **Statistics** (default open, conditional — when `selectedSignalRow` exists) — key-value pairs: Signal score (clickable `SignalScorePopover`), Direction, Best p-value, Trend p-value, Effect size, Dose-response pattern, Severity, Treatment-related
 3. **Adversity rationale** (default open) — dose-level rows for selected endpoint + sex, with p-value, effect size, severity text colored via `getSeverityDotColor()`. Empty state: "No data for selected endpoint."
 4. **Source records** (conditional — when `studyId` and `selectedSignalRow`) — `SourceRecordsExpander` component with domain, test code, sex, and dose level from selection
-5. **Other findings in {organ}** (default open) — correlations table showing other endpoints in the same organ system. Columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows clickable → navigate to dose-response. Empty state: "No correlations in this organ system."
+5. **Other findings in {organ}** (default open) — correlations table showing other endpoints in the same organ system. Columns: Endpoint, Dom (`DomainLabel`), Signal (right, mono), p (right, mono). Rows clickable, navigating to findings view. Empty state: "No correlations in this organ system."
 6. **Tox Assessment** — `ToxFindingForm` keyed by endpoint_label, with `systemSuggestion` derived from the best row (preferring adverse) via `deriveToxSuggestion()`
-7. **Related views** (default closed) — "View dose-response" (passes endpoint_label + organ_system), "View study summary" (passes organ_system), "View histopathology" (passes organ_system)
+7. **Related views** (default closed) — "View findings" (passes endpoint_label + organ_system), "View study summary" (passes organ_system), "View histopathology" (passes organ_system)
 8. **Audit trail** (conditional — when `studyId`) — `AuditTrailPanel` filtered by endpoint_label
 9. **Methodology** — `MethodologyPanel` with active effect size method from study-level stat methods
 
@@ -505,14 +540,16 @@ Panes (ordered per design system priority — insights -> stats -> annotation ->
 | Expand/collapse all | Local | `useCollapseAll` — `expandGen`/`collapseGen` counters for ViewSection and CollapseAllButtons |
 | Rail width | Shell | Managed by shell-level `OrganRailMode` (not embedded in this view) |
 | NOAEL summary data | Server | `useEffectiveNoael` hook — merges `useNoaelSummary` (React Query, 5min stale) with `useAnnotations<NoaelOverride>` override annotations |
-| NOAEL override annotations | Server | `useAnnotations<NoaelOverride>(studyId, "noael-override")` — override edits saved via `useSaveAnnotation` |
-| Adverse effect data | Server | `useAdverseEffectSummary` hook (React Query, 5min stale) |
+| NOAEL override annotations | Server | `useAnnotations<NoaelOverride>(studyId, "noael-overrides")` — override edits saved via `useSaveAnnotation` |
+| Adverse effect data | Server/Derived | `useFindingsAnalyticsResult` hook — returns `activeFindings` (unified findings array), mapped to `AdverseEffectSummaryRow[]` via `mapFindingsToRows()` |
 | Rule results | Server | `useRuleResults` hook (shared cache with context panel) |
 | Signal summary data | Server | `useStudySignalSummary` hook (React Query, 5min stale) — `SignalSummaryRow[]` |
 | Target organ data | Server | `useTargetOrganSummary` hook (React Query, 5min stale) — `TargetOrganRow[]` |
 | Panel data (derived) | Local (memo) | `buildSignalsPanelData(noaelData, targetOrgans, signalData)` — returns `SignalsPanelData` with `studyStatements`, `modifiers`, `caveats`, `organBlocks`, `metrics` |
 | Recovery data | Server | `useOrganRecovery` hook — fetches histopath subject data per MI/MA specimen, derives recovery assessments via `deriveRecoveryAssessments()`. Returns `{ bySpecimen, byEndpointLabel, assessmentByLabel, overall, hasRecovery, recoveryDaysBySpecimen }` |
-| PK integration | Server | `usePkIntegration(studyId)` — returns `{ available, cmax, auc, hed, mrsd, doseProportionality }` |
+| PK integration | Server | `usePkIntegration(studyId)` — returns `{ available, noael_exposure, loael_exposure, hed, dose_proportionality, tk_design }` |
+| Study context | Server | `useStudyContext(studyId)` — provides species for recovery analysis |
+| Effect size symbol | Derived | `getEffectSizeSymbol(useStatMethods(studyId).effectSize)` — dynamic column header label |
 
 ---
 
@@ -520,11 +557,12 @@ Panes (ordered per design system priority — insights -> stats -> annotation ->
 
 ```
 useEffectiveNoael(studyId)        --> noaelData (3 rows: M/F/Combined, merged with overrides)
-useAdverseEffectSummary(studyId)  --> aeData (357 rows)
+useFindingsAnalyticsResult()      --> activeFindings --> mapFindingsToRows() --> aeData
 useRuleResults(studyId)           --> ruleResults (shared React Query cache)
 useStudySignalSummary(studyId)    --> signalData (SignalSummaryRow[])
 useTargetOrganSummary(studyId)    --> targetOrgans (TargetOrganRow[])
 usePkIntegration(studyId)         --> pkData
+useStudyContext(studyId)          --> studyCtx (species for recovery)
 
                   buildSignalsPanelData(noaelData, targetOrgans, signalData)
                                         |
@@ -535,6 +573,10 @@ usePkIntegration(studyId)         --> pkData
                                         |
                                    findings --> ProtectiveSignalsBar
                                         |        (pharmacological, treatment-decrease, background)
+                                        |
+                  deriveWeightedNOAEL(endpoints, doseLevels)
+                                        |
+                                   result --> WeightedNoaelCard (ECI)
                                         |
                             deriveOrganSummaries(aeData) --> OrganSummary[]
                                         |
@@ -577,14 +619,14 @@ usePkIntegration(studyId)         --> pkData
 ### Outbound (Context panel — "Related views" pane, with selection)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
-| "View dose-response" | `/studies/{studyId}/dose-response` | `{ endpoint_label, organ_system }` |
+| "View findings" | `/studies/{studyId}/findings` | `{ endpoint_label, organ_system }` |
 | "View study summary" | `/studies/{studyId}` | `{ organ_system }` (if available) |
 | "View histopathology" | `/studies/{studyId}/histopathology` | `{ organ_system }` (if available) |
 
-### Outbound (Overview tab — Insights `onEndpointClick`)
+### Outbound (Evidence tab — Insights `onEndpointClick`)
 | Action | Navigates To | State Passed |
 |--------|-------------|-------------|
-| Click organ name in insight | `/studies/{studyId}/dose-response` | `{ organ_system }` |
+| Click organ name in insight | `/studies/{studyId}/findings` | `{ organ_system }` |
 
 ### Outbound (NOAEL Banner — finding click)
 | Action | Navigates To | State Passed |
@@ -609,7 +651,7 @@ usePkIntegration(studyId)         --> pkData
 | State | Display |
 |-------|---------|
 | Loading | Centered spinner `Loader2` (animate-spin) + "Loading NOAEL data..." |
-| Error (no generated data) | Red box with instructions to run generator command |
+| Error (no generated data) | Red box (`bg-red-50`) with instructions to run generator command |
 | No organ selected (but data exists) | "Select an organ system from the shell rail to view adverse effect details." |
 | No data at all | "No adverse effect data available." |
 | Empty search results (rail) | "No matches for '{search}'" |

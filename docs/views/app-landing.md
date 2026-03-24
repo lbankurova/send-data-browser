@@ -51,8 +51,8 @@ Container: `border-b bg-card px-8 py-8`
 ### Left block
 `flex shrink-0 items-start gap-4`
 - Flask icon: `FlaskConical`, `h-11 w-11 text-primary`
-- Title: `text-xl font-semibold tracking-tight` -- "SENDEX"
-- Subtitle: `mt-0.5 text-xs text-muted-foreground` -- "Analyze and validate your SEND data"
+- Title: `text-xl font-semibold tracking-tight` — "SENDEX"
+- Subtitle: `mt-0.5 text-xs text-muted-foreground` — "Analyze and validate your SEND data"
 
 ### Right block
 - Feature list: `text-xs text-muted-foreground`, `list-disc space-y-0.5 pl-4`
@@ -90,7 +90,7 @@ Three content states:
 
 **Importing state:**
 - Spinner: `Loader2 h-5 w-5 animate-spin text-primary`
-- Text: `text-xs text-muted-foreground` -- "Importing study..."
+- Text: `text-xs text-muted-foreground` — "Importing study..."
 
 **File selected state:**
 - Upload icon: `Upload h-5 w-5 text-primary/60`
@@ -99,21 +99,21 @@ Three content states:
 
 **Empty state (default):**
 - Upload icon: `Upload h-5 w-5 text-muted-foreground/50`
-- Text: `text-xs font-medium text-muted-foreground` -- "drop SEND study folder"
+- Text: `text-xs font-medium text-muted-foreground` — "drop SEND study folder"
 - Hidden file input: accepts `.zip` files
-- Browse button: `rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent` -- "Browse..."
+- Browse button: `rounded-md border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent` — "Browse..."
 
 Drag-and-drop is fully functional: `onDragOver`, `onDragLeave`, `onDrop` handlers set `isDragging` state and capture the dropped file.
 
 #### Description Field
 `flex items-start gap-3`
-- Label: `shrink-0 pt-1.5 text-xs text-muted-foreground` -- "Description"
+- Label: `shrink-0 pt-1.5 text-xs text-muted-foreground` — "Description"
 - Textarea: `w-[260px] max-w-full resize rounded-md border border-border/50 bg-background px-3 py-1.5 text-xs`, placeholder "Optional study notes..."
 
 #### Validation Options
 `space-y-1.5`
-- "Validate SEND compliance" -- checkbox, **interactive**, checked by default (`useState(true)`)
-- "Attempt automatic fixes" -- checkbox, **interactive**, unchecked by default (`useState(false)`)
+- "Validate SEND compliance" — checkbox, **interactive**, checked by default (`useState(true)`)
+- "Attempt automatic fixes" — checkbox, **interactive**, unchecked by default (`useState(false)`)
 
 Both checkboxes use `h-3 w-3` styling and are wired to local state via `onChange`.
 
@@ -125,8 +125,8 @@ Conditionally styled based on whether a file is selected:
 Label: "Import study" (or "Importing..." during import)
 
 #### Import Feedback
-- Error: `text-xs text-red-600` -- displays `err.message` or "Import failed"
-- Success: `text-xs` with inline color `#16a34a` -- displays "Imported {study_id} ({domain_count} domains)"
+- Error: `text-xs text-red-600` — displays `err.message` or "Import failed"
+- Success: `text-xs` with inline color `#16a34a` — displays "Imported {study_id} ({domain_count} domains)"
 
 #### Import Flow
 When triggered, `handleFile` calls `importStudy(file, { validate, autoFix })` from `@/lib/api`. On success it invalidates the `["studies"]` React Query cache to refresh the table. The file, validate, and autoFix values are all captured from local state.
@@ -139,12 +139,12 @@ Container: `px-8 py-6`
 
 ### Section Header
 `mb-4 flex items-center justify-between` wrapper containing:
-- Left: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` -- "Studies ({N})" where N = `allStudies.length + scenarioStudies.length`
+- Left: `text-xs font-semibold uppercase tracking-wider text-muted-foreground` — "Studies ({N})" where N = `allStudies.length + scenarioStudies.length`
 - Right: Program filter dropdown (visible when `projects` array has entries)
 
 ### Program Filter
 `flex items-center gap-2`
-- Label: `text-xs text-muted-foreground` -- "Program:"
+- Label: `text-xs text-muted-foreground` — "Program:"
 - Select: `rounded border border-border bg-background px-2 py-1 text-xs`
   - Default option: "All programs"
   - Options from `useProjects()`: `{name} ({compound})`
@@ -156,8 +156,8 @@ Container: `px-8 py-6`
 ### Empty State
 `rounded-md border bg-card py-12 text-center`
 - Flask icon: `mx-auto mb-3 h-8 w-8 text-muted-foreground`
-- "No studies imported yet." -- `font-medium`
-- "Import your first study to get started." -- `mt-1 text-sm text-muted-foreground`
+- "No studies imported yet." — `font-medium`
+- "Import your first study to get started." — `mt-1 text-sm text-muted-foreground`
 
 ### Table
 `max-h-[60vh] overflow-auto rounded-md border bg-card`
@@ -192,7 +192,7 @@ Header cells: `px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wider te
 | Column | Rendering |
 |--------|-----------|
 | Actions | `px-1.5 py-px text-center`, `MoreVertical` icon button (`h-3.5 w-3.5 text-muted-foreground`), opens context menu |
-| Study | `px-1.5 py-px font-medium text-primary` -- study_id |
+| Study | `px-1.5 py-px font-medium text-primary` — study_id |
 | Protocol | `px-1.5 py-px text-muted-foreground`, em dash if "NOT AVAILABLE" or null |
 | Species | `px-1.5 py-px text-muted-foreground`, em dash if null |
 | Stage | `px-1.5 py-px`, colored via `getPipelineStageColor()` with first letter capitalized and underscores replaced with spaces; em dash if no pipeline_stage |
@@ -225,7 +225,9 @@ Header cells: `px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wider te
 | `useProjects()` | Server (React Query) | Program list for filter dropdown |
 | `useScenarios(designMode)` | Server (React Query) | Scenario studies (only when design mode enabled) |
 
-**Study merging:** Real studies from `useStudies()` are mapped to `DisplayStudy` with portfolio-specific fields (`pipeline_stage`, `noael_value`) set to undefined. The `duration_weeks` is calculated from `start_date`/`end_date` if both are available. Portfolio studies from `useStudyPortfolio()` are mapped with full metadata including `pipeline_stage`, `duration_weeks`, `noael_value` (resolved via `noael()` accessor with derived "(d)" suffix), and `validation` status computed from error/warning counts. Both arrays are concatenated into `allStudiesUnfiltered`, then filtered by `projectFilter` to produce `allStudies`.
+**Study merging:** Real studies from `useStudies()` are mapped to `DisplayStudy` with portfolio-specific fields (`pipeline_stage`, `noael_value`) set to undefined. The `duration_weeks` is calculated from `start_date`/`end_date` if both are available. Portfolio studies from `useStudyPortfolio()` are mapped with full metadata including `pipeline_stage`, `duration_weeks`, `noael_value` (resolved via `noael()` accessor with derived "(d)" suffix), and `validation` status computed from error/warning counts.
+
+**Design mode gating:** Portfolio studies are only included in the studies table when design mode is active. Without design mode, only real/imported studies from `useStudies()` are shown. The combined array `allStudiesUnfiltered` is: `designMode ? [...realStudies, ...portfolioDisplayStudies] : [...realStudies]`. This is then filtered by `projectFilter` to produce `allStudies`.
 
 ### Scenario Studies Section
 When design mode is active, scenario studies appear below a dashed separator (`border-t border-dashed`). Separator row uses `colSpan={9}`. Each scenario row renders 9 `<td>` elements (fewer than the 12-column header). All cells use `px-1.5 py-px`:
@@ -242,7 +244,7 @@ When design mode is active, scenario studies appear below a dashed separator (`b
 ### Design Mode Toggle
 Below the table: `mt-3 flex items-center gap-2`
 - `Wrench h-3 w-3 text-muted-foreground/50` icon
-- Checkbox label: `text-[11px] text-muted-foreground` -- "Design mode"
+- Checkbox label: `text-[11px] text-muted-foreground` — "Design mode"
 - Wired to `useDesignMode()` context (`designMode`, `toggleDesignMode`)
 
 ---
@@ -280,8 +282,8 @@ Triggered when "Delete" is selected from the context menu. A full modal dialog w
 **Dialog:** `fixed left-1/2 top-1/2 z-50 w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-popover p-6 shadow-xl`
 
 ### Content
-- Title: `text-sm font-semibold` -- "Confirm Deletion"
-- Body: `mt-2 text-sm text-muted-foreground` -- "Delete study **{studyId}** and all associated data? This cannot be undone." (study ID in `font-medium text-foreground`)
+- Title: `text-sm font-semibold` — "Confirm Deletion"
+- Body: `mt-2 text-sm text-muted-foreground` — "Delete study **{studyId}** and all associated data? This cannot be undone." (study ID in `font-medium text-foreground`)
 
 ### Actions
 `mt-4 flex justify-end gap-2`
@@ -293,7 +295,7 @@ On confirm, calls `deleteStudy(studyId)` from `@/lib/api`, then invalidates `["s
 
 ---
 
-## Context Panel -- StudyPortfolioContextPanel
+## Context Panel — StudyPortfolioContextPanel
 
 When on the landing page with a study selected, the `ContextPanel` routing component checks if the selected study exists in the portfolio data (`useStudyPortfolio()`). If found, it renders `StudyPortfolioContextPanel` as the primary context panel.
 
@@ -309,9 +311,9 @@ When on the landing page with a study selected, the `ContextPanel` routing compo
 ### Pane structure (conditional by pipeline_stage)
 
 **Always shown:**
-- `StageStatusPane` -- study stage and status display
-- `RelatedStudiesPane` -- related studies from the same program
-- `StudyDetailsLinkPane` -- navigation link to study detail view
+- `StageStatusPane` — study stage and status display
+- `RelatedStudiesPane` — related studies from the same program
+- `StudyDetailsLinkPane` — navigation link to study detail view
 
 **Submitted / Pre-submission stage:**
 - `ToxSummaryPane` (if study has target organs or NOAEL data)
@@ -330,7 +332,7 @@ When on the landing page with a study selected, the `ContextPanel` routing compo
 
 ---
 
-## Context Panel -- StudyInspector (fallback)
+## Context Panel — StudyInspector (fallback)
 
 When a selected study is not found in the portfolio data, the context panel falls back to `StudyInspector` (defined in `ContextPanel.tsx`). This shows triage-grade info for study selection mode. For no selection: "Select a study to view details."
 
@@ -356,7 +358,7 @@ When a selected study is not found in the portfolio data, the context panel fall
 
 ---
 
-## Context Panel -- ScenarioInspector
+## Context Panel — ScenarioInspector
 
 When the selected study ID starts with `"SCENARIO-"`, the context panel renders `ScenarioInspector` instead. It fetches expected issues from `/api/scenarios/{id}/expected-issues` and displays:
 
@@ -382,8 +384,8 @@ When the selected study ID starts with `"SCENARIO-"`, the context panel renders 
 | Project filter | Local | `useState<string>("")` |
 | Context menu | Local | `useState<{ study, x, y } | null>` |
 | Delete target | Local | `useState<string | null>` |
-| Import section open | Local | `useState<boolean>` -- default closed (open if no studies loaded) |
-| Click timer | Local | `useRef<Timeout>` -- 250ms delay for single vs double click |
+| Import section open | Local | `useState<boolean>` — default closed (open if no studies loaded) |
+| Click timer | Local | `useRef<Timeout>` — 250ms delay for single vs double click |
 
 ---
 

@@ -20,6 +20,7 @@ const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
 
 const BADGE_STYLES: Record<string, string> = {
   trs: "bg-red-50 text-red-600 border-red-200",
+  adverse: "bg-red-50 text-red-600 border-red-200",
   rec: "bg-green-50 text-green-600 border-green-200",
   pattern: "bg-violet-50 text-violet-600 border-violet-200",
   tk: "bg-gray-50 text-gray-500 border-gray-200",
@@ -112,7 +113,7 @@ export function CohortRail() {
       <div className="flex-1 overflow-y-auto">
         {filteredSubjects.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-            No subjects match the current preset and filters
+            No subjects match the current preset and filters. Try a different preset or clear filters.
           </div>
         ) : (
           filteredSubjects.map((s) => (
@@ -167,14 +168,14 @@ function SubjectRow({
       {/* Badge */}
       {s.badge && (
         <span className={cn("rounded border px-1 text-[10px] font-semibold uppercase", BADGE_STYLES[s.badge])}>
-          {s.badge === "pattern" ? "PTN" : s.badge.toUpperCase()}
+          {s.badge.toUpperCase()}
         </span>
       )}
 
       {/* Disposition day */}
       <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
         {s.isRecovery && s.recoveryStartDay != null ? (
-          <>Rec d{s.sacrificeDay ?? "?"}/{s.plannedDay ?? "?"}</>
+          <>Rec d{s.sacrificeDay != null ? s.sacrificeDay - s.recoveryStartDay : "?"}/{s.plannedDay != null ? s.plannedDay - s.recoveryStartDay : "?"}</>
         ) : (
           <>
             d<span className={isEarly ? "text-foreground font-medium" : ""}>{s.sacrificeDay ?? "?"}</span>

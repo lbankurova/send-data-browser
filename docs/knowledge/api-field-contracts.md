@@ -248,6 +248,17 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 
 ---
 
+## CL Domain Per-Finding Fields (unified_findings.json)
+
+CL findings include two additional fields for the Cohort View's per-subject onset day rendering and body-system grouping:
+
+| ID | Field | Type | Nullable | Source | Semantics |
+|----|-------|------|----------|--------|-----------|
+| BFIELD-83 | `raw_subject_onset_days` | `Array<{USUBJID: int \| null}>` | **Yes** (absent for non-CL) | `findings_cl.py` — `min(CLDY)` per USUBJID per finding | Per-subject CL onset day. Array of single-key dicts, same shape as `raw_subject_values`. Only present on CL domain findings. Used by Cohort View evidence table for `d{day}→` cells. |
+| BFIELD-84 | `cl_body_system` | `string` | **Yes** (absent for non-CL) | `findings_cl.py:classify_cl_body_system()` | Body-system classification for CL findings: `"CNS"`, `"GI"`, `"integument"`, or `"general"`. Keyword-pattern-matched from finding text. Used to override `organ_name` in `domain_stats.py` so CL findings group under body-system organs in the Cohort View organ toggle. |
+
+---
+
 ## ID Allocation
 
 | Range | Category | Count |
@@ -268,6 +279,7 @@ These fields are propagated identically across multiple JSON outputs via `_propa
 | BFIELD-77 | B-6 progression chain (Tier 3B) | 1 |
 | BFIELD-78 | GroupStat severity_grade_counts | 1 |
 | BFIELD-79 -- BFIELD-82 | Recovery comparison API | 4 |
-| BFIELD-83+ | Reserved for future fields | -- |
+| BFIELD-83 -- BFIELD-84 | CL domain per-finding fields | 2 |
+| BFIELD-85+ | Reserved for future fields | -- |
 
-Total: 82 fields documented across 14 JSON output categories.
+Total: 84 fields documented across 15 JSON output categories.

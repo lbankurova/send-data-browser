@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getNeutralHeatColor, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { FilterSelect } from "@/components/ui/FilterBar";
 import type { OrganSignal, CohortFindingRow, SharedFinding, CohortSubject } from "@/types/cohort";
 import type { DoseGroup } from "@/types/analysis";
 
@@ -31,6 +32,7 @@ interface Props {
   onSubjectClick: (id: string) => void;
   onFindingClick: (findingId: string) => void;
   truncated: boolean;
+  missingExamMap: Map<string, Set<string>>;
 }
 
 export function CohortEvidenceTable({
@@ -47,6 +49,7 @@ export function CohortEvidenceTable({
   onSubjectClick,
   onFindingClick,
   truncated,
+  missingExamMap,
 }: Props) {
   // Dose groups represented in display subjects (for group table columns)
   const representedDoseGroups = useMemo(() => {
@@ -60,25 +63,34 @@ export function CohortEvidenceTable({
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header: organ toggle + shared findings */}
       <div className="flex items-center gap-3 border-b px-3 py-1.5">
-        {organSignals.length > 0 && (
-          <div className="flex items-center gap-1">
+        {organSignals.length > 0 && organSignals.length <= 6 && (
+          <div className="flex gap-0.5 rounded bg-muted/30 p-0.5">
             {organSignals.map((o) => (
               <button
                 key={o.organName}
                 type="button"
                 className={cn(
-                  "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
+                  "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                   selectedOrgan === o.organName
                     ? "bg-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
-                style={selectedOrgan === o.organName ? { color: SEVERITY_PILL[o.worstSeverity] ? undefined : undefined } : undefined}
                 onClick={() => onOrganChange(o.organName)}
               >
                 <span className={cn(SEVERITY_PILL[o.worstSeverity])}>{o.organName}</span>
               </button>
             ))}
           </div>
+        )}
+        {organSignals.length > 6 && (
+          <FilterSelect
+            value={selectedOrgan ?? ""}
+            onChange={(e) => onOrganChange(e.target.value || null)}
+          >
+            {organSignals.map((o) => (
+              <option key={o.organName} value={o.organName}>{o.organName}</option>
+            ))}
+          </FilterSelect>
         )}
         {/* Shared findings bar */}
         {selectedSubjectCount >= 2 && sharedFindings.length > 0 && (
@@ -118,7 +130,7 @@ export function CohortEvidenceTable({
       {findingRows.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
           {selectedOrgan
-            ? `No findings recorded for ${selectedOrgan} in the selected subjects`
+            ? `No findings recorded for ${selectedOrgan} in the selected subjects.`
             : "Select an organ to view findings"}
         </div>
       ) : (
@@ -195,6 +207,7 @@ export function CohortEvidenceTable({
                       <div className="flex items-center justify-center gap-0.5 text-[9px]">
                         <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: getDoseGroupColor(s.doseGroupOrder) }} />
                         <span style={{ color: SEX_COLOR[s.sex] }}>{s.sex}</span>
+                        <span className="text-muted-foreground">{formatDoseShortLabel(s.doseLabel)}</span>
                       </div>
                     </th>
                   ))}
@@ -214,12 +227,20 @@ export function CohortEvidenceTable({
                   >
                     {displaySubjects.map((s) => {
                       const hasAnySubjectValues = Object.keys(row.subjectValues).length > 0;
+                      // NE/NC absence labels for incidence domains
+                      const incidenceDomain = row.domain === "MI" || row.domain === "MA" || row.domain === "CL";
+                      const absence = !hasAnySubjectValues && incidenceDomain
+                        ? getAbsenceLabel(s, row.organName, missingExamMap)
+                        : null;
                       return (
                         <td key={s.usubjid} className="px-1.5 py-0.5 text-center font-mono text-[11px]" style={{ width: 1, whiteSpace: "nowrap" }}>
-                          {hasAnySubjectValues ? (
+                          {absence === "NC" ? (
+                            <span className="text-[10px] italic text-muted-foreground">NC</span>
+                          ) : absence === "NE" ? (
+                            <span className="text-[10px] italic text-amber-500">NE</span>
+                          ) : hasAnySubjectValues ? (
                             <SubjectCell value={row.subjectValues[s.usubjid]} domain={row.domain} />
                           ) : (
-                            /* Incidence domains without per-subject data: show dot for dose group match */
                             <span className="text-muted-foreground text-[10px]">&middot;</span>
                           )}
                         </td>
@@ -266,7 +287,8 @@ function GroupCell({ row, stat, isControl }: { row: CohortFindingRow; stat: { n:
   }
   // LB: fold-change
   if (isControl) return <>{stat.mean.toFixed(1)}</>;
-  return <>{stat.mean.toFixed(1)}&times;</>;
+  const lbDir = stat.mean > 1.1 ? "\u2191" : stat.mean < 0.9 ? "\u2193" : "";
+  return <>{stat.mean.toFixed(1)}&times;{lbDir}</>;
 }
 
 function SubjectCell({ value, domain }: { value: number | string | null | undefined; domain: string }) {
@@ -319,4 +341,23 @@ function SubjectCell({ value, domain }: { value: number | string | null | undefi
   }
 
   return <>{String(value)}</>;
+}
+
+/** Determine NE/NC absence label for a subject × organ cell. */
+function getAbsenceLabel(
+  subject: CohortSubject,
+  organName: string,
+  missingExamMap: Map<string, Set<string>>,
+): "NE" | "NC" | null {
+  // NC: TK satellites don't get MI/MA examinations by protocol
+  if (subject.isTK) return "NC";
+  // NE: subject has tissue battery gap for this organ
+  const missing = missingExamMap.get(subject.usubjid);
+  if (missing) {
+    const organUpper = organName.toUpperCase();
+    for (const m of missing) {
+      if (m.toUpperCase() === organUpper) return "NE";
+    }
+  }
+  return null;
 }
