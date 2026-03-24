@@ -122,12 +122,32 @@ async def get_timecourse(
         if "BWTEST" not in df.columns:
             df["BWTEST"] = "Body Weight"
 
-    # Filter to requested test code
-    if testcd_col not in df.columns:
-        raise HTTPException(status_code=404, detail=f"Column '{testcd_col}' not found in {domain_upper}")
-    df = df[df[testcd_col].str.upper() == test_code.upper()]
-    if df.empty:
-        raise HTTPException(status_code=404, detail=f"Test code '{test_code}' not found in {domain_upper}")
+    # OM domain: OMTESTCD is always "WEIGHT" — differentiate by specimen.
+    # Accept both "WEIGHT" (returns all organs) and specimen names like "TESTIS"
+    # (returns just that organ).  The recovery-comparison endpoint and unified
+    # findings use specimen as the test_code, so we match on OMSPEC first.
+    om_handled = False
+    if domain_upper == "OM" and "OMSPEC" in df.columns:
+        # If the request is for a specific specimen (not "WEIGHT"), filter by it
+        if test_code.upper() != "WEIGHT":
+            df = df[df["OMSPEC"].str.upper() == test_code.upper()]
+            if df.empty:
+                raise HTTPException(status_code=404, detail=f"Specimen '{test_code}' not found in OM")
+        # Remap OMTESTCD to specimen for per-organ grouping
+        df[testcd_col] = df["OMSPEC"]
+        if name_col in df.columns:
+            df[name_col] = df["OMSPEC"].apply(
+                lambda s: s.replace("GLAND, ", "").title() + " Weight"
+            )
+        om_handled = True
+
+    # Filter to requested test code (skipped for OM — handled above)
+    if not om_handled:
+        if testcd_col not in df.columns:
+            raise HTTPException(status_code=404, detail=f"Column '{testcd_col}' not found in {domain_upper}")
+        df = df[df[testcd_col].str.upper() == test_code.upper()]
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"Test code '{test_code}' not found in {domain_upper}")
 
     # Get test name and unit from first row
     test_name = str(df[name_col].iloc[0]) if name_col in df.columns else test_code
@@ -1078,6 +1098,29 @@ async def get_recovery_comparison(study_id: str):
     except Exception:
         last_dosing_day = None
 
+    # Recovery period boundary: max of main-arm terminal sacrifice day and last
+    # dosing day.  Days at or before this boundary are dosing-period measurements.
+    # Computed cross-domain (BW is the most reliable source for terminal day)
+    # to match frontend logic: mainTerminalDay = max(terminalDay, lastDosingDay).
+    main_terminal_day = last_dosing_day or 0
+    if "bw" in study.xpt_files:
+        try:
+            bw_df = _read_domain_df(study, "BW")
+            bw_day_col = "BWDY"
+            if bw_day_col in bw_df.columns:
+                bw_df[bw_day_col] = pd.to_numeric(bw_df[bw_day_col], errors="coerce")
+                main_bw = bw_df[bw_df["USUBJID"].isin(main_ids)]
+                if not main_bw.empty:
+                    bw_max = main_bw[bw_day_col].max()
+                    if pd.notna(bw_max):
+                        main_terminal_day = max(main_terminal_day, int(bw_max))
+        except Exception:
+            pass
+    # Also check recovery_day from DS (terminal recovery sacrifice) to ensure
+    # main_terminal_day is at least before the first recovery sacrifice.
+    if recovery_day is not None and main_terminal_day >= recovery_day:
+        main_terminal_day = recovery_day - 1
+
     rows: list[dict] = []
     # { endpoint_label: { sex: [day1, day2, ...] } }
     recovery_days_available: dict[str, dict[str, list[int]]] = {}
@@ -1153,14 +1196,36 @@ async def get_recovery_comparison(study_id: str):
                 # Recovery control: dose_level=0, same sex
                 rec_control = sex_group[sex_group["dose_level"] == 0]
 
-                # Collect all unique days across ALL dose groups (treated + control)
-                # for this endpoint/sex to populate recovery_days_available.
-                all_days_in_sex = sorted(sex_group[day_col].dropna().unique())
+                # Collect scheduled measurement days for the recovery day stepper.
+                # A day is "scheduled" (not a moribund sacrifice) if the control
+                # group has measurements at that day — moribund sacrifices only
+                # affect one animal and won't have concurrent control data.
+                # We also require at least one treated group with n >= 2 for stats.
+                # Days within the main study period (≤ last_dosing_day) are excluded —
+                # recovery-arm subjects may have dosing-period measurements (e.g. BG, FW)
+                # but those reflect treatment effects, not recovery.
+                ctrl_days = set(
+                    rec_control[day_col].dropna().unique()
+                ) if not rec_control.empty else set()
+                treated_groups = sex_group[sex_group["dose_level"] > 0]
+                valid_days: list[int] = []
+                for d in sorted(sex_group[day_col].dropna().unique()):
+                    if d <= main_terminal_day:
+                        continue  # main study period — not a recovery measurement
+                    if d not in ctrl_days:
+                        continue  # no concurrent control → likely moribund sacrifice
+                    # Check at least one treated group has n >= 2 at this day
+                    at_day = treated_groups[treated_groups[day_col] == d]
+                    has_group = False
+                    for _, dg in at_day.groupby("dose_level"):
+                        if len(dg[value_col].dropna()) >= 2:
+                            has_group = True
+                            break
+                    if has_group:
+                        valid_days.append(int(d))
                 if test_name not in recovery_days_available:
                     recovery_days_available[test_name] = {}
-                recovery_days_available[test_name][str(sex_val)] = [
-                    int(d) for d in all_days_in_sex
-                ]
+                recovery_days_available[test_name][str(sex_val)] = valid_days
 
                 # Main-arm terminal effect (for comparison) — computed once per
                 # test_code/sex, reused across all days and dose groups.
@@ -1248,8 +1313,11 @@ async def get_recovery_comparison(study_id: str):
                                     peak_day_val = tp_day
                     _peak_cache[int(dose_level)] = (peak_d, peak_day_val)
 
-                    # --- Iterate over ALL unique days for this dose group ---
+                    # --- Iterate over recovery-period days for this dose group ---
+                    # Exclude main-study-period days (≤ main_terminal_day) — those
+                    # reflect treatment effects during dosing, not recovery.
                     unique_days = sorted(dose_group[day_col].dropna().unique())
+                    unique_days = [d for d in unique_days if d > main_terminal_day]
 
                     for current_day in unique_days:
                         dose_at_day = dose_group[dose_group[day_col] == current_day]

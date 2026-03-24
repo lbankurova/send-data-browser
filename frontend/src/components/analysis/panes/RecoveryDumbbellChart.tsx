@@ -22,7 +22,6 @@ import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
-import { RECOVERY_VERDICT_LABEL } from "@/lib/recovery-labels";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -658,7 +657,7 @@ function RecoveryDataTable({
               const tG = cr.row.terminal_effect;
               const rG = cr.row.effect_size;
               const v = classifyContinuousRecovery(tG, rG, cr.row.treated_n, cr.row.control_n);
-              const label = RECOVERY_VERDICT_LABEL[cr.verdict] ?? CONT_VERDICT_LABEL[cr.verdict];
+              const label = CONT_VERDICT_LABEL[cr.verdict];
               const classLabel = cr.confidence === "low" ? `${label} *` : label;
 
               let changeStr = "—";

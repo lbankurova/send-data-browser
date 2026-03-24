@@ -350,10 +350,15 @@ export function TimeCoursePane({
 
   const { includeRecovery } = useRecoveryPooling();
 
+  // OM domain: use specimen as test_code for per-organ data
+  const effectiveTestCode = finding.domain === "OM" && finding.specimen
+    ? finding.specimen
+    : finding.test_code;
+
   // Continuous time-course data (disabled for CL)
   const { data, isLoading, isError } = useTimeCourseData(
     isContinuous ? finding.domain : undefined,
-    isContinuous ? finding.test_code : undefined,
+    isContinuous ? effectiveTestCode : undefined,
     includeRecovery,
   );
 
@@ -361,7 +366,7 @@ export function TimeCoursePane({
   const { data: subjData } = useTimecourseSubject(
     showSubjects && isContinuous ? studyId : undefined,
     showSubjects && isContinuous ? finding.domain : undefined,
-    showSubjects && isContinuous ? finding.test_code : undefined,
+    showSubjects && isContinuous ? effectiveTestCode : undefined,
     undefined,
     includeRecovery,
   );

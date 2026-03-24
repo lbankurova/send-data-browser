@@ -443,7 +443,9 @@ export function DoseResponseChartPanel({
   }, [chartData, hasSeverityData]);
 
   // ── Recovery dumbbell chart data ─────────────────────────
-  // Filter recovery rows to the selected endpoint + day for the dumbbell chart
+  // Filter recovery rows to the selected endpoint + day for the dumbbell chart.
+  // The backend already excludes main-study-period days (≤ terminal sacrifice),
+  // so all rows here are genuine recovery-period measurements.
   const recoveryDumbbellRows = useMemo(() => {
     if (!recoveryData?.available || leftTab !== "recovery") return [];
     const testCode = selectedFinding?.test_code ?? "";
