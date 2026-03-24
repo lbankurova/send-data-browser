@@ -103,3 +103,9 @@ export function formatPctRecovered(pct: number): string {
 export function formatGAbs(g: number): string {
   return Math.abs(g).toFixed(2);
 }
+
+/** Signed g for table display: "+0.78" / "-0.45" / "0.00". */
+export function formatGSigned(g: number): string {
+  if (Math.abs(g) < 0.005) return "0.00";
+  return g > 0 ? `+${g.toFixed(2)}` : g.toFixed(2);
+}

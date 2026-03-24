@@ -16,6 +16,7 @@ import {
   classifyContinuousRecovery,
   CONT_VERDICT_LABEL,
   formatGAbs,
+  formatGSigned,
   formatPctRecovered,
 } from "@/lib/recovery-verdict";
 import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
@@ -720,8 +721,8 @@ function RecoveryDataTable({
               return (
                 <SexDataCells
                   key={sex}
-                  terminal={tG != null ? `${formatGAbs(tG)}${effectSymbol}` : "—"}
-                  recovery={rG != null ? `${formatGAbs(rG)}${effectSymbol}` : "—"}
+                  terminal={tG != null ? `${formatGSigned(tG)}${effectSymbol}` : "—"}
+                  recovery={rG != null ? `${formatGSigned(rG)}${effectSymbol}` : "—"}
                   change={changeStr}
                   classification={classLabel}
                   lowConfidence={cr.confidence === "low"}
