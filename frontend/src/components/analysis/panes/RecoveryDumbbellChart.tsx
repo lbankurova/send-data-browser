@@ -528,9 +528,9 @@ export function RecoveryDumbbellChart({
                   const arrowTip = ry - arrowDir * 1; // arrow tip sits just before the tick
                   const arrowBase = arrowTip - arrowDir * ARROW_HALF * 2;
 
-                  // Tooltip
+                  // Tooltip — use same-arm terminal (cr.terminalVal) for consistency
                   const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
-                  const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size, cr.row.treated_n, cr.row.control_n);
+                  const v = classifyContinuousRecovery(cr.terminalVal, cr.recoveryVal, cr.row.treated_n, cr.row.control_n);
                   const pctStr = v.pctRecovered != null ? ` (${formatPctRecovered(v.pctRecovered)})` : "";
                   const pStr = cr.row.p_value != null ? ` p=${formatPCompact(cr.row.p_value)}` : "";
                   const lowNStr = isLowConf ? ` · low N (n=${cr.row.treated_n ?? "?"})` : "";
@@ -707,8 +707,9 @@ function RecoveryDataTable({
                 );
               }
 
-              const tG = cr.row.terminal_effect;
-              const rG = cr.row.effect_size;
+              // Use same-arm terminal (cr.terminalVal) for consistency with chart
+              const tG = cr.terminalVal;
+              const rG = cr.recoveryVal;
               const v = classifyContinuousRecovery(tG, rG, cr.row.treated_n, cr.row.control_n);
               const label = CONT_VERDICT_LABEL[cr.verdict];
               const classLabel = cr.confidence === "low" ? `${label} *` : label;
