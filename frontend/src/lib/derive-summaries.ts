@@ -93,6 +93,8 @@ export interface EndpointSummary {
   endpointConfidence?: import("./endpoint-confidence").EndpointConfidenceResult;
   /** True for derived endpoints (ratios/indices) — excluded from percentile ranking and NOAEL. */
   isDerived?: boolean;
+  /** Present when endpoint spans multiple domains (e.g. MI + MA for the same lesion). */
+  domains?: string[];
 }
 
 export interface OrganCoherence {
@@ -333,6 +335,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxFoldChange: number | null;
     hasEarlyDeathExclusion: boolean;
     isDerived: boolean;
+    domains: Set<string>;
     /** REM-05: Group stats from scheduled sacrifice (same sex as direction) */
     groupStats: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[] | null;
     /** Sex that set the direction (used to align groupStats with direction) */
@@ -351,8 +354,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     testCode?: string;
   }>>();
 
+  // Key by label+domain so MI and MA for the same lesion produce separate entries.
   for (const row of rows) {
-    let entry = map.get(row.endpoint_label);
+    const mapKey = `${row.endpoint_label}\0${row.domain}`;
+    let entry = map.get(mapKey);
     if (!entry) {
       entry = {
         organ_system: resolveOrganSystem(row),
@@ -371,9 +376,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         maxFoldChange: null,
         hasEarlyDeathExclusion: false,
         isDerived: !!row.is_derived,
+        domains: new Set<string>(),
         groupStats: null,
       };
-      map.set(row.endpoint_label, entry);
+      map.set(mapKey, entry);
     }
 
     // H4: backfill testCode/specimen/finding from subsequent rows when first row had null
@@ -385,10 +391,10 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
 
     // Per-sex accumulation (mirrors main aggregation logic)
     {
-      let labelSexes = sexMap.get(row.endpoint_label);
+      let labelSexes = sexMap.get(mapKey);
       if (!labelSexes) {
         labelSexes = new Map();
-        sexMap.set(row.endpoint_label, labelSexes);
+        sexMap.set(mapKey, labelSexes);
       }
       let sexEntry = labelSexes.get(row.sex);
       if (!sexEntry) {
@@ -475,8 +481,19 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     }
   }
 
+  // Detect labels that span multiple domains (e.g. MI + MA for same lesion)
+  const labelDomains = new Map<string, string[]>();
+  for (const [key, entry] of map) {
+    const label = key.split("\0")[0];
+    let arr = labelDomains.get(label);
+    if (!arr) { arr = []; labelDomains.set(label, arr); }
+    arr.push(entry.domain);
+  }
+
   const summaries: EndpointSummary[] = [];
-  for (const [label, entry] of map) {
+  for (const [key, entry] of map) {
+    const label = key.split("\0")[0];
+    const allDomains = labelDomains.get(label)!;
     const ep: EndpointSummary = {
       endpoint_label: label,
       organ_system: entry.organ_system,
@@ -495,6 +512,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       maxFoldChange: entry.maxFoldChange,
       hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
       isDerived: entry.isDerived,
+      ...(allDomains.length > 1 ? { domains: allDomains.sort() } : {}),
     };
 
     // REM-05: Derive control and worst-treated group stats (continuous endpoints only)
@@ -524,7 +542,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     }
 
     // Attach bySex for multi-sex endpoints
-    const labelSexes = sexMap.get(label);
+    const labelSexes = sexMap.get(key);
     if (labelSexes && labelSexes.size >= 2) {
       const bySex = new Map<string, SexEndpointSummary>();
       for (const [sex, se] of labelSexes) {

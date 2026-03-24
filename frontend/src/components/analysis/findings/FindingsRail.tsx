@@ -75,10 +75,12 @@ interface FindingsRailProps {
   activeGroupScope?: { type: GroupingMode; value: string } | null;
   /** Active endpoint selection — set by rail click or center panel. */
   activeEndpoint?: string | null;
+  /** Domain of the active endpoint (for multi-domain endpoints like MI + MA). */
+  activeDomain?: string;
   /** Callback when a group card is clicked (for table filtering). */
   onGroupScopeChange?: (scope: { type: GroupingMode; value: string } | null) => void;
   /** Callback when an endpoint row is clicked (for table filtering + context panel). */
-  onEndpointSelect?: (endpointLabel: string | null) => void;
+  onEndpointSelect?: (endpointLabel: string | null, domain?: string) => void;
   /** Callback when the grouping mode changes (for context). */
   onGroupingChange?: (mode: GroupingMode) => void;
   /** Callback with the rail's fully-filtered visible endpoint set + display metadata. */
@@ -95,6 +97,7 @@ export function FindingsRail({
   studyId,
   activeGroupScope = null,
   activeEndpoint = null,
+  activeDomain,
   onGroupScopeChange,
   onEndpointSelect,
   onGroupingChange,
@@ -414,11 +417,13 @@ export function FindingsRail({
     });
 
     // Scroll endpoint into view (defer to next frame so expansion renders)
+    // Multi-domain endpoints use composite keys in endpointRefs
+    const refKey = activeDomain ? `${activeEndpoint}\0${activeDomain}` : activeEndpoint;
     requestAnimationFrame(() => {
-      const el = endpointRefs.current.get(activeEndpoint);
+      const el = endpointRefs.current.get(refKey);
       el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
-  }, [activeEndpoint, endpointToGroup]);
+  }, [activeEndpoint, activeDomain, endpointToGroup]);
 
   // ── Handlers ───────────────────────────────────────────
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
@@ -446,9 +451,9 @@ export function FindingsRail({
     });
   }, []);
 
-  const handleEndpointClick = useCallback((endpointLabel: string) => {
+  const handleEndpointClick = useCallback((endpointLabel: string, domain?: string) => {
     // Always select (no toggle-off)
-    onEndpointSelect?.(endpointLabel);
+    onEndpointSelect?.(endpointLabel, domain);
   }, [onEndpointSelect]);
 
   // ── Loading / Error / Empty states ─────────────────────
@@ -553,14 +558,14 @@ export function FindingsRail({
             {sortedCards.flatMap((card) =>
               card.endpoints.map((ep) => (
                 <EndpointRow
-                  key={ep.endpoint_label}
+                  key={ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label}
                   endpoint={ep}
-                  isSelected={activeEndpoint === ep.endpoint_label}
+                  isSelected={activeEndpoint === ep.endpoint_label && (!ep.domains || activeDomain === ep.domain)}
                   isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
-                  onClick={() => handleEndpointClick(ep.endpoint_label)}
+                  onClick={() => handleEndpointClick(ep.endpoint_label, ep.domains ? ep.domain : undefined)}
                   onHover={() => handleEndpointHover(ep.endpoint_label)}
                   onRestore={onRestoreEndpoint}
-                  ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+                  ref={(el) => registerEndpointRef(ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label, el)}
                   clinicalTier={clinicalTierMap.get(ep.endpoint_label)}
                 />
               ))
@@ -575,6 +580,7 @@ export function FindingsRail({
               isExpanded={expanded.has(card.key)}
               isScoped={activeGroupScope?.value === card.key}
               activeEndpoint={activeEndpoint}
+              activeDomain={activeDomain}
               unfilteredTotal={unfilteredGroupTotals.get(card.key) ?? card.totalEndpoints}
               showFilteredCount={railIsFiltered}
               onHeaderSelect={() => handleCardSelect(card)}
@@ -1081,6 +1087,7 @@ function CardSection({
   isExpanded,
   isScoped,
   activeEndpoint,
+  activeDomain,
   unfilteredTotal,
   showFilteredCount,
   onHeaderSelect,
@@ -1100,11 +1107,12 @@ function CardSection({
   isExpanded: boolean;
   isScoped: boolean;
   activeEndpoint: string | null;
+  activeDomain?: string;
   unfilteredTotal: number;
   showFilteredCount: boolean;
   onHeaderSelect: () => void;
   onToggleExpand: () => void;
-  onEndpointClick: (label: string) => void;
+  onEndpointClick: (label: string, domain?: string) => void;
   onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
   excludedEndpoints?: ReadonlySet<string>;
@@ -1145,14 +1153,14 @@ function CardSection({
           {card.endpoints.map((ep) => {
             return (
               <EndpointRow
-                key={ep.endpoint_label}
+                key={ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label}
                 endpoint={ep}
-                isSelected={activeEndpoint === ep.endpoint_label}
+                isSelected={activeEndpoint === ep.endpoint_label && (!ep.domains || activeDomain === ep.domain)}
                 isExcluded={excludedEndpoints?.has(ep.endpoint_label)}
-                onClick={() => onEndpointClick(ep.endpoint_label)}
+                onClick={() => onEndpointClick(ep.endpoint_label, ep.domains ? ep.domain : undefined)}
                 onHover={onEndpointHover ? () => onEndpointHover(ep.endpoint_label) : undefined}
                 onRestore={onRestoreEndpoint}
-                ref={(el) => registerEndpointRef(ep.endpoint_label, el)}
+                ref={(el) => registerEndpointRef(ep.domains ? `${ep.endpoint_label}\0${ep.domain}` : ep.endpoint_label, el)}
                 clinicalTier={clinicalTierMap?.get(ep.endpoint_label)}
               />
             );
@@ -1431,8 +1439,11 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             isExcluded && "text-muted-foreground/50",
           )}
           style={{ borderLeftColor: pipeColor }}
-          title={`${endpoint.endpoint_label}\n${pipeTooltip}`}
+          title={`${endpoint.endpoint_label}${endpoint.domains ? ` (${endpoint.domains.join(" · ")})` : ""}\n${pipeTooltip}`}
         >
+          {endpoint.domains && (
+            <span className="text-[10px] font-semibold text-muted-foreground mr-1">{endpoint.domain}</span>
+          )}
           {endpoint.endpoint_label}
         </span>
         {clinicalTier && (
