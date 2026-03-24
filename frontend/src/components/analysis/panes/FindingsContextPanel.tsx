@@ -20,7 +20,7 @@ import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { RecoveryPane } from "./RecoveryPane";
 import { TimeCoursePane } from "./TimeCoursePane";
-import { DistributionPane } from "./DistributionPane";
+// DistributionPane moved to center panel (CenterDistribution in DoseResponseChartPanel)
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
@@ -1049,7 +1049,7 @@ export function FindingsContextPanel() {
   const { data: noaelRows } = useEffectiveNoael(studyId);
   const recoveryPaneRef = useRef<HTMLDivElement>(null);
   const evidencePaneRef = useRef<HTMLDivElement>(null);
-  const distributionPaneRef = useRef<HTMLDivElement>(null);
+  // distributionPaneRef removed — DistributionPane moved to center panel
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { data: causalAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
@@ -1531,17 +1531,7 @@ export function FindingsContextPanel() {
         />
       )}
 
-      {/* Distribution */}
-      {selectedFinding && (
-        <div ref={distributionPaneRef}>
-          <DistributionPane
-            finding={selectedFinding}
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-            scrollRef={distributionPaneRef}
-          />
-        </div>
-      )}
+      {/* Distribution — moved to center panel DoseResponseChartPanel */}
 
       {/* Recovery */}
       {hasRecovery && selectedFinding && (
