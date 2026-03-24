@@ -15,6 +15,7 @@ import {
 } from "@/components/analysis/charts/dose-response-charts";
 import type { MergedPoint, BarVerdictInfo } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
+import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { getSexColor, getDoseGroupColor, formatDoseNumericLabel, getNeutralHeatColor } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
@@ -118,9 +119,9 @@ function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
       if (ns.type === "custom" && typeof ns.renderItem === "function") {
         // Can't easily patch renderItem; leave as-is (error bars are already 1px)
       }
-      // Bar widths: stacked severity bars get wider; others stay compact
+      // Bar widths: uniform across incidence + severity charts
       if (ns.type === "bar") {
-        ns.barMaxWidth = ns.stack ? 16 : 8;
+        ns.barMaxWidth = 16;
       }
 
       // Strip NOAEL markLine
@@ -158,7 +159,7 @@ function compactifyEffectSize(opt: EChartsOption, points: MergedPoint[]): EChart
   }
   if (Array.isArray(o.series)) {
     o.series = (o.series as Record<string, unknown>[]).map((s) => {
-      const newS: Record<string, unknown> = { ...s, barMaxWidth: 8 };
+      const newS: Record<string, unknown> = { ...s, barMaxWidth: 16 };
       // Trim data to skip control (first entry)
       if (Array.isArray(s.data) && s.data.length === points.length) {
         newS.data = s.data.slice(1); // control is always first (dose_level 0)
@@ -208,6 +209,7 @@ export function DoseResponseChartPanel({
   const [drChartMode, setDrChartMode] = useSessionState<DRChartMode>(
     "pcc.findings.drChartMode", "line", isOneOf(DR_MODES),
   );
+  const { selectedFinding } = useFindingSelection();
   const [splitPct, setSplitPct] = useState(50);
   const chartRowRef = useRef<HTMLDivElement>(null);
 
@@ -232,6 +234,15 @@ export function DoseResponseChartPanel({
     if (selectedDay == null) return null;
     rows = rows.filter((r) => r.day === selectedDay);
     if (rows.length === 0) return null;
+
+    // When endpoint spans multiple domains (e.g. MI + MA for KIDNEY — CYST),
+    // scope to the selected finding's domain to avoid lookup-map collisions
+    // where one domain's incidence silently overwrites another's.
+    const activeDomain = selectedFinding?.domain;
+    const domains = new Set(rows.map((r) => r.domain));
+    if (domains.size > 1 && activeDomain && domains.has(activeDomain)) {
+      rows = rows.filter((r) => r.domain === activeDomain);
+    }
 
     const dataType = rows[0].data_type;
     const domain = rows[0].domain;
@@ -259,7 +270,7 @@ export function DoseResponseChartPanel({
         point[`effect_${sex}`] = r?.effect_size ?? null;
         // Severity grade counts for MI stacked severity chart
         const epFinding = findings.find(
-          (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex,
+          (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex && f.domain === domain,
         );
         const gs = epFinding?.group_stats.find((g) => g.dose_level === dl);
         point[`sev_counts_${sex}`] = gs?.severity_grade_counts ?? null;
@@ -268,7 +279,7 @@ export function DoseResponseChartPanel({
     });
 
     return { dataType, domain, testCode, pattern, studyDay, sexes, doseLevels, mergedPoints, rows };
-  }, [drRows, findings, endpointLabel, selectedDay]);
+  }, [drRows, findings, endpointLabel, selectedDay, selectedFinding?.domain]);
 
 
   // ── Non-monotonic flag ────────────────────────────────────
@@ -348,8 +359,9 @@ export function DoseResponseChartPanel({
         if (p != null && p < 0.05) sigLabels.push(String(pt.dose_label));
       }
       // Trend p from the finding for this sex at the selected day
+      const dom = chartData.domain;
       const epFinding = findings.find(
-        (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex && f.day === selectedDay,
+        (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.sex === sex && f.day === selectedDay && f.domain === dom,
       );
       return {
         sex,

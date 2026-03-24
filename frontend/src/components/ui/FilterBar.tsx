@@ -83,7 +83,7 @@ export function FilterMultiSelect({
       const current = selected ?? new Set(allKeys);
       const next = new Set(current);
       if (next.has(key)) {
-        if (next.size > 1) next.delete(key);
+        next.delete(key);
       } else {
         next.add(key);
       }
@@ -97,16 +97,17 @@ export function FilterMultiSelect({
   }, [onChange]);
 
   const clearAll = useCallback(() => {
-    // Keep only the first option (minimum 1 required)
-    if (allKeys.length > 0) onChange(new Set([allKeys[0]]));
-  }, [allKeys, onChange]);
+    onChange(new Set());  // Deselect all checkboxes
+  }, [onChange]);
 
   // Build display label
   const displayLabel = isAllSelected
     ? allLabel
-    : selectedCount === 1
-      ? options.find((o) => selected!.has(o.key))?.label ?? allLabel
-      : `${selectedCount} groups`;
+    : selectedCount === 0
+      ? "None"
+      : selectedCount === 1
+        ? options.find((o) => selected!.has(o.key))?.label ?? allLabel
+        : `${selectedCount} groups`;
 
   // Group options
   const groups = new Map<string, typeof options>();
@@ -142,9 +143,9 @@ export function FilterMultiSelect({
             </button>
             <button
               type="button"
-              className={cn("text-[11px]", !isAllSelected && selectedCount === 1 ? "text-muted-foreground/50" : "text-primary hover:underline")}
+              className={cn("text-[11px]", selectedCount === 0 ? "text-muted-foreground/50" : "text-primary hover:underline")}
               onClick={clearAll}
-              disabled={!isAllSelected && selectedCount === 1}
+              disabled={selectedCount === 0}
             >
               Clear all
             </button>
