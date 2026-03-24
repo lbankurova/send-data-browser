@@ -27,7 +27,7 @@
 
 | Category | Open | Resolved | Description |
 |----------|------|----------|-------------|
-| Bug | 11 | 9 | Incorrect behavior that should be fixed |
+| Bug | 12 | 9 | Incorrect behavior that should be fixed |
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
@@ -36,7 +36,7 @@
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **86** | **71** | |
+| **Total open** | **87** | **71** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -164,6 +164,13 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Files:** `backend/validation/scripts/registry.py`
 - **Issue:** `get_script()` returns first match then None for all subsequent calls due to early return in loop. Not called by router currently, so no runtime impact.
 - **Status:** Not a bug — code is correct (loop re-enters from top on each call; `return s` inside `if` is standard find-first pattern)
+
+### BUG-20: D-R line chart error bars disappear on hover (ECharts blur)
+- **Files:** `frontend/src/components/analysis/charts/dose-response-charts.ts`
+- **Issue:** Line series use `emphasis: { focus: "series" }` which causes ECharts to blur all other series on hover. Error bars are a separate custom series, so they get blurred (faded to near-invisible). Attempted fixes (`emphasis.disabled`, `blur.itemStyle.opacity`, explicit `opacity:1` on renderItem children) all failed — ECharts applies blur at a level above individual element styles for custom series.
+- **Fix:** Likely needs one of: (a) render error bars via ECharts `graphic` component (outside series system entirely), (b) use `zlevel` separation if blur doesn't cross canvas layers, (c) abandon `focus: "series"` and implement manual dimming via ECharts event API (`highlight`/`downplay` actions targeting specific series indices).
+- **Owner:** frontend-dev
+- **Status:** Open
 
 ---
 

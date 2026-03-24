@@ -118,9 +118,9 @@ function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
       if (ns.type === "custom" && typeof ns.renderItem === "function") {
         // Can't easily patch renderItem; leave as-is (error bars are already 1px)
       }
-      // Thin bars: match DoseDetail bar height (~2.5px visual)
+      // Bar widths: stacked severity bars get wider; others stay compact
       if (ns.type === "bar") {
-        ns.barMaxWidth = 8;
+        ns.barMaxWidth = ns.stack ? 16 : 8;
       }
 
       // Strip NOAEL markLine
