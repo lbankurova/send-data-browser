@@ -1511,6 +1511,24 @@ async def get_recovery_comparison(study_id: str):
         except Exception:
             pass
 
+    # MA (Macroscopic Findings) — incidence only (no severity grades in SEND MA)
+    if "ma" in study.xpt_files:
+        try:
+            ma_df = _read_domain_df(study, "MA")
+            ma_spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
+            ma_rows = compute_incidence_recovery(
+                cl_df=ma_df,
+                subjects_df=subjects_df,
+                domain_key="ma",
+                day_col="MADY",
+                last_dosing_day=last_dosing_day,
+                recovery_day=recovery_day,
+                specimen_col=ma_spec_col,
+            )
+            incidence_rows.extend(ma_rows)
+        except Exception:
+            pass
+
     return {
         "available": len(rows) > 0 or len(incidence_rows) > 0,
         "recovery_day": recovery_day,

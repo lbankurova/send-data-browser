@@ -11,7 +11,8 @@ import { useFindings } from "@/hooks/useFindings";
 import { useSubjectContext } from "@/hooks/useSubjectContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
-import { buildCohortSubjects, computePresetSubjects, computeOrganSignals, buildCohortFindingRows, computeSharedFindings } from "@/lib/cohort-engine";
+import { buildCohortSubjects, computePresetSubjects, computeOrganSignals, buildCohortFindingRows, computeSharedFindings, computeSubjectOrganCounts } from "@/lib/cohort-engine";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding } from "@/types/cohort";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
@@ -26,6 +27,12 @@ export interface CohortContextValue {
   doseGroups: DoseGroup[];
   /** Subjects with missing organ examinations — USUBJID → set of missing organ/specimen names. */
   missingExamMap: Map<string, Set<string>>;
+  /** Per-subject histopath data for the selected organ (MI/MA severity grades). */
+  histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
+  /** True when histopath subjects data has loaded for the current organ. */
+  hasHistopathData: boolean;
+  /** Per-subject organ involvement count (for rail signal density). */
+  subjectOrganCounts: Map<string, number>;
   // Subject roster
   allSubjects: CohortSubject[];
   filteredSubjects: CohortSubject[];
@@ -103,6 +110,24 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
   const isLoading = findingsLoading || scLoading;
 
+  // ── Histopath per-subject severity for MI/MA cells ─────────
+  const histopathSpecimen = selectedOrgan?.toUpperCase() ?? null;
+  const { data: histopathSubjects } = useHistopathSubjects(studyId, histopathSpecimen);
+
+  const histopathMap = useMemo(() => {
+    const map = new Map<string, Map<string, { severity_num: number; severity: string | null }>>();
+    if (!histopathSubjects?.subjects) return map;
+    for (const s of histopathSubjects.subjects) {
+      const findingMap = new Map<string, { severity_num: number; severity: string | null }>();
+      for (const [name, data] of Object.entries(s.findings)) {
+        findingMap.set(name.toUpperCase(), { severity_num: data.severity_num, severity: data.severity });
+      }
+      map.set(s.usubjid, findingMap);
+    }
+    return map;
+  }, [histopathSubjects]);
+  const hasHistopathData = histopathMap.size > 0;
+
   // ── Derived: tissue battery gap map ───────────────────────
   const missingExamMap = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -120,6 +145,11 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const allSubjects = useMemo(
     () => buildCohortSubjects(subjectContext ?? [], mortality ?? null, crossAnimalFlags ?? null, findings),
     [subjectContext, mortality, crossAnimalFlags, findings],
+  );
+
+  const subjectOrganCounts = useMemo(
+    () => computeSubjectOrganCounts(findings, allSubjects),
+    [findings, allSubjects],
   );
 
   const presetSubjectIds = useMemo(
@@ -156,9 +186,14 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   }
 
   const activeSubjects = useMemo(() => {
-    const filteredIds = new Set(filteredSubjects.map((s) => s.usubjid));
-    return filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid) && filteredIds.has(s.usubjid));
-  }, [filteredSubjects, selectedSubjects]);
+    const active = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
+    // Fallback: if selection is empty but subjects exist, the auto-select state
+    // update hasn't taken effect yet (same render cycle). Use all filtered.
+    if (active.length === 0 && filteredSubjects.length > 0 && !initialSubjects) {
+      return filteredSubjects;
+    }
+    return active;
+  }, [filteredSubjects, selectedSubjects, initialSubjects]);
 
   const displaySubjects = useMemo(() => {
     if (activeSubjects.length <= MAX_SUBJECT_COLUMNS) return activeSubjects;
@@ -223,6 +258,9 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     findings,
     doseGroups,
     missingExamMap,
+    histopathMap,
+    hasHistopathData,
+    subjectOrganCounts,
     allSubjects,
     filteredSubjects,
     activeSubjects,
@@ -248,7 +286,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     setSearchQuery,
     setHoveredRow,
   }), [
-    isLoading, findings, doseGroups, missingExamMap, allSubjects, filteredSubjects,
+    isLoading, findings, doseGroups, missingExamMap, histopathMap, hasHistopathData,
+    subjectOrganCounts, allSubjects, filteredSubjects,
     activeSubjects, displaySubjects, preset, selectedSubjects,
     selectedOrgan, includeTK, doseFilter, sexFilter, searchQuery,
     hoveredRow, organSignals, findingRows, sharedFindings, toggleSubject,

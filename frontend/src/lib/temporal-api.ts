@@ -159,11 +159,11 @@ export interface RecoveryComparisonResponse {
     recovery_n: number;
     recovery_day: number | null;
     verdict: "resolved" | "improving" | "persistent" | "worsening" | "new_in_recovery" | "insufficient_n" | null;
-    /** Organ/specimen (MI domain only). */
+    /** Organ/specimen (MI/MA domains). */
     specimen?: string;
-    /** Severity grade counts for main arm (MI domain only). Keys: "1"-"5". */
+    /** Severity grade counts for main arm (MI only). Keys: "1"-"5". */
     main_severity_counts?: Record<string, number> | null;
-    /** Severity grade counts for recovery arm (MI domain only). Keys: "1"-"5". */
+    /** Severity grade counts for recovery arm (MI only). Keys: "1"-"5". */
     recovery_severity_counts?: Record<string, number> | null;
   }[];
 }

@@ -33,6 +33,8 @@ interface Props {
   onFindingClick: (findingId: string) => void;
   truncated: boolean;
   missingExamMap: Map<string, Set<string>>;
+  histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
+  hasHistopathData: boolean;
 }
 
 export function CohortEvidenceTable({
@@ -50,6 +52,8 @@ export function CohortEvidenceTable({
   onFindingClick,
   truncated,
   missingExamMap,
+  histopathMap,
+  hasHistopathData,
 }: Props) {
   // Dose groups represented in display subjects (for group table columns)
   const representedDoseGroups = useMemo(() => {
@@ -163,13 +167,19 @@ export function CohortEvidenceTable({
                     className={cn(
                       "cursor-pointer transition-colors",
                       hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
+                      row.severity === "normal" && "text-muted-foreground",
                     )}
+                    style={{
+                      borderLeft: row.severity === "adverse" ? "3px solid #dc2626"
+                        : row.severity === "warning" ? "3px solid #d97706"
+                        : "3px solid transparent",
+                    }}
                     onMouseEnter={() => onRowHover(row.key)}
                     onMouseLeave={() => onRowHover(null)}
                     onClick={() => onFindingClick(row.findingId)}
                   >
                     <td className="px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>{row.domain}</td>
-                    <td className="max-w-[140px] truncate px-2 py-0.5">{row.finding}</td>
+                    <td className="max-w-[140px] truncate px-2 py-0.5" title={row.finding}>{row.finding}</td>
                     {representedDoseGroups.map((dg) => {
                       const gs = row.groupStats.find((g) => g.doseLevel === dg.dose_level);
                       return (
@@ -220,6 +230,7 @@ export function CohortEvidenceTable({
                     className={cn(
                       "cursor-pointer transition-colors",
                       hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
+                      row.severity === "normal" && "text-muted-foreground",
                     )}
                     onMouseEnter={() => onRowHover(row.key)}
                     onMouseLeave={() => onRowHover(null)}
@@ -227,10 +238,14 @@ export function CohortEvidenceTable({
                   >
                     {displaySubjects.map((s) => {
                       const hasAnySubjectValues = Object.keys(row.subjectValues).length > 0;
-                      // NE/NC absence labels for incidence domains
-                      const incidenceDomain = row.domain === "MI" || row.domain === "MA" || row.domain === "CL";
+                      const isMIMa = row.domain === "MI" || row.domain === "MA";
+                      const incidenceDomain = isMIMa || row.domain === "CL";
                       const absence = !hasAnySubjectValues && incidenceDomain
                         ? getAbsenceLabel(s, row.organName, missingExamMap)
+                        : null;
+                      // MI/MA: look up per-subject severity from histopath subjects
+                      const histoEntry = isMIMa
+                        ? histopathMap.get(s.usubjid)?.get(row.finding.toUpperCase()) ?? null
                         : null;
                       return (
                         <td key={s.usubjid} className="px-1.5 py-0.5 text-center font-mono text-[11px]" style={{ width: 1, whiteSpace: "nowrap" }}>
@@ -238,8 +253,14 @@ export function CohortEvidenceTable({
                             <span className="text-[10px] italic text-muted-foreground">NC</span>
                           ) : absence === "NE" ? (
                             <span className="text-[10px] italic text-amber-500">NE</span>
+                          ) : histoEntry && row.domain === "MI" ? (
+                            <SubjectCell value={histoEntry.severity_num} domain="MI" />
+                          ) : histoEntry && row.domain === "MA" ? (
+                            <span className="text-foreground">{"\u2713"}</span>
                           ) : hasAnySubjectValues ? (
                             <SubjectCell value={row.subjectValues[s.usubjid]} domain={row.domain} />
+                          ) : isMIMa && hasHistopathData ? (
+                            <span className="text-muted-foreground">&mdash;</span>
                           ) : (
                             <span className="text-muted-foreground text-[10px]">&middot;</span>
                           )}

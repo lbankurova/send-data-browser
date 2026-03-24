@@ -51,6 +51,8 @@ export function CohortView() {
         onFindingClick={handleFindingClick}
         truncated={cohort.truncated}
         missingExamMap={cohort.missingExamMap}
+        histopathMap={cohort.histopathMap}
+        hasHistopathData={cohort.hasHistopathData}
       />
       <CohortCharts
         studyId={studyId!}

@@ -462,3 +462,68 @@ export function computeSharedFindings(
 
   return deduped;
 }
+
+// ── Per-subject organ involvement (for rail enrichment) ─────
+
+/**
+ * For each subject, count distinct organs where the subject has findings.
+ * Continuous domains: check raw_subject_values. CL: check raw_subject_onset_days.
+ * MI/MA: proxy via dose-level incidence (individual data not in unified_findings).
+ */
+export function computeSubjectOrganCounts(
+  findings: UnifiedFinding[],
+  allSubjects: CohortSubject[],
+): Map<string, number> {
+  const subjectOrgans = new Map<string, Set<string>>();
+
+  for (const f of findings) {
+    const organ = f.organ_name ?? f.organ_system ?? null;
+    if (!organ) continue;
+
+    // Continuous domains with per-subject values
+    if (f.raw_subject_values) {
+      for (const entry of f.raw_subject_values) {
+        for (const [id, val] of Object.entries(entry)) {
+          if (val != null) {
+            if (!subjectOrgans.has(id)) subjectOrgans.set(id, new Set());
+            subjectOrgans.get(id)!.add(organ);
+          }
+        }
+      }
+    }
+    // CL onset days
+    if (f.raw_subject_onset_days) {
+      for (const entry of f.raw_subject_onset_days) {
+        for (const [id, val] of Object.entries(entry)) {
+          if (val != null) {
+            if (!subjectOrgans.has(id)) subjectOrgans.set(id, new Set());
+            subjectOrgans.get(id)!.add(organ);
+          }
+        }
+      }
+    }
+    // MI/MA proxy: dose-level incidence → attribute to all subjects at that dose+sex
+    if (!f.raw_subject_values && !f.raw_subject_onset_days) {
+      const affectedDoseLevels = new Set<number>();
+      for (const gs of f.group_stats ?? []) {
+        if (gs.dose_level > 0 && ((gs.affected ?? 0) > 0 || (gs.incidence ?? 0) > 0)) {
+          affectedDoseLevels.add(gs.dose_level);
+        }
+      }
+      if (affectedDoseLevels.size > 0) {
+        for (const s of allSubjects) {
+          if (affectedDoseLevels.has(s.doseGroupOrder) && (!f.sex || s.sex === f.sex)) {
+            if (!subjectOrgans.has(s.usubjid)) subjectOrgans.set(s.usubjid, new Set());
+            subjectOrgans.get(s.usubjid)!.add(organ);
+          }
+        }
+      }
+    }
+  }
+
+  const result = new Map<string, number>();
+  for (const [id, organs] of subjectOrgans) {
+    result.set(id, organs.size);
+  }
+  return result;
+}

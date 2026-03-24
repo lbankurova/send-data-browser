@@ -34,6 +34,7 @@ export function CohortRail() {
     doseFilter, setDoseFilter,
     sexFilter, setSexFilter,
     searchQuery, setSearchQuery,
+    subjectOrganCounts,
   } = useCohort();
 
   // Summary counts
@@ -122,6 +123,7 @@ export function CohortRail() {
               subject={s}
               isSelected={selectedSubjects.has(s.usubjid)}
               onToggle={toggleSubject}
+              organCount={subjectOrganCounts.get(s.usubjid) ?? 0}
             />
           ))
         )}
@@ -134,10 +136,12 @@ function SubjectRow({
   subject: s,
   isSelected,
   onToggle,
+  organCount,
 }: {
   subject: CohortSubject;
   isSelected: boolean;
   onToggle: (id: string, shiftKey: boolean) => void;
+  organCount: number;
 }) {
   const pipeColor = getDoseGroupColor(s.doseGroupOrder);
   const isEarly = s.sacrificeDay != null && s.plannedDay != null && s.sacrificeDay < s.plannedDay;
@@ -169,6 +173,13 @@ function SubjectRow({
       {s.badge && (
         <span className={cn("rounded border px-1 text-[10px] font-semibold uppercase", BADGE_STYLES[s.badge])}>
           {s.badge.toUpperCase()}
+        </span>
+      )}
+
+      {/* Organ involvement count */}
+      {organCount > 0 && (
+        <span className="font-mono text-[9px] text-muted-foreground" title={`Findings in ${organCount} organ${organCount !== 1 ? "s" : ""}`}>
+          {organCount}org
         </span>
       )}
 

@@ -13,7 +13,6 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
-import { RECOVERY_VERDICT_LABEL, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
 import type { RecoveryVerdict, RecoveryDoseAssessment, RecoveryAssessment } from "@/lib/recovery-assessment";
 import type { RecoveryAdequacy } from "@/lib/recovery-assessment";
 import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
@@ -32,11 +31,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { Info } from "lucide-react";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
-import { DoseLabel } from "@/components/ui/DoseLabel";
-import { PaneTable } from "./PaneTable";
 import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
 import { IncidenceDumbbellChart } from "./IncidenceDumbbellChart";
+import { IncidenceRecoveryChart } from "./IncidenceRecoveryChart";
 
 // ── Histopath verdict badge ──────────────────────────────
 
@@ -455,10 +452,6 @@ function buildClassificationContext(
 
 // ── Incidence recovery section ───────────────────────────
 
-// SLA-18: Use canonical harmonized verdict labels
-const VERDICT_LABEL = RECOVERY_VERDICT_LABEL;
-const VERDICT_COLOR = RECOVERY_VERDICT_COLOR;
-
 function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: recovery } = useRecoveryComparison(studyId);
@@ -489,82 +482,11 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
     );
   }
 
-  // Group by sex (F before M)
-  const bySex = new Map<string, typeof matched>();
-  for (const row of matched) {
-    const arr = bySex.get(row.sex) ?? [];
-    arr.push(row);
-    bySex.set(row.sex, arr);
-  }
-  const sexOrder = ["F", "M"].filter((s) => bySex.has(s));
-  const showSexCol = sexOrder.length > 1;
-
   return (
-    <div className="space-y-2">
-      {recovery.recovery_day != null && (
-        <div className="text-[11px] text-muted-foreground">
-          Recovery sacrifice: Day {recovery.recovery_day}
-        </div>
-      )}
-      <PaneTable>
-        <colgroup>
-          {showSexCol && <col style={{ width: 20 }} />}
-          <col style={{ width: 80 }} />
-          <col style={{ width: 80 }} />
-          <col style={{ width: 80 }} />
-          <col />
-        </colgroup>
-        <thead>
-          <tr className="text-muted-foreground border-b border-border/40">
-            {showSexCol && <PaneTable.Th />}
-            <PaneTable.Th>Group</PaneTable.Th>
-            <PaneTable.Th numeric>Terminal</PaneTable.Th>
-            <PaneTable.Th numeric>Recovery</PaneTable.Th>
-            <PaneTable.Th absorber className="pl-4">Assessment</PaneTable.Th>
-          </tr>
-        </thead>
-        <tbody>
-          {sexOrder.map((sex) => {
-            const rows = bySex.get(sex)!;
-            return rows.map((row, i) => {
-              const mainPct = row.main_n > 0 ? Math.round(row.main_affected / row.main_n * 100) : 0;
-              const recPct = row.recovery_n > 0 ? Math.round(row.recovery_affected / row.recovery_n * 100) : 0;
-              const verdict = row.verdict;
-              const vLabel = verdict ? VERDICT_LABEL[verdict] ?? verdict : "—";
-              const vColor = verdict ? VERDICT_COLOR[verdict] ?? "text-muted-foreground" : "text-muted-foreground";
-
-              return (
-                <tr key={`${sex}-${row.dose_level}`} className="border-b border-border/20">
-                  {showSexCol && (
-                    <PaneTable.Td className="text-muted-foreground">
-                      {i === 0 ? sex : ""}
-                    </PaneTable.Td>
-                  )}
-                  <PaneTable.Td>
-                    <DoseLabel
-                      level={row.dose_level}
-                      label={formatDoseShortLabel(row.dose_label)}
-                      tooltip={row.dose_label}
-                    />
-                  </PaneTable.Td>
-                  <PaneTable.Td numeric>
-                    {row.main_affected}/{row.main_n}
-                    <span className="text-muted-foreground/60 ml-1">({mainPct}%)</span>
-                  </PaneTable.Td>
-                  <PaneTable.Td numeric>
-                    {row.recovery_affected}/{row.recovery_n}
-                    <span className="text-muted-foreground/60 ml-1">({recPct}%)</span>
-                  </PaneTable.Td>
-                  <PaneTable.Td className={`pl-4 font-medium ${vColor}`}>
-                    {vLabel}
-                  </PaneTable.Td>
-                </tr>
-              );
-            });
-          })}
-        </tbody>
-      </PaneTable>
-    </div>
+    <IncidenceRecoveryChart
+      rows={matched}
+      recoveryDay={recovery.recovery_day}
+    />
   );
 }
 
