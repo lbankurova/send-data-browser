@@ -1343,20 +1343,25 @@ export function buildStackedSeverityBarOption(
       });
 
       // Side-border gradient: F = left edge, M = right edge (outer edges).
-      // ~12% of bar width gives a visible 2px stripe on 16px compactified bars.
+      // ~12% sex stripe, ~4% light separator, rest grade fill.
       const isF = sex === "F";
+      const sep = "rgba(255,255,255,0.45)";
       const stripe = {
         type: "linear" as const, x: 0, y: 0, x2: 1, y2: 0,
         colorStops: isF
           ? [
               { offset: 0, color: sexColor },
               { offset: 0.12, color: sexColor },
-              { offset: 0.12, color: gradeColor },
+              { offset: 0.12, color: sep },
+              { offset: 0.16, color: sep },
+              { offset: 0.16, color: gradeColor },
               { offset: 1, color: gradeColor },
             ]
           : [
               { offset: 0, color: gradeColor },
-              { offset: 0.88, color: gradeColor },
+              { offset: 0.84, color: gradeColor },
+              { offset: 0.84, color: sep },
+              { offset: 0.88, color: sep },
               { offset: 0.88, color: sexColor },
               { offset: 1, color: sexColor },
             ],
