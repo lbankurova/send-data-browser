@@ -448,6 +448,11 @@ export function DoseResponseChartPanel({
   // so all rows here are genuine recovery-period measurements.
   const recoveryDumbbellRows = useMemo(() => {
     if (!recoveryData?.available || leftTab !== "recovery") return [];
+    // MI/MA findings use incidence_rows, not continuous rows — skip dumbbell.
+    // Without this guard, MI specimen names (e.g. "LIVER") match OM continuous
+    // rows (organ weight), showing a misleading Hedges' g chart for histopath.
+    const dom = selectedFinding?.domain;
+    if (dom === "MI" || dom === "MA") return [];
     const testCode = selectedFinding?.test_code ?? "";
     const specimen = selectedFinding?.specimen;
     const matched = recoveryData.rows.filter((r) => {
@@ -467,27 +472,112 @@ export function DoseResponseChartPanel({
       if (!prev || (r.day ?? 0) > (prev.day ?? 0)) best.set(key, r);
     }
     return [...best.values()];
-  }, [recoveryData, leftTab, selectedDay, selectedFinding?.test_code, selectedFinding?.specimen]);
+  }, [recoveryData, leftTab, selectedDay, selectedFinding?.test_code, selectedFinding?.specimen, selectedFinding?.domain]);
 
-  // Incidence recovery rows (CL domain) filtered to this endpoint
+  // Incidence recovery rows (CL/MI) filtered to this endpoint
   const incidenceRecoveryRows = useMemo(() => {
     if (!recoveryData?.incidence_rows?.length || !selectedFinding) return [];
     const finding = selectedFinding.finding;
     const testCode = selectedFinding.test_code;
-    return recoveryData.incidence_rows.filter(
-      (r) => (r.finding === finding || r.finding === testCode)
-        && (r.main_affected > 0 || r.recovery_affected > 0), // skip 0→0 (nothing observed)
-    );
+    const specimen = selectedFinding.specimen?.toUpperCase();
+    return recoveryData.incidence_rows.filter((r) => {
+      if (!(r.finding === finding || r.finding === testCode)) return false;
+      if (r.main_affected === 0 && r.recovery_affected === 0) return false;
+      // MI rows carry specimen — match against selected finding's organ
+      if (specimen && r.specimen && r.specimen.toUpperCase() !== specimen) return false;
+      return true;
+    });
   }, [recoveryData, selectedFinding]);
+
+  // ── MI recovery severity data ──────────────────────────────
+  // Extracts severity grade counts (main vs recovery arm) for MI findings
+  // from incidence_rows, then builds MergedPoint[] for the severity chart.
+  const miRecoveryRows = useMemo(() => {
+    if (!recoveryData?.incidence_rows?.length || !selectedFinding) return [];
+    if (selectedFinding.domain !== "MI") return [];
+    const finding = selectedFinding.finding?.toUpperCase();
+    const testCode = selectedFinding.test_code?.toUpperCase();
+    const specimen = selectedFinding.specimen?.toUpperCase();
+    return recoveryData.incidence_rows.filter((r) => {
+      if (r.domain !== "MI") return false;
+      const rFinding = r.finding?.toUpperCase();
+      if (rFinding !== finding && rFinding !== testCode) return false;
+      if (specimen && r.specimen && r.specimen.toUpperCase() !== specimen) return false;
+      return true;
+    });
+  }, [recoveryData, selectedFinding]);
+
+  const miRecoverySevData = useMemo(() => {
+    if (miRecoveryRows.length === 0) return null;
+    const sexes = [...new Set(miRecoveryRows.map((r) => r.sex))].sort();
+    const doseLevels = [...new Set(miRecoveryRows.map((r) => r.dose_level))].sort((a, b) => a - b);
+
+    const mainPoints: MergedPoint[] = doseLevels.map((dl) => {
+      const point: MergedPoint = {
+        dose_level: dl,
+        dose_label: formatDoseShortLabel(miRecoveryRows.find((r) => r.dose_level === dl)?.dose_label ?? `Dose ${dl}`),
+      };
+      for (const sex of sexes) {
+        const row = miRecoveryRows.find((r) => r.dose_level === dl && r.sex === sex);
+        point[`sev_counts_${sex}`] = row?.main_severity_counts ?? null;
+      }
+      return point;
+    });
+
+    const recoveryPoints: MergedPoint[] = doseLevels.map((dl) => {
+      const point: MergedPoint = {
+        dose_level: dl,
+        dose_label: formatDoseShortLabel(miRecoveryRows.find((r) => r.dose_level === dl)?.dose_label ?? `Dose ${dl}`),
+      };
+      for (const sex of sexes) {
+        const row = miRecoveryRows.find((r) => r.dose_level === dl && r.sex === sex);
+        point[`sev_counts_${sex}`] = row?.recovery_severity_counts ?? null;
+      }
+      return point;
+    });
+
+    const hasRecoverySev = recoveryPoints.some((pt) =>
+      sexes.some((s) => pt[`sev_counts_${s}`] != null),
+    );
+    const hasMainSev = mainPoints.some((pt) =>
+      sexes.some((s) => pt[`sev_counts_${s}`] != null),
+    );
+
+    if (!hasMainSev && !hasRecoverySev) return null;
+    return { mainPoints, recoveryPoints, sexes, hasMainSev, hasRecoverySev };
+  }, [miRecoveryRows]);
+
+  const mainSevRecoveryOption = useMemo(() => {
+    if (!miRecoverySevData?.hasMainSev) return null;
+    const raw = buildStackedSeverityBarOption(
+      miRecoverySevData.mainPoints, miRecoverySevData.sexes, sexColors, sexLabels,
+    );
+    return compactify(raw, miRecoverySevData.mainPoints);
+  }, [miRecoverySevData]);
+
+  const recSevRecoveryOption = useMemo(() => {
+    if (!miRecoverySevData?.hasRecoverySev) return null;
+    const raw = buildStackedSeverityBarOption(
+      miRecoverySevData.recoveryPoints, miRecoverySevData.sexes, sexColors, sexLabels,
+    );
+    return compactify(raw, miRecoverySevData.recoveryPoints);
+  }, [miRecoverySevData]);
+
+  const hasMiRecoverySev = !!miRecoverySevData;
 
   // Available right-panel tabs for this endpoint.
   // CL/MA: only recovery (no effect/distribution — incidence endpoints).
+  // MI in recovery mode: severity tab from recovery incidence data (not day-dependent).
   const availableRightTabs = useMemo(() => {
     const tabs: { key: RightTab; label: string }[] = [];
     if (!hasRightRecovery) {
-      // Continuous / MI endpoints: effect + distribution tabs
-      if (hasEffect || hasSeverityData)
+      // MI in recovery mode: use recovery severity data (independent of chartDay)
+      if (leftTab === "recovery" && hasMiRecoverySev) {
+        tabs.push({ key: "effect", label: "Severity" });
+      } else if (hasEffect || hasSeverityData) {
+        // Continuous / MI endpoints: effect + distribution tabs
         tabs.push({ key: "effect", label: hasSeverityData ? "Severity" : "Effect size" });
+      }
       if (hasDistribution)
         tabs.push({ key: "distribution", label: "Distribution" });
     } else {
@@ -495,7 +585,7 @@ export function DoseResponseChartPanel({
       tabs.push({ key: "recovery", label: "Recovery" });
     }
     return tabs;
-  }, [hasEffect, hasSeverityData, hasDistribution, hasRightRecovery, incidenceRecoveryRows.length]);
+  }, [hasEffect, hasSeverityData, hasDistribution, hasRightRecovery, incidenceRecoveryRows.length, leftTab, hasMiRecoverySev]);
 
   const showRightTabs = availableRightTabs.length > 1;
   // Resolve active tab: if current selection isn't available, fall back to first available
@@ -505,7 +595,11 @@ export function DoseResponseChartPanel({
   // Whether the right panel has actual renderable content
   const hasRightPanel = availableRightTabs.length > 0 && (
     (activeRightContent === "distribution" && !!selectedFinding) ||
-    (activeRightContent === "effect" && ((hasSeverityData && !!sevOption) || (hasEffect && !!esOption))) ||
+    (activeRightContent === "effect" && (
+      (leftTab === "recovery" && hasMiRecoverySev) ||
+      (hasSeverityData && !!sevOption) ||
+      (hasEffect && !!esOption)
+    )) ||
     (activeRightContent === "recovery" && hasRightRecovery)
   );
 
@@ -820,6 +914,49 @@ export function DoseResponseChartPanel({
                   </div>
                 )}
               </div>
+            ) : activeRightContent === "effect" && leftTab === "recovery" && hasMiRecoverySev ? (
+              /* MI recovery severity comparison: terminal vs recovery */
+              <>
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Severity distribution
+                  </span>
+                  <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
+                    {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
+                      <span key={label} className="flex items-center gap-0.5">
+                        <span
+                          className="inline-block h-2 w-2 rounded-sm"
+                          style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
+                        />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-1 min-h-0 flex-col gap-0.5">
+                  {mainSevRecoveryOption && (
+                    <div className="flex flex-1 min-h-0 flex-col">
+                      <span className="shrink-0 text-[9px] font-medium text-muted-foreground/70 px-1">Terminal</span>
+                      <div className="flex-1 min-h-0">
+                        <EChartsWrapper option={mainSevRecoveryOption} style={{ width: "100%", height: "100%" }} />
+                      </div>
+                    </div>
+                  )}
+                  {recSevRecoveryOption && (
+                    <div className="flex flex-1 min-h-0 flex-col">
+                      <span className="shrink-0 text-[9px] font-medium text-muted-foreground/70 px-1">Recovery</span>
+                      <div className="flex-1 min-h-0">
+                        <EChartsWrapper option={recSevRecoveryOption} style={{ width: "100%", height: "100%" }} />
+                      </div>
+                    </div>
+                  )}
+                  {!mainSevRecoveryOption && !recSevRecoveryOption && (
+                    <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground">
+                      No severity data for recovery arm
+                    </div>
+                  )}
+                </div>
+              </>
             ) : activeRightContent === "effect" && hasSeverityData && sevOption ? (
               /* Stacked severity (incidence MI) */
               <>
