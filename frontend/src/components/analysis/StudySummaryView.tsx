@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
@@ -480,6 +480,7 @@ function DomainTable({
   interpretationNotes: import("@/lib/species-vehicle-context").ContextNote[];
 }) {
   const [showFolded, setShowFolded] = useState(false);
+  const navigate = useNavigate();
 
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
@@ -611,6 +612,15 @@ function DomainTable({
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {formatSubjectsCell(row)}
+                  {row.code.toLowerCase() === "ds" && mortalityData?.has_mortality && (
+                    <button
+                      type="button"
+                      className="ml-1.5 text-xs text-primary hover:underline cursor-pointer"
+                      onClick={() => navigate(`/studies/${studyId}/cohort?preset=trs`)}
+                    >
+                      View TRS animals
+                    </button>
+                  )}
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.trCount > 0 ? `${row.trCount} TR` : "\u2014"}

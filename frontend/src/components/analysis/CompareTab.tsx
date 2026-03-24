@@ -10,6 +10,7 @@
  * Subjects are grouped by dose group + arm (main/recovery) in all sections.
  */
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
@@ -119,6 +120,7 @@ export function CompareTab({
   onEditSelection,
   onFindingClick,
 }: CompareTabProps) {
+  const navigate = useNavigate();
   const { data: compData, isLoading } = useSubjectComparison(studyId, subjectIds);
   const { data: histopathData } = useHistopathSubjects(studyId, specimen);
   const subjData: SubjectHistopathEntry[] | null = histopathData?.subjects ?? null;
@@ -168,9 +170,17 @@ export function CompareTab({
           <div className="text-xs font-semibold text-foreground">
             Comparing {subjectIds.length} subjects in {specimen.replace(/_/g, " ")}
           </div>
-          <button onClick={onEditSelection} className="text-xs text-primary hover:underline">
-            Edit
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/studies/${studyId}/cohort?preset=histo&subjects=${subjectIds.join(",")}`)}
+              className="text-xs text-primary hover:underline cursor-pointer"
+            >
+              Open in Cohort view
+            </button>
+            <button onClick={onEditSelection} className="text-xs text-primary hover:underline">
+              Edit
+            </button>
+          </div>
         </div>
         <div className="mt-0.5 text-[11px] text-muted-foreground">
           {groups.map((g, i) => (

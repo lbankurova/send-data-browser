@@ -27,6 +27,8 @@ export interface SubjectContextRow {
   RECOVERY_START_DY: number | null;
   SACRIFICE_DY: number | null;
   DOSE_VARIES: boolean;
+  /** Sex from DM domain. May be absent in older generated files. */
+  SEX?: string;
 }
 
 export function useSubjectContext(studyId: string | undefined) {

@@ -550,8 +550,13 @@ def build_subject_context(study: StudyInfo) -> dict:
     subjects_df["USUBJID_str"] = subjects_df["USUBJID"].astype(str).str.strip()
     dm_subset["USUBJID_str"] = dm_subset["USUBJID"].astype(str).str.strip()
 
+    # Drop columns already present in subjects_df to avoid suffix conflicts
+    drop_cols = ["USUBJID", "ARMCD"]
+    for c in dm_subset.columns:
+        if c != "USUBJID_str" and c in subjects_df.columns:
+            drop_cols.append(c)
     ctx = subjects_df.merge(
-        dm_subset.drop(columns=["USUBJID", "ARMCD"], errors="ignore"),
+        dm_subset.drop(columns=drop_cols, errors="ignore"),
         on="USUBJID_str",
         how="left",
     )

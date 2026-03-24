@@ -146,6 +146,10 @@ export interface UnifiedFinding {
     timestamp: string;
     pathologist?: string;
   };
+  /** Per-subject raw values — array of {USUBJID: value} maps. Used by Cohort View. */
+  raw_subject_values?: Record<string, number | string | null>[];
+  /** Human-readable organ name (e.g., "Liver", "Kidney"). */
+  organ_name?: string | null;
 }
 
 export interface ConfidenceDimension {

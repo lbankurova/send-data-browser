@@ -53,10 +53,18 @@ export interface HistopathologyViewSelection {
   sex?: string;
 }
 
+export interface CohortViewSelection {
+  _view: "cohort";
+  mode: "subject" | "finding";
+  usubjid?: string;
+  findingId?: string;
+}
+
 export type ViewSelection =
   | NoaelViewSelection
   | HistopathologyViewSelection
-  | ValidationViewSelection;
+  | ValidationViewSelection
+  | CohortViewSelection;
 
 // ─── Context ──────────────────────────────────────────────────
 
