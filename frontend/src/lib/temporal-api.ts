@@ -111,6 +111,9 @@ export interface RecoveryComparisonResponse {
     p_value: number | null;
     effect_size: number | null;
     terminal_effect: number | null;
+    /** Same-arm terminal: Hedges' g at terminal day using recovery-arm subjects only.
+     *  Eliminates cross-arm control baseline shift. Null when data unavailable. */
+    terminal_effect_same_arm?: number | null;
     /** Study day of the terminal sacrifice (end of dosing). */
     terminal_day: number | null;
     /** Peak effect (max |g|) across all main-arm timepoints for this dose (annotation context). */
@@ -156,6 +159,12 @@ export interface RecoveryComparisonResponse {
     recovery_n: number;
     recovery_day: number | null;
     verdict: "resolved" | "improving" | "persistent" | "worsening" | "new_in_recovery" | "insufficient_n" | null;
+    /** Organ/specimen (MI domain only). */
+    specimen?: string;
+    /** Severity grade counts for main arm (MI domain only). Keys: "1"-"5". */
+    main_severity_counts?: Record<string, number> | null;
+    /** Severity grade counts for recovery arm (MI domain only). Keys: "1"-"5". */
+    recovery_severity_counts?: Record<string, number> | null;
   }[];
 }
 

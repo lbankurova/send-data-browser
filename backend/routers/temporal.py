@@ -1252,6 +1252,7 @@ async def get_recovery_comparison(study_id: str):
                 # Pre-compute terminal effect and peak effect per dose_level
                 # (these depend only on main arm, independent of recovery day).
                 _terminal_cache: dict[int, tuple] = {}  # dose_level -> (terminal_d, terminal_day_val, main_treated_mean, ci_lower_term, ci_upper_term, pct_diff_term)
+                _same_arm_terminal_cache: dict[int, float | None] = {}  # dose_level -> terminal_d_same_arm
                 _peak_cache: dict[int, tuple] = {}  # dose_level -> (peak_d, peak_day_val)
 
                 for dose_level, dose_group in sex_group.groupby("dose_level"):
@@ -1302,6 +1303,19 @@ async def get_recovery_comparison(study_id: str):
                         ci_lower_term, ci_upper_term, pct_diff_term,
                     )
 
+                    # --- Same-arm terminal effect (Option D, BUG-21) ---
+                    # Use recovery-arm treated vs recovery-arm control at the
+                    # terminal day.  Eliminates cross-arm control baseline shift.
+                    terminal_d_same_arm = None
+                    if main_ctrl_day is not None and not rec_control.empty:
+                        rec_treated_at_term = dose_group[dose_group[day_col] == main_ctrl_day]
+                        rec_ctrl_at_term = rec_control[rec_control[day_col] == main_ctrl_day]
+                        rt_vals = rec_treated_at_term[value_col].dropna().values
+                        rc_vals = rec_ctrl_at_term[value_col].dropna().values
+                        if len(rt_vals) >= 2 and len(rc_vals) >= 2:
+                            terminal_d_same_arm = compute_effect_size(rt_vals, rc_vals)
+                    _same_arm_terminal_cache[int(dose_level)] = terminal_d_same_arm
+
                     # --- Peak effect (main arm) ---
                     peak_d = None
                     peak_day_val = None
@@ -1346,6 +1360,7 @@ async def get_recovery_comparison(study_id: str):
                         ci_lower_term = t_cache[3]
                         ci_upper_term = t_cache[4]
                         pct_diff_term = t_cache[5]
+                        terminal_d_same_arm = _same_arm_terminal_cache.get(int(dose_level))
                         peak_d = p_cache[0]
                         peak_day_val = p_cache[1]
 
@@ -1367,6 +1382,7 @@ async def get_recovery_comparison(study_id: str):
                                 "p_value": None,
                                 "effect_size": None,
                                 "terminal_effect": _safe_round(terminal_d, 4),
+                                "terminal_effect_same_arm": _safe_round(terminal_d_same_arm, 4),
                                 "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
                                 "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
                                 "peak_day": int(peak_day_val) if peak_day_val is not None else None,
@@ -1388,6 +1404,7 @@ async def get_recovery_comparison(study_id: str):
                                 "p_value": None,
                                 "effect_size": None,
                                 "terminal_effect": _safe_round(terminal_d, 4),
+                                "terminal_effect_same_arm": _safe_round(terminal_d_same_arm, 4),
                                 "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
                                 "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
                                 "peak_day": int(peak_day_val) if peak_day_val is not None else None,
@@ -1433,6 +1450,7 @@ async def get_recovery_comparison(study_id: str):
                             "p_value": _safe_round(t_result["p_value"], 6),
                             "effect_size": _safe_round(d, 4),
                             "terminal_effect": _safe_round(terminal_d, 4),
+                            "terminal_effect_same_arm": _safe_round(terminal_d_same_arm, 4),
                             "terminal_day": int(terminal_day_val) if terminal_day_val is not None else None,
                             "peak_effect": _safe_round(peak_d, 4) if peak_d is not None else None,
                             "peak_day": int(peak_day_val) if peak_day_val is not None else None,
@@ -1453,7 +1471,7 @@ async def get_recovery_comparison(study_id: str):
     for dk, (testcd_col, val_col, _unit_col, day_col, name_col) in _DOMAIN_COLS.items():
         _compute_domain_recovery(dk.lower(), testcd_col, val_col, day_col, name_col)
 
-    # ── Incidence domains (CL) ────────────────────────────────
+    # ── Incidence domains (CL, MI) ──────────────────────────────
     # Compare incidence of clinical observations between main and recovery arms.
     # For each finding × sex × dose: count affected subjects in main (terminal)
     # vs recovery arm to assess persistence/resolution.
@@ -1470,6 +1488,26 @@ async def get_recovery_comparison(study_id: str):
                 last_dosing_day=last_dosing_day,
                 recovery_day=recovery_day,
             )
+        except Exception:
+            pass
+
+    # MI (Microscopic Findings) — incidence + severity grade counts
+    if "mi" in study.xpt_files:
+        try:
+            mi_df = _read_domain_df(study, "MI")
+            mi_sev_col = "MISEV" if "MISEV" in mi_df.columns else None
+            mi_spec_col = "MISPEC" if "MISPEC" in mi_df.columns else None
+            mi_rows = compute_incidence_recovery(
+                cl_df=mi_df,
+                subjects_df=subjects_df,
+                domain_key="mi",
+                day_col="MIDY",
+                last_dosing_day=last_dosing_day,
+                recovery_day=recovery_day,
+                specimen_col=mi_spec_col,
+                sev_col=mi_sev_col,
+            )
+            incidence_rows.extend(mi_rows)
         except Exception:
             pass
 

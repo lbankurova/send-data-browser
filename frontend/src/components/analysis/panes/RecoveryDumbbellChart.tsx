@@ -76,13 +76,16 @@ export function buildChartRows(
       };
     }
 
-    const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size, row.treated_n, row.control_n);
+    // Prefer same-arm terminal (Option D, BUG-21) — eliminates cross-arm
+    // control baseline shift.  Falls back to cross-arm when unavailable.
+    const terminalG = row.terminal_effect_same_arm ?? row.terminal_effect;
+    const v = classifyContinuousRecovery(terminalG, row.effect_size, row.treated_n, row.control_n);
 
     return {
       row, doseLabel,
       verdict: v.verdict,
       confidence: v.confidence,
-      terminalVal: row.terminal_effect ?? null,
+      terminalVal: terminalG ?? null,
       recoveryVal: row.effect_size ?? null,
       isEdge: null,
     };
