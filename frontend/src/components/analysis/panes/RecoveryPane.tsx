@@ -7,10 +7,14 @@
  * Continuous domains use verdict-first rows; histopath uses incidence badges.
  */
 import { useParams } from "react-router-dom";
+import { useMemo } from "react";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { assessRecoveryAdequacy } from "@/lib/recovery-assessment";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import { getVerdictLabel } from "@/lib/recovery-labels";
 import { Info } from "lucide-react";
 import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
 import { IncidenceRecoveryChart } from "./IncidenceRecoveryChart";
@@ -122,12 +126,57 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
     );
   }
 
+  // Recovery adequacy assessment (study-design-level, not per-dose)
+  const adequacy = useMemo(() => {
+    if (recovery.recovery_day == null || recovery.last_dosing_day == null) return null;
+    // Only assess for MI/MA where finding-nature classification is reliable
+    if (finding.domain !== "MI" && finding.domain !== "MA") return null;
+    const recoveryDays = recovery.recovery_day - recovery.last_dosing_day;
+    const nature = classifyFindingNature(finding.finding, null, finding.specimen ?? null);
+    return assessRecoveryAdequacy(recoveryDays, nature);
+  }, [recovery.recovery_day, recovery.last_dosing_day, finding.finding, finding.specimen, finding.domain]);
+
+  // Anomaly annotation: check if any dose has anomaly verdict
+  const hasAnomaly = matched.some((r) => r.verdict === "anomaly");
+  const anomalyContext = useMemo(() => {
+    if (!hasAnomaly) return null;
+    const nature = classifyFindingNature(finding.finding, null, finding.specimen ?? null);
+    // Check dose-response: does the anomaly appear at multiple dose levels?
+    const anomalyDoses = matched.filter((r) => r.verdict === "anomaly");
+    const doseDependent = anomalyDoses.length > 1 &&
+      new Set(anomalyDoses.map((r) => r.dose_level)).size > 1;
+    return { nature, doseDependent, count: anomalyDoses.length };
+  }, [hasAnomaly, matched, finding.finding, finding.specimen]);
+
   return (
-    <IncidenceRecoveryChart
-      rows={matched}
-      recoveryDay={recovery.recovery_day}
-      compact
-    />
+    <div className="space-y-1">
+      <IncidenceRecoveryChart
+        rows={matched}
+        recoveryDay={recovery.recovery_day}
+        compact
+      />
+
+      {/* Recovery adequacy annotation (MI/MA only) */}
+      {adequacy && !adequacy.adequate && (
+        <div className="text-[9px] text-amber-700" title={`Expected ${adequacy.expectedWeeks} weeks for ${adequacy.findingNature ?? "this finding type"}; study provided ${adequacy.actualWeeks.toFixed(1)} weeks`}>
+          Recovery period may be inadequate for {adequacy.findingNature ?? "this finding type"} ({adequacy.actualWeeks.toFixed(0)}w of ~{adequacy.expectedWeeks}w expected)
+        </div>
+      )}
+
+      {/* Anomaly discrimination annotation */}
+      {anomalyContext && (
+        <div className="text-[9px] text-muted-foreground">
+          <span className="font-medium text-red-700">{getVerdictLabel("anomaly")}</span>
+          {" — "}
+          {anomalyContext.doseDependent
+            ? "dose-dependent pattern suggests delayed onset"
+            : "single dose level — spontaneous or delayed onset unclear"}
+          {anomalyContext.nature.nature !== "unknown" && (
+            <> ({anomalyContext.nature.nature}: {anomalyContext.nature.expected_reversibility === "none" ? "not typically delayed" : `${anomalyContext.nature.expected_reversibility} delayed-onset propensity`})</>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

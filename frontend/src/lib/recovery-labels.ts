@@ -17,7 +17,7 @@ export const RECOVERY_VERDICT_LABEL: Record<string, string> = {
   partially_reversed: "Partially reversed",
   persistent: "Persistent",
   progressing: "Progressing",
-  overcorrected: "Overcorrected",
+  overcorrected: "Reversed (rebound)",
   anomaly: "New in recovery",
 
   // Guard verdicts

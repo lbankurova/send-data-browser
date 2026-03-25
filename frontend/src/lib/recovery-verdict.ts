@@ -90,7 +90,7 @@ export function classifyContinuousRecovery(
 export const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
   reversed: "Reversed",
   partially_reversed: "Partially reversed",
-  overcorrected: "Overcorrected",
+  overcorrected: "Reversed (rebound)",
   persistent: "Persistent",
   progressing: "Progressing",
   not_assessed: "Not assessed",
