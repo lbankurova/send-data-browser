@@ -618,11 +618,23 @@ def _compute_signal_score(
     return min(score, 1.0)
 
 
+_PATTERN_RANK: dict[str, int] = {
+    "monotonic_increase": 6,
+    "threshold_increase": 5,
+    "threshold_decrease": 5,
+    "non_monotonic": 4,
+    "monotonic_decrease": 2,
+    "flat": 0,
+    "insufficient_data": 0,
+}
+
+
 def build_finding_dose_trends(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
     """Build per-finding dose trend statistics for histopathology.
 
     One row per (specimen, finding), aggregated across sex.
-    Includes Cochran-Armitage trend p-value and severity-trend Spearman rho/p.
+    Includes Cochran-Armitage trend p-value, severity-trend Spearman rho/p,
+    and backend-authoritative dose-response pattern (aggregated + per-sex).
     """
     # Only MI/MA/CL domains
     histo_findings = [f for f in findings if f.get("domain") in ("MI", "MA", "CL")]
@@ -659,12 +671,34 @@ def build_finding_dose_trends(findings: list[dict], dose_groups: list[dict]) -> 
             sev_rho = result["rho"]
             sev_p = result["p_value"]
 
+        # --- Dose-response pattern: aggregate (worst across sexes) + per-sex ---
+        best_pattern = "insufficient_data"
+        best_onset = None
+        best_rank = -1
+        pattern_by_sex: dict[str, dict] = {}
+        for f in group:
+            p = f.get("dose_response_pattern", "insufficient_data")
+            rank = _PATTERN_RANK.get(p, 0)
+            if rank > best_rank:
+                best_rank = rank
+                best_pattern = p
+                best_onset = f.get("onset_dose_level")
+            sex = f.get("sex", "")
+            if sex and sex not in pattern_by_sex:
+                pattern_by_sex[sex] = {
+                    "pattern": p,
+                    "onset_dose_level": f.get("onset_dose_level"),
+                }
+
         rows.append({
             "specimen": specimen,
             "finding": finding,
             "ca_trend_p": ca_trend_p,
             "severity_trend_rho": sev_rho,
             "severity_trend_p": sev_p,
+            "dose_response_pattern": best_pattern,
+            "onset_dose_level": best_onset,
+            "pattern_by_sex": pattern_by_sex,
         })
 
     return rows

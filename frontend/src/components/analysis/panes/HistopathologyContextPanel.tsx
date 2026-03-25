@@ -937,7 +937,7 @@ function SpecimenOverviewPane({
         (t: { finding: string; specimen: string }) => t.finding === finding && t.specimen === specimen,
       );
       const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
-      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
+      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat, trend?.dose_response_pattern, trend?.onset_dose_level);
       const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
       const findingNature = classifyFindingNature(finding, undefined, specimen, studyCtxSpec?.species);
 
@@ -1753,19 +1753,21 @@ function FindingDetailPane({
         (r.rule_id === "R10" && r.severity === "warning"),
     );
     const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, selection.finding) : null;
-    const findingPattern = classifyFindingPattern(
-      lesionData.filter((r) => r.specimen === selection.specimen),
-      selection.finding,
-      trendData?.find((t: { finding: string; specimen: string }) => t.finding === selection.finding && t.specimen === selection.specimen)?.ca_trend_p ?? null,
-      null,
-      false,
-      findingLat,
-    );
-    const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const trend = trendData?.find(
       (t: { finding: string; specimen: string }) =>
         t.finding === selection.finding && t.specimen === selection.specimen,
     );
+    const findingPattern = classifyFindingPattern(
+      lesionData.filter((r) => r.specimen === selection.specimen),
+      selection.finding,
+      trend?.ca_trend_p ?? null,
+      null,
+      false,
+      findingLat,
+      trend?.dose_response_pattern,
+      trend?.onset_dose_level,
+    );
+    const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const clinicalRule = ruleResults.find(
       (r) =>
         r.params?.clinical_class &&
@@ -1882,12 +1884,19 @@ function FindingDetailPane({
       if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
-    const findingPattern = classifyFindingPattern(findingRows, selection.finding, null, null, false);
+    const headerTrend = trendData?.find(
+      (t: { finding: string; specimen: string }) =>
+        t.finding === selection.finding && t.specimen === selection.specimen,
+    );
+    const findingPattern = classifyFindingPattern(
+      findingRows, selection.finding, headerTrend?.ca_trend_p ?? null, null, false, undefined,
+      headerTrend?.dose_response_pattern, headerTrend?.onset_dose_level,
+    );
     const doseTrend = formatPatternLabel(findingPattern);
     const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
     const incPct = Math.round(maxInc * 100);
     return { incPct, maxSev, doseTrend, sexLabel, findingPattern };
-  }, [findingRows, selection.finding]);
+  }, [findingRows, selection.finding, selection.specimen, trendData]);
 
   // Rules matching finding
   const findingRules = useMemo(() => {

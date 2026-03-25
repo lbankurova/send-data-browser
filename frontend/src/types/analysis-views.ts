@@ -228,6 +228,12 @@ export interface FindingDoseTrend {
   ca_trend_p: number | null;
   severity_trend_rho: number | null;
   severity_trend_p: number | null;
+  /** Backend-authoritative dose-response pattern (aggregate across sexes). */
+  dose_response_pattern?: string | null;
+  /** Onset dose level for threshold patterns. */
+  onset_dose_level?: number | null;
+  /** Per-sex pattern breakdown. */
+  pattern_by_sex?: Record<string, { pattern: string; onset_dose_level: number | null }>;
 }
 
 // --- Histopathology (View 4) ---
