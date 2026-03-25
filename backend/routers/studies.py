@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 from config import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from models.schemas import DomainData, DomainSummary, StudyMetadata, StudySummary
@@ -16,11 +17,26 @@ from services.xpt_processor import (
 router = APIRouter(prefix="/api")
 
 SCENARIOS_DIR = Path(__file__).parent.parent / "scenarios"
+PREFS_PATH = Path(__file__).parent.parent / "data" / "study_preferences.json"
 
 # Populated at startup
 _studies: dict[str, StudyInfo] = {}
 _study_metadata: dict[str, dict] = {}
 _full_metadata: dict[str, StudyMetadata] = {}
+
+
+def _load_prefs() -> dict:
+    if PREFS_PATH.exists():
+        with open(PREFS_PATH) as f:
+            return json.load(f)
+    return {"display_names": {}, "order": []}
+
+
+def _save_prefs(prefs: dict):
+    PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(PREFS_PATH, "w") as f:
+        json.dump(prefs, f, indent=2)
+        f.write("\n")
 
 
 def init_studies(studies: dict[str, StudyInfo]):
@@ -55,6 +71,8 @@ def _get_study(study_id: str) -> StudyInfo:
 
 @router.get("/studies", response_model=list[StudySummary])
 def list_studies():
+    prefs = _load_prefs()
+    display_names = prefs.get("display_names", {})
     results = []
     for study_id, study in sorted(_studies.items()):
         meta = _study_metadata.get(study_id, {})
@@ -68,6 +86,7 @@ def list_studies():
         results.append(StudySummary(
             study_id=study.study_id,
             name=study.name,
+            display_name=display_names.get(study_id),
             domain_count=len(study.xpt_files),
             species=meta.get("species"),
             study_type=meta.get("study_type"),
@@ -78,6 +97,38 @@ def list_studies():
             end_date=full.end_date if full else None,
         ))
     return results
+
+
+class RenameRequest(BaseModel):
+    display_name: str | None = None
+
+
+class OrderRequest(BaseModel):
+    order: list[str]
+
+
+@router.get("/studies/preferences")
+def get_preferences():
+    return _load_prefs()
+
+
+@router.put("/studies/{study_id}/rename")
+def rename_study(study_id: str, body: RenameRequest):
+    prefs = _load_prefs()
+    if body.display_name:
+        prefs["display_names"][study_id] = body.display_name
+    else:
+        prefs["display_names"].pop(study_id, None)
+    _save_prefs(prefs)
+    return {"study_id": study_id, "display_name": body.display_name}
+
+
+@router.put("/studies/order")
+def update_study_order(body: OrderRequest):
+    prefs = _load_prefs()
+    prefs["order"] = body.order
+    _save_prefs(prefs)
+    return {"order": body.order}
 
 
 @router.get("/studies/{study_id}/metadata")

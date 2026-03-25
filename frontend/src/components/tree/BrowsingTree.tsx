@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   FlaskConical,
@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
+import { useStudyPreferences } from "@/hooks/useStudyPreferences";
 import { useDesignMode } from "@/contexts/DesignModeContext";
 import { useScenarios } from "@/hooks/useScenarios";
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
@@ -25,6 +26,7 @@ function viewRoute(studyId: string, viewKey: string): string {
 
 function StudyBranch({
   studyId,
+  displayName,
   isExpanded,
   onToggle,
   activeStudyId,
@@ -32,6 +34,7 @@ function StudyBranch({
   emphasize,
 }: {
   studyId: string;
+  displayName?: string;
   isExpanded: boolean;
   onToggle: () => void;
   activeStudyId: string | undefined;
@@ -115,7 +118,7 @@ function StudyBranch({
     <>
       {/* Study root node — click = Study Summary, chevron = toggle */}
       <TreeNode
-        label={`Study: ${studyId}`}
+        label={`Study: ${displayName || studyId}`}
         depth={1}
         isExpanded={isExpanded}
         isActive={isStudyActive}
@@ -206,6 +209,7 @@ function StudyBranch({
 
 export function BrowsingTree() {
   const { data: studies, isLoading } = useStudies();
+  const { data: prefs } = useStudyPreferences();
   const { studyId: activeStudyId, domainName: activeDomainName } = useParams<{
     studyId: string;
     domainName: string;
@@ -258,10 +262,36 @@ export function BrowsingTree() {
   const { designMode } = useDesignMode();
   const { data: scenarios } = useScenarios(designMode);
 
-  const allStudyIds = [
-    ...(studies ?? []).map((s) => s.study_id),
-    ...(designMode ? (scenarios ?? []).map((s) => s.scenario_id) : []),
-  ];
+  // Build display-name lookup from study data + preferences
+  const displayNames: Record<string, string> = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of studies ?? []) {
+      if (s.display_name) map[s.study_id] = s.display_name;
+    }
+    // Prefs override (stays in sync since both come from same source)
+    if (prefs?.display_names) {
+      for (const [id, name] of Object.entries(prefs.display_names)) {
+        map[id] = name;
+      }
+    }
+    return map;
+  }, [studies, prefs]);
+
+  // Apply custom ordering to study IDs
+  const allStudyIds = useMemo(() => {
+    const ids = [
+      ...(studies ?? []).map((s) => s.study_id),
+      ...(designMode ? (scenarios ?? []).map((s) => s.scenario_id) : []),
+    ];
+    const order = prefs?.order;
+    if (!order || order.length === 0) return ids;
+    const orderIndex = new Map(order.map((id, i) => [id, i]));
+    return ids.sort((a, b) => {
+      const ai = orderIndex.get(a) ?? Infinity;
+      const bi = orderIndex.get(b) ?? Infinity;
+      return ai - bi;
+    });
+  }, [studies, scenarios, designMode, prefs?.order]);
 
   // Register IDs so the landing page expand/collapse control can use them
   const idsKey = allStudyIds.join(",");
@@ -312,6 +342,7 @@ export function BrowsingTree() {
           <StudyBranch
             key={id}
             studyId={id}
+            displayName={displayNames[id]}
             isExpanded={expandedStudies.has(id)}
             onToggle={() => toggleStudy(id)}
             activeStudyId={activeStudyId}
