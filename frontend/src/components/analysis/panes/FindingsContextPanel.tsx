@@ -56,7 +56,8 @@ import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
-import { verdictLabel } from "@/lib/recovery-assessment";
+import { verdictLabel, deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
+import type { RecoveryAssessment } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
@@ -1190,6 +1191,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
   nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
   selectFinding: (f: UnifiedFinding | null) => void;
 }) {
+  const navigate = useNavigate();
   const { expandAll, collapseAll, expandGen, collapseGen } = useCollapseAll();
 
   // Specimen findings
@@ -1234,11 +1236,23 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     return { subjectAgg, perFinding };
   }, [subjData, specimen]);
 
-  // Recovery flag
+  // Recovery flag + per-finding classification
   const hasRecovery = useMemo(
     () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
     [subjData],
   );
+  const recoveryAssessments = useMemo((): RecoveryAssessment[] => {
+    if (!hasRecovery || !subjData?.subjects) return [];
+    const findingNames = specimenFindings.map(f => f.finding);
+    if (findingNames.length === 0) return [];
+    return deriveRecoveryAssessmentsSexAware(
+      findingNames,
+      subjData.subjects,
+      undefined,
+      subjData.recovery_days,
+      specimen,
+    );
+  }, [hasRecovery, subjData, specimenFindings, specimen]);
 
   // Peer comparison (HCD) for all findings
   const peerRows = useMemo(() => {
@@ -1401,6 +1415,28 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
         </CollapsiblePane>
       )}
 
+      {/* Recovery assessment */}
+      {hasRecovery && recoveryAssessments.length > 0 && (
+        <CollapsiblePane title="Recovery assessment" expandAll={expandGen} collapseAll={collapseGen}>
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="border-b text-muted-foreground">
+                <th className="pb-0.5 text-left font-semibold">Finding</th>
+                <th className="pb-0.5 text-right font-semibold">Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recoveryAssessments.map(ra => (
+                <tr key={ra.finding} className="border-b border-dashed">
+                  <td className="max-w-[140px] truncate py-0.5" title={ra.finding}>{ra.finding}</td>
+                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CollapsiblePane>
+      )}
+
       {/* Pathology review */}
       {studyId && (
         <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} />
@@ -1409,7 +1445,13 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       {/* Related views */}
       <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-1 text-xs">
-          <span className="text-muted-foreground">View in Cohort (coming soon)</span>
+          <a
+            href={`/studies/${studyId}/cohort?organ=${encodeURIComponent(specimen)}&preset=histo`}
+            className="block text-primary hover:underline"
+            onClick={(e) => { e.preventDefault(); navigate(`/studies/${studyId}/cohort?organ=${encodeURIComponent(specimen)}&preset=histo`); }}
+          >
+            View in Cohort
+          </a>
         </div>
       </CollapsiblePane>
     </div>

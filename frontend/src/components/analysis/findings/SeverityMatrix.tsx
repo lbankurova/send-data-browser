@@ -25,6 +25,7 @@ interface MatrixCell {
   affected: number;
   n: number;
   avgSeverity: number | null;
+  maxSeverity: number;
   isGraded: boolean;
 }
 
@@ -67,18 +68,25 @@ function buildMatrix(findings: UnifiedFinding[]) {
         if (avgSev != null && avgSev > 0) isGraded = true;
         if (avgSev != null && avgSev > maxSev) maxSev = avgSev;
 
+        // Derive max severity from grade counts if available
+        const gradeMax = gs.severity_grade_counts
+          ? Math.max(...Object.keys(gs.severity_grade_counts).map(Number).filter(n => !isNaN(n)), 0)
+          : (avgSev ?? 0);
+
         if (existing) {
           existing.affected += gs.affected ?? 0;
           existing.n += gs.n;
           existing.avgSeverity = avgSev != null
             ? Math.max(existing.avgSeverity ?? 0, avgSev)
             : existing.avgSeverity;
+          existing.maxSeverity = Math.max(existing.maxSeverity, gradeMax);
           if (avgSev != null && avgSev > 0) existing.isGraded = true;
         } else {
           cells.set(gs.dose_level, {
             affected: gs.affected ?? 0,
             n: gs.n,
             avgSeverity: avgSev,
+            maxSeverity: gradeMax,
             isGraded: avgSev != null && avgSev > 0,
           });
         }
@@ -116,12 +124,14 @@ function buildRecoveryCells(
       if (doseSubjects.length === 0) continue;
       let affected = 0;
       let sevSum = 0;
+      let maxSev = 0;
       let hasGraded = false;
       for (const s of doseSubjects) {
         const fd = s.findings[finding];
         if (fd && fd.severity_num > 0) {
           affected++;
           sevSum += fd.severity_num;
+          if (fd.severity_num > maxSev) maxSev = fd.severity_num;
           if (fd.severity_num >= 1) hasGraded = true;
         }
       }
@@ -129,6 +139,7 @@ function buildRecoveryCells(
         affected,
         n: doseSubjects.length,
         avgSeverity: affected > 0 ? sevSum / affected : null,
+        maxSeverity: maxSev,
         isGraded: hasGraded,
       });
     }
@@ -359,13 +370,14 @@ function CellRenderer({ cell }: { cell: MatrixCell | undefined }) {
 
   // Graded — heat color by avg severity
   const heat = getNeutralHeatColor(cell.avgSeverity ?? 0);
+  const isOutlier = cell.maxSeverity >= 3 && cell.avgSeverity != null && (cell.maxSeverity - cell.avgSeverity) >= 2;
   return (
     <div
       className="flex h-6 w-16 items-center justify-center rounded-sm"
       style={{ backgroundColor: heat.bg, color: heat.text }}
-      title={cell.avgSeverity != null ? `avg severity: ${cell.avgSeverity.toFixed(1)}` : undefined}
+      title={cell.avgSeverity != null ? `avg severity: ${cell.avgSeverity.toFixed(1)}${isOutlier ? `, max: ${cell.maxSeverity}` : ""}` : undefined}
     >
-      <span className="text-[10px] font-mono font-medium">{cell.affected}/{cell.n}</span>
+      <span className="text-[10px] font-mono font-medium">{cell.affected}/{cell.n}{isOutlier ? "*" : ""}</span>
     </div>
   );
 }
