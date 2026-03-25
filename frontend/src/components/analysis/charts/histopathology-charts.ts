@@ -392,7 +392,9 @@ export function buildDoseIncidenceBarOption(
             const p = params as any;
             const d = p.data;
             if (!d || d._isSpacer) return "";
-            if (d.value === 0) return "";
+            // Not examined (n=0): show "NE" badge
+            if (d._n === 0) return d._isRecovery ? "{ne|NE}" : "";
+            // Examined, 0 affected: show "0% 0/n"
             const pctStr = `${Math.round(d.value)}%`;
             const countStr = `${d._affected}/${d._n}`;
             if (d._isRecovery) {
@@ -402,6 +404,7 @@ export function buildDoseIncidenceBarOption(
           },
           rich: {
             muted: { fontSize: 9, color: "rgba(107,114,128,0.5)" },
+            ne: { fontSize: 8, color: "#9CA3AF", fontStyle: "italic", padding: [0, 0, 0, 2] },
           },
         },
         ...(yAxisInfo.recoveryStartIndex != null ? {
@@ -655,6 +658,8 @@ export function buildDoseSeverityBarOption(
             const p = params as any;
             const d = p.data;
             if (!d || d._isSpacer) return "";
+            // Not examined (count=0): show "NE" badge
+            if (d._count === 0) return d._isRecovery ? "{ne|NE}" : "";
             if (d.value === 0) return "";
             if (d._isRecovery) {
               return `{muted|${d._avg.toFixed(1)}}`;
@@ -663,6 +668,7 @@ export function buildDoseSeverityBarOption(
           },
           rich: {
             muted: { fontSize: 9, color: "rgba(107,114,128,0.5)" },
+            ne: { fontSize: 8, color: "#9CA3AF", fontStyle: "italic", padding: [0, 0, 0, 2] },
           },
         },
         ...(yAxisInfo.recoveryStartIndex != null ? {

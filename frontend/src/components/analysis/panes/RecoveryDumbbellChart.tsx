@@ -187,7 +187,6 @@ export function formatVerdictDesc(
   return ratio ? `${dir}\u2009${ratio}\u00d7 (${gTrajectory}${pStr})` : `${dir} (${gTrajectory}${pStr})`;
 }
 
-/** Re-exported for IncidenceDumbbellChart. */
 export function connectorStyle(p: number | null): { opacity: number; width: number } {
   if (p == null) return { opacity: 0.7, width: 0.5 };
   if (p < 0.05) return { opacity: 1.0, width: 1.5 };

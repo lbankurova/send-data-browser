@@ -10,7 +10,7 @@
  */
 import { useMemo } from "react";
 import { getDoseGroupColor, getSexColor, getNeutralHeatColor } from "@/lib/severity-colors";
-import { getVerdictLabel } from "@/lib/recovery-labels";
+import { getVerdictLabel, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
@@ -21,6 +21,8 @@ interface IncidenceRecoveryChartProps {
   recoveryDay?: number | null;
   /** Terminal sacrifice day for header label. */
   terminalDay?: number | null;
+  /** Compact mode for narrower context panel rendering. */
+  compact?: boolean;
 }
 
 // ── Severity grade palette ──────────────────────────────
@@ -31,16 +33,16 @@ const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
 
 // ── Layout constants ────────────────────────────────────
 
-const ROW_H = 18;
-const BAR_H = 12;
-const BAR_MAX_W = 120;
-const LABEL_W = 70;
-const COUNT_W = 40;
-const GAP = 12;
+const LAYOUT = {
+  normal: { ROW_H: 18, BAR_H: 12, BAR_MAX_W: 120, LABEL_W: 70, COUNT_W: 40, GAP: 12 },
+  compact: { ROW_H: 16, BAR_H: 10, BAR_MAX_W: 90, LABEL_W: 60, COUNT_W: 36, GAP: 8 },
+} as const;
 
 // ── Component ───────────────────────────────────────────
 
-export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: IncidenceRecoveryChartProps) {
+export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay, compact = false }: IncidenceRecoveryChartProps) {
+  const L = compact ? LAYOUT.compact : LAYOUT.normal;
+
   // Group by dose_level, then sex within dose
   const { doseLevels, sexes, rowMap } = useMemo(() => {
     const levels = new Set<number>();
@@ -72,6 +74,32 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: Incid
     return map;
   }, [rows]);
 
+  // Verdict summary: one entry per dose (or per dose+sex if verdicts differ)
+  const verdictSummary = useMemo(() => {
+    const entries: { label: string; verdict: string }[] = [];
+    for (const dl of doseLevels) {
+      const doseLabel = doseLabelMap.get(dl) ?? `Dose ${dl}`;
+      if (sexes.length <= 1) {
+        const r = rowMap.get(`${dl}_${sexes[0]}`);
+        if (r?.verdict) entries.push({ label: doseLabel, verdict: r.verdict });
+      } else {
+        // Check if verdicts differ across sexes
+        const verdicts = sexes.map((s) => rowMap.get(`${dl}_${s}`)?.verdict).filter(Boolean);
+        const unique = new Set(verdicts);
+        if (unique.size <= 1 && verdicts[0]) {
+          entries.push({ label: doseLabel, verdict: verdicts[0] });
+        } else {
+          // Different verdicts per sex — show each
+          for (const sex of sexes) {
+            const r = rowMap.get(`${dl}_${sex}`);
+            if (r?.verdict) entries.push({ label: `${doseLabel} ${sex}`, verdict: r.verdict });
+          }
+        }
+      }
+    }
+    return entries;
+  }, [doseLevels, sexes, rowMap, doseLabelMap]);
+
   const multiSex = sexes.length > 1;
   const hasSeverity = rows.some((r) => r.main_severity_counts || r.recovery_severity_counts);
 
@@ -81,12 +109,12 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: Incid
     <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center text-[10px] text-muted-foreground/60 gap-4">
-        <span style={{ width: LABEL_W }} />
-        <span className="font-medium" style={{ width: BAR_MAX_W + COUNT_W, textAlign: "center" }}>
+        <span style={{ width: L.LABEL_W }} />
+        <span className="font-medium" style={{ width: L.BAR_MAX_W + L.COUNT_W, textAlign: "center" }}>
           Terminal{terminalDay != null ? ` (D${terminalDay})` : ""}
         </span>
-        <span style={{ width: GAP }} />
-        <span className="font-medium" style={{ width: BAR_MAX_W + COUNT_W, textAlign: "center" }}>
+        <span style={{ width: L.GAP }} />
+        <span className="font-medium" style={{ width: L.BAR_MAX_W + L.COUNT_W, textAlign: "center" }}>
           Recovery{recoveryDay != null ? ` (D${recoveryDay})` : ""}
         </span>
       </div>
@@ -101,9 +129,9 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: Incid
             const recInc = r.recovery_n > 0 ? r.recovery_affected / r.recovery_n : 0;
 
             return (
-              <div key={sex} className="flex items-center" style={{ height: ROW_H }}>
+              <div key={sex} className="flex items-center" style={{ height: L.ROW_H }}>
                 {/* Dose label (first sex row only) or sex indicator */}
-                <div className="shrink-0 flex items-center gap-1" style={{ width: LABEL_W }}>
+                <div className="shrink-0 flex items-center gap-1" style={{ width: L.LABEL_W }}>
                   {(sex === sexes[0]) ? (
                     <span
                       className="font-mono text-[10px] border-l-2 pl-1.5 truncate"
@@ -127,10 +155,13 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: Incid
                   affected={r.main_affected}
                   total={r.main_n}
                   severityCounts={r.main_severity_counts}
+                  barMaxW={L.BAR_MAX_W}
+                  barH={L.BAR_H}
+                  countW={L.COUNT_W}
                 />
 
                 {/* Gap */}
-                <div style={{ width: GAP }} />
+                <div style={{ width: L.GAP }} />
 
                 {/* Recovery bar */}
                 <IncidenceBar
@@ -138,17 +169,30 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay }: Incid
                   affected={r.recovery_affected}
                   total={r.recovery_n}
                   severityCounts={r.recovery_severity_counts}
+                  barMaxW={L.BAR_MAX_W}
+                  barH={L.BAR_H}
+                  countW={L.COUNT_W}
                 />
-
-                {/* Verdict */}
-                <span className="text-[9px] text-muted-foreground/60 pl-2 whitespace-nowrap">
-                  {r.verdict ? getVerdictLabel(r.verdict) : ""}
-                </span>
               </div>
             );
           })}
         </div>
       ))}
+
+      {/* Verdict summary — below chart, one line */}
+      {verdictSummary.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-1 text-[9px] pt-0.5">
+          {verdictSummary.map((v, i) => (
+            <span key={v.label} className="whitespace-nowrap">
+              {i > 0 && <span className="text-muted-foreground/40 mr-1">{"\u00b7"}</span>}
+              <span className="text-muted-foreground/60">{v.label}: </span>
+              <span className={RECOVERY_VERDICT_COLOR[v.verdict] ?? "text-muted-foreground"}>
+                {getVerdictLabel(v.verdict)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Severity legend (MI only) */}
       {hasSeverity && (
@@ -175,13 +219,19 @@ function IncidenceBar({
   affected,
   total,
   severityCounts,
+  barMaxW,
+  barH,
+  countW,
 }: {
   proportion: number;
   affected: number;
   total: number;
   severityCounts?: Record<string, number> | null;
+  barMaxW: number;
+  barH: number;
+  countW: number;
 }) {
-  const barW = Math.round(proportion * BAR_MAX_W);
+  const barW = Math.round(proportion * barMaxW);
 
   // Severity segments (MI only)
   const segments = useMemo(() => {
@@ -204,17 +254,17 @@ function IncidenceBar({
   }, [severityCounts, affected, barW]);
 
   return (
-    <div className="flex items-center" style={{ width: BAR_MAX_W + COUNT_W }}>
+    <div className="flex items-center" style={{ width: barMaxW + countW }}>
       {/* Bar */}
       <div
         className="relative"
-        style={{ width: BAR_MAX_W, height: BAR_H }}
+        style={{ width: barMaxW, height: barH }}
         title={`${affected}/${total} (${total > 0 ? Math.round(proportion * 100) : 0}%)`}
       >
         {/* Background track */}
         <div
           className="absolute inset-0 bg-muted/20 rounded-sm"
-          style={{ width: BAR_MAX_W }}
+          style={{ width: barMaxW }}
         />
         {/* Filled portion */}
         {barW > 0 && (
@@ -224,7 +274,7 @@ function IncidenceBar({
               {segments.map((seg) => (
                 <div
                   key={seg.grade}
-                  style={{ width: seg.width, height: BAR_H, backgroundColor: seg.color }}
+                  style={{ width: seg.width, height: barH, backgroundColor: seg.color }}
                   title={`${GRADE_LABELS[seg.grade - 1]}: ${seg.count}`}
                 />
               ))}
@@ -233,7 +283,7 @@ function IncidenceBar({
             // Solid bar (CL/MA — no severity)
             <div
               className="absolute top-0 left-0 rounded-sm"
-              style={{ width: barW, height: BAR_H, backgroundColor: "#94A3B8" }}
+              style={{ width: barW, height: barH, backgroundColor: "#94A3B8" }}
             />
           )
         )}
@@ -241,7 +291,7 @@ function IncidenceBar({
       {/* Count label */}
       <span
         className="text-[9px] tabular-nums text-muted-foreground/60 text-right"
-        style={{ width: COUNT_W }}
+        style={{ width: countW }}
       >
         {affected}/{total}
       </span>

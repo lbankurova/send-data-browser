@@ -29,7 +29,7 @@ import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { CenterDistribution } from "./CenterDistribution";
 import { RecoveryDumbbellChart } from "../panes/RecoveryDumbbellChart";
 import { IncidenceRecoveryChart } from "../panes/IncidenceRecoveryChart";
-import { RECOVERY_VERDICT_LABEL } from "@/lib/recovery-labels";
+import { IncidenceDoseCharts } from "./IncidenceDoseCharts";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { UnifiedFinding, DoseGroup, GroupStat, PairwiseResult } from "@/types/analysis";
 import type { DoseResponseRow } from "@/types/analysis-views";
@@ -624,6 +624,20 @@ export function DoseResponseChartPanel({
     document.addEventListener("pointerup", onUp);
   }, [splitPct]);
 
+  // Incidence endpoints get a completely different layout — bypass the continuous framework
+  if (selectedFinding?.data_type === "incidence") {
+    return (
+      <IncidenceDoseCharts
+        findings={findings}
+        endpointLabel={endpointLabel}
+        doseGroups={doseGroups}
+        selectedDay={selectedDay}
+        hasRecovery={hasRecovery}
+        recoveryData={recoveryData}
+      />
+    );
+  }
+
   // No early return — the tab bar must always render so users can switch tabs.
   // "No data" states are shown inside each tab's content area instead.
   const isContinuous = chartData?.dataType === "continuous";
@@ -638,8 +652,9 @@ export function DoseResponseChartPanel({
           className="flex shrink-0 flex-col overflow-hidden px-1"
           style={{ width: hasRightPanel ? `${splitPct}%` : "100%" }}
         >
-          {/* Left panel content: D-R chart or Recovery dumbbell */}
-          {leftTab === "recovery" && hasRecovery ? (
+          {/* Left panel content: D-R chart or Recovery dumbbell.
+              When hasRightRecovery (CL/MA), recovery lives in the right panel — left always shows D-R. */}
+          {leftTab === "recovery" && hasRecovery && !hasRightRecovery ? (
             /* Recovery tab content */
             <div className="flex flex-1 min-h-0 flex-col">
               <div className="flex shrink-0 items-center justify-between py-0.5">
@@ -796,71 +811,19 @@ export function DoseResponseChartPanel({
                 </div>
               </div>
             ) : activeRightContent === "recovery" && hasRightRecovery ? (
-              /* Incidence recovery (CL/MA) — always shown side-by-side with treatment chart */
+              /* Incidence recovery (CL/MI/MA) — unified paired bar chart */
               <div className="flex flex-1 min-h-0 flex-col pt-0.5">
                 <div className="flex shrink-0 items-center justify-between py-0.5">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Recovery — incidence
                   </span>
-                  {recoveryData?.recovery_day != null && (
-                    <span className="text-[9px] tabular-nums text-muted-foreground/70">
-                      Day {recoveryData.recovery_day}
-                    </span>
-                  )}
                 </div>
                 {incidenceRecoveryRows.length > 0 ? (
                 <div className="flex-1 min-h-0 overflow-auto px-1 py-1">
-                  {(() => {
-                    const sexes = [...new Set(incidenceRecoveryRows.map((r) => r.sex))].sort();
-                    return sexes.map((sex) => {
-                      const sexRows = incidenceRecoveryRows
-                        .filter((r) => r.sex === sex)
-                        .sort((a, b) => a.dose_level - b.dose_level);
-                      return (
-                        <div key={sex} className="space-y-1 mb-2">
-                          {sexes.length > 1 && (
-                            <div className="text-[10px] font-medium text-muted-foreground">{sex}</div>
-                          )}
-                          {sexRows.map((r) => {
-                            const termPct = r.main_n > 0 ? (r.main_affected / r.main_n) * 100 : 0;
-                            const recPct = r.recovery_n > 0 ? (r.recovery_affected / r.recovery_n) * 100 : 0;
-                            const verdictLabel = r.verdict ? (RECOVERY_VERDICT_LABEL[r.verdict] ?? r.verdict) : null;
-                            return (
-                              <div key={`${r.sex}_${r.dose_level}`} className="flex items-center gap-2 text-[10px]">
-                                <span className="w-14 shrink-0 truncate text-muted-foreground" title={r.dose_label}>
-                                  {r.dose_label}
-                                </span>
-                                <div className="flex flex-1 items-center gap-1 min-w-0">
-                                  <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Terminal: ${r.main_affected}/${r.main_n}`}>
-                                    <div className="h-full bg-foreground/25 rounded-sm" style={{ width: `${termPct}%` }} />
-                                  </div>
-                                  <div className="flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden" title={`Recovery: ${r.recovery_affected}/${r.recovery_n}`}>
-                                    <div className="h-full bg-primary/30 rounded-sm" style={{ width: `${recPct}%` }} />
-                                  </div>
-                                </div>
-                                <span className="w-16 shrink-0 text-right tabular-nums font-mono text-muted-foreground">
-                                  {Math.round(termPct)}&rarr;{Math.round(recPct)}%
-                                </span>
-                                {verdictLabel && (
-                                  <span className="shrink-0 rounded-sm bg-gray-100 px-1 py-0.5 text-[9px] text-gray-600 border border-gray-200">
-                                    {verdictLabel}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    });
-                  })()}
-                  <div className="flex items-center gap-3 pt-1 text-[9px] text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <span className="inline-block h-2 w-4 rounded-sm bg-foreground/25" /> Terminal
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="inline-block h-2 w-4 rounded-sm bg-primary/30" /> Recovery
-                    </span>
-                  </div>
+                  <IncidenceRecoveryChart
+                    rows={incidenceRecoveryRows}
+                    recoveryDay={recoveryData?.recovery_day}
+                  />
                 </div>
                 ) : (
                   <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground">
