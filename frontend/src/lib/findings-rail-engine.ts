@@ -189,7 +189,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
-    case "specimen": return ep.organ_system; // stub — same as organ until histopath merge
+    case "specimen": return ep.specimen ?? "_no_specimen";
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
@@ -233,11 +233,16 @@ export function groupEndpoints(
   }
 
   // Sort cards by group signal descending; tiebreak: adverseCount desc, then name alpha
-  cards.sort((a, b) =>
-    b.groupSignal - a.groupSignal ||
-    b.adverseCount - a.adverseCount ||
-    a.key.localeCompare(b.key)
-  );
+  // "_no_specimen" always sorts last (like "no_syndrome")
+  cards.sort((a, b) => {
+    if (mode === "specimen") {
+      if (a.key === "_no_specimen") return 1;
+      if (b.key === "_no_specimen") return -1;
+    }
+    return b.groupSignal - a.groupSignal ||
+      b.adverseCount - a.adverseCount ||
+      a.key.localeCompare(b.key);
+  });
 
   return cards;
 }

@@ -58,6 +58,7 @@ import { useStudyMortality } from "@/hooks/useStudyMortality";
 import type { StudyMortality } from "@/types/mortality";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
+import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -221,6 +222,7 @@ export function FindingsRail({
       const key =
         grouping === "organ" ? ep.organ_system
         : grouping === "domain" ? ep.domain
+        : grouping === "specimen" ? (ep.specimen ?? "_no_specimen")
         : ep.pattern;
       seen.set(key, (seen.get(key) ?? 0) + 1);
     }
@@ -230,6 +232,7 @@ export function FindingsRail({
       key,
       label:
         grouping === "organ" ? titleCase(key)
+        : grouping === "specimen" ? (key === "_no_specimen" ? "No Specimen" : titleCase(key))
         : grouping === "domain" ? getDomainFullLabel(key)
         : getPatternLabel(key),
     }));
@@ -292,6 +295,8 @@ export function FindingsRail({
         }
       } else if (activeGroupScope.type === "finding") {
         eps = eps.filter((ep) => ep.endpoint_label === activeGroupScope.value);
+      } else if (activeGroupScope.type === "specimen") {
+        eps = eps.filter((ep) => (ep.specimen ?? "_no_specimen") === activeGroupScope.value);
       }
     }
     return eps.map((ep) => ep.endpoint_label);
@@ -307,6 +312,7 @@ export function FindingsRail({
       return syn?.name ?? (activeGroupScope.value === "no_syndrome" ? "No Syndrome" : null);
     }
     if (activeGroupScope.type === "finding") return activeGroupScope.value;
+    if (activeGroupScope.type === "specimen") return activeGroupScope.value === "_no_specimen" ? "No Specimen" : titleCase(activeGroupScope.value);
     return null;
   }, [activeGroupScope, syndromes]);
 
@@ -594,6 +600,7 @@ export function FindingsRail({
               normalizationContexts={analytics.normalizationContexts}
               syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
+              syndromes={grouping === "specimen" ? syndromes : undefined}
             />
           ))
         )}
@@ -606,7 +613,7 @@ export function FindingsRail({
 
 const GROUPING_TOGGLES: { value: GroupingMode; label: string; stub?: boolean }[] = [
   { value: "finding", label: "Endpoint" },
-  { value: "specimen", label: "Specimen", stub: true },
+  { value: "specimen", label: "Specimen" },
   { value: "organ", label: "Organ" },
   { value: "syndrome", label: "Syndrome" },
 ];
@@ -670,7 +677,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                 t.stub && "cursor-not-allowed opacity-30",
               )}
               onClick={() => { if (!t.stub) onGroupingChange(t.value); }}
-              title={t.stub ? "Coming soon — requires histopathology merge" : `Group by ${t.label}`}
+              title={`Group by ${t.label}`}
               disabled={t.stub}
             >
               {t.label}
@@ -908,6 +915,7 @@ const GROUPING_ALL_LABELS: Partial<Record<GroupingMode, string>> = {
   domain: "All domains",
   pattern: "All patterns",
   syndrome: "All syndromes",
+  specimen: "All specimens",
 };
 
 function RailFiltersSection({
@@ -1101,6 +1109,7 @@ function CardSection({
   normalizationContexts,
   syndromeCovariation,
   syndromeConfidence,
+  syndromes,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1121,6 +1130,7 @@ function CardSection({
   normalizationContexts?: NormalizationContext[];
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  syndromes?: CrossDomainSyndrome[];
 }) {
   // Compute organ confidence only for organ grouping mode
   const organConf = grouping === "organ"
@@ -1131,6 +1141,18 @@ function CardSection({
   const organNorm = grouping === "organ" && normalizationContexts
     ? computeOrganNormSummary(card.endpoints, normalizationContexts)
     : null;
+
+  // Specimen data for specimen grouping mode
+  const specimenData = useMemo(() => {
+    if (grouping !== "specimen") return null;
+    // Find linked syndrome name (first syndrome containing any endpoint from this card)
+    const synName = syndromes?.find((syn) =>
+      syn.matchedEndpoints.some((m) =>
+        card.endpoints.some((ep) => ep.endpoint_label === m.endpoint_label),
+      ),
+    )?.name;
+    return { endpoints: card.endpoints, syndromeName: synName };
+  }, [grouping, card.endpoints, syndromes]);
 
   return (
     <div>
@@ -1147,6 +1169,7 @@ function CardSection({
         organNorm={organNorm}
         syndromeCovariation={syndromeCovariation}
         syndromeConfidence={syndromeConfidence}
+        specimenData={specimenData}
       />
       {isExpanded && (
         <div>
@@ -1186,6 +1209,7 @@ function CardHeader({
   organNorm,
   syndromeCovariation,
   syndromeConfidence,
+  specimenData,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1199,8 +1223,18 @@ function CardHeader({
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
+
+  // Specimen mode: pipe encodes worst severity across all findings
+  const specimenPipeColor = grouping === "specimen"
+    ? (card.adverseCount > 0
+      ? "#dc2626"
+      : card.endpoints.some((ep) => ep.worstSeverity === "warning")
+        ? "#facc15"
+        : "transparent")
+    : undefined;
 
   return (
     <div
@@ -1209,20 +1243,33 @@ function CardHeader({
         isScoped
           ? "border-l-2 border-primary bg-accent/50"
           : "hover:bg-accent/30",
+        grouping === "specimen" && !isScoped && specimenPipeColor !== "transparent" && "border-l-2",
       )}
+      style={grouping === "specimen" && !isScoped && specimenPipeColor && specimenPipeColor !== "transparent" ? { borderLeftColor: specimenPipeColor } : undefined}
       role="button"
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} />
-      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-        {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
-      </span>
-      <span className="text-muted-foreground/40">&middot;</span>
-      <span className="font-mono text-[11px] text-muted-foreground">
-        {card.trCount}
-      </span>
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} specimenData={specimenData} />
+      {grouping === "specimen" ? (
+        <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-foreground">
+          {(() => {
+            const maxInc = card.endpoints.reduce((max, ep) => Math.max(max, ep.maxIncidence ?? 0), 0);
+            return maxInc > 0 ? `Max: ${Math.round(maxInc * 100)}%` : "";
+          })()}
+        </span>
+      ) : (
+        <>
+          <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+            {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
+          </span>
+          <span className="text-muted-foreground/40">&middot;</span>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {card.trCount}
+          </span>
+        </>
+      )}
       <button
         className="ml-1 shrink-0 rounded p-0.5 hover:bg-accent/60 transition-colors"
         onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
@@ -1270,7 +1317,7 @@ function adjustSyndromeConfidence(
   return { level: confidence.toLowerCase() as ConfidenceLevel, caveat: null };
 }
 
-function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm, syndromeCovariation, syndromeConfidence }: {
+function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm, syndromeCovariation, syndromeConfidence, specimenData }: {
   grouping: GroupingMode;
   value: string;
   syndromeLabel?: string;
@@ -1278,6 +1325,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string } | null;
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
@@ -1338,6 +1386,32 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
         {covLabel && covLabel !== "Insufficient data" && (
           <span className="shrink-0 text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
             {covLabel}
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  if (grouping === "specimen") {
+    const isNoSpecimen = value === "_no_specimen";
+    // Specimen card: name + domain badges + syndrome name
+    const specimenEndpoints = specimenData?.endpoints;
+    const domains = specimenEndpoints
+      ? [...new Set(specimenEndpoints.map((ep) => ep.domain))].sort()
+      : [];
+    const linkedSyndrome = specimenData?.syndromeName;
+
+    return (
+      <span className={cn("flex min-w-0 items-center gap-1.5 font-semibold", isNoSpecimen && "text-muted-foreground/70")} title={isNoSpecimen ? "Endpoints without specimen data" : titleCase(value)}>
+        <span className="truncate">{isNoSpecimen ? "No Specimen" : titleCase(value)}</span>
+        {domains.map((d) => (
+          <span key={d} className="shrink-0 rounded bg-gray-100 px-1 py-px text-[10px] font-semibold text-gray-600 border border-gray-200">
+            {d}
+          </span>
+        ))}
+        {linkedSyndrome && (
+          <span className="shrink-0 truncate text-[10px] text-muted-foreground" title={linkedSyndrome}>
+            {linkedSyndrome}
           </span>
         )}
       </span>
