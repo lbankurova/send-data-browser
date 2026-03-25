@@ -1256,11 +1256,19 @@ function CardHeader({
     >
       <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} specimenData={specimenData} />
       {grouping === "specimen" ? (
-        <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-foreground">
-          {(() => {
-            const maxInc = card.endpoints.reduce((max, ep) => Math.max(max, ep.maxIncidence ?? 0), 0);
-            return maxInc > 0 ? `Max: ${Math.round(maxInc * 100)}%` : "";
-          })()}
+        <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {(() => {
+              const maxInc = card.endpoints.reduce((max, ep) => Math.max(max, ep.maxIncidence ?? 0), 0);
+              return maxInc > 0 ? `Max: ${Math.round(maxInc * 100)}%` : "";
+            })()}
+          </span>
+          {specimenData?.syndromeName && (
+            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground" title={specimenData.syndromeName}>
+              <Link2 className="size-2.5" />
+              <span className="truncate max-w-[120px]">{specimenData.syndromeName}</span>
+            </span>
+          )}
         </span>
       ) : (
         <>
@@ -1396,25 +1404,18 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   }
 
   if (grouping === "specimen") {
-    // Specimen card: name + domain badges + syndrome name
+    // Specimen card: name + domain badges (syndrome moved to CardHeader metric area)
     const specimenEndpoints = specimenData?.endpoints;
     const domains = specimenEndpoints
       ? [...new Set(specimenEndpoints.map((ep) => ep.domain))].sort()
       : [];
-    const linkedSyndrome = specimenData?.syndromeName;
 
     return (
       <span className="flex min-w-0 flex-1 flex-col" title={value.toUpperCase()}>
         <span className="truncate font-semibold">{value.toUpperCase()}</span>
-        {(domains.length > 0 || linkedSyndrome) && (
-          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className="shrink-0">{domains.join(", ")}</span>
-            {linkedSyndrome && (
-              <span className="ml-auto flex shrink-0 items-center gap-0.5 truncate" title={linkedSyndrome}>
-                <Link2 className="size-2.5" />
-                <span className="truncate">{linkedSyndrome}</span>
-              </span>
-            )}
+        {domains.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {domains.join(", ")}
           </span>
         )}
       </span>
