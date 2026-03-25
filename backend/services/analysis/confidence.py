@@ -12,6 +12,7 @@ Each finding receives a confidence grade (HIGH / MODERATE / LOW) based on
 | D5  | Both sexes concordant + TR        | Same dir,    | Discordant                  | No sibling         |
 |     |                                   | opp not TR   |                             |                    |
 | D6  | —                                 | Outside zone | Max step 0.75-1.0 SD        | Not Tier 2         |
+| D7  | Aligns with concern + TR          | —            | —                           | No concern dir     |
 
 Grade: sum ≥ 2 → HIGH, 0–1 → MODERATE, ≤ -1 → LOW
 """
@@ -227,6 +228,45 @@ def _score_d6_tier2_equivocal(f: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# D7: Direction alignment with toxicological concern (GAP-117)
+# ---------------------------------------------------------------------------
+
+def _score_d7_direction_concern(f: dict) -> dict:
+    """Upgrade when the observed direction aligns with the known direction of concern.
+
+    When a finding's direction matches the expected toxicological concern direction
+    (e.g., RBC decreasing when 'down' is the concern), AND the finding is
+    treatment-related, the evidence for a genuine toxic signal is stronger.
+
+    Pure upgrade — never downgrades. Opposite-direction findings may still be
+    toxicologically significant (e.g., RBC increase = polycythemia).
+    """
+    concern = f.get("direction_of_concern")
+    if not concern:
+        return _dim("D7", "Direction alignment", None,
+                     "No direction_of_concern for this endpoint — skipped")
+
+    aligns = f.get("direction_aligns_with_concern")
+    tr = f.get("treatment_related", False)
+
+    if aligns and tr:
+        return _dim("D7", "Direction alignment", +1,
+                     f"Direction '{f.get('direction')}' aligns with concern direction "
+                     f"'{concern}' + treatment-related")
+
+    if aligns and not tr:
+        return _dim("D7", "Direction alignment", 0,
+                     f"Direction aligns with concern but not treatment-related")
+
+    if aligns is False:
+        return _dim("D7", "Direction alignment", 0,
+                     f"Direction '{f.get('direction')}' opposite to concern '{concern}' — neutral")
+
+    return _dim("D7", "Direction alignment", 0,
+                 f"No observed direction — neutral")
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -239,6 +279,7 @@ def compute_confidence(finding: dict, sibling: dict | None) -> dict:
         _score_d4_hcd(finding),
         _score_d5_cross_sex(finding, sibling),
         _score_d6_tier2_equivocal(finding),
+        _score_d7_direction_concern(finding),
     ]
     return _result(dims)
 

@@ -25,7 +25,7 @@ from services.analysis.corroboration import compute_corroboration, compute_chain
 from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
-from services.analysis.send_knowledge import BIOMARKER_MAP
+from services.analysis.send_knowledge import BIOMARKER_MAP, get_direction_of_concern
 
 log = logging.getLogger(__name__)
 
@@ -162,6 +162,16 @@ def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
     bio = BIOMARKER_MAP.get(tc)
     f["is_derived"] = bool(bio and bio.get("derived"))
 
+    # Direction of concern — expected toxicological direction for this endpoint.
+    # Wires BIOMARKER_MAP metadata into findings (GAP-117, reviewer audit 2026-03).
+    concern_dir = get_direction_of_concern(f)
+    f["direction_of_concern"] = concern_dir
+    observed_dir = f.get("direction")
+    if concern_dir and observed_dir and observed_dir != "none":
+        f["direction_aligns_with_concern"] = (observed_dir == concern_dir)
+    else:
+        f["direction_aligns_with_concern"] = None  # no concern direction or no observed direction
+
     # Endpoint label
     test_name = f.get("test_name", f.get("test_code", ""))
     specimen = f.get("specimen")
@@ -272,6 +282,7 @@ def process_findings(
     species: str | None = None,
     strain: str | None = None,
     duration_days: int | None = None,
+    relrec_links: dict[tuple, list[tuple]] | None = None,
     route: str | None = None,
     vehicle: str | None = None,
 ) -> list[dict]:
@@ -308,7 +319,7 @@ def process_findings(
     # Pattern overrides applied at endpoint level (analysis_views.py) so they
     # work for both static file serving and parameterized pipeline results
     # Cross-domain corroboration (requires all enriched findings present)
-    enriched = compute_corroboration(enriched)
+    enriched = compute_corroboration(enriched, relrec_links=relrec_links)
     # Cross-organ chain detection (requires all enriched findings present)
     enriched = compute_chain_detection(enriched)
     # ECETOC per-finding adversity assessment (requires corroboration_status)

@@ -227,6 +227,8 @@ export interface UseOrganWeightNormalizationResult {
   highestTier: number;
   worstBwG: number;
   worstBrainG: number | null;
+  /** Max |effect_size| per organ (uppercase key). From the active metric's pairwise stats. */
+  organEffectSizes: Map<string, number>;
   getDecision: (organ: string, doseKey?: string) => NormalizationDecision | null;
   getContext: (organ: string, doseKey?: string) => NormalizationContext | null;
   /** Get worst-case decision across all dose groups for an organ */
@@ -336,12 +338,27 @@ export function useOrganWeightNormalization(
     };
   }, [state]);
 
+  // Max |effect_size| per organ from OM findings (active metric pairwise stats)
+  const organEffectSizes = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!findingsData?.findings) return map;
+    for (const f of findingsData.findings) {
+      if (f.domain !== "OM" || !f.specimen || f.max_effect_size == null) continue;
+      const key = f.specimen.toUpperCase();
+      const abs = Math.abs(f.max_effect_size);
+      const prev = map.get(key);
+      if (prev === undefined || abs > prev) map.set(key, abs);
+    }
+    return map;
+  }, [findingsData]);
+
   return {
     state,
     isLoading: findingsLoading,
     highestTier: state?.highestTier ?? 1,
     worstBwG: state?.worstBwG ?? 0,
     worstBrainG: state?.worstBrainG ?? null,
+    organEffectSizes,
     getDecision,
     getContext,
     getWorstDecision,
