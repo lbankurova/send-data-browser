@@ -611,10 +611,10 @@ export function FindingsRail({
 
 // ─── Signal Summary ────────────────────────────────────────
 
-const GROUPING_TOGGLES: { value: GroupingMode; label: string; stub?: boolean }[] = [
+const GROUPING_TOGGLES: { value: GroupingMode; label: string; tooltip?: string; stub?: boolean }[] = [
   { value: "finding", label: "Endpoint" },
   { value: "specimen", label: "Specimen" },
-  { value: "organ", label: "Organ" },
+  { value: "organ", label: "Organ Sys.", tooltip: "Group by organ system" },
   { value: "syndrome", label: "Syndrome" },
 ];
 
@@ -677,7 +677,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                 t.stub && "cursor-not-allowed opacity-30",
               )}
               onClick={() => { if (!t.stub) onGroupingChange(t.value); }}
-              title={`Group by ${t.label}`}
+              title={t.tooltip ?? `Group by ${t.label.toLowerCase()}`}
               disabled={t.stub}
             >
               {t.label}
