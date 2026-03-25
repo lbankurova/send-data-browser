@@ -886,7 +886,7 @@ function SexComparisonPane({
 
 const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
   reversed: "text-emerald-700",
-  reversing: "text-emerald-600",
+  partially_reversed: "text-emerald-600",
   persistent: "text-amber-700",
   progressing: "text-red-700",
 };

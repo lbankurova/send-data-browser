@@ -334,7 +334,7 @@ export function classifyRecovery(
     (d) => d.main.incidence > 0.10 && d.main.affected >= 2,
   );
   const isMarginalReversing =
-    assessment.overall === "reversing" &&
+    assessment.overall === "partially_reversed" &&
     assessment.assessments.some(
       (d) =>
         d.main.incidence > 0 && d.recovery.incidence / d.main.incidence > 0.60,
@@ -391,7 +391,7 @@ export function classifyRecovery(
 
   // Step 4: EXPECTED_REVERSIBILITY
   const isExpectedReversibility =
-    (assessment.overall === "reversed" || assessment.overall === "reversing") &&
+    (assessment.overall === "reversed" || assessment.overall === "partially_reversed") &&
     (context.isAdverse || context.doseConsistency !== "Weak");
 
   if (isExpectedReversibility) {
@@ -425,7 +425,7 @@ export function classifyRecovery(
     !context.isAdverse &&
     context.doseConsistency === "Weak" &&
     (assessment.overall === "reversed" ||
-      assessment.overall === "reversing" ||
+      assessment.overall === "partially_reversed" ||
       assessment.overall === "not_observed");
 
   if (isIncidentalRecoverySignal) {

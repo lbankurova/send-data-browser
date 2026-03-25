@@ -50,13 +50,13 @@ function makeRow(overrides: Partial<RecoveryRow> = {}): RecoveryRow {
 describe("classifyContinuousRecovery", () => {
   test("null terminal + low recovery → resolved", () => {
     const v = classifyContinuousRecovery(null, 0.3);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 
   test("null terminal + high recovery → worsening (delayed onset)", () => {
     const v = classifyContinuousRecovery(null, 0.8);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
     expect(v.pctRecovered).toBeNull();
   });
 
@@ -68,12 +68,12 @@ describe("classifyContinuousRecovery", () => {
 
   test("near-zero terminal + low recovery → resolved", () => {
     const v = classifyContinuousRecovery(0.005, 0.3);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
   });
 
   test("near-zero terminal + high recovery → worsening", () => {
     const v = classifyContinuousRecovery(0.005, 0.8);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
   });
 
   test("pct ≥ 80 → reversed", () => {
@@ -90,14 +90,14 @@ describe("classifyContinuousRecovery", () => {
   test("pct 50-80 → reversing", () => {
     // terminal=2.0, recovery=0.8 → pct = (2.0-0.8)/2.0 * 100 = 60%
     const v = classifyContinuousRecovery(2.0, 0.8);
-    expect(v.verdict).toBe("reversing");
+    expect(v.verdict).toBe("partially_reversed");
     expect(v.pctRecovered).toBeCloseTo(60);
   });
 
-  test("pct 20-50 → partial", () => {
+  test("pct 20-50 → partially_reversed", () => {
     // terminal=2.0, recovery=1.3 → pct = (2.0-1.3)/2.0 * 100 = 35%
     const v = classifyContinuousRecovery(2.0, 1.3);
-    expect(v.verdict).toBe("partial");
+    expect(v.verdict).toBe("partially_reversed");
     expect(v.pctRecovered).toBeCloseTo(35);
   });
 
@@ -111,7 +111,7 @@ describe("classifyContinuousRecovery", () => {
   test("negative pct → worsening", () => {
     // terminal=1.5, recovery=2.0 → pct = (1.5-2.0)/1.5 * 100 = -33%
     const v = classifyContinuousRecovery(1.5, 2.0);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
     expect(v.pctRecovered!).toBeLessThan(0);
   });
 
@@ -126,7 +126,7 @@ describe("classifyContinuousRecovery", () => {
     // positive terminal, negative recovery but trivial magnitude
     const v = classifyContinuousRecovery(1.5, -0.3);
     // Sign-flip guard in sub-threshold branch → resolved (BUG-21 fix)
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 
@@ -135,14 +135,14 @@ describe("classifyContinuousRecovery", () => {
     // Before BUG-21 fix: pct = (0.78-0.19)/0.78 = 76% → "reversed" (wrong)
     // After fix: sign-flip in sub-threshold branch → "resolved"
     const v = classifyContinuousRecovery(0.78, -0.19);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 
   test("sign flip + |recovery| < 0.5 (negative terminal) → resolved", () => {
     // Mirror case: negative terminal, positive recovery (sub-threshold)
     const v = classifyContinuousRecovery(-1.2, 0.3);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 
@@ -150,7 +150,7 @@ describe("classifyContinuousRecovery", () => {
     // terminal=0.3, recovery=0.4 → both below 0.5
     // pct = (0.3-0.4)/0.3 * 100 = -33% → pct < 0 → resolved
     const v = classifyContinuousRecovery(0.3, 0.4);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 });
@@ -193,7 +193,7 @@ describe("classifyContinuousRecovery — confidence", () => {
   test("treated n=2 with resolved verdict → still low confidence", () => {
     // Near-zero terminal, low recovery → "resolved" but with low confidence
     const v = classifyContinuousRecovery(0.005, 0.3, 2, 10);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.confidence).toBe("low");
   });
 
@@ -219,7 +219,7 @@ describe("classifyContinuousRecovery — confidence", () => {
     expect(reversed.confidence).toBe("adequate");
 
     const worsening = classifyContinuousRecovery(1.5, 2.0, 3, 3); // neg pct → worsening
-    expect(worsening.verdict).toBe("worsening");
+    expect(worsening.verdict).toBe("progressing");
     expect(worsening.confidence).toBe("low");
 
     const persistent = classifyContinuousRecovery(2.0, 1.8, 5, 5); // 10% → persistent

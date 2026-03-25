@@ -242,7 +242,7 @@ describe("computeVerdict — ratio computation", () => {
       arm({ incidence: 0.5, affected: 5, avgSeverity: 2.0 }),
       arm({ n: 5, examined: 5, affected: 1, incidence: 0.2, avgSeverity: 1.5, maxSeverity: 2 }),
     );
-    expect(v).toBe("reversing");
+    expect(v).toBe("partially_reversed");
   });
 
   test("reversing when severity ratio ≤ 0.5 (but incidence not low enough)", () => {
@@ -250,7 +250,7 @@ describe("computeVerdict — ratio computation", () => {
       arm({ incidence: 0.5, affected: 5, avgSeverity: 3.0 }),
       arm({ n: 5, examined: 5, affected: 2, incidence: 0.4, avgSeverity: 1.0, maxSeverity: 1 }),
     );
-    expect(v).toBe("reversing");
+    expect(v).toBe("partially_reversed");
   });
 
   test("persistent when ratios are in the middle range", () => {
@@ -326,7 +326,7 @@ describe("computeVerdict — duration awareness", () => {
 
 describe("worstVerdict", () => {
   test("returns anomaly as worst (highest priority)", () => {
-    expect(worstVerdict(["reversed", "anomaly", "reversing"])).toBe("anomaly");
+    expect(worstVerdict(["reversed", "anomaly", "partially_reversed"])).toBe("anomaly");
   });
 
   test("returns progressing over persistent", () => {
@@ -334,7 +334,7 @@ describe("worstVerdict", () => {
   });
 
   test("returns persistent over reversing", () => {
-    expect(worstVerdict(["reversing", "persistent"])).toBe("persistent");
+    expect(worstVerdict(["partially_reversed", "persistent"])).toBe("persistent");
   });
 
   test("returns no_data for empty array", () => {
@@ -698,9 +698,9 @@ describe("classifyRecovery — classification ladder", () => {
     const d = doseAssessment({
       main: { incidence: 0.5, affected: 5, avgSeverity: 2.0 },
       recovery: { n: 5, examined: 5, affected: 1, incidence: 0.2, avgSeverity: 0.5, maxSeverity: 1 },
-      verdict: "reversing",
+      verdict: "partially_reversed",
     });
-    const a = assessment("Finding", [d], "reversing");
+    const a = assessment("Finding", [d], "partially_reversed");
     const r = classifyRecovery(a, context({ isAdverse: false, doseConsistency: "Strong", signalClass: "normal" }));
     expect(r.classification).toBe("EXPECTED_REVERSIBILITY");
   });
@@ -952,9 +952,9 @@ describe("anomaly discrimination", () => {
     const necrosisAssessment = assessment("Necrosis, hepatocellular", [
       doseAssessment({
         main: { incidence: 0.4, affected: 4, avgSeverity: 2.0 },
-        verdict: "reversing",
+        verdict: "partially_reversed",
       }),
-    ], "reversing");
+    ], "partially_reversed");
 
     const nature = classifyFindingNature("Fibrosis");
     const result = discriminateAnomaly(
@@ -972,9 +972,9 @@ describe("anomaly discrimination", () => {
     // Necrosis at 2 dose levels → dose-related precursor
     const fibrosisAssessment = assessment("Fibrosis", [anomalyDose()], "anomaly");
     const necrosisAssessment = assessment("Necrosis", [
-      doseAssessment({ doseLevel: 1, main: { incidence: 0.1, affected: 1 }, verdict: "reversing" }),
-      doseAssessment({ doseLevel: 2, main: { incidence: 0.3, affected: 3 }, verdict: "reversing" }),
-    ], "reversing");
+      doseAssessment({ doseLevel: 1, main: { incidence: 0.1, affected: 1 }, verdict: "partially_reversed" }),
+      doseAssessment({ doseLevel: 2, main: { incidence: 0.3, affected: 3 }, verdict: "partially_reversed" }),
+    ], "partially_reversed");
 
     const nature = classifyFindingNature("Fibrosis");
     const result = discriminateAnomaly(
@@ -1049,7 +1049,7 @@ describe("anomaly discrimination", () => {
       doseAssessment({
         main: { incidence: 0.56, affected: 5, n: 9, examined: 9, avgSeverity: 1.5 },
         recovery: { incidence: 0.40, affected: 2, n: 5, examined: 5, avgSeverity: 1.0 },
-        verdict: "reversing",
+        verdict: "partially_reversed",
         doseLevel: 3,
       }),
     ], "anomaly");
@@ -1097,8 +1097,8 @@ describe("anomaly discrimination", () => {
   test("anomaly with precursor via classifyRecovery → DELAYED_ONSET", () => {
     const fibrosisA = assessment("Fibrosis", [anomalyDose()], "anomaly");
     const necrosisA = assessment("Necrosis", [
-      doseAssessment({ main: { incidence: 0.3, affected: 3 }, verdict: "reversing" }),
-    ], "reversing");
+      doseAssessment({ main: { incidence: 0.3, affected: 3 }, verdict: "partially_reversed" }),
+    ], "partially_reversed");
 
     const nature = classifyFindingNature("Fibrosis");
     const cls = classifyRecovery(fibrosisA, context({
@@ -1544,7 +1544,7 @@ describe("deriveRecoveryAssessmentsSexAware — sex stratification (GAP-59)", ()
     // Pooled: rec 40% / main 40% = 1.0 → persistent (F dilution hides the improvement)
     expect(pooled[0].assessments[0].verdict).toBe("persistent");
     // Sex-aware: rec 40% / main-M 80% = 0.5 → reversing (correct: real improvement visible)
-    expect(sexAware[0].assessments[0].verdict).toBe("reversing");
+    expect(sexAware[0].assessments[0].verdict).toBe("partially_reversed");
   });
 
   test("both-sex recovery: merges worst verdict across sexes", () => {

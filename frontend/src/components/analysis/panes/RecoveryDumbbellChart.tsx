@@ -122,8 +122,8 @@ function checkDoseConsistency(
 
     // Check if any verdict contradicts the consistent direction
     // (e.g., "resolved"/"reversed" when all doses show same-direction effect)
-    const positiveVerdicts = new Set<ContinuousVerdictType>(["resolved", "reversed", "reversing"]);
-    const negativeVerdicts = new Set<ContinuousVerdictType>(["worsening", "persistent"]);
+    const positiveVerdicts = new Set<ContinuousVerdictType>(["reversed", "partially_reversed"]);
+    const negativeVerdicts = new Set<ContinuousVerdictType>(["progressing", "persistent"]);
     const hasPositive = rows.some((cr) => positiveVerdicts.has(cr.verdict));
     const hasNegative = rows.some((cr) => negativeVerdicts.has(cr.verdict));
 

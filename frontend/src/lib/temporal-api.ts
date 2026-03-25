@@ -158,13 +158,23 @@ export interface RecoveryComparisonResponse {
     recovery_affected: number;
     recovery_n: number;
     recovery_day: number | null;
-    verdict: "resolved" | "improving" | "persistent" | "worsening" | "new_in_recovery" | "insufficient_n" | null;
+    /** Examination-aware denominator (MI/MA: subjects with tissue record; CL: roster N). */
+    main_examined?: number;
+    /** Examination-aware denominator for recovery arm. */
+    recovery_examined?: number;
+    verdict: string | null;
+    /** Confidence based on recovery examined N. */
+    confidence?: "low" | "adequate" | null;
     /** Organ/specimen (MI/MA domains). */
     specimen?: string;
     /** Severity grade counts for main arm (MI only). Keys: "1"-"5". */
     main_severity_counts?: Record<string, number> | null;
     /** Severity grade counts for recovery arm (MI only). Keys: "1"-"5". */
     recovery_severity_counts?: Record<string, number> | null;
+    /** Mean severity grade for main arm. */
+    main_avg_severity?: number | null;
+    /** Mean severity grade for recovery arm. */
+    recovery_avg_severity?: number | null;
   }[];
 }
 
