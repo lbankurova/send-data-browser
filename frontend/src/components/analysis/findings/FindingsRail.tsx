@@ -1526,35 +1526,45 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             <span className="text-muted-foreground"> &mdash; {endpoint.qualifierTags}</span>
           )}
         </span>
-        {clinicalTier && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
-            {clinicalTier}
-          </span>
-        )}
-        {(() => {
-          const nc = endpoint.endpointConfidence?.noaelContribution;
-          if (!nc || nc.label === "excluded") return null;
-          const tooltipLines = [
-            `NOAEL ${nc.label} (weight ${nc.weight})`,
-            nc.canSetNOAEL ? "Can constrain NOAEL" : "Does not constrain NOAEL",
-            nc.requiresCorroboration ? "Requires corroboration" : null,
-            ...nc.caveats.map(c => `Caveat: ${c}`),
-          ].filter(Boolean).join("\n");
-          if (nc.label === "determining") return (
-            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} title={tooltipLines} />
-          );
-          if (nc.label === "contributing") return (
-            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full bg-gray-400" title={tooltipLines} />
-          );
-          return (
-            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full border border-gray-400" title={tooltipLines} />
-          );
-        })()}
-        {sexesDiffer && (
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
-            F≠M
-          </span>
-        )}
+        {/* --- Indicator columns: fixed-width slots for vertical alignment --- */}
+        {/* Clinical tier — w-[22px] reserves space for "S2"/"S3"/"S4" */}
+        <span className="shrink-0 w-[22px] flex items-center justify-center">
+          {clinicalTier ? (
+            <span className="rounded bg-gray-100 px-1 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
+              {clinicalTier}
+            </span>
+          ) : null}
+        </span>
+        {/* NOAEL contribution dot — w-[10px] reserves space for 6px dot */}
+        <span className="shrink-0 w-[10px] flex items-center justify-center">
+          {(() => {
+            const nc = endpoint.endpointConfidence?.noaelContribution;
+            if (!nc || nc.label === "excluded") return null;
+            const tooltipLines = [
+              `NOAEL ${nc.label} (weight ${nc.weight})`,
+              nc.canSetNOAEL ? "Can constrain NOAEL" : "Does not constrain NOAEL",
+              nc.requiresCorroboration ? "Requires corroboration" : null,
+              ...nc.caveats.map(c => `Caveat: ${c}`),
+            ].filter(Boolean).join("\n");
+            if (nc.label === "determining") return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} title={tooltipLines} />
+            );
+            if (nc.label === "contributing") return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full bg-gray-400" title={tooltipLines} />
+            );
+            return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full border border-gray-400" title={tooltipLines} />
+            );
+          })()}
+        </span>
+        {/* Sex divergence — w-[24px] reserves space for "F≠M" */}
+        <span className="shrink-0 w-[24px] flex items-center justify-center">
+          {sexesDiffer ? (
+            <span className="font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
+              F≠M
+            </span>
+          ) : null}
+        </span>
       </div>
     </button>
   );
