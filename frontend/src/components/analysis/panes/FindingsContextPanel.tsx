@@ -52,6 +52,8 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
 import { verdictLabel } from "@/lib/recovery-assessment";
@@ -1178,6 +1180,242 @@ function CorrelatingEvidenceInline({ evidence }: {
   );
 }
 
+// ─── Specimen Context Panel (Phase 5) ────────────────────────────────────────
+
+function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analytics, nav, selectFinding }: {
+  studyId: string | undefined;
+  specimen: string;
+  activeFindings: UnifiedFinding[];
+  analytics: FindingsAnalytics;
+  nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
+  selectFinding: (f: UnifiedFinding | null) => void;
+}) {
+  const { expandAll, collapseAll, expandGen, collapseGen } = useCollapseAll();
+
+  // Specimen findings
+  const specimenFindings = useMemo(() => {
+    const unique = new Map<string, UnifiedFinding>();
+    for (const f of activeFindings) {
+      if (f.specimen === specimen && (f.domain === "MI" || f.domain === "MA")) {
+        const key = `${f.finding}\0${f.domain}`;
+        if (!unique.has(key)) unique.set(key, f);
+      }
+    }
+    return [...unique.values()].sort((a, b) => {
+      const sevOrd = { adverse: 0, warning: 1, normal: 2 };
+      return (sevOrd[a.severity] ?? 2) - (sevOrd[b.severity] ?? 2) || a.finding.localeCompare(b.finding);
+    });
+  }, [activeFindings, specimen]);
+
+  // Syndromes containing this specimen
+  const specimenSyndromes = useMemo(() => {
+    const prefix = specimen.toUpperCase() + " \u2014 ";
+    return analytics.syndromes?.filter(s =>
+      s.matchedEndpoints.some(m => m.endpoint_label.toUpperCase().startsWith(prefix))
+    ) ?? [];
+  }, [analytics.syndromes, specimen]);
+
+  // Lab correlates (specimen-level)
+  const labCorrelation = useSpecimenLabCorrelation(studyId, specimen);
+
+  // Subject data for laterality + recovery
+  const { data: subjData } = useHistopathSubjects(studyId, specimen);
+
+  // Laterality
+  const lateralityData = useMemo(() => {
+    if (!subjData?.subjects || !isPairedOrgan(specimen)) return null;
+    if (!specimenHasLaterality(subjData.subjects)) return null;
+    const subjectAgg = aggregateSubjectLaterality(subjData.subjects);
+    if (subjectAgg.total === 0) return null;
+    const perFinding = (subjData.findings ?? []).map(f => ({
+      finding: f,
+      agg: aggregateFindingLaterality(subjData.subjects, f),
+    })).filter(x => x.agg.left > 0 || x.agg.right > 0 || x.agg.bilateral > 0);
+    return { subjectAgg, perFinding };
+  }, [subjData, specimen]);
+
+  // Recovery flag
+  const hasRecovery = useMemo(
+    () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
+    [subjData],
+  );
+
+  // Peer comparison (HCD) for all findings
+  const peerRows = useMemo(() => {
+    return specimenFindings.map(f => {
+      const controlGs = f.group_stats.find(gs => gs.dose_level === 0);
+      const controlInc = controlGs ? (controlGs.incidence ?? (controlGs.n > 0 ? (controlGs.affected ?? 0) / controlGs.n : 0)) : 0;
+      const organName = specimen.toLowerCase().replace(/_/g, " ");
+      const hcd = getHistoricalControl(f.finding, organName);
+      const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+      return { finding: f.finding, controlIncidence: controlInc, hcd, status };
+    }).filter(r => r.hcd != null);
+  }, [specimenFindings, specimen]);
+
+  return (
+    <div>
+      <ContextPanelHeader
+        title={specimen.toUpperCase()}
+        subtitle={
+          <>
+            {specimenFindings.length} findings
+            {specimenSyndromes.length > 0 && <> &middot; {specimenSyndromes.length} syndrome{specimenSyndromes.length !== 1 ? "s" : ""}</>}
+            {hasRecovery && <> &middot; Recovery</>}
+          </>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={nav.onBack}
+        onForward={nav.onForward}
+      />
+
+      {/* Findings list */}
+      <CollapsiblePane title="Findings" defaultOpen expandAll={expandGen} collapseAll={collapseGen} headerRight={<span className="text-[10px] text-muted-foreground">{specimenFindings.length}</span>}>
+        <div className="space-y-0.5">
+          {specimenFindings.map(f => {
+            const mp = f.modifier_profile;
+            const tags: string[] = [];
+            if (mp?.dominant_temporality) tags.push(mp.dominant_temporality);
+            if (mp?.dominant_distribution) tags.push(mp.dominant_distribution);
+            return (
+              <button
+                key={`${f.finding}\0${f.domain}`}
+                className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-accent/30"
+                onClick={() => selectFinding(f)}
+              >
+                <span className="text-[10px] font-semibold text-muted-foreground">{f.domain}</span>
+                <span className="min-w-0 truncate">
+                  {f.finding}
+                  {tags.length > 0 && <span className="ml-1 text-muted-foreground">&mdash; {tags.join(", ")}</span>}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {f.severity === "adverse" ? "adverse" : f.severity === "warning" ? "warning" : ""}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </CollapsiblePane>
+
+      {/* Syndromes */}
+      {specimenSyndromes.length > 0 && (
+        <CollapsiblePane title="Syndromes" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1">
+            {specimenSyndromes.map(s => (
+              <div key={s.id} className="text-xs">
+                <span className="font-medium">{s.name}</span>
+                <span className="ml-1 text-muted-foreground">({s.confidence.toLowerCase()})</span>
+              </div>
+            ))}
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Lab correlates */}
+      {labCorrelation.correlations.length > 0 && (
+        <CollapsiblePane title="Lab correlates" expandAll={expandGen} collapseAll={collapseGen}>
+          <LabCorrelatesInline
+            correlations={labCorrelation.correlations}
+            isLoading={labCorrelation.isLoading}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Peer comparison (HCD) */}
+      {peerRows.length > 0 && (
+        <CollapsiblePane title="Peer comparison (HCD)" expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              Control group incidence vs historical control data (HCD).
+            </p>
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Study ctrl</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">HCD range</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {peerRows.map(row => (
+                  <tr key={row.finding} className="border-b border-dashed">
+                    <td className="max-w-[120px] truncate py-1 text-xs font-medium" title={row.finding}>{row.finding}</td>
+                    <td className="py-1 text-right font-mono text-muted-foreground">{Math.round(row.controlIncidence * 100)}%</td>
+                    <td className="py-1 text-right text-muted-foreground">
+                      {row.hcd && (
+                        <span className="font-mono">{Math.round(row.hcd.min_incidence * 100)}{"\u2013"}{Math.round(row.hcd.max_incidence * 100)}%</span>
+                      )}
+                    </td>
+                    <td className="py-1 text-right">
+                      <span className={cn(
+                        "text-[10px]",
+                        row.status === "above_range" ? "font-medium text-foreground"
+                          : row.status === "at_upper" ? "text-muted-foreground"
+                          : "text-muted-foreground/60",
+                      )}>
+                        {row.status === "above_range" && "\u25B2 "}
+                        {HCD_STATUS_LABELS[row.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Laterality */}
+      {lateralityData && (
+        <CollapsiblePane title="Laterality" expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1.5 text-xs">
+            <p className="text-muted-foreground">
+              {lateralitySummary(lateralityData.subjectAgg)}
+            </p>
+            {lateralityData.perFinding.length > 0 && (
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="pb-0.5 text-left font-semibold">Finding</th>
+                    <th className="pb-0.5 text-right font-semibold">L</th>
+                    <th className="pb-0.5 text-right font-semibold">R</th>
+                    <th className="pb-0.5 text-right font-semibold">Bi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lateralityData.perFinding.map(({ finding, agg }) => (
+                    <tr key={finding} className="border-b border-dashed">
+                      <td className="max-w-[120px] truncate py-0.5" title={finding}>{finding}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.left}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.right}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.bilateral}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Pathology review */}
+      {studyId && (
+        <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} />
+      )}
+
+      {/* Related views */}
+      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <div className="space-y-1 text-xs">
+          <span className="text-muted-foreground">View in Cohort (coming soon)</span>
+        </div>
+      </CollapsiblePane>
+    </div>
+  );
+}
+
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
@@ -1531,7 +1769,18 @@ export function FindingsContextPanel() {
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
       return <SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} />;
     }
-    // Specimen-level context panel — Phase 5 (not yet implemented)
+    if (selectedGroupType === "specimen" && selectedGroupKey) {
+      return (
+        <SpecimenContextPanelInline
+          studyId={studyId}
+          specimen={selectedGroupKey}
+          activeFindings={activeFindings}
+          analytics={analytics}
+          nav={nav}
+          selectFinding={selectFinding}
+        />
+      );
+    }
 
     // Priority 3: empty state — show normalization heatmap when OM data present
     const normContexts = analytics.normalizationContexts;
@@ -1600,6 +1849,11 @@ export function FindingsContextPanel() {
           {!hasSibling && selectedFinding.dose_response_pattern && (
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               {getPatternLabel(selectedFinding.dose_response_pattern)}
+            </span>
+          )}
+          {eciConfidence && (
+            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${confidenceLevelClass(eciConfidence)}`}>
+              {eciConfidence}
             </span>
           )}
           {(() => {

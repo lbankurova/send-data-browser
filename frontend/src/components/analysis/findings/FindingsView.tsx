@@ -629,6 +629,8 @@ export function FindingsView() {
             <SeverityMatrix
               findings={tableFindings}
               doseGroups={data.dose_groups}
+              studyId={studyId}
+              specimen={scopeLabel}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (

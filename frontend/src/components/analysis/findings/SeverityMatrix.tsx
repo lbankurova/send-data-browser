@@ -2,7 +2,7 @@
  * SeverityMatrix — specimen-scoped severity heatmap for FindingsView.
  *
  * Renders when rail is in specimen grouping mode and a specimen card is selected.
- * Rows = MI/MA findings for the specimen, columns = dose groups.
+ * Rows = MI/MA findings for the specimen, columns = dose groups (terminal | recovery).
  * Dual encoding: cell color = avg severity (grayscale heat), cell label = affected/n.
  */
 
@@ -10,11 +10,15 @@ import { useMemo, useState } from "react";
 import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import type { SubjectHistopathEntry } from "@/types/timecourse";
 
 interface SeverityMatrixProps {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
+  studyId?: string;
+  specimen?: string | null;
 }
 
 interface MatrixCell {
@@ -24,12 +28,10 @@ interface MatrixCell {
   isGraded: boolean;
 }
 
-/** Deduplicate findings by (finding, sex) → merge sex rows into combined stats. */
+/** Build terminal cells from UnifiedFinding group_stats. */
 function buildMatrix(findings: UnifiedFinding[]) {
-  // Only MI/MA findings
   const miMa = findings.filter(f => f.domain === "MI" || f.domain === "MA");
 
-  // Group by endpoint_label+domain (may have M and F rows)
   const grouped = new Map<string, UnifiedFinding[]>();
   for (const f of miMa) {
     const key = `${f.endpoint_label ?? f.finding}\0${f.domain}`;
@@ -38,12 +40,11 @@ function buildMatrix(findings: UnifiedFinding[]) {
     grouped.set(key, arr);
   }
 
-  // Build rows
   const rows: {
     key: string;
     label: string;
     domain: string;
-    endpointLabel: string;
+    finding: string;
     isGraded: boolean;
     maxSev: number;
     cells: Map<number, MatrixCell>;
@@ -53,9 +54,8 @@ function buildMatrix(findings: UnifiedFinding[]) {
     const first = fGroup[0];
     const label = first.finding;
     const domain = first.domain;
-    const endpointLabel = first.endpoint_label ?? first.finding;
+    const finding = first.finding;
 
-    // Aggregate across sexes per dose level
     const cells = new Map<number, MatrixCell>();
     let isGraded = false;
     let maxSev = 0;
@@ -85,10 +85,9 @@ function buildMatrix(findings: UnifiedFinding[]) {
       }
     }
 
-    rows.push({ key, label, domain, endpointLabel, isGraded, maxSev, cells });
+    rows.push({ key, label, domain, finding, isGraded, maxSev, cells });
   }
 
-  // Sort: graded first (by maxSev desc), then non-graded (alpha)
   rows.sort((a, b) => {
     if (a.isGraded && !b.isGraded) return -1;
     if (!a.isGraded && b.isGraded) return 1;
@@ -97,6 +96,46 @@ function buildMatrix(findings: UnifiedFinding[]) {
   });
 
   return rows;
+}
+
+/** Build recovery cells from subject-level data. */
+function buildRecoveryCells(
+  subjects: SubjectHistopathEntry[],
+  findingNames: string[],
+  doseLevels: number[],
+): Map<string, Map<number, MatrixCell>> {
+  const recSubjects = subjects.filter(s => s.is_recovery);
+  if (recSubjects.length === 0) return new Map();
+
+  const result = new Map<string, Map<number, MatrixCell>>();
+
+  for (const finding of findingNames) {
+    const cells = new Map<number, MatrixCell>();
+    for (const dl of doseLevels) {
+      const doseSubjects = recSubjects.filter(s => s.dose_level === dl);
+      if (doseSubjects.length === 0) continue;
+      let affected = 0;
+      let sevSum = 0;
+      let hasGraded = false;
+      for (const s of doseSubjects) {
+        const fd = s.findings[finding];
+        if (fd && fd.severity_num > 0) {
+          affected++;
+          sevSum += fd.severity_num;
+          if (fd.severity_num >= 1) hasGraded = true;
+        }
+      }
+      cells.set(dl, {
+        affected,
+        n: doseSubjects.length,
+        avgSeverity: affected > 0 ? sevSum / affected : null,
+        isGraded: hasGraded,
+      });
+    }
+    result.set(finding, cells);
+  }
+
+  return result;
 }
 
 // ─── Legend ─────────────────────────────────────────────────
@@ -136,7 +175,7 @@ function Legend() {
 
 // ─── Component ──────────────────────────────────────────────
 
-export function SeverityMatrix({ findings, doseGroups }: SeverityMatrixProps) {
+export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: SeverityMatrixProps) {
   const [gradedOnly, setGradedOnly] = useState(false);
 
   const rows = useMemo(() => buildMatrix(findings), [findings]);
@@ -144,6 +183,26 @@ export function SeverityMatrix({ findings, doseGroups }: SeverityMatrixProps) {
     () => gradedOnly ? rows.filter(r => r.isGraded) : rows,
     [rows, gradedOnly],
   );
+
+  // Recovery data from subject-level endpoint
+  const { data: subjData } = useHistopathSubjects(studyId, specimen ?? null);
+  const hasRecovery = useMemo(
+    () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
+    [subjData],
+  );
+  const recoveryDoseLevels = useMemo(() => {
+    if (!hasRecovery || !subjData?.subjects) return [];
+    const levels = new Set<number>();
+    for (const s of subjData.subjects) {
+      if (s.is_recovery) levels.add(s.dose_level);
+    }
+    return [...levels].sort((a, b) => a - b);
+  }, [hasRecovery, subjData]);
+  const recoveryCells = useMemo(() => {
+    if (!hasRecovery || !subjData?.subjects) return new Map<string, Map<number, MatrixCell>>();
+    const findingNames = rows.map(r => r.finding);
+    return buildRecoveryCells(subjData.subjects, findingNames, recoveryDoseLevels);
+  }, [hasRecovery, subjData, rows, recoveryDoseLevels]);
 
   if (rows.length === 0) {
     return (
@@ -195,30 +254,76 @@ export function SeverityMatrix({ findings, doseGroups }: SeverityMatrixProps) {
                   </th>
                 );
               })}
+              {/* Recovery columns */}
+              {hasRecovery && (
+                <>
+                  <th className="px-0.5 py-1.5" style={{ width: 1 }}>
+                    <div className="mx-0.5 h-4 w-px bg-border" />
+                  </th>
+                  {recoveryDoseLevels.map(dl => {
+                    const dg = doseGroups.find(d => d.dose_level === dl);
+                    const shortLabel = dl === 0 ? "C" : String(dg?.dose_value ?? dl);
+                    return (
+                      <th key={`rec_${dl}`} className="px-1 py-1.5 text-center" style={{ width: 1, whiteSpace: "nowrap" }}>
+                        <span className="text-[10px] font-medium text-muted-foreground">{shortLabel}</span>
+                      </th>
+                    );
+                  })}
+                </>
+              )}
             </tr>
+            {/* Recovery header label */}
+            {hasRecovery && (
+              <tr>
+                <th colSpan={2 + doseGroups.length} />
+                <th className="px-0.5" style={{ width: 1 }} />
+                <th colSpan={recoveryDoseLevels.length} className="pb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Recovery
+                </th>
+              </tr>
+            )}
           </thead>
           <tbody>
-            {visibleRows.map(row => (
-              <tr
-                key={row.key}
-                className="hover:bg-accent/30"
-              >
-                <td className="px-2 py-px text-[10px] font-semibold text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
-                  {row.domain}
-                </td>
-                <td className="px-2 py-px" style={{ width: "100%" }}>
-                  <span className="text-xs">{row.label}</span>
-                </td>
-                {doseGroups.map(dg => {
-                  const cell = row.cells.get(dg.dose_level);
-                  return (
-                    <td key={dg.dose_level} className="px-1 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
-                      <CellRenderer cell={cell} />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {visibleRows.map(row => {
+              const recCells = recoveryCells.get(row.finding);
+              return (
+                <tr
+                  key={row.key}
+                  className="hover:bg-accent/30"
+                >
+                  <td className="px-2 py-px text-[10px] font-semibold text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+                    {row.domain}
+                  </td>
+                  <td className="px-2 py-px" style={{ width: "100%" }}>
+                    <span className="text-xs">{row.label}</span>
+                  </td>
+                  {doseGroups.map(dg => {
+                    const cell = row.cells.get(dg.dose_level);
+                    return (
+                      <td key={dg.dose_level} className="px-1 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
+                        <CellRenderer cell={cell} />
+                      </td>
+                    );
+                  })}
+                  {/* Recovery cells */}
+                  {hasRecovery && (
+                    <>
+                      <td className="px-0.5" style={{ width: 1 }}>
+                        <div className="mx-0.5 h-full w-px bg-border" />
+                      </td>
+                      {recoveryDoseLevels.map(dl => {
+                        const cell = recCells?.get(dl);
+                        return (
+                          <td key={`rec_${dl}`} className="px-1 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
+                            <CellRenderer cell={cell} />
+                          </td>
+                        );
+                      })}
+                    </>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
