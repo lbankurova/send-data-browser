@@ -228,6 +228,7 @@ def assess_a3(
     *,
     route: str | None = None,
     vehicle: str | None = None,
+    control_group_mean: float | None = None,
 ) -> dict:
     """Assess A-3 factor: is the treated-group mean within HCD range?
 
@@ -235,10 +236,16 @@ def assess_a3(
     matching HCD entry. Tries SQLite database first (Phase 2), then falls
     back to static JSON (Phase 1).
 
+    When control_group_mean is provided, also checks whether the study's
+    concurrent control falls outside the HCD range — a conflict that means
+    the HCD comparison may be unreliable (reviewer audit 2026-03).
+
     Returns dict with:
       result: 'within_hcd' | 'outside_hcd' | 'no_hcd'
       score: -0.5 | +0.5 | 0.0
       detail: human-readable annotation
+      control_outside_hcd: bool (True if concurrent control is outside HCD range)
+      control_hcd_detail: str (description of control vs HCD comparison)
     Plus optional extended fields when SQLite is the source:
       percentile_rank, n, study_count, source
     """
@@ -261,7 +268,8 @@ def assess_a3(
                 route=route, vehicle=vehicle,
             )
             if hcd:
-                return _evaluate_hcd(treated_group_mean, hcd, sqlite_db, resolved, sex, dur_cat, organ_key)
+                return _evaluate_hcd(treated_group_mean, hcd, sqlite_db, resolved, sex, dur_cat, organ_key,
+                                     control_group_mean=control_group_mean)
 
     # Fallback to JSON (Phase 1)
     json_db = _load_db()
@@ -281,7 +289,49 @@ def assess_a3(
         f"Treated mean {treated_group_mean:.3f} vs HCD [{hcd.lower:.3f}, {hcd.upper:.3f}] "
         f"(ref: {hcd.mean}±{hcd.sd}, n={hcd.n}, {hcd.source})"
     )
-    return {"result": result, "score": score, "detail": detail}
+    out = {"result": result, "score": score, "detail": detail}
+    _check_control_vs_hcd(out, control_group_mean, hcd.lower, hcd.upper, hcd.mean, hcd.sd)
+    return out
+
+
+def _check_control_vs_hcd(
+    out: dict,
+    control_group_mean: float | None,
+    hcd_lower: float,
+    hcd_upper: float,
+    hcd_mean: float,
+    hcd_sd: float,
+) -> None:
+    """Check if the study's concurrent control falls outside the HCD range.
+
+    When the concurrent control itself is an outlier relative to the HCD,
+    the HCD-based scoring may be unreliable — the study's baseline differs
+    substantially from historical norms. Mutates `out` in place.
+    """
+    if control_group_mean is None:
+        out["control_outside_hcd"] = False
+        out["control_hcd_detail"] = "No control mean available"
+        return
+
+    ctrl_within = hcd_lower <= control_group_mean <= hcd_upper
+    out["control_outside_hcd"] = not ctrl_within
+    if ctrl_within:
+        out["control_hcd_detail"] = (
+            f"Control mean {control_group_mean:.3f} within HCD "
+            f"[{hcd_lower:.3f}, {hcd_upper:.3f}]"
+        )
+    else:
+        # Flag: concurrent control disagrees with HCD — scoring may mislead
+        n_sd_from_mean = abs(control_group_mean - hcd_mean) / hcd_sd if hcd_sd > 0 else 0
+        out["control_hcd_detail"] = (
+            f"WARNING: Control mean {control_group_mean:.3f} outside HCD "
+            f"[{hcd_lower:.3f}, {hcd_upper:.3f}] ({n_sd_from_mean:.1f} SD from HCD mean) "
+            f"— concurrent control dominates; HCD comparison may be unreliable"
+        )
+        log.warning(
+            "HCD conflict: control mean %.3f outside HCD [%.3f, %.3f] for this organ/sex",
+            control_group_mean, hcd_lower, hcd_upper,
+        )
 
 
 def _evaluate_hcd(
@@ -292,6 +342,8 @@ def _evaluate_hcd(
     sex: str,
     dur_cat: str,
     organ_key: str,
+    *,
+    control_group_mean: float | None = None,
 ) -> dict:
     """Evaluate a treated-group mean against an HCD entry (SQLite source)."""
     within = hcd["lower"] <= treated_group_mean <= hcd["upper"]
@@ -314,6 +366,10 @@ def _evaluate_hcd(
     pct = sqlite_db.percentile_rank(treated_group_mean, strain, sex, dur_cat, organ_key)
     if pct is not None:
         out["percentile_rank"] = pct
+
+    # Concurrent control vs HCD conflict check
+    _check_control_vs_hcd(out, control_group_mean, hcd["lower"], hcd["upper"],
+                          hcd["mean"], hcd["sd"])
 
     return out
 

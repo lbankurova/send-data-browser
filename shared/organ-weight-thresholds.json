@@ -1,8 +1,8 @@
 {
   "_comment": "Organ-specific weight change thresholds for regulatory toxicology assessment. Sources: FDA reviewer practice, Hood (2006), Hall (2012), Capen (1997), ECETOC TRA.",
   "_schema": {
-    "variation_ceiling_pct": "Below this % change, the finding is trivially small (noise ceiling)",
-    "adverse_floor_pct": "At or above this % change, the finding is biologically meaningful (adverse floor)",
+    "variation_ceiling_pct": "Noise ceiling: below this % change, the effect is trivially small and indistinguishable from normal variation. Named 'ceiling' because it is the upper bound of the noise band. Example: liver ceiling=5% means <5% change is noise.",
+    "adverse_floor_pct": "Adverse floor: at or above this % change, the effect is biologically meaningful. Named 'floor' because it is the lower bound of the adverse range. Example: liver floor=10% means >=10% change is adverse (if statistically significant).",
     "strong_adverse_pct": "At or above this, the finding is clearly adverse regardless of context",
     "adaptive_requires": "Optional block: conditions required to claim 'adaptive' for this organ",
     "special_flags": "Optional array: organ-specific caveats the engine should annotate",

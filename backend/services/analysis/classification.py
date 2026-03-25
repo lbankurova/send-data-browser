@@ -115,8 +115,15 @@ def _pooled_sd(group_stats: list[dict]) -> float:
 # ---------------------------------------------------------------------------
 # Three-tier system from deep-research brief 9, based on biological variability:
 #   Tier 1 (CV < 10%):  0.5 SD — tight band, high sensitivity
-#   Tier 2 (CV 10-20%): 0.5 SD — same fraction, equivocal flagging deferred
+#   Tier 2 (CV 10-20%): 0.5 SD — same fraction as Tier 1 (intentional)
 #   Tier 3 (CV > 20%):  0.75 SD — wider band absorbs intrinsic noise
+#
+# Design note (reviewer audit 2026-03): Tier 1 and Tier 2 share the same
+# 0.5 SD equivalence fraction. This is intentional — the differentiation
+# happens downstream in the GRADE confidence scoring system (confidence.py):
+# Tier 2 endpoints receive a D6 penalty (-1) when the max step falls in
+# the 0.75–1.0 SD equivocal zone, flagging genuine-but-marginal effects
+# without changing the dose-response pattern classification itself.
 
 _TIER_FRACTIONS = {1: 0.5, 2: 0.5, 3: 0.75}
 
@@ -426,9 +433,18 @@ def determine_treatment_related(finding: dict) -> bool:
     if severity == "adverse" and dose_response in ("monotonic_increase", "monotonic_decrease"):
         return True
 
-    # Very significant pairwise only
+    # Very significant pairwise only — with effect size floor for continuous
+    # endpoints to prevent declaring trivially small effects treatment-related
+    # purely on statistical power in well-powered studies (reviewer audit 2026-03).
     if min_p is not None and min_p < 0.01:
-        return True
+        from services.analysis.send_knowledge import get_effect_size as _get_es
+        max_d = _get_es(finding)
+        # Incidence endpoints have no effect size — p < 0.01 alone is sufficient
+        if max_d is None:
+            return True
+        # Continuous: require minimum biological signal (|d| >= 0.2)
+        if abs(max_d) >= 0.2:
+            return True
 
     return False
 
@@ -465,10 +481,23 @@ def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
     elif pattern in ("non_monotonic", "u_shaped"):
         score += 0.5
 
-    # A-2: Concordance — corroboration from other domains
+    # A-2: Concordance — corroboration from other domains.
+    # Gate: corroboration is an amplifier, not a promoter.  A-2 bonus applies
+    # only when the finding has at least minimal evidence of a signal.
+    # Zero-evidence corroboration (RELREC or syndrome) records the linkage
+    # truthfully but doesn't move the classification needle.
     corr = finding.get("corroboration_status", "not_applicable")
     if corr == "corroborated":
-        score += 1.0
+        sev = finding.get("severity", "normal")
+        p = finding.get("min_p_adj")
+        tp = finding.get("trend_p")
+        has_signal = (
+            sev != "normal"
+            or (p is not None and p < 0.10)
+            or (tp is not None and tp < 0.10)
+        )
+        if has_signal:
+            score += 1.0
 
     # A-3: Historical control data (HCD)
     score += a3_score
@@ -551,7 +580,12 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
                 return "tr_adverse"
             return "tr_adaptive"
 
-    # B-1: Large magnitude → adverse (Cohen's d thresholds, continuous only)
+    # B-1: Large magnitude → adverse (continuous only)
+    # Thresholds (0.5 / 0.8 / 1.5) are intentionally shifted upward from
+    # Cohen's canonical benchmarks (0.2 / 0.5 / 0.8). In preclinical tox,
+    # biological variability and small group sizes inflate effect estimates —
+    # higher thresholds reduce false-positive adverse calls. This is a
+    # deliberate conservatism choice, not an oversight (reviewer audit 2026-03).
     if abs_d >= 1.5:
         return "tr_adverse"
 
@@ -746,16 +780,19 @@ def _compute_a3_for_om(
     """
     from services.analysis.hcd import assess_a3
 
-    # Get highest-dose group mean (absolute organ weight)
+    # Get highest-dose and control group means (absolute organ weight)
     gs = finding.get("group_stats", [])
     treated_mean = None
+    control_mean = None
     if gs:
         treated_mean = gs[-1].get("mean")
+        control_mean = gs[0].get("mean")  # dose_level 0 = vehicle control
 
     specimen = finding.get("specimen", "")
     sex = finding.get("sex", "")
     return assess_a3(treated_mean, specimen, sex, strain, duration_days,
-                     route=route, vehicle=vehicle)
+                     route=route, vehicle=vehicle,
+                     control_group_mean=control_mean)
 
 
 def _evaluate_b6_for_finding(
