@@ -96,6 +96,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
   const normalization = useOrganWeightNormalization(studyId, false, effectSize as EffectSizeMethod);
   const overrides = useNormalizationOverrides(studyId);
+  const [showNormTable, setShowNormTable] = useState(false);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // Auto-selected mode per organ (for "auto" label in dropdown)
@@ -220,18 +221,30 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                   <span>({brainTierLabel}{usesDogThresholds ? " (dog thresholds)" : ""})</span>
                 )}
               </div>
-              <div>
-                {isPerOrganAuto
-                  ? `Per-organ auto-selected for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`
-                  : `Forced: ${methodLabel} for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`}
-              </div>
               {rationale && <div>{rationale}</div>}
+              <div className="flex items-baseline gap-2">
+                <span>
+                  {isPerOrganAuto
+                    ? `Per-organ auto-selected for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`
+                    : `Forced: ${methodLabel} for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`}
+                </span>
+                {normalization.state && normalization.state.contexts.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    title="View and override per-organ normalization methods"
+                    onClick={() => setShowNormTable((v) => !v)}
+                  >
+                    {showNormTable ? "Hide" : "Override"}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })()}
 
-        {/* Normalization table — always show when contexts available */}
-        {normalization.state && normalization.state.contexts.length > 0 && (
+        {/* Normalization table — expandable via Override link */}
+        {showNormTable && normalization.state && normalization.state.contexts.length > 0 && (
           <div className="mb-1 mt-0.5">
             <NormalizationHeatmap
               contexts={normalization.state.contexts}
