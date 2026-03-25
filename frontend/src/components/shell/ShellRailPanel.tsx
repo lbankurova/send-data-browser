@@ -78,7 +78,7 @@ export function ShellRailPanel() {
     setGroupScope(scope);
     setActiveEndpoint(null);
     // Update group selection in context for context panel routing
-    if (scope && (scope.type === "organ" || scope.type === "syndrome")) {
+    if (scope && (scope.type === "organ" || scope.type === "syndrome" || scope.type === "specimen")) {
       selectGroup(scope.type, scope.value);
     } else {
       selectGroup(null, null);

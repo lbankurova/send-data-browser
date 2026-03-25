@@ -28,6 +28,8 @@ import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { CausalityWorksheet } from "./CausalityWorksheet";
 import type { CausalitySummary, CausalAssessment } from "./CausalityWorksheet";
 import { InsightsList } from "./InsightsList";
+import { QualifierDetailPane } from "./QualifierDetailPane";
+import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { deriveToxSuggestion } from "@/types/annotations";
 import { ChevronRight } from "lucide-react";
@@ -49,6 +51,9 @@ import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
+import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
+import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
 import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
@@ -1030,6 +1035,149 @@ function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
   );
 }
 
+// ─── Lab Correlates (inline, ported from HistopathologyContextPanel) ─────────
+
+function signalDots(signal: number): string {
+  if (signal >= 3) return "\u25CF\u25CF\u25CF";
+  if (signal >= 2) return "\u25CF\u25CF";
+  if (signal >= 1) return "\u25CF";
+  return "";
+}
+
+function LabCorrelatesInline({ correlations, isLoading, finding }: {
+  correlations: Array<{ test: string; pctChange: number; controlMean: number; highDoseMean: number; unit: string; signal: number; isRelevant: boolean; direction: "up" | "down" }>;
+  isLoading: boolean;
+  finding?: string;
+}) {
+  if (isLoading) return <p className="text-xs text-muted-foreground">Loading lab data...</p>;
+  if (correlations.length === 0) return <p className="text-xs text-muted-foreground">No clinical pathology data available.</p>;
+
+  const relevant = correlations.filter(c => c.signal > 0 || c.isRelevant).slice(0, 8);
+  if (relevant.length === 0) return <p className="text-xs text-muted-foreground">No relevant lab changes detected.</p>;
+
+  return (
+    <div className="space-y-0.5">
+      {finding && <p className="text-[11px] text-muted-foreground">Most relevant for {finding}</p>}
+      {relevant.map(c => (
+        <div key={c.test} className="text-[11px]">
+          <span className={c.isRelevant ? "font-medium text-foreground" : "text-muted-foreground"}>
+            {c.test}: {c.pctChange >= 0 ? "+" : ""}{c.pctChange.toFixed(0)}% at high dose ({c.controlMean.toFixed(0)} {"\u2192"} {c.highDoseMean.toFixed(0)} {c.unit})
+          </span>
+          {c.signal > 0 && <span className="ml-1 font-mono text-[10px] text-muted-foreground">{signalDots(c.signal)}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Peer Comparison / HCD (inline, ported from HistopathologyContextPanel) ──
+
+function PeerComparisonInline({ row }: {
+  row: { finding: string; controlIncidence: number; hcd: HistoricalControlData | null; status: HCDStatus };
+}) {
+  const { finding, controlIncidence, hcd, status } = row;
+  if (!hcd) return null;
+
+  const meanPct = Math.round(hcd.mean_incidence * 100);
+  const rangeLow = Math.round(hcd.min_incidence * 100);
+  const rangeHigh = Math.round(hcd.max_incidence * 100);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-muted-foreground">
+        Control group incidence vs historical control data (HCD) for the same strain.
+      </p>
+      <table className="w-full text-[11px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Study ctrl</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">HCD range</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-dashed">
+            <td className="max-w-[120px] truncate py-1 text-xs font-medium" title={finding}>{finding}</td>
+            <td className="py-1 text-right font-mono text-muted-foreground">{Math.round(controlIncidence * 100)}%</td>
+            <td className="py-1 text-right text-muted-foreground">
+              <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
+              <br />
+              <span className="text-[10px] text-muted-foreground/60">mean {meanPct}%, n={hcd.n_studies}</span>
+            </td>
+            <td className="py-1 text-right">
+              <span className={cn(
+                "text-[10px]",
+                status === "above_range" ? "font-medium text-foreground"
+                  : status === "at_upper" ? "text-muted-foreground"
+                  : "text-muted-foreground/60",
+              )}>
+                {status === "above_range" && "\u25B2 "}
+                {status === "at_upper" && "\u26A0 "}
+                {HCD_STATUS_LABELS[status]}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {hcd && (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">mock</span>
+          <span className="text-[10px] text-muted-foreground/50">Simulated historical control data</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Correlating Evidence (inline, ported from HistopathologyContextPanel) ────
+
+function CorrelatingEvidenceInline({ evidence }: {
+  evidence: {
+    inThisSpecimen: [string, { maxIncidence: number; domain: string }][];
+    crossOrgan: [string, { maxIncidence: number }][];
+  };
+}) {
+  return (
+    <div className="space-y-2">
+      {/* In this specimen */}
+      {evidence.inThisSpecimen.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No other findings in this specimen.</p>
+      ) : (
+        <div className="space-y-0.5">
+          {evidence.inThisSpecimen.map(([name, info]) => (
+            <div key={name} className="flex items-center justify-between text-xs">
+              <span className="min-w-0 truncate" title={name}>
+                <span className="mr-1 text-[10px] font-semibold text-muted-foreground">{info.domain}</span>
+                {name}
+              </span>
+              <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                {Math.round(info.maxIncidence * 100)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* In other specimens (same finding) — R16 cross-organ */}
+      {evidence.crossOrgan.length > 0 && (
+        <div className="mt-2">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            In other specimens (same finding)
+          </div>
+          <div className="space-y-0.5">
+            {evidence.crossOrgan.map(([specimen, info]) => (
+              <div key={specimen} className="text-xs">
+                <span className="text-muted-foreground">{specimen}</span>
+                <span className="text-[10px] text-muted-foreground"> {"\u00B7"} {Math.round(info.maxIncidence * 100)}% incidence</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
@@ -1055,10 +1203,10 @@ export function FindingsContextPanel() {
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // ── Navigation history (D1) ──
-  type FindingsNavEntry = { type: "finding"; id: string } | { type: "organ" | "syndrome"; key: string };
+  type FindingsNavEntry = { type: "finding"; id: string } | { type: "organ" | "syndrome" | "specimen"; key: string };
   const currentNavEntry = useMemo((): FindingsNavEntry | null => {
     if (selectedFindingId) return { type: "finding", id: selectedFindingId };
-    if (selectedGroupType && selectedGroupKey) return { type: selectedGroupType as "organ" | "syndrome", key: selectedGroupKey };
+    if (selectedGroupType && selectedGroupKey) return { type: selectedGroupType as "organ" | "syndrome" | "specimen", key: selectedGroupKey };
     return null;
   }, [selectedFindingId, selectedGroupType, selectedGroupKey]);
 
@@ -1128,6 +1276,67 @@ export function FindingsContextPanel() {
     const verdict = recoveryOverview.byEndpointLabel.get(label);
     return verdict === "not_examined";
   }, [selectedFinding, recoveryOverview.byEndpointLabel]);
+
+  // Lab correlates (MI/MA findings — specimen-scoped)
+  const isHistoFinding = selectedFinding?.domain === "MI" || selectedFinding?.domain === "MA";
+  const labCorrelation = useSpecimenLabCorrelation(
+    studyId,
+    isHistoFinding ? selectedFinding?.specimen ?? null : null,
+    isHistoFinding ? selectedFinding?.finding ?? undefined : undefined,
+  );
+
+  // Peer comparison / HCD (MI/MA findings — control incidence vs historical controls)
+  const peerRow = useMemo(() => {
+    if (!isHistoFinding || !selectedFinding?.specimen || !selectedFinding?.finding) return null;
+    const controlGs = selectedFinding.group_stats.find(gs => gs.dose_level === 0);
+    if (!controlGs) return null;
+    const controlInc = controlGs.incidence ?? (controlGs.n > 0 ? (controlGs.affected ?? 0) / controlGs.n : 0);
+    const organName = selectedFinding.specimen.toLowerCase().replace(/_/g, " ");
+    const hcd = getHistoricalControl(selectedFinding.finding, organName);
+    const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+    return { finding: selectedFinding.finding, controlIncidence: controlInc, hcd, status };
+  }, [isHistoFinding, selectedFinding]);
+
+  // Correlating evidence — other MI/MA findings in the same specimen + cross-organ matches
+  const correlatingEvidence = useMemo(() => {
+    if (!isHistoFinding || !selectedFinding?.specimen || !selectedFinding?.finding) return null;
+    const specimen = selectedFinding.specimen;
+    const finding = selectedFinding.finding;
+
+    // In this specimen: other findings
+    const sameSpecimen = activeFindings
+      .filter(f => f.specimen === specimen && (f.domain === "MI" || f.domain === "MA") && f.finding !== finding)
+      .reduce((acc, f) => {
+        if (!acc.has(f.finding)) {
+          const maxInc = Math.max(...f.group_stats.filter(gs => gs.dose_level > 0).map(gs => gs.incidence ?? 0), 0);
+          acc.set(f.finding, { maxIncidence: maxInc, domain: f.domain });
+        }
+        return acc;
+      }, new Map<string, { maxIncidence: number; domain: string }>());
+
+    const inThisSpecimen = [...sameSpecimen.entries()]
+      .sort((a, b) => b[1].maxIncidence - a[1].maxIncidence)
+      .slice(0, 10);
+
+    // Cross-organ: same finding in other specimens
+    const findingLower = finding.toLowerCase();
+    const otherSpecimens = activeFindings
+      .filter(f => f.finding.toLowerCase() === findingLower && f.specimen !== specimen && f.specimen != null && (f.domain === "MI" || f.domain === "MA"))
+      .reduce((acc, f) => {
+        const spec = f.specimen!;
+        if (!acc.has(spec)) {
+          const maxInc = Math.max(...f.group_stats.filter(gs => gs.dose_level > 0).map(gs => gs.incidence ?? 0), 0);
+          acc.set(spec, { maxIncidence: maxInc });
+        }
+        return acc;
+      }, new Map<string, { maxIncidence: number }>());
+
+    const crossOrgan = [...otherSpecimens.entries()]
+      .sort((a, b) => b[1].maxIncidence - a[1].maxIncidence)
+      .slice(0, 8);
+
+    return { inThisSpecimen, crossOrgan };
+  }, [isHistoFinding, selectedFinding, activeFindings]);
 
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {
@@ -1322,6 +1531,7 @@ export function FindingsContextPanel() {
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
       return <SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} />;
     }
+    // Specimen-level context panel — Phase 5 (not yet implemented)
 
     // Priority 3: empty state — show normalization heatmap when OM data present
     const normContexts = analytics.normalizationContexts;
@@ -1361,7 +1571,18 @@ export function FindingsContextPanel() {
       <ContextPanelHeader
         title={selectedFinding.finding}
         subtitle={
-          <>{selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}</>
+          <>
+            {selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}
+            {selectedFinding.modifier_profile?.dominant_temporality && (
+              <> &middot; {selectedFinding.modifier_profile.dominant_temporality}</>
+            )}
+            {selectedFinding.modifier_profile?.dominant_distribution && (
+              <> &middot; {selectedFinding.modifier_profile.dominant_distribution}</>
+            )}
+            {selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0 && (
+              <> &middot; {Object.entries(selectedFinding.modifier_profile.laterality).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(", ")}</>
+            )}
+          </>
         }
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -1547,6 +1768,55 @@ export function FindingsContextPanel() {
             <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
           </CollapsiblePane>
         </div>
+      )}
+
+      {/* Qualifier detail — MI/MA only, full modifier breakdown */}
+      {selectedFinding && (selectedFinding.domain === "MI" || selectedFinding.domain === "MA") && selectedFinding.modifier_profile && (
+        <CollapsiblePane
+          title="Qualifiers"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <QualifierDetailPane finding={selectedFinding} />
+        </CollapsiblePane>
+      )}
+
+      {/* Lab correlates — MI/MA only, specimen-scoped clinical pathology */}
+      {isHistoFinding && labCorrelation.correlations.length > 0 && (
+        <CollapsiblePane
+          title="Lab correlates"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <LabCorrelatesInline
+            correlations={labCorrelation.correlations}
+            isLoading={labCorrelation.isLoading}
+            finding={selectedFinding?.finding}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Peer comparison / HCD — MI/MA only, control vs historical controls */}
+      {isHistoFinding && peerRow && peerRow.hcd && (
+        <CollapsiblePane
+          title="Peer comparison (HCD)"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <PeerComparisonInline row={peerRow} />
+        </CollapsiblePane>
+      )}
+
+      {/* Correlating evidence — MI/MA only, same specimen + cross-organ */}
+      {isHistoFinding && correlatingEvidence && (correlatingEvidence.inThisSpecimen.length > 0 || correlatingEvidence.crossOrgan.length > 0) && (
+        <CollapsiblePane
+          title="Correlating evidence"
+          defaultOpen
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <CorrelatingEvidenceInline evidence={correlatingEvidence} />
+        </CollapsiblePane>
       )}
 
       {/* Analysis + determination panes — need useFindingContext data */}
@@ -1866,6 +2136,11 @@ export function FindingsContextPanel() {
           endpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
           systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
         />
+      )}
+
+      {/* Pathology review — MI/MA only */}
+      {isHistoFinding && studyId && (
+        <PathologyReviewForm studyId={studyId} finding={selectedFinding.finding} />
       )}
       </>
       ) : null}
