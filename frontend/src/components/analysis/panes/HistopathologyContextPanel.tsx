@@ -42,7 +42,7 @@ import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import type { SignalSummaryRow } from "@/types/analysis-views";
-import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
+import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, aggregateSubjectLaterality, lateralitySummary } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import type { LabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 
@@ -758,29 +758,21 @@ function SpecimenOverviewPane({
   // Laterality summary for paired organs
   const lateralityInfo = useMemo(() => {
     if (!isPairedOrgan(specimen) || !subjData?.subjects || !specimenHasLaterality(subjData.subjects)) return null;
-    // Aggregate across all findings
+    // Per-finding breakdown (observation-level, for detail display)
     const findings = subjData.findings ?? [];
     const perFinding = findings.map((f) => ({
       finding: f,
       agg: aggregateFindingLaterality(subjData.subjects, f),
     })).filter((x) => x.agg.left > 0 || x.agg.right > 0 || x.agg.bilateral > 0);
     if (perFinding.length === 0) return null;
-    // Overall totals
-    const total = { left: 0, right: 0, bilateral: 0, total: 0 };
-    for (const pf of perFinding) {
-      total.left += pf.agg.left;
-      total.right += pf.agg.right;
-      total.bilateral += pf.agg.bilateral;
-      total.total += pf.agg.total;
-    }
-    // Predominantly unilateral? Spec: >70% same laterality and not bilateral
-    const unilateral = total.left + total.right;
-    const affected = unilateral + total.bilateral;
-    const isUnilateral = affected > 0 && unilateral / affected >= 0.7;
-    // Determine dominant side for display
-    const dominantSide = total.left >= total.right ? "left" : "right";
-    const dominantCount = Math.max(total.left, total.right);
-    return { perFinding, total, isUnilateral, dominantSide, dominantCount, affected };
+    // Subject-level laterality: each subject counted once by dominant pattern
+    const subjectAgg = aggregateSubjectLaterality(subjData.subjects);
+    if (subjectAgg.total === 0) return null;
+    // Predominantly one-sided? Dominant side must account for ≥70% of subjects
+    const dominantSideCount = Math.max(subjectAgg.left, subjectAgg.right);
+    const isUnilateral = subjectAgg.total >= 3 && dominantSideCount / subjectAgg.total >= 0.7;
+    const dominantSide = subjectAgg.left >= subjectAgg.right ? "left" : "right";
+    return { perFinding, subjectAgg, isUnilateral, dominantSide, dominantSideCount };
   }, [specimen, subjData]);
 
   // Lab correlation (specimen-level)
@@ -1249,9 +1241,9 @@ function SpecimenOverviewPane({
         <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1">
             <p className="text-[11px] text-muted-foreground italic">
-              Laterality: Predominantly {lateralityInfo.isUnilateral
-                ? `${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantCount}/${lateralityInfo.affected} affected subjects)`
-                : `${lateralitySummary(lateralityInfo.total)}`
+              Laterality: {lateralityInfo.isUnilateral
+                ? `Predominantly ${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantSideCount}/${lateralityInfo.subjectAgg.total} subjects)`
+                : `Mixed (${lateralitySummary(lateralityInfo.subjectAgg)})`
               }
             </p>
             {lateralityInfo.isUnilateral && (

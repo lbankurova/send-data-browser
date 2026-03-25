@@ -85,6 +85,44 @@ export function lateralityShortLabel(lat: string | null | undefined): string {
   return u.charAt(0);
 }
 
+/**
+ * Aggregate laterality at the subject level — each subject counted once.
+ * A subject's dominant laterality is determined by their finding pattern:
+ * - More LEFT than RIGHT findings → "left"
+ * - More RIGHT than LEFT findings → "right"
+ * - Equal LEFT and RIGHT (both > 0), or only BILATERAL → "bilateral"
+ */
+export function aggregateSubjectLaterality(
+  subjects: SubjectHistopathEntry[],
+): LateralityAggregate {
+  let left = 0;
+  let right = 0;
+  let bilateral = 0;
+  let total = 0;
+
+  for (const s of subjects) {
+    let sL = 0;
+    let sR = 0;
+    let sB = 0;
+    for (const fData of Object.values(s.findings)) {
+      const lat = fData.laterality?.toUpperCase();
+      if (lat === "LEFT") sL++;
+      else if (lat === "RIGHT") sR++;
+      else if (lat === "BILATERAL") sB++;
+    }
+    if (sL === 0 && sR === 0 && sB === 0) continue;
+    total++;
+    if (sL > sR) left++;
+    else if (sR > sL) right++;
+    // NB: bilateral bucket includes two distinct patterns: subjects with
+    // genuinely bilateral findings (0L 0R 2B) AND subjects with equal
+    // unilateral counts on both sides (1L 1R 0B). Both are "no dominant side."
+    else bilateral++;
+  }
+
+  return { left, right, bilateral, total };
+}
+
 /** Produce a compact laterality summary string (e.g., "3L 2R 1B"). */
 export function lateralitySummary(agg: LateralityAggregate): string {
   const parts: string[] = [];
