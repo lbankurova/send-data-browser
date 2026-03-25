@@ -3,16 +3,19 @@ import { AlertTriangle } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from "@/lib/organ-weight-normalization";
+import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
+import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSelect } from "@/components/ui/FilterBar";
+
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -92,7 +95,24 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const recoveryControlsExcluded = allControlCount > controlGroups.length;
 
   const normalization = useOrganWeightNormalization(studyId, false, effectSize as EffectSizeMethod);
+  const overrides = useNormalizationOverrides(studyId);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // Auto-selected mode per organ (for "auto" label in dropdown)
+  const autoModes = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!normalization.state) return map;
+    for (const [organ, doseMap] of normalization.state.decisions) {
+      // Use worst-tier decision's mode as the organ-level auto mode
+      let worstTier = 0;
+      let mode = "body_weight";
+      for (const d of doseMap.values()) {
+        if (d.tier > worstTier) { worstTier = d.tier; mode = d.mode; }
+      }
+      map.set(organ, mode);
+    }
+    return map;
+  }, [normalization.state]);
 
   if (metaLoading) {
     return (
@@ -178,13 +198,11 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
               }
             }
           }
-          const autoMethod = highestTier >= 3
-            ? (worstBrainG != null ? "ratio-brain" : "ratio-bw")
-            : null;
-          const isAutoSelected = autoMethod != null && organWeightMethod === autoMethod;
+          const isPerOrganAuto = organWeightMethod === "recommended";
           const methodLabel = organWeightMethod === "ratio-brain" ? "ratio to brain"
             : organWeightMethod === "ratio-bw" ? "ratio to BW"
-            : "absolute";
+            : organWeightMethod === "absolute" ? "absolute"
+            : null; // "recommended" → no single method label
           const rationale = buildNormalizationRationale(highestTier, worstBrainG, speciesStrain);
           return (
             <div className="mb-0.5 space-y-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
@@ -203,13 +221,28 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 )}
               </div>
               <div>
-                {isAutoSelected ? "Auto-selected" : "User-selected"}
-                {`: ${methodLabel} for `}{elevatedCount} organ{elevatedCount !== 1 ? "s" : ""} at Tier 2+
+                {isPerOrganAuto
+                  ? `Per-organ auto-selected for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`
+                  : `Forced: ${methodLabel} for ${elevatedCount} organ${elevatedCount !== 1 ? "s" : ""} at Tier 2+`}
               </div>
               {rationale && <div>{rationale}</div>}
             </div>
           );
         })()}
+
+        {/* Normalization table — always show when contexts available */}
+        {normalization.state && normalization.state.contexts.length > 0 && (
+          <div className="mb-1 mt-0.5">
+            <NormalizationHeatmap
+              contexts={normalization.state.contexts}
+              doseGroups={meta?.dose_groups?.filter((dg) => !dg.is_recovery)}
+              overrides={overrides}
+              autoModes={autoModes}
+              hasBrainData={normalization.worstBrainG != null}
+              organEffectSizes={normalization.organEffectSizes}
+            />
+          </div>
+        )}
 
         {/* Adversity threshold */}
         <SettingsRow label="Adversity threshold">
@@ -377,3 +410,4 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
     </div>
   );
 }
+
