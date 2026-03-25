@@ -10,6 +10,7 @@ import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import { DayStepper } from "./DayStepper";
+import { SeverityMatrix } from "./SeverityMatrix";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -613,6 +614,21 @@ export function FindingsView() {
               onLeftTabChange={setLeftChartTab}
               hasRecovery={studyHasRecovery}
               recoveryData={recoveryData}
+            />
+          </ViewSection>
+        ) : scopeType === "specimen" && tableFindings.some(f => f.domain === "MI" || f.domain === "MA") ? (
+          /* Specimen-scoped → severity matrix */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <SeverityMatrix
+              findings={tableFindings}
+              doseGroups={data.dose_groups}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
