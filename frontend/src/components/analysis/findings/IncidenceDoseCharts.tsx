@@ -15,7 +15,7 @@ import {
   buildDoseSeverityBarOption,
 } from "@/components/analysis/charts/histopathology-charts";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { getVerdictLabel, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
+import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import {
   buildMainIncidenceGroups,
   buildMainSeverityGroups,
@@ -70,15 +70,15 @@ export function IncidenceDoseCharts({
   const incidenceRows = recoveryData?.incidence_rows ?? [];
 
   const recoveryIncGroups = useMemo(
-    () => hasRecovery ? buildRecoveryIncidenceGroups(incidenceRows, findingName, domain) : undefined,
-    [hasRecovery, incidenceRows, findingName, domain],
+    () => hasRecovery ? buildRecoveryIncidenceGroups(incidenceRows, findingName, domain, doseGroups) : undefined,
+    [hasRecovery, incidenceRows, findingName, domain, doseGroups],
   );
 
   const recoverySevGroups = useMemo(
     () => (hasRecovery && hasSeverity)
-      ? buildRecoverySeverityGroups(incidenceRows, findingName, domain)
+      ? buildRecoverySeverityGroups(incidenceRows, findingName, domain, doseGroups)
       : undefined,
-    [hasRecovery, hasSeverity, incidenceRows, findingName, domain],
+    [hasRecovery, hasSeverity, incidenceRows, findingName, domain, doseGroups],
   );
 
   const hasRecoveryData = (recoveryIncGroups?.length ?? 0) > 0;
@@ -161,7 +161,7 @@ export function IncidenceDoseCharts({
             <span key={v.label} className="whitespace-nowrap">
               {i > 0 && <span className="text-muted-foreground/40 mr-1">{"\u00b7"}</span>}
               <span className="text-muted-foreground/60">{v.label}: </span>
-              <span className={RECOVERY_VERDICT_COLOR[v.verdict] ?? "text-muted-foreground"}>
+              <span className={RECOVERY_VERDICT_CLASS[v.verdict] ?? "text-muted-foreground"}>
                 {getVerdictLabel(v.verdict)}
               </span>
             </span>

@@ -59,6 +59,27 @@ const sexLabels: Record<string, string> = { M: "Males", F: "Females" };
 const COMPACT_GRID = { left: 4, right: 8, top: 12, bottom: 16, containLabel: true };
 const COMPACT_AXIS_FONT = 8;
 
+/** Severity grade labels — canonical across all severity displays. */
+const SEV_GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"] as const;
+const SEV_GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
+
+/** Shared severity legend for stacked severity charts. */
+function SeverityLegend() {
+  return (
+    <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+      {SEV_GRADE_LABELS.map((label, i) => (
+        <span key={label} className="flex items-center gap-0.5">
+          <span
+            className="inline-block h-2 w-2 rounded-sm"
+            style={{ backgroundColor: getNeutralHeatColor(SEV_GRADE_SCORES[i]).bg }}
+          />
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** Build rich x-axis labels with dose-group colors. */
 function coloredAxisLabels(points: MergedPoint[]) {
   return {
@@ -714,7 +735,7 @@ export function DoseResponseChartPanel({
                     />
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
                   {chartData?.sexes.map((sex) => (
                     <span key={sex} className="flex items-center gap-0.5">
                       <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: sexColors[sex] ?? "#666" }} />
@@ -747,7 +768,7 @@ export function DoseResponseChartPanel({
                   ? (v.trendP < 0.001 ? "p<0.001" : `p=${v.trendP.toFixed(3)}`)
                   : "p=\u2014";
                 return (
-                  <div key={v.sex} className="text-[8px] text-muted-foreground">
+                  <div key={v.sex} className="text-[9px] text-muted-foreground">
                     <span style={{ color: getSexColor(v.sex) }}>{v.sex}</span>
                     {": "}
                     <span className={v.sigDoseLabels.length > 0 ? "text-foreground/80" : ""}>{sigPart}</span>
@@ -838,17 +859,7 @@ export function DoseResponseChartPanel({
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Severity distribution
                   </span>
-                  <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
-                    {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
-                      <span key={label} className="flex items-center gap-0.5">
-                        <span
-                          className="inline-block h-2 w-2 rounded-sm"
-                          style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
-                        />
-                        {label}
-                      </span>
-                    ))}
-                  </div>
+                  <SeverityLegend />
                 </div>
                 <div className="flex flex-1 min-h-0 flex-col gap-0.5">
                   {mainSevRecoveryOption && (
@@ -881,17 +892,7 @@ export function DoseResponseChartPanel({
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Severity distribution
                   </span>
-                  <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground">
-                    {["Minimal", "Mild", "Moderate", "Marked", "Severe"].map((label, i) => (
-                      <span key={label} className="flex items-center gap-0.5">
-                        <span
-                          className="inline-block h-2 w-2 rounded-sm"
-                          style={{ backgroundColor: getNeutralHeatColor([0.1, 0.3, 0.5, 0.7, 0.9][i]).bg }}
-                        />
-                        {label}
-                      </span>
-                    ))}
-                  </div>
+                  <SeverityLegend />
                 </div>
                 <div className="flex-1 min-h-0">
                   <EChartsWrapper option={sevOption} style={{ width: "100%", height: "100%" }} />
@@ -905,7 +906,7 @@ export function DoseResponseChartPanel({
                     Effect size ({esLabel})
                     {omSubtitle && <span className="normal-case"> &mdash; {omSubtitle}</span>}
                   </span>
-                  <span className="text-[8px] text-muted-foreground/60">{esSymbol}=0.8 threshold</span>
+                  <span className="text-[9px] text-muted-foreground/60">{esSymbol}=0.8 threshold</span>
                 </div>
                 <div className="flex-1 min-h-0">
                   <EChartsWrapper option={esOption} style={{ width: "100%", height: "100%" }} />

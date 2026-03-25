@@ -94,13 +94,13 @@ export function buildMainSeverityGroups(
         bySexData[sex] = { totalSeverity: gs.avg_severity * gs.affected, count: gs.affected };
       }
     }
-    if (Object.keys(bySexData).length > 0) {
-      groups.push({
-        doseLevel: dg.dose_level,
-        doseLabel: dg.label,
-        bySex: bySexData,
-      });
-    }
+    // Always push — even with empty bySex — to preserve spatial anchoring
+    // across paired charts (A-11). An empty group renders as a zero-height bar.
+    groups.push({
+      doseLevel: dg.dose_level,
+      doseLabel: dg.label,
+      bySex: bySexData,
+    });
   }
 
   return groups;
@@ -111,11 +111,15 @@ export function buildMainSeverityGroups(
 /**
  * Build DoseIncidenceGroup[] from recovery-comparison incidence_rows.
  * Filters to the specified finding+domain, uses recovery arm counts.
+ *
+ * When referenceDoseGroups is provided, all dose levels are included
+ * even if recovery data is absent — preserving spatial anchoring (A-11).
  */
 export function buildRecoveryIncidenceGroups(
   rows: IncidenceRow[],
   finding: string,
   domain: string,
+  referenceDoseGroups?: DoseGroup[],
 ): DoseIncidenceGroup[] {
   const findingUpper = finding.toUpperCase();
   const matched = rows.filter(
@@ -138,6 +142,15 @@ export function buildRecoveryIncidenceGroups(
     if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label);
   }
 
+  // When reference dose groups are provided, ensure all levels are represented (A-11)
+  if (referenceDoseGroups) {
+    return referenceDoseGroups.map((dg) => ({
+      doseLevel: dg.dose_level,
+      doseLabel: doseLabels.get(dg.dose_level) ?? dg.label,
+      bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
+    }));
+  }
+
   return [...byDose.entries()]
     .sort(([a], [b]) => a - b)
     .map(([doseLevel, sexMap]) => ({
@@ -150,18 +163,21 @@ export function buildRecoveryIncidenceGroups(
 /**
  * Build DoseSeverityGroup[] from recovery-comparison incidence_rows (MI only).
  * Uses recovery_severity_counts to compute totalSeverity and count.
+ *
+ * When referenceDoseGroups is provided, all dose levels are included
+ * even if recovery severity data is absent — preserving spatial anchoring (A-11).
  */
 export function buildRecoverySeverityGroups(
   rows: IncidenceRow[],
   finding: string,
   domain: string,
+  referenceDoseGroups?: DoseGroup[],
 ): DoseSeverityGroup[] {
   const findingUpper = finding.toUpperCase();
   const allForFinding = rows.filter((r) => r.finding === findingUpper && r.domain === domain);
   if (!allForFinding.some((r) => r.dose_level > 0 && r.recovery_n > 0)) return [];
 
   const matched = allForFinding.filter((r) => r.recovery_severity_counts);
-  if (matched.length === 0) return [];
 
   const byDose = new Map<number, Map<string, { totalSeverity: number; count: number }>>();
   const doseLabels = new Map<number, string>();
@@ -179,6 +195,17 @@ export function buildRecoverySeverityGroups(
     if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label);
   }
 
+  // When reference dose groups are provided, ensure all levels are represented (A-11)
+  if (referenceDoseGroups) {
+    return referenceDoseGroups.map((dg) => ({
+      doseLevel: dg.dose_level,
+      doseLabel: doseLabels.get(dg.dose_level) ?? dg.label,
+      bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
+    }));
+  }
+
+  // No reference groups — return only what we have (backward compat for other callers)
+  if (byDose.size === 0) return [];
   return [...byDose.entries()]
     .sort(([a], [b]) => a - b)
     .map(([doseLevel, sexMap]) => ({

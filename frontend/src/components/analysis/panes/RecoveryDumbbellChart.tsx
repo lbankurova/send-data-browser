@@ -212,7 +212,7 @@ const PLOT_BOTTOM = 28;
 const LEFT_MARGIN = 40;
 const PLOT_RIGHT = 8;
 const DOT_R = 3;
-const ZERO_LINE_COLOR = "#CBD5E1";
+const ZERO_LINE_COLOR = "var(--border)";
 
 // ── Main component ───────────────────────────────────────
 
@@ -428,7 +428,7 @@ export function RecoveryDumbbellChart({
               key={t}
               x={LEFT_MARGIN - 3} y={yScale(t)}
               textAnchor="end" dominantBaseline="central"
-              className="text-[8px]" fill="var(--muted-foreground)"
+              className="text-[9px]" fill="var(--muted-foreground)"
             >
               {t === 0 ? "Control" : t.toFixed(1)}
             </text>
@@ -439,7 +439,7 @@ export function RecoveryDumbbellChart({
             x={6} y={PLOT_TOP + plotHeight / 2}
             textAnchor="middle" dominantBaseline="central"
             transform={`rotate(-90, 6, ${PLOT_TOP + plotHeight / 2})`}
-            className="text-[8px]" fill="var(--muted-foreground)" opacity={0.6}
+            className="text-[9px]" fill="var(--muted-foreground)" opacity={0.6}
           >
             {effectSymbol} (vs control)
           </text>
@@ -546,7 +546,7 @@ export function RecoveryDumbbellChart({
                       {/* Gray connector — width/dash encodes p-value */}
                       <line
                         x1={sexCx} y1={ty} x2={sexCx} y2={arrowBase}
-                        stroke="#94A3B8" strokeWidth={cs.width}
+                        stroke="#9CA3AF" strokeWidth={cs.width}
                         opacity={cs.opacity}
                         {...(isLowConf ? { strokeDasharray: "3,2" } : {})}
                       />
@@ -757,16 +757,16 @@ function RecoveryDataTable({
 function SexSubHeaders() {
   return (
     <>
-      <th className="text-right text-muted-foreground/40 font-normal px-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
         Terminal
       </th>
-      <th className="text-right text-muted-foreground/40 font-normal px-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
         Recovery
       </th>
-      <th className="text-right text-muted-foreground/40 font-normal px-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
         Change
       </th>
-      <th className="text-left text-muted-foreground/40 font-normal pl-2 pr-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-left text-muted-foreground/60 font-medium pl-2 pr-1 whitespace-nowrap" style={{ width: 1 }}>
         Classification
       </th>
     </>

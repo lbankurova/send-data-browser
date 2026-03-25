@@ -10,7 +10,7 @@
  */
 import { useMemo } from "react";
 import { getDoseGroupColor, getSexColor, getNeutralHeatColor } from "@/lib/severity-colors";
-import { getVerdictLabel, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
+import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
@@ -186,7 +186,7 @@ export function IncidenceRecoveryChart({ rows, recoveryDay, terminalDay, compact
             <span key={v.label} className="whitespace-nowrap">
               {i > 0 && <span className="text-muted-foreground/40 mr-1">{"\u00b7"}</span>}
               <span className="text-muted-foreground/60">{v.label}: </span>
-              <span className={RECOVERY_VERDICT_COLOR[v.verdict] ?? "text-muted-foreground"}>
+              <span className={RECOVERY_VERDICT_CLASS[v.verdict] ?? "text-muted-foreground"}>
                 {getVerdictLabel(v.verdict)}
               </span>
             </span>
@@ -283,7 +283,7 @@ function IncidenceBar({
             // Solid bar (CL/MA — no severity)
             <div
               className="absolute top-0 left-0 rounded-sm"
-              style={{ width: barW, height: barH, backgroundColor: "#94A3B8" }}
+              style={{ width: barW, height: barH, backgroundColor: "#9CA3AF" }}
             />
           )
         )}
