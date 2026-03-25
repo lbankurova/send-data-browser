@@ -18,7 +18,9 @@ import {
   Minus,
   EyeOff,
   Info,
-  Link2,
+  Fingerprint,
+  ChevronsUpDown,
+  ChevronsDownUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -539,6 +541,11 @@ export function FindingsRail({
         clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
+        mostExpanded={grouping !== "finding" && sortedCards.length > 1 ? expanded.size > sortedCards.length / 2 : null}
+        onToggleExpandAll={() => {
+          if (expanded.size > sortedCards.length / 2) setExpanded(new Set());
+          else setExpanded(new Set(sortedCards.map((c) => c.key)));
+        }}
       />
 
       {/* Zone 5: Card list (scrollable) */}
@@ -594,6 +601,14 @@ export function FindingsRail({
               showFilteredCount={railIsFiltered}
               onHeaderSelect={() => handleCardSelect(card)}
               onToggleExpand={() => handleCardToggleExpand(card)}
+              onSyndromeClick={(synId) => {
+                handleGroupingChange("syndrome");
+                // Defer scope + expand so grouping state settles first
+                setTimeout(() => {
+                  onGroupScopeChange?.({ type: "syndrome", value: synId });
+                  setExpanded((prev) => new Set(prev).add(synId));
+                }, 0);
+              }}
               onEndpointClick={handleEndpointClick}
               onEndpointHover={handleEndpointHover}
               registerEndpointRef={registerEndpointRef}
@@ -932,6 +947,8 @@ function RailFiltersSection({
   clinicalS2Plus,
   onFiltersChange,
   onSortChange,
+  mostExpanded,
+  onToggleExpandAll,
 }: {
   filters: RailFilters;
   sortMode: SortMode;
@@ -943,6 +960,8 @@ function RailFiltersSection({
   clinicalS2Plus: boolean;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
+  mostExpanded: boolean | null;
+  onToggleExpandAll: () => void;
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
@@ -1038,6 +1057,18 @@ function RailFiltersSection({
           onChange={(next) => onFiltersChange({ ...filters, severity: next })}
           allLabel="All classes"
         />
+        {mostExpanded !== null && (
+          <button
+            type="button"
+            className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
+            title={mostExpanded ? "Collapse all groups" : "Expand all groups"}
+            onClick={onToggleExpandAll}
+          >
+            {mostExpanded
+              ? <ChevronsDownUp className="h-3.5 w-3.5" />
+              : <ChevronsUpDown className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1103,6 +1134,7 @@ function CardSection({
   showFilteredCount,
   onHeaderSelect,
   onToggleExpand,
+  onSyndromeClick,
   onEndpointClick,
   onEndpointHover,
   registerEndpointRef,
@@ -1124,6 +1156,7 @@ function CardSection({
   showFilteredCount: boolean;
   onHeaderSelect: () => void;
   onToggleExpand: () => void;
+  onSyndromeClick?: (syndromeId: string) => void;
   onEndpointClick: (label: string, domain?: string) => void;
   onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
@@ -1148,13 +1181,13 @@ function CardSection({
   // Specimen data for specimen grouping mode
   const specimenData = useMemo(() => {
     if (grouping !== "specimen") return null;
-    // Find linked syndrome name (first syndrome containing any endpoint from this card)
-    const synName = syndromes?.find((syn) =>
-      syn.matchedEndpoints.some((m) =>
+    // Find linked syndrome (first syndrome containing any endpoint from this card)
+    const syn = syndromes?.find((s) =>
+      s.matchedEndpoints.some((m) =>
         card.endpoints.some((ep) => ep.endpoint_label === m.endpoint_label),
       ),
-    )?.name;
-    return { endpoints: card.endpoints, syndromeName: synName };
+    );
+    return { endpoints: card.endpoints, syndromeName: syn?.name, syndromeId: syn?.id };
   }, [grouping, card.endpoints, syndromes]);
 
   return (
@@ -1168,6 +1201,7 @@ function CardSection({
         showFilteredCount={showFilteredCount}
         onSelect={onHeaderSelect}
         onToggleExpand={onToggleExpand}
+        onSyndromeClick={onSyndromeClick}
         organConfidence={organConf}
         organNorm={organNorm}
         syndromeCovariation={syndromeCovariation}
@@ -1208,6 +1242,7 @@ function CardHeader({
   showFilteredCount,
   onSelect,
   onToggleExpand,
+  onSyndromeClick,
   organConfidence,
   organNorm,
   syndromeCovariation,
@@ -1222,11 +1257,12 @@ function CardHeader({
   showFilteredCount: boolean;
   onSelect: () => void;
   onToggleExpand: () => void;
+  onSyndromeClick?: (syndromeId: string) => void;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
-  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string } | null;
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -1263,11 +1299,16 @@ function CardHeader({
               return maxInc > 0 ? `Max: ${Math.round(maxInc * 100)}%` : "";
             })()}
           </span>
-          {specimenData?.syndromeName && (
-            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground" title={specimenData.syndromeName}>
-              <Link2 className="size-2.5" />
+          {specimenData?.syndromeName && specimenData.syndromeId && (
+            <button
+              type="button"
+              className="flex items-center gap-0.5 text-[10px] text-primary hover:underline cursor-pointer"
+              title={`${specimenData.syndromeName}\nClick to view in syndrome grouping`}
+              onClick={(e) => { e.stopPropagation(); onSyndromeClick?.(specimenData.syndromeId!); }}
+            >
+              <Fingerprint className="size-2.5" />
               <span className="truncate max-w-[120px]">{specimenData.syndromeName}</span>
-            </span>
+            </button>
           )}
         </span>
       ) : (
@@ -1336,7 +1377,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
-  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string } | null;
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
@@ -1384,7 +1425,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
 
     return (
       <span className={cn("flex min-w-0 items-center gap-1.5 truncate font-semibold", isNoSyndrome && "text-muted-foreground/70")} title={tooltipLines.join("\n")}>
-        {!isNoSyndrome && <span className="shrink-0">{"\uD83D\uDD17"}</span>}
+        {!isNoSyndrome && <Fingerprint className="size-3 shrink-0 text-muted-foreground" />}
         <span className="truncate">{label}</span>
         {adjusted && (
           <span
