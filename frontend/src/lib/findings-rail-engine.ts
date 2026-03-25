@@ -189,7 +189,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
-    case "specimen": return ep.specimen ?? "_no_specimen";
+    case "specimen": return ep.specimen ?? "";
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
@@ -203,6 +203,8 @@ export function groupEndpoints(
 
   for (const ep of endpoints) {
     const key = groupKey(ep, mode);
+    // Skip endpoints without specimen in specimen mode
+    if (mode === "specimen" && !key) continue;
     let list = groups.get(key);
     if (!list) {
       list = [];
@@ -233,12 +235,7 @@ export function groupEndpoints(
   }
 
   // Sort cards by group signal descending; tiebreak: adverseCount desc, then name alpha
-  // "_no_specimen" always sorts last (like "no_syndrome")
   cards.sort((a, b) => {
-    if (mode === "specimen") {
-      if (a.key === "_no_specimen") return 1;
-      if (b.key === "_no_specimen") return -1;
-    }
     return b.groupSignal - a.groupSignal ||
       b.adverseCount - a.adverseCount ||
       a.key.localeCompare(b.key);

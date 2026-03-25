@@ -26,6 +26,8 @@ export interface GroupStat {
   incidence?: number | null;
   avg_severity?: number | null;
   severity_grade_counts?: Record<string, number> | null;
+  /** Per-dose distribution qualifier counts (MI/MA only): e.g. {focal: 3, diffuse: 2} */
+  modifier_counts?: Record<string, number> | null;
 }
 
 export interface PairwiseResult {
@@ -62,6 +64,18 @@ export interface UnifiedFinding {
   trend_p: number | null;
   trend_stat: number | null;
   avg_severity?: number | null;
+  /** SUPP qualifier profile (MI/MA only): distribution, temporality, location counts. */
+  modifier_profile?: {
+    dominant_distribution?: string | null;
+    dominant_temporality?: string | null;
+    distribution?: Record<string, number> | null;
+    temporality?: Record<string, number> | null;
+    location?: Record<string, number> | null;
+    laterality?: Record<string, number> | null;
+    n_with_modifiers?: number;
+    n_total?: number;
+    raw_values?: string[];
+  } | null;
   organ_system?: string | null;
   endpoint_label?: string | null;
   max_fold_change?: number | null;

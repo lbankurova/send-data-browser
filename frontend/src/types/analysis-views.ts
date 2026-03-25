@@ -168,6 +168,8 @@ export interface AdverseEffectSummaryRow {
   scheduled_group_stats?: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[];
   /** True for derived endpoints (ratios/indices) that create tautological correlations. */
   is_derived?: boolean;
+  /** Pre-computed qualifier tag string for MI/MA (e.g. "acute, centrilobular"). */
+  qualifier_tags?: string | null;
 }
 
 // --- Dose-Response (View 2) ---

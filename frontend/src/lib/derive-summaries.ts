@@ -95,6 +95,8 @@ export interface EndpointSummary {
   isDerived?: boolean;
   /** Present when endpoint spans multiple domains (e.g. MI + MA for the same lesion). */
   domains?: string[];
+  /** Pre-computed qualifier tag string for MI/MA (e.g. "acute, centrilobular"). */
+  qualifierTags?: string | null;
 }
 
 export interface OrganCoherence {
@@ -263,6 +265,14 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       finding: f.finding,
       max_incidence: f.max_incidence ?? null,
       max_fold_change: f.max_fold_change ?? null,
+      qualifier_tags: (() => {
+        const mp = f.modifier_profile;
+        if (!mp) return null;
+        const tags: string[] = [];
+        if (mp.dominant_temporality) tags.push(mp.dominant_temporality);
+        if (mp.dominant_distribution) tags.push(mp.dominant_distribution);
+        return tags.length > 0 ? tags.join(", ") : null;
+      })(),
     };
   });
 }
@@ -340,6 +350,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     groupStats: { dose_level: number; n: number; mean: number | null; sd: number | null; median?: number | null }[] | null;
     /** Sex that set the direction (used to align groupStats with direction) */
     directionSex?: string;
+    qualifierTags: string | null;
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -378,6 +389,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         isDerived: !!row.is_derived,
         domains: new Set<string>(),
         groupStats: null,
+        qualifierTags: row.qualifier_tags ?? null,
       };
       map.set(mapKey, entry);
     }
@@ -512,6 +524,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       maxFoldChange: entry.maxFoldChange,
       hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
       isDerived: entry.isDerived,
+      qualifierTags: entry.qualifierTags,
       ...(allDomains.length > 1 ? { domains: allDomains.sort() } : {}),
     };
 

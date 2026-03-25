@@ -2,7 +2,7 @@
  * Specimen grouping mode tests for findings-rail-engine.
  *
  * Covers: groupKey → groupEndpoints for specimen mode,
- * including catch-all "_no_specimen", sort order, and
+ * filtering out non-specimen endpoints, sort order, and
  * filterEndpoints with groupFilter.
  */
 import { describe, it, expect } from "vitest";
@@ -47,15 +47,14 @@ const ALL_ENDPOINTS = [LIVER_MI, LIVER_MA, KIDNEY_MI, ALT_LB, BW_GAIN];
 // ─── Tests ───────────────────────────────────────────────
 
 describe("specimen grouping mode", () => {
-  it("groups endpoints by specimen, non-specimen into _no_specimen", () => {
+  it("groups endpoints by specimen, excludes non-specimen endpoints", () => {
     const cards = groupEndpoints(ALL_ENDPOINTS, "specimen");
     const keys = cards.map((c) => c.key);
 
-    // Three groups: LIVER, KIDNEY, _no_specimen
+    // Two groups: LIVER, KIDNEY — non-specimen endpoints filtered out
     expect(keys).toContain("LIVER");
     expect(keys).toContain("KIDNEY");
-    expect(keys).toContain("_no_specimen");
-    expect(cards).toHaveLength(3);
+    expect(cards).toHaveLength(2);
   });
 
   it("LIVER card contains both MI and MA endpoints", () => {
@@ -69,42 +68,23 @@ describe("specimen grouping mode", () => {
     ]);
   });
 
-  it("_no_specimen card contains LB and BW endpoints", () => {
+  it("non-specimen endpoints are excluded, not grouped into catch-all", () => {
     const cards = groupEndpoints(ALL_ENDPOINTS, "specimen");
-    const noSpec = cards.find((c) => c.key === "_no_specimen")!;
+    const allEndpoints = cards.flatMap((c) => c.endpoints);
 
-    expect(noSpec.endpoints).toHaveLength(2);
-    expect(noSpec.endpoints.map((e) => e.endpoint_label).sort()).toEqual([
-      "ALT",
-      "BW Gain",
-    ]);
+    // ALT (LB) and BW Gain (BW) should not appear
+    expect(allEndpoints.find((e) => e.endpoint_label === "ALT")).toBeUndefined();
+    expect(allEndpoints.find((e) => e.endpoint_label === "BW Gain")).toBeUndefined();
   });
 
-  it("_no_specimen card always sorts last", () => {
+  it("cards sort by groupSignal descending", () => {
     const cards = groupEndpoints(ALL_ENDPOINTS, "specimen");
-    const lastCard = cards[cards.length - 1];
-
-    expect(lastCard.key).toBe("_no_specimen");
-  });
-
-  it("_no_specimen sorts last even when it has higher signal", () => {
-    const highSignalNonSpecimen = ep({ endpoint_label: "HIGH_SIGNAL", specimen: null, domain: "LB", organ_system: "hepatic", signal: 999 });
-    const lowSignalSpecimen = ep({ endpoint_label: "SPLEEN — ATROPHY", specimen: "SPLEEN", domain: "MI", organ_system: "lymphoid", signal: 1 });
-    const cards = groupEndpoints([highSignalNonSpecimen, lowSignalSpecimen], "specimen");
-
-    expect(cards[0].key).toBe("SPLEEN");
-    expect(cards[1].key).toBe("_no_specimen");
-  });
-
-  it("cards sort by groupSignal descending (excluding _no_specimen)", () => {
-    const cards = groupEndpoints(ALL_ENDPOINTS, "specimen");
-    const specimenCards = cards.filter((c) => c.key !== "_no_specimen");
 
     // LIVER: signal 10 + 5 = 15, KIDNEY: signal 8
-    expect(specimenCards[0].key).toBe("LIVER");
-    expect(specimenCards[0].groupSignal).toBe(15);
-    expect(specimenCards[1].key).toBe("KIDNEY");
-    expect(specimenCards[1].groupSignal).toBe(8);
+    expect(cards[0].key).toBe("LIVER");
+    expect(cards[0].groupSignal).toBe(15);
+    expect(cards[1].key).toBe("KIDNEY");
+    expect(cards[1].groupSignal).toBe(8);
   });
 
   it("aggregates adverseCount and trCount per specimen", () => {
@@ -118,14 +98,15 @@ describe("specimen grouping mode", () => {
     expect(kidney.trCount).toBe(1);
   });
 
-  it("buildEndpointToGroupIndex maps endpoints to specimen keys", () => {
+  it("buildEndpointToGroupIndex maps specimen endpoints only", () => {
     const index = buildEndpointToGroupIndex(ALL_ENDPOINTS as any, "specimen");
 
     expect(index.get("LIVER — HYPERTROPHY")).toBe("LIVER");
     expect(index.get("LIVER — MASS")).toBe("LIVER");
     expect(index.get("KIDNEY — NEPHROPATHY")).toBe("KIDNEY");
-    expect(index.get("ALT")).toBe("_no_specimen");
-    expect(index.get("BW Gain")).toBe("_no_specimen");
+    // Non-specimen endpoints get empty string key (filtered in UI)
+    expect(index.get("ALT")).toBe("");
+    expect(index.get("BW Gain")).toBe("");
   });
 
   it("filterEndpoints with groupFilter filters by specimen key", () => {
@@ -134,14 +115,6 @@ describe("specimen grouping mode", () => {
 
     expect(result).toHaveLength(2);
     expect(result.every((e) => e.specimen === "LIVER")).toBe(true);
-  });
-
-  it("filterEndpoints with _no_specimen groupFilter returns non-specimen endpoints", () => {
-    const filters: RailFilters = { ...EMPTY_RAIL_FILTERS, groupFilter: new Set(["_no_specimen"]) };
-    const result = filterEndpoints(ALL_ENDPOINTS as any, filters, "specimen");
-
-    expect(result).toHaveLength(2);
-    expect(result.every((e) => e.specimen == null)).toBe(true);
   });
 });
 

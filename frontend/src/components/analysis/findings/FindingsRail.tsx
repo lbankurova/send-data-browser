@@ -18,6 +18,7 @@ import {
   Minus,
   EyeOff,
   Info,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -219,10 +220,12 @@ export function FindingsRail({
     }
     const seen = new Map<string, number>();
     for (const ep of endpointsWithSignal) {
+      // Skip endpoints without specimen in specimen grouping mode
+      if (grouping === "specimen" && !ep.specimen) continue;
       const key =
         grouping === "organ" ? ep.organ_system
         : grouping === "domain" ? ep.domain
-        : grouping === "specimen" ? (ep.specimen ?? "_no_specimen")
+        : grouping === "specimen" ? ep.specimen!
         : ep.pattern;
       seen.set(key, (seen.get(key) ?? 0) + 1);
     }
@@ -232,7 +235,7 @@ export function FindingsRail({
       key,
       label:
         grouping === "organ" ? titleCase(key)
-        : grouping === "specimen" ? (key === "_no_specimen" ? "No Specimen" : titleCase(key))
+        : grouping === "specimen" ? key.toUpperCase()
         : grouping === "domain" ? getDomainFullLabel(key)
         : getPatternLabel(key),
     }));
@@ -296,7 +299,7 @@ export function FindingsRail({
       } else if (activeGroupScope.type === "finding") {
         eps = eps.filter((ep) => ep.endpoint_label === activeGroupScope.value);
       } else if (activeGroupScope.type === "specimen") {
-        eps = eps.filter((ep) => (ep.specimen ?? "_no_specimen") === activeGroupScope.value);
+        eps = eps.filter((ep) => ep.specimen === activeGroupScope.value);
       }
     }
     return eps.map((ep) => ep.endpoint_label);
@@ -312,7 +315,7 @@ export function FindingsRail({
       return syn?.name ?? (activeGroupScope.value === "no_syndrome" ? "No Syndrome" : null);
     }
     if (activeGroupScope.type === "finding") return activeGroupScope.value;
-    if (activeGroupScope.type === "specimen") return activeGroupScope.value === "_no_specimen" ? "No Specimen" : titleCase(activeGroupScope.value);
+    if (activeGroupScope.type === "specimen") return activeGroupScope.value.toUpperCase();
     return null;
   }, [activeGroupScope, syndromes]);
 
@@ -1393,7 +1396,6 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   }
 
   if (grouping === "specimen") {
-    const isNoSpecimen = value === "_no_specimen";
     // Specimen card: name + domain badges + syndrome name
     const specimenEndpoints = specimenData?.endpoints;
     const domains = specimenEndpoints
@@ -1402,16 +1404,17 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
     const linkedSyndrome = specimenData?.syndromeName;
 
     return (
-      <span className={cn("flex min-w-0 items-center gap-1.5 font-semibold", isNoSpecimen && "text-muted-foreground/70")} title={isNoSpecimen ? "Endpoints without specimen data" : titleCase(value)}>
-        <span className="truncate">{isNoSpecimen ? "No Specimen" : titleCase(value)}</span>
-        {domains.map((d) => (
-          <span key={d} className="shrink-0 rounded bg-gray-100 px-1 py-px text-[10px] font-semibold text-gray-600 border border-gray-200">
-            {d}
-          </span>
-        ))}
-        {linkedSyndrome && (
-          <span className="shrink-0 truncate text-[10px] text-muted-foreground" title={linkedSyndrome}>
-            {linkedSyndrome}
+      <span className="flex min-w-0 flex-1 flex-col" title={value.toUpperCase()}>
+        <span className="truncate font-semibold">{value.toUpperCase()}</span>
+        {(domains.length > 0 || linkedSyndrome) && (
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="shrink-0">{domains.join(", ")}</span>
+            {linkedSyndrome && (
+              <span className="ml-auto flex shrink-0 items-center gap-0.5 truncate" title={linkedSyndrome}>
+                <Link2 className="size-2.5" />
+                <span className="truncate">{linkedSyndrome}</span>
+              </span>
+            )}
           </span>
         )}
       </span>
@@ -1519,12 +1522,34 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             <span className="text-[10px] font-semibold text-muted-foreground mr-1">{endpoint.domain}</span>
           )}
           {endpoint.endpoint_label}
+          {endpoint.qualifierTags && (
+            <span className="text-muted-foreground"> &mdash; {endpoint.qualifierTags}</span>
+          )}
         </span>
         {clinicalTier && (
           <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
             {clinicalTier}
           </span>
         )}
+        {(() => {
+          const nc = endpoint.endpointConfidence?.noaelContribution;
+          if (!nc || nc.label === "excluded") return null;
+          const tooltipLines = [
+            `NOAEL ${nc.label} (weight ${nc.weight})`,
+            nc.canSetNOAEL ? "Can constrain NOAEL" : "Does not constrain NOAEL",
+            nc.requiresCorroboration ? "Requires corroboration" : null,
+            ...nc.caveats.map(c => `Caveat: ${c}`),
+          ].filter(Boolean).join("\n");
+          if (nc.label === "determining") return (
+            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} title={tooltipLines} />
+          );
+          if (nc.label === "contributing") return (
+            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full bg-gray-400" title={tooltipLines} />
+          );
+          return (
+            <span className="shrink-0 inline-block h-[6px] w-[6px] rounded-full border border-gray-400" title={tooltipLines} />
+          );
+        })()}
         {sexesDiffer && (
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
             F≠M

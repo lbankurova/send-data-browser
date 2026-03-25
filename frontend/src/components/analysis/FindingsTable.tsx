@@ -20,6 +20,7 @@ import {
   formatEffectSize,
   formatDoseShortLabel,
   getPValueHex,
+  getNeutralHeatColor,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
@@ -313,6 +314,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
   const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
+  const hasMiMa = useMemo(() => findings.some(f => f.domain === "MI" || f.domain === "MA"), [findings]);
 
   // Global max for sparkline scaling: max |delta from control| (continuous) or max incidence (categorical)
   const globalSparkMax = useMemo(() => {
@@ -512,6 +514,29 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      // Distribution + Temporality columns — MI/MA only, hidden when no MI/MA data
+      ...(hasMiMa ? [
+        col.display({
+          id: "distribution",
+          header: () => <span title="Dominant distribution qualifier (MI/MA only). Shows most frequent qualifier (>50%) or 'mixed'.">Dist</span>,
+          cell: (info) => {
+            const f = info.row.original;
+            if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">&mdash;</span>;
+            const val = f.modifier_profile?.dominant_distribution;
+            return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+          },
+        }),
+        col.display({
+          id: "temporality",
+          header: () => <span title="Dominant temporality qualifier (MI/MA only). Shows most frequent qualifier (>50%) or 'mixed'.">Temp</span>,
+          cell: (info) => {
+            const f = info.row.original;
+            if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">&mdash;</span>;
+            const val = f.modifier_profile?.dominant_temporality;
+            return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+          },
+        }),
+      ] : []),
       ...doseGroups.map((dg, idx) => {
         // Short labels: control → "C", non-zero → numeric only
         const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
@@ -544,8 +569,17 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 </span>
               );
             }
+            // MI/MA: heat-color incidence cells by severity or incidence score
+            const isMiMa = f.domain === "MI" || f.domain === "MA";
+            const incidence = gs.incidence ?? 0;
+            const heat = isMiMa && dg.dose_level > 0 && incidence > 0
+              ? getNeutralHeatColor(gs.avg_severity != null ? Math.min(gs.avg_severity / 4, 1) : incidence)
+              : null;
             return (
-              <span className="font-mono">
+              <span
+                className={cn("font-mono", heat && "rounded px-1")}
+                style={heat ? { backgroundColor: heat.bg, color: heat.text } : undefined}
+              >
                 {gs.affected != null && gs.n ? `${gs.affected}/${gs.n}` : "\u2014"}{excludedMark}
               </span>
             );
@@ -704,7 +738,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -806,7 +840,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           if (r.data_type === "continuous") {
             return <span className="font-mono">{r.mean != null ? r.mean.toFixed(2) : "\u2014"}</span>;
           }
-          return <span className="font-mono">{r.affected != null && r.n ? `${r.affected}/${r.n}` : "\u2014"}</span>;
+          // MI/MA: heat-color incidence cells by per-dose avg severity or incidence
+          const isMiMa = r.domain === "MI" || r.domain === "MA";
+          const inc = r.incidence ?? 0;
+          const doseAvgSev = r.domain === "MI" ? r.fold_change : null; // fold_change = avg_severity for MI
+          const heat = isMiMa && r.dose_level > 0 && inc > 0
+            ? getNeutralHeatColor(doseAvgSev != null ? Math.min(doseAvgSev / 4, 1) : inc)
+            : null;
+          return (
+            <span
+              className={cn("font-mono", heat && "rounded px-1")}
+              style={heat ? { backgroundColor: heat.bg, color: heat.text } : undefined}
+            >
+              {r.affected != null && r.n ? `${r.affected}/${r.n}` : "\u2014"}
+            </span>
+          );
         },
       }),
       pivCol.display({
