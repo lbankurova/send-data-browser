@@ -21,6 +21,7 @@ import {
   Fingerprint,
   ChevronsUpDown,
   ChevronsDownUp,
+  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -436,22 +437,116 @@ export function FindingsRail({
     });
   }, [activeEndpoint, activeDomain, endpointToGroup]);
 
+  // ── Navigation history (back/forward) ──────────────────
+  type RailSnapshot = {
+    grouping: GroupingMode;
+    scope: { type: GroupingMode; value: string } | null;
+    endpoint: string | null;
+    domain: string | undefined;
+    expanded: Set<string>;
+  };
+
+  const historyRef = useRef<{ stack: RailSnapshot[]; cursor: number }>({ stack: [], cursor: -1 });
+  const isRestoringRef = useRef(false);
+  const pendingFromRef = useRef<RailSnapshot | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
+
+  const takeSnapshot = useCallback((): RailSnapshot => ({
+    grouping,
+    scope: activeGroupScope ?? null,
+    endpoint: activeEndpoint ?? null,
+    domain: activeDomain,
+    expanded: new Set(expanded),
+  }), [grouping, activeGroupScope, activeEndpoint, activeDomain, expanded]);
+
+  const snapshotsEqual = (a: RailSnapshot, b: RailSnapshot) =>
+    a.grouping === b.grouping && a.endpoint === b.endpoint &&
+    a.scope?.value === b.scope?.value && a.scope?.type === b.scope?.type;
+
+  // Phase 1: called synchronously at start of navigation — captures "from" state
+  const beginNavigation = useCallback(() => {
+    if (isRestoringRef.current) return;
+    pendingFromRef.current = takeSnapshot();
+  }, [takeSnapshot]);
+
+  // Phase 2: effect fires after state settles — pushes "from" + "to" onto stack
+  useEffect(() => {
+    const from = pendingFromRef.current;
+    if (!from || isRestoringRef.current) return;
+    pendingFromRef.current = null;
+
+    const h = historyRef.current;
+    const to = takeSnapshot();
+
+    // Skip if state didn't actually change
+    if (snapshotsEqual(from, to)) return;
+
+    // Seed "from" if stack is empty or different from current top
+    if (h.cursor < 0) {
+      h.stack = [from];
+      h.cursor = 0;
+    } else if (!snapshotsEqual(h.stack[h.cursor], from)) {
+      // Truncate forward history, push from
+      h.stack = h.stack.slice(0, h.cursor + 1);
+      h.stack.push(from);
+      h.cursor = h.stack.length - 1;
+    }
+
+    // Truncate forward history, push "to"
+    h.stack = h.stack.slice(0, h.cursor + 1);
+    h.stack.push(to);
+    if (h.stack.length > 50) { h.stack.shift(); }
+    h.cursor = h.stack.length - 1;
+    setHistoryVersion((v) => v + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grouping, activeGroupScope, activeEndpoint]);
+
+  const restoreSnapshot = useCallback((snap: RailSnapshot) => {
+    isRestoringRef.current = true;
+    setGrouping(snap.grouping);
+    setExpanded(snap.expanded);
+    onGroupScopeChange?.(snap.scope);
+    onEndpointSelect?.(snap.endpoint, snap.domain);
+    onGroupingChange?.(snap.grouping);
+    setHistoryVersion((v) => v + 1);
+    setTimeout(() => { isRestoringRef.current = false; }, 0);
+  }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
+
+  const canGoBack = historyVersion >= 0 && historyRef.current.cursor > 0;
+  const canGoForward = historyVersion >= 0 && historyRef.current.cursor < historyRef.current.stack.length - 1;
+
+  const goBack = useCallback(() => {
+    const h = historyRef.current;
+    if (h.cursor <= 0) return;
+    h.cursor--;
+    restoreSnapshot(h.stack[h.cursor]);
+  }, [restoreSnapshot]);
+
+  const goForward = useCallback(() => {
+    const h = historyRef.current;
+    if (h.cursor >= h.stack.length - 1) return;
+    h.cursor++;
+    restoreSnapshot(h.stack[h.cursor]);
+  }, [restoreSnapshot]);
+
   // ── Handlers ───────────────────────────────────────────
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
+    beginNavigation();
     setGrouping(mode);
     setExpanded(new Set());
     setRailFilters((prev) => ({ ...prev, groupFilter: null }));
     onGroupScopeChange?.(null);
     onEndpointSelect?.(null);
     onGroupingChange?.(mode);
-  }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
+  }, [beginNavigation,onGroupScopeChange, onEndpointSelect, onGroupingChange]);
 
   const handleCardSelect = useCallback((card: GroupCard) => {
+    beginNavigation();
     // Always scope to clicked group (no toggle-off)
     onGroupScopeChange?.({ type: grouping, value: card.key });
     // Auto-expand selected group so endpoints are visible
     setExpanded((prev) => new Set(prev).add(card.key));
-  }, [grouping, onGroupScopeChange]);
+  }, [beginNavigation,grouping, onGroupScopeChange]);
 
   const handleCardToggleExpand = useCallback((card: GroupCard) => {
     setExpanded((prev) => {
@@ -463,9 +558,10 @@ export function FindingsRail({
   }, []);
 
   const handleEndpointClick = useCallback((endpointLabel: string, domain?: string) => {
+    beginNavigation();
     // Always select (no toggle-off)
     onEndpointSelect?.(endpointLabel, domain);
-  }, [onEndpointSelect]);
+  }, [beginNavigation,onEndpointSelect]);
 
   // ── Loading / Error / Empty states ─────────────────────
   if (isLoading) {
@@ -546,6 +642,10 @@ export function FindingsRail({
           if (expanded.size > sortedCards.length / 2) setExpanded(new Set());
           else setExpanded(new Set(sortedCards.map((c) => c.key)));
         }}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onGoBack={goBack}
+        onGoForward={goForward}
       />
 
       {/* Zone 5: Card list (scrollable) */}
@@ -602,12 +702,13 @@ export function FindingsRail({
               onHeaderSelect={() => handleCardSelect(card)}
               onToggleExpand={() => handleCardToggleExpand(card)}
               onSyndromeClick={(synId) => {
-                handleGroupingChange("syndrome");
-                // Defer scope + expand so grouping state settles first
-                setTimeout(() => {
-                  onGroupScopeChange?.({ type: "syndrome", value: synId });
-                  setExpanded((prev) => new Set(prev).add(synId));
-                }, 0);
+                beginNavigation();
+                setGrouping("syndrome");
+                setExpanded(new Set([synId]));
+                setRailFilters((prev) => ({ ...prev, groupFilter: null }));
+                onGroupScopeChange?.({ type: "syndrome", value: synId });
+                onEndpointSelect?.(null);
+                onGroupingChange?.("syndrome");
               }}
               onEndpointClick={handleEndpointClick}
               onEndpointHover={handleEndpointHover}
@@ -949,6 +1050,10 @@ function RailFiltersSection({
   onSortChange,
   mostExpanded,
   onToggleExpandAll,
+  canGoBack,
+  canGoForward,
+  onGoBack,
+  onGoForward,
 }: {
   filters: RailFilters;
   sortMode: SortMode;
@@ -962,30 +1067,44 @@ function RailFiltersSection({
   onSortChange: (s: SortMode) => void;
   mostExpanded: boolean | null;
   onToggleExpandAll: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onGoBack: () => void;
+  onGoForward: () => void;
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search + sort (sort has fixed width to prevent jump when search expands) */}
-      <div className="flex items-center gap-1.5">
-        <FilterSearch
-          value={filters.search}
-          onChange={(v) => onFiltersChange({ ...filters, search: v })}
-          placeholder="Search…"
+      {/* Row 1 (top — least used): Group filter + domain + pattern + severity */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {grouping !== "finding" && (
+          <FilterMultiSelect
+            options={groupFilterOptions}
+            selected={filters.groupFilter}
+            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
+          />
+        )}
+        <FilterMultiSelect
+          options={domainFilterOptions}
+          selected={filters.domains}
+          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
+          allLabel="All domains"
         />
-        <div className="w-[110px] shrink-0">
-          <FilterSelect
-            value={sortMode}
-            onChange={(e) => onSortChange(e.target.value as SortMode)}
-          >
-            <option value="signal">Sort: Signal</option>
-            <option value="pvalue">Sort: P-value</option>
-            <option value="effect">Sort: Effect</option>
-            <option value="az">Sort: A{"\u2013"}Z</option>
-          </FilterSelect>
-        </div>
+        <FilterMultiSelect
+          options={patternFilterOptions}
+          selected={filters.pattern}
+          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
+          allLabel="All patterns"
+        />
+        <FilterMultiSelect
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
+          allLabel="All classes"
+        />
       </div>
 
-      {/* Row 2: Quick toggles + NOAEL role */}
+      {/* Row 2 (middle): Quick toggles + NOAEL role + sort */}
       <div className="flex items-center gap-1.5">
         <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Treatment-related endpoints only">
           <input
@@ -1027,48 +1146,58 @@ function RailFiltersSection({
           <option value="supporting">Supporting</option>
           <option value="excluded">Excluded</option>
         </FilterSelect>
+        <div className="w-[110px] shrink-0">
+          <FilterSelect
+            value={sortMode}
+            onChange={(e) => onSortChange(e.target.value as SortMode)}
+          >
+            <option value="signal">Sort: Signal</option>
+            <option value="pvalue">Sort: P-value</option>
+            <option value="effect">Sort: Effect</option>
+            <option value="az">Sort: A{"\u2013"}Z</option>
+          </FilterSelect>
+        </div>
       </div>
 
-      {/* Row 2: Group filter + domain + pattern + severity */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {grouping !== "finding" && (
-          <FilterMultiSelect
-            options={groupFilterOptions}
-            selected={filters.groupFilter}
-            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
-          />
-        )}
-        <FilterMultiSelect
-          options={domainFilterOptions}
-          selected={filters.domains}
-          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
-          allLabel="All domains"
+      {/* Row 3 (bottom — closest to cards): Search + back/forward + expand/collapse */}
+      <div className="flex items-center gap-1.5">
+        <FilterSearch
+          value={filters.search}
+          onChange={(v) => onFiltersChange({ ...filters, search: v })}
+          placeholder="Search…"
         />
-        <FilterMultiSelect
-          options={patternFilterOptions}
-          selected={filters.pattern}
-          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
-          allLabel="All patterns"
-        />
-        <FilterMultiSelect
-          options={SEVERITY_OPTIONS}
-          selected={filters.severity}
-          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
-          allLabel="All classes"
-        />
-        {mostExpanded !== null && (
+        <div className="ml-auto flex items-center gap-0.5">
           <button
             type="button"
-            className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
-            title={mostExpanded ? "Collapse all groups" : "Expand all groups"}
-            onClick={onToggleExpandAll}
+            className={cn("rounded p-0.5 transition-colors", canGoBack ? "text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40" : "text-muted-foreground/20 cursor-default")}
+            title="Back"
+            onClick={onGoBack}
+            disabled={!canGoBack}
           >
-            {mostExpanded
-              ? <ChevronsDownUp className="h-3.5 w-3.5" />
-              : <ChevronsUpDown className="h-3.5 w-3.5" />}
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-        )}
+          <button
+            type="button"
+            className={cn("rounded p-0.5 transition-colors", canGoForward ? "text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40" : "text-muted-foreground/20 cursor-default")}
+            title="Forward"
+            onClick={onGoForward}
+            disabled={!canGoForward}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+          {mostExpanded !== null && (
+            <button
+              type="button"
+              className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
+              title={mostExpanded ? "Collapse all groups" : "Expand all groups"}
+              onClick={onToggleExpandAll}
+            >
+              {mostExpanded
+                ? <ChevronsDownUp className="h-3.5 w-3.5" />
+                : <ChevronsUpDown className="h-3.5 w-3.5" />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
