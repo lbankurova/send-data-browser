@@ -142,9 +142,6 @@ function StudyBranch({
             />
           ))}
 
-          {/* Separator */}
-          <div className="mx-4 my-1 border-t" />
-
           {/* Domains section */}
           <TreeNode
             label={`Domains`}
@@ -338,17 +335,19 @@ export function BrowsingTree() {
         }
       />
       {rootExpanded &&
-        allStudyIds.map((id) => (
-          <StudyBranch
-            key={id}
-            studyId={id}
-            displayName={displayNames[id]}
-            isExpanded={expandedStudies.has(id)}
-            onToggle={() => toggleStudy(id)}
-            activeStudyId={activeStudyId}
-            activeDomainName={activeDomainName}
-            emphasize={expandedStudies.size > 0}
-          />
+        allStudyIds.map((id, i) => (
+          <div key={id}>
+            {i > 0 && <div className="mx-4 my-1 border-t" />}
+            <StudyBranch
+              studyId={id}
+              displayName={displayNames[id]}
+              isExpanded={expandedStudies.has(id)}
+              onToggle={() => toggleStudy(id)}
+              activeStudyId={activeStudyId}
+              activeDomainName={activeDomainName}
+              emphasize={expandedStudies.size > 0}
+            />
+          </div>
         ))}
       </div>
     </nav>
