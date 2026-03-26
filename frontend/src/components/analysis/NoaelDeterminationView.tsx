@@ -15,6 +15,7 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
+import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import { worstVerdict } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
@@ -44,27 +45,40 @@ export function NoaelDeterminationView() {
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const esSymbol = getEffectSizeSymbol(useStatMethods(studyId).effectSize);
+  // Raw per-dose AE data (for heatmap — mapFindingsToRows flattens dose_level to 0)
+  const { data: rawAeData } = useAdverseEffectSummary(studyId);
   const { data: recoveryData } = useRecoveryVerdicts(studyId);
 
   // Derive per-organ worst recovery verdict from recovery_verdicts JSON
+  // Recovery uses specimen names ("LIVER"), aeData uses organ_system ("hepatic") — build mapping
   const recoveryByOrgan = useMemo(() => {
-    if (!recoveryData?.per_finding) return new Map<string, RecoveryVerdict>();
+    if (!recoveryData?.per_finding || !aeData) return new Map<string, RecoveryVerdict>();
+    // Build specimen → organ_system lookup from aeData
+    const specimenToOrgan = new Map<string, string>();
+    for (const row of aeData) {
+      if (row.specimen && row.organ_system) {
+        specimenToOrgan.set(row.specimen.toUpperCase(), row.organ_system);
+      }
+    }
+    // Group verdicts by organ_system (mapped from specimen)
     const byOrgan = new Map<string, RecoveryVerdict[]>();
     for (const entry of Object.values(recoveryData.per_finding)) {
       const verdict = entry.verdict as RecoveryVerdict | null;
       if (!verdict) continue;
       const specimen = (entry as { specimen?: string }).specimen;
       if (!specimen) continue;
-      const existing = byOrgan.get(specimen) ?? [];
+      const organSystem = specimenToOrgan.get(specimen.toUpperCase());
+      if (!organSystem) continue;
+      const existing = byOrgan.get(organSystem) ?? [];
       existing.push(verdict);
-      byOrgan.set(specimen, existing);
+      byOrgan.set(organSystem, existing);
     }
     const result = new Map<string, RecoveryVerdict>();
     for (const [organ, verdicts] of byOrgan) {
       result.set(organ, worstVerdict(verdicts));
     }
     return result;
-  }, [recoveryData]);
+  }, [recoveryData, aeData]);
 
   // Build panel data for StudyStatementsBar
   const panelData = useMemo(() => {
@@ -162,6 +176,7 @@ export function NoaelDeterminationView() {
             <EvidenceChain
               organSummaries={organSummaries}
               aeData={aeData ?? []}
+              rawAeData={rawAeData}
               selectedOrgan={selectedOrgan}
               studyId={studyId!}
               effectSizeSymbol={esSymbol}

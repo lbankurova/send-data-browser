@@ -15,6 +15,8 @@ import { verdictArrow, verdictLabel } from "@/lib/recovery-assessment";
 interface EvidenceChainProps {
   organSummaries: OrganSummary[];
   aeData: AdverseEffectSummaryRow[];
+  /** Raw per-dose AE data for heatmap (aeData has dose_level flattened to 0) */
+  rawAeData?: AdverseEffectSummaryRow[];
   selectedOrgan: string | null;
   studyId: string;
   effectSizeSymbol?: string;
@@ -26,6 +28,7 @@ interface EvidenceChainProps {
 export function EvidenceChain({
   organSummaries,
   aeData,
+  rawAeData,
   selectedOrgan,
   studyId,
   effectSizeSymbol = "d",
@@ -86,12 +89,13 @@ export function EvidenceChain({
   }, [aeData, loaelDoseLevel]);
 
   // ── Heatmap data: all adverse organs × dose levels ──
+  // Uses rawAeData (per-dose rows from backend) — aeData has dose_level flattened to 0
   const heatmapData = useMemo(() => {
-    if (adverseOrgans.length === 0) return null;
+    if (adverseOrgans.length === 0 || !rawAeData?.length) return null;
 
     // Collect unique dose levels with labels (sorted ascending)
     const doseMap = new Map<number, string>();
-    for (const row of aeData) {
+    for (const row of rawAeData) {
       if (!doseMap.has(row.dose_level)) {
         doseMap.set(row.dose_level, row.dose_label);
       }
@@ -100,25 +104,29 @@ export function EvidenceChain({
       .sort(([a], [b]) => a - b)
       .map(([level, label]) => ({ level, label }));
 
+    if (doses.length <= 1) return null;
+
     // Build matrix: organ × dose → worst severity score
+    const adverseOrganSet = new Set(adverseOrgans.map((o) => o.organ_system));
     const matrix = new Map<string, Map<number, number>>();
-    for (const organ of adverseOrgans) {
-      const organRows = aeData.filter((r) => r.organ_system === organ.organ_system);
-      const doseScores = new Map<number, number>();
-      for (const row of organRows) {
-        const score =
-          row.severity === "adverse" && row.treatment_related ? 0.9
-          : row.severity === "adverse" ? 0.7
-          : row.severity === "warning" ? 0.5
-          : 0.2;
-        const current = doseScores.get(row.dose_level) ?? 0;
-        if (score > current) doseScores.set(row.dose_level, score);
+    for (const row of rawAeData) {
+      if (!adverseOrganSet.has(row.organ_system)) continue;
+      const score =
+        row.severity === "adverse" && row.treatment_related ? 0.9
+        : row.severity === "adverse" ? 0.7
+        : row.severity === "warning" ? 0.5
+        : 0.2;
+      let doseScores = matrix.get(row.organ_system);
+      if (!doseScores) {
+        doseScores = new Map<number, number>();
+        matrix.set(row.organ_system, doseScores);
       }
-      matrix.set(organ.organ_system, doseScores);
+      const current = doseScores.get(row.dose_level) ?? 0;
+      if (score > current) doseScores.set(row.dose_level, score);
     }
 
     return { doses, matrix };
-  }, [adverseOrgans, aeData]);
+  }, [adverseOrgans, rawAeData]);
 
   const handleEndpointClick = useCallback(
     (organSystem: string) => {
