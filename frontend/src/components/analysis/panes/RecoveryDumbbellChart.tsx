@@ -308,6 +308,11 @@ export function RecoveryDumbbellChart({
             hi = Math.max(hi, v);
           }
         }
+        if (hasPeakQualifier(cr.row)) {
+          const pv = cr.row.peak_effect!;
+          lo = Math.min(lo, pv);
+          hi = Math.max(hi, pv);
+        }
       }
     }
     const pad = Math.max((hi - lo) * 0.1, 0.3);
@@ -352,6 +357,11 @@ export function RecoveryDumbbellChart({
 
   const allChartRows = sexes.flatMap(s => chartRowsBySex[s] ?? []);
 
+  const hasPeak = useMemo(
+    () => allChartRows.some((cr) => !cr.isEdge && hasPeakQualifier(cr.row)),
+    [allChartRows],
+  );
+
   return (
     <div className="flex flex-col gap-2">
       {/* Legend */}
@@ -379,6 +389,14 @@ export function RecoveryDumbbellChart({
           </svg>
           Recovery{rDay != null ? ` (D${rDay})` : ""}
         </span>
+        {hasPeak && (
+          <span className="inline-flex items-center gap-1">
+            <svg width="8" height="8" viewBox="0 0 8 8">
+              <polygon points="4,1 1,7 7,7" fill="none" stroke="#6b7280" strokeWidth={1} />
+            </svg>
+            Peak
+          </span>
+        )}
         <span className="text-border">|</span>
         {/* Line style */}
         <span className="inline-flex items-center gap-1">
@@ -527,13 +545,20 @@ export function RecoveryDumbbellChart({
                   const arrowTip = ry - arrowDir * 1; // arrow tip sits just before the tick
                   const arrowBase = arrowTip - arrowDir * ARROW_HALF * 2;
 
+                  // Peak qualifier check
+                  const showPeak = hasPeakQualifier(cr.row);
+                  const peakY = showPeak ? yScale(cr.row.peak_effect!) : 0;
+
                   // Tooltip — use same-arm terminal (cr.terminalVal) for consistency
                   const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
                   const v = classifyContinuousRecovery(cr.terminalVal, cr.recoveryVal, cr.row.treated_n, cr.row.control_n);
                   const pctStr = v.pctRecovered != null ? ` (${formatPctRecovered(v.pctRecovered)})` : "";
                   const pStr = cr.row.p_value != null ? ` p=${formatPCompact(cr.row.p_value)}` : "";
                   const lowNStr = isLowConf ? ` · low N (n=${cr.row.treated_n ?? "?"})` : "";
-                  const tooltip = `${sex}: ${verdictStr}${pctStr} · ${effectSymbol}: ${formatGAbs(tVal)} → ${formatGAbs(rVal)}${pStr}${lowNStr}`;
+                  const peakStr = showPeak
+                    ? ` · peak: ${formatGAbs(cr.row.peak_effect!)}${effectSymbol} (D${cr.row.peak_day ?? "?"})`
+                    : "";
+                  const tooltip = `${sex}: ${verdictStr}${pctStr} · ${effectSymbol}: ${formatGAbs(tVal)} → ${formatGAbs(rVal)}${pStr}${lowNStr}${peakStr}`;
 
                   return (
                     <g key={sex}>
@@ -543,6 +568,27 @@ export function RecoveryDumbbellChart({
                         x1={sexCx} y1={ty} x2={sexCx} y2={ry}
                         stroke="transparent" strokeWidth={10}
                       />
+                      {/* Peak dashed connector (renders behind terminal dot) */}
+                      {showPeak && (
+                        <line
+                          x1={sexCx} y1={ty}
+                          x2={sexCx} y2={peakY + 2.5}
+                          stroke="#9CA3AF"
+                          strokeWidth={0.5}
+                          strokeDasharray="2,2"
+                          opacity={0.5}
+                        />
+                      )}
+                      {/* Peak triangle (open, sex-colored) */}
+                      {showPeak && (
+                        <polygon
+                          points={`${sexCx},${peakY - 4} ${sexCx - 3.5},${peakY + 2.5} ${sexCx + 3.5},${peakY + 2.5}`}
+                          fill="none"
+                          stroke={sexColor}
+                          strokeWidth={1}
+                          opacity={0.7}
+                        />
+                      )}
                       {/* Gray connector — width/dash encodes p-value */}
                       <line
                         x1={sexCx} y1={ty} x2={sexCx} y2={arrowBase}
