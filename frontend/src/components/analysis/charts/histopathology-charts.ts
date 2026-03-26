@@ -63,7 +63,7 @@ export interface DoseSeverityGroup {
 // ─── Dose group colors (for Y-axis labels only) ─────────────────────
 
 function getDoseGroupLabelColor(level: number): string {
-  const colors = ["#6b7280", "#3b82f6", "#f59e0b", "#ef4444"];
+  const colors = ["#6b7280", "#3b82f6", "#BA7517", "#ef4444"];
   return colors[level] ?? "#6b7280";
 }
 

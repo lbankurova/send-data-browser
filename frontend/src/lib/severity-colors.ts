@@ -48,7 +48,7 @@ export function getSeverityDotColor(severity: string): string {
     case "adverse":
       return "#dc2626"; // red-600
     case "warning":
-      return "#facc15"; // yellow-400 — bright lemon-yellow, distinct from dose-group-2 amber #f59e0b
+      return "#facc15"; // yellow-400 — bright lemon-yellow, distinct from dose-group-2 brown-gold #BA7517
     case "normal":
     default:
       return "#16a34a"; // green-600
@@ -163,7 +163,7 @@ export function getNeutralHeatColor(score: number): { bg: string; text: string }
 
 /** Dose group color by level index. */
 export function getDoseGroupColor(level: number): string {
-  const colors = ["#6b7280", "#3b82f6", "#f59e0b", "#ef4444"];
+  const colors = ["#6b7280", "#3b82f6", "#BA7517", "#ef4444"];
   return colors[level] ?? "#6b7280";
 }
 

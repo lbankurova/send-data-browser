@@ -33,7 +33,7 @@
 
 **Current state:**
 - Color in ECharts only (line series, bar fills, sparklines, legends)
-- `getDoseGroupColor(level)`: 0=#6b7280 (gray), 1=#3b82f6 (blue), 2=#f59e0b (amber), 3=#ef4444 (red)
+- `getDoseGroupColor(level)`: 0=#6b7280 (gray), 1=#3b82f6 (blue), 2=#BA7517 (brown-gold), 3=#ef4444 (red)
 - `badge.dose` token exists but barely used
 - Plain text in all tables
 
