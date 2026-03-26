@@ -15,6 +15,9 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
+import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
+import { worstVerdict } from "@/lib/recovery-assessment";
+import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { RuleInspectorTab } from "./RuleInspectorTab";
 import { NoaelBanner } from "./noael/NoaelBanner";
 import { StudyStatementsBar } from "./noael/StudyStatementsBar";
@@ -41,6 +44,27 @@ export function NoaelDeterminationView() {
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const esSymbol = getEffectSizeSymbol(useStatMethods(studyId).effectSize);
+  const { data: recoveryData } = useRecoveryVerdicts(studyId);
+
+  // Derive per-organ worst recovery verdict from recovery_verdicts JSON
+  const recoveryByOrgan = useMemo(() => {
+    if (!recoveryData?.per_finding) return new Map<string, RecoveryVerdict>();
+    const byOrgan = new Map<string, RecoveryVerdict[]>();
+    for (const entry of Object.values(recoveryData.per_finding)) {
+      const verdict = entry.verdict as RecoveryVerdict | null;
+      if (!verdict) continue;
+      const specimen = (entry as { specimen?: string }).specimen;
+      if (!specimen) continue;
+      const existing = byOrgan.get(specimen) ?? [];
+      existing.push(verdict);
+      byOrgan.set(specimen, existing);
+    }
+    const result = new Map<string, RecoveryVerdict>();
+    for (const [organ, verdicts] of byOrgan) {
+      result.set(organ, worstVerdict(verdicts));
+    }
+    return result;
+  }, [recoveryData]);
 
   // Build panel data for StudyStatementsBar
   const panelData = useMemo(() => {
@@ -142,6 +166,7 @@ export function NoaelDeterminationView() {
               studyId={studyId!}
               effectSizeSymbol={esSymbol}
               noaelData={noaelData}
+              recoveryByOrgan={recoveryByOrgan}
             />
           ) : (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">

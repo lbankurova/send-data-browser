@@ -4,10 +4,13 @@ import type { OrganSummary } from "@/lib/derive-summaries";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { AdverseEffectSummaryRow, NoaelSummaryRow } from "@/types/analysis-views";
 import { DomainLabel } from "@/components/ui/DomainLabel";
-import { formatPValue, formatEffectSize, getDirectionSymbol, titleCase } from "@/lib/severity-colors";
+import { DoseHeader } from "@/components/ui/DoseLabel";
+import { formatPValue, formatEffectSize, getNeutralHeatColor, getDirectionSymbol, titleCase } from "@/lib/severity-colors";
 import { effectSizeLabel } from "@/lib/domain-types";
 import { cn } from "@/lib/utils";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
+import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { verdictArrow, verdictLabel } from "@/lib/recovery-assessment";
 
 interface EvidenceChainProps {
   organSummaries: OrganSummary[];
@@ -16,6 +19,8 @@ interface EvidenceChainProps {
   studyId: string;
   effectSizeSymbol?: string;
   noaelData?: NoaelSummaryRow[];
+  /** Per-organ recovery verdicts: organ_system → worst verdict */
+  recoveryByOrgan?: Map<string, RecoveryVerdict>;
 }
 
 export function EvidenceChain({
@@ -25,6 +30,7 @@ export function EvidenceChain({
   studyId,
   effectSizeSymbol = "d",
   noaelData,
+  recoveryByOrgan,
 }: EvidenceChainProps) {
   const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
@@ -79,6 +85,41 @@ export function EvidenceChain({
     return labels;
   }, [aeData, loaelDoseLevel]);
 
+  // ── Heatmap data: all adverse organs × dose levels ──
+  const heatmapData = useMemo(() => {
+    if (adverseOrgans.length === 0) return null;
+
+    // Collect unique dose levels with labels (sorted ascending)
+    const doseMap = new Map<number, string>();
+    for (const row of aeData) {
+      if (!doseMap.has(row.dose_level)) {
+        doseMap.set(row.dose_level, row.dose_label);
+      }
+    }
+    const doses = Array.from(doseMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([level, label]) => ({ level, label }));
+
+    // Build matrix: organ × dose → worst severity score
+    const matrix = new Map<string, Map<number, number>>();
+    for (const organ of adverseOrgans) {
+      const organRows = aeData.filter((r) => r.organ_system === organ.organ_system);
+      const doseScores = new Map<number, number>();
+      for (const row of organRows) {
+        const score =
+          row.severity === "adverse" && row.treatment_related ? 0.9
+          : row.severity === "adverse" ? 0.7
+          : row.severity === "warning" ? 0.5
+          : 0.2;
+        const current = doseScores.get(row.dose_level) ?? 0;
+        if (score > current) doseScores.set(row.dose_level, score);
+      }
+      matrix.set(organ.organ_system, doseScores);
+    }
+
+    return { doses, matrix };
+  }, [adverseOrgans, aeData]);
+
   const handleEndpointClick = useCallback(
     (organSystem: string) => {
       navigateTo({ organSystem });
@@ -107,10 +148,80 @@ export function EvidenceChain({
 
   return (
     <div>
+      {/* ── Full-study adversity heatmap ── */}
+      {heatmapData && heatmapData.doses.length > 1 && (
+        <div className="border-b px-4 py-3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Adversity overview
+          </div>
+          <div className="overflow-x-auto">
+            <table className="text-[11px]">
+              <thead>
+                <tr>
+                  <th className="pr-2 text-left font-normal text-muted-foreground" style={{ width: "1px", whiteSpace: "nowrap" }} />
+                  {heatmapData.doses.map((d) => (
+                    <th key={d.level} className="px-1 text-center font-normal" style={{ width: "1px", whiteSpace: "nowrap" }}>
+                      <DoseHeader level={d.level} label={d.label.split(" ")[0]} />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {adverseOrgans.map((organ) => {
+                  const doseScores = heatmapData.matrix.get(organ.organ_system);
+                  return (
+                    <tr key={organ.organ_system}>
+                      <td
+                        className="max-w-[140px] truncate pr-2 text-left"
+                        style={{ width: "1px", whiteSpace: "nowrap" }}
+                        title={organ.organ_system}
+                      >
+                        {titleCase(organ.organ_system)}
+                      </td>
+                      {heatmapData.doses.map((d) => {
+                        const score = doseScores?.get(d.level) ?? 0;
+                        const { bg, text } = getNeutralHeatColor(score);
+                        return (
+                          <td key={d.level} className="px-1 py-0.5 text-center">
+                            <div
+                              className="mx-auto h-4 w-10 rounded-sm"
+                              style={{ backgroundColor: bg, color: text }}
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* Legend */}
+          <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+            {([
+              [0.9, "Adverse (TR)"],
+              [0.5, "Warning"],
+              [0.2, "Normal"],
+              [0, "N/A"],
+            ] as const).map(([score, label]) => {
+              const { bg } = getNeutralHeatColor(score);
+              return (
+                <span key={label} className="flex items-center gap-1">
+                  <span className="inline-block h-2.5 w-4 rounded-sm" style={{ backgroundColor: bg }} />
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Per-organ evidence sections ── */}
       {adverseOrgans.map((organ) => {
         const endpoints = endpointsByOrgan.get(organ.organ_system) ?? [];
         const trCount = organ.trCount;
         const isSelected = selectedOrgan === organ.organ_system;
+        const recoveryVerdict = recoveryByOrgan?.get(organ.organ_system);
 
         return (
           <div
@@ -128,6 +239,11 @@ export function EvidenceChain({
               <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                 {organ.domains.length} {organ.domains.length === 1 ? "domain" : "domains"}
               </span>
+              {recoveryVerdict && recoveryVerdict !== "not_examined" && recoveryVerdict !== "no_data" && (
+                <span className="rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {verdictArrow(recoveryVerdict)} {verdictLabel(recoveryVerdict)}
+                </span>
+              )}
             </div>
 
             {/* Summary text */}
@@ -142,7 +258,7 @@ export function EvidenceChain({
               <span>
                 Max |{effectSizeSymbol}|:{" "}
                 <span className={cn("font-mono", organ.maxCohensD != null && Math.abs(organ.maxCohensD) >= 0.8 && "font-semibold")}>
-                  {organ.maxCohensD != null ? formatEffectSize(organ.maxCohensD) : "—"}
+                  {organ.maxCohensD != null ? formatEffectSize(organ.maxCohensD) : "\u2014"}
                 </span>
               </span>
               <span>
