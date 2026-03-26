@@ -56,6 +56,7 @@ import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
 import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
 import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
+import { classifyFindingNature } from "@/lib/finding-nature";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -753,6 +754,17 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      ...(hasMiMa ? [col.display({
+        id: "nature",
+        header: () => <span title="Biological classification of the finding (MI/MA only). Informs recovery expectations and adversity interpretation.">Nature</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">{"\u2014"}</span>;
+          const nature = classifyFindingNature(f.finding, null, f.specimen ?? null);
+          if (nature.nature === "unknown") return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="text-muted-foreground" title={`${nature.nature} \u2014 reversibility: ${nature.expected_reversibility}`}>{nature.nature}</span>;
+        },
+      })] : []),
       col.display({
         id: "recovery",
         header: () => <span className="text-muted-foreground" title="Recovery verdict (worst-case across dose groups)">Recovery</span>,

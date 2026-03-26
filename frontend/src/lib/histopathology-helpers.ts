@@ -391,3 +391,34 @@ export function deriveSpecimenReviewStatus(
   if (allReviewed && statuses.every(s => s === "Agreed" || s === "Deferred")) return "Confirmed";
   return "In review";
 }
+
+// ─── Specimen → organ_system mapping (mirrors backend ORGAN_SYSTEM_MAP) ──────
+
+const SPECIMEN_ORGAN_MAP: Record<string, string> = {
+  LIVER: "hepatic", KIDNEY: "renal", KIDNEYS: "renal", HEART: "cardiovascular",
+  AORTA: "cardiovascular", BRAIN: "neurological", "SPINAL CORD": "neurological",
+  LUNG: "respiratory", LUNGS: "respiratory", TRACHEA: "respiratory", LARYNX: "respiratory",
+  SPLEEN: "hematologic", THYMUS: "hematologic",
+  PANCREAS: "endocrine", STOMACH: "gastrointestinal", ESOPHAGUS: "gastrointestinal",
+  TONGUE: "gastrointestinal", TESTIS: "reproductive", TESTES: "reproductive",
+  EPIDIDYMIS: "reproductive", UTERUS: "reproductive", SKIN: "integumentary",
+  EYE: "ocular", EYES: "ocular", "URINARY BLADDER": "renal",
+};
+const KEYWORD_ORGAN_MAP: [string, string][] = [
+  ["ADRENAL", "endocrine"], ["THYROID", "endocrine"], ["PITUITARY", "endocrine"],
+  ["PROSTATE", "reproductive"], ["MAMMARY", "reproductive"], ["OVARY", "reproductive"],
+  ["BONE MARROW", "hematologic"], ["LYMPH NODE", "hematologic"],
+  ["LARGE INTESTINE", "gastrointestinal"], ["SMALL INTESTINE", "gastrointestinal"],
+  ["COLON", "gastrointestinal"], ["CECUM", "gastrointestinal"], ["RECTUM", "gastrointestinal"],
+  ["DUODENUM", "gastrointestinal"], ["JEJUNUM", "gastrointestinal"], ["ILEUM", "gastrointestinal"],
+  ["MUSCLE", "musculoskeletal"], ["FEMUR", "musculoskeletal"], ["STERNUM", "musculoskeletal"],
+];
+
+export function specimenToOrganSystem(specimen: string): string {
+  const upper = specimen.toUpperCase().trim();
+  if (SPECIMEN_ORGAN_MAP[upper]) return SPECIMEN_ORGAN_MAP[upper];
+  for (const [keyword, system] of KEYWORD_ORGAN_MAP) {
+    if (upper.includes(keyword)) return system;
+  }
+  return "general";
+}
