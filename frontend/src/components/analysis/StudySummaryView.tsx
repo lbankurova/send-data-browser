@@ -25,6 +25,7 @@ import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
+import { PkExposureSection } from "./panes/PkExposureSection";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
@@ -1079,6 +1080,13 @@ function DetailsTab({
       <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
         <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} interpretationNotes={interpretationNotes} />
       </CollapsiblePane>
+
+      {/* ── PK Exposure ── */}
+      {pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0 && (
+        <CollapsiblePane title="PK Exposure" defaultOpen>
+          <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
+        </CollapsiblePane>
+      )}
 
       {/* ── Data quality ── */}
       <CollapsiblePane
