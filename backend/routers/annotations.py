@@ -20,6 +20,7 @@ VALID_SCHEMA_TYPES = {
     "custom-insight-rules", "custom-validation-rules",
     "study-notes", "analysis-settings", "normalization-overrides",
     "pattern-overrides", "noael-overrides", "mortality-overrides",
+    "recovery-overrides",
 }
 
 # Map URL slugs to file names
