@@ -14,10 +14,28 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { assessRecoveryAdequacy } from "@/lib/recovery-assessment";
 import { classifyFindingNature } from "@/lib/finding-nature";
+import { classifyContinuousRecovery } from "@/lib/recovery-verdict";
 import { getVerdictLabel } from "@/lib/recovery-labels";
 import { Info } from "lucide-react";
 import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
 import { IncidenceRecoveryChart } from "./IncidenceRecoveryChart";
+import { RecoveryVerdictOverride } from "./RecoveryVerdictOverride";
+
+// ── Verdict priority for worst-case selection ────────────
+// Higher index = more concerning.
+const VERDICT_PRIORITY: Record<string, number> = {
+  not_assessed: 0,
+  reversed: 1,
+  overcorrected: 2,
+  partially_reversed: 3,
+  persistent: 4,
+  progressing: 5,
+  anomaly: 5,
+};
+
+function verdictPriority(v: string): number {
+  return VERDICT_PRIORITY[v] ?? 0;
+}
 
 // ── Continuous recovery section ──────────────────────────
 
@@ -89,6 +107,28 @@ function ContinuousRecoverySection({
         terminalDay={allRows[0]?.terminal_day}
         recoveryDay={recovery.recovery_day}
       />
+
+      {/* Verdict override — uses worst-case across all dose/sex rows */}
+      {studyId && (() => {
+        // Compute per-row verdicts and find the worst case
+        const classified = allRows.map((row) => {
+          const tG = row.terminal_effect_same_arm ?? row.terminal_effect;
+          const v = classifyContinuousRecovery(tG, row.effect_size, row.treated_n, row.control_n);
+          return { terminalG: tG ?? null, recoveryG: row.effect_size ?? null, pctRecovered: v.pctRecovered, verdict: v.verdict };
+        });
+        const worst = classified.reduce((a, b) => verdictPriority(b.verdict) > verdictPriority(a.verdict) ? b : a, classified[0]);
+        return (
+          <RecoveryVerdictOverride
+            findingId={finding.id}
+            studyId={studyId}
+            dataType="continuous"
+            autoVerdict={worst.verdict}
+            terminalG={worst.terminalG}
+            recoveryG={worst.recoveryG}
+            pctRecovered={worst.pctRecovered}
+          />
+        );
+      })()}
 
     </div>
   );
@@ -176,6 +216,31 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
           )}
         </div>
       )}
+
+      {/* Verdict override — uses worst-case across matched incidence rows */}
+      {studyId && (() => {
+        const worst = matched.reduce((a, b) => verdictPriority(b.verdict ?? "not_assessed") > verdictPriority(a.verdict ?? "not_assessed") ? b : a, matched[0]);
+        return (
+          <RecoveryVerdictOverride
+            findingId={finding.id}
+            studyId={studyId}
+            dataType="incidence"
+            autoVerdict={worst.verdict ?? "not_assessed"}
+            incidenceRow={{
+              main_affected: worst.main_affected,
+              main_n: worst.main_n,
+              recovery_affected: worst.recovery_affected,
+              recovery_n: worst.recovery_n,
+              verdict: worst.verdict,
+              confidence: worst.confidence,
+              main_avg_severity: worst.main_avg_severity,
+              recovery_avg_severity: worst.recovery_avg_severity,
+              main_examined: worst.main_examined,
+              recovery_examined: worst.recovery_examined,
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
