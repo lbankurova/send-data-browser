@@ -738,7 +738,7 @@ export function DoseResponseChartPanel({
                   </div>
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    No recovery data for this endpoint
+                    No recovery data for this endpoint.
                   </div>
                 )}
               </div>

@@ -48,8 +48,8 @@ function ContinuousRecoverySection({
 
   if (!recovery || !recovery.available) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery comparison data available.
+      <div className="text-xs text-muted-foreground">
+        No recovery arm in this study.
       </div>
     );
   }
@@ -77,8 +77,8 @@ function ContinuousRecoverySection({
 
   if (allRows.length === 0) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery data for {finding.finding}.
+      <div className="text-xs text-muted-foreground">
+        No recovery data for this endpoint.
       </div>
     );
   }
@@ -130,8 +130,8 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
 
   if (!recovery || !recovery.available) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery comparison data available.
+      <div className="text-xs text-muted-foreground">
+        No recovery arm in this study.
       </div>
     );
   }
@@ -148,8 +148,8 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
 
   if (matched.length === 0) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery data for {finding.finding}.
+      <div className="text-xs text-muted-foreground">
+        No recovery data for this endpoint.
       </div>
     );
   }

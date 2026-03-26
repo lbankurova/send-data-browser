@@ -113,7 +113,7 @@ export function IncidenceDoseCharts({
   const rightLabel = hasSeverity ? "Severity" : "Recovery";
   const rightEmptyMsg = hasSeverity
     ? "No severity data."
-    : (hasRecovery ? "No recovery data for this finding." : "No recovery arm data.");
+    : (hasRecovery ? "No recovery data for this endpoint." : "No recovery arm in this study.");
 
   if (mainIncGroups.length === 0) {
     return (

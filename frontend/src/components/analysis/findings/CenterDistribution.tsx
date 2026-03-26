@@ -139,7 +139,9 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   if (isError || subjects.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        No individual data at this timepoint
+        {showRecoveryAnimals
+          ? "No recovery-arm subjects at this timepoint."
+          : "No individual data at this timepoint."}
       </div>
     );
   }
