@@ -3,6 +3,12 @@
  *
  * Provided at Layout level so both CohortRail (ShellRailPanel) and
  * CohortView (Outlet) can consume it. Lightweight when not on the cohort route.
+ *
+ * Filtering uses the composable filter engine (evaluateFilter) with FilterGroup.
+ * The old computePresetSubjects + manual cascading filters are replaced by:
+ *   1. buildPresetFilterGroup combines active presets into a FilterGroup
+ *   2. Convenience filters (dose, sex, search) add predicates on top
+ *   3. evaluateFilter evaluates the combined filter against each subject
  */
 import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
@@ -11,13 +17,17 @@ import { useFindings } from "@/hooks/useFindings";
 import { useSubjectContext } from "@/hooks/useSubjectContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
-import { buildCohortSubjects, computePresetSubjects, computeOrganSignals, buildCohortFindingRows, computeSharedFindings, computeSubjectOrganCounts } from "@/lib/cohort-engine";
+import { buildCohortSubjects, buildPresetFilterGroup, computeOrganSignals, buildCohortFindingRows, computeSharedFindings, computeSubjectOrganCounts } from "@/lib/cohort-engine";
+import { evaluateFilter } from "@/lib/filter-engine";
+import type { FilterContext } from "@/lib/filter-engine";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
-import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding } from "@/types/cohort";
+import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
+import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate } from "@/types/cohort";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const EMPTY_FILTERS = { domain: null, severity: null, search: "", sex: null, organ_system: null, endpoint_label: null, dose_response_pattern: null };
 const MAX_SUBJECT_COLUMNS = 20;
+const EMPTY_FILTER_GROUP: FilterGroup = { operator: "and", predicates: [] };
 
 export interface CohortContextValue {
   // Data loading
@@ -25,7 +35,7 @@ export interface CohortContextValue {
   // Raw data
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
-  /** Subjects with missing organ examinations — USUBJID → set of missing organ/specimen names. */
+  /** Subjects with missing organ examinations — USUBJID -> set of missing organ/specimen names. */
   missingExamMap: Map<string, Set<string>>;
   /** Per-subject histopath data for the selected organ (MI/MA severity grades). */
   histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
@@ -38,7 +48,7 @@ export interface CohortContextValue {
   filteredSubjects: CohortSubject[];
   activeSubjects: CohortSubject[];
   displaySubjects: CohortSubject[];
-  // State
+  // State — backward compatible
   preset: CohortPreset;
   selectedSubjects: Set<string>;
   selectedOrgan: string | null;
@@ -47,12 +57,15 @@ export interface CohortContextValue {
   sexFilter: Set<string> | null;
   searchQuery: string;
   hoveredRow: string | null;
+  // State — new composable filter
+  activePresets: Set<CohortPreset>;
+  filterGroup: FilterGroup;
   // Derived
   organSignals: OrganSignal[];
   findingRows: CohortFindingRow[];
   sharedFindings: SharedFinding[];
   truncated: boolean;
-  // Actions
+  // Actions — backward compatible
   setPreset: (p: CohortPreset) => void;
   toggleSubject: (id: string, shiftKey: boolean) => void;
   setSelectedOrgan: (organ: string | null) => void;
@@ -61,6 +74,12 @@ export interface CohortContextValue {
   setSexFilter: (v: Set<string> | null) => void;
   setSearchQuery: (v: string) => void;
   setHoveredRow: (key: string | null) => void;
+  // Actions — new composable filter
+  togglePreset: (p: CohortPreset) => void;
+  setFilterGroup: (fg: FilterGroup) => void;
+  setFilterOperator: (op: FilterOperator) => void;
+  addPredicate: (p: FilterPredicate) => void;
+  removePredicate: (index: number) => void;
 }
 
 const CohortCtx = createContext<CohortContextValue | null>(null);
@@ -79,14 +98,17 @@ export function useCohortMaybe(): CohortContextValue | null {
 export function CohortProvider({ studyId, children }: { studyId: string | undefined; children: ReactNode }) {
   const [searchParams] = useSearchParams();
 
-  // ── Query param initialization ─────────────────────────────
+  // -- Query param initialization -----------------------------------------
   const initialPreset = (searchParams.get("preset") as CohortPreset) || "all";
   const initialDose = searchParams.get("dose");
   const initialSubjects = searchParams.get("subjects");
   const initialOrgan = searchParams.get("organ");
 
-  // ── State ──────────────────────────────────────────────────
-  const [preset, setPreset] = useState<CohortPreset>(initialPreset);
+  // -- State --------------------------------------------------------------
+  const [activePresets, setActivePresets] = useState<Set<CohortPreset>>(
+    () => new Set([initialPreset]),
+  );
+  const [filterGroup, setFilterGroup] = useState<FilterGroup>(EMPTY_FILTER_GROUP);
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(
     () => initialSubjects ? new Set(initialSubjects.split(",")) : new Set<string>(),
   );
@@ -100,14 +122,67 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const lastClickedIndex = useRef<number>(-1);
 
-  // ── Sync state when URL params change after mount (e.g. "See subjects" nav) ──
+  // -- Backward-compatible derived `preset` value -------------------------
+  // Returns the single active preset (for CohortRail's PanePillToggle)
+  const preset: CohortPreset = useMemo(() => {
+    if (activePresets.size === 1) return [...activePresets][0];
+    if (activePresets.has("all")) return "all";
+    return [...activePresets][0]; // fallback: first preset
+  }, [activePresets]);
+
+  // -- Backward-compatible setPreset (exclusive behavior) -----------------
+  const setPreset = useCallback((p: CohortPreset) => {
+    setActivePresets(new Set([p]));
+  }, []);
+
+  // -- New: togglePreset (multi-select behavior) --------------------------
+  const togglePreset = useCallback((p: CohortPreset) => {
+    setActivePresets((prev) => {
+      const next = new Set(prev);
+      if (p === "all") {
+        // Selecting "all" clears other presets
+        return new Set<CohortPreset>(["all"]);
+      }
+      // Remove "all" when selecting a specific preset
+      next.delete("all");
+      if (next.has(p)) {
+        next.delete(p);
+        // If nothing left, revert to "all"
+        if (next.size === 0) return new Set<CohortPreset>(["all"]);
+      } else {
+        next.add(p);
+      }
+      return next;
+    });
+  }, []);
+
+  // -- New: filter group actions ------------------------------------------
+  const setFilterOperator = useCallback((op: FilterOperator) => {
+    setFilterGroup((prev) => ({ ...prev, operator: op }));
+  }, []);
+
+  const addPredicate = useCallback((p: FilterPredicate) => {
+    setFilterGroup((prev) => ({
+      ...prev,
+      predicates: [...prev.predicates, p],
+    }));
+  }, []);
+
+  const removePredicate = useCallback((index: number) => {
+    setFilterGroup((prev) => ({
+      ...prev,
+      predicates: prev.predicates.filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  // -- Sync state when URL params change after mount (e.g. "See subjects" nav) --
   const prevSubjectsParam = useRef(initialSubjects);
   useEffect(() => {
     if (initialSubjects !== prevSubjectsParam.current) {
       prevSubjectsParam.current = initialSubjects;
       if (initialSubjects) {
         setSelectedSubjects(new Set(initialSubjects.split(",")));
-        setPreset(initialPreset);
+        setActivePresets(new Set([initialPreset]));
       } else {
         // Cleared subjects param — let auto-select take over
         setSelectedSubjects(new Set<string>());
@@ -115,17 +190,18 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     }
   }, [initialSubjects, initialPreset]);
 
-  // ── Data fetching (only when studyId present) ──────────────
+  // -- Data fetching (only when studyId present) --------------------------
   const { data: findingsResp, isLoading: findingsLoading } = useFindings(studyId, 1, 10000, EMPTY_FILTERS);
   const { data: subjectContext, isLoading: scLoading } = useSubjectContext(studyId);
   const { data: mortality } = useStudyMortality(studyId);
   const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
+  const { data: syndromesData } = useSubjectSyndromes(studyId);
 
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
   const isLoading = findingsLoading || scLoading;
 
-  // ── Histopath per-subject severity for MI/MA cells ─────────
+  // -- Histopath per-subject severity for MI/MA cells ---------------------
   const histopathSpecimen = selectedOrgan?.toUpperCase() ?? null;
   const { data: histopathSubjects } = useHistopathSubjects(studyId, histopathSpecimen);
 
@@ -143,7 +219,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   }, [histopathSubjects]);
   const hasHistopathData = histopathMap.size > 0;
 
-  // ── Derived: tissue battery gap map ───────────────────────
+  // -- Derived: tissue battery gap map ------------------------------------
   const missingExamMap = useMemo(() => {
     const map = new Map<string, Set<string>>();
     if (!crossAnimalFlags) return map;
@@ -156,7 +232,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     return map;
   }, [crossAnimalFlags]);
 
-  // ── Derived: subject roster ────────────────────────────────
+  // -- Derived: subject roster --------------------------------------------
   const allSubjects = useMemo(
     () => buildCohortSubjects(subjectContext ?? [], mortality ?? null, crossAnimalFlags ?? null, findings),
     [subjectContext, mortality, crossAnimalFlags, findings],
@@ -167,30 +243,66 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     [findings, allSubjects],
   );
 
-  const presetSubjectIds = useMemo(
-    () => computePresetSubjects(allSubjects, preset, includeTK),
-    [allSubjects, preset, includeTK],
+  // -- Derived: CohortFindingRows for filter context ----------------------
+  // Note: buildCohortFindingRows needs an organ, but for FilterContext we need
+  // all findings as CohortFindingRow[]. We pass an empty array since the
+  // filterGroup predicates that need findings (organ, domain, bw_change) will
+  // be evaluated against the global finding rows. For now, we build finding rows
+  // for the selected organ only (same as before), and the filter context uses
+  // the full finding rows when a specific organ is selected.
+  // The filter engine's FilterContext.findings is used for per-subject value
+  // lookups by organ/domain/bw_change predicates. Without a selected organ,
+  // we pass an empty array — these predicates won't be used in the base filter.
+  const filterFindingRows = useMemo(
+    () => selectedOrgan ? buildCohortFindingRows(findings, selectedOrgan, allSubjects) : [],
+    [findings, selectedOrgan, allSubjects],
   );
 
+  // -- Build combined filter and evaluate ---------------------------------
+  const presetFilter = useMemo(
+    () => buildPresetFilterGroup(activePresets, filterGroup, includeTK),
+    [activePresets, filterGroup, includeTK],
+  );
+
+  // Build the convenience filter (dose, sex, search) as a separate AND group
+  const convenienceFilter = useMemo((): FilterGroup => {
+    const predicates: FilterPredicate[] = [];
+    if (doseFilter) predicates.push({ type: "dose", values: doseFilter });
+    if (sexFilter) predicates.push({ type: "sex", values: sexFilter });
+    if (searchQuery) predicates.push({ type: "search", query: searchQuery });
+    return { operator: "and", predicates };
+  }, [doseFilter, sexFilter, searchQuery]);
+
+  // Build the FilterContext for evaluateFilter
+  const filterCtx = useMemo((): FilterContext => ({
+    syndromes: syndromesData?.subjects ?? {},
+    findings: filterFindingRows,
+    subjectOrganCounts,
+    histopathMap,
+  }), [syndromesData, filterFindingRows, subjectOrganCounts, histopathMap]);
+
   const filteredSubjects = useMemo(() => {
-    let subjects = allSubjects.filter((s) => presetSubjectIds.has(s.usubjid));
-    if (doseFilter) subjects = subjects.filter((s) => doseFilter.has(s.doseGroupOrder));
-    if (sexFilter) subjects = subjects.filter((s) => sexFilter.has(s.sex));
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      subjects = subjects.filter((s) => s.usubjid.toLowerCase().includes(q));
+    // Two-stage filtering:
+    // 1. Preset filter (may be OR for multi-preset, or AND for single)
+    // 2. Convenience filters (always AND)
+    let subjects = allSubjects.filter((s) => evaluateFilter(s, presetFilter, filterCtx));
+
+    // Apply convenience filters as second pass (for multi-preset OR case)
+    if (convenienceFilter.predicates.length > 0) {
+      subjects = subjects.filter((s) => evaluateFilter(s, convenienceFilter, filterCtx));
     }
+
     // When navigated with explicit subject list, filter to just those subjects
     if (initialSubjects) {
       const target = new Set(initialSubjects.split(","));
       subjects = subjects.filter((s) => target.has(s.usubjid));
     }
     return subjects;
-  }, [allSubjects, presetSubjectIds, doseFilter, sexFilter, searchQuery, initialSubjects]);
+  }, [allSubjects, presetFilter, convenienceFilter, filterCtx, initialSubjects]);
 
   // Auto-select all filtered subjects when preset/filters change
   const prevFilterKey = useRef("");
-  const filterKey = `${preset}-${doseFilter ? [...doseFilter].sort().join(",") : "all"}-${sexFilter ? [...sexFilter].sort().join(",") : "all"}-${searchQuery}-${includeTK}`;
+  const filterKey = `${[...activePresets].sort().join("+")}-${filterGroup.predicates.length}-${filterGroup.operator}-${doseFilter ? [...doseFilter].sort().join(",") : "all"}-${sexFilter ? [...sexFilter].sort().join(",") : "all"}-${searchQuery}-${includeTK}`;
   if (filterKey !== prevFilterKey.current) {
     prevFilterKey.current = filterKey;
     if (!initialSubjects) {
@@ -220,7 +332,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     return [...activeSubjects].sort((a, b) => b.doseGroupOrder - a.doseGroupOrder).slice(0, MAX_SUBJECT_COLUMNS);
   }, [activeSubjects]);
 
-  // ── Derived: organ signals and finding rows ────────────────
+  // -- Derived: organ signals and finding rows ----------------------------
   const organSignals = useMemo(
     () => computeOrganSignals(findings, activeSubjects),
     [findings, activeSubjects],
@@ -248,7 +360,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     [findings, activeSubjects],
   );
 
-  // ── Handlers ───────────────────────────────────────────────
+  // -- Handlers -----------------------------------------------------------
   const toggleSubject = useCallback((usubjid: string, shiftKey: boolean) => {
     setSelectedSubjects((prev) => {
       const next = new Set(prev);
@@ -286,6 +398,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     activeSubjects,
     displaySubjects,
     preset,
+    activePresets,
+    filterGroup,
     selectedSubjects,
     selectedOrgan,
     includeTK,
@@ -298,6 +412,11 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     sharedFindings,
     truncated: activeSubjects.length > MAX_SUBJECT_COLUMNS,
     setPreset,
+    togglePreset,
+    setFilterGroup,
+    setFilterOperator,
+    addPredicate,
+    removePredicate,
     toggleSubject,
     setSelectedOrgan,
     setIncludeTK,
@@ -308,9 +427,11 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   }), [
     isLoading, findings, doseGroups, missingExamMap, histopathMap, hasHistopathData,
     subjectOrganCounts, allSubjects, filteredSubjects,
-    activeSubjects, displaySubjects, preset, selectedSubjects,
-    selectedOrgan, includeTK, doseFilter, sexFilter, searchQuery,
-    hoveredRow, organSignals, findingRows, sharedFindings, toggleSubject,
+    activeSubjects, displaySubjects, preset, activePresets, filterGroup,
+    selectedSubjects, selectedOrgan, includeTK, doseFilter, sexFilter, searchQuery,
+    hoveredRow, organSignals, findingRows, sharedFindings,
+    setPreset, togglePreset, setFilterGroup, setFilterOperator,
+    addPredicate, removePredicate, toggleSubject,
   ]);
 
   return <CohortCtx.Provider value={value}>{children}</CohortCtx.Provider>;
