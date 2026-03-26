@@ -4,7 +4,7 @@ import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
-import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, Info, AlertTriangle, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -25,7 +25,6 @@ import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
-import { CollapseAllButtons } from "./panes/CollapseAllButtons";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { PkExposureSection } from "./panes/PkExposureSection";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
@@ -793,6 +792,7 @@ function DetailsTab({
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const [sectionsExpanded, setSectionsExpanded] = useState(true); // default: all open
   const [organWeightMethod] = useSessionState(
     `pcc.${studyId}.organWeightMethod`, "recommended", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
   );
@@ -1058,7 +1058,19 @@ function DetailsTab({
 
       {/* ── Section controls ── */}
       <div className="flex items-center justify-end border-b px-4 py-1">
-        <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+        <button
+          type="button"
+          className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
+          title={sectionsExpanded ? "Collapse all sections" : "Expand all sections"}
+          onClick={() => {
+            if (sectionsExpanded) { collapseAll(); } else { expandAll(); }
+            setSectionsExpanded(v => !v);
+          }}
+        >
+          {sectionsExpanded
+            ? <ChevronsDownUp className="h-3.5 w-3.5" />
+            : <ChevronsUpDown className="h-3.5 w-3.5" />}
+        </button>
       </div>
 
       {/* ── Study timeline ───────────────────────────────── */}

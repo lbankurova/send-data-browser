@@ -1,13 +1,13 @@
 /**
  * CohortRail — subject roster with preset checkboxes, filter pills, and multi-select rows.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterMultiSelect, FilterSearch, FilterClearButton } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useCohort } from "@/contexts/CohortContext";
-import { FilterPanel } from "./FilterPanel";
+import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
 import type { CohortPreset, CohortSubject, FilterPredicate } from "@/types/cohort";
 
 const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
@@ -94,6 +94,8 @@ export function CohortRail() {
     subjectOrganCounts,
   } = useCohort();
 
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
   // Summary counts
   const selected = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
   const doseGroupCount = new Set(selected.map((s) => s.doseGroupOrder)).size;
@@ -162,7 +164,7 @@ export function CohortRail() {
         </div>
       )}
 
-      {/* Zone 3: Quick-access filters */}
+      {/* Zone 3: Quick-access filters + filter panel toggle */}
       <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5">
         <FilterMultiSelect
           options={doseOptions}
@@ -183,6 +185,11 @@ export function CohortRail() {
           dirty={isDirty}
           onClear={() => { setDoseFilter(null); setSexFilter(null); setSearchQuery(""); }}
         />
+        <FilterPanelToggle
+          predicateCount={filterGroup.predicates.length}
+          isOpen={showFilterPanel}
+          onToggle={() => setShowFilterPanel((p) => !p)}
+        />
       </div>
 
       {/* TK toggle (shown when "all" is active or no specific preset selected) */}
@@ -198,8 +205,10 @@ export function CohortRail() {
         </label>
       )}
 
-      {/* FilterPanel: collapsible advanced filters */}
-      <FilterPanel />
+      {/* FilterPanel: side panel for adding advanced filter predicates */}
+      {showFilterPanel && (
+        <FilterPanel onClose={() => setShowFilterPanel(false)} />
+      )}
 
       {/* Zone 4: Subject rows */}
       <div className="flex-1 overflow-y-auto">

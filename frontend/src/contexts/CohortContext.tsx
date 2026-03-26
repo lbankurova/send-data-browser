@@ -243,20 +243,9 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     [findings, allSubjects],
   );
 
-  // -- Derived: CohortFindingRows for filter context ----------------------
-  // Note: buildCohortFindingRows needs an organ, but for FilterContext we need
-  // all findings as CohortFindingRow[]. We pass an empty array since the
-  // filterGroup predicates that need findings (organ, domain, bw_change) will
-  // be evaluated against the global finding rows. For now, we build finding rows
-  // for the selected organ only (same as before), and the filter context uses
-  // the full finding rows when a specific organ is selected.
-  // The filter engine's FilterContext.findings is used for per-subject value
-  // lookups by organ/domain/bw_change predicates. Without a selected organ,
-  // we pass an empty array — these predicates won't be used in the base filter.
-  const filterFindingRows = useMemo(
-    () => selectedOrgan ? buildCohortFindingRows(findings, selectedOrgan, allSubjects) : [],
-    [findings, selectedOrgan, allSubjects],
-  );
+  // Note: filter-engine predicates (organ, domain, bw_change) now use
+  // allFindings (UnifiedFinding[]) directly, so no CohortFindingRow conversion
+  // is needed for the filter context.
 
   // -- Build combined filter and evaluate ---------------------------------
   const presetFilter = useMemo(
@@ -276,10 +265,10 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   // Build the FilterContext for evaluateFilter
   const filterCtx = useMemo((): FilterContext => ({
     syndromes: syndromesData?.subjects ?? {},
-    findings: filterFindingRows,
+    allFindings: findings,
     subjectOrganCounts,
     histopathMap,
-  }), [syndromesData, filterFindingRows, subjectOrganCounts, histopathMap]);
+  }), [syndromesData, findings, subjectOrganCounts, histopathMap]);
 
   const filteredSubjects = useMemo(() => {
     // Two-stage filtering:

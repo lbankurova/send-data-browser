@@ -12,9 +12,9 @@ import type {
   CohortPreset,
   FilterGroup,
   FilterPredicate,
-  CohortFindingRow,
   SubjectSyndromeProfile,
 } from "@/types/cohort";
+import type { UnifiedFinding } from "@/types/analysis";
 
 // ── FilterContext ──────────────────────────────────────────────
 
@@ -22,7 +22,8 @@ import type {
  * Auxiliary data needed by predicates that look beyond CohortSubject properties.
  *
  * - syndromes: per-subject syndrome profiles keyed by USUBJID
- * - findings: all CohortFindingRows for the current view
+ * - allFindings: full UnifiedFinding[] from the study -- used by organ/domain/bw_change
+ *   predicates to check per-subject values across ALL organs (not just the selected one).
  * - subjectOrganCounts: pre-computed per-subject distinct organ counts
  * - histopathMap: per-subject histopath data with numeric severity grades (0-5)
  *   Keyed by USUBJID, then by FINDING_NAME (uppercased).
@@ -30,7 +31,7 @@ import type {
  */
 export interface FilterContext {
   syndromes: Record<string, SubjectSyndromeProfile>;
-  findings: CohortFindingRow[];
+  allFindings: UnifiedFinding[];
   subjectOrganCounts: Map<string, number>;
   histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
 }
@@ -119,6 +120,15 @@ export function evaluatePredicate(
 
 // ── Individual predicate evaluators ────────────────────────────
 
+/**
+ * Organ predicate: check if subject has findings in the specified organ.
+ *
+ * Uses allFindings (UnifiedFinding[]) to search across ALL organs.
+ * For continuous domains (LB, OM, BW): checks raw_subject_values.
+ * For CL: checks raw_subject_onset_days.
+ * For incidence domains (MI, MA): uses dose-level proxy (subject at a dose
+ * level with affected > 0 is considered to have findings).
+ */
 function evalOrgan(
   subject: CohortSubject,
   pred: Extract<FilterPredicate, { type: "organ" }>,
@@ -126,29 +136,78 @@ function evalOrgan(
 ): boolean {
   const role = pred.role ?? "any";
 
-  for (const f of ctx.findings) {
-    if (f.organName !== pred.organName) continue;
+  for (const f of ctx.allFindings) {
+    const organ = f.organ_name ?? f.organ_system ?? null;
+    if (organ !== pred.organName) continue;
 
-    // Check if subject has a value in this finding
-    if (f.subjectValues[subject.usubjid] == null) continue;
+    // Role filter on severity
+    if (role === "adverse" && f.severity !== "adverse") continue;
+    if (role === "warning" && f.severity !== "warning" && f.severity !== "adverse") continue;
 
-    // Role filter
-    if (role === "any") return true;
-    if (role === "adverse" && f.severity === "adverse") return true;
-    if (role === "warning" && (f.severity === "warning" || f.severity === "adverse")) return true;
+    // Check per-subject values (continuous domains)
+    if (f.raw_subject_values) {
+      for (const entry of f.raw_subject_values) {
+        if (entry[subject.usubjid] != null) return true;
+      }
+    }
+
+    // CL: check onset days
+    if (f.raw_subject_onset_days) {
+      for (const entry of f.raw_subject_onset_days) {
+        if (entry[subject.usubjid] != null) return true;
+      }
+    }
+
+    // Incidence domains (MI, MA): dose-level proxy
+    if (!f.raw_subject_values && !f.raw_subject_onset_days) {
+      for (const gs of f.group_stats ?? []) {
+        if (gs.dose_level === subject.doseGroupOrder &&
+            gs.dose_level > 0 &&
+            ((gs.affected ?? 0) > 0 || (gs.incidence ?? 0) > 0)) {
+          // Also check sex match for per-sex findings
+          if (!f.sex || f.sex === subject.sex) return true;
+        }
+      }
+    }
   }
 
   return false;
 }
 
+/**
+ * Domain predicate: check if subject has findings in the specified domain.
+ * Uses allFindings with same per-subject / dose-level proxy logic as evalOrgan.
+ */
 function evalDomain(
   subject: CohortSubject,
   pred: Extract<FilterPredicate, { type: "domain" }>,
   ctx: FilterContext,
 ): boolean {
-  for (const f of ctx.findings) {
+  for (const f of ctx.allFindings) {
     if (f.domain !== pred.domain) continue;
-    if (f.subjectValues[subject.usubjid] != null) return true;
+
+    // Per-subject values (continuous)
+    if (f.raw_subject_values) {
+      for (const entry of f.raw_subject_values) {
+        if (entry[subject.usubjid] != null) return true;
+      }
+    }
+    // CL onset days
+    if (f.raw_subject_onset_days) {
+      for (const entry of f.raw_subject_onset_days) {
+        if (entry[subject.usubjid] != null) return true;
+      }
+    }
+    // Incidence proxy
+    if (!f.raw_subject_values && !f.raw_subject_onset_days) {
+      for (const gs of f.group_stats ?? []) {
+        if (gs.dose_level === subject.doseGroupOrder &&
+            gs.dose_level > 0 &&
+            ((gs.affected ?? 0) > 0 || (gs.incidence ?? 0) > 0)) {
+          if (!f.sex || f.sex === subject.sex) return true;
+        }
+      }
+    }
   }
   return false;
 }
@@ -201,22 +260,25 @@ function evalSeverity(
 /**
  * BW change predicate: looks for BW domain findings and checks % change.
  *
- * Searches findings for domain="BW", extracts the subject's value,
- * and checks against minPct threshold in the specified direction.
+ * Searches allFindings for domain="BW", extracts the subject's value
+ * from raw_subject_values, and checks against minPct threshold.
  */
 function evalBwChange(
   subject: CohortSubject,
   pred: Extract<FilterPredicate, { type: "bw_change" }>,
   ctx: FilterContext,
 ): boolean {
-  for (const f of ctx.findings) {
+  for (const f of ctx.allFindings) {
     if (f.domain !== "BW") continue;
+    if (!f.raw_subject_values) continue;
 
-    const val = f.subjectValues[subject.usubjid];
-    if (val == null || typeof val !== "number") continue;
+    for (const entry of f.raw_subject_values) {
+      const val = entry[subject.usubjid];
+      if (val == null || typeof val !== "number") continue;
 
-    if (pred.direction === "loss" && val <= -pred.minPct) return true;
-    if (pred.direction === "gain" && val >= pred.minPct) return true;
+      if (pred.direction === "loss" && val <= -pred.minPct) return true;
+      if (pred.direction === "gain" && val >= pred.minPct) return true;
+    }
   }
   return false;
 }

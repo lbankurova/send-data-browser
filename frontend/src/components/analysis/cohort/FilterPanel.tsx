@@ -1,14 +1,16 @@
 /**
- * FilterPanel — collapsible panel for adding composable filter predicates.
+ * FilterPanel -- side panel for adding composable filter predicates.
  *
- * Renders below the quick-access filters in CohortRail. Users pick a dimension,
- * configure its value, and click "Add" to create a predicate in the FilterGroup.
+ * Opens as a vertical panel alongside the subject list (like FindingsTableFilterPanel).
+ * Users pick a dimension, configure its value, and click "Add" to create a predicate.
  * Active predicates appear as pills in CohortRail (managed there, not here).
  */
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { Filter, Plus, X, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCohort } from "@/contexts/CohortContext";
+import { useParams } from "react-router-dom";
+import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import type { FilterPredicate } from "@/types/cohort";
 
 // ── Dimension categories ─────────────────────────────────────
@@ -51,55 +53,99 @@ const DISPOSITION_OPTIONS = [
   { key: "scheduled", label: "Scheduled" },
 ];
 
+// ── FilterPanelToggle -- icon button to open the panel ─────────
+
+export function FilterPanelToggle({
+  predicateCount,
+  isOpen,
+  onToggle,
+}: {
+  predicateCount: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "relative flex items-center gap-1 rounded px-1.5 py-1 text-xs transition-colors",
+        isOpen
+          ? "bg-primary/10 text-primary"
+          : predicateCount > 0
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+      )}
+      onClick={onToggle}
+      title="Toggle filter panel"
+    >
+      <Filter className="h-3 w-3" />
+      {predicateCount > 0 && (
+        <span className="rounded-full bg-gray-100 px-1 text-[9px] font-semibold text-gray-600 border border-gray-200">
+          {predicateCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
 // ── FilterPanel component ────────────────────────────────────
 
-export function FilterPanel() {
-  const { addPredicate, organSignals, filterGroup } = useCohort();
-  const [expanded, setExpanded] = useState(false);
+export function FilterPanel({ onClose }: { onClose: () => void }) {
+  const { addPredicate, organSignals } = useCohort();
+  const { studyId } = useParams<{ studyId: string }>();
+  const { data: syndromesData } = useSubjectSyndromes(studyId);
   const [selectedDimension, setSelectedDimension] = useState<DimensionId | null>(null);
 
-  const predicateCount = filterGroup.predicates.length;
+  // Derive available syndrome options from actual data
+  const syndromeOptions = useMemo(() => {
+    if (!syndromesData?.subjects) return [];
+    const syndromeMap = new Map<string, string>();
+    for (const profile of Object.values(syndromesData.subjects)) {
+      for (const s of [...profile.syndromes, ...profile.partial_syndromes]) {
+        if (!syndromeMap.has(s.syndrome_id)) {
+          syndromeMap.set(s.syndrome_id, s.syndrome_name);
+        }
+      }
+    }
+    return [...syndromeMap.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [syndromesData]);
 
   return (
-    <div className="border-b">
+    <div className="flex flex-col bg-muted/10 border-r w-[200px] shrink-0 overflow-y-auto">
       {/* Header */}
-      <button
-        type="button"
-        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent/30"
-        onClick={() => setExpanded((p) => !p)}
-      >
-        {expanded ? (
-          <ChevronDown className="h-3 w-3 shrink-0" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0" />
-        )}
-        <span>Filters</span>
-        {predicateCount > 0 && (
-          <span className="ml-1 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 border border-gray-200">
-            {predicateCount}
-          </span>
-        )}
-      </button>
+      <div className="flex items-center justify-between px-2.5 py-1.5 border-b">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Add filter
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+          title="Close filter panel"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
 
-      {/* Panel body */}
-      {expanded && (
-        <div className="bg-muted/5 px-3 pb-2 pt-1">
-          {/* Dimension selector */}
-          {selectedDimension === null ? (
-            <DimensionPicker onSelect={setSelectedDimension} />
-          ) : (
-            <DimensionConfigurator
-              dimension={selectedDimension}
-              organSignals={organSignals}
-              onAdd={(predicate) => {
-                addPredicate(predicate);
-                setSelectedDimension(null);
-              }}
-              onCancel={() => setSelectedDimension(null)}
-            />
-          )}
-        </div>
-      )}
+      {/* Content */}
+      <div className="px-2 py-1.5">
+        {selectedDimension === null ? (
+          <DimensionPicker onSelect={setSelectedDimension} />
+        ) : (
+          <DimensionConfigurator
+            dimension={selectedDimension}
+            organSignals={organSignals}
+            syndromeOptions={syndromeOptions}
+            onAdd={(predicate) => {
+              addPredicate(predicate);
+              setSelectedDimension(null);
+            }}
+            onCancel={() => setSelectedDimension(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -113,10 +159,7 @@ function DimensionPicker({ onSelect }: { onSelect: (id: DimensionId) => void }) 
   }
 
   return (
-    <div className="space-y-1.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Add filter
-      </div>
+    <div className="space-y-0.5">
       {Object.entries(groups).map(([groupKey, dims]) => (
         <div key={groupKey}>
           {dims.map((d) => (
@@ -148,16 +191,126 @@ function DimensionPicker({ onSelect }: { onSelect: (id: DimensionId) => void }) 
   );
 }
 
+// ── SearchableCombobox ───────────────────────────────────────
+
+function SearchableCombobox({
+  options,
+  value,
+  onChange,
+  placeholder = "Search...",
+}: {
+  options: { key: string; label: string }[];
+  value: string;
+  onChange: (key: string) => void;
+  placeholder?: string;
+}) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    if (!search) return options;
+    const lower = search.toLowerCase();
+    return options.filter((o) => o.label.toLowerCase().includes(lower) || o.key.toLowerCase().includes(lower));
+  }, [options, search]);
+
+  const selectedLabel = options.find((o) => o.key === value)?.label;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((p) => !p);
+          if (!open) setTimeout(() => inputRef.current?.focus(), 0);
+        }}
+        className={cn(
+          "flex w-full items-center justify-between rounded border border-border bg-background px-2 py-1 text-xs",
+          value ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
+        <span className="truncate">{selectedLabel ?? placeholder}</span>
+        <svg className="h-3 w-3 shrink-0 opacity-50" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M3 5l3 3 3-3" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-full max-h-[200px] overflow-hidden rounded-md border bg-popover shadow-md flex flex-col">
+          {/* Search input */}
+          <div className="flex items-center gap-1 border-b px-2 py-1">
+            <Search className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Type to filter..."
+              className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/40"
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setOpen(false); setSearch(""); }
+                if (e.key === "Enter" && filtered.length === 1) {
+                  onChange(filtered[0].key);
+                  setOpen(false);
+                  setSearch("");
+                }
+              }}
+            />
+          </div>
+          {/* Options list */}
+          <div className="overflow-y-auto max-h-[160px]">
+            {filtered.length === 0 ? (
+              <div className="px-2 py-2 text-[10px] text-muted-foreground/60">No matches</div>
+            ) : (
+              filtered.map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.key);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-1.5 px-2 py-1 text-xs hover:bg-accent/50 text-left",
+                    o.key === value && "bg-accent/30",
+                  )}
+                >
+                  {o.key === value && <Check className="h-3 w-3 text-primary shrink-0" />}
+                  {o.key !== value && <span className="w-3" />}
+                  <span className="truncate">{o.label}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── DimensionConfigurator ────────────────────────────────────
 
 function DimensionConfigurator({
   dimension,
   organSignals,
+  syndromeOptions,
   onAdd,
   onCancel,
 }: {
   dimension: DimensionId;
   organSignals: { organName: string }[];
+  syndromeOptions: { id: string; name: string }[];
   onAdd: (p: FilterPredicate) => void;
   onCancel: () => void;
 }) {
@@ -169,7 +322,7 @@ function DimensionConfigurator({
     case "severity":
       return <SeverityConfig onAdd={onAdd} onCancel={onCancel} />;
     case "syndrome":
-      return <SyndromeConfig onAdd={onAdd} onCancel={onCancel} />;
+      return <SyndromeConfig syndromeOptions={syndromeOptions} onAdd={onAdd} onCancel={onCancel} />;
     case "bw_change":
       return <BwChangeConfig onAdd={onAdd} onCancel={onCancel} />;
     case "organ_count":
@@ -242,7 +395,10 @@ function OrganConfig({
   const [value, setValue] = useState("");
   const [role, setRole] = useState<"any" | "adverse" | "warning">("any");
 
-  const organs = organSignals.map((o) => o.organName).sort();
+  const organOptions = useMemo(
+    () => organSignals.map((o) => ({ key: o.organName, label: o.organName })).sort((a, b) => a.label.localeCompare(b.label)),
+    [organSignals],
+  );
 
   return (
     <ConfigLayout
@@ -251,16 +407,12 @@ function OrganConfig({
       onAdd={() => onAdd({ type: "organ", organName: value, role })}
       canAdd={value !== ""}
     >
-      <select
-        className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+      <SearchableCombobox
+        options={organOptions}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-      >
-        <option value="">Select organ...</option>
-        {organs.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
+        onChange={setValue}
+        placeholder="Select organ..."
+      />
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground">Role:</span>
         {(["any", "adverse", "warning"] as const).map((r) => (
@@ -351,24 +503,21 @@ function SeverityConfig({
 // ── Syndrome configurator ───────────────────────────────────
 
 function SyndromeConfig({
+  syndromeOptions,
   onAdd,
   onCancel,
 }: {
+  syndromeOptions: { id: string; name: string }[];
   onAdd: (p: FilterPredicate) => void;
   onCancel: () => void;
 }) {
   const [syndromeId, setSyndromeId] = useState("");
   const [matchType, setMatchType] = useState<"full" | "partial" | "any">("any");
 
-  // Common syndrome IDs -- kept simple as the syndrome definitions are known
-  const COMMON_SYNDROMES = [
-    "hepatotoxicity",
-    "nephrotoxicity",
-    "cardiotoxicity",
-    "hematotoxicity",
-    "immunotoxicity",
-    "neurotoxicity",
-  ];
+  const comboOptions = useMemo(
+    () => syndromeOptions.map((s) => ({ key: s.id, label: `${s.name} (${s.id})` })),
+    [syndromeOptions],
+  );
 
   return (
     <ConfigLayout
@@ -377,16 +526,12 @@ function SyndromeConfig({
       onAdd={() => onAdd({ type: "syndrome", syndromeId, matchType })}
       canAdd={syndromeId !== ""}
     >
-      <select
-        className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+      <SearchableCombobox
+        options={comboOptions}
         value={syndromeId}
-        onChange={(e) => setSyndromeId(e.target.value)}
-      >
-        <option value="">Select syndrome...</option>
-        {COMMON_SYNDROMES.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
+        onChange={setSyndromeId}
+        placeholder="Select syndrome..."
+      />
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground">Match:</span>
         {(["any", "full", "partial"] as const).map((m) => (
@@ -503,7 +648,7 @@ function DispositionConfig({
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const toggle = (key: string) => {
+  const toggle = useCallback((key: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -513,7 +658,7 @@ function DispositionConfig({
       }
       return next;
     });
-  };
+  }, []);
 
   return (
     <ConfigLayout
