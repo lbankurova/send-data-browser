@@ -33,12 +33,14 @@ import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { RuleInspectorTab } from "./RuleInspectorTab";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
 import type { Insight } from "@/hooks/useInsights";
 
-type Tab = "details" | "insights";
+type Tab = "details" | "insights" | "rules";
 
 export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -163,6 +165,7 @@ export function StudySummaryView() {
       <ViewTabBar
         tabs={[
           { key: "details", label: "Study details" },
+          { key: "rules", label: "Rules & classification" },
           { key: "insights", label: "Cross-study insights" },
         ]}
         value={tab}
@@ -182,6 +185,7 @@ export function StudySummaryView() {
 
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} signalData={signalData} mortalityData={mortalityData} />}
+      {tab === "rules" && <RulesClassificationTab studyId={studyId!} />}
       {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
     </div>
   );
@@ -1229,6 +1233,22 @@ function DetailsTab({
           </div>
         </div>
       </CollapsiblePane>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rules & Classification Tab
+// ---------------------------------------------------------------------------
+
+function RulesClassificationTab({ studyId }: { studyId: string }) {
+  const { data: ruleResults } = useRuleResults(studyId);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="h-full">
+        <RuleInspectorTab ruleResults={ruleResults ?? []} organFilter={null} studyId={studyId} />
       </div>
     </div>
   );

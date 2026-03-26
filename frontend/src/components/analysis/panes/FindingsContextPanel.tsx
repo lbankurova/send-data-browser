@@ -866,7 +866,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-50/40 cell-overridable">
                   {sf ? (
                     <PatternOverrideDropdown key={sf.id} finding={sf} />
                   ) : (
@@ -882,7 +882,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-50/40 cell-overridable">
                   {sf && doseGroups ? (
                     <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (
@@ -2515,6 +2515,7 @@ function NoaelStudyLevelPanel({
   collapseGen: number;
   nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
 }) {
+  const navigate = useNavigate();
   const { data: ruleResults } = useRuleResults(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
@@ -2574,6 +2575,19 @@ function NoaelStudyLevelPanel({
         <CollapsiblePane title="Safety margin" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <SafetyMarginCalculator pkData={pkData} />
         </CollapsiblePane>
+      )}
+
+      {/* Configure rules link */}
+      {studyId && (
+        <div className="border-b px-4 py-2">
+          <button
+            type="button"
+            className="text-[11px] font-medium text-primary hover:underline"
+            onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}?tab=rules`)}
+          >
+            Configure rules &rarr;
+          </button>
+        </div>
       )}
 
       {/* Fallback guidance */}
