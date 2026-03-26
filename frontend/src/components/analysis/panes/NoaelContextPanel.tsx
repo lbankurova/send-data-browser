@@ -143,18 +143,7 @@ export function NoaelContextPanel({
           </CollapsiblePane>
         )}
 
-        {/* 3. Related views */}
-        {studyId && (
-          <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-            <div className="space-y-1">
-              <RelatedViewLink label="View in Findings" onClick={() => navigate(`/studies/${encodeURIComponent(studyId!)}/findings`, { state: { organ_system: organSelection } })} />
-              <RelatedViewLink label="View in Histopathology" onClick={() => navigate(`/studies/${encodeURIComponent(studyId!)}/histopathology`, { state: { organ_system: organSelection } })} />
-              <RelatedViewLink label="View study summary" onClick={() => navigate(`/studies/${encodeURIComponent(studyId!)}`, { state: { organ_system: organSelection } })} />
-            </div>
-          </CollapsiblePane>
-        )}
-
-        {/* 4. Audit trail */}
+        {/* 3. Audit trail */}
         {studyId && (
           <AuditTrailPanel
             studyId={studyId}
@@ -244,17 +233,7 @@ export function NoaelContextPanel({
       {/* 4. Methodology */}
       <MethodologyPanel expandAll={expandGen} collapseAll={collapseGen} activeEffectSizeMethod={noaelStatMethods.effectSize} />
 
-      {/* 5. Related views */}
-      {studyId && (
-        <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1">
-            <RelatedViewLink label="View findings" onClick={() => navigate(`/studies/${encodeURIComponent(studyId!)}/findings`)} />
-            <RelatedViewLink label="View study summary" onClick={() => navigate(`/studies/${encodeURIComponent(studyId!)}`)} />
-          </div>
-        </CollapsiblePane>
-      )}
-
-      {/* 6. Audit trail (override history) */}
+      {/* 5. Audit trail (override history) */}
       {studyId && (
         <AuditTrailPanel
           studyId={studyId}
@@ -268,18 +247,6 @@ export function NoaelContextPanel({
 }
 
 // ─── Helper ─────────────────────────────────────────────────────────────────
-
-function RelatedViewLink({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className="block w-full text-left text-xs font-medium text-primary hover:underline"
-      onClick={onClick}
-    >
-      {label} &rarr;
-    </button>
-  );
-}
 
 function ConfidencePenaltyRow({ label, value, detail }: { label: string; value: number; detail: string }) {
   if (value === 0) return null;
