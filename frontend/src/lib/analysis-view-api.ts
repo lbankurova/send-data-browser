@@ -14,6 +14,7 @@ import type {
   PkIntegration,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
+import type { SubjectSyndromesResponse } from "@/types/cohort";
 
 const API_BASE = "/api";
 
@@ -288,4 +289,14 @@ export function fetchStaticChart(
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     return res.text();
   });
+}
+
+// ── Subject syndromes ───────────────────────────────────────
+
+export function fetchSubjectSyndromes(
+  studyId: string,
+): Promise<SubjectSyndromesResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-syndromes`,
+  );
 }

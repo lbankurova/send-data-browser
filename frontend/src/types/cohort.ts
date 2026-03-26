@@ -92,6 +92,54 @@ export interface SharedFinding {
   severity: "adverse" | "warning" | "normal";
 }
 
+// ── Per-subject syndrome matching ───────────────────────────
+
+export interface SyndromeEvidence {
+  domain: string;
+  test_code?: string;
+  specimen?: string;
+  finding?: string;
+  severity?: string;
+  value?: number;
+  fold_change?: number;
+  pct_change?: number;
+  direction?: "up" | "down";
+}
+
+export interface SyndromeMissingCriteria {
+  domain: string;
+  specimen?: string;
+  criteria: string; // human-readable description of what's missing
+}
+
+export interface SubjectSyndromeMatch {
+  syndrome_id: string;
+  syndrome_name: string;
+  match_type: "full" | "partial";
+  matched_required: SyndromeEvidence[];
+  matched_supporting: SyndromeEvidence[];
+  missing_required: SyndromeMissingCriteria[];
+  confidence: "HIGH" | "MODERATE" | "LOW";
+}
+
+export interface SubjectSyndromeProfile {
+  syndromes: SubjectSyndromeMatch[];
+  partial_syndromes: SubjectSyndromeMatch[];
+  syndrome_count: number;
+  partial_count: number;
+  affected_organ_count: number;
+  finding_count: number;
+}
+
+export interface SubjectSyndromesResponse {
+  meta: {
+    generated: string;
+    study_id: string;
+    syndrome_definitions_version: string;
+  };
+  subjects: Record<string, SubjectSyndromeProfile>;
+}
+
 // ── Cohort state ─────────────────────────────────────────────
 
 export interface CohortState {

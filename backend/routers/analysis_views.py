@@ -52,6 +52,7 @@ VALID_VIEW_NAMES = {
     "pk-integration",
     "cross-animal-flags",
     "unified-findings",
+    "subject-syndromes",
 }
 
 # The 10 view names that the parameterized pipeline produces
