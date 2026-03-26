@@ -4,6 +4,7 @@ interface PanePillToggleOption<T extends string> {
   value: T;
   label: string;
   disabled?: boolean;
+  title?: string;
 }
 
 interface PanePillToggleProps<T extends string> {
@@ -24,6 +25,7 @@ export function PanePillToggle<T extends string>({
           key={opt.value}
           type="button"
           disabled={opt.disabled}
+          title={opt.title}
           className={cn(
             "px-1.5 py-0.5 text-[10px] rounded transition-colors",
             value === opt.value
