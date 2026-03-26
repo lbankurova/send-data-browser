@@ -52,6 +52,10 @@ import {
   applyTableFilters,
 } from "./findings/table-filters";
 import type { TableFilterState } from "./findings/table-filters";
+import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
+import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
+import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
+import { getVerdictLabel } from "@/lib/recovery-labels";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -154,9 +158,15 @@ interface FindingsTableProps {
   globalDay?: number | null;
   /** Day labels from the global stepper ("terminal" | "peak") — applied to matching days in the combo-box. */
   globalDayLabels?: Map<number, string>;
+  /** Recovery comparison data for verdict column. */
+  recoveryData?: RecoveryComparisonResponse;
+  /** Recovery override annotations keyed by finding ID. */
+  recoveryOverrides?: Record<string, RecoveryOverrideAnnotation>;
+  /** Callback when user clicks a recovery badge — navigates to recovery tab. */
+  onNavigateRecovery?: (finding: UnifiedFinding) => void;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels, recoveryData, recoveryOverrides, onNavigateRecovery }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -336,6 +346,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     }
     return { continuous: maxCont, incidence: maxInc };
   }, [findings]);
+
+  // Recovery verdict map — worst-case verdict per finding for the Recovery column
+  const verdictMap = useMemo(
+    () => buildFindingVerdictMap(findings, recoveryData, recoveryOverrides),
+    [findings, recoveryData, recoveryOverrides],
+  );
 
   // Pipeline: panel filters → endpoint scope (when synced) → available days → day filter.
   const panelFilteredFindings = useMemo(() => {
@@ -737,8 +753,35 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      col.display({
+        id: "recovery",
+        header: () => <span className="text-muted-foreground" title="Recovery verdict (worst-case across dose groups)">Recovery</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          const vi = verdictMap.get(f.id);
+          if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
+          const label = getVerdictLabel(vi.effectiveVerdict);
+          return (
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "bg-gray-100 text-gray-600 border border-gray-200",
+                vi.isOverridden && "bg-violet-50/40",
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateRecovery?.(f);
+              }}
+              title={vi.isOverridden ? `Override: ${label}` : label}
+            >
+              {label}
+            </button>
+          );
+        },
+      }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations, verdictMap, onNavigateRecovery]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -925,9 +968,37 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from
       // pivoted view — each row is a dose group, not an endpoint. These are shown in
-      // standard view only.
+      // standard view only. Recovery column IS included since it summarizes endpoint-level
+      // worst-case and helps scanning without switching layouts.
+      pivCol.display({
+        id: "recovery",
+        header: () => <span className="text-muted-foreground" title="Recovery verdict (worst-case across dose groups)">Recovery</span>,
+        cell: (info) => {
+          const f = info.row.original.original;
+          const vi = verdictMap.get(f.id);
+          if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
+          const label = getVerdictLabel(vi.effectiveVerdict);
+          return (
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "bg-gray-100 text-gray-600 border border-gray-200",
+                vi.isOverridden && "bg-violet-50/40",
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigateRecovery?.(f);
+              }}
+              title={vi.isOverridden ? `Override: ${label}` : label}
+            >
+              {label}
+            </button>
+          );
+        },
+      }),
     ],
-    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod, verdictMap, onNavigateRecovery]
   );
 
   // ─── Standard table instance ───────────────────────────────

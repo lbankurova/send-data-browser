@@ -25,6 +25,8 @@ import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-trans
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
+import { useAnnotations } from "@/hooks/useAnnotations";
+import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
 import {
   setFindingsRailCallback,
   getFindingsExcludedCallback,
@@ -78,6 +80,9 @@ export function FindingsView() {
   // Recovery comparison data (multi-day stats from Phase 2)
   const { data: recoveryData } = useRecoveryComparison(studyId);
   const studyHasRecovery = !!recoveryData?.available;
+
+  // Recovery override annotations — shares React Query cache with RecoveryPane via same query key
+  const { data: recoveryOverrides } = useAnnotations<RecoveryOverrideAnnotation>(studyId, "recovery-overrides");
 
   // Left chart tab: dose-response or recovery dumbbell
   type LeftChartTab = "dr" | "recovery";
@@ -135,6 +140,12 @@ export function FindingsView() {
   const handleRestoreEndpoint = useCallback((label: string) => {
     setExcludedEndpoints((prev) => { const next = new Set(prev); next.delete(label); return next; });
   }, []);
+
+  // Navigate to recovery tab for a finding (called from FindingsTable recovery badge click)
+  const handleNavigateRecovery = useCallback((finding: UnifiedFinding) => {
+    selectFinding(finding);
+    setLeftChartTab("recovery");
+  }, [selectFinding, setLeftChartTab]);
 
   // Sync excluded endpoints to rail via reverse callback
   useEffect(() => {
@@ -692,6 +703,9 @@ export function FindingsView() {
           effectSizeMethod={analytics.activeEffectSizeMethod}
           globalDay={activeEndpoint ? chartDay : undefined}
           globalDayLabels={dayMeta?.dayLabels}
+          recoveryData={recoveryData}
+          recoveryOverrides={recoveryOverrides}
+          onNavigateRecovery={handleNavigateRecovery}
         />
       ) : null}
       </div>
