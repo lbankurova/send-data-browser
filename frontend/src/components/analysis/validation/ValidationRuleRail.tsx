@@ -211,6 +211,22 @@ export function ValidationRuleRail({
     return rules;
   }, [rulesWithStatus, search, showFilter, sevFilter, sourceFilter]);
 
+  // Auto-select first triggered rule on initial load (design system §9)
+  const autoSelectDone = useRef(false);
+  useEffect(() => {
+    if (autoSelectDone.current) return;
+    if (selectedRuleId !== null) {
+      autoSelectDone.current = true;
+      return;
+    }
+    if (pendingRuleParam.current !== null) return;
+    if (isLoading || filtered.length === 0) return;
+
+    autoSelectDone.current = true;
+    const firstRule = filtered[0];
+    onRuleSelect(firstRule);
+  }, [filtered, selectedRuleId, isLoading, onRuleSelect]);
+
   // Sort + group
   const sortKeyFn = useCallback(
     (r: ValidationRuleResult): string => {
