@@ -9,9 +9,9 @@ import type { FilterContext } from "@/lib/filter-engine";
 import type {
   CohortSubject,
   FilterGroup,
-  CohortFindingRow,
   SubjectSyndromeProfile,
 } from "@/types/cohort";
+import type { UnifiedFinding } from "@/types/analysis";
 
 // ── Test fixtures ──────────────────────────────────────────────
 
@@ -35,31 +35,40 @@ function makeSubject(overrides: Partial<CohortSubject> = {}): CohortSubject {
   };
 }
 
-function makeFindingRow(overrides: Partial<CohortFindingRow> = {}): CohortFindingRow {
+/** Create a minimal UnifiedFinding for filter engine tests. */
+function makeUnifiedFinding(overrides: Partial<UnifiedFinding> = {}): UnifiedFinding {
   return {
-    key: "MI-NECROSIS-all-M",
+    id: "f-1",
     domain: "MI",
+    test_code: "NECROSIS",
+    test_name: "Necrosis",
+    specimen: null,
     finding: "NECROSIS",
-    testCode: "NECROSIS",
-    organName: "LIVER",
-    sex: "M",
     day: null,
+    sex: "M",
+    unit: null,
+    data_type: "incidence",
     severity: "adverse",
     direction: null,
-    findingId: "f-1",
-    groupStats: [],
-    subjectValues: {},
-    dataType: "incidence",
-    maxFoldChange: null,
-    maxIncidence: 0.75,
+    dose_response_pattern: null,
+    treatment_related: true,
+    max_effect_size: null,
+    min_p_adj: null,
+    trend_p: null,
+    trend_stat: null,
+    group_stats: [],
+    pairwise: [],
+    organ_system: "Liver",
+    organ_name: "Liver",
+    endpoint_label: "Necrosis",
     ...overrides,
-  };
+  } as UnifiedFinding;
 }
 
 function makeEmptyContext(): FilterContext {
   return {
     syndromes: {},
-    findings: [],
+    allFindings: [],
     subjectOrganCounts: new Map(),
     histopathMap: new Map(),
   };
@@ -180,43 +189,78 @@ describe("sex predicate", () => {
 // ── Organ predicate ────────────────────────────────────────────
 
 describe("organ predicate", () => {
-  it("matches when subject has findings in organ (role=any)", () => {
+  it("matches when subject has continuous findings in organ (role=any)", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ organName: "LIVER", severity: "warning", subjectValues: { "PC201708-1001": 1.5 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        organ_name: "Liver",
+        domain: "LB",
+        severity: "warning",
+        raw_subject_values: [{ "PC201708-1001": 1.5 }],
+      }),
     ];
-    const pred = { type: "organ" as const, organName: "LIVER", role: "any" as const };
+    const pred = { type: "organ" as const, organName: "Liver", role: "any" as const };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches when subject has incidence findings in organ via dose-level proxy", () => {
+    const subject = makeSubject({ doseGroupOrder: 3, sex: "M" });
+    const ctx = makeEmptyContext();
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        organ_name: "Liver",
+        domain: "MI",
+        severity: "adverse",
+        sex: "M",
+        group_stats: [
+          { dose_level: 0, n: 10, mean: null, sd: null, median: null, affected: 0, incidence: 0 },
+          { dose_level: 3, n: 10, mean: null, sd: null, median: null, affected: 5, incidence: 0.5 },
+        ],
+      }),
+    ];
+    const pred = { type: "organ" as const, organName: "Liver", role: "any" as const };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
   });
 
   it("fails organ role=adverse when only warning findings exist", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ organName: "LIVER", severity: "warning", subjectValues: { "PC201708-1001": 1.5 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        organ_name: "Liver",
+        severity: "warning",
+        raw_subject_values: [{ "PC201708-1001": 1.5 }],
+      }),
     ];
-    const pred = { type: "organ" as const, organName: "LIVER", role: "adverse" as const };
+    const pred = { type: "organ" as const, organName: "Liver", role: "adverse" as const };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
   });
 
   it("matches organ role=adverse when adverse findings exist", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ organName: "LIVER", severity: "adverse", subjectValues: { "PC201708-1001": 1.5 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        organ_name: "Liver",
+        severity: "adverse",
+        raw_subject_values: [{ "PC201708-1001": 1.5 }],
+      }),
     ];
-    const pred = { type: "organ" as const, organName: "LIVER", role: "adverse" as const };
+    const pred = { type: "organ" as const, organName: "Liver", role: "adverse" as const };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
   });
 
   it("fails when subject has no findings in organ", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ organName: "LIVER", subjectValues: { "PC201708-2001": 1.5 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        organ_name: "Liver",
+        raw_subject_values: [{ "PC201708-2001": 1.5 }],
+      }),
     ];
-    const pred = { type: "organ" as const, organName: "KIDNEY" };
+    const pred = { type: "organ" as const, organName: "Kidney" };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
   });
 });
@@ -224,11 +268,30 @@ describe("organ predicate", () => {
 // ── Domain predicate ───────────────────────────────────────────
 
 describe("domain predicate", () => {
-  it("matches when subject has findings in domain", () => {
+  it("matches when subject has continuous findings in domain", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ domain: "MI", subjectValues: { "PC201708-1001": 1 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        domain: "LB",
+        raw_subject_values: [{ "PC201708-1001": 1.5 }],
+      }),
+    ];
+    const pred = { type: "domain" as const, domain: "LB" };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches when subject has incidence findings via dose-level proxy", () => {
+    const subject = makeSubject({ doseGroupOrder: 3, sex: "M" });
+    const ctx = makeEmptyContext();
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        domain: "MI",
+        sex: "M",
+        group_stats: [
+          { dose_level: 3, n: 10, mean: null, sd: null, median: null, affected: 5, incidence: 0.5 },
+        ],
+      }),
     ];
     const pred = { type: "domain" as const, domain: "MI" };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
@@ -237,8 +300,11 @@ describe("domain predicate", () => {
   it("fails when subject has no findings in domain", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({ domain: "MI", subjectValues: { "PC201708-2001": 1 } }),
+    ctx.allFindings = [
+      makeUnifiedFinding({
+        domain: "MI",
+        raw_subject_values: [{ "PC201708-2001": 1 }],
+      }),
     ];
     const pred = { type: "domain" as const, domain: "LB" };
     expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
@@ -364,11 +430,11 @@ describe("bw_change predicate", () => {
   it("matches loss when BW % change exceeds threshold (negative)", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({
+    ctx.allFindings = [
+      makeUnifiedFinding({
         domain: "BW",
         finding: "Body Weight Change",
-        subjectValues: { "PC201708-1001": -12 },
+        raw_subject_values: [{ "PC201708-1001": -12 }],
       }),
     ];
     const pred = { type: "bw_change" as const, minPct: 10, direction: "loss" as const };
@@ -378,11 +444,11 @@ describe("bw_change predicate", () => {
   it("fails loss when BW % change below threshold", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({
+    ctx.allFindings = [
+      makeUnifiedFinding({
         domain: "BW",
         finding: "Body Weight Change",
-        subjectValues: { "PC201708-1001": -5 },
+        raw_subject_values: [{ "PC201708-1001": -5 }],
       }),
     ];
     const pred = { type: "bw_change" as const, minPct: 10, direction: "loss" as const };
@@ -392,11 +458,11 @@ describe("bw_change predicate", () => {
   it("matches gain when BW % change exceeds threshold (positive)", () => {
     const subject = makeSubject();
     const ctx = makeEmptyContext();
-    ctx.findings = [
-      makeFindingRow({
+    ctx.allFindings = [
+      makeUnifiedFinding({
         domain: "BW",
         finding: "Body Weight Change",
-        subjectValues: { "PC201708-1001": 15 },
+        raw_subject_values: [{ "PC201708-1001": 15 }],
       }),
     ];
     const pred = { type: "bw_change" as const, minPct: 10, direction: "gain" as const };
