@@ -25,6 +25,8 @@ import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
+import { CollapseAllButtons } from "./panes/CollapseAllButtons";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { PkExposureSection } from "./panes/PkExposureSection";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
@@ -790,6 +792,7 @@ function DetailsTab({
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const [organWeightMethod] = useSessionState(
     `pcc.${studyId}.organWeightMethod`, "recommended", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
   );
@@ -1013,15 +1016,6 @@ function DetailsTab({
                 <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
               </div>
             )}
-            {/* Dose proportionality warning */}
-            {pkData?.dose_proportionality &&
-              pkData.dose_proportionality.assessment !== "linear" &&
-              pkData.dose_proportionality.assessment !== "insufficient_data" && (
-              <div className="mt-0.5 flex items-start gap-1 text-[11px] text-muted-foreground">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
-                <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
-              </div>
-            )}
             {/* Study-level interpretation notes (cross-domain) */}
             {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
               <div key={i} className="mt-0.5 flex items-start gap-1 text-[11px]">
@@ -1062,9 +1056,14 @@ function DetailsTab({
         </div>
       )}
 
+      {/* ── Section controls ── */}
+      <div className="flex items-center justify-end border-b px-4 py-1">
+        <CollapseAllButtons onExpandAll={expandAll} onCollapseAll={collapseAll} />
+      </div>
+
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
-        <CollapsiblePane title="Study timeline" defaultOpen>
+        <CollapsiblePane title="Study timeline" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <StudyTimeline
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
@@ -1077,13 +1076,13 @@ function DetailsTab({
       )}
 
       {/* ── Domain summary table ─────────────────────────── */}
-      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
+      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
         <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} interpretationNotes={interpretationNotes} />
       </CollapsiblePane>
 
       {/* ── PK Exposure ── */}
       {pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0 && (
-        <CollapsiblePane title="PK Exposure" defaultOpen>
+        <CollapsiblePane title="PK Exposure" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
         </CollapsiblePane>
       )}
@@ -1092,6 +1091,8 @@ function DetailsTab({
       <CollapsiblePane
         title="Data quality"
         defaultOpen={false}
+        expandAll={expandGen}
+        collapseAll={collapseGen}
         headerRight={(missingRequired.length > 0 || (valData?.summary.errors ?? 0) > 0) ? (
           <span className="flex items-center gap-3">
             {missingRequired.length > 0 && (
