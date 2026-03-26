@@ -52,6 +52,15 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
+import { ProtectiveSignalsBar } from "@/components/analysis/noael/ProtectiveSignalsBar";
+import { WeightedNoaelCard } from "@/components/analysis/noael/WeightedNoaelCard";
+import { SafetyMarginCalculator } from "@/components/analysis/noael/SafetyMarginCalculator";
+import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsBar";
+import { usePkIntegration } from "@/hooks/usePkIntegration";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
+import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
+import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
@@ -1327,7 +1336,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
 
       {/* Lab correlates */}
       {labCorrelation.correlations.length > 0 && (
-        <CollapsiblePane title="Lab correlates" expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Lab correlates" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <LabCorrelatesInline
             correlations={labCorrelation.correlations}
             isLoading={labCorrelation.isLoading}
@@ -1337,7 +1346,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
 
       {/* Peer comparison (HCD) */}
       {peerRows.length > 0 && (
-        <CollapsiblePane title="Peer comparison (HCD)" expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Peer comparison (HCD)" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-2">
             <p className="text-[11px] text-muted-foreground">
               Control group incidence vs historical control data (HCD).
@@ -1601,12 +1610,13 @@ export function FindingsContextPanel() {
     return verdict === "not_examined";
   }, [selectedFinding, recoveryOverview.byEndpointLabel]);
 
-  // Lab correlates (MI/MA findings — specimen-scoped)
+  // Lab correlates (any finding with a specimen — MI/MA, OM, etc.)
   const isHistoFinding = selectedFinding?.domain === "MI" || selectedFinding?.domain === "MA";
+  const hasSpecimen = !!selectedFinding?.specimen;
   const labCorrelation = useSpecimenLabCorrelation(
     studyId,
-    isHistoFinding ? selectedFinding?.specimen ?? null : null,
-    isHistoFinding ? selectedFinding?.finding ?? undefined : undefined,
+    hasSpecimen ? selectedFinding?.specimen ?? null : null,
+    hasSpecimen ? selectedFinding?.finding ?? undefined : undefined,
   );
 
   // Peer comparison / HCD (MI/MA findings — control incidence vs historical controls)
@@ -1868,14 +1878,18 @@ export function FindingsContextPanel() {
       );
     }
 
-    // Priority 3: empty state
+    // Priority 3: no selection → NOAEL determination + study-level panes
     return (
-      <div className="p-4">
-        <h3 className="mb-2 text-sm font-semibold">Findings</h3>
-        <p className="text-xs text-muted-foreground">
-          Select a finding row to view detailed analysis.
-        </p>
-      </div>
+      <NoaelStudyLevelPanel
+        studyId={studyId}
+        activeFindings={activeFindings}
+        noaelRows={noaelRows}
+        expandAll={expandAll}
+        collapseAll={collapseAll}
+        expandGen={expandGen}
+        collapseGen={collapseGen}
+        nav={nav}
+      />
     );
   }
 
@@ -2110,10 +2124,11 @@ export function FindingsContextPanel() {
         </CollapsiblePane>
       )}
 
-      {/* Lab correlates — MI/MA only, specimen-scoped clinical pathology */}
-      {isHistoFinding && labCorrelation.correlations.length > 0 && (
+      {/* Lab correlates — any finding with a specimen (MI/MA, OM, etc.) */}
+      {hasSpecimen && labCorrelation.correlations.length > 0 && (
         <CollapsiblePane
           title="Lab correlates"
+          defaultOpen
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2129,6 +2144,7 @@ export function FindingsContextPanel() {
       {isHistoFinding && peerRow && peerRow.hcd && (
         <CollapsiblePane
           title="Peer comparison (HCD)"
+          defaultOpen
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2474,6 +2490,96 @@ export function FindingsContextPanel() {
       </>
       ) : null}
 
+    </div>
+  );
+}
+
+// ─── Study-level NOAEL panel (no finding/group selected) ────────────────────
+
+function NoaelStudyLevelPanel({
+  studyId,
+  activeFindings,
+  noaelRows,
+  expandAll,
+  collapseAll,
+  expandGen,
+  collapseGen,
+  nav,
+}: {
+  studyId: string | undefined;
+  activeFindings: UnifiedFinding[];
+  noaelRows: import("@/types/analysis-views").NoaelSummaryRow[] | undefined;
+  expandAll: () => void;
+  collapseAll: () => void;
+  expandGen: number;
+  collapseGen: number;
+  nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
+}) {
+  const { data: ruleResults } = useRuleResults(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const { data: pkData } = usePkIntegration(studyId);
+
+  const aeData = useMemo(() => {
+    if (!activeFindings.length) return [];
+    return mapFindingsToRows(activeFindings);
+  }, [activeFindings]);
+
+  // Study statements for StudyStatementsBar
+  const panelData = useMemo(() => {
+    if (!signalData || !targetOrgans || !noaelRows) return null;
+    return buildSignalsPanelData(noaelRows, targetOrgans, signalData);
+  }, [signalData, targetOrgans, noaelRows]);
+
+  return (
+    <div>
+      <ContextPanelHeader
+        title="Findings"
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={nav.onBack}
+        onForward={nav.onForward}
+      />
+
+      {/* NOAEL determination (compact) */}
+      <NoaelDeterminationPane aeData={aeData} expandAll={expandGen} collapseAll={collapseGen} />
+
+      {/* Study statements + caveats */}
+      {panelData && (panelData.studyStatements.length > 0 || panelData.modifiers.length > 0 || panelData.caveats.length > 0) && (
+        <CollapsiblePane title="Study statements" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <StudyStatementsBar
+            statements={panelData.studyStatements}
+            modifiers={panelData.modifiers}
+            caveats={panelData.caveats}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Protective signals (R18/R19) */}
+      {studyId && ruleResults && (
+        <CollapsiblePane title="Protective signals" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <ProtectiveSignalsBar rules={ruleResults} studyId={studyId} signalData={signalData} />
+        </CollapsiblePane>
+      )}
+
+      {/* Weighted NOAEL (ECI) */}
+      <CollapsiblePane title="Weighted NOAEL (ECI)" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <WeightedNoaelCard />
+      </CollapsiblePane>
+
+      {/* Safety margin calculator */}
+      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
+        <CollapsiblePane title="Safety margin" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+          <SafetyMarginCalculator pkData={pkData} />
+        </CollapsiblePane>
+      )}
+
+      {/* Fallback guidance */}
+      <div className="px-4 py-3 text-xs text-muted-foreground">
+        Select a finding to view detailed analysis.
+      </div>
     </div>
   );
 }
