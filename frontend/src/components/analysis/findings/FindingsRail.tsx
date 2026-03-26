@@ -61,6 +61,7 @@ import { useSyndromeCorrelationSummaries } from "@/hooks/useSyndromeCorrelationS
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import type { StudyMortality } from "@/types/mortality";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
@@ -116,8 +117,15 @@ export function FindingsRail({
 
   // Mortality data for rail header
   const { data: mortalityData } = useStudyMortality(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
   // Scheduled-only toggle moved to MethodologyPanel; mortality indicator now opens subject profile
   useScheduledOnly(); // keep hook call for context subscription
+
+  // Target organ set for organ rail card badges
+  const targetOrganSet = useMemo(() => {
+    if (!targetOrgans) return new Set<string>();
+    return new Set(targetOrgans.filter((t) => t.target_organ_flag).map((t) => t.organ_system));
+  }, [targetOrgans]);
 
   // GAP-68: Eagerly fetch co-variation summaries for all syndromes in one batch request
   const { data: syndromeCovariation } = useSyndromeCorrelationSummaries(studyId, syndromes);
@@ -720,6 +728,7 @@ export function FindingsRail({
               syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
               syndromes={grouping === "specimen" ? syndromes : undefined}
+              isTargetOrgan={grouping === "organ" && targetOrganSet.has(card.key)}
             />
           ))
         )}
@@ -1274,6 +1283,7 @@ function CardSection({
   syndromeCovariation,
   syndromeConfidence,
   syndromes,
+  isTargetOrgan,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1296,6 +1306,7 @@ function CardSection({
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
   syndromes?: CrossDomainSyndrome[];
+  isTargetOrgan?: boolean;
 }) {
   // Compute organ confidence only for organ grouping mode
   const organConf = grouping === "organ"
@@ -1306,6 +1317,18 @@ function CardSection({
   const organNorm = grouping === "organ" && normalizationContexts
     ? computeOrganNormSummary(card.endpoints, normalizationContexts)
     : null;
+
+  // NOAEL role dots for organ cards (max 3: determining, contributing, supporting)
+  const noaelRoles = grouping === "organ" ? (() => {
+    let det = 0, cont = 0, sup = 0;
+    for (const ep of card.endpoints) {
+      const label = ep.endpointConfidence?.noaelContribution?.label;
+      if (label === "determining") det++;
+      else if (label === "contributing") cont++;
+      else if (label === "supporting") sup++;
+    }
+    return { determining: det, contributing: cont, supporting: sup };
+  })() : null;
 
   // Specimen data for specimen grouping mode
   const specimenData = useMemo(() => {
@@ -1333,6 +1356,8 @@ function CardSection({
         onSyndromeClick={onSyndromeClick}
         organConfidence={organConf}
         organNorm={organNorm}
+        noaelRoles={noaelRoles}
+        isTargetOrgan={isTargetOrgan}
         syndromeCovariation={syndromeCovariation}
         syndromeConfidence={syndromeConfidence}
         specimenData={specimenData}
@@ -1374,6 +1399,8 @@ function CardHeader({
   onSyndromeClick,
   organConfidence,
   organNorm,
+  noaelRoles,
+  isTargetOrgan,
   syndromeCovariation,
   syndromeConfidence,
   specimenData,
@@ -1389,6 +1416,8 @@ function CardHeader({
   onSyndromeClick?: (syndromeId: string) => void;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
+  noaelRoles?: { determining: number; contributing: number; supporting: number } | null;
+  isTargetOrgan?: boolean;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
   specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string; syndromeId?: string } | null;
@@ -1420,6 +1449,21 @@ function CardHeader({
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
       <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} specimenData={specimenData} />
+      {/* NOAEL role dots + Target badge (organ mode only) */}
+      {noaelRoles && (noaelRoles.determining > 0 || noaelRoles.contributing > 0 || noaelRoles.supporting > 0) && (
+        <span className="shrink-0 flex items-center gap-0.5" title={[
+          noaelRoles.determining > 0 ? `${noaelRoles.determining} determining` : null,
+          noaelRoles.contributing > 0 ? `${noaelRoles.contributing} contributing` : null,
+          noaelRoles.supporting > 0 ? `${noaelRoles.supporting} supporting` : null,
+        ].filter(Boolean).join(", ")}>
+          {noaelRoles.determining > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} />}
+          {noaelRoles.contributing > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full bg-gray-400" />}
+          {noaelRoles.supporting > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full border border-gray-400" />}
+        </span>
+      )}
+      {isTargetOrgan && (
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1 py-0.5 text-[10px] font-medium text-gray-600">Target</span>
+      )}
       {grouping === "specimen" ? (
         <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
           <span className="font-mono text-[11px] text-muted-foreground">
