@@ -1,17 +1,11 @@
-import { lazy, Suspense, Component, useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, Component, useState, useEffect } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelection } from "@/contexts/SelectionContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useAESummary } from "@/hooks/useAESummary";
 import { generateStudyReport } from "@/lib/report-generator";
-import { useRuleResults } from "@/hooks/useRuleResults";
-import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
-import { useNoaelSummary } from "@/hooks/useNoaelSummary";
-import { generateNoaelNarrative } from "@/lib/noael-narrative";
-import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useValidationResults } from "@/hooks/useValidationResults";
@@ -23,8 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Lazy-loaded context panel panes — only the active pane is loaded
 const FindingsContextPanel = lazy(() => import("@/components/analysis/panes/FindingsContextPanel").then(m => ({ default: m.FindingsContextPanel })));
 const StudyDetailsContextPanel = lazy(() => import("@/components/analysis/panes/StudyDetailsContextPanel").then(m => ({ default: m.StudyDetailsContextPanel })));
-const NoaelContextPanel = lazy(() => import("@/components/analysis/panes/NoaelContextPanel").then(m => ({ default: m.NoaelContextPanel })));
-const HistopathologyContextPanel = lazy(() => import("@/components/analysis/panes/HistopathologyContextPanel").then(m => ({ default: m.HistopathologyContextPanel })));
 const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
 const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
 const StudyPortfolioContextPanel = lazy(() => import("@/components/portfolio/StudyPortfolioContextPanel").then(m => ({ default: m.StudyPortfolioContextPanel })));
@@ -271,31 +263,6 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
   return <StudyDetailsContextPanel studyId={studyId} />;
 }
 
-function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection: studySel } = useStudySelection();
-  const { data: aeData } = useAdverseEffectSummary(studyId);
-  const { data: ruleResults } = useRuleResults(studyId);
-  const { data: noaelData } = useNoaelSummary(studyId);
-
-  // Compute narrative once here — shared with NoaelBanner via React Query cache for noaelData
-  const narrative = useMemo(() => {
-    if (!noaelData || noaelData.length === 0) return null;
-    const primary = noaelData.find((r) => r.sex === "Combined") ?? noaelData[0];
-    return generateNoaelNarrative(primary, aeData ?? [], primary.sex as "Combined" | "M" | "F");
-  }, [noaelData, aeData]);
-
-  return (
-    <NoaelContextPanel
-      aeData={aeData ?? []}
-      ruleResults={ruleResults ?? []}
-      organSelection={studySel.organSystem ?? null}
-      studyId={studyId}
-      narrative={narrative}
-      noaelData={noaelData}
-    />
-  );
-}
-
 function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
   const { selection, setSelection } = useViewSelection();
 
@@ -304,26 +271,6 @@ function ValidationContextPanelWrapper({ studyId }: { studyId: string }) {
   return <ValidationContextPanel selection={sel} studyId={studyId} setSelection={setSelection} />;
 }
 
-function HistopathologyContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection } = useViewSelection();
-  const { data: lesionData } = useLesionSeveritySummary(studyId);
-  const { data: ruleResults } = useRuleResults(studyId);
-  const { data: pathReviews } = useAnnotations<PathologyReview>(studyId, "pathology-reviews");
-
-  const sel = selection?._view === "histopathology" && (selection as { specimen?: string }).specimen
-    ? selection as { specimen: string; finding?: string; sex?: string }
-    : null;
-
-  return (
-    <HistopathologyContextPanel
-      lesionData={lesionData ?? []}
-      ruleResults={ruleResults ?? []}
-      selection={sel}
-      studyId={studyId}
-      pathReviews={pathReviews}
-    />
-  );
-}
 
 function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
   const navigate = useNavigate();
@@ -441,8 +388,6 @@ export function ContextPanel() {
   const isStudySummaryRoute =
     activeStudyId &&
     location.pathname === `/studies/${encodeURIComponent(activeStudyId)}`;
-  const isNoaelRoute = /\/studies\/[^/]+\/noael-determination/.test(location.pathname);
-  const isHistopathologyRoute = /\/studies\/[^/]+\/histopathology/.test(location.pathname);
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
   const isCohortRoute = /\/studies\/[^/]+\/cohort/.test(location.pathname);
 
@@ -463,14 +408,6 @@ export function ContextPanel() {
 
   if (isFindingsRoute) {
     return <LazyPane><FindingsContextPanel /></LazyPane>;
-  }
-
-  if (isNoaelRoute && activeStudyId) {
-    return <LazyPane><NoaelContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
-  }
-
-  if (isHistopathologyRoute && activeStudyId) {
-    return <LazyPane><HistopathologyContextPanelWrapper studyId={activeStudyId} /></LazyPane>;
   }
 
   if (isValidationRoute && activeStudyId) {

@@ -83,7 +83,7 @@ export function RecoveryVerdictOverride({
       {/* Verdict row */}
       <div
         className={`relative flex items-center gap-1 rounded px-2 py-1 cursor-context-menu ${
-          isOverridden ? "bg-violet-50/40" : ""
+          isOverridden ? "bg-violet-100/50 cell-overridable" : ""
         }`}
         onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
         title="Right-click to override verdict"

@@ -217,7 +217,7 @@ function NoaelSexRow({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <span
-            className="cursor-context-menu rounded bg-violet-50/40 px-1.5 py-0.5 font-medium"
+            className={`cursor-context-menu rounded bg-violet-100/50 px-1.5 py-0.5 font-medium${override ? " cell-overridable" : ""}`}
             onContextMenu={(e) => { e.preventDefault(); handleOpen(); }}
             title="Right-click to override"
           >

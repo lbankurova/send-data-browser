@@ -64,8 +64,7 @@ import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
-import { verdictLabel, deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
-import type { RecoveryAssessment } from "@/lib/recovery-assessment";
+import { verdictLabel } from "@/lib/recovery-assessment";
 import type { RecoveryVerdict } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
@@ -866,7 +865,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40 cell-overridable">
+                <td key={s} className="py-0.5 text-right bg-violet-100/50">
                   {sf ? (
                     <PatternOverrideDropdown key={sf.id} finding={sf} />
                   ) : (
@@ -882,7 +881,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40 cell-overridable">
+                <td key={s} className="py-0.5 text-right bg-violet-100/50">
                   {sf && doseGroups ? (
                     <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (
@@ -1243,23 +1242,32 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     return { subjectAgg, perFinding };
   }, [subjData, specimen]);
 
-  // Recovery flag + per-finding classification
+  // Recovery verdicts from backend (via /recovery-comparison incidence_rows)
+  const { data: recoveryComp } = useRecoveryComparison(studyId);
   const hasRecovery = useMemo(
     () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
     [subjData],
   );
-  const recoveryAssessments = useMemo((): RecoveryAssessment[] => {
-    if (!hasRecovery || !subjData?.subjects) return [];
-    const findingNames = specimenFindings.map(f => f.finding);
-    if (findingNames.length === 0) return [];
-    return deriveRecoveryAssessmentsSexAware(
-      findingNames,
-      subjData.subjects,
-      undefined,
-      subjData.recovery_days,
-      specimen,
+  const recoveryVerdicts = useMemo((): { finding: string; overall: RecoveryVerdict }[] => {
+    if (!hasRecovery || !recoveryComp?.incidence_rows?.length) return [];
+    const specUpper = specimen.toUpperCase();
+    const matched = recoveryComp.incidence_rows.filter(
+      (r) => r.specimen?.toUpperCase() === specUpper && r.verdict != null,
     );
-  }, [hasRecovery, subjData, specimenFindings, specimen]);
+    // Aggregate worst verdict per finding across dose groups and sexes
+    const byFinding = new Map<string, string>();
+    const VPRI: Record<string, number> = {
+      not_assessed: 0, reversed: 1, overcorrected: 2,
+      partially_reversed: 3, persistent: 4, progressing: 5, anomaly: 5,
+    };
+    for (const row of matched) {
+      const existing = byFinding.get(row.finding);
+      if (!existing || (VPRI[row.verdict!] ?? 0) > (VPRI[existing] ?? 0)) {
+        byFinding.set(row.finding, row.verdict!);
+      }
+    }
+    return [...byFinding.entries()].map(([finding, verdict]) => ({ finding, overall: verdict as RecoveryVerdict }));
+  }, [hasRecovery, recoveryComp, specimen]);
 
   // Peer comparison (HCD) for all findings
   const peerRows = useMemo(() => {
@@ -1423,7 +1431,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       )}
 
       {/* Recovery assessment */}
-      {hasRecovery && recoveryAssessments.length > 0 && (
+      {hasRecovery && recoveryVerdicts.length > 0 && (
         <CollapsiblePane title="Recovery assessment" expandAll={expandGen} collapseAll={collapseGen}>
           <table className="w-full text-[11px]">
             <thead>
@@ -1433,10 +1441,10 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
               </tr>
             </thead>
             <tbody>
-              {recoveryAssessments.map(ra => (
+              {recoveryVerdicts.map(ra => (
                 <tr key={ra.finding} className="border-b border-dashed">
                   <td className="max-w-[140px] truncate py-0.5" title={ra.finding}>{ra.finding}</td>
-                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall)}</td>
+                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall as RecoveryVerdict)}</td>
                 </tr>
               ))}
             </tbody>

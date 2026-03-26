@@ -177,7 +177,7 @@ export function NormalizationHeatmap({ contexts, doseGroups, overrides, autoMode
                   );
                 })}
                 {editable && (
-                  <td className="px-1.5 py-0.5 bg-violet-50/40" style={{ width: 1, whiteSpace: "nowrap" }}>
+                  <td className={`px-1.5 py-0.5 bg-violet-100/50${isOverridden ? " cell-overridable" : ""}`} style={{ width: 1, whiteSpace: "nowrap" }}>
                     <NormMethodDropdown
                       organ={row.organ}
                       activeMode={activeMode}

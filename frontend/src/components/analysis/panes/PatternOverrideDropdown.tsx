@@ -61,7 +61,7 @@ export function PatternOverrideDropdown({ finding }: Props) {
 
   return (
     <div
-      className="relative flex items-center gap-0.5"
+      className={`relative flex items-center gap-0.5${state.patternChanged ? " cell-overridable" : ""}`}
       onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
     >
       <span

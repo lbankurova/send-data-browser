@@ -144,6 +144,25 @@ button[data-rail-item][data-selected] .ev {
   color: var(--ev-color, #DC2626);
 }
 
+/* ── Override-editable cell indicator ──
+   Top-left corner triangle signals "right-click to override".
+   Works alongside bg-violet-50/40 as a monitor-proof indicator. */
+.cell-overridable {
+  position: relative;
+}
+.cell-overridable::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 6px 0 0;
+  border-color: rgb(139 92 246 / 0.5) transparent transparent transparent;
+  pointer-events: none;
+}
+
 /* ── One-time hint fade (collapsible sections) ── */
 @keyframes fade-hint {
   0%   { opacity: 1; }

@@ -55,7 +55,7 @@ import type { TableFilterState } from "./findings/table-filters";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
 import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
-import { getVerdictLabel } from "@/lib/recovery-labels";
+import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -765,9 +765,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             <button
               type="button"
               className={cn(
-                "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
-                "bg-gray-100 text-gray-600 border border-gray-200",
-                vi.isOverridden && "bg-violet-50/40",
+                "text-[10px] font-medium cursor-pointer hover:underline",
+                RECOVERY_VERDICT_CLASS[vi.effectiveVerdict] ?? "text-muted-foreground",
+                vi.isOverridden && "italic",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -982,9 +982,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             <button
               type="button"
               className={cn(
-                "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium",
-                "bg-gray-100 text-gray-600 border border-gray-200",
-                vi.isOverridden && "bg-violet-50/40",
+                "text-[10px] font-medium cursor-pointer hover:underline",
+                RECOVERY_VERDICT_CLASS[vi.effectiveVerdict] ?? "text-muted-foreground",
+                vi.isOverridden && "italic",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -1336,6 +1336,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
                   const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose";
+                  const isOverridden = cell.column.id === "pattern"
+                    ? derivePatternState(row.original, overrideActions.annotations).patternChanged
+                    : cell.column.id === "onset_dose"
+                    ? deriveOnsetState(row.original, doseGroups, overrideActions.annotations).isOverridden
+                    : false;
                   const style = colStyle(cell.column.id);
                   return (
                     <td
@@ -1343,7 +1348,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       className={cn(
                         "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                        isOverridable && "bg-violet-50/40",
+                        isOverridable && "bg-violet-100/50",
+                        isOverridden && "cell-overridable",
                       )}
                       style={style}
                       data-evidence=""
