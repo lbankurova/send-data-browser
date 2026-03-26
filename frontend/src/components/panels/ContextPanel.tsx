@@ -1,4 +1,4 @@
-import { lazy, Suspense, Component, useState, useEffect } from "react";
+import { lazy, Suspense, Component, useState, useEffect, useMemo } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -7,9 +7,10 @@ import { useStudySelection } from "@/contexts/StudySelectionContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useAESummary } from "@/hooks/useAESummary";
 import { generateStudyReport } from "@/lib/report-generator";
-import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useAdverseEffectSummary } from "@/hooks/useAdverseEffectSummary";
+import { useNoaelSummary } from "@/hooks/useNoaelSummary";
+import { generateNoaelNarrative } from "@/lib/noael-narrative";
 import { useLesionSeveritySummary } from "@/hooks/useLesionSeveritySummary";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
@@ -271,24 +272,26 @@ function StudySummaryContextPanelWrapper({ studyId }: { studyId: string }) {
 }
 
 function NoaelContextPanelWrapper({ studyId }: { studyId: string }) {
-  const { selection: viewSel } = useViewSelection();
   const { selection: studySel } = useStudySelection();
   const { data: aeData } = useAdverseEffectSummary(studyId);
   const { data: ruleResults } = useRuleResults(studyId);
-  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: noaelData } = useNoaelSummary(studyId);
 
-  // NoaelContextPanel expects { endpoint_label, dose_level, sex } — these come from
-  // NOAEL's local selection state, bridged via ViewSelectionContext during transition
-  const sel = viewSel?._view === "noael" ? viewSel as { endpoint_label: string; dose_level: number; sex: string } : null;
+  // Compute narrative once here — shared with NoaelBanner via React Query cache for noaelData
+  const narrative = useMemo(() => {
+    if (!noaelData || noaelData.length === 0) return null;
+    const primary = noaelData.find((r) => r.sex === "Combined") ?? noaelData[0];
+    return generateNoaelNarrative(primary, aeData ?? [], primary.sex as "Combined" | "M" | "F");
+  }, [noaelData, aeData]);
 
   return (
     <NoaelContextPanel
       aeData={aeData ?? []}
       ruleResults={ruleResults ?? []}
-      signalData={signalData ?? []}
-      selection={sel}
       organSelection={studySel.organSystem ?? null}
       studyId={studyId}
+      narrative={narrative}
+      noaelData={noaelData}
     />
   );
 }
