@@ -53,6 +53,8 @@ VALID_VIEW_NAMES = {
     "cross-animal-flags",
     "unified-findings",
     "subject-syndromes",
+    "subject-onset-days",
+    "recovery-verdicts",
 }
 
 # The 10 view names that the parameterized pipeline produces
