@@ -613,6 +613,107 @@ describe("onset_day predicate", () => {
     const pred = { type: "onset_day" as const, min: 5, max: 15 };
     expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(false);
   });
+
+  it("matches with min only (no max)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 30 },
+    };
+    const pred = { type: "onset_day" as const, min: 20, max: null };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails with min only when all days are below min", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 10 },
+    };
+    const pred = { type: "onset_day" as const, min: 20, max: null };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches with max only (no min)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "CL:EMESIS": 3 },
+    };
+    const pred = { type: "onset_day" as const, min: null, max: 10 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails with max only when all days exceed max", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 30 },
+    };
+    const pred = { type: "onset_day" as const, min: null, max: 10 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches with finding filter (exact match)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 7, "CL:EMESIS": 3 },
+    };
+    const pred = { type: "onset_day" as const, min: 5, max: 15, finding: "LB:ALT" };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails with finding filter when exact finding not present", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 7, "CL:EMESIS": 3 },
+    };
+    const pred = { type: "onset_day" as const, min: 1, max: 100, finding: "LB:AST" };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches with wildcard finding (domain prefix)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "CL:EMESIS": 3, "CL:CRUST": 10, "LB:ALT": 30 },
+    };
+    const pred = { type: "onset_day" as const, min: 1, max: 5, finding: "CL:*" };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails with wildcard finding when no matching domain keys in range", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "CL:EMESIS": 30, "LB:ALT": 3 },
+    };
+    // CL:* matches CL:EMESIS (day 30), which is outside [1,5]; LB:ALT (day 3) is in range but wrong domain
+    const pred = { type: "onset_day" as const, min: 1, max: 5, finding: "CL:*" };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches at exact boundary (day == min)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 5 },
+    };
+    const pred = { type: "onset_day" as const, min: 5, max: 10 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches at exact boundary (day == max)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 10 },
+    };
+    const pred = { type: "onset_day" as const, min: 5, max: 10 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
 });
 
 // ── Recovery verdict predicate ────────────────────────────────
@@ -622,6 +723,190 @@ describe("recovery_verdict predicate", () => {
     const subject = makeSubject();
     const pred = { type: "recovery_verdict" as const, finding: "NECROSIS", specimen: "LIVER", verdict: ["resolved"] };
     expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(false);
+  });
+
+  it("matches when subject has matching finding+specimen+verdict", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: "minimal",
+            verdict: "partially_reversed",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 1, persistent_count: 0, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "LIVER", verdict: ["partially_reversed"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches with multiple verdict values (OR within verdict array)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "persistent",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 0, persistent_count: 1, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "LIVER", verdict: ["reversed", "persistent"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails when verdict does not match", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: "minimal",
+            verdict: "partially_reversed",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 1, persistent_count: 0, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "LIVER", verdict: ["reversed"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("fails when finding does not match", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "persistent",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 0, persistent_count: 1, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "inflammation", specimen: "LIVER", verdict: ["persistent"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches with wildcard finding (matches any finding)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "persistent",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 0, persistent_count: 1, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "*", specimen: "LIVER", verdict: ["persistent"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches with wildcard specimen (matches any specimen)", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "KIDNEY",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "reversed",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 1, partially_reversed_count: 0, persistent_count: 0, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "*", verdict: ["reversed"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("matches case-insensitively on finding and specimen", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "Liver",
+            finding: "Necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "persistent",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 0, persistent_count: 1, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "liver", verdict: ["persistent"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails when specimen does not match", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.recoveryVerdicts = {
+      "PC201708-1001": {
+        findings: [
+          {
+            domain: "MI",
+            specimen: "LIVER",
+            finding: "necrosis",
+            main_severity: "moderate",
+            recovery_severity: null,
+            verdict: "persistent",
+            confidence: "adequate",
+          },
+        ],
+        summary: { reversed_count: 0, partially_reversed_count: 0, persistent_count: 1, progressing_count: 0, anomaly_count: 0 },
+      },
+    };
+    const pred = { type: "recovery_verdict" as const, finding: "necrosis", specimen: "KIDNEY", verdict: ["persistent"] };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
   });
 });
 
