@@ -376,10 +376,15 @@ function InterleavedPanel({
   const plotHeight = Math.max(60, height - PLOT_TOP - bottomMargin);
   const plotWidth = width - LEFT_MARGIN - PLOT_RIGHT;
   const numCols = doseGroups.length;
-  const colWidth = numCols > 0 ? plotWidth / numCols : plotWidth;
+  const nominalColWidth = numCols > 0 ? plotWidth / numCols : plotWidth;
+  const interGroupGap = numCols > 1 ? nominalColWidth * 0.2 : 0;
+  const colWidth = numCols > 1
+    ? (plotWidth - (numCols - 1) * interGroupGap) / numCols
+    : nominalColWidth;
   const plotBottom = PLOT_TOP + plotHeight;
 
-  const colCenter = (colIdx: number) => LEFT_MARGIN + (colIdx + 0.5) * colWidth;
+  const colCenter = (colIdx: number) =>
+    LEFT_MARGIN + colIdx * (colWidth + interGroupGap) + colWidth / 2;
   const yScale = (v: number) => PLOT_TOP + plotHeight * (1 - (v - vMin) / (vMax - vMin));
 
   // Sub-column offset: F on left, M on right within each dose column
