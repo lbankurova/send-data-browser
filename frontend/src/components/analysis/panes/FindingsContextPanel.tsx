@@ -1457,6 +1457,56 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
   );
 }
 
+/** Pathologist notes from CO domain, grouped by text with subject links. */
+function PathologistNotes({ finding, studyId, navigate }: {
+  finding: UnifiedFinding;
+  studyId: string | undefined;
+  navigate: (to: string) => void;
+}) {
+  if (!finding.comments || finding.comments.length === 0) return null;
+
+  const grouped = new Map<string, string[]>();
+  for (const c of finding.comments) {
+    if (!c) continue;
+    const text = typeof c === "string" ? c : c.text;
+    const subj = typeof c === "string" ? "" : (c.subject_id ?? "");
+    if (!text) continue;
+    const existing = grouped.get(text);
+    if (existing) {
+      if (subj) existing.push(subj);
+    } else {
+      grouped.set(text, subj ? [subj] : []);
+    }
+  }
+  if (grouped.size === 0) return null;
+
+  const total = finding.comments.length;
+  return (
+    <div className="border-t px-4 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pathologist Notes</div>
+      <ul className="space-y-1">
+        {[...grouped.entries()].map(([text, subjects], i) => (
+          <li key={i} className="text-xs leading-snug">
+            <span className="text-muted-foreground italic">{text}</span>
+            {total > 1 && <span className="text-muted-foreground/60"> ({subjects.length}/{total})</span>}
+            {subjects.length > 0 && (
+              <button
+                className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjects.join(","))}&preset=all`);
+                }}
+              >
+                See subjects
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function FindingsContextPanel() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
@@ -1946,47 +1996,7 @@ export function FindingsContextPanel() {
                 }}
               />
             )}
-            {selectedFinding.comments && selectedFinding.comments.length > 0 && (() => {
-              // Aggregate comments by text, collecting subject IDs per note.
-              // Handle both {text, subject_id} objects and legacy plain strings.
-              const grouped = new Map<string, string[]>();
-              for (const c of selectedFinding.comments) {
-                if (!c) continue;
-                const text = typeof c === "string" ? c : c.text;
-                const subj = typeof c === "string" ? "" : (c.subject_id ?? "");
-                if (!text) continue;
-                const subjects = grouped.get(text) ?? [];
-                if (subj) subjects.push(subj);
-                grouped.set(text, subjects);
-              }
-              if (grouped.size === 0) return null;
-              const total = selectedFinding.comments.length;
-              return (
-                <div className="border-t px-4 py-2">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pathologist Notes</div>
-                  <ul className="space-y-1">
-                    {[...grouped.entries()].map(([text, subjects], i) => (
-                      <li key={i} className="text-xs leading-snug">
-                        <span className="text-muted-foreground italic">{text}</span>
-                        {total > 1 && <span className="text-muted-foreground/60"> ({subjects.length}/{total})</span>}
-                        {subjects.length > 0 && (
-                          <button
-                            className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const subjectParam = subjects.join(",");
-                              navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjectParam)}&preset=all`);
-                            }}
-                          >
-                            See subjects
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })()}
+            <PathologistNotes finding={selectedFinding} studyId={studyId} navigate={navigate} />
             {context!.sibling && (
               <SexComparisonPane
                 finding={selectedFinding}
