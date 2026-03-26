@@ -28,6 +28,7 @@ from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
+from generator.subject_syndromes import build_subject_syndromes
 from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.phase_filter import compute_last_dosing_day
 
@@ -195,6 +196,7 @@ def generate(study_id: str):
 
     # Phase 1c results (may have failed in thread)
     provenance_msgs = []
+    ctx_df = None
     try:
         context_result = fut_ctx.result()
         provenance_msgs = generate_provenance_messages(context_result)
@@ -221,6 +223,26 @@ def generate(study_id: str):
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
         print(f"  1c WARNING: Subject context failed: {e}")
+
+    # Phase 1g: Per-subject syndrome matching
+    _tick("1g_start")
+    if ctx_df is not None:
+        print("Phase 1g: Computing per-subject syndrome matches...")
+        try:
+            subject_syndromes = build_subject_syndromes(findings, study, ctx_df)
+            _write_json(out_dir / "subject_syndromes.json", subject_syndromes)
+            n_matched = sum(1 for s in subject_syndromes.get("subjects", {}).values()
+                            if s.get("syndrome_count", 0) > 0)
+            n_partial = sum(1 for s in subject_syndromes.get("subjects", {}).values()
+                            if s.get("partial_count", 0) > 0)
+            print(f"  {n_matched} subjects with full syndrome matches, {n_partial} with partial matches")
+        except Exception as e:
+            print(f"  WARNING: Subject syndrome computation failed: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("Phase 1g: SKIPPED — subject context (Phase 1c) not available")
+    _tick("1g_end")
 
     # Phase 2: Assemble view-specific data via parameterized pipeline
     _tick("2_start")
@@ -291,6 +313,7 @@ def generate(study_id: str):
         ("1b Domain stats", "1b"),
         ("1c-e Parallel (ctx/tumor/food)", "1cde"),
         ("1f Cross-animal flags", "1f"),
+        ("1g Subject syndromes", "1g"),
         ("2  View DataFrames", "2"),
         ("2b-5 Parallel (PK/rules/chart/unified)", "2b345"),
     ]
