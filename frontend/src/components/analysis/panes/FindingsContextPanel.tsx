@@ -22,7 +22,6 @@ import { RecoveryPane } from "./RecoveryPane";
 import { TimeCoursePane } from "./TimeCoursePane";
 // DistributionPane moved to center panel (CenterDistribution in DoseResponseChartPanel)
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
-import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { CausalityWorksheet } from "./CausalityWorksheet";
@@ -1824,25 +1823,13 @@ export function FindingsContextPanel() {
       );
     }
 
-    // Priority 3: empty state — show normalization heatmap when OM data present
-    const normContexts = analytics.normalizationContexts;
-    const hasNormData = normContexts && normContexts.length > 0 && normContexts.some(c => c.tier >= 2);
+    // Priority 3: empty state
     return (
       <div className="p-4">
         <h3 className="mb-2 text-sm font-semibold">Findings</h3>
         <p className="text-xs text-muted-foreground">
           Select a finding row to view detailed analysis.
         </p>
-        {hasNormData && (
-          <div className="mt-3">
-            <CollapsiblePane title="Normalization overview" defaultOpen variant="margin">
-              <NormalizationHeatmap
-                contexts={normContexts.filter(c => c.tier >= 2)}
-                onOrganClick={(organ) => selectGroup("organ", organ)}
-              />
-            </CollapsiblePane>
-          </div>
-        )}
       </div>
     );
   }
@@ -1959,6 +1946,47 @@ export function FindingsContextPanel() {
                 }}
               />
             )}
+            {selectedFinding.comments && selectedFinding.comments.length > 0 && (() => {
+              // Aggregate comments by text, collecting subject IDs per note.
+              // Handle both {text, subject_id} objects and legacy plain strings.
+              const grouped = new Map<string, string[]>();
+              for (const c of selectedFinding.comments) {
+                if (!c) continue;
+                const text = typeof c === "string" ? c : c.text;
+                const subj = typeof c === "string" ? "" : (c.subject_id ?? "");
+                if (!text) continue;
+                const subjects = grouped.get(text) ?? [];
+                if (subj) subjects.push(subj);
+                grouped.set(text, subjects);
+              }
+              if (grouped.size === 0) return null;
+              const total = selectedFinding.comments.length;
+              return (
+                <div className="border-t px-4 py-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pathologist Notes</div>
+                  <ul className="space-y-1">
+                    {[...grouped.entries()].map(([text, subjects], i) => (
+                      <li key={i} className="text-xs leading-snug">
+                        <span className="text-muted-foreground italic">{text}</span>
+                        {total > 1 && <span className="text-muted-foreground/60"> ({subjects.length}/{total})</span>}
+                        {subjects.length > 0 && (
+                          <button
+                            className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const subjectParam = subjects.join(",");
+                              navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjectParam)}&preset=all`);
+                            }}
+                          >
+                            See subjects
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
             {context!.sibling && (
               <SexComparisonPane
                 finding={selectedFinding}
