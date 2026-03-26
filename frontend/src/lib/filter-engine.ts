@@ -13,6 +13,7 @@ import type {
   FilterGroup,
   FilterPredicate,
   SubjectSyndromeProfile,
+  RecoveryVerdictSubject,
 } from "@/types/cohort";
 import type { UnifiedFinding } from "@/types/analysis";
 
@@ -28,12 +29,16 @@ import type { UnifiedFinding } from "@/types/analysis";
  * - histopathMap: per-subject histopath data with numeric severity grades (0-5)
  *   Keyed by USUBJID, then by FINDING_NAME (uppercased).
  *   This is the correct source for severity predicates (NOT CohortFindingRow.severity).
+ * - onsetDays: per-subject onset days keyed by finding key (e.g. "CL:EMESIS" -> day 3)
+ * - recoveryVerdicts: per-subject recovery verdict data with per-finding verdicts
  */
 export interface FilterContext {
   syndromes: Record<string, SubjectSyndromeProfile>;
   allFindings: UnifiedFinding[];
   subjectOrganCounts: Map<string, number>;
   histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
+  onsetDays: Record<string, Record<string, number>>;
+  recoveryVerdicts: Record<string, RecoveryVerdictSubject>;
 }
 
 // ── Core evaluation ────────────────────────────────────────────
@@ -109,12 +114,11 @@ export function evaluatePredicate(
     case "search":
       return subject.usubjid.toLowerCase().includes(predicate.query.toLowerCase());
 
-    // Stubs for Phase 3
     case "onset_day":
-      return true;
+      return evalOnsetDay(subject, predicate, ctx);
 
     case "recovery_verdict":
-      return true;
+      return evalRecoveryVerdict(subject, predicate, ctx);
   }
 }
 
@@ -300,6 +304,77 @@ function evalDisposition(
   if (hasTrsValue && subject.badge === "trs") return true;
   if (hasScheduled && subject.badge !== "trs") return true;
   return false;
+}
+
+/**
+ * Onset day predicate: check if subject has ANY onset day within [min, max].
+ *
+ * If finding is specified:
+ * - Exact match: only check that specific finding key
+ * - Wildcard (e.g. "CL:*"): match all keys starting with the domain prefix
+ *
+ * Returns false if the subject has no onset day data.
+ */
+function evalOnsetDay(
+  subject: CohortSubject,
+  pred: Extract<FilterPredicate, { type: "onset_day" }>,
+  ctx: FilterContext,
+): boolean {
+  const subjectDays = ctx.onsetDays[subject.usubjid];
+  if (!subjectDays) return false;
+
+  const minDay = pred.min ?? -Infinity;
+  const maxDay = pred.max ?? Infinity;
+
+  // Determine which finding keys to check
+  let keys: string[];
+  if (pred.finding) {
+    if (pred.finding.endsWith(":*")) {
+      // Wildcard: match all keys starting with the domain prefix
+      const prefix = pred.finding.slice(0, -1); // "CL:" from "CL:*"
+      keys = Object.keys(subjectDays).filter((k) => k.startsWith(prefix));
+    } else {
+      // Exact match
+      keys = pred.finding in subjectDays ? [pred.finding] : [];
+    }
+  } else {
+    keys = Object.keys(subjectDays);
+  }
+
+  return keys.some((k) => {
+    const day = subjectDays[k];
+    return day >= minDay && day <= maxDay;
+  });
+}
+
+/**
+ * Recovery verdict predicate: check if subject has a matching recovery verdict.
+ *
+ * Matches on finding + specimen (case-insensitive), then checks if the
+ * entry's verdict is in the predicate's verdict array.
+ * Use "*" for finding or specimen to match any.
+ *
+ * Returns false if the subject has no recovery verdict data.
+ */
+function evalRecoveryVerdict(
+  subject: CohortSubject,
+  pred: Extract<FilterPredicate, { type: "recovery_verdict" }>,
+  ctx: FilterContext,
+): boolean {
+  const subjectData = ctx.recoveryVerdicts[subject.usubjid];
+  if (!subjectData) return false;
+
+  const findingLower = pred.finding.toLowerCase();
+  const specimenLower = pred.specimen.toLowerCase();
+
+  return subjectData.findings.some((entry) => {
+    // Check finding match (case-insensitive, or wildcard)
+    if (findingLower !== "*" && entry.finding.toLowerCase() !== findingLower) return false;
+    // Check specimen match (case-insensitive, or wildcard)
+    if (specimenLower !== "*" && entry.specimen.toLowerCase() !== specimenLower) return false;
+    // Check verdict
+    return pred.verdict.includes(entry.verdict);
+  });
 }
 
 // ── Preset conversion ──────────────────────────────────────────

@@ -71,6 +71,8 @@ function makeEmptyContext(): FilterContext {
     allFindings: [],
     subjectOrganCounts: new Map(),
     histopathMap: new Map(),
+    onsetDays: {},
+    recoveryVerdicts: {},
   };
 }
 
@@ -583,23 +585,43 @@ describe("search predicate", () => {
   });
 });
 
-// ── Onset day predicate (stub) ─────────────────────────────────
+// ── Onset day predicate ───────────────────────────────────────
 
-describe("onset_day predicate (stub)", () => {
-  it("returns true (stub for Phase 3)", () => {
+describe("onset_day predicate", () => {
+  it("fails when no onset days within range", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 30, "MI:LIVER:necrosis": 92 },
+    };
+    const pred = { type: "onset_day" as const, min: 1, max: 5 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(false);
+  });
+
+  it("matches when onset day is within range", () => {
+    const subject = makeSubject();
+    const ctx = makeEmptyContext();
+    ctx.onsetDays = {
+      "PC201708-1001": { "LB:ALT": 7 },
+    };
+    const pred = { type: "onset_day" as const, min: 5, max: 15 };
+    expect(evaluatePredicate(subject, pred, ctx)).toBe(true);
+  });
+
+  it("fails when subject has no onset data", () => {
     const subject = makeSubject();
     const pred = { type: "onset_day" as const, min: 5, max: 15 };
-    expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(true);
+    expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(false);
   });
 });
 
-// ── Recovery verdict predicate (stub) ──────────────────────────
+// ── Recovery verdict predicate ────────────────────────────────
 
-describe("recovery_verdict predicate (stub)", () => {
-  it("returns true (stub for Phase 3)", () => {
+describe("recovery_verdict predicate", () => {
+  it("fails when subject has no recovery data", () => {
     const subject = makeSubject();
     const pred = { type: "recovery_verdict" as const, finding: "NECROSIS", specimen: "LIVER", verdict: ["resolved"] };
-    expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(true);
+    expect(evaluatePredicate(subject, pred, makeEmptyContext())).toBe(false);
   });
 });
 

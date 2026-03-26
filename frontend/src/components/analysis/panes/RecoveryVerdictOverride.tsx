@@ -3,7 +3,7 @@
  *
  * Shows:
  * 1. Transparency line explaining why the auto-verdict was chosen
- * 2. Verdict display with dropdown for override selection
+ * 2. Verdict display with right-click dropdown for override selection
  * 3. Override indicator with bg-violet-50/40 tint when overridden
  * 4. OverridePill dot for note entry when overridden
  * 5. "Reset to auto" option when overridden
@@ -12,7 +12,6 @@
  * of RecoveryPane.
  */
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { OverridePill } from "@/components/ui/OverridePill";
 import {
   useRecoveryOverrideActions,
@@ -83,9 +82,11 @@ export function RecoveryVerdictOverride({
 
       {/* Verdict row */}
       <div
-        className={`relative flex items-center gap-1 rounded px-2 py-1 ${
+        className={`relative flex items-center gap-1 rounded px-2 py-1 cursor-context-menu ${
           isOverridden ? "bg-violet-50/40" : ""
         }`}
+        onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
+        title="Right-click to override verdict"
       >
         {/* Override indicator: show both auto and override when overridden */}
         {isOverridden ? (
@@ -105,7 +106,7 @@ export function RecoveryVerdictOverride({
         )}
 
         {/* OverridePill for note entry */}
-        <div className="w-3 shrink-0">
+        <div className="w-3 shrink-0 ml-auto">
           <OverridePill
             isOverridden={isOverridden}
             note={annotation?.note}
@@ -117,12 +118,6 @@ export function RecoveryVerdictOverride({
             popoverAlign="end"
           />
         </div>
-
-        {/* Dropdown trigger */}
-        <ChevronDown
-          className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40 cursor-pointer ml-auto"
-          onClick={() => setOpen(!open)}
-        />
 
         {/* Dropdown menu */}
         {open && (

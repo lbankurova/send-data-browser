@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { UnifiedFinding } from "@/types/analysis";
 import {
@@ -61,16 +60,18 @@ export function PatternOverrideDropdown({ finding }: Props) {
   const previewText = buildPreviewText(preview);
 
   return (
-    <div className="relative flex items-center gap-0.5">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex-1 text-right font-mono py-0.5 text-muted-foreground hover:bg-muted/50 rounded transition-colors"
+    <div
+      className="relative flex items-center gap-0.5"
+      onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
+    >
+      <span
+        className="flex-1 text-right font-mono py-0.5 text-muted-foreground cursor-context-menu"
         title={state.patternChanged
           ? `Overridden (was: ${state.originalLabel ?? state.originalPattern})`
-          : "Click to override pattern"}
+          : "Right-click to override pattern"}
       >
         {state.currentLabel}
-      </button>
+      </span>
       <div className="w-3 shrink-0">
         <OverridePill
           isOverridden={state.patternChanged}
@@ -83,10 +84,6 @@ export function PatternOverrideDropdown({ finding }: Props) {
           popoverAlign="end"
         />
       </div>
-      <ChevronDown
-        className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40 cursor-pointer"
-        onClick={() => setOpen(!open)}
-      />
 
       {open && (
         <>

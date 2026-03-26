@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
 import { formatOnsetDose } from "@/lib/onset-dose";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
@@ -37,16 +36,17 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
   }
 
   return (
-    <div className={`relative flex items-center gap-0.5${state.needsAttention ? " border-b border-red-500" : ""}`}
+    <div
+      className={`relative flex items-center gap-0.5${state.needsAttention ? " border-b border-red-500" : ""}`}
       title={state.needsAttention ? "Onset dose needs selection" : undefined}
+      onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
     >
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex-1 text-right font-mono py-0.5 hover:bg-muted/50 rounded transition-colors"
-        title={state.needsAttention ? "Onset dose needs selection" : state.overrideTooltip}
+      <span
+        className={`flex-1 text-right font-mono py-0.5 cursor-context-menu${state.onset ? "" : " text-muted-foreground/60"}`}
+        title={state.needsAttention ? "Onset dose needs selection" : state.overrideTooltip ?? "Right-click to override onset dose"}
       >
-        <span className={state.onset ? "" : "text-muted-foreground/60"}>{state.displayLabel}</span>
-      </button>
+        {state.displayLabel}
+      </span>
       <div className="w-3 shrink-0">
         <OverridePill
           isOverridden={state.isOverridden}
@@ -59,10 +59,6 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
           popoverAlign="end"
         />
       </div>
-      <ChevronDown
-        className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40 cursor-pointer"
-        onClick={() => setOpen(!open)}
-      />
 
       {open && (
         <>

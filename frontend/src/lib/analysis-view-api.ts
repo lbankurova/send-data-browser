@@ -14,7 +14,7 @@ import type {
   PkIntegration,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
-import type { SubjectSyndromesResponse } from "@/types/cohort";
+import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse } from "@/types/cohort";
 
 const API_BASE = "/api";
 
@@ -298,5 +298,25 @@ export function fetchSubjectSyndromes(
 ): Promise<SubjectSyndromesResponse> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/subject-syndromes`,
+  );
+}
+
+// ── Onset days ──────────────────────────────────────────────
+
+export function fetchOnsetDays(
+  studyId: string,
+): Promise<OnsetDaysResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-onset-days`,
+  );
+}
+
+// ── Recovery verdicts ───────────────────────────────────────
+
+export function fetchRecoveryVerdicts(
+  studyId: string,
+): Promise<RecoveryVerdictsResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/recovery-verdicts`,
   );
 }

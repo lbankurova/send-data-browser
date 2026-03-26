@@ -3,12 +3,11 @@
  * metric and BW confounding tier per organ.
  *
  * Method column uses inline override dropdown matching the findings table
- * pattern override UX: violet-tinted cell, click to open dropdown, OverridePill
- * for notes when overridden.
+ * pattern override UX: violet-tinted cell, right-click to open dropdown,
+ * OverridePill for notes when overridden.
  */
 
 import { useState, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import { NORM_MODE_SHORT } from "@/lib/organ-weight-normalization";
 import { titleCase } from "@/lib/severity-colors";
@@ -240,16 +239,18 @@ function NormMethodDropdown({
   };
 
   return (
-    <div className="relative flex items-center gap-0.5">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex-1 text-right font-mono py-0.5 text-muted-foreground hover:bg-muted/50 rounded transition-colors"
+    <div
+      className="relative flex items-center gap-0.5"
+      onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
+    >
+      <span
+        className="flex-1 text-right font-mono py-0.5 text-muted-foreground cursor-context-menu"
         title={isOverridden
           ? `Overridden (auto: ${MODE_LABELS[autoMode] ?? autoMode})`
-          : "Click to override method"}
+          : "Right-click to override method"}
       >
         {MODE_LABELS[activeMode] ?? activeMode}
-      </button>
+      </span>
       <div className="w-3 shrink-0">
         <OverridePill
           isOverridden={isOverridden}
@@ -262,10 +263,6 @@ function NormMethodDropdown({
           popoverAlign="end"
         />
       </div>
-      <ChevronDown
-        className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40 cursor-pointer"
-        onClick={() => setOpen(!open)}
-      />
 
       {open && (
         <>

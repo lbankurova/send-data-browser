@@ -165,6 +165,13 @@ export type FilterPredicate =
   | { type: "tk"; isTK: boolean }
   | { type: "search"; query: string };
 
+// ── Phase 3 stubs ────────────────────────────────────────────
+
+/** Per-subject recovery verdict data. Phase 3 placeholder. */
+export interface RecoveryVerdictSubject {
+  findings: Array<{ finding: string; specimen: string; verdict: string }>;
+}
+
 // ── Cohort state ─────────────────────────────────────────────
 
 export interface CohortState {

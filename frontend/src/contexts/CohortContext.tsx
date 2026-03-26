@@ -22,6 +22,8 @@ import { evaluateFilter } from "@/lib/filter-engine";
 import type { FilterContext } from "@/lib/filter-engine";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
+import { useOnsetDays } from "@/hooks/useOnsetDays";
+import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate } from "@/types/cohort";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
@@ -196,6 +198,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const { data: mortality } = useStudyMortality(studyId);
   const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
   const { data: syndromesData } = useSubjectSyndromes(studyId);
+  const { data: onsetDaysData } = useOnsetDays(studyId);
+  const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
 
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
@@ -268,6 +272,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     allFindings: findings,
     subjectOrganCounts,
     histopathMap,
+    onsetDays: {},
+    recoveryVerdicts: {},
   }), [syndromesData, findings, subjectOrganCounts, histopathMap]);
 
   const filteredSubjects = useMemo(() => {
