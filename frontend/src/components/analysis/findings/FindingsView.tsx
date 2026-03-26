@@ -359,7 +359,9 @@ export function FindingsView() {
     if (sortedDays.length === 0) return null;
     const maxDay = sortedDays[sortedDays.length - 1];
     const dayLabels = new Map<number, string>();
-    dayLabels.set(maxDay, "terminal recovery");
+    for (const d of sortedDays) {
+      dayLabels.set(d, d === maxDay ? "terminal recovery" : "recovery");
+    }
     return { availableDays: sortedDays, terminalRecoveryDay: maxDay, dayLabels };
   }, [activeEndpoint, tableFindings, recoveryData, dayMeta?.terminalDay]);
 
