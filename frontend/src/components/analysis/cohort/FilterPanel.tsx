@@ -29,8 +29,7 @@ type DimensionId =
 interface DimensionDef {
   id: DimensionId;
   label: string;
-  group: "finding" | "metrics" | "phase3";
-  disabled?: boolean;
+  group: "finding" | "metrics";
 }
 
 const DIMENSIONS: DimensionDef[] = [
@@ -39,10 +38,10 @@ const DIMENSIONS: DimensionDef[] = [
   { id: "severity", label: "MI severity", group: "finding" },
   { id: "syndrome", label: "Syndrome", group: "finding" },
   { id: "disposition", label: "Disposition", group: "finding" },
+  { id: "recovery_verdict", label: "Recovery verdict", group: "finding" },
   { id: "bw_change", label: "Body weight change", group: "metrics" },
   { id: "organ_count", label: "Organ count", group: "metrics" },
-  { id: "onset_day", label: "Onset day", group: "phase3", disabled: true },
-  { id: "recovery_verdict", label: "Recovery verdict", group: "phase3", disabled: true },
+  { id: "onset_day", label: "Onset day", group: "metrics" },
 ];
 
 const DOMAIN_OPTIONS = ["MI", "MA", "LB", "OM", "BW", "CL"];
@@ -153,36 +152,28 @@ export function FilterPanel({ onClose }: { onClose: () => void }) {
 // ── DimensionPicker ──────────────────────────────────────────
 
 function DimensionPicker({ onSelect }: { onSelect: (id: DimensionId) => void }) {
-  const groups: Record<string, DimensionDef[]> = { finding: [], metrics: [], phase3: [] };
+  const groups: Record<string, DimensionDef[]> = { finding: [], metrics: [] };
   for (const d of DIMENSIONS) {
     groups[d.group].push(d);
   }
 
+  const groupKeys = Object.keys(groups);
   return (
     <div className="space-y-0.5">
-      {Object.entries(groups).map(([groupKey, dims]) => (
+      {groupKeys.map((groupKey, gi) => (
         <div key={groupKey}>
-          {dims.map((d) => (
+          {groups[groupKey].map((d) => (
             <button
               key={d.id}
               type="button"
-              disabled={d.disabled}
-              className={cn(
-                "flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs",
-                d.disabled
-                  ? "text-muted-foreground/40 cursor-not-allowed"
-                  : "text-foreground hover:bg-accent/50 cursor-pointer"
-              )}
-              onClick={() => !d.disabled && onSelect(d.id)}
+              className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-xs text-foreground hover:bg-accent/50 cursor-pointer"
+              onClick={() => onSelect(d.id)}
             >
               <Plus className="h-3 w-3 shrink-0" />
               <span>{d.label}</span>
-              {d.disabled && (
-                <span className="ml-auto text-[9px] text-muted-foreground/40">(Phase 3)</span>
-              )}
             </button>
           ))}
-          {groupKey !== "phase3" && (
+          {gi < groupKeys.length - 1 && (
             <div className="my-1 border-t border-border/30" />
           )}
         </div>
@@ -329,6 +320,10 @@ function DimensionConfigurator({
       return <OrganCountConfig onAdd={onAdd} onCancel={onCancel} />;
     case "disposition":
       return <DispositionConfig onAdd={onAdd} onCancel={onCancel} />;
+    case "onset_day":
+      return <OnsetDayConfig onAdd={onAdd} onCancel={onCancel} />;
+    case "recovery_verdict":
+      return <RecoveryVerdictConfig onAdd={onAdd} onCancel={onCancel} />;
     default:
       return null;
   }
@@ -683,6 +678,171 @@ function DispositionConfig({
             </span>
           </label>
         ))}
+      </div>
+    </ConfigLayout>
+  );
+}
+
+// ── Onset day configurator ───────────────────────────────────
+
+function OnsetDayConfig({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: (p: FilterPredicate) => void;
+  onCancel: () => void;
+}) {
+  const [minDay, setMinDay] = useState<string>("");
+  const [maxDay, setMaxDay] = useState<string>("");
+  const [finding, setFinding] = useState("");
+
+  const minVal = minDay !== "" ? Number(minDay) : null;
+  const maxVal = maxDay !== "" ? Number(maxDay) : null;
+  const canAdd = minVal != null || maxVal != null;
+
+  return (
+    <ConfigLayout
+      label="Onset day"
+      onCancel={onCancel}
+      onAdd={() =>
+        onAdd({
+          type: "onset_day",
+          min: minVal,
+          max: maxVal,
+          ...(finding ? { finding } : {}),
+        })
+      }
+      canAdd={canAdd}
+    >
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-8 shrink-0">Min:</span>
+          <input
+            type="number"
+            min={1}
+            value={minDay}
+            onChange={(e) => setMinDay(e.target.value)}
+            placeholder="1"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-8 shrink-0">Max:</span>
+          <input
+            type="number"
+            min={1}
+            value={maxDay}
+            onChange={(e) => setMaxDay(e.target.value)}
+            placeholder="90"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-8 shrink-0">Scope:</span>
+          <input
+            type="text"
+            value={finding}
+            onChange={(e) => setFinding(e.target.value)}
+            placeholder="e.g. CL:* or LB:ALT"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          />
+        </div>
+        <p className="text-[9px] text-muted-foreground/60">
+          Day range for onset. Scope narrows to specific findings.
+        </p>
+      </div>
+    </ConfigLayout>
+  );
+}
+
+// ── Recovery verdict configurator ────────────────────────────
+
+const VERDICT_OPTIONS = [
+  { key: "reversed", label: "Reversed" },
+  { key: "partially_reversed", label: "Partially reversed" },
+  { key: "persistent", label: "Persistent" },
+  { key: "progressing", label: "Progressing" },
+  { key: "anomaly", label: "Anomaly" },
+];
+
+function RecoveryVerdictConfig({
+  onAdd,
+  onCancel,
+}: {
+  onAdd: (p: FilterPredicate) => void;
+  onCancel: () => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [finding, setFinding] = useState("");
+  const [specimen, setSpecimen] = useState("");
+
+  const toggle = useCallback((key: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  return (
+    <ConfigLayout
+      label="Recovery verdict"
+      onCancel={onCancel}
+      onAdd={() =>
+        onAdd({
+          type: "recovery_verdict",
+          finding: finding || "*",
+          specimen: specimen || "*",
+          verdict: [...selected],
+        })
+      }
+      canAdd={selected.size > 0}
+    >
+      <div className="space-y-1.5">
+        <div className="space-y-0.5">
+          {VERDICT_OPTIONS.map((opt) => (
+            <label key={opt.key} className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected.has(opt.key)}
+                onChange={() => toggle(opt.key)}
+                className="h-3 w-3 rounded border-gray-300"
+              />
+              <span className={cn(
+                selected.has(opt.key) ? "text-foreground" : "text-muted-foreground"
+              )}>
+                {opt.label}
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-12 shrink-0">Finding:</span>
+          <input
+            type="text"
+            value={finding}
+            onChange={(e) => setFinding(e.target.value)}
+            placeholder="e.g. necrosis"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-12 shrink-0">Specimen:</span>
+          <input
+            type="text"
+            value={specimen}
+            onChange={(e) => setSpecimen(e.target.value)}
+            placeholder="e.g. LIVER"
+            className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
+          />
+        </div>
+        <p className="text-[9px] text-muted-foreground/60">
+          Select verdicts. Leave finding/specimen blank to match any.
+        </p>
       </div>
     </ConfigLayout>
   );
