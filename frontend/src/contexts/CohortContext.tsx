@@ -4,7 +4,7 @@
  * Provided at Layout level so both CohortRail (ShellRailPanel) and
  * CohortView (Outlet) can consume it. Lightweight when not on the cohort route.
  */
-import { createContext, useContext, useState, useCallback, useMemo, useRef } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useFindings } from "@/hooks/useFindings";
@@ -100,6 +100,21 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const lastClickedIndex = useRef<number>(-1);
 
+  // ── Sync state when URL params change after mount (e.g. "See subjects" nav) ──
+  const prevSubjectsParam = useRef(initialSubjects);
+  useEffect(() => {
+    if (initialSubjects !== prevSubjectsParam.current) {
+      prevSubjectsParam.current = initialSubjects;
+      if (initialSubjects) {
+        setSelectedSubjects(new Set(initialSubjects.split(",")));
+        setPreset(initialPreset);
+      } else {
+        // Cleared subjects param — let auto-select take over
+        setSelectedSubjects(new Set<string>());
+      }
+    }
+  }, [initialSubjects, initialPreset]);
+
   // ── Data fetching (only when studyId present) ──────────────
   const { data: findingsResp, isLoading: findingsLoading } = useFindings(studyId, 1, 10000, EMPTY_FILTERS);
   const { data: subjectContext, isLoading: scLoading } = useSubjectContext(studyId);
@@ -165,8 +180,13 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
       const q = searchQuery.toLowerCase();
       subjects = subjects.filter((s) => s.usubjid.toLowerCase().includes(q));
     }
+    // When navigated with explicit subject list, filter to just those subjects
+    if (initialSubjects) {
+      const target = new Set(initialSubjects.split(","));
+      subjects = subjects.filter((s) => target.has(s.usubjid));
+    }
     return subjects;
-  }, [allSubjects, presetSubjectIds, doseFilter, sexFilter, searchQuery]);
+  }, [allSubjects, presetSubjectIds, doseFilter, sexFilter, searchQuery, initialSubjects]);
 
   // Auto-select all filtered subjects when preset/filters change
   const prevFilterKey = useRef("");

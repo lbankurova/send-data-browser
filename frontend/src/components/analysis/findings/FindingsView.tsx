@@ -9,6 +9,7 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
+import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
 import { SeverityMatrix } from "./SeverityMatrix";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -605,16 +606,24 @@ export function FindingsView() {
             onResizePointerDown={scatterSection.onPointerDown}
             contentRef={scatterSection.contentRef}
           >
-            <DoseResponseChartPanel
-              endpointLabel={activeEndpoint}
-              findings={tableFindings}
-              doseGroups={data.dose_groups}
-              selectedDay={chartDay}
-              leftTab={leftChartTab}
-              onLeftTabChange={setLeftChartTab}
-              hasRecovery={studyHasRecovery}
-              recoveryData={recoveryData}
-            />
+            {(() => {
+              const epFinding = tableFindings.find(f => (f.endpoint_label ?? f.finding) === activeEndpoint);
+              if (epFinding?.domain === "IS") {
+                return <IsImmunogenicityPanel finding={epFinding} doseGroups={data.dose_groups} />;
+              }
+              return (
+                <DoseResponseChartPanel
+                  endpointLabel={activeEndpoint}
+                  findings={tableFindings}
+                  doseGroups={data.dose_groups}
+                  selectedDay={chartDay}
+                  leftTab={leftChartTab}
+                  onLeftTabChange={setLeftChartTab}
+                  hasRecovery={studyHasRecovery}
+                  recoveryData={recoveryData}
+                />
+              );
+            })()}
           </ViewSection>
         ) : scopeType === "specimen" && tableFindings.some(f => f.domain === "MI" || f.domain === "MA") ? (
           /* Specimen-scoped → severity matrix */

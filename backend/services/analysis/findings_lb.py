@@ -44,13 +44,34 @@ def compute_lb_findings(
         lb_df["LBDY"] = pd.to_numeric(lb_df.get("LBDY", pd.Series(dtype=float)), errors="coerce")
     lb_df = filter_treatment_period_records(lb_df, subjects, "LBDY", last_dosing_day)
 
-    # Parse numeric result
+    # Parse numeric result, with SUPPLB LBCALCN fallback for BLQ/non-numeric values
     if "LBSTRESN" in lb_df.columns:
         lb_df["value"] = pd.to_numeric(lb_df["LBSTRESN"], errors="coerce")
     elif "LBORRES" in lb_df.columns:
         lb_df["value"] = pd.to_numeric(lb_df["LBORRES"], errors="coerce")
     else:
         return []
+
+    # Apply SUPPLB LBCALCN imputation for missing numeric values
+    if lb_df["value"].isna().any() and "supplb" in study.xpt_files and "LBSEQ" in lb_df.columns:
+        try:
+            from services.xpt_processor import read_xpt as _read_xpt
+            supp_df, _ = _read_xpt(study.xpt_files["supplb"])
+            supp_df.columns = [c.upper() for c in supp_df.columns]
+            calcn = supp_df[supp_df["QNAM"].astype(str).str.strip().str.upper() == "LBCALCN"]
+            if len(calcn) > 0:
+                calcn_map = {
+                    (str(r["USUBJID"]).strip(), int(float(r["IDVARVAL"])))
+                    : pd.to_numeric(r["QVAL"], errors="coerce")
+                    for _, r in calcn.iterrows()
+                }
+                mask = lb_df["value"].isna()
+                lb_df.loc[mask, "value"] = lb_df.loc[mask].apply(
+                    lambda r: calcn_map.get((str(r["USUBJID"]).strip(), int(float(r["LBSEQ"]))), None),
+                    axis=1,
+                )
+        except Exception:
+            pass  # SUPPLB parsing failed — proceed without imputation
 
     # Get timepoint column
     day_col = "LBDY" if "LBDY" in lb_df.columns else None

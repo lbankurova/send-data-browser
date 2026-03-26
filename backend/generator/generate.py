@@ -198,6 +198,17 @@ def generate(study_id: str):
     try:
         context_result = fut_ctx.result()
         provenance_msgs = generate_provenance_messages(context_result)
+
+        # Flag unsupported domains that are present in the source data
+        if "is" in study.xpt_files and not any(f.get("domain") == "IS" for f in findings):
+            provenance_msgs.append({
+                "rule_id": "Prov-010",
+                "icon": "warning",
+                "message": "IS (Immunogenicity) domain present but not analyzed. "
+                           "Immunogenicity endpoints are not yet supported by the analysis pipeline.",
+                "link_to_rule": None,
+            })
+
         ctx_df = context_result["subject_context"]
         _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
         _write_json(out_dir / "provenance_messages.json", provenance_msgs)

@@ -8,6 +8,9 @@ from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
 from services.analysis.phase_filter import (
     get_treatment_subjects, filter_treatment_period_records,
 )
+from services.analysis.supp_qualifiers import (
+    load_supp_modifiers, aggregate_modifiers, count_distributions,
+)
 from services.analysis.day_utils import mode_day, min_day
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE", "NONE"}
@@ -66,6 +69,14 @@ def compute_cl_findings(
     # Filter recovery records to treatment period if day column exists
     cl_df = filter_treatment_period_records(cl_df, subjects, "CLDY", last_dosing_day)
 
+    # Load SUPPCL modifiers (e.g., injection site reaction sizing)
+    supp_map = load_supp_modifiers(study, "cl")
+    if supp_map and "CLSEQ" in cl_df.columns:
+        cl_df["_modifiers"] = cl_df.apply(
+            lambda r: supp_map.get((r["USUBJID"], int(float(r["CLSEQ"])))),
+            axis=1,
+        )
+
     finding_col = "CLSTRESC" if "CLSTRESC" in cl_df.columns else ("CLORRES" if "CLORRES" in cl_df.columns else None)
     if finding_col is None:
         return []
@@ -109,12 +120,21 @@ def compute_cl_findings(
 
             dose_counts[dose_level] = (affected, total)
 
-            group_stats.append({
+            gs_entry = {
                 "dose_level": int(dose_level),
                 "n": total,
                 "affected": affected,
                 "incidence": round(affected / total, 4) if total > 0 else 0,
-            })
+            }
+
+            # Per-dose modifier counts (from SUPPCL)
+            if "_modifiers" in dose_grp.columns:
+                dose_mods = dose_grp["_modifiers"].dropna().tolist()
+                mod_counts = count_distributions(dose_mods)
+                if mod_counts:
+                    gs_entry["modifier_counts"] = mod_counts
+
+            group_stats.append(gs_entry)
 
             if dose_level == all_dose_levels[0]:
                 control_affected = affected
@@ -161,6 +181,29 @@ def compute_cl_findings(
                 if min_p is None or pw["p_value"] < min_p:
                     min_p = pw["p_value"]
 
+        # Aggregate modifiers for this (finding, sex)
+        modifier_profile = None
+        if "_modifiers" in grp.columns:
+            modifier_records = grp["_modifiers"].dropna().tolist()
+            if modifier_records:
+                profile = aggregate_modifiers(modifier_records)
+                profile["n_total"] = int(grp["USUBJID"].nunique())
+                modifier_profile = profile
+
+        # Collect (subject_id, seq) pairs for RELREC linkage and CO comment attachment
+        relrec_seqs = None
+        relrec_subject_seqs = None
+        if "CLSEQ" in grp.columns:
+            seqs = grp["CLSEQ"].dropna().unique()
+            if len(seqs) > 0:
+                relrec_seqs = [int(float(s)) for s in seqs]
+            pairs = grp[["USUBJID", "CLSEQ"]].dropna()
+            if len(pairs) > 0:
+                relrec_subject_seqs = [
+                    (str(r["USUBJID"]).strip(), int(float(r["CLSEQ"])))
+                    for _, r in pairs.iterrows()
+                ]
+
         findings.append({
             "domain": "CL",
             "test_code": finding_str,
@@ -182,6 +225,9 @@ def compute_cl_findings(
             "has_recovery_subjects": has_any_recovery_cl,
             "raw_subject_onset_days": onset_days,
             "cl_body_system": body_system,
+            "modifier_profile": modifier_profile,
+            "_relrec_seq": relrec_seqs,
+            "_relrec_subject_seqs": relrec_subject_seqs,
         })
 
     return findings

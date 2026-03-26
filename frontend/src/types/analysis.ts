@@ -168,6 +168,8 @@ export interface UnifiedFinding {
   cl_body_system?: string;
   /** Human-readable organ name (e.g., "Liver", "Kidney"). */
   organ_name?: string | null;
+  /** Pathologist/clinician comments from CO domain, linked via record sequence. */
+  comments?: { text: string; subject_id: string }[];
 }
 
 export interface ConfidenceDimension {

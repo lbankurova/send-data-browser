@@ -153,6 +153,20 @@ def compute_ma_findings(
                 profile["n_total"] = int(grp["USUBJID"].nunique())
                 modifier_profile = profile
 
+        # Collect (subject_id, seq) pairs for RELREC linkage and CO comment attachment
+        relrec_seqs = None
+        relrec_subject_seqs = None
+        if "MASEQ" in grp.columns:
+            seqs = grp["MASEQ"].dropna().unique()
+            if len(seqs) > 0:
+                relrec_seqs = [int(float(s)) for s in seqs]
+            pairs = grp[["USUBJID", "MASEQ"]].dropna()
+            if len(pairs) > 0:
+                relrec_subject_seqs = [
+                    (str(r["USUBJID"]).strip(), int(float(r["MASEQ"])))
+                    for _, r in pairs.iterrows()
+                ]
+
         findings.append({
             "domain": "MA",
             "test_code": f"{specimen}_{finding_str}",
@@ -172,6 +186,8 @@ def compute_ma_findings(
             "min_p_adj": min_p,
             "modifier_profile": modifier_profile,
             "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
+            "_relrec_seq": relrec_seqs,
+            "_relrec_subject_seqs": relrec_subject_seqs,
         })
 
     return findings

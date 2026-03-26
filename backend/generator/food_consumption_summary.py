@@ -80,7 +80,7 @@ def build_food_consumption_summary(findings: list[dict], study: StudyInfo) -> di
 
 
 def _read_fw_raw(study: StudyInfo) -> pd.DataFrame | None:
-    """Read raw FW XPT data."""
+    """Read raw FW XPT data, resolving POOLID → USUBJID via POOLDEF if needed."""
     if "fw" not in study.xpt_files:
         return None
     try:
@@ -96,6 +96,16 @@ def _read_fw_raw(study: StudyInfo) -> pd.DataFrame | None:
         for col in ["FWDY", "FWENDY"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
+        # Resolve POOLID → USUBJID if USUBJID is missing/empty and POOLDEF exists
+        if "POOLID" in df.columns and "pooldef" in study.xpt_files:
+            usub_vals = df["USUBJID"].astype(str).str.strip() if "USUBJID" in df.columns else pd.Series(dtype=str)
+            has_usub = usub_vals.replace("", pd.NA).replace("nan", pd.NA).notna().any()
+            if not has_usub:
+                pool_df, _ = read_xpt(study.xpt_files["pooldef"])
+                pool_df.columns = [c.upper() for c in pool_df.columns]
+                if "USUBJID" in pool_df.columns and "POOLID" in pool_df.columns:
+                    df = df.drop(columns=["USUBJID"], errors="ignore")
+                    df = df.merge(pool_df[["USUBJID", "POOLID"]], on="POOLID", how="inner")
         return df
     except Exception:
         return None

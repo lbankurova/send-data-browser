@@ -21,6 +21,7 @@ from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.findings_eg import compute_eg_findings
 from services.analysis.findings_vs import compute_vs_findings
 from services.analysis.findings_bg import compute_bg_findings
+from services.analysis.findings_is import compute_is_findings
 from generator.organ_map import get_organ_name
 from services.analysis.phase_filter import (
     compute_last_dosing_day, get_treatment_subjects, filter_treatment_period_records,
@@ -160,6 +161,10 @@ def compute_all_findings(
     if "fw" in study.xpt_files:
         all_findings.extend(_compute_fw_findings(study, subjects, last_dosing_day=last_dosing_day))
 
+    # Try IS domain (immunogenicity) — log-scale GMT with seroconversion
+    if "is" in study.xpt_files:
+        all_findings.extend(compute_is_findings(study, subjects))
+
     # Pass 3 — build separate (main-only) map for in-life domains
     separate_map = None
     has_recovery = subjects["is_recovery"].any()
@@ -183,12 +188,35 @@ def compute_all_findings(
     route = get_route(study)
     vehicle = get_vehicle(study)
 
+    # Load supplemental domains (RELREC linkages + CO comments)
+    from services.analysis.supplemental_domains import load_relrec_links, load_comments
+    relrec_links = load_relrec_links(study)
+    comments_map = load_comments(study)
+
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
         species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
+        relrec_links=relrec_links if relrec_links else None,
     )
+
+    # Attach CO comments to findings (display-only annotations with subject linkage).
+    # Key is (domain, subject_id, seq) to avoid cross-subject SEQ collisions.
+    if comments_map:
+        for finding in all_findings:
+            domain = finding.get("domain", "")
+            subject_seqs = finding.get("_relrec_subject_seqs")
+            if subject_seqs:
+                finding_comments: list[dict[str, str]] = []
+                for subj_id, seq in subject_seqs:
+                    finding_comments.extend(comments_map.get((domain, subj_id, seq), []))
+                if finding_comments:
+                    finding["comments"] = finding_comments
+
+    # Resolve RELREC links to human-readable cross-domain finding names.
+    if relrec_links:
+        _attach_relrec_display(all_findings, relrec_links)
 
     # Generator-specific: attach scheduled extras (min_p_adj, max_effect_size, trend_p)
     if scheduled_map:
@@ -270,6 +298,7 @@ def _compute_fw_findings(
     """Compute findings from FW domain — mirrors BW pattern."""
     from services.xpt_processor import read_xpt
     from services.analysis.statistics import dunnett_pairwise, compute_effect_size, trend_test
+    from services.analysis.fw_utils import resolve_fw_subjects
 
     if "fw" not in study.xpt_files:
         return []
@@ -277,9 +306,8 @@ def _compute_fw_findings(
     fw_df, _ = read_xpt(study.xpt_files["fw"])
     fw_df.columns = [c.upper() for c in fw_df.columns]
 
-    # Include recovery animals for treatment-period pooling
-    treatment_subs = get_treatment_subjects(subjects)
-    fw_df = fw_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    # Resolve FW → subject roster (direct USUBJID merge, or via POOLDEF fallback)
+    fw_df = resolve_fw_subjects(fw_df, subjects, study)
 
     if "FWSTRESN" in fw_df.columns:
         fw_df["value"] = pd.to_numeric(fw_df["FWSTRESN"], errors="coerce")
@@ -426,3 +454,57 @@ def _compute_fw_findings(
         })
 
     return findings
+
+
+def _attach_relrec_display(
+    findings: list[dict],
+    relrec_links: dict[tuple[str, str, int], list[tuple[str, int]]],
+) -> None:
+    """Resolve RELREC links to human-readable cross-domain finding labels.
+
+    Adds ``relrec_linked_findings`` to each finding that has explicit
+    pathologist-confirmed links to findings in other domains.
+    Uses (domain, subject_id, seq) keys to avoid cross-subject SEQ collisions.
+    """
+    # Build reverse index: (domain, subject_id, seq) → finding
+    subj_seq_to_finding: dict[tuple[str, str, int], dict] = {}
+    for f in findings:
+        domain = f.get("domain", "")
+        subject_seqs = f.get("_relrec_subject_seqs")
+        if subject_seqs:
+            for subj_id, seq in subject_seqs:
+                subj_seq_to_finding[(domain, subj_id, seq)] = f
+
+    # For each finding, collect linked finding labels via subject-scoped lookups
+    seen: set[int] = set()
+    for f in findings:
+        fid = id(f)
+        if fid in seen:
+            continue
+        seen.add(fid)
+
+        domain = f.get("domain", "")
+        subject_seqs = f.get("_relrec_subject_seqs")
+        if not subject_seqs:
+            continue
+
+        linked: dict[str, dict] = {}  # keyed by "domain:specimen:finding" to dedup
+        for subj_id, seq in subject_seqs:
+            targets = relrec_links.get((domain, subj_id, seq), [])
+            for tgt_domain, tgt_seq in targets:
+                if tgt_domain == domain:
+                    continue
+                tgt_f = subj_seq_to_finding.get((tgt_domain, subj_id, tgt_seq))
+                if tgt_f is None:
+                    continue
+                key = f"{tgt_domain}:{tgt_f.get('specimen', '')}:{tgt_f.get('finding', '')}"
+                if key not in linked:
+                    linked[key] = {
+                        "domain": tgt_domain,
+                        "specimen": tgt_f.get("specimen"),
+                        "finding": tgt_f.get("finding") or tgt_f.get("test_name", ""),
+                        "endpoint_label": tgt_f.get("endpoint_label"),
+                    }
+
+        if linked:
+            f["relrec_linked_findings"] = list(linked.values())

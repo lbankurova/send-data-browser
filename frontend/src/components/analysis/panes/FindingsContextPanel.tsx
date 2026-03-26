@@ -1465,7 +1465,7 @@ function PathologistNotes({ finding, studyId, navigate }: {
 }) {
   if (!finding.comments || finding.comments.length === 0) return null;
 
-  const grouped = new Map<string, string[]>();
+  const grouped = new Map<string, Set<string>>();
   for (const c of finding.comments) {
     if (!c) continue;
     const text = typeof c === "string" ? c : c.text;
@@ -1473,35 +1473,43 @@ function PathologistNotes({ finding, studyId, navigate }: {
     if (!text) continue;
     const existing = grouped.get(text);
     if (existing) {
-      if (subj) existing.push(subj);
+      if (subj) existing.add(subj);
     } else {
-      grouped.set(text, subj ? [subj] : []);
+      grouped.set(text, subj ? new Set([subj]) : new Set());
     }
   }
   if (grouped.size === 0) return null;
 
-  const total = finding.comments.length;
+  // Total unique subjects across all comment texts
+  const allSubjects = new Set<string>();
+  for (const subjects of grouped.values()) {
+    for (const s of subjects) allSubjects.add(s);
+  }
+
   return (
     <div className="border-t px-4 py-2">
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pathologist Notes</div>
       <ul className="space-y-1">
-        {[...grouped.entries()].map(([text, subjects], i) => (
-          <li key={i} className="text-xs leading-snug">
-            <span className="text-muted-foreground italic">{text}</span>
-            {total > 1 && <span className="text-muted-foreground/60"> ({subjects.length}/{total})</span>}
-            {subjects.length > 0 && (
-              <button
-                className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjects.join(","))}&preset=all`);
-                }}
-              >
-                See subjects
-              </button>
-            )}
-          </li>
-        ))}
+        {[...grouped.entries()].map(([text, subjects], i) => {
+          const subjectArr = [...subjects];
+          return (
+            <li key={i} className="text-xs leading-snug">
+              <span className="text-muted-foreground italic">{text}</span>
+              {allSubjects.size > 1 && <span className="text-muted-foreground/60"> ({subjects.size}/{allSubjects.size})</span>}
+              {subjectArr.length > 0 && (
+                <button
+                  className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjectArr.join(","))}&preset=all`);
+                  }}
+                >
+                  See subjects
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
