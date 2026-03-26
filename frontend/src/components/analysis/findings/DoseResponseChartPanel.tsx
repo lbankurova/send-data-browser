@@ -496,6 +496,35 @@ export function DoseResponseChartPanel({
     return [...best.values()];
   }, [recoveryData, leftTab, selectedDay, selectedFinding?.test_code, selectedFinding?.specimen, selectedFinding?.domain]);
 
+  // ── Recovery effect size bar chart (continuous endpoints) ──
+  const recoveryEsOption = useMemo(() => {
+    if (!recoveryDumbbellRows.length || leftTab !== "recovery") return null;
+    const sexes = [...new Set(recoveryDumbbellRows.map((r) => r.sex))].sort();
+    const doseLevels = [...new Set(recoveryDumbbellRows.map((r) => r.dose_level))].sort((a, b) => a - b);
+    // Skip control group (dose_level 0) — effect size is always 0 for controls
+    const treatmentDoses = doseLevels.filter((dl) => dl > 0);
+    if (treatmentDoses.length === 0) return null;
+
+    const doseGroupMap = new Map(doseGroups.map((dg) => [dg.dose_level, dg]));
+    const lookup = new Map<string, typeof recoveryDumbbellRows[number]>();
+    for (const r of recoveryDumbbellRows) lookup.set(`${r.sex}_${r.dose_level}`, r);
+
+    const mergedPoints: MergedPoint[] = treatmentDoses.map((dl) => {
+      const point: MergedPoint = {
+        dose_level: dl,
+        dose_label: formatDoseShortLabel(doseGroupMap.get(dl)?.label ?? `Dose ${dl}`),
+      };
+      for (const sex of sexes) {
+        const r = lookup.get(`${sex}_${dl}`);
+        point[`effect_${sex}`] = r?.effect_size ?? null;
+      }
+      return point;
+    });
+
+    const raw = buildEffectSizeBarOption(mergedPoints, sexes, sexColors, sexLabels, "g", "Residual effect at recovery");
+    return compactifyEffectSize(raw, mergedPoints);
+  }, [recoveryDumbbellRows, leftTab, doseGroups]);
+
   // Incidence recovery rows (CL/MI) filtered to this endpoint
   const incidenceRecoveryRows = useMemo(() => {
     if (!recoveryData?.incidence_rows?.length || !selectedFinding) return [];
@@ -596,6 +625,9 @@ export function DoseResponseChartPanel({
       // MI in recovery mode: use recovery severity data (independent of chartDay)
       if (leftTab === "recovery" && hasMiRecoverySev) {
         tabs.push({ key: "effect", label: "Severity" });
+      } else if (leftTab === "recovery" && recoveryEsOption) {
+        // Continuous recovery: show recovery effect size chart
+        tabs.push({ key: "effect", label: "Effect size" });
       } else if (hasEffect || hasSeverityData) {
         // Continuous / MI endpoints: effect + distribution tabs
         tabs.push({ key: "effect", label: hasSeverityData ? "Severity" : "Effect size" });
@@ -607,7 +639,7 @@ export function DoseResponseChartPanel({
       tabs.push({ key: "recovery", label: "Recovery" });
     }
     return tabs;
-  }, [hasEffect, hasSeverityData, hasDistribution, hasRightRecovery, incidenceRecoveryRows.length, leftTab, hasMiRecoverySev]);
+  }, [hasEffect, hasSeverityData, hasDistribution, hasRightRecovery, incidenceRecoveryRows.length, leftTab, hasMiRecoverySev, recoveryEsOption]);
 
   const showRightTabs = availableRightTabs.length > 1;
   // Resolve active tab: if current selection isn't available, fall back to first available
@@ -619,6 +651,7 @@ export function DoseResponseChartPanel({
     (activeRightContent === "distribution" && !!selectedFinding) ||
     (activeRightContent === "effect" && (
       (leftTab === "recovery" && hasMiRecoverySev) ||
+      (leftTab === "recovery" && !!recoveryEsOption) ||
       (hasSeverityData && !!sevOption) ||
       (hasEffect && !!esOption)
     )) ||
@@ -880,6 +913,19 @@ export function DoseResponseChartPanel({
                       No severity data for recovery arm
                     </div>
                   )}
+                </div>
+              </>
+            ) : activeRightContent === "effect" && leftTab === "recovery" && recoveryEsOption ? (
+              /* Recovery effect size bar chart (continuous) */
+              <>
+                <div className="flex shrink-0 items-center justify-between py-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Residual effect size (g)
+                  </span>
+                  <span className="text-[9px] text-muted-foreground/60">g=0.8 threshold</span>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <EChartsWrapper option={recoveryEsOption} style={{ width: "100%", height: "100%" }} />
                 </div>
               </>
             ) : activeRightContent === "effect" && hasSeverityData && sevOption ? (
