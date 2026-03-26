@@ -17,8 +17,6 @@ import { classifyFindingNature } from "@/lib/finding-nature";
 import { classifyContinuousRecovery } from "@/lib/recovery-verdict";
 import { getVerdictLabel } from "@/lib/recovery-labels";
 import { Info } from "lucide-react";
-import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
-import { IncidenceRecoveryChart } from "./IncidenceRecoveryChart";
 import { RecoveryVerdictOverride } from "./RecoveryVerdictOverride";
 
 // ── Verdict priority for worst-case selection ────────────
@@ -41,10 +39,8 @@ function verdictPriority(v: string): number {
 
 function ContinuousRecoverySection({
   finding,
-  doseGroups,
 }: {
   finding: UnifiedFinding;
-  doseGroups?: DoseGroup[];
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const { data: recovery } = useRecoveryComparison(studyId);
@@ -99,14 +95,6 @@ function ContinuousRecoverySection({
           <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
         </span>
       </div>
-
-      {/* Dumbbell chart with verdict notes under each sex panel */}
-      <RecoveryDumbbellChart
-        rows={allRows}
-        doseGroups={doseGroups}
-        terminalDay={allRows[0]?.terminal_day}
-        recoveryDay={recovery.recovery_day}
-      />
 
       {/* Verdict override — uses worst-case across all dose/sex rows */}
       {studyId && (() => {
@@ -190,12 +178,6 @@ function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGr
 
   return (
     <div className="space-y-1">
-      <IncidenceRecoveryChart
-        rows={matched}
-        recoveryDay={recovery.recovery_day}
-        compact
-      />
-
       {/* Recovery adequacy annotation (MI/MA only) */}
       {adequacy && !adequacy.adequate && (
         <div className="text-[9px] text-amber-700" title={`Expected ${adequacy.expectedWeeks} weeks for ${adequacy.findingNature ?? "this finding type"}; study provided ${adequacy.actualWeeks.toFixed(1)} weeks`}>
@@ -255,7 +237,7 @@ interface RecoveryPaneProps {
 export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
   // Continuous domains (LB, BW, OM, VS, FW, EG, etc.)
   if (finding.data_type === "continuous") {
-    return <ContinuousRecoverySection finding={finding} doseGroups={doseGroups} />;
+    return <ContinuousRecoverySection finding={finding} />;
   }
 
   // All incidence domains (MI, MA, CL) — unified via incidence_rows

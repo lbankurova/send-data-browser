@@ -185,6 +185,7 @@ export function FindingsView() {
     // drives the day filter and drops findings for the new endpoint.
     setSelectedDay(null);
     setDayCleared(false);
+    setLeftChartTab("dr");
     const currentData = dataRef.current;
     if (endpointLabel && currentData?.findings?.length) {
       let epFindings = currentData.findings.filter(
@@ -203,7 +204,7 @@ export function FindingsView() {
       selectFinding(null);
       setActiveDay(null);
     }
-  }, [selectFinding]);
+  }, [selectFinding, setLeftChartTab]);
 
   // Register event bus callback
   useEffect(() => {

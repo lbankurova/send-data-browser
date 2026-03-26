@@ -198,8 +198,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const { data: mortality } = useStudyMortality(studyId);
   const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
   const { data: syndromesData } = useSubjectSyndromes(studyId);
-  const { data: onsetDaysData } = useOnsetDays(studyId);
-  const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
+  const { data: _onsetDaysData } = useOnsetDays(studyId);
+  const { data: _recoveryVerdictsData } = useRecoveryVerdicts(studyId);
 
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];

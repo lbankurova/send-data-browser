@@ -23,12 +23,12 @@ import {
   getNeutralHeatColor,
   deriveSpecimenSummaries,
   deriveSpecimenReviewStatus,
+  specimenToOrganSystem,
 } from "@/lib/histopathology-helpers";
 import type {
   SpecimenSummary,
   SpecimenReviewStatus,
 } from "@/lib/histopathology-helpers";
-import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
 import { rail } from "@/lib/design-tokens";
 import { useRailKeyboard } from "@/hooks/useRailKeyboard";
 import type { PathologyReview } from "@/types/annotations";

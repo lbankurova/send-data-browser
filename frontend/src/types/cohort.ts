@@ -165,6 +165,47 @@ export type FilterPredicate =
   | { type: "tk"; isTK: boolean }
   | { type: "search"; query: string };
 
+// ── Onset days response ─────────────────────────────────────
+
+export interface OnsetDaysResponse {
+  meta: { generated: string; study_id: string };
+  /** Per-subject map: { [USUBJID]: { [findingKey]: onset_day } } */
+  subjects: Record<string, Record<string, number>>;
+}
+
+// ── Recovery verdicts response ──────────────────────────────
+
+export interface RecoveryFindingVerdict {
+  domain: string;
+  specimen: string;
+  finding: string;
+  verdict: string | null;
+  main_incidence?: number;
+  recovery_incidence?: number;
+  subjects_reversed?: number;
+  subjects_persistent?: number;
+  main_severity?: number | null;
+  recovery_severity?: number | null;
+  confidence?: { level: string };
+}
+
+export interface RecoverySubjectProfile {
+  findings: RecoveryFindingVerdict[];
+  summary: {
+    reversed_count: number;
+    partially_reversed_count: number;
+    persistent_count: number;
+    progressing_count: number;
+    anomaly_count: number;
+  };
+}
+
+export interface RecoveryVerdictsResponse {
+  meta: { generated: string; study_id: string };
+  per_subject: Record<string, RecoverySubjectProfile>;
+  per_finding: Record<string, RecoveryFindingVerdict>;
+}
+
 // ── Phase 3 stubs ────────────────────────────────────────────
 
 /** Per-subject recovery verdict data. Phase 3 placeholder. */
