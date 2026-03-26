@@ -212,22 +212,6 @@ export function NoaelContextPanel({
   }, [noaelData, aeData]);
 
   // Helper for navigation links
-  const navLink = (label: string, path: string, state?: Record<string, string>) => (
-    <a
-      href="#"
-      className="block text-primary hover:underline"
-      onClick={(e) => {
-        e.preventDefault();
-        if (studyId) {
-          if (selectedOrganSystem) navigateTo({ organSystem: selectedOrganSystem });
-          navigate(`/studies/${encodeURIComponent(studyId)}${path}`, { state });
-        }
-      }}
-    >
-      {label} &#x2192;
-    </a>
-  );
-
   // -------------------------------------------------------------------------
   // No-selection mode: study-level NOAEL overview
   // -------------------------------------------------------------------------
@@ -403,14 +387,7 @@ export function NoaelContextPanel({
           </CollapsiblePane>
         )}
 
-        {/* 4. Related views */}
-        <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1 text-xs">
-            {navLink(`View histopathology: ${titleCase(organSelection)}`, "/histopathology", { organ_system: organSelection })}
-            {navLink("View findings", "/findings", { organ_system: organSelection })}
-            {navLink("View study summary", "", organSelection ? { organ_system: organSelection } : undefined)}
-          </div>
-        </CollapsiblePane>
+
       </div>
     );
   }
@@ -582,20 +559,7 @@ export function NoaelContextPanel({
         );
       })()}
 
-      {/* 7. Related views */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          {navLink("View findings", "/findings", {
-            endpoint_label: selection!.endpoint_label,
-            ...(selectedOrganSystem && { organ_system: selectedOrganSystem }),
-          })}
-          {navLink("View study summary", "", selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined)}
-          {navLink(`View histopathology${selectedOrganSystem ? `: ${titleCase(selectedOrganSystem)}` : ""}`, "/histopathology",
-            selectedOrganSystem ? { organ_system: selectedOrganSystem } : undefined)}
-        </div>
-      </CollapsiblePane>
-
-      {/* 8. Audit trail */}
+      {/* 7. Audit trail */}
       {studyId && (
         <AuditTrailPanel
           studyId={studyId}

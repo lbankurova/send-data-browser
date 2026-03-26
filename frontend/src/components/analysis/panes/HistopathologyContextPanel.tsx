@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect, Fragment } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
@@ -725,7 +725,6 @@ function SpecimenOverviewPane({
   pathReviews?: Record<string, PathologyReview>;
   nav?: HistoNavProps;
 }) {
-  const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -1270,50 +1269,6 @@ function SpecimenOverviewPane({
         <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} defaultOpen />
       )}
 
-      {/* Related views */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View study summary &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View findings &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View NOAEL determination &#x2192;
-          </a>
-        </div>
-      </CollapsiblePane>
     </div>
   );
 }
@@ -1684,7 +1639,6 @@ function FindingDetailPane({
   studyId?: string;
   nav?: HistoNavProps;
 }) {
-  const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { setSelectedSubject, setPendingCompare } = useViewSelection();
@@ -2384,50 +2338,6 @@ function FindingDetailPane({
         <ToxFindingForm studyId={studyId} endpointLabel={selection.finding} />
       )}
 
-      {/* Cross-view links */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View study summary &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View findings &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View NOAEL determination &#x2192;
-          </a>
-        </div>
-      </CollapsiblePane>
     </div>
   );
 }
