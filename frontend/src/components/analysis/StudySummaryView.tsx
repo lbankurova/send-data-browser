@@ -1094,7 +1094,7 @@ function DetailsTab({
 
       {/* ── PK Exposure ── */}
       {pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0 && (
-        <CollapsiblePane title="PK Exposure" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="PK Exposure" expandAll={expandGen} collapseAll={collapseGen}>
           <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
         </CollapsiblePane>
       )}
