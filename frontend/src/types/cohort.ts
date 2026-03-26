@@ -140,6 +140,31 @@ export interface SubjectSyndromesResponse {
   subjects: Record<string, SubjectSyndromeProfile>;
 }
 
+// ── Composable filter predicates ─────────────────────────────
+
+export type FilterOperator = "and" | "or";
+
+export interface FilterGroup {
+  operator: FilterOperator;
+  predicates: FilterPredicate[];
+}
+
+export type FilterPredicate =
+  | { type: "dose"; values: Set<number> }
+  | { type: "sex"; values: Set<string> }
+  | { type: "organ"; organName: string; role?: "any" | "adverse" | "warning" }
+  | { type: "domain"; domain: string }
+  | { type: "syndrome"; syndromeId: string; matchType: "full" | "partial" | "any" }
+  | { type: "severity"; minGrade: number }
+  | { type: "bw_change"; minPct: number; direction: "loss" | "gain" }
+  | { type: "organ_count"; min: number }
+  | { type: "disposition"; values: Set<string> }
+  | { type: "recovery"; isRecovery: boolean }
+  | { type: "onset_day"; min: number | null; max: number | null; finding?: string }
+  | { type: "recovery_verdict"; finding: string; specimen: string; verdict: string[] }
+  | { type: "tk"; isTK: boolean }
+  | { type: "search"; query: string };
+
 // ── Cohort state ─────────────────────────────────────────────
 
 export interface CohortState {
