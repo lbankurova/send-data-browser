@@ -787,21 +787,18 @@ export function DoseResponseChartPanel({
           {/* Left tab bar — D-R | Recovery.
               Hidden for CL/MA: recovery shown directly in right panel. */}
           {hasRecovery && !hasRightRecovery && (
-            <div className="flex shrink-0 items-end gap-px bg-muted/30">
+            <div className="relative flex shrink-0 items-stretch border-t border-border bg-muted/40">
               {(["dr", "recovery"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => onLeftTabChange(tab)}
-                  className={`relative px-3 py-1 text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 text-xs transition-colors ${
                     leftTab === tab
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground/70"
+                      ? "-mt-px border-x border-b border-border bg-background font-semibold text-foreground"
+                      : "font-medium text-muted-foreground hover:text-foreground/70"
                   }`}
                 >
                   {tab === "dr" ? "Dose-response" : "Recovery"}
-                  {leftTab === tab && (
-                    <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />
-                  )}
                 </button>
               ))}
             </div>
@@ -916,21 +913,18 @@ export function DoseResponseChartPanel({
 
             {/* Right tab bar */}
             {showRightTabs && (
-              <div className="flex shrink-0 items-end gap-px bg-muted/30">
+              <div className="relative flex shrink-0 items-stretch border-t border-border bg-muted/40">
                 {availableRightTabs.map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setRightTab(t.key)}
-                    className={`relative px-3 py-1 text-xs font-medium transition-colors ${
+                    className={`px-3 py-1 text-xs transition-colors ${
                       activeRightContent === t.key
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground/70"
+                        ? "-mt-px border-x border-b border-border bg-background font-semibold text-foreground"
+                        : "font-medium text-muted-foreground hover:text-foreground/70"
                     }`}
                   >
                     {t.label}
-                    {activeRightContent === t.key && (
-                      <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />
-                    )}
                   </button>
                 ))}
               </div>
