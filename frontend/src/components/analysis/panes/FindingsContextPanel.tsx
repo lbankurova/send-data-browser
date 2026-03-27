@@ -31,7 +31,7 @@ import { QualifierDetailPane } from "./QualifierDetailPane";
 import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { deriveToxSuggestion } from "@/types/annotations";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DoseLabel } from "@/components/ui/DoseLabel";
@@ -1446,9 +1446,25 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       {peerRows.length > 0 && (
         <CollapsiblePane title="Peer comparison (HCD)" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-2">
-            <p className="text-[11px] text-muted-foreground">
-              Control group incidence vs historical control data (HCD).
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                Control group incidence vs historical control data (HCD).
+              </p>
+              <div className="relative group shrink-0">
+                <Info className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                <div className="pointer-events-none absolute right-0 top-5 z-50 hidden w-[320px] rounded border bg-popover p-2.5 text-[11px] leading-relaxed text-popover-foreground shadow-md group-hover:block">
+                  <p className="font-medium">Historical control data (HCD)</p>
+                  <p className="mt-1 text-muted-foreground">Charles River Crl:CD(SD) published reference ranges — 34 control groups, 4–26 weeks, oral and parenteral routes. Context-aware 4-tier matching by strain, sex, study duration, and route.</p>
+                  <p className="mt-1.5 font-medium">Limitations</p>
+                  <ul className="mt-0.5 list-disc pl-3.5 text-muted-foreground">
+                    <li>Limited to Sprague-Dawley rats — other strains/species use general fallback ranges</li>
+                    <li>Seed dataset covers common findings only — rare lesions may lack HCD</li>
+                    <li>Ranges reflect published aggregates, not facility-specific data</li>
+                    <li>In production, replaced by a real HCD database query</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <table className="w-full text-[11px]">
               <thead>
                 <tr className="border-b text-muted-foreground">
