@@ -12,6 +12,7 @@
  * below main bars with a spacer category, 50% opacity fills, and comparison tooltips.
  */
 import type { EChartsOption } from "echarts";
+import { getDoseGroupColor } from "@/lib/severity-colors";
 
 // ─── Shared constants (match dose-response-charts.ts) ────────────────
 const GRID_LINE_COLOR = "#e5e7eb";
@@ -62,10 +63,7 @@ export interface DoseSeverityGroup {
 
 // ─── Dose group colors (for Y-axis labels only) ─────────────────────
 
-function getDoseGroupLabelColor(level: number): string {
-  const colors = ["#6b7280", "#3b82f6", "#BA7517", "#ef4444"];
-  return colors[level] ?? "#6b7280";
-}
+const getDoseGroupLabelColor = getDoseGroupColor;
 
 // ─── Shared Y-axis builder ──────────────────────────────────────────
 

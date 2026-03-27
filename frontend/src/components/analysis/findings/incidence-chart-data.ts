@@ -8,6 +8,7 @@
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { DoseIncidenceGroup, DoseSeverityGroup } from "@/components/analysis/charts/histopathology-charts";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
 
@@ -46,7 +47,7 @@ export function buildMainIncidenceGroups(
     }
     groups.push({
       doseLevel: dg.dose_level,
-      doseLabel: dg.label,
+      doseLabel: formatDoseShortLabel(dg.label),
       bySex: bySexData,
     });
   }
@@ -98,7 +99,7 @@ export function buildMainSeverityGroups(
     // across paired charts (A-11). An empty group renders as a zero-height bar.
     groups.push({
       doseLevel: dg.dose_level,
-      doseLabel: dg.label,
+      doseLabel: formatDoseShortLabel(dg.label),
       bySex: bySexData,
     });
   }
@@ -139,14 +140,14 @@ export function buildRecoveryIncidenceGroups(
       affected: r.recovery_affected,
       n: r.recovery_n,
     });
-    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label);
+    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
   }
 
   // When reference dose groups are provided, ensure all levels are represented (A-11)
   if (referenceDoseGroups) {
     return referenceDoseGroups.map((dg) => ({
       doseLevel: dg.dose_level,
-      doseLabel: doseLabels.get(dg.dose_level) ?? dg.label,
+      doseLabel: doseLabels.get(dg.dose_level) ?? formatDoseShortLabel(dg.label),
       bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
     }));
   }
@@ -192,14 +193,14 @@ export function buildRecoverySeverityGroups(
     if (count === 0) continue;
     if (!byDose.has(r.dose_level)) byDose.set(r.dose_level, new Map());
     byDose.get(r.dose_level)!.set(r.sex, { totalSeverity: total, count });
-    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, r.dose_label);
+    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
   }
 
   // When reference dose groups are provided, ensure all levels are represented (A-11)
   if (referenceDoseGroups) {
     return referenceDoseGroups.map((dg) => ({
       doseLevel: dg.dose_level,
-      doseLabel: doseLabels.get(dg.dose_level) ?? dg.label,
+      doseLabel: doseLabels.get(dg.dose_level) ?? formatDoseShortLabel(dg.label),
       bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
     }));
   }
