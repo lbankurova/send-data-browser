@@ -688,7 +688,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("max_fold_change", {
-        header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        header: () => <span title="Magnitude vs control — fold change (continuous), incidence ratio (MA/CL), avg severity (MI). Control = 0% shows raw incidence.">Magnitude</span>,
         cell: (info) => {
           const f = info.row.original;
           // Domain-appropriate magnitude — mirrors pivoted view logic at endpoint level
@@ -698,9 +698,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             return <span className="font-mono text-muted-foreground" title={`avg severity = ${sev.toFixed(2)}`}>{sev.toFixed(1)}</span>;
           }
           if (f.data_type === "incidence") {
-            const inc = f.max_incidence;
-            if (inc == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-            return <span className="font-mono text-muted-foreground" title={`max incidence = ${(inc * 100).toFixed(0)}%`}>{`${(inc * 100).toFixed(0)}%`}</span>;
+            // Incidence ratio: max treated incidence / control incidence
+            const controlGs = f.group_stats.find(gs => gs.dose_level === 0);
+            const controlInc = controlGs?.incidence ?? 0;
+            const treatedGs = f.group_stats.filter(gs => gs.dose_level > 0);
+            const maxTreatedInc = treatedGs.reduce((max, gs) => Math.max(max, gs.incidence ?? 0), 0);
+            if (controlInc > 0 && maxTreatedInc > 0) {
+              const ratio = maxTreatedInc / controlInc;
+              return <span className="font-mono text-muted-foreground" title={`incidence ratio: ${(maxTreatedInc * 100).toFixed(0)}% / ${(controlInc * 100).toFixed(0)}% = ${ratio.toFixed(2)}`}>{`\u00d7${ratio.toFixed(1)}`}</span>;
+            }
+            // Control is zero — show max incidence as fallback (can't compute ratio)
+            if (maxTreatedInc > 0) {
+              return <span className="font-mono text-muted-foreground" title={`max incidence ${(maxTreatedInc * 100).toFixed(0)}% (control: 0%)`}>{`${(maxTreatedInc * 100).toFixed(0)}%`}</span>;
+            }
+            return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           }
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
