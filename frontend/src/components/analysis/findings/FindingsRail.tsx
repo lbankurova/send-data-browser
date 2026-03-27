@@ -51,7 +51,7 @@ import type {
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
-import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
+import { NORM_MODE_SHORT } from "@/lib/organ-weight-normalization";
 import { titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -1491,12 +1491,12 @@ function CardHeader({
         </span>
       ) : (
         <>
-          <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-            {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
+          <span className="ml-auto font-mono text-[11px] text-muted-foreground" title={showFilteredCount ? `${card.totalEndpoints} of ${unfilteredTotal} endpoints shown` : `${card.adverseCount} adverse endpoints`}>
+            {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount} A
           </span>
           <span className="text-muted-foreground/40">&middot;</span>
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {card.trCount}
+          <span className="font-mono text-[11px] text-muted-foreground" title={`${card.trCount} treatment-related endpoints`}>
+            {card.trCount} TR
           </span>
         </>
       )}
@@ -1654,22 +1654,20 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   }
 
   return (
-    <span className="flex min-w-0 items-center gap-1.5 font-semibold" title={tooltipLines.join("\n")}>
+    <span className="flex min-w-0 flex-col font-semibold" title={tooltipLines.join("\n")}>
       <span className="truncate">{titleCase(value)}</span>
-      {organConfidence && (
-        <span
-          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
-          style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
-        >
-          Conf: {CONF_SHORT[organConfidence.level]}
-        </span>
-      )}
-      {organNorm && (
-        <span
-          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
-          style={{ borderBottom: `1.5px dashed ${NORM_TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
-        >
-          Norm: {organNorm.modeShort}
+      {(organConfidence || organNorm) && (
+        <span className="flex items-center gap-1.5">
+          {organConfidence && (
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              Conf: {CONF_SHORT[organConfidence.level]}
+            </span>
+          )}
+          {organNorm && (
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              Norm: {organNorm.modeShort}
+            </span>
+          )}
         </span>
       )}
     </span>
