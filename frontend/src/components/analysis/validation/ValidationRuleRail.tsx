@@ -8,6 +8,7 @@ import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import type { ValidationRuleOverride } from "@/types/annotations";
 import { useSearchParams } from "react-router-dom";
 import { Download, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ── CSV export ────────────────────────────────────────────────────────
 
@@ -37,8 +38,14 @@ function downloadRulesCsv(rules: ValidationRuleResult[], filename: string) {
 }
 
 type SortMode = "evidence" | "domain" | "category" | "severity" | "source";
-type ShowFilter = "" | "triggered" | "clean" | "enabled" | "disabled";
+type ShowFilter = "" | "triggered" | "other";
 type SevFilter = "" | "Error" | "Warning" | "Info";
+
+const SHOW_TOGGLES: { value: ShowFilter; label: string }[] = [
+  { value: "", label: "All" },
+  { value: "triggered", label: "Triggered" },
+  { value: "other", label: "Clean/disabled" },
+];
 type SourceFilter = "" | "custom" | "core";
 
 interface Props {
@@ -195,12 +202,8 @@ export function ValidationRuleRail({
     // Show filter
     if (showFilter === "triggered")
       rules = rules.filter((r) => r.status === "triggered");
-    else if (showFilter === "clean")
-      rules = rules.filter((r) => r.status === "clean");
-    else if (showFilter === "enabled")
-      rules = rules.filter((r) => r.status !== "disabled");
-    else if (showFilter === "disabled")
-      rules = rules.filter((r) => r.status === "disabled");
+    else if (showFilter === "other")
+      rules = rules.filter((r) => r.status !== "triggered");
 
     // Severity filter
     if (sevFilter) rules = rules.filter((r) => r.severity === sevFilter);
@@ -262,20 +265,39 @@ export function ValidationRuleRail({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Validation rules
-        </span>
-        <div className="flex items-center gap-1.5">
-          <ExportDropdown allRules={rulesWithStatus} filteredRules={filtered} />
-          <button
-            className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={isValidating}
-            onClick={() => runValidation()}
-          >
-            {isValidating ? "RUNNING..." : "RUN"}
-          </button>
+      {/* Header: show toggles + actions */}
+      <div className="shrink-0 border-b px-3 pb-2 pt-3">
+        <div className="flex items-center gap-1">
+          <div className="flex flex-wrap rounded bg-muted/50 p-0.5">
+            {SHOW_TOGGLES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                  showFilter === t.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setShowFilter(t.value)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <ExportDropdown allRules={rulesWithStatus} filteredRules={filtered} />
+            <button
+              className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={isValidating}
+              onClick={() => runValidation()}
+            >
+              {isValidating ? "RUNNING..." : "RUN"}
+            </button>
+          </div>
+        </div>
+        <div className="mt-1 text-[11px] text-muted-foreground">
+          {filtered.length} rule{filtered.length !== 1 ? "s" : ""}
         </div>
       </div>
 
@@ -300,17 +322,6 @@ export function ValidationRuleRail({
           <option value="category">Sort: Category</option>
           <option value="severity">Sort: Severity</option>
           <option value="source">Sort: Source</option>
-        </FilterSelect>
-        <FilterSelect
-          value={showFilter}
-          onChange={(e) => setShowFilter(e.target.value as ShowFilter)}
-          className="text-[11px]"
-        >
-          <option value="">Show: All</option>
-          <option value="triggered">Triggered</option>
-          <option value="clean">Clean</option>
-          <option value="enabled">Enabled</option>
-          <option value="disabled">Disabled</option>
         </FilterSelect>
         <FilterSelect
           value={sevFilter}
