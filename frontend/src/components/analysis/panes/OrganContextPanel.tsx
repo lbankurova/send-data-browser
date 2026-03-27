@@ -654,7 +654,8 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
       {corrMatrix && corrMatrix.endpoints.length >= 2 && (
         <CollapsiblePane
           title="Endpoint correlations"
-          defaultOpen
+          defaultOpen={false}
+          sessionKey="pcc.organ.correlations"
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
@@ -698,7 +699,8 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
         return (
           <CollapsiblePane
             title="Organ weight normalization"
-            defaultOpen
+            defaultOpen={false}
+            sessionKey="pcc.organ.normalization"
             expandAll={expandGen}
             collapseAll={collapseGen}
             headerRight={
@@ -735,7 +737,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
       {/* Pane 1c: NORMALIZATION HEATMAP (all organs at a glance, only when normalization tier >= 2) */}
       {analytics.normalizationContexts && analytics.normalizationContexts.length > 0
         && analytics.normalizationContexts.some(c => c.tier >= 2) && (
-        <CollapsiblePane title="Normalization overview" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Normalization overview" defaultOpen={false} sessionKey="pcc.organ.norm-overview" expandAll={expandGen} collapseAll={collapseGen}>
           <NormalizationHeatmap
             contexts={analytics.normalizationContexts.filter(c => c.tier >= 2)}
             onOrganClick={(organ) => selectGroup("organ", organ)}
@@ -744,7 +746,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
       )}
 
       {/* Pane 2: ORGAN NOAEL */}
-      <CollapsiblePane title="Organ NOAEL" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Organ NOAEL" defaultOpen={false} sessionKey="pcc.organ.noael" expandAll={expandGen} collapseAll={collapseGen}>
         {noaelData ? (
           <div>
             <div className="text-sm font-semibold">
@@ -792,7 +794,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
 
       {/* Pane 3: RELATED SYNDROMES (only for organs with syndrome associations) */}
       {hasRelevantSyndromes && (
-        <CollapsiblePane title="Related syndromes" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Related syndromes" defaultOpen={false} sessionKey="pcc.organ.syndromes" expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-2">
             {relatedSyndromes.map(({ id, detected }) => (
               <RelatedSyndromeRow
@@ -808,7 +810,7 @@ export function OrganContextPanel({ organKey, nav }: OrganContextPanelProps) {
       )}
 
       {/* Pane 4: MEMBER ENDPOINTS */}
-      <CollapsiblePane title="Member endpoints" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Member endpoints" defaultOpen={false} sessionKey="pcc.organ.members" expandAll={expandGen} collapseAll={collapseGen}>
         <div className="space-y-0.5">
           {sortedEndpoints.map(ep => (
             <MemberEndpointRow
