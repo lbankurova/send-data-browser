@@ -34,8 +34,9 @@ send/*
 
 # ── Internal docs (not public) ──
 # All internal documentation lives under docs/_internal/.
-# Public docs (methods, species-profiles, etc.) live in docs/ root.
+# Public docs (methods.md) live in docs/ root.
 docs/_internal/
+docs/scientific-logic.md
 
 # ── Development tooling (not public) ──
 .claude/
