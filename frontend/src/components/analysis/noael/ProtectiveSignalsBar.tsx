@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { classifyProtectiveSignal, getProtectiveBadgeStyle } from "@/lib/protective-signal";
 import type { ProtectiveClassification } from "@/lib/protective-signal";
-import { specimenToOrganSystem } from "@/components/analysis/panes/HistopathologyContextPanel";
+import { specimenToOrganSystem } from "@/lib/histopathology-helpers";
 import { useStudySelection } from "@/contexts/StudySelectionContext";
 import type { RuleResult, SignalSummaryRow } from "@/types/analysis-views";
 
