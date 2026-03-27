@@ -64,8 +64,9 @@ import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
-import { verdictLabel } from "@/lib/recovery-assessment";
-import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { verdictLabel, deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import type { RecoveryAssessment, RecoveryVerdict } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
@@ -1190,15 +1191,15 @@ function CorrelatingEvidenceInline({ evidence }: {
 
 // ─── Specimen Context Panel (Phase 5) ────────────────────────────────────────
 
-function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analytics, nav, selectFinding }: {
+function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analytics, nav }: {
   studyId: string | undefined;
   specimen: string;
   activeFindings: UnifiedFinding[];
   analytics: FindingsAnalytics;
   nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
-  selectFinding: (f: UnifiedFinding | null) => void;
 }) {
   const { expandAll, collapseAll, expandGen, collapseGen } = useCollapseAll();
+  const [labExpanded, setLabExpanded] = useState(false);
 
   // Specimen findings
   const specimenFindings = useMemo(() => {
@@ -1242,32 +1243,68 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     return { subjectAgg, perFinding };
   }, [subjData, specimen]);
 
-  // Recovery verdicts from backend (via /recovery-comparison incidence_rows)
-  const { data: recoveryComp } = useRecoveryComparison(studyId);
+  // Recovery flag + per-finding classification
   const hasRecovery = useMemo(
     () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
     [subjData],
   );
-  const recoveryVerdicts = useMemo((): { finding: string; overall: RecoveryVerdict }[] => {
-    if (!hasRecovery || !recoveryComp?.incidence_rows?.length) return [];
-    const specUpper = specimen.toUpperCase();
-    const matched = recoveryComp.incidence_rows.filter(
-      (r) => r.specimen?.toUpperCase() === specUpper && r.verdict != null,
+  const recoveryAssessments = useMemo((): RecoveryAssessment[] => {
+    if (!hasRecovery || !subjData?.subjects) return [];
+    const findingNames = specimenFindings.map(f => f.finding);
+    if (findingNames.length === 0) return [];
+    return deriveRecoveryAssessmentsSexAware(
+      findingNames,
+      subjData.subjects,
+      undefined,
+      subjData.recovery_days,
+      specimen,
     );
-    // Aggregate worst verdict per finding across dose groups and sexes
-    const byFinding = new Map<string, string>();
-    const VPRI: Record<string, number> = {
-      not_assessed: 0, reversed: 1, overcorrected: 2,
-      partially_reversed: 3, persistent: 4, progressing: 5, anomaly: 5,
-    };
-    for (const row of matched) {
-      const existing = byFinding.get(row.finding);
-      if (!existing || (VPRI[row.verdict!] ?? 0) > (VPRI[existing] ?? 0)) {
-        byFinding.set(row.finding, row.verdict!);
-      }
+  }, [hasRecovery, subjData, specimenFindings, specimen]);
+
+  // Weight-of-evidence synthesis (aggregates across all specimen dimensions)
+  const woeSynthesis = useMemo(() => {
+    if (specimenFindings.length === 0) return null;
+    const total = specimenFindings.length;
+    const trCount = specimenFindings.filter(f => f.treatment_related).length;
+    const adverseCount = specimenFindings.filter(f => f.severity === "adverse").length;
+    const adaptiveCount = specimenFindings.filter(f => f.finding_class === "tr_adaptive").length;
+
+    // Dose-response patterns
+    const withPattern = specimenFindings.filter(f => f.dose_response_pattern && f.dose_response_pattern !== "no_pattern" && f.dose_response_pattern !== "control_only");
+    const doseDepCount = withPattern.length;
+
+    // Significance
+    const sigCount = specimenFindings.filter(f => f.min_p_adj != null && f.min_p_adj < 0.05).length;
+    const trendSigCount = specimenFindings.filter(f => f.trend_p != null && f.trend_p < 0.05).length;
+
+    // Finding natures
+    const natures = specimenFindings.map(f => classifyFindingNature(f.finding, null, f.specimen ?? null));
+    const natureCounts = new Map<string, number>();
+    for (const n of natures) {
+      if (n.nature !== "unknown") natureCounts.set(n.nature, (natureCounts.get(n.nature) ?? 0) + 1);
     }
-    return [...byFinding.entries()].map(([finding, verdict]) => ({ finding, overall: verdict as RecoveryVerdict }));
-  }, [hasRecovery, recoveryComp, specimen]);
+    const dominantNature = [...natureCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    // Build conclusion line
+    const parts: string[] = [];
+    if (trCount > 0) parts.push(`${trCount}/${total} treatment-related`);
+    if (adverseCount > 0) parts.push(`${adverseCount} adverse`);
+    if (adaptiveCount > 0) parts.push(`${adaptiveCount} adaptive`);
+    if (doseDepCount > 0) parts.push(`dose-dependent in ${doseDepCount}/${total}`);
+    const conclusion = parts.join(", ");
+
+    // Strength assessment
+    const strength = trCount >= total * 0.6 && doseDepCount >= 2 && sigCount >= 2
+      ? "strong" : trCount >= 2 || (doseDepCount >= 1 && sigCount >= 1)
+      ? "moderate" : trCount >= 1 ? "weak" : "insufficient";
+
+    return {
+      total, trCount, adverseCount, adaptiveCount,
+      doseDepCount, sigCount, trendSigCount,
+      natureCounts, dominantNature,
+      conclusion, strength,
+    };
+  }, [specimenFindings]);
 
   // Peer comparison (HCD) for all findings
   const peerRows = useMemo(() => {
@@ -1300,33 +1337,110 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
         onForward={nav.onForward}
       />
 
-      {/* Findings list */}
-      <CollapsiblePane title="Findings" defaultOpen expandAll={expandGen} collapseAll={collapseGen} headerRight={<span className="text-[10px] text-muted-foreground">{specimenFindings.length}</span>}>
-        <div className="space-y-0.5">
-          {specimenFindings.map(f => {
-            const mp = f.modifier_profile;
-            const tags: string[] = [];
-            if (mp?.dominant_temporality) tags.push(mp.dominant_temporality);
-            if (mp?.dominant_distribution) tags.push(mp.dominant_distribution);
-            return (
-              <button
-                key={`${f.finding}\0${f.domain}`}
-                className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-accent/30"
-                onClick={() => selectFinding(f)}
-              >
-                <span className="text-[10px] font-semibold text-muted-foreground">{f.domain}</span>
-                <span className="min-w-0 truncate">
-                  {f.finding}
-                  {tags.length > 0 && <span className="ml-1 text-muted-foreground">&mdash; {tags.join(", ")}</span>}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {f.severity === "adverse" ? "adverse" : f.severity === "warning" ? "warning" : ""}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </CollapsiblePane>
+      {/* Weight-of-evidence synthesis */}
+      {woeSynthesis && woeSynthesis.total > 0 && (
+        <CollapsiblePane title="Specimen assessment" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1.5">
+            {/* Conclusion line */}
+            <p className="text-xs">
+              <span className={woeSynthesis.strength === "strong" ? "font-semibold text-foreground" : woeSynthesis.strength === "moderate" ? "font-medium text-foreground" : "text-muted-foreground"}>
+                {woeSynthesis.strength === "strong" ? "Strong" : woeSynthesis.strength === "moderate" ? "Moderate" : woeSynthesis.strength === "weak" ? "Weak" : "Insufficient"} evidence
+              </span>
+              {" \u2014 "}
+              <span className="text-muted-foreground">{woeSynthesis.conclusion}.</span>
+            </p>
+
+            {/* Dimension rows */}
+            <div className="space-y-0.5 text-[11px]">
+              {/* HCD */}
+              {peerRows.length > 0 && (() => {
+                const aboveCount = peerRows.filter(r => r.status === "above_range").length;
+                const atUpperCount = peerRows.filter(r => r.status === "at_upper").length;
+                return (aboveCount > 0 || atUpperCount > 0) ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Historical controls</span>
+                    <span className={aboveCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"}>
+                      {aboveCount > 0 ? `${aboveCount} above range` : ""}{aboveCount > 0 && atUpperCount > 0 ? ", " : ""}{atUpperCount > 0 ? `${atUpperCount} at upper` : ""}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Recovery */}
+              {recoveryAssessments.length > 0 && (() => {
+                const reversed = recoveryAssessments.filter(r => r.overall === "reversed").length;
+                const partial = recoveryAssessments.filter(r => r.overall === "partially_reversed").length;
+                const persistent = recoveryAssessments.filter(r => r.overall === "persistent" || r.overall === "progressing").length;
+                const parts: string[] = [];
+                if (reversed > 0) parts.push(`${reversed} reversed`);
+                if (partial > 0) parts.push(`${partial} partial`);
+                if (persistent > 0) parts.push(`${persistent} persistent`);
+                return parts.length > 0 ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Recovery</span>
+                    <span className={persistent > 0 ? "font-medium text-foreground" : "text-muted-foreground"}>{parts.join(", ")}</span>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Syndromes */}
+              {specimenSyndromes.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Syndrome support</span>
+                  <span className="text-muted-foreground">{specimenSyndromes.map(s => s.name).join(", ")}</span>
+                </div>
+              )}
+
+              {/* Lab correlates — top 3 summary + expandable full table */}
+              {labCorrelation.correlations.length > 0 && (() => {
+                const top3 = labCorrelation.correlations.slice(0, 3);
+                return (
+                  <div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Lab correlates (top 3)</span>
+                      <span className="text-muted-foreground">
+                        {top3.map(c => `${c.test} ${c.direction === "up" ? "\u2191" : "\u2193"}${Math.abs(Math.round(c.pctChange))}%`).join(", ")}
+                        {labCorrelation.correlations.length > 3 && (
+                          <button className="ml-1.5 text-primary hover:underline" onClick={() => setLabExpanded(p => !p)}>
+                            {labExpanded ? "Hide" : "Show all"}
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                    {labExpanded && (
+                      <div className="mt-1.5 border-t border-border/30 pt-1.5">
+                        <LabCorrelatesInline correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Dominant nature */}
+              {woeSynthesis.dominantNature && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Finding nature</span>
+                  <span className="text-muted-foreground">
+                    {woeSynthesis.dominantNature[1] === woeSynthesis.total
+                      ? woeSynthesis.dominantNature[0]
+                      : `${woeSynthesis.dominantNature[0]} (${woeSynthesis.dominantNature[1]}/${woeSynthesis.total})`}
+                  </span>
+                </div>
+              )}
+
+              {/* Significance */}
+              {woeSynthesis.sigCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Significance</span>
+                  <span className="text-muted-foreground">
+                    {woeSynthesis.sigCount}/{woeSynthesis.total} pairwise{woeSynthesis.trendSigCount > 0 ? `, ${woeSynthesis.trendSigCount} trend` : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CollapsiblePane>
+      )}
 
       {/* Syndromes */}
       {specimenSyndromes.length > 0 && (
@@ -1339,16 +1453,6 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
               </div>
             ))}
           </div>
-        </CollapsiblePane>
-      )}
-
-      {/* Lab correlates */}
-      {labCorrelation.correlations.length > 0 && (
-        <CollapsiblePane title="Lab correlates" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <LabCorrelatesInline
-            correlations={labCorrelation.correlations}
-            isLoading={labCorrelation.isLoading}
-          />
         </CollapsiblePane>
       )}
 
@@ -1431,7 +1535,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       )}
 
       {/* Recovery assessment */}
-      {hasRecovery && recoveryVerdicts.length > 0 && (
+      {hasRecovery && recoveryAssessments.length > 0 && (
         <CollapsiblePane title="Recovery assessment" expandAll={expandGen} collapseAll={collapseGen}>
           <table className="w-full text-[11px]">
             <thead>
@@ -1441,10 +1545,10 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
               </tr>
             </thead>
             <tbody>
-              {recoveryVerdicts.map(ra => (
+              {recoveryAssessments.map(ra => (
                 <tr key={ra.finding} className="border-b border-dashed">
                   <td className="max-w-[140px] truncate py-0.5" title={ra.finding}>{ra.finding}</td>
-                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall as RecoveryVerdict)}</td>
+                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1881,7 +1985,6 @@ export function FindingsContextPanel() {
           activeFindings={activeFindings}
           analytics={analytics}
           nav={nav}
-          selectFinding={selectFinding}
         />
       );
     }
