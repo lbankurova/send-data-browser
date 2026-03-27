@@ -1536,28 +1536,6 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
         </CollapsiblePane>
       )}
 
-      {/* Recovery assessment */}
-      {hasRecovery && recoveryAssessments.length > 0 && (
-        <CollapsiblePane title="Recovery assessment" expandAll={expandGen} collapseAll={collapseGen}>
-          <table className="w-full text-[11px]">
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="pb-0.5 text-left font-semibold">Finding</th>
-                <th className="pb-0.5 text-right font-semibold">Verdict</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recoveryAssessments.map(ra => (
-                <tr key={ra.finding} className="border-b border-dashed">
-                  <td className="max-w-[140px] truncate py-0.5" title={ra.finding}>{ra.finding}</td>
-                  <td className="py-0.5 text-right text-muted-foreground">{verdictLabel(ra.overall)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CollapsiblePane>
-      )}
-
       {/* Pathology review */}
       {studyId && (
         <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} />
