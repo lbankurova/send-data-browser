@@ -5,7 +5,7 @@ may be correct in isolation, but the assembled output silently wrong.
 
 Loads unified_findings.json and checks domain invariants on every finding.
 Parameterized by study — auto-discovers all studies in generated/.
-Spec: docs/incoming/findings-invariant-audit.md
+Spec: docs/_internal/incoming/findings-invariant-audit.md
 """
 
 import json

@@ -5,7 +5,7 @@
  * Each predicate type is a pure function. The engine composes them with AND/OR logic.
  * Zero UI dependencies -- pure data transformation.
  *
- * @see docs/incoming/cohort-view-overhaul.md (PRD section 2.1)
+ * @see docs/_internal/incoming/cohort-view-overhaul.md (PRD section 2.1)
  */
 import type {
   CohortSubject,

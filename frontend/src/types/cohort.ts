@@ -1,7 +1,7 @@
 /**
  * Types for the Cohort View — multi-subject analysis surface.
  *
- * @see docs/incoming/cohort-view.md
+ * @see docs/_internal/incoming/cohort-view.md
  */
 
 // ── Preset modes ─────────────────────────────────────────────
