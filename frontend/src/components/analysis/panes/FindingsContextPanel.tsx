@@ -1397,7 +1397,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
               {specimenSyndromes.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Syndrome support</span>
-                  <span className="text-muted-foreground">{specimenSyndromes.map(s => s.name).join(", ")}</span>
+                  <span className="text-muted-foreground">{specimenSyndromes.map(s => `${s.name} (${s.confidence.toLowerCase()})`).join(", ")}</span>
                 </div>
               )}
 
