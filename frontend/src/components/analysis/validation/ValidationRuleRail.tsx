@@ -259,11 +259,6 @@ export function ValidationRuleRail({
     return groupBy(sorted, sortKeyFn);
   }, [filtered, sortKeyFn]);
 
-  const maxRecords = useMemo(
-    () => Math.max(1, ...allRules.map((r) => r.records_affected)),
-    [allRules]
-  );
-
 
   return (
     <div className="flex h-full flex-col">
@@ -339,7 +334,7 @@ export function ValidationRuleRail({
       </div>
 
       {/* Card list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
             Loading rules...
@@ -350,10 +345,10 @@ export function ValidationRuleRail({
           </div>
         ) : (
           Array.from(grouped.entries()).map(([groupKey, rules]) => (
-            <div key={groupKey} className="mb-2">
+            <div key={groupKey} className="mb-1">
               {/* Group header — only show if not the default "evidence" sort with single group */}
               {(sortMode !== "evidence" || grouped.size > 1) && (
-                <div className="mb-1 px-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="mb-0.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {groupKey === "0-triggered"
                     ? "Triggered"
                     : groupKey === "1-other"
@@ -361,14 +356,13 @@ export function ValidationRuleRail({
                       : groupKey}
                 </div>
               )}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {rules.map((rule) => (
                   <ValidationRuleCard
                     key={rule.rule_id}
                     rule={rule}
                     isSelected={selectedRuleId === rule.rule_id}
                     isDisabled={rule.status === "disabled"}
-                    maxRecords={maxRecords}
                     onClick={() => onRuleSelect(rule)}
                   />
                 ))}
