@@ -21,7 +21,8 @@ import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
-import { evaluateLabRules, getClinicalFloor } from "@/lib/lab-clinical-catalog";
+import { evaluateLabRules, getClinicalFloor, getClinicalAdditive } from "@/lib/lab-clinical-catalog";
+import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import type { FindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -84,7 +85,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   );
 
   const signalScores = useMemo(() => {
-    const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; confidenceMultiplier: number }>();
+    const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; clinicalAdditive: number; sexConcordanceBoost: number; confidenceMultiplier: number }>();
     for (const ep of endpointSummaries) {
       let synBoost = 0;
       for (const syn of syndromes) {
@@ -96,15 +97,18 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       const coh = organCoherence.get(ep.organ_system);
       const cohBoost = coh ? Math.min(coh.domainCount - 1, 3) * 2 : 0;
       let floor = 0;
+      let clinAdd = 0;
       for (const match of labMatches) {
         if (match.matchedEndpoints.includes(ep.endpoint_label)) {
           floor = Math.max(floor, getClinicalFloor(match.severity));
+          clinAdd = Math.max(clinAdd, getClinicalAdditive(match.severity));
         }
       }
+      const sexConc = getSexConcordanceBoost(ep);
       const conf = classifyEndpointConfidence(ep);
       const confMult = getConfidenceMultiplier(conf);
-      if (cohBoost > 0 || synBoost > 0 || floor > 0 || confMult !== 1) {
-        boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, confidenceMultiplier: confMult });
+      if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinAdd > 0 || sexConc !== 0 || confMult !== 1) {
+        boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalAdditive: clinAdd, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult });
       }
     }
     const scored = withSignalScores(endpointSummaries, boostMap);

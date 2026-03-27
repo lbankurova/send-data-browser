@@ -87,6 +87,19 @@ export function getClinicalFloor(severity: "S1" | "S2" | "S3" | "S4"): number {
   return CLINICAL_FLOOR[severity];
 }
 
+// GAP-123: Additive boost — always added to base score (floor only rescues weak-stats endpoints;
+// the additive ensures clinical significance always contributes to ranking differentiation).
+const CLINICAL_ADDITIVE: Record<string, number> = {
+  S4: 5,  // Critical (Hy's Law etc.)
+  S3: 3,  // Adverse (marked ALT, severe hematology)
+  S2: 2,  // Concern (moderate changes)
+  S1: 0,  // Monitor (no additive)
+};
+
+export function getClinicalAdditive(severity: "S1" | "S2" | "S3" | "S4"): number {
+  return CLINICAL_ADDITIVE[severity];
+}
+
 // ─── Synonym Lookup ────────────────────────────────────────
 
 // Exact-label architecture (following finding-term-map.ts pattern).

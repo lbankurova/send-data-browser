@@ -1,0 +1,21 @@
+{
+  "_comment": "Organ-specific sex concordance/divergence boost values for signal scoring. See docs/deep-research/Organ-specific sex concordance scoring for rat toxicology signals.md for literature basis and citations.",
+  "rat": {
+    "LIVER":         { "concordance": 2.0, "divergence": 0.5 },
+    "KIDNEY":        { "concordance": 2.0, "divergence": 0.3 },
+    "HEMATOPOIETIC": { "concordance": 1.8, "divergence": 0.5 },
+    "BONE_MARROW":   { "concordance": 1.2, "divergence": 1.5 },
+    "THYMUS":        { "concordance": 1.5, "divergence": 0.8 },
+    "SPLEEN":        { "concordance": 1.2, "divergence": 1.5 },
+    "ADRENAL":       { "concordance": 1.8, "divergence": 0.5 },
+    "THYROID":       { "concordance": 2.0, "divergence": 0.5 },
+    "HEART":         { "concordance": 1.5, "divergence": 1.2 },
+    "LUNG":          { "concordance": 1.2, "divergence": 1.5 },
+    "BRAIN":         { "concordance": 1.3, "divergence": 1.2 },
+    "REPRODUCTIVE":  null,
+    "SKIN":          { "concordance": 1.0, "divergence": 1.5 },
+    "BODY_WEIGHT":   { "concordance": 2.0, "divergence": 0.3 },
+    "COAGULATION":   { "concordance": 1.0, "divergence": 1.8 }
+  },
+  "default": { "concordance": 1.5, "divergence": 1.0 }
+}
