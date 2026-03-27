@@ -1442,20 +1442,6 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
         </CollapsiblePane>
       )}
 
-      {/* Syndromes */}
-      {specimenSyndromes.length > 0 && (
-        <CollapsiblePane title="Syndromes" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
-          <div className="space-y-1">
-            {specimenSyndromes.map(s => (
-              <div key={s.id} className="text-xs">
-                <span className="font-medium">{s.name}</span>
-                <span className="ml-1 text-muted-foreground">({s.confidence.toLowerCase()})</span>
-              </div>
-            ))}
-          </div>
-        </CollapsiblePane>
-      )}
-
       {/* Peer comparison (HCD) */}
       {peerRows.length > 0 && (
         <CollapsiblePane title="Peer comparison (HCD)" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
