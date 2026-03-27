@@ -1,0 +1,17 @@
+{
+  "$schema": "../schemas/study-type-config.schema.json",
+  "version": "1.0.0",
+  "study_type": "REPEAT_DOSE",
+  "display_name": "Repeat-Dose Toxicology",
+  "description": "Subacute (≤28d), subchronic (≤90d), and chronic (>90d) repeat-dose studies with multi-timepoint evidence.",
+  "ts_stype_values": ["SUBACUTE", "SUBCHRONIC", "CHRONIC"],
+  "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "FW", "BG", "DS", "TF"],
+  "required_domains": ["LB", "BW"],
+  "time_course": true,
+  "statistical_unit": "individual",
+  "statistical_mode": "between_group",
+  "noael_type": "single",
+  "enabled_syndrome_groups": ["XS", "XC"],
+  "ui_profile": "repeat_dose",
+  "caveats": []
+}
