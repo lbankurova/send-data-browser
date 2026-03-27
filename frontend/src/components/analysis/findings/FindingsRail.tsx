@@ -1333,13 +1333,19 @@ function CardSection({
   // Specimen data for specimen grouping mode
   const specimenData = useMemo(() => {
     if (grouping !== "specimen") return null;
-    // Find linked syndrome (first syndrome containing any endpoint from this card)
-    const syn = syndromes?.find((s) =>
+    // Find all syndromes containing any endpoint from this card
+    const matched = syndromes?.filter((s) =>
       s.matchedEndpoints.some((m) =>
         card.endpoints.some((ep) => ep.endpoint_label === m.endpoint_label),
       ),
-    );
-    return { endpoints: card.endpoints, syndromeName: syn?.name, syndromeId: syn?.id };
+    ) ?? [];
+    return {
+      endpoints: card.endpoints,
+      syndromes: matched.map(s => ({ name: s.name, id: s.id })),
+      // Backward compat for CardLabel
+      syndromeName: matched[0]?.name,
+      syndromeId: matched[0]?.id,
+    };
   }, [grouping, card.endpoints, syndromes]);
 
   return (
@@ -1420,7 +1426,7 @@ function CardHeader({
   isTargetOrgan?: boolean;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
-  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string; syndromeId?: string } | null;
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromes: { name: string; id: string }[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -1466,22 +1472,21 @@ function CardHeader({
       )}
       {grouping === "specimen" ? (
         <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {(() => {
-              const maxInc = card.endpoints.reduce((max, ep) => Math.max(max, ep.maxIncidence ?? 0), 0);
-              return maxInc > 0 ? `Max: ${Math.round(maxInc * 100)}%` : "";
-            })()}
-          </span>
-          {specimenData?.syndromeName && specimenData.syndromeId && (
-            <button
-              type="button"
-              className="flex items-center gap-0.5 text-[10px] text-primary hover:underline cursor-pointer"
-              title={`${specimenData.syndromeName}\nClick to view in syndrome grouping`}
-              onClick={(e) => { e.stopPropagation(); onSyndromeClick?.(specimenData.syndromeId!); }}
-            >
-              <Fingerprint className="size-2.5" />
-              <span className="truncate max-w-[120px]">{specimenData.syndromeName}</span>
-            </button>
+          {specimenData?.syndromes && specimenData.syndromes.length > 0 && (
+            <div className="flex flex-col items-end gap-0.5">
+              {specimenData.syndromes.map(syn => (
+                <button
+                  key={syn.id}
+                  type="button"
+                  className="flex items-center gap-0.5 text-[10px] text-primary hover:underline cursor-pointer"
+                  title={`${syn.name}\nClick to view in syndrome grouping`}
+                  onClick={(e) => { e.stopPropagation(); onSyndromeClick?.(syn.id); }}
+                >
+                  <Fingerprint className="size-2.5 shrink-0" />
+                  <span className="truncate max-w-[120px]">{syn.name}</span>
+                </button>
+              ))}
+            </div>
           )}
         </span>
       ) : (
@@ -1550,7 +1555,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
-  specimenData?: { endpoints: EndpointWithSignal[]; syndromeName?: string; syndromeId?: string } | null;
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromes: { name: string; id: string }[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
