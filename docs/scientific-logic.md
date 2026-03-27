@@ -1191,8 +1191,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `pattern_only` | Required findings met. But RETIC argues against this specific mechanism. Consider differential (XS05 (Hemolytic anemia)). Capped at pattern_only due to directional gate: RETIC ↑ contradicts expected ↓ for XS04. |
 | Treatment-relatedness | `treatment_related` | score 3.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=isolated[0], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | endpoint LR+: 16.1 (anemia, neutropenia); SOC: blood and lymphatic system disorders |
@@ -1268,8 +1268,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_confirmed` | Required findings met. RETIC confirms this mechanism. No contradicting evidence. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=marked, precursor=false |
-| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_confirmed, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=marked, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=mechanism_confirmed, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | endpoint LR+: 10.1 (anemia); SOC: blood and lymphatic system disorders |
@@ -1349,8 +1349,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. Moderate supporting evidence from THYMUS_WT. Contradicting evidence: Directional gate fired (weak_against): LYMPH ↑ contradicts expected ↓ for XS08. Capped at mechanism_uncertain due to directional gate: LYMPH ↑ contradicts expected ↓ for XS08. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=mechanism_uncertain, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `insufficient_data` | SOC LR+: n/a; SOC: — |
@@ -1413,8 +1413,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. No discriminating evidence defined for this syndrome. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=mechanism_uncertain, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `moderate` | SOC LR+: 2.5; SOC: metabolism and nutrition disorders |
@@ -1471,8 +1471,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `pattern_only` | Syndrome detected through supporting evidence only. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `insufficient_data` | SOC LR+: n/a; SOC: — |
@@ -1524,8 +1524,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `pattern_only` | Syndrome detected through supporting evidence only. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=marked, precursor=false |
-| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=marked, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `insufficient_data` | SOC LR+: n/a; SOC: — |
@@ -1578,8 +1578,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `pattern_only` | Required findings met. Moderate supporting evidence from KIDNEY_WT. No contradicting evidence. Capped at pattern_only: confirmatory domain MI not available in study data. |
 | Treatment-relatedness | `treatment_related` | score 4.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=concordant[1], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=pattern_only, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `moderate` | SOC LR+: 4; SOC: renal and urinary disorders |
@@ -1719,8 +1719,8 @@ This section shows the system's actual output for each syndrome detected in the 
 |-----------|--------|--------|
 | Certainty | `mechanism_uncertain` | Required findings met. Contradicting evidence: Spleen weight ↓ (opposite-direction match). |
 | Treatment-relatedness | `treatment_related` | score 3.0: A-1 Dose-response=strong[2], A-2 Cross-endpoint concordance=isolated[0], A-3 HCD comparison=no_hcd[0], A-6 Statistical significance=significant[1], A-7 Clinical observation support=no[0] |
-| Adversity | `adverse` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
-| Regulatory significance | `S3_Adverse` | Cascade: certainty=mechanism_uncertain, adversity=adverse |
+| Adversity | `equivocal` | adaptive=false, stressConfound=false, reversible=unknown, magnitude=severe, precursor=false |
+| Regulatory significance | `S2_Concern` | Cascade: certainty=mechanism_uncertain, adversity=equivocal |
 | Histopathologic severity | `n/a` | Max tissue grade from MI data (pathologist's morphologic grading) |
 | Recovery | `not_examined` | Recovery not examined in this study. |
 | Translational | `high` | endpoint LR+: 16.1 (neutropenia); SOC: — |

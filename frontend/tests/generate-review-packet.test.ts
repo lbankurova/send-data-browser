@@ -37,6 +37,12 @@ import type {
   StudyContext,
 } from "@/lib/syndrome-interpretation";
 import { getRuleDefinition, describeThreshold } from "@/lib/lab-clinical-catalog";
+import {
+  decideNormalization,
+  buildSpeciesStrainKey,
+  mapStudyType,
+} from "@/lib/organ-weight-normalization";
+import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
 import { writeFileSync, mkdirSync } from "fs";
@@ -47,7 +53,67 @@ import fixture from "../../frontend/tests/fixtures/pointcross-findings.json";
 // ─── Pipeline setup ──────────────────────────────────────────
 
 const endpoints = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
-const syndromes = detectCrossDomainSyndromes(endpoints);
+
+// Build NormalizationContexts from endpoint summaries.
+// Extract BW and brain effect sizes per dose group from the raw fixture,
+// then call decideNormalization for each OM organ × dose group.
+function buildNormalizationContexts(
+  rows: AdverseEffectSummaryRow[],
+): NormalizationContext[] {
+  const speciesStrain = buildSpeciesStrainKey("RAT", "SPRAGUE-DAWLEY");
+  const studyType = mapStudyType("SUBCHRONIC");
+
+  // Extract worst BW g across dose groups (use absolute max effect_size)
+  const bwRows = rows.filter(r => r.domain === "BW");
+  const bwGByDose = new Map<number, number>();
+  for (const r of bwRows) {
+    const g = Math.abs(r.effect_size ?? 0);
+    const prev = bwGByDose.get(r.dose_level) ?? 0;
+    if (g > prev) bwGByDose.set(r.dose_level, g);
+  }
+
+  // Extract brain OM g per dose group
+  const brainRows = rows.filter(
+    r => r.domain === "OM" && r.specimen?.toUpperCase() === "BRAIN",
+  );
+  const brainGByDose = new Map<number, number>();
+  for (const r of brainRows) {
+    const g = Math.abs(r.effect_size ?? 0);
+    const prev = brainGByDose.get(r.dose_level) ?? 0;
+    if (g > prev) brainGByDose.set(r.dose_level, g);
+  }
+
+  // Collect unique OM organs (excluding brain)
+  const omRows = rows.filter(r => r.domain === "OM" && r.specimen?.toUpperCase() !== "BRAIN");
+  const organs = new Set(omRows.map(r => r.specimen?.toUpperCase()).filter(Boolean) as string[]);
+  const doseGroups = [...bwGByDose.keys()].filter(d => d > 0).sort();
+
+  const contexts: NormalizationContext[] = [];
+  for (const organ of organs) {
+    for (const dose of doseGroups) {
+      const bwG = bwGByDose.get(dose) ?? 0;
+      const brainG = brainGByDose.get(dose) ?? null;
+      const decision = decideNormalization(bwG, brainG, organ, speciesStrain, studyType);
+      contexts.push({
+        organ,
+        setcd: String(dose),
+        activeMode: decision.mode,
+        tier: decision.tier,
+        bwG,
+        brainG,
+        brainAffected: decision.brainAffected,
+        effectDecomposition: null,
+        rationale: decision.rationale,
+        warnings: decision.warnings,
+        userOverridden: false,
+      });
+    }
+  }
+  return contexts;
+}
+
+const normContexts = buildNormalizationContexts(fixture as AdverseEffectSummaryRow[]);
+const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
 
 const defaultContext: StudyContext = {
   studyId: "PointCross",
@@ -554,7 +620,7 @@ function generateReviewDocument(): string {
   lines.push("");
 
   for (const syndrome of syndromes) {
-    const termReport = getSyndromeTermReport(syndrome.id, endpoints, syndrome.sexes);
+    const termReport = getSyndromeTermReport(syndrome.id, endpoints, syndrome.sexes, undefined, normContexts);
     if (!termReport) continue;
 
     const clSupport = assessClinicalObservationSupport(syndrome.id, []);
@@ -573,6 +639,7 @@ function generateReviewDocument(): string {
       defaultContext,
       undefined, // mortalityNoaelCap
       syndromes.map(s => s.id), // REM-10: pass all detected syndrome IDs for stress confound check
+      normContexts, // organ weight normalization contexts
     );
 
     // REM-23: Badge based on detection tier

@@ -1034,11 +1034,11 @@ describe("Scientific logic invariants — post-remediation", () => {
     expect(s.interpretation.regulatorySeverity).toMatch(/^S2/);
   });
 
-  test("F: Spot-check XS05 adverse + confirmed -> S3", () => {
+  test("F: Spot-check XS05 equivocal + confirmed -> S2 (BW confound g=7.8 shifts adversity)", () => {
     const s = sections.find((s) => s.id === "XS05")!;
-    expect(s.interpretation.adversity).toBe("adverse");
+    expect(s.interpretation.adversity).toBe("equivocal");
     expect(s.interpretation.certainty).toBe("mechanism_confirmed");
-    expect(s.interpretation.regulatorySeverity).toMatch(/^S3/);
+    expect(s.interpretation.regulatorySeverity).toMatch(/^S2/);
   });
 
   test("F: Spot-check XS04 pattern_only + adverse -> S2", () => {
