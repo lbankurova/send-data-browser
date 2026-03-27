@@ -6,7 +6,8 @@
 # Setup: git config core.hooksPath .githooks
 #
 
-FRONTEND_DIR="C:/pg/pcc/frontend"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+FRONTEND_DIR="$REPO_ROOT/frontend"
 
 echo "========================================"
 echo "  Pre-commit hook: running checks..."
