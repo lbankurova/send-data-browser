@@ -66,6 +66,7 @@ import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mo
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
 import { verdictLabel, deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
 import { classifyFindingNature } from "@/lib/finding-nature";
+import { getRelevantTests } from "@/lib/organ-test-mapping";
 import type { RecoveryAssessment, RecoveryVerdict } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
@@ -1055,6 +1056,34 @@ function signalDots(signal: number): string {
   return "";
 }
 
+function LabFindingsInline({ findings }: { findings: UnifiedFinding[] }) {
+  if (findings.length === 0) return <p className="text-xs text-muted-foreground">No relevant lab findings.</p>;
+  return (
+    <table className="w-full text-[11px]">
+      <thead>
+        <tr className="border-b text-muted-foreground">
+          <th className="pb-0.5 text-left font-semibold">Test</th>
+          <th className="pb-0.5 text-right font-semibold">Dir</th>
+          <th className="pb-0.5 text-right font-semibold">Fold</th>
+          <th className="pb-0.5 text-right font-semibold">p</th>
+          <th className="pb-0.5 text-right font-semibold">Pattern</th>
+        </tr>
+      </thead>
+      <tbody>
+        {findings.map(f => (
+          <tr key={`${f.test_code}-${f.sex ?? ""}`} className="border-b border-dashed">
+            <td className="py-0.5 font-medium">{f.test_code}{f.sex ? ` (${f.sex})` : ""}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "\u2014"}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.max_fold_change != null ? `\u00d7${f.max_fold_change.toFixed(2)}` : "\u2014"}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.min_p_adj != null ? (f.min_p_adj < 0.001 ? "<0.001" : f.min_p_adj.toFixed(3)) : "\u2014"}</td>
+            <td className="py-0.5 text-right text-muted-foreground">{f.dose_response_pattern?.replace(/_/g, " ") ?? "\u2014"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function LabCorrelatesInline({ correlations, isLoading, finding }: {
   correlations: Array<{ test: string; pctChange: number; controlMean: number; highDoseMean: number; unit: string; signal: number; isRelevant: boolean; direction: "up" | "down" }>;
   isLoading: boolean;
@@ -1224,8 +1253,27 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     ) ?? [];
   }, [analytics.syndromes, specimen]);
 
-  // Lab correlates (specimen-level)
-  const labCorrelation = useSpecimenLabCorrelation(studyId, specimen);
+  // Lab correlates (specimen-level) — LB findings with test_codes relevant to this organ
+  const relevantLabFindings = useMemo(() => {
+    const tests = new Set(getRelevantTests(specimen).map(t => t.toUpperCase()));
+    if (tests.size === 0) return [];
+    return activeFindings
+      .filter(f => f.domain === "LB" && tests.has(f.test_code.toUpperCase()))
+      // Deduplicate by test_code (keep worst severity per test, combine sexes)
+      .reduce((acc, f) => {
+        const existing = acc.find(e => e.test_code.toUpperCase() === f.test_code.toUpperCase());
+        if (!existing) { acc.push(f); }
+        else if (f.severity === "adverse" && existing.severity !== "adverse") {
+          acc[acc.indexOf(existing)] = f;
+        }
+        return acc;
+      }, [] as UnifiedFinding[])
+      .sort((a, b) => {
+        // Treatment-related first, then by effect size descending
+        if (a.treatment_related !== b.treatment_related) return a.treatment_related ? -1 : 1;
+        return Math.abs(b.max_effect_size ?? 0) - Math.abs(a.max_effect_size ?? 0);
+      });
+  }, [activeFindings, specimen]);
 
   // Subject data for laterality + recovery
   const { data: subjData } = useHistopathSubjects(studyId, specimen);
@@ -1391,25 +1439,31 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
                 </div>
               )}
 
-              {/* Lab correlates — top 3 summary + expandable full table */}
-              {labCorrelation.correlations.length > 0 && (() => {
-                const top3 = labCorrelation.correlations.slice(0, 3);
+              {/* Lab correlates — top 3 from unified findings + expandable full list */}
+              {relevantLabFindings.length > 0 && (() => {
+                const top3 = relevantLabFindings.slice(0, 3);
+                const arrow = (f: UnifiedFinding) => f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "";
+                const foldLabel = (f: UnifiedFinding) => f.max_fold_change != null
+                  ? `${arrow(f)}${f.direction === "down" ? "" : "\u00d7"}${f.max_fold_change.toFixed(1)}`
+                  : arrow(f);
                 return (
                   <div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Lab correlates (top 3)</span>
                       <span className="text-muted-foreground">
-                        {top3.map(c => `${c.test} ${c.direction === "up" ? "\u2191" : "\u2193"}${Math.abs(Math.round(c.pctChange))}%`).join(", ")}
-                        {labCorrelation.correlations.length > 3 && (
-                          <button className="ml-1.5 text-primary hover:underline" onClick={() => setLabExpanded(p => !p)}>
-                            {labExpanded ? "Hide" : "Show all"}
+                        Lab correlates (top 3){" "}
+                        {relevantLabFindings.length > 3 && (
+                          <button className="text-primary hover:underline" onClick={() => setLabExpanded(p => !p)}>
+                            {labExpanded ? "hide" : "show all"}
                           </button>
                         )}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {top3.map(f => `${f.test_code} ${foldLabel(f)}`).join(", ")}
                       </span>
                     </div>
                     {labExpanded && (
                       <div className="mt-1.5 border-t border-border/30 pt-1.5">
-                        <LabCorrelatesInline correlations={labCorrelation.correlations} isLoading={labCorrelation.isLoading} />
+                        <LabFindingsInline findings={relevantLabFindings} />
                       </div>
                     )}
                   </div>
