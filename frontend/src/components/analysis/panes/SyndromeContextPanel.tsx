@@ -651,7 +651,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
 
       {/* ══ EVIDENCE PANE ══ */}
       {syndromeInterp && (
-        <CollapsiblePane title="Evidence" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Evidence" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <EvidencePane
             syndromeId={syndromeId}
             syndromeInterp={syndromeInterp}
@@ -690,7 +690,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
 
       {/* ══ DOSE-RESPONSE & RECOVERY PANE ══ */}
       {syndromeInterp && detected && (
-        <CollapsiblePane title="Dose-response & recovery" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Dose-response & recovery" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <DoseResponseRecoveryPane
             syndromeInterp={syndromeInterp}
             domainsCovered={detected.domainsCovered}
@@ -702,7 +702,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
 
       {/* ══ HISTOPATHOLOGY (conditional) ══ */}
       {syndromeInterp && hasHistopath && (
-        <CollapsiblePane title="Histopathology" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Histopathology" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <HistopathContextPane crossRefs={syndromeInterp.histopathContext} organProportionality={organProportionality} />
           {/* §8C: XS01 organ-matched tumor progression cross-reference */}
           {syndromeId === "XS01" && matchedSpecimens.size > 0 &&
@@ -740,7 +740,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
       {syndromeInterp && showFoodConsumption && (
         <CollapsiblePane
           title="Food consumption"
-          defaultOpen={syndromeInterp.foodConsumptionContext.available && syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable"}
+          defaultOpen={false}
           headerRight={
             syndromeInterp.foodConsumptionContext.available && syndromeInterp.foodConsumptionContext.bwFwAssessment !== "not_applicable"
               ? <FoodConsumptionHeaderRight assessment={syndromeInterp.foodConsumptionContext.bwFwAssessment} />
@@ -766,7 +766,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
       {syndromeInterp && showOrganProportionality && organProportionality && (
         <CollapsiblePane
           title="Organ proportionality"
-          defaultOpen={true}
+          defaultOpen={false}
           headerRight={<OrganProportionalityHeaderRight result={organProportionality} />}
           expandAll={expandGen}
           collapseAll={collapseGen}
