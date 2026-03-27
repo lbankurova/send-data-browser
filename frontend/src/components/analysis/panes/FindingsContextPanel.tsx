@@ -246,12 +246,10 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 // ─── Decomposed Confidence Display ─────────────────────────
 
 function confidenceLevelClass(level: ConfidenceLevel): string {
-  // High = nothing to see; moderate = semibold; low = semibold + bright
+  // High = nothing to see; moderate/low = semibold (C-04: no colored text in context panel)
   return level === "high"
     ? "text-muted-foreground"
-    : level === "moderate"
-      ? "font-semibold text-foreground"
-      : "font-semibold text-red-600";
+    : "font-semibold text-foreground";
 }
 
 const DIMENSION_TOOLTIPS: Record<string, string> = {
@@ -1339,7 +1337,6 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
           <>
             {specimenFindings.length} findings
             {specimenSyndromes.length > 0 && <> &middot; {specimenSyndromes.length} syndrome{specimenSyndromes.length !== 1 ? "s" : ""}</>}
-            {hasRecovery && <> &middot; Recovery</>}
           </>
         }
         onExpandAll={expandAll}
@@ -2064,7 +2061,7 @@ export function FindingsContextPanel() {
             </span>
           )}
           {eciConfidence && (
-            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${confidenceLevelClass(eciConfidence)}`}>
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200 uppercase">
               {eciConfidence}
             </span>
           )}
@@ -2087,7 +2084,7 @@ export function FindingsContextPanel() {
             );
           })()}
           {!hasSibling && noael && (
-            <span className="text-muted-foreground">
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               NOAEL: {noael.dose_value != null
                 ? `${noael.dose_value} ${noael.dose_unit}`
                 : `< lowest dose`}

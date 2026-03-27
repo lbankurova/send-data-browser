@@ -8,7 +8,6 @@ import type { EndpointConfidenceResult } from "@/lib/endpoint-confidence";
 import {
   resolveCanonical,
   findClinicalMatchForEndpoint,
-  getClinicalTierTextClass,
   getRuleSourceShortLabel,
   describeThreshold,
 } from "@/lib/lab-clinical-catalog";
@@ -402,7 +401,8 @@ export function VerdictPane({
   const clinicalLineText = clinicalMatch
     ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId}${sexAnnotation} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
     : null;
-  const clinicalLineClass = clinicalMatch ? getClinicalTierTextClass(clinicalMatch.severity) : "";
+  // C-04: no colored text in context panel — tier label communicates severity
+  const clinicalLineClass = "text-muted-foreground";
 
   return (
     <div>
@@ -418,9 +418,9 @@ export function VerdictPane({
         >{verdict.label}</span>
         {verdict.severityWord && (
           <>
-            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground">&middot;</span>
             <span
-              className="text-xs font-medium text-foreground"
+              className="text-sm font-semibold text-foreground"
               style={verdict.underlineColor ? {
                 textDecoration: "underline dashed",
                 textDecorationColor: verdict.underlineColor,
@@ -440,7 +440,7 @@ export function VerdictPane({
 
       {/* Line 3 -- Metadata: confidence · NOAEL weight · NOAEL */}
       {(confidence || noaelWeight || noaelStr) && (
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[11px] text-muted-foreground">
           {confidence && <span>{confidence} confidence</span>}
           {confidence && noaelWeight && <span>&middot;</span>}
           {noaelWeight && (
@@ -460,7 +460,7 @@ export function VerdictPane({
 
       {/* Line 4 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
       {sexDirectionLine && (
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-foreground/80">
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
           <span>{sexDirectionLine}</span>
           {!hasSibling && !notEvaluated && <PatternOverrideDropdown finding={finding} />}
         </div>
@@ -524,7 +524,7 @@ export function VerdictPane({
 
       {/* Line 6 -- ANCOVA punchline */}
       {ancovaLine && (
-        <div className="mt-2 text-[11px] text-foreground/80">{ancovaLine}</div>
+        <div className="mt-2 text-[11px] text-muted-foreground">{ancovaLine}</div>
       )}
     </div>
   );
