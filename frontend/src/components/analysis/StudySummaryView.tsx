@@ -958,7 +958,7 @@ function DetailsTab({
 
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
-        <CollapsiblePane title="Study timeline" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Study timeline" defaultOpen={false} sessionKey="pcc.studyDetails.timeline" expandAll={expandGen} collapseAll={collapseGen}>
           <StudyTimeline
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
@@ -971,13 +971,13 @@ function DetailsTab({
       )}
 
       {/* ── Domain summary table ─────────────────────────── */}
-      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen={false} sessionKey="pcc.studyDetails.domains" expandAll={expandGen} collapseAll={collapseGen}>
         <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} interpretationNotes={interpretationNotes} />
       </CollapsiblePane>
 
       {/* ── PK Exposure ── */}
       {pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0 && (
-        <CollapsiblePane title="PK Exposure" expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="PK Exposure" defaultOpen={false} sessionKey="pcc.studyDetails.pkExposure" expandAll={expandGen} collapseAll={collapseGen}>
           <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
         </CollapsiblePane>
       )}
@@ -986,6 +986,7 @@ function DetailsTab({
       <CollapsiblePane
         title="Data quality"
         defaultOpen={false}
+        sessionKey="pcc.studyDetails.dataQuality"
         expandAll={expandGen}
         collapseAll={collapseGen}
         headerRight={(missingRequired.length > 0 || (valData?.summary.errors ?? 0) > 0) ? (

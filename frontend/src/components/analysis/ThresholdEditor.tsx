@@ -208,6 +208,7 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
     <CollapsiblePane
       title="Signal scoring parameters"
       defaultOpen={false}
+      sessionKey="pcc.studySettings.scoringParams"
       expandAll={expandAll}
       collapseAll={collapseAll}
       headerRight={isModified ? <span className="text-[10px] text-amber-600">(customized)</span> : undefined}

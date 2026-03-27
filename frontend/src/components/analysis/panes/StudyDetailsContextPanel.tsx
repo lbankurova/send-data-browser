@@ -142,7 +142,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
       <div className="flex-1 overflow-auto">
       {/* ── Analysis methods ─────────────────────────────── */}
-      <CollapsiblePane title="Analysis methods" expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Analysis methods" defaultOpen={false} sessionKey="pcc.studySettings.analysisMethods" expandAll={expandGen} collapseAll={collapseGen}>
         {/* Control group */}
         {controlGroups.length > 0 && (
           <>
@@ -388,7 +388,8 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       <CollapsiblePane
         title="Study notes"
         headerRight={currentNote ? "1 note" : "none"}
-        defaultOpen={!!currentNote}
+        defaultOpen={false}
+        sessionKey="pcc.studySettings.studyNotes"
         expandAll={expandGen}
         collapseAll={collapseGen}
       >
