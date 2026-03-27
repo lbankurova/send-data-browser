@@ -111,22 +111,35 @@ function buildRecoveryCells(
   subjects: SubjectHistopathEntry[],
   findingNames: string[],
   doseLevels: number[],
-): Map<string, Map<number, MatrixCell>> {
+): Map<string, Map<number, MatrixCell | null>> {
   const recSubjects = subjects.filter(s => s.is_recovery);
   if (recSubjects.length === 0) return new Map();
 
-  const result = new Map<string, Map<number, MatrixCell>>();
+  const result = new Map<string, Map<number, MatrixCell | null>>();
 
   for (const finding of findingNames) {
-    const cells = new Map<number, MatrixCell>();
+    const cells = new Map<number, MatrixCell | null>();
     for (const dl of doseLevels) {
       const doseSubjects = recSubjects.filter(s => s.dose_level === dl);
       if (doseSubjects.length === 0) continue;
+
+      // Count examined subjects: those who have ANY finding in their findings dict
+      // (if they have findings recorded, their tissue was examined)
+      const examined = doseSubjects.filter(s =>
+        Object.keys(s.findings).length > 0 || s.ma_examined === true,
+      );
+
+      // No subjects examined at this dose → not examined
+      if (examined.length === 0) {
+        cells.set(dl, null);
+        continue;
+      }
+
       let affected = 0;
       let sevSum = 0;
       let maxSev = 0;
       let hasGraded = false;
-      for (const s of doseSubjects) {
+      for (const s of examined) {
         const fd = s.findings[finding];
         if (fd && fd.severity_num > 0) {
           affected++;
@@ -137,7 +150,7 @@ function buildRecoveryCells(
       }
       cells.set(dl, {
         affected,
-        n: doseSubjects.length,
+        n: examined.length,
         avgSeverity: affected > 0 ? sevSum / affected : null,
         maxSeverity: maxSev,
         isGraded: hasGraded,
@@ -174,7 +187,11 @@ function Legend() {
       })}
       <span className="ml-2 flex items-center gap-1">
         <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-gray-300" />
-        Not found
+        Zero
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block h-3 w-3 rounded-sm bg-striped" />
+        NE
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block h-3 w-3 rounded-sm border border-gray-400 bg-transparent" />
@@ -344,10 +361,14 @@ export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: Seve
 
 // ─── Cell renderer ──────────────────────────────────────────
 
-function CellRenderer({ cell }: { cell: MatrixCell | undefined }) {
+function CellRenderer({ cell }: { cell: MatrixCell | null | undefined }) {
   // Not examined — no data at all
   if (!cell) {
-    return <div className="flex h-6 w-16 items-center justify-center" />;
+    return (
+      <div className="flex h-6 w-16 items-center justify-center rounded-sm bg-striped" title="Not examined">
+        <span className="text-[10px] font-mono text-muted-foreground/40">NE</span>
+      </div>
+    );
   }
 
   // Examined but finding absent
