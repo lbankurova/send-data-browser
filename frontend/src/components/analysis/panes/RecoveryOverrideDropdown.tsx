@@ -20,8 +20,9 @@ export function RecoveryOverrideDropdown({ finding, verdictInfo }: Props) {
   const actions = useRecoveryOverrideActions(studyId);
   const [open, setOpen] = useState(false);
 
-  const { verdict: autoVerdict, isOverridden, effectiveVerdict, dataType } = verdictInfo;
+  const { verdict: autoVerdict, isOverridden, effectiveVerdict, dataType, lowConfidence } = verdictInfo;
   const label = getVerdictLabel(effectiveVerdict);
+  const displayLabel = lowConfidence && !isOverridden ? `${label} *` : label;
 
   function handleSelect(value: string) {
     setOpen(false);
@@ -44,9 +45,11 @@ export function RecoveryOverrideDropdown({ finding, verdictInfo }: Props) {
           "flex-1 text-right py-0.5 cursor-context-menu text-muted-foreground",
           isOverridden && "italic",
         )}
-        title={isOverridden ? `Override: ${label} (auto: ${getVerdictLabel(autoVerdict)})` : "Right-click to override"}
+        title={lowConfidence && !isOverridden
+          ? `Low confidence: n < 5 in recovery group. Right-click to override`
+          : isOverridden ? `Override: ${label} (auto: ${getVerdictLabel(autoVerdict)})` : "Right-click to override"}
       >
-        {label}
+        {displayLabel}
       </span>
       <div className="w-3 shrink-0">
         <OverridePill

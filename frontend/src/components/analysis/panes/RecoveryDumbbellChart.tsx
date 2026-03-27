@@ -690,28 +690,18 @@ function RecoveryDataTable({
   return (
     <table className="w-full text-[10px] border-collapse">
       <thead>
-        {/* Group header row — Dose + per-sex groups (each with Classification) */}
-        <tr className="border-b border-border/30">
-          <th className="text-left text-muted-foreground/60 font-medium py-0.5 pr-2 whitespace-nowrap" style={{ width: 1 }}>
+        {/* Single header row — Dose + Terminal/Recovery per sex with color-coded bottom border */}
+        <tr>
+          <th className="text-left text-muted-foreground/60 font-medium py-0.5 pr-2 whitespace-nowrap border-b border-border/30" style={{ width: 1 }}>
             Dose
           </th>
-          {sexes.map((sex) => (
-            <th
-              key={sex}
-              colSpan={4}
-              className="text-center font-medium py-0.5 px-1"
-              style={{ color: multiSex ? getSexColor(sex) : "var(--muted-foreground)" }}
-            >
-              {multiSex ? sex : ""}
-            </th>
-          ))}
-        </tr>
-        {/* Sub-header row — Terminal / Recovery / Change / Classification per sex */}
-        <tr className="border-b border-border/20">
-          <th />
-          {sexes.map((sex) => (
-            <SexSubHeaders key={sex} />
-          ))}
+          {sexes.map((sex) => {
+            const borderColor = multiSex ? getSexColor(sex) : undefined;
+            const borderStyle = borderColor ? { borderBottomColor: borderColor, borderBottomWidth: "2px" } : undefined;
+            return (
+              <SexSubHeaders key={sex} borderStyle={borderStyle} />
+            );
+          })}
         </tr>
       </thead>
       <tbody>
@@ -727,27 +717,15 @@ function RecoveryDataTable({
               </span>
             </td>
 
-            {/* Per-sex cells (Terminal / Recovery / Change / Classification) */}
+            {/* Per-sex cells (Terminal / Recovery / Change) */}
             {sexes.map((sex) => {
               const cr = chartRowLookup.get(`${sex}_${dl}`);
               if (!cr || cr.isEdge) {
-                const edgeClassification = cr?.isEdge === "insufficient_n"
-                  ? "Insufficient N"
-                  : cr?.isEdge === "no_concurrent_control"
-                  ? "No control"
-                  : "—";
-                const edgeNote = cr?.isEdge === "insufficient_n"
-                  ? `n=${cr.row.treated_n ?? "?"}`
-                  : cr?.isEdge === "no_concurrent_control"
-                  ? "no ctrl"
-                  : "";
                 return (
                   <SexDataCells
                     key={sex}
                     terminal="—"
                     recovery="—"
-                    change={edgeNote || "—"}
-                    classification={edgeClassification}
                   />
                 );
               }
@@ -755,26 +733,12 @@ function RecoveryDataTable({
               // Use same-arm terminal (cr.terminalVal) for consistency with chart
               const tG = cr.terminalVal;
               const rG = cr.recoveryVal;
-              const v = classifyContinuousRecovery(tG, rG, cr.row.treated_n, cr.row.control_n);
-              const label = CONT_VERDICT_LABEL[cr.verdict];
-              const classLabel = cr.confidence === "low" ? `${label} *` : label;
-
-              let changeStr = "—";
-              if (tG != null && rG != null && Math.abs(tG) >= 0.01) {
-                if (v.pctRecovered != null) {
-                  const dir = Math.abs(rG) <= Math.abs(tG) ? "\u2193" : "\u2191";
-                  changeStr = `${dir}${formatPctRecovered(v.pctRecovered)}`;
-                }
-              }
 
               return (
                 <SexDataCells
                   key={sex}
                   terminal={tG != null ? `${formatGSigned(tG)}${effectSymbol}` : "—"}
                   recovery={rG != null ? `${formatGSigned(rG)}${effectSymbol}` : "—"}
-                  change={changeStr}
-                  classification={classLabel}
-                  lowConfidence={cr.confidence === "low"}
                 />
               );
             })}
@@ -785,7 +749,7 @@ function RecoveryDataTable({
       {doseConsistencyNotes.size > 0 && (
         <tfoot>
           <tr>
-            <td colSpan={1 + sexes.length * 4} className="pt-1.5">
+            <td colSpan={1 + sexes.length * 2} className="pt-1.5">
               {[...doseConsistencyNotes.entries()].map(([sex, note]) => (
                 <div key={sex} className="text-[10px] text-muted-foreground/70">
                   {sexes.length > 1 && <span style={{ color: getSexColor(sex) }}>{sex}: </span>}
@@ -800,27 +764,21 @@ function RecoveryDataTable({
   );
 }
 
-function SexSubHeaders() {
+function SexSubHeaders({ borderStyle }: { borderStyle?: React.CSSProperties }) {
   return (
     <>
-      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 py-0.5 whitespace-nowrap border-b border-border/30" style={{ width: 1, ...borderStyle }}>
         Terminal
       </th>
-      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 py-0.5 whitespace-nowrap border-b border-border/30" style={{ width: 1, ...borderStyle }}>
         Recovery
-      </th>
-      <th className="text-right text-muted-foreground/60 font-medium px-1 whitespace-nowrap" style={{ width: 1 }}>
-        Change
-      </th>
-      <th className="text-left text-muted-foreground/60 font-medium pl-2 pr-1 whitespace-nowrap" style={{ width: 1 }}>
-        Classification
       </th>
     </>
   );
 }
 
-function SexDataCells({ terminal, recovery, change, classification, lowConfidence }: {
-  terminal: string; recovery: string; change: string; classification: string; lowConfidence?: boolean;
+function SexDataCells({ terminal, recovery }: {
+  terminal: string; recovery: string;
 }) {
   return (
     <>
@@ -829,16 +787,6 @@ function SexDataCells({ terminal, recovery, change, classification, lowConfidenc
       </td>
       <td className="text-right tabular-nums font-mono py-1 px-1 text-muted-foreground" style={{ width: 1 }}>
         {recovery}
-      </td>
-      <td className="text-right tabular-nums font-mono py-1 px-1 text-muted-foreground" style={{ width: 1 }}>
-        {change}
-      </td>
-      <td
-        className="text-left py-1 pl-2 pr-1 whitespace-nowrap text-muted-foreground"
-        style={{ width: 1 }}
-        title={lowConfidence ? "Low confidence: n < 5 in recovery group" : undefined}
-      >
-        {classification}
       </td>
     </>
   );

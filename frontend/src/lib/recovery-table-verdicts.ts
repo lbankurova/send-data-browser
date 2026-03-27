@@ -26,6 +26,8 @@ export interface FindingVerdictInfo {
   effectiveVerdict: string;
   /** Data type for this finding (needed by override actions). */
   dataType: "continuous" | "incidence";
+  /** True when the worst-case verdict came from a low-confidence comparison (n < 5). */
+  lowConfidence?: boolean;
 }
 
 // ── Verdict priority (same as RecoveryPane) ──────────────────
@@ -58,9 +60,12 @@ export function buildFindingVerdictMap(
 
   for (const finding of findings) {
     let worstVerdict: string | null = null;
+    let lowConfidence = false;
 
     if (finding.data_type === "continuous") {
-      worstVerdict = computeContinuousVerdict(finding, recoveryData);
+      const r = computeContinuousVerdict(finding, recoveryData);
+      worstVerdict = r.verdict;
+      lowConfidence = r.lowConfidence;
     } else {
       worstVerdict = computeIncidenceVerdict(finding, recoveryData);
     }
@@ -77,6 +82,7 @@ export function buildFindingVerdictMap(
       isOverridden,
       effectiveVerdict,
       dataType: finding.data_type === "continuous" ? "continuous" : "incidence",
+      lowConfidence,
     });
   }
 
@@ -88,7 +94,7 @@ export function buildFindingVerdictMap(
 function computeContinuousVerdict(
   finding: UnifiedFinding,
   recoveryData: RecoveryComparisonResponse,
-): string | null {
+): { verdict: string | null; lowConfidence: boolean } {
   // Match rows by test_code, or by specimen for OM domain
   const matched = recoveryData.rows.filter((r) => {
     if (finding.specimen) {
@@ -112,11 +118,12 @@ function computeContinuousVerdict(
 
   // Skip rows with insufficient_n or no_concurrent_control, then classify
   let worstVerdict: string | null = null;
+  let worstLowConf = false;
 
   for (const r of terminalRows) {
     if (r.insufficient_n || r.no_concurrent_control) continue;
 
-    const { verdict } = classifyContinuousRecovery(
+    const { verdict, confidence } = classifyContinuousRecovery(
       r.terminal_effect_same_arm ?? r.terminal_effect,
       r.effect_size,
       r.treated_n,
@@ -125,10 +132,11 @@ function computeContinuousVerdict(
 
     if (worstVerdict == null || verdictPriority(verdict) > verdictPriority(worstVerdict)) {
       worstVerdict = verdict;
+      worstLowConf = confidence === "low";
     }
   }
 
-  return worstVerdict;
+  return { verdict: worstVerdict, lowConfidence: worstLowConf };
 }
 
 // ── Incidence verdict computation ────────────────────────────

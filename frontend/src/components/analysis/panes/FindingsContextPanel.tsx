@@ -18,7 +18,6 @@ import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
-import { RecoveryPane } from "./RecoveryPane";
 import { TimeCoursePane } from "./TimeCoursePane";
 // DistributionPane moved to center panel (CenterDistribution in DoseResponseChartPanel)
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
@@ -872,7 +871,7 @@ function RecoveryVerdictLine({
 }: {
   finding: UnifiedFinding;
   siblingFinding?: UnifiedFinding;
-  onSeeDetails: () => void;
+  onSeeDetails?: () => void;
 }) {
   const { studyId } = useParams<{ studyId: string }>();
   const isHistopath = finding.domain === "MI" || finding.domain === "MA";
@@ -1594,7 +1593,6 @@ export function FindingsContextPanel() {
     selectedFindingId
   );
   const { data: noaelRows } = useEffectiveNoael(studyId);
-  const recoveryPaneRef = useRef<HTMLDivElement>(null);
   const evidencePaneRef = useRef<HTMLDivElement>(null);
   // distributionPaneRef removed — DistributionPane moved to center panel
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
@@ -1654,27 +1652,6 @@ export function FindingsContextPanel() {
     });
   }, [ruleResults, selectedFinding]);
 
-  // Recovery "not examined" detection — drives CollapsiblePane collapse + summary
-  const { data: studyCtxForRecovery } = useStudyContext(studyId);
-  const recoverySpecimens = useMemo(() => {
-    const f = selectedFinding;
-    const isHisto = f?.domain === "MI" || f?.domain === "MA";
-    return isHisto && f?.specimen ? [f.specimen] : [];
-  }, [selectedFinding]);
-  const recoveryOverview = useOrganRecovery(
-    studyId,
-    recoverySpecimens,
-    undefined,
-    studyCtxForRecovery?.species ?? null,
-  );
-  const recoveryNotExamined = useMemo(() => {
-    if (!selectedFinding?.specimen) return false;
-    const isHisto = selectedFinding.domain === "MI" || selectedFinding.domain === "MA";
-    if (!isHisto) return false;
-    const label = `${selectedFinding.specimen} \u2014 ${selectedFinding.finding}`;
-    const verdict = recoveryOverview.byEndpointLabel.get(label);
-    return verdict === "not_examined";
-  }, [selectedFinding, recoveryOverview.byEndpointLabel]);
 
   // Lab correlates (any finding with a specimen — MI/MA, OM, etc.)
   const isHistoFinding = selectedFinding?.domain === "MI" || selectedFinding?.domain === "MA";
@@ -2086,9 +2063,6 @@ export function FindingsContextPanel() {
               <RecoveryVerdictLine
                 finding={selectedFinding}
                 siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
-                onSeeDetails={() => {
-                  recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                }}
               />
             )}
             <PathologistNotes finding={selectedFinding} studyId={studyId} navigate={navigate} />
@@ -2198,7 +2172,8 @@ export function FindingsContextPanel() {
             return (
               <CollapsiblePane
                 title={noaelTitle}
-                defaultOpen
+                defaultOpen={false}
+                sessionKey="pcc.ep.noael"
                 expandAll={expandGen}
                 collapseAll={collapseGen}
               >
@@ -2262,26 +2237,13 @@ export function FindingsContextPanel() {
 
       {/* Distribution — moved to center panel DoseResponseChartPanel */}
 
-      {/* Recovery */}
-      {hasRecovery && selectedFinding && (
-        <div ref={recoveryPaneRef}>
-          <CollapsiblePane
-            key={selectedFinding.id}
-            title="Recovery"
-            defaultOpen={!recoveryNotExamined}
-            summary={recoveryNotExamined ? "Not examined" : undefined}
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-          >
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
-          </CollapsiblePane>
-        </div>
-      )}
 
       {/* Qualifier detail — MI/MA only, full modifier breakdown */}
       {selectedFinding && (selectedFinding.domain === "MI" || selectedFinding.domain === "MA") && selectedFinding.modifier_profile && (
         <CollapsiblePane
           title="Qualifiers"
+          defaultOpen={false}
+          sessionKey="pcc.ep.qualifiers"
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2293,7 +2255,8 @@ export function FindingsContextPanel() {
       {relevantLabFindingsForEndpoint.length > 0 && (
         <CollapsiblePane
           title="Lab correlates"
-          defaultOpen
+          defaultOpen={false}
+          sessionKey="pcc.ep.lab-correlates"
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2307,7 +2270,8 @@ export function FindingsContextPanel() {
       {isHistoFinding && peerRow && peerRow.hcd && (
         <CollapsiblePane
           title="Peer comparison (HCD)"
-          defaultOpen
+          defaultOpen={false}
+          sessionKey="pcc.ep.peer-hcd"
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2319,7 +2283,8 @@ export function FindingsContextPanel() {
       {isHistoFinding && correlatingEvidence && (correlatingEvidence.inThisSpecimen.length > 0 || correlatingEvidence.crossOrgan.length > 0) && (
         <CollapsiblePane
           title="Correlating evidence"
-          defaultOpen
+          defaultOpen={false}
+          sessionKey="pcc.ep.correlating-evidence"
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
@@ -2334,7 +2299,8 @@ export function FindingsContextPanel() {
           <div ref={evidencePaneRef}>
           <CollapsiblePane
             title={hasSibling ? "Statistical evidence:" : "Statistical evidence"}
-            defaultOpen
+            defaultOpen={false}
+            sessionKey="pcc.ep.stat-evidence"
             keepMounted
             expandAll={expandGen}
             collapseAll={collapseGen}
@@ -2527,6 +2493,7 @@ export function FindingsContextPanel() {
             <CollapsiblePane
               title="Organ insights"
               defaultOpen={false}
+              sessionKey="pcc.ep.organ-insights"
               keepMounted
               expandAll={expandGen}
               collapseAll={collapseGen}
@@ -2547,7 +2514,8 @@ export function FindingsContextPanel() {
       {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
         <CollapsiblePane
           title={endpointSyndromes.length > 0 && hasOrganConvergence ? "Patterns" : endpointSyndromes.length > 0 ? "Syndromes" : "Patterns"}
-          defaultOpen
+          defaultOpen={false}
+          sessionKey="pcc.ep.patterns"
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
@@ -2581,7 +2549,7 @@ export function FindingsContextPanel() {
       {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}
       {context!.correlations.related.length > 0
         && context!.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
-        <CollapsiblePane title="Correlations" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Correlations" defaultOpen={false} sessionKey="pcc.ep.correlations" keepMounted expandAll={expandGen} collapseAll={collapseGen}>
           <CorrelationsPane
             data={context!.correlations}
             organSystem={selectedFinding.organ_system}
@@ -2590,7 +2558,7 @@ export function FindingsContextPanel() {
         </CollapsiblePane>
       )}
 
-      <CollapsiblePane title="Effect ranking" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Effect ranking" defaultOpen={false} sessionKey="pcc.ep.effect-ranking" keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
           effectSize={context!.effect_size}
           selectedFindingId={selectedFindingId}
@@ -2602,6 +2570,7 @@ export function FindingsContextPanel() {
       <CollapsiblePane
         title="Causality assessment"
         defaultOpen={false}
+        sessionKey="pcc.ep.causality"
         keepMounted
         expandAll={expandGen}
         collapseAll={collapseGen}
@@ -2698,7 +2667,7 @@ function NoaelStudyLevelPanel({
 
       {/* Study statements + caveats */}
       {panelData && (panelData.studyStatements.length > 0 || panelData.modifiers.length > 0 || panelData.caveats.length > 0) && (
-        <CollapsiblePane title="Study statements" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Study statements" defaultOpen={false} sessionKey="pcc.ep.study-statements" expandAll={expandGen} collapseAll={collapseGen}>
           <StudyStatementsBar
             statements={panelData.studyStatements}
             modifiers={panelData.modifiers}
@@ -2709,14 +2678,14 @@ function NoaelStudyLevelPanel({
 
       {/* Protective signals (R18/R19) */}
       {studyId && ruleResults && (
-        <CollapsiblePane title="Protective signals" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Protective signals" defaultOpen={false} sessionKey="pcc.ep.protective-signals" expandAll={expandGen} collapseAll={collapseGen}>
           <ProtectiveSignalsBar rules={ruleResults} studyId={studyId} signalData={signalData} />
         </CollapsiblePane>
       )}
 
       {/* Safety margin calculator */}
       {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
-        <CollapsiblePane title="Safety margin" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Safety margin" defaultOpen={false} sessionKey="pcc.ep.safety-margin" expandAll={expandGen} collapseAll={collapseGen}>
           <SafetyMarginCalculator pkData={pkData} />
         </CollapsiblePane>
       )}
