@@ -1,0 +1,18 @@
+{
+  "$schema": "../schemas/km-factors.schema.json",
+  "version": "1.0.0",
+  "_source": "FDA Guidance for Industry: Estimating the Maximum Safe Starting Dose in Initial Clinical Trials for Therapeutics in Adult Healthy Volunteers (2005), Table 1",
+  "_note": "HED (mg/kg) = Animal NOAEL (mg/kg) × (Animal Km / Human Km)",
+  "human_km": 37,
+  "species": {
+    "mouse": { "km": 3, "body_weight_kg": 0.02 },
+    "hamster": { "km": 5, "body_weight_kg": 0.08 },
+    "rat": { "km": 6, "body_weight_kg": 0.15 },
+    "ferret": { "km": 7, "body_weight_kg": 0.30 },
+    "guinea_pig": { "km": 8, "body_weight_kg": 0.40 },
+    "rabbit": { "km": 12, "body_weight_kg": 1.80 },
+    "monkey": { "km": 12, "body_weight_kg": 3.00 },
+    "dog": { "km": 20, "body_weight_kg": 10.0 },
+    "minipig": { "km": 27, "body_weight_kg": 20.0 }
+  }
+}

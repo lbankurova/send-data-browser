@@ -186,17 +186,58 @@ export interface StudySummaryRecord {
 }
 
 // ─── Program (for cross-study grouping) ─────────────────────
+// Maps to backend `projects[]` in study_metadata.json.
+// Studies reference their program via the `project` FK field.
+// pipeline_stage on studies maps to study_stage here.
 
 export interface Program {
-  program_id: string;
-  compound_name: string;
-  study_ids: string[];
+  /** Matches Project.id in study_metadata.json (e.g., "proj_pcdrug") */
+  id: string;
+  /** Display name (e.g., "PCDRUG Program") */
+  name: string;
+  /** Compound name for cross-study grouping */
+  compound: string;
+  /** CAS registry number */
+  cas: string | null;
+  /** Development phase (e.g., "IND-Enabling", "Lead Optimization") */
+  phase: string;
+  /** Therapeutic area */
+  therapeutic_area: string;
   /** Optional clinical dose for safety margin computation (Phase 7) */
   clinical_dose?: {
     dose_value: number;
     dose_unit: string;
     route: string;
   } | null;
-  /** CAS number or internal compound identifier */
-  compound_identifier?: string | null;
+}
+
+// ─── Pipeline stage mapping ─────────────────────────────────
+// Backend uses `pipeline_stage`, cross-study spec uses `study_stage`.
+// Values map directly:
+//   "submitted"       → "SUBMITTED"
+//   "pre_submission"  → "SUBMITTED"  (treated as submitted for cross-study)
+//   "ongoing"         → "ONGOING"
+//   "planned"         → "PLANNED"
+
+export type StudyStage = "PLANNED" | "ONGOING" | "SUBMITTED";
+
+export function mapPipelineStageToStudyStage(
+  pipelineStage: string | null,
+): StudyStage {
+  switch (pipelineStage) {
+    case "ongoing": return "ONGOING";
+    case "planned": return "PLANNED";
+    default: return "SUBMITTED";
+  }
+}
+
+// ─── Km Factors (FDA 2005 BSA scaling) ──────────────────────
+// Used for HED computation in cross-study NOAEL reconciliation.
+// Loaded from shared/config/km-factors.json.
+
+export interface KmFactors {
+  /** Species Km values for BSA-based HED conversion */
+  species: Record<string, { km: number; body_weight_kg: number }>;
+  /** Human Km (reference) */
+  human_km: number;
 }
