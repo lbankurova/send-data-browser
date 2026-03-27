@@ -9,6 +9,7 @@ import { Info } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import {
   SIGNAL_SCORE_WEIGHTS,
   INCIDENCE_SCORE_WEIGHTS,
@@ -80,6 +81,7 @@ interface Props {
 
 export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
   const queryClient = useQueryClient();
+  const [, setStudyTab] = useStudySummaryTab();
   const { data: annotations } = useAnnotations<ThresholdConfig>(studyId, "threshold-config");
   const { mutate: save, isPending, isSuccess, reset } = useSaveAnnotation<ThresholdConfig>(studyId, "threshold-config");
 
@@ -328,6 +330,12 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
             disabled={!isModified}
           >
             Reset to defaults
+          </button>
+          <button
+            className="ml-auto text-[11px] text-primary hover:underline"
+            onClick={() => setStudyTab("rules")}
+          >
+            View rules & classification
           </button>
         </div>
 

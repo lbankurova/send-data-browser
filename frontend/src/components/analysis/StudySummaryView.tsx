@@ -51,6 +51,11 @@ export function StudySummaryView() {
   // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
   const [tab, setTab] = useStudySummaryTab(initialTab);
+  // Rules tab hidden by default — shown on demand via "View rules & classification" link
+  const [rulesTabOpen, setRulesTabOpen] = useState(initialTab === "rules");
+  useEffect(() => {
+    if (tab === "rules") setRulesTabOpen(true);
+  }, [tab]);
 
   // Initialize ScheduledOnlyContext from mortality data (matches FindingsView pattern)
   const { setEarlyDeathSubjects } = useScheduledOnly();
@@ -137,10 +142,16 @@ export function StudySummaryView() {
       <ViewTabBar
         tabs={[
           { key: "details", label: "Study details" },
-          { key: "rules", label: "Rules & classification" },
+          ...(rulesTabOpen ? [{ key: "rules", label: "Rules & classification", closable: true }] : []),
         ]}
         value={tab}
         onChange={(k) => setTab(k as Tab)}
+        onClose={(k) => {
+          if (k === "rules") {
+            setRulesTabOpen(false);
+            setTab("details");
+          }
+        }}
         right={
           <div className="px-3 py-2">
             <button
