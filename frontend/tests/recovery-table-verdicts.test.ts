@@ -302,7 +302,7 @@ describe("buildFindingVerdictMap", () => {
     });
 
     const overrides: Record<string, RecoveryOverrideAnnotation> = {
-      f5: {
+      "f5:M": {
         verdict: "persistent",
         original_verdict: "reversed",
         data_type: "continuous",
