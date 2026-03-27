@@ -37,17 +37,29 @@
         },
         {
           "testCodes": [
-            "SDH",
+            "SDH"
+          ],
+          "canonicalLabels": [
+            "sorbitol dehydrogenase"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "SDH"
+        },
+        {
+          "testCodes": [
             "GLDH",
             "GDH"
           ],
           "canonicalLabels": [
-            "sorbitol dehydrogenase",
             "glutamate dehydrogenase"
           ],
           "domain": "LB",
           "direction": "up",
-          "role": "supporting"
+          "role": "supporting",
+          "tag": "GLDH",
+          "priority": "preferred"
         },
         {
           "testCodes": [
@@ -297,6 +309,35 @@
           "direction": "any",
           "role": "supporting",
           "tag": "MI_KIDNEY"
+        },
+        {
+          "testCodes": [
+            "UPROT",
+            "UTP"
+          ],
+          "canonicalLabels": [
+            "urine protein",
+            "proteinuria",
+            "urine total protein"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "UPROT"
+        },
+        {
+          "testCodes": [
+            "UGLUC",
+            "UGLU"
+          ],
+          "canonicalLabels": [
+            "urine glucose",
+            "glucosuria"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "UGLUC"
         }
       ]
     },
@@ -312,7 +353,9 @@
         {
           "testCodes": [
             "NEUT",
-            "ANC"
+            "ANC",
+            "HET",
+            "HETERO"
           ],
           "canonicalLabels": [
             "neutrophils",
@@ -424,6 +467,30 @@
           "direction": "down",
           "role": "supporting",
           "tag": "SPLEEN_WT"
+        },
+        {
+          "testCodes": [
+            "MCV"
+          ],
+          "canonicalLabels": [
+            "mean corpuscular volume"
+          ],
+          "domain": "LB",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "MCV"
+        },
+        {
+          "testCodes": [
+            "MCHC"
+          ],
+          "canonicalLabels": [
+            "mean corpuscular hemoglobin concentration"
+          ],
+          "domain": "LB",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "MCHC"
         }
       ]
     },
@@ -528,6 +595,18 @@
           "domain": "LB",
           "direction": "down",
           "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "MCV"
+          ],
+          "canonicalLabels": [
+            "mean corpuscular volume"
+          ],
+          "domain": "LB",
+          "direction": "up",
+          "role": "supporting",
+          "tag": "MCV"
         }
       ]
     },

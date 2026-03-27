@@ -141,13 +141,12 @@ describe("syndrome interpretation layer", () => {
 
   // ── Component 1: Certainty ──
 
-  test("XS04 certainty is pattern_only (single-domain cap, REM-12)", () => {
+  test("XS04 certainty is insufficient_data (single-domain cap, REM-12)", () => {
     const result = interp(xs04);
-    // REM-12: XS04 with single domain (LB only) is capped at pattern_only
-    // regardless of discriminator evidence. The strongAgainst gate (RETIC)
-    // would have produced mechanism_uncertain, but the single-domain cap
-    // overrides it to pattern_only since LB alone cannot confirm mechanism.
-    expect(result.certainty).toBe("pattern_only");
+    // REM-12: XS04 with single domain (LB only) is capped. The strongAgainst
+    // gate (RETIC) would have produced mechanism_uncertain, but data sufficiency
+    // caps to insufficient_data since MI domain is absent.
+    expect(result.certainty).toBe("insufficient_data");
     // RETIC is still strong argues_against in discriminator evidence
     const retic = result.discriminatingEvidence.find((e) => e.endpoint === "RETIC");
     expect(retic).toBeDefined();
@@ -457,8 +456,8 @@ describe("syndrome interpretation layer", () => {
   test("dual badges: XS04 has pattern confidence from detection + mechanism certainty", () => {
     const result = interp(xs04);
     expect(result.patternConfidence).toBe(xs04.confidence);
-    // REM-12: single-domain cap overrides to pattern_only
-    expect(result.mechanismCertainty).toBe("pattern_only");
+    // REM-12: single-domain cap + data sufficiency gate overrides to insufficient_data
+    expect(result.mechanismCertainty).toBe("insufficient_data");
   });
 
   test("narrative is non-empty", () => {
@@ -472,8 +471,8 @@ describe("syndrome interpretation layer", () => {
     const xs07 = byId.get("XS07");
     if (xs07) {
       const result = interp(xs07);
-      // MI not in fixture → data sufficiency cap to pattern_only regardless of requiredMet
-      expect(result.certainty).toBe("pattern_only");
+      // MI not in fixture → data sufficiency cap to insufficient_data regardless of requiredMet
+      expect(result.certainty).toBe("insufficient_data");
     }
   });
 
@@ -551,7 +550,7 @@ describe("syndrome interpretation layer", () => {
     expect(["S3_Adverse", "S2_Concern"]).toContain(result.overallSeverity);
   });
 
-  test("death in syndrome organs → S0_Death", () => {
+  test("single death in syndrome organs → S3_Adverse (S0 requires ≥2 deaths or corroboration)", () => {
     const mortality: AnimalDisposition[] = [{
       animalId: "SUBJ-001",
       doseGroup: 3,
@@ -564,7 +563,7 @@ describe("syndrome interpretation layer", () => {
     }];
     const result = interp(xs01, { mortality });
     expect(result.mortalityContext.deathsInSyndromeOrgans).toBe(1);
-    expect(result.overallSeverity).toBe("S0_Death");
+    expect(result.overallSeverity).toBe("S3_Adverse");
   });
 
   test("death in unrelated organs → S4_Critical (not S0_Death)", () => {
@@ -928,9 +927,9 @@ describe("deriveOverallSeverity", () => {
   const adverse = { ...equivocal, overall: "adverse" as const };
   const nonAdverse = { ...equivocal, overall: "non_adverse" as const };
 
-  test("deaths in syndrome organs → S0_Death", () => {
+  test("single death in syndrome organs → S3_Adverse (S0 requires ≥2 deaths or corroboration)", () => {
     const mort = { ...baseMortality, deathsInSyndromeOrgans: 1 };
-    expect(deriveOverallSeverity(mort, noTumors, equivocal, "mechanism_confirmed")).toBe("S0_Death");
+    expect(deriveOverallSeverity(mort, noTumors, equivocal, "mechanism_confirmed")).toBe("S3_Adverse");
   });
 
   test("tumors with progression → carcinogenic", () => {

@@ -74,7 +74,7 @@ export interface DirectionalGateResult {
   action: "reject" | "strong_against" | "weak_against" | "none";
   overrideApplied: boolean;
   overrideReason?: "direct_lesion" | "timecourse";
-  certaintyCap?: "mechanism_uncertain" | "pattern_only";
+  certaintyCap?: "mechanism_uncertain" | "pattern_only" | "insufficient_data";
   explanation: string;
   /** True when gate direction was determined from ANCOVA decomposition. */
   ancovaSource?: boolean;
@@ -92,6 +92,17 @@ export interface CrossDomainSyndrome {
   sexes: string[];
   /** REM-09: Directional gate evaluation result, if applicable. */
   directionalGate?: DirectionalGateResult;
+}
+
+// ─── Study domain completeness types ──────────────────────
+
+export interface StudyDomainWarning {
+  /** Missing domain code */
+  domain: string;
+  /** Human-readable warning */
+  warning: string;
+  /** Syndrome IDs whose certainty is impacted by this missing domain */
+  impactedSyndromes: string[];
 }
 
 // ─── Magnitude floor types ─────────────────────────────────

@@ -549,6 +549,7 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
   const mechanismText = syndromeInterp
     ? syndromeInterp.mechanismCertainty === "mechanism_confirmed" ? "Confirmed mechanism"
       : syndromeInterp.mechanismCertainty === "mechanism_uncertain" ? "Uncertain mechanism"
+      : syndromeInterp.mechanismCertainty === "insufficient_data" ? "Insufficient data"
       : "Pattern only"
     : null;
   const mechanismClass = syndromeInterp
@@ -559,6 +560,8 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
       ? "Supporting findings confirm this specific mechanism over alternatives"
       : syndromeInterp.mechanismCertainty === "mechanism_uncertain"
         ? "Required findings present but some findings argue against, or key tests were not measured"
+        : syndromeInterp.mechanismCertainty === "insufficient_data"
+        ? "Required findings matched but key confirmatory domain data are absent from the study"
         : "Statistical pattern detected but no mechanism-specific findings available"
     : "";
 

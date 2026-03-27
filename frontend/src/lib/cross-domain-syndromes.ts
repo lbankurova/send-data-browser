@@ -22,6 +22,7 @@ import type {
   MagnitudeFloor,
   TermReportEntry,
   SyndromeTermReport,
+  StudyDomainWarning,
 } from "./cross-domain-syndrome-types";
 import {
   SYNDROME_DEFINITIONS,
@@ -44,6 +45,7 @@ export type {
   SyndromeTermReport,
   SyndromeNearMissInfo,
   ChainDefinition,
+  StudyDomainWarning,
 } from "./cross-domain-syndrome-types";
 
 export {
@@ -767,6 +769,48 @@ export function detectCrossDomainSyndromes(
 
   // REM-09: Apply directional gates as post-processing (SE-7: ANCOVA-aware)
   return applyDirectionalGates(results, endpoints, normalizationContexts);
+}
+
+// ─── Study-level domain completeness check ──────────────────
+
+/**
+ * Check which standard domains are absent from the study data and generate
+ * warnings with impacted syndrome IDs.
+ *
+ * Expected domains: LB, BW, OM, MI, CL, EG, VS
+ * Warnings are generated for MI, EG/VS, and CL absence.
+ */
+export function checkStudyDomainCompleteness(
+  endpoints: EndpointSummary[],
+): StudyDomainWarning[] {
+  const presentDomains = new Set(endpoints.map((ep) => ep.domain.toUpperCase()));
+  const warnings: StudyDomainWarning[] = [];
+
+  if (!presentDomains.has("MI")) {
+    warnings.push({
+      domain: "MI",
+      warning: "Histopathology not available — all syndrome certainty capped at mechanism_uncertain",
+      impactedSyndromes: ["XS01", "XS02", "XS03", "XS04", "XS05", "XS06", "XS07"],
+    });
+  }
+
+  if (!presentDomains.has("EG") && !presentDomains.has("VS")) {
+    warnings.push({
+      domain: "EG/VS",
+      warning: "Cardiovascular functional data not available — XS10 cannot be evaluated",
+      impactedSyndromes: ["XS10"],
+    });
+  }
+
+  if (!presentDomains.has("CL")) {
+    warnings.push({
+      domain: "CL",
+      warning: "Clinical observation domain not available — clinical signs cannot be confirmed",
+      impactedSyndromes: ["XS06", "XS08", "XS09"],
+    });
+  }
+
+  return warnings;
 }
 
 // ─── Near-miss analysis (for Organ Context Panel) ─────────

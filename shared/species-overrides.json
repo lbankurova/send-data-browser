@@ -1,0 +1,171 @@
+{
+  "_doc": "Species-specific overrides for the cross-domain syndrome engine. Each entry modifies syndrome interpretation when the study species matches.",
+  "overrides": {
+    "rat": {
+      "_notes": "Rat is the baseline species — minimal overrides needed.",
+      "XS01": {
+        "flags": ["GLDH/SDH are liver-specific in rats (ALT has muscle/RBC sources). Certainty may improve if these biomarkers are available."]
+      },
+      "XS08": {
+        "flags": ["CORT = corticosterone in rats (not cortisol); verify assay specificity."]
+      }
+    },
+    "rabbit": {
+      "_notes": "Herbivore with unique physiology: ALT not liver-specific, GGT predominantly renal, cortisol primary glucocorticoid, baseline reticulocytosis 1-4%, N:L ratio ~1:1, calcium excretion via kidneys.",
+      "XS01": {
+        "termOverrides": [
+          { "tag": "ALT", "confidenceModifier": -1, "flag": "ALT not liver-specific in rabbits (high cardiac muscle activity, ~5h half-life). Verify with SDH or histopathology." },
+          { "tag": "AST", "confidenceModifier": -1, "flag": "AST elevated by physical restraint in rabbits; may reflect handling stress, not hepatocellular injury." }
+        ],
+        "flags": ["Check for hepatic lipidosis pattern (BW↓ + FC↓ + liver wt↑) — rabbits develop steatosis from brief anorexia."]
+      },
+      "XS02": {
+        "termOverrides": [
+          { "tag": "GGT", "confidenceModifier": -1, "flag": "GGT predominantly renal in rabbits; reduced sensitivity for hepatobiliary disease. Clotting artifact risk if serum separation delayed." }
+        ],
+        "flags": ["Consider bile acids (if measured) as more sensitive cholestasis marker than GGT in rabbits."]
+      },
+      "XS03": {
+        "termOverrides": [
+          { "tag": "BUN", "confidenceModifier": -1, "flag": "BUN has high diurnal/dietary variability in rabbits (caecotrophy, protein intake). Creatinine is more reliable anchor." }
+        ],
+        "flags": ["CA↑ and PHOS↑ are key nephrotoxicity markers in rabbits (renal calcium excretion pathway)."]
+      },
+      "XS04": {
+        "flags": ["Baseline reticulocytes 1-4% in rabbits — a 2× fold-change may not be meaningful. Adjust regenerative response thresholds.", "Heterophils may be misidentified as eosinophils by automated analyzers — verify NEUT reporting in SEND data."]
+      },
+      "XS05": {
+        "flags": ["Baseline reticulocytes 1-4% in rabbits — adjust regenerative response thresholds vs other species."]
+      },
+      "XS07": {
+        "flags": ["N:L ratio ~1:1 baseline in rabbits; evaluate absolute lymphopenia vs relative shift. Stress causes relative heterophilia + lymphopenia without absolute WBC increase."]
+      },
+      "XS08": {
+        "flags": ["CORT in rabbits = cortisol (not corticosterone); verify assay is cortisol-specific.", "Adrenaline causes transient lymphocytosis in rabbits (opposite to glucocorticoid lymphopenia); sampling time relative to restraint matters."]
+      },
+      "XS10": {
+        "translationalWeightModifier": 1,
+        "flags": ["Rabbit IKr-driven cardiac repolarization is more translatable to human QT risk than rat Ito-driven repolarization.", "ALT elevation may be cardiac-origin in rabbits — cross-check with troponin (cTnI) if available."]
+      },
+      "XC03a": {
+        "flags": ["Rabbits have lower sensitivity to FCHH enzyme induction pathway than rats. TSH assay validation limited for rabbits."]
+      },
+      "L07": { "severityModifier": -1, "flags": ["Hy's Law adapted criteria have reduced specificity in rabbits — ALT is not liver-specific and TBILI elevation may reflect hemolysis or lipidosis."] },
+      "L08": { "severityModifier": -1 }
+    },
+    "dog": {
+      "_notes": "Gold standard non-rodent species. ALT highly liver-specific (~59h half-life). Unique C-ALP isoenzyme makes ALP least specific in any species. Gold standard for QTc (ICH S7B). SDMA validated for early nephrotoxicity.",
+      "XS01": {
+        "termOverrides": [
+          { "tag": "ALT", "confidenceModifier": 1, "flag": "ALT is highly liver-specific in dogs (~59h half-life); reliable hepatocellular marker." }
+        ],
+        "flags": ["Corticosteroids elevate dog ALT ~2-3× — check concurrent ALP/C-ALP elevation for steroid hepatopathy pattern."]
+      },
+      "XS02": {
+        "flags": [
+          "C-ALP isoenzyme unique to dogs — ALP elevation without hyperbilirubinemia has high prior probability of reflecting C-ALP, not cholestasis. Verify with bilirubin status.",
+          "ALP can reach >100× normal from glucocorticoids alone without true cholestasis.",
+          "If ALP↑ + GGT↑ + no BILI↑ → steroid hepatopathy or enzyme induction, not cholestasis."
+        ]
+      },
+      "XS03": {
+        "flags": ["SDMA (if measured) detects ~20% GFR loss vs creatinine's ~75%; preferred early nephrotoxicity marker in dogs."]
+      },
+      "XS07": {
+        "flags": ["Check eosinopenia + neutrophilia + lymphopenia pattern — if all three present, stress leukogram (XS08) is primary, not immunotoxicity.", "Spontaneous lymphoma background in aged beagles; verify lymphocytosis is not neoplastic in chronic studies."]
+      },
+      "XS08": {
+        "flags": ["CORT = cortisol in dogs. C-ALP elevation is expected downstream of stress cortisol.", "Classic stress leukogram: neutrophilia + lymphopenia + monocytosis + eosinopenia (4-marker signature). EOS↓ is uniquely reliable in dogs."]
+      },
+      "XS10": {
+        "translationalWeightModifier": 2,
+        "flags": ["Beagle telemetry is THE gold standard for preclinical QTc assessment per ICH S7B. Maximum translational weight for dog ECG data."]
+      },
+      "XC03a": {
+        "flags": ["Dogs have lower FCHH sensitivity than rats. Require concurrent liver enzyme induction evidence (hypertrophy, liver weight↑) to confirm pathway.", "Hypothyroidism is common in dogs; verify T4↓ is not spontaneous (check HCD)."]
+      },
+      "L07": { "flags": ["Keep standard severity. C-ALP may confound R-ratio calculation (ALP denominator inflated)."] },
+      "L11": { "flags": ["ALP in dogs requires bilirubin context; isolated ALP↑ insufficient to conclude cholestasis. C-ALP isoenzyme is the most common cause of elevated ALP in dogs."] }
+    },
+    "cynomolgus": {
+      "_notes": "Closest to human. Gold standard for biologics. Small n (3-6). Ketamine confound. High background pathology. CD4:CD8 inverted. Human TSH assays don't work.",
+      "_aliases": ["nhp", "monkey", "macaque", "primate"],
+      "XS01": {
+        "termOverrides": [
+          { "tag": "ALT", "confidenceModifier": -1, "flag": "Ketamine sedation increases AST/ALT in NHPs; verify elevation is consistent with histopathology and dose-response." }
+        ],
+        "flags": ["High background rate of hepatic mononuclear infiltrates (~33% controls); HCD comparison required for histopath-based evidence."]
+      },
+      "XS02": {
+        "flags": ["ALP and GGT significantly higher in male cynomolgus; use sex-stratified references. No C-ALP isoenzyme in NHPs (unlike dogs)."]
+      },
+      "XS03": {
+        "flags": ["Spontaneous renal lesions common (~26% focal glomerular/infiltrates); HCD comparison required."]
+      },
+      "XS04": {
+        "flags": ["Ketamine reduces WBC and lymphocytes; leukocyte changes require cautious interpretation. Protocol-controlled ketamine timing essential."]
+      },
+      "XS07": {
+        "flags": [
+          "Normal CD4:CD8 ratio ~0.5 in cynomolgus (inverted vs human ~2:1); do not interpret species-normal ratio as immunosuppression.",
+          "For biologics targeting immune cells: expected pharmacological depletion is not adverse immunotoxicity. Verify target biology.",
+          "Peripheral blood immunophenotyping (flow cytometry) is far more informative than total lymphocyte count for NHP XS07."
+        ]
+      },
+      "XS08": {
+        "flags": ["CORT = cortisol in NHPs (like humans). High inter-individual variability from capture/restraint/social stress. Adrenal weight is more reliable stress marker than cortisol."]
+      },
+      "XS10": {
+        "translationalWeightModifier": 2,
+        "flags": ["NHP QTc data carry high translational weight (IKr-driven, comparable to dog/human). Valid alternative to dog for ICH S7B assessment."]
+      },
+      "XC03a": {
+        "certaintyCap": "pattern_only",
+        "flags": ["FCHH via enzyme induction is far less operative in primates than rats (TBG-bound T4, ~4-6 day half-life).", "Human TSH assays do NOT detect NHP TSH — verify species-specific assay was used.", "T4↓ + TSH↑ in NHPs more likely reflects direct thyroid toxicity than enzyme induction."]
+      },
+      "_global": {
+        "flags": ["Match HCD by geographic origin (Mauritius vs Vietnamese vs Chinese macaques)."]
+      }
+    },
+    "guinea pig": {
+      "_notes": "Most physiologically unusual species. ALT reduced specificity. Cannot synthesize vitamin C. IKr-driven QTc (high translation despite being rodent). Complement C4 deficiency in some colonies.",
+      "_aliases": ["guinea_pig", "cavy"],
+      "XS01": {
+        "termOverrides": [
+          { "tag": "ALT", "confidenceModifier": -2, "flag": "ALT has reduced sensitivity and specificity for liver injury in guinea pigs. Require SDH/GLDH or histopathology for confirmation." }
+        ],
+        "flags": ["Verify vitamin C supplementation — deficiency elevates liver enzymes and causes anemia independent of test article.", "ALT is consistently higher in males than females; apply sex-stratified references."]
+      },
+      "XS02": {
+        "flags": ["ALP decreases sharply in first 200 days of life; apply age-stratified reference range. GGT is more informative relative to age-adjusted ALP."]
+      },
+      "XS03": {
+        "flags": ["Spontaneous nephrocalcinosis common in guinea pig kidneys; HCD mandatory. CA↑ relevant as supporting nephrotoxicity marker (renal calcium excretion)."]
+      },
+      "XS04": {
+        "flags": ["Lymphocyte-dominant leukogram (40-80% lymphocytes). Heterophils present — may be misidentified by automated analyzers."]
+      },
+      "XS05": {
+        "flags": ["Vitamin C deficiency produces non-regenerative microcytic anemia mimicking myelosuppression — check supplementation before concluding hemolysis."]
+      },
+      "XS07": {
+        "flags": ["Complement C4 deficiency exists naturally in some guinea pig colonies; verify complement status for immunotoxicity studies.", "Lymphocyte-dominant leukogram (40-80%); LYMPH↓ thresholds differ from dog/NHP baselines."]
+      },
+      "XS08": {
+        "flags": ["CORT = corticosterone in guinea pigs (like rats); verify assay specificity.", "Anorexia rapidly depletes vitamin C stores (days) — BW↓ + FC↓ may trigger secondary hypovitaminosis C cascade producing multi-organ false toxicity signals."]
+      },
+      "XS10": {
+        "translationalWeightModifier": 1,
+        "flags": ["Guinea pig cardiac repolarization is IKr-driven — exception to rodent QTc rule. CVGP model validated at 92% accuracy for QTc/PR prediction.", "If anesthetized CVGP protocol, note urethane anesthesia has own cardiovascular effects."]
+      },
+      "XC03a": {
+        "flags": ["Limited FCHH data for guinea pigs; default to mechanism_uncertain. TSH assay validation sparse for this species."]
+      },
+      "L07": { "severityModifier": -1, "flags": ["ALT not liver-specific in guinea pigs; vitamin C deficiency can produce concurrent ALT+BILI elevation. Require SDH/GLDH and/or histopathology confirmation."] },
+      "L08": { "severityModifier": -1 },
+      "_global": {
+        "flags": ["Verify dietary vitamin C adequacy in all guinea pig studies — inadequate supplementation mimics multi-organ systemic toxicity.", "Match HCD by breeder/supplier — AST, ALP differ significantly between guinea pig breeders."]
+      }
+    }
+  }
+}

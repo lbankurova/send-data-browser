@@ -71,6 +71,7 @@ function getMechanismLabel(certainty: SyndromeCertainty): string {
   switch (certainty) {
     case "mechanism_confirmed": return "Confirmed mechanism";
     case "mechanism_uncertain": return "Uncertain mechanism";
+    case "insufficient_data": return "Insufficient data";
     default: return "Pattern only";
   }
 }

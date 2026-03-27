@@ -457,7 +457,7 @@ export function interpretSyndrome(
 
   // REM-10: Stress confound certainty downgrade — reduce by one level
   if (adversity.stressConfound) {
-    const CERTAINTY_ORDER: SyndromeCertainty[] = ["pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
+    const CERTAINTY_ORDER: SyndromeCertainty[] = ["insufficient_data", "pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
     const idx = CERTAINTY_ORDER.indexOf(certaintyResult.certainty);
     if (idx > 0) {
       certaintyResult = {
@@ -466,6 +466,28 @@ export function interpretSyndrome(
         rationale: certaintyResult.rationale +
           ` Downgraded: all evidence overlaps with stress-response endpoints (XS08 co-detected). Direct ${syndrome.name.toLowerCase()} requires additional evidence (functional assay, histopathology, or dose-dissociation from stress markers).`,
       };
+    }
+  }
+
+  // REM-31: Syndrome interaction caps — XS08 ↔ XS07 certainty cap
+  // When XS08 (stress) and XS07 (immunotoxicity) are co-detected, cap XS07 at
+  // mechanism_uncertain unless lymphoid depletion MI beyond thymic atrophy is present.
+  if (syndrome.id === "XS07" && allDetectedSyndromeIds?.includes("XS08")) {
+    const hasNonThymicLymphoidMI = syndrome.matchedEndpoints.some(
+      (ep) => ep.domain === "MI" && !ep.endpoint_label.toLowerCase().includes("thymus"),
+    );
+    if (!hasNonThymicLymphoidMI) {
+      const CERTAINTY_ORDER_MAP: Record<SyndromeCertainty, number> = {
+        insufficient_data: -1, pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+      };
+      if (CERTAINTY_ORDER_MAP[certaintyResult.certainty] > CERTAINTY_ORDER_MAP["mechanism_uncertain"]) {
+        certaintyResult = {
+          ...certaintyResult,
+          certainty: "mechanism_uncertain",
+          rationale: certaintyResult.rationale +
+            ` Capped at mechanism_uncertain: XS08 (stress response) co-detected — thymic/lymphoid changes may be stress-driven. Requires non-thymic lymphoid depletion histopathology or functional immune data to confirm direct immunotoxicity.`,
+        };
+      }
     }
   }
 

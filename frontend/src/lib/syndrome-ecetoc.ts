@@ -917,6 +917,12 @@ export function computeAdversity(
     overall = "equivocal";
   }
 
+  // REM-33: Reversibility modifier — full reversal downgrades adverse → equivocal
+  // for moderate+ magnitude (minimal/mild already handled above as non_adverse)
+  if (reversible === true && overall === "adverse" && !precursorToWorse) {
+    overall = "equivocal";
+  }
+
   return {
     adaptive,
     stressConfound,
@@ -949,12 +955,19 @@ export function deriveOverallSeverity(
   adversity: AdversityAssessment,
   certainty: SyndromeCertainty,
 ): OverallSeverity {
-  if (mortalityContext.deathsInSyndromeOrgans > 0) return "S0_Death";
+  // REM-32: S0 requires corroboration — single uncorroborated death → S3_Adverse with warning
+  if (mortalityContext.deathsInSyndromeOrgans > 1) return "S0_Death";
+  if (mortalityContext.deathsInSyndromeOrgans === 1) {
+    // Single death: S0 only if corroborated by treatment-related deaths elsewhere
+    if (mortalityContext.treatmentRelatedDeaths > 1) return "S0_Death";
+    return "S3_Adverse"; // single uncorroborated death → S3, not S0
+  }
   if (tumorContext.tumorsPresent && tumorContext.progressionDetected) return "carcinogenic";
   if (tumorContext.tumorsPresent) return "proliferative";
   if (mortalityContext.treatmentRelatedDeaths > 0) return "S4_Critical";
   if ((certainty === "mechanism_confirmed" || certainty === "mechanism_uncertain") && adversity.overall === "adverse") return "S3_Adverse";
   if (adversity.overall === "adverse") return "S2_Concern";
   if (adversity.overall === "non_adverse") return "S1_Monitor";
+  if (certainty === "insufficient_data") return "S1_Monitor";
   return "S2_Concern";
 }

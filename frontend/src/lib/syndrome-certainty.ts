@@ -686,7 +686,7 @@ export function applyCertaintyCaps(
   histopathData?: LesionSeverityRow[],
 ): { certainty: SyndromeCertainty; rationale: string; upgradeEvidence?: UpgradeEvidenceResult | null } {
   const CERTAINTY_ORDER: Record<SyndromeCertainty, number> = {
-    pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
+    insufficient_data: -1, pattern_only: 0, mechanism_uncertain: 1, mechanism_confirmed: 2,
   };
 
   // REM-09: Apply directional gate certainty cap
@@ -720,7 +720,7 @@ export function applyCertaintyCaps(
     const coveredDomains = new Set(syndrome.domainsCovered);
     for (const req of suffReqs) {
       if (!coveredDomains.has(req.domain)) {
-        const maxCert: SyndromeCertainty = req.role === "confirmatory" ? "pattern_only" : "mechanism_uncertain";
+        const maxCert: SyndromeCertainty = req.role === "confirmatory" ? "insufficient_data" : "mechanism_uncertain";
         if (CERTAINTY_ORDER[certainty] > CERTAINTY_ORDER[maxCert]) {
           certainty = maxCert;
           rationale += ` Capped at ${maxCert}: ${req.role} domain ${req.domain} not available in study data.`;
@@ -757,8 +757,8 @@ export function applyCertaintyCaps(
       if (totalScore >= 2.0) levelsLifted = 2;
       else if (totalScore >= 1.0) levelsLifted = 1;
 
-      // Apply lift (pattern_only → mechanism_uncertain → mechanism_confirmed)
-      const CERTAINTY_LADDER: SyndromeCertainty[] = ["pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
+      // Apply lift (insufficient_data → pattern_only → mechanism_uncertain → mechanism_confirmed)
+      const CERTAINTY_LADDER: SyndromeCertainty[] = ["insufficient_data", "pattern_only", "mechanism_uncertain", "mechanism_confirmed"];
       let finalCertainty = cappedCertainty;
       if (levelsLifted > 0) {
         const currentIdx = CERTAINTY_LADDER.indexOf(cappedCertainty);

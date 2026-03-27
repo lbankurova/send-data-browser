@@ -42,7 +42,8 @@ export const DOSE_RESPONSE_THRESHOLDS = {
 export type SyndromeCertainty =
   | "mechanism_confirmed"
   | "mechanism_uncertain"
-  | "pattern_only";
+  | "pattern_only"
+  | "insufficient_data";
 
 export type EnzymeTier = "watchlist" | "concern" | "high";
 

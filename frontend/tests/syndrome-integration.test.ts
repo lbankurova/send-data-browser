@@ -211,7 +211,7 @@ describe("syndrome interpretation — structural invariants", () => {
   });
 
   test("certainty is a valid enum value", () => {
-    const validCertainties = ["mechanism_confirmed", "mechanism_uncertain", "pattern_only"];
+    const validCertainties = ["mechanism_confirmed", "mechanism_uncertain", "pattern_only", "insufficient_data"];
     for (const { syndrome, interp } of interpretations) {
       expect(
         validCertainties,

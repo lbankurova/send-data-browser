@@ -437,7 +437,7 @@ describe("Phase 4: tiered liver enzyme certainty cap", () => {
   // - MI absent → data sufficiency caps to pattern_only first → enzyme tier irrelevant
   // - MI present → data sufficiency satisfied → enzyme tier is the active cap
 
-  test("single enzyme without MI → pattern_only (data sufficiency caps first, concern tier irrelevant)", () => {
+  test("single enzyme without MI → insufficient_data (data sufficiency caps first, concern tier irrelevant)", () => {
     const syndrome = makeXS01([
       { endpoint_label: "ALT", domain: "LB", role: "required" },
     ]);
@@ -445,7 +445,7 @@ describe("Phase 4: tiered liver enzyme certainty cap", () => {
       ep({ testCode: "ALT", maxEffectSize: 1.5, maxFoldChange: 2.0, direction: "up" }),
     ];
     const result = assessCertainty(syndrome, unavailableDiscriminators, allEps, noHistopath);
-    expect(result.certainty).toBe("pattern_only");
+    expect(result.certainty).toBe("insufficient_data");
   });
 
   test("single enzyme with MI → concern tier caps to mechanism_uncertain", () => {
@@ -478,7 +478,7 @@ describe("Phase 4: tiered liver enzyme certainty cap", () => {
     expect(result.rationale).not.toContain("single liver enzyme");
   });
 
-  test("single enzyme + liver weight (no MI) → pattern_only (data sufficiency caps first)", () => {
+  test("single enzyme + liver weight (no MI) → insufficient_data (data sufficiency caps first)", () => {
     const syndrome = makeXS01([
       { endpoint_label: "ALT", domain: "LB", role: "required" },
       { endpoint_label: "LIVER — LIVER (WEIGHT)", domain: "OM", role: "supporting" },
@@ -487,7 +487,7 @@ describe("Phase 4: tiered liver enzyme certainty cap", () => {
       ep({ testCode: "ALT", maxEffectSize: 1.5, maxFoldChange: 2.0, direction: "up" }),
     ];
     const result = assessCertainty(syndrome, unavailableDiscriminators, allEps, noHistopath);
-    expect(result.certainty).toBe("pattern_only");
+    expect(result.certainty).toBe("insufficient_data");
     expect(result.rationale).toContain("MI");
   });
 
@@ -645,8 +645,8 @@ describe("Phase 4b: enzyme magnitude tiers", () => {
     expect(result.certainty).toBe("mechanism_confirmed");
   });
 
-  test("tier cap + data sufficiency: no MI → pattern_only (no upgrade evidence either)", () => {
-    // No MI → data sufficiency caps to pattern_only → UE-04 also not met
+  test("tier cap + data sufficiency: no MI → insufficient_data (no upgrade evidence either)", () => {
+    // No MI → data sufficiency caps to insufficient_data → UE-04 also not met
     const syndrome: CrossDomainSyndrome = {
       id: "XS01",
       name: "Hepatocellular Injury",
@@ -665,8 +665,8 @@ describe("Phase 4b: enzyme magnitude tiers", () => {
       sdhEndpoint,
     ];
     const result = assessCertainty(syndrome, confirmingDiscriminators, allEps, noHistopath);
-    // Data sufficiency → pattern_only; enzyme tier also watchlist → pattern_only; no UE-04 → no lift
-    expect(result.certainty).toBe("pattern_only");
+    // Data sufficiency → insufficient_data; enzyme tier also watchlist → insufficient_data; no UE-04 → no lift
+    expect(result.certainty).toBe("insufficient_data");
     expect(result.rationale).toContain("MI");
   });
 
