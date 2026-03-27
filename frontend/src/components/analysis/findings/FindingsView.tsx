@@ -529,6 +529,9 @@ export function FindingsView() {
               findings={tableFindings}
               doseGroups={data.dose_groups}
               selectedDay={chartDay}
+              leftTab="dr"
+              onLeftTabChange={() => {}}
+              hasRecovery={false}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
