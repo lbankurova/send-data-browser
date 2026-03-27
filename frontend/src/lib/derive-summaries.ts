@@ -618,11 +618,9 @@ export function deriveOrganCoherence(endpoints: EndpointSummary[]): Map<string, 
       adverseEndpoints: eps.filter((e) => e.worstSeverity === "adverse").length,
       warningEndpoints: eps.filter((e) => e.worstSeverity === "warning").length,
       convergenceLabel:
-        domains.length >= 3
-          ? "3-domain convergence"
-          : domains.length >= 2
-            ? "2-domain convergence"
-            : "single domain",
+        domains.length >= 2
+          ? `${domains.length}-domain convergence`
+          : "single domain",
     });
   }
   return result;
