@@ -13,16 +13,19 @@ import { classifyContinuousRecovery } from "@/lib/recovery-verdict";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { UnifiedFinding } from "@/types/analysis";
 import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
+import { recoveryOverrideKey } from "@/hooks/useRecoveryOverrideActions";
 
 // ── Types ────────────────────────────────────────────────────
 
 export interface FindingVerdictInfo {
   /** Worst-case auto verdict across dose groups. */
   verdict: string;
-  /** Whether an override annotation exists for this finding. */
+  /** Whether an override annotation exists for this finding+sex. */
   isOverridden: boolean;
   /** Override verdict if overridden, else auto verdict. */
   effectiveVerdict: string;
+  /** Data type for this finding (needed by override actions). */
+  dataType: "continuous" | "incidence";
 }
 
 // ── Verdict priority (same as RecoveryPane) ──────────────────
@@ -64,7 +67,8 @@ export function buildFindingVerdictMap(
 
     if (worstVerdict == null) continue;
 
-    const override = overrides?.[finding.id];
+    const key = recoveryOverrideKey(finding.id, finding.sex);
+    const override = overrides?.[key];
     const isOverridden = !!override;
     const effectiveVerdict = isOverridden ? override.verdict : worstVerdict;
 
@@ -72,6 +76,7 @@ export function buildFindingVerdictMap(
       verdict: worstVerdict,
       isOverridden,
       effectiveVerdict,
+      dataType: finding.data_type === "continuous" ? "continuous" : "incidence",
     });
   }
 

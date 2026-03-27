@@ -1,10 +1,8 @@
 /**
  * Hook for recovery verdict override CRUD via the annotations system.
  *
- * Follows the same pattern as usePatternOverrideActions but simpler:
- * no optimistic cache updates on findings (recovery verdicts are display-only
- * in the pane, not used in findings table computation). Just invalidates the
- * annotations query on success.
+ * Override key format: `findingId:sex` — each sex gets its own override,
+ * aligning with regulatory requirements for independent per-sex assessment.
  */
 
 import { useCallback } from "react";
@@ -33,6 +31,11 @@ export const RECOVERY_OVERRIDE_OPTIONS = [
   { value: "not_assessed", label: RECOVERY_VERDICT_LABEL["not_assessed"] },
 ] as const;
 
+/** Build the per-sex annotation entity key. */
+export function recoveryOverrideKey(findingId: string, sex: string): string {
+  return `${findingId}:${sex}`;
+}
+
 // ── Hook ─────────────────────────────────────────────────────
 
 export function useRecoveryOverrideActions(studyId: string | undefined) {
@@ -42,21 +45,21 @@ export function useRecoveryOverrideActions(studyId: string | undefined) {
   const deleteMutation = useDeleteAnnotation(studyId, "recovery-overrides");
 
   /**
-   * Set or update the override verdict for a finding.
+   * Set or update the override verdict for a finding+sex.
    * If newVerdict matches originalVerdict, treats as a reset (deletes override).
    */
   const selectVerdict = useCallback(
-    (findingId: string, originalVerdict: string, dataType: "continuous" | "incidence", newVerdict: string) => {
+    (findingId: string, sex: string, originalVerdict: string, dataType: "continuous" | "incidence", newVerdict: string) => {
       if (!studyId) return;
+      const key = recoveryOverrideKey(findingId, sex);
 
-      // Selecting original verdict = reset
       if (newVerdict === originalVerdict) {
-        resetVerdict(findingId);
+        resetVerdict(findingId, sex);
         return;
       }
 
       saveMutation.mutate({
-        entityKey: findingId,
+        entityKey: key,
         data: {
           verdict: newVerdict,
           original_verdict: originalVerdict,
@@ -70,22 +73,22 @@ export function useRecoveryOverrideActions(studyId: string | undefined) {
 
   /** Remove an override, reverting to the auto-computed verdict. */
   const resetVerdict = useCallback(
-    (findingId: string) => {
+    (findingId: string, sex: string) => {
       if (!studyId) return;
-      deleteMutation.mutate(findingId);
+      deleteMutation.mutate(recoveryOverrideKey(findingId, sex));
     },
     [studyId, deleteMutation],
   );
 
   /** Save or update a note on an existing override. Creates the override if needed. */
   const saveNote = useCallback(
-    (findingId: string, originalVerdict: string, dataType: "continuous" | "incidence", text: string) => {
+    (findingId: string, sex: string, originalVerdict: string, dataType: "continuous" | "incidence", text: string) => {
       if (!studyId) return;
+      const key = recoveryOverrideKey(findingId, sex);
 
-      // Merge note into existing annotation data
-      const existing = annotations?.[findingId];
+      const existing = annotations?.[key];
       saveMutation.mutate({
-        entityKey: findingId,
+        entityKey: key,
         data: {
           verdict: existing?.verdict ?? originalVerdict,
           original_verdict: existing?.original_verdict ?? originalVerdict,

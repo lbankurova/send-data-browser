@@ -141,12 +141,6 @@ export function FindingsView() {
     setExcludedEndpoints((prev) => { const next = new Set(prev); next.delete(label); return next; });
   }, []);
 
-  // Navigate to recovery tab for a finding (called from FindingsTable recovery badge click)
-  const handleNavigateRecovery = useCallback((finding: UnifiedFinding) => {
-    selectFinding(finding);
-    setLeftChartTab("recovery");
-  }, [selectFinding, setLeftChartTab]);
-
   // Sync excluded endpoints to rail via reverse callback
   useEffect(() => {
     const cb = getFindingsExcludedCallback();
@@ -706,7 +700,6 @@ export function FindingsView() {
           globalDayLabels={dayMeta?.dayLabels}
           recoveryData={recoveryData}
           recoveryOverrides={recoveryOverrides}
-          onNavigateRecovery={handleNavigateRecovery}
         />
       ) : null}
       </div>

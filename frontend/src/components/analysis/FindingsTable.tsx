@@ -55,8 +55,8 @@ import type { TableFilterState } from "./findings/table-filters";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
 import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
-import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import { classifyFindingNature } from "@/lib/finding-nature";
+import { RecoveryOverrideDropdown } from "./panes/RecoveryOverrideDropdown";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -163,11 +163,9 @@ interface FindingsTableProps {
   recoveryData?: RecoveryComparisonResponse;
   /** Recovery override annotations keyed by finding ID. */
   recoveryOverrides?: Record<string, RecoveryOverrideAnnotation>;
-  /** Callback when user clicks a recovery badge — navigates to recovery tab. */
-  onNavigateRecovery?: (finding: UnifiedFinding) => void;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels, recoveryData, recoveryOverrides, onNavigateRecovery }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels, recoveryData, recoveryOverrides }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -772,28 +770,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const f = info.row.original;
           const vi = verdictMap.get(f.id);
           if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
-          const label = getVerdictLabel(vi.effectiveVerdict);
-          return (
-            <button
-              type="button"
-              className={cn(
-                "text-[10px] font-medium cursor-pointer hover:underline",
-                RECOVERY_VERDICT_CLASS[vi.effectiveVerdict] ?? "text-muted-foreground",
-                vi.isOverridden && "italic",
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigateRecovery?.(f);
-              }}
-              title={vi.isOverridden ? `Override: ${label}` : label}
-            >
-              {label}
-            </button>
-          );
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
         },
       }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations, verdictMap, onNavigateRecovery]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations, verdictMap]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -989,28 +970,11 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const f = info.row.original.original;
           const vi = verdictMap.get(f.id);
           if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
-          const label = getVerdictLabel(vi.effectiveVerdict);
-          return (
-            <button
-              type="button"
-              className={cn(
-                "text-[10px] font-medium cursor-pointer hover:underline",
-                RECOVERY_VERDICT_CLASS[vi.effectiveVerdict] ?? "text-muted-foreground",
-                vi.isOverridden && "italic",
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNavigateRecovery?.(f);
-              }}
-              title={vi.isOverridden ? `Override: ${label}` : label}
-            >
-              {label}
-            </button>
-          );
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
         },
       }),
     ],
-    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod, verdictMap, onNavigateRecovery]
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod, verdictMap]
   );
 
   // ─── Standard table instance ───────────────────────────────
@@ -1347,11 +1311,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
-                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose";
+                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose" || cell.column.id === "recovery";
                   const isOverridden = cell.column.id === "pattern"
                     ? derivePatternState(row.original, overrideActions.annotations).patternChanged
                     : cell.column.id === "onset_dose"
                     ? deriveOnsetState(row.original, doseGroups, overrideActions.annotations).isOverridden
+                    : cell.column.id === "recovery"
+                    ? (verdictMap.get(row.original.id)?.isOverridden ?? false)
                     : false;
                   const style = colStyle(cell.column.id);
                   return (
