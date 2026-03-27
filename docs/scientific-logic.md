@@ -29,7 +29,7 @@ Mark each question with ✅ (agree), ❌ (disagree — explain), or ❓ (need mo
 
 # Part A: Syndrome Pattern Definitions
 
-The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern specifies required and supporting evidence across laboratory (LB), microscopic pathology (MI), macroscopic pathology (MA), organ weight (OM), clinical observation (CL), and other domains.
+The system defines 33 cross-domain syndrome patterns: 10 primary (XS01–XS10) and 23 compound (XC-series). Each pattern specifies required and supporting evidence across laboratory (LB), microscopic pathology (MI), macroscopic pathology (MA), organ weight (OM), clinical observation (CL), and other domains.
 
 ## XS01: Hepatocellular injury
 
@@ -341,6 +341,543 @@ The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern
 
 ---
 
+## XC01a: BM Myeloid Suppression
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| NEUT ↓ | LB | down | NEUT |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| WBC ↓ | LB | down |
+| Bone marrow decreased cellularity | MI | any |
+| Spleen weight ↓ | OM | down |
+
+---
+
+## XC01b: BM Erythroid Suppression
+
+**Clinical description:** (no description)
+
+**Required logic:** Compound: `RBC AND HGB AND RETIC`  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| RBC ↓ | LB | down | RBC |
+| HGB ↓ | LB | down | HGB |
+| RETIC ↓ | LB | down | RETIC |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| HCT ↓ | LB | down |
+| Bone marrow decreased cellularity | MI | any |
+| Spleen weight | OM | any |
+| Pallor | CL | any |
+
+---
+
+## XC01c: BM Megakaryocyte Suppression
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| PLAT ↓ | LB | down | PLAT |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Bone marrow decreased cellularity | MI | any |
+| Petechiae | CL | any |
+
+---
+
+## XC02: Hemolytic Anemia Multi-Organ
+
+**Clinical description:** (no description)
+
+**Required logic:** ALL required terms must match  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| RBC ↓ | LB | down | RBC |
+| RETIC ↑ | LB | up | RETIC |
+| BILI ↑ | LB | up | TBILI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| MCV ↑ | LB | up |
+| LDH ↑ | LB | up |
+| HAPTO ↓ | LB | down |
+| Spleen extramedullary hematopoiesis | MI | any |
+| Bone marrow erythroid hyperplasia | MI | any |
+| Liver hemosiderosis | MI | any |
+| Kidney hemosiderin | MI | any |
+| Spleen weight ↑ | OM | up |
+| Pallor | CL | any |
+
+---
+
+## XC03a: Thyroid FCHH (Enzyme Induction)
+
+**Clinical description:** (no description)
+
+**Required logic:** ALL required terms must match  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| T4 ↓ | LB | down | T4 |
+| TSH ↑ | LB | up | TSH |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Thyroid hypertrophy, follicular cell | MI | any |
+| Liver hypertrophy | MI | any |
+| Thyroid weight ↑ | OM | up |
+| Liver weight ↑ | OM | up |
+
+---
+
+## XC03b: Thyroid FCHH (Direct)
+
+**Clinical description:** (no description)
+
+**Required logic:** ALL required terms must match  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| T4 ↓ | LB | down | T4 |
+| TSH ↑ | LB | up | TSH |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Thyroid hypertrophy, follicular cell | MI | any |
+| Thyroid weight ↑ | OM | up |
+
+---
+
+## XC04a: Adrenal Cortical Hypertrophy (Stress)
+
+**Clinical description:** (no description)
+
+**Required logic:** Compound: `ADRENAL_MI AND (ADRENAL_WT OR THYMUS_WT OR BW)`  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Adrenal cortical hypertrophy | MI | any | ADRENAL_MI |
+| Adrenal weight ↑ | OM | up | ADRENAL_WT |
+| Thymus weight ↓ | OM | down | THYMUS_WT |
+| Body Weight ↓ | BW | down | BW |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| LYMPH ↓ | LB | down |
+| NEUT ↑ | LB | up |
+| CORT ↑ | LB | up |
+| Piloerection | CL | any |
+
+---
+
+## XC04b: Adrenal Cortical Atrophy (HPA Suppression)
+
+**Clinical description:** (no description)
+
+**Required logic:** ALL required terms must match  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Adrenal cortical atrophy | MI | any | ADRENAL_MI |
+| Adrenal weight ↓ | OM | down | ADRENAL_WT |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| ACTH ↓ | LB | down |
+| CORT ↓ | LB | down |
+
+---
+
+## XC04c: Adrenal Cortical Vacuolation (Steroidogenesis Block)
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Adrenal vacuolation, cortical | MI | any | ADRENAL_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| CORT ↓ | LB | down |
+| ACTH ↑ | LB | up |
+| K ↑ | LB | up |
+| SODIUM ↓ | LB | down |
+| Adrenal weight | OM | any |
+
+---
+
+## XC05: Adrenal Medullary Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Adrenal chromaffin cell hyperplasia | MI | any | ADRENAL_MED_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Adrenal weight ↑ | OM | up |
+
+---
+
+## XC06a: Testicular Germ Cell Toxicity
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Testis tubular degeneration | MI | any | TESTIS_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Testis weight ↓ | OM | down |
+| TESTO ↓ | LB | down |
+| FSH ↑ | LB | up |
+| INHBB ↓ | LB | down |
+
+---
+
+## XC06b: Leydig Cell Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Testis leydig cell atrophy | MI | any | LEYDIG_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| TESTO | LB | any |
+| LH ↑ | LB | up |
+| Testis weight | OM | any |
+
+---
+
+## XC06c: Male Accessory Sex Organ Atrophy
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Epididymis atrophy | MI | any | ASO_MI |
+| Prostate atrophy | MI | any | ASO_MI |
+| Seminal vesicle atrophy | MI | any | ASO_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Prostate weight ↓ | OM | down |
+| TESTO ↓ | LB | down |
+
+---
+
+## XC07a: Ovarian Follicular Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Ovary follicular atresia | MI | any | OVARY_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| ESTRA ↓ | LB | down |
+| FSH ↑ | LB | up |
+| LH ↑ | LB | up |
+| PROG ↓ | LB | down |
+| Ovary weight ↓ | OM | down |
+| Irregular Cycling | CL | any |
+
+---
+
+## XC08a: Uterine Atrophy
+
+**Clinical description:** (no description)
+
+**Required logic:** ALL required terms must match  
+**Minimum domains:** 2
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Uterus atrophy | MI | any | UTERUS_MI |
+| Uterus weight ↓ | OM | down | UTERUS_WT |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| ESTRA ↓ | LB | down |
+| Prolonged Diestrus | CL | any |
+
+---
+
+## XC08b: Uterine Hyperplasia
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Uterus endometrial hyperplasia | MI | any | UTERUS_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Uterus weight ↑ | OM | up |
+| ESTRA ↑ | LB | up |
+| Persistent Estrus | CL | any |
+
+---
+
+## XC09: CNS Neuronal Degeneration
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Brain neuronal degeneration | MI | any | CNS_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Brain weight | OM | any |
+| Tremors | CL | any |
+
+---
+
+## XC10: PNS Axonal Degeneration
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Peripheral nerve axonal degeneration | MI | any | PNS_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Decreased Grip Strength | CL | any |
+
+---
+
+## XC11a: Dermal Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Skin acanthosis | MI | any | SKIN_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Erythema | CL | any |
+
+---
+
+## XC11b: Injection Site Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Injection site fibrosis | MI | any | INJ_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Injection Site Erythema | CL | any |
+
+---
+
+## XC12a: Retinal Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Eye retinal degeneration | MI | any | RETINA_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Fundoscopic Abnormality | CL | any |
+
+---
+
+## XC12b: Lens Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Eye cataract | MI | any | LENS_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Lens Opacity | CL | any |
+
+---
+
+## XC12c: Corneal Effects
+
+**Clinical description:** (no description)
+
+**Required logic:** ANY one required term triggers detection  
+**Minimum domains:** 1
+
+**Required evidence:**
+
+| Term | Domain | Direction | Tag |
+|------|--------|-----------|-----|
+| Eye corneal opacity | MI | any | CORNEA_MI |
+
+**Supporting evidence:**
+
+| Term | Domain | Direction |
+|------|--------|-----------|
+| Corneal Opacity | CL | any |
+
+---
+
 # Part B: Interpretation Framework
 
 After detecting syndrome patterns, the system interprets each through a multi-step pipeline. Each step produces a structured assessment that feeds into the next.
@@ -532,7 +1069,7 @@ This section shows the system's actual output for each syndrome detected in the 
 **Duration:** 13 weeks (subchronic)  
 **Detected syndromes:** XS01 (Hepatocellular injury), XS05 (Hemolytic anemia), XS08 (Stress response), XS09 (Target organ wasting), XC03a (Thyroid FCHH (Enzyme Induction)), XC04c (Adrenal Cortical Vacuolation (Steroidogenesis Block)), XS03 (Nephrotoxicity), XC01a (BM Myeloid Suppression)  
 **Differential diagnoses (pattern detected, mechanism contradicted):** XS04 (Myelosuppression), XS07 (Immunotoxicity)  
-**Not evaluated (insufficient data):** XS02 (Hepatobiliary / Cholestatic), XS06 (Phospholipidosis), XS10 (Cardiovascular)
+**Not evaluated (insufficient data):** XS02 (Hepatobiliary / Cholestatic), XS06 (Phospholipidosis), XS10 (Cardiovascular), XC01b (BM Erythroid Suppression), XC01c (BM Megakaryocyte Suppression), XC02 (Hemolytic Anemia Multi-Organ), XC03b (Thyroid FCHH (Direct)), XC04a (Adrenal Cortical Hypertrophy (Stress)), XC04b (Adrenal Cortical Atrophy (HPA Suppression)), XC05 (Adrenal Medullary Effects), XC06a (Testicular Germ Cell Toxicity), XC06b (Leydig Cell Effects), XC06c (Male Accessory Sex Organ Atrophy), XC07a (Ovarian Follicular Effects), XC08a (Uterine Atrophy), XC08b (Uterine Hyperplasia), XC09 (CNS Neuronal Degeneration), XC10 (PNS Axonal Degeneration), XC11a (Dermal Effects), XC11b (Injection Site Effects), XC12a (Retinal Effects), XC12b (Lens Effects), XC12c (Corneal Effects)
 
 ## XS01: Hepatocellular injury [DETECTED]
 

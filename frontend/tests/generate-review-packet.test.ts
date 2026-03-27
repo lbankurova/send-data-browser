@@ -21,6 +21,7 @@ import type {
   CrossDomainSyndrome,
   TermReportEntry,
 } from "@/lib/cross-domain-syndromes";
+import { SYNDROME_DEFINITIONS } from "@/lib/cross-domain-syndrome-data";
 import {
   interpretSyndrome,
   computeTreatmentRelatedness,
@@ -240,12 +241,13 @@ function generateReviewDocument(): string {
 
   lines.push("# Part A: Syndrome Pattern Definitions");
   lines.push("");
-  lines.push("The system defines 10 cross-domain syndrome patterns (XS01–XS10). Each pattern specifies required and supporting evidence across laboratory (LB), microscopic pathology (MI), macroscopic pathology (MA), organ weight (OM), clinical observation (CL), and other domains.");
+  const allDefinedIds = SYNDROME_DEFINITIONS.map(d => d.id);
+  const xsIds = allDefinedIds.filter(id => id.startsWith("XS"));
+  const xcIds = allDefinedIds.filter(id => id.startsWith("XC"));
+  lines.push(`The system defines ${allDefinedIds.length} cross-domain syndrome patterns: ${xsIds.length} primary (XS01–XS10) and ${xcIds.length} compound (XC-series). Each pattern specifies required and supporting evidence across laboratory (LB), microscopic pathology (MI), macroscopic pathology (MA), organ weight (OM), clinical observation (CL), and other domains.`);
   lines.push("");
 
-  const syndromeIds = ["XS01", "XS02", "XS03", "XS04", "XS05", "XS06", "XS07", "XS08", "XS09", "XS10"];
-
-  for (const sid of syndromeIds) {
+  for (const sid of allDefinedIds) {
     const def = getSyndromeDefinition(sid);
     if (!def) {
       lines.push(`## ${sid} — (not found in engine)`);
@@ -523,7 +525,7 @@ function generateReviewDocument(): string {
   // detected = passes required logic AND no reject/strong_against gate
   // candidate = passes required logic BUT ruled_out or strong_against by gate
   // not_evaluated = not detected because required domain/endpoint absent from study
-  const allSyndromeIds = ["XS01", "XS02", "XS03", "XS04", "XS05", "XS06", "XS07", "XS08", "XS09", "XS10"];
+  const allSyndromeIds = allDefinedIds;
   const detectedIds = new Set(syndromes.map(s => s.id));
 
   const detectedSyndromes: typeof syndromes = [];
@@ -882,9 +884,9 @@ describe("Scientific Logic Review Packet", () => {
     expect(doc).toContain("# Part D: PointCross Worked Examples");
     expect(doc).toContain("# Part E: Cross-Cutting Review Questions");
 
-    // Verify all 10 syndrome definitions present in Part A
-    for (const sid of ["XS01", "XS02", "XS03", "XS04", "XS05", "XS06", "XS07", "XS08", "XS09", "XS10"]) {
-      expect(doc).toContain(`## ${sid}:`);
+    // Verify all syndrome definitions present in Part A
+    for (const def of SYNDROME_DEFINITIONS) {
+      expect(doc).toContain(`## ${def.id}:`);
     }
 
     // Verify detected syndromes have worked examples in Part D
