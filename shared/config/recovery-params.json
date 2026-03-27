@@ -1,0 +1,47 @@
+{
+  "$schema": "../schemas/recovery-params.schema.json",
+  "version": "1.0.0",
+
+  "finding_nature_keywords": {
+    "_comment": "Keyword → finding nature classification with default recovery characteristics",
+    "ADAPTIVE": {
+      "keywords": ["hyperplasia", "hypertrophy", "vacuolation", "pigmentation", "weight change"],
+      "default_reversibility": "high",
+      "default_recovery_weeks": 6
+    },
+    "DEGENERATIVE": {
+      "keywords": ["degeneration", "necrosis", "atrophy", "fibrosis", "sclerosis"],
+      "default_reversibility": "moderate",
+      "default_recovery_weeks": 10
+    },
+    "PROLIFERATIVE": {
+      "keywords": ["tumor", "adenoma", "carcinoma", "sarcoma", "neoplasm"],
+      "default_reversibility": "none",
+      "default_recovery_weeks": null
+    },
+    "INFLAMMATORY": {
+      "keywords": ["inflammation", "infiltrate", "granuloma", "abscess"],
+      "default_reversibility": "moderate",
+      "default_recovery_weeks": 8
+    },
+    "DEPOSITIONAL": {
+      "keywords": ["mineralization", "hemosiderin", "lipofuscin"],
+      "default_reversibility": "none",
+      "default_recovery_weeks": null
+    },
+    "VASCULAR": {
+      "keywords": ["hemorrhage", "thrombosis", "congestion", "angiectasis"],
+      "default_reversibility": "variable",
+      "default_recovery_weeks": 4
+    }
+  },
+
+  "pharmacological_exclusions": {
+    "_comment": "Findings that never classify as pharmacological protective signals",
+    "terms": [
+      "artifact", "autolysis", "postmortem",
+      "basophilic tubules", "chronic progressive nephropathy", "lipofuscin",
+      "pigment", "mineralization", "cyst", "dilatation", "congestion", "hemorrhage", "thrombus"
+    ]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "../schemas/classification-tiers.schema.json",
+  "version": "1.0.0",
+
+  "severity_cascade": {
+    "_comment": "Overall severity tier priority (highest to lowest)",
+    "tiers": ["S0_Death", "carcinogenic", "proliferative", "S4_Critical", "S3_Adverse", "S2_Concern", "S1_Monitor"]
+  },
+
+  "inhand_severity_mapping": {
+    "_comment": "INHAND histopathology severity grade to numeric mapping",
+    "MINIMAL": 1,
+    "MILD": 2,
+    "MODERATE": 3,
+    "MARKED": 4,
+    "SEVERE": 5
+  },
+
+  "severity_bands": {
+    "_comment": "Severity band cutoffs for recovery modulation (finding-nature.ts)",
+    "low_max": 2,
+    "mid_max": 3
+  },
+
+  "finding_nature_modulation": {
+    "_comment": "Severity × nature modulation tables for recovery duration estimation",
+    "ADAPTIVE": {
+      "low":  { "multiplier": 1.0, "qualifier": "expected" },
+      "mid":  { "multiplier": 1.5, "qualifier": "expected" },
+      "high": { "multiplier": 2.0, "qualifier": "possible" }
+    },
+    "INFLAMMATORY": {
+      "low":  { "multiplier": 1.0, "qualifier": "expected" },
+      "mid":  { "multiplier": 1.3, "qualifier": "possible" },
+      "high": { "multiplier": 2.0, "qualifier": "unlikely" }
+    },
+    "DEGENERATIVE": {
+      "low":  { "multiplier": 1.0, "qualifier": "possible" },
+      "mid":  { "multiplier": 1.6, "qualifier": "unlikely" },
+      "high": { "multiplier": 2.5, "qualifier": "unlikely" }
+    },
+    "DEPOSITIONAL": {
+      "low":  { "multiplier": 1.0, "qualifier": "unlikely" },
+      "mid":  { "multiplier": 1.0, "qualifier": "unlikely" },
+      "high": { "multiplier": 1.0, "qualifier": "unlikely" }
+    },
+    "VASCULAR": {
+      "low":  { "multiplier": 1.0, "qualifier": "expected" },
+      "mid":  { "multiplier": 1.5, "qualifier": "possible" },
+      "high": { "multiplier": 2.0, "qualifier": "unlikely" }
+    },
+    "PROLIFERATIVE": {
+      "low":  { "multiplier": 1.0, "qualifier": "none" },
+      "mid":  { "multiplier": 1.0, "qualifier": "none" },
+      "high": { "multiplier": 1.0, "qualifier": "none" }
+    }
+  },
+
+  "recovery_classification_priority": {
+    "_comment": "Priority order for recovery classification (lower = more concerning)",
+    "DELAYED_ONSET": 0,
+    "DELAYED_ONSET_POSSIBLE": 1,
+    "INCOMPLETE_RECOVERY": 2,
+    "ASSESSMENT_LIMITED_BY_DURATION": 3,
+    "EXPECTED_REVERSIBILITY": 4,
+    "INCIDENTAL_RECOVERY_SIGNAL": 5,
+    "POSSIBLE_SPONTANEOUS": 5,
+    "UNCLASSIFIABLE": 6
+  },
+
+  "cv_tier_sets": {
+    "_comment": "Test code CV tier classification for dose-response equivalence band selection (backend)",
+    "high_cv": ["WBC", "EOS", "BASO", "TRIG", "BILI", "CHOL", "CK", "LDH", "GGT", "GLUC", "RETIC", "MONO"],
+    "moderate_cv": ["ALT", "AST", "GLUC", "PLAT", "ALP", "TP", "CALC", "PHOS", "UREA", "SODIUM", "CHLOR"],
+    "low_cv": ["RBC", "HGB", "HCT", "MCV", "MCH", "MCHC", "TP", "ALB", "CREAT", "POTASS"],
+    "high_cv_specimens": ["SPLEEN", "THYMUS", "ADRENAL", "PITUITARY", "THYROID", "OVARY", "UTERUS", "PROSTATE", "SEMINAL VESICLE"]
+  },
+
+  "dose_response_strong_patterns": {
+    "_comment": "Patterns classified as 'strong' for A-1 treatment-relatedness factor",
+    "patterns": ["linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease"]
+  },
+
+  "hcd_a3_scores": {
+    "_comment": "ECETOC A-3 factor scores for HCD comparison",
+    "within_hcd": -0.5,
+    "outside_hcd": 0.5,
+    "no_hcd": 0.0
+  }
+}

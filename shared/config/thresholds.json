@@ -1,0 +1,87 @@
+{
+  "$schema": "../schemas/thresholds.schema.json",
+  "version": "1.0.0",
+
+  "statistical_significance": {
+    "_comment": "P-value cutoffs for treatment-relatedness and severity classification",
+    "significant": 0.05,
+    "borderline": 0.1,
+    "highly_significant": 0.01,
+    "exploratory_incidence": 0.1,
+    "histopath_presence_gate": 0.2,
+    "strong_pattern_p": 0.1
+  },
+
+  "effect_size": {
+    "_comment": "Cohen's d / Hedges' g boundaries for severity and dose-response classification",
+    "large": 1.0,
+    "moderate": 0.5,
+    "pairwise_min_for_strong": 0.8,
+    "equivalence_band_tier1_2": 0.5,
+    "equivalence_band_tier3": 0.75,
+    "equivocal_zone_lower": 0.75,
+    "equivocal_zone_upper": 1.0,
+    "min_pooled_sd": 0.001,
+    "min_incidence_tolerance": 0.02
+  },
+
+  "enzyme_tiers": {
+    "_comment": "Fold-change delta thresholds for liver enzyme tier classification",
+    "watchlist": 0.5,
+    "concern": 1.0,
+    "high": 2.0,
+    "adaptive_fold_threshold": 5.0
+  },
+
+  "recovery": {
+    "_comment": "Recovery verdict ratio thresholds and minimum group sizes",
+    "min_recovery_n": 3,
+    "min_adequate_n": 5,
+    "low_power_threshold": 2,
+    "verdict_ratios": {
+      "reversed_incidence": 0.2,
+      "reversed_severity": 0.3,
+      "partially_reversed_incidence": 0.5,
+      "partially_reversed_severity": 0.5,
+      "progressing_incidence": 1.1,
+      "progressing_severity": 1.2
+    }
+  },
+
+  "protective_signal": {
+    "_comment": "Thresholds for protective signal classification",
+    "magnitude_floor_pp": 15,
+    "control_incidence_floor_pct": 10,
+    "min_cross_domain_correlates": 2,
+    "min_moderate_correlates": 1,
+    "repurposing_ctrl_inc_pct": 50,
+    "repurposing_large_drop_pct": 40
+  },
+
+  "cross_animal_flags": {
+    "_comment": "Thresholds for tissue battery, tumor linkage, and BW change flags",
+    "tissue_battery_completeness_pct": 80,
+    "tumor_min_incidence": 2,
+    "tumor_min_lower_dose_incidence": 0,
+    "carcinogenicity_standard_weeks": 104,
+    "bw_gaining_pct": 5,
+    "bw_declining_pct": -5
+  },
+
+  "onset": {
+    "_comment": "Threshold for LB onset day detection",
+    "lb_fold_vs_control": 2.0
+  },
+
+  "confidence_grade": {
+    "_comment": "Grade thresholds for GRADE-inspired confidence scoring",
+    "high_threshold": 2,
+    "low_threshold": -1
+  },
+
+  "rule_thresholds": {
+    "_comment": "Thresholds used by the 19 canonical scoring rules",
+    "r10_large_effect": 1.0,
+    "r11_moderate_effect": 0.5
+  }
+}

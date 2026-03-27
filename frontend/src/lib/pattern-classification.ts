@@ -81,32 +81,22 @@ const DEFAULT_CONFIG: PatternConfig = {
   min_affected_non_monotonic: 2,
 };
 
-// ── Signal score weights ─────────────────────────────────────
+// ── Signal score weights (from shared/config/scoring-weights.json) ──
 
-const PATTERN_BASE: Record<PatternType, number> = {
-  MONOTONIC_UP: 2.5,
-  THRESHOLD: 2.0,
-  NON_MONOTONIC: 1.5,
-  SINGLE_GROUP: 0.75,    // IMP-07: lowered from 1.0 (often incidental)
-  MONOTONIC_DOWN: 0.5,   // histopath default; domain-aware in patternWeight
-  CONTROL_ONLY: 0,
-  NO_PATTERN: 0,
-};
+import scoringConfig from "../../../shared/config/scoring-weights.json";
+
+const PATTERN_BASE = Object.fromEntries(
+  Object.entries(scoringConfig.pattern_base_scores).filter(([k]) => !k.startsWith("_"))
+) as Record<PatternType, number>;
 
 /** Domain-specific MONOTONIC_DOWN weights (IMP-07) */
-const MONOTONIC_DOWN_BY_DOMAIN: Record<string, number> = {
-  MI: 0.5,    // Histopath incidence — decreasing lesion rarely adverse
-  OM: 2.0,    // Organ weight — dose-dependent decrease is classic tox
-  LB: 1.5,    // Clinical chemistry — decreases can be significant
-  BW: 2.0,    // Body weight — dose-dependent decrease is adverse
-  MA: 0.5,    // Macroscopic — similar to histopath
-};
+const MONOTONIC_DOWN_BY_DOMAIN = Object.fromEntries(
+  Object.entries(scoringConfig.monotonic_down_by_domain).filter(([k]) => !k.startsWith("_"))
+) as Record<string, number>;
 
-const CONF_MULT: Record<ConfidenceLevel, number> = {
-  HIGH: 1.0,
-  MODERATE: 0.7,
-  LOW: 0.4,
-};
+const CONF_MULT = Object.fromEntries(
+  Object.entries(scoringConfig.confidence_multipliers).filter(([k]) => !k.startsWith("_"))
+) as Record<ConfidenceLevel, number>;
 
 // ── Utility ──────────────────────────────────────────────────
 

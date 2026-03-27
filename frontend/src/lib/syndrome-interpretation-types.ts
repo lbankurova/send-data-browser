@@ -10,30 +10,31 @@ import type { StudyContext } from "@/types/study-context";
 import type { StudyMortality } from "@/types/mortality";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 
-// ─── Exported threshold constants (single source of truth) ─────────
-// Used by the code logic AND by the packet generator for documentation.
+// ─── Exported threshold constants ────────────────────────────────
+// Loaded from shared/config/ JSON files. Values are the single source
+// of truth; this module re-exports them for backward compatibility.
+// See: shared/config/thresholds.json, shared/config/translational-lr.json
+
+import thresholdsConfig from "../../../shared/config/thresholds.json";
+import translationalConfig from "../../../shared/config/translational-lr.json";
 
 /** Translational tier LR+ bin thresholds */
-export const TRANSLATIONAL_BINS = {
-  endpoint: { high: 10, moderate: 3 },
-  soc: { high: 5, moderate: 2 },
-} as const;
+export const TRANSLATIONAL_BINS = translationalConfig.bins as {
+  readonly endpoint: { readonly high: number; readonly moderate: number };
+  readonly soc: { readonly high: number; readonly moderate: number };
+};
 
 /** Statistical significance thresholds for treatment-relatedness A-6 factor */
 export const STAT_SIG_THRESHOLDS = {
-  significant: 0.05,
-  borderline: 0.1,
+  significant: thresholdsConfig.statistical_significance.significant,
+  borderline: thresholdsConfig.statistical_significance.borderline,
 } as const;
 
 /** Dose-response A-1 factor thresholds */
 export const DOSE_RESPONSE_THRESHOLDS = {
-  /** p-value for borderline significance in strong pattern path */
-  strongPatternP: 0.1,
-  /** p-value for highly significant pairwise alternative path */
-  pairwiseHighP: 0.01,
-  /** minimum |effect size| for pairwise alternative path */
-  pairwiseMinEffect: 0.8,
-  /** Patterns considered "strong" */
+  strongPatternP: thresholdsConfig.statistical_significance.strong_pattern_p,
+  pairwiseHighP: thresholdsConfig.statistical_significance.highly_significant,
+  pairwiseMinEffect: thresholdsConfig.effect_size.pairwise_min_for_strong,
   strongPatterns: ["linear", "monotonic", "threshold", "threshold_increase", "threshold_decrease"],
 } as const;
 

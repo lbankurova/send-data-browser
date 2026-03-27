@@ -60,69 +60,31 @@ import {
 } from "@/lib/syndrome-ecetoc";
 
 // ─── Translational Confidence Scoring ─────────────────────
-// Data: concordance-v0 — Liu & Fan 2026 paper text, 2026-02-18
+// Data loaded from shared/config/translational-lr.json (source: Liu & Fan 2026)
 
-const CONCORDANCE_DATA_VERSION = "concordance-v0";
+import translationalConfig from "../../../shared/config/translational-lr.json";
 
-/** SOC-level LR+ by species. Midpoints of approximate ranges from Liu & Fan Fig. 3C. */
-// @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04, SPECIES-05 — species-specific concordance LR+
-const SOC_CONCORDANCE: Record<string, Record<string, number>> = {
-  rat: {
-    "hepatobiliary disorders": 3.5, "blood and lymphatic system disorders": 3.5,
-    "gastrointestinal disorders": 2.5, "renal and urinary disorders": 4.0,
-    "immune system disorders": 2.5, "metabolism and nutrition disorders": 2.5,
-    "cardiac disorders": 2.5, "nervous system disorders": 1.5, "investigations": 1.5,
-  },
-  dog: {
-    "hepatobiliary disorders": 3.5, "blood and lymphatic system disorders": 4.5,
-    "gastrointestinal disorders": 4.5, "renal and urinary disorders": 3.5,
-    "immune system disorders": 2.5, "metabolism and nutrition disorders": 3.5,
-    "cardiac disorders": 3.5, "nervous system disorders": 2.5, "investigations": 1.5,
-  },
-  monkey: {
-    "hepatobiliary disorders": 4.5, "blood and lymphatic system disorders": 5.5,
-    "gastrointestinal disorders": 4.5, "renal and urinary disorders": 4.5,
-    "immune system disorders": 6.0, "metabolism and nutrition disorders": 4.5,
-    "cardiac disorders": 3.5, "nervous system disorders": 2.5, "investigations": 2.5,
-  },
-  mouse: {
-    "hepatobiliary disorders": 5.0, "blood and lymphatic system disorders": 2.5,
-    "gastrointestinal disorders": 2.5, "renal and urinary disorders": 2.5,
-    "immune system disorders": 4.0, "metabolism and nutrition disorders": 2.5,
-    "cardiac disorders": 1.5, "nervous system disorders": 1.5, "investigations": 1.5,
-  },
-  rabbit: {
-    "hepatobiliary disorders": 1.5, "blood and lymphatic system disorders": 2.5,
-    "gastrointestinal disorders": 1.5, "renal and urinary disorders": 2.5,
-    "immune system disorders": 1.5, "metabolism and nutrition disorders": 1.5,
-    "cardiac disorders": 1.5, "nervous system disorders": 1.5, "investigations": 1.5,
-  },
-};
+const CONCORDANCE_DATA_VERSION = translationalConfig.version;
 
-/** PT-level LR+ for specific endpoints. Seeded from Liu & Fan paper text. */
-// @species SPECIES-01, SPECIES-02, SPECIES-03, SPECIES-04 — species-specific PT-level concordance LR+
-const KNOWN_PT_CONCORDANCE: Record<string, { species: string; lrPlus: number }[]> = {
-  "immune-mediated hepatitis": [{ species: "mouse", lrPlus: 462.4 }],
-  "hepatic necrosis": [{ species: "rat", lrPlus: 8.7 }, { species: "dog", lrPlus: 12.3 }],
-  "cholestasis": [{ species: "rat", lrPlus: 6.1 }],
-  "hepatotoxicity": [{ species: "all", lrPlus: 2.2 }],
-  "hepatic function abnormal": [{ species: "all", lrPlus: 4.2 }],
-  "liver disorder": [{ species: "all", lrPlus: 3.2 }],
-  "neutropenia": [{ species: "all", lrPlus: 16.1 }],
-  "anemia": [{ species: "all", lrPlus: 10.1 }],
-  "thrombocytopenia": [{ species: "all", lrPlus: 8.4 }],
-  "hypertriglyceridemia": [{ species: "rat", lrPlus: 112.7 }],
-  "hyperglycemia": [{ species: "all", lrPlus: 34.4 }],
-  "hyperphagia": [{ species: "dog", lrPlus: 230.8 }],
-  "hyperinsulinemia": [{ species: "all", lrPlus: 217.7 }],
-  "diabetes mellitus": [{ species: "all", lrPlus: 106.3 }],
-  "lactic acidosis": [{ species: "all", lrPlus: 89 }],
-  "constipation": [{ species: "all", lrPlus: 21.5 }],
-  "rash": [{ species: "all", lrPlus: 20 }],
-  "infection": [{ species: "all", lrPlus: 116 }],
-  "hypercalcemia": [{ species: "dog", lrPlus: 98.2 }],
-  "metabolic disorder": [{ species: "monkey", lrPlus: 217.4 }],
-};
+/** SOC-level LR+ by species. Filter out _comment keys. */
+const SOC_CONCORDANCE: Record<string, Record<string, number>> =
+  Object.fromEntries(
+    Object.entries(translationalConfig.soc_concordance)
+      .filter(([k]) => !k.startsWith("_"))
+  ) as Record<string, Record<string, number>>;
+
+/** PT-level LR+ for specific endpoints. Filter out _comment keys. */
+const KNOWN_PT_CONCORDANCE: Record<string, { species: string; lrPlus: number }[]> =
+  Object.fromEntries(
+    Object.entries(translationalConfig.known_pt_concordance)
+      .filter(([k]) => !k.startsWith("_"))
+      .map(([pt, entries]) => [
+        pt,
+        (entries as Array<{ species: string; lr_plus: number }>).map(
+          (e) => ({ species: e.species, lrPlus: e.lr_plus })
+        ),
+      ])
+  );
 
 
 // ─── MedDRA dictionary index (built from send-to-meddra-v3.json) ──

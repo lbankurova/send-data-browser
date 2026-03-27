@@ -1,0 +1,91 @@
+{
+  "$schema": "../schemas/scoring-weights.schema.json",
+  "version": "1.0.0",
+
+  "pattern_base_scores": {
+    "_comment":"Base signal scores by dose-response pattern type",
+    "MONOTONIC_UP": 2.5,
+    "THRESHOLD": 2.0,
+    "NON_MONOTONIC": 1.5,
+    "SINGLE_GROUP": 0.75,
+    "MONOTONIC_DOWN": 0.5,
+    "CONTROL_ONLY": 0,
+    "NO_PATTERN": 0
+  },
+
+  "monotonic_down_by_domain": {
+    "_comment":"Domain-specific weights for decreasing dose-response patterns (IMP-07)",
+    "MI": 0.5,
+    "OM": 2.0,
+    "LB": 1.5,
+    "BW": 2.0,
+    "MA": 0.5
+  },
+
+  "confidence_multipliers": {
+    "_comment":"Confidence level multipliers for signal scoring",
+    "HIGH": 1.0,
+    "MODERATE": 0.7,
+    "LOW": 0.4
+  },
+
+  "continuous_weights": {
+    "_comment":"Component weights for continuous endpoint signal scoring (sum = 1.0)",
+    "p_value": 0.35,
+    "trend": 0.20,
+    "effect_size": 0.25,
+    "pattern": 0.20
+  },
+
+  "incidence_weights": {
+    "_comment":"Component weights for incidence endpoint signal scoring",
+    "p_value": 0.45,
+    "trend": 0.30,
+    "pattern": 0.25,
+    "severity_modifier_cap": 0.10
+  },
+
+  "incidence_boosts": {
+    "_comment":"Signal boost factors for incidence endpoints",
+    "p_value_boost": 1.25,
+    "pattern_boost": 1.15
+  },
+
+  "noael_contribution_weights": {
+    "_comment":"NOAEL contribution weights by confidence tier",
+    "determining": 1.0,
+    "contributing": 0.7,
+    "supporting": 0.3,
+    "excluded": 0.0
+  },
+
+  "noael_penalties": {
+    "_comment":"Penalty deductions from NOAEL confidence score",
+    "single_endpoint": 0.20,
+    "weak_statistics": 0.15,
+    "normalization_caveat": 0.10,
+    "sex_inconsistency": 0.20,
+    "pathology_disagreement": 0.0,
+    "large_effect_non_sig": 0.20
+  },
+
+  "clinical_severity_floors": {
+    "_comment":"Fold-change floors and additive boosts by severity tier",
+    "S4": { "floor": 15, "additive": 5 },
+    "S3": { "floor": 8, "additive": 3 },
+    "S2": { "floor": 4, "additive": 2 },
+    "S1": { "floor": 0, "additive": 0 }
+  },
+
+  "backend_pattern_scores": {
+    "_comment":"Backend default pattern scores (overridable per study via threshold_config.json)",
+    "monotonic_increase": 1.0,
+    "monotonic_decrease": 1.0,
+    "threshold": 0.7,
+    "threshold_increase": 0.7,
+    "threshold_decrease": 0.7,
+    "non_monotonic": 0.3,
+    "flat": 0.0,
+    "insufficient_data": 0.0
+  }
+}

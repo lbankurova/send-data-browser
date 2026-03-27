@@ -1,0 +1,94 @@
+{
+  "$schema": "../schemas/translational-lr.schema.json",
+  "version": "1.0.0",
+  "_source": "Liu & Fan 2026 — concordance-v0",
+
+  "bins": {
+    "_comment": "Likelihood ratio thresholds for translational tier assignment",
+    "endpoint": { "high": 10, "moderate": 3 },
+    "soc": { "high": 5, "moderate": 2 }
+  },
+
+  "soc_concordance": {
+    "_comment": "SOC-level LR+ by species. Midpoints of approximate ranges from Liu & Fan Fig. 3C.",
+    "rat": {
+      "hepatobiliary disorders": 3.5,
+      "blood and lymphatic system disorders": 3.5,
+      "gastrointestinal disorders": 2.5,
+      "renal and urinary disorders": 4.0,
+      "immune system disorders": 2.5,
+      "metabolism and nutrition disorders": 2.5,
+      "cardiac disorders": 2.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    },
+    "dog": {
+      "hepatobiliary disorders": 3.5,
+      "blood and lymphatic system disorders": 4.5,
+      "gastrointestinal disorders": 4.5,
+      "renal and urinary disorders": 3.5,
+      "immune system disorders": 2.5,
+      "metabolism and nutrition disorders": 3.5,
+      "cardiac disorders": 3.5,
+      "nervous system disorders": 2.5,
+      "investigations": 1.5
+    },
+    "monkey": {
+      "hepatobiliary disorders": 4.5,
+      "blood and lymphatic system disorders": 5.5,
+      "gastrointestinal disorders": 4.5,
+      "renal and urinary disorders": 4.5,
+      "immune system disorders": 6.0,
+      "metabolism and nutrition disorders": 4.5,
+      "cardiac disorders": 3.5,
+      "nervous system disorders": 2.5,
+      "investigations": 2.5
+    },
+    "mouse": {
+      "hepatobiliary disorders": 5.0,
+      "blood and lymphatic system disorders": 2.5,
+      "gastrointestinal disorders": 2.5,
+      "renal and urinary disorders": 2.5,
+      "immune system disorders": 4.0,
+      "metabolism and nutrition disorders": 2.5,
+      "cardiac disorders": 1.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    },
+    "rabbit": {
+      "hepatobiliary disorders": 1.5,
+      "blood and lymphatic system disorders": 2.5,
+      "gastrointestinal disorders": 1.5,
+      "renal and urinary disorders": 2.5,
+      "immune system disorders": 1.5,
+      "metabolism and nutrition disorders": 1.5,
+      "cardiac disorders": 1.5,
+      "nervous system disorders": 1.5,
+      "investigations": 1.5
+    }
+  },
+
+  "known_pt_concordance": {
+    "_comment": "PT-level LR+ for specific endpoints. From Liu & Fan paper text.",
+    "immune-mediated hepatitis": [{ "species": "mouse", "lr_plus": 462.4 }],
+    "hepatic necrosis": [{ "species": "rat", "lr_plus": 8.7 }, { "species": "dog", "lr_plus": 12.3 }],
+    "cholestasis": [{ "species": "rat", "lr_plus": 6.1 }],
+    "hepatotoxicity": [{ "species": "all", "lr_plus": 2.2 }],
+    "hepatic function abnormal": [{ "species": "all", "lr_plus": 4.2 }],
+    "liver disorder": [{ "species": "all", "lr_plus": 3.2 }],
+    "neutropenia": [{ "species": "all", "lr_plus": 16.1 }],
+    "anemia": [{ "species": "all", "lr_plus": 10.1 }],
+    "thrombocytopenia": [{ "species": "all", "lr_plus": 8.4 }],
+    "hypertriglyceridemia": [{ "species": "rat", "lr_plus": 112.7 }],
+    "hyperglycemia": [{ "species": "all", "lr_plus": 34.4 }],
+    "hyperphagia": [{ "species": "dog", "lr_plus": 230.8 }],
+    "hyperinsulinemia": [{ "species": "all", "lr_plus": 217.7 }],
+    "diabetes mellitus": [{ "species": "all", "lr_plus": 106.3 }],
+    "lactic acidosis": [{ "species": "all", "lr_plus": 89 }],
+    "constipation": [{ "species": "all", "lr_plus": 21.5 }],
+    "rash": [{ "species": "all", "lr_plus": 20 }],
+    "infection": [{ "species": "all", "lr_plus": 116 }],
+    "hypercalcemia": [{ "species": "dog", "lr_plus": 98.2 }],
+    "metabolic disorder": [{ "species": "monkey", "lr_plus": 217.4 }]
+  }
+}
