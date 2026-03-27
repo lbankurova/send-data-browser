@@ -16,6 +16,7 @@ import {
   HISTOPATH_PROXIES,
   DOSE_RESPONSE_THRESHOLDS,
 } from "@/lib/syndrome-interpretation-types";
+import thresholdsConfig from "../../../shared/config/thresholds.json";
 import type {
   SyndromeCertainty,
   EnzymeTier,
@@ -191,7 +192,7 @@ export function evaluateDiscriminator(
 
     const actualDir: "up" | "down" | null =
       ep.direction === "up" || ep.direction === "down" ? ep.direction : null;
-    const significant = ep.minPValue != null && ep.minPValue < 0.05;
+    const significant = ep.minPValue != null && ep.minPValue < thresholdsConfig.statistical_significance.significant;
     if (!significant) {
       if (disc.absenceMeaningful && ep.minPValue != null) {
         // Direction-aware absence logic:
@@ -260,7 +261,7 @@ export function evaluateDiscriminator(
     );
     if (miMatch) {
       const isPresent = miMatch.direction === disc.expectedDirection ||
-        (miMatch.minPValue != null && miMatch.minPValue < 0.2);
+        (miMatch.minPValue != null && miMatch.minPValue < thresholdsConfig.statistical_significance.histopath_presence_gate);
       return {
         endpoint: disc.endpoint,
         description: disc.rationale,
@@ -578,7 +579,7 @@ export function evaluateUpgradeEvidence(
   const coMarkerCodes = ["BILI", "TBILI", "SDH", "GLDH", "GDH"];
   const hasSignificantCoMarker = allEndpoints.some(
     ep => ep.domain === "LB" && coMarkerCodes.includes(ep.testCode?.toUpperCase() ?? "") &&
-      ep.direction === "up" && ep.minPValue != null && ep.minPValue < 0.05,
+      ep.direction === "up" && ep.minPValue != null && ep.minPValue < thresholdsConfig.statistical_significance.significant,
   );
   const altGtAst = altFC != null && astFC != null && altFC > astFC;
   const coMarkerMet = altGtAst && hasSignificantCoMarker;
@@ -628,7 +629,7 @@ export function evaluateUpgradeEvidence(
   for (const crit of funcCriteria) {
     const match = allEndpoints.find(
       ep => ep.domain === "LB" && crit.codes.includes(ep.testCode?.toUpperCase() ?? "")
-        && ep.direction === crit.direction && ep.minPValue != null && ep.minPValue < 0.05,
+        && ep.direction === crit.direction && ep.minPValue != null && ep.minPValue < thresholdsConfig.statistical_significance.significant,
     );
     if (match) funcMatches.push(`${match.testCode} ${crit.direction === "up" ? "↑" : "↓"}`);
   }
@@ -644,7 +645,7 @@ export function evaluateUpgradeEvidence(
   const liverSpecificCodes = ["GLDH", "GDH", "SDH"];
   const liverSpecificMatch = allEndpoints.find(
     ep => ep.domain === "LB" && liverSpecificCodes.includes(ep.testCode?.toUpperCase() ?? "")
-      && ep.direction === "up" && ep.minPValue != null && ep.minPValue < 0.05,
+      && ep.direction === "up" && ep.minPValue != null && ep.minPValue < thresholdsConfig.statistical_significance.significant,
   );
   items.push({
     id: "UE-07", label: "GLDH liver-specific", strength: "moderate", score: 0.5,

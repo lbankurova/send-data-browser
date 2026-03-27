@@ -769,7 +769,8 @@ function isStressEndpoint(ep: EndpointMatch): boolean {
 }
 
 // REM-16: Adaptive response patterns
-const ADAPTIVE_FOLD_THRESHOLD = 5.0;
+import thresholdsConfig from "../../../shared/config/thresholds.json";
+const ADAPTIVE_FOLD_THRESHOLD = thresholdsConfig.enzyme_tiers.adaptive_fold_threshold;
 
 // @field FIELD-25 — adaptive pattern check (XS01 enzyme induction)
 function checkAdaptivePattern(

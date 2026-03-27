@@ -104,29 +104,37 @@ const KEYWORD_TABLE: KeywordEntry[] = [
 ];
 
 // ─── Severity modulation tables (IMP-04a) ────────────────
+// Loaded from shared/config/classification-tiers.json
 
-/**
- * Modulate typical_recovery_weeks and qualifier based on max severity.
- * Higher severity → longer recovery time and less certainty.
- */
+import classificationConfig from "../../../shared/config/classification-tiers.json";
+
 interface SeverityModulation {
   weekMultiplier: number;
   qualifier: ReversibilityQualifier;
 }
 
-const SEVERITY_MODULATION: Record<FindingNature, Record<"low" | "mid" | "high", SeverityModulation>> = {
-  adaptive:      { low: { weekMultiplier: 1.0, qualifier: "expected" },  mid: { weekMultiplier: 1.5, qualifier: "expected" },  high: { weekMultiplier: 2.0, qualifier: "possible" } },
-  inflammatory:  { low: { weekMultiplier: 1.0, qualifier: "expected" },  mid: { weekMultiplier: 1.3, qualifier: "possible" },  high: { weekMultiplier: 2.0, qualifier: "unlikely" } },
-  degenerative:  { low: { weekMultiplier: 1.0, qualifier: "possible" },  mid: { weekMultiplier: 1.6, qualifier: "unlikely" },  high: { weekMultiplier: 2.5, qualifier: "unlikely" } },
-  depositional:  { low: { weekMultiplier: 1.0, qualifier: "unlikely" },  mid: { weekMultiplier: 1.0, qualifier: "unlikely" },  high: { weekMultiplier: 1.0, qualifier: "none" } },
-  vascular:      { low: { weekMultiplier: 1.0, qualifier: "expected" },  mid: { weekMultiplier: 1.5, qualifier: "possible" },  high: { weekMultiplier: 2.0, qualifier: "unlikely" } },
-  proliferative: { low: { weekMultiplier: 1.0, qualifier: "none" },      mid: { weekMultiplier: 1.0, qualifier: "none" },      high: { weekMultiplier: 1.0, qualifier: "none" } },
-  unknown:       { low: { weekMultiplier: 1.0, qualifier: "unknown" },   mid: { weekMultiplier: 1.5, qualifier: "unknown" },   high: { weekMultiplier: 2.0, qualifier: "unknown" } },
-};
+/** Build SEVERITY_MODULATION from config, with unknown fallback */
+function loadSeverityModulation(): Record<FindingNature, Record<"low" | "mid" | "high", SeverityModulation>> {
+  const cfg = classificationConfig.finding_nature_modulation as unknown as Record<string, Record<string, { multiplier: number; qualifier: string }>>;
+  const result: Record<string, Record<"low" | "mid" | "high", SeverityModulation>> = {};
+  for (const [nature, bands] of Object.entries(cfg)) {
+    if (nature.startsWith("_")) continue;
+    result[nature.toLowerCase()] = {
+      low:  { weekMultiplier: bands.low.multiplier,  qualifier: bands.low.qualifier as ReversibilityQualifier },
+      mid:  { weekMultiplier: bands.mid.multiplier,  qualifier: bands.mid.qualifier as ReversibilityQualifier },
+      high: { weekMultiplier: bands.high.multiplier, qualifier: bands.high.qualifier as ReversibilityQualifier },
+    };
+  }
+  // unknown fallback (not in config)
+  result.unknown = { low: { weekMultiplier: 1.0, qualifier: "unknown" }, mid: { weekMultiplier: 1.5, qualifier: "unknown" }, high: { weekMultiplier: 2.0, qualifier: "unknown" } };
+  return result as Record<FindingNature, Record<"low" | "mid" | "high", SeverityModulation>>;
+}
+
+const SEVERITY_MODULATION = loadSeverityModulation();
 
 function severityBand(maxSeverity: number): "low" | "mid" | "high" {
-  if (maxSeverity <= 2) return "low";
-  if (maxSeverity <= 3) return "mid";
+  if (maxSeverity <= classificationConfig.severity_bands.low_max) return "low";
+  if (maxSeverity <= classificationConfig.severity_bands.mid_max) return "mid";
   return "high";
 }
 

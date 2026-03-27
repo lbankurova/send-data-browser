@@ -7,6 +7,7 @@
  */
 
 import { classifyFindingNature } from "@/lib/finding-nature";
+import thresholdsConfig from "../../../shared/config/thresholds.json";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ export function classifyProtectiveSignal(input: ClassifyProtectiveInput): Protec
   };
 
   // Step 2: magnitude check
-  if (decreaseMagnitude < 0.15 || input.controlIncidence < 0.10) {
+  if (decreaseMagnitude < thresholdsConfig.protective_signal.magnitude_floor_pp / 100 || input.controlIncidence < thresholdsConfig.protective_signal.control_incidence_floor_pct / 100) {
     return { ...base, classification: "background" };
   }
 
@@ -101,7 +102,7 @@ export function classifyProtectiveSignal(input: ClassifyProtectiveInput): Protec
   let classification: ProtectiveClassification;
   let qualifier: ProtectiveSignalResult["qualifier"];
 
-  if (isStrong && input.crossDomainCorrelateCount >= 2) {
+  if (isStrong && input.crossDomainCorrelateCount >= thresholdsConfig.protective_signal.min_cross_domain_correlates) {
     // Check for consequence finding (downgrades pharmacological → treatment-decrease)
     if (isConsequenceFinding(input.finding, input.crossDomainCorrelateCount)) {
       classification = "treatment-decrease";
@@ -109,7 +110,7 @@ export function classifyProtectiveSignal(input: ClassifyProtectiveInput): Protec
     } else {
       classification = "pharmacological";
     }
-  } else if (isStrong || (isModerate && input.crossDomainCorrelateCount >= 1)) {
+  } else if (isStrong || (isModerate && input.crossDomainCorrelateCount >= thresholdsConfig.protective_signal.min_moderate_correlates)) {
     classification = "treatment-decrease";
   } else {
     classification = "background";
