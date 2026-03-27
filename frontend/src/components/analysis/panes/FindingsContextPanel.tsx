@@ -169,7 +169,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
   const punchline = punchlineParts.length > 0 ? punchlineParts.join(". ") + "." : null;
 
   return (
-    <div className="mt-2 rounded-md border border-border/50 p-2 text-[11px]">
+    <div className="mt-2 text-[11px]">
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           ANCOVA decomposition
@@ -186,7 +186,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 
       {/* Punchline: plain-English ANCOVA vs raw comparison */}
       {punchline && (
-        <div className="mb-1.5 text-foreground/80">
+        <div className="mb-1.5 text-muted-foreground">
           {punchline}
         </div>
       )}
@@ -197,47 +197,54 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
         <span>p = <span className="font-mono">{formatPValue(ancova.slope.p_value)}</span></span>
       </div>
 
-      {/* Effect decomposition per dose group */}
+      {/* Effect decomposition + adjusted means — columnar table */}
       <table className="w-full">
         <thead>
           <tr className="text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Group</th>
-            <th className="py-0.5 text-right font-medium">Total</th>
+            <th className="py-0.5 text-right font-medium">Adjusted</th>
+            <th className="py-0.5 text-right font-medium">Raw</th>
             <th className="py-0.5 text-right font-medium">Direct</th>
-            <th className="py-0.5 text-right font-medium">Indirect</th>
             <th className="py-0.5 text-right font-medium">% direct</th>
             <th className="py-0.5 text-right font-medium">p</th>
           </tr>
         </thead>
         <tbody>
-          {ancova.effect_decomposition.map((d) => (
-            <tr key={d.group} className={d.direct_p < 0.05 ? "text-red-600" : ""}>
-              <td className="py-0.5">
-                <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[11px]" />
-              </td>
-              <td className="py-0.5 text-right font-mono">{d.total_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{d.indirect_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{(d.proportion_direct * 100).toFixed(0)}%</td>
-              <td className="py-0.5 text-right font-mono">{formatPValue(d.direct_p)}</td>
-            </tr>
-          ))}
+          {ancova.effect_decomposition.map((d) => {
+            const adj = ancova.adjusted_means.find(m => m.group === d.group);
+            return (
+              <tr key={d.group}>
+                <td className="py-0.5">
+                  <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[11px]" />
+                </td>
+                <td className="py-0.5 text-right font-mono">{adj ? adj.adjusted_mean.toFixed(2) : "—"}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">{adj ? adj.raw_mean.toFixed(2) : "—"}</td>
+                <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
+                <td className="py-0.5 text-right font-mono">{(d.proportion_direct * 100).toFixed(0)}%</td>
+                <td className="py-0.5 text-right font-mono">{formatPValue(d.direct_p)}</td>
+              </tr>
+            );
+          })}
+          {/* Control row (no decomposition, just means) */}
+          {(() => {
+            const ctrl = ancova.adjusted_means.find(m => m.group === 0);
+            if (!ctrl) return null;
+            return (
+              <tr>
+                <td className="py-0.5">
+                  <DoseLabel level={0} label="Control" className="text-[11px]" />
+                </td>
+                <td className="py-0.5 text-right font-mono">{ctrl.adjusted_mean.toFixed(2)}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">{ctrl.raw_mean.toFixed(2)}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+              </tr>
+            );
+          })()}
         </tbody>
       </table>
-
-      {/* Adjusted means */}
-      <div className="mt-1.5">
-        <div className="mb-0.5 text-[10px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-          {ancova.adjusted_means.map((m) => (
-            <span key={m.group} className="inline-flex items-center gap-1 font-mono">
-              <DoseLabel level={m.group} label={resolveDoseLabel(m.group)} className="text-[11px]" />
-              <span>{m.adjusted_mean.toFixed(2)}</span>
-              <span className="text-muted-foreground">(raw {m.raw_mean.toFixed(2)})</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <div className="mt-0.5 text-[10px] text-muted-foreground">At mean BW = {ancova.covariate_mean.toFixed(1)}</div>
     </div>
   );
 }
@@ -350,10 +357,14 @@ function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: Endpo
 }
 
 function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  const [showAncova, setShowAncova] = useState(false);
   const { nonMonotonic } = eci;
   const pattern = finding.dose_response_pattern ?? "";
   const isThreshold = pattern.startsWith("threshold");
   const isFlat = pattern === "flat" || pattern === "no_pattern" || pattern === "insufficient_data";
+  const hasAncova = finding.ancova != null
+    && finding.ancova.adjusted_means.length > 0
+    && finding.ancova.model_r_squared > 0;
 
   return (
     <div className="space-y-0.5 text-muted-foreground">
@@ -398,6 +409,17 @@ function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: Endpoin
         </>
       ) : (
         <div>Monotonic dose-response confirmed.</div>
+      )}
+      {hasAncova && (
+        <div className="mt-1">
+          <button
+            className="text-[10px] text-blue-600 hover:underline"
+            onClick={() => setShowAncova((v) => !v)}
+          >
+            {showAncova ? "Hide" : "Show"} ANCOVA decomposition
+          </button>
+          {showAncova && <ANCOVADecompositionPane finding={finding} doseGroups={doseGroups} />}
+        </div>
       )}
     </div>
   );
@@ -2141,13 +2163,31 @@ export function FindingsContextPanel() {
 
           {/* NOAEL pane — endpoint-level NOAEL with per-sex ECI decomposition */}
           {noael && !notEvaluated && (() => {
-            const noaelTitle = noael.dose_value != null
-              ? `NOAEL: ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
-              : "NOAEL: below tested range";
             const epLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
             const ep = analytics.endpoints.find(e => e.endpoint_label === epLabel);
             const noaelBySex = ep?.noaelBySex;
             const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
+            // Determine sex annotation for the pane title
+            const sexAnnotation = (() => {
+              if (!noaelBySex || noaelBySex.size < 2) return selectedFinding.sex;
+              // Both sexes — check if they agree
+              const entries = [...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b));
+              const allSame = entries.every(([, n]) => n.doseValue === entries[0][1].doseValue && n.tier === entries[0][1].tier);
+              if (allSame) return "F+M";
+              // Different — find which sex drives the lower (more conservative) NOAEL
+              const belowLowest = entries.find(([, n]) => n.tier === "below-lowest");
+              if (belowLowest) return belowLowest[0];
+              const withValues = entries.filter(([, n]) => n.doseValue != null);
+              if (withValues.length > 0) {
+                const min = withValues.reduce((best, cur) => (cur[1].doseValue! < best[1].doseValue! ? cur : best));
+                return min[0];
+              }
+              return "F+M";
+            })();
+            const noaelDose = noael.dose_value != null
+              ? `${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
+              : "below tested range";
+            const noaelTitle = `NOAEL: ${noaelDose} (${sexAnnotation})`;
             const eciPerSex = ep?.eciPerSex;
             const sibFinding = hasSibling && siblingContext
               ? findingsData?.findings.find(f => f.id === siblingContext.finding_id)
@@ -2479,11 +2519,7 @@ export function FindingsContextPanel() {
                 </div>
               );
             })()}
-            {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
-            {activeFinding!.domain === "OM" && activeFinding!.ancova && (
-              <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
-            )}
-            {/* ECI decomposition moved to NOAEL pane */}
+            {/* ANCOVA + ECI decomposition moved to NOAEL pane */}
           </CollapsiblePane>
           </div>
 
