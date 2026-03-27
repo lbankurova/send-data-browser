@@ -380,14 +380,14 @@ function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: Endpoin
             <div>Highest dose p = {formatPValue(nonMonotonic.highestDosePValue)} vs control.</div>
           )}
         </>
-      ) : eci.integrated.doseResponse === "moderate" ? (
+      ) : (pattern === "non_monotonic" || pattern === "u_shaped") ? (
         <>
-          <div>Backend pattern classification: non_monotonic</div>
+          <div>{pattern === "u_shaped" ? "U-shaped" : "Non-monotonic"} dose-response pattern.</div>
           <div>
-            JT trend test assumes monotonic dose-response;
+            Trend test assumes monotonic dose-response;
             significance may not reflect the observed pattern shape.
           </div>
-          <div>Consider examining individual dose-group contrasts (Dunnett&apos;s) rather than trend for this endpoint.</div>
+          <div>Individual dose-group contrasts (Dunnett&apos;s) may be more informative than trend for this endpoint.</div>
         </>
       ) : isFlat ? (
         <>
@@ -2166,7 +2166,6 @@ export function FindingsContextPanel() {
             const epLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
             const ep = analytics.endpoints.find(e => e.endpoint_label === epLabel);
             const noaelBySex = ep?.noaelBySex;
-            const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
             // Determine sex annotation for the pane title
             const sexAnnotation = (() => {
               if (!noaelBySex || noaelBySex.size < 2) return selectedFinding.sex;
@@ -2204,10 +2203,10 @@ export function FindingsContextPanel() {
                 collapseAll={collapseGen}
               >
                 <div className="space-y-2 text-[11px] text-muted-foreground">
-                  {/* Per-sex NOAEL breakdown */}
-                  {hasSexNoaelDiff && (
+                  {/* Per-sex NOAEL breakdown — always shown when both sexes exist */}
+                  {noaelBySex && noaelBySex.size >= 2 && (
                     <div className="flex gap-x-4">
-                      {[...noaelBySex!.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => (
+                      {[...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => (
                         <span key={sex}>
                           {sex}: {n.tier === "below-lowest"
                             ? "below tested range"

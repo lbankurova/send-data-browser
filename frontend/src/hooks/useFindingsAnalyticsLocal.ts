@@ -63,7 +63,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
           ep.noaelTier = noael.combined.tier;
           ep.noaelDoseValue = noael.combined.doseValue;
           ep.noaelDoseUnit = noael.combined.doseUnit;
-          if (noael.sexDiffers) ep.noaelBySex = noael.bySex;
+          if (noael.bySex.size >= 2) ep.noaelBySex = noael.bySex;
         }
       }
     }

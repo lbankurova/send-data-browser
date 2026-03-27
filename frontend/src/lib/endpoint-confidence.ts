@@ -709,6 +709,7 @@ export function integrateConfidence(
   concordance: TrendConcordanceResult,
   normCaveat: NormalizationCaveat | null,
   ep: EndpointSummary,
+  pattern: string,
 ): IntegratedConfidence {
   const statistical = deriveStatisticalConfidence(ep);
 
@@ -723,7 +724,7 @@ export function integrateConfidence(
       statistical,
       nonMonoFlag.consequences.confidencePenalty,
     );
-  } else if (ep.pattern === "non_monotonic" || ep.pattern === "u_shaped") {
+  } else if (pattern === "non_monotonic" || pattern === "u_shaped") {
     // Backend already classified as non-monotonic/u-shaped — JT trend test is less
     // informative for non-monotonic data, cap at moderate
     doseResponse = "moderate";
@@ -881,6 +882,7 @@ export function computeEndpointConfidence(
     concordance,
     normCaveat,
     ep,
+    pattern,
   );
   const noaelContribution = computeNOAELContribution(
     integrated,
