@@ -2,15 +2,12 @@ import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { formatPValue, getEffectMagnitudeLabel } from "@/lib/severity-colors";
-import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { EndpointConfidenceResult } from "@/lib/endpoint-confidence";
 import {
   resolveCanonical,
   findClinicalMatchForEndpoint,
-  getRuleSourceShortLabel,
   describeThreshold,
 } from "@/lib/lab-clinical-catalog";
-import type { SexEndpointSummary } from "@/lib/derive-summaries";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
@@ -45,80 +42,6 @@ interface Props {
 
 
 
-// ─── Pattern sentence ───────────────────────────────────────
-
-/** Format a single pattern + direction into a human label. */
-function formatPattern(pattern: string, direction: string | null): string {
-  const dirWord = direction === "up" ? "increase" : direction === "down" ? "decrease" : null;
-
-  if (pattern.startsWith("threshold")) {
-    return dirWord ? `Threshold ${dirWord}` : "Threshold";
-  }
-  if (pattern === "monotonic_increase" || pattern === "monotonic_decrease") {
-    return dirWord ? `Monotonic ${dirWord}` : "Monotonic";
-  }
-  if (pattern === "non_monotonic") {
-    return dirWord ? `Non-monotonic ${dirWord}` : "Non-monotonic";
-  }
-  if (pattern === "u_shaped") {
-    return "U-shaped";
-  }
-  if (pattern === "flat") {
-    return "No dose-dependent pattern";
-  }
-  return getPatternLabel(pattern);
-}
-
-
-/** Build combined sex + direction + pattern description for the verdict section. */
-function buildSexDirectionLine(
-  sexLabel: string,
-  bySex: Map<string, SexEndpointSummary> | undefined,
-  doseResponse: FindingContext["dose_response"] | undefined,
-): string {
-  if (!bySex || bySex.size < 2) {
-    // Single sex — append pattern if available
-    if (!doseResponse?.pattern || doseResponse.pattern === "insufficient_data" || doseResponse.pattern === "flat") {
-      return sexLabel;
-    }
-    return `${sexLabel} \u00b7 ${formatPattern(doseResponse.pattern, doseResponse.direction ?? null)}`;
-  }
-
-  const entries = [...bySex.entries()].sort(([a], [b]) => a.localeCompare(b));
-  const pats = entries.map(([sex, s]) => ({
-    sex,
-    direction: s.direction,
-    pattern: s.pattern,
-    fullLabel: formatPattern(s.pattern, s.direction),
-  }));
-
-  // Check for opposite directions
-  const ups = pats.filter(p => p.direction === "up");
-  const downs = pats.filter(p => p.direction === "down");
-  const hasOpposite = ups.length > 0 && downs.length > 0;
-
-  if (hasOpposite) {
-    // "Both sexes · Opposite direction: ↑ F (threshold), ↓ M (threshold)"
-    const parts = pats
-      .filter(p => p.direction === "up" || p.direction === "down")
-      .map(p => {
-        const arrow = p.direction === "up" ? "\u2191" : "\u2193";
-        return `${arrow} ${p.sex} (${getPatternLabel(p.pattern)})`;
-      });
-    return `${sexLabel} \u00b7 Opposite direction: ${parts.join(", ")}`;
-  }
-
-  // Same direction — show pattern
-  const allSame = pats.every(p => p.pattern === pats[0].pattern && p.direction === pats[0].direction);
-  if (allSame && pats[0].pattern && pats[0].pattern !== "flat" && pats[0].pattern !== "insufficient_data") {
-    return `${sexLabel} \u00b7 ${pats[0].fullLabel}`;
-  }
-
-  // Different patterns, same direction
-  const patParts = pats.map(p => `${p.sex}: ${p.fullLabel}`);
-  return `${sexLabel} \u00b7 ${patParts.join(" \u00b7 ")}`;
-}
-
 // ─── Component ──────────────────────────────────────────────
 
 export function VerdictPane({
@@ -131,7 +54,7 @@ export function VerdictPane({
   siblingStatistics,
   siblingDoseResponse,
   treatmentSummary: _treatmentSummary,
-  endpointSexes,
+  endpointSexes: _endpointSexes,
   notEvaluated,
   eciConfidence: _eciConfidence,
   endpointConfidence: _endpointConfidence,
@@ -145,26 +68,12 @@ export function VerdictPane({
     ? findClinicalMatchForEndpoint(finding.endpoint_label ?? finding.finding, analytics.labMatches, finding.test_code)
     : null;
 
-  // Sex label
   const endpointLabel = finding.endpoint_label ?? finding.finding;
-  const aggSexes = endpointSexes?.get(endpointLabel);
-  let sexLabel: string;
-  if (aggSexes && aggSexes.length >= 2) {
-    sexLabel = "Both sexes";
-  } else if (aggSexes && aggSexes.length === 1) {
-    sexLabel = aggSexes[0] === "M" ? "M only" : aggSexes[0] === "F" ? "F only" : "Both sexes";
-  } else {
-    const sex = finding.sex;
-    sexLabel = sex === "M" ? "M only" : sex === "F" ? "F only" : "Both sexes";
-  }
 
   // Per-sex NOAEL breakdown (from endpoint summary)
   const epSummary = analytics?.endpoints.find(e => e.endpoint_label === endpointLabel);
 
   const bySex = epSummary?.bySex;
-
-  // Combined sex + direction + pattern line (replaces separate patternSentence + directionalFlag)
-  const sexDirectionLine = notEvaluated ? null : buildSexDirectionLine(sexLabel, bySex, doseResponse);
 
   // "Largest effect" sex header
   const bestEffectSex = (() => {
@@ -241,52 +150,49 @@ export function VerdictPane({
     return `ANCOVA confirms direct effect at ${doseLabel} (${pFragment}).`;
   })();
 
-  // Clinical verdict line
-  const sexAnnotation = clinicalMatch?.sex
-    ? ` \u00b7 ${clinicalMatch.sex}`
-    : "";
-  const clinicalLineText = clinicalMatch
-    ? `${clinicalMatch.severity} ${clinicalMatch.severityLabel} \u00b7 Rule ${clinicalMatch.ruleId}${sexAnnotation} \u00b7 ${getRuleSourceShortLabel(clinicalMatch.source)}`
-    : null;
-  // C-04: no colored text in context panel — tier label communicates severity
-  const clinicalLineClass = "text-muted-foreground";
+  // Clinical significance line: "Clinical sig. S2 | F: 1.5×↑ · M: 1.3×↑"
+  const clinicalLine = (() => {
+    if (!clinicalMatch) return null;
+    const tier = clinicalMatch.severity;
+    const canonical = resolveCanonical(endpointLabel, finding.test_code);
+
+    // Build fold-change parts
+    if (bySex && bySex.size >= 2 && canonical) {
+      const entries = [...bySex.entries()].sort(([a], [b]) => a.localeCompare(b));
+      const parts = entries.map(([sex, s]) => {
+        const fc = s.maxFoldChange != null && s.maxFoldChange > 0 ? s.maxFoldChange : null;
+        const dir = s.direction === "up" ? "\u2191" : s.direction === "down" ? "\u2193" : "";
+        return fc != null ? `${sex}: ${fc.toFixed(1)}\u00d7${dir}` : `${sex}: \u2014`;
+      });
+      return `Clinical sig. ${tier} | ${parts.join(" \u00b7 ")}`;
+    }
+
+    // Single sex — use the rule-level fold change
+    const fc = canonical ? clinicalMatch.foldChanges[canonical] : null;
+    const dir = finding.direction === "up" ? "\u2191" : finding.direction === "down" ? "\u2193" : "";
+    const fcStr = fc != null ? ` | ${fc.toFixed(1)}\u00d7${dir}` : "";
+    return `Clinical sig. ${tier}${fcStr}`;
+  })();
 
   return (
     <div>
-      {/* Line 1 -- Clinical tier + rule (only when a clinical rule matched) */}
-      {clinicalLineText && (
-        <div className={`mt-0.5 text-[11px] font-medium ${clinicalLineClass}`}>
-          {clinicalLineText}
+      {/* Clinical significance line */}
+      {clinicalLine && (
+        <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+          {clinicalLine}
         </div>
       )}
 
-      {/* Line 2 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
-      {sexDirectionLine && (
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
-          <span>{sexDirectionLine}</span>
-          {!hasSibling && !notEvaluated && <PatternOverrideDropdown finding={finding} />}
+      {/* Pattern override dropdown (single-sex only — both-sex pattern shown in sex comparison table) */}
+      {!hasSibling && !notEvaluated && (
+        <div className="mt-0.5">
+          <PatternOverrideDropdown finding={finding} />
         </div>
       )}
-
-      {/* Sex divergence callout — when both sexes present and effect sizes differ substantially */}
-      {bySex && bySex.size >= 2 && (() => {
-        const entries = [...bySex.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-        const esValues = entries.map(([, s]) => Math.abs(s.maxEffectSize ?? 0));
-        const divergence = esValues.length >= 2 ? Math.abs(esValues[0] - esValues[1]) : 0;
-        if (divergence <= 0.5) return null;
-        const parts = entries.map(([sex, s]) =>
-          `${sex} |${isContinuous ? getEffectSizeSymbol(esMethod) : "d"}|=${Math.abs(s.maxEffectSize ?? 0).toFixed(2)}`
-        );
-        return (
-          <div className="mt-1 text-[10px] text-muted-foreground">
-            Sex divergence: {parts.join(", ")}
-          </div>
-        );
-      })()}
 
       {/* Line 5 -- Key numbers with "Largest effect" header */}
       {(effectSize != null || trendP != null || pctChange != null || foldChangeDisplay != null) && (
-        <div className="mt-3 pt-2 border-t border-border/40">
+        <div className="mt-1.5">
           <div className="text-[11px] text-muted-foreground">
             Largest effect ({bestEffectSex}):
           </div>
