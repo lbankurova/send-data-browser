@@ -1352,7 +1352,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
 
       {/* Weight-of-evidence synthesis */}
       {woeSynthesis && woeSynthesis.total > 0 && (
-        <CollapsiblePane title="Specimen assessment" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Specimen assessment" defaultOpen={false} sessionKey="pcc.specimen.assessment" expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1.5">
             {/* Conclusion line */}
             <p className="text-xs">
@@ -1463,7 +1463,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
 
       {/* Peer comparison (HCD) */}
       {peerRows.length > 0 && (
-        <CollapsiblePane title="Peer comparison (HCD)" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Peer comparison (HCD)" defaultOpen={false} sessionKey="pcc.specimen.hcd" expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <p className="text-[11px] text-muted-foreground">
@@ -1524,7 +1524,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
 
       {/* Laterality */}
       {lateralityData && (
-        <CollapsiblePane title="Laterality" expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Laterality" defaultOpen={false} sessionKey="pcc.specimen.laterality" expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1.5 text-xs">
             <p className="text-muted-foreground">
               {lateralitySummary(lateralityData.subjectAgg)}
