@@ -51,6 +51,49 @@ export async function importStudy(
   return res.json();
 }
 
+export interface StudyPreferences {
+  display_names: Record<string, string>;
+  order: string[];
+}
+
+export function fetchStudyPreferences(): Promise<StudyPreferences> {
+  return fetchJson("/studies/preferences");
+}
+
+export async function renameStudy(
+  studyId: string,
+  displayName: string | null
+): Promise<{ study_id: string; display_name: string | null }> {
+  const res = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/rename`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: displayName }),
+    }
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(body.detail || `Rename failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateStudyOrder(
+  order: string[]
+): Promise<{ order: string[] }> {
+  const res = await fetch(`${API_BASE}/studies/order`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(body.detail || `Reorder failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function deleteStudy(
   studyId: string
 ): Promise<{ study_id: string; removed: string[] }> {

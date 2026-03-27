@@ -14,7 +14,7 @@ from services.analysis.findings_dd import parse_dd_domain
 
 SCHEDULED_DISPOSITIONS = {"TERMINAL SACRIFICE", "INTERIM SACRIFICE",
                           "SCHEDULED EUTHANASIA", "SCHEDULED SACRIFICE",
-                          "TERMINAL KILL"}
+                          "TERMINAL KILL", "RECOVERY SACRIFICE"}
 
 
 def get_early_death_subjects(

@@ -5,7 +5,7 @@ animals. Their in-life data (BW, LB, CL, FW, BG, EG, VS) should be pooled with m
 study animals for treatment-period statistics. Terminal domains (MI, MA, OM, TF) remain
 main-study-only because sacrifice timing differs.
 
-See docs/knowledge/recovery-animal-data-handling-spec.md for the full specification.
+See docs/_internal/knowledge/recovery-animal-data-handling-spec.md for the full specification.
 """
 
 import re

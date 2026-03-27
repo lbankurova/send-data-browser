@@ -22,7 +22,7 @@ const LOW_POWER_THRESHOLD = 2;
 
 export type RecoveryVerdict =
   | "reversed"
-  | "reversing"
+  | "partially_reversed"
   | "persistent"
   | "progressing"
   | "anomaly"
@@ -151,7 +151,7 @@ export function computeVerdict(
   } else if (incidenceRatio <= thresholds.reversedIncidence && sevRatio <= thresholds.reversedSeverity) {
     verdict = "reversed";
   } else if (incidenceRatio <= thresholds.reversingIncidence || sevRatio <= thresholds.reversingSeverity) {
-    verdict = "reversing";
+    verdict = "partially_reversed";
   } else {
     verdict = "persistent";
   }
@@ -207,7 +207,7 @@ const VERDICT_PRIORITY: RecoveryVerdict[] = [
   "low_power",
   "progressing",
   "persistent",
-  "reversing",
+  "partially_reversed",
   "reversed",
   "insufficient_n",
   "not_observed",
@@ -229,7 +229,7 @@ export function verdictPriority(verdict: RecoveryVerdict | undefined): number {
 
 const VERDICT_ARROWS: Record<RecoveryVerdict, string> = {
   reversed: "\u2193",       // ↓
-  reversing: "\u2198",      // ↘
+  partially_reversed: "\u2198",      // ↘
   persistent: "\u2192",     // →
   progressing: "\u2191",    // ↑
   anomaly: "\u26A0",        // ⚠
@@ -626,12 +626,12 @@ export function specimenRecoveryLabel(
   const unique = new Set(substantive);
   if (unique.size === 1) {
     const sole = [...unique][0];
-    return sole === "reversing" ? "partial" : sole;
+    return sole === "partially_reversed" ? "partial" : sole;
   }
 
   // Mix of verdicts → "partial" if any reversed, else worst
   if (unique.has("reversed") && unique.size > 1) return "partial";
 
   const worst = worstVerdict(substantive);
-  return worst === "reversing" ? "partial" : worst;
+  return worst === "partially_reversed" ? "partial" : worst;
 }

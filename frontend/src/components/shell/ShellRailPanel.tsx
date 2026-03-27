@@ -12,7 +12,6 @@ import { ValidationRuleRail } from "@/components/analysis/validation/ValidationR
 import { CohortRail } from "@/components/analysis/cohort/CohortRail";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
-import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import type { ValidationRuleResult } from "@/hooks/useValidationResults";
 import type { GroupingMode } from "@/lib/findings-rail-engine";
 
@@ -78,7 +77,7 @@ export function ShellRailPanel() {
     setGroupScope(scope);
     setActiveEndpoint(null);
     // Update group selection in context for context panel routing
-    if (scope && (scope.type === "organ" || scope.type === "syndrome")) {
+    if (scope && (scope.type === "organ" || scope.type === "syndrome" || scope.type === "specimen")) {
       selectGroup(scope.type, scope.value);
     } else {
       selectGroup(null, null);
@@ -134,7 +133,6 @@ export function ShellRailPanel() {
   const isValidationRoute = pathname.includes("/validation");
   const isCohortRoute = pathname.includes("/cohort");
   const isStudySummaryRoute = studyId && pathname === `/studies/${encodeURIComponent(studyId)}`;
-  const [summaryTab] = useStudySummaryTab();
 
   // Validation rail: read/write selected rule via ViewSelectionContext
   const { selection: viewSelection, setSelection } = useViewSelection();
@@ -168,7 +166,7 @@ export function ShellRailPanel() {
   // Don't render on landing page, non-study routes, domain browser,
   // or study summary "details" tab (no organ rail needed for metadata)
   if (!studyId || domainName) return null;
-  if (isStudySummaryRoute && summaryTab === "details") return null;
+  if (isStudySummaryRoute) return null;
 
   return (
     <>

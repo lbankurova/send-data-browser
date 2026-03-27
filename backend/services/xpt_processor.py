@@ -25,6 +25,16 @@ def get_cached_csv_path(study_id: str, domain: str) -> Path:
     return study_cache / f"{domain}.csv"
 
 
+def _zero_subnormals(df: pd.DataFrame) -> pd.DataFrame:
+    """Replace subnormal floats (SAS XPT artifacts like 5.4e-79) with 0."""
+    import numpy as np
+    for col in df.select_dtypes(include="float").columns:
+        mask = (df[col].abs() > 0) & (df[col].abs() < np.finfo(np.float64).tiny)
+        if mask.any():
+            df.loc[mask, col] = 0.0
+    return df
+
+
 def read_xpt(xpt_path: Path) -> tuple[pd.DataFrame, pyreadstat.metadata_container]:
     try:
         df, meta = pyreadstat.read_xport(str(xpt_path))
@@ -38,6 +48,7 @@ def read_xpt(xpt_path: Path) -> tuple[pd.DataFrame, pyreadstat.metadata_containe
                 continue
         else:
             raise
+    df = _zero_subnormals(df)
     return df, meta
 
 
@@ -78,22 +89,54 @@ def get_domain_metadata(study: StudyInfo, domain: str) -> DomainMeta:
     )
 
 
+def _count_domain_subjects(study: StudyInfo, domain: str) -> int | None:
+    """Count unique subjects in a domain, resolving via POOLDEF for pool-based domains."""
+    try:
+        # Try CSV cache first (faster)
+        csv_path = get_cached_csv_path(study.study_id, domain)
+        if csv_path.exists():
+            df = pd.read_csv(csv_path, dtype=str)
+        else:
+            df, _ = read_xpt(study.xpt_files[domain])
+            df.columns = [c.upper() for c in df.columns]
+
+        # Count valid (non-empty, non-NA) USUBJID values
+        if "USUBJID" in df.columns:
+            usub_raw = df["USUBJID"]
+            usub_notna = usub_raw[usub_raw.notna()]
+            usub_valid = usub_notna.astype(str).str.strip()
+            usub_valid = usub_valid[usub_valid.ne("")]
+            if len(usub_valid) > 0:
+                return int(usub_valid.nunique())
+
+        # Fallback: resolve pool-based domains via POOLDEF
+        poolid_col = "POOLID"
+        if poolid_col in df.columns and "pooldef" in study.xpt_files:
+            pool_path = get_cached_csv_path(study.study_id, "pooldef")
+            if pool_path.exists():
+                pool_df = pd.read_csv(pool_path, dtype=str)
+            else:
+                pool_df, _ = read_xpt(study.xpt_files["pooldef"])
+                pool_df.columns = [c.upper() for c in pool_df.columns]
+            if "POOLID" in pool_df.columns and "USUBJID" in pool_df.columns:
+                pool_ids = set(df[poolid_col].astype(str).str.strip())
+                matched = pool_df[pool_df["POOLID"].astype(str).str.strip().isin(pool_ids)]
+                return int(matched["USUBJID"].nunique())
+
+        return None
+    except (ValueError, KeyError):
+        return None
+
+
 def get_all_domain_summaries(study: StudyInfo) -> list[DomainSummary]:
     """Get summary info for all domains in a study."""
     summaries = []
     for domain in sorted(study.xpt_files.keys()):
         try:
             meta = get_domain_metadata(study, domain)
-            # Count unique subjects from CSV cache if USUBJID column exists
-            subject_count = None
-            try:
-                csv_path = get_cached_csv_path(study.study_id, domain)
-                if csv_path.exists():
-                    df = pd.read_csv(csv_path, usecols=["USUBJID"], dtype=str)
-                    subject_count = int(df["USUBJID"].nunique())
-            except (ValueError, KeyError):
-                # Domain doesn't have USUBJID column — that's fine
-                pass
+            # Count unique subjects
+            subject_count = _count_domain_subjects(study, domain)
+
             summaries.append(DomainSummary(
                 name=meta.name,
                 label=meta.label,

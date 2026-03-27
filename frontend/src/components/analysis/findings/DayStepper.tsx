@@ -8,14 +8,16 @@ interface DayStepperProps {
   availableDays: number[];
   selectedDay: number | null;
   onDayChange: (day: number) => void;
-  /** Map of day → label key ("terminal" | "peak") */
+  /** Map of day → label key ("terminal" | "peak" | "recovery" | "terminal recovery") */
   dayLabels: Map<number, string>;
   /** Peak day number, used for label formatting */
   peakDay: number | null;
 }
 
 function formatDayLabel(day: number, label: string | undefined): string {
+  if (label === "terminal recovery") return `D${day} (terminal recovery)`;
   if (label === "terminal") return `D${day} (terminal)`;
+  if (label === "recovery") return `D${day} (recovery)`;
   if (label === "peak") return `D${day} (peak)`;
   return `D${day}`;
 }

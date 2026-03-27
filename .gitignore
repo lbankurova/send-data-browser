@@ -1,14 +1,19 @@
 node_modules/
-backend/venv/
-backend/cache/
-backend/static/
 frontend/dist/
 .env
-nul
 
 # Python
+backend/venv/
+backend/.venv-core/
+backend/_core_engine/
+backend/cache/
+backend/generated/
+backend/static/
+backend/verbose.txt
+backend/get-pip.py
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # HCD ETL data (large Excel downloads + generated SQLite)
 backend/data/hcd.db
@@ -18,20 +23,30 @@ backend/etl/data/
 send/*
 !send/PointCross/
 
-# Design docs (not needed in repo)
+# Binaries — keep out of version control
 *.pdf
 *.docx
 *.doc
+*.xlsx
 *.png
 !docs/img/*.png
 *.zip
 
-# Incoming specs — local work-in-progress; pull from GitHub, never push
-docs/incoming/
-docs/views/histopathology-audit*.md
+# ── Internal docs (not public) ──
+# All internal documentation lives under docs/_internal/.
+# Public docs (methods.md) live in docs/ root.
+docs/_internal/
+docs/scientific-logic.md
 
-# Knowledge docs (local research, generated references, external docs)
-docs/knowledge/
-
-# Claude Code local settings
+# ── Development tooling (not public) ──
 .claude/
+.planning/
+.continue-here.md
+CLAUDE.md
+
+# ── Internal reports / audits at root ──
+AUDIT_*.md
+INTEGRATION_TEST_RESULTS.md
+
+# Windows artifacts
+nul

@@ -3,68 +3,458 @@
  * Shows recovery verdict, classification, finding nature,
  * and comparison stats for the selected finding.
  *
- * Both sexes are shown side-by-side (F before M) when data exists.
- * Continuous domains use verdict-first rows; histopath uses incidence badges.
+ * MI/MA: Full per-dose assessment blocks with incidence/severity
+ * comparisons, guard explanations, and subject details (ported from
+ * HistopathologyContextPanel's robust pipeline).
+ *
+ * CL: Per-dose group data from backend incidence_rows.
+ *
+ * Continuous: Per-dose verdict summary with effect size comparison.
+ *
+ * Charts (RecoveryDumbbellChart, IncidenceRecoveryChart) live in the
+ * center panel (DoseResponseChartPanel) — this pane shows the
+ * non-chart assessment content.
  */
-import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useOrganRecovery } from "@/hooks/useOrganRecovery";
-import { useStudyContext } from "@/hooks/useStudyContext";
-import type { OrganRecoveryResult } from "@/hooks/useOrganRecovery";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
-import { verdictLabel, assessRecoveryAdequacy } from "@/lib/recovery-assessment";
-import { RECOVERY_VERDICT_LABEL, RECOVERY_VERDICT_COLOR } from "@/lib/recovery-labels";
-import type { RecoveryVerdict, RecoveryDoseAssessment, RecoveryAssessment } from "@/lib/recovery-assessment";
-import type { RecoveryAdequacy } from "@/lib/recovery-assessment";
-import { classifyFindingNature, reversibilityLabel } from "@/lib/finding-nature";
-import type { FindingNatureInfo } from "@/lib/finding-nature";
-import {
-  classifyRecovery,
-  CLASSIFICATION_LABELS,
-  CLASSIFICATION_BORDER,
-} from "@/lib/recovery-classification";
-import type {
-  RecoveryClassification,
-  RecoveryContext,
-} from "@/lib/recovery-classification";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { useStudyContext } from "@/hooks/useStudyContext";
 import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import {
+  assessRecoveryAdequacy,
+  deriveRecoveryAssessmentsSexAware,
+  MIN_RECOVERY_N,
+  verdictArrow,
+  formatRecoveryFraction,
+  verdictLabel,
+} from "@/lib/recovery-assessment";
+import type { RecoveryAssessment, RecoveryDoseAssessment } from "@/lib/recovery-assessment";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import { classifyContinuousRecovery } from "@/lib/recovery-verdict";
+import { getVerdictLabel } from "@/lib/recovery-labels";
+import { cn } from "@/lib/utils";
 import { Info } from "lucide-react";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
-import { DoseLabel } from "@/components/ui/DoseLabel";
-import { PaneTable } from "./PaneTable";
-import { RecoveryDumbbellChart } from "./RecoveryDumbbellChart";
-import { IncidenceDumbbellChart } from "./IncidenceDumbbellChart";
 
-// ── Histopath verdict badge ──────────────────────────────
+// ── Per-dose assessment block (ported from HistopathologyContextPanel) ──
 
-const VERDICT_COLORS: Partial<Record<RecoveryVerdict, string>> = {
-  reversed: "text-emerald-700 bg-emerald-50",
-  reversing: "text-emerald-600 bg-emerald-50/60",
-  persistent: "text-amber-700 bg-amber-50",
-  progressing: "text-red-700 bg-red-50",
-};
+const SUBJECT_COLLAPSE_THRESHOLD = 4;
 
-function VerdictBadge({ verdict }: { verdict: RecoveryVerdict }) {
-  const color = VERDICT_COLORS[verdict] ?? "text-muted-foreground bg-muted/50";
+function RecoveryDoseBlock({
+  assessment: a,
+  recoveryDays,
+}: {
+  assessment: RecoveryDoseAssessment;
+  recoveryDays?: number | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Reset collapsed state on finding change (new subject set)
+  const subjectIds = a.recovery.subjectDetails.map((s) => s.id).join(",");
+  useEffect(() => {
+    setExpanded(false);
+  }, [subjectIds]);
+
+  const shortId = (id: string) => {
+    const parts = id.split("-");
+    return parts[parts.length - 1] || id.slice(-4);
+  };
+
+  const periodLabel = recoveryDays != null
+    ? recoveryDays >= 7
+      ? `${Math.round(recoveryDays / 7)} week${Math.round(recoveryDays / 7) !== 1 ? "s" : ""} recovery`
+      : `${recoveryDays} day${recoveryDays !== 1 ? "s" : ""} recovery`
+    : null;
+
+  // Inline delta computation (suppress for guard verdicts)
+  const showDeltas = a.verdict !== "anomaly" && a.verdict !== "insufficient_n"
+    && a.verdict !== "not_examined" && a.verdict !== "low_power";
+  const incDelta = showDeltas && a.main.incidence > 0
+    ? Math.round(((a.recovery.incidence - a.main.incidence) / a.main.incidence) * 100)
+    : null;
+  const sevDelta = showDeltas && a.main.avgSeverity > 0
+    ? Math.round(((a.recovery.avgSeverity - a.main.avgSeverity) / a.main.avgSeverity) * 100)
+    : null;
+
+  // Collapsible subject list
+  const subjects = a.recovery.subjectDetails;
+  const visible = expanded ? subjects : subjects.slice(0, SUBJECT_COLLAPSE_THRESHOLD);
+  const hiddenCount = subjects.length - SUBJECT_COLLAPSE_THRESHOLD;
+
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${color}`}>
-      {verdictLabel(verdict)}
-    </span>
+    <div>
+      {/* Dose label */}
+      <div className="mb-1 pt-0.5">
+        <span className="text-xs font-medium text-foreground">{a.doseGroupLabel}</span>
+        {periodLabel && (
+          <>
+            <span className="mx-1 text-muted-foreground/30">{"\u00b7"}</span>
+            <span className="text-[11px] text-muted-foreground">{periodLabel}</span>
+          </>
+        )}
+      </div>
+
+      {/* Guard verdicts: not_examined, insufficient_n, low_power */}
+      {a.verdict === "not_examined" ? (
+        <div className="mt-1.5">
+          <div className="text-[11px] font-medium text-foreground/70">
+            {"\u2205"} Tissue not examined in recovery arm.
+          </div>
+          <div className="text-[11px] text-muted-foreground italic">
+            None of the {a.recovery.n} recovery subject{a.recovery.n !== 1 ? "s" : ""} had this tissue evaluated. No reversibility assessment is possible.
+          </div>
+        </div>
+      ) : a.verdict === "insufficient_n" ? (
+        <div className="mt-1.5">
+          <div className="text-[11px] font-medium text-foreground/70">
+            {"\u2020"} Insufficient sample: only {a.recovery.examined} recovery subject{a.recovery.examined !== 1 ? "s" : ""} examined.
+          </div>
+          <div className="text-[11px] text-muted-foreground italic">
+            Ratios with fewer than {MIN_RECOVERY_N} examined subjects are unreliable.
+          </div>
+        </div>
+      ) : a.verdict === "low_power" ? (
+        <div className="mt-1.5">
+          <div className="text-[11px] font-medium text-foreground/70">
+            ~ Low statistical power.
+          </div>
+          <div className="text-[11px] text-muted-foreground italic">
+            Main-arm incidence ({Math.round(a.main.incidence * 100)}%) too low to assess reversibility with {a.recovery.examined} examined recovery subject{a.recovery.examined !== 1 ? "s" : ""}. Expected {"\u2248"}{(a.main.incidence * a.recovery.examined).toFixed(1)} affected; {a.recovery.affected} observed is not informative.
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Incidence + severity comparison lines */}
+          <div className="space-y-1 text-[11px]">
+            {/* Incidence line: main → recovery with delta */}
+            <div className="flex items-center flex-wrap gap-x-1">
+              <span className="text-muted-foreground shrink-0">Incidence</span>
+              <span className="font-mono text-muted-foreground">
+                {formatRecoveryFraction(a.main.affected, a.main.examined, a.main.n)}
+              </span>
+              <div
+                className="inline-block h-1.5 rounded-full bg-gray-400"
+                style={{ width: `${Math.min(a.main.incidence * 48, 48)}px` }}
+              />
+              <span className="text-muted-foreground/40">{"\u2192"}</span>
+              <span className="font-mono text-foreground">
+                {formatRecoveryFraction(a.recovery.affected, a.recovery.examined, a.recovery.n)}
+              </span>
+              <div
+                className="inline-block h-1.5 rounded-full bg-gray-400/50"
+                style={{ width: `${Math.min(a.recovery.incidence * 48, 48)}px` }}
+              />
+              {incDelta != null && (
+                <span className={cn(
+                  "ml-1 font-mono",
+                  incDelta > 0 ? "font-medium text-foreground/70" :
+                  incDelta < 0 ? "text-muted-foreground" :
+                  "text-muted-foreground/50",
+                )}>
+                  {verdictArrow(a.verdict)} {incDelta > 0 ? "+" : ""}{incDelta}%
+                </span>
+              )}
+            </div>
+
+            {/* Severity line: main → recovery with delta */}
+            <div className="flex items-center flex-wrap gap-x-1">
+              <span className="text-muted-foreground shrink-0">Severity</span>
+              <span className="font-mono text-muted-foreground">
+                avg {a.main.avgSeverity.toFixed(1)}
+              </span>
+              <span className="text-muted-foreground/40">{"\u2192"}</span>
+              <span className="font-mono text-foreground">
+                avg {a.recovery.avgSeverity.toFixed(1)}
+              </span>
+              {sevDelta != null && (
+                <span className={cn(
+                  "ml-1 font-mono",
+                  sevDelta > 0 ? "font-medium text-foreground/70" :
+                  sevDelta < 0 ? "text-muted-foreground" :
+                  "text-muted-foreground/50",
+                )}>
+                  {verdictArrow(a.verdict)} {sevDelta > 0 ? "+" : ""}{sevDelta}%
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Assessment */}
+          <div className="mt-1.5 text-[11px]">
+            <span className="text-muted-foreground">Assessment: </span>
+            <span className="font-medium">{verdictLabel(a.verdict)}</span>
+          </div>
+
+          {/* Anomaly explanation */}
+          {a.verdict === "anomaly" && (
+            <div className="mt-1.5">
+              <div className="text-[11px] font-medium text-foreground/70">
+                {"\u26A0"} Anomaly: recovery incidence {Math.round(a.recovery.incidence * 100)}% at a dose level where main arm had 0%.
+              </div>
+              <div className="text-[11px] text-muted-foreground italic">
+                This may indicate delayed onset or a data quality issue. Requires pathologist assessment.
+              </div>
+            </div>
+          )}
+
+          {/* Recovery subjects with severity trajectories */}
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {subjects.length > 0 ? (
+              <>
+                Recovery subjects:{" "}
+                {visible.map((s, i) => {
+                  const mainPart = s.mainArmSeverity !== null
+                    ? `${s.mainArmSeverity}`
+                    : s.mainArmAvgSeverity > 0
+                      ? `avg ${s.mainArmAvgSeverity.toFixed(1)}`
+                      : "\u2014";
+                  const unexpected = s.mainArmSeverity !== null
+                    ? s.severity >= s.mainArmSeverity
+                    : s.mainArmAvgSeverity > 0
+                      ? s.severity >= s.mainArmAvgSeverity
+                      : false;
+
+                  return (
+                    <span key={s.id}>
+                      {i > 0 && ", "}
+                      <span className="text-primary/70">
+                        {shortId(s.id)}
+                      </span>
+                      <span className={cn("font-mono", unexpected ? "font-medium" : "text-muted-foreground")}>
+                        {" "}({mainPart}
+                        <span className="text-muted-foreground/40"> {"\u2192"} </span>
+                        {s.severity})
+                      </span>
+                    </span>
+                  );
+                })}
+                {/* Collapse toggle */}
+                {hiddenCount > 0 && (
+                  <>
+                    {" "}
+                    <button
+                      className="text-[11px] text-primary hover:underline"
+                      onClick={() => setExpanded((p) => !p)}
+                    >
+                      {expanded ? "Show fewer" : `+${hiddenCount} more`}
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>none affected (0/{a.recovery.examined} examined{a.recovery.examined < a.recovery.n ? ` of ${a.recovery.n}` : ""})</>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-// ── Confidence badge ─────────────────────────────────────
+/** Per-finding recovery content: renders per-dose blocks with verdict-tiered containers. */
+function RecoveryPaneContent({
+  assessment,
+  recoveryDays,
+}: {
+  assessment: RecoveryAssessment;
+  recoveryDays?: number | null;
+}) {
+  const visible = assessment.assessments.filter(
+    (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
+  );
 
-function ConfidenceBadge({ confidence }: { confidence: "High" | "Moderate" | "Low" }) {
-  const color = confidence === "High"
-    ? "text-emerald-700"
-    : confidence === "Moderate"
-      ? "text-amber-700"
-      : "text-muted-foreground";
-  return <span className={`text-[11px] font-medium ${color}`}>{confidence} confidence</span>;
+  if (visible.length === 0) return null;
+
+  return (
+    <div>
+      {visible.map((a, i) => (
+        <Fragment key={a.doseLevel}>
+          {i > 0 && <div className="border-t border-border/40 my-2" />}
+          {/* Container treatment per verdict tier */}
+          {a.verdict === "not_examined" ? (
+            <div className="rounded border border-red-300/20 bg-red-50/10 px-2 py-1.5 dark:border-red-500/15 dark:bg-red-900/5">
+              <RecoveryDoseBlock assessment={a} recoveryDays={recoveryDays} />
+            </div>
+          ) : a.verdict === "anomaly" ? (
+            <div className="rounded border border-amber-300/30 bg-amber-50/20 px-2 py-1.5 dark:border-amber-500/20 dark:bg-amber-900/10">
+              <RecoveryDoseBlock assessment={a} recoveryDays={recoveryDays} />
+            </div>
+          ) : a.verdict === "insufficient_n" || a.verdict === "low_power" ? (
+            <div className="rounded border border-border/30 bg-muted/10 px-2 py-1.5">
+              <RecoveryDoseBlock assessment={a} recoveryDays={recoveryDays} />
+            </div>
+          ) : (
+            <RecoveryDoseBlock assessment={a} recoveryDays={recoveryDays} />
+          )}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+// ── MI/MA incidence recovery (robust histopath pipeline) ──
+
+function HistopathRecoverySection({
+  finding,
+}: {
+  finding: UnifiedFinding;
+}) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { data: recovery } = useRecoveryComparison(studyId);
+  const { data: studyCtx } = useStudyContext(studyId);
+  const specimen = finding.specimen ?? "";
+  const { data: subjData } = useHistopathSubjects(studyId, specimen);
+
+  // Derive sex-aware recovery assessment for this finding
+  const findingRecovery = useMemo((): RecoveryAssessment | null => {
+    if (!subjData?.subjects) return null;
+    const hasRecoverySubjects = subjData.subjects.some((s) => s.is_recovery);
+    if (!hasRecoverySubjects) return null;
+    const assessments = deriveRecoveryAssessmentsSexAware(
+      [finding.finding],
+      subjData.subjects,
+      undefined,
+      subjData.recovery_days,
+      specimen,
+      studyCtx?.species ?? null,
+    );
+    return assessments[0] ?? null;
+  }, [subjData, finding.finding, specimen, studyCtx]);
+
+  // Recovery adequacy assessment
+  const adequacy = useMemo(() => {
+    if (recovery?.recovery_day == null || recovery?.last_dosing_day == null) return null;
+    const recoveryDays = recovery.recovery_day - recovery.last_dosing_day;
+    const nature = classifyFindingNature(finding.finding, null, finding.specimen ?? null);
+    return assessRecoveryAdequacy(recoveryDays, nature);
+  }, [recovery?.recovery_day, recovery?.last_dosing_day, finding.finding, finding.specimen]);
+
+  if (!findingRecovery) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        No recovery data for this finding.
+      </div>
+    );
+  }
+
+  const hasVisibleDoses = findingRecovery.assessments.some(
+    (a) => a.verdict !== "not_observed" && a.verdict !== "no_data",
+  );
+
+  if (!hasVisibleDoses) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Finding not observed in treated dose groups.
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="space-y-2">
+      {/* Recovery adequacy annotation */}
+      {adequacy && !adequacy.adequate && (
+        <div className="text-[9px] text-amber-700" title={`Expected ${adequacy.expectedWeeks} weeks for ${adequacy.findingNature ?? "this finding type"}; study provided ${adequacy.actualWeeks.toFixed(1)} weeks`}>
+          Recovery period may be inadequate for {adequacy.findingNature ?? "this finding type"} ({adequacy.actualWeeks.toFixed(0)}w of ~{adequacy.expectedWeeks}w expected)
+        </div>
+      )}
+
+      {/* Per-dose assessment blocks */}
+      <RecoveryPaneContent
+        assessment={findingRecovery}
+        recoveryDays={subjData?.recovery_days}
+      />
+
+    </div>
+  );
+}
+
+// ── CL incidence recovery (backend pipeline) ─────────────
+
+function CLRecoverySection({ finding }: { finding: UnifiedFinding }) {
+  const { studyId } = useParams<{ studyId: string }>();
+  const { data: recovery } = useRecoveryComparison(studyId);
+
+  if (!recovery || !recovery.available) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        No recovery arm in this study.
+      </div>
+    );
+  }
+
+  const incRows = recovery.incidence_rows ?? [];
+  const findingUpper = finding.finding.toUpperCase();
+  const findingSex = finding.sex === "F" || finding.sex === "M" ? finding.sex : null;
+  const matched = incRows.filter(
+    (r) => r.finding === findingUpper && r.domain === finding.domain
+      && (findingSex == null || r.sex === findingSex),
+  );
+
+  if (matched.length === 0) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        No recovery data for this endpoint.
+      </div>
+    );
+  }
+
+  // Group by dose_level for structured display
+  const doseMap = new Map<number, typeof matched>();
+  for (const r of matched) {
+    if (r.dose_level === 0) continue; // skip control
+    const arr = doseMap.get(r.dose_level) ?? [];
+    arr.push(r);
+    doseMap.set(r.dose_level, arr);
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Per-dose group rows */}
+      {[...doseMap.entries()].sort(([a], [b]) => a - b).map(([doseLevel, rows]) => {
+        const rep = rows[0];
+        return (
+          <div key={doseLevel}>
+            <div className="mb-0.5">
+              <span className="text-xs font-medium text-foreground">
+                {rep.dose_label ?? `Dose ${doseLevel}`}
+              </span>
+            </div>
+            {rows.sort((a, b) => a.sex.localeCompare(b.sex)).map((r) => (
+              <div key={`${r.dose_level}_${r.sex}`} className="flex items-center flex-wrap gap-x-1 text-[11px]">
+                <span className="text-muted-foreground w-3">{r.sex}</span>
+                <span className="font-mono text-muted-foreground">
+                  {r.main_affected}/{r.main_examined ?? r.main_n}
+                </span>
+                <span className="text-muted-foreground/40">{"\u2192"}</span>
+                <span className="font-mono text-foreground">
+                  {r.recovery_affected}/{r.recovery_examined ?? r.recovery_n}
+                </span>
+                {r.verdict && (
+                  <span className={cn(
+                    "ml-1 text-[10px]",
+                    r.verdict === "reversed" ? "text-emerald-700" :
+                    r.verdict === "partially_reversed" ? "text-emerald-600" :
+                    r.verdict === "progressing" ? "text-red-700" :
+                    r.verdict === "anomaly" ? "text-red-700" :
+                    "text-muted-foreground",
+                  )}>
+                    {getVerdictLabel(r.verdict)}
+                  </span>
+                )}
+                {r.confidence === "low" && (
+                  <span className="text-[9px] text-muted-foreground/50">(low N)</span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+
+    </div>
+  );
 }
 
 // ── Continuous recovery section ──────────────────────────
@@ -82,16 +472,14 @@ function ContinuousRecoverySection({
 
   if (!recovery || !recovery.available) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery comparison data available.
+      <div className="text-xs text-muted-foreground">
+        No recovery arm in this study.
       </div>
     );
   }
 
   // Get rows for this endpoint (both sexes), filtered to the MAX recovery day
-  // per dose/sex.  The backend now returns multi-day rows (Phase 2 — multi-day
-  // recovery stats); the dumbbell chart expects one row per dose_level×sex.
-  // For OM findings, match by specimen (organ) since OMTESTCD is always "WEIGHT".
+  // per dose/sex.
   const allRows = (() => {
     const matched = recovery.rows.filter((r) => {
       if (finding.specimen) {
@@ -111,10 +499,27 @@ function ContinuousRecoverySection({
 
   if (allRows.length === 0) {
     return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery data for {finding.finding}.
+      <div className="text-xs text-muted-foreground">
+        No recovery data for this endpoint.
       </div>
     );
+  }
+
+  // Compute per-row verdicts
+  const classified = allRows
+    .filter((row) => row.dose_level !== 0)
+    .map((row) => {
+      const tG = row.terminal_effect_same_arm ?? row.terminal_effect;
+      const v = classifyContinuousRecovery(tG, row.effect_size, row.treated_n, row.control_n);
+      return { row, terminalG: tG ?? null, recoveryG: row.effect_size ?? null, pctRecovered: v.pctRecovered, verdict: v.verdict };
+    });
+
+  // Group by dose_level for structured display
+  const doseMap = new Map<number, typeof classified>();
+  for (const c of classified) {
+    const arr = doseMap.get(c.row.dose_level) ?? [];
+    arr.push(c);
+    doseMap.set(c.row.dose_level, arr);
   }
 
   return (
@@ -125,445 +530,59 @@ function ContinuousRecoverySection({
           {recovery.recovery_day != null && <>Day {recovery.recovery_day} (recovery)</>}
           {" · "}Effect size: {getEffectSizeLabel(effectSize)} ({getEffectSizeSymbol(effectSize)})
         </span>
-        <span title={"Each row is one dose group. Filled dot = effect size at terminal sacrifice. Vertical bar = effect size at recovery. Arrow direction shows whether the effect shrank (recovering, arrow left toward zero) or grew (worsening, arrow right). Line weight encodes statistical significance: thicker = p<0.05, thinner = p\u22650.05. Amber triangles mark peak effects during dosing when they materially exceeded the terminal value."}>
+        <span title={"Charts in center panel. Filled dot = terminal effect, tick = recovery effect. Thick line = p<0.05."}>
           <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
         </span>
       </div>
 
-      {/* Dumbbell chart with verdict notes under each sex panel */}
-      <RecoveryDumbbellChart
-        rows={allRows}
-        doseGroups={doseGroups}
-        terminalDay={allRows[0]?.terminal_day}
-        recoveryDay={recovery.recovery_day}
-      />
-
-    </div>
-  );
-}
-
-// ── Histopath recovery: both-sex wrapper ─────────────────
-
-function HistopathRecoveryAllSexes({
-  finding,
-  specimen,
-}: {
-  finding: UnifiedFinding;
-  specimen: string;
-}) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const { data: studyCtx } = useStudyContext(studyId);
-  const specimensArr = useMemo(() => [specimen], [specimen]);
-
-  // Always call both hooks (React rules — must be unconditional)
-  const species = studyCtx?.species ?? null;
-  const recoveryF = useOrganRecovery(studyId, specimensArr, "F", species);
-  const recoveryM = useOrganRecovery(studyId, specimensArr, "M", species);
-
-  if (recoveryF.isLoading || recoveryM.isLoading) {
-    return <Skeleton className="h-16 w-full" />;
-  }
-
-  const sections: { sex: string; recovery: OrganRecoveryResult }[] = [];
-  if (recoveryF.hasRecovery) sections.push({ sex: "F", recovery: recoveryF });
-  if (recoveryM.hasRecovery) sections.push({ sex: "M", recovery: recoveryM });
-
-  if (sections.length === 0) {
-    return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery arm data for this specimen.
-      </div>
-    );
-  }
-
-  // Build assessmentsBySex for the chart — extract assessments for the specific finding
-  const findingName = finding.finding;
-  const label = `${specimen} \u2014 ${findingName}`;
-
-  // Short-circuit: if all sexes show "not_examined" for this finding, show one-liner
-  const allNotExamined = sections.every(({ recovery }) => {
-    const verdict = recovery.byEndpointLabel.get(label);
-    return verdict === "not_examined";
-  });
-  if (allNotExamined) {
-    return (
-      <div className="text-[11px] text-muted-foreground">
-        Tissue not examined in recovery arm.
-      </div>
-    );
-  }
-  const assessmentsBySex: Record<string, RecoveryDoseAssessment[]> = {};
-  let recoveryDays: number | null = null;
-
-  for (const { sex, recovery } of sections) {
-    const assessment = recovery.assessmentByLabel.get(label);
-    if (assessment) {
-      assessmentsBySex[sex] = assessment.assessments;
-    }
-    if (recoveryDays == null) {
-      const rd = recovery.recoveryDaysBySpecimen.get(specimen);
-      if (rd != null) recoveryDays = rd;
-    }
-  }
-
-  const hasChartableData = Object.values(assessmentsBySex).some(
-    (assessments) => assessments.length > 0,
-  );
-
-  const showSexHeaders = sections.length > 1;
-
-  // Recovery duration adequacy (study-design-level context)
-  const maxSev = Math.max(
-    ...Object.values(assessmentsBySex).flatMap((a) =>
-      a.flatMap((d) => [d.main.maxSeverity, d.recovery.maxSeverity]),
-    ),
-    0,
-  );
-  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null, specimen, species);
-  const adequacy: RecoveryAdequacy | null = assessRecoveryAdequacy(recoveryDays, nature);
-
-  return (
-    <div className="space-y-3">
-      {/* Recovery duration adequacy line */}
-      {adequacy && adequacy.findingNature && (
-        <div className="text-[11px] text-muted-foreground">
-          Recovery: {Math.round(adequacy.actualWeeks)} weeks
-          {" | "}Finding nature: {adequacy.findingNature}
-          {" | "}{reversibilityLabel(nature)}
-        </div>
-      )}
-
-      {/* Incidence dumbbell chart (shared across sexes) */}
-      {hasChartableData && (
-        <IncidenceDumbbellChart
-          assessmentsBySex={assessmentsBySex}
-          recoveryDays={recoveryDays}
-        />
-      )}
-
-      {/* Per-sex metadata sections */}
-      {sections.map(({ sex, recovery }) => (
-        <HistopathMetaSection
-          key={sex}
-          sex={sex}
-          finding={finding}
-          specimen={specimen}
-          species={species}
-          recovery={recovery}
-          showSexHeader={showSexHeaders}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Histopath recovery: per-sex metadata ─────────────────
-
-function HistopathMetaSection({
-  sex,
-  finding,
-  specimen,
-  species,
-  recovery,
-  showSexHeader,
-}: {
-  sex: string;
-  finding: UnifiedFinding;
-  specimen: string;
-  species: string | null;
-  recovery: OrganRecoveryResult;
-  showSexHeader: boolean;
-}) {
-  const findingName = finding.finding;
-  const label = `${specimen} \u2014 ${findingName}`;
-  const assessment = recovery.assessmentByLabel.get(label);
-  const verdict = recovery.byEndpointLabel.get(label);
-  const recoveryDays = recovery.recoveryDaysBySpecimen.get(specimen);
-
-  if (!assessment || !verdict) {
-    return showSexHeader ? (
-      <div>
-        <div className="text-[11px] font-semibold text-foreground mb-1">{sex}</div>
-        <div className="text-[11px] text-muted-foreground">
-          Finding not observed in recovery-arm subjects.
-        </div>
-      </div>
-    ) : (
-      <div className="text-[11px] text-muted-foreground">
-        Finding not observed in recovery-arm subjects.
-      </div>
-    );
-  }
-
-  // Finding nature classification
-  const maxSev = Math.max(
-    ...assessment.assessments.map((a) => a.main.maxSeverity),
-    ...assessment.assessments.map((a) => a.recovery.maxSeverity),
-  );
-  const nature = classifyFindingNature(findingName, maxSev > 0 ? maxSev : null, specimen, species);
-
-  // Recovery classification — pass all specimen assessments for cross-finding precursor check
-  const allAssessments = recovery.bySpecimen.get(specimen) ?? [];
-  const classContext = buildClassificationContext(finding, nature, recoveryDays ?? null, allAssessments);
-  const classification = classifyRecovery(assessment, classContext);
-
-  return (
-    <div className="space-y-2">
-      {showSexHeader && (
-        <div className="text-[11px] font-semibold text-foreground">{sex}</div>
-      )}
-
-      {/* Overall verdict + recovery days */}
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground">Verdict:</span>
-        <VerdictBadge verdict={verdict} />
-        {recoveryDays != null && (
-          <span className="text-[11px] text-muted-foreground">
-            ({recoveryDays}d recovery)
-          </span>
-        )}
-      </div>
-
-      {/* Classification */}
-      <ClassificationSection classification={classification} />
-
-      {/* Finding nature */}
-      <FindingNatureSection nature={nature} />
-
-      {/* Concordance check — flag discordance between nature and verdict */}
-      <ConcordanceNote nature={nature} verdict={verdict} />
-    </div>
-  );
-}
-
-// ── Classification display ───────────────────────────────
-
-function ClassificationSection({ classification }: { classification: RecoveryClassification }) {
-  const borderClass = CLASSIFICATION_BORDER[classification.classification];
-  return (
-    <div className={`pl-2 ${borderClass}`}>
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] font-medium">
-          {CLASSIFICATION_LABELS[classification.classification]}
-        </span>
-        <ConfidenceBadge confidence={classification.confidence} />
-      </div>
-      <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-        {classification.rationale}
-      </div>
-      {classification.qualifiers.length > 0 && (
-        <div className="mt-0.5 text-[11px] text-muted-foreground/80">
-          {classification.qualifiers.join(". ")}
-        </div>
-      )}
-      {classification.recommendedAction && (
-        <div className="mt-0.5 text-[11px] italic text-muted-foreground/70">
-          {classification.recommendedAction}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Finding nature display ───────────────────────────────
-
-function FindingNatureSection({ nature }: { nature: FindingNatureInfo }) {
-  if (nature.nature === "unknown") return null;
-
-  return (
-    <div className="space-y-0.5">
-      <div className="text-[11px] text-muted-foreground">
-        <span className="font-medium text-foreground">Finding nature: </span>
-        {nature.nature}
-        {nature.source === "ct_mapped" && nature.normalizedTerm && (
-          <span className="text-muted-foreground/60"> ({nature.normalizedTerm})</span>
-        )}
-      </div>
-      <div className="text-[11px] text-muted-foreground">
-        <span className="font-medium text-foreground">Reversibility: </span>
-        {reversibilityLabel(nature)}
-      </div>
-    </div>
-  );
-}
-
-// ── Concordance check (spec §11.3) ───────────────────────
-
-function ConcordanceNote({
-  nature,
-  verdict,
-}: {
-  nature: FindingNatureInfo;
-  verdict: RecoveryVerdict;
-}) {
-  if (nature.nature === "unknown") return null;
-
-  const qualifier = nature.reversibilityQualifier;
-  let message: string | null = null;
-
-  if (
-    qualifier === "expected" &&
-    (verdict === "persistent" || verdict === "progressing")
-  ) {
-    message =
-      "\u26a0 Expected to resolve but persisting \u2014 may indicate ongoing toxicity or insufficient recovery duration";
-  } else if (
-    (qualifier === "unlikely" || qualifier === "none") &&
-    (verdict === "reversed" || verdict === "reversing")
-  ) {
-    message =
-      "Finding nature suggests persistence; recovery may reflect sampling variability or secondary changes";
-  }
-
-  if (!message) return null;
-
-  return (
-    <div className="text-[10px] text-muted-foreground/70 leading-snug">
-      {message}
-    </div>
-  );
-}
-
-// ── Context builder ──────────────────────────────────────
-
-function buildClassificationContext(
-  finding: UnifiedFinding,
-  nature: FindingNatureInfo,
-  recoveryDays: number | null,
-  allAssessments?: RecoveryAssessment[],
-): RecoveryContext {
-  // Determine dose consistency from dose_response_pattern
-  const pattern = finding.dose_response_pattern?.toLowerCase() ?? "";
-  let doseConsistency: RecoveryContext["doseConsistency"] = "Weak";
-  if (pattern.includes("monotonic")) doseConsistency = "Strong";
-  else if (pattern.includes("threshold") || pattern.includes("sublinear")) doseConsistency = "Moderate";
-  else if (pattern.includes("non_monotonic") || pattern.includes("non-monotonic") || pattern.includes("u_shaped")) doseConsistency = "NonMonotonic";
-
-  return {
-    isAdverse: finding.severity === "adverse",
-    doseConsistency,
-    doseResponsePValue: finding.trend_p,
-    clinicalClass: null,
-    signalClass: finding.severity,
-    findingNature: nature,
-    allAssessments,
-    historicalControlIncidence: null,
-    crossDomainCorroboration: null,
-    recoveryPeriodDays: recoveryDays,
-  };
-}
-
-// ── Incidence recovery section ───────────────────────────
-
-// SLA-18: Use canonical harmonized verdict labels
-const VERDICT_LABEL = RECOVERY_VERDICT_LABEL;
-const VERDICT_COLOR = RECOVERY_VERDICT_COLOR;
-
-function IncidenceRecoverySection({ finding }: { finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const { data: recovery } = useRecoveryComparison(studyId);
-
-  if (!recovery || !recovery.available) {
-    return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery comparison data available.
-      </div>
-    );
-  }
-
-  const incRows = recovery.incidence_rows ?? [];
-  // Match by finding name (uppercased in both unified_findings and backend)
-  // CL findings are per-sex; filter to the finding's sex when specific
-  const findingUpper = finding.finding.toUpperCase();
-  const findingSex = finding.sex === "F" || finding.sex === "M" ? finding.sex : null;
-  const matched = incRows.filter(
-    (r) => r.finding === findingUpper && r.domain === finding.domain
-      && (findingSex == null || r.sex === findingSex),
-  );
-
-  if (matched.length === 0) {
-    return (
-      <div className="text-[11px] text-muted-foreground">
-        No recovery data for {finding.finding}.
-      </div>
-    );
-  }
-
-  // Group by sex (F before M)
-  const bySex = new Map<string, typeof matched>();
-  for (const row of matched) {
-    const arr = bySex.get(row.sex) ?? [];
-    arr.push(row);
-    bySex.set(row.sex, arr);
-  }
-  const sexOrder = ["F", "M"].filter((s) => bySex.has(s));
-  const showSexCol = sexOrder.length > 1;
-
-  return (
-    <div className="space-y-2">
-      {recovery.recovery_day != null && (
-        <div className="text-[11px] text-muted-foreground">
-          Recovery sacrifice: Day {recovery.recovery_day}
-        </div>
-      )}
-      <PaneTable>
-        <colgroup>
-          {showSexCol && <col style={{ width: 20 }} />}
-          <col style={{ width: 80 }} />
-          <col style={{ width: 80 }} />
-          <col style={{ width: 80 }} />
-          <col />
-        </colgroup>
-        <thead>
-          <tr className="text-muted-foreground border-b border-border/40">
-            {showSexCol && <PaneTable.Th />}
-            <PaneTable.Th>Group</PaneTable.Th>
-            <PaneTable.Th numeric>Terminal</PaneTable.Th>
-            <PaneTable.Th numeric>Recovery</PaneTable.Th>
-            <PaneTable.Th absorber className="pl-4">Assessment</PaneTable.Th>
-          </tr>
-        </thead>
-        <tbody>
-          {sexOrder.map((sex) => {
-            const rows = bySex.get(sex)!;
-            return rows.map((row, i) => {
-              const mainPct = row.main_n > 0 ? Math.round(row.main_affected / row.main_n * 100) : 0;
-              const recPct = row.recovery_n > 0 ? Math.round(row.recovery_affected / row.recovery_n * 100) : 0;
-              const verdict = row.verdict;
-              const vLabel = verdict ? VERDICT_LABEL[verdict] ?? verdict : "—";
-              const vColor = verdict ? VERDICT_COLOR[verdict] ?? "text-muted-foreground" : "text-muted-foreground";
-
-              return (
-                <tr key={`${sex}-${row.dose_level}`} className="border-b border-border/20">
-                  {showSexCol && (
-                    <PaneTable.Td className="text-muted-foreground">
-                      {i === 0 ? sex : ""}
-                    </PaneTable.Td>
+      {/* Per-dose verdict summary */}
+      {doseMap.size > 0 && (
+        <div className="space-y-1">
+          {[...doseMap.entries()].sort(([a], [b]) => a - b).map(([doseLevel, rows]) => (
+            <div key={doseLevel}>
+              {rows.sort((a, b) => a.row.sex.localeCompare(b.row.sex)).map((c) => (
+                <div key={`${c.row.dose_level}_${c.row.sex}`} className="flex items-center flex-wrap gap-x-1 text-[11px]">
+                  <span className="text-muted-foreground w-3">{c.row.sex}</span>
+                  <span className="text-xs font-medium text-foreground">
+                    {(() => {
+                      const dg = doseGroups?.find((g) => g.dose_level === doseLevel);
+                      return dg && dg.dose_value != null && dg.dose_value > 0
+                        ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
+                        : `Dose ${doseLevel}`;
+                    })()}
+                  </span>
+                  {c.terminalG != null && (
+                    <span className="font-mono text-muted-foreground">
+                      {getEffectSizeSymbol(effectSize)} {Math.abs(c.terminalG).toFixed(2)}
+                    </span>
                   )}
-                  <PaneTable.Td>
-                    <DoseLabel
-                      level={row.dose_level}
-                      label={formatDoseShortLabel(row.dose_label)}
-                      tooltip={row.dose_label}
-                    />
-                  </PaneTable.Td>
-                  <PaneTable.Td numeric>
-                    {row.main_affected}/{row.main_n}
-                    <span className="text-muted-foreground/60 ml-1">({mainPct}%)</span>
-                  </PaneTable.Td>
-                  <PaneTable.Td numeric>
-                    {row.recovery_affected}/{row.recovery_n}
-                    <span className="text-muted-foreground/60 ml-1">({recPct}%)</span>
-                  </PaneTable.Td>
-                  <PaneTable.Td className={`pl-4 font-medium ${vColor}`}>
-                    {vLabel}
-                  </PaneTable.Td>
-                </tr>
-              );
-            });
-          })}
-        </tbody>
-      </PaneTable>
+                  <span className="text-muted-foreground/40">{"\u2192"}</span>
+                  {c.recoveryG != null && (
+                    <span className="font-mono text-foreground">
+                      {Math.abs(c.recoveryG).toFixed(2)}
+                    </span>
+                  )}
+                  {c.pctRecovered != null && (
+                    <span className="font-mono text-muted-foreground ml-1">
+                      ({c.pctRecovered > 0 ? "+" : ""}{c.pctRecovered.toFixed(0)}%)
+                    </span>
+                  )}
+                  <span className={cn(
+                    "ml-1 text-[10px]",
+                    c.verdict === "reversed" ? "text-emerald-700" :
+                    c.verdict === "partially_reversed" ? "text-emerald-600" :
+                    c.verdict === "progressing" ? "text-red-700" :
+                    "text-muted-foreground",
+                  )}>
+                    {getVerdictLabel(c.verdict)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
     </div>
   );
 }
@@ -576,21 +595,19 @@ interface RecoveryPaneProps {
 }
 
 export function RecoveryPane({ finding, doseGroups }: RecoveryPaneProps) {
-  const isHistopath = finding.domain === "MI" || finding.domain === "MA";
-  const specimen = finding.specimen;
-
-  if (isHistopath && specimen) {
-    return <HistopathRecoveryAllSexes finding={finding} specimen={specimen} />;
-  }
-
   // Continuous domains (LB, BW, OM, VS, FW, EG, etc.)
   if (finding.data_type === "continuous") {
     return <ContinuousRecoverySection finding={finding} doseGroups={doseGroups} />;
   }
 
-  // Incidence domains (CL, etc.) — exclude MI/MA which use histopath path
+  // MI/MA: Use the robust histopath pipeline with per-dose assessment blocks
+  if (finding.data_type === "incidence" && (finding.domain === "MI" || finding.domain === "MA")) {
+    return <HistopathRecoverySection finding={finding} />;
+  }
+
+  // CL and other incidence domains: backend pipeline with per-dose display
   if (finding.data_type === "incidence") {
-    return <IncidenceRecoverySection finding={finding} doseGroups={doseGroups} />;
+    return <CLRecoverySection finding={finding} />;
   }
 
   return (

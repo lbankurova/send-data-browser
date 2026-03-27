@@ -57,13 +57,33 @@ export function deriveToxSuggestion(
   };
 }
 
-/** Expert-configured thresholds for signal scoring (TRUST-01p2). */
+/** Expert-configured signal scoring parameters (TRUST-01p2).
+ *
+ * Saved via annotation API; backend reads these at pipeline time to
+ * drive signal score, target organ, and NOAEL confidence computation.
+ *
+ * New format uses continuousWeights + incidenceWeights.
+ * Legacy format (signalScoreWeights) is migrated on load.
+ */
 export interface ThresholdConfig {
-  signalScoreWeights: {
+  /** @deprecated Use continuousWeights instead. Kept for backward compat. */
+  signalScoreWeights?: {
     pValue: number;
     trend: number;
     effectSize: number;
     pattern: number;
+  };
+  continuousWeights: {
+    pValue: number;
+    trend: number;
+    effectSize: number;
+    pattern: number;
+  };
+  incidenceWeights: {
+    pValue: number;
+    trend: number;
+    pattern: number;
+    severityModifier: number;
   };
   patternScores: Record<string, number>;
   pValueSignificance: number;

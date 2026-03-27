@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useSessionState } from "@/hooks/useSessionState";
 
 interface CollapsiblePaneProps {
   title: string;
@@ -17,6 +18,8 @@ interface CollapsiblePaneProps {
   /** Keep children mounted when collapsed (CSS hidden instead of unmount).
    *  Only safe for panes whose hooks are purely derived from props/context. */
   keepMounted?: boolean;
+  /** When provided, open/closed state persists in sessionStorage under this key. */
+  sessionKey?: string;
 }
 
 export function CollapsiblePane({
@@ -31,8 +34,12 @@ export function CollapsiblePane({
   onToggle,
   variant = "border",
   keepMounted = false,
+  sessionKey,
 }: CollapsiblePaneProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  const [sessionOpen, setSessionOpen] = useSessionState(sessionKey ?? "", defaultOpen);
+  const isOpen = sessionKey ? sessionOpen : localOpen;
+  const setIsOpen = sessionKey ? setSessionOpen : setLocalOpen;
   const prevExpand = useRef(expandAll);
   const prevCollapse = useRef(collapseAll);
 

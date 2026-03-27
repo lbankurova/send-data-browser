@@ -3,7 +3,7 @@
  *
  * Ensures bidirectional coverage between:
  *   1. `// @field FIELD-XX` annotations in source files
- *   2. `### FIELD-XX` headings in docs/knowledge/field-contracts.md
+ *   2. `### FIELD-XX` headings in docs/_internal/knowledge/field-contracts.md
  *
  * Catches:
  *   - Undocumented fields (annotation exists, no doc entry)
@@ -20,7 +20,7 @@ import { TERMINAL_DOMAINS, IN_LIFE_DOMAINS, LB_DOMAIN, SCHEDULED_DOMAINS } from 
 const ROOT = path.resolve(__dirname, "../..");
 const FIELD_CONTRACTS = path.join(
   ROOT,
-  "docs/knowledge/field-contracts.md"
+  "docs/_internal/knowledge/field-contracts.md"
 );
 const LIB_DIR = path.join(ROOT, "frontend/src/lib");
 

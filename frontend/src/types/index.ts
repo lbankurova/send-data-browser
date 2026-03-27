@@ -1,6 +1,7 @@
 export interface StudySummary {
   study_id: string;
   name: string;
+  display_name: string | null;
   domain_count: number;
   species: string | null;
   study_type: string | null;

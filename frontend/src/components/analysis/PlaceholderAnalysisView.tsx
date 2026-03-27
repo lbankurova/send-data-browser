@@ -7,7 +7,6 @@ const ANALYSIS_LABELS: Record<string, string> = {
   "sex-differences": "Sex Differences Analysis",
   reversibility: "Reversibility Assessment",
   "dose-response": "Dose-response & Causality",
-  histopathology: "Histopathology",
   "noael-determination": "NOAEL Determination",
 };
 

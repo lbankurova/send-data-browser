@@ -9,14 +9,17 @@
  */
 
 export type ContinuousVerdictType =
-  | "resolved"
   | "reversed"
+  | "partially_reversed"
   | "overcorrected"
+  | "persistent"
+  | "progressing"
+  | "not_assessed"
+  // ── Transition aliases (kept until all consumers updated) ──
+  | "resolved"
   | "reversing"
   | "partial"
-  | "persistent"
-  | "worsening"
-  | "not_assessed";
+  | "worsening";
 
 /** Minimum group size for adequate statistical confidence in Hedges' g. */
 const MIN_ADEQUATE_N = 5;
@@ -46,9 +49,9 @@ export function classifyContinuousRecovery(
   // Near-zero terminal: classify based on recovery alone (delayed onset detection)
   if (terminalG == null || Math.abs(terminalG) < 0.01) {
     if (recoveryG == null || Math.abs(recoveryG) < 0.5) {
-      return { verdict: "resolved", pctRecovered: null, confidence };
+      return { verdict: "reversed", pctRecovered: null, confidence };
     }
-    return { verdict: "worsening", pctRecovered: null, confidence };
+    return { verdict: "progressing", pctRecovered: null, confidence };
   }
 
   if (recoveryG == null) {
@@ -64,27 +67,38 @@ export function classifyContinuousRecovery(
 
   // Recovery effect below trivial threshold (|g| < 0.5)
   if (Math.abs(recoveryG) < 0.5) {
+    // Sign flip with sub-threshold residual: the terminal effect was marginal and
+    // the parameter crossed zero. The residual is trivial — classify as reversed
+    // (BUG-21: avoids misleading verdict when cross-arm control baseline shift
+    // inflates terminal g).
+    if (Math.sign(terminalG) !== Math.sign(recoveryG)) {
+      return { verdict: "reversed", pctRecovered: null, confidence };
+    }
     // Effect grew but both below 0.5 — no meaningful effect at either timepoint
-    if (pct < 0) return { verdict: "resolved", pctRecovered: null, confidence };
-    return { verdict: pct >= 80 ? "resolved" : "reversed", pctRecovered: pct, confidence };
+    if (pct < 0) return { verdict: "reversed", pctRecovered: null, confidence };
+    return { verdict: "reversed", pctRecovered: pct, confidence };
   }
 
-  if (pct < 0) return { verdict: "worsening", pctRecovered: pct, confidence };
+  if (pct < 0) return { verdict: "progressing", pctRecovered: pct, confidence };
   if (pct >= 80) return { verdict: "reversed", pctRecovered: pct, confidence };
-  if (pct >= 50) return { verdict: "reversing", pctRecovered: pct, confidence };
-  if (pct >= 20) return { verdict: "partial", pctRecovered: pct, confidence };
+  // Keep the 50%/20% threshold branching — pctRecovered carries the precision (decision §7.2)
+  if (pct >= 50) return { verdict: "partially_reversed", pctRecovered: pct, confidence };
+  if (pct >= 20) return { verdict: "partially_reversed", pctRecovered: pct, confidence };
   return { verdict: "persistent", pctRecovered: pct, confidence };
 }
 
 export const CONT_VERDICT_LABEL: Record<ContinuousVerdictType, string> = {
-  resolved: "Resolved",
   reversed: "Reversed",
-  overcorrected: "Overcorrected",
-  reversing: "Reversing",
-  partial: "Partial",
+  partially_reversed: "Partially reversed",
+  overcorrected: "Reversed (rebound)",
   persistent: "Persistent",
-  worsening: "Worsening",
+  progressing: "Progressing",
   not_assessed: "Not assessed",
+  // Transition aliases
+  resolved: "Reversed",
+  reversing: "Partially reversed",
+  partial: "Partially reversed",
+  worsening: "Progressing",
 };
 
 /** Format |pct| for display, capping extreme values. */
@@ -95,4 +109,10 @@ export function formatPctRecovered(pct: number): string {
 
 export function formatGAbs(g: number): string {
   return Math.abs(g).toFixed(2);
+}
+
+/** Signed g for table display: "+0.78" / "-0.45" / "0.00". */
+export function formatGSigned(g: number): string {
+  if (Math.abs(g) < 0.005) return "0.00";
+  return g > 0 ? `+${g.toFixed(2)}` : g.toFixed(2);
 }

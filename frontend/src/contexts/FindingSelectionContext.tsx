@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { UnifiedFinding } from "@/types/analysis";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
-export type GroupSelectionType = "organ" | "syndrome" | null;
+export type GroupSelectionType = "organ" | "syndrome" | "specimen" | null;
 
 interface FindingSelectionState {
   selectedFindingId: string | null;

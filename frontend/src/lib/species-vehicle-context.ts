@@ -1,8 +1,8 @@
 /**
  * Species, vehicle, and route interpretation context lookup.
  *
- * Static lookup tables derived from docs/knowledge/species-profiles.md
- * and docs/knowledge/vehicle-profiles.md. Returns notes relevant to the
+ * Static lookup tables derived from docs/_internal/knowledge/species-profiles.md
+ * and docs/_internal/knowledge/vehicle-profiles.md. Returns notes relevant to the
  * current study's species/strain/vehicle/route combination.
  *
  * Notes are scoped:

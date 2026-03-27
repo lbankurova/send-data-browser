@@ -5,8 +5,8 @@
  * 14 organs, 56 histopathology findings, 24 continuous endpoints.
  * Each entry carries its own severity modulation model and species modifiers.
  *
- * @see docs/deep-research/engine/brief 7/recovery_duration_lookup_v3_merged.json
- * @see docs/deep-research/engine/brief 7/cross_validation_report.md
+ * @see docs/_internal/research/recovery-duration/recovery_duration_lookup_v3_merged.json
+ * @see docs/_internal/research/recovery-duration/cross-validation-report.md
  */
 
 import type { ReversibilityQualifier } from "./finding-nature";

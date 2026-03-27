@@ -4,7 +4,7 @@
  * Tests the pure functions in:
  * - recovery-verdict.ts: classifyContinuousRecovery (verdict classification)
  * - RecoveryDumbbellChart.tsx: buildChartRows, hasPeakQualifier, formatVerdictDesc,
- *   connectorStyle, computeAxisBounds
+ *   connectorStyle
  */
 import { describe, test, expect } from "vitest";
 import {
@@ -17,7 +17,6 @@ import {
   hasPeakQualifier,
   formatVerdictDesc,
   connectorStyle,
-  computeAxisBounds,
 } from "@/components/analysis/panes/RecoveryDumbbellChart";
 import type { ChartRow } from "@/components/analysis/panes/RecoveryDumbbellChart";
 
@@ -51,13 +50,13 @@ function makeRow(overrides: Partial<RecoveryRow> = {}): RecoveryRow {
 describe("classifyContinuousRecovery", () => {
   test("null terminal + low recovery → resolved", () => {
     const v = classifyContinuousRecovery(null, 0.3);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 
   test("null terminal + high recovery → worsening (delayed onset)", () => {
     const v = classifyContinuousRecovery(null, 0.8);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
     expect(v.pctRecovered).toBeNull();
   });
 
@@ -69,12 +68,12 @@ describe("classifyContinuousRecovery", () => {
 
   test("near-zero terminal + low recovery → resolved", () => {
     const v = classifyContinuousRecovery(0.005, 0.3);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
   });
 
   test("near-zero terminal + high recovery → worsening", () => {
     const v = classifyContinuousRecovery(0.005, 0.8);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
   });
 
   test("pct ≥ 80 → reversed", () => {
@@ -91,14 +90,14 @@ describe("classifyContinuousRecovery", () => {
   test("pct 50-80 → reversing", () => {
     // terminal=2.0, recovery=0.8 → pct = (2.0-0.8)/2.0 * 100 = 60%
     const v = classifyContinuousRecovery(2.0, 0.8);
-    expect(v.verdict).toBe("reversing");
+    expect(v.verdict).toBe("partially_reversed");
     expect(v.pctRecovered).toBeCloseTo(60);
   });
 
-  test("pct 20-50 → partial", () => {
+  test("pct 20-50 → partially_reversed", () => {
     // terminal=2.0, recovery=1.3 → pct = (2.0-1.3)/2.0 * 100 = 35%
     const v = classifyContinuousRecovery(2.0, 1.3);
-    expect(v.verdict).toBe("partial");
+    expect(v.verdict).toBe("partially_reversed");
     expect(v.pctRecovered).toBeCloseTo(35);
   });
 
@@ -112,7 +111,7 @@ describe("classifyContinuousRecovery", () => {
   test("negative pct → worsening", () => {
     // terminal=1.5, recovery=2.0 → pct = (1.5-2.0)/1.5 * 100 = -33%
     const v = classifyContinuousRecovery(1.5, 2.0);
-    expect(v.verdict).toBe("worsening");
+    expect(v.verdict).toBe("progressing");
     expect(v.pctRecovered!).toBeLessThan(0);
   });
 
@@ -123,18 +122,35 @@ describe("classifyContinuousRecovery", () => {
     expect(v.pctRecovered).toBeNull();
   });
 
-  test("sign flip + |recovery| < 0.5 → resolved (trivial)", () => {
+  test("sign flip + |recovery| < 0.5, pct >= 80 → resolved (trivial)", () => {
     // positive terminal, negative recovery but trivial magnitude
     const v = classifyContinuousRecovery(1.5, -0.3);
-    // |recovery| < 0.5 branch: pct = (1.5-0.3)/1.5 * 100 = 80% → resolved
-    expect(v.verdict).toBe("resolved");
+    // Sign-flip guard in sub-threshold branch → resolved (BUG-21 fix)
+    expect(v.verdict).toBe("reversed");
+    expect(v.pctRecovered).toBeNull();
+  });
+
+  test("sign flip + |recovery| < 0.5, pct < 80 → resolved (BUG-21)", () => {
+    // The BW Males 2 mg/kg case: terminal slightly positive, recovery slightly negative
+    // Before BUG-21 fix: pct = (0.78-0.19)/0.78 = 76% → "reversed" (wrong)
+    // After fix: sign-flip in sub-threshold branch → "resolved"
+    const v = classifyContinuousRecovery(0.78, -0.19);
+    expect(v.verdict).toBe("reversed");
+    expect(v.pctRecovered).toBeNull();
+  });
+
+  test("sign flip + |recovery| < 0.5 (negative terminal) → resolved", () => {
+    // Mirror case: negative terminal, positive recovery (sub-threshold)
+    const v = classifyContinuousRecovery(-1.2, 0.3);
+    expect(v.verdict).toBe("reversed");
+    expect(v.pctRecovered).toBeNull();
   });
 
   test("both below 0.5, pct < 0 → resolved", () => {
     // terminal=0.3, recovery=0.4 → both below 0.5
     // pct = (0.3-0.4)/0.3 * 100 = -33% → pct < 0 → resolved
     const v = classifyContinuousRecovery(0.3, 0.4);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.pctRecovered).toBeNull();
   });
 });
@@ -177,7 +193,7 @@ describe("classifyContinuousRecovery — confidence", () => {
   test("treated n=2 with resolved verdict → still low confidence", () => {
     // Near-zero terminal, low recovery → "resolved" but with low confidence
     const v = classifyContinuousRecovery(0.005, 0.3, 2, 10);
-    expect(v.verdict).toBe("resolved");
+    expect(v.verdict).toBe("reversed");
     expect(v.confidence).toBe("low");
   });
 
@@ -203,7 +219,7 @@ describe("classifyContinuousRecovery — confidence", () => {
     expect(reversed.confidence).toBe("adequate");
 
     const worsening = classifyContinuousRecovery(1.5, 2.0, 3, 3); // neg pct → worsening
-    expect(worsening.verdict).toBe("worsening");
+    expect(worsening.verdict).toBe("progressing");
     expect(worsening.confidence).toBe("low");
 
     const persistent = classifyContinuousRecovery(2.0, 1.8, 5, 5); // 10% → persistent
@@ -251,11 +267,11 @@ describe("buildChartRows — confidence field", () => {
 // ═════════════════════════════════════════════════════════
 
 describe("buildChartRows", () => {
-  test("normal row: terminalVal = |terminal_effect|, recoveryVal = |effect_size|", () => {
+  test("normal row: terminalVal and recoveryVal are signed", () => {
     const rows = buildChartRows([makeRow({ terminal_effect: -1.5, effect_size: -0.8 })], undefined);
     expect(rows).toHaveLength(1);
-    expect(rows[0].terminalVal).toBeCloseTo(1.5);
-    expect(rows[0].recoveryVal).toBeCloseTo(0.8);
+    expect(rows[0].terminalVal).toBeCloseTo(-1.5);
+    expect(rows[0].recoveryVal).toBeCloseTo(-0.8);
     expect(rows[0].isEdge).toBeNull();
   });
 
@@ -408,60 +424,3 @@ describe("connectorStyle", () => {
   });
 });
 
-// ═════════════════════════════════════════════════════════
-// computeAxisBounds
-// ═════════════════════════════════════════════════════════
-
-describe("computeAxisBounds", () => {
-  function makeChartRow(overrides: Partial<ChartRow> = {}): ChartRow {
-    return {
-      row: makeRow(),
-      doseLabel: "10 mg/kg",
-      verdict: "reversing",
-      terminalVal: 1.5,
-      recoveryVal: 0.8,
-      peakVal: null,
-      isEdge: null,
-      ...overrides,
-    };
-  }
-
-  test("globalXMax includes 10% padding", () => {
-    const chartRowsBySex = {
-      M: [makeChartRow({ terminalVal: 2.0, recoveryVal: 1.0 })],
-    };
-    const { globalXMax } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // max = 2.0, pad = 2.0 * 0.1 = 0.2 → globalXMax = 2.2
-    expect(globalXMax).toBeCloseTo(2.2);
-  });
-
-  test("xMin = 0 when no overcorrection", () => {
-    const chartRowsBySex = {
-      F: [makeChartRow({ terminalVal: 1.5, recoveryVal: 0.8 })],
-    };
-    const { xMinBySex } = computeAxisBounds(chartRowsBySex, ["F"]);
-    expect(xMinBySex["F"]).toBe(0);
-  });
-
-  test("xMin extends negative for overcorrection (with padding)", () => {
-    const chartRowsBySex = {
-      M: [makeChartRow({ terminalVal: 1.5, recoveryVal: -0.8, verdict: "overcorrected" })],
-    };
-    const { xMinBySex } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // min = -0.8, negPad = 0.8 * 0.1 = 0.08 → xMin = -0.88
-    expect(xMinBySex["M"]).toBeCloseTo(-0.88);
-    expect(xMinBySex["M"]).toBeLessThan(-0.8);
-  });
-
-  test("edge rows excluded from bounds", () => {
-    const chartRowsBySex = {
-      M: [
-        makeChartRow({ terminalVal: 1.5, recoveryVal: 0.8 }),
-        makeChartRow({ terminalVal: 10.0, recoveryVal: 8.0, isEdge: "insufficient_n" }),
-      ],
-    };
-    const { globalXMax } = computeAxisBounds(chartRowsBySex, ["M"]);
-    // edge row should be excluded, max = 1.5
-    expect(globalXMax).toBeCloseTo(1.65); // 1.5 + 0.15
-  });
-});

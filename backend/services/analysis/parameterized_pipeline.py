@@ -10,7 +10,7 @@ import logging
 import math
 
 from services.study_discovery import StudyInfo
-from services.analysis.analysis_settings import AnalysisSettings
+from services.analysis.analysis_settings import AnalysisSettings, ScoringParams, load_scoring_params
 from services.analysis.findings_pipeline import (
     SCHEDULED_DOMAINS,
     enrich_findings,
@@ -83,10 +83,13 @@ class ParameterizedAnalysisPipeline:
         # 2. Apply settings transforms (post-processing)
         findings = apply_settings_transforms(findings, settings)
 
+        # 2b. Load expert scoring params from annotations (defaults if none saved)
+        scoring = load_scoring_params(self.study.study_id)
+
         # 3. Build all view JSONs (order matters: rules need target_organs + noael)
-        signal_summary = build_study_signal_summary(findings, dose_groups)
-        target_organs = build_target_organ_summary(findings)
-        noael = build_noael_summary(findings, dose_groups, mortality=mortality)
+        signal_summary = build_study_signal_summary(findings, dose_groups, params=scoring)
+        target_organs = build_target_organ_summary(findings, params=scoring)
+        noael = build_noael_summary(findings, dose_groups, mortality=mortality, params=scoring)
         rules = evaluate_rules(findings, target_organs, noael, dose_groups)
 
         # 4. Build unified_findings response (IDs + correlations + summary)

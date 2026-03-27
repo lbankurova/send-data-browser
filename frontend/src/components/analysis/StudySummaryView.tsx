@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchFindings } from "@/lib/analysis-api";
 import { fetchLesionSeveritySummary } from "@/lib/analysis-view-api";
-import { Loader2, FileText, Info, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, Info, AlertTriangle, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useNoaelSummary } from "@/hooks/useNoaelSummary";
@@ -12,7 +12,6 @@ import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useDomains } from "@/hooks/useDomains";
-import { useInsights } from "@/hooks/useInsights";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -25,18 +24,21 @@ import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
+import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { PkExposureSection } from "./panes/PkExposureSection";
 import { getInterpretationContext } from "@/lib/species-vehicle-context";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getTierSeverityLabel } from "@/lib/organ-weight-normalization";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { useRuleResults } from "@/hooks/useRuleResults";
+import { RuleInspectorTab } from "./RuleInspectorTab";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
-import type { Insight } from "@/hooks/useInsights";
 
-type Tab = "details" | "insights";
+type Tab = "details" | "rules";
 
 export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -49,6 +51,11 @@ export function StudySummaryView() {
   // Initialize tab from URL query parameter if present, then persist via session
   const initialTab = (searchParams.get("tab") as Tab) || "details";
   const [tab, setTab] = useStudySummaryTab(initialTab);
+  // Rules tab hidden by default — shown on demand via "View rules & classification" link
+  const [rulesTabOpen, setRulesTabOpen] = useState(initialTab === "rules");
+  useEffect(() => {
+    if (tab === "rules") setRulesTabOpen(true);
+  }, [tab]);
 
   // Initialize ScheduledOnlyContext from mortality data (matches FindingsView pattern)
   const { setEarlyDeathSubjects } = useScheduledOnly();
@@ -91,23 +98,6 @@ export function StudySummaryView() {
     });
   }, [studyId, settingsParams, queryClient]);
 
-  // If analysis data not available but insights tab requested, show insights
-  if (error && tab === "insights") {
-    return (
-      <div className="flex h-full flex-col">
-        <ViewTabBar
-          tabs={[
-            { key: "details", label: "Study details" },
-            { key: "insights", label: "Cross-study insights" },
-          ]}
-          value={tab}
-          onChange={(newTab: string) => setTab(newTab as Tab)}
-        />
-        <CrossStudyInsightsTab studyId={studyId!} />
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -119,15 +109,6 @@ export function StudySummaryView() {
           <p className="text-sm text-amber-600">
             This is a portfolio metadata study without analysis data.
           </p>
-          <p className="mt-2 text-sm text-amber-600">
-            Try the <strong>Cross-study insights</strong> tab to see intelligence for this study.
-          </p>
-          <button
-            onClick={() => setTab("insights")}
-            className="mt-4 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-          >
-            View cross-study insights →
-          </button>
         </div>
         <div className="mt-6 rounded-lg bg-gray-50 p-4 text-left">
           <p className="text-xs text-gray-600">
@@ -161,10 +142,16 @@ export function StudySummaryView() {
       <ViewTabBar
         tabs={[
           { key: "details", label: "Study details" },
-          { key: "insights", label: "Cross-study insights" },
+          ...(rulesTabOpen ? [{ key: "rules", label: "Rules & classification", closable: true }] : []),
         ]}
         value={tab}
         onChange={(k) => setTab(k as Tab)}
+        onClose={(k) => {
+          if (k === "rules") {
+            setRulesTabOpen(false);
+            setTab("details");
+          }
+        }}
         right={
           <div className="px-3 py-2">
             <button
@@ -180,113 +167,11 @@ export function StudySummaryView() {
 
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} signalData={signalData} mortalityData={mortalityData} />}
-      {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
+      {tab === "rules" && <RulesClassificationTab studyId={studyId!} />}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Cross-Study Insights Tab
-// ---------------------------------------------------------------------------
-
-function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
-  const { data: insights, isLoading, error } = useInsights(studyId);
-  const [showAll, setShowAll] = useState(false);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Loading insights...
-        </span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-12 text-center">
-        <div>
-          <Info className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            Cross-study insights are not available for this study.
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            (Only portfolio studies with metadata have insights)
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!insights || insights.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-12 text-center">
-        <p className="text-xs text-muted-foreground">
-          No cross-study insights available (no reference studies).
-        </p>
-      </div>
-    );
-  }
-
-  const priority01 = insights.filter((i) => i.priority <= 1);
-  const priority23 = insights.filter((i) => i.priority >= 2);
-
-  return (
-    <div className="flex-1 overflow-auto p-4">
-      <div className="space-y-2">
-        {/* Priority 0 and 1 — always visible */}
-        {priority01.map((insight, idx) => (
-          <InsightCard key={idx} insight={insight} />
-        ))}
-
-        {/* Priority 2 and 3 — collapsed by default */}
-        {priority23.length > 0 && (
-          <>
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="mt-4 text-xs text-primary hover:underline"
-            >
-              {showAll
-                ? "Show fewer insights \u25B2"
-                : `Show ${priority23.length} more insights \u25BC`}
-            </button>
-            {showAll &&
-              priority23.map((insight, idx) => (
-                <InsightCard key={`p23-${idx}`} insight={insight} />
-              ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Insight Card Component
-// ---------------------------------------------------------------------------
-
-function InsightCard({ insight }: { insight: Insight }) {
-  return (
-    <div className="border-l-2 border-primary py-2 pl-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs font-semibold">{insight.title}</span>
-        {insight.ref_study && (
-          <span className="text-[11px] text-muted-foreground">
-            {insight.ref_study}
-          </span>
-        )}
-        {!insight.ref_study && (
-          <span className="text-[11px] italic text-muted-foreground">
-            (this study)
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-foreground">{insight.detail}</p>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Details tab — study metadata + profile block + timeline + data quality
@@ -480,8 +365,6 @@ function DomainTable({
   interpretationNotes: import("@/lib/species-vehicle-context").ContextNote[];
 }) {
   const [showFolded, setShowFolded] = useState(false);
-  const navigate = useNavigate();
-
   const domainSignals = useMemo(() => aggregateDomainSignals(signalData), [signalData]);
 
   /** Generate decision-context notes for domains where analysis settings matter. */
@@ -612,15 +495,6 @@ function DomainTable({
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {formatSubjectsCell(row)}
-                  {row.code.toLowerCase() === "ds" && mortalityData?.has_mortality && (
-                    <button
-                      type="button"
-                      className="ml-1.5 text-xs text-primary hover:underline cursor-pointer"
-                      onClick={() => navigate(`/studies/${studyId}/cohort?preset=trs`)}
-                    >
-                      View TRS animals
-                    </button>
-                  )}
                 </td>
                 <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
                   {row.trCount > 0 ? `${row.trCount} TR` : "\u2014"}
@@ -800,6 +674,8 @@ function DetailsTab({
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
+  const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+  const [sectionsExpanded, setSectionsExpanded] = useState(true); // default: all open
   const [organWeightMethod] = useSessionState(
     `pcc.${studyId}.organWeightMethod`, "recommended", isOneOf(ORGAN_WEIGHT_METHOD_VALUES),
   );
@@ -1023,15 +899,6 @@ function DetailsTab({
                 <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
               </div>
             )}
-            {/* Dose proportionality warning */}
-            {pkData?.dose_proportionality &&
-              pkData.dose_proportionality.assessment !== "linear" &&
-              pkData.dose_proportionality.assessment !== "insufficient_data" && (
-              <div className="mt-0.5 flex items-start gap-1 text-[11px] text-muted-foreground">
-                <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-500" />
-                <span>{pkData.dose_proportionality.interpretation ?? "Non-linear dose proportionality detected"}</span>
-              </div>
-            )}
             {/* Study-level interpretation notes (cross-domain) */}
             {interpretationNotes.filter(n => n.domain === null).map((n, i) => (
               <div key={i} className="mt-0.5 flex items-start gap-1 text-[11px]">
@@ -1072,9 +939,26 @@ function DetailsTab({
         </div>
       )}
 
+      {/* ── Section controls ── */}
+      <div className="flex items-center justify-end border-b px-4 py-1">
+        <button
+          type="button"
+          className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
+          title={sectionsExpanded ? "Collapse all sections" : "Expand all sections"}
+          onClick={() => {
+            if (sectionsExpanded) { collapseAll(); } else { expandAll(); }
+            setSectionsExpanded(v => !v);
+          }}
+        >
+          {sectionsExpanded
+            ? <ChevronsDownUp className="h-3.5 w-3.5" />
+            : <ChevronsUpDown className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+
       {/* ── Study timeline ───────────────────────────────── */}
       {doseGroups.length > 0 && studyCtx?.dosingDurationWeeks && (
-        <CollapsiblePane title="Study timeline" defaultOpen>
+        <CollapsiblePane title="Study timeline" defaultOpen={false} sessionKey="pcc.studyDetails.timeline" expandAll={expandGen} collapseAll={collapseGen}>
           <StudyTimeline
             doseGroups={doseGroups}
             dosingDurationWeeks={studyCtx.dosingDurationWeeks}
@@ -1087,14 +971,24 @@ function DetailsTab({
       )}
 
       {/* ── Domain summary table ─────────────────────────── */}
-      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen>
+      <CollapsiblePane title={`Domains (${domainRows.length})`} defaultOpen={false} sessionKey="pcc.studyDetails.domains" expandAll={expandGen} collapseAll={collapseGen}>
         <DomainTable studyId={studyId} domains={domainRows} signalData={signalData} mortalityData={mortalityData} excludedSubjects={excludedSubjects} organWeightMethod={organWeightMethod} normTier={normalization.highestTier} normBwG={normalization.worstBwG} effectSizeSymbol={getEffectSizeSymbol(effectSizeMethod)} tfTypeSummary={tfTypeSummary} interpretationNotes={interpretationNotes} />
       </CollapsiblePane>
+
+      {/* ── PK Exposure ── */}
+      {pkData?.available && pkData.by_dose_group && pkData.by_dose_group.length > 0 && (
+        <CollapsiblePane title="PK Exposure" defaultOpen={false} sessionKey="pcc.studyDetails.pkExposure" expandAll={expandGen} collapseAll={collapseGen}>
+          <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
+        </CollapsiblePane>
+      )}
 
       {/* ── Data quality ── */}
       <CollapsiblePane
         title="Data quality"
         defaultOpen={false}
+        sessionKey="pcc.studyDetails.dataQuality"
+        expandAll={expandGen}
+        collapseAll={collapseGen}
         headerRight={(missingRequired.length > 0 || (valData?.summary.errors ?? 0) > 0) ? (
           <span className="flex items-center gap-3">
             {missingRequired.length > 0 && (
@@ -1219,6 +1113,22 @@ function DetailsTab({
           </div>
         </div>
       </CollapsiblePane>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rules & Classification Tab
+// ---------------------------------------------------------------------------
+
+function RulesClassificationTab({ studyId }: { studyId: string }) {
+  const { data: ruleResults } = useRuleResults(studyId);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="h-full">
+        <RuleInspectorTab ruleResults={ruleResults ?? []} organFilter={null} studyId={studyId} />
       </div>
     </div>
   );

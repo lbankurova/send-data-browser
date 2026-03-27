@@ -31,23 +31,19 @@ import { useViewSelection } from "@/contexts/ViewSelectionContext";
 
 export type YAxisMode = "g" | "absolute" | "pct_change" | "pct_vs_control";
 
-const Y_AXIS_OPTIONS: { value: YAxisMode; label: string }[] = [
-  { value: "g", label: "g" },
-  { value: "absolute", label: "Abs" },
-  { value: "pct_change", label: "%\u0394" },
-  { value: "pct_vs_control", label: "%vsC" },
+const Y_AXIS_OPTIONS: { value: YAxisMode; label: string; title: string }[] = [
+  { value: "g", label: "g", title: "Hedges' g effect size vs concurrent control" },
+  { value: "absolute", label: "Abs", title: "Group mean (absolute values)" },
+  { value: "pct_change", label: "%\u0394", title: "Percent change from baseline (Day 1)" },
+  { value: "pct_vs_control", label: "%vsC", title: "Percent difference from concurrent control" },
 ];
 
 const Y_AXIS_INFO: Record<YAxisMode, string> = {
-  g: "Hedges' g effect size: treated vs concurrent control at each timepoint. Pooled SD normalizes for within-group variability.",
-  absolute: "Raw group mean values at each timepoint.",
-  pct_change: "Percent change from baseline (first timepoint) for each dose group.",
-  pct_vs_control: "Percent difference from concurrent control at each timepoint.",
+  g: "Hedges' g effect size vs concurrent control. 95% CI bands from SE(g). Hover any timepoint for values. Toggle dose groups to isolate. Subjects mode shows per-animal traces.",
+  absolute: "Group mean at each timepoint. 95% CI bands (t-distributed for small n). Hover any timepoint for values.",
+  pct_change: "Percent change from baseline (Day 1). 95% CI propagated from absolute values. Hover any timepoint for values.",
+  pct_vs_control: "Percent difference from concurrent control. 95% CI propagated from absolute values. Hover any timepoint for values.",
 };
-
-// ── Timepoint mode types ─────────────────────────────────
-
-type TimepointMode = "terminal" | "peak" | "recovery";
 
 // ── Visibility allowlist ──────────────────────────────────
 
@@ -56,6 +52,26 @@ const ALLOWED_DOMAINS = new Set(["BW", "LB", "FW", "BG", "EG", "VS"]);
 // ── Plot layout constants ─────────────────────────────────
 
 const PLOT_AREA = { left: 8, top: 4, width: 182, height: 122 } as const;
+
+// ── 95% CI helper ────────────────────────────────────────
+
+/** 95% CI half-width: t(0.025, n-1) × SD/√n.
+ *  Uses t-approximation for small n; falls back to 1.96 for n≥30. */
+function ci95Half(sd: number, n: number): number {
+  if (n < 2 || sd <= 0) return 0;
+  // Approximate t-critical for common small n values in tox studies
+  const tCrit = n >= 30 ? 1.96
+    : n >= 20 ? 2.09
+    : n >= 15 ? 2.14
+    : n >= 10 ? 2.26
+    : n >= 8 ? 2.36
+    : n >= 6 ? 2.57
+    : n >= 5 ? 2.78
+    : n >= 4 ? 3.18
+    : n >= 3 ? 4.30
+    : 12.71; // n=2
+  return tCrit * sd / Math.sqrt(n);
+}
 
 // ── Transform series by Y-axis mode ──────────────────────
 
@@ -66,17 +82,27 @@ function transformSeries(
   yAxisMode: YAxisMode,
 ): Record<string, Record<number, ChartPoint[]>> {
   if (yAxisMode === "g") {
-    // Map g series directly: g → y
+    // Map g series directly: g → y, with CI from Hedges' g SE formula
     const result: Record<string, Record<number, ChartPoint[]>> = {};
     for (const [sex, sexSeries] of Object.entries(gSeries)) {
       result[sex] = {};
       for (const [dlStr, pts] of Object.entries(sexSeries)) {
-        result[sex][Number(dlStr)] = pts.map((p) => ({
-          day: p.day,
-          y: p.g,
-          n: p.n,
-          nControl: p.nControl,
-        }));
+        result[sex][Number(dlStr)] = pts.map((p) => {
+          // SE(g) ≈ √(1/n_t + 1/n_c + g²/(2(n_t+n_c)))
+          const nTotal = p.n + p.nControl;
+          const seG = nTotal > 0
+            ? Math.sqrt(1 / p.n + 1 / p.nControl + (p.g * p.g) / (2 * nTotal))
+            : 0;
+          const halfW = 1.96 * seG;
+          return {
+            day: p.day,
+            y: p.g,
+            n: p.n,
+            nControl: p.nControl,
+            ciLower: p.g - halfW,
+            ciUpper: p.g + halfW,
+          };
+        });
       }
     }
     return result;
@@ -99,13 +125,22 @@ function transformSeries(
       for (const pt of pts) {
         const ctrlPt = ctrl?.get(pt.day);
         const nControl = ctrlPt?.n ?? 0;
+        const half = ci95Half(pt.sd, pt.n);
+        const absLo = pt.mean - half;
+        const absHi = pt.mean + half;
 
         let y: number;
+        let ciLower: number | undefined;
+        let ciUpper: number | undefined;
         if (yAxisMode === "absolute") {
           y = pt.mean;
+          ciLower = absLo;
+          ciUpper = absHi;
         } else if (yAxisMode === "pct_change") {
           if (baseline != null && baseline !== 0) {
             y = ((pt.mean - baseline) / baseline) * 100;
+            ciLower = ((absLo - baseline) / baseline) * 100;
+            ciUpper = ((absHi - baseline) / baseline) * 100;
           } else {
             y = 0;
           }
@@ -114,12 +149,14 @@ function transformSeries(
           const ctrlMean = ctrlPt?.mean;
           if (ctrlMean != null && ctrlMean !== 0) {
             y = ((pt.mean - ctrlMean) / ctrlMean) * 100;
+            ciLower = ((absLo - ctrlMean) / ctrlMean) * 100;
+            ciUpper = ((absHi - ctrlMean) / ctrlMean) * 100;
           } else {
             y = 0;
           }
         }
 
-        chartPts.push({ day: pt.day, y, n: pt.n, nControl });
+        chartPts.push({ day: pt.day, y, n: pt.n, nControl, ciLower, ciUpper });
       }
       if (chartPts.length > 0) {
         result[sex][dl] = chartPts;
@@ -350,10 +387,15 @@ export function TimeCoursePane({
 
   const { includeRecovery } = useRecoveryPooling();
 
+  // OM domain: use specimen as test_code for per-organ data
+  const effectiveTestCode = finding.domain === "OM" && finding.specimen
+    ? finding.specimen
+    : finding.test_code;
+
   // Continuous time-course data (disabled for CL)
   const { data, isLoading, isError } = useTimeCourseData(
     isContinuous ? finding.domain : undefined,
-    isContinuous ? finding.test_code : undefined,
+    isContinuous ? effectiveTestCode : undefined,
     includeRecovery,
   );
 
@@ -361,7 +403,7 @@ export function TimeCoursePane({
   const { data: subjData } = useTimecourseSubject(
     showSubjects && isContinuous ? studyId : undefined,
     showSubjects && isContinuous ? finding.domain : undefined,
-    showSubjects && isContinuous ? finding.test_code : undefined,
+    showSubjects && isContinuous ? effectiveTestCode : undefined,
     undefined,
     includeRecovery,
   );
@@ -520,41 +562,7 @@ function TimeCourseContent({
 
   const isSingleSex = data.sexes.length === 1;
 
-  // Timepoint mode state
-  const [timepointMode, setTimepointMode] = useState<TimepointMode>("terminal");
-
-  // Peak day: day with the maximum absolute effect size for highest dose group
-  const peakDay = useMemo(() => {
-    if (data.doseGroups.length === 0) return null;
-    const highestDl = data.doseGroups[data.doseGroups.length - 1].doseLevel;
-    let bestDay: number | null = null;
-    let bestAbs = -1;
-    for (const sex of data.sexes) {
-      const pts = transformed[sex]?.[highestDl];
-      if (!pts) continue;
-      for (const pt of pts) {
-        const absY = Math.abs(pt.y);
-        if (absY > bestAbs) { bestAbs = absY; bestDay = pt.day; }
-      }
-    }
-    return bestDay;
-  }, [transformed, data.sexes, data.doseGroups]);
-
-  // Recovery day: last day after terminal day
-  const recoveryDay = useMemo(() => {
-    if (data.terminalDay == null || allDays.length === 0) return null;
-    const afterTerminal = allDays.filter((d) => d > data.terminalDay!);
-    return afterTerminal.length > 0 ? afterTerminal[afterTerminal.length - 1] : null;
-  }, [allDays, data.terminalDay]);
-
-  // Resolve the default day based on timepoint mode
-  const defaultDay = useMemo(() => {
-    if (timepointMode === "peak" && peakDay != null) return peakDay;
-    if (timepointMode === "recovery" && recoveryDay != null) return recoveryDay;
-    return data.terminalDay;
-  }, [timepointMode, peakDay, recoveryDay, data.terminalDay]);
-
-  const displayDay = hoveredDay ?? defaultDay;
+  const displayDay = hoveredDay ?? data.terminalDay;
   const isHovering = hoveredDay !== null;
 
   const tickFmt = useMemo(() => yTickFormatter(yAxisMode), [yAxisMode]);
@@ -619,28 +627,10 @@ function TimeCourseContent({
           </span>
         </div>
 
-        {/* Timepoint toggle: Terminal / Peak / Recovery */}
-        {(peakDay != null || recoveryDay != null) && (
-          <div className="flex items-center gap-1">
-            <PanePillToggle
-              value={timepointMode}
-              options={[
-                { value: "terminal" as const, label: "Terminal" },
-                ...(peakDay != null && peakDay !== data.terminalDay
-                  ? [{ value: "peak" as const, label: "Peak" }] : []),
-                ...(recoveryDay != null
-                  ? [{ value: "recovery" as const, label: "Recovery" }] : []),
-              ]}
-              onChange={setTimepointMode}
-            />
-          </div>
-        )}
-
-        {/* Dose group filter chips when subjects ON */}
-        {showSubjects && (
-          <div className="flex flex-wrap gap-1">
-            {data.doseGroups.map(({ doseLevel, doseLabel }) => {
-              const isSelected = selectedDoseGroups.length === 0 || selectedDoseGroups.includes(doseLevel);
+        {/* Dose group filter chips */}
+        <div className="flex flex-wrap gap-1">
+          {data.doseGroups.map(({ doseLevel, doseLabel }) => {
+            const isSelected = selectedDoseGroups.length === 0 || selectedDoseGroups.includes(doseLevel);
               return (
                 <button
                   key={doseLevel}
@@ -665,7 +655,6 @@ function TimeCourseContent({
               );
             })}
           </div>
-        )}
 
         {/* Charts — F left (with Y axis), M right (without) */}
         <div className={`flex ${isSingleSex ? "" : "gap-1"}`}>
@@ -674,8 +663,21 @@ function TimeCourseContent({
             const showY = isFirst;
             const pArea = showY ? plotAreaLeft : plotAreaRight;
             const scales = showY ? scalesLeft : scalesRight;
-            const sexSeries = transformed[sex] ?? {};
-            const sexDeaths = deaths.filter((d) => d.sex === sex && d.study_day != null);
+            const allSexSeries = transformed[sex] ?? {};
+            // Filter series and doseGroups when dose group chips are active
+            const hasDoseFilter = selectedDoseGroups.length > 0;
+            const sexSeries = hasDoseFilter
+              ? Object.fromEntries(Object.entries(allSexSeries).filter(([dl]) => selectedDoseGroups.includes(Number(dl))))
+              : allSexSeries;
+            const visibleDoseGroups = hasDoseFilter
+              ? data.doseGroups.filter((dg) => selectedDoseGroups.includes(dg.doseLevel))
+              : data.doseGroups;
+            // In relative modes (%change, %vsC) deaths on the group mean are misleading
+            // (they cluster near 0% before the groups separate) — show only in subjects mode
+            const isRelativeMode = yAxisMode === "pct_change" || yAxisMode === "pct_vs_control";
+            const sexDeaths = (isRelativeMode && !showSubjects)
+              ? []
+              : deaths.filter((d) => d.sex === sex && d.study_day != null);
             const sexTraces = subjectTracesBySex?.[sex];
 
             return (
@@ -685,7 +687,7 @@ function TimeCourseContent({
                 </div>
                 <TimeCourseLineChart
                   series={sexSeries}
-                  doseGroups={data.doseGroups}
+                  doseGroups={visibleDoseGroups}
                   xScale={scales.xScale}
                   yScale={scales.yScale}
                   xDomain={xDomain}

@@ -1,7 +1,7 @@
 /**
  * Types for the Cohort View — multi-subject analysis surface.
  *
- * @see docs/incoming/cohort-view.md
+ * @see docs/_internal/incoming/cohort-view.md
  */
 
 // ── Preset modes ─────────────────────────────────────────────
@@ -90,6 +90,127 @@ export interface SharedFinding {
   finding: string;
   direction: "up" | "down" | "none" | null;
   severity: "adverse" | "warning" | "normal";
+}
+
+// ── Per-subject syndrome matching ───────────────────────────
+
+export interface SyndromeEvidence {
+  domain: string;
+  test_code?: string;
+  specimen?: string;
+  finding?: string;
+  severity?: string;
+  value?: number;
+  fold_change?: number;
+  pct_change?: number;
+  direction?: "up" | "down";
+}
+
+export interface SyndromeMissingCriteria {
+  domain: string;
+  specimen?: string;
+  criteria: string; // human-readable description of what's missing
+}
+
+export interface SubjectSyndromeMatch {
+  syndrome_id: string;
+  syndrome_name: string;
+  match_type: "full" | "partial";
+  matched_required: SyndromeEvidence[];
+  matched_supporting: SyndromeEvidence[];
+  missing_required: SyndromeMissingCriteria[];
+  confidence: "HIGH" | "MODERATE" | "LOW";
+}
+
+export interface SubjectSyndromeProfile {
+  syndromes: SubjectSyndromeMatch[];
+  partial_syndromes: SubjectSyndromeMatch[];
+  syndrome_count: number;
+  partial_count: number;
+  affected_organ_count: number;
+  finding_count: number;
+}
+
+export interface SubjectSyndromesResponse {
+  meta: {
+    generated: string;
+    study_id: string;
+    syndrome_definitions_version: string;
+  };
+  subjects: Record<string, SubjectSyndromeProfile>;
+}
+
+// ── Composable filter predicates ─────────────────────────────
+
+export type FilterOperator = "and" | "or";
+
+export interface FilterGroup {
+  operator: FilterOperator;
+  predicates: FilterPredicate[];
+}
+
+export type FilterPredicate =
+  | { type: "dose"; values: Set<number> }
+  | { type: "sex"; values: Set<string> }
+  | { type: "organ"; organName: string; role?: "any" | "adverse" | "warning" }
+  | { type: "domain"; domain: string }
+  | { type: "syndrome"; syndromeId: string; matchType: "full" | "partial" | "any" }
+  | { type: "severity"; minGrade: number }
+  | { type: "bw_change"; minPct: number; direction: "loss" | "gain" }
+  | { type: "organ_count"; min: number }
+  | { type: "disposition"; values: Set<string> }
+  | { type: "recovery"; isRecovery: boolean }
+  | { type: "onset_day"; min: number | null; max: number | null; finding?: string }
+  | { type: "recovery_verdict"; finding: string; specimen: string; verdict: string[] }
+  | { type: "tk"; isTK: boolean }
+  | { type: "search"; query: string };
+
+// ── Onset days response ─────────────────────────────────────
+
+export interface OnsetDaysResponse {
+  meta: { generated: string; study_id: string };
+  /** Per-subject map: { [USUBJID]: { [findingKey]: onset_day } } */
+  subjects: Record<string, Record<string, number>>;
+}
+
+// ── Recovery verdicts response ──────────────────────────────
+
+export interface RecoveryFindingVerdict {
+  domain: string;
+  specimen: string;
+  finding: string;
+  verdict: string | null;
+  main_incidence?: number;
+  recovery_incidence?: number;
+  subjects_reversed?: number;
+  subjects_persistent?: number;
+  main_severity?: number | null;
+  recovery_severity?: number | null;
+  confidence?: { level: string };
+}
+
+export interface RecoverySubjectProfile {
+  findings: RecoveryFindingVerdict[];
+  summary: {
+    reversed_count: number;
+    partially_reversed_count: number;
+    persistent_count: number;
+    progressing_count: number;
+    anomaly_count: number;
+  };
+}
+
+export interface RecoveryVerdictsResponse {
+  meta: { generated: string; study_id: string };
+  per_subject: Record<string, RecoverySubjectProfile>;
+  per_finding: Record<string, RecoveryFindingVerdict>;
+}
+
+// ── Phase 3 stubs ────────────────────────────────────────────
+
+/** Per-subject recovery verdict data. Phase 3 placeholder. */
+export interface RecoveryVerdictSubject {
+  findings: Array<{ finding: string; specimen: string; verdict: string }>;
 }
 
 // ── Cohort state ─────────────────────────────────────────────

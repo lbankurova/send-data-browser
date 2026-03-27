@@ -39,6 +39,8 @@ export interface SignalBoosts {
   syndromeBoost: number;    // 3 if in syndrome, 0 otherwise
   coherenceBoost: number;   // 2 for 3+ domains, 1 for 2, 0 otherwise
   clinicalFloor: number;    // S4=15, S3=8, S2=4, S1=0
+  clinicalAdditive: number; // GAP-123: always added to base (S4=5, S3=3, S2=2, S1=0)
+  sexConcordanceBoost: number; // GAP-123: organ-specific concordance/divergence boost
   confidenceMultiplier: number; // HIGH=1.0, MODERATE=0.7, LOW=0.4
 }
 
@@ -92,8 +94,10 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;
+  const clinAdd = boosts?.clinicalAdditive ?? 0;
+  const sexConc = boosts?.sexConcordanceBoost ?? 0;
   const floor = boosts?.clinicalFloor ?? 0;
-  return Math.max(base + synBoost + cohBoost, floor);
+  return Math.max(base + synBoost + cohBoost + clinAdd + sexConc, floor);
 }
 
 // ─── Endpoint confidence classification ──────────────────────
@@ -189,7 +193,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "domain": return ep.domain;
     case "pattern": return ep.pattern;
     case "finding": return "_all";
-    case "specimen": return ep.organ_system; // stub — same as organ until histopath merge
+    case "specimen": return ep.specimen ?? "";
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
   }
 }
@@ -203,6 +207,8 @@ export function groupEndpoints(
 
   for (const ep of endpoints) {
     const key = groupKey(ep, mode);
+    // Skip endpoints without specimen in specimen mode
+    if (mode === "specimen" && !key) continue;
     let list = groups.get(key);
     if (!list) {
       list = [];
@@ -233,11 +239,11 @@ export function groupEndpoints(
   }
 
   // Sort cards by group signal descending; tiebreak: adverseCount desc, then name alpha
-  cards.sort((a, b) =>
-    b.groupSignal - a.groupSignal ||
-    b.adverseCount - a.adverseCount ||
-    a.key.localeCompare(b.key)
-  );
+  cards.sort((a, b) => {
+    return b.groupSignal - a.groupSignal ||
+      b.adverseCount - a.adverseCount ||
+      a.key.localeCompare(b.key);
+  });
 
   return cards;
 }

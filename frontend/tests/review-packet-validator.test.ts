@@ -8,7 +8,7 @@
  * Invariant K:    Directional gate must be present & capped when reject discriminator is opposite (REM-09)
  * Invariant L:    Single-domain certainty cap (REM-12)
  *
- * Source: docs/knowledge/audit-results/2026-02-19/generate-review-packet-expect-clean.test.ts
+ * Source: docs/_internal/knowledge/audit-results/2026-02-19/generate-review-packet-expect-clean.test.ts
  */
 
 import { describe, test, expect } from "vitest";
@@ -102,7 +102,7 @@ type SyndromeSection = {
 function readPacketMd(): string {
   const candidates = [
     // Primary: the generator's output
-    path.resolve(__dirname, "../../docs/knowledge/scientific-logic-review.md"),
+    path.resolve(__dirname, "../../docs/scientific-logic.md"),
     // Fallback: env var
     process.env.REVIEW_PACKET_FIXTURE_PATH
       ? path.resolve(process.env.REVIEW_PACKET_FIXTURE_PATH)
@@ -1034,11 +1034,11 @@ describe("Scientific logic invariants — post-remediation", () => {
     expect(s.interpretation.regulatorySeverity).toMatch(/^S2/);
   });
 
-  test("F: Spot-check XS05 adverse + confirmed -> S3", () => {
+  test("F: Spot-check XS05 equivocal + confirmed -> S2 (BW confound g=7.8 shifts adversity)", () => {
     const s = sections.find((s) => s.id === "XS05")!;
-    expect(s.interpretation.adversity).toBe("adverse");
+    expect(s.interpretation.adversity).toBe("equivocal");
     expect(s.interpretation.certainty).toBe("mechanism_confirmed");
-    expect(s.interpretation.regulatorySeverity).toMatch(/^S3/);
+    expect(s.interpretation.regulatorySeverity).toMatch(/^S2/);
   });
 
   test("F: Spot-check XS04 pattern_only + adverse -> S2", () => {

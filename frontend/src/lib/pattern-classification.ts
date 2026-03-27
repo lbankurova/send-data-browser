@@ -25,6 +25,22 @@ export type PatternType =
 
 export type ConfidenceLevel = "HIGH" | "MODERATE" | "LOW";
 
+/** Map backend classification.py pattern string to frontend PatternType.
+ *  Backend is the authority for dose-response pattern; this bridges the naming. */
+export function mapBackendPattern(bp: string | null | undefined): PatternType | null {
+  if (!bp) return null;
+  switch (bp) {
+    case "monotonic_increase": return "MONOTONIC_UP";
+    case "monotonic_decrease": return "MONOTONIC_DOWN";
+    case "threshold_increase":
+    case "threshold_decrease": return "THRESHOLD";
+    case "non_monotonic": return "NON_MONOTONIC";
+    case "flat":
+    case "insufficient_data": return "NO_PATTERN";
+    default: return null;
+  }
+}
+
 export interface PatternAlert {
   id: string;
   priority: "HIGH" | "MEDIUM" | "INFO";
@@ -568,6 +584,8 @@ export function classifyFindingPattern(
   syndromeMatch: SyndromeMatch | null,
   organWeightSig: boolean,
   laterality?: LateralityAggregate | null,
+  backendPattern?: string | null,
+  backendOnset?: number | null,
 ): PatternClassification {
   const groups = buildDoseGroupData(specimenRows, finding);
   if (groups.length < 2) {
@@ -582,7 +600,28 @@ export function classifyFindingPattern(
     };
   }
 
-  const result = classifyPattern(groups, trendP);
+  // Use backend pattern when available; fall back to local classification
+  const mapped = mapBackendPattern(backendPattern);
+  let result: PatternClassification;
+
+  if (mapped) {
+    // Backend is authority, but detect CONTROL_ONLY from data
+    // (backend has no CONTROL_ONLY concept)
+    const control = groups[0];
+    const treated = groups.slice(1);
+    const treatedActive = treated.filter((g) => g.incidence > 0 || g.avg_severity > 0);
+    if (treatedActive.length === 0 && (control.incidence > 0 || control.avg_severity > 0)) {
+      result = makeResult("CONTROL_ONLY", null, groups, trendP);
+    } else {
+      const detail = (mapped === "THRESHOLD" && backendOnset != null)
+        ? (groups.find((g) => g.dose_level === backendOnset)?.dose_label ?? null)
+        : null;
+      result = makeResult(mapped, detail, groups, trendP);
+    }
+  } else {
+    result = classifyPattern(groups, trendP);
+  }
+
   const { level, factors } = computeConfidence(
     groups,
     result.pattern,
@@ -620,9 +659,11 @@ export function classifyFindingPatternWithSex(
   syndromeMatch: SyndromeMatch | null,
   organWeightSig: boolean,
   laterality?: LateralityAggregate | null,
+  backendTrend?: FindingDoseTrend | null,
 ): PatternClassificationResult {
   const aggregate = classifyFindingPattern(
     specimenRows, finding, trendP, syndromeMatch, organWeightSig, laterality,
+    backendTrend?.dose_response_pattern, backendTrend?.onset_dose_level,
   );
 
   const sexes = [...new Set(specimenRows.map(r => r.sex))].filter(Boolean);
@@ -633,8 +674,10 @@ export function classifyFindingPatternWithSex(
   const bySex = new Map<string, PatternClassification>();
   for (const sex of sexes) {
     const sexRows = specimenRows.filter(r => r.sex === sex);
+    const sexBackend = backendTrend?.pattern_by_sex?.[sex];
     bySex.set(sex, classifyFindingPattern(
       sexRows, finding, trendP, syndromeMatch, organWeightSig, laterality,
+      sexBackend?.pattern, sexBackend?.onset_dose_level,
     ));
   }
 
@@ -708,9 +751,10 @@ export function classifySpecimenPattern(
   let worstRank = -1;
 
   for (const finding of findings) {
-    const trendP = trendData?.find(
+    const trendEntry = trendData?.find(
       (t) => t.finding === finding && t.specimen === organ,
-    )?.ca_trend_p ?? null;
+    );
+    const trendP = trendEntry?.ca_trend_p ?? null;
 
     const result = classifyFindingPattern(
       specimenData,
@@ -719,6 +763,8 @@ export function classifySpecimenPattern(
       syndrome,
       organWeightSig,
       laterality,
+      trendEntry?.dose_response_pattern,
+      trendEntry?.onset_dose_level,
     );
     const rank = PATTERN_RANK[result.pattern];
     if (rank > worstRank) {

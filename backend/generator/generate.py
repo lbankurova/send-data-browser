@@ -28,6 +28,8 @@ from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
+from generator.subject_syndromes import build_subject_syndromes
+from generator.onset_recovery import build_onset_days, build_recovery_verdicts
 from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.phase_filter import compute_last_dosing_day
 
@@ -195,9 +197,21 @@ def generate(study_id: str):
 
     # Phase 1c results (may have failed in thread)
     provenance_msgs = []
+    ctx_df = None
     try:
         context_result = fut_ctx.result()
         provenance_msgs = generate_provenance_messages(context_result)
+
+        # Flag unsupported domains that are present in the source data
+        if "is" in study.xpt_files and not any(f.get("domain") == "IS" for f in findings):
+            provenance_msgs.append({
+                "rule_id": "Prov-010",
+                "icon": "warning",
+                "message": "IS (Immunogenicity) domain present but not analyzed. "
+                           "Immunogenicity endpoints are not yet supported by the analysis pipeline.",
+                "link_to_rule": None,
+            })
+
         ctx_df = context_result["subject_context"]
         _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
         _write_json(out_dir / "provenance_messages.json", provenance_msgs)
@@ -210,6 +224,57 @@ def generate(study_id: str):
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
         print(f"  1c WARNING: Subject context failed: {e}")
+
+    # Phase 1g: Per-subject syndrome matching
+    _tick("1g_start")
+    if ctx_df is not None:
+        print("Phase 1g: Computing per-subject syndrome matches...")
+        try:
+            subject_syndromes = build_subject_syndromes(findings, study, ctx_df)
+            _write_json(out_dir / "subject_syndromes.json", subject_syndromes)
+            n_matched = sum(1 for s in subject_syndromes.get("subjects", {}).values()
+                            if s.get("syndrome_count", 0) > 0)
+            n_partial = sum(1 for s in subject_syndromes.get("subjects", {}).values()
+                            if s.get("partial_count", 0) > 0)
+            print(f"  {n_matched} subjects with full syndrome matches, {n_partial} with partial matches")
+        except Exception as e:
+            print(f"  WARNING: Subject syndrome computation failed: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("Phase 1g: SKIPPED — subject context (Phase 1c) not available")
+    _tick("1g_end")
+
+    # Phase 1h: Onset days and recovery verdicts
+    _tick("1h_start")
+    print("Phase 1h: Computing onset days and recovery verdicts...")
+    try:
+        onset_days = build_onset_days(findings, ctx_df if ctx_df is not None else __import__('pandas').DataFrame())
+        _write_json(out_dir / "subject_onset_days.json", onset_days)
+        n_onset_subjects = len(onset_days.get("subjects", {}))
+        print(f"  onset days for {n_onset_subjects} subjects")
+    except Exception as e:
+        print(f"  WARNING: Onset day computation failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    try:
+        last_dosing_day_auto = compute_last_dosing_day(study)
+        effective_ldd = last_dosing_day_override if last_dosing_day_override is not None else last_dosing_day_auto
+        # Enrich _subjects with dose_label from dose_groups (needed by compute_incidence_recovery)
+        _rv_subjects = _subjects.copy()
+        _dl_map = {dg["dose_level"]: dg.get("label", "") for dg in _dose_groups}
+        _rv_subjects["dose_label"] = _rv_subjects["dose_level"].map(_dl_map).fillna("")
+        recovery_verdicts = build_recovery_verdicts(findings, study, _rv_subjects, effective_ldd)
+        _write_json(out_dir / "recovery_verdicts.json", recovery_verdicts)
+        n_rv_subjects = len(recovery_verdicts.get("per_subject", {}))
+        n_rv_findings = len(recovery_verdicts.get("per_finding", {}))
+        print(f"  recovery verdicts for {n_rv_subjects} subjects, {n_rv_findings} findings")
+    except Exception as e:
+        print(f"  WARNING: Recovery verdict computation failed: {e}")
+        import traceback
+        traceback.print_exc()
+    _tick("1h_end")
 
     # Phase 2: Assemble view-specific data via parameterized pipeline
     _tick("2_start")
@@ -280,6 +345,8 @@ def generate(study_id: str):
         ("1b Domain stats", "1b"),
         ("1c-e Parallel (ctx/tumor/food)", "1cde"),
         ("1f Cross-animal flags", "1f"),
+        ("1g Subject syndromes", "1g"),
+        ("1h Onset/recovery", "1h"),
         ("2  View DataFrames", "2"),
         ("2b-5 Parallel (PK/rules/chart/unified)", "2b345"),
     ]

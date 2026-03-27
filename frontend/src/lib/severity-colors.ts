@@ -48,7 +48,7 @@ export function getSeverityDotColor(severity: string): string {
     case "adverse":
       return "#dc2626"; // red-600
     case "warning":
-      return "#facc15"; // yellow-400 — bright lemon-yellow, distinct from dose-group-2 amber #f59e0b
+      return "#facc15"; // yellow-400
     case "normal":
     default:
       return "#16a34a"; // green-600
@@ -257,17 +257,6 @@ export function formatDoseShortLabel(rawLabel: string): string {
   return match ? match[1] : detail;
 }
 
-/** Parse raw dose labels into numeric-only display labels (no units).
- *  "Group 2, 2 mg/kg PCDRUG" → "2"
- *  "Group 1, Control"         → "Control"
- *  Already-short "2 mg/kg"    → "2"
- */
-export function formatDoseNumericLabel(rawLabel: string): string {
-  const short = formatDoseShortLabel(rawLabel);
-  if (/control/i.test(short)) return "Control";
-  const match = short.match(/^([\d.]+)/);
-  return match ? match[1] : short;
-}
 
 /** Convert endpoint labels to title case: "ALBUMIN" → "Albumin", "LIVER_VACUOLIZATION" → "Liver Vacuolization" */
 export function titleCase(s: string | null | undefined): string {

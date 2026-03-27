@@ -1,8 +1,13 @@
-"""Tests for incidence recovery verdict logic and time-period filtering.
+"""Tests for incidence recovery verdict logic — unified 7-guard chain.
 
 Covers:
-  Fix 2 (M-2): CL incidence "worsening" verdict
-  Fix 3 (m-4): CL time-period filter (recovery-arm records restricted to post-dosing)
+  - Full guard chain (not_examined, insufficient_n, anomaly, not_observed, low_power)
+  - Examination-aware denominators
+  - Severity tiebreaker (MI/MA only)
+  - Sex-restricted recovery arm handling
+  - Unified vocabulary (reversed, partially_reversed, persistent, progressing, anomaly)
+  - Time-period filtering
+  - Confidence flag
 
 Run: cd backend && python -m pytest tests/test_incidence_recovery.py -v
 """
@@ -18,48 +23,159 @@ import pytest
 from services.analysis.incidence_recovery import (
     compute_incidence_verdict,
     compute_incidence_recovery,
+    MIN_RECOVERY_N,
+    MIN_ADEQUATE_N,
+    LOW_POWER_THRESHOLD,
 )
 
 
 # ═══════════════════════════════════════════════════════════
-# compute_incidence_verdict — pure verdict logic
+# compute_incidence_verdict — full 7-guard chain
 # ═══════════════════════════════════════════════════════════
 
 
-class TestComputeIncidenceVerdict:
-    def test_resolved_when_recovery_zero(self):
-        assert compute_incidence_verdict(0.4, 0.0) == "resolved"
+class TestGuard0NotExamined:
+    """Guard 0: rec_examined == 0 → not_examined."""
 
-    def test_improving_when_recovery_less_than_main(self):
-        assert compute_incidence_verdict(0.6, 0.2) == "improving"
+    def test_zero_examined_returns_not_examined(self):
+        assert compute_incidence_verdict(10, 5, 0, 0) == "not_examined"
 
-    def test_persistent_when_equal(self):
-        assert compute_incidence_verdict(0.4, 0.4) == "persistent"
+    def test_zero_examined_ignores_main_data(self):
+        assert compute_incidence_verdict(10, 8, 0, 0) == "not_examined"
 
-    def test_worsening_when_recovery_exceeds_main(self):
-        assert compute_incidence_verdict(0.2, 0.6) == "worsening"
 
-    def test_new_in_recovery_when_main_zero(self):
-        assert compute_incidence_verdict(0.0, 0.4) == "new_in_recovery"
+class TestGuard1InsufficientN:
+    """Guard 1: rec_examined < MIN_RECOVERY_N → insufficient_n."""
 
-    def test_resolved_when_both_zero(self):
-        # Both arms zero → rec_inc == 0 → resolved (no finding to persist)
-        assert compute_incidence_verdict(0.0, 0.0) == "resolved"
+    def test_one_examined(self):
+        assert compute_incidence_verdict(10, 5, 1, 0) == "insufficient_n"
 
-    def test_worsening_boundary_just_above(self):
-        # rec slightly > main → worsening
-        assert compute_incidence_verdict(0.40, 0.41) == "worsening"
+    def test_two_examined(self):
+        assert compute_incidence_verdict(10, 5, 2, 1) == "insufficient_n"
 
-    def test_persistent_boundary_exact_equal(self):
-        assert compute_incidence_verdict(0.33, 0.33) == "persistent"
+    def test_at_threshold_passes(self):
+        assert MIN_RECOVERY_N == 3
+        # 3 examined, 0 affected, main had findings → should pass guard
+        result = compute_incidence_verdict(10, 5, 3, 0)
+        assert result != "insufficient_n"
 
-    def test_resolved_main_has_incidence(self):
-        # main had findings, recovery has zero → resolved
-        assert compute_incidence_verdict(0.8, 0.0) == "resolved"
 
-    def test_worsening_20pct_to_60pct(self):
-        """The specific scenario from the spec: 20% → 60% should be worsening, not persistent."""
-        assert compute_incidence_verdict(0.2, 0.6) == "worsening"
+class TestGuard2Anomaly:
+    """Guard 2: main_inc=0, rec_affected>0 → anomaly."""
+
+    def test_finding_only_in_recovery(self):
+        assert compute_incidence_verdict(10, 0, 5, 2) == "anomaly"
+
+    def test_main_zero_affected_recovery_has_findings(self):
+        assert compute_incidence_verdict(10, 0, 3, 1) == "anomaly"
+
+
+class TestGuard3NotObserved:
+    """Guard 3: main_inc=0, main_affected=0, rec_affected=0 → not_observed."""
+
+    def test_no_findings_either_arm(self):
+        # This case: main had 0 affected, recovery had 0 affected
+        # But both were examined. Finding was not observed.
+        assert compute_incidence_verdict(10, 0, 5, 0) == "not_observed"
+
+
+class TestGuard4LowPower:
+    """Guard 4: main_inc * rec_examined < LOW_POWER_THRESHOLD → low_power."""
+
+    def test_low_main_incidence_small_recovery(self):
+        # main: 1/10 = 10%, rec_examined=5, expected = 0.5 < 2
+        assert compute_incidence_verdict(10, 1, 5, 0) == "low_power"
+
+    def test_barely_below_threshold(self):
+        # main: 3/10 = 30%, rec_examined=5, expected = 1.5 < 2
+        assert compute_incidence_verdict(10, 3, 5, 0) == "low_power"
+
+    def test_at_threshold_passes(self):
+        # main: 4/10 = 40%, rec_examined=5, expected = 2.0 — NOT low_power
+        result = compute_incidence_verdict(10, 4, 5, 0)
+        assert result != "low_power"
+        assert result == "reversed"  # rec_affected=0 → reversed
+
+
+class TestGuard5Reversed:
+    """Guard 5: rec_inc=0 (but tissue was examined) → reversed."""
+
+    def test_no_recovery_findings(self):
+        assert compute_incidence_verdict(10, 5, 5, 0) == "reversed"
+
+    def test_high_main_no_recovery(self):
+        assert compute_incidence_verdict(10, 8, 5, 0) == "reversed"
+
+
+class TestRatioVerdicts:
+    """Steps 6-10: ratio-based verdict computation."""
+
+    def test_partially_reversed_lower_incidence(self):
+        # main: 6/10=60%, rec: 2/5=40%, ratio=0.67 → partially_reversed (≤0.5 OR sev)
+        # Actually ratio 0.67 > 0.5 so without severity → persistent
+        # Let's use: main: 10/10=100%, rec: 2/5=40%, ratio=0.4 ≤ 0.5
+        assert compute_incidence_verdict(10, 10, 5, 2) == "partially_reversed"
+
+    def test_persistent_similar_incidence(self):
+        # main: 5/10=50%, rec: 3/5=60%, ratio=1.2 — not > 1.1 with more affected
+        # rec_affected=3 < main_affected=5, so not progressing
+        # ratio 1.2 > 0.5, no severity → persistent
+        assert compute_incidence_verdict(10, 5, 5, 3) == "persistent"
+
+    def test_progressing_higher_incidence_more_affected(self):
+        # main: 4/10=40%, rec: 5/5=100%, ratio=2.5 > 1.1, rec_affected > main_affected
+        # (main_inc * rec_examined = 0.4 * 5 = 2.0 ≥ LOW_POWER_THRESHOLD)
+        assert compute_incidence_verdict(10, 4, 5, 5) == "progressing"
+
+    def test_reversed_very_low_ratio(self):
+        # main: 8/10=80%, rec: 1/10=10%, ratio=0.125 ≤ 0.2
+        assert compute_incidence_verdict(10, 8, 10, 1) == "reversed"
+
+
+class TestSeverityTiebreaker:
+    """Severity ratio modifies verdict for MI/MA domains."""
+
+    def test_severity_drop_overrides_to_partially_reversed(self):
+        # Incidence ratio ~1.0 (persistent), but severity drops significantly
+        # main: 5/10=50%, rec: 3/5=60%, inc_ratio=1.2, persistent without severity
+        # With severity: main_avg=3.0, rec_avg=1.0, sev_ratio=0.33 ≤ 0.5 → partially_reversed
+        result = compute_incidence_verdict(
+            10, 5, 5, 3,
+            main_avg_severity=3.0, rec_avg_severity=1.0,
+            use_severity=True,
+        )
+        assert result == "partially_reversed"
+
+    def test_severity_increase_overrides_to_progressing(self):
+        # Incidence drops but severity increases
+        # main: 5/10=50%, rec: 2/5=40%, inc_ratio=0.8 — would be persistent
+        # severity: main_avg=2.0, rec_avg=3.0, sev_ratio=1.5 > 1.2 → progressing
+        result = compute_incidence_verdict(
+            10, 5, 5, 2,
+            main_avg_severity=2.0, rec_avg_severity=3.0,
+            use_severity=True,
+        )
+        assert result == "progressing"
+
+    def test_severity_ignored_when_flag_false(self):
+        # Same data as above but use_severity=False → persistent (incidence-only)
+        result = compute_incidence_verdict(
+            10, 5, 5, 3,
+            main_avg_severity=3.0, rec_avg_severity=1.0,
+            use_severity=False,
+        )
+        assert result == "persistent"
+
+    def test_severity_both_low_reversed(self):
+        # Both incidence and severity very low → reversed
+        # main: 10/10=100%, rec: 1/10=10%, inc_ratio=0.1 ≤ 0.2
+        # severity: main=4.0, rec=1.0, sev_ratio=0.25 ≤ 0.3
+        result = compute_incidence_verdict(
+            10, 10, 10, 1,
+            main_avg_severity=4.0, rec_avg_severity=1.0,
+            use_severity=True,
+        )
+        assert result == "reversed"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -107,6 +223,20 @@ def make_cl_df(
     return df
 
 
+def make_mi_df(
+    records: list[dict],
+) -> pd.DataFrame:
+    """Build a minimal MI domain DataFrame.
+
+    Each record: {"USUBJID": str, "MISTRESC": str, "MIDY": int, "MISPEC": str, "MISEV": str}
+    Normal records should be included for examination-aware counting.
+    """
+    df = pd.DataFrame(records)
+    if "MIDY" not in df.columns:
+        df["MIDY"] = 1
+    return df
+
+
 # ═══════════════════════════════════════════════════════════
 # compute_incidence_recovery — DataFrame integration
 # ═══════════════════════════════════════════════════════════
@@ -115,65 +245,74 @@ def make_cl_df(
 class TestComputeIncidenceRecovery:
     """Integration tests with synthetic DataFrames."""
 
-    def test_basic_resolved(self):
-        """Main arm has findings, recovery has none → resolved."""
+    def test_basic_reversed(self):
+        """Main arm has findings, recovery has none → reversed."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
-            rec_ids=["R1", "R2", "R3"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
         )
         cl = make_cl_df([
+            # Main: 4/5=80%, rec: 0/5=0%. Expected=0.8*5=4.0 ≥ 2 → passes low_power
             {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
-            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 20},
+            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 15},
+            {"USUBJID": "M3", "CLSTRESC": "SWELLING", "CLDY": 20},
+            {"USUBJID": "M4", "CLSTRESC": "SWELLING", "CLDY": 25},
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
         r = rows[0]
-        assert r["verdict"] == "resolved"
-        assert r["main_affected"] == 2
-        assert r["main_n"] == 5
+        assert r["verdict"] == "reversed"
+        assert r["main_affected"] == 4
         assert r["recovery_affected"] == 0
-        assert r["recovery_n"] == 3
 
-    def test_worsening_verdict(self):
-        """Recovery incidence exceeds main → worsening (Fix 2, M-2)."""
+    def test_progressing_verdict(self):
+        """Recovery incidence exceeds main → progressing."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
-            rec_ids=["R1", "R2", "R3"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
         )
         cl = make_cl_df([
-            # Main: 1/5 = 20%
+            # Main: 3/5=60%, rec: 4/5=80%. Expected=0.6*5=3.0 ≥ 2
+            # ratio=1.33 > 1.1, rec_affected=4 > main_affected=3 → progressing
             {"USUBJID": "M1", "CLSTRESC": "EDEMA", "CLDY": 10},
-            # Recovery: 2/3 = 67%
+            {"USUBJID": "M2", "CLSTRESC": "EDEMA", "CLDY": 15},
+            {"USUBJID": "M3", "CLSTRESC": "EDEMA", "CLDY": 20},
             {"USUBJID": "R1", "CLSTRESC": "EDEMA", "CLDY": 100},
             {"USUBJID": "R2", "CLSTRESC": "EDEMA", "CLDY": 100},
+            {"USUBJID": "R3", "CLSTRESC": "EDEMA", "CLDY": 100},
+            {"USUBJID": "R4", "CLSTRESC": "EDEMA", "CLDY": 100},
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
-        assert rows[0]["verdict"] == "worsening"
-        assert rows[0]["main_affected"] == 1
-        assert rows[0]["recovery_affected"] == 2
+        assert rows[0]["verdict"] == "progressing"
+        assert rows[0]["main_affected"] == 3
+        assert rows[0]["recovery_affected"] == 4
 
     def test_persistent_verdict(self):
         """Equal incidence in both arms → persistent."""
         subjects = make_subjects_df(
-            main_ids=["M1", "M2", "M3"],
-            rec_ids=["R1", "R2", "R3"],
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
         )
         cl = make_cl_df([
-            # Main: 1/3 = 33%
+            # Main: 3/5=60%, rec: 3/5=60%. Expected=0.6*5=3.0 ≥ 2
+            # ratio=1.0, persistent
             {"USUBJID": "M1", "CLSTRESC": "MASS", "CLDY": 10},
-            # Recovery: 1/3 = 33%
+            {"USUBJID": "M2", "CLSTRESC": "MASS", "CLDY": 15},
+            {"USUBJID": "M3", "CLSTRESC": "MASS", "CLDY": 20},
             {"USUBJID": "R1", "CLSTRESC": "MASS", "CLDY": 100},
+            {"USUBJID": "R2", "CLSTRESC": "MASS", "CLDY": 100},
+            {"USUBJID": "R3", "CLSTRESC": "MASS", "CLDY": 100},
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
         assert rows[0]["verdict"] == "persistent"
 
-    def test_improving_verdict(self):
-        """Recovery incidence less than main → improving."""
+    def test_partially_reversed_verdict(self):
+        """Recovery incidence less than main → partially_reversed."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
             rec_ids=["R1", "R2", "R3", "R4", "R5"],
@@ -189,10 +328,10 @@ class TestComputeIncidenceRecovery:
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
-        assert rows[0]["verdict"] == "improving"
+        assert rows[0]["verdict"] == "partially_reversed"
 
-    def test_new_in_recovery(self):
-        """Finding appears only in recovery arm → new_in_recovery."""
+    def test_anomaly_new_in_recovery(self):
+        """Finding appears only in recovery arm → anomaly."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3"],
             rec_ids=["R1", "R2", "R3"],
@@ -203,27 +342,57 @@ class TestComputeIncidenceRecovery:
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
-        assert rows[0]["verdict"] == "new_in_recovery"
+        assert rows[0]["verdict"] == "anomaly"
 
-    # ── Fix 3 (m-4): Time-period filtering ──────────────────
+    def test_output_includes_examined_counts(self):
+        """Rows include main_examined and recovery_examined fields."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3"],
+            rec_ids=["R1", "R2", "R3"],
+        )
+        cl = make_cl_df([
+            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "R1", "CLSTRESC": "SWELLING", "CLDY": 100},
+        ])
 
-    def test_time_filter_excludes_treatment_phase_from_recovery(self):
-        """Recovery-arm CL obs from treatment period excluded (Fix 3, m-4).
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        assert len(rows) == 1
+        assert "main_examined" in rows[0]
+        assert "recovery_examined" in rows[0]
 
-        Scenario: Recovery animal R1 has CL observations on day 10 (treatment)
-        and day 100 (recovery). With last_dosing_day=90, only day 100 counts.
-        """
+    def test_confidence_field(self):
+        """Rows include confidence: low when rec_examined < 5, adequate otherwise."""
+        # 3 recovery subjects → low confidence
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
             rec_ids=["R1", "R2", "R3"],
         )
         cl = make_cl_df([
-            # Main arm: 2 affected during treatment
+            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
+        ])
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        assert rows[0]["confidence"] == "low"
+
+        # 5 recovery subjects → adequate confidence
+        subjects5 = make_subjects_df(
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
+        )
+        rows5 = compute_incidence_recovery(cl, subjects5, "cl", "CLDY")
+        assert rows5[0]["confidence"] == "adequate"
+
+    # ── Time-period filtering ──────────────────────────────────
+
+    def test_time_filter_excludes_treatment_phase_from_recovery(self):
+        """Recovery-arm CL obs from treatment period excluded."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3"],
+        )
+        cl = make_cl_df([
             {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
             {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 20},
-            # Recovery animal with TREATMENT-PHASE observation (should be excluded)
-            {"USUBJID": "R1", "CLSTRESC": "SWELLING", "CLDY": 10},
-            # Recovery animal with true recovery observation
+            {"USUBJID": "R1", "CLSTRESC": "SWELLING", "CLDY": 10},  # treatment phase — excluded
             {"USUBJID": "R2", "CLSTRESC": "SWELLING", "CLDY": 100},
         ])
 
@@ -232,43 +401,41 @@ class TestComputeIncidenceRecovery:
         )
         assert len(rows) == 1
         r = rows[0]
-        # Only R2's day-100 observation counts in recovery
         assert r["recovery_affected"] == 1
         assert r["main_affected"] == 2
-        # Without time filter, R1's day-10 obs would also count → rec_affected=2 → worsening
-        # With time filter: 1/3 < 2/5 → improving
-        assert r["verdict"] == "improving"
 
     def test_time_filter_changes_verdict(self):
-        """Without filter: worsening. With filter: resolved.
-
-        Demonstrates the filter prevents false worsening signals.
-        """
+        """Without filter: progressing. With filter: reversed."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
-            rec_ids=["R1", "R2", "R3"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
         )
         cl = make_cl_df([
-            # Main arm: 1/5 = 20%
-            {"USUBJID": "M1", "CLSTRESC": "LESION", "CLDY": 15},
-            # Recovery animals with treatment-phase observations only
-            # (these are pre-dosing boundary, should be filtered out)
+            # Main: 4/5=80% → expected=0.8*5=4.0 ≥ 2
+            {"USUBJID": "M1", "CLSTRESC": "LESION", "CLDY": 10},
+            {"USUBJID": "M2", "CLSTRESC": "LESION", "CLDY": 15},
+            {"USUBJID": "M3", "CLSTRESC": "LESION", "CLDY": 20},
+            {"USUBJID": "M4", "CLSTRESC": "LESION", "CLDY": 25},
+            # Recovery with treatment-phase observations only
             {"USUBJID": "R1", "CLSTRESC": "LESION", "CLDY": 10},
             {"USUBJID": "R2", "CLSTRESC": "LESION", "CLDY": 20},
+            {"USUBJID": "R3", "CLSTRESC": "LESION", "CLDY": 30},
+            {"USUBJID": "R4", "CLSTRESC": "LESION", "CLDY": 40},
+            {"USUBJID": "R5", "CLSTRESC": "LESION", "CLDY": 50},
         ])
 
-        # Without filter: recovery has 2/3 = 67% → worsening
+        # Without filter: recovery has 5/5=100% > main 4/5=80%, ratio=1.25 > 1.1
+        # rec_affected=5 > main_affected=4 → progressing
         rows_no_filter = compute_incidence_recovery(
             cl, subjects, "cl", "CLDY", last_dosing_day=None,
         )
-        assert rows_no_filter[0]["verdict"] == "worsening"
+        assert rows_no_filter[0]["verdict"] == "progressing"
 
-        # With filter (last_dosing_day=90): both R1 and R2 observations are ≤90
-        # so they're excluded from recovery → rec_affected=0 → resolved
+        # With filter (last_dosing_day=90): all R obs ≤90 → excluded → reversed
         rows_filtered = compute_incidence_recovery(
             cl, subjects, "cl", "CLDY", last_dosing_day=90,
         )
-        assert rows_filtered[0]["verdict"] == "resolved"
+        assert rows_filtered[0]["verdict"] == "reversed"
 
     def test_time_filter_boundary_day(self):
         """Observations exactly on last_dosing_day go to main, day+1 to recovery."""
@@ -277,11 +444,8 @@ class TestComputeIncidenceRecovery:
             rec_ids=["R1", "R2", "R3"],
         )
         cl = make_cl_df([
-            # Main: finding on exact boundary day → included in main
             {"USUBJID": "M1", "CLSTRESC": "REDNESS", "CLDY": 90},
-            # Recovery: finding on boundary day → excluded (≤90, not >90)
-            {"USUBJID": "R1", "CLSTRESC": "REDNESS", "CLDY": 90},
-            # Recovery: finding on day after boundary → included
+            {"USUBJID": "R1", "CLSTRESC": "REDNESS", "CLDY": 90},   # boundary → excluded
             {"USUBJID": "R2", "CLSTRESC": "REDNESS", "CLDY": 91},
         ])
 
@@ -290,26 +454,32 @@ class TestComputeIncidenceRecovery:
         )
         assert len(rows) == 1
         r = rows[0]
-        assert r["main_affected"] == 1  # M1 on day 90
-        assert r["recovery_affected"] == 1  # R2 on day 91, NOT R1 on day 90
+        assert r["main_affected"] == 1
+        assert r["recovery_affected"] == 1
 
     def test_null_days_preserved(self):
-        """Records with NULL CLDY pass through in both arms."""
+        """Records with NULL day pass through in both arms."""
         subjects = make_subjects_df(
-            main_ids=["M1", "M2", "M3"],
-            rec_ids=["R1", "R2", "R3"],
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3", "R4", "R5"],
         )
         cl = make_cl_df([
+            # Main: 3/5=60%, expected=0.6*5=3.0 ≥ 2
             {"USUBJID": "M1", "CLSTRESC": "NODULE", "CLDY": None},
+            {"USUBJID": "M2", "CLSTRESC": "NODULE", "CLDY": None},
+            {"USUBJID": "M3", "CLSTRESC": "NODULE", "CLDY": None},
+            # Recovery: 3/5=60%, ratio=1.0 → persistent
             {"USUBJID": "R1", "CLSTRESC": "NODULE", "CLDY": None},
+            {"USUBJID": "R2", "CLSTRESC": "NODULE", "CLDY": None},
+            {"USUBJID": "R3", "CLSTRESC": "NODULE", "CLDY": None},
         ])
 
         rows = compute_incidence_recovery(
             cl, subjects, "cl", "CLDY", last_dosing_day=90,
         )
         assert len(rows) == 1
-        assert rows[0]["main_affected"] == 1
-        assert rows[0]["recovery_affected"] == 1
+        assert rows[0]["main_affected"] == 3
+        assert rows[0]["recovery_affected"] == 3
         assert rows[0]["verdict"] == "persistent"
 
     def test_normal_terms_excluded(self):
@@ -327,8 +497,8 @@ class TestComputeIncidenceRecovery:
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 0  # All observations are normal
 
-    def test_control_dose_excluded(self):
-        """Dose level 0 (control) should not appear in results."""
+    def test_control_dose_included_with_no_verdict(self):
+        """Dose level 0 (control) appears in results but has verdict=None."""
         subjects_rows = [
             {"USUBJID": "C1", "SEX": "M", "dose_level": 0, "dose_label": "0 mg/kg", "is_recovery": False},
             {"USUBJID": "C2", "SEX": "M", "dose_level": 0, "dose_label": "0 mg/kg", "is_recovery": True},
@@ -343,8 +513,9 @@ class TestComputeIncidenceRecovery:
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
-        dose_levels = {r["dose_level"] for r in rows}
-        assert 0 not in dose_levels
+        control_rows = [r for r in rows if r["dose_level"] == 0]
+        assert len(control_rows) > 0
+        assert all(r["verdict"] is None for r in control_rows)
 
     def test_orres_fallback(self):
         """Uses CLORRES when CLSTRESC is absent."""
@@ -359,41 +530,140 @@ class TestComputeIncidenceRecovery:
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
-        assert rows[0]["finding"] == "SWELLING"  # Uppercased
+        assert rows[0]["finding"] == "SWELLING"
 
 
 # ═══════════════════════════════════════════════════════════
-# SLA-15: MIN_RECOVERY_N guard
+# Examination-aware denominators
+# ═══════════════════════════════════════════════════════════
+
+
+class TestExaminationAware:
+    """Examination-aware denominators for MI/MA domains."""
+
+    def test_mi_examined_from_normal_records(self):
+        """MI records with NORMAL contribute to examined count, not affected."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3", "M4", "M5"],
+            rec_ids=["R1", "R2", "R3"],
+        )
+        mi = make_mi_df([
+            # Main: 3 examined (2 normal + 1 affected), only 1 affected
+            {"USUBJID": "M1", "MISTRESC": "NORMAL", "MISPEC": "LIVER", "MIDY": 10},
+            {"USUBJID": "M2", "MISTRESC": "NORMAL", "MISPEC": "LIVER", "MIDY": 10},
+            {"USUBJID": "M3", "MISTRESC": "NECROSIS", "MISPEC": "LIVER", "MISEV": "MODERATE", "MIDY": 10},
+            # Recovery: 3 examined (2 normal + 1 affected)
+            {"USUBJID": "R1", "MISTRESC": "NORMAL", "MISPEC": "LIVER", "MIDY": 100},
+            {"USUBJID": "R2", "MISTRESC": "NORMAL", "MISPEC": "LIVER", "MIDY": 100},
+            {"USUBJID": "R3", "MISTRESC": "NECROSIS", "MISPEC": "LIVER", "MISEV": "MINIMAL", "MIDY": 100},
+        ])
+
+        rows = compute_incidence_recovery(
+            mi, subjects, "mi", "MIDY", specimen_col="MISPEC", sev_col="MISEV",
+        )
+        liver_rows = [r for r in rows if r.get("specimen") == "LIVER"]
+        assert len(liver_rows) == 1
+        r = liver_rows[0]
+        # Examined = 3 (includes NORMAL subjects), not N=5
+        assert r["main_examined"] == 3
+        assert r["recovery_examined"] == 3
+        assert r["main_affected"] == 1
+        assert r["recovery_affected"] == 1
+
+    def test_unexamined_recovery_returns_not_examined(self):
+        """MI specimen not examined in recovery arm → not_examined verdict."""
+        subjects = make_subjects_df(
+            main_ids=["M1", "M2", "M3"],
+            rec_ids=["R1", "R2", "R3"],
+        )
+        mi = make_mi_df([
+            # Main: liver examined, findings present
+            {"USUBJID": "M1", "MISTRESC": "NECROSIS", "MISPEC": "LIVER", "MIDY": 10},
+            {"USUBJID": "M2", "MISTRESC": "NORMAL", "MISPEC": "LIVER", "MIDY": 10},
+            # Recovery: NO liver records at all (tissue not examined)
+            {"USUBJID": "R1", "MISTRESC": "NORMAL", "MISPEC": "KIDNEY", "MIDY": 100},
+        ])
+
+        rows = compute_incidence_recovery(
+            mi, subjects, "mi", "MIDY", specimen_col="MISPEC",
+        )
+        liver_rows = [r for r in rows if r.get("specimen") == "LIVER"]
+        assert len(liver_rows) == 1
+        assert liver_rows[0]["verdict"] == "not_examined"
+        assert liver_rows[0]["recovery_examined"] == 0
+
+
+# ═══════════════════════════════════════════════════════════
+# Sex-restricted recovery arm
+# ═══════════════════════════════════════════════════════════
+
+
+class TestSexRestrictedRecovery:
+    """When only one sex has a recovery arm, the other gets not_examined."""
+
+    def test_males_only_recovery(self):
+        """Recovery arm has only males — female row gets not_examined."""
+        subjects_rows = [
+            # Main: both sexes (5 each for adequate power)
+            {"USUBJID": "MF1", "SEX": "F", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MF2", "SEX": "F", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MF3", "SEX": "F", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MF4", "SEX": "F", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MF5", "SEX": "F", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MM1", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MM2", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MM3", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MM4", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            {"USUBJID": "MM5", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": False},
+            # Recovery: males only (5 subjects)
+            {"USUBJID": "RM1", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": True},
+            {"USUBJID": "RM2", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": True},
+            {"USUBJID": "RM3", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": True},
+            {"USUBJID": "RM4", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": True},
+            {"USUBJID": "RM5", "SEX": "M", "dose_level": 1, "dose_label": "100 mg/kg", "is_recovery": True},
+            # Control
+            {"USUBJID": "C1", "SEX": "M", "dose_level": 0, "dose_label": "0 mg/kg", "is_recovery": False},
+        ]
+        subjects = pd.DataFrame(subjects_rows)
+        cl = make_cl_df([
+            # 4/5 = 80% for each sex → expected = 0.8 * 5 = 4.0 ≥ 2
+            {"USUBJID": "MF1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MF2", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MF3", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MF4", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MM1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MM2", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MM3", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "MM4", "CLSTRESC": "SWELLING", "CLDY": 10},
+        ])
+
+        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
+        f_rows = [r for r in rows if r["sex"] == "F" and r["dose_level"] == 1]
+        m_rows = [r for r in rows if r["sex"] == "M" and r["dose_level"] == 1]
+
+        # Female: no recovery subjects examined → not_examined
+        assert len(f_rows) == 1
+        assert f_rows[0]["verdict"] == "not_examined"
+        assert f_rows[0]["recovery_examined"] == 0
+
+        # Male: recovery subjects present → normal verdict
+        assert len(m_rows) == 1
+        assert m_rows[0]["verdict"] == "reversed"
+
+
+# ═══════════════════════════════════════════════════════════
+# MIN_RECOVERY_N guard (integration)
 # ═══════════════════════════════════════════════════════════
 
 
 class TestMinRecoveryNGuard:
-    """SLA-15: CL recovery with too few recovery animals → insufficient_n."""
-
-    def test_verdict_insufficient_n_when_below_threshold(self):
-        """rec_n < MIN_RECOVERY_N → insufficient_n regardless of incidence."""
-        from services.analysis.incidence_recovery import MIN_RECOVERY_N
-        assert MIN_RECOVERY_N == 3
-        assert compute_incidence_verdict(0.5, 0.0, rec_n=0) == "insufficient_n"
-        assert compute_incidence_verdict(0.5, 0.0, rec_n=1) == "insufficient_n"
-        assert compute_incidence_verdict(0.5, 0.0, rec_n=2) == "insufficient_n"
-
-    def test_verdict_normal_when_at_threshold(self):
-        """rec_n == MIN_RECOVERY_N → normal verdict logic applies."""
-        assert compute_incidence_verdict(0.5, 0.0, rec_n=3) == "resolved"
-        assert compute_incidence_verdict(0.5, 0.3, rec_n=3) == "improving"
-        assert compute_incidence_verdict(0.5, 0.8, rec_n=3) == "worsening"
-
-    def test_verdict_none_skips_guard(self):
-        """rec_n=None (default) skips the guard for backward compat."""
-        assert compute_incidence_verdict(0.5, 0.0) == "resolved"
-        assert compute_incidence_verdict(0.5, 0.0, rec_n=None) == "resolved"
+    """Guard 1 at DataFrame level."""
 
     def test_integration_small_recovery_arm(self):
-        """DataFrame-level: 2 recovery subjects → insufficient_n verdict."""
+        """2 recovery subjects → insufficient_n verdict."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3", "M4", "M5"],
-            rec_ids=["R1", "R2"],  # only 2 — below MIN_RECOVERY_N
+            rec_ids=["R1", "R2"],
         )
         cl = make_cl_df([
             {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
@@ -406,31 +676,19 @@ class TestMinRecoveryNGuard:
         assert rows[0]["recovery_n"] == 2
 
     def test_integration_sufficient_recovery_arm(self):
-        """DataFrame-level: 3 recovery subjects → normal verdict."""
-        subjects = make_subjects_df(
-            main_ids=["M1", "M2", "M3", "M4", "M5"],
-            rec_ids=["R1", "R2", "R3"],  # 3 — at MIN_RECOVERY_N
-        )
-        cl = make_cl_df([
-            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
-            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 20},
-        ])
-
-        rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
-        assert len(rows) == 1
-        assert rows[0]["verdict"] == "resolved"
-        assert rows[0]["recovery_n"] == 3
-
-    def test_integration_single_animal_no_definitive_verdict(self):
-        """A CL finding with N=1 in recovery should not get 'resolved'."""
+        """3 recovery subjects with adequate main incidence → reversed."""
         subjects = make_subjects_df(
             main_ids=["M1", "M2", "M3"],
-            rec_ids=["R1"],  # single recovery animal
+            rec_ids=["R1", "R2", "R3"],
         )
         cl = make_cl_df([
-            {"USUBJID": "M1", "CLSTRESC": "TREMOR", "CLDY": 10},
+            # Main: 3/3=100%, expected=1.0*3=3.0 ≥ 2 → passes low_power
+            {"USUBJID": "M1", "CLSTRESC": "SWELLING", "CLDY": 10},
+            {"USUBJID": "M2", "CLSTRESC": "SWELLING", "CLDY": 15},
+            {"USUBJID": "M3", "CLSTRESC": "SWELLING", "CLDY": 20},
         ])
 
         rows = compute_incidence_recovery(cl, subjects, "cl", "CLDY")
         assert len(rows) == 1
-        assert rows[0]["verdict"] == "insufficient_n"
+        assert rows[0]["verdict"] == "reversed"
+        assert rows[0]["recovery_n"] == 3

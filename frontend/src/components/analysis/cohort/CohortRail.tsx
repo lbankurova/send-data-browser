@@ -1,19 +1,20 @@
 /**
- * CohortRail — subject roster with preset toggle, filters, and multi-select rows.
+ * CohortRail — subject roster with preset checkboxes, filter pills, and multi-select rows.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { FilterMultiSelect, FilterSearch, FilterClearButton } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useCohort } from "@/contexts/CohortContext";
-import type { CohortPreset, CohortSubject } from "@/types/cohort";
+import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
+import type { CohortPreset, CohortSubject, FilterPredicate } from "@/types/cohort";
 
 const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "trs", label: "TRS" },
   { value: "histo", label: "Histo" },
   { value: "recovery", label: "Recovery" },
-  { value: "all", label: "All" },
 ];
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
@@ -26,15 +27,74 @@ const BADGE_STYLES: Record<string, string> = {
   tk: "bg-gray-50 text-gray-500 border-gray-200",
 };
 
+// ── Predicate label formatting ────────────────────────────────
+
+function getPredicateLabel(p: FilterPredicate): string {
+  switch (p.type) {
+    case "dose":
+      return `Dose: ${[...p.values].join(", ")}`;
+    case "sex":
+      return `Sex: ${[...p.values].join(", ")}`;
+    case "organ":
+      return `Organ: ${p.organName}${p.role && p.role !== "any" ? ` (${p.role})` : ""}`;
+    case "domain":
+      return `Domain: ${p.domain}`;
+    case "syndrome":
+      return `Syndrome: ${p.syndromeId}${p.matchType !== "any" ? ` (${p.matchType})` : ""}`;
+    case "severity":
+      return `MI grade >= ${p.minGrade}`;
+    case "bw_change":
+      return `BW: >= ${p.minPct}% ${p.direction}`;
+    case "organ_count":
+      return `Organs >= ${p.min}`;
+    case "disposition":
+      return `Disposition: ${[...p.values].join(", ")}`;
+    case "recovery":
+      return "Recovery";
+    case "tk":
+      return "TK";
+    case "search":
+      return `Search: ${p.query}`;
+    case "onset_day":
+      return "Onset day";
+    case "recovery_verdict":
+      return "Recovery verdict";
+  }
+}
+
+// ── FilterPill ────────────────────────────────────────────────
+
+function FilterPill({ predicate, onRemove }: { predicate: FilterPredicate; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+      <span className="truncate max-w-[120px]">{getPredicateLabel(predicate)}</span>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        className="ml-0.5 rounded-sm hover:bg-gray-200 p-0.5"
+        title="Remove filter"
+      >
+        <X className="h-2.5 w-2.5" />
+      </button>
+    </span>
+  );
+}
+
+// ── CohortRail ────────────────────────────────────────────────
+
 export function CohortRail() {
   const {
-    preset, setPreset,
+    activePresets, togglePreset,
+    filterGroup, removePredicate, setFilterOperator,
     filteredSubjects, selectedSubjects, toggleSubject,
     includeTK, setIncludeTK,
     doseFilter, setDoseFilter,
     sexFilter, setSexFilter,
     searchQuery, setSearchQuery,
+    subjectOrganCounts,
   } = useCohort();
+
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Summary counts
   const selected = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
@@ -57,9 +117,24 @@ export function CohortRail() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Zone 1: Preset toggle */}
-      <div className="flex items-center gap-2 border-b px-3 py-2">
-        <PanePillToggle options={PRESET_OPTIONS} value={preset} onChange={setPreset} />
+      {/* Zone 1: Preset checkboxes */}
+      <div className="flex items-center gap-3 border-b px-3 py-2">
+        {PRESET_OPTIONS.map((opt) => (
+          <label key={opt.value} className="flex items-center gap-1 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={activePresets.has(opt.value)}
+              onChange={() => togglePreset(opt.value)}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            <span className={cn(
+              "font-medium",
+              activePresets.has(opt.value) ? "text-foreground" : "text-muted-foreground"
+            )}>
+              {opt.label}
+            </span>
+          </label>
+        ))}
       </div>
 
       {/* Zone 2: Summary line */}
@@ -73,7 +148,23 @@ export function CohortRail() {
         <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
       </div>
 
-      {/* Zone 3: Filters */}
+      {/* Filter pills zone */}
+      {filterGroup.predicates.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 border-b px-3 py-1.5">
+          {filterGroup.predicates.map((p, i) => (
+            <FilterPill key={i} predicate={p} onRemove={() => removePredicate(i)} />
+          ))}
+          <button
+            type="button"
+            onClick={() => setFilterOperator(filterGroup.operator === "and" ? "or" : "and")}
+            className="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded bg-primary/10 hover:bg-primary/20"
+          >
+            {filterGroup.operator.toUpperCase()}
+          </button>
+        </div>
+      )}
+
+      {/* Zone 3: Quick-access filters + filter panel toggle */}
       <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5">
         <FilterMultiSelect
           options={doseOptions}
@@ -94,10 +185,15 @@ export function CohortRail() {
           dirty={isDirty}
           onClear={() => { setDoseFilter(null); setSexFilter(null); setSearchQuery(""); }}
         />
+        <FilterPanelToggle
+          predicateCount={filterGroup.predicates.length}
+          isOpen={showFilterPanel}
+          onToggle={() => setShowFilterPanel((p) => !p)}
+        />
       </div>
 
-      {/* TK toggle (only in All preset) */}
-      {preset === "all" && (
+      {/* TK toggle (shown when "all" is active or no specific preset selected) */}
+      {(activePresets.has("all") || activePresets.size === 0) && (
         <label className="flex items-center gap-1.5 border-b px-3 py-1 text-[10px] text-muted-foreground cursor-pointer">
           <input
             type="checkbox"
@@ -107,6 +203,11 @@ export function CohortRail() {
           />
           Include TK satellites
         </label>
+      )}
+
+      {/* FilterPanel: side panel for adding advanced filter predicates */}
+      {showFilterPanel && (
+        <FilterPanel onClose={() => setShowFilterPanel(false)} />
       )}
 
       {/* Zone 4: Subject rows */}
@@ -122,6 +223,7 @@ export function CohortRail() {
               subject={s}
               isSelected={selectedSubjects.has(s.usubjid)}
               onToggle={toggleSubject}
+              organCount={subjectOrganCounts.get(s.usubjid) ?? 0}
             />
           ))
         )}
@@ -134,10 +236,12 @@ function SubjectRow({
   subject: s,
   isSelected,
   onToggle,
+  organCount,
 }: {
   subject: CohortSubject;
   isSelected: boolean;
   onToggle: (id: string, shiftKey: boolean) => void;
+  organCount: number;
 }) {
   const pipeColor = getDoseGroupColor(s.doseGroupOrder);
   const isEarly = s.sacrificeDay != null && s.plannedDay != null && s.sacrificeDay < s.plannedDay;
@@ -169,6 +273,13 @@ function SubjectRow({
       {s.badge && (
         <span className={cn("rounded border px-1 text-[10px] font-semibold uppercase", BADGE_STYLES[s.badge])}>
           {s.badge.toUpperCase()}
+        </span>
+      )}
+
+      {/* Organ involvement count */}
+      {organCount > 0 && (
+        <span className="font-mono text-[9px] text-muted-foreground" title={`Findings in ${organCount} organ${organCount !== 1 ? "s" : ""}`}>
+          {organCount}org
         </span>
       )}
 

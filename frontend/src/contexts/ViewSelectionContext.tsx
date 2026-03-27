@@ -46,13 +46,6 @@ export interface ValidationIssueViewSelection {
 
 export type ValidationViewSelection = ValidationRuleViewSelection | ValidationIssueViewSelection;
 
-export interface HistopathologyViewSelection {
-  _view: "histopathology";
-  specimen: string;
-  finding?: string;
-  sex?: string;
-}
-
 export interface CohortViewSelection {
   _view: "cohort";
   mode: "subject" | "finding";
@@ -62,7 +55,6 @@ export interface CohortViewSelection {
 
 export type ViewSelection =
   | NoaelViewSelection
-  | HistopathologyViewSelection
   | ValidationViewSelection
   | CohortViewSelection;
 

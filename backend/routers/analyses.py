@@ -27,7 +27,7 @@ from models.analysis_schemas import (
 from services.study_discovery import StudyInfo
 from services.analysis.context_panes import build_finding_context, build_organ_correlation_matrix, build_syndrome_correlation_summary
 from services.analysis.correlations import compute_syndrome_correlations
-from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
+from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query, load_scoring_params
 from services.analysis.analysis_cache import (
     read_cache, write_cache,
     acquire_compute_lock, release_compute_lock, wait_for_cache,
@@ -95,11 +95,12 @@ def invalidate_findings_cache(study_id: str | None = None):
 
 def _load_findings_for_settings(study_id: str, settings: AnalysisSettings) -> dict:
     """Load unified_findings for the given settings, computing on cache miss."""
-    if settings.is_default():
+    scoring = load_scoring_params(study_id)
+    if settings.is_default() and scoring.is_default():
         return _load_unified_findings(study_id)
 
     # Non-default: cache check → pipeline (with cross-process lock)
-    cache_key = settings.settings_hash()
+    cache_key = settings.settings_hash(scoring=scoring)
     cached = read_cache(study_id, cache_key, "unified-findings")
     if cached is not None:
         return cached

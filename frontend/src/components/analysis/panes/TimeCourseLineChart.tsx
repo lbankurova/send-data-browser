@@ -15,6 +15,8 @@ export interface ChartPoint {
   y: number;
   n: number;
   nControl: number;
+  ciLower?: number;
+  ciUpper?: number;
 }
 
 interface DoseGroupInfo {
@@ -233,6 +235,24 @@ export function TimeCourseLineChart({
         );
       })}
 
+      {/* CI bands — filled area between ciLower and ciUpper per dose group */}
+      {!hasSubjects && doseGroups.map(({ doseLevel }) => {
+        const pts = series[doseLevel];
+        if (!pts || pts.length < 2) return null;
+        const withCI = pts.filter((p) => p.ciLower != null && p.ciUpper != null);
+        if (withCI.length < 2) return null;
+        const bandUp = withCI.map((p) => `${xScale(p.day)},${yScale(p.ciUpper!)}`).join(" L ");
+        const bandDn = [...withCI].reverse().map((p) => `${xScale(p.day)},${yScale(p.ciLower!)}`).join(" L ");
+        return (
+          <path
+            key={`ci-${doseLevel}`}
+            d={`M ${bandUp} L ${bandDn} Z`}
+            fill={getDoseGroupColor(doseLevel)}
+            opacity={0.10}
+          />
+        );
+      })}
+
       {/* Data lines — one polyline per dose group (hidden when subjects mode is ON) */}
       {!hasSubjects && doseGroups.map(({ doseLevel }) => {
         const pts = series[doseLevel];
@@ -254,7 +274,9 @@ export function TimeCourseLineChart({
         );
       })}
 
-      {/* Death markers — concentric circles at death day */}
+      {/* Death markers — on subject traces when subjects ON,
+          on group mean when subjects OFF (only in absolute/g modes
+          where placement on the group mean is meaningful). */}
       {deaths.map((d) => {
         if (d.study_day == null) return null;
         const cx = xScale(d.study_day);
@@ -269,7 +291,6 @@ export function TimeCourseLineChart({
             if (exact) {
               cy = yScale(exact.y);
             } else {
-              // Interpolate on subject trace
               let before: { day: number; y: number } | null = null;
               for (const p of trace.points) {
                 if (p.day <= d.study_day) before = p;
@@ -280,8 +301,8 @@ export function TimeCourseLineChart({
           }
         }
 
-        // Fallback to group mean interpolation (when subjects OFF or subject not found)
-        if (cy == null) {
+        // Fallback to group mean interpolation (subjects OFF)
+        if (cy == null && !hasSubjects) {
           const pts = series[d.dose_level];
           if (!pts || pts.length === 0) return null;
           let before: ChartPoint | null = null;
@@ -303,7 +324,13 @@ export function TimeCourseLineChart({
 
         if (cy == null) return null;
         return (
-          <g key={d.USUBJID}>
+          <g
+            key={d.USUBJID}
+            style={{ cursor: hasSubjects ? "pointer" : undefined }}
+            onMouseEnter={hasSubjects ? () => onHoverSubject?.(d.USUBJID) : undefined}
+            onMouseLeave={hasSubjects ? () => onHoverSubject?.(null) : undefined}
+            onClick={hasSubjects ? (e) => { e.stopPropagation(); onSubjectClick?.(d.USUBJID); } : undefined}
+          >
             <title>{`${d.disposition} — ${d.USUBJID} D${d.study_day}`}</title>
             <circle cx={cx} cy={cy} r={3.5} fill="white" stroke={color} strokeWidth={0.75} />
             <circle cx={cx} cy={cy} r={1.5} fill={color} />

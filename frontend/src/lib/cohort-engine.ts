@@ -20,7 +20,10 @@ import type {
   CohortFindingRow,
   GroupStatEntry,
   SharedFinding,
+  FilterGroup,
+  FilterPredicate,
 } from "@/types/cohort";
+import { presetToFilter } from "@/lib/filter-engine";
 
 // Domains with per-subject raw values
 const CONTINUOUS_DOMAINS = new Set(["LB", "OM", "BW"]);
@@ -217,6 +220,64 @@ export function computePresetSubjects(
       break;
   }
   return ids;
+}
+
+// ── Preset + custom filter composition ────────────────────────
+
+/**
+ * Combine active presets and a custom FilterGroup into a single FilterGroup.
+ *
+ * Returns the preset layer as a FilterGroup. CohortContext applies convenience
+ * predicates (dose, sex, search) as a second filtering pass on top.
+ *
+ * Logic:
+ * 1. If activePresets is empty or contains only "all", no preset predicates
+ *    are added (identity). If includeTK is false, a TK exclusion predicate is added.
+ * 2. If activePresets has one specific preset, convert it via presetToFilter and
+ *    merge with customFilters predicates into an AND group.
+ * 3. If activePresets has multiple specific presets (e.g. trs + recovery), convert
+ *    each via presetToFilter and merge all their predicates into an OR group
+ *    (selecting multiple presets = union). Custom filters are then AND'd separately
+ *    by the caller (CohortContext evaluates in two stages).
+ */
+export function buildPresetFilterGroup(
+  activePresets: Set<CohortPreset>,
+  customFilters: FilterGroup,
+  includeTK: boolean,
+): FilterGroup {
+  // "all" or empty → identity (no preset narrowing)
+  if (activePresets.has("all") || activePresets.size === 0) {
+    const predicates: FilterPredicate[] = [];
+    if (!includeTK) {
+      predicates.push({ type: "tk", isTK: false });
+    }
+    predicates.push(...customFilters.predicates);
+    return { operator: "and", predicates };
+  }
+
+  // Convert each active preset to a FilterGroup
+  const presetFilters = [...activePresets].map((p) => presetToFilter(p, includeTK));
+
+  if (presetFilters.length === 1) {
+    // Single preset — AND its predicates with custom filters
+    return {
+      operator: "and",
+      predicates: [...presetFilters[0].predicates, ...customFilters.predicates],
+    };
+  }
+
+  // Multiple presets — OR all preset predicates (union semantics).
+  // Custom filters cannot be merged into this flat OR group, so the caller
+  // (CohortContext) evaluates custom filters as a separate AND pass.
+  const orPredicates: FilterPredicate[] = [];
+  for (const pf of presetFilters) {
+    if (pf.predicates.length === 0) {
+      // An empty-predicate preset (identity) — just apply custom filters
+      return { operator: "and", predicates: [...customFilters.predicates] };
+    }
+    orPredicates.push(...pf.predicates);
+  }
+  return { operator: "or", predicates: orPredicates };
 }
 
 // ── Organ signals ────────────────────────────────────────────
@@ -461,4 +522,69 @@ export function computeSharedFindings(
   });
 
   return deduped;
+}
+
+// ── Per-subject organ involvement (for rail enrichment) ─────
+
+/**
+ * For each subject, count distinct organs where the subject has findings.
+ * Continuous domains: check raw_subject_values. CL: check raw_subject_onset_days.
+ * MI/MA: proxy via dose-level incidence (individual data not in unified_findings).
+ */
+export function computeSubjectOrganCounts(
+  findings: UnifiedFinding[],
+  allSubjects: CohortSubject[],
+): Map<string, number> {
+  const subjectOrgans = new Map<string, Set<string>>();
+
+  for (const f of findings) {
+    const organ = f.organ_name ?? f.organ_system ?? null;
+    if (!organ) continue;
+
+    // Continuous domains with per-subject values
+    if (f.raw_subject_values) {
+      for (const entry of f.raw_subject_values) {
+        for (const [id, val] of Object.entries(entry)) {
+          if (val != null) {
+            if (!subjectOrgans.has(id)) subjectOrgans.set(id, new Set());
+            subjectOrgans.get(id)!.add(organ);
+          }
+        }
+      }
+    }
+    // CL onset days
+    if (f.raw_subject_onset_days) {
+      for (const entry of f.raw_subject_onset_days) {
+        for (const [id, val] of Object.entries(entry)) {
+          if (val != null) {
+            if (!subjectOrgans.has(id)) subjectOrgans.set(id, new Set());
+            subjectOrgans.get(id)!.add(organ);
+          }
+        }
+      }
+    }
+    // MI/MA proxy: dose-level incidence → attribute to all subjects at that dose+sex
+    if (!f.raw_subject_values && !f.raw_subject_onset_days) {
+      const affectedDoseLevels = new Set<number>();
+      for (const gs of f.group_stats ?? []) {
+        if (gs.dose_level > 0 && ((gs.affected ?? 0) > 0 || (gs.incidence ?? 0) > 0)) {
+          affectedDoseLevels.add(gs.dose_level);
+        }
+      }
+      if (affectedDoseLevels.size > 0) {
+        for (const s of allSubjects) {
+          if (affectedDoseLevels.has(s.doseGroupOrder) && (!f.sex || s.sex === f.sex)) {
+            if (!subjectOrgans.has(s.usubjid)) subjectOrgans.set(s.usubjid, new Set());
+            subjectOrgans.get(s.usubjid)!.add(organ);
+          }
+        }
+      }
+    }
+  }
+
+  const result = new Map<string, number>();
+  for (const [id, organs] of subjectOrgans) {
+    result.set(id, organs.size);
+  }
+  return result;
 }

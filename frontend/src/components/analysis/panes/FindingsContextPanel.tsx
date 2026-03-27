@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -13,24 +13,22 @@ import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
-import { EvidencePane } from "./EvidencePane";
 import { CorrelationsPane } from "./CorrelationsPane";
 import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
-import { RecoveryPane } from "./RecoveryPane";
 import { TimeCoursePane } from "./TimeCoursePane";
 // DistributionPane moved to center panel (CenterDistribution in DoseResponseChartPanel)
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
-import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
 import { OnsetDoseDropdown } from "./OnsetDoseDropdown";
 import { CausalityWorksheet } from "./CausalityWorksheet";
 import type { CausalitySummary, CausalAssessment } from "./CausalityWorksheet";
-import { InsightsList } from "./InsightsList";
+import { QualifierDetailPane } from "./QualifierDetailPane";
+import { PathologyReviewForm } from "./PathologyReviewForm";
 import { ToxFindingForm } from "./ToxFindingForm";
 import { deriveToxSuggestion } from "@/types/annotations";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DoseLabel } from "@/components/ui/DoseLabel";
@@ -44,13 +42,27 @@ import type { DoseGroup, UnifiedFinding } from "@/types/analysis";
 import { formatPValue, getDoseGroupColor, titleCase } from "@/lib/severity-colors";
 import { getPatternLabel, getPatternLabelDirectional } from "@/lib/findings-rail-engine";
 import type { SexEndpointSummary, EndpointNoael, OrganCoherence } from "@/lib/derive-summaries";
-import { useOrganRecovery } from "@/hooks/useOrganRecovery";
 import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
-import { useStudyContext } from "@/hooks/useStudyContext";
+import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
+import { getVerdictLabel } from "@/lib/recovery-labels";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
-import { verdictLabel } from "@/lib/recovery-assessment";
-import type { RecoveryVerdict } from "@/lib/recovery-assessment";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
+import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
+import { ProtectiveSignalsBar } from "@/components/analysis/noael/ProtectiveSignalsBar";
+import { SafetyMarginCalculator } from "@/components/analysis/noael/SafetyMarginCalculator";
+import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsBar";
+import { usePkIntegration } from "@/hooks/usePkIntegration";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
+import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
+import { mapFindingsToRows } from "@/lib/derive-summaries";
+import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
+import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
+import { deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import { getRelevantTests } from "@/lib/organ-test-mapping";
+import type { RecoveryAssessment } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
@@ -154,7 +166,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
   const punchline = punchlineParts.length > 0 ? punchlineParts.join(". ") + "." : null;
 
   return (
-    <div className="mt-2 rounded-md border border-border/50 p-2 text-[11px]">
+    <div className="mt-2 text-[11px]">
       <div className="mb-1.5 flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           ANCOVA decomposition
@@ -171,7 +183,7 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 
       {/* Punchline: plain-English ANCOVA vs raw comparison */}
       {punchline && (
-        <div className="mb-1.5 text-foreground/80">
+        <div className="mb-1.5 text-muted-foreground">
           {punchline}
         </div>
       )}
@@ -182,47 +194,54 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
         <span>p = <span className="font-mono">{formatPValue(ancova.slope.p_value)}</span></span>
       </div>
 
-      {/* Effect decomposition per dose group */}
+      {/* Effect decomposition + adjusted means — columnar table */}
       <table className="w-full">
         <thead>
           <tr className="text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Group</th>
-            <th className="py-0.5 text-right font-medium">Total</th>
+            <th className="py-0.5 text-right font-medium">Adjusted</th>
+            <th className="py-0.5 text-right font-medium">Raw</th>
             <th className="py-0.5 text-right font-medium">Direct</th>
-            <th className="py-0.5 text-right font-medium">Indirect</th>
             <th className="py-0.5 text-right font-medium">% direct</th>
             <th className="py-0.5 text-right font-medium">p</th>
           </tr>
         </thead>
         <tbody>
-          {ancova.effect_decomposition.map((d) => (
-            <tr key={d.group} className={d.direct_p < 0.05 ? "text-red-600" : ""}>
-              <td className="py-0.5">
-                <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[11px]" />
-              </td>
-              <td className="py-0.5 text-right font-mono">{d.total_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{d.indirect_effect.toFixed(3)}</td>
-              <td className="py-0.5 text-right font-mono">{(d.proportion_direct * 100).toFixed(0)}%</td>
-              <td className="py-0.5 text-right font-mono">{formatPValue(d.direct_p)}</td>
-            </tr>
-          ))}
+          {ancova.effect_decomposition.map((d) => {
+            const adj = ancova.adjusted_means.find(m => m.group === d.group);
+            return (
+              <tr key={d.group}>
+                <td className="py-0.5">
+                  <DoseLabel level={d.group} label={resolveDoseLabel(d.group)} className="text-[11px]" />
+                </td>
+                <td className="py-0.5 text-right font-mono">{adj ? adj.adjusted_mean.toFixed(2) : "—"}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">{adj ? adj.raw_mean.toFixed(2) : "—"}</td>
+                <td className="py-0.5 text-right font-mono">{d.direct_effect.toFixed(3)}</td>
+                <td className="py-0.5 text-right font-mono">{(d.proportion_direct * 100).toFixed(0)}%</td>
+                <td className="py-0.5 text-right font-mono">{formatPValue(d.direct_p)}</td>
+              </tr>
+            );
+          })}
+          {/* Control row (no decomposition, just means) */}
+          {(() => {
+            const ctrl = ancova.adjusted_means.find(m => m.group === 0);
+            if (!ctrl) return null;
+            return (
+              <tr>
+                <td className="py-0.5">
+                  <DoseLabel level={0} label="Control" className="text-[11px]" />
+                </td>
+                <td className="py-0.5 text-right font-mono">{ctrl.adjusted_mean.toFixed(2)}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">{ctrl.raw_mean.toFixed(2)}</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+                <td className="py-0.5 text-right font-mono text-muted-foreground">—</td>
+              </tr>
+            );
+          })()}
         </tbody>
       </table>
-
-      {/* Adjusted means */}
-      <div className="mt-1.5">
-        <div className="mb-0.5 text-[10px] text-muted-foreground">Adjusted means (at mean BW = {ancova.covariate_mean.toFixed(1)})</div>
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-          {ancova.adjusted_means.map((m) => (
-            <span key={m.group} className="inline-flex items-center gap-1 font-mono">
-              <DoseLabel level={m.group} label={resolveDoseLabel(m.group)} className="text-[11px]" />
-              <span>{m.adjusted_mean.toFixed(2)}</span>
-              <span className="text-muted-foreground">(raw {m.raw_mean.toFixed(2)})</span>
-            </span>
-          ))}
-        </div>
-      </div>
+      <div className="mt-0.5 text-[10px] text-muted-foreground">At mean BW = {ancova.covariate_mean.toFixed(1)}</div>
     </div>
   );
 }
@@ -230,12 +249,10 @@ function ANCOVADecompositionPane({ finding, doseGroups }: { finding: UnifiedFind
 // ─── Decomposed Confidence Display ─────────────────────────
 
 function confidenceLevelClass(level: ConfidenceLevel): string {
-  // High = nothing to see; moderate = semibold; low = semibold + bright
+  // High = nothing to see; moderate/low = semibold (C-04: no colored text in context panel)
   return level === "high"
     ? "text-muted-foreground"
-    : level === "moderate"
-      ? "font-semibold text-foreground"
-      : "font-semibold text-red-600";
+    : "font-semibold text-foreground";
 }
 
 const DIMENSION_TOOLTIPS: Record<string, string> = {
@@ -299,21 +316,11 @@ function StatisticalEvidenceContent({ finding, doseGroups }: { finding: UnifiedF
   );
 }
 
-function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: EndpointConfidenceResult; syndromes: CrossDomainSyndrome[]; finding: UnifiedFinding }) {
+function BiologicalPlausibilityContent({ eci, syndromes, finding, organCoherence }: { eci: EndpointConfidenceResult; syndromes: CrossDomainSyndrome[]; finding: UnifiedFinding; organCoherence?: OrganCoherence }) {
   const reason = eci.normCaveat?.reason;
   const hasSyndromes = syndromes.length > 0;
   const organ = finding.specimen ?? finding.organ_system ?? "";
-
-  // Compute organ-level convergence (unique domains across all syndromes for this organ)
-  const organDomains = useMemo(() => {
-    const domains = new Set<string>();
-    for (const syn of syndromes) {
-      for (const m of syn.matchedEndpoints) {
-        domains.add(m.domain);
-      }
-    }
-    return [...domains].sort();
-  }, [syndromes]);
+  const coh = organCoherence;
 
   return (
     <div className="space-y-1 text-muted-foreground">
@@ -325,10 +332,14 @@ function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: Endpo
           </div>
         </div>
       ))}
-      {hasSyndromes && organ && organDomains.length >= 2 && (
-        <div>{organDomains.length}-domain convergence in {organ}: {organDomains.join(", ")}</div>
+      {coh && coh.domainCount >= 2 && (
+        <div>
+          {coh.convergenceLabel} in {titleCase(organ)}: {coh.domains.join(", ")}
+          {" \u00b7 "}
+          {coh.adverseEndpoints} adverse{coh.warningEndpoints > 0 ? ` + ${coh.warningEndpoints} warning` : ""} endpoint{(coh.adverseEndpoints + coh.warningEndpoints) !== 1 ? "s" : ""}
+        </div>
       )}
-      {!hasSyndromes && eci.integrated.biological === "high" && !reason && (
+      {!hasSyndromes && !coh && eci.integrated.biological === "high" && !reason && (
         <div>No cross-domain corroboration or normalization concerns.</div>
       )}
       {reason && <div>{reason}</div>}
@@ -337,10 +348,14 @@ function BiologicalPlausibilityContent({ eci, syndromes, finding }: { eci: Endpo
 }
 
 function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
+  const [showAncova, setShowAncova] = useState(false);
   const { nonMonotonic } = eci;
   const pattern = finding.dose_response_pattern ?? "";
   const isThreshold = pattern.startsWith("threshold");
   const isFlat = pattern === "flat" || pattern === "no_pattern" || pattern === "insufficient_data";
+  const hasAncova = finding.ancova != null
+    && finding.ancova.adjusted_means.length > 0
+    && finding.ancova.model_r_squared > 0;
 
   return (
     <div className="space-y-0.5 text-muted-foreground">
@@ -356,14 +371,14 @@ function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: Endpoin
             <div>Highest dose p = {formatPValue(nonMonotonic.highestDosePValue)} vs control.</div>
           )}
         </>
-      ) : eci.integrated.doseResponse === "moderate" ? (
+      ) : (pattern === "non_monotonic" || pattern === "u_shaped") ? (
         <>
-          <div>Backend pattern classification: non_monotonic</div>
+          <div>{pattern === "u_shaped" ? "U-shaped" : "Non-monotonic"} dose-response pattern.</div>
           <div>
-            JT trend test assumes monotonic dose-response;
+            Trend test assumes monotonic dose-response;
             significance may not reflect the observed pattern shape.
           </div>
-          <div>Consider examining individual dose-group contrasts (Dunnett&apos;s) rather than trend for this endpoint.</div>
+          <div>Individual dose-group contrasts (Dunnett&apos;s) may be more informative than trend for this endpoint.</div>
         </>
       ) : isFlat ? (
         <>
@@ -385,6 +400,17 @@ function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: Endpoin
         </>
       ) : (
         <div>Monotonic dose-response confirmed.</div>
+      )}
+      {hasAncova && (
+        <div className="mt-1">
+          <button
+            className="text-[10px] text-blue-600 hover:underline"
+            onClick={() => setShowAncova((v) => !v)}
+          >
+            {showAncova ? "Hide" : "Show"} ANCOVA decomposition
+          </button>
+          {showAncova && <ANCOVADecompositionPane finding={finding} doseGroups={doseGroups} />}
+        </div>
       )}
     </div>
   );
@@ -529,30 +555,24 @@ interface DimDef {
   renderContent: (() => React.ReactNode) | null;
 }
 
-function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[]; syndromes: CrossDomainSyndrome[] }) {
+function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes, organCoherence }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[]; syndromes: CrossDomainSyndrome[]; organCoherence?: OrganCoherence }) {
   const { integrated } = eci;
-  const [showDecomp, setShowDecomp] = useState(false);
-  const [expandedDims, setExpandedDims] = useState<Set<string>>(new Set());
-  const dimRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-
-  // Seed expandedDims with LOW dimensions when decomposition first shown
-  useEffect(() => {
-    if (showDecomp) {
-      const lowDims = new Set<string>();
-      const levels: Record<string, ConfidenceLevel> = {
-        "Statistical evidence": integrated.statistical,
-        "Biological plausibility": integrated.biological,
-        "Dose-response quality": integrated.doseResponse,
-        "Trend test validity": integrated.trendValidity,
-        "Trend concordance": integrated.trendConcordance,
-      };
-      for (const [key, level] of Object.entries(levels)) {
-        if (level === "low") lowDims.add(key);
-      }
-      if (lowDims.size > 0) setExpandedDims(lowDims);
+  const [expandedDims, setExpandedDims] = useState<Set<string>>(() => {
+    // Seed with LOW dimensions on mount
+    const lowDims = new Set<string>();
+    const levels: Record<string, ConfidenceLevel> = {
+      "Statistical evidence": integrated.statistical,
+      "Biological plausibility": integrated.biological,
+      "Dose-response quality": integrated.doseResponse,
+      "Trend test validity": integrated.trendValidity,
+      "Trend concordance": integrated.trendConcordance,
+    };
+    for (const [key, level] of Object.entries(levels)) {
+      if (level === "low") lowDims.add(key);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDecomp]);
+    return lowDims;
+  });
+  const dimRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
 
   const toggleDim = useCallback((key: string) => {
     setExpandedDims((prev) => {
@@ -560,19 +580,6 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
-    });
-  }, []);
-
-  const expandAndScroll = useCallback((key: string) => {
-    setShowDecomp(true);
-    setExpandedDims((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-    // Scroll after render
-    requestAnimationFrame(() => {
-      dimRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   }, []);
 
@@ -593,7 +600,7 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
       label: "Biological plausibility",
       level: integrated.biological,
       notApplicable: false,
-      renderContent: () => <BiologicalPlausibilityContent eci={eci} syndromes={syndromes} finding={finding} />,
+      renderContent: () => <BiologicalPlausibilityContent eci={eci} syndromes={syndromes} finding={finding} organCoherence={organCoherence} />,
     },
     {
       key: "Dose-response quality",
@@ -619,102 +626,58 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
   ], [eci, finding, integrated, trendNA, concordanceNA]);
 
   return (
-    <div className="mt-2 text-[11px]">
-      {/* Collapsed summary line */}
-      <div className="flex items-baseline gap-1 flex-wrap">
-        <span className="text-muted-foreground">Confidence:</span>
-        <span className={`uppercase ${confidenceLevelClass(integrated.integrated)}`}>
-          {integrated.integrated}
-        </span>
-        {integrated.limitingFactors.length > 0 && (
-          <span className="text-muted-foreground">
-            (limited by{" "}
-            {integrated.limitingFactors.map((factor, i) => (
-              <span key={factor}>
-                {i > 0 && ", "}
-                <button
-                  className="text-primary cursor-pointer hover:underline"
-                  onClick={() => expandAndScroll(factor)}
+    <div className="text-[11px]">
+      {/* Decomposition — per-dimension expandable rows */}
+      <table className="w-full text-[11px]">
+        <tbody>
+          {dims.map((d) => {
+            const isExpanded = expandedDims.has(d.key);
+            const isExpandable = !d.notApplicable && d.renderContent != null;
+            return (
+              <Fragment key={d.key}>
+                <tr
+                  ref={(el) => { if (el) dimRefs.current.set(d.key, el); }}
+                  className={isExpandable ? "cursor-pointer hover:bg-muted/20" : ""}
+                  onClick={isExpandable ? () => toggleDim(d.key) : undefined}
                 >
-                  {factor}
-                </button>
-              </span>
-            ))}
-            )
-          </span>
-        )}
-        {eci.noaelContribution.weight > 0 && (
-          <>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">
-              NOAEL weight: {eci.noaelContribution.weight} ({eci.noaelContribution.label})
-              {eci.noaelContribution.requiresCorroboration && " — requires corroboration"}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Toggle link */}
-      <button
-        className="mt-0.5 text-[10px] text-primary hover:underline"
-        onClick={() => setShowDecomp((v) => !v)}
-      >
-        {showDecomp ? "Hide decomposition" : "Show decomposition"}
-      </button>
-
-      {/* Expanded decomposition — per-dimension expandable rows */}
-      {showDecomp && (
-        <table className="mt-1.5 w-full text-[11px]">
-          <tbody>
-            {dims.map((d) => {
-              const isExpanded = expandedDims.has(d.key);
-              const isExpandable = !d.notApplicable && d.renderContent != null;
-              return (
-                <Fragment key={d.key}>
-                  <tr
-                    ref={(el) => { if (el) dimRefs.current.set(d.key, el); }}
-                    className={isExpandable ? "cursor-pointer hover:bg-muted/20" : ""}
-                    onClick={isExpandable ? () => toggleDim(d.key) : undefined}
+                  <td
+                    className={`py-0.5 pr-1.5 uppercase text-[10px] ${
+                      d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
+                    }`}
+                    style={{ width: "1px", whiteSpace: "nowrap" }}
                   >
-                    <td
-                      className={`py-0.5 pr-1.5 uppercase text-[10px] ${
-                        d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
-                      }`}
-                      style={{ width: "1px", whiteSpace: "nowrap" }}
-                    >
-                      {d.notApplicable ? "\u2014" : d.level}
-                    </td>
-                    <td
-                      className={`py-0.5 font-medium whitespace-nowrap ${d.notApplicable ? "text-muted-foreground/50" : ""}`}
-                      title={DIMENSION_TOOLTIPS[d.key]}
-                    >
-                      <span className="inline-flex items-center gap-0.5">
-                        {isExpandable ? (
-                          <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
-                        ) : (
-                          <span className="inline-block h-3 w-3 shrink-0" />
-                        )}
-                        {d.label}
-                        {d.notApplicable && (
-                          <span className="ml-1 text-[10px] font-normal text-muted-foreground/50">(not applicable)</span>
-                        )}
-                      </span>
+                    {d.notApplicable ? "\u2014" : d.level}
+                  </td>
+                  <td
+                    className={`py-0.5 font-medium whitespace-nowrap ${d.notApplicable ? "text-muted-foreground/50" : ""}`}
+                    title={DIMENSION_TOOLTIPS[d.key]}
+                  >
+                    <span className="inline-flex items-center gap-0.5">
+                      {isExpandable ? (
+                        <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
+                      ) : (
+                        <span className="inline-block h-3 w-3 shrink-0" />
+                      )}
+                      {d.label}
+                      {d.notApplicable && (
+                        <span className="ml-1 text-[10px] font-normal text-muted-foreground/50">(not applicable)</span>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+                {isExpanded && d.renderContent && (
+                  <tr>
+                    <td />
+                    <td className="pb-1.5 pl-[14px] pt-0.5 text-[11px]">
+                      {d.renderContent()}
                     </td>
                   </tr>
-                  {isExpanded && d.renderContent && (
-                    <tr>
-                      <td />
-                      <td className="pb-1.5 pl-[14px] pt-0.5 text-[11px]">
-                        {d.renderContent()}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -809,26 +772,20 @@ function SexComparisonPane({
   // Onset dose row — always rendered as custom JSX cells with dropdown
   // (onset dose is always overridable, even without a pattern override)
 
-  // Recovery row (when available)
-  if (primaryRecoveryLabel || siblingRecoveryLabel) {
-    rows.push({
-      label: "Recovery",
-      values: [
+  // Recovery labels — rendered as last row after onset dose
+  const recoveryValues: [string, string] | null = (primaryRecoveryLabel || siblingRecoveryLabel)
+    ? [
         (primarySex === sexes[0] ? primaryRecoveryLabel : siblingRecoveryLabel) ?? "\u2014",
         (primarySex === sexes[1] ? primaryRecoveryLabel : siblingRecoveryLabel) ?? "\u2014",
-      ],
-    });
-  }
+      ]
+    : null;
 
   return (
-    <div className="mt-2 pr-6">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-        Sex comparison
-      </div>
+    <div className="mt-3 pr-6">
       <table className="w-full text-[11px]">
         <thead>
           <tr className="border-b text-[10px] text-muted-foreground">
-            <th className="py-0.5 text-left font-medium" />
+            <th className="py-0.5 text-left font-semibold uppercase tracking-wider">Sex comparison</th>
             {sexes.map(s => (
               <th key={s} className="py-0.5 text-right font-medium">
                 {s}
@@ -850,7 +807,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-100/50">
                   {sf ? (
                     <PatternOverrideDropdown key={sf.id} finding={sf} />
                   ) : (
@@ -866,7 +823,7 @@ function SexComparisonPane({
             {sexes.map(s => {
               const sf = findingForSex[s];
               return (
-                <td key={s} className="py-0.5 text-right bg-violet-50/40">
+                <td key={s} className="py-0.5 text-right bg-violet-100/50">
                   {sf && doseGroups ? (
                     <OnsetDoseDropdown key={sf.id} finding={sf} doseGroups={doseGroups} />
                   ) : (
@@ -876,156 +833,594 @@ function SexComparisonPane({
               );
             })}
           </tr>
+          {/* Recovery row — last, uses same engine as findings table */}
+          {recoveryValues && (
+            <tr className="border-b border-border/30">
+              <td className="py-0.5 text-muted-foreground">Recovery</td>
+              <td className="py-0.5 text-right font-mono">{recoveryValues[0]}</td>
+              <td className="py-0.5 text-right font-mono">{recoveryValues[1]}</td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
   );
 }
 
-// ─── Recovery verdict colors (text-only, no badge bg) ────
-
-const RECOVERY_VERDICT_CLASS: Partial<Record<RecoveryVerdict, string>> = {
-  reversed: "text-emerald-700",
-  reversing: "text-emerald-600",
-  persistent: "text-amber-700",
-  progressing: "text-red-700",
-};
-
-// ─── Recovery verdict one-liner for the Verdict section ──
-
-function RecoveryVerdictLine({
-  finding,
-  siblingFinding,
-  onSeeDetails,
-}: {
-  finding: UnifiedFinding;
-  siblingFinding?: UnifiedFinding;
-  onSeeDetails: () => void;
-}) {
-  const { studyId } = useParams<{ studyId: string }>();
-  const isHistopath = finding.domain === "MI" || finding.domain === "MA";
-  const specimen = finding.specimen;
-
-  // Hooks must be called unconditionally
-  const specimens = useMemo(() => (specimen ? [specimen] : []), [specimen]);
-  const { data: studyCtxRecLine } = useStudyContext(studyId);
-  const organRecovery = useOrganRecovery(studyId, specimens, undefined, studyCtxRecLine?.species ?? null);
-  const { data: recoveryComp } = useRecoveryComparison(studyId);
-
-  if (isHistopath && specimen) {
-    if (organRecovery.isLoading) return null;
-    const label = `${specimen} \u2014 ${finding.finding}`;
-    const verdict = organRecovery.byEndpointLabel.get(label);
-    if (!verdict || verdict === "not_observed" || verdict === "no_data" || verdict === "not_examined") return null;
-    return (
-      <div className="mt-1.5 flex items-center gap-2 text-[11px]">
-        <span className="text-muted-foreground">Recovery:</span>
-        <span className={`font-medium ${RECOVERY_VERDICT_CLASS[verdict] ?? "text-muted-foreground"}`}>
-          {verdictLabel(verdict)}
-        </span>
-        <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
-          See details
-        </button>
-      </div>
-    );
-  }
-
-  if (finding.data_type === "continuous" && recoveryComp?.available) {
-    // Compute recovery summary per sex, then render all sexes
-    const sexFindings = [finding, ...(siblingFinding ? [siblingFinding] : [])].sort(
-      (a, b) => a.sex.localeCompare(b.sex),
-    );
-    const sexResults: { sex: string; text: string; cls: string }[] = [];
-
-    for (const sf of sexFindings) {
-      const rows = recoveryComp.rows.filter((r) => {
-        const codeMatch = sf.specimen
-          ? r.test_code.toUpperCase() === sf.specimen.toUpperCase()
-          : r.test_code.toUpperCase() === sf.test_code.toUpperCase();
-        return codeMatch && r.sex === sf.sex;
-      });
-      if (rows.length === 0) continue;
-      const hasComparable = rows.some((r) => r.terminal_effect != null && r.effect_size != null);
-      if (!hasComparable) continue;
-
-      const allReversing = rows.every(
-        (r) => r.terminal_effect != null && r.effect_size != null &&
-          Math.abs(r.effect_size) < Math.abs(r.terminal_effect) * 0.5,
-      );
-      const anyWorsening = rows.some(
-        (r) => r.terminal_effect != null && r.effect_size != null &&
-          Math.abs(r.effect_size) > Math.abs(r.terminal_effect) * 1.1,
-      );
-
-      const text = allReversing
-        ? "Reversing"
-        : anyWorsening
-          ? "Persistent"
-          : "Partial";
-      const cls = allReversing
-        ? "text-emerald-700"
-        : anyWorsening
-          ? "text-amber-700"
-          : "text-muted-foreground";
-
-      sexResults.push({ sex: sf.sex, text, cls });
-    }
-
-    if (sexResults.length === 0) return null;
-
-    // Single sex — original compact format
-    if (sexResults.length === 1) {
-      const r = sexResults[0];
-      const fullText = r.text === "Reversing" ? "Reversing (>50% reduction)" : r.text === "Persistent" ? "Persistent or worsening" : "Partial recovery";
-      return (
-        <div className="mt-1.5 flex items-center gap-2 text-[11px]">
-          <span className="text-muted-foreground">Recovery:</span>
-          <span className={`font-medium ${r.cls}`}>{fullText}</span>
-          <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
-            See details
-          </button>
-        </div>
-      );
-    }
-
-    // Both sexes — show per-sex inline
-    return (
-      <div className="mt-1.5 flex items-center gap-2 text-[11px]">
-        <span className="text-muted-foreground">Recovery:</span>
-        {sexResults.map((r, i) => (
-          <span key={r.sex}>
-            {i > 0 && <span className="text-muted-foreground/30 mx-0.5">|</span>}
-            <span className="text-muted-foreground">{r.sex}</span>
-            {" "}
-            <span className={`font-medium ${r.cls}`}>{r.text}</span>
-          </span>
-        ))}
-        <button className="text-[10px] text-primary hover:underline" onClick={onSeeDetails}>
-          See details
-        </button>
-      </div>
-    );
-  }
-
-  return null;
-}
 
 // ─── Convergence Note (for Patterns pane) ───────────────
 
-function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
-  const totalEndpoints = coherence.adverseEndpoints + coherence.warningEndpoints;
+// ─── Lab Correlates (from unified findings pipeline) ───────────────────────
+function LabFindingsInline({ findings }: { findings: UnifiedFinding[] }) {
+  if (findings.length === 0) return <p className="text-xs text-muted-foreground">No relevant lab findings.</p>;
   return (
-    <div className="rounded border border-border/40 bg-muted/10 p-2 text-[11px]">
-      <div className="font-medium text-foreground">
-        {coherence.convergenceLabel} in {titleCase(coherence.organ_system)}
-      </div>
-      <div className="mt-0.5 text-muted-foreground">
-        Domains: {coherence.domains.join(", ")}
-        {" \u00b7 "}
-        {coherence.adverseEndpoints} adverse
-        {coherence.warningEndpoints > 0 && ` + ${coherence.warningEndpoints} warning`}
-        {" endpoint"}{totalEndpoints !== 1 ? "s" : ""}
-      </div>
+    <table className="w-full text-[11px]">
+      <thead>
+        <tr className="border-b text-muted-foreground">
+          <th className="pb-0.5 text-left font-semibold">Test</th>
+          <th className="pb-0.5 text-right font-semibold">Dir</th>
+          <th className="pb-0.5 text-right font-semibold">Fold</th>
+          <th className="pb-0.5 text-right font-semibold">p</th>
+          <th className="pb-0.5 text-right font-semibold">Pattern</th>
+        </tr>
+      </thead>
+      <tbody>
+        {findings.map(f => (
+          <tr key={`${f.test_code}-${f.sex ?? ""}`} className="border-b border-dashed">
+            <td className="py-0.5 font-medium">{f.test_code}{f.sex ? ` (${f.sex})` : ""}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "\u2014"}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.max_fold_change != null ? `\u00d7${f.max_fold_change.toFixed(2)}` : "\u2014"}</td>
+            <td className="py-0.5 text-right font-mono text-muted-foreground">{f.min_p_adj != null ? (f.min_p_adj < 0.001 ? "<0.001" : f.min_p_adj.toFixed(3)) : "\u2014"}</td>
+            <td className="py-0.5 text-right text-muted-foreground">{f.dose_response_pattern?.replace(/_/g, " ") ?? "\u2014"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// ─── Peer Comparison / HCD (inline, ported from HistopathologyContextPanel) ──
+
+function PeerComparisonInline({ row }: {
+  row: { finding: string; controlIncidence: number; hcd: HistoricalControlData | null; status: HCDStatus };
+}) {
+  const { finding, controlIncidence, hcd, status } = row;
+  if (!hcd) return null;
+
+  const meanPct = Math.round(hcd.mean_incidence * 100);
+  const rangeLow = Math.round(hcd.min_incidence * 100);
+  const rangeHigh = Math.round(hcd.max_incidence * 100);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-muted-foreground">
+        Control group incidence vs historical control data (HCD) for the same strain.
+      </p>
+      <table className="w-full text-[11px]">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Study ctrl</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">HCD range</th>
+            <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-dashed">
+            <td className="max-w-[120px] truncate py-1 text-xs font-medium" title={finding}>{finding}</td>
+            <td className="py-1 text-right font-mono text-muted-foreground">{Math.round(controlIncidence * 100)}%</td>
+            <td className="py-1 text-right text-muted-foreground">
+              <span className="font-mono">{rangeLow}{"\u2013"}{rangeHigh}%</span>
+              <br />
+              <span className="text-[10px] text-muted-foreground/60">mean {meanPct}%, n={hcd.n_studies}</span>
+            </td>
+            <td className="py-1 text-right">
+              <span className={cn(
+                "text-[10px]",
+                status === "above_range" ? "font-medium text-foreground"
+                  : status === "at_upper" ? "text-muted-foreground"
+                  : "text-muted-foreground/60",
+              )}>
+                {status === "above_range" && "\u25B2 "}
+                {status === "at_upper" && "\u26A0 "}
+                {HCD_STATUS_LABELS[status]}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {hcd && (
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">mock</span>
+          <span className="text-[10px] text-muted-foreground/50">Simulated historical control data</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Correlating Evidence (inline, ported from HistopathologyContextPanel) ────
+
+function CorrelatingEvidenceInline({ evidence }: {
+  evidence: {
+    inThisSpecimen: [string, { maxIncidence: number; domain: string }][];
+    crossOrgan: [string, { maxIncidence: number }][];
+  };
+}) {
+  return (
+    <div className="space-y-2">
+      {/* In this specimen */}
+      {evidence.inThisSpecimen.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No other findings in this specimen.</p>
+      ) : (
+        <div className="space-y-0.5">
+          {evidence.inThisSpecimen.map(([name, info]) => (
+            <div key={name} className="flex items-center justify-between text-xs">
+              <span className="min-w-0 truncate" title={name}>
+                <span className="mr-1 text-[10px] font-semibold text-muted-foreground">{info.domain}</span>
+                {name}
+              </span>
+              <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                {Math.round(info.maxIncidence * 100)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* In other specimens (same finding) — R16 cross-organ */}
+      {evidence.crossOrgan.length > 0 && (
+        <div className="mt-2">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            In other specimens (same finding)
+          </div>
+          <div className="space-y-0.5">
+            {evidence.crossOrgan.map(([specimen, info]) => (
+              <div key={specimen} className="text-xs">
+                <span className="text-muted-foreground">{specimen}</span>
+                <span className="text-[10px] text-muted-foreground"> {"\u00B7"} {Math.round(info.maxIncidence * 100)}% incidence</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Specimen Context Panel (Phase 5) ────────────────────────────────────────
+
+function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analytics, nav }: {
+  studyId: string | undefined;
+  specimen: string;
+  activeFindings: UnifiedFinding[];
+  analytics: FindingsAnalytics;
+  nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
+}) {
+  const { expandAll, collapseAll, expandGen, collapseGen } = useCollapseAll();
+  const [labExpanded, setLabExpanded] = useState(false);
+
+  // Specimen findings
+  const specimenFindings = useMemo(() => {
+    const unique = new Map<string, UnifiedFinding>();
+    for (const f of activeFindings) {
+      if (f.specimen === specimen && (f.domain === "MI" || f.domain === "MA")) {
+        const key = `${f.finding}\0${f.domain}`;
+        if (!unique.has(key)) unique.set(key, f);
+      }
+    }
+    return [...unique.values()].sort((a, b) => {
+      const sevOrd = { adverse: 0, warning: 1, normal: 2 };
+      return (sevOrd[a.severity] ?? 2) - (sevOrd[b.severity] ?? 2) || a.finding.localeCompare(b.finding);
+    });
+  }, [activeFindings, specimen]);
+
+  // Syndromes containing this specimen
+  const specimenSyndromes = useMemo(() => {
+    const prefix = specimen.toUpperCase() + " \u2014 ";
+    return analytics.syndromes?.filter(s =>
+      s.matchedEndpoints.some(m => m.endpoint_label.toUpperCase().startsWith(prefix))
+    ) ?? [];
+  }, [analytics.syndromes, specimen]);
+
+  // Lab correlates (specimen-level) — LB findings with test_codes relevant to this organ
+  const relevantLabFindings = useMemo(() => {
+    const tests = new Set(getRelevantTests(specimen).map(t => t.toUpperCase()));
+    if (tests.size === 0) return [];
+    return activeFindings
+      .filter(f => f.domain === "LB" && tests.has(f.test_code.toUpperCase()))
+      // Deduplicate by test_code (keep worst severity per test, combine sexes)
+      .reduce((acc, f) => {
+        const existing = acc.find(e => e.test_code.toUpperCase() === f.test_code.toUpperCase());
+        if (!existing) { acc.push(f); }
+        else if (f.severity === "adverse" && existing.severity !== "adverse") {
+          acc[acc.indexOf(existing)] = f;
+        }
+        return acc;
+      }, [] as UnifiedFinding[])
+      .sort((a, b) => {
+        // Treatment-related first, then by effect size descending
+        if (a.treatment_related !== b.treatment_related) return a.treatment_related ? -1 : 1;
+        return Math.abs(b.max_effect_size ?? 0) - Math.abs(a.max_effect_size ?? 0);
+      });
+  }, [activeFindings, specimen]);
+
+  // Subject data for laterality + recovery
+  const { data: subjData } = useHistopathSubjects(studyId, specimen);
+
+  // Laterality
+  const lateralityData = useMemo(() => {
+    if (!subjData?.subjects || !isPairedOrgan(specimen)) return null;
+    if (!specimenHasLaterality(subjData.subjects)) return null;
+    const subjectAgg = aggregateSubjectLaterality(subjData.subjects);
+    if (subjectAgg.total === 0) return null;
+    const perFinding = (subjData.findings ?? []).map(f => ({
+      finding: f,
+      agg: aggregateFindingLaterality(subjData.subjects, f),
+    })).filter(x => x.agg.left > 0 || x.agg.right > 0 || x.agg.bilateral > 0);
+    return { subjectAgg, perFinding };
+  }, [subjData, specimen]);
+
+  // Recovery flag + per-finding classification
+  const hasRecovery = useMemo(
+    () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
+    [subjData],
+  );
+  const recoveryAssessments = useMemo((): RecoveryAssessment[] => {
+    if (!hasRecovery || !subjData?.subjects) return [];
+    const findingNames = specimenFindings.map(f => f.finding);
+    if (findingNames.length === 0) return [];
+    return deriveRecoveryAssessmentsSexAware(
+      findingNames,
+      subjData.subjects,
+      undefined,
+      subjData.recovery_days,
+      specimen,
+    );
+  }, [hasRecovery, subjData, specimenFindings, specimen]);
+
+  // Weight-of-evidence synthesis (aggregates across all specimen dimensions)
+  const woeSynthesis = useMemo(() => {
+    if (specimenFindings.length === 0) return null;
+    const total = specimenFindings.length;
+    const trCount = specimenFindings.filter(f => f.treatment_related).length;
+    const adverseCount = specimenFindings.filter(f => f.severity === "adverse").length;
+    const adaptiveCount = specimenFindings.filter(f => f.finding_class === "tr_adaptive").length;
+
+    // Dose-response patterns
+    const withPattern = specimenFindings.filter(f => f.dose_response_pattern && f.dose_response_pattern !== "no_pattern" && f.dose_response_pattern !== "control_only");
+    const doseDepCount = withPattern.length;
+
+    // Significance
+    const sigCount = specimenFindings.filter(f => f.min_p_adj != null && f.min_p_adj < 0.05).length;
+    const trendSigCount = specimenFindings.filter(f => f.trend_p != null && f.trend_p < 0.05).length;
+
+    // Finding natures
+    const natures = specimenFindings.map(f => classifyFindingNature(f.finding, null, f.specimen ?? null));
+    const natureCounts = new Map<string, number>();
+    for (const n of natures) {
+      if (n.nature !== "unknown") natureCounts.set(n.nature, (natureCounts.get(n.nature) ?? 0) + 1);
+    }
+    const dominantNature = [...natureCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    // Build conclusion line
+    const parts: string[] = [];
+    if (trCount > 0) parts.push(`${trCount}/${total} treatment-related`);
+    if (adverseCount > 0) parts.push(`${adverseCount} adverse`);
+    if (adaptiveCount > 0) parts.push(`${adaptiveCount} adaptive`);
+    if (doseDepCount > 0) parts.push(`dose-dependent in ${doseDepCount}/${total}`);
+    const conclusion = parts.join(", ");
+
+    // Strength assessment
+    const strength = trCount >= total * 0.6 && doseDepCount >= 2 && sigCount >= 2
+      ? "strong" : trCount >= 2 || (doseDepCount >= 1 && sigCount >= 1)
+      ? "moderate" : trCount >= 1 ? "weak" : "insufficient";
+
+    return {
+      total, trCount, adverseCount, adaptiveCount,
+      doseDepCount, sigCount, trendSigCount,
+      natureCounts, dominantNature,
+      conclusion, strength,
+    };
+  }, [specimenFindings]);
+
+  // Peer comparison (HCD) for all findings
+  const peerRows = useMemo(() => {
+    return specimenFindings.map(f => {
+      const controlGs = f.group_stats.find(gs => gs.dose_level === 0);
+      const controlInc = controlGs ? (controlGs.incidence ?? (controlGs.n > 0 ? (controlGs.affected ?? 0) / controlGs.n : 0)) : 0;
+      const organName = specimen.toLowerCase().replace(/_/g, " ");
+      const hcd = getHistoricalControl(f.finding, organName);
+      const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+      return { finding: f.finding, controlIncidence: controlInc, hcd, status };
+    }).filter(r => r.hcd != null);
+  }, [specimenFindings, specimen]);
+
+  return (
+    <div>
+      <ContextPanelHeader
+        title={specimen.toUpperCase()}
+        subtitle={
+          <>
+            {specimenFindings.length} findings
+            {specimenSyndromes.length > 0 && <> &middot; {specimenSyndromes.length} syndrome{specimenSyndromes.length !== 1 ? "s" : ""}</>}
+          </>
+        }
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={nav.onBack}
+        onForward={nav.onForward}
+      />
+
+      {/* Weight-of-evidence synthesis */}
+      {woeSynthesis && woeSynthesis.total > 0 && (
+        <CollapsiblePane title="Specimen assessment" defaultOpen={false} sessionKey="pcc.specimen.assessment" expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1.5">
+            {/* Conclusion line */}
+            <p className="text-xs">
+              <span className={woeSynthesis.strength === "strong" ? "font-semibold text-foreground" : woeSynthesis.strength === "moderate" ? "font-medium text-foreground" : "text-muted-foreground"}>
+                {woeSynthesis.strength === "strong" ? "Strong" : woeSynthesis.strength === "moderate" ? "Moderate" : woeSynthesis.strength === "weak" ? "Weak" : "Insufficient"} evidence
+              </span>
+              {" \u2014 "}
+              <span className="text-muted-foreground">{woeSynthesis.conclusion}.</span>
+            </p>
+
+            {/* Dimension rows */}
+            <div className="space-y-0.5 text-[11px]">
+              {/* HCD */}
+              {peerRows.length > 0 && (() => {
+                const aboveCount = peerRows.filter(r => r.status === "above_range").length;
+                const atUpperCount = peerRows.filter(r => r.status === "at_upper").length;
+                return (aboveCount > 0 || atUpperCount > 0) ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Historical controls</span>
+                    <span className={aboveCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"}>
+                      {aboveCount > 0 ? `${aboveCount} above range` : ""}{aboveCount > 0 && atUpperCount > 0 ? ", " : ""}{atUpperCount > 0 ? `${atUpperCount} at upper` : ""}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Recovery */}
+              {recoveryAssessments.length > 0 && (() => {
+                const reversed = recoveryAssessments.filter(r => r.overall === "reversed").length;
+                const partial = recoveryAssessments.filter(r => r.overall === "partially_reversed").length;
+                const persistent = recoveryAssessments.filter(r => r.overall === "persistent" || r.overall === "progressing").length;
+                const parts: string[] = [];
+                if (reversed > 0) parts.push(`${reversed} reversed`);
+                if (partial > 0) parts.push(`${partial} partial`);
+                if (persistent > 0) parts.push(`${persistent} persistent`);
+                return parts.length > 0 ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Recovery</span>
+                    <span className={persistent > 0 ? "font-medium text-foreground" : "text-muted-foreground"}>{parts.join(", ")}</span>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Syndromes */}
+              {specimenSyndromes.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Syndrome support</span>
+                  <span className="text-muted-foreground">{specimenSyndromes.map(s => `${s.name} (${s.confidence.toLowerCase()})`).join(", ")}</span>
+                </div>
+              )}
+
+              {/* Lab correlates — top 3 from unified findings + expandable full list */}
+              {relevantLabFindings.length > 0 && (() => {
+                const top3 = relevantLabFindings.slice(0, 3);
+                const arrow = (f: UnifiedFinding) => f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "";
+                const foldLabel = (f: UnifiedFinding) => f.max_fold_change != null
+                  ? `${arrow(f)}${f.direction === "down" ? "" : "\u00d7"}${f.max_fold_change.toFixed(1)}`
+                  : arrow(f);
+                return (
+                  <div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Lab correlates (top 3){" "}
+                        {relevantLabFindings.length > 3 && (
+                          <button className="text-primary hover:underline" onClick={() => setLabExpanded(p => !p)}>
+                            {labExpanded ? "hide" : "show all"}
+                          </button>
+                        )}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {top3.map(f => `${f.test_code} ${foldLabel(f)}`).join(", ")}
+                      </span>
+                    </div>
+                    {labExpanded && (
+                      <div className="mt-1.5 border-t border-border/30 pt-1.5">
+                        <LabFindingsInline findings={relevantLabFindings} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Dominant nature */}
+              {woeSynthesis.dominantNature && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Finding nature</span>
+                  <span className="text-muted-foreground">
+                    {woeSynthesis.dominantNature[1] === woeSynthesis.total
+                      ? woeSynthesis.dominantNature[0]
+                      : `${woeSynthesis.dominantNature[0]} (${woeSynthesis.dominantNature[1]}/${woeSynthesis.total})`}
+                  </span>
+                </div>
+              )}
+
+              {/* Significance */}
+              {woeSynthesis.sigCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Significance</span>
+                  <span className="text-muted-foreground">
+                    {woeSynthesis.sigCount}/{woeSynthesis.total} pairwise{woeSynthesis.trendSigCount > 0 ? `, ${woeSynthesis.trendSigCount} trend` : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Peer comparison (HCD) */}
+      {peerRows.length > 0 && (
+        <CollapsiblePane title="Peer comparison (HCD)" defaultOpen={false} sessionKey="pcc.specimen.hcd" expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                Control group incidence vs historical control data (HCD).
+              </p>
+              <div className="relative group shrink-0">
+                <Info className="w-3 h-3 text-muted-foreground/40 cursor-help" />
+                <div className="pointer-events-none absolute right-0 top-5 z-50 hidden w-[320px] rounded border bg-popover p-2.5 text-[11px] leading-relaxed text-popover-foreground shadow-md group-hover:block">
+                  <p className="font-medium">Historical control data (HCD)</p>
+                  <p className="mt-1 text-muted-foreground">Charles River Crl:CD(SD) published reference ranges — 34 control groups, 4–26 weeks, oral and parenteral routes. Context-aware 4-tier matching by strain, sex, study duration, and route.</p>
+                  <p className="mt-1.5 font-medium">Limitations</p>
+                  <ul className="mt-0.5 list-disc pl-3.5 text-muted-foreground">
+                    <li>Limited to Sprague-Dawley rats — other strains/species use general fallback ranges</li>
+                    <li>Seed dataset covers common findings only — rare lesions may lack HCD</li>
+                    <li>Ranges reflect published aggregates, not facility-specific data</li>
+                    <li>In production, replaced by a real HCD database query</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="pb-0.5 text-left text-[11px] font-semibold uppercase tracking-wider">Finding</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Study ctrl</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">HCD range</th>
+                  <th className="pb-0.5 text-right text-[11px] font-semibold uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {peerRows.map(row => (
+                  <tr key={row.finding} className="border-b border-dashed">
+                    <td className="max-w-[120px] truncate py-1 text-xs font-medium" title={row.finding}>{row.finding}</td>
+                    <td className="py-1 text-right font-mono text-muted-foreground">{Math.round(row.controlIncidence * 100)}%</td>
+                    <td className="py-1 text-right text-muted-foreground">
+                      {row.hcd && (
+                        <span className="font-mono">{Math.round(row.hcd.min_incidence * 100)}{"\u2013"}{Math.round(row.hcd.max_incidence * 100)}%</span>
+                      )}
+                    </td>
+                    <td className="py-1 text-right">
+                      <span className={cn(
+                        "text-[10px]",
+                        row.status === "above_range" ? "font-medium text-foreground"
+                          : row.status === "at_upper" ? "text-muted-foreground"
+                          : "text-muted-foreground/60",
+                      )}>
+                        {row.status === "above_range" && "\u25B2 "}
+                        {HCD_STATUS_LABELS[row.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Laterality */}
+      {lateralityData && (
+        <CollapsiblePane title="Laterality" defaultOpen={false} sessionKey="pcc.specimen.laterality" expandAll={expandGen} collapseAll={collapseGen}>
+          <div className="space-y-1.5 text-xs">
+            <p className="text-muted-foreground">
+              {lateralitySummary(lateralityData.subjectAgg)}
+            </p>
+            {lateralityData.perFinding.length > 0 && (
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="pb-0.5 text-left font-semibold">Finding</th>
+                    <th className="pb-0.5 text-right font-semibold">L</th>
+                    <th className="pb-0.5 text-right font-semibold">R</th>
+                    <th className="pb-0.5 text-right font-semibold">Bi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lateralityData.perFinding.map(({ finding, agg }) => (
+                    <tr key={finding} className="border-b border-dashed">
+                      <td className="max-w-[120px] truncate py-0.5" title={finding}>{finding}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.left}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.right}</td>
+                      <td className="py-0.5 text-right font-mono text-muted-foreground">{agg.bilateral}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </CollapsiblePane>
+      )}
+
+      {/* Pathology review */}
+      {studyId && (
+        <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} />
+      )}
+
+    </div>
+  );
+}
+
+/** Pathologist notes from CO domain, grouped by text with subject links. */
+function PathologistNotes({ finding, studyId, navigate }: {
+  finding: UnifiedFinding;
+  studyId: string | undefined;
+  navigate: (to: string) => void;
+}) {
+  if (!finding.comments || finding.comments.length === 0) return null;
+
+  const grouped = new Map<string, Set<string>>();
+  for (const c of finding.comments) {
+    if (!c) continue;
+    const text = typeof c === "string" ? c : c.text;
+    const subj = typeof c === "string" ? "" : (c.subject_id ?? "");
+    if (!text) continue;
+    const existing = grouped.get(text);
+    if (existing) {
+      if (subj) existing.add(subj);
+    } else {
+      grouped.set(text, subj ? new Set([subj]) : new Set());
+    }
+  }
+  if (grouped.size === 0) return null;
+
+  // Total unique subjects across all comment texts
+  const allSubjects = new Set<string>();
+  for (const subjects of grouped.values()) {
+    for (const s of subjects) allSubjects.add(s);
+  }
+
+  return (
+    <div className="border-t px-4 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Pathologist Notes</div>
+      <ul className="space-y-1">
+        {[...grouped.entries()].map(([text, subjects], i) => {
+          const subjectArr = [...subjects];
+          return (
+            <li key={i} className="text-xs leading-snug">
+              <span className="text-muted-foreground italic">{text}</span>
+              {allSubjects.size > 1 && <span className="text-muted-foreground/60"> ({subjects.size}/{allSubjects.size})</span>}
+              {subjectArr.length > 0 && (
+                <button
+                  className="ml-1.5 text-primary hover:underline text-[10px] not-italic"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(`/studies/${studyId}/cohort?subjects=${encodeURIComponent(subjectArr.join(","))}&preset=all`);
+                  }}
+                >
+                  See subjects
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -1047,18 +1442,16 @@ export function FindingsContextPanel() {
     selectedFindingId
   );
   const { data: noaelRows } = useEffectiveNoael(studyId);
-  const recoveryPaneRef = useRef<HTMLDivElement>(null);
-  const evidencePaneRef = useRef<HTMLDivElement>(null);
   // distributionPaneRef removed — DistributionPane moved to center panel
   const { data: toxAnnotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { data: causalAnnotations } = useAnnotations<CausalAssessment>(studyId, "causal-assessment");
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   // ── Navigation history (D1) ──
-  type FindingsNavEntry = { type: "finding"; id: string } | { type: "organ" | "syndrome"; key: string };
+  type FindingsNavEntry = { type: "finding"; id: string } | { type: "organ" | "syndrome" | "specimen"; key: string };
   const currentNavEntry = useMemo((): FindingsNavEntry | null => {
     if (selectedFindingId) return { type: "finding", id: selectedFindingId };
-    if (selectedGroupType && selectedGroupKey) return { type: selectedGroupType as "organ" | "syndrome", key: selectedGroupKey };
+    if (selectedGroupType && selectedGroupKey) return { type: selectedGroupType as "organ" | "syndrome" | "specimen", key: selectedGroupKey };
     return null;
   }, [selectedFindingId, selectedGroupType, selectedGroupKey]);
 
@@ -1080,6 +1473,7 @@ export function FindingsContextPanel() {
   const { useScheduledOnly: isScheduledOnly, hasEarlyDeaths } = useScheduledOnly();
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
   const hasRecovery = studyMeta?.dose_groups?.some((dg) => dg.recovery_armcd) ?? false;
+  const { data: recoveryCompData } = useRecoveryComparison(studyId);
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
 
@@ -1097,37 +1491,81 @@ export function FindingsContextPanel() {
   }, [selectedFinding, signalSummary]);
 
   // InsightsList: filter by organ system + domain prefix (dual filter from D-R panel)
-  const endpointRules = useMemo(() => {
-    if (!selectedFinding) return [];
-    const domainPrefix = selectedFinding.domain ? selectedFinding.domain + "_" : null;
-    return ruleResults.filter((r) => {
-      if (selectedFinding.organ_system && r.organ_system === selectedFinding.organ_system) return true;
-      if (domainPrefix && r.scope === "endpoint" && r.context_key.startsWith(domainPrefix)) return true;
-      return false;
-    });
-  }, [ruleResults, selectedFinding]);
+  // Lab correlates (any finding with a specimen — MI/MA, OM, etc.)
+  const isHistoFinding = selectedFinding?.domain === "MI" || selectedFinding?.domain === "MA";
+  const hasSpecimen = !!selectedFinding?.specimen;
+  const relevantLabFindingsForEndpoint = useMemo(() => {
+    if (!hasSpecimen || !selectedFinding?.specimen) return [];
+    const tests = new Set(getRelevantTests(selectedFinding.specimen, selectedFinding.finding).map(t => t.toUpperCase()));
+    if (tests.size === 0) return [];
+    return activeFindings
+      .filter(f => f.domain === "LB" && tests.has(f.test_code.toUpperCase()))
+      .reduce((acc, f) => {
+        const existing = acc.find(e => e.test_code.toUpperCase() === f.test_code.toUpperCase());
+        if (!existing) { acc.push(f); }
+        else if (f.severity === "adverse" && existing.severity !== "adverse") {
+          acc[acc.indexOf(existing)] = f;
+        }
+        return acc;
+      }, [] as UnifiedFinding[])
+      .sort((a, b) => {
+        if (a.treatment_related !== b.treatment_related) return a.treatment_related ? -1 : 1;
+        return Math.abs(b.max_effect_size ?? 0) - Math.abs(a.max_effect_size ?? 0);
+      });
+  }, [activeFindings, selectedFinding, hasSpecimen]);
 
-  // Recovery "not examined" detection — drives CollapsiblePane collapse + summary
-  const { data: studyCtxForRecovery } = useStudyContext(studyId);
-  const recoverySpecimens = useMemo(() => {
-    const f = selectedFinding;
-    const isHisto = f?.domain === "MI" || f?.domain === "MA";
-    return isHisto && f?.specimen ? [f.specimen] : [];
-  }, [selectedFinding]);
-  const recoveryOverview = useOrganRecovery(
-    studyId,
-    recoverySpecimens,
-    undefined,
-    studyCtxForRecovery?.species ?? null,
-  );
-  const recoveryNotExamined = useMemo(() => {
-    if (!selectedFinding?.specimen) return false;
-    const isHisto = selectedFinding.domain === "MI" || selectedFinding.domain === "MA";
-    if (!isHisto) return false;
-    const label = `${selectedFinding.specimen} \u2014 ${selectedFinding.finding}`;
-    const verdict = recoveryOverview.byEndpointLabel.get(label);
-    return verdict === "not_examined";
-  }, [selectedFinding, recoveryOverview.byEndpointLabel]);
+  // Peer comparison / HCD (MI/MA findings — control incidence vs historical controls)
+  const peerRow = useMemo(() => {
+    if (!isHistoFinding || !selectedFinding?.specimen || !selectedFinding?.finding) return null;
+    const controlGs = selectedFinding.group_stats.find(gs => gs.dose_level === 0);
+    if (!controlGs) return null;
+    const controlInc = controlGs.incidence ?? (controlGs.n > 0 ? (controlGs.affected ?? 0) / controlGs.n : 0);
+    const organName = selectedFinding.specimen.toLowerCase().replace(/_/g, " ");
+    const hcd = getHistoricalControl(selectedFinding.finding, organName);
+    const status: HCDStatus = hcd ? classifyVsHCD(controlInc, hcd) : "no_data";
+    return { finding: selectedFinding.finding, controlIncidence: controlInc, hcd, status };
+  }, [isHistoFinding, selectedFinding]);
+
+  // Correlating evidence — other MI/MA findings in the same specimen + cross-organ matches
+  const correlatingEvidence = useMemo(() => {
+    if (!isHistoFinding || !selectedFinding?.specimen || !selectedFinding?.finding) return null;
+    const specimen = selectedFinding.specimen;
+    const finding = selectedFinding.finding;
+
+    // In this specimen: other findings
+    const sameSpecimen = activeFindings
+      .filter(f => f.specimen === specimen && (f.domain === "MI" || f.domain === "MA") && f.finding !== finding)
+      .reduce((acc, f) => {
+        if (!acc.has(f.finding)) {
+          const maxInc = Math.max(...f.group_stats.filter(gs => gs.dose_level > 0).map(gs => gs.incidence ?? 0), 0);
+          acc.set(f.finding, { maxIncidence: maxInc, domain: f.domain });
+        }
+        return acc;
+      }, new Map<string, { maxIncidence: number; domain: string }>());
+
+    const inThisSpecimen = [...sameSpecimen.entries()]
+      .sort((a, b) => b[1].maxIncidence - a[1].maxIncidence)
+      .slice(0, 10);
+
+    // Cross-organ: same finding in other specimens
+    const findingLower = finding.toLowerCase();
+    const otherSpecimens = activeFindings
+      .filter(f => f.finding.toLowerCase() === findingLower && f.specimen !== specimen && f.specimen != null && (f.domain === "MI" || f.domain === "MA"))
+      .reduce((acc, f) => {
+        const spec = f.specimen!;
+        if (!acc.has(spec)) {
+          const maxInc = Math.max(...f.group_stats.filter(gs => gs.dose_level > 0).map(gs => gs.incidence ?? 0), 0);
+          acc.set(spec, { maxIncidence: maxInc });
+        }
+        return acc;
+      }, new Map<string, { maxIncidence: number }>());
+
+    const crossOrgan = [...otherSpecimens.entries()]
+      .sort((a, b) => b[1].maxIncidence - a[1].maxIncidence)
+      .slice(0, 8);
+
+    return { inThisSpecimen, crossOrgan };
+  }, [isHistoFinding, selectedFinding, activeFindings]);
 
   // When scheduled-only mode is active, swap statistics rows to scheduled variants
   const activeStatistics = useMemo(() => {
@@ -1196,8 +1634,6 @@ export function FindingsContextPanel() {
   const organCoh = selectedFinding?.organ_system
     ? analytics.organCoherence.get(selectedFinding.organ_system)
     : undefined;
-  const hasOrganConvergence = organCoh != null && organCoh.domainCount >= 2;
-
   // Look up ECI integrated confidence for the selected endpoint
   const eciConfidence = useMemo(() => {
     if (!selectedFinding || !analytics) return null;
@@ -1235,51 +1671,8 @@ export function FindingsContextPanel() {
 
   // ── Sex selector state (Phase B7) ──
   // Default to sex with larger |effect|; fallback to selected finding's sex
-  const defaultSex = useMemo(() => {
-    if (!selectedFinding) return "M";
-    const label = selectedFinding.endpoint_label ?? selectedFinding.finding;
-    const ep = analytics.endpoints.find(e => e.endpoint_label === label);
-    const bySex = ep?.bySex;
-    if (bySex && bySex.size >= 2) {
-      let bestSex = selectedFinding.sex;
-      let bestEffect = -1;
-      for (const [sex, s] of bySex.entries()) {
-        const effect = Math.abs(s.maxEffectSize ?? 0);
-        if (effect > bestEffect) { bestEffect = effect; bestSex = sex; }
-      }
-      return bestSex;
-    }
-    return selectedFinding.sex;
-  }, [selectedFinding, analytics.endpoints]);
-
-  const [activeSex, setActiveSex] = useState(defaultSex);
-  // Reset when the selected finding changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setActiveSex(defaultSex); }, [selectedFindingId, defaultSex]);
-
   const hasSibling = context?.sibling != null;
   const siblingContext = context?.sibling;
-
-  // Determine the active sex's statistics for Tier 2 panes
-  const sexAwareStatistics = useMemo(() => {
-    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
-      return activeStatistics;
-    }
-    // Active sex is the sibling's sex — use sibling statistics
-    if (isScheduledOnly && hasEarlyDeaths && siblingContext.statistics.scheduled_rows) {
-      return { ...siblingContext.statistics, rows: siblingContext.statistics.scheduled_rows };
-    }
-    return siblingContext.statistics;
-  }, [activeStatistics, hasSibling, siblingContext, activeSex, selectedFinding?.sex, isScheduledOnly, hasEarlyDeaths]);
-
-  // The active finding for ANCOVA: use the sibling finding from findingsData when toggled
-  const activeFinding = useMemo(() => {
-    if (!hasSibling || !siblingContext || activeSex === selectedFinding?.sex) {
-      return selectedFinding;
-    }
-    // Look up the sibling UnifiedFinding from activeFindings (filtered stats)
-    return activeFindings.find(f => f.id === siblingContext.finding_id) ?? selectedFinding;
-  }, [hasSibling, siblingContext, activeSex, selectedFinding, activeFindings]);
 
   // Per-sex CausalitySummary map for CausalityWorksheet per-sex breakdown (GAP-80)
   const perSexSummaries = useMemo((): Record<string, CausalitySummary> | undefined => {
@@ -1322,27 +1715,30 @@ export function FindingsContextPanel() {
     if (selectedGroupType === "syndrome" && selectedGroupKey) {
       return <SyndromeContextPanel syndromeId={selectedGroupKey} nav={nav} />;
     }
+    if (selectedGroupType === "specimen" && selectedGroupKey) {
+      return (
+        <SpecimenContextPanelInline
+          studyId={studyId}
+          specimen={selectedGroupKey}
+          activeFindings={activeFindings}
+          analytics={analytics}
+          nav={nav}
+        />
+      );
+    }
 
-    // Priority 3: empty state — show normalization heatmap when OM data present
-    const normContexts = analytics.normalizationContexts;
-    const hasNormData = normContexts && normContexts.length > 0 && normContexts.some(c => c.tier >= 2);
+    // Priority 3: no selection → NOAEL determination + study-level panes
     return (
-      <div className="p-4">
-        <h3 className="mb-2 text-sm font-semibold">Findings</h3>
-        <p className="text-xs text-muted-foreground">
-          Select a finding row to view detailed analysis.
-        </p>
-        {hasNormData && (
-          <div className="mt-3">
-            <CollapsiblePane title="Normalization overview" defaultOpen variant="margin">
-              <NormalizationHeatmap
-                contexts={normContexts.filter(c => c.tier >= 2)}
-                onOrganClick={(organ) => selectGroup("organ", organ)}
-              />
-            </CollapsiblePane>
-          </div>
-        )}
-      </div>
+      <NoaelStudyLevelPanel
+        studyId={studyId}
+        activeFindings={activeFindings}
+        noaelRows={noaelRows}
+        expandAll={expandAll}
+        collapseAll={collapseAll}
+        expandGen={expandGen}
+        collapseGen={collapseGen}
+        nav={nav}
+      />
     );
   }
 
@@ -1359,9 +1755,19 @@ export function FindingsContextPanel() {
     <div>
       {/* Sticky header — renders immediately from cached finding */}
       <ContextPanelHeader
-        title={selectedFinding.finding}
+        title={<>{selectedFinding.finding} <span className="text-[11px] font-medium text-muted-foreground">{selectedFinding.domain}</span></>}
         subtitle={
-          <>{selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}</>
+          (selectedFinding.modifier_profile?.dominant_temporality || selectedFinding.modifier_profile?.dominant_distribution || (selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0)) ? (
+            <>
+              {selectedFinding.modifier_profile?.dominant_temporality}
+              {selectedFinding.modifier_profile?.dominant_distribution && (
+                <>{selectedFinding.modifier_profile.dominant_temporality ? " · " : ""}{selectedFinding.modifier_profile.dominant_distribution}</>
+              )}
+              {selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0 && (
+                <>{(selectedFinding.modifier_profile.dominant_temporality || selectedFinding.modifier_profile.dominant_distribution) ? " · " : ""}{Object.entries(selectedFinding.modifier_profile.laterality).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(", ")}</>
+              )}
+            </>
+          ) : undefined
         }
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -1379,6 +1785,41 @@ export function FindingsContextPanel() {
           {!hasSibling && selectedFinding.dose_response_pattern && (
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               {getPatternLabel(selectedFinding.dose_response_pattern)}
+            </span>
+          )}
+          {selectedFinding.severity && selectedFinding.severity !== "normal" && (
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200 capitalize">
+              {selectedFinding.severity}
+            </span>
+          )}
+          {/* Clinical tier badge (S2+ only, matching rail) */}
+          {(() => {
+            if (!analytics?.labMatches.length) return null;
+            const epLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
+            let worstTier: string | null = null;
+            let worstLabel: string | null = null;
+            for (const m of analytics.labMatches) {
+              if ((sevOrder[m.severity] ?? 0) < 2) continue;
+              if (!m.matchedEndpoints.some(e => e.toUpperCase() === epLabel.toUpperCase())) continue;
+              if (!worstTier || (sevOrder[m.severity] ?? 0) > (sevOrder[worstTier] ?? 0)) {
+                worstTier = m.severity;
+                worstLabel = m.severityLabel;
+              }
+            }
+            if (!worstTier) return null;
+            return (
+              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
+                {worstTier} {worstLabel}
+              </span>
+            );
+          })()}
+          {eciConfidence && (
+            <span
+              className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
+              title="Endpoint confidence — how reliably this endpoint's data supports NOAEL determination. Based on statistical strength, biological plausibility, dose-response quality, and trend test validity."
+            >
+              NOAEL: {eciConfidence === "high" ? "Determining" : eciConfidence === "moderate" ? "Contributing" : "Supporting"}
             </span>
           )}
           {(() => {
@@ -1400,12 +1841,30 @@ export function FindingsContextPanel() {
             );
           })()}
           {!hasSibling && noael && (
-            <span className="text-muted-foreground">
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
               NOAEL: {noael.dose_value != null
                 ? `${noael.dose_value} ${noael.dose_unit}`
                 : `< lowest dose`}
             </span>
           )}
+          {/* BW >10% regulatory threshold badge */}
+          {selectedFinding.domain === "BW" && (() => {
+            const gs = selectedFinding.group_stats;
+            if (!gs || gs.length < 2) return null;
+            const control = gs[0];
+            const highest = gs[gs.length - 1];
+            if (control.mean == null || highest.mean == null || control.mean === 0) return null;
+            const pct = Math.abs(((highest.mean - control.mean) / Math.abs(control.mean)) * 100);
+            if (pct <= 10) return null;
+            return (
+              <span
+                className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
+                title={`Body weight change of ${pct.toFixed(1)}% exceeds the 10% regulatory threshold`}
+              >
+                BW &gt;10%
+              </span>
+            );
+          })()}
         </div>
       </ContextPanelHeader>
 
@@ -1428,28 +1887,35 @@ export function FindingsContextPanel() {
               notEvaluated={notEvaluated}
               eciConfidence={eciConfidence}
               endpointConfidence={endpointConfidenceResult}
-              onSeeDecomposition={() => {
-                evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-              }}
               hasSibling={hasSibling}
             />
-            {hasRecovery && !notEvaluated && (
-              <RecoveryVerdictLine
-                finding={selectedFinding}
-                siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
-                onSeeDetails={() => {
-                  recoveryPaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                }}
-              />
-            )}
-            {context!.sibling && (
-              <SexComparisonPane
-                finding={selectedFinding}
-                siblingFinding={findingsData?.findings.find(f => f.id === siblingContext!.finding_id)}
-                analytics={analytics}
-                doseGroups={findingsData?.dose_groups}
-              />
-            )}
+            <PathologistNotes finding={selectedFinding} studyId={studyId} navigate={navigate} />
+            {context!.sibling && (() => {
+              const sibFinding = findingsData?.findings.find(f => f.id === siblingContext!.finding_id);
+              // Compute recovery verdicts using the same engine as the findings table
+              let primaryRecLabel: string | undefined;
+              let siblingRecLabel: string | undefined;
+              if (hasRecovery && recoveryCompData?.available) {
+                const findings = [selectedFinding, ...(sibFinding ? [sibFinding] : [])];
+                const verdictMap = buildFindingVerdictMap(findings, recoveryCompData, undefined);
+                const pv = verdictMap.get(selectedFinding.id);
+                if (pv) primaryRecLabel = getVerdictLabel(pv.effectiveVerdict) + (pv.lowConfidence ? " *" : "");
+                if (sibFinding) {
+                  const sv = verdictMap.get(sibFinding.id);
+                  if (sv) siblingRecLabel = getVerdictLabel(sv.effectiveVerdict) + (sv.lowConfidence ? " *" : "");
+                }
+              }
+              return (
+                <SexComparisonPane
+                  finding={selectedFinding}
+                  siblingFinding={sibFinding}
+                  analytics={analytics}
+                  doseGroups={findingsData?.dose_groups}
+                  primaryRecoveryLabel={primaryRecLabel}
+                  siblingRecoveryLabel={siblingRecLabel}
+                />
+              );
+            })()}
             {/* Opposite-direction callout: when sexes disagree on direction AND ANCOVA
                 resolves whether the effect is direct, surface this prominently */}
             {(() => {
@@ -1496,20 +1962,156 @@ export function FindingsContextPanel() {
                           : "ANCOVA available — check decomposition for BW confounding"
                       : "No ANCOVA available. Consider BW confounding as a possible explanation."}
                   </div>
-                  {hasAnyAncova && (
-                    <button
-                      className="mt-1 text-[10px] text-primary hover:underline"
-                      onClick={() => {
-                        evidencePaneRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                      }}
-                    >
-                      See ANCOVA decomposition
-                    </button>
-                  )}
                 </div>
               );
             })()}
           </div>
+
+          {/* NOAEL pane — endpoint-level NOAEL with per-sex ECI decomposition */}
+          {noael && !notEvaluated && (() => {
+            const epLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const ep = analytics.endpoints.find(e => e.endpoint_label === epLabel);
+            const noaelBySex = ep?.noaelBySex;
+            // Determine sex annotation for the pane title
+            const sexAnnotation = (() => {
+              if (!noaelBySex || noaelBySex.size < 2) return selectedFinding.sex;
+              // Both sexes — check if they agree
+              const entries = [...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b));
+              const allSame = entries.every(([, n]) => n.doseValue === entries[0][1].doseValue && n.tier === entries[0][1].tier);
+              if (allSame) return "F+M";
+              // Different — find which sex drives the lower (more conservative) NOAEL
+              const belowLowest = entries.find(([, n]) => n.tier === "below-lowest");
+              if (belowLowest) return belowLowest[0];
+              const withValues = entries.filter(([, n]) => n.doseValue != null);
+              if (withValues.length > 0) {
+                const min = withValues.reduce((best, cur) => (cur[1].doseValue! < best[1].doseValue! ? cur : best));
+                return min[0];
+              }
+              return "F+M";
+            })();
+            const noaelDose = noael.dose_value != null
+              ? `${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
+              : "below tested range";
+            const noaelTitle = `NOAEL: ${noaelDose} (${sexAnnotation})`;
+            const eciPerSex = ep?.eciPerSex;
+            const sibFinding = hasSibling && siblingContext
+              ? findingsData?.findings.find(f => f.id === siblingContext.finding_id)
+              : undefined;
+            // Map sex → finding for per-sex decomposition
+            const findingBySex = new Map<string, UnifiedFinding>();
+            findingBySex.set(selectedFinding.sex, selectedFinding);
+            if (sibFinding) findingBySex.set(sibFinding.sex, sibFinding);
+            return (
+              <CollapsiblePane
+                title={noaelTitle}
+                defaultOpen={false}
+                sessionKey="pcc.ep.noael"
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+              >
+                <div className="space-y-2 text-[11px] text-muted-foreground">
+                  {/* Per-sex NOAEL breakdown — always shown when both sexes exist */}
+                  {noaelBySex && noaelBySex.size >= 2 && (
+                    <div className="flex gap-x-4">
+                      {[...noaelBySex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => (
+                        <span key={sex}>
+                          {sex}: {n.tier === "below-lowest"
+                            ? "below tested range"
+                            : n.doseValue != null
+                              ? `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`
+                              : "—"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* ECI decomposition — per-sex when available, otherwise aggregated */}
+                  {eciPerSex && eciPerSex.size >= 2 ? (
+                    <div className="space-y-3">
+                      {[...eciPerSex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, sexEci]) => (
+                        <div key={sex}>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{sex}</div>
+                          <DecomposedConfidencePane
+                            eci={sexEci}
+                            finding={findingBySex.get(sex) ?? selectedFinding}
+                            doseGroups={findingsData?.dose_groups}
+                            syndromes={endpointSyndromes}
+                            organCoherence={organCoh}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : ep?.endpointConfidence ? (
+                    <DecomposedConfidencePane eci={ep.endpointConfidence} finding={selectedFinding} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} organCoherence={organCoh} />
+                  ) : null}
+
+                  {/* Normalization alternatives (OM domain, BW confounding) */}
+                  {selectedFinding.domain === "OM" && (() => {
+                    const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
+                    const cat = specimen ? getOrganCorrelationCategory(specimen) : null;
+                    const decision = specimen ? normalization.getDecision(specimen) : null;
+                    const shouldShow = cat === OrganCorrelationCategory.GONADAL
+                      || cat === OrganCorrelationCategory.FEMALE_REPRODUCTIVE
+                      || (decision?.showAlternatives ?? false);
+                    if (!shouldShow) return null;
+                    const isGonadal = cat === OrganCorrelationCategory.GONADAL;
+                    const gs = selectedFinding.group_stats;
+                    const controlGs = gs.find(g => g.dose_level === 0 || g.dose_level === 1);
+                    const highestGs = gs.length > 0 ? gs[gs.length - 1] : null;
+                    if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
+                    const ratioGrayed = isGonadal ? "opacity-40" : "";
+                    return (
+                      <div className="mt-2 border-t border-border/30 pt-2">
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Normalization alternatives (high dose vs control)
+                        </div>
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="text-[10px] text-muted-foreground">
+                              <th className="py-0.5 text-left font-medium">Metric</th>
+                              <th className="py-0.5 text-right font-medium">Control</th>
+                              <th className="py-0.5 text-right font-medium">High dose</th>
+                              <th className="py-0.5 text-right font-medium">{"\u0394"}%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="py-0.5">Absolute (g)</td>
+                              <td className="py-0.5 text-right font-mono">{controlGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                              <td className="py-0.5 text-right font-mono">{highestGs.mean?.toFixed(3) ?? "\u2014"}</td>
+                              <td className="py-0.5 text-right font-mono">
+                                {controlGs.mean && highestGs.mean
+                                  ? `${(((highestGs.mean - controlGs.mean) / controlGs.mean) * 100).toFixed(1)}%`
+                                  : "\u2014"}
+                              </td>
+                            </tr>
+                            <tr className={ratioGrayed}>
+                              <td className="py-0.5">
+                                Ratio-to-BW
+                                {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(n/a)</span>}
+                              </td>
+                              <td className="py-0.5 text-right font-mono">{controlGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                              <td className="py-0.5 text-right font-mono">{highestGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
+                              <td className="py-0.5 text-right font-mono">
+                                {controlGs.mean_relative && highestGs.mean_relative
+                                  ? `${(((highestGs.mean_relative - controlGs.mean_relative) / controlGs.mean_relative) * 100).toFixed(1)}%`
+                                  : "\u2014"}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <button
+                          className="mt-1 text-[10px] text-primary hover:underline"
+                          onClick={() => studyId && navigate(`/studies/${encodeURIComponent(studyId)}?tab=rules`)}
+                        >
+                          Analysis methods &rarr;
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </CollapsiblePane>
+            );
+          })()}
 
         </>
       ) : (
@@ -1533,291 +2135,95 @@ export function FindingsContextPanel() {
 
       {/* Distribution — moved to center panel DoseResponseChartPanel */}
 
-      {/* Recovery */}
-      {hasRecovery && selectedFinding && (
-        <div ref={recoveryPaneRef}>
-          <CollapsiblePane
-            key={selectedFinding.id}
-            title="Recovery"
-            defaultOpen={!recoveryNotExamined}
-            summary={recoveryNotExamined ? "Not examined" : undefined}
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-          >
-            <RecoveryPane finding={selectedFinding} doseGroups={findingsData?.dose_groups} />
-          </CollapsiblePane>
-        </div>
+
+      {/* Qualifier detail — MI/MA only, full modifier breakdown */}
+      {selectedFinding && (selectedFinding.domain === "MI" || selectedFinding.domain === "MA") && selectedFinding.modifier_profile && (
+        <CollapsiblePane
+          title="Qualifiers"
+          defaultOpen={false}
+          sessionKey="pcc.ep.qualifiers"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <QualifierDetailPane finding={selectedFinding} />
+        </CollapsiblePane>
       )}
 
-      {/* Analysis + determination panes — need useFindingContext data */}
+      {/* Lab correlates — any finding with a specimen (MI/MA, OM, etc.) */}
+      {relevantLabFindingsForEndpoint.length > 0 && (
+        <CollapsiblePane
+          title="Lab correlates"
+          defaultOpen={false}
+          sessionKey="pcc.ep.lab-correlates"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <LabFindingsInline
+            findings={relevantLabFindingsForEndpoint}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Peer comparison / HCD — MI/MA only, control vs historical controls */}
+      {isHistoFinding && peerRow && peerRow.hcd && (
+        <CollapsiblePane
+          title="Peer comparison (HCD)"
+          defaultOpen={false}
+          sessionKey="pcc.ep.peer-hcd"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <PeerComparisonInline row={peerRow} />
+        </CollapsiblePane>
+      )}
+
+      {/* Correlating evidence — MI/MA only, same specimen + cross-organ */}
+      {isHistoFinding && correlatingEvidence && (correlatingEvidence.inThisSpecimen.length > 0 || correlatingEvidence.crossOrgan.length > 0) && (
+        <CollapsiblePane
+          title="Correlating evidence"
+          defaultOpen={false}
+          sessionKey="pcc.ep.correlating-evidence"
+          expandAll={expandGen}
+          collapseAll={collapseGen}
+        >
+          <CorrelatingEvidenceInline evidence={correlatingEvidence} />
+        </CollapsiblePane>
+      )}
+
+      {/* Determination panes — need useFindingContext data */}
       {contextReady ? (
       <>
-          {/* Statistical evidence */}
-          <div ref={evidencePaneRef}>
-          <CollapsiblePane
-            title={hasSibling ? "Statistical evidence:" : "Statistical evidence"}
-            defaultOpen
-            keepMounted
-            expandAll={expandGen}
-            collapseAll={collapseGen}
-            headerRight={hasSibling ? (
-              <>
-                {[selectedFinding.sex, siblingContext!.sex].map((s, i) => (
-                  <span key={s}>
-                    {i > 0 && <span className="mx-0.5 text-muted-foreground/30">|</span>}
-                    <span
-                      className={cn("cursor-pointer", activeSex === s ? "text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground/60")}
-                      onClick={() => setActiveSex(s)}
-                    >
-                      {s}
-                    </span>
-                  </span>
-                ))}
-              </>
-            ) : undefined}
-          >
-            <EvidencePane
-              finding={activeFinding!}
-              analytics={analytics}
-              statistics={sexAwareStatistics!}
-            />
-            {/* Normalization annotation for OM domain endpoints */}
-            {selectedFinding.domain === "OM" && (() => {
-              const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
-              const category = specimen ? getOrganCorrelationCategory(specimen) : null;
-              const normCtx = specimen ? normalization.getContext(specimen) : null;
-
-              // Reproductive organs always show category-specific messaging
-              if (category === OrganCorrelationCategory.GONADAL) {
-                return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
-                    <div className="font-semibold text-amber-800">
-                      Testes — absolute weight primary (BW-spared)
-                    </div>
-                    <div className="mt-0.5 text-amber-700">
-                      Absolute weight is the primary endpoint for testes.
-                      Body weight ratios are not appropriate (Creasy 2013).
-                    </div>
-                    {normCtx && normCtx.tier >= 2 && (
-                      <div className="mt-1 font-semibold text-amber-800">
-                        BW-ratio testes weight will appear artificially increased
-                        (BW Tier {normCtx.tier}, g = {normCtx.bwG.toFixed(2)}).
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              if (category === OrganCorrelationCategory.ANDROGEN_DEPENDENT) {
-                const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
-                return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
-                    <div className="font-semibold text-amber-800">
-                      {organName} — androgen-dependent, not BW-dependent
-                    </div>
-                    <div className="mt-0.5 text-amber-700">
-                      Weight reflects androgen status. Correlate with histopathology
-                      and testes findings.
-                    </div>
-                    <button
-                      className="mt-1 text-[10px] text-blue-600 hover:underline"
-                      onClick={() => {
-                        // Navigate to MI domain findings for this organ
-                        navigate(`/study/${studyId}/findings`, {
-                          state: { domain: "MI", specimen: specimen },
-                        });
-                      }}
-                    >
-                      View MI findings for {organName} &rarr;
-                    </button>
-                  </div>
-                );
-              }
-              if (category === OrganCorrelationCategory.FEMALE_REPRODUCTIVE) {
-                const organName = specimen ? specimen.charAt(0) + specimen.slice(1).toLowerCase() : "Organ";
-                return (
-                  <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
-                    <div className="font-semibold text-amber-800">
-                      {organName} — low confidence (estrous cycle variability)
-                    </div>
-                    <div className="mt-0.5 text-amber-700">
-                      Low confidence — estrous cycle stage not controlled.
-                      Interpret with caution (CV 25–50%).
-                    </div>
-                  </div>
-                );
-              }
-
-              // Non-reproductive organs: show BW confounding at tier >= 2
-              if (!normCtx || normCtx.tier < 2) return null;
-              const modeLabels: Record<string, string> = {
-                absolute: "absolute weight",
-                body_weight: "ratio-to-BW",
-                brain_weight: "ratio-to-brain",
-                ancova: "ANCOVA",
-              };
-              return (
-                <div className="mt-2 rounded-md bg-amber-50 p-2 text-[11px]">
-                  <div className="font-semibold text-amber-800">
-                    Body weight confounding (Tier {normCtx.tier})
-                  </div>
-                  <div className="mt-0.5 text-amber-700">
-                    BW effect: g = {normCtx.bwG.toFixed(2)}. {normCtx.tier >= 3
-                      ? "Organ-to-BW ratios unreliable for this dose group."
-                      : "Organ-to-BW ratios should be interpreted with caution."}
-                  </div>
-                  <div className="mt-0.5 text-amber-700">
-                    Active normalization: {modeLabels[normCtx.activeMode] ?? normCtx.activeMode}
-                    {normCtx.tier === 4 && " — ANCOVA recommended for definitive assessment"}
-                  </div>
-                </div>
-              );
-            })()}
-            {/* Normalization alternatives for OM domain (G2: grayed for GONADAL, G5: side-by-side for FEMALE) */}
-            {selectedFinding.domain === "OM" && (() => {
-              const specimen = selectedFinding.specimen?.toUpperCase() ?? "";
-              const cat = specimen ? getOrganCorrelationCategory(specimen) : null;
-              const decision = specimen ? normalization.getDecision(specimen) : null;
-              // Show alternatives for: GONADAL (grayed ratios), FEMALE_REPRODUCTIVE (always), tier >= 2 (showAlternatives)
-              const shouldShow = cat === OrganCorrelationCategory.GONADAL
-                || cat === OrganCorrelationCategory.FEMALE_REPRODUCTIVE
-                || (decision?.showAlternatives ?? false);
-              if (!shouldShow) return null;
-              const isGonadal = cat === OrganCorrelationCategory.GONADAL;
-              const gs = selectedFinding.group_stats;
-              const controlGs = gs.find(g => g.dose_level === 0 || g.dose_level === 1);
-              const highestGs = gs.length > 0 ? gs[gs.length - 1] : null;
-              if (!controlGs || !highestGs || highestGs.dose_level === controlGs.dose_level) return null;
-              const ratioGrayed = isGonadal ? "opacity-40" : "";
-              return (
-                <div className="mt-2 rounded-md border border-border/50 p-2 text-[11px]">
-                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Normalization alternatives (high dose vs control)
-                  </div>
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-[10px] text-muted-foreground">
-                        <th className="py-0.5 text-left font-medium">Metric</th>
-                        <th className="py-0.5 text-right font-medium">Control</th>
-                        <th className="py-0.5 text-right font-medium">High dose</th>
-                        <th className="py-0.5 text-right font-medium">{"\u0394"}%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="py-0.5">Absolute (g)</td>
-                        <td className="py-0.5 text-right font-mono">{controlGs.mean?.toFixed(3) ?? "\u2014"}</td>
-                        <td className="py-0.5 text-right font-mono">{highestGs.mean?.toFixed(3) ?? "\u2014"}</td>
-                        <td className="py-0.5 text-right font-mono">
-                          {controlGs.mean && highestGs.mean
-                            ? `${(((highestGs.mean - controlGs.mean) / controlGs.mean) * 100).toFixed(1)}%`
-                            : "\u2014"}
-                        </td>
-                      </tr>
-                      <tr className={ratioGrayed}>
-                        <td className="py-0.5">
-                          Ratio-to-BW
-                          {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
-                        </td>
-                        <td className="py-0.5 text-right font-mono">{controlGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
-                        <td className="py-0.5 text-right font-mono">{highestGs.mean_relative?.toFixed(4) ?? "\u2014"}</td>
-                        <td className="py-0.5 text-right font-mono">
-                          {controlGs.mean_relative && highestGs.mean_relative
-                            ? `${(((highestGs.mean_relative - controlGs.mean_relative) / controlGs.mean_relative) * 100).toFixed(1)}%`
-                            : "\u2014"}
-                        </td>
-                      </tr>
-                      <tr className={ratioGrayed}>
-                        <td className="py-0.5">
-                          Ratio-to-brain
-                          {isGonadal && <span className="ml-1 text-[8px] text-amber-600">(not appropriate)</span>}
-                        </td>
-                        <td className="py-0.5 text-right font-mono text-muted-foreground" colSpan={3}>
-                          Not computed (Phase 2)
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })()}
-            {/* ANCOVA effect decomposition (OM domain, Phase 2) */}
-            {activeFinding!.domain === "OM" && activeFinding!.ancova && (
-              <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
-            )}
-            {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
-            {(() => {
-              const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
-              const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
-              if (!ep?.endpointConfidence) return null;
-              return (
-                <div className="mt-3 border-t border-border/30 pt-2">
-                  <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
-                </div>
-              );
-            })()}
-          </CollapsiblePane>
-          </div>
-
-          {/* Organ insights */}
-          {endpointRules.length > 0 && (
-            <CollapsiblePane
-              title="Organ insights"
-              defaultOpen={false}
-              keepMounted
-              expandAll={expandGen}
-              collapseAll={collapseGen}
-              headerRight={
-                <span className="text-[10px] text-muted-foreground">
-                  {endpointRules.length} rules
-                </span>
-              }
-            >
-              <InsightsList
-                rules={endpointRules}
-                onEndpointClick={(organ) => selectGroup("organ", organ)}
-              />
-            </CollapsiblePane>
-          )}
-
-      {/* Patterns pane — three states: syndromes only, convergence only, both */}
-      {(endpointSyndromes.length > 0 || hasOrganConvergence) && studyId && (
+      {/* Syndromes pane */}
+      {endpointSyndromes.length > 0 && studyId && (
         <CollapsiblePane
-          title={endpointSyndromes.length > 0 && hasOrganConvergence ? "Patterns" : endpointSyndromes.length > 0 ? "Syndromes" : "Patterns"}
-          defaultOpen
+          title="Syndromes"
+          defaultOpen={false}
+          sessionKey="pcc.ep.syndromes"
           expandAll={expandGen}
           collapseAll={collapseGen}
           headerRight={
-            endpointSyndromes.length > 0 ? (
-              <span className="text-[10px] text-muted-foreground">
-                {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
-              </span>
-            ) : (
-              <span className="text-[10px] text-muted-foreground">convergence</span>
-            )
+            <span className="text-[10px] text-muted-foreground">
+              {endpointSyndromes.length} syndrome{endpointSyndromes.length !== 1 ? "s" : ""}
+            </span>
           }
         >
-          <div className="space-y-3">
-            {hasOrganConvergence && <ConvergenceNote coherence={organCoh!} />}
-            {endpointSyndromes.length > 0 && (
-              <EndpointSyndromePane
-                studyId={studyId}
-                currentEndpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
-                syndromes={endpointSyndromes}
-                allSyndromeIds={analytics.syndromes.map((s) => s.id)}
-                endpoints={analytics.endpoints}
-                signalScores={analytics.signalScores}
-                normalizationContexts={analytics.normalizationContexts}
-                onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
-              />
-            )}
-          </div>
+          <EndpointSyndromePane
+            studyId={studyId}
+            currentEndpointLabel={selectedFinding.endpoint_label ?? selectedFinding.finding}
+            syndromes={endpointSyndromes}
+            allSyndromeIds={analytics.syndromes.map((s) => s.id)}
+            endpoints={analytics.endpoints}
+            signalScores={analytics.signalScores}
+            normalizationContexts={analytics.normalizationContexts}
+            onViewSyndrome={(syndromeId) => selectGroup("syndrome", syndromeId)}
+          />
         </CollapsiblePane>
       )}
 
       {/* Hide correlations pane when based on group means — useless rho=1.0 with n=4 */}
       {context!.correlations.related.length > 0
         && context!.correlations.related.some((c) => c.basis !== "group_means" && (c.n ?? 0) >= 10) && (
-        <CollapsiblePane title="Correlations" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+        <CollapsiblePane title="Correlations" defaultOpen={false} sessionKey="pcc.ep.correlations" keepMounted expandAll={expandGen} collapseAll={collapseGen}>
           <CorrelationsPane
             data={context!.correlations}
             organSystem={selectedFinding.organ_system}
@@ -1826,7 +2232,7 @@ export function FindingsContextPanel() {
         </CollapsiblePane>
       )}
 
-      <CollapsiblePane title="Effect ranking" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
+      <CollapsiblePane title="Effect ranking" defaultOpen={false} sessionKey="pcc.ep.effect-ranking" keepMounted expandAll={expandGen} collapseAll={collapseGen}>
         <ContextPane
           effectSize={context!.effect_size}
           selectedFindingId={selectedFindingId}
@@ -1838,6 +2244,7 @@ export function FindingsContextPanel() {
       <CollapsiblePane
         title="Causality assessment"
         defaultOpen={false}
+        sessionKey="pcc.ep.causality"
         keepMounted
         expandAll={expandGen}
         collapseAll={collapseGen}
@@ -1867,50 +2274,113 @@ export function FindingsContextPanel() {
           systemSuggestion={selectedSignalRow ? deriveToxSuggestion(selectedSignalRow.treatment_related, selectedSignalRow.severity) : undefined}
         />
       )}
+
+      {/* Pathology review — MI/MA only */}
+      {isHistoFinding && studyId && (
+        <PathologyReviewForm studyId={studyId} finding={selectedFinding.finding} />
+      )}
       </>
       ) : null}
 
-      {/* Related views */}
-      <CollapsiblePane title="Related views" defaultOpen={false} keepMounted expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigate(`/studies/${encodeURIComponent(studyId)}/histopathology`);
-              }
-            }}
+    </div>
+  );
+}
+
+// ─── Study-level NOAEL panel (no finding/group selected) ────────────────────
+
+function NoaelStudyLevelPanel({
+  studyId,
+  activeFindings,
+  noaelRows,
+  expandAll,
+  collapseAll,
+  expandGen,
+  collapseGen,
+  nav,
+}: {
+  studyId: string | undefined;
+  activeFindings: UnifiedFinding[];
+  noaelRows: import("@/types/analysis-views").NoaelSummaryRow[] | undefined;
+  expandAll: () => void;
+  collapseAll: () => void;
+  expandGen: number;
+  collapseGen: number;
+  nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
+}) {
+  const navigate = useNavigate();
+  const { data: ruleResults } = useRuleResults(studyId);
+  const { data: signalData } = useStudySignalSummary(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
+  const { data: pkData } = usePkIntegration(studyId);
+
+  const aeData = useMemo(() => {
+    if (!activeFindings.length) return [];
+    return mapFindingsToRows(activeFindings);
+  }, [activeFindings]);
+
+  // Study statements for StudyStatementsBar
+  const panelData = useMemo(() => {
+    if (!signalData || !targetOrgans || !noaelRows) return null;
+    return buildSignalsPanelData(noaelRows, targetOrgans, signalData);
+  }, [signalData, targetOrgans, noaelRows]);
+
+  return (
+    <div>
+      <ContextPanelHeader
+        title="Findings"
+        onExpandAll={expandAll}
+        onCollapseAll={collapseAll}
+        canGoBack={nav.canGoBack}
+        canGoForward={nav.canGoForward}
+        onBack={nav.onBack}
+        onForward={nav.onForward}
+      />
+
+      {/* NOAEL determination (compact) */}
+      <NoaelDeterminationPane aeData={aeData} expandAll={expandGen} collapseAll={collapseGen} />
+
+      {/* Study statements + caveats */}
+      {panelData && (panelData.studyStatements.length > 0 || panelData.modifiers.length > 0 || panelData.caveats.length > 0) && (
+        <CollapsiblePane title="Study statements" defaultOpen={false} sessionKey="pcc.ep.study-statements" expandAll={expandGen} collapseAll={collapseGen}>
+          <StudyStatementsBar
+            statements={panelData.studyStatements}
+            modifiers={panelData.modifiers}
+            caveats={panelData.caveats}
+          />
+        </CollapsiblePane>
+      )}
+
+      {/* Protective signals (R18/R19) */}
+      {studyId && ruleResults && (
+        <CollapsiblePane title="Protective signals" defaultOpen={false} sessionKey="pcc.ep.protective-signals" expandAll={expandGen} collapseAll={collapseGen}>
+          <ProtectiveSignalsBar rules={ruleResults} studyId={studyId} signalData={signalData} />
+        </CollapsiblePane>
+      )}
+
+      {/* Safety margin calculator */}
+      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (
+        <CollapsiblePane title="Safety margin" defaultOpen={false} sessionKey="pcc.ep.safety-margin" expandAll={expandGen} collapseAll={collapseGen}>
+          <SafetyMarginCalculator pkData={pkData} />
+        </CollapsiblePane>
+      )}
+
+      {/* Configure rules link */}
+      {studyId && (
+        <div className="border-b px-4 py-2">
+          <button
+            type="button"
+            className="text-[11px] font-medium text-primary hover:underline"
+            onClick={() => navigate(`/studies/${encodeURIComponent(studyId)}?tab=rules`)}
           >
-            View histopathology &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`);
-              }
-            }}
-          >
-            View NOAEL determination &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigate(`/studies/${encodeURIComponent(studyId)}`);
-              }
-            }}
-          >
-            View study summary &#x2192;
-          </a>
+            Configure rules &rarr;
+          </button>
         </div>
-      </CollapsiblePane>
+      )}
+
+      {/* Fallback guidance */}
+      <div className="px-4 py-3 text-xs text-muted-foreground">
+        Select a finding to view detailed analysis.
+      </div>
     </div>
   );
 }

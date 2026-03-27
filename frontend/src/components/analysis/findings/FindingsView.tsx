@@ -9,7 +9,9 @@ import { ViewTabBar } from "@/components/ui/ViewTabBar";
 import { FindingsTable } from "../FindingsTable";
 import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
+import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
+import { SeverityMatrix } from "./SeverityMatrix";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +24,9 @@ import { formatPValue, formatEffectSize } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import type { UnifiedFinding } from "@/types/analysis";
 import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
+import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
+import { useAnnotations } from "@/hooks/useAnnotations";
+import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
 import {
   setFindingsRailCallback,
   getFindingsExcludedCallback,
@@ -71,6 +76,20 @@ export function FindingsView() {
 
   // Scheduled-only exclusion context
   const { setEarlyDeathSubjects, useScheduledOnly: isScheduledOnly } = useScheduledOnly();
+
+  // Recovery comparison data (multi-day stats from Phase 2)
+  const { data: recoveryData } = useRecoveryComparison(studyId);
+  const studyHasRecovery = !!recoveryData?.available;
+
+  // Recovery override annotations — shares React Query cache with RecoveryPane via same query key
+  const { data: recoveryOverrides } = useAnnotations<RecoveryOverrideAnnotation>(studyId, "recovery-overrides");
+
+  // Left chart tab: dose-response or recovery dumbbell
+  type LeftChartTab = "dr" | "recovery";
+  const LEFT_TABS = ["dr", "recovery"] as const;
+  const [leftChartTab, setLeftChartTab] = useSessionState<LeftChartTab>(
+    "pcc.findings.leftTab", "dr", isOneOf(LEFT_TABS),
+  );
 
   // Rail-provided state (single source of truth for filtering)
   const [visibleLabels, setVisibleLabels] = useState<Set<string> | null>(null);
@@ -160,6 +179,7 @@ export function FindingsView() {
     // drives the day filter and drops findings for the new endpoint.
     setSelectedDay(null);
     setDayCleared(false);
+    setLeftChartTab("dr");
     const currentData = dataRef.current;
     if (endpointLabel && currentData?.findings?.length) {
       let epFindings = currentData.findings.filter(
@@ -178,7 +198,7 @@ export function FindingsView() {
       selectFinding(null);
       setActiveDay(null);
     }
-  }, [selectFinding]);
+  }, [selectFinding, setLeftChartTab]);
 
   // Register event bus callback
   useEffect(() => {
@@ -311,10 +331,63 @@ export function FindingsView() {
     return { availableDays: days, peakDay, terminalDay: terminal, dayLabels };
   }, [activeEndpoint, tableFindings]);
 
+  // ── Recovery day metadata for DayStepper (Phase 3) ──────
+  const recoveryDayMeta = useMemo(() => {
+    if (!activeEndpoint || !recoveryData?.available) return null;
+    // recovery_days_available is keyed by test_code (e.g. "ALB", "BW").
+    // For OM domain, it's keyed by specimen (e.g. "BRAIN", "HEART").
+    // Resolve the lookup key from the active finding.
+    const activeFinding = tableFindings.find(
+      (f) => (f.endpoint_label ?? f.finding) === activeEndpoint,
+    );
+    const lookupKey = activeFinding
+      ? (activeFinding.domain === "OM" && activeFinding.specimen
+          ? activeFinding.specimen
+          : activeFinding.test_code)
+      : activeEndpoint;
+    const epDays = recoveryData.recovery_days_available[lookupKey];
+    if (!epDays) return null;
+    // Recovery period starts AFTER the main-study terminal sacrifice day.
+    // Use the larger of dayMeta.terminalDay (actual last day with main-arm
+    // group data) and last_dosing_day — excludes both the dosing period and
+    // the terminal sacrifice day itself (Day 92 in PointCross).
+    const mainTerminalDay = Math.max(
+      dayMeta?.terminalDay ?? 0,
+      recoveryData.last_dosing_day ?? 0,
+    );
+    const allDays = new Set<number>();
+    for (const sexDays of Object.values(epDays)) {
+      for (const d of sexDays) {
+        if (d > mainTerminalDay) allDays.add(d);
+      }
+    }
+    const sortedDays = [...allDays].sort((a, b) => a - b);
+    if (sortedDays.length === 0) return null;
+    const maxDay = sortedDays[sortedDays.length - 1];
+    const dayLabels = new Map<number, string>();
+    for (const d of sortedDays) {
+      dayLabels.set(d, d === maxDay ? "terminal recovery" : "recovery");
+    }
+    return { availableDays: sortedDays, terminalRecoveryDay: maxDay, dayLabels };
+  }, [activeEndpoint, tableFindings, recoveryData, dayMeta?.terminalDay]);
+
+  // ── Active day stepper metadata — switches based on left tab ──
+  // When in recovery mode: use recovery days if available, otherwise null
+  // (hides stepper — correct for incidence endpoints with no multi-day recovery).
+  // Never fall back to main-study dayMeta when recovery tab is active.
+  const activeDayMeta = leftChartTab === "recovery"
+    ? (recoveryDayMeta
+        ? { availableDays: recoveryDayMeta.availableDays, dayLabels: recoveryDayMeta.dayLabels, peakDay: null }
+        : null)
+    : dayMeta
+      ? { availableDays: dayMeta.availableDays, dayLabels: dayMeta.dayLabels, peakDay: dayMeta.peakDay }
+      : null;
+
   // Selected day — user-driven via DayStepper, auto-initialized from rail or peak/terminal.
   // dayCleared tracks when user explicitly clears the day filter — prevents useEffect from
   // immediately re-setting it to the default.
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedRecoveryDay, setSelectedRecoveryDay] = useState<number | null>(null);
   const [dayCleared, setDayCleared] = useState(false);
   useEffect(() => {
     if (dayCleared) return; // user cleared — don't auto-set
@@ -324,11 +397,21 @@ export function FindingsView() {
       setSelectedDay(null);
     }
   }, [activeDay, dayMeta, dayCleared]);
+  // Auto-set recovery day to terminal recovery when available
+  useEffect(() => {
+    if (recoveryDayMeta) {
+      setSelectedRecoveryDay(recoveryDayMeta.terminalRecoveryDay);
+    } else {
+      setSelectedRecoveryDay(null);
+    }
+  }, [recoveryDayMeta]);
   // Reset dayCleared when endpoint changes (new endpoint = new day context)
   useEffect(() => { setDayCleared(false); }, [activeEndpoint]);
   // Chart day: always resolves to a day (charts need a specific day to plot)
-  const chartDay = selectedDay
-    ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null);
+  // In recovery mode, use selectedRecoveryDay; otherwise use main study day.
+  const chartDay = leftChartTab === "recovery"
+    ? (selectedRecoveryDay ?? recoveryDayMeta?.terminalRecoveryDay ?? null)
+    : (selectedDay ?? (dayMeta ? (activeDay ?? dayMeta.peakDay ?? dayMeta.terminalDay) : null));
   // (tableDay removed — day filtering now handled by FindingsTable's internal combo-box)
 
   // Plottable count: endpoints with both effect size and p-value
@@ -457,18 +540,25 @@ export function FindingsView() {
   // Header right for D-R chart section: day stepper + excluded chips + info icon
   const chartHeaderRight = useMemo(() => (
     <span className="flex items-center gap-2">
-      {dayMeta && (
+      {activeDayMeta && (
         <DayStepper
-          availableDays={dayMeta.availableDays}
+          availableDays={activeDayMeta.availableDays}
           selectedDay={chartDay}
-          onDayChange={(d) => { setSelectedDay(d); setDayCleared(false); }}
-          dayLabels={dayMeta.dayLabels}
-          peakDay={dayMeta.peakDay}
+          onDayChange={(d) => {
+            if (leftChartTab === "recovery") {
+              setSelectedRecoveryDay(d);
+            } else {
+              setSelectedDay(d);
+              setDayCleared(false);
+            }
+          }}
+          dayLabels={activeDayMeta.dayLabels}
+          peakDay={activeDayMeta.peakDay}
         />
       )}
       {excludedChips}
     </span>
-  ), [dayMeta, chartDay, excludedChips]);
+  ), [activeDayMeta, chartDay, excludedChips, leftChartTab]);
 
   // Sync endpoint sexes to shared selection context (reaches context panel)
   useEffect(() => {
@@ -524,14 +614,40 @@ export function FindingsView() {
             onResizePointerDown={scatterSection.onPointerDown}
             contentRef={scatterSection.contentRef}
           >
-            <DoseResponseChartPanel
-              endpointLabel={activeEndpoint}
+            {(() => {
+              const epFinding = tableFindings.find(f => (f.endpoint_label ?? f.finding) === activeEndpoint);
+              if (epFinding?.domain === "IS") {
+                return <IsImmunogenicityPanel finding={epFinding} doseGroups={data.dose_groups} />;
+              }
+              return (
+                <DoseResponseChartPanel
+                  endpointLabel={activeEndpoint}
+                  findings={tableFindings}
+                  doseGroups={data.dose_groups}
+                  selectedDay={chartDay}
+                  leftTab={leftChartTab}
+                  onLeftTabChange={setLeftChartTab}
+                  hasRecovery={studyHasRecovery}
+                  recoveryData={recoveryData}
+                />
+              );
+            })()}
+          </ViewSection>
+        ) : scopeType === "specimen" && tableFindings.some(f => f.domain === "MI" || f.domain === "MA") ? (
+          /* Specimen-scoped → severity matrix */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <SeverityMatrix
               findings={tableFindings}
               doseGroups={data.dose_groups}
-              selectedDay={chartDay}
-              leftTab="dr"
-              onLeftTabChange={() => {}}
-              hasRecovery={false}
+              studyId={studyId}
+              specimen={scopeLabel}
             />
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
@@ -582,6 +698,8 @@ export function FindingsView() {
           effectSizeMethod={analytics.activeEffectSizeMethod}
           globalDay={activeEndpoint ? chartDay : undefined}
           globalDayLabels={dayMeta?.dayLabels}
+          recoveryData={recoveryData}
+          recoveryOverrides={recoveryOverrides}
         />
       ) : null}
       </div>

@@ -20,6 +20,7 @@ import {
   formatEffectSize,
   formatDoseShortLabel,
   getPValueHex,
+  getNeutralHeatColor,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
@@ -51,6 +52,11 @@ import {
   applyTableFilters,
 } from "./findings/table-filters";
 import type { TableFilterState } from "./findings/table-filters";
+import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
+import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";
+import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
+import { classifyFindingNature } from "@/lib/finding-nature";
+import { RecoveryOverrideDropdown } from "./panes/RecoveryOverrideDropdown";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -153,9 +159,13 @@ interface FindingsTableProps {
   globalDay?: number | null;
   /** Day labels from the global stepper ("terminal" | "peak") — applied to matching days in the combo-box. */
   globalDayLabels?: Map<number, string>;
+  /** Recovery comparison data for verdict column. */
+  recoveryData?: RecoveryComparisonResponse;
+  /** Recovery override annotations keyed by finding ID. */
+  recoveryOverrides?: Record<string, RecoveryOverrideAnnotation>;
 }
 
-export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels }: FindingsTableProps) {
+export function FindingsTable({ findings, doseGroups, signalScores, excludedEndpoints, onToggleExclude, activeEndpoint, activeDomain, activeGrouping, onOpenInTab, effectSizeMethod = "hedges-g", globalDay, globalDayLabels, recoveryData, recoveryOverrides }: FindingsTableProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { selectedFindingId, selectFinding } = useFindingSelection();
   const prefetch = usePrefetchFindingContext(studyId);
@@ -313,6 +323,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
 
   // Pre-compute whether CL domain exists (avoids capturing `findings` in columns useMemo)
   const hasCl = useMemo(() => findings.some(f => f.domain === "CL"), [findings]);
+  const hasMiMa = useMemo(() => findings.some(f => f.domain === "MI" || f.domain === "MA"), [findings]);
 
   // Global max for sparkline scaling: max |delta from control| (continuous) or max incidence (categorical)
   const globalSparkMax = useMemo(() => {
@@ -334,6 +345,12 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
     }
     return { continuous: maxCont, incidence: maxInc };
   }, [findings]);
+
+  // Recovery verdict map — worst-case verdict per finding for the Recovery column
+  const verdictMap = useMemo(
+    () => buildFindingVerdictMap(findings, recoveryData, recoveryOverrides),
+    [findings, recoveryData, recoveryOverrides],
+  );
 
   // Pipeline: panel filters → endpoint scope (when synced) → available days → day filter.
   const panelFilteredFindings = useMemo(() => {
@@ -512,6 +529,29 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      // Distribution + Temporality columns — MI/MA only, hidden when no MI/MA data
+      ...(hasMiMa ? [
+        col.display({
+          id: "distribution",
+          header: () => <span title="Dominant distribution qualifier (MI/MA only). Shows most frequent qualifier (>50%) or 'mixed'.">Dist</span>,
+          cell: (info) => {
+            const f = info.row.original;
+            if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">&mdash;</span>;
+            const val = f.modifier_profile?.dominant_distribution;
+            return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+          },
+        }),
+        col.display({
+          id: "temporality",
+          header: () => <span title="Dominant temporality qualifier (MI/MA only). Shows most frequent qualifier (>50%) or 'mixed'.">Temp</span>,
+          cell: (info) => {
+            const f = info.row.original;
+            if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">&mdash;</span>;
+            const val = f.modifier_profile?.dominant_temporality;
+            return <span className="text-muted-foreground">{val ?? "\u2014"}</span>;
+          },
+        }),
+      ] : []),
       ...doseGroups.map((dg, idx) => {
         // Short labels: control → "C", non-zero → numeric only
         const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
@@ -544,8 +584,17 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 </span>
               );
             }
+            // MI/MA: heat-color incidence cells by severity or incidence score
+            const isMiMa = f.domain === "MI" || f.domain === "MA";
+            const incidence = gs.incidence ?? 0;
+            const heat = isMiMa && dg.dose_level > 0 && incidence > 0
+              ? getNeutralHeatColor(gs.avg_severity != null ? Math.min(gs.avg_severity / 4, 1) : incidence)
+              : null;
             return (
-              <span className="font-mono">
+              <span
+                className={cn("font-mono", heat && "rounded px-1")}
+                style={heat ? { backgroundColor: heat.bg, color: heat.text } : undefined}
+              >
                 {gs.affected != null && gs.n ? `${gs.affected}/${gs.n}` : "\u2014"}{excludedMark}
               </span>
             );
@@ -639,7 +688,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("max_fold_change", {
-        header: () => <span title="Magnitude vs control — max fold change (continuous), max odds ratio (MA/CL/TF), avg severity (MI)">Magnitude</span>,
+        header: () => <span title="Magnitude vs control — fold change (continuous), incidence ratio (MA/CL), avg severity (MI). Control = 0% shows raw incidence.">Magnitude</span>,
         cell: (info) => {
           const f = info.row.original;
           // Domain-appropriate magnitude — mirrors pivoted view logic at endpoint level
@@ -649,9 +698,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             return <span className="font-mono text-muted-foreground" title={`avg severity = ${sev.toFixed(2)}`}>{sev.toFixed(1)}</span>;
           }
           if (f.data_type === "incidence") {
-            const inc = f.max_incidence;
-            if (inc == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-            return <span className="font-mono text-muted-foreground" title={`max incidence = ${(inc * 100).toFixed(0)}%`}>{`${(inc * 100).toFixed(0)}%`}</span>;
+            // Incidence ratio: max treated incidence / control incidence
+            const controlGs = f.group_stats.find(gs => gs.dose_level === 0);
+            const controlInc = controlGs?.incidence ?? 0;
+            const treatedGs = f.group_stats.filter(gs => gs.dose_level > 0);
+            const maxTreatedInc = treatedGs.reduce((max, gs) => Math.max(max, gs.incidence ?? 0), 0);
+            if (controlInc > 0 && maxTreatedInc > 0) {
+              const ratio = maxTreatedInc / controlInc;
+              return <span className="font-mono text-muted-foreground" title={`incidence ratio: ${(maxTreatedInc * 100).toFixed(0)}% / ${(controlInc * 100).toFixed(0)}% = ${ratio.toFixed(2)}`}>{`\u00d7${ratio.toFixed(1)}`}</span>;
+            }
+            // Control is zero — show max incidence as fallback (can't compute ratio)
+            if (maxTreatedInc > 0) {
+              return <span className="font-mono text-muted-foreground" title={`max incidence ${(maxTreatedInc * 100).toFixed(0)}% (control: 0%)`}>{`${(maxTreatedInc * 100).toFixed(0)}%`}</span>;
+            }
+            return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           }
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
@@ -703,8 +763,29 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           );
         },
       }),
+      ...(hasMiMa ? [col.display({
+        id: "nature",
+        header: () => <span title="Biological classification of the finding (MI/MA only). Informs recovery expectations and adversity interpretation.">Nature</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          if (f.domain !== "MI" && f.domain !== "MA") return <span className="text-muted-foreground">{"\u2014"}</span>;
+          const nature = classifyFindingNature(f.finding, null, f.specimen ?? null);
+          if (nature.nature === "unknown") return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          return <span className="text-muted-foreground" title={`${nature.nature} \u2014 reversibility: ${nature.expected_reversibility}`}>{nature.nature}</span>;
+        },
+      })] : []),
+      col.display({
+        id: "recovery",
+        header: () => <span className="text-muted-foreground" title="Recovery verdict (worst-case across dose groups)">Recovery</span>,
+        cell: (info) => {
+          const f = info.row.original;
+          const vi = verdictMap.get(f.id);
+          if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
+        },
+      }),
     ],
-    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations]
+    [doseGroups, signalScores, excludedEndpoints, onToggleExclude, hasCl, hasMiMa, clDayMode, sparkScale, globalSparkMax, effectSizeMethod, overrideActions.annotations, verdictMap]
   );
 
   // ─── Pivoted columns ──────────────────────────────────────
@@ -806,7 +887,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           if (r.data_type === "continuous") {
             return <span className="font-mono">{r.mean != null ? r.mean.toFixed(2) : "\u2014"}</span>;
           }
-          return <span className="font-mono">{r.affected != null && r.n ? `${r.affected}/${r.n}` : "\u2014"}</span>;
+          // MI/MA: heat-color incidence cells by per-dose avg severity or incidence
+          const isMiMa = r.domain === "MI" || r.domain === "MA";
+          const inc = r.incidence ?? 0;
+          const doseAvgSev = r.domain === "MI" ? r.fold_change : null; // fold_change = avg_severity for MI
+          const heat = isMiMa && r.dose_level > 0 && inc > 0
+            ? getNeutralHeatColor(doseAvgSev != null ? Math.min(doseAvgSev / 4, 1) : inc)
+            : null;
+          return (
+            <span
+              className={cn("font-mono", heat && "rounded px-1")}
+              style={heat ? { backgroundColor: heat.bg, color: heat.text } : undefined}
+            >
+              {r.affected != null && r.n ? `${r.affected}/${r.n}` : "\u2014"}
+            </span>
+          );
         },
       }),
       pivCol.display({
@@ -877,9 +972,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from
       // pivoted view — each row is a dose group, not an endpoint. These are shown in
-      // standard view only.
+      // standard view only. Recovery column IS included since it summarizes endpoint-level
+      // worst-case and helps scanning without switching layouts.
+      pivCol.display({
+        id: "recovery",
+        header: () => <span className="text-muted-foreground" title="Recovery verdict (worst-case across dose groups)">Recovery</span>,
+        cell: (info) => {
+          const f = info.row.original.original;
+          const vi = verdictMap.get(f.id);
+          if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
+        },
+      }),
     ],
-    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod]
+    [signalScores, excludedEndpoints, onToggleExclude, hasCl, clDayMode, effectSizeMethod, verdictMap]
   );
 
   // ─── Standard table instance ───────────────────────────────
@@ -1216,7 +1322,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               >
                 {row.getVisibleCells().map((cell) => {
                   const isAbsorber = cell.column.id === ABSORBER_ID;
-                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose";
+                  const isOverridable = cell.column.id === "pattern" || cell.column.id === "onset_dose" || cell.column.id === "recovery";
+                  const isOverridden = cell.column.id === "pattern"
+                    ? derivePatternState(row.original, overrideActions.annotations).patternChanged
+                    : cell.column.id === "onset_dose"
+                    ? deriveOnsetState(row.original, doseGroups, overrideActions.annotations).isOverridden
+                    : cell.column.id === "recovery"
+                    ? (verdictMap.get(row.original.id)?.isOverridden ?? false)
+                    : false;
                   const style = colStyle(cell.column.id);
                   return (
                     <td
@@ -1224,7 +1337,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                       className={cn(
                         "px-1.5 py-px",
                         isAbsorber && !columnSizing[ABSORBER_ID] && "overflow-hidden text-ellipsis whitespace-nowrap",
-                        isOverridable && "bg-violet-50/40",
+                        isOverridable && "bg-violet-100/50",
+                        isOverridden && "cell-overridable",
                       )}
                       style={style}
                       data-evidence=""

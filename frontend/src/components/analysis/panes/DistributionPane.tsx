@@ -146,10 +146,14 @@ export function DistributionPane({
   // Canonical death/mortality exclusion (shared with FindingsView, TimeCoursePane, etc.)
   const { excludedSubjects } = useScheduledOnly();
 
+  // OM domain: use specimen as test_code for per-organ data
+  const effectiveTestCode = finding.domain === "OM" && finding.specimen
+    ? finding.specimen
+    : finding.test_code;
   const { data: subjectData, isLoading, isError } = useTimecourseSubject(
     isVisible ? studyId : undefined,
     isVisible ? finding.domain : undefined,
-    isVisible ? finding.test_code : undefined,
+    isVisible ? effectiveTestCode : undefined,
     undefined, // all sexes
     includeRecovery,
   );

@@ -74,6 +74,24 @@ def effect_size_label(finding: dict) -> str:
     # generation-time default only.
     return "Hedges' g"
 
+
+def get_direction_of_concern(finding: dict) -> str | None:
+    """Return the expected toxicological direction of concern for a finding.
+
+    Uses BIOMARKER_MAP metadata keyed by test_code. Returns "up" or "down"
+    for LB/EG/VS/BG endpoints with known concern direction, None otherwise.
+
+    This encodes domain knowledge: e.g., RBC decrease is concerning (anemia),
+    ALT increase is concerning (hepatotoxicity). The observed `direction` field
+    on the finding may or may not align with the concern direction.
+    """
+    tc = finding.get("test_code", "")
+    bio = BIOMARKER_MAP.get(tc)
+    if bio:
+        return bio.get("direction_of_concern")
+    return None
+
+
 # LBTESTCD → biomarker metadata
 BIOMARKER_MAP: dict[str, dict] = {
     # Hepatic / Liver

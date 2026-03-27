@@ -235,8 +235,9 @@ function OverviewTab({
   const findingConsistency = useMemo(() => {
     const map = new Map<string, PatternClassificationResult>();
     for (const fs of findingSummaries) {
-      const trendP = trendsByFinding.get(fs.finding)?.ca_trend_p ?? null;
-      map.set(fs.finding, classifyFindingPatternWithSex(specimenData, fs.finding, trendP, null, false));
+      const trend = trendsByFinding.get(fs.finding);
+      const trendP = trend?.ca_trend_p ?? null;
+      map.set(fs.finding, classifyFindingPatternWithSex(specimenData, fs.finding, trendP, null, false, undefined, trend));
     }
     return map;
   }, [findingSummaries, specimenData, trendsByFinding]);

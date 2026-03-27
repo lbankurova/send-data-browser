@@ -29,5 +29,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "../shared"]
+  "include": ["src", "../shared"],
+  "exclude": ["src/**/_archived/**"]
 }

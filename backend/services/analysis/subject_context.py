@@ -601,7 +601,8 @@ def build_subject_context(study: StudyInfo) -> dict:
     ctx["SACRIFICE_DY"] = None
     if ds_df is not None and "USUBJID" in ds_df.columns:
         sacrifice = ds_df[_str_col(ds_df, "DSDECOD").str.upper().isin(
-            ["TERMINAL SACRIFICE", "SCHEDULED SACRIFICE", "EUTHANASIA"]
+            ["TERMINAL SACRIFICE", "SCHEDULED SACRIFICE", "EUTHANASIA",
+             "RECOVERY SACRIFICE"]
         )]
         if len(sacrifice) > 0 and "DSSTDY" in sacrifice.columns:
             sac_map = dict(zip(

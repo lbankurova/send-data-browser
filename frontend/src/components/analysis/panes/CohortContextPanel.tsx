@@ -1,8 +1,8 @@
 /**
  * CohortContextPanel — default context panel pane for the Cohort View.
  *
- * Shows cohort composition, shared findings detail, tissue battery status,
- * and tumor linkage summary.
+ * Sections ordered by insight priority: Affected Organs → Shared Findings →
+ * Tissue Battery → Tumor Linkage → Composition → BW Overview.
  */
 import { useMemo } from "react";
 import { useCohortMaybe } from "@/contexts/CohortContext";
@@ -68,28 +68,30 @@ export function CohortContextPanel() {
         <p className="mt-0.5 text-sm font-medium">{activeSubjects.length} subjects selected</p>
       </div>
 
-      {/* Composition */}
-      <div>
-        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Composition
-        </h4>
-        <div className="mt-1 space-y-0.5">
-          {[...doseBreakdown.entries()].sort((a, b) => a[0] - b[0]).map(([order, { label, count }]) => (
-            <div key={order} className="flex items-center gap-2 text-xs">
-              <span className="inline-block h-2 w-2 rounded-full" style={{ background: getDoseGroupColor(order) }} />
-              <span className="flex-1 truncate">{label}</span>
-              <span className="font-mono text-muted-foreground">{count}</span>
-            </div>
-          ))}
-          <div className="flex items-center gap-2 pt-1 text-xs">
-            <span style={{ color: SEX_COLOR.M }} className="font-medium">M {maleCount}</span>
-            <span className="text-muted-foreground">/</span>
-            <span style={{ color: SEX_COLOR.F }} className="font-medium">F {femaleCount}</span>
+      {/* 1. Affected organs — the overview insight */}
+      {organSignals.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Affected organs ({organSignals.length})
+          </h4>
+          <div className="mt-1 space-y-0.5">
+            {organSignals.map((o) => (
+              <div key={o.organName} className="flex items-center gap-2 text-xs">
+                <span className={
+                  o.worstSeverity === "adverse" ? "text-red-600" :
+                  o.worstSeverity === "warning" ? "text-amber-600" : "text-muted-foreground"
+                }>
+                  {"\u25CF"}
+                </span>
+                <span className="flex-1">{o.organName}</span>
+                <span className="font-mono text-muted-foreground">{o.findingCount}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Shared findings */}
+      {/* 2. Shared findings — key convergence insight */}
       {sharedFindings.length > 0 && (
         <div>
           <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -117,7 +119,7 @@ export function CohortContextPanel() {
         </div>
       )}
 
-      {/* Tissue battery */}
+      {/* 3. Tissue battery — data quality */}
       <div>
         <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Tissue battery
@@ -142,7 +144,7 @@ export function CohortContextPanel() {
         </div>
       </div>
 
-      {/* Tumor linkage */}
+      {/* 4. Tumor linkage */}
       {tumorCount > 0 && (
         <div>
           <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -154,30 +156,28 @@ export function CohortContextPanel() {
         </div>
       )}
 
-      {/* Organs summary */}
-      {organSignals.length > 0 && (
-        <div>
-          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Affected organs ({organSignals.length})
-          </h4>
-          <div className="mt-1 space-y-0.5">
-            {organSignals.map((o) => (
-              <div key={o.organName} className="flex items-center gap-2 text-xs">
-                <span className={
-                  o.worstSeverity === "adverse" ? "text-red-600" :
-                  o.worstSeverity === "warning" ? "text-amber-600" : "text-muted-foreground"
-                }>
-                  {"\u25CF"}
-                </span>
-                <span className="flex-1">{o.organName}</span>
-                <span className="font-mono text-muted-foreground">{o.findingCount}</span>
-              </div>
-            ))}
+      {/* 5. Composition — reference info (rail summary already shows this) */}
+      <div>
+        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Composition
+        </h4>
+        <div className="mt-1 space-y-0.5">
+          {[...doseBreakdown.entries()].sort((a, b) => a[0] - b[0]).map(([order, { label, count }]) => (
+            <div key={order} className="flex items-center gap-2 text-xs">
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: getDoseGroupColor(order) }} />
+              <span className="flex-1 truncate">{label}</span>
+              <span className="font-mono text-muted-foreground">{count}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-2 pt-1 text-xs">
+            <span style={{ color: SEX_COLOR.M }} className="font-medium">M {maleCount}</span>
+            <span className="text-muted-foreground">/</span>
+            <span style={{ color: SEX_COLOR.F }} className="font-medium">F {femaleCount}</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* BW sparkline */}
+      {/* 6. BW sparkline — supplementary */}
       {comparison?.body_weights && comparison.body_weights.length > 0 && (
         <div>
           <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

@@ -221,7 +221,10 @@ def _check_direction_coherence(
     return True
 
 
-def compute_corroboration(findings: list[dict]) -> list[dict]:
+def compute_corroboration(
+    findings: list[dict],
+    relrec_links: dict[tuple[str, str, int], list[tuple[str, int]]] | None = None,
+) -> list[dict]:
     """Add ``corroboration_status`` to each finding based on cross-domain evidence.
 
     Groups findings by sex, then for each finding:
@@ -231,6 +234,13 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
        domain in the same sex).
     3. SLA-16: Validates directional coherence across matched findings.
     4. Sets ``corroboration_status`` on each finding.
+    5. RELREC post-pass: if explicit pathologist-confirmed cross-domain linkages
+       exist (from RELREC domain), upgrade to ``"corroborated"`` regardless of
+       syndrome matching.
+
+    Args:
+        relrec_links: Optional map of (domain, seq) → [(linked_domain, linked_seq)].
+            These are explicit record-level linkages from the RELREC domain.
 
     **No auto-downgrade**: ``severity`` is NOT modified. The frontend (and
     eventually the user) decides what to do with the flag.
@@ -304,7 +314,64 @@ def compute_corroboration(findings: list[dict]) -> list[dict]:
         else:
             f["corroboration_status"] = "not_applicable"
 
+    # RELREC post-pass: explicit pathologist-confirmed cross-domain links
+    # upgrade corroboration_status unconditionally.  The A-2 gate in
+    # classification.py prevents zero-signal findings from being promoted.
+    if relrec_links:
+        apply_relrec_corroboration(findings, relrec_links)
+
     return findings
+
+
+def apply_relrec_corroboration(
+    findings: list[dict],
+    relrec_links: dict[tuple[str, str, int], list[tuple[str, int]]],
+) -> None:
+    """Upgrade corroboration_status for findings with explicit RELREC cross-domain links.
+
+    A RELREC link means a pathologist explicitly connected two records at submission
+    time — stronger evidence than statistical co-occurrence.  If a finding has a
+    RELREC link to a record in a different domain, and both records exist in the
+    findings list, set corroboration_status = "corroborated" on both.
+
+    Keys in relrec_links are (domain, subject_id, seq) to handle per-subject SEQ scoping.
+    """
+    # Build finding lookup: (domain, subject_id, seq) → finding
+    # Uses _relrec_subject_seqs which carries (subject_id, seq) pairs.
+    subj_seq_to_finding: dict[tuple[str, str, int], dict] = {}
+    for f in findings:
+        domain = f.get("domain", "")
+        subject_seqs = f.get("_relrec_subject_seqs")
+        if subject_seqs:
+            for subj_id, seq in subject_seqs:
+                subj_seq_to_finding[(domain, subj_id, seq)] = f
+        else:
+            # Fallback for findings without _relrec_subject_seqs
+            seqs = f.get("_relrec_seq")
+            if seqs:
+                for s in (seqs if isinstance(seqs, list) else [seqs]):
+                    subj_seq_to_finding[(domain, "", s)] = f
+
+    upgraded = 0
+    for (src_domain, src_subj, src_seq), targets in relrec_links.items():
+        src_finding = subj_seq_to_finding.get((src_domain, src_subj, src_seq))
+        if src_finding is None:
+            continue
+        for tgt_domain, tgt_seq in targets:
+            if tgt_domain == src_domain:
+                continue  # must be cross-domain
+            tgt_finding = subj_seq_to_finding.get((tgt_domain, src_subj, tgt_seq))
+            if tgt_finding is None:
+                continue
+            # Both findings exist and are cross-domain — upgrade both.
+            # Corroboration status is truthful: these ARE corroborated by
+            # explicit pathologist linkage.  The A-2 gate in classification.py
+            # prevents zero-signal findings from being promoted.
+            for f in (src_finding, tgt_finding):
+                if f.get("corroboration_status") != "corroborated":
+                    f["corroboration_status"] = "corroborated"
+                    f["_relrec_corroborated"] = True
+                    upgraded += 1
 
 
 # ---------------------------------------------------------------------------

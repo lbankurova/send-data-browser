@@ -1,143 +1,50 @@
 /**
- * Recovery Dumbbell Chart — side-by-side F/M panels showing
- * terminal → recovery effect size trajectories per dose group.
+ * Recovery Dumbbell Chart — vertical orientation.
  *
- * Renders as inline SVG within the RecoveryPane context panel.
- * Toolbar: show peak, show CI, sync axes, sort.
- * Footer: J-T trend, power note.
+ * Y-axis: signed Hedges' g (vs control).  X-axis: dose groups.
+ * F/M dots interleaved side-by-side within each dose column.
+ * Filled dot = terminal, open dot = recovery, connected by a
+ * verdict-colored segment (solid = p<0.05, dashed = p≥0.05).
+ *
+ * Below the chart: compact data table (one row per dose, F/M columns).
  */
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { useContainerWidth } from "@/hooks/useContainerWidth";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { DoseGroup } from "@/types/analysis";
 import {
   classifyContinuousRecovery,
   CONT_VERDICT_LABEL,
   formatGAbs,
+  formatGSigned,
   formatPctRecovered,
 } from "@/lib/recovery-verdict";
 import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStatMethods } from "@/hooks/useStatMethods";
-import { DoseLabel } from "@/components/ui/DoseLabel";
-import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
 
 // ── Types ────────────────────────────────────────────────
 
 type RecoveryRow = RecoveryComparisonResponse["rows"][number];
-
-
 
 interface RecoveryDumbbellChartProps {
   rows: RecoveryRow[];
   doseGroups?: DoseGroup[];
   terminalDay?: number | null;
   recoveryDay?: number | null;
-  /** When a dose row is clicked, emit the dose_level for scroll-to-text. */
   onDoseClick?: (doseLevel: number) => void;
 }
 
-// SLA-18: Use canonical harmonized verdict classes
-import { RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
-
-const CONT_VERDICT_CLASS: Record<ContinuousVerdictType, string> = {
-  resolved: RECOVERY_VERDICT_CLASS["resolved"],
-  reversed: RECOVERY_VERDICT_CLASS["reversed"],
-  overcorrected: RECOVERY_VERDICT_CLASS["overcorrected"] + " italic",
-  reversing: RECOVERY_VERDICT_CLASS["reversing"],
-  partial: "text-muted-foreground",   // continuous-specific: partial is subdued
-  persistent: RECOVERY_VERDICT_CLASS["persistent"],
-  worsening: RECOVERY_VERDICT_CLASS["worsening"],
-  not_assessed: RECOVERY_VERDICT_CLASS["not_assessed"],
-};
-
-function formatPCompact(p: number): string {
-  if (p < 0.001) return "<0.001";
-  return p.toFixed(3);
-}
-
-export function formatVerdictDesc(
-  terminalG: number | null,
-  recoveryG: number | null,
-  pctRecovered: number | null,
-  pValue: number | null,
-  effectSymbol: string,
-): string {
-  // Null recovery with non-null terminal — recovery data not available
-  if (recoveryG == null && terminalG != null && Math.abs(terminalG) >= 0.01) {
-    return `recovery data not available (terminal |${effectSymbol}|\u2009=\u2009${formatGAbs(terminalG)})`;
-  }
-
-  const pStr = pValue != null ? `, p\u2009=\u2009${formatPCompact(pValue)}` : "";
-
-  if (terminalG == null || Math.abs(terminalG) < 0.01) {
-    if (recoveryG != null && Math.abs(recoveryG) >= 0.5) {
-      return `delayed onset (|${effectSymbol}|\u2009=\u2009${formatGAbs(recoveryG)}${pStr})`;
-    }
-    return `no meaningful effect at either timepoint`;
-  }
-
-  const gTrajectory = `${formatGAbs(terminalG)}${effectSymbol} \u2192 ${formatGAbs(recoveryG ?? 0)}${effectSymbol}`;
-  const rG = Math.abs(recoveryG ?? 0);
-  const tG = Math.abs(terminalG);
-  const dir = rG <= tG ? "\u2193" : "\u2191";
-
-  if (pctRecovered != null) {
-    if (Math.abs(pctRecovered) > 999) {
-      return `${dir}\u2009>10\u00d7 (${gTrajectory}${pStr})`;
-    }
-    return `${dir}\u2009${formatPctRecovered(pctRecovered)} (${gTrajectory}${pStr})`;
-  }
-
-  // Worsening without pctRecovered
-  const ratio = tG > 0.01 ? (rG / tG).toFixed(1) : null;
-  return ratio ? `${dir}\u2009${ratio}\u00d7 (${gTrajectory}${pStr})` : `${dir} (${gTrajectory}${pStr})`;
-}
-
-// ── Constants ────────────────────────────────────────────
-
-const ROW_HEIGHT = 22;
-const DOT_R = 2.5;
-const ARROW_SIZE = 5;
-const CONNECTOR_COLOR = "#94A3B8"; // slate-400
-const ZERO_LINE_COLOR = "#CBD5E1"; // slate-300
-
-
-// ── Helpers ──────────────────────────────────────────────
-
-/** Connector visual tier by p-value. Weight encodes significance — no dashes. */
-export function connectorStyle(p: number | null): {
-  opacity: number;
-  width: number;
-} {
-  if (p == null) return { opacity: 0.7, width: 0.5 };
-  if (p < 0.05) return { opacity: 1.0, width: 1.5 };
-  if (p < 0.10) return { opacity: 0.8, width: 1 };
-  return { opacity: 0.7, width: 0.5 };
-}
-
-/** Check if a row qualifies for peak marker. */
-export function hasPeakQualifier(row: RecoveryRow): boolean {
-  return (
-    row.peak_effect != null &&
-    row.terminal_effect != null &&
-    Math.abs(row.peak_effect) > Math.abs(row.terminal_effect) * 1.5 &&
-    Math.abs(row.peak_effect) > 1.0 &&
-    Math.abs(row.terminal_effect) >= 0.5
-  );
-}
-
-// ── Processed row for rendering ──────────────────────────
+// ── Processed row ────────────────────────────────────────
 
 export interface ChartRow {
   row: RecoveryRow;
   doseLabel: string;
   verdict: ContinuousVerdictType;
   confidence?: "adequate" | "low";
-  terminalVal: number | null; // |g| at terminal (always ≥ 0)
-  recoveryVal: number | null; // |g| at recovery; negative when overcorrected (crossed control)
-  peakVal: number | null;     // |g| at peak (always ≥ 0)
+  terminalVal: number | null; // signed g at terminal
+  recoveryVal: number | null; // signed g at recovery
   isEdge: "insufficient_n" | "no_concurrent_control" | null;
 }
 
@@ -152,579 +59,160 @@ export function buildChartRows(
         ? `${dg.dose_value} ${dg.dose_unit ?? ""}`.trim()
         : `Dose ${row.dose_level}`;
 
-    // Edge cases
     if (row.insufficient_n) {
       return {
-        row,
-        doseLabel,
+        row, doseLabel,
         verdict: "not_assessed" as ContinuousVerdictType,
-        terminalVal: null,
-        recoveryVal: null,
-        peakVal: null,
+        terminalVal: null, recoveryVal: null,
         isEdge: "insufficient_n",
       };
     }
     if (row.no_concurrent_control) {
       return {
-        row,
-        doseLabel,
+        row, doseLabel,
         verdict: "not_assessed" as ContinuousVerdictType,
-        terminalVal: null,
-        recoveryVal: null,
-        peakVal: null,
+        terminalVal: null, recoveryVal: null,
         isEdge: "no_concurrent_control",
       };
     }
 
-    const v = classifyContinuousRecovery(row.terminal_effect, row.effect_size, row.treated_n, row.control_n);
-
-    // Chart plots |g|. Overcorrected recovery crosses zero (negative) to show
-    // the effect reversed past control. All other values are absolute.
-    const isOvercorrected = v.verdict === "overcorrected";
+    // Prefer same-arm terminal (Option D, BUG-21) — eliminates cross-arm
+    // control baseline shift.  Falls back to cross-arm when unavailable.
+    const terminalG = row.terminal_effect_same_arm ?? row.terminal_effect;
+    const v = classifyContinuousRecovery(terminalG, row.effect_size, row.treated_n, row.control_n);
 
     return {
-      row,
-      doseLabel,
+      row, doseLabel,
       verdict: v.verdict,
       confidence: v.confidence,
-      terminalVal: row.terminal_effect != null ? Math.abs(row.terminal_effect) : null,
-      recoveryVal: row.effect_size != null
-        ? (isOvercorrected ? -Math.abs(row.effect_size) : Math.abs(row.effect_size))
-        : null,
-      peakVal: row.peak_effect != null ? Math.abs(row.peak_effect) : null,
+      terminalVal: terminalG ?? null,
+      recoveryVal: row.effect_size ?? null,
       isEdge: null,
     };
   });
 
   result.sort((a, b) => a.row.dose_level - b.row.dose_level);
-
   return result;
 }
 
-// ── SVG Panel ────────────────────────────────────────────
+// ── Dose-response consistency check (Option C, BUG-21) ──
 
-interface PanelProps {
-  chartRows: ChartRow[];
-  xMax: number;
-  xMin: number;
-  sex: string;
-  effectSymbol: string;
-  terminalDay: number | null;
-  hoveredDose: number | null;
-  onHoverDose: (dose: number | null) => void;
-  onClickDose: (dose: number) => void;
+/**
+ * Detect when all evaluated dose groups for a sex show the same directional
+ * recovery effect (all positive or all negative g), indicating a dose-consistent
+ * pattern that per-dose verdicts alone may not communicate.
+ *
+ * Returns a human-readable note per sex, or null if no pattern detected.
+ */
+function checkDoseConsistency(
+  chartRowsBySex: Record<string, ChartRow[]>,
+  sexes: string[],
+): Map<string, string> {
+  const notes = new Map<string, string>();
+  for (const sex of sexes) {
+    const rows = (chartRowsBySex[sex] ?? []).filter(
+      (cr) => !cr.isEdge && cr.recoveryVal != null,
+    );
+    if (rows.length < 2) continue;
+
+    const signs = rows.map((cr) => Math.sign(cr.recoveryVal!));
+    const allPositive = signs.every((s) => s > 0);
+    const allNegative = signs.every((s) => s < 0);
+    if (!allPositive && !allNegative) continue;
+
+    // Check if any verdict contradicts the consistent direction
+    // (e.g., "resolved"/"reversed" when all doses show same-direction effect)
+    const positiveVerdicts = new Set<ContinuousVerdictType>(["reversed", "partially_reversed"]);
+    const negativeVerdicts = new Set<ContinuousVerdictType>(["progressing", "persistent"]);
+    const hasPositive = rows.some((cr) => positiveVerdicts.has(cr.verdict));
+    const hasNegative = rows.some((cr) => negativeVerdicts.has(cr.verdict));
+
+    if (hasPositive && hasNegative) {
+      const dir = allNegative ? "below" : "above";
+      notes.set(sex, `All dose groups ${dir} control at recovery (dose-consistent pattern)`);
+    }
+  }
+  return notes;
 }
 
-const LARGE_EFFECT_THRESHOLD = 0.8;
-const LARGE_EFFECT_COLOR = "#7C3AED"; // violet-600
+// ── Helpers ──────────────────────────────────────────────
 
-function DumbbellPanel({
-  chartRows,
-  xMax,
-  xMin,
-  sex,
-  effectSymbol,
-  terminalDay,
-  hoveredDose,
-  onHoverDose,
-  onClickDose,
-}: PanelProps) {
-  const [containerRef, chartWidth] = useContainerWidth();
-  const marginLeft = 2;
-  const marginRight = 6;
-  const plotWidth = chartWidth - marginLeft - marginRight;
-  const chartHeight = chartRows.length * ROW_HEIGHT + 4;
+function computeNiceTicks(min: number, max: number, maxTicks = 6): number[] {
+  const range = max - min;
+  if (range === 0) return [min];
+  const rawStep = range / maxTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const candidates = [1, 2, 5, 10];
+  const step = mag * (candidates.find((c) => c * mag >= rawStep) ?? 10);
+  const ticks: number[] = [];
+  const start = Math.ceil(min / step) * step;
+  for (let v = start; v <= max + step * 0.001; v += step) {
+    ticks.push(Math.round(v * 1e10) / 1e10);
+  }
+  return ticks;
+}
 
-  // Scale: value → x position
-  const range = xMax - xMin;
-  const scale = (val: number) => {
-    if (range === 0) return marginLeft + plotWidth / 2;
-    return marginLeft + ((val - xMin) / range) * plotWidth;
-  };
+function formatPCompact(p: number): string {
+  if (p < 0.001) return "<0.001";
+  return p.toFixed(3);
+}
 
-  const zeroX = scale(0);
+/** Exported for RecoveryPane verdict descriptions. */
+export function formatVerdictDesc(
+  terminalG: number | null,
+  recoveryG: number | null,
+  pctRecovered: number | null,
+  pValue: number | null,
+  effectSymbol: string,
+): string {
+  if (recoveryG == null && terminalG != null && Math.abs(terminalG) >= 0.01) {
+    return `recovery data not available (terminal |${effectSymbol}|\u2009=\u2009${formatGAbs(terminalG)})`;
+  }
+  const pStr = pValue != null ? `, p\u2009=\u2009${formatPCompact(pValue)}` : "";
+  if (terminalG == null || Math.abs(terminalG) < 0.01) {
+    if (recoveryG != null && Math.abs(recoveryG) >= 0.5) {
+      return `delayed onset (|${effectSymbol}|\u2009=\u2009${formatGAbs(recoveryG)}${pStr})`;
+    }
+    return `no meaningful effect at either timepoint`;
+  }
+  const gTrajectory = `${formatGAbs(terminalG)}${effectSymbol} \u2192 ${formatGAbs(recoveryG ?? 0)}${effectSymbol}`;
+  const rG = Math.abs(recoveryG ?? 0);
+  const tG = Math.abs(terminalG);
+  const dir = rG <= tG ? "\u2193" : "\u2191";
+  if (pctRecovered != null) {
+    if (Math.abs(pctRecovered) > 999) return `${dir}\u2009>10\u00d7 (${gTrajectory}${pStr})`;
+    return `${dir}\u2009${formatPctRecovered(pctRecovered)} (${gTrajectory}${pStr})`;
+  }
+  const ratio = tG > 0.01 ? (rG / tG).toFixed(1) : null;
+  return ratio ? `${dir}\u2009${ratio}\u00d7 (${gTrajectory}${pStr})` : `${dir} (${gTrajectory}${pStr})`;
+}
 
-  // +0.8 threshold (always shown when in range)
-  const thresholdX = scale(LARGE_EFFECT_THRESHOLD);
-  const showThresholdLine = LARGE_EFFECT_THRESHOLD >= xMin && LARGE_EFFECT_THRESHOLD <= xMax;
+export function connectorStyle(p: number | null): { opacity: number; width: number } {
+  if (p == null) return { opacity: 0.7, width: 0.5 };
+  if (p < 0.05) return { opacity: 1.0, width: 1.5 };
+  if (p < 0.10) return { opacity: 0.8, width: 1 };
+  return { opacity: 0.7, width: 0.5 };
+}
 
-  // -0.8 mirror threshold — only when overcorrection is present in this panel
-  const hasOvercorrection = chartRows.some(cr => !cr.isEdge && cr.recoveryVal != null && cr.recoveryVal < 0);
-  const negThresholdX = scale(-LARGE_EFFECT_THRESHOLD);
-  const showNegThresholdLine = hasOvercorrection && -LARGE_EFFECT_THRESHOLD >= xMin && -LARGE_EFFECT_THRESHOLD <= xMax;
-
-  const MIN_LINE_DIST = 8; // px in viewBox units — suppress marker lines too close to references
-
+/** Re-exported for tests. */
+export function hasPeakQualifier(row: RecoveryRow): boolean {
   return (
-    <div ref={containerRef} className="flex-1 min-w-0 flex flex-col">
-      {/* Sex header */}
-      <div className="text-center text-[10px] font-medium text-muted-foreground mb-0.5">
-        {sex}
-      </div>
-
-      <svg
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="block w-full"
-        style={{ height: chartHeight, overflow: "visible" }}
-      >
-        {/* Zero reference line (control) */}
-        <line
-          x1={zeroX}
-          y1={0}
-          x2={zeroX}
-          y2={chartHeight}
-          stroke={ZERO_LINE_COLOR}
-          strokeWidth={1.5}
-        />
-
-        {/* Large effect threshold line (+0.8) */}
-        {showThresholdLine && (
-          <line
-            x1={thresholdX}
-            y1={0}
-            x2={thresholdX}
-            y2={chartHeight}
-            stroke={LARGE_EFFECT_COLOR}
-            strokeWidth={0.75}
-            strokeDasharray="3,3"
-            opacity={0.4}
-          />
-        )}
-
-        {/* Mirror threshold line (-0.8) — only when overcorrection present */}
-        {showNegThresholdLine && (
-          <line
-            x1={negThresholdX}
-            y1={0}
-            x2={negThresholdX}
-            y2={chartHeight}
-            stroke={LARGE_EFFECT_COLOR}
-            strokeWidth={0.75}
-            strokeDasharray="3,3"
-            opacity={0.4}
-          />
-        )}
-
-        {/* Rows */}
-        {chartRows.map((cr, i) => {
-          const cy = i * ROW_HEIGHT + ROW_HEIGHT / 2;
-          const isHovered = hoveredDose === cr.row.dose_level;
-
-          // Edge case: insufficient_n
-          if (cr.isEdge === "insufficient_n") {
-            return (
-              <g key={cr.row.dose_level}>
-                {isHovered && (
-                  <rect
-                    x={0}
-                    y={cy - ROW_HEIGHT / 2}
-                    width={chartWidth}
-                    height={ROW_HEIGHT}
-                    fill="currentColor"
-                    opacity={0.03}
-                  />
-                )}
-                <circle
-                  cx={zeroX}
-                  cy={cy - 4}
-                  r={3}
-                  fill="#D1D5DB"
-                  opacity={0.5}
-                >
-                  <title>n={cr.row.treated_n ?? 1} — insufficient for classification</title>
-                </circle>
-              </g>
-            );
-          }
-
-          // Edge case: no_concurrent_control
-          if (cr.isEdge === "no_concurrent_control") {
-            return (
-              <g key={cr.row.dose_level}>
-                {isHovered && (
-                  <rect
-                    x={0}
-                    y={cy - ROW_HEIGHT / 2}
-                    width={chartWidth}
-                    height={ROW_HEIGHT}
-                    fill="currentColor"
-                    opacity={0.03}
-                  />
-                )}
-                <text
-                  x={zeroX}
-                  y={cy - 4}
-                  fontSize={8}
-                  fill="#D97706"
-                  dominantBaseline="middle"
-                  textAnchor="middle"
-                >
-                  ⚠
-                </text>
-              </g>
-            );
-          }
-
-          // Normal row
-          const tVal = cr.terminalVal ?? 0;
-          const rVal = cr.recoveryVal ?? 0;
-          const tx = scale(tVal);
-          const rx = scale(rVal);
-          const cs = connectorStyle(cr.row.p_value);
-          const isLowConf = cr.confidence === "low";
-          const recovering = Math.abs(rVal) < Math.abs(tVal); // effect magnitude shrinking = recovering
-          const arrowDir = rx < tx ? -1 : 1; // arrow points in direction of recovery position
-
-          // Terminal → recovery tooltip
-          const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
-          const deltaDir = recovering ? "dropped" : "grew";
-          const vTip = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size, cr.row.treated_n, cr.row.control_n);
-          const pctStr = vTip.pctRecovered != null ? formatPctRecovered(vTip.pctRecovered) : "";
-          const lowNStr = isLowConf ? ` · low N (n=${cr.row.treated_n ?? "?"})` : "";
-          const recoveryTooltip = `${verdictStr} · Δ ${deltaDir} ${pctStr} (${effectSymbol}: ${formatGAbs(cr.row.terminal_effect ?? 0)} → ${formatGAbs(cr.row.effect_size ?? 0)})${lowNStr}`;
-
-          // Peak trajectory tooltip
-          const showPeak = cr.peakVal != null && hasPeakQualifier(cr.row);
-          let peakTooltip = "";
-          if (showPeak) {
-            const peakG = Math.abs(cr.row.peak_effect!);
-            const termG = Math.abs(cr.row.terminal_effect ?? 0);
-            const recG = Math.abs(cr.row.effect_size ?? 0);
-            const pDay = cr.row.peak_day ?? "?";
-            const tDay = cr.row.terminal_day ?? "?";
-            const rDay = cr.row.recovery_day ?? "?";
-            const pctDosing = peakG > 0.01 ? Math.round(((peakG - termG) / peakG) * 100) : 0;
-            const pctRecovery = peakG > 0.01 ? Math.round(((termG - recG) / peakG) * 100) : 0;
-            const recDir = recG <= termG ? "resolved" : "worsened";
-            peakTooltip =
-              `Peak (D${pDay}): ${formatGAbs(peakG)}${effectSymbol} → ` +
-              `Terminal (D${tDay}): ${formatGAbs(termG)}${effectSymbol} → ` +
-              `Recovery (D${rDay}): ${formatGAbs(recG)}${effectSymbol}\n` +
-              `╰── ${pctDosing}% resolved during dosing ─╯ ╰── ${Math.abs(pctRecovery)}% ${recDir} during recovery ─╯`;
-          }
-
-          // Marker lines: thin verticals at terminal, recovery, peak positions
-          // Suppressed when too close to zero or |g|=0.8 reference lines
-          const isTooClose = (px: number) =>
-            Math.abs(px - zeroX) < MIN_LINE_DIST ||
-            (showThresholdLine && Math.abs(px - thresholdX) < MIN_LINE_DIST) ||
-            (showNegThresholdLine && Math.abs(px - negThresholdX) < MIN_LINE_DIST);
-          const markerLines: { x: number; color: string }[] = [];
-          if (!isTooClose(tx)) markerLines.push({ x: tx, color: CONNECTOR_COLOR });
-          if (!isTooClose(rx)) markerLines.push({ x: rx, color: CONNECTOR_COLOR });
-          if (showPeak) {
-            const px = scale(cr.peakVal!);
-            if (!isTooClose(px)) markerLines.push({ x: px, color: "#D97706" });
-          }
-
-          return (
-            <g
-              key={cr.row.dose_level}
-              onMouseEnter={() => onHoverDose(cr.row.dose_level)}
-              onMouseLeave={() => onHoverDose(null)}
-              onClick={() => onClickDose(cr.row.dose_level)}
-              className="cursor-pointer"
-            >
-              {/* Row hover highlight */}
-              {isHovered && (
-                <rect
-                  x={0}
-                  y={cy - ROW_HEIGHT / 2}
-                  width={chartWidth}
-                  height={ROW_HEIGHT}
-                  fill="currentColor"
-                  opacity={0.03}
-                />
-              )}
-
-              {/* Per-row marker lines at terminal/recovery/peak positions */}
-              {markerLines.map((ml, mi) => (
-                <line
-                  key={mi}
-                  x1={ml.x}
-                  y1={cy - ROW_HEIGHT / 2}
-                  x2={ml.x}
-                  y2={cy + ROW_HEIGHT / 2}
-                  stroke={ml.color}
-                  strokeWidth={0.5}
-                  opacity={0.15}
-                />
-              ))}
-
-              {/* Peak group — separate tooltip */}
-              {showPeak && (
-                <g>
-                  <title>{peakTooltip}</title>
-                  {/* Invisible wider hit area for dotted line */}
-                  <line
-                    x1={scale(cr.peakVal!)}
-                    y1={cy - 4}
-                    x2={tx}
-                    y2={cy - 4}
-                    stroke="transparent"
-                    strokeWidth={8}
-                  />
-                  {/* Dotted connector from peak to terminal */}
-                  <line
-                    x1={scale(cr.peakVal!)}
-                    y1={cy - 4}
-                    x2={tx}
-                    y2={cy - 4}
-                    stroke="#D97706"
-                    strokeWidth={0.5}
-                    strokeDasharray="2,3"
-                    opacity={0.4}
-                  />
-                  {/* Triangle marker — amber outline, no fill */}
-                  <polygon
-                    points={`${scale(cr.peakVal!)},${cy - 4 - 3.5} ${scale(cr.peakVal!) - 3},${cy - 4 + 2} ${scale(cr.peakVal!) + 3},${cy - 4 + 2}`}
-                    fill="none"
-                    stroke="#D97706"
-                    strokeWidth={1}
-                    opacity={0.6}
-                  />
-                </g>
-              )}
-
-              {/* Terminal → Recovery group — separate tooltip */}
-              <g>
-                <title>{recoveryTooltip}</title>
-                {/* Invisible wider hit area for connector line */}
-                <line
-                  x1={tx}
-                  y1={cy - 4}
-                  x2={rx}
-                  y2={cy - 4}
-                  stroke="transparent"
-                  strokeWidth={8}
-                />
-                {/* Connector line: terminal → recovery */}
-                <line
-                  x1={tx}
-                  y1={cy - 4}
-                  x2={rx}
-                  y2={cy - 4}
-                  stroke={CONNECTOR_COLOR}
-                  strokeWidth={cs.width}
-                  opacity={cs.opacity}
-                  {...(isLowConf ? { strokeDasharray: "3,2" } : {})}
-                />
-
-                {/* Terminal dot (filled) */}
-                <circle
-                  cx={tx}
-                  cy={cy - 4}
-                  r={DOT_R}
-                  fill={CONNECTOR_COLOR}
-                />
-
-                {/* Vertical pipe at recovery g value */}
-                <line
-                  x1={rx}
-                  y1={cy - 4 - DOT_R}
-                  x2={rx}
-                  y2={cy - 4 + DOT_R}
-                  stroke={CONNECTOR_COLOR}
-                  strokeWidth={1.5}
-                  opacity={cs.opacity}
-                />
-
-                {/* Arrow tip at recovery end */}
-                <polygon
-                  points={
-                    arrowDir > 0
-                      ? `${rx - ARROW_SIZE},${cy - 4 - ARROW_SIZE / 2} ${rx},${cy - 4} ${rx - ARROW_SIZE},${cy - 4 + ARROW_SIZE / 2}`
-                      : `${rx + ARROW_SIZE},${cy - 4 - ARROW_SIZE / 2} ${rx},${cy - 4} ${rx + ARROW_SIZE},${cy - 4 + ARROW_SIZE / 2}`
-                  }
-                  fill={CONNECTOR_COLOR}
-                  opacity={cs.opacity}
-                />
-              </g>
-
-            </g>
-          );
-        })}
-
-      </svg>
-
-      {/* HTML labels below chart — CSS pixels, not SVG viewBox units */}
-      <div className="relative h-3">
-        {showNegThresholdLine && (
-          <span
-            className="absolute text-[10px] leading-none whitespace-nowrap"
-            style={{
-              left: `${(negThresholdX / chartWidth) * 100}%`,
-              transform: "translateX(-100%)",
-              color: LARGE_EFFECT_COLOR,
-              opacity: 0.6,
-            }}
-          >
-            −0.8
-          </span>
-        )}
-        <span
-          className="absolute text-[10px] text-muted-foreground/50 leading-none whitespace-nowrap"
-          style={{
-            left: `${(zeroX / chartWidth) * 100}%`,
-            transform: "translateX(-100%)",
-          }}
-          title={terminalDay != null ? `Control at terminal D${terminalDay}` : "Control"}
-        >
-          C{terminalDay != null ? `: D${terminalDay}` : ""}
-        </span>
-        {showThresholdLine && (
-          <span
-            className="absolute text-[10px] leading-none whitespace-nowrap"
-            style={{
-              left: `${(thresholdX / chartWidth) * 100}%`,
-              color: LARGE_EFFECT_COLOR,
-              opacity: 0.6,
-            }}
-          >
-            0.8
-          </span>
-        )}
-      </div>
-
-      {/* Verdict notes per dose row */}
-      <div className="space-y-0 mt-2">
-        {chartRows.map((cr) => {
-          if (cr.isEdge === "insufficient_n") {
-            return (
-              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
-                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
-                    title={cr.doseLabel}
-                  />
-                  <span className="text-muted-foreground/60">
-                    n={cr.row.treated_n ?? 1} — insufficient
-                  </span>
-                </span>
-              </div>
-            );
-          }
-          if (cr.isEdge === "no_concurrent_control") {
-            return (
-              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
-                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
-                    title={cr.doseLabel}
-                  />
-                  <span className="text-muted-foreground">no concurrent control</span>
-                </span>
-              </div>
-            );
-          }
-          const v = classifyContinuousRecovery(cr.row.terminal_effect, cr.row.effect_size, cr.row.treated_n, cr.row.control_n);
-
-          // Both below trivial threshold — no meaningful effect
-          const tAbs = cr.row.terminal_effect != null ? Math.abs(cr.row.terminal_effect) : 0;
-          const rAbs = cr.row.effect_size != null ? Math.abs(cr.row.effect_size) : 0;
-          if (tAbs < 0.5 && rAbs < 0.5) {
-            return (
-              <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
-                    style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
-                    title={cr.doseLabel}
-                  />
-                  <span className="text-muted-foreground/60">
-                    No meaningful effect at either timepoint (|{effectSymbol}|&lt;0.5)
-                  </span>
-                </span>
-              </div>
-            );
-          }
-
-          const desc = formatVerdictDesc(cr.row.terminal_effect, cr.row.effect_size, v.pctRecovered, cr.row.p_value, effectSymbol);
-          return (
-            <div key={cr.row.dose_level} className="text-[10px] leading-relaxed">
-              <span className="inline-flex items-center gap-1">
-                <span
-                  className="inline-block w-[4px] h-[4px] rounded-full shrink-0"
-                  style={{ backgroundColor: getDoseGroupColor(cr.row.dose_level) }}
-                  title={cr.doseLabel}
-                />
-                <span className={`inline-block w-[70px] shrink-0 ${CONT_VERDICT_CLASS[cr.verdict]}`}>
-                  {CONT_VERDICT_LABEL[cr.verdict]}{cr.confidence === "low" ? <span className="cursor-help" title="Low confidence: n < 5 in recovery group"> *</span> : ""}:
-                </span>
-                <span className="text-muted-foreground">{desc}</span>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* §4.3: Control group drift warning — text note when control shifted >15% */}
-      {(() => {
-        const withCtrl = chartRows.filter(
-          (cr) =>
-            !cr.isEdge &&
-            cr.row.control_mean_terminal != null &&
-            cr.row.control_mean != null &&
-            Math.abs(cr.row.control_mean_terminal!) > 0.001,
-        );
-        if (withCtrl.length === 0) return null;
-        const row0 = withCtrl[0].row;
-        const ctrlTerminal = row0.control_mean_terminal!;
-        const ctrlRecovery = row0.control_mean!;
-        const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
-        if (driftPct <= 15) return null;
-        return (
-          <div className="text-[10px] text-muted-foreground/70 mt-1">
-            Control group shifted {Math.round(driftPct)}% between terminal and recovery
-            ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}).
-            Interpretation may be affected.
-          </div>
-        );
-      })()}
-
-    </div>
+    row.peak_effect != null &&
+    row.terminal_effect != null &&
+    Math.abs(row.peak_effect) > Math.abs(row.terminal_effect) * 1.5 &&
+    Math.abs(row.peak_effect) > 1.0 &&
+    Math.abs(row.terminal_effect) >= 0.5
   );
 }
 
-// ── Axis scaling ─────────────────────────────────────────
+// ── Layout constants ─────────────────────────────────────
 
-/** Compute global xMax and per-sex xMin for the dumbbell chart axis. */
-export function computeAxisBounds(
-  chartRowsBySex: Record<string, ChartRow[]>,
-  sexes: string[],
-): { globalXMax: number; xMinBySex: Record<string, number> } {
-  let mx = 0;
-  const mins: Record<string, number> = {};
-  for (const s of sexes) {
-    let mn = 0;
-    for (const cr of chartRowsBySex[s] ?? []) {
-      if (cr.isEdge) continue;
-      const vals = [cr.terminalVal, cr.recoveryVal];
-      if (cr.peakVal != null && hasPeakQualifier(cr.row)) {
-        vals.push(cr.peakVal);
-      }
-      for (const v of vals) {
-        if (v != null) {
-          mn = Math.min(mn, v);
-          mx = Math.max(mx, v);
-        }
-      }
-    }
-    mins[s] = mn;
-  }
-  const pad = mx * 0.1 || 0.5;
-  return {
-    globalXMax: mx + pad,
-    xMinBySex: Object.fromEntries(
-      Object.entries(mins).map(([s, mn]) => {
-        const negPad = mn < 0 ? Math.abs(mn) * 0.1 || 0.1 : 0;
-        return [s, mn - negPad];
-      }),
-    ),
-  };
-}
+const PLOT_TOP = 8;
+const PLOT_BOTTOM = 28;
+const LEFT_MARGIN = 40;
+const PLOT_RIGHT = 8;
+const DOT_R = 3;
+const ZERO_LINE_COLOR = "var(--border)";
 
 // ── Main component ───────────────────────────────────────
 
@@ -741,128 +229,565 @@ export function RecoveryDumbbellChart({
 
   const [hoveredDose, setHoveredDose] = useState<number | null>(null);
 
+  // Resize observer for the SVG
+  const [dims, setDims] = useState({ width: 400, height: 220 });
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const measuredRef = useCallback((node: SVGSVGElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (node) {
+      const observer = new ResizeObserver((entries) => {
+        const r = entries[0]?.contentRect;
+        if (r && r.width > 0 && r.height > 0) {
+          setDims({ width: Math.round(r.width), height: Math.round(r.height) });
+        }
+      });
+      observer.observe(node);
+      observerRef.current = observer;
+      const rect = node.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setDims({ width: Math.round(rect.width), height: Math.round(rect.height) });
+      }
+    }
+  }, []);
+
   // Split rows by sex (F before M)
   const sexes = useMemo(() => [...new Set(rows.map((r) => r.sex))].sort(), [rows]);
+  const multiSex = sexes.length > 1;
 
   const rowsBySex = useMemo(() => {
     const map: Record<string, RecoveryRow[]> = {};
-    for (const s of sexes) {
-      map[s] = rows.filter((r) => r.sex === s);
-    }
+    for (const s of sexes) map[s] = rows.filter((r) => r.sex === s);
     return map;
   }, [rows, sexes]);
 
   const chartRowsBySex = useMemo(() => {
     const map: Record<string, ChartRow[]> = {};
-    for (const s of sexes) {
-      map[s] = buildChartRows(rowsBySex[s], doseGroups);
-    }
+    for (const s of sexes) map[s] = buildChartRows(rowsBySex[s], doseGroups);
     return map;
   }, [rowsBySex, sexes, doseGroups]);
 
-  // Global xMax (shared scale for F vs M comparison on the positive/effect side).
-  // Per-sex xMin: only extend left of zero when that panel has overcorrection.
-  const { globalXMax, xMinBySex } = useMemo(
-    () => computeAxisBounds(chartRowsBySex, sexes),
+  // Lookup: sex_doseLevel → ChartRow
+  const chartRowLookup = useMemo(() => {
+    const map = new Map<string, ChartRow>();
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) map.set(`${s}_${cr.row.dose_level}`, cr);
+    }
+    return map;
+  }, [chartRowsBySex, sexes]);
+
+  // Union of dose levels
+  const allDoseLevels = useMemo(() => {
+    const levels = new Set<number>();
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) levels.add(cr.row.dose_level);
+    }
+    return [...levels].sort((a, b) => a - b);
+  }, [chartRowsBySex, sexes]);
+
+  // Dose labels lookup
+  const doseLabelMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) {
+        if (!map.has(cr.row.dose_level)) map.set(cr.row.dose_level, cr.doseLabel);
+      }
+    }
+    return map;
+  }, [chartRowsBySex, sexes]);
+
+  // Y-axis bounds — signed, always include 0
+  const [yMin, yMax] = useMemo(() => {
+    let lo = 0, hi = 0;
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) {
+        if (cr.isEdge) continue;
+        for (const v of [cr.terminalVal, cr.recoveryVal]) {
+          if (v != null) {
+            lo = Math.min(lo, v);
+            hi = Math.max(hi, v);
+          }
+        }
+        if (hasPeakQualifier(cr.row)) {
+          const pv = cr.row.peak_effect!;
+          lo = Math.min(lo, pv);
+          hi = Math.max(hi, pv);
+        }
+      }
+    }
+    const pad = Math.max((hi - lo) * 0.1, 0.3);
+    return [lo - pad, hi + pad];
+  }, [chartRowsBySex, sexes]);
+
+  const yTicks = useMemo(() => computeNiceTicks(yMin, yMax), [yMin, yMax]);
+
+  // Dose-response consistency notes (Option C, BUG-21)
+  const doseConsistencyNotes = useMemo(
+    () => checkDoseConsistency(chartRowsBySex, sexes),
     [chartRowsBySex, sexes],
   );
 
-  // Dose labels (shared column from F or first sex)
-  const primarySex = sexes[0] ?? "F";
-  const primaryRows = chartRowsBySex[primarySex] ?? [];
-
   const handleDoseClick = useCallback(
-    (dose: number) => {
-      onDoseClick?.(dose);
-    },
+    (dose: number) => onDoseClick?.(dose),
     [onDoseClick],
   );
 
-  if (sexes.length === 0 || primaryRows.length === 0) return null;
+  if (sexes.length === 0 || allDoseLevels.length === 0) return null;
 
   const tDay = terminalDay ?? rows[0]?.terminal_day;
   const rDay = recoveryDay ?? rows[0]?.recovery_day;
 
+  // ── SVG layout ────────────────────────────────────────
+  const { width, height } = dims;
+  const plotHeight = Math.max(60, height - PLOT_TOP - PLOT_BOTTOM);
+  const plotWidth = width - LEFT_MARGIN - PLOT_RIGHT;
+  const numCols = allDoseLevels.length;
+  const colWidth = numCols > 0 ? plotWidth / numCols : plotWidth;
+  const plotBottom = PLOT_TOP + plotHeight;
+
+  const colCenter = (colIdx: number) => LEFT_MARGIN + (colIdx + 0.5) * colWidth;
+  const yScale = (v: number) => PLOT_TOP + plotHeight * (1 - (v - yMin) / (yMax - yMin));
+
+  // Sub-column offset for F/M within dose column
+  const subColOffset = (sex: string) => {
+    if (!multiSex) return 0;
+    const sexIdx = sexes.indexOf(sex);
+    return (sexIdx - (sexes.length - 1) / 2) * (colWidth * 0.25);
+  };
+
+  const allChartRows = sexes.flatMap(s => chartRowsBySex[s] ?? []);
+
+  const hasPeak = useMemo(
+    () => allChartRows.some((cr) => !cr.isEdge && hasPeakQualifier(cr.row)),
+    [allChartRows],
+  );
+
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-2">
       {/* Legend */}
       <div className="text-[10px] text-muted-foreground/60 flex items-center gap-3 flex-wrap">
+        {/* Sex swatches */}
+        {sexes.map((sex) => (
+          <span key={sex} className="inline-flex items-center gap-1">
+            <svg width="8" height="8" viewBox="0 0 8 8">
+              <circle cx="4" cy="4" r="2.5" fill={getSexColor(sex)} />
+            </svg>
+            {sex}
+          </span>
+        ))}
+        <span className="text-border">|</span>
+        {/* Glyph encoding */}
         <span className="inline-flex items-center gap-1">
           <svg width="8" height="8" viewBox="0 0 8 8">
-            <circle cx="4" cy="4" r="2.5" fill="#94A3B8" />
+            <circle cx="4" cy="4" r="2.5" fill="#6b7280" />
           </svg>
           Terminal{tDay != null ? ` (D${tDay})` : ""}
         </span>
         <span className="inline-flex items-center gap-1">
-          <svg width="4" height="8" viewBox="0 0 4 8">
-            <line x1="2" y1="1" x2="2" y2="7" stroke="#94A3B8" strokeWidth="1.5" />
+          <svg width="8" height="8" viewBox="0 0 8 8">
+            <polygon points="4,1 1,7 7,7" fill="#6b7280" />
           </svg>
           Recovery{rDay != null ? ` (D${rDay})` : ""}
         </span>
+        {hasPeak && (
+          <span className="inline-flex items-center gap-1">
+            <svg width="8" height="8" viewBox="0 0 8 8">
+              <polygon points="4,1 1,7 7,7" fill="none" stroke="#6b7280" strokeWidth={1} />
+            </svg>
+            Peak
+          </span>
+        )}
+        <span className="text-border">|</span>
+        {/* Line style */}
         <span className="inline-flex items-center gap-1">
-          <svg width="8" height="8" viewBox="0 0 8 8">
-            <polygon points="4,1 1,7 7,7" fill="none" stroke="#D97706" strokeWidth="1" />
+          <svg width="16" height="4" viewBox="0 0 16 4">
+            <line x1="0" y1="2" x2="16" y2="2" stroke="#6b7280" strokeWidth="1.5" />
           </svg>
-          Peak
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="1.5" /></svg>
           p&lt;0.05
         </span>
-        <span className="inline-flex items-center gap-1" title="Recovery cohorts typically have smaller group sizes (n=5–10). Non-significant p-values do not rule out biologically meaningful effects.">
-          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="0.5" opacity="0.7" /></svg>
-          p≥0.05 <span className="text-muted-foreground">*</span>
-        </span>
-        <span className="inline-flex items-center gap-1" title="n &lt; 5 in treated or control arm — Hedges' g has wide confidence intervals">
-          <svg width="16" height="4" viewBox="0 0 16 4"><line x1="0" y1="2" x2="16" y2="2" stroke="#94A3B8" strokeWidth="1" strokeDasharray="3,2" opacity="0.7" /></svg>
-          low N
+        <span className="inline-flex items-center gap-1" title="Recovery cohorts typically have smaller group sizes (n=5-10). Non-significant p-values do not rule out biologically meaningful effects.">
+          <svg width="16" height="4" viewBox="0 0 16 4">
+            <line x1="0" y1="2" x2="16" y2="2" stroke="#6b7280" strokeWidth="1.5" strokeDasharray="4,3" />
+          </svg>
+          p&ge;0.05
         </span>
       </div>
 
-      {/* Chart area: dose labels + panels */}
-      <div className="flex gap-1.5">
-        {/* Shared dose labels column */}
-        <div className="w-[60px] shrink-0 flex flex-col pt-[14px]">
-          {primaryRows.map((cr) => (
-            <div
-              key={cr.row.dose_level}
-              className="flex items-center justify-end"
-              style={{ height: ROW_HEIGHT }}
-            >
-              <DoseLabel
-                level={cr.row.dose_level}
-                label={cr.doseLabel}
-                align="right"
-                className="text-[10px]"
-              />
-            </div>
+      {/* Chart */}
+      <div style={{ height: 220 }}>
+        <svg
+          ref={measuredRef}
+          className="w-full h-full"
+          viewBox={`0 0 ${width} ${height}`}
+          preserveAspectRatio="xMinYMin meet"
+        >
+          {/* Horizontal grid lines */}
+          {yTicks.map((t) => (
+            <line
+              key={t}
+              x1={LEFT_MARGIN} y1={yScale(t)}
+              x2={width - PLOT_RIGHT} y2={yScale(t)}
+              stroke="var(--border)" strokeWidth={0.5} strokeDasharray="2,2"
+            />
           ))}
-        </div>
 
-        {/* Panels */}
-        {sexes.map((sex, idx) => {
-          const sRows = chartRowsBySex[sex] ?? [];
-          return (
-            <div key={sex} className="contents">
-              {idx > 0 && <div className="w-px bg-border/30" />}
-              <DumbbellPanel
-                chartRows={sRows}
-                xMin={xMinBySex[sex] ?? 0}
-                xMax={globalXMax}
-                effectSymbol={effectSymbol}
-                terminalDay={tDay ?? null}
-                sex={sex}
-                hoveredDose={hoveredDose}
-                onHoverDose={setHoveredDose}
-                onClickDose={handleDoseClick}
-              />
-            </div>
-          );
-        })}
-        {/* Keep single-sex panels at half-width to match two-panel scale */}
-        {sexes.length === 1 && <div className="flex-1 min-w-0" />}
+          {/* Zero baseline */}
+          {yMin <= 0 && yMax >= 0 && (
+            <line
+              x1={LEFT_MARGIN} y1={yScale(0)}
+              x2={width - PLOT_RIGHT} y2={yScale(0)}
+              stroke={ZERO_LINE_COLOR} strokeWidth={1.5}
+            />
+          )}
+
+          {/* Y-axis tick labels */}
+          {yTicks.map((t) => (
+            <text
+              key={t}
+              x={LEFT_MARGIN - 3} y={yScale(t)}
+              textAnchor="end" dominantBaseline="central"
+              className="text-[9px]" fill="var(--muted-foreground)"
+            >
+              {t === 0 ? "Control" : t.toFixed(1)}
+            </text>
+          ))}
+
+          {/* Y-axis label */}
+          <text
+            x={6} y={PLOT_TOP + plotHeight / 2}
+            textAnchor="middle" dominantBaseline="central"
+            transform={`rotate(-90, 6, ${PLOT_TOP + plotHeight / 2})`}
+            className="text-[9px]" fill="var(--muted-foreground)" opacity={0.6}
+          >
+            {effectSymbol} (vs control)
+          </text>
+
+          {/* Per-dose-group columns */}
+          {allDoseLevels.map((dl, colIdx) => {
+            const cx = colCenter(colIdx);
+            const isHovered = hoveredDose === dl;
+
+            return (
+              <g
+                key={dl}
+                onMouseEnter={() => setHoveredDose(dl)}
+                onMouseLeave={() => setHoveredDose(null)}
+                onClick={() => handleDoseClick(dl)}
+                className="cursor-pointer"
+              >
+                {/* Column hover highlight */}
+                {isHovered && (
+                  <rect
+                    x={cx - colWidth / 2} y={PLOT_TOP}
+                    width={colWidth} height={plotHeight}
+                    fill="currentColor" opacity={0.03}
+                    rx={2}
+                  />
+                )}
+
+                {/* Thin separator between F/M sub-lanes */}
+                {multiSex && (
+                  <line
+                    x1={cx} y1={PLOT_TOP}
+                    x2={cx} y2={plotBottom}
+                    stroke="var(--border)" strokeWidth={0.3} opacity={0.25}
+                  />
+                )}
+
+                {/* Per-sex glyphs */}
+                {sexes.map((sex) => {
+                  const cr = chartRowLookup.get(`${sex}_${dl}`);
+                  if (!cr) return null;
+
+                  const sexCx = cx + subColOffset(sex);
+                  const sexColor = getSexColor(sex);
+
+                  // Edge: insufficient_n
+                  if (cr.isEdge === "insufficient_n") {
+                    return (
+                      <circle
+                        key={sex}
+                        cx={sexCx} cy={yScale(0)} r={3}
+                        fill="#D1D5DB" opacity={0.5}
+                      >
+                        <title>{sex}: n={cr.row.treated_n ?? 1} — insufficient for classification</title>
+                      </circle>
+                    );
+                  }
+
+                  // Edge: no_concurrent_control
+                  if (cr.isEdge === "no_concurrent_control") {
+                    return (
+                      <text
+                        key={sex}
+                        x={sexCx} y={yScale(0)}
+                        fontSize={8} fill="#D97706"
+                        dominantBaseline="middle" textAnchor="middle"
+                      >
+                        <title>{sex}: no concurrent control</title>
+                        &#x26A0;
+                      </text>
+                    );
+                  }
+
+                  // Normal glyph
+                  const tVal = cr.terminalVal ?? 0;
+                  const rVal = cr.recoveryVal ?? 0;
+                  const ty = yScale(tVal);
+                  const ry = yScale(rVal);
+                  const cs = connectorStyle(cr.row.p_value);
+                  const isLowConf = cr.confidence === "low";
+
+                  // Arrow direction: points from terminal toward recovery
+                  const ARROW_HALF = 3.5;
+                  const TICK_HALF = 4;
+                  const arrowDir = ry > ty ? 1 : -1; // +1 = arrow points down, -1 = up
+                  const arrowTip = ry - arrowDir * 1; // arrow tip sits just before the tick
+                  const arrowBase = arrowTip - arrowDir * ARROW_HALF * 2;
+
+                  // Peak qualifier check
+                  const showPeak = hasPeakQualifier(cr.row);
+                  const peakY = showPeak ? yScale(cr.row.peak_effect!) : 0;
+
+                  // Tooltip — use same-arm terminal (cr.terminalVal) for consistency
+                  const verdictStr = CONT_VERDICT_LABEL[cr.verdict];
+                  const v = classifyContinuousRecovery(cr.terminalVal, cr.recoveryVal, cr.row.treated_n, cr.row.control_n);
+                  const pctStr = v.pctRecovered != null ? ` (${formatPctRecovered(v.pctRecovered)})` : "";
+                  const pStr = cr.row.p_value != null ? ` p=${formatPCompact(cr.row.p_value)}` : "";
+                  const lowNStr = isLowConf ? ` · low N (n=${cr.row.treated_n ?? "?"})` : "";
+                  const peakStr = showPeak
+                    ? ` · peak: ${formatGAbs(cr.row.peak_effect!)}${effectSymbol} (D${cr.row.peak_day ?? "?"})`
+                    : "";
+                  const tooltip = `${sex}: ${verdictStr}${pctStr} · ${effectSymbol}: ${formatGAbs(tVal)} → ${formatGAbs(rVal)}${pStr}${lowNStr}${peakStr}`;
+
+                  return (
+                    <g key={sex}>
+                      <title>{tooltip}</title>
+                      {/* Invisible wider hit area */}
+                      <line
+                        x1={sexCx} y1={ty} x2={sexCx} y2={ry}
+                        stroke="transparent" strokeWidth={10}
+                      />
+                      {/* Peak dashed connector (renders behind terminal dot) */}
+                      {showPeak && (
+                        <line
+                          x1={sexCx} y1={ty}
+                          x2={sexCx} y2={peakY + 2.5}
+                          stroke="#9CA3AF"
+                          strokeWidth={0.5}
+                          strokeDasharray="2,2"
+                          opacity={0.5}
+                        />
+                      )}
+                      {/* Peak triangle (open, sex-colored) */}
+                      {showPeak && (
+                        <polygon
+                          points={`${sexCx},${peakY - 4} ${sexCx - 3.5},${peakY + 2.5} ${sexCx + 3.5},${peakY + 2.5}`}
+                          fill="none"
+                          stroke={sexColor}
+                          strokeWidth={1}
+                          opacity={0.7}
+                        />
+                      )}
+                      {/* Gray connector — width/dash encodes p-value */}
+                      <line
+                        x1={sexCx} y1={ty} x2={sexCx} y2={arrowBase}
+                        stroke="#9CA3AF" strokeWidth={cs.width}
+                        opacity={cs.opacity}
+                        {...(isLowConf ? { strokeDasharray: "3,2" } : {})}
+                      />
+                      {/* Terminal dot (filled, sex-colored) */}
+                      <circle
+                        cx={sexCx} cy={ty} r={DOT_R}
+                        fill={sexColor}
+                      />
+                      {/* Recovery tick mark (horizontal line at exact recovery value) */}
+                      <line
+                        x1={sexCx - TICK_HALF} y1={ry}
+                        x2={sexCx + TICK_HALF} y2={ry}
+                        stroke={sexColor} strokeWidth={1.5} opacity={cs.opacity}
+                      />
+                      {/* Recovery arrow (sex-colored, points in direction of change) */}
+                      <polygon
+                        points={`${sexCx},${arrowTip} ${sexCx - ARROW_HALF},${arrowBase} ${sexCx + ARROW_HALF},${arrowBase}`}
+                        fill={sexColor} opacity={cs.opacity}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* Dose label — color-coded by group */}
+                <text
+                  x={cx} y={plotBottom + 12}
+                  textAnchor="middle" dominantBaseline="central"
+                  className="text-[10px] font-medium" fill={getDoseGroupColor(dl)}
+                >
+                  {doseLabelMap.get(dl) ?? `Dose ${dl}`}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
 
+      {/* Data table — visually separated from chart */}
+      <div className="border-t border-border/30 pt-3 mt-1" />
+      <RecoveryDataTable
+        allDoseLevels={allDoseLevels}
+        doseLabelMap={doseLabelMap}
+        sexes={sexes}
+        chartRowLookup={chartRowLookup}
+        effectSymbol={effectSymbol}
+        doseConsistencyNotes={doseConsistencyNotes}
+      />
+
+      {/* Control group drift warning */}
+      {(() => {
+        const withCtrl = allChartRows.filter(
+          (cr) =>
+            !cr.isEdge &&
+            cr.row.control_mean_terminal != null &&
+            cr.row.control_mean != null &&
+            Math.abs(cr.row.control_mean_terminal!) > 0.001,
+        );
+        if (withCtrl.length === 0) return null;
+        const row0 = withCtrl[0].row;
+        const ctrlTerminal = row0.control_mean_terminal!;
+        const ctrlRecovery = row0.control_mean!;
+        const driftPct = Math.abs(ctrlRecovery - ctrlTerminal) / Math.abs(ctrlTerminal) * 100;
+        if (driftPct <= 15) return null;
+        return (
+          <div className="text-[10px] text-muted-foreground/70">
+            Control group shifted {Math.round(driftPct)}% between terminal and recovery
+            ({ctrlTerminal.toFixed(2)} {"\u2192"} {ctrlRecovery.toFixed(2)}).
+            Interpretation may be affected.
+          </div>
+        );
+      })()}
     </div>
+  );
+}
+
+// ── Data table ──────────────────────────────────────────
+
+function RecoveryDataTable({
+  allDoseLevels,
+  doseLabelMap,
+  sexes,
+  chartRowLookup,
+  effectSymbol,
+  doseConsistencyNotes,
+}: {
+  allDoseLevels: number[];
+  doseLabelMap: Map<number, string>;
+  sexes: string[];
+  chartRowLookup: Map<string, ChartRow>;
+  effectSymbol: string;
+  doseConsistencyNotes: Map<string, string>;
+}) {
+  const multiSex = sexes.length > 1;
+
+  return (
+    <table className="w-full text-[10px] border-collapse">
+      <thead>
+        {/* Single header row — Dose + Terminal/Recovery per sex with color-coded bottom border */}
+        <tr>
+          <th className="text-left text-muted-foreground/60 font-medium py-0.5 pr-2 whitespace-nowrap border-b border-border/30" style={{ width: 1 }}>
+            Dose
+          </th>
+          {sexes.map((sex) => {
+            const borderColor = multiSex ? getSexColor(sex) : undefined;
+            const borderStyle = borderColor ? { borderBottomColor: borderColor, borderBottomWidth: "2px" } : undefined;
+            return (
+              <SexSubHeaders key={sex} borderStyle={borderStyle} />
+            );
+          })}
+        </tr>
+      </thead>
+      <tbody>
+        {allDoseLevels.map((dl) => (
+          <tr key={dl} className="border-b border-border/10 hover:bg-muted/20">
+            {/* Dose label */}
+            <td className="py-1 pr-2 whitespace-nowrap" style={{ width: 1 }}>
+              <span
+                className="font-mono text-[10px] border-l-2 pl-1.5"
+                style={{ borderLeftColor: getDoseGroupColor(dl) }}
+              >
+                {doseLabelMap.get(dl) ?? `Dose ${dl}`}
+              </span>
+            </td>
+
+            {/* Per-sex cells (Terminal / Recovery / Change) */}
+            {sexes.map((sex) => {
+              const cr = chartRowLookup.get(`${sex}_${dl}`);
+              if (!cr || cr.isEdge) {
+                return (
+                  <SexDataCells
+                    key={sex}
+                    terminal="—"
+                    recovery="—"
+                  />
+                );
+              }
+
+              // Use same-arm terminal (cr.terminalVal) for consistency with chart
+              const tG = cr.terminalVal;
+              const rG = cr.recoveryVal;
+
+              return (
+                <SexDataCells
+                  key={sex}
+                  terminal={tG != null ? `${formatGSigned(tG)}${effectSymbol}` : "—"}
+                  recovery={rG != null ? `${formatGSigned(rG)}${effectSymbol}` : "—"}
+                />
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+      {/* Dose-consistency notes (Option C, BUG-21) */}
+      {doseConsistencyNotes.size > 0 && (
+        <tfoot>
+          <tr>
+            <td colSpan={1 + sexes.length * 2} className="pt-1.5">
+              {[...doseConsistencyNotes.entries()].map(([sex, note]) => (
+                <div key={sex} className="text-[10px] text-muted-foreground/70">
+                  {sexes.length > 1 && <span style={{ color: getSexColor(sex) }}>{sex}: </span>}
+                  {note}
+                </div>
+              ))}
+            </td>
+          </tr>
+        </tfoot>
+      )}
+    </table>
+  );
+}
+
+function SexSubHeaders({ borderStyle }: { borderStyle?: React.CSSProperties }) {
+  return (
+    <>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 py-0.5 whitespace-nowrap border-b border-border/30" style={{ width: 1, ...borderStyle }}>
+        Terminal
+      </th>
+      <th className="text-right text-muted-foreground/60 font-medium px-1 py-0.5 whitespace-nowrap border-b border-border/30" style={{ width: 1, ...borderStyle }}>
+        Recovery
+      </th>
+    </>
+  );
+}
+
+function SexDataCells({ terminal, recovery }: {
+  terminal: string; recovery: string;
+}) {
+  return (
+    <>
+      <td className="text-right tabular-nums font-mono py-1 px-1 text-muted-foreground" style={{ width: 1 }}>
+        {terminal}
+      </td>
+      <td className="text-right tabular-nums font-mono py-1 px-1 text-muted-foreground" style={{ width: 1 }}>
+        {recovery}
+      </td>
+    </>
   );
 }

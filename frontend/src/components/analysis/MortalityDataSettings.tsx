@@ -134,14 +134,14 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
 
   if (!hasMortality) {
     return (
-      <CollapsiblePane title="Mortality" defaultOpen={false} expandAll={expandAll} collapseAll={collapseAll}>
+      <CollapsiblePane title="Mortality" defaultOpen={false} sessionKey="pcc.studySettings.mortality" expandAll={expandAll} collapseAll={collapseAll}>
         <div className="text-[11px] text-muted-foreground">No mortality events recorded.</div>
       </CollapsiblePane>
     );
   }
 
   return (
-    <CollapsiblePane title="Mortality" headerRight={summary} expandAll={expandAll} collapseAll={collapseAll}>
+    <CollapsiblePane title="Mortality" defaultOpen={false} sessionKey="pcc.studySettings.mortality" headerRight={summary} expandAll={expandAll} collapseAll={collapseAll}>
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">

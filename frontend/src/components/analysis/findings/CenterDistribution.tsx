@@ -48,10 +48,15 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   // Always fetch with recovery subjects included so the checkbox can toggle them.
   // (includeRecovery from pooling settings controls default behavior; we need
   // the data available regardless for the Recovery checkbox.)
+  // OM domain: test_code is always "WEIGHT" but the backend accepts specimen
+  // names (e.g. "TESTIS") to return per-organ data.
+  const effectiveTestCode = finding.domain === "OM" && finding.specimen
+    ? finding.specimen
+    : finding.test_code;
   const { data: subjectData, isLoading, isError } = useTimecourseSubject(
     isVisible ? studyId : undefined,
     isVisible ? finding.domain : undefined,
-    isVisible ? finding.test_code : undefined,
+    isVisible ? effectiveTestCode : undefined,
     undefined, // all sexes
     true, // always include recovery subjects in fetch
   );
@@ -134,7 +139,9 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   if (isError || subjects.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-        No individual data at this timepoint
+        {showRecoveryAnimals
+          ? "No recovery-arm subjects at this timepoint."
+          : "No individual data at this timepoint."}
       </div>
     );
   }

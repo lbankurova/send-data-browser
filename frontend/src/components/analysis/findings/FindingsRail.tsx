@@ -18,6 +18,10 @@ import {
   Minus,
   EyeOff,
   Info,
+  Fingerprint,
+  ChevronsUpDown,
+  ChevronsDownUp,
+  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
@@ -47,7 +51,7 @@ import type {
 import { getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import type { ConfidenceLevel } from "@/lib/endpoint-confidence";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
-import { NORM_MODE_SHORT, NORM_TIER_COLOR } from "@/lib/organ-weight-normalization";
+import { NORM_MODE_SHORT } from "@/lib/organ-weight-normalization";
 import { titleCase, formatDoseShortLabel } from "@/lib/severity-colors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSearch, FilterSelect, FilterMultiSelect } from "@/components/ui/FilterBar";
@@ -57,7 +61,9 @@ import { useSyndromeCorrelationSummaries } from "@/hooks/useSyndromeCorrelationS
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import type { StudyMortality } from "@/types/mortality";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import type { SyndromeCorrelationSummary } from "@/types/analysis";
+import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 
 // ─── Props ─────────────────────────────────────────────────
 
@@ -111,8 +117,15 @@ export function FindingsRail({
 
   // Mortality data for rail header
   const { data: mortalityData } = useStudyMortality(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
   // Scheduled-only toggle moved to MethodologyPanel; mortality indicator now opens subject profile
   useScheduledOnly(); // keep hook call for context subscription
+
+  // Target organ set for organ rail card badges
+  const targetOrganSet = useMemo(() => {
+    if (!targetOrgans) return new Set<string>();
+    return new Set(targetOrgans.filter((t) => t.target_organ_flag).map((t) => t.organ_system));
+  }, [targetOrgans]);
 
   // GAP-68: Eagerly fetch co-variation summaries for all syndromes in one batch request
   const { data: syndromeCovariation } = useSyndromeCorrelationSummaries(studyId, syndromes);
@@ -218,9 +231,12 @@ export function FindingsRail({
     }
     const seen = new Map<string, number>();
     for (const ep of endpointsWithSignal) {
+      // Skip endpoints without specimen in specimen grouping mode
+      if (grouping === "specimen" && !ep.specimen) continue;
       const key =
         grouping === "organ" ? ep.organ_system
         : grouping === "domain" ? ep.domain
+        : grouping === "specimen" ? ep.specimen!
         : ep.pattern;
       seen.set(key, (seen.get(key) ?? 0) + 1);
     }
@@ -230,6 +246,7 @@ export function FindingsRail({
       key,
       label:
         grouping === "organ" ? titleCase(key)
+        : grouping === "specimen" ? key.toUpperCase()
         : grouping === "domain" ? getDomainFullLabel(key)
         : getPatternLabel(key),
     }));
@@ -292,6 +309,8 @@ export function FindingsRail({
         }
       } else if (activeGroupScope.type === "finding") {
         eps = eps.filter((ep) => ep.endpoint_label === activeGroupScope.value);
+      } else if (activeGroupScope.type === "specimen") {
+        eps = eps.filter((ep) => ep.specimen === activeGroupScope.value);
       }
     }
     return eps.map((ep) => ep.endpoint_label);
@@ -307,6 +326,7 @@ export function FindingsRail({
       return syn?.name ?? (activeGroupScope.value === "no_syndrome" ? "No Syndrome" : null);
     }
     if (activeGroupScope.type === "finding") return activeGroupScope.value;
+    if (activeGroupScope.type === "specimen") return activeGroupScope.value.toUpperCase();
     return null;
   }, [activeGroupScope, syndromes]);
 
@@ -425,22 +445,116 @@ export function FindingsRail({
     });
   }, [activeEndpoint, activeDomain, endpointToGroup]);
 
+  // ── Navigation history (back/forward) ──────────────────
+  type RailSnapshot = {
+    grouping: GroupingMode;
+    scope: { type: GroupingMode; value: string } | null;
+    endpoint: string | null;
+    domain: string | undefined;
+    expanded: Set<string>;
+  };
+
+  const historyRef = useRef<{ stack: RailSnapshot[]; cursor: number }>({ stack: [], cursor: -1 });
+  const isRestoringRef = useRef(false);
+  const pendingFromRef = useRef<RailSnapshot | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
+
+  const takeSnapshot = useCallback((): RailSnapshot => ({
+    grouping,
+    scope: activeGroupScope ?? null,
+    endpoint: activeEndpoint ?? null,
+    domain: activeDomain,
+    expanded: new Set(expanded),
+  }), [grouping, activeGroupScope, activeEndpoint, activeDomain, expanded]);
+
+  const snapshotsEqual = (a: RailSnapshot, b: RailSnapshot) =>
+    a.grouping === b.grouping && a.endpoint === b.endpoint &&
+    a.scope?.value === b.scope?.value && a.scope?.type === b.scope?.type;
+
+  // Phase 1: called synchronously at start of navigation — captures "from" state
+  const beginNavigation = useCallback(() => {
+    if (isRestoringRef.current) return;
+    pendingFromRef.current = takeSnapshot();
+  }, [takeSnapshot]);
+
+  // Phase 2: effect fires after state settles — pushes "from" + "to" onto stack
+  useEffect(() => {
+    const from = pendingFromRef.current;
+    if (!from || isRestoringRef.current) return;
+    pendingFromRef.current = null;
+
+    const h = historyRef.current;
+    const to = takeSnapshot();
+
+    // Skip if state didn't actually change
+    if (snapshotsEqual(from, to)) return;
+
+    // Seed "from" if stack is empty or different from current top
+    if (h.cursor < 0) {
+      h.stack = [from];
+      h.cursor = 0;
+    } else if (!snapshotsEqual(h.stack[h.cursor], from)) {
+      // Truncate forward history, push from
+      h.stack = h.stack.slice(0, h.cursor + 1);
+      h.stack.push(from);
+      h.cursor = h.stack.length - 1;
+    }
+
+    // Truncate forward history, push "to"
+    h.stack = h.stack.slice(0, h.cursor + 1);
+    h.stack.push(to);
+    if (h.stack.length > 50) { h.stack.shift(); }
+    h.cursor = h.stack.length - 1;
+    setHistoryVersion((v) => v + 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grouping, activeGroupScope, activeEndpoint]);
+
+  const restoreSnapshot = useCallback((snap: RailSnapshot) => {
+    isRestoringRef.current = true;
+    setGrouping(snap.grouping);
+    setExpanded(snap.expanded);
+    onGroupScopeChange?.(snap.scope);
+    onEndpointSelect?.(snap.endpoint, snap.domain);
+    onGroupingChange?.(snap.grouping);
+    setHistoryVersion((v) => v + 1);
+    setTimeout(() => { isRestoringRef.current = false; }, 0);
+  }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
+
+  const canGoBack = historyVersion >= 0 && historyRef.current.cursor > 0;
+  const canGoForward = historyVersion >= 0 && historyRef.current.cursor < historyRef.current.stack.length - 1;
+
+  const goBack = useCallback(() => {
+    const h = historyRef.current;
+    if (h.cursor <= 0) return;
+    h.cursor--;
+    restoreSnapshot(h.stack[h.cursor]);
+  }, [restoreSnapshot]);
+
+  const goForward = useCallback(() => {
+    const h = historyRef.current;
+    if (h.cursor >= h.stack.length - 1) return;
+    h.cursor++;
+    restoreSnapshot(h.stack[h.cursor]);
+  }, [restoreSnapshot]);
+
   // ── Handlers ───────────────────────────────────────────
   const handleGroupingChange = useCallback((mode: GroupingMode) => {
+    beginNavigation();
     setGrouping(mode);
     setExpanded(new Set());
     setRailFilters((prev) => ({ ...prev, groupFilter: null }));
     onGroupScopeChange?.(null);
     onEndpointSelect?.(null);
     onGroupingChange?.(mode);
-  }, [onGroupScopeChange, onEndpointSelect, onGroupingChange]);
+  }, [beginNavigation,onGroupScopeChange, onEndpointSelect, onGroupingChange]);
 
   const handleCardSelect = useCallback((card: GroupCard) => {
+    beginNavigation();
     // Always scope to clicked group (no toggle-off)
     onGroupScopeChange?.({ type: grouping, value: card.key });
     // Auto-expand selected group so endpoints are visible
     setExpanded((prev) => new Set(prev).add(card.key));
-  }, [grouping, onGroupScopeChange]);
+  }, [beginNavigation,grouping, onGroupScopeChange]);
 
   const handleCardToggleExpand = useCallback((card: GroupCard) => {
     setExpanded((prev) => {
@@ -452,9 +566,10 @@ export function FindingsRail({
   }, []);
 
   const handleEndpointClick = useCallback((endpointLabel: string, domain?: string) => {
+    beginNavigation();
     // Always select (no toggle-off)
     onEndpointSelect?.(endpointLabel, domain);
-  }, [onEndpointSelect]);
+  }, [beginNavigation,onEndpointSelect]);
 
   // ── Loading / Error / Empty states ─────────────────────
   if (isLoading) {
@@ -530,6 +645,15 @@ export function FindingsRail({
         clinicalS2Plus={railFilters.clinicalS2Plus ?? false}
         onFiltersChange={setRailFilters}
         onSortChange={setSortMode}
+        mostExpanded={grouping !== "finding" && sortedCards.length > 1 ? expanded.size > sortedCards.length / 2 : null}
+        onToggleExpandAll={() => {
+          if (expanded.size > sortedCards.length / 2) setExpanded(new Set());
+          else setExpanded(new Set(sortedCards.map((c) => c.key)));
+        }}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onGoBack={goBack}
+        onGoForward={goForward}
       />
 
       {/* Zone 5: Card list (scrollable) */}
@@ -585,6 +709,15 @@ export function FindingsRail({
               showFilteredCount={railIsFiltered}
               onHeaderSelect={() => handleCardSelect(card)}
               onToggleExpand={() => handleCardToggleExpand(card)}
+              onSyndromeClick={(synId) => {
+                beginNavigation();
+                setGrouping("syndrome");
+                setExpanded(new Set([synId]));
+                setRailFilters((prev) => ({ ...prev, groupFilter: null }));
+                onGroupScopeChange?.({ type: "syndrome", value: synId });
+                onEndpointSelect?.(null);
+                onGroupingChange?.("syndrome");
+              }}
               onEndpointClick={handleEndpointClick}
               onEndpointHover={handleEndpointHover}
               registerEndpointRef={registerEndpointRef}
@@ -594,6 +727,8 @@ export function FindingsRail({
               normalizationContexts={analytics.normalizationContexts}
               syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
+              syndromes={grouping === "specimen" ? syndromes : undefined}
+              isTargetOrgan={grouping === "organ" && targetOrganSet.has(card.key)}
             />
           ))
         )}
@@ -604,10 +739,10 @@ export function FindingsRail({
 
 // ─── Signal Summary ────────────────────────────────────────
 
-const GROUPING_TOGGLES: { value: GroupingMode; label: string; stub?: boolean }[] = [
+const GROUPING_TOGGLES: { value: GroupingMode; label: string; tooltip?: string; stub?: boolean }[] = [
   { value: "finding", label: "Endpoint" },
-  { value: "specimen", label: "Specimen", stub: true },
-  { value: "organ", label: "Organ" },
+  { value: "specimen", label: "Specimen" },
+  { value: "organ", label: "Organ Sys.", tooltip: "Group by organ system" },
   { value: "syndrome", label: "Syndrome" },
 ];
 
@@ -670,7 +805,7 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
                 t.stub && "cursor-not-allowed opacity-30",
               )}
               onClick={() => { if (!t.stub) onGroupingChange(t.value); }}
-              title={t.stub ? "Coming soon — requires histopathology merge" : `Group by ${t.label}`}
+              title={t.tooltip ?? `Group by ${t.label.toLowerCase()}`}
               disabled={t.stub}
             >
               {t.label}
@@ -908,6 +1043,7 @@ const GROUPING_ALL_LABELS: Partial<Record<GroupingMode, string>> = {
   domain: "All domains",
   pattern: "All patterns",
   syndrome: "All syndromes",
+  specimen: "All specimens",
 };
 
 function RailFiltersSection({
@@ -921,6 +1057,12 @@ function RailFiltersSection({
   clinicalS2Plus,
   onFiltersChange,
   onSortChange,
+  mostExpanded,
+  onToggleExpandAll,
+  canGoBack,
+  canGoForward,
+  onGoBack,
+  onGoForward,
 }: {
   filters: RailFilters;
   sortMode: SortMode;
@@ -932,30 +1074,46 @@ function RailFiltersSection({
   clinicalS2Plus: boolean;
   onFiltersChange: (f: RailFilters) => void;
   onSortChange: (s: SortMode) => void;
+  mostExpanded: boolean | null;
+  onToggleExpandAll: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onGoBack: () => void;
+  onGoForward: () => void;
 }) {
   return (
     <div className="shrink-0 space-y-1.5 border-b bg-muted/30 px-4 py-2">
-      {/* Row 1: Search + sort (sort has fixed width to prevent jump when search expands) */}
-      <div className="flex items-center gap-1.5">
-        <FilterSearch
-          value={filters.search}
-          onChange={(v) => onFiltersChange({ ...filters, search: v })}
-          placeholder="Search…"
+      {/* Row 1 (top — least used): Group filter + domain + pattern + severity */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {grouping !== "finding" && (
+          <FilterMultiSelect
+            options={groupFilterOptions}
+            selected={filters.groupFilter}
+            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
+            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
+          />
+        )}
+        <FilterMultiSelect
+          options={domainFilterOptions}
+          selected={filters.domains}
+          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
+          allLabel="All domains"
         />
-        <div className="w-[110px] shrink-0">
-          <FilterSelect
-            value={sortMode}
-            onChange={(e) => onSortChange(e.target.value as SortMode)}
-          >
-            <option value="signal">Sort: Signal</option>
-            <option value="pvalue">Sort: P-value</option>
-            <option value="effect">Sort: Effect</option>
-            <option value="az">Sort: A{"\u2013"}Z</option>
-          </FilterSelect>
-        </div>
+        <FilterMultiSelect
+          options={patternFilterOptions}
+          selected={filters.pattern}
+          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
+          allLabel="All patterns"
+        />
+        <FilterMultiSelect
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
+          allLabel="All classes"
+        />
       </div>
 
-      {/* Row 2: Quick toggles + NOAEL role */}
+      {/* Row 2 (middle): Quick toggles + NOAEL role + sort */}
       <div className="flex items-center gap-1.5">
         <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground" title="Treatment-related endpoints only">
           <input
@@ -997,36 +1155,58 @@ function RailFiltersSection({
           <option value="supporting">Supporting</option>
           <option value="excluded">Excluded</option>
         </FilterSelect>
+        <div className="w-[110px] shrink-0">
+          <FilterSelect
+            value={sortMode}
+            onChange={(e) => onSortChange(e.target.value as SortMode)}
+          >
+            <option value="signal">Sort: Signal</option>
+            <option value="pvalue">Sort: P-value</option>
+            <option value="effect">Sort: Effect</option>
+            <option value="az">Sort: A{"\u2013"}Z</option>
+          </FilterSelect>
+        </div>
       </div>
 
-      {/* Row 2: Group filter + domain + pattern + severity */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {grouping !== "finding" && (
-          <FilterMultiSelect
-            options={groupFilterOptions}
-            selected={filters.groupFilter}
-            onChange={(next) => onFiltersChange({ ...filters, groupFilter: next })}
-            allLabel={GROUPING_ALL_LABELS[grouping] ?? "All"}
-          />
-        )}
-        <FilterMultiSelect
-          options={domainFilterOptions}
-          selected={filters.domains}
-          onChange={(next) => onFiltersChange({ ...filters, domains: next })}
-          allLabel="All domains"
+      {/* Row 3 (bottom — closest to cards): Search + back/forward + expand/collapse */}
+      <div className="flex items-center gap-1.5">
+        <FilterSearch
+          value={filters.search}
+          onChange={(v) => onFiltersChange({ ...filters, search: v })}
+          placeholder="Search…"
         />
-        <FilterMultiSelect
-          options={patternFilterOptions}
-          selected={filters.pattern}
-          onChange={(next) => onFiltersChange({ ...filters, pattern: next })}
-          allLabel="All patterns"
-        />
-        <FilterMultiSelect
-          options={SEVERITY_OPTIONS}
-          selected={filters.severity}
-          onChange={(next) => onFiltersChange({ ...filters, severity: next })}
-          allLabel="All classes"
-        />
+        <div className="ml-auto flex items-center gap-0.5">
+          <button
+            type="button"
+            className={cn("rounded p-0.5 transition-colors", canGoBack ? "text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40" : "text-muted-foreground/20 cursor-default")}
+            title="Back"
+            onClick={onGoBack}
+            disabled={!canGoBack}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className={cn("rounded p-0.5 transition-colors", canGoForward ? "text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40" : "text-muted-foreground/20 cursor-default")}
+            title="Forward"
+            onClick={onGoForward}
+            disabled={!canGoForward}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+          {mostExpanded !== null && (
+            <button
+              type="button"
+              className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
+              title={mostExpanded ? "Collapse all groups" : "Expand all groups"}
+              onClick={onToggleExpandAll}
+            >
+              {mostExpanded
+                ? <ChevronsDownUp className="h-3.5 w-3.5" />
+                : <ChevronsUpDown className="h-3.5 w-3.5" />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1092,6 +1272,7 @@ function CardSection({
   showFilteredCount,
   onHeaderSelect,
   onToggleExpand,
+  onSyndromeClick,
   onEndpointClick,
   onEndpointHover,
   registerEndpointRef,
@@ -1101,6 +1282,8 @@ function CardSection({
   normalizationContexts,
   syndromeCovariation,
   syndromeConfidence,
+  syndromes,
+  isTargetOrgan,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1112,6 +1295,7 @@ function CardSection({
   showFilteredCount: boolean;
   onHeaderSelect: () => void;
   onToggleExpand: () => void;
+  onSyndromeClick?: (syndromeId: string) => void;
   onEndpointClick: (label: string, domain?: string) => void;
   onEndpointHover?: (label: string) => void;
   registerEndpointRef: (label: string, el: HTMLElement | null) => void;
@@ -1121,6 +1305,8 @@ function CardSection({
   normalizationContexts?: NormalizationContext[];
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  syndromes?: CrossDomainSyndrome[];
+  isTargetOrgan?: boolean;
 }) {
   // Compute organ confidence only for organ grouping mode
   const organConf = grouping === "organ"
@@ -1131,6 +1317,36 @@ function CardSection({
   const organNorm = grouping === "organ" && normalizationContexts
     ? computeOrganNormSummary(card.endpoints, normalizationContexts)
     : null;
+
+  // NOAEL role dots for organ cards (max 3: determining, contributing, supporting)
+  const noaelRoles = grouping === "organ" ? (() => {
+    let det = 0, cont = 0, sup = 0;
+    for (const ep of card.endpoints) {
+      const label = ep.endpointConfidence?.noaelContribution?.label;
+      if (label === "determining") det++;
+      else if (label === "contributing") cont++;
+      else if (label === "supporting") sup++;
+    }
+    return { determining: det, contributing: cont, supporting: sup };
+  })() : null;
+
+  // Specimen data for specimen grouping mode
+  const specimenData = useMemo(() => {
+    if (grouping !== "specimen") return null;
+    // Find all syndromes containing any endpoint from this card
+    const matched = syndromes?.filter((s) =>
+      s.matchedEndpoints.some((m) =>
+        card.endpoints.some((ep) => ep.endpoint_label === m.endpoint_label),
+      ),
+    ) ?? [];
+    return {
+      endpoints: card.endpoints,
+      syndromes: matched.map(s => ({ name: s.name, id: s.id })),
+      // Backward compat for CardLabel
+      syndromeName: matched[0]?.name,
+      syndromeId: matched[0]?.id,
+    };
+  }, [grouping, card.endpoints, syndromes]);
 
   return (
     <div>
@@ -1143,10 +1359,14 @@ function CardSection({
         showFilteredCount={showFilteredCount}
         onSelect={onHeaderSelect}
         onToggleExpand={onToggleExpand}
+        onSyndromeClick={onSyndromeClick}
         organConfidence={organConf}
         organNorm={organNorm}
+        noaelRoles={noaelRoles}
+        isTargetOrgan={isTargetOrgan}
         syndromeCovariation={syndromeCovariation}
         syndromeConfidence={syndromeConfidence}
+        specimenData={specimenData}
       />
       {isExpanded && (
         <div>
@@ -1182,10 +1402,14 @@ function CardHeader({
   showFilteredCount,
   onSelect,
   onToggleExpand,
+  onSyndromeClick,
   organConfidence,
   organNorm,
+  noaelRoles,
+  isTargetOrgan,
   syndromeCovariation,
   syndromeConfidence,
+  specimenData,
 }: {
   card: GroupCard;
   grouping: GroupingMode;
@@ -1195,12 +1419,25 @@ function CardHeader({
   showFilteredCount: boolean;
   onSelect: () => void;
   onToggleExpand: () => void;
+  onSyndromeClick?: (syndromeId: string) => void;
   organConfidence?: { level: ConfidenceLevel; limitingFactors: string[] } | null;
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
+  noaelRoles?: { determining: number; contributing: number; supporting: number } | null;
+  isTargetOrgan?: boolean;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromes: { name: string; id: string }[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
+
+  // Specimen mode: pipe encodes worst severity across all findings
+  const specimenPipeColor = grouping === "specimen"
+    ? (card.adverseCount > 0
+      ? "#dc2626"
+      : card.endpoints.some((ep) => ep.worstSeverity === "warning")
+        ? "#facc15"
+        : "transparent")
+    : undefined;
 
   return (
     <div
@@ -1209,20 +1446,60 @@ function CardHeader({
         isScoped
           ? "border-l-2 border-primary bg-accent/50"
           : "hover:bg-accent/30",
+        grouping === "specimen" && !isScoped && specimenPipeColor !== "transparent" && "border-l-2",
       )}
+      style={grouping === "specimen" && !isScoped && specimenPipeColor && specimenPipeColor !== "transparent" ? { borderLeftColor: specimenPipeColor } : undefined}
       role="button"
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} />
-      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
-        {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount}
-      </span>
-      <span className="text-muted-foreground/40">&middot;</span>
-      <span className="font-mono text-[11px] text-muted-foreground">
-        {card.trCount}
-      </span>
+      <CardLabel grouping={grouping} value={card.key} syndromeLabel={grouping === "syndrome" ? card.label : undefined} organConfidence={organConfidence} organNorm={organNorm} syndromeCovariation={syndromeCovariation} syndromeConfidence={syndromeConfidence} specimenData={specimenData} />
+      {/* NOAEL role dots + Target badge (organ mode only) */}
+      {noaelRoles && (noaelRoles.determining > 0 || noaelRoles.contributing > 0 || noaelRoles.supporting > 0) && (
+        <span className="shrink-0 flex items-center gap-0.5" title={[
+          noaelRoles.determining > 0 ? `${noaelRoles.determining} determining` : null,
+          noaelRoles.contributing > 0 ? `${noaelRoles.contributing} contributing` : null,
+          noaelRoles.supporting > 0 ? `${noaelRoles.supporting} supporting` : null,
+        ].filter(Boolean).join(", ")}>
+          {noaelRoles.determining > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} />}
+          {noaelRoles.contributing > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full bg-gray-400" />}
+          {noaelRoles.supporting > 0 && <span className="inline-block h-[6px] w-[6px] rounded-full border border-gray-400" />}
+        </span>
+      )}
+      {isTargetOrgan && (
+        <span className="shrink-0 rounded-sm border border-gray-200 bg-gray-100 px-1 py-0.5 text-[10px] font-medium text-gray-600">Target</span>
+      )}
+      {grouping === "specimen" ? (
+        <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+          {specimenData?.syndromes && specimenData.syndromes.length > 0 && (
+            <div className="flex flex-col items-end gap-0.5">
+              {specimenData.syndromes.map(syn => (
+                <button
+                  key={syn.id}
+                  type="button"
+                  className="flex items-center gap-0.5 text-[10px] text-primary hover:underline cursor-pointer"
+                  title={`${syn.name}\nClick to view in syndrome grouping`}
+                  onClick={(e) => { e.stopPropagation(); onSyndromeClick?.(syn.id); }}
+                >
+                  <Fingerprint className="size-2.5 shrink-0" />
+                  <span className="truncate max-w-[120px]">{syn.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </span>
+      ) : (
+        <>
+          <span className="ml-auto font-mono text-[11px] text-muted-foreground" title={showFilteredCount ? `${card.totalEndpoints} of ${unfilteredTotal} endpoints shown` : `${card.adverseCount} adverse endpoints`}>
+            {showFilteredCount ? `${card.totalEndpoints}/${unfilteredTotal}` : card.adverseCount} A
+          </span>
+          <span className="text-muted-foreground/40">&middot;</span>
+          <span className="font-mono text-[11px] text-muted-foreground" title={`${card.trCount} treatment-related endpoints`}>
+            {card.trCount} TR
+          </span>
+        </>
+      )}
       <button
         className="ml-1 shrink-0 rounded p-0.5 hover:bg-accent/60 transition-colors"
         onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
@@ -1270,7 +1547,7 @@ function adjustSyndromeConfidence(
   return { level: confidence.toLowerCase() as ConfidenceLevel, caveat: null };
 }
 
-function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm, syndromeCovariation, syndromeConfidence }: {
+function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm, syndromeCovariation, syndromeConfidence, specimenData }: {
   grouping: GroupingMode;
   value: string;
   syndromeLabel?: string;
@@ -1278,6 +1555,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   organNorm?: { tier: number; mode: string; modeShort: string } | null;
   syndromeCovariation?: SyndromeCorrelationSummary;
   syndromeConfidence?: "HIGH" | "MODERATE" | "LOW";
+  specimenData?: { endpoints: EndpointWithSignal[]; syndromes: { name: string; id: string }[]; syndromeName?: string; syndromeId?: string } | null;
 }) {
   if (grouping === "domain") {
     const domainCode = value.toUpperCase();
@@ -1325,7 +1603,7 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
 
     return (
       <span className={cn("flex min-w-0 items-center gap-1.5 truncate font-semibold", isNoSyndrome && "text-muted-foreground/70")} title={tooltipLines.join("\n")}>
-        {!isNoSyndrome && <span className="shrink-0">{"\uD83D\uDD17"}</span>}
+        {!isNoSyndrome && <Fingerprint className="size-3 shrink-0 text-muted-foreground" />}
         <span className="truncate">{label}</span>
         {adjusted && (
           <span
@@ -1338,6 +1616,25 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
         {covLabel && covLabel !== "Insufficient data" && (
           <span className="shrink-0 text-[10px] bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-px">
             {covLabel}
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  if (grouping === "specimen") {
+    // Specimen card: name + domain badges (syndrome moved to CardHeader metric area)
+    const specimenEndpoints = specimenData?.endpoints;
+    const domains = specimenEndpoints
+      ? [...new Set(specimenEndpoints.map((ep) => ep.domain))].sort()
+      : [];
+
+    return (
+      <span className="flex min-w-0 flex-1 flex-col" title={value.toUpperCase()}>
+        <span className="truncate font-semibold">{value.toUpperCase()}</span>
+        {domains.length > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {domains.join(", ")}
           </span>
         )}
       </span>
@@ -1357,22 +1654,20 @@ function CardLabel({ grouping, value, syndromeLabel, organConfidence, organNorm,
   }
 
   return (
-    <span className="flex min-w-0 items-center gap-1.5 font-semibold" title={tooltipLines.join("\n")}>
+    <span className="flex min-w-0 flex-col font-semibold" title={tooltipLines.join("\n")}>
       <span className="truncate">{titleCase(value)}</span>
-      {organConfidence && (
-        <span
-          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
-          style={{ borderBottom: `1.5px dashed ${RAG_COLOR[organConfidence.level]}` }}
-        >
-          Conf: {CONF_SHORT[organConfidence.level]}
-        </span>
-      )}
-      {organNorm && (
-        <span
-          className="shrink-0 text-[10px] font-medium text-muted-foreground pb-px"
-          style={{ borderBottom: `1.5px dashed ${NORM_TIER_COLOR[organNorm.tier] ?? "#9ca3af"}` }}
-        >
-          Norm: {organNorm.modeShort}
+      {(organConfidence || organNorm) && (
+        <span className="flex items-center gap-1.5">
+          {organConfidence && (
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              Conf: {CONF_SHORT[organConfidence.level]}
+            </span>
+          )}
+          {organNorm && (
+            <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+              Norm: {organNorm.modeShort}
+            </span>
+          )}
         </span>
       )}
     </span>
@@ -1445,17 +1740,49 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
             <span className="text-[10px] font-semibold text-muted-foreground mr-1">{endpoint.domain}</span>
           )}
           {endpoint.endpoint_label}
+          {endpoint.qualifierTags && (
+            <span className="text-muted-foreground"> &mdash; {endpoint.qualifierTags}</span>
+          )}
         </span>
-        {clinicalTier && (
-          <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
-            {clinicalTier}
-          </span>
-        )}
-        {sexesDiffer && (
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
-            F≠M
-          </span>
-        )}
+        {/* --- Indicator columns: fixed-width slots for vertical alignment --- */}
+        {/* Clinical tier — w-[22px] reserves space for "S2"/"S3"/"S4" */}
+        <span className="shrink-0 w-[22px] flex items-center justify-center">
+          {clinicalTier ? (
+            <span className="rounded bg-gray-100 px-1 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200" title={`Clinical tier ${clinicalTier} — sentinel safety biomarker`}>
+              {clinicalTier}
+            </span>
+          ) : null}
+        </span>
+        {/* NOAEL contribution dot — w-[10px] reserves space for 6px dot */}
+        <span className="shrink-0 w-[10px] flex items-center justify-center">
+          {(() => {
+            const nc = endpoint.endpointConfidence?.noaelContribution;
+            if (!nc || nc.label === "excluded") return null;
+            const tooltipLines = [
+              `NOAEL ${nc.label} (weight ${nc.weight})`,
+              nc.canSetNOAEL ? "Can constrain NOAEL" : "Does not constrain NOAEL",
+              nc.requiresCorroboration ? "Requires corroboration" : null,
+              ...nc.caveats.map(c => `Caveat: ${c}`),
+            ].filter(Boolean).join("\n");
+            if (nc.label === "determining") return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "rgba(248,113,113,0.7)" }} title={tooltipLines} />
+            );
+            if (nc.label === "contributing") return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full bg-gray-400" title={tooltipLines} />
+            );
+            return (
+              <span className="inline-block h-[6px] w-[6px] rounded-full border border-gray-400" title={tooltipLines} />
+            );
+          })()}
+        </span>
+        {/* Sex divergence — w-[24px] reserves space for "F≠M" */}
+        <span className="shrink-0 w-[24px] flex items-center justify-center">
+          {sexesDiffer ? (
+            <span className="font-mono text-[10px] text-muted-foreground/60" title="Findings differ between sexes (direction or pattern)">
+              F≠M
+            </span>
+          ) : null}
+        </span>
       </div>
     </button>
   );

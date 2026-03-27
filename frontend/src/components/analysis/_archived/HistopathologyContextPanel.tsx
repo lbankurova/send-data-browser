@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect, Fragment } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
@@ -42,7 +42,7 @@ import { useFindingDoseTrends } from "@/hooks/useFindingDoseTrends";
 import { fishersExact2x2 } from "@/lib/statistics";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import type { SignalSummaryRow } from "@/types/analysis-views";
-import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
+import { isPairedOrgan, specimenHasLaterality, aggregateFindingLaterality, aggregateSubjectLaterality, lateralitySummary } from "@/lib/laterality";
 import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import type { LabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 
@@ -725,7 +725,6 @@ function SpecimenOverviewPane({
   pathReviews?: Record<string, PathologyReview>;
   nav?: HistoNavProps;
 }) {
-  const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
@@ -758,29 +757,21 @@ function SpecimenOverviewPane({
   // Laterality summary for paired organs
   const lateralityInfo = useMemo(() => {
     if (!isPairedOrgan(specimen) || !subjData?.subjects || !specimenHasLaterality(subjData.subjects)) return null;
-    // Aggregate across all findings
+    // Per-finding breakdown (observation-level, for detail display)
     const findings = subjData.findings ?? [];
     const perFinding = findings.map((f) => ({
       finding: f,
       agg: aggregateFindingLaterality(subjData.subjects, f),
     })).filter((x) => x.agg.left > 0 || x.agg.right > 0 || x.agg.bilateral > 0);
     if (perFinding.length === 0) return null;
-    // Overall totals
-    const total = { left: 0, right: 0, bilateral: 0, total: 0 };
-    for (const pf of perFinding) {
-      total.left += pf.agg.left;
-      total.right += pf.agg.right;
-      total.bilateral += pf.agg.bilateral;
-      total.total += pf.agg.total;
-    }
-    // Predominantly unilateral? Spec: >70% same laterality and not bilateral
-    const unilateral = total.left + total.right;
-    const affected = unilateral + total.bilateral;
-    const isUnilateral = affected > 0 && unilateral / affected >= 0.7;
-    // Determine dominant side for display
-    const dominantSide = total.left >= total.right ? "left" : "right";
-    const dominantCount = Math.max(total.left, total.right);
-    return { perFinding, total, isUnilateral, dominantSide, dominantCount, affected };
+    // Subject-level laterality: each subject counted once by dominant pattern
+    const subjectAgg = aggregateSubjectLaterality(subjData.subjects);
+    if (subjectAgg.total === 0) return null;
+    // Predominantly one-sided? Dominant side must account for ≥70% of subjects
+    const dominantSideCount = Math.max(subjectAgg.left, subjectAgg.right);
+    const isUnilateral = subjectAgg.total >= 3 && dominantSideCount / subjectAgg.total >= 0.7;
+    const dominantSide = subjectAgg.left >= subjectAgg.right ? "left" : "right";
+    return { perFinding, subjectAgg, isUnilateral, dominantSide, dominantSideCount };
   }, [specimen, subjData]);
 
   // Lab correlation (specimen-level)
@@ -945,7 +936,7 @@ function SpecimenOverviewPane({
         (t: { finding: string; specimen: string }) => t.finding === finding && t.specimen === specimen,
       );
       const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, finding) : null;
-      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat);
+      const findingPattern = classifyFindingPattern(specimenData, finding, trend?.ca_trend_p ?? null, null, false, findingLat, trend?.dose_response_pattern, trend?.onset_dose_level);
       const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
       const findingNature = classifyFindingNature(finding, undefined, specimen, studyCtxSpec?.species);
 
@@ -1249,9 +1240,9 @@ function SpecimenOverviewPane({
         <CollapsiblePane title="Laterality" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1">
             <p className="text-[11px] text-muted-foreground italic">
-              Laterality: Predominantly {lateralityInfo.isUnilateral
-                ? `${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantCount}/${lateralityInfo.affected} affected subjects)`
-                : `${lateralitySummary(lateralityInfo.total)}`
+              Laterality: {lateralityInfo.isUnilateral
+                ? `Predominantly ${lateralityInfo.dominantSide}-sided (${lateralityInfo.dominantSideCount}/${lateralityInfo.subjectAgg.total} subjects)`
+                : `Mixed (${lateralitySummary(lateralityInfo.subjectAgg)})`
               }
             </p>
             {lateralityInfo.isUnilateral && (
@@ -1278,50 +1269,6 @@ function SpecimenOverviewPane({
         <PathologyReviewForm studyId={studyId} finding={`specimen:${specimen}`} defaultOpen />
       )}
 
-      {/* Related views */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View study summary &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View findings &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: specimen } });
-              }
-            }}
-          >
-            View NOAEL determination &#x2192;
-          </a>
-        </div>
-      </CollapsiblePane>
     </div>
   );
 }
@@ -1692,7 +1639,6 @@ function FindingDetailPane({
   studyId?: string;
   nav?: HistoNavProps;
 }) {
-  const navigate = useNavigate();
   const { navigateTo } = useStudySelection();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
   const { setSelectedSubject, setPendingCompare } = useViewSelection();
@@ -1761,19 +1707,21 @@ function FindingDetailPane({
         (r.rule_id === "R10" && r.severity === "warning"),
     );
     const findingLat = subjData?.subjects ? aggregateFindingLaterality(subjData.subjects, selection.finding) : null;
-    const findingPattern = classifyFindingPattern(
-      lesionData.filter((r) => r.specimen === selection.specimen),
-      selection.finding,
-      trendData?.find((t: { finding: string; specimen: string }) => t.finding === selection.finding && t.specimen === selection.specimen)?.ca_trend_p ?? null,
-      null,
-      false,
-      findingLat,
-    );
-    const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const trend = trendData?.find(
       (t: { finding: string; specimen: string }) =>
         t.finding === selection.finding && t.specimen === selection.specimen,
     );
+    const findingPattern = classifyFindingPattern(
+      lesionData.filter((r) => r.specimen === selection.specimen),
+      selection.finding,
+      trend?.ca_trend_p ?? null,
+      null,
+      false,
+      findingLat,
+      trend?.dose_response_pattern,
+      trend?.onset_dose_level,
+    );
+    const doseConsistency = patternToLegacyConsistency(findingPattern.pattern, findingPattern.confidence);
     const clinicalRule = ruleResults.find(
       (r) =>
         r.params?.clinical_class &&
@@ -1890,12 +1838,19 @@ function FindingDetailPane({
       if (r.incidence > maxInc) maxInc = r.incidence;
       sexes.add(r.sex);
     }
-    const findingPattern = classifyFindingPattern(findingRows, selection.finding, null, null, false);
+    const headerTrend = trendData?.find(
+      (t: { finding: string; specimen: string }) =>
+        t.finding === selection.finding && t.specimen === selection.specimen,
+    );
+    const findingPattern = classifyFindingPattern(
+      findingRows, selection.finding, headerTrend?.ca_trend_p ?? null, null, false, undefined,
+      headerTrend?.dose_response_pattern, headerTrend?.onset_dose_level,
+    );
     const doseTrend = formatPatternLabel(findingPattern);
     const sexLabel = sexes.size === 1 ? ([...sexes][0] === "M" ? "M" : "F") : "M/F";
     const incPct = Math.round(maxInc * 100);
     return { incPct, maxSev, doseTrend, sexLabel, findingPattern };
-  }, [findingRows, selection.finding]);
+  }, [findingRows, selection.finding, selection.specimen, trendData]);
 
   // Rules matching finding
   const findingRules = useMemo(() => {
@@ -2383,50 +2338,6 @@ function FindingDetailPane({
         <ToxFindingForm studyId={studyId} endpointLabel={selection.finding} />
       )}
 
-      {/* Cross-view links */}
-      <CollapsiblePane title="Related views" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <div className="space-y-1 text-xs">
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View study summary &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/findings`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View findings &#x2192;
-          </a>
-          <a
-            href="#"
-            className="block text-primary hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              if (studyId) {
-                navigateTo({ organSystem: selection.specimen });
-                navigate(`/studies/${encodeURIComponent(studyId)}/noael-determination`, { state: { organ_system: selection.specimen } });
-              }
-            }}
-          >
-            View NOAEL determination &#x2192;
-          </a>
-        </div>
-      </CollapsiblePane>
     </div>
   );
 }

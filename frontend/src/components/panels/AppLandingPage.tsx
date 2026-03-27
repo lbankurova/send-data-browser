@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState, useMemo } from "react";
+import { useCallback, useRef, useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench } from "lucide-react";
+import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench, GripVertical, Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useProjects } from "@/hooks/useProjects";
+import { useStudyPreferences, useRenameStudy, useUpdateStudyOrder } from "@/hooks/useStudyPreferences";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -34,23 +35,40 @@ type DisplayStudy = StudySummary & {
   portfolio_metadata?: StudyMetadata;  // Full portfolio metadata if available
 };
 
+/** Display label for a study: display_name if set, otherwise study_id */
+function studyLabel(s: DisplayStudy): string {
+  return s.display_name || s.study_id;
+}
+
 function StudyContextMenu({
   position,
   study,
   onClose,
   onOpen,
   onDelete,
+  onRename,
+  onResetName,
 }: {
   position: { x: number; y: number };
   study: DisplayStudy;
   onClose: () => void;
   onOpen: () => void;
   onDelete: () => void;
+  onRename: () => void;
+  onResetName: () => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const items: { label: string; action: () => void; disabled?: boolean; separator?: boolean; danger?: boolean }[] = [
+  const items: { label: string; icon?: React.ReactNode; action: () => void; disabled?: boolean; separator?: boolean; danger?: boolean }[] = [
     { label: "Open Study", action: onOpen },
+    {
+      label: "Rename...",
+      icon: <Pencil className="h-3 w-3" />,
+      action: onRename,
+    },
+    ...(study.display_name
+      ? [{ label: "Reset Name", action: onResetName }]
+      : []),
     {
       label: "Open Validation Report",
       action: () => {
@@ -100,12 +118,13 @@ function StudyContextMenu({
             {item.separator && <div className="my-1 border-t" />}
             <button
               className={cn(
-                "flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent",
+                "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent",
                 item.danger && "text-red-600 hover:bg-red-50"
               )}
               onClick={item.action}
               disabled={item.disabled}
             >
+              {item.icon && <span className="text-muted-foreground">{item.icon}</span>}
               {item.label}
             </button>
           </div>
@@ -336,12 +355,50 @@ export function AppLandingPage() {
   const { data: studies, isLoading } = useStudies();
   const { data: portfolioStudies } = useStudyPortfolio();
   const { data: projects } = useProjects();
+  const { data: prefs } = useStudyPreferences();
+  const renameMutation = useRenameStudy();
+  const orderMutation = useUpdateStudyOrder();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy } = useSelection();
   const { designMode, toggleDesignMode } = useDesignMode();
   const { data: scenarios } = useScenarios(designMode);
   const [projectFilter, setProjectFilter] = useState<string>("");
+
+  // Rename state
+  const [renamingStudyId, setRenamingStudyId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag-and-drop reorder state
+  const [dragStudyId, setDragStudyId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingStudyId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingStudyId]);
+
+  const handleRenameStart = useCallback((study: DisplayStudy) => {
+    setRenamingStudyId(study.study_id);
+    setRenameValue(study.display_name ?? study.study_id);
+  }, []);
+
+  const handleRenameConfirm = useCallback(() => {
+    if (!renamingStudyId) return;
+    const trimmed = renameValue.trim();
+    // If empty or same as study_id, clear the display name
+    const displayName = trimmed && trimmed !== renamingStudyId ? trimmed : null;
+    renameMutation.mutate({ studyId: renamingStudyId, displayName });
+    setRenamingStudyId(null);
+  }, [renamingStudyId, renameValue, renameMutation]);
+
+  const handleRenameCancel = useCallback(() => {
+    setRenamingStudyId(null);
+  }, []);
 
   const realStudies: DisplayStudy[] = (studies ?? []).map((s) => {
     // Try to calculate duration from start/end dates if available
@@ -382,6 +439,7 @@ export function AppLandingPage() {
     return {
       study_id: s.id,
       name: s.title,
+      display_name: null,
       domain_count: s.domains?.length ?? 0,
       species: s.species,
       study_type: s.study_type,
@@ -404,6 +462,7 @@ export function AppLandingPage() {
     ? (scenarios ?? []).map((s: ScenarioSummary) => ({
         study_id: s.scenario_id,
         name: s.name,
+        display_name: null,
         domain_count: s.domain_count,
         species: s.species,
         study_type: s.study_type,
@@ -422,11 +481,40 @@ export function AppLandingPage() {
     ? [...realStudies, ...portfolioDisplayStudies]
     : [...realStudies];
 
-  // Filter by program if selected
+  // Filter by program if selected, then apply custom order
   const allStudies: DisplayStudy[] = useMemo(() => {
-    if (!projectFilter) return allStudiesUnfiltered;
-    return allStudiesUnfiltered.filter((s) => s.portfolio_metadata?.project === projectFilter);
-  }, [allStudiesUnfiltered, projectFilter]);
+    const filtered = projectFilter
+      ? allStudiesUnfiltered.filter((s) => s.portfolio_metadata?.project === projectFilter)
+      : allStudiesUnfiltered;
+    const order = prefs?.order;
+    if (!order || order.length === 0) return filtered;
+    const orderIndex = new Map(order.map((id, i) => [id, i]));
+    return [...filtered].sort((a, b) => {
+      const ai = orderIndex.get(a.study_id) ?? Infinity;
+      const bi = orderIndex.get(b.study_id) ?? Infinity;
+      return ai - bi;
+    });
+  }, [allStudiesUnfiltered, projectFilter, prefs?.order]);
+
+  const handleDrop = useCallback(
+    (targetStudyId: string) => {
+      if (!dragStudyId || dragStudyId === targetStudyId) {
+        setDragStudyId(null);
+        setDropTargetId(null);
+        return;
+      }
+      const ids = allStudies.map((s) => s.study_id);
+      const fromIdx = ids.indexOf(dragStudyId);
+      const toIdx = ids.indexOf(targetStudyId);
+      if (fromIdx === -1 || toIdx === -1) return;
+      ids.splice(fromIdx, 1);
+      ids.splice(toIdx, 0, dragStudyId);
+      orderMutation.mutate(ids);
+      setDragStudyId(null);
+      setDropTargetId(null);
+    },
+    [dragStudyId, allStudies, orderMutation]
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     study: DisplayStudy;
@@ -569,6 +657,7 @@ export function AppLandingPage() {
             <table className="w-full text-[11px]">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr className="border-b bg-muted/30">
+                  <th className="w-5 px-0 py-1"></th>
                   <th className="w-8 px-1.5 py-1"></th>
                   <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
                   <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
@@ -586,17 +675,49 @@ export function AppLandingPage() {
               <tbody>
                 {allStudies.map((study) => {
                   const isSelected = selectedStudyId === study.study_id;
+                  const isRenaming = renamingStudyId === study.study_id;
+                  const isDragOver = dropTargetId === study.study_id && dragStudyId !== study.study_id;
                   return (
                     <tr
                       key={study.study_id}
                       className={cn(
                         "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
-                        isSelected && "bg-accent font-medium"
+                        isSelected && "bg-accent font-medium",
+                        isDragOver && "border-t-2 border-t-primary"
                       )}
                       onClick={() => handleClick(study)}
                       onDoubleClick={() => handleDoubleClick(study)}
                       onContextMenu={(e) => handleContextMenu(e, study)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDropTargetId(study.study_id);
+                      }}
+                      onDragLeave={() => {
+                        if (dropTargetId === study.study_id) setDropTargetId(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleDrop(study.study_id);
+                      }}
                     >
+                      {/* Drag handle */}
+                      <td className="px-0 py-px text-center">
+                        <span
+                          draggable
+                          onDragStart={(e) => {
+                            setDragStudyId(study.study_id);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => {
+                            setDragStudyId(null);
+                            setDropTargetId(null);
+                          }}
+                          className="inline-flex cursor-grab rounded p-0.5 text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+                          title="Drag to reorder"
+                        >
+                          <GripVertical className="h-3 w-3" />
+                        </span>
+                      </td>
                       <td className="px-1.5 py-px text-center">
                         <button
                           className="rounded p-0.5 hover:bg-accent"
@@ -606,7 +727,26 @@ export function AppLandingPage() {
                           <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                       </td>
-                      <td className="px-1.5 py-px font-medium text-primary">{study.study_id}</td>
+                      <td className="px-1.5 py-px font-medium text-primary">
+                        {isRenaming ? (
+                          <input
+                            ref={renameInputRef}
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameConfirm();
+                              if (e.key === "Escape") handleRenameCancel();
+                            }}
+                            onBlur={handleRenameConfirm}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full rounded border border-primary bg-background px-1 py-0 text-[11px] font-medium text-foreground outline-none"
+                          />
+                        ) : (
+                          <span title={study.display_name ? study.study_id : undefined}>
+                            {studyLabel(study)}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-1.5 py-px text-muted-foreground">
                         {study.protocol && study.protocol !== "NOT AVAILABLE"
                           ? study.protocol
@@ -657,7 +797,7 @@ export function AppLandingPage() {
                 {scenarioStudies.length > 0 && (
                   <>
                     <tr>
-                      <td colSpan={9} className="px-3 py-0">
+                      <td colSpan={13} className="px-3 py-0">
                         <div className="border-t border-dashed" />
                       </td>
                     </tr>
@@ -743,6 +883,16 @@ export function AppLandingPage() {
             const id = contextMenu.study.study_id;
             setContextMenu(null);
             setDeleteTarget(id);
+          }}
+          onRename={() => {
+            const study = contextMenu.study;
+            setContextMenu(null);
+            handleRenameStart(study);
+          }}
+          onResetName={() => {
+            const id = contextMenu.study.study_id;
+            setContextMenu(null);
+            renameMutation.mutate({ studyId: id, displayName: null });
           }}
         />
       )}

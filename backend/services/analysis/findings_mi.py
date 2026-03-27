@@ -1,5 +1,7 @@
 """MI (Microscopic) domain findings: per (MISPEC, MISTRESC) where abnormal → incidence + severity."""
 
+import re
+
 import numpy as np
 import pandas as pd
 
@@ -14,6 +16,24 @@ from services.analysis.supp_qualifiers import (
 from services.analysis.day_utils import mode_day
 
 SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5}
+_N_OF_M = re.compile(r"^(\d+)\s+OF\s+(\d+)$", re.IGNORECASE)
+
+
+def _parse_severity(val: str) -> float | None:
+    """Parse severity text to numeric score.
+
+    Handles: "MINIMAL"→1 .. "SEVERE"→5, "2 OF 5"→2.0, plain "3"→3.0.
+    """
+    val = val.strip().upper()
+    if val in SEVERITY_SCORES:
+        return float(SEVERITY_SCORES[val])
+    m = _N_OF_M.match(val)
+    if m:
+        return float(m.group(1))
+    try:
+        return float(val)
+    except ValueError:
+        return None
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
 
@@ -69,7 +89,7 @@ def compute_mi_findings(
     # Severity score
     if severity_col:
         mi_abnormal = mi_abnormal.copy()
-        mi_abnormal["sev_score"] = mi_abnormal[severity_col].astype(str).str.strip().str.upper().map(SEVERITY_SCORES)
+        mi_abnormal["sev_score"] = mi_abnormal[severity_col].astype(str).apply(_parse_severity)
 
     findings = []
     grouped = mi_abnormal.groupby([spec_col, finding_col, "SEX"])
@@ -197,6 +217,20 @@ def compute_mi_findings(
                 profile["n_total"] = int(grp["USUBJID"].nunique())
                 modifier_profile = profile
 
+        # Collect (subject_id, seq) pairs for RELREC linkage and CO comment attachment
+        relrec_seqs = None
+        relrec_subject_seqs = None
+        if "MISEQ" in grp.columns:
+            seqs = grp["MISEQ"].dropna().unique()
+            if len(seqs) > 0:
+                relrec_seqs = [int(float(s)) for s in seqs]
+            pairs = grp[["USUBJID", "MISEQ"]].dropna()
+            if len(pairs) > 0:
+                relrec_subject_seqs = [
+                    (str(r["USUBJID"]).strip(), int(float(r["MISEQ"])))
+                    for _, r in pairs.iterrows()
+                ]
+
         findings.append({
             "domain": "MI",
             "test_code": f"{specimen}_{finding_str}",
@@ -217,6 +251,8 @@ def compute_mi_findings(
             "has_recovery_subjects": str(specimen).strip().upper() in specimens_with_recovery,
             "avg_severity": all_sev,
             "modifier_profile": modifier_profile,
+            "_relrec_seq": relrec_seqs,
+            "_relrec_subject_seqs": relrec_subject_seqs,
         })
 
     return findings

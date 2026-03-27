@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class StudySummary(BaseModel):
     study_id: str
     name: str
+    display_name: str | None = None
     domain_count: int
     species: str | None = None
     study_type: str | None = None

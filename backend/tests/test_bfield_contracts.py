@@ -1,7 +1,7 @@
 """BFIELD contract conformance tests.
 
 Validates generated JSON files against documented invariants in
-docs/knowledge/api-field-contracts.md.
+docs/_internal/knowledge/api-field-contracts.md.
 
 Catches type/nullability/enum/range violations that individual module
 tests miss — each module may be correct in isolation, but the assembled
