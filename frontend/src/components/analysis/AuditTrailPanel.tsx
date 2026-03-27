@@ -19,7 +19,7 @@ const SCHEMA_LABELS: Record<string, string> = {
   "validation-records": "Validation record",
   "endpoint-bookmarks": "Endpoint bookmark",
   "causal-assessment": "Causal assessment",
-  "threshold-config": "Threshold configuration",
+  "threshold-config": "Signal scoring parameters",
   "validation-rule-config": "Validation rule config",
 };
 

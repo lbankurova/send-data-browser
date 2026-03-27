@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from services.study_discovery import StudyInfo
-from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query
+from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query, load_scoring_params
 from services.analysis.analysis_cache import (
     read_cache, write_cache, invalidate_study,
     acquire_compute_lock, release_compute_lock, wait_for_cache,
@@ -237,8 +237,11 @@ def get_analysis_view(
 
     file_name = _slug_to_file[view_name]
 
-    # Non-parameterized views (mortality, context, PK, etc.) or default settings -> from disk
-    if view_name not in PARAMETERIZED_VIEWS or settings.is_default():
+    # Load expert scoring params (defaults if none saved)
+    scoring = load_scoring_params(study_id)
+
+    # Non-parameterized views (mortality, context, PK, etc.) or all defaults -> from disk
+    if view_name not in PARAMETERIZED_VIEWS or (settings.is_default() and scoring.is_default()):
         data = _load_from_disk(study_id, file_name)
         if data is None:
             raise HTTPException(
@@ -247,8 +250,8 @@ def get_analysis_view(
             )
         return _apply_overrides(data, study_id, view_name)
 
-    # Non-default settings -> cache -> pipeline
-    cache_key = settings.settings_hash()
+    # Non-default settings or scoring -> cache -> pipeline
+    cache_key = settings.settings_hash(scoring=scoring)
     cached = read_cache(study_id, cache_key, view_name)
     if cached is not None:
         return _apply_overrides(cached, study_id, view_name)

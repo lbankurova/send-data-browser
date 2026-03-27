@@ -3,8 +3,11 @@
 Produces the 7 view-specific JSON structures that the frontend consumes.
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 
+from services.analysis.analysis_settings import ScoringParams, DEFAULT_PATTERN_SCORES
 from services.analysis.statistics import severity_trend
 
 
@@ -33,7 +36,11 @@ def _propagate_scheduled_fields(row: dict, finding: dict) -> None:
         row["n_excluded"] = finding["n_excluded"]
 
 
-def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) -> list[dict]:
+def build_study_signal_summary(
+    findings: list[dict],
+    dose_groups: list[dict],
+    params: ScoringParams | None = None,
+) -> list[dict]:
     """Build the study signal summary: one row per endpoint x dose x sex.
 
     Each row contains signal score, p-values, flags, direction, effect size.
@@ -62,6 +69,7 @@ def build_study_signal_summary(findings: list[dict], dose_groups: list[dict]) ->
                 effect_size=effect_size,
                 dose_response_pattern=finding.get("dose_response_pattern"),
                 data_type=finding.get("data_type", "continuous"),
+                params=params,
             )
 
             rows.append({
@@ -106,7 +114,10 @@ def _convergence_group(domain: str) -> str:
     return domain
 
 
-def build_target_organ_summary(findings: list[dict]) -> list[dict]:
+def build_target_organ_summary(
+    findings: list[dict],
+    params: ScoringParams | None = None,
+) -> list[dict]:
     """Build target organ summary: one row per organ system.
 
     Aggregates evidence across endpoints. SLA-11 fix: deduplicates numerator
@@ -138,6 +149,7 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
             effect_size=get_effect_size(finding),
             dose_response_pattern=finding.get("dose_response_pattern"),
             data_type=finding.get("data_type", "continuous"),
+            params=params,
         )
         # SLA-11: keep max signal per endpoint key (dedup longitudinal duplicates)
         if ep_key not in data["ep_signals"] or sig > data["ep_signals"][ep_key]:
@@ -175,7 +187,10 @@ def build_target_organ_summary(findings: list[dict]) -> list[dict]:
             "max_signal_score": round(data["max_signal"], 3),
             "n_significant": data["n_significant"],
             "n_treatment_related": data["n_treatment_related"],
-            "target_organ_flag": evidence_score >= 0.3 and data["n_significant"] >= 1,
+            "target_organ_flag": (
+                evidence_score >= (params or ScoringParams()).target_organ_evidence
+                and data["n_significant"] >= (params or ScoringParams()).target_organ_n_significant
+            ),
             "max_severity": round(max_sev, 2) if max_sev is not None else None,
         })
 
@@ -353,6 +368,7 @@ def build_noael_summary(
     findings: list[dict],
     dose_groups: list[dict],
     mortality: dict | None = None,
+    params: ScoringParams | None = None,
 ) -> list[dict]:
     """Build NOAEL summary: 3 rows (M, F, combined)."""
     rows = []
@@ -413,6 +429,7 @@ def build_noael_summary(
         # Compute NOAEL confidence score
         confidence = _compute_noael_confidence(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
+            params=params,
         )
 
         # Determine classification method used
@@ -502,21 +519,25 @@ def _compute_noael_confidence(
     all_findings: list[dict],
     noael_level: int | None,
     n_adverse_at_loael: int,
+    params: ScoringParams | None = None,
 ) -> float:
     """Compute NOAEL confidence score (0.0 to 1.0).
 
-    Penalties:
-    - single_endpoint: NOAEL based on only 1 adverse endpoint (0.2)
-    - sex_inconsistency: M and F NOAEL differ for Combined (0.2)
-    - pathology_disagreement: reserved for annotation data (0.0)
-    - large_effect_non_significant: large effect size but not significant (0.2)
-    - all_uncorroborated: ALL adverse findings at LOAEL are uncorroborated (0.15)
+    Penalties (configurable via ScoringParams):
+    - single_endpoint: NOAEL based on only 1 adverse endpoint
+    - sex_inconsistency: M and F NOAEL differ for Combined
+    - pathology_disagreement: reserved for annotation data
+    - large_effect_non_significant: large effect size but not significant
+    - all_uncorroborated: ALL adverse findings at LOAEL are uncorroborated (fixed 0.15)
     """
+    if params is None:
+        params = ScoringParams()
+
     score = 1.0
 
     # Penalty: NOAEL based on a single endpoint
     if n_adverse_at_loael <= 1:
-        score -= 0.2
+        score -= params.penalty_single_endpoint
 
     # Penalty: sex inconsistency (for M/F rows, check if opposite sex has different NOAEL)
     if sex in ("M", "F"):
@@ -532,24 +553,27 @@ def _compute_noael_confidence(
         opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
         opp_noael = (opp_loael - 1) if opp_loael is not None and opp_loael > 0 else None
         if noael_level is not None and opp_noael is not None and noael_level != opp_noael:
-            score -= 0.2
+            score -= params.penalty_sex_inconsistency
 
-    # Penalty: pathology_disagreement — defaults to 0 (annotation data unavailable at generation time)
+    # Penalty: pathology_disagreement
+    score -= params.penalty_pathology_disagreement
 
     # Penalty: large effect size but not statistically significant (SLA-14)
     # Only applies to continuous data types — MI severity ≥ 1.0 for ALL graded
     # findings, so the threshold is meaningless for incidence/ordinal.
+    large_effect_threshold = params.large_effect
     for f in sex_findings:
         if f.get("data_type") != "continuous":
             continue
         es = f.get("max_effect_size")
         p = f.get("min_p_adj")
-        if es is not None and abs(es) >= 1.0 and (p is None or p >= 0.05):
-            score -= 0.2
+        if es is not None and abs(es) >= large_effect_threshold and (p is None or p >= 0.05):
+            score -= params.penalty_large_effect_non_sig
             break
 
     # Penalty: ALL adverse findings at LOAEL are uncorroborated
     # Asymmetric: uncorroborated still drives LOAEL, just with lower confidence
+    # (fixed 0.15, not configurable — guard-chain logic, not a tunable threshold)
     if n_adverse_at_loael > 0:
         loael_findings = [
             f for f in sex_findings
@@ -570,6 +594,7 @@ def _compute_signal_score(
     effect_size: float | None,
     dose_response_pattern: str | None,
     data_type: str = "continuous",
+    params: ScoringParams | None = None,
 ) -> float:
     """Compute a 0-1 signal score combining statistical and biological significance.
 
@@ -577,43 +602,38 @@ def _compute_signal_score(
     - Continuous: p=0.35, trend=0.20, effect=0.25, pattern=0.20
     - Incidence:  p=0.45, trend=0.30, effect=0.00, pattern=0.25
       (MI severity grade as optional 0.10 modifier, total capped at 1.0)
+
+    When ``params`` is provided, weights and pattern scores are taken from
+    the expert-configured ScoringParams instead of the defaults above.
     """
     import math
-    score = 0.0
 
-    pattern_scores = {
-        "monotonic_increase": 1.0,
-        "monotonic_decrease": 1.0,
-        "threshold": 0.7,
-        "threshold_increase": 0.7,
-        "threshold_decrease": 0.7,
-        "non_monotonic": 0.3,
-        "flat": 0.0,
-        "insufficient_data": 0.0,
-    }
-    pat_score = pattern_scores.get(dose_response_pattern or "", 0.0)
+    if params is None:
+        params = ScoringParams()
+
+    score = 0.0
+    pat_score = params.pattern_scores.get(dose_response_pattern or "", 0.0)
 
     if data_type == "continuous":
-        # Existing weights: p=0.35, trend=0.20, effect=0.25, pattern=0.20
         if p_value is not None and p_value > 0:
-            score += 0.35 * min(-math.log10(p_value) / 4.0, 1.0)
+            score += params.cont_w_pvalue * min(-math.log10(p_value) / 4.0, 1.0)
         if trend_p is not None and trend_p > 0:
-            score += 0.20 * min(-math.log10(trend_p) / 4.0, 1.0)
+            score += params.cont_w_trend * min(-math.log10(trend_p) / 4.0, 1.0)
         if effect_size is not None:
-            score += 0.25 * min(abs(effect_size) / 2.0, 1.0)
-        score += 0.20 * pat_score
+            score += params.cont_w_effect * min(abs(effect_size) / 2.0, 1.0)
+        score += params.cont_w_pattern * pat_score
     else:
         # Incidence: no effect-size analog — redistribute weight to statistical components
         if p_value is not None and p_value > 0:
-            score += 0.45 * min(-math.log10(p_value) / 4.0, 1.0)
+            score += params.inc_w_pvalue * min(-math.log10(p_value) / 4.0, 1.0)
         if trend_p is not None and trend_p > 0:
-            score += 0.30 * min(-math.log10(trend_p) / 4.0, 1.0)
-        score += 0.25 * pat_score
-        # MI severity grade as optional modifier (0-0.10 bonus)
+            score += params.inc_w_trend * min(-math.log10(trend_p) / 4.0, 1.0)
+        score += params.inc_w_pattern * pat_score
+        # MI severity grade as optional modifier
         if effect_size is not None:
             sev_grade = effect_size  # MI avg_severity; None for MA/CL/TF/DS
             if sev_grade is not None:
-                score += 0.10 * min((sev_grade - 1) / 4.0, 1.0)
+                score += params.inc_w_severity * min((sev_grade - 1) / 4.0, 1.0)
 
     return min(score, 1.0)
 

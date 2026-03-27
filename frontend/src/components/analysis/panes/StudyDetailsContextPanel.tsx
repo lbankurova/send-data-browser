@@ -13,6 +13,7 @@ import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
+import { ThresholdEditor } from "@/components/analysis/ThresholdEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterSelect } from "@/components/ui/FilterBar";
 
@@ -376,6 +377,9 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           {effectSize === "glass-delta" && "Uses control SD only. Preferred when treatment affects variance."}
         </div>
       </CollapsiblePane>
+
+      {/* ── Threshold configuration ──────────────────────── */}
+      <ThresholdEditor studyId={studyId} expandAll={expandGen} collapseAll={collapseGen} />
 
       {/* ── Mortality ────────────────────────────────────── */}
       <MortalityInfoPane mortality={mortalityData} expandAll={expandGen} collapseAll={collapseGen} />

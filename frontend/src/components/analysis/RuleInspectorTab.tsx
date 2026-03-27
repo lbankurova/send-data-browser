@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
-import { ThresholdEditor } from "./ThresholdEditor";
+
 import { CustomInsightRuleBuilder } from "./CustomInsightRuleBuilder";
 import { FilterBar, FilterBarCount, FilterSelect } from "@/components/ui/FilterBar";
+import { useAnnotations } from "@/hooks/useAnnotations";
 import {
   RULE_CATALOG,
   THRESHOLDS,
   SIGNAL_SCORE_WEIGHTS,
+  INCIDENCE_SCORE_WEIGHTS,
   PATTERN_SCORES,
   TIER_CLASSIFICATION,
   PRIORITY_BANDS,
@@ -14,6 +16,7 @@ import {
 } from "@/lib/rule-definitions";
 import type { RuleDef } from "@/lib/rule-definitions";
 import type { RuleResult } from "@/types/analysis-views";
+import type { ThresholdConfig } from "@/types/annotations";
 
 interface Props {
   ruleResults: RuleResult[];
@@ -22,6 +25,21 @@ interface Props {
 }
 
 export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
+  // Active scoring params (from annotation, falls back to defaults)
+  const { data: thresholdAnnotations } = useAnnotations<ThresholdConfig>(studyId, "threshold-config");
+  const active = useMemo(() => {
+    const raw = thresholdAnnotations?.["defaults"];
+    const cw = raw?.continuousWeights ?? raw?.signalScoreWeights ?? SIGNAL_SCORE_WEIGHTS;
+    const iw = raw?.incidenceWeights ?? INCIDENCE_SCORE_WEIGHTS;
+    return {
+      cont: cw,
+      inc: iw,
+      targetOrganEvidence: raw?.targetOrganEvidence ?? 0.3,
+      targetOrganSignificant: raw?.targetOrganSignificant ?? 1,
+      isCustomized: !!raw?.continuousWeights || !!raw?.signalScoreWeights,
+    };
+  }, [thresholdAnnotations]);
+
   const [scopeFilter, setScopeFilter] = useState<string>("");
   const [severityFilter, setSeverityFilter] = useState<string>("");
 
@@ -103,10 +121,19 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {/* Signal score formula */}
-        <CollapsiblePane title="Signal score formula" defaultOpen>
+        <CollapsiblePane
+          title="Signal score formula"
+          defaultOpen
+          headerRight={active.isCustomized ? <span className="text-[10px] text-amber-600">(customized)</span> : undefined}
+        >
           <div className="space-y-2 text-xs">
+            <div className="mb-1 text-[11px] font-medium text-muted-foreground">Continuous</div>
             <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[11px]">
-              {SIGNAL_SCORE_WEIGHTS.pValue} &times; p-value + {SIGNAL_SCORE_WEIGHTS.trend} &times; trend + {SIGNAL_SCORE_WEIGHTS.effectSize} &times; effect size + {SIGNAL_SCORE_WEIGHTS.pattern} &times; pattern
+              {active.cont.pValue} &times; p-value + {active.cont.trend} &times; trend + {active.cont.effectSize} &times; effect size + {active.cont.pattern} &times; pattern
+            </div>
+            <div className="mb-1 text-[11px] font-medium text-muted-foreground">Incidence</div>
+            <div className="rounded bg-muted/40 px-3 py-2 font-mono text-[11px]">
+              {active.inc.pValue} &times; p-value + {active.inc.trend} &times; trend + {active.inc.pattern} &times; pattern + {active.inc.severityModifier} &times; MI severity
             </div>
             <ComponentDetails />
             <div className="mt-2 border-t pt-2">
@@ -118,7 +145,7 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
             <div className="mt-2 border-t pt-2">
               <div className="mb-1 text-[11px] font-medium text-muted-foreground">Target organ threshold</div>
               <div className="font-mono text-[11px]">
-                evidence &ge; 0.3 AND n_significant &ge; 1
+                evidence &ge; {active.targetOrganEvidence} AND n_significant &ge; {active.targetOrganSignificant}
               </div>
             </div>
           </div>
@@ -209,9 +236,6 @@ export function RuleInspectorTab({ ruleResults, organFilter, studyId }: Props) {
             ))}
           </div>
         </CollapsiblePane>
-
-        {/* Threshold editor (TRUST-01p2) */}
-        {studyId && <ThresholdEditor studyId={studyId} />}
 
         {/* Custom insight rules (TRUST-01p3) */}
         {studyId && <CustomInsightRuleBuilder studyId={studyId} />}

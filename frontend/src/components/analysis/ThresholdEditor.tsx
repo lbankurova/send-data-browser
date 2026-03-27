@@ -1,38 +1,68 @@
 /**
- * TRUST-01p2: Threshold Editor
- * Allows experts to adjust signal scoring weights, pattern scores,
- * thresholds, and NOAEL confidence penalties.
- * Persists via annotation system for audit trail.
+ * TRUST-01p2: Signal Scoring Parameters Editor
+ * Allows experts to adjust signal scoring weights (continuous & incidence),
+ * pattern scores, thresholds, and NOAEL confidence penalties.
+ * Saved params are read by the backend pipeline at computation time.
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Info } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CollapsiblePane } from "./panes/CollapsiblePane";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import {
   SIGNAL_SCORE_WEIGHTS,
+  INCIDENCE_SCORE_WEIGHTS,
   PATTERN_SCORES,
   NOAEL_CONFIDENCE_PENALTIES,
 } from "@/lib/rule-definitions";
 import type { ThresholdConfig } from "@/types/annotations";
 
 // ---------------------------------------------------------------------------
-// Default values (from rule-definitions.ts)
+// Default values
 // ---------------------------------------------------------------------------
 
-const DEFAULT_CONFIG: Omit<ThresholdConfig, "modifiedBy" | "modifiedDate"> = {
-  signalScoreWeights: { ...SIGNAL_SCORE_WEIGHTS },
-  patternScores: { ...PATTERN_SCORES },
+const DEFAULT_CONT = { ...SIGNAL_SCORE_WEIGHTS };
+const DEFAULT_INC = { ...INCIDENCE_SCORE_WEIGHTS };
+
+type Penalties = {
+  singleEndpoint: number;
+  sexInconsistency: number;
+  pathologyDisagreement: number;
+  largeEffectNonSig: number;
+};
+
+const DEFAULT_PENALTIES: Penalties = {
+  singleEndpoint: -0.20,
+  sexInconsistency: -0.20,
+  pathologyDisagreement: 0,
+  largeEffectNonSig: -0.20,
+};
+
+const DEFAULT_CONFIG = {
+  continuousWeights: DEFAULT_CONT as { pValue: number; trend: number; effectSize: number; pattern: number },
+  incidenceWeights: DEFAULT_INC as { pValue: number; trend: number; pattern: number; severityModifier: number },
+  patternScores: { ...PATTERN_SCORES } as Record<string, number>,
   pValueSignificance: 0.05,
   largeEffect: 1.0,
   moderateEffect: 0.5,
   targetOrganEvidence: 0.3,
   targetOrganSignificant: 1,
-  noaelPenalties: {
-    singleEndpoint: -0.20,
-    sexInconsistency: -0.20,
-    pathologyDisagreement: 0,
-    largeEffectNonSig: -0.20,
-  },
+  noaelPenalties: DEFAULT_PENALTIES,
 };
+
+// ---------------------------------------------------------------------------
+// Backward compat: migrate old signalScoreWeights → continuousWeights
+// ---------------------------------------------------------------------------
+
+function migrateConfig(raw: ThresholdConfig): ThresholdConfig {
+  if (raw.continuousWeights) return raw;
+  // Old format: signalScoreWeights only → becomes continuousWeights
+  return {
+    ...raw,
+    continuousWeights: raw.signalScoreWeights ?? { ...DEFAULT_CONT },
+    incidenceWeights: { ...DEFAULT_INC },
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -49,6 +79,7 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
+  const queryClient = useQueryClient();
   const { data: annotations } = useAnnotations<ThresholdConfig>(studyId, "threshold-config");
   const { mutate: save, isPending, isSuccess, reset } = useSaveAnnotation<ThresholdConfig>(studyId, "threshold-config");
 
@@ -60,22 +91,28 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
     }
   }, [isSuccess, reset]);
 
-  const existing = annotations?.["defaults"];
+  const existing = useMemo(() => {
+    const raw = annotations?.["defaults"];
+    if (!raw) return undefined;
+    return migrateConfig(raw);
+  }, [annotations]);
 
-  // Local state for all editable fields
-  const [weights, setWeights] = useState(DEFAULT_CONFIG.signalScoreWeights);
-  const [patterns, setPatterns] = useState(DEFAULT_CONFIG.patternScores);
-  const [pValSig, setPValSig] = useState(DEFAULT_CONFIG.pValueSignificance);
-  const [largeEff, setLargeEff] = useState(DEFAULT_CONFIG.largeEffect);
-  const [modEff, setModEff] = useState(DEFAULT_CONFIG.moderateEffect);
-  const [toEvidence, setToEvidence] = useState(DEFAULT_CONFIG.targetOrganEvidence);
-  const [toSignificant, setToSignificant] = useState(DEFAULT_CONFIG.targetOrganSignificant);
+  // Local state
+  const [contWeights, setContWeights] = useState(DEFAULT_CONFIG.continuousWeights);
+  const [incWeights, setIncWeights] = useState(DEFAULT_CONFIG.incidenceWeights);
+  const [patterns, setPatterns] = useState<Record<string, number>>(DEFAULT_CONFIG.patternScores);
+  const [pValSig, setPValSig] = useState<number>(DEFAULT_CONFIG.pValueSignificance);
+  const [largeEff, setLargeEff] = useState<number>(DEFAULT_CONFIG.largeEffect);
+  const [modEff, setModEff] = useState<number>(DEFAULT_CONFIG.moderateEffect);
+  const [toEvidence, setToEvidence] = useState<number>(DEFAULT_CONFIG.targetOrganEvidence);
+  const [toSignificant, setToSignificant] = useState<number>(DEFAULT_CONFIG.targetOrganSignificant);
   const [penalties, setPenalties] = useState(DEFAULT_CONFIG.noaelPenalties);
 
   // Sync from persisted data
   useEffect(() => {
     if (existing) {
-      setWeights(existing.signalScoreWeights);
+      setContWeights(existing.continuousWeights);
+      setIncWeights(existing.incidenceWeights);
       setPatterns(existing.patternScores);
       setPValSig(existing.pValueSignificance);
       setLargeEff(existing.largeEffect);
@@ -86,18 +123,18 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
     }
   }, [existing]);
 
-  // Check if weights sum to 1.0
-  const weightSum = weights.pValue + weights.trend + weights.effectSize + weights.pattern;
-  const weightSumValid = Math.abs(weightSum - 1.0) < 0.005;
+  // Sums
+  const contSum = contWeights.pValue + contWeights.trend + contWeights.effectSize + contWeights.pattern;
+  const contSumValid = Math.abs(contSum - 1.0) < 0.005;
+  const incSum = incWeights.pValue + incWeights.trend + incWeights.pattern;
+  const incSumValid = Math.abs(incSum - 1.0) < 0.005;
 
-  // Check if anything is modified from defaults
+  // Modified from defaults?
   const isModified = useMemo(() => {
     const d = DEFAULT_CONFIG;
     return (
-      weights.pValue !== d.signalScoreWeights.pValue ||
-      weights.trend !== d.signalScoreWeights.trend ||
-      weights.effectSize !== d.signalScoreWeights.effectSize ||
-      weights.pattern !== d.signalScoreWeights.pattern ||
+      JSON.stringify(contWeights) !== JSON.stringify(d.continuousWeights) ||
+      JSON.stringify(incWeights) !== JSON.stringify(d.incidenceWeights) ||
       Object.entries(patterns).some(([k, v]) => v !== d.patternScores[k]) ||
       pValSig !== d.pValueSignificance ||
       largeEff !== d.largeEffect ||
@@ -109,16 +146,14 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
       penalties.pathologyDisagreement !== d.noaelPenalties.pathologyDisagreement ||
       penalties.largeEffectNonSig !== d.noaelPenalties.largeEffectNonSig
     );
-  }, [weights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties]);
+  }, [contWeights, incWeights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties]);
 
-  // Check if different from persisted
+  // Dirty (different from persisted)?
   const isDirty = useMemo(() => {
-    if (!existing) return isModified; // If no saved config, dirty only if different from defaults
+    if (!existing) return isModified;
     return (
-      weights.pValue !== existing.signalScoreWeights.pValue ||
-      weights.trend !== existing.signalScoreWeights.trend ||
-      weights.effectSize !== existing.signalScoreWeights.effectSize ||
-      weights.pattern !== existing.signalScoreWeights.pattern ||
+      JSON.stringify(contWeights) !== JSON.stringify(existing.continuousWeights) ||
+      JSON.stringify(incWeights) !== JSON.stringify(existing.incidenceWeights) ||
       Object.entries(patterns).some(([k, v]) => v !== existing.patternScores[k]) ||
       pValSig !== existing.pValueSignificance ||
       largeEff !== existing.largeEffect ||
@@ -130,13 +165,14 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
       penalties.pathologyDisagreement !== existing.noaelPenalties.pathologyDisagreement ||
       penalties.largeEffectNonSig !== existing.noaelPenalties.largeEffectNonSig
     );
-  }, [existing, weights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties, isModified]);
+  }, [existing, contWeights, incWeights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties, isModified]);
 
   const handleSave = useCallback(() => {
     save({
       entityKey: "defaults",
       data: {
-        signalScoreWeights: weights,
+        continuousWeights: contWeights,
+        incidenceWeights: incWeights,
         patternScores: patterns,
         pValueSignificance: pValSig,
         largeEffect: largeEff,
@@ -145,46 +181,78 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
         targetOrganSignificant: toSignificant,
         noaelPenalties: penalties,
       },
+    }, {
+      onSuccess: () => {
+        // Invalidate analysis data so UI re-fetches with new scoring params
+        queryClient.invalidateQueries({ queryKey: ["study", studyId] });
+        queryClient.invalidateQueries({ queryKey: ["analysis"] });
+      },
     });
-  }, [save, weights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties]);
+  }, [save, queryClient, studyId, contWeights, incWeights, patterns, pValSig, largeEff, modEff, toEvidence, toSignificant, penalties]);
 
   const handleReset = () => {
-    setWeights(DEFAULT_CONFIG.signalScoreWeights);
-    setPatterns(DEFAULT_CONFIG.patternScores);
+    setContWeights({ ...DEFAULT_CONFIG.continuousWeights });
+    setIncWeights({ ...DEFAULT_CONFIG.incidenceWeights });
+    setPatterns({ ...DEFAULT_CONFIG.patternScores });
     setPValSig(DEFAULT_CONFIG.pValueSignificance);
     setLargeEff(DEFAULT_CONFIG.largeEffect);
     setModEff(DEFAULT_CONFIG.moderateEffect);
     setToEvidence(DEFAULT_CONFIG.targetOrganEvidence);
     setToSignificant(DEFAULT_CONFIG.targetOrganSignificant);
-    setPenalties(DEFAULT_CONFIG.noaelPenalties);
+    setPenalties({ ...DEFAULT_CONFIG.noaelPenalties });
   };
 
   return (
     <CollapsiblePane
-      title="Threshold configuration"
+      title="Signal scoring parameters"
       defaultOpen={false}
       expandAll={expandAll}
       collapseAll={collapseAll}
       headerRight={isModified ? <span className="text-[10px] text-amber-600">(customized)</span> : undefined}
+      badge={
+        <span title="Configure signal scoring weights, pattern scores, thresholds, and NOAEL penalties. Changes are saved per-study and applied to all analysis computations.">
+          <Info className="h-3 w-3 shrink-0 cursor-help text-muted-foreground/40" />
+        </span>
+      }
     >
       <div className="space-y-3 text-xs">
-        {/* Signal score weights */}
+        {/* Continuous weights */}
         <div>
           <div className="mb-1.5 flex items-baseline gap-2">
-            <span className="text-[11px] font-medium text-muted-foreground">Signal score weights</span>
-            <span className={`text-[10px] font-mono ${weightSumValid ? "text-muted-foreground/60" : "text-red-600"}`}>
-              sum = {weightSum.toFixed(2)}{!weightSumValid && " (must = 1.00)"}
+            <span className="text-[11px] font-medium text-muted-foreground">Continuous weights</span>
+            <span className={`text-[10px] font-mono ${contSumValid ? "text-muted-foreground/60" : "text-red-600"}`}>
+              sum = {contSum.toFixed(2)}{!contSumValid && " (must = 1.00)"}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-            <WeightInput label="p-value" value={weights.pValue} defaultValue={SIGNAL_SCORE_WEIGHTS.pValue}
-              onChange={(v) => setWeights((w) => ({ ...w, pValue: v }))} />
-            <WeightInput label="Trend" value={weights.trend} defaultValue={SIGNAL_SCORE_WEIGHTS.trend}
-              onChange={(v) => setWeights((w) => ({ ...w, trend: v }))} />
-            <WeightInput label="Effect size" value={weights.effectSize} defaultValue={SIGNAL_SCORE_WEIGHTS.effectSize}
-              onChange={(v) => setWeights((w) => ({ ...w, effectSize: v }))} />
-            <WeightInput label="Pattern" value={weights.pattern} defaultValue={SIGNAL_SCORE_WEIGHTS.pattern}
-              onChange={(v) => setWeights((w) => ({ ...w, pattern: v }))} />
+            <WeightInput label="p-value" value={contWeights.pValue} defaultValue={DEFAULT_CONT.pValue}
+              onChange={(v) => setContWeights((w) => ({ ...w, pValue: v }))} />
+            <WeightInput label="Trend" value={contWeights.trend} defaultValue={DEFAULT_CONT.trend}
+              onChange={(v) => setContWeights((w) => ({ ...w, trend: v }))} />
+            <WeightInput label="Effect size" value={contWeights.effectSize} defaultValue={DEFAULT_CONT.effectSize}
+              onChange={(v) => setContWeights((w) => ({ ...w, effectSize: v }))} />
+            <WeightInput label="Pattern" value={contWeights.pattern} defaultValue={DEFAULT_CONT.pattern}
+              onChange={(v) => setContWeights((w) => ({ ...w, pattern: v }))} />
+          </div>
+        </div>
+
+        {/* Incidence weights */}
+        <div>
+          <div className="mb-1.5 flex items-baseline gap-2">
+            <span className="text-[11px] font-medium text-muted-foreground">Incidence weights</span>
+            <span className={`text-[10px] font-mono ${incSumValid ? "text-muted-foreground/60" : "text-red-600"}`}>
+              sum = {incSum.toFixed(2)}{!incSumValid && " (must = 1.00)"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+            <WeightInput label="p-value" value={incWeights.pValue} defaultValue={DEFAULT_INC.pValue}
+              onChange={(v) => setIncWeights((w) => ({ ...w, pValue: v }))} />
+            <WeightInput label="Trend" value={incWeights.trend} defaultValue={DEFAULT_INC.trend}
+              onChange={(v) => setIncWeights((w) => ({ ...w, trend: v }))} />
+            <WeightInput label="Pattern" value={incWeights.pattern} defaultValue={DEFAULT_INC.pattern}
+              onChange={(v) => setIncWeights((w) => ({ ...w, pattern: v }))} />
+            <WeightInput label="MI severity cap" value={incWeights.severityModifier} defaultValue={DEFAULT_INC.severityModifier}
+              onChange={(v) => setIncWeights((w) => ({ ...w, severityModifier: v }))} />
           </div>
         </div>
 
@@ -250,7 +318,7 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
           <button
             className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-green-600 text-white" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
             onClick={handleSave}
-            disabled={!isDirty || !weightSumValid || isPending || isSuccess}
+            disabled={!isDirty || !contSumValid || !incSumValid || isPending || isSuccess}
           >
             {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
           </button>
@@ -272,8 +340,8 @@ export function ThresholdEditor({ studyId, expandAll, collapseAll }: Props) {
         )}
 
         <p className="text-[10px] text-muted-foreground/60">
-          Configuration is saved per-study. Changes do not re-run the analysis pipeline —
-          they document expert-preferred thresholds for regulatory review.
+          Configuration is saved per-study. Changes affect signal scores,
+          target organ flags, and NOAEL confidence on next data load.
         </p>
       </div>
     </CollapsiblePane>

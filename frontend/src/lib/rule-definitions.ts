@@ -191,6 +191,7 @@ export const THRESHOLDS: ThresholdDef[] = [
 // Signal score weights & pattern scores
 // ---------------------------------------------------------------------------
 
+/** Continuous endpoint signal score weights (must sum to 1.0). */
 export const SIGNAL_SCORE_WEIGHTS = {
   pValue: 0.35,
   trend: 0.20,
@@ -198,10 +199,20 @@ export const SIGNAL_SCORE_WEIGHTS = {
   pattern: 0.20,
 } as const;
 
+/** Incidence endpoint signal score weights. */
+export const INCIDENCE_SCORE_WEIGHTS = {
+  pValue: 0.45,
+  trend: 0.30,
+  pattern: 0.25,
+  severityModifier: 0.10,
+} as const;
+
 export const PATTERN_SCORES: Record<string, number> = {
   monotonic_increase: 1.0,
   monotonic_decrease: 1.0,
   threshold: 0.7,
+  threshold_increase: 0.7,
+  threshold_decrease: 0.7,
   non_monotonic: 0.3,
   flat: 0.0,
   insufficient_data: 0.0,
