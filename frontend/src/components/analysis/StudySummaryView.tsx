@@ -12,7 +12,6 @@ import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useProvenanceMessages } from "@/hooks/useProvenanceMessages";
 import { useDomains } from "@/hooks/useDomains";
-import { useInsights } from "@/hooks/useInsights";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
@@ -38,9 +37,8 @@ import { RuleInspectorTab } from "./RuleInspectorTab";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
-import type { Insight } from "@/hooks/useInsights";
 
-type Tab = "details" | "insights" | "rules";
+type Tab = "details" | "rules";
 
 export function StudySummaryView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -95,23 +93,6 @@ export function StudySummaryView() {
     });
   }, [studyId, settingsParams, queryClient]);
 
-  // If analysis data not available but insights tab requested, show insights
-  if (error && tab === "insights") {
-    return (
-      <div className="flex h-full flex-col">
-        <ViewTabBar
-          tabs={[
-            { key: "details", label: "Study details" },
-            { key: "insights", label: "Cross-study insights" },
-          ]}
-          value={tab}
-          onChange={(newTab: string) => setTab(newTab as Tab)}
-        />
-        <CrossStudyInsightsTab studyId={studyId!} />
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -123,15 +104,6 @@ export function StudySummaryView() {
           <p className="text-sm text-amber-600">
             This is a portfolio metadata study without analysis data.
           </p>
-          <p className="mt-2 text-sm text-amber-600">
-            Try the <strong>Cross-study insights</strong> tab to see intelligence for this study.
-          </p>
-          <button
-            onClick={() => setTab("insights")}
-            className="mt-4 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-          >
-            View cross-study insights →
-          </button>
         </div>
         <div className="mt-6 rounded-lg bg-gray-50 p-4 text-left">
           <p className="text-xs text-gray-600">
@@ -166,7 +138,6 @@ export function StudySummaryView() {
         tabs={[
           { key: "details", label: "Study details" },
           { key: "rules", label: "Rules & classification" },
-          { key: "insights", label: "Cross-study insights" },
         ]}
         value={tab}
         onChange={(k) => setTab(k as Tab)}
@@ -186,113 +157,10 @@ export function StudySummaryView() {
       {/* Tab content */}
       {tab === "details" && <DetailsTab meta={meta} studyId={studyId!} provenanceMessages={provenanceData} signalData={signalData} mortalityData={mortalityData} />}
       {tab === "rules" && <RulesClassificationTab studyId={studyId!} />}
-      {tab === "insights" && <CrossStudyInsightsTab studyId={studyId!} />}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Cross-Study Insights Tab
-// ---------------------------------------------------------------------------
-
-function CrossStudyInsightsTab({ studyId }: { studyId: string }) {
-  const { data: insights, isLoading, error } = useInsights(studyId);
-  const [showAll, setShowAll] = useState(false);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Loading insights...
-        </span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-12 text-center">
-        <div>
-          <Info className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            Cross-study insights are not available for this study.
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            (Only portfolio studies with metadata have insights)
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!insights || insights.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-12 text-center">
-        <p className="text-xs text-muted-foreground">
-          No cross-study insights available (no reference studies).
-        </p>
-      </div>
-    );
-  }
-
-  const priority01 = insights.filter((i) => i.priority <= 1);
-  const priority23 = insights.filter((i) => i.priority >= 2);
-
-  return (
-    <div className="flex-1 overflow-auto p-4">
-      <div className="space-y-2">
-        {/* Priority 0 and 1 — always visible */}
-        {priority01.map((insight, idx) => (
-          <InsightCard key={idx} insight={insight} />
-        ))}
-
-        {/* Priority 2 and 3 — collapsed by default */}
-        {priority23.length > 0 && (
-          <>
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="mt-4 text-xs text-primary hover:underline"
-            >
-              {showAll
-                ? "Show fewer insights \u25B2"
-                : `Show ${priority23.length} more insights \u25BC`}
-            </button>
-            {showAll &&
-              priority23.map((insight, idx) => (
-                <InsightCard key={`p23-${idx}`} insight={insight} />
-              ))}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Insight Card Component
-// ---------------------------------------------------------------------------
-
-function InsightCard({ insight }: { insight: Insight }) {
-  return (
-    <div className="border-l-2 border-primary py-2 pl-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs font-semibold">{insight.title}</span>
-        {insight.ref_study && (
-          <span className="text-[11px] text-muted-foreground">
-            {insight.ref_study}
-          </span>
-        )}
-        {!insight.ref_study && (
-          <span className="text-[11px] italic text-muted-foreground">
-            (this study)
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-foreground">{insight.detail}</p>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Details tab — study metadata + profile block + timeline + data quality
