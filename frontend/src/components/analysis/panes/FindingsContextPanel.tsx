@@ -50,7 +50,6 @@ import { useRecoveryComparison } from "@/hooks/useRecoveryComparison";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
-import { useSpecimenLabCorrelation } from "@/hooks/useSpecimenLabCorrelation";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
 import { ProtectiveSignalsBar } from "@/components/analysis/noael/ProtectiveSignalsBar";
@@ -1047,15 +1046,7 @@ function ConvergenceNote({ coherence }: { coherence: OrganCoherence }) {
   );
 }
 
-// ─── Lab Correlates (inline, ported from HistopathologyContextPanel) ─────────
-
-function signalDots(signal: number): string {
-  if (signal >= 3) return "\u25CF\u25CF\u25CF";
-  if (signal >= 2) return "\u25CF\u25CF";
-  if (signal >= 1) return "\u25CF";
-  return "";
-}
-
+// ─── Lab Correlates (from unified findings pipeline) ───────────────────────
 function LabFindingsInline({ findings }: { findings: UnifiedFinding[] }) {
   if (findings.length === 0) return <p className="text-xs text-muted-foreground">No relevant lab findings.</p>;
   return (
@@ -1081,32 +1072,6 @@ function LabFindingsInline({ findings }: { findings: UnifiedFinding[] }) {
         ))}
       </tbody>
     </table>
-  );
-}
-
-function LabCorrelatesInline({ correlations, isLoading, finding }: {
-  correlations: Array<{ test: string; pctChange: number; controlMean: number; highDoseMean: number; unit: string; signal: number; isRelevant: boolean; direction: "up" | "down" }>;
-  isLoading: boolean;
-  finding?: string;
-}) {
-  if (isLoading) return <p className="text-xs text-muted-foreground">Loading lab data...</p>;
-  if (correlations.length === 0) return <p className="text-xs text-muted-foreground">No clinical pathology data available.</p>;
-
-  const relevant = correlations.filter(c => c.signal > 0 || c.isRelevant).slice(0, 8);
-  if (relevant.length === 0) return <p className="text-xs text-muted-foreground">No relevant lab changes detected.</p>;
-
-  return (
-    <div className="space-y-0.5">
-      {finding && <p className="text-[11px] text-muted-foreground">Most relevant for {finding}</p>}
-      {relevant.map(c => (
-        <div key={c.test} className="text-[11px]">
-          <span className={c.isRelevant ? "font-medium text-foreground" : "text-muted-foreground"}>
-            {c.test}: {c.pctChange >= 0 ? "+" : ""}{c.pctChange.toFixed(0)}% at high dose ({c.controlMean.toFixed(0)} {"\u2192"} {c.highDoseMean.toFixed(0)} {c.unit})
-          </span>
-          {c.signal > 0 && <span className="ml-1 font-mono text-[10px] text-muted-foreground">{signalDots(c.signal)}</span>}
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -1759,11 +1724,25 @@ export function FindingsContextPanel() {
   // Lab correlates (any finding with a specimen — MI/MA, OM, etc.)
   const isHistoFinding = selectedFinding?.domain === "MI" || selectedFinding?.domain === "MA";
   const hasSpecimen = !!selectedFinding?.specimen;
-  const labCorrelation = useSpecimenLabCorrelation(
-    studyId,
-    hasSpecimen ? selectedFinding?.specimen ?? null : null,
-    hasSpecimen ? selectedFinding?.finding ?? undefined : undefined,
-  );
+  const relevantLabFindingsForEndpoint = useMemo(() => {
+    if (!hasSpecimen || !selectedFinding?.specimen) return [];
+    const tests = new Set(getRelevantTests(selectedFinding.specimen, selectedFinding.finding).map(t => t.toUpperCase()));
+    if (tests.size === 0) return [];
+    return activeFindings
+      .filter(f => f.domain === "LB" && tests.has(f.test_code.toUpperCase()))
+      .reduce((acc, f) => {
+        const existing = acc.find(e => e.test_code.toUpperCase() === f.test_code.toUpperCase());
+        if (!existing) { acc.push(f); }
+        else if (f.severity === "adverse" && existing.severity !== "adverse") {
+          acc[acc.indexOf(existing)] = f;
+        }
+        return acc;
+      }, [] as UnifiedFinding[])
+      .sort((a, b) => {
+        if (a.treatment_related !== b.treatment_related) return a.treatment_related ? -1 : 1;
+        return Math.abs(b.max_effect_size ?? 0) - Math.abs(a.max_effect_size ?? 0);
+      });
+  }, [activeFindings, selectedFinding, hasSpecimen]);
 
   // Peer comparison / HCD (MI/MA findings — control incidence vs historical controls)
   const peerRow = useMemo(() => {
@@ -2270,17 +2249,15 @@ export function FindingsContextPanel() {
       )}
 
       {/* Lab correlates — any finding with a specimen (MI/MA, OM, etc.) */}
-      {hasSpecimen && labCorrelation.correlations.length > 0 && (
+      {relevantLabFindingsForEndpoint.length > 0 && (
         <CollapsiblePane
           title="Lab correlates"
           defaultOpen
           expandAll={expandGen}
           collapseAll={collapseGen}
         >
-          <LabCorrelatesInline
-            correlations={labCorrelation.correlations}
-            isLoading={labCorrelation.isLoading}
-            finding={selectedFinding?.finding}
+          <LabFindingsInline
+            findings={relevantLabFindingsForEndpoint}
           />
         </CollapsiblePane>
       )}
