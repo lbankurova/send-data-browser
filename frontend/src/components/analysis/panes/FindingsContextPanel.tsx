@@ -53,7 +53,6 @@ import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
 import { ProtectiveSignalsBar } from "@/components/analysis/noael/ProtectiveSignalsBar";
-import { WeightedNoaelCard } from "@/components/analysis/noael/WeightedNoaelCard";
 import { SafetyMarginCalculator } from "@/components/analysis/noael/SafetyMarginCalculator";
 import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsBar";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
@@ -545,28 +544,22 @@ interface DimDef {
 
 function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[]; syndromes: CrossDomainSyndrome[] }) {
   const { integrated } = eci;
-  const [showDecomp, setShowDecomp] = useState(false);
-  const [expandedDims, setExpandedDims] = useState<Set<string>>(new Set());
-  const dimRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-
-  // Seed expandedDims with LOW dimensions when decomposition first shown
-  useEffect(() => {
-    if (showDecomp) {
-      const lowDims = new Set<string>();
-      const levels: Record<string, ConfidenceLevel> = {
-        "Statistical evidence": integrated.statistical,
-        "Biological plausibility": integrated.biological,
-        "Dose-response quality": integrated.doseResponse,
-        "Trend test validity": integrated.trendValidity,
-        "Trend concordance": integrated.trendConcordance,
-      };
-      for (const [key, level] of Object.entries(levels)) {
-        if (level === "low") lowDims.add(key);
-      }
-      if (lowDims.size > 0) setExpandedDims(lowDims);
+  const [expandedDims, setExpandedDims] = useState<Set<string>>(() => {
+    // Seed with LOW dimensions on mount
+    const lowDims = new Set<string>();
+    const levels: Record<string, ConfidenceLevel> = {
+      "Statistical evidence": integrated.statistical,
+      "Biological plausibility": integrated.biological,
+      "Dose-response quality": integrated.doseResponse,
+      "Trend test validity": integrated.trendValidity,
+      "Trend concordance": integrated.trendConcordance,
+    };
+    for (const [key, level] of Object.entries(levels)) {
+      if (level === "low") lowDims.add(key);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDecomp]);
+    return lowDims;
+  });
+  const dimRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
 
   const toggleDim = useCallback((key: string) => {
     setExpandedDims((prev) => {
@@ -574,19 +567,6 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
-    });
-  }, []);
-
-  const expandAndScroll = useCallback((key: string) => {
-    setShowDecomp(true);
-    setExpandedDims((prev) => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-    // Scroll after render
-    requestAnimationFrame(() => {
-      dimRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   }, []);
 
@@ -633,102 +613,58 @@ function DecomposedConfidencePane({ eci, finding, doseGroups, syndromes }: { eci
   ], [eci, finding, integrated, trendNA, concordanceNA]);
 
   return (
-    <div className="mt-2 text-[11px]">
-      {/* Collapsed summary line */}
-      <div className="flex items-baseline gap-1 flex-wrap">
-        <span className="text-muted-foreground">Confidence:</span>
-        <span className={`uppercase ${confidenceLevelClass(integrated.integrated)}`}>
-          {integrated.integrated}
-        </span>
-        {integrated.limitingFactors.length > 0 && (
-          <span className="text-muted-foreground">
-            (limited by{" "}
-            {integrated.limitingFactors.map((factor, i) => (
-              <span key={factor}>
-                {i > 0 && ", "}
-                <button
-                  className="text-primary cursor-pointer hover:underline"
-                  onClick={() => expandAndScroll(factor)}
+    <div className="text-[11px]">
+      {/* Decomposition — per-dimension expandable rows */}
+      <table className="w-full text-[11px]">
+        <tbody>
+          {dims.map((d) => {
+            const isExpanded = expandedDims.has(d.key);
+            const isExpandable = !d.notApplicable && d.renderContent != null;
+            return (
+              <Fragment key={d.key}>
+                <tr
+                  ref={(el) => { if (el) dimRefs.current.set(d.key, el); }}
+                  className={isExpandable ? "cursor-pointer hover:bg-muted/20" : ""}
+                  onClick={isExpandable ? () => toggleDim(d.key) : undefined}
                 >
-                  {factor}
-                </button>
-              </span>
-            ))}
-            )
-          </span>
-        )}
-        {eci.noaelContribution.weight > 0 && (
-          <>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">
-              NOAEL weight: {eci.noaelContribution.weight} ({eci.noaelContribution.label})
-              {eci.noaelContribution.requiresCorroboration && " — requires corroboration"}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Toggle link */}
-      <button
-        className="mt-0.5 text-[10px] text-primary hover:underline"
-        onClick={() => setShowDecomp((v) => !v)}
-      >
-        {showDecomp ? "Hide decomposition" : "Show decomposition"}
-      </button>
-
-      {/* Expanded decomposition — per-dimension expandable rows */}
-      {showDecomp && (
-        <table className="mt-1.5 w-full text-[11px]">
-          <tbody>
-            {dims.map((d) => {
-              const isExpanded = expandedDims.has(d.key);
-              const isExpandable = !d.notApplicable && d.renderContent != null;
-              return (
-                <Fragment key={d.key}>
-                  <tr
-                    ref={(el) => { if (el) dimRefs.current.set(d.key, el); }}
-                    className={isExpandable ? "cursor-pointer hover:bg-muted/20" : ""}
-                    onClick={isExpandable ? () => toggleDim(d.key) : undefined}
+                  <td
+                    className={`py-0.5 pr-1.5 uppercase text-[10px] ${
+                      d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
+                    }`}
+                    style={{ width: "1px", whiteSpace: "nowrap" }}
                   >
-                    <td
-                      className={`py-0.5 pr-1.5 uppercase text-[10px] ${
-                        d.notApplicable ? "text-muted-foreground/50" : confidenceLevelClass(d.level)
-                      }`}
-                      style={{ width: "1px", whiteSpace: "nowrap" }}
-                    >
-                      {d.notApplicable ? "\u2014" : d.level}
-                    </td>
-                    <td
-                      className={`py-0.5 font-medium whitespace-nowrap ${d.notApplicable ? "text-muted-foreground/50" : ""}`}
-                      title={DIMENSION_TOOLTIPS[d.key]}
-                    >
-                      <span className="inline-flex items-center gap-0.5">
-                        {isExpandable ? (
-                          <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
-                        ) : (
-                          <span className="inline-block h-3 w-3 shrink-0" />
-                        )}
-                        {d.label}
-                        {d.notApplicable && (
-                          <span className="ml-1 text-[10px] font-normal text-muted-foreground/50">(not applicable)</span>
-                        )}
-                      </span>
+                    {d.notApplicable ? "\u2014" : d.level}
+                  </td>
+                  <td
+                    className={`py-0.5 font-medium whitespace-nowrap ${d.notApplicable ? "text-muted-foreground/50" : ""}`}
+                    title={DIMENSION_TOOLTIPS[d.key]}
+                  >
+                    <span className="inline-flex items-center gap-0.5">
+                      {isExpandable ? (
+                        <ChevronRight className={cn("h-3 w-3 shrink-0 text-muted-foreground transition-transform", isExpanded && "rotate-90")} />
+                      ) : (
+                        <span className="inline-block h-3 w-3 shrink-0" />
+                      )}
+                      {d.label}
+                      {d.notApplicable && (
+                        <span className="ml-1 text-[10px] font-normal text-muted-foreground/50">(not applicable)</span>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+                {isExpanded && d.renderContent && (
+                  <tr>
+                    <td />
+                    <td className="pb-1.5 pl-[14px] pt-0.5 text-[11px]">
+                      {d.renderContent()}
                     </td>
                   </tr>
-                  {isExpanded && d.renderContent && (
-                    <tr>
-                      <td />
-                      <td className="pb-1.5 pl-[14px] pt-0.5 text-[11px]">
-                        {d.renderContent()}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+                )}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -2027,20 +1963,19 @@ export function FindingsContextPanel() {
     <div>
       {/* Sticky header — renders immediately from cached finding */}
       <ContextPanelHeader
-        title={selectedFinding.finding}
+        title={<>{selectedFinding.finding} <span className="text-[11px] font-medium text-muted-foreground">{selectedFinding.domain}</span></>}
         subtitle={
-          <>
-            {selectedFinding.domain} | {selectedFinding.day != null ? `Day ${selectedFinding.day}` : "Terminal"}
-            {selectedFinding.modifier_profile?.dominant_temporality && (
-              <> &middot; {selectedFinding.modifier_profile.dominant_temporality}</>
-            )}
-            {selectedFinding.modifier_profile?.dominant_distribution && (
-              <> &middot; {selectedFinding.modifier_profile.dominant_distribution}</>
-            )}
-            {selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0 && (
-              <> &middot; {Object.entries(selectedFinding.modifier_profile.laterality).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(", ")}</>
-            )}
-          </>
+          (selectedFinding.modifier_profile?.dominant_temporality || selectedFinding.modifier_profile?.dominant_distribution || (selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0)) ? (
+            <>
+              {selectedFinding.modifier_profile?.dominant_temporality}
+              {selectedFinding.modifier_profile?.dominant_distribution && (
+                <>{selectedFinding.modifier_profile.dominant_temporality ? " · " : ""}{selectedFinding.modifier_profile.dominant_distribution}</>
+              )}
+              {selectedFinding.modifier_profile?.laterality && Object.keys(selectedFinding.modifier_profile.laterality).length > 0 && (
+                <>{(selectedFinding.modifier_profile.dominant_temporality || selectedFinding.modifier_profile.dominant_distribution) ? " · " : ""}{Object.entries(selectedFinding.modifier_profile.laterality).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(", ")}</>
+              )}
+            </>
+          ) : undefined
         }
         onExpandAll={expandAll}
         onCollapseAll={collapseAll}
@@ -2060,9 +1995,17 @@ export function FindingsContextPanel() {
               {getPatternLabel(selectedFinding.dose_response_pattern)}
             </span>
           )}
+          {selectedFinding.severity && selectedFinding.severity !== "normal" && (
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200 capitalize">
+              {selectedFinding.severity}
+            </span>
+          )}
           {eciConfidence && (
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200 uppercase">
-              {eciConfidence}
+            <span
+              className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
+              title="Endpoint confidence — how reliably this endpoint's data supports NOAEL determination. Based on statistical strength, biological plausibility, dose-response quality, and trend test validity."
+            >
+              NOAEL: {eciConfidence === "high" ? "Determining" : eciConfidence === "moderate" ? "Contributing" : "Supporting"}
             </span>
           )}
           {(() => {
@@ -2195,6 +2138,68 @@ export function FindingsContextPanel() {
               );
             })()}
           </div>
+
+          {/* NOAEL pane — endpoint-level NOAEL with per-sex ECI decomposition */}
+          {noael && !notEvaluated && (() => {
+            const noaelTitle = noael.dose_value != null
+              ? `NOAEL: ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
+              : "NOAEL: below tested range";
+            const epLabel = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const ep = analytics.endpoints.find(e => e.endpoint_label === epLabel);
+            const noaelBySex = ep?.noaelBySex;
+            const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
+            const eciPerSex = ep?.eciPerSex;
+            const sibFinding = hasSibling && siblingContext
+              ? findingsData?.findings.find(f => f.id === siblingContext.finding_id)
+              : undefined;
+            // Map sex → finding for per-sex decomposition
+            const findingBySex = new Map<string, UnifiedFinding>();
+            findingBySex.set(selectedFinding.sex, selectedFinding);
+            if (sibFinding) findingBySex.set(sibFinding.sex, sibFinding);
+            return (
+              <CollapsiblePane
+                title={noaelTitle}
+                defaultOpen
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+              >
+                <div className="space-y-2 text-[11px] text-muted-foreground">
+                  {/* Per-sex NOAEL breakdown */}
+                  {hasSexNoaelDiff && (
+                    <div className="flex gap-x-4">
+                      {[...noaelBySex!.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, n]) => (
+                        <span key={sex}>
+                          {sex}: {n.tier === "below-lowest"
+                            ? "below tested range"
+                            : n.doseValue != null
+                              ? `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`
+                              : "—"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* ECI decomposition — per-sex when available, otherwise aggregated */}
+                  {eciPerSex && eciPerSex.size >= 2 ? (
+                    <div className="space-y-3">
+                      {[...eciPerSex.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([sex, sexEci]) => (
+                        <div key={sex}>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{sex}</div>
+                          <DecomposedConfidencePane
+                            eci={sexEci}
+                            finding={findingBySex.get(sex) ?? selectedFinding}
+                            doseGroups={findingsData?.dose_groups}
+                            syndromes={endpointSyndromes}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : ep?.endpointConfidence ? (
+                    <DecomposedConfidencePane eci={ep.endpointConfidence} finding={selectedFinding} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
+                  ) : null}
+                </div>
+              </CollapsiblePane>
+            );
+          })()}
 
         </>
       ) : (
@@ -2478,17 +2483,7 @@ export function FindingsContextPanel() {
             {activeFinding!.domain === "OM" && activeFinding!.ancova && (
               <ANCOVADecompositionPane finding={activeFinding!} doseGroups={findingsData?.dose_groups} />
             )}
-            {/* Decomposed confidence display (ECI — SPEC-ECI-AMD-002) */}
-            {(() => {
-              const endpointLabel = activeFinding!.endpoint_label ?? activeFinding!.finding;
-              const ep = analytics.endpoints.find((e) => e.endpoint_label === endpointLabel);
-              if (!ep?.endpointConfidence) return null;
-              return (
-                <div className="mt-3 border-t border-border/30 pt-2">
-                  <DecomposedConfidencePane eci={ep.endpointConfidence} finding={activeFinding!} doseGroups={findingsData?.dose_groups} syndromes={endpointSyndromes} />
-                </div>
-              );
-            })()}
+            {/* ECI decomposition moved to NOAEL pane */}
           </CollapsiblePane>
           </div>
 
@@ -2683,11 +2678,6 @@ function NoaelStudyLevelPanel({
           <ProtectiveSignalsBar rules={ruleResults} studyId={studyId} signalData={signalData} />
         </CollapsiblePane>
       )}
-
-      {/* Weighted NOAEL (ECI) */}
-      <CollapsiblePane title="Weighted NOAEL (ECI)" defaultOpen={false} expandAll={expandGen} collapseAll={collapseGen}>
-        <WeightedNoaelCard />
-      </CollapsiblePane>
 
       {/* Safety margin calculator */}
       {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (

@@ -919,14 +919,28 @@ export function attachEndpointConfidence(
 ): void {
   // Build a lookup: endpoint_label → best UnifiedFinding (strongest signal)
   const findingsByLabel = new Map<string, UnifiedFinding>();
+  // Also build per-sex lookup: endpoint_label → Map<sex, best UnifiedFinding>
+  const findingsBySex = new Map<string, Map<string, UnifiedFinding>>();
   for (const f of findings) {
     const label = f.endpoint_label ?? f.finding;
+    // Overall best (aggregated across sexes)
     const existing = findingsByLabel.get(label);
     if (
       !existing ||
       Math.abs(f.max_effect_size ?? 0) > Math.abs(existing.max_effect_size ?? 0)
     ) {
       findingsByLabel.set(label, f);
+    }
+    // Per-sex best
+    const sex = f.sex ?? "Unknown";
+    if (!findingsBySex.has(label)) findingsBySex.set(label, new Map());
+    const sexMap = findingsBySex.get(label)!;
+    const existingSex = sexMap.get(sex);
+    if (
+      !existingSex ||
+      Math.abs(f.max_effect_size ?? 0) > Math.abs(existingSex.max_effect_size ?? 0)
+    ) {
+      sexMap.set(sex, f);
     }
   }
 
@@ -938,24 +952,38 @@ export function attachEndpointConfidence(
     if (!f) continue;
 
     const organ = ep.specimen ?? ep.organ_system;
-    // ANCOVA ran successfully: adjusted means computed and model has an R²
-    const hasValidAncova = f.ancova != null
-      && f.ancova.adjusted_means.length > 0
-      && f.ancova.model_r_squared > 0;
-    const result = computeEndpointConfidence(
-      f.group_stats ?? [],
-      f.pairwise ?? [],
-      f.dose_response_pattern ?? ep.pattern,
-      f.trend_p,
-      organ,
-      hasEstrousData,
-      miSummaries,
-      ep,
-      f.williams,
-      hasValidAncova,
-    );
 
-    ep.endpointConfidence = result;
+    // Compute ECI for a single finding
+    const computeForFinding = (finding: UnifiedFinding) => {
+      const hasValidAncova = finding.ancova != null
+        && finding.ancova.adjusted_means.length > 0
+        && finding.ancova.model_r_squared > 0;
+      return computeEndpointConfidence(
+        finding.group_stats ?? [],
+        finding.pairwise ?? [],
+        finding.dose_response_pattern ?? ep.pattern,
+        finding.trend_p,
+        organ,
+        hasEstrousData,
+        miSummaries,
+        ep,
+        finding.williams,
+        hasValidAncova,
+      );
+    };
+
+    // Aggregated ECI (best signal across sexes)
+    ep.endpointConfidence = computeForFinding(f);
+
+    // Per-sex ECI
+    const sexMap = findingsBySex.get(ep.endpoint_label);
+    if (sexMap && sexMap.size >= 2) {
+      const perSex = new Map<string, EndpointConfidenceResult>();
+      for (const [sex, sexFinding] of sexMap) {
+        perSex.set(sex, computeForFinding(sexFinding));
+      }
+      ep.eciPerSex = perSex;
+    }
   }
 }
 

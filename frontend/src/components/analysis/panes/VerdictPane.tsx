@@ -2,8 +2,7 @@ import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { formatPValue, getEffectMagnitudeLabel } from "@/lib/severity-colors";
-import { getPatternLabel, classifyEndpointConfidence } from "@/lib/findings-rail-engine";
-import type { EndpointConfidence } from "@/lib/findings-rail-engine";
+import { getPatternLabel } from "@/lib/findings-rail-engine";
 import type { EndpointConfidenceResult } from "@/lib/endpoint-confidence";
 import {
   resolveCanonical,
@@ -11,7 +10,7 @@ import {
   getRuleSourceShortLabel,
   describeThreshold,
 } from "@/lib/lab-clinical-catalog";
-import type { EndpointSummary, SexEndpointSummary } from "@/lib/derive-summaries";
+import type { SexEndpointSummary } from "@/lib/derive-summaries";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
@@ -44,118 +43,7 @@ interface Props {
   hasSibling?: boolean;
 }
 
-interface Verdict {
-  label: string;
-  labelClass: string;
-  severityWord: string;
-  /** Dashed underline color for the verdict line (red for adverse, amber for warning). */
-  underlineColor: string | null;
-}
 
-// ─── Verdict logic (moved from TreatmentRelatedSummaryPane) ─
-
-/** Determine effective severity accounting for clinical override from Layer D. */
-function effectiveSeverity(
-  statSev: string,
-  analytics: FindingsAnalytics | undefined,
-  finding: UnifiedFinding | null | undefined,
-): { sev: string; clinicalOverride: string | null } {
-  if (!analytics?.labMatches.length || !finding) return { sev: statSev, clinicalOverride: null };
-  const endpointLabel = finding.endpoint_label ?? finding.finding;
-  const canonical = resolveCanonical(endpointLabel);
-  if (!canonical) return { sev: statSev, clinicalOverride: null };
-
-  const sevOrder: Record<string, number> = { adverse: 3, warning: 2, normal: 1 };
-  const clinicalToStat: Record<string, string> = { S4: "adverse", S3: "adverse", S2: "warning", S1: "normal" };
-  let worst = statSev;
-  let overrideRule: string | null = null;
-
-  for (const match of analytics.labMatches) {
-    if (!match.matchedEndpoints.some((e) => resolveCanonical(e) === canonical)) continue;
-    const mapped = clinicalToStat[match.severity] ?? "normal";
-    if ((sevOrder[mapped] ?? 0) > (sevOrder[worst] ?? 0)) {
-      worst = mapped;
-      overrideRule = match.ruleName;
-    }
-  }
-
-  return { sev: worst, clinicalOverride: worst !== statSev ? overrideRule : null };
-}
-
-function computeVerdict(
-  data: FindingContext["treatment_summary"],
-  analytics?: FindingsAnalytics,
-  finding?: UnifiedFinding | null,
-): Verdict {
-  const tr = data.treatment_related;
-  const { sev, clinicalOverride } = effectiveSeverity(data.severity, analytics, finding);
-
-  if (tr && sev === "adverse") {
-    const suffix = clinicalOverride ? ` (${clinicalOverride})` : "";
-    return {
-      label: "Treatment-related",
-      labelClass: "text-sm font-semibold text-foreground",
-      severityWord: `Adverse${suffix}`,
-      underlineColor: "#DC2626",
-    };
-  }
-  if (tr && sev === "warning") {
-    return {
-      label: "Treatment-related",
-      labelClass: "text-sm font-semibold text-foreground",
-      severityWord: "Warning",
-      underlineColor: "#D97706",
-    };
-  }
-  if (tr) {
-    return {
-      label: "Treatment-related",
-      labelClass: "text-sm font-medium text-foreground",
-      severityWord: "Normal",
-      underlineColor: null,
-    };
-  }
-  if (clinicalOverride && sev === "adverse") {
-    return {
-      label: `Clinical: ${clinicalOverride}`,
-      labelClass: "text-sm font-semibold text-foreground",
-      severityWord: "Adverse",
-      underlineColor: "#DC2626",
-    };
-  }
-  return {
-    label: "Not treatment-related",
-    labelClass: "text-sm font-medium text-muted-foreground",
-    severityWord: "",
-    underlineColor: null,
-  };
-}
-
-// ─── Confidence ─────────────────────────────────────────────
-
-function buildConfidenceLabel(
-  finding: UnifiedFinding,
-  analytics: FindingsAnalytics | undefined,
-): EndpointConfidence | null {
-  if (!analytics) return null;
-  const endpointLabel = finding.endpoint_label ?? finding.finding;
-
-  const ep: EndpointSummary = {
-    endpoint_label: endpointLabel,
-    organ_system: finding.organ_system ?? "unknown",
-    domain: finding.domain,
-    worstSeverity: (finding.severity === "adverse" ? "adverse" : finding.severity === "warning" ? "warning" : "normal") as "adverse" | "warning" | "normal",
-    treatmentRelated: finding.treatment_related,
-    pattern: finding.dose_response_pattern ?? "flat",
-    minPValue: finding.min_p_adj,
-    maxEffectSize: finding.max_effect_size,
-    direction: finding.direction as "up" | "down" | "none" | null ?? null,
-    sexes: finding.sex === "M" ? ["M"] : finding.sex === "F" ? ["F"] : ["M", "F"],
-    maxFoldChange: null,
-  };
-
-  return classifyEndpointConfidence(ep);
-}
 
 // ─── Pattern sentence ───────────────────────────────────────
 
@@ -237,31 +125,20 @@ export function VerdictPane({
   finding,
   siblingFinding,
   analytics,
-  noael,
+  noael: _noael,
   doseResponse,
   statistics,
   siblingStatistics,
   siblingDoseResponse,
-  treatmentSummary,
+  treatmentSummary: _treatmentSummary,
   endpointSexes,
   notEvaluated,
-  eciConfidence,
-  endpointConfidence,
-  onSeeDecomposition,
+  eciConfidence: _eciConfidence,
+  endpointConfidence: _endpointConfidence,
+  onSeeDecomposition: _onSeeDecomposition,
   hasSibling,
 }: Props) {
   const { settings: studySettings } = useStudySettings();
-  const verdict = notEvaluated
-    ? { label: "Not evaluated", labelClass: "text-sm font-medium text-muted-foreground", severityWord: "", underlineColor: null }
-    : computeVerdict(treatmentSummary, analytics, finding);
-
-  // patternSentence computed below after epSummary
-  // Prefer ECI integrated confidence over the simple heuristic
-  const confidence: EndpointConfidence | null = notEvaluated
-    ? null
-    : eciConfidence
-      ? eciConfidence.toUpperCase() as EndpointConfidence
-      : buildConfidenceLabel(finding, analytics);
 
   // Clinical match for this endpoint (Layer D)
   const clinicalMatch: LabClinicalMatch | null = (!notEvaluated && analytics?.labMatches.length)
@@ -283,41 +160,11 @@ export function VerdictPane({
 
   // Per-sex NOAEL breakdown (from endpoint summary)
   const epSummary = analytics?.endpoints.find(e => e.endpoint_label === endpointLabel);
-  const noaelBySex = epSummary?.noaelBySex;
-  const hasSexNoaelDiff = noaelBySex && noaelBySex.size >= 2;
-
-  // NOAEL string — when both sexes present, derive combined from min of per-sex values
-  // (the `noael` prop is computed from primary finding's stats and may not reflect the true combined)
-  const noaelStr = (() => {
-    if (!noael) return null;
-    if (hasSexNoaelDiff) {
-      const entries = [...noaelBySex!.entries()];
-      const belowLowest = entries.some(([, n]) => n.tier === "below-lowest");
-      if (belowLowest) return "NOAEL below tested range (combined \u2014 min of per-sex values)";
-      const withValues = entries.filter(([, n]) => n.doseValue != null);
-      if (withValues.length > 0) {
-        const min = withValues.reduce((best, cur) => (cur[1].doseValue! < best[1].doseValue! ? cur : best));
-        return `NOAEL ${min[1].doseValue} ${min[1].doseUnit ?? "mg/kg"} (combined \u2014 min of per-sex values)`;
-      }
-      return "NOAEL below tested range (combined \u2014 min of per-sex values)";
-    }
-    if (noael.dose_value != null) {
-      return `NOAEL ${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`;
-    }
-    const lowestDose = statistics?.rows?.[1]; // index 0 = control
-    if (lowestDose?.dose_value != null) {
-      return `NOAEL < ${lowestDose.dose_value} ${noael.dose_unit ?? "mg/kg"} (all tested doses significant)`;
-    }
-    return "NOAEL below tested range";
-  })();
 
   const bySex = epSummary?.bySex;
 
   // Combined sex + direction + pattern line (replaces separate patternSentence + directionalFlag)
   const sexDirectionLine = notEvaluated ? null : buildSexDirectionLine(sexLabel, bySex, doseResponse);
-
-  // NOAEL weight from ECI
-  const noaelWeight = endpointConfidence?.noaelContribution ?? null;
 
   // "Largest effect" sex header
   const bestEffectSex = (() => {
@@ -406,59 +253,14 @@ export function VerdictPane({
 
   return (
     <div>
-      {/* Line 1 -- Verdict badge */}
-      <div className="flex items-center gap-2">
-        <span
-          className={verdict.labelClass}
-          style={verdict.underlineColor ? {
-            textDecoration: "underline dashed",
-            textDecorationColor: verdict.underlineColor,
-            textUnderlineOffset: "4px",
-          } : undefined}
-        >{verdict.label}</span>
-        {verdict.severityWord && (
-          <>
-            <span className="text-muted-foreground">&middot;</span>
-            <span
-              className="text-sm font-semibold text-foreground"
-              style={verdict.underlineColor ? {
-                textDecoration: "underline dashed",
-                textDecorationColor: verdict.underlineColor,
-                textUnderlineOffset: "4px",
-              } : undefined}
-            >{verdict.severityWord}</span>
-          </>
-        )}
-      </div>
-
-      {/* Line 2 -- Clinical tier + rule (only when a clinical rule matched) */}
+      {/* Line 1 -- Clinical tier + rule (only when a clinical rule matched) */}
       {clinicalLineText && (
         <div className={`mt-0.5 text-[11px] font-medium ${clinicalLineClass}`}>
           {clinicalLineText}
         </div>
       )}
 
-      {/* Line 3 -- Metadata: confidence · NOAEL weight · NOAEL */}
-      {(confidence || noaelWeight || noaelStr) && (
-        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[11px] text-muted-foreground">
-          {confidence && <span>{confidence} confidence</span>}
-          {confidence && noaelWeight && <span>&middot;</span>}
-          {noaelWeight && (
-            <span>
-              NOAEL weight: {noaelWeight.weight} ({noaelWeight.label})
-              {onSeeDecomposition && (
-                <button className="ml-1 text-primary hover:underline" onClick={onSeeDecomposition}>
-                  See decomposition
-                </button>
-              )}
-            </span>
-          )}
-          {(confidence || noaelWeight) && noaelStr && <span>&middot;</span>}
-          {noaelStr && <span>{noaelStr}</span>}
-        </div>
-      )}
-
-      {/* Line 4 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
+      {/* Line 2 -- Sex + direction + pattern (+ override dropdown for single-sex) */}
       {sexDirectionLine && (
         <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
           <span>{sexDirectionLine}</span>

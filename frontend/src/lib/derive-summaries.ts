@@ -91,6 +91,8 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** Endpoint confidence integrity assessment (ECI) — SPEC-ECI-AMD-002 */
   endpointConfidence?: import("./endpoint-confidence").EndpointConfidenceResult;
+  /** Per-sex ECI breakdown. Present when endpoint has data for multiple sexes. */
+  eciPerSex?: Map<string, import("./endpoint-confidence").EndpointConfidenceResult>;
   /** True for derived endpoints (ratios/indices) — excluded from percentile ranking and NOAEL. */
   isDerived?: boolean;
   /** Present when endpoint spans multiple domains (e.g. MI + MA for the same lesion). */
