@@ -1,0 +1,119 @@
+{
+  "$schema": "../schemas/cross-study-patterns.schema.json",
+  "version": "1.0.0",
+
+  "patterns": [
+    {
+      "id": "XSI_CONCORDANCE",
+      "name": "Cross-Species Target Organ Concordance",
+      "description": "Compares target organs across species. Shared target organ across species is the strongest predictor of human relevance.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 2,
+        "dose_overlap_required": false
+      },
+      "confidence_modifiers": [
+        { "condition": "nhp_high_background_organ", "effect": "reduce", "note": "NHP has high spontaneous background for this organ" },
+        { "condition": "dose_range_no_overlap", "effect": "reduce", "note": "Dose ranges do not overlap — non-concordance may reflect dose ceiling, not true species difference" },
+        { "condition": "shared_across_2plus_species", "effect": "increase", "note": "Target organ confirmed across 2+ species" }
+      ],
+      "output_classifications": ["CONCORDANCE_CONFIRMED", "SPECIES_LIMITED", "NOT_DETECTED"]
+    },
+    {
+      "id": "XSI_DURATION",
+      "name": "Duration Escalation Trajectory",
+      "description": "For the same compound in the same species across increasing study durations — is the finding progressive, stable, or adaptive?",
+      "comparability": {
+        "same_compound": true,
+        "same_species": true,
+        "same_route": "required",
+        "min_studies": 2,
+        "dose_overlap_required": true
+      },
+      "confidence_modifiers": [
+        { "condition": "no_dose_overlap", "effect": "reduce", "note": "Dose levels do not overlap — trajectory comparison not valid" }
+      ],
+      "output_classifications": ["PROGRESSIVE", "STABLE", "ADAPTIVE", "RESOLVED", "EMERGENT"]
+    },
+    {
+      "id": "XSI_NOAEL",
+      "name": "Program NOAEL Reconciliation",
+      "description": "Identifies most sensitive species and computes HED for FIH dose selection using FDA BSA scaling.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 2,
+        "dose_overlap_required": false
+      },
+      "confidence_modifiers": [
+        { "condition": "route_differs", "effect": "reduce", "note": "Route differs between studies — dose-based comparison may be misleading without bioavailability data" }
+      ],
+      "output_classifications": ["MOST_SENSITIVE_IDENTIFIED", "EQUIVOCAL", "SINGLE_SPECIES_ONLY"]
+    },
+    {
+      "id": "XSI_WATCHLIST",
+      "name": "Monitoring Watchlist",
+      "description": "Generates a structured watchlist for ongoing/planned studies based on confirmed and potential target organs from submitted studies.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 1,
+        "dose_overlap_required": false,
+        "requires_stage_filter": true
+      },
+      "confidence_modifiers": [],
+      "output_classifications": ["PRIORITY_1_CONFIRMED", "PRIORITY_2_POTENTIAL"]
+    },
+    {
+      "id": "XSI_NOVEL",
+      "name": "Novel Finding Flag",
+      "description": "Flags syndromes appearing in the current study but absent from all prior studies of the same compound.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 2,
+        "dose_overlap_required": false
+      },
+      "confidence_modifiers": [
+        { "condition": "lower_doses_in_prior", "effect": "reduce", "note": "Prior study used lower doses — finding may appear novel because affected threshold was not reached" }
+      ],
+      "output_classifications": ["KNOWN_CONFIRMED", "KNOWN_SINGLE", "NOVEL_SAME_SPECIES", "NOVEL_ALL_SPECIES"]
+    },
+    {
+      "id": "XSI_RECOVERY",
+      "name": "Reversibility Comparison",
+      "description": "Compares recovery outcomes for the same syndrome/target organ across studies.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 2,
+        "dose_overlap_required": false,
+        "requires_recovery_data": true
+      },
+      "confidence_modifiers": [],
+      "output_classifications": ["CONSISTENT_RECOVERY", "DURATION_DEPENDENT", "SPECIES_DIVERGENT", "INSUFFICIENT_DATA"]
+    },
+    {
+      "id": "XSI_SEVERITY",
+      "name": "Severity Grade Comparison",
+      "description": "Ordinal severity comparison for the same syndrome across studies/species.",
+      "comparability": {
+        "same_compound": true,
+        "same_species": false,
+        "same_route": "note_if_different",
+        "min_studies": 2,
+        "dose_overlap_required": false
+      },
+      "confidence_modifiers": [
+        { "condition": "different_dose_ranges", "effect": "reduce", "note": "Dose ranges differ — severity comparison at unmatched doses may be misleading" }
+      ],
+      "output_classifications": ["CONCORDANT", "SPECIES_DIVERGENT", "DOSE_DEPENDENT"]
+    }
+  ]
+}
