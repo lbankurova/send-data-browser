@@ -3061,7 +3061,12 @@
         }
       ],
       "completeTier": "tier_1",
-      "partialTier": "tier_2"
+      "partialTier": "tier_2",
+      "applies_to_study_types": [
+        "REPEAT_DOSE_*",
+        "ACUTE",
+        "DOSE_RANGE_FINDER"
+      ]
     },
     {
       "id": "CHAIN_02",
@@ -3111,7 +3116,12 @@
         }
       ],
       "completeTier": "tier_1",
-      "partialTier": "tier_2"
+      "partialTier": "tier_2",
+      "applies_to_study_types": [
+        "REPEAT_DOSE_*",
+        "ACUTE",
+        "DOSE_RANGE_FINDER"
+      ]
     },
     {
       "id": "CHAIN_03",
@@ -3166,7 +3176,12 @@
         }
       ],
       "completeTier": "tier_1",
-      "partialTier": "tier_2"
+      "partialTier": "tier_2",
+      "applies_to_study_types": [
+        "REPEAT_DOSE_*",
+        "ACUTE",
+        "DOSE_RANGE_FINDER"
+      ]
     },
     {
       "id": "CHAIN_04",
@@ -3229,7 +3244,12 @@
         }
       ],
       "completeTier": "tier_1",
-      "partialTier": "tier_2"
+      "partialTier": "tier_2",
+      "applies_to_study_types": [
+        "REPEAT_DOSE_*",
+        "ACUTE",
+        "DOSE_RANGE_FINDER"
+      ]
     },
     {
       "id": "CHAIN_05",
@@ -3307,7 +3327,12 @@
         }
       ],
       "completeTier": "tier_1",
-      "partialTier": "tier_2"
+      "partialTier": "tier_2",
+      "applies_to_study_types": [
+        "REPEAT_DOSE_*",
+        "ACUTE",
+        "DOSE_RANGE_FINDER"
+      ]
     }
   ]
 }

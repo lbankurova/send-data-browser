@@ -170,6 +170,24 @@ describe("Cross-Study Engine", () => {
     expect(xs01Novel!.classification).toBe("KNOWN_SINGLE");
   });
 
+  test("XSI_NOVEL: XS05 is NOVEL_SAME_SPECIES when seen in dog but not rat prior", () => {
+    // XS05 is in rat13wk (anchor). Add it to dog study but not rat4wk.
+    const dogWithXs05: StudySummaryRecord = {
+      ...dogStudy4wk,
+      detected_syndromes: [
+        ...dogStudy4wk.detected_syndromes,
+        { syndrome_id: "XS05", name: "Hemolytic anemia", certainty: "pattern_only", severity: "minimal", treatment_relatedness: "treatment_related", adversity: "non_adverse", target_organ: "HEMATOPOIETIC", domains_covered: ["LB"], affected_parameters: ["RBC"], noael_dose: 5, loael_dose: 25, translational_tier: "low" },
+      ],
+    };
+    // Anchor=rat13wk has XS05. dog has XS05 (cross-species). rat4wk does NOT have XS05.
+    // → Not in same species prior, but in other species → NOVEL_SAME_SPECIES
+    const result = analyzeProgram(ratStudy13wk, [dogWithXs05, ratStudy4wk], testProgram);
+    const novel = result.pattern_results.filter((r) => r.pattern_id === "XSI_NOVEL");
+    const xs05 = novel.find((n) => (n.details as { syndrome_id: string }).syndrome_id === "XS05");
+    expect(xs05).toBeDefined();
+    expect(xs05!.classification).toBe("NOVEL_SAME_SPECIES");
+  });
+
   test("XSI_RECOVERY: XS01 partial (rat) vs complete (dog) → SPECIES_DIVERGENT", () => {
     const result = analyzeProgram(ratStudy13wk, [dogStudy4wk], testProgram);
     const recovery = result.pattern_results.filter((r) => r.pattern_id === "XSI_RECOVERY");

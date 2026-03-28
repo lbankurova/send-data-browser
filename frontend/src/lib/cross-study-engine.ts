@@ -284,7 +284,8 @@ function evaluateNovel(
       ).length;
       classification = count >= 2 ? "KNOWN_CONFIRMED" : "KNOWN_SINGLE";
     } else if (priorSyndromeIds.has(syn.syndrome_id)) {
-      classification = "KNOWN_SINGLE";
+      // Seen in other species but not same species → novel for this species
+      classification = "NOVEL_SAME_SPECIES";
     } else {
       classification = "NOVEL_ALL_SPECIES";
     }
