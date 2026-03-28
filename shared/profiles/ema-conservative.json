@@ -1,0 +1,31 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "name": "EMA Conservative",
+  "version": "1.0.0",
+  "description": "Stricter thresholds for EMA submissions. Lower p-value significance threshold, higher effect size requirement for strong dose-response, more conservative enzyme tier cutoffs.",
+  "regulatory_context": "EMA",
+  "overrides": {
+    "thresholds": {
+      "statistical_significance": {
+        "significant": 0.01,
+        "borderline": 0.05
+      },
+      "effect_size": {
+        "pairwise_min_for_strong": 1.0
+      },
+      "enzyme_tiers": {
+        "watchlist": 1.0,
+        "concern": 2.0,
+        "high": 3.0
+      }
+    },
+    "scoring-weights": {
+      "continuous_weights": {
+        "p_value": 0.45,
+        "trend": 0.20,
+        "effect_size": 0.20,
+        "pattern": 0.15
+      }
+    }
+  }
+}

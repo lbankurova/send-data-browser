@@ -1,0 +1,28 @@
+{
+  "$schema": "../schemas/profile.schema.json",
+  "name": "Screening Permissive",
+  "version": "1.0.0",
+  "description": "Relaxed thresholds for early-stage screening and dose range finding. Higher p-value tolerance, lower effect size requirements. Prioritizes sensitivity over specificity.",
+  "regulatory_context": "screening",
+  "overrides": {
+    "thresholds": {
+      "statistical_significance": {
+        "significant": 0.10,
+        "borderline": 0.20
+      },
+      "effect_size": {
+        "moderate": 0.3,
+        "pairwise_min_for_strong": 0.5
+      },
+      "recovery": {
+        "min_recovery_n": 2,
+        "min_adequate_n": 3
+      }
+    },
+    "scoring-weights": {
+      "confidence_multipliers": {
+        "LOW": 0.6
+      }
+    }
+  }
+}
