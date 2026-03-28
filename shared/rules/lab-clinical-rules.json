@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/lab-clinical-rules.schema.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "rules": [
     {
       "id": "L01", "name": "ALT elevation (moderate)", "category": "liver",
@@ -9,7 +9,14 @@
       "thresholds": { "ALT": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALT", "direction": "up" },
+          { "type": "fold_between", "canonical": "ALT", "gte": 2, "lt": 5 }
+        ]
+      }
     },
     {
       "id": "L02", "name": "ALT elevation (marked)", "category": "liver",
@@ -18,7 +25,14 @@
       "thresholds": { "ALT": { "value": 5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALT", "direction": "up" },
+          { "type": "fold_above", "canonical": "ALT", "threshold": 5 }
+        ]
+      }
     },
     {
       "id": "L03", "name": "ALT + Bilirubin concurrent elevation", "category": "liver",
@@ -29,7 +43,15 @@
       "severity": "S4", "species_applicability": "both", "source": "FDA Guidance (2009), Hy's Law",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALT", "direction": "up" },
+          { "type": "direction", "canonical": "TBILI", "direction": "up" },
+          { "type": "share_sex", "canonical_a": "ALT", "canonical_b": "TBILI" }
+        ]
+      }
     },
     {
       "id": "L04", "name": "Bilirubin elevation (isolated)", "category": "liver",
@@ -37,7 +59,17 @@
       "severity": "S1", "species_applicability": "both", "source": "Clinical practice",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "TBILI", "direction": "up" },
+          { "type": "not", "condition": { "type": "direction", "canonical": "ALT", "direction": "up" } },
+          { "type": "not", "condition": { "type": "direction", "canonical": "AST", "direction": "up" } },
+          { "type": "not", "condition": { "type": "direction", "canonical": "ALP", "direction": "up" } },
+          { "type": "not", "condition": { "type": "direction", "canonical": "GGT", "direction": "up" } }
+        ]
+      }
     },
     {
       "id": "L05", "name": "Hepatocellular panel coverage (QC)", "category": "liver",
@@ -50,7 +82,13 @@
       "severity": "S1", "species_applicability": "nonclinical", "source": "Best practice",
       "baseline_aware": false,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "count_present",
+        "canonicals": ["ALT", "AST", "SDH", "GDH"],
+        "operator": "lt",
+        "value": 2
+      }
     },
     {
       "id": "L06", "name": "Cholestatic panel coverage (QC)", "category": "liver",
@@ -63,7 +101,13 @@
       "severity": "S1", "species_applicability": "nonclinical", "source": "Best practice",
       "baseline_aware": false,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "count_present",
+        "canonicals": ["ALP", "GGT", "5NT", "TBILI"],
+        "operator": "lt",
+        "value": 2
+      }
     },
     {
       "id": "L07", "name": "Concurrent transaminase + bilirubin elevation (adapted from clinical Hy's Law)", "category": "liver",
@@ -75,7 +119,40 @@
       "severity": "S4", "species_applicability": "both", "source": "Adapted from FDA Hy's Law guidance (clinical concept)",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "or",
+            "conditions": [
+              { "type": "direction", "canonical": "ALT", "direction": "up" },
+              { "type": "direction", "canonical": "AST", "direction": "up" }
+            ]
+          },
+          { "type": "direction", "canonical": "TBILI", "direction": "up" },
+          { "type": "not", "condition": { "type": "direction", "canonical": "ALP", "direction": "up" } },
+          {
+            "type": "or",
+            "conditions": [
+              {
+                "type": "and",
+                "conditions": [
+                  { "type": "direction", "canonical": "ALT", "direction": "up" },
+                  { "type": "share_sex", "canonical_a": "ALT", "canonical_b": "TBILI" }
+                ]
+              },
+              {
+                "type": "and",
+                "conditions": [
+                  { "type": "direction", "canonical": "AST", "direction": "up" },
+                  { "type": "share_sex", "canonical_a": "AST", "canonical_b": "TBILI" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "L08", "name": "Concurrent transaminase + bilirubin elevation (nonclinical adaptation)", "category": "liver",
@@ -86,7 +163,39 @@
       "severity": "S3", "species_applicability": "nonclinical", "source": "Adapted from clinical Hy's Law concept",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "or",
+            "conditions": [
+              { "type": "direction", "canonical": "ALT", "direction": "up" },
+              { "type": "direction", "canonical": "AST", "direction": "up" }
+            ]
+          },
+          { "type": "direction", "canonical": "TBILI", "direction": "up" },
+          {
+            "type": "or",
+            "conditions": [
+              {
+                "type": "and",
+                "conditions": [
+                  { "type": "direction", "canonical": "ALT", "direction": "up" },
+                  { "type": "share_sex", "canonical_a": "ALT", "canonical_b": "TBILI" }
+                ]
+              },
+              {
+                "type": "and",
+                "conditions": [
+                  { "type": "direction", "canonical": "AST", "direction": "up" },
+                  { "type": "share_sex", "canonical_a": "AST", "canonical_b": "TBILI" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "L09", "name": "Excess ALT frequency (program flag)", "category": "liver",
@@ -94,7 +203,14 @@
       "severity": "S3", "species_applicability": "both", "source": "Program monitoring",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALT", "direction": "up" },
+          { "type": "pattern_match", "canonical": "ALT", "patterns": ["monotonic_increase", "threshold"] }
+        ]
+      }
     },
     {
       "id": "L10", "name": "R-ratio classification", "category": "liver",
@@ -105,7 +221,15 @@
       "severity": "S2", "species_applicability": "both", "source": "R-ratio hepatic phenotype",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALT", "direction": "up" },
+          { "type": "direction", "canonical": "ALP", "direction": "up" },
+          { "type": "share_sex", "canonical_a": "ALT", "canonical_b": "ALP" }
+        ]
+      }
     },
     {
       "id": "L11", "name": "ALP in cholestasis (note)", "category": "liver",
@@ -113,7 +237,15 @@
       "severity": "S1", "species_applicability": "both", "source": "Clinical practice",
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "ALP", "direction": "up" },
+          { "type": "not", "condition": { "type": "direction", "canonical": "ALT", "direction": "up" } },
+          { "type": "not", "condition": { "type": "direction", "canonical": "AST", "direction": "up" } }
+        ]
+      }
     },
     {
       "id": "L12", "name": "BUN elevation", "category": "graded",
@@ -122,7 +254,14 @@
       "thresholds": { "BUN": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "BUN", "direction": "up" },
+          { "type": "fold_above", "canonical": "BUN", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L13", "name": "Creatinine elevation", "category": "graded",
@@ -131,7 +270,14 @@
       "thresholds": { "CREAT": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "CREAT", "direction": "up" },
+          { "type": "fold_above", "canonical": "CREAT", "threshold": 1.5 }
+        ]
+      }
     },
     {
       "id": "L14", "name": "Hemoglobin decrease", "category": "graded",
@@ -140,7 +286,14 @@
       "thresholds": { "HGB": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "HGB", "direction": "down" },
+          { "type": "fold_above", "canonical": "HGB", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L15", "name": "RBC decrease", "category": "graded",
@@ -149,7 +302,14 @@
       "thresholds": { "RBC": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "RBC", "direction": "down" },
+          { "type": "fold_above", "canonical": "RBC", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L16", "name": "HCT decrease", "category": "graded",
@@ -158,7 +318,14 @@
       "thresholds": { "HCT": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "HCT", "direction": "down" },
+          { "type": "fold_above", "canonical": "HCT", "threshold": 1.5 }
+        ]
+      }
     },
     {
       "id": "L17", "name": "Platelet decrease", "category": "graded",
@@ -167,7 +334,14 @@
       "thresholds": { "PLAT": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "PLAT", "direction": "down" },
+          { "type": "fold_above", "canonical": "PLAT", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L18", "name": "WBC decrease", "category": "graded",
@@ -176,7 +350,14 @@
       "thresholds": { "WBC": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "WBC", "direction": "down" },
+          { "type": "fold_above", "canonical": "WBC", "threshold": 1.5 }
+        ]
+      }
     },
     {
       "id": "L19", "name": "Neutrophil decrease", "category": "graded",
@@ -185,7 +366,14 @@
       "thresholds": { "NEUT": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "NEUT", "direction": "down" },
+          { "type": "fold_above", "canonical": "NEUT", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L20", "name": "Potassium imbalance", "category": "graded",
@@ -194,7 +382,20 @@
       "thresholds": { "K": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "bidirectional"
+      "condition_type": "bidirectional",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "or",
+            "conditions": [
+              { "type": "direction", "canonical": "K", "direction": "up" },
+              { "type": "direction", "canonical": "K", "direction": "down" }
+            ]
+          },
+          { "type": "fold_above", "canonical": "K", "threshold": 1.5 }
+        ]
+      }
     },
     {
       "id": "L21", "name": "Glucose imbalance", "category": "graded",
@@ -203,7 +404,20 @@
       "thresholds": { "GLUC": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "bidirectional"
+      "condition_type": "bidirectional",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "or",
+            "conditions": [
+              { "type": "direction", "canonical": "GLUC", "direction": "up" },
+              { "type": "direction", "canonical": "GLUC", "direction": "down" }
+            ]
+          },
+          { "type": "fold_above", "canonical": "GLUC", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L22", "name": "Cholesterol elevation", "category": "graded",
@@ -212,7 +426,14 @@
       "thresholds": { "CHOL": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "CHOL", "direction": "up" },
+          { "type": "fold_above", "canonical": "CHOL", "threshold": 1.5 }
+        ]
+      }
     },
     {
       "id": "L23", "name": "Reticulocyte response", "category": "graded",
@@ -221,7 +442,14 @@
       "thresholds": { "RETIC": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "RETIC", "direction": "up" },
+          { "type": "fold_above", "canonical": "RETIC", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L24", "name": "Coagulation prolongation", "category": "graded",
@@ -234,7 +462,33 @@
       "thresholds": { "PT": { "value": 1.5, "comparison": "gte" }, "INR": { "value": 1.3, "comparison": "gte" }, "APTT": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "multi_graded_increase"
+      "condition_type": "multi_graded_increase",
+      "conditions": {
+        "type": "or",
+        "conditions": [
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "direction", "canonical": "PT", "direction": "up" },
+              { "type": "fold_above", "canonical": "PT", "threshold": 1.5 }
+            ]
+          },
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "direction", "canonical": "INR", "direction": "up" },
+              { "type": "fold_above", "canonical": "INR", "threshold": 1.3 }
+            ]
+          },
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "direction", "canonical": "APTT", "direction": "up" },
+              { "type": "fold_above", "canonical": "APTT", "threshold": 1.5 }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "L25a", "name": "Sodium imbalance", "category": "graded",
@@ -243,7 +497,20 @@
       "thresholds": { "NA": { "value": 1.2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "bidirectional"
+      "condition_type": "bidirectional",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          {
+            "type": "or",
+            "conditions": [
+              { "type": "direction", "canonical": "NA", "direction": "up" },
+              { "type": "direction", "canonical": "NA", "direction": "down" }
+            ]
+          },
+          { "type": "fold_above", "canonical": "NA", "threshold": 1.2 }
+        ]
+      }
     },
     {
       "id": "L25b", "name": "Calcium/Phosphate imbalance", "category": "graded",
@@ -256,7 +523,42 @@
       "thresholds": { "CA": { "value": 1.5, "comparison": "gte" }, "PHOS": { "value": 1.5, "comparison": "gte" }, "MG": { "value": 1.5, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "multi_bidirectional"
+      "condition_type": "multi_bidirectional",
+      "conditions": {
+        "type": "or",
+        "conditions": [
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "or", "conditions": [
+                { "type": "direction", "canonical": "CA", "direction": "up" },
+                { "type": "direction", "canonical": "CA", "direction": "down" }
+              ]},
+              { "type": "fold_above", "canonical": "CA", "threshold": 1.5 }
+            ]
+          },
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "or", "conditions": [
+                { "type": "direction", "canonical": "PHOS", "direction": "up" },
+                { "type": "direction", "canonical": "PHOS", "direction": "down" }
+              ]},
+              { "type": "fold_above", "canonical": "PHOS", "threshold": 1.5 }
+            ]
+          },
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "or", "conditions": [
+                { "type": "direction", "canonical": "MG", "direction": "up" },
+                { "type": "direction", "canonical": "MG", "direction": "down" }
+              ]},
+              { "type": "fold_above", "canonical": "MG", "threshold": 1.5 }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "L25c", "name": "Urinalysis abnormality", "category": "graded",
@@ -268,7 +570,26 @@
       "thresholds": { "URINE_VOL": { "value": 1.5, "comparison": "gte" }, "URINE_SG": { "value": 1.3, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "custom"
+      "condition_type": "custom",
+      "conditions": {
+        "type": "or",
+        "conditions": [
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "direction", "canonical": "URINE_VOL", "direction": "up" },
+              { "type": "fold_above", "canonical": "URINE_VOL", "threshold": 1.5 }
+            ]
+          },
+          {
+            "type": "and",
+            "conditions": [
+              { "type": "direction", "canonical": "URINE_SG", "direction": "down" },
+              { "type": "fold_above", "canonical": "URINE_SG", "threshold": 1.3 }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "L26", "name": "Multi-domain convergence bonus", "category": "governance",
@@ -276,7 +597,13 @@
       "severity": "S1", "species_applicability": "both", "source": "Internal",
       "baseline_aware": false,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "governance"
+      "condition_type": "governance",
+      "conditions": {
+        "type": "context_property",
+        "property": "coherenceDomainCount",
+        "operator": "gte",
+        "value": 3
+      }
     },
     {
       "id": "L27", "name": "Syndrome pattern bonus", "category": "governance",
@@ -284,7 +611,13 @@
       "severity": "S1", "species_applicability": "both", "source": "Internal",
       "baseline_aware": false,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "governance"
+      "condition_type": "governance",
+      "conditions": {
+        "type": "context_property",
+        "property": "syndromeMatched",
+        "operator": "eq",
+        "value": true
+      }
     },
     {
       "id": "L28", "name": "Neutrophil increase", "category": "graded",
@@ -293,7 +626,14 @@
       "thresholds": { "NEUT": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "NEUT", "direction": "up" },
+          { "type": "fold_above", "canonical": "NEUT", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L29", "name": "WBC increase", "category": "graded",
@@ -302,7 +642,14 @@
       "thresholds": { "WBC": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "WBC", "direction": "up" },
+          { "type": "fold_above", "canonical": "WBC", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L30", "name": "Platelet increase", "category": "graded",
@@ -311,7 +658,14 @@
       "thresholds": { "PLAT": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_increase"
+      "condition_type": "graded_increase",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "PLAT", "direction": "up" },
+          { "type": "fold_above", "canonical": "PLAT", "threshold": 2 }
+        ]
+      }
     },
     {
       "id": "L31", "name": "Reticulocyte decrease", "category": "graded",
@@ -320,7 +674,14 @@
       "thresholds": { "RETIC": { "value": 2, "comparison": "gte" } },
       "baseline_aware": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"],
-      "condition_type": "graded_decrease"
+      "condition_type": "graded_decrease",
+      "conditions": {
+        "type": "and",
+        "conditions": [
+          { "type": "direction", "canonical": "RETIC", "direction": "down" },
+          { "type": "fold_above", "canonical": "RETIC", "threshold": 2 }
+        ]
+      }
     }
   ],
 

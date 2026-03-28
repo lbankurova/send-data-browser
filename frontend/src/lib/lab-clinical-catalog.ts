@@ -1,12 +1,14 @@
 /**
  * Lab Clinical Significance Catalog (Layer D).
  * Criteria-as-data rule engine per admiral grading patterns.
- * Evaluates endpoint summaries against 26 rules (L01-L26) to detect
+ * Evaluates endpoint summaries against 33 rules (L01-L31) to detect
  * clinically significant lab patterns.
  */
 
 import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import { evaluateCondition } from "@/lib/rule-evaluator";
+import type { RuleCondition } from "@/lib/rule-evaluator";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -43,7 +45,8 @@ interface LabRule {
   /** When true, the rule compares treated vs control (fold-change is baseline-relative).
    *  All current rules use baseline-relative fold-change proxy from |effectSize|. */
   baselineAware?: boolean;
-  evaluate: (ctx: RuleContext) => boolean;
+  /** JSON condition tree evaluated by rule-evaluator.ts. */
+  conditions: RuleCondition;
 }
 
 export interface ConfidenceModifier {
@@ -132,27 +135,10 @@ export function resolveCanonical(endpointLabel: string, testCode?: string): stri
   return null;
 }
 
-// ─── Rule helpers ──────────────────────────────────────────
+// ─── Rule helpers (kept for explainRuleNotTriggered) ──────────
 
 function hasUp(ctx: RuleContext, canonical: string): boolean {
   return ctx.presentCanonicals.has(canonical) && ctx.endpointDirection.get(canonical) === "up";
-}
-
-function hasDown(ctx: RuleContext, canonical: string): boolean {
-  return ctx.presentCanonicals.has(canonical) && ctx.endpointDirection.get(canonical) === "down";
-}
-
-function foldAbove(ctx: RuleContext, canonical: string, threshold: number): boolean {
-  // REM-01B: fold changes are now directional (< 1.0 for decreases).
-  // For threshold comparison, use absolute deviation from 1.0 mapped back to ratio.
-  // E.g., threshold 2 means ≥2× control. For FC=0.4 (decrease), |1/0.4|=2.5 → meets threshold.
-  const fc = ctx.foldChanges.get(canonical) ?? 0;
-  const magnitude = fc > 0 && fc < 1.0 ? 1.0 / fc : fc;
-  return magnitude >= threshold;
-}
-
-function countPresent(ctx: RuleContext, canonicals: string[]): number {
-  return canonicals.filter((c) => ctx.presentCanonicals.has(c)).length;
 }
 
 /** Check that two canonicals share at least one common sex. */
@@ -161,14 +147,6 @@ function shareSex(ctx: RuleContext, a: string, b: string): boolean {
   const sb = ctx.sexes.get(b);
   if (!sa || !sb) return true; // missing sex data → don't block
   return sa.some((s) => sb.includes(s));
-}
-
-function hasGradedIncrease(ctx: RuleContext, canonical: string, minFold: number): boolean {
-  return hasUp(ctx, canonical) && foldAbove(ctx, canonical, minFold);
-}
-
-function hasGradedDecrease(ctx: RuleContext, canonical: string, minFold: number): boolean {
-  return hasDown(ctx, canonical) && foldAbove(ctx, canonical, minFold);
 }
 
 /** Generic threshold evaluator: checks all required parameters against their declarative thresholds.
@@ -193,315 +171,20 @@ export function evaluateThreshold(rule: LabRule, ctx: RuleContext): boolean {
   return false;
 }
 
-// ─── Rule Catalog ──────────────────────────────────────────
+// ─── Rule Catalog (built from JSON conditions) ─────────────
 
-const LAB_RULES: LabRule[] = [
-  // Liver rules L01-L11
-  {
-    id: "L01", name: "ALT elevation (moderate)", category: "liver",
-    parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "FDA Guidance (2009)",
-    thresholds: { ALT: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasUp(ctx, "ALT") && foldAbove(ctx, "ALT", 2) && !foldAbove(ctx, "ALT", 5),
-  },
-  {
-    id: "L02", name: "ALT elevation (marked)", category: "liver",
-    parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "FDA Guidance (2009)",
-    thresholds: { ALT: { value: 5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasUp(ctx, "ALT") && foldAbove(ctx, "ALT", 5),
-  },
-  {
-    id: "L03", name: "ALT + Bilirubin concurrent elevation", category: "liver",
-    parameters: [
-      { canonical: "ALT", direction: "increase", role: "required" },
-      { canonical: "TBILI", direction: "increase", role: "required" },
-    ],
-    severity: "S4", speciesApplicability: "both", source: "FDA Guidance (2009), Hy's Law",
-    baselineAware: true,
-    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "TBILI") && shareSex(ctx, "ALT", "TBILI"),
-  },
-  {
-    id: "L04", name: "Bilirubin elevation (isolated)", category: "liver",
-    parameters: [{ canonical: "TBILI", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Clinical practice",
-    baselineAware: true,
-    evaluate: (ctx) => {
-      if (!hasUp(ctx, "TBILI")) return false;
-      return !hasUp(ctx, "ALT") && !hasUp(ctx, "AST") && !hasUp(ctx, "ALP") && !hasUp(ctx, "GGT");
-    },
-  },
-  {
-    id: "L05", name: "Hepatocellular panel coverage (QC)", category: "liver",
-    parameters: [
-      { canonical: "ALT", direction: "increase", role: "supporting" },
-      { canonical: "AST", direction: "increase", role: "supporting" },
-      { canonical: "SDH", direction: "increase", role: "supporting" },
-      { canonical: "GDH", direction: "increase", role: "supporting" },
-    ],
-    severity: "S1", speciesApplicability: "nonclinical", source: "Best practice",
-    baselineAware: false,
-    evaluate: (ctx) => countPresent(ctx, ["ALT", "AST", "SDH", "GDH"]) < 2,
-  },
-  {
-    id: "L06", name: "Cholestatic panel coverage (QC)", category: "liver",
-    parameters: [
-      { canonical: "ALP", direction: "increase", role: "supporting" },
-      { canonical: "GGT", direction: "increase", role: "supporting" },
-      { canonical: "5NT", direction: "increase", role: "supporting" },
-      { canonical: "TBILI", direction: "increase", role: "supporting" },
-    ],
-    severity: "S1", speciesApplicability: "nonclinical", source: "Best practice",
-    baselineAware: false,
-    evaluate: (ctx) => countPresent(ctx, ["ALP", "GGT", "5NT", "TBILI"]) < 2,
-  },
-  {
-    // REM-18: Renamed from "Hy's Law pattern" — clinical concept adaptation
-    id: "L07", name: "Concurrent transaminase + bilirubin elevation (adapted from clinical Hy's Law)", category: "liver",
-    parameters: [
-      { canonical: "ALT", direction: "increase", role: "required" },
-      { canonical: "TBILI", direction: "increase", role: "required" },
-      { canonical: "ALP", direction: "increase", role: "supporting" },
-    ],
-    severity: "S4", speciesApplicability: "both", source: "Adapted from FDA Hy's Law guidance (clinical concept)",
-    baselineAware: true,
-    evaluate: (ctx) => {
-      const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;
-      if (!altOrAst) return false;
-      return hasUp(ctx, "TBILI") && !hasUp(ctx, "ALP") && shareSex(ctx, altOrAst, "TBILI");
-    },
-  },
-  {
-    // REM-18: Renamed from "Hy's Law-like animal pattern" — clinical concept adaptation
-    id: "L08", name: "Concurrent transaminase + bilirubin elevation (nonclinical adaptation)", category: "liver",
-    parameters: [
-      { canonical: "ALT", direction: "increase", role: "required" },
-      { canonical: "TBILI", direction: "increase", role: "required" },
-    ],
-    severity: "S3", speciesApplicability: "nonclinical", source: "Adapted from clinical Hy's Law concept",
-    baselineAware: true,
-    evaluate: (ctx) => {
-      const altOrAst = hasUp(ctx, "ALT") ? "ALT" : hasUp(ctx, "AST") ? "AST" : null;
-      if (!altOrAst) return false;
-      return hasUp(ctx, "TBILI") && shareSex(ctx, altOrAst, "TBILI");
-    },
-  },
-  {
-    id: "L09", name: "Excess ALT frequency (program flag)", category: "liver",
-    parameters: [{ canonical: "ALT", direction: "increase", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Program monitoring",
-    baselineAware: true,
-    evaluate: (ctx) =>
-      hasUp(ctx, "ALT") &&
-      (ctx.endpointPattern.get("ALT") === "monotonic_increase" ||
-       ctx.endpointPattern.get("ALT") === "threshold"),
-  },
-  {
-    id: "L10", name: "R-ratio classification", category: "liver",
-    parameters: [
-      { canonical: "ALT", direction: "increase", role: "required" },
-      { canonical: "ALP", direction: "increase", role: "supporting" },
-    ],
-    severity: "S2", speciesApplicability: "both", source: "R-ratio hepatic phenotype",
-    baselineAware: true,
-    evaluate: (ctx) => hasUp(ctx, "ALT") && hasUp(ctx, "ALP") && shareSex(ctx, "ALT", "ALP"),
-  },
-  {
-    id: "L11", name: "ALP in cholestasis (note)", category: "liver",
-    parameters: [{ canonical: "ALP", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Clinical practice",
-    baselineAware: true,
-    evaluate: (ctx) => hasUp(ctx, "ALP") && !hasUp(ctx, "ALT") && !hasUp(ctx, "AST"),
-  },
-
-  // Graded rules L12-L24 — effect size magnitude -> grade -> severity
-  {
-    id: "L12", name: "BUN elevation", category: "graded",
-    parameters: [{ canonical: "BUN", direction: "increase", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Renal toxicology",
-    thresholds: { BUN: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "BUN", 2),
-  },
-  {
-    id: "L13", name: "Creatinine elevation", category: "graded",
-    parameters: [{ canonical: "CREAT", direction: "increase", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Renal toxicology",
-    thresholds: { CREAT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "CREAT", 1.5),
-  },
-  {
-    id: "L14", name: "Hemoglobin decrease", category: "graded",
-    parameters: [{ canonical: "HGB", direction: "decrease", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Hematology",
-    thresholds: { HGB: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "HGB", 2),
-  },
-  {
-    id: "L15", name: "RBC decrease", category: "graded",
-    parameters: [{ canonical: "RBC", direction: "decrease", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Hematology",
-    thresholds: { RBC: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "RBC", 2),
-  },
-  {
-    id: "L16", name: "HCT decrease", category: "graded",
-    parameters: [{ canonical: "HCT", direction: "decrease", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Hematology",
-    thresholds: { HCT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "HCT", 1.5),
-  },
-  {
-    id: "L17", name: "Platelet decrease", category: "graded",
-    parameters: [{ canonical: "PLAT", direction: "decrease", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Hematology",
-    thresholds: { PLAT: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "PLAT", 2),
-  },
-  {
-    id: "L18", name: "WBC decrease", category: "graded",
-    parameters: [{ canonical: "WBC", direction: "decrease", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Hematology",
-    thresholds: { WBC: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "WBC", 1.5),
-  },
-  {
-    id: "L19", name: "Neutrophil decrease", category: "graded",
-    parameters: [{ canonical: "NEUT", direction: "decrease", role: "required" }],
-    severity: "S3", speciesApplicability: "both", source: "Hematology",
-    thresholds: { NEUT: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "NEUT", 2),
-  },
-  {
-    id: "L20", name: "Potassium imbalance", category: "graded",
-    parameters: [{ canonical: "K", direction: "increase", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
-    thresholds: { K: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      (hasUp(ctx, "K") && foldAbove(ctx, "K", 1.5)) ||
-      (hasDown(ctx, "K") && foldAbove(ctx, "K", 1.5)),
-  },
-  {
-    id: "L21", name: "Glucose imbalance", category: "graded",
-    parameters: [{ canonical: "GLUC", direction: "increase", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
-    thresholds: { GLUC: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      (hasUp(ctx, "GLUC") && foldAbove(ctx, "GLUC", 2)) ||
-      (hasDown(ctx, "GLUC") && foldAbove(ctx, "GLUC", 2)),
-  },
-  {
-    id: "L22", name: "Cholesterol elevation", category: "graded",
-    parameters: [{ canonical: "CHOL", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Clinical chemistry",
-    thresholds: { CHOL: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "CHOL", 1.5),
-  },
-  {
-    id: "L23", name: "Reticulocyte response", category: "graded",
-    parameters: [{ canonical: "RETIC", direction: "increase", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Hematology",
-    thresholds: { RETIC: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "RETIC", 2),
-  },
-  {
-    id: "L24", name: "Coagulation prolongation", category: "graded",
-    parameters: [
-      { canonical: "PT", direction: "increase", role: "required" },
-      { canonical: "INR", direction: "increase", role: "supporting" },
-      { canonical: "APTT", direction: "increase", role: "supporting" },
-    ],
-    severity: "S2", speciesApplicability: "both", source: "Coagulation",
-    thresholds: { PT: { value: 1.5, comparison: "gte" }, INR: { value: 1.3, comparison: "gte" }, APTT: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      hasGradedIncrease(ctx, "PT", 1.5) ||
-      hasGradedIncrease(ctx, "INR", 1.3) ||
-      hasGradedIncrease(ctx, "APTT", 1.5),
-  },
-  {
-    id: "L25a", name: "Sodium imbalance", category: "graded",
-    parameters: [{ canonical: "NA", direction: "increase", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
-    thresholds: { NA: { value: 1.2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      (hasUp(ctx, "NA") && foldAbove(ctx, "NA", 1.2)) ||
-      (hasDown(ctx, "NA") && foldAbove(ctx, "NA", 1.2)),
-  },
-  {
-    id: "L25b", name: "Calcium/Phosphate imbalance", category: "graded",
-    parameters: [
-      { canonical: "CA", direction: "increase", role: "required" },
-      { canonical: "PHOS", direction: "increase", role: "supporting" },
-      { canonical: "MG", direction: "increase", role: "supporting" },
-    ],
-    severity: "S2", speciesApplicability: "both", source: "Clinical chemistry",
-    thresholds: { CA: { value: 1.5, comparison: "gte" }, PHOS: { value: 1.5, comparison: "gte" }, MG: { value: 1.5, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      (hasUp(ctx, "CA") && foldAbove(ctx, "CA", 1.5)) ||
-      (hasDown(ctx, "CA") && foldAbove(ctx, "CA", 1.5)) ||
-      (hasUp(ctx, "PHOS") && foldAbove(ctx, "PHOS", 1.5)) ||
-      (hasDown(ctx, "PHOS") && foldAbove(ctx, "PHOS", 1.5)) ||
-      (hasUp(ctx, "MG") && foldAbove(ctx, "MG", 1.5)) ||
-      (hasDown(ctx, "MG") && foldAbove(ctx, "MG", 1.5)),
-  },
-  {
-    id: "L25c", name: "Urinalysis abnormality", category: "graded",
-    parameters: [
-      { canonical: "URINE_VOL", direction: "increase", role: "required" },
-      { canonical: "URINE_SG", direction: "decrease", role: "supporting" },
-    ],
-    severity: "S1", speciesApplicability: "both", source: "Urinalysis",
-    thresholds: { URINE_VOL: { value: 1.5, comparison: "gte" }, URINE_SG: { value: 1.3, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) =>
-      hasGradedIncrease(ctx, "URINE_VOL", 1.5) ||
-      hasGradedDecrease(ctx, "URINE_SG", 1.3),
-  },
-
-  // Graded rules L28-L31 — additional hematology thresholds
-  {
-    id: "L28", name: "Neutrophil increase", category: "graded",
-    parameters: [{ canonical: "NEUT", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Hematology",
-    thresholds: { NEUT: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "NEUT", 2),
-  },
-  {
-    id: "L29", name: "WBC increase", category: "graded",
-    parameters: [{ canonical: "WBC", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Hematology",
-    thresholds: { WBC: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "WBC", 2),
-  },
-  {
-    id: "L30", name: "Platelet increase", category: "graded",
-    parameters: [{ canonical: "PLAT", direction: "increase", role: "required" }],
-    severity: "S1", speciesApplicability: "both", source: "Hematology",
-    thresholds: { PLAT: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedIncrease(ctx, "PLAT", 2),
-  },
-  {
-    id: "L31", name: "Reticulocyte decrease", category: "graded",
-    parameters: [{ canonical: "RETIC", direction: "decrease", role: "required" }],
-    severity: "S2", speciesApplicability: "both", source: "Hematology",
-    thresholds: { RETIC: { value: 2, comparison: "gte" } }, baselineAware: true,
-    evaluate: (ctx) => hasGradedDecrease(ctx, "RETIC", 2),
-  },
-
-  // Governance rules L26-L27 (post-hoc confidence modifiers, not severity triggers)
-  {
-    id: "L26", name: "Multi-domain convergence bonus", category: "governance",
-    parameters: [],
-    severity: "S1", speciesApplicability: "both", source: "Internal",
-    baselineAware: false,
-    evaluate: (ctx) => ctx.coherenceDomainCount >= 3,
-  },
-  {
-    id: "L27", name: "Syndrome pattern bonus", category: "governance",
-    parameters: [],
-    severity: "S1", speciesApplicability: "both", source: "Internal",
-    baselineAware: false,
-    evaluate: (ctx) => ctx.syndromeMatched,
-  },
-];
+const LAB_RULES: LabRule[] = labRulesConfig.rules.map(r => ({
+  id: r.id,
+  name: r.name,
+  category: r.category as LabRule["category"],
+  parameters: r.parameters as LabRule["parameters"],
+  severity: r.severity as LabRule["severity"],
+  speciesApplicability: r.species_applicability as LabRule["speciesApplicability"],
+  source: r.source,
+  thresholds: r.thresholds as Record<string, LabRuleThreshold> | undefined,
+  baselineAware: r.baseline_aware,
+  conditions: r.conditions as unknown as RuleCondition,
+}));
 
 // ─── Evaluator ─────────────────────────────────────────────
 
@@ -732,7 +415,7 @@ export function evaluateLabRules(
     // Evaluate non-governance rules
     for (const rule of LAB_RULES) {
       if (rule.category === "governance") continue;
-      if (!rule.evaluate(ctx)) continue;
+      if (!evaluateCondition(rule.conditions, ctx)) continue;
 
       const { score, confidence, modifiers } = computeConfidence(rule, ctx);
       matches.push({
@@ -1010,13 +693,13 @@ export function explainRuleNotTriggered(
 
   // Fallback: check if rule fires in ANY context (superseding check)
   const rule = LAB_RULES.find((r) => r.id === ruleId);
-  if (rule && contexts.some(c => rule.evaluate(c))) {
+  if (rule && contexts.some(c => evaluateCondition(rule.conditions, c))) {
     const sevOrder: Record<string, number> = { S4: 4, S3: 3, S2: 2, S1: 1 };
     const superseder = LAB_RULES.find(
       (r) => r.id !== ruleId
         && r.category !== "governance"
         && (sevOrder[r.severity] ?? 0) > (sevOrder[rule.severity] ?? 0)
-        && contexts.some(c => r.evaluate(c))
+        && contexts.some(c => evaluateCondition(r.conditions, c))
         && r.parameters.some((p) => rule.parameters.some((rp) => rp.canonical === p.canonical)),
     );
     if (superseder) {
