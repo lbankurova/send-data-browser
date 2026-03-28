@@ -53,6 +53,14 @@ export function CohortView() {
         missingExamMap={cohort.missingExamMap}
         histopathMap={cohort.histopathMap}
         hasHistopathData={cohort.hasHistopathData}
+        comparisonMode={cohort.comparisonMode}
+        onComparisonModeChange={cohort.setComparisonMode}
+        comparisonResults={cohort.comparisonResults}
+        referenceLabel={cohort.referenceLabel}
+        studySubjectCount={cohort.activeSubjects.filter(
+          (s) => !cohort.effectiveReferenceIds.has(s.usubjid),
+        ).length}
+        hasCustomReference={cohort.referenceGroup !== null}
       />
       <CohortCharts
         studyId={studyId!}

@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { getNeutralHeatColor, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
 import { FilterSelect } from "@/components/ui/FilterBar";
-import type { OrganSignal, CohortFindingRow, SharedFinding, CohortSubject } from "@/types/cohort";
+import type { OrganSignal, CohortFindingRow, SharedFinding, CohortSubject, ComparisonRow } from "@/types/cohort";
 import type { DoseGroup } from "@/types/analysis";
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
@@ -35,6 +35,13 @@ interface Props {
   missingExamMap: Map<string, Set<string>>;
   histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
   hasHistopathData: boolean;
+  // Comparison mode
+  comparisonMode: "subjects" | "comparison";
+  onComparisonModeChange: (mode: "subjects" | "comparison") => void;
+  comparisonResults: ComparisonRow[];
+  referenceLabel: string;
+  studySubjectCount: number;
+  hasCustomReference: boolean;
 }
 
 export function CohortEvidenceTable({
@@ -54,6 +61,12 @@ export function CohortEvidenceTable({
   missingExamMap,
   histopathMap,
   hasHistopathData,
+  comparisonMode,
+  onComparisonModeChange,
+  comparisonResults,
+  referenceLabel,
+  studySubjectCount,
+  hasCustomReference,
 }: Props) {
   // Dose groups represented in display subjects (for group table columns)
   const representedDoseGroups = useMemo(() => {
@@ -95,6 +108,12 @@ export function CohortEvidenceTable({
               <option key={o.organName} value={o.organName}>{o.organName}</option>
             ))}
           </FilterSelect>
+        )}
+        {/* Reference label in center header — only when custom reference is set */}
+        {hasCustomReference && (
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            REF: {referenceLabel} vs Study ({studySubjectCount})
+          </span>
         )}
         {/* Shared findings bar */}
         {selectedSubjectCount >= 2 && sharedFindings.length > 0 && (
@@ -201,76 +220,143 @@ export function CohortEvidenceTable({
             </table>
           </div>
 
-          {/* Right: Subject detail table */}
+          {/* Right panel: Subject detail OR Comparison columns */}
           <div className="min-w-0 flex-1 overflow-auto">
-            <table className="w-full border-collapse text-xs">
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr>
-                  {displaySubjects.map((s) => (
-                    <th
-                      key={s.usubjid}
-                      className="cursor-pointer px-1.5 py-1 text-center hover:bg-accent/30"
-                      style={{ width: 1, whiteSpace: "nowrap" }}
-                      onClick={() => onSubjectClick(s.usubjid)}
-                    >
-                      <div className="font-mono text-[10px] font-semibold">{s.usubjid.split("-").pop()}</div>
-                      <div className="flex items-center justify-center gap-0.5 text-[9px]">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: getDoseGroupColor(s.doseGroupOrder) }} />
-                        <span style={{ color: SEX_COLOR[s.sex] }}>{s.sex}</span>
-                        <span className="text-muted-foreground">{formatDoseShortLabel(s.doseLabel)}</span>
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {findingRows.map((row) => (
-                  <tr
-                    key={row.key}
-                    className={cn(
-                      "cursor-pointer transition-colors",
-                      hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
-                      row.severity === "normal" && "text-muted-foreground",
-                    )}
-                    onMouseEnter={() => onRowHover(row.key)}
-                    onMouseLeave={() => onRowHover(null)}
-                    onClick={() => onFindingClick(row.findingId)}
-                  >
-                    {displaySubjects.map((s) => {
-                      const hasAnySubjectValues = Object.keys(row.subjectValues).length > 0;
-                      const isMIMa = row.domain === "MI" || row.domain === "MA";
-                      const incidenceDomain = isMIMa || row.domain === "CL";
-                      const absence = !hasAnySubjectValues && incidenceDomain
-                        ? getAbsenceLabel(s, row.organName, missingExamMap)
-                        : null;
-                      // MI/MA: look up per-subject severity from histopath subjects
-                      const histoEntry = isMIMa
-                        ? histopathMap.get(s.usubjid)?.get(row.finding.toUpperCase()) ?? null
-                        : null;
-                      return (
-                        <td key={s.usubjid} className="px-1.5 py-0.5 text-center font-mono text-[11px]" style={{ width: 1, whiteSpace: "nowrap" }}>
-                          {absence === "NC" ? (
-                            <span className="text-[10px] italic text-muted-foreground">NC</span>
-                          ) : absence === "NE" ? (
-                            <span className="text-[10px] italic text-amber-500">NE</span>
-                          ) : histoEntry && row.domain === "MI" ? (
-                            <SubjectCell value={histoEntry.severity_num} domain="MI" />
-                          ) : histoEntry && row.domain === "MA" ? (
-                            <span className="text-foreground">{"\u2713"}</span>
-                          ) : hasAnySubjectValues ? (
-                            <SubjectCell value={row.subjectValues[s.usubjid]} domain={row.domain} />
-                          ) : isMIMa && hasHistopathData ? (
-                            <span className="text-muted-foreground">&mdash;</span>
-                          ) : (
-                            <span className="text-muted-foreground text-[10px]">&middot;</span>
-                          )}
-                        </td>
-                      );
-                    })}
+            {/* Segmented control: Subjects | Comparison */}
+            <div className="sticky top-0 z-10 flex items-center gap-0.5 border-b bg-muted/30 px-2 py-0.5">
+              {(["subjects", "comparison"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => onComparisonModeChange(mode)}
+                  className={cn(
+                    "relative px-4 py-1.5 text-xs font-medium transition-colors",
+                    comparisonMode === mode
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {mode === "subjects" ? "Subjects" : "Comparison"}
+                  {comparisonMode === mode && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {comparisonMode === "subjects" ? (
+              /* Subject detail table */
+              <table className="w-full border-collapse text-xs">
+                <thead className="sticky top-[33px] z-10 bg-background">
+                  <tr>
+                    {displaySubjects.map((s) => (
+                      <th
+                        key={s.usubjid}
+                        className="cursor-pointer px-1.5 py-1 text-center hover:bg-accent/30"
+                        style={{ width: 1, whiteSpace: "nowrap" }}
+                        onClick={() => onSubjectClick(s.usubjid)}
+                      >
+                        <div className="font-mono text-[10px] font-semibold">{s.usubjid.split("-").pop()}</div>
+                        <div className="flex items-center justify-center gap-0.5 text-[9px]">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: getDoseGroupColor(s.doseGroupOrder) }} />
+                          <span style={{ color: SEX_COLOR[s.sex] }}>{s.sex}</span>
+                          <span className="text-muted-foreground">{formatDoseShortLabel(s.doseLabel)}</span>
+                        </div>
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {findingRows.map((row) => (
+                    <tr
+                      key={row.key}
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
+                        row.severity === "normal" && "text-muted-foreground",
+                      )}
+                      onMouseEnter={() => onRowHover(row.key)}
+                      onMouseLeave={() => onRowHover(null)}
+                      onClick={() => onFindingClick(row.findingId)}
+                    >
+                      {displaySubjects.map((s) => {
+                        const hasAnySubjectValues = Object.keys(row.subjectValues).length > 0;
+                        const isMIMa = row.domain === "MI" || row.domain === "MA";
+                        const incidenceDomain = isMIMa || row.domain === "CL";
+                        const absence = !hasAnySubjectValues && incidenceDomain
+                          ? getAbsenceLabel(s, row.organName, missingExamMap)
+                          : null;
+                        const histoEntry = isMIMa
+                          ? histopathMap.get(s.usubjid)?.get(row.finding.toUpperCase()) ?? null
+                          : null;
+                        return (
+                          <td key={s.usubjid} className="px-1.5 py-0.5 text-center font-mono text-[11px]" style={{ width: 1, whiteSpace: "nowrap" }}>
+                            {absence === "NC" ? (
+                              <span className="text-[10px] italic text-muted-foreground">NC</span>
+                            ) : absence === "NE" ? (
+                              <span className="text-[10px] italic text-amber-500">NE</span>
+                            ) : histoEntry && row.domain === "MI" ? (
+                              <SubjectCell value={histoEntry.severity_num} domain="MI" />
+                            ) : histoEntry && row.domain === "MA" ? (
+                              <span className="text-foreground">{"\u2713"}</span>
+                            ) : hasAnySubjectValues ? (
+                              <SubjectCell value={row.subjectValues[s.usubjid]} domain={row.domain} />
+                            ) : isMIMa && hasHistopathData ? (
+                              <span className="text-muted-foreground">&mdash;</span>
+                            ) : (
+                              <span className="text-muted-foreground text-[10px]">&middot;</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              /* Comparison table */
+              <table className="w-full border-collapse text-xs">
+                <thead className="sticky top-[33px] z-10 bg-background">
+                  <tr>
+                    <th className="px-2 py-1 text-center text-[10px] font-semibold text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>Ref</th>
+                    <th className="px-2 py-1 text-center text-[10px] font-semibold text-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>Study</th>
+                    <th className="px-2 py-1 text-center text-[10px] font-semibold text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>Delta</th>
+                    <th className="px-2 py-1 text-center text-[10px] font-semibold text-muted-foreground" style={{ width: 30, whiteSpace: "nowrap" }}>Disc</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {findingRows.map((row) => {
+                    const cmp = comparisonResults.find((c) => c.findingKey === row.key);
+                    return (
+                      <tr
+                        key={row.key}
+                        className={cn(
+                          "cursor-pointer transition-colors group",
+                          hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
+                          row.severity === "normal" && "text-muted-foreground",
+                        )}
+                        onMouseEnter={() => onRowHover(row.key)}
+                        onMouseLeave={() => onRowHover(null)}
+                        onClick={() => onFindingClick(row.findingId)}
+                      >
+                        <td className="px-2 py-0.5 text-center font-mono text-[11px] text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+                          <ComparisonAggregate value={cmp?.refAggregate ?? null} dataType={row.dataType} />
+                        </td>
+                        <td className="px-2 py-0.5 font-mono text-[11px]">
+                          <ComparisonAggregate value={cmp?.studyAggregate ?? null} dataType={row.dataType} />
+                        </td>
+                        <td data-evidence className="px-2 py-0.5 text-center font-mono text-[11px] text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
+                          <span className="ev"><DeltaCell delta={cmp?.delta ?? null} deltaType={cmp?.deltaType ?? "fold_change"} /></span>
+                        </td>
+                        <td className="px-2 py-0.5 text-center text-muted-foreground" style={{ width: 30, whiteSpace: "nowrap" }}>
+                          {cmp?.isDiscriminating && <span className="font-semibold">*</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}
@@ -362,6 +448,30 @@ function SubjectCell({ value, domain }: { value: number | string | null | undefi
   }
 
   return <>{String(value)}</>;
+}
+
+// ── Comparison cell renderers ────────────────────────────────
+
+function ComparisonAggregate({ value, dataType }: { value: number | null; dataType: "continuous" | "incidence" }) {
+  if (value == null) return <span className="text-muted-foreground">&mdash;</span>;
+  if (dataType === "incidence") {
+    return <>{(value * 100).toFixed(0)}%</>;
+  }
+  return <>{value.toFixed(2)}</>;
+}
+
+function DeltaCell({ delta, deltaType }: { delta: number | null; deltaType: "fold_change" | "fisher_p" }) {
+  if (delta == null) return <span className="text-muted-foreground">&mdash;</span>;
+
+  if (deltaType === "fisher_p") {
+    const label = delta < 0.001 ? "p<.001" : delta < 0.01 ? "p<.01" : `p=${delta.toFixed(2)}`;
+    return <>{label}</>;
+  }
+
+  // Fold-change: show as percentage change
+  const pctChange = (delta - 1) * 100;
+  const sign = pctChange > 0 ? "+" : "";
+  return <>{sign}{pctChange.toFixed(0)}%</>;
 }
 
 /** Determine NE/NC absence label for a subject × organ cell. */

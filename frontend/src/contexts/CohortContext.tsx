@@ -24,7 +24,9 @@ import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
-import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate } from "@/types/cohort";
+import { useSavedCohortActions } from "@/hooks/useSavedCohortActions";
+import { computeDefaultReference, computeComparison, deserializeFilterState } from "@/lib/comparison-engine";
+import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate, ComparisonRow, SavedCohort, ReferenceGroup } from "@/types/cohort";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const EMPTY_FILTERS = { domain: null, severity: null, search: "", sex: null, organ_system: null, endpoint_label: null, dose_response_pattern: null };
@@ -82,6 +84,25 @@ export interface CohortContextValue {
   setFilterOperator: (op: FilterOperator) => void;
   addPredicate: (p: FilterPredicate) => void;
   removePredicate: (index: number) => void;
+  // Reference comparison
+  referenceGroup: ReferenceGroup | null;
+  effectiveReferenceIds: Set<string>;
+  comparisonMode: "subjects" | "comparison";
+  comparisonResults: ComparisonRow[];
+  setAsReference: () => void;
+  setAsReferenceFromCohort: (cohortId: string) => void;
+  clearReference: () => void;
+  setComparisonMode: (mode: "subjects" | "comparison") => void;
+  referenceLabel: string;
+  // Saved cohorts
+  savedCohorts: SavedCohort[];
+  activeSavedCohortId: string | null;
+  saveCohort: (name: string) => void;
+  loadSavedCohort: (id: string) => void;
+  deleteSavedCohort: (id: string) => void;
+  renameSavedCohort: (id: string, name: string) => void;
+  togglePinSavedCohort: (id: string) => void;
+  savedCohortsPending: boolean;
 }
 
 const CohortCtx = createContext<CohortContextValue | null>(null);
@@ -98,7 +119,7 @@ export function useCohortMaybe(): CohortContextValue | null {
 }
 
 export function CohortProvider({ studyId, children }: { studyId: string | undefined; children: ReactNode }) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // -- Query param initialization -----------------------------------------
   const initialPreset = (searchParams.get("preset") as CohortPreset) || "all";
@@ -123,6 +144,11 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const lastClickedIndex = useRef<number>(-1);
+
+  // -- Reference comparison state -------------------------------------------
+  const [referenceGroup, setReferenceGroup] = useState<ReferenceGroup | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<"subjects" | "comparison">("subjects");
+  const [activeSavedCohortId, setActiveSavedCohortId] = useState<string | null>(null);
 
   // -- Backward-compatible derived `preset` value -------------------------
   // Returns the single active preset (for CohortRail's PanePillToggle)
@@ -355,6 +381,117 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     [findings, activeSubjects],
   );
 
+  // -- Saved cohorts (annotation CRUD) ------------------------------------
+  const {
+    savedCohorts,
+    isPending: savedCohortsPending,
+    saveCohort: _saveCohortRaw,
+    deleteCohort: _deleteCohort,
+    renameCohort: _renameCohort,
+    togglePin: _togglePin,
+  } = useSavedCohortActions(studyId);
+
+  const saveCohort = useCallback((name: string) => {
+    _saveCohortRaw(name, activePresets, filterGroup, doseFilter, sexFilter, searchQuery, includeTK);
+  }, [_saveCohortRaw, activePresets, filterGroup, doseFilter, sexFilter, searchQuery, includeTK]);
+
+  const loadSavedCohort = useCallback((id: string) => {
+    const cohort = savedCohorts.find((c) => c.id === id);
+    if (!cohort) return;
+    const restored = deserializeFilterState(cohort.filters);
+    setActivePresets(restored.activePresets);
+    setFilterGroup(restored.filterGroup);
+    setDoseFilter(restored.doseFilter);
+    setSexFilter(restored.sexFilter);
+    setSearchQuery(restored.searchQuery);
+    setIncludeTK(restored.includeTK);
+    setActiveSavedCohortId(id);
+    // Fix #7: Write ?cohort= URL param for sharing
+    setSearchParams((prev) => { const next = new URLSearchParams(prev); next.set("cohort", id); return next; }, { replace: true });
+  }, [savedCohorts, setSearchParams]);
+
+  // Auto-uncheck saved cohort when user diverges from saved state
+  const prevFilterKey2 = useRef(filterKey);
+  if (activeSavedCohortId && filterKey !== prevFilterKey2.current) {
+    prevFilterKey2.current = filterKey;
+    setActiveSavedCohortId(null);
+  }
+  prevFilterKey2.current = filterKey;
+
+  // -- URL ?cohort= param ------------------------------------------------
+  const initialCohortParam = searchParams.get("cohort");
+  const cohortParamApplied = useRef(false);
+  useEffect(() => {
+    if (initialCohortParam && !cohortParamApplied.current && savedCohorts.length > 0) {
+      cohortParamApplied.current = true;
+      const match = savedCohorts.find((c) => c.id === initialCohortParam);
+      if (match) loadSavedCohort(match.id);
+    }
+  }, [initialCohortParam, savedCohorts, loadSavedCohort]);
+
+  // -- Reference group computation ----------------------------------------
+  const defaultReferenceIds = useMemo(
+    () => computeDefaultReference(allSubjects, activeSubjects),
+    [allSubjects, activeSubjects],
+  );
+
+  const effectiveReferenceIds = referenceGroup?.subjectIds ?? defaultReferenceIds;
+
+  const referenceLabel = useMemo(() => {
+    if (referenceGroup) return referenceGroup.label;
+    return `Controls (${defaultReferenceIds.size})`;
+  }, [referenceGroup, defaultReferenceIds]);
+
+  // Fix #1: setAsReference captures current filtered subjects as custom ref
+  const setAsReference = useCallback(() => {
+    const ids = new Set(filteredSubjects.map((s) => s.usubjid));
+    setReferenceGroup({ type: "custom", subjectIds: ids, label: `Custom (${ids.size})` });
+  }, [filteredSubjects]);
+
+  // Fix #1: setAsReferenceFromCohort loads a saved cohort's subjects as reference
+  const setAsReferenceFromCohort = useCallback((cohortId: string) => {
+    const cohort = savedCohorts.find((c) => c.id === cohortId);
+    if (!cohort) return;
+    // Resolve the saved cohort's filter state to get its subjects
+    const restored = deserializeFilterState(cohort.filters);
+    // Build a preset filter + convenience filter, evaluate against allSubjects
+    const presetFg = buildPresetFilterGroup(restored.activePresets, restored.filterGroup, restored.includeTK);
+    const convPredicates: FilterPredicate[] = [];
+    if (restored.doseFilter) convPredicates.push({ type: "dose", values: restored.doseFilter });
+    if (restored.sexFilter) convPredicates.push({ type: "sex", values: restored.sexFilter });
+    if (restored.searchQuery) convPredicates.push({ type: "search", query: restored.searchQuery });
+    const convFg: FilterGroup = { operator: "and", predicates: convPredicates };
+
+    const cohortSubjects = allSubjects
+      .filter((s) => evaluateFilter(s, presetFg, filterCtx))
+      .filter((s) => convPredicates.length === 0 || evaluateFilter(s, convFg, filterCtx));
+    const ids = new Set(cohortSubjects.map((s) => s.usubjid));
+    setReferenceGroup({ type: "saved-cohort", subjectIds: ids, label: `${cohort.name} (${ids.size})`, savedCohortId: cohortId });
+  }, [savedCohorts, allSubjects, filterCtx]);
+
+  const clearReference = useCallback(() => {
+    setReferenceGroup(null);
+    setComparisonMode("subjects");
+  }, []);
+
+  // Study subjects = active subjects minus reference subjects
+  const studySubjectIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const s of activeSubjects) {
+      if (!effectiveReferenceIds.has(s.usubjid)) {
+        ids.add(s.usubjid);
+      }
+    }
+    return ids;
+  }, [activeSubjects, effectiveReferenceIds]);
+
+  // Fix #4: Always compute comparison results when a custom reference is set
+  // (not only when comparisonMode === "comparison")
+  const comparisonResults = useMemo(() => {
+    if (!referenceGroup) return [];
+    return computeComparison(findingRows, effectiveReferenceIds, studySubjectIds);
+  }, [referenceGroup, findingRows, effectiveReferenceIds, studySubjectIds]);
+
   // -- Handlers -----------------------------------------------------------
   const toggleSubject = useCallback((usubjid: string, shiftKey: boolean) => {
     setSelectedSubjects((prev) => {
@@ -419,6 +556,25 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     setSexFilter,
     setSearchQuery,
     setHoveredRow,
+    // Reference comparison
+    referenceGroup,
+    effectiveReferenceIds,
+    comparisonMode,
+    comparisonResults,
+    setAsReference,
+    setAsReferenceFromCohort,
+    clearReference,
+    setComparisonMode,
+    referenceLabel,
+    // Saved cohorts
+    savedCohorts,
+    activeSavedCohortId,
+    saveCohort,
+    loadSavedCohort,
+    deleteSavedCohort: _deleteCohort,
+    renameSavedCohort: _renameCohort,
+    togglePinSavedCohort: _togglePin,
+    savedCohortsPending,
   }), [
     isLoading, findings, doseGroups, missingExamMap, histopathMap, hasHistopathData,
     subjectOrganCounts, allSubjects, filteredSubjects,
@@ -427,6 +583,10 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     hoveredRow, organSignals, findingRows, sharedFindings,
     setPreset, togglePreset, setFilterGroup, setFilterOperator,
     addPredicate, removePredicate, toggleSubject,
+    referenceGroup, effectiveReferenceIds, comparisonMode, comparisonResults,
+    setAsReference, setAsReferenceFromCohort, clearReference, referenceLabel,
+    savedCohorts, activeSavedCohortId, saveCohort, loadSavedCohort,
+    _deleteCohort, _renameCohort, _togglePin, savedCohortsPending,
   ]);
 
   return <CohortCtx.Provider value={value}>{children}</CohortCtx.Provider>;

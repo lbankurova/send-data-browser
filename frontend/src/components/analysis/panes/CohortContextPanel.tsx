@@ -59,7 +59,34 @@ export function CohortContextPanel() {
   const tumorCount = crossAnimalFlags?.tumor_linkage.tumor_dose_response.length ?? 0;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 bg-muted/5 p-4">
+      {/* Comparison section (top priority when reference active) */}
+      {cohort.referenceGroup && cohort.comparisonResults.length > 0 && (
+        <div>
+          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Comparison
+          </h4>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {cohort.comparisonResults.filter((r) => r.isDiscriminating).length} discriminating findings
+          </p>
+          <div className="mt-1 space-y-0.5">
+            {cohort.comparisonResults
+              .filter((r) => r.isDiscriminating)
+              .slice(0, 8)
+              .map((r) => (
+                <div key={r.findingKey} className="flex items-center gap-1.5 text-xs">
+                  <span className="text-[10px] font-semibold text-muted-foreground">{r.domain}</span>
+                  <span className="flex-1 truncate">{r.finding}</span>
+                </div>
+              ))}
+          </div>
+          <div className="mt-2 space-y-0.5 text-[10px] text-muted-foreground">
+            <div>Ref: {cohort.referenceLabel}</div>
+            <div>Study: {activeSubjects.filter((s) => !cohort.effectiveReferenceIds.has(s.usubjid)).length} subjects</div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

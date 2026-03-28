@@ -21,6 +21,7 @@ VALID_SCHEMA_TYPES = {
     "study-notes", "analysis-settings", "normalization-overrides",
     "pattern-overrides", "noael-overrides", "mortality-overrides",
     "recovery-overrides",
+    "saved-cohorts",
 }
 
 # Map URL slugs to file names

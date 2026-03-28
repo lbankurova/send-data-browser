@@ -213,6 +213,72 @@ export interface RecoveryVerdictSubject {
   findings: Array<{ finding: string; specimen: string; verdict: string }>;
 }
 
+// ── Reference comparison ────────────────────────────────────
+
+export interface ReferenceGroup {
+  type: "implicit" | "custom" | "saved-cohort";
+  subjectIds: Set<string>;
+  label: string;
+  savedCohortId?: string;
+}
+
+export interface ComparisonRow {
+  /** Finding row key this comparison corresponds to. */
+  findingKey: string;
+  domain: string;
+  finding: string;
+  dataType: "continuous" | "incidence";
+  refAggregate: number | null;
+  studyAggregate: number | null;
+  delta: number | null;
+  deltaType: "fold_change" | "fisher_p";
+  isDiscriminating: boolean;
+}
+
+// ── Saved cohorts ───────────────────────────────────────────
+
+export interface SavedCohort {
+  id: string;
+  name: string;
+  pinned: boolean;
+  createdAt: string;
+  filters: SerializedFilterState;
+}
+
+export interface SerializedFilterState {
+  activePresets: string[];
+  filterGroup: SerializedFilterGroup;
+  doseFilter: number[] | null;
+  sexFilter: string[] | null;
+  searchQuery: string;
+  includeTK: boolean;
+}
+
+export interface SerializedFilterGroup {
+  operator: FilterOperator;
+  predicates: SerializedFilterPredicate[];
+}
+
+/**
+ * JSON-safe version of FilterPredicate — Sets become arrays.
+ * Discriminated union mirrors FilterPredicate with arrays instead of Sets.
+ */
+export type SerializedFilterPredicate =
+  | { type: "dose"; values: number[] }
+  | { type: "sex"; values: string[] }
+  | { type: "organ"; organName: string; role?: "any" | "adverse" | "warning" }
+  | { type: "domain"; domain: string }
+  | { type: "syndrome"; syndromeId: string; matchType: "full" | "partial" | "any" }
+  | { type: "severity"; minGrade: number }
+  | { type: "bw_change"; minPct: number; direction: "loss" | "gain" }
+  | { type: "organ_count"; min: number }
+  | { type: "disposition"; values: string[] }
+  | { type: "recovery"; isRecovery: boolean }
+  | { type: "onset_day"; min: number | null; max: number | null; finding?: string }
+  | { type: "recovery_verdict"; finding: string; specimen: string; verdict: string[] }
+  | { type: "tk"; isTK: boolean }
+  | { type: "search"; query: string };
+
 // ── Cohort state ─────────────────────────────────────────────
 
 export interface CohortState {

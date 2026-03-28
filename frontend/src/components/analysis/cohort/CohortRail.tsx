@@ -1,14 +1,15 @@
 /**
- * CohortRail — subject roster with preset checkboxes, filter pills, and multi-select rows.
+ * CohortRail — subject roster with preset checkboxes, saved cohorts,
+ * reference indicator, filter pills, and multi-select rows.
  */
-import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { X, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterMultiSelect, FilterSearch, FilterClearButton } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useCohort } from "@/contexts/CohortContext";
 import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
-import type { CohortPreset, CohortSubject, FilterPredicate } from "@/types/cohort";
+import type { CohortPreset, CohortSubject, FilterPredicate, SavedCohort } from "@/types/cohort";
 
 const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
   { value: "all", label: "All" },
@@ -92,9 +93,19 @@ export function CohortRail() {
     sexFilter, setSexFilter,
     searchQuery, setSearchQuery,
     subjectOrganCounts,
+    // Reference
+    referenceGroup, referenceLabel,
+    setAsReference, setAsReferenceFromCohort, clearReference,
+    // Saved cohorts
+    savedCohorts, activeSavedCohortId,
+    saveCohort, loadSavedCohort, deleteSavedCohort,
+    renameSavedCohort, togglePinSavedCohort,
   } = useCohort();
 
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [showMoreSaved, setShowMoreSaved] = useState(false);
 
   // Summary counts
   const selected = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
@@ -114,6 +125,19 @@ export function CohortRail() {
   }, [filteredSubjects]);
 
   const isDirty = doseFilter !== null || sexFilter !== null || searchQuery !== "";
+  const hasFilters = !activePresets.has("all") || activePresets.size > 1 || filterGroup.predicates.length > 0 || isDirty;
+
+  // Saved cohorts: pinned vs unpinned
+  const pinnedCohorts = savedCohorts.filter((c) => c.pinned);
+  const unpinnedCohorts = savedCohorts.filter((c) => !c.pinned);
+
+  const handleSave = useCallback(() => {
+    const trimmed = saveName.trim();
+    if (!trimmed) return;
+    saveCohort(trimmed);
+    setSaveName("");
+    setShowSaveInput(false);
+  }, [saveName, saveCohort]);
 
   return (
     <div className="flex h-full flex-col">
@@ -135,18 +159,122 @@ export function CohortRail() {
             </span>
           </label>
         ))}
+        {/* Save... link (visible when filters are active) */}
+        {hasFilters && !showSaveInput && (
+          <button
+            type="button"
+            onClick={() => setShowSaveInput(true)}
+            className="ml-auto text-xs text-primary hover:text-primary/80"
+          >
+            Save...
+          </button>
+        )}
       </div>
 
-      {/* Zone 2: Summary line */}
-      <div className="flex items-center gap-1.5 border-b px-3 py-1.5 text-[10px] text-muted-foreground">
-        <span className="font-medium">{selected.length} subjects</span>
-        <span>&middot;</span>
-        <span>{doseGroupCount} dose grp{doseGroupCount !== 1 ? "s" : ""}</span>
-        <span>&middot;</span>
-        <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
-        <span>/</span>
-        <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
-      </div>
+      {/* Inline save input */}
+      {showSaveInput && (
+        <div className="flex items-center gap-1.5 border-b px-3 py-1.5">
+          <input
+            type="text"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setShowSaveInput(false); }}
+            placeholder="Cohort name"
+            className="flex-1 rounded border border-gray-200 bg-background px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+            autoFocus
+          />
+          <button type="button" onClick={() => setShowSaveInput(false)} className="text-[10px] text-muted-foreground hover:text-foreground">
+            Cancel
+          </button>
+          <button type="button" onClick={handleSave} disabled={!saveName.trim()} className="rounded bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground disabled:opacity-50">
+            Save
+          </button>
+        </div>
+      )}
+
+      {/* Saved cohorts section */}
+      {savedCohorts.length > 0 && (
+        <div className="border-b px-3 py-1.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            Saved
+          </div>
+          {pinnedCohorts.map((c) => (
+            <SavedCohortRow
+              key={c.id}
+              cohort={c}
+              isActive={activeSavedCohortId === c.id}
+              onLoad={loadSavedCohort}
+              onDelete={deleteSavedCohort}
+              onRename={renameSavedCohort}
+              onTogglePin={togglePinSavedCohort}
+              onUseAsRef={setAsReferenceFromCohort}
+            />
+          ))}
+          {unpinnedCohorts.length > 0 && !showMoreSaved && (
+            <button
+              type="button"
+              onClick={() => setShowMoreSaved(true)}
+              className="text-[10px] text-primary hover:text-primary/80 mt-0.5"
+            >
+              + {unpinnedCohorts.length} more
+            </button>
+          )}
+          {showMoreSaved && unpinnedCohorts.map((c) => (
+            <SavedCohortRow
+              key={c.id}
+              cohort={c}
+              isActive={activeSavedCohortId === c.id}
+              onLoad={loadSavedCohort}
+              onDelete={deleteSavedCohort}
+              onRename={renameSavedCohort}
+              onTogglePin={togglePinSavedCohort}
+              onUseAsRef={setAsReferenceFromCohort}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Zone 2: Summary / Reference indicator */}
+      {referenceGroup ? (
+        <div className="border-b px-3 py-1.5 text-[10px]">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold uppercase tracking-wider text-muted-foreground">Ref</span>
+            <span className="font-medium text-foreground">{referenceLabel}</span>
+            <button type="button" onClick={clearReference} className="ml-auto text-primary hover:text-primary/80">Clear</button>
+          </div>
+          <div className="text-muted-foreground mt-0.5">
+            vs {selected.length} subjects &middot;{" "}
+            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span> /{" "}
+            <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
+          </div>
+          <button
+            type="button"
+            onClick={setAsReference}
+            className="text-primary hover:text-primary/80 mt-0.5"
+          >
+            Change ref
+          </button>
+        </div>
+      ) : (
+        <div className="border-b px-3 py-1.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <span className="font-medium">{selected.length} subjects</span>
+            <span>&middot;</span>
+            <span>{doseGroupCount} dose grp{doseGroupCount !== 1 ? "s" : ""}</span>
+            <span>&middot;</span>
+            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
+            <span>/</span>
+            <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
+          </div>
+          <button
+            type="button"
+            onClick={setAsReference}
+            className="text-primary hover:text-primary/80 mt-0.5"
+          >
+            Set as reference
+          </button>
+        </div>
+      )}
 
       {/* Filter pills zone */}
       {filterGroup.predicates.length > 0 && (
@@ -229,6 +357,128 @@ export function CohortRail() {
         )}
       </div>
     </div>
+  );
+}
+
+// ── SavedCohortRow with right-click context menu ─────────────
+
+function SavedCohortRow({
+  cohort,
+  isActive,
+  onLoad,
+  onDelete,
+  onRename,
+  onTogglePin,
+  onUseAsRef,
+}: {
+  cohort: SavedCohort;
+  isActive: boolean;
+  onLoad: (id: string) => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  onTogglePin: (id: string) => void;
+  onUseAsRef: (cohortId: string) => void;
+}) {
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameName, setRenameName] = useState(cohort.name);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuPos) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuPos(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuPos]);
+
+  if (renaming) {
+    return (
+      <div className="flex items-center gap-1 py-0.5">
+        <input
+          type="text"
+          value={renameName}
+          onChange={(e) => setRenameName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { onRename(cohort.id, renameName.trim()); setRenaming(false); }
+            if (e.key === "Escape") setRenaming(false);
+          }}
+          className="flex-1 rounded border border-gray-200 bg-background px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          autoFocus
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <label
+        className="flex items-center gap-1.5 py-0.5 text-xs cursor-context-menu"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenuPos({ x: e.clientX, y: e.clientY });
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isActive}
+          onChange={() => onLoad(cohort.id)}
+          className="h-3 w-3 rounded border-gray-300"
+        />
+        <span className={cn(
+          "font-medium truncate",
+          isActive ? "text-foreground" : "text-muted-foreground"
+        )}>
+          {cohort.name}
+        </span>
+      </label>
+
+      {/* Context menu */}
+      {menuPos && (
+        <div
+          ref={menuRef}
+          className="fixed z-50 min-w-[140px] rounded border border-gray-200 bg-background py-1 shadow-lg"
+          style={{ left: menuPos.x, top: menuPos.y }}
+        >
+          <ContextMenuItem onClick={() => { onLoad(cohort.id); setMenuPos(null); }}>
+            Load cohort
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { onUseAsRef(cohort.id); setMenuPos(null); }}>
+            Use as reference
+          </ContextMenuItem>
+          <div className="my-0.5 border-t border-gray-100" />
+          <ContextMenuItem onClick={() => { onTogglePin(cohort.id); setMenuPos(null); }}>
+            {cohort.pinned ? (
+              <><PinOff className="h-3 w-3" /> Unpin</>
+            ) : (
+              <><Pin className="h-3 w-3" /> Pin to top</>
+            )}
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { setRenaming(true); setRenameName(cohort.name); setMenuPos(null); }}>
+            <Pencil className="h-3 w-3" /> Rename
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { onDelete(cohort.id); setMenuPos(null); }} className="text-red-600 hover:bg-red-50">
+            <Trash2 className="h-3 w-3" /> Delete
+          </ContextMenuItem>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContextMenuItem({ children, onClick, className }: { children: React.ReactNode; onClick: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={cn("flex w-full items-center gap-1.5 px-3 py-1 text-xs hover:bg-accent/50 text-left", className)}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 }
 
