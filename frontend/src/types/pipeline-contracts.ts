@@ -203,11 +203,17 @@ export interface Program {
   phase: string;
   /** Therapeutic area */
   therapeutic_area: string;
-  /** Optional clinical dose for safety margin computation (Phase 7) */
+  /** Optional clinical dose + exposure for safety margin computation (Phase 7) */
   clinical_dose?: {
     dose_value: number;
     dose_unit: string;
     route: string;
+    /** Clinical AUC at therapeutic dose (for AUC-based margin) */
+    auc?: number;
+    /** Clinical Cmax at therapeutic dose */
+    cmax?: number;
+    /** Exposure unit (e.g., "ng·h/mL") */
+    unit?: string;
   } | null;
 }
 

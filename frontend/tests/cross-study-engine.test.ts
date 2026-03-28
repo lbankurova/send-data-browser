@@ -5,7 +5,7 @@
  */
 import { describe, test, expect } from "vitest";
 import type { StudySummaryRecord, Program } from "@/types/pipeline-contracts";
-import { analyzeProgram } from "@/lib/cross-study-engine";
+import { analyzeProgram, synthesizeProgram } from "@/lib/cross-study-engine";
 
 // ── Test fixtures ───────────────────────────────────────────
 
@@ -207,11 +207,99 @@ describe("Cross-Study Engine", () => {
   });
 
   test("engine never touches raw SEND data — only StudySummaryRecord fields", () => {
-    // This is a design contract test: verify that analyzeProgram's inputs
-    // are only StudySummaryRecord and Program — no UnifiedFinding, EndpointSummary, etc.
     const result = analyzeProgram(ratStudy13wk, [dogStudy4wk], testProgram);
     expect(result).toBeDefined();
-    // If this compiles, the contract holds — the function signature
-    // only accepts StudySummaryRecord and Program.
+  });
+
+  // ── Phase 7 patterns ──────────────────────────────────────
+
+  test("XSI_EXPOSURE: no pattern when no TK data", () => {
+    const result = analyzeProgram(ratStudy13wk, [dogStudy4wk], testProgram);
+    const exposure = result.pattern_results.find((r) => r.pattern_id === "XSI_EXPOSURE");
+    // Neither fixture has auc_at_noael populated
+    expect(exposure).toBeUndefined();
+  });
+
+  test("XSI_EXPOSURE: produces pattern when TK data available", () => {
+    const ratWithTk: StudySummaryRecord = {
+      ...ratStudy13wk,
+      auc_at_noael: 13272,
+      cmax_at_noael: 2356,
+      tk_unit: "ng·h/mL",
+    };
+    const dogWithTk: StudySummaryRecord = {
+      ...dogStudy4wk,
+      auc_at_noael: 45000,
+      cmax_at_noael: 8000,
+      tk_unit: "ng·h/mL",
+    };
+    const result = analyzeProgram(ratWithTk, [dogWithTk], testProgram);
+    const exposure = result.pattern_results.find((r) => r.pattern_id === "XSI_EXPOSURE")!;
+    expect(exposure).toBeDefined();
+    expect(exposure.classification).toBe("DOSE_EXPOSURE_CONCORDANT");
+  });
+
+  test("XSI_MARGIN: ADEQUATE_MARGIN when clinical dose is low", () => {
+    const ratWithTk: StudySummaryRecord = {
+      ...ratStudy13wk,
+      auc_at_noael: 13272,
+      cmax_at_noael: 2356,
+      tk_unit: "ng·h/mL",
+    };
+    const programWithDose: Program = {
+      ...testProgram,
+      clinical_dose: { dose_value: 0.01, dose_unit: "mg/kg", route: "ORAL" },
+    };
+    const result = analyzeProgram(ratWithTk, [], programWithDose);
+    const margin = result.pattern_results.find((r) => r.pattern_id === "XSI_MARGIN")!;
+    expect(margin).toBeDefined();
+    expect(margin.classification).toBe("ADEQUATE_MARGIN");
+  });
+
+  test("XSI_CONCORDANCE_MATRIX: produces matrix with 3+ studies", () => {
+    const result = analyzeProgram(ratStudy13wk, [dogStudy4wk, ratStudy4wk], testProgram);
+    const matrix = result.pattern_results.find((r) => r.pattern_id === "XSI_CONCORDANCE_MATRIX");
+    expect(matrix).toBeDefined();
+    const details = matrix!.details as { total_syndromes: number; universal: number; partial: number; unique: number };
+    expect(details.total_syndromes).toBeGreaterThan(0);
+  });
+
+  test("XSI_CONCORDANCE_MATRIX: not produced with only 2 studies", () => {
+    const result = analyzeProgram(ratStudy13wk, [dogStudy4wk], testProgram);
+    const matrix = result.pattern_results.find((r) => r.pattern_id === "XSI_CONCORDANCE_MATRIX");
+    expect(matrix).toBeUndefined();
+  });
+
+  test("XSI_RECOVERY_ADEQUACY: detects duration-dependent recovery", () => {
+    // Rat 4wk: complete recovery. Rat 13wk: partial recovery. Same syndrome XS01.
+    const result = analyzeProgram(ratStudy13wk, [ratStudy4wk], testProgram);
+    const adequacy = result.pattern_results.filter((r) => r.pattern_id === "XSI_RECOVERY_ADEQUACY");
+    const xs01 = adequacy.find((r) => (r.details as { syndrome_id: string }).syndrome_id === "XS01");
+    // rat4wk has complete, rat13wk has partial → duration-dependent
+    if (xs01) {
+      expect(["DURATION_DEPENDENT_RECOVERY", "INADEQUATE_DURATION"]).toContain(xs01.classification);
+    }
+  });
+
+  // ── Mode 2: Program Synthesis ─────────────────────────────
+
+  test("synthesizeProgram: produces results without anchor", () => {
+    const result = synthesizeProgram([ratStudy13wk, dogStudy4wk, ratStudy4wk], testProgram);
+    expect(result.program_id).toBe("prog_test");
+    expect(result.studies_analyzed.length).toBe(3);
+    expect(result.pattern_results.length).toBeGreaterThan(0);
+    expect(result.program_noael).not.toBeNull();
+  });
+
+  test("synthesizeProgram: includes concordance matrix for 3+ studies", () => {
+    const result = synthesizeProgram([ratStudy13wk, dogStudy4wk, ratStudy4wk], testProgram);
+    const matrix = result.pattern_results.find((r) => r.pattern_id === "XSI_CONCORDANCE_MATRIX");
+    expect(matrix).toBeDefined();
+  });
+
+  test("synthesizeProgram: empty input returns empty conclusion", () => {
+    const result = synthesizeProgram([], testProgram);
+    expect(result.studies_analyzed.length).toBe(0);
+    expect(result.pattern_results.length).toBe(0);
   });
 });

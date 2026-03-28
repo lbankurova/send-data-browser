@@ -384,6 +384,267 @@ function evaluateSeverity(
   return results;
 }
 
+// ─── Pattern: XSI_EXPOSURE (Phase 7) ────────────────────────
+
+export interface ExposureComparison {
+  study_id: string;
+  species: string;
+  noael_dose: number | null;
+  noael_unit: string;
+  auc_at_noael: number | null;
+  cmax_at_noael: number | null;
+  tk_unit: string | null;
+  hed: number | null;
+  auc_margin: number | null;
+}
+
+function evaluateExposure(
+  studies: StudySummaryRecord[],
+  clinicalDose?: { auc?: number; cmax?: number; unit?: string } | null,
+): { comparisons: ExposureComparison[]; pattern: PatternResult | null } {
+  const humanKm = kmFactors.human_km;
+  const speciesKm = kmFactors.species as Record<string, { km: number }>;
+
+  const comparisons: ExposureComparison[] = studies
+    .filter((s) => s.combined_noael !== null)
+    .map((s) => {
+      const noaelDose = s.combined_noael!.dose_value;
+      const sp = s.species.toLowerCase();
+      const km = speciesKm[sp]?.km ?? speciesKm["rat"]?.km ?? 6;
+      const hed = noaelDose !== null ? noaelDose * (km / humanKm) : null;
+      const aucMargin = s.auc_at_noael !== null && clinicalDose?.auc
+        ? s.auc_at_noael / clinicalDose.auc
+        : null;
+
+      return {
+        study_id: s.study_id,
+        species: s.species,
+        noael_dose: noaelDose,
+        noael_unit: s.combined_noael!.dose_unit,
+        auc_at_noael: s.auc_at_noael,
+        cmax_at_noael: s.cmax_at_noael,
+        tk_unit: s.tk_unit,
+        hed,
+        auc_margin: aucMargin,
+      };
+    })
+    .sort((a, b) => (a.hed ?? Infinity) - (b.hed ?? Infinity));
+
+  // Only produce a pattern result if TK data exists in at least one study
+  const withTk = comparisons.filter((c) => c.auc_at_noael !== null);
+  if (withTk.length === 0) {
+    return { comparisons, pattern: null };
+  }
+
+  const notes: string[] = [];
+  if (withTk.length < comparisons.length) {
+    notes.push(`TK data available for ${withTk.length} of ${comparisons.length} studies — dose-based comparison used for studies without TK`);
+  }
+  if (!clinicalDose?.auc) {
+    notes.push("No clinical AUC provided — AUC-based safety margin not computed. Enter proposed clinical dose on the Program record to enable.");
+  }
+
+  // Check for nonlinear kinetics warning
+  const doseSorted = withTk.filter((c) => c.noael_dose !== null).sort((a, b) => a.noael_dose! - b.noael_dose!);
+  if (doseSorted.length >= 2) {
+    const aucSorted = doseSorted.map((c) => c.auc_at_noael!);
+    const dosesAreIncreasing = doseSorted.every((c, i) => i === 0 || c.noael_dose! >= doseSorted[i - 1].noael_dose!);
+    const aucsAreIncreasing = aucSorted.every((v, i) => i === 0 || v >= aucSorted[i - 1]);
+    if (dosesAreIncreasing && !aucsAreIncreasing) {
+      notes.push("Possible nonlinear kinetics detected — AUC does not increase proportionally with dose. AUC-based margins may be misleading.");
+    }
+  }
+
+  // Determine if dose-based and exposure-based rankings agree
+  const doseRanked = [...comparisons].sort((a, b) => (a.hed ?? Infinity) - (b.hed ?? Infinity));
+  const aucRanked = [...withTk].sort((a, b) => (a.auc_at_noael ?? Infinity) - (b.auc_at_noael ?? Infinity));
+
+  let classification: string;
+  if (withTk.length >= 2 && doseRanked[0]?.study_id !== aucRanked[0]?.study_id) {
+    classification = "DOSE_EXPOSURE_DISCORDANT";
+    notes.push("Most sensitive species differs between dose-based and exposure-based ranking. The exposure-based ranking (AUC) is preferred per ICH M3(R2).");
+  } else if (withTk.length >= 2) {
+    classification = "DOSE_EXPOSURE_CONCORDANT";
+  } else {
+    classification = "SINGLE_STUDY_TK";
+  }
+
+  return {
+    comparisons,
+    pattern: {
+      pattern_id: "XSI_EXPOSURE",
+      pattern_name: "TK/AUC Exposure-Normalized Comparison",
+      classification,
+      studies_compared: withTk.map((c) => c.study_id),
+      details: { comparisons: withTk, clinical_auc: clinicalDose?.auc ?? null },
+      confidence_notes: notes,
+    },
+  };
+}
+
+// ─── Pattern: XSI_MARGIN (Phase 7) ─────────────────────────
+
+function evaluateMargin(
+  exposureComparisons: ExposureComparison[],
+  clinicalDose?: { auc?: number; cmax?: number; dose_value?: number; unit?: string } | null,
+): PatternResult | null {
+  if (!clinicalDose?.auc && !clinicalDose?.dose_value) return null;
+
+  const margins: Array<{ study_id: string; species: string; margin_type: string; margin_value: number }> = [];
+  const notes: string[] = [];
+
+  for (const comp of exposureComparisons) {
+    if (comp.auc_at_noael !== null && clinicalDose?.auc) {
+      margins.push({
+        study_id: comp.study_id,
+        species: comp.species,
+        margin_type: "AUC-based",
+        margin_value: comp.auc_at_noael / clinicalDose.auc,
+      });
+    } else if (comp.hed !== null && clinicalDose?.dose_value) {
+      margins.push({
+        study_id: comp.study_id,
+        species: comp.species,
+        margin_type: "dose-based (HED)",
+        margin_value: comp.hed / clinicalDose.dose_value,
+      });
+    }
+  }
+
+  if (margins.length === 0) return null;
+
+  const minMargin = Math.min(...margins.map((m) => m.margin_value));
+  let classification: string;
+  if (minMargin >= 10) {
+    classification = "ADEQUATE_MARGIN";
+  } else if (minMargin >= 3) {
+    classification = "NARROW_MARGIN";
+    notes.push(`Minimum safety margin is ${minMargin.toFixed(1)}x — below 10x FDA guideline default safety factor.`);
+  } else {
+    classification = "INSUFFICIENT_MARGIN";
+    notes.push(`Minimum safety margin is ${minMargin.toFixed(1)}x — critically narrow. Review dose selection rationale.`);
+  }
+
+  return {
+    pattern_id: "XSI_MARGIN",
+    pattern_name: "Human Safety Margin",
+    classification,
+    studies_compared: margins.map((m) => m.study_id),
+    details: { margins, min_margin: minMargin, clinical_dose: clinicalDose },
+    confidence_notes: notes,
+  };
+}
+
+// ─── Pattern: XSI_CONCORDANCE_MATRIX (Phase 7) ─────────────
+
+function evaluateConcordanceMatrix(
+  studies: StudySummaryRecord[],
+): PatternResult | null {
+  if (studies.length < 3) return null;
+
+  // Build matrix: syndrome × study → present/absent
+  const allSyndromes = new Set<string>();
+  for (const s of studies) {
+    for (const syn of s.detected_syndromes) allSyndromes.add(syn.syndrome_id);
+  }
+
+  const matrix: Record<string, Record<string, boolean>> = {};
+  for (const synId of allSyndromes) {
+    matrix[synId] = {};
+    for (const s of studies) {
+      matrix[synId][s.study_id] = s.detected_syndromes.some((syn) => syn.syndrome_id === synId);
+    }
+  }
+
+  // Count concordance: how many syndromes appear in all studies vs some
+  let universalCount = 0;
+  let partialCount = 0;
+  let uniqueCount = 0;
+  for (const synId of allSyndromes) {
+    const presentIn = Object.values(matrix[synId]).filter(Boolean).length;
+    if (presentIn === studies.length) universalCount++;
+    else if (presentIn === 1) uniqueCount++;
+    else partialCount++;
+  }
+
+  return {
+    pattern_id: "XSI_CONCORDANCE_MATRIX",
+    pattern_name: "Findings Concordance Matrix",
+    classification: universalCount > 0 ? "CONCORDANCE_PATTERN" : partialCount > 0 ? "PARTIAL_CONCORDANCE" : "NO_CONCORDANCE",
+    studies_compared: studies.map((s) => s.study_id),
+    details: {
+      matrix,
+      total_syndromes: allSyndromes.size,
+      universal: universalCount,
+      partial: partialCount,
+      unique: uniqueCount,
+    },
+    confidence_notes: [],
+  };
+}
+
+// ─── Pattern: XSI_RECOVERY_ADEQUACY (Phase 7) ──────────────
+
+function evaluateRecoveryAdequacy(
+  studies: StudySummaryRecord[],
+): PatternResult[] {
+  const results: PatternResult[] = [];
+  const withRecovery = studies.filter((s) => s.recovery_weeks !== null && s.recovery_weeks > 0);
+  if (withRecovery.length < 2) return results;
+
+  // Compare recovery period adequacy for the same syndrome across studies
+  const syndromeRecovery = new Map<string, Array<{ study_id: string; species: string; recovery_weeks: number; status: string }>>();
+
+  for (const s of withRecovery) {
+    for (const [synId, status] of Object.entries(s.recovery_outcomes)) {
+      const entries = syndromeRecovery.get(synId) ?? [];
+      entries.push({ study_id: s.study_id, species: s.species, recovery_weeks: s.recovery_weeks!, status });
+      syndromeRecovery.set(synId, entries);
+    }
+  }
+
+  for (const [synId, entries] of syndromeRecovery) {
+    if (entries.length < 2) continue;
+
+    const hasIncomplete = entries.some((e) => e.status === "partial" || e.status === "incomplete" || e.status === "not_reversed");
+    const hasComplete = entries.some((e) => e.status === "complete" || e.status === "reversed");
+
+    let classification: string;
+    const notes: string[] = [];
+
+    if (hasIncomplete && hasComplete) {
+      // Find if longer recovery period helped
+      const sorted = [...entries].sort((a, b) => a.recovery_weeks - b.recovery_weeks);
+      const shortestIncomplete = sorted.find((e) => e.status !== "complete" && e.status !== "reversed");
+      const longestComplete = [...sorted].reverse().find((e) => e.status === "complete" || e.status === "reversed");
+
+      if (shortestIncomplete && longestComplete && longestComplete.recovery_weeks > shortestIncomplete.recovery_weeks) {
+        classification = "DURATION_DEPENDENT_RECOVERY";
+        notes.push(`Recovery appears duration-dependent: incomplete at ${shortestIncomplete.recovery_weeks}wk, complete at ${longestComplete.recovery_weeks}wk.`);
+      } else {
+        classification = "INADEQUATE_DURATION";
+        notes.push("Incomplete recovery observed — longer recovery period may be needed for chronic study design.");
+      }
+    } else if (hasComplete) {
+      classification = "ADEQUATE_DURATION";
+    } else {
+      classification = "INADEQUATE_DURATION";
+      notes.push("No complete recovery observed in any study — consider extending recovery period.");
+    }
+
+    results.push({
+      pattern_id: "XSI_RECOVERY_ADEQUACY",
+      pattern_name: "Recovery Period Adequacy Comparison",
+      classification,
+      studies_compared: entries.map((e) => e.study_id),
+      details: { syndrome_id: synId, entries },
+      confidence_notes: notes,
+    });
+  }
+
+  return results;
+}
+
 // ─── Main entry point: Mode 1 (Anchor Comparison) ──────────
 
 /**
@@ -417,6 +678,21 @@ export function analyzeProgram(
   // XSI_SEVERITY: severity grade comparison
   patternResults.push(...evaluateSeverity(allStudies));
 
+  // XSI_EXPOSURE: TK/AUC exposure-normalized comparison (Phase 7)
+  const { comparisons: exposureComps, pattern: exposurePattern } = evaluateExposure(allStudies, program.clinical_dose);
+  if (exposurePattern) patternResults.push(exposurePattern);
+
+  // XSI_MARGIN: human safety margin (Phase 7)
+  const marginPattern = evaluateMargin(exposureComps, program.clinical_dose);
+  if (marginPattern) patternResults.push(marginPattern);
+
+  // XSI_CONCORDANCE_MATRIX: findings concordance across 3+ studies (Phase 7)
+  const concordanceMatrix = evaluateConcordanceMatrix(allStudies);
+  if (concordanceMatrix) patternResults.push(concordanceMatrix);
+
+  // XSI_RECOVERY_ADEQUACY: recovery period adequacy comparison (Phase 7)
+  patternResults.push(...evaluateRecoveryAdequacy(allStudies));
+
   // XSI_NOAEL: program NOAEL reconciliation
   const noaelReconciliation = evaluateNoael(allStudies);
 
@@ -427,6 +703,94 @@ export function analyzeProgram(
     program_id: program.id,
     compound_name: program.compound,
     studies_analyzed: allStudies.map((s) => s.study_id),
+    pattern_results: patternResults,
+    program_noael: noaelReconciliation.length > 0 ? noaelReconciliation : null,
+    watchlist,
+  };
+}
+
+// ─── Mode 2: Program Synthesis (symmetric, no anchor) ──────
+
+/**
+ * Run all cross-study patterns in program synthesis mode.
+ * No anchor study — all studies are treated symmetrically.
+ * Produces a program-level overview for IND submission preparation.
+ *
+ * All inputs are StudySummaryRecord — never raw SEND data.
+ */
+export function synthesizeProgram(
+  studies: StudySummaryRecord[],
+  program: Program,
+): ProgramConclusion {
+  if (studies.length === 0) {
+    return {
+      program_id: program.id,
+      compound_name: program.compound,
+      studies_analyzed: [],
+      pattern_results: [],
+      program_noael: null,
+      watchlist: [],
+    };
+  }
+
+  const submittedStudies = studies.filter((s) => s.study_stage === "SUBMITTED");
+  const patternResults: PatternResult[] = [];
+
+  // XSI_CONCORDANCE: run for each unique species pair
+  const speciesGroups = new Map<string, StudySummaryRecord[]>();
+  for (const s of studies) {
+    const sp = s.species.toUpperCase();
+    const group = speciesGroups.get(sp) ?? [];
+    group.push(s);
+    speciesGroups.set(sp, group);
+  }
+  if (speciesGroups.size >= 2) {
+    // Use first study from the species with most studies as pseudo-anchor
+    const sorted = [...speciesGroups.entries()].sort((a, b) => b[1].length - a[1].length);
+    const pseudoAnchor = sorted[0][1][0];
+    const refs = studies.filter((s) => s.study_id !== pseudoAnchor.study_id);
+    const conc = evaluateConcordance(pseudoAnchor, refs);
+    if (conc) patternResults.push(conc);
+  }
+
+  // XSI_DURATION: run for each same-species pair
+  for (const [, group] of speciesGroups) {
+    if (group.length >= 2) {
+      patternResults.push(...evaluateDuration(group[0], group.slice(1)));
+    }
+  }
+
+  // XSI_RECOVERY: all studies
+  patternResults.push(...evaluateRecovery(studies));
+
+  // XSI_SEVERITY: all studies
+  patternResults.push(...evaluateSeverity(studies));
+
+  // XSI_EXPOSURE: TK comparison
+  const { comparisons: exposureComps, pattern: exposurePattern } = evaluateExposure(studies, program.clinical_dose);
+  if (exposurePattern) patternResults.push(exposurePattern);
+
+  // XSI_MARGIN: safety margin
+  const marginPattern = evaluateMargin(exposureComps, program.clinical_dose);
+  if (marginPattern) patternResults.push(marginPattern);
+
+  // XSI_CONCORDANCE_MATRIX: 3+ studies
+  const concordanceMatrix = evaluateConcordanceMatrix(studies);
+  if (concordanceMatrix) patternResults.push(concordanceMatrix);
+
+  // XSI_RECOVERY_ADEQUACY: recovery period comparison
+  patternResults.push(...evaluateRecoveryAdequacy(studies));
+
+  // XSI_NOAEL: program NOAEL
+  const noaelReconciliation = evaluateNoael(studies);
+
+  // XSI_WATCHLIST: monitoring watchlist
+  const watchlist = evaluateWatchlist(submittedStudies);
+
+  return {
+    program_id: program.id,
+    compound_name: program.compound,
+    studies_analyzed: studies.map((s) => s.study_id),
     pattern_results: patternResults,
     program_noael: noaelReconciliation.length > 0 ? noaelReconciliation : null,
     watchlist,
