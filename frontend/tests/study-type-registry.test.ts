@@ -3,6 +3,7 @@
  * domain checks, and caveat resolution for all registered study types.
  */
 import { describe, test, expect } from "vitest";
+import { mapPipelineStageToStudyStage } from "@/types/pipeline-contracts";
 import {
   getStudyTypeConfig,
   routeStudyType,
@@ -110,6 +111,15 @@ describe("Study Type Registry", () => {
     const cfg = getStudyTypeConfig("REPEAT_DOSE")!;
     const caveats = getCaveatsForStudyType(cfg);
     expect(caveats.length).toBe(0);
+  });
+
+  test("mapPipelineStageToStudyStage: maps all pipeline stages correctly", () => {
+    expect(mapPipelineStageToStudyStage("submitted")).toBe("SUBMITTED");
+    expect(mapPipelineStageToStudyStage("pre_submission")).toBe("SUBMITTED");
+    expect(mapPipelineStageToStudyStage("ongoing")).toBe("ONGOING");
+    expect(mapPipelineStageToStudyStage("planned")).toBe("PLANNED");
+    expect(mapPipelineStageToStudyStage(null)).toBe("SUBMITTED");
+    expect(mapPipelineStageToStudyStage("unknown_value")).toBe("SUBMITTED");
   });
 
   test("each study type has valid schema fields", () => {

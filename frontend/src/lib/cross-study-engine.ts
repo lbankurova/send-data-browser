@@ -15,6 +15,7 @@ import kmFactors from "../../../shared/config/km-factors.json";
 
 // ─── Types ──────────────────────────────────────────────────
 
+/** Result of a single cross-study pattern evaluation. */
 export interface PatternResult {
   pattern_id: string;
   pattern_name: string;
@@ -24,6 +25,7 @@ export interface PatternResult {
   confidence_notes: string[];
 }
 
+/** Monitoring watchlist entry for an ongoing/planned study. */
 export interface WatchlistItem {
   priority: 1 | 2;
   organ_system: string;
@@ -34,6 +36,7 @@ export interface WatchlistItem {
   severity_at_loael: string | null;
 }
 
+/** Per-study NOAEL + HED for program NOAEL reconciliation. */
 export interface NoaelReconciliation {
   study_id: string;
   species: string;
@@ -43,6 +46,7 @@ export interface NoaelReconciliation {
   most_sensitive: boolean;
 }
 
+/** Aggregated output of cross-study analysis for a program. */
 export interface ProgramConclusion {
   program_id: string;
   compound_name: string;
@@ -386,6 +390,7 @@ function evaluateSeverity(
 
 // ─── Pattern: XSI_EXPOSURE (Phase 7) ────────────────────────
 
+/** Per-study exposure data for AUC-based cross-study comparison. */
 export interface ExposureComparison {
   study_id: string;
   species: string;
@@ -598,7 +603,7 @@ function evaluateRecoveryAdequacy(
   for (const s of withRecovery) {
     for (const [synId, status] of Object.entries(s.recovery_outcomes)) {
       const entries = syndromeRecovery.get(synId) ?? [];
-      entries.push({ study_id: s.study_id, species: s.species, recovery_weeks: s.recovery_weeks!, status });
+      entries.push({ study_id: s.study_id, species: s.species, recovery_weeks: s.recovery_weeks ?? 0, status });
       syndromeRecovery.set(synId, entries);
     }
   }

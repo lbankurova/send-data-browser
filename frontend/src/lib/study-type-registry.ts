@@ -25,6 +25,13 @@ const ALL_CONFIGS: StudyTypeConfig[] = [
   safetyPharmCvConfig as StudyTypeConfig,
 ];
 
+// Validate at module init that REPEAT_DOSE exists (used as fallback everywhere)
+const _rdFallback = ALL_CONFIGS.find((c) => c.study_type === "REPEAT_DOSE");
+if (!_rdFallback) {
+  throw new Error("study-type-registry: REPEAT_DOSE config is required but missing");
+}
+const REPEAT_DOSE_FALLBACK: StudyTypeConfig = _rdFallback;
+
 // ── Registry ────────────────────────────────────────────────
 
 /** Map of study_type ID → config */
@@ -52,16 +59,16 @@ export function routeStudyType(tsStype: string | null): StudyTypeConfig {
     const match = configByStype.get(tsStype.toUpperCase());
     if (match) return match;
   }
-  return configById.get("REPEAT_DOSE")!;
+  return REPEAT_DOSE_FALLBACK;
 }
 
 /** Route safety pharmacology by domain presence.
  *  SAFETY PHARMACOLOGY is a single TS.STYPE — sub-type by available domains. */
 export function routeSafetyPharm(availableDomains: string[]): StudyTypeConfig {
   const domains = new Set(availableDomains.map((d) => d.toUpperCase()));
-  if (domains.has("EG")) return configById.get("SAFETY_PHARM_CARDIOVASCULAR")!;
+  if (domains.has("EG")) return configById.get("SAFETY_PHARM_CARDIOVASCULAR") ?? REPEAT_DOSE_FALLBACK;
   // Future: RE → SAFETY_PHARM_RESPIRATORY, BH → SAFETY_PHARM_CNS
-  return configById.get("REPEAT_DOSE")!; // fallback
+  return REPEAT_DOSE_FALLBACK;
 }
 
 /** Get all registered study type configs. */
