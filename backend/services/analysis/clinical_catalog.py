@@ -4,210 +4,46 @@ Matches histopathology findings against a curated catalog of clinically
 significant lesions (C01–C15), annotates results with clinical metadata,
 promotes severity for sentinel/high-concern findings, suppresses
 protective labels for excluded findings, and computes confidence.
+
+Rule data loaded from shared/rules/clinical-catalog-rules.json.
 """
 
+import json
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Catalog — 15 clinically significant finding patterns
+# Load catalog from JSON
 # ---------------------------------------------------------------------------
 
-CLINICAL_CATALOG = [
-    {
-        "id": "C01",
-        "name": "Male reproductive — atrophy/degeneration",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": ["TESTIS", "EPIDIDYMIS", "SEMINAL VESICLE", "PROSTATE"],
-        "findings": ["ATROPHY", "DEGENERATION", "HYPOSPERMIA", "ASPERMIA",
-                      "GERM CELL DEPLETION"],
-        "min_n_affected": 1,
-        "min_severity": 1,
-    },
-    {
-        "id": "C02",
-        "name": "Ovary atrophy/follicular depletion",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": ["OVARY"],
-        "findings": ["ATROPHY", "DEGENERATION", "FOLLICULAR DEPLETION",
-                      "DECREASED CORPORA LUTEA"],
-        "min_n_affected": 1,
-        "min_severity": 1,
-    },
-    {
-        "id": "C03",
-        "name": "Uterus atrophy",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["UTERUS"],
-        "findings": ["ATROPHY"],
-        "min_n_affected": 2,
-        "min_severity": 1,
-    },
-    {
-        "id": "C04",
-        "name": "Malignant neoplasia (any organ)",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": None,  # any organ
-        "findings": ["CARCINOMA", "SARCOMA", "LYMPHOMA", "LEUKEMIA", "MALIGNANT"],
-        "min_n_affected": 1,
-        "min_severity": 1,
-    },
-    {
-        "id": "C05",
-        "name": "Benign neoplasia",
-        "clinical_class": "ContextDependent",
-        "elevate_to": None,  # flag for review only
-        "specimens": None,
-        "findings": ["ADENOMA", "FIBROMA", "BENIGN"],
-        "min_n_affected": 2,
-        "min_severity": 1,
-    },
-    {
-        "id": "C06",
-        "name": "Neurotoxic injury",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": ["BRAIN", "SPINAL CORD", "SCIATIC NERVE",
-                       "PERIPHERAL NERVE", "DORSAL ROOT GANGLIA"],
-        "findings": ["NECROSIS", "DEGENERATION", "GLIOSIS", "DEMYELINATION",
-                      "AXONAL DEGENERATION", "NEURONAL NECROSIS"],
-        "min_n_affected": 1,
-        "min_severity": 1,
-    },
-    {
-        "id": "C07",
-        "name": "Bone marrow hypocellularity/aplasia",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": ["BONE MARROW", "STERNUM", "FEMUR"],
-        "findings": ["HYPOCELLULARITY", "APLASIA", "DECREASED CELLULARITY"],
-        "min_n_affected": 1,
-        "min_severity": 2,
-    },
-    {
-        "id": "C08",
-        "name": "Liver necrosis/degeneration",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["LIVER"],
-        "findings": ["NECROSIS", "HEPATOCELLULAR NECROSIS", "SINGLE CELL NECROSIS",
-                      "CENTRILOBULAR NECROSIS", "DEGENERATION",
-                      "HEPATOCELLULAR DEGENERATION"],
-        "min_n_affected": 2,
-        "min_severity": 1,
-    },
-    {
-        "id": "C09",
-        "name": "Kidney tubular necrosis/degeneration",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["KIDNEY"],
-        "findings": ["TUBULAR NECROSIS", "CORTICAL NECROSIS",
-                      "TUBULAR DEGENERATION", "PAPILLARY NECROSIS"],
-        "min_n_affected": 2,
-        "min_severity": 1,
-    },
-    {
-        "id": "C10",
-        "name": "Heart myocardial necrosis/degeneration",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["HEART"],
-        "findings": ["MYOCYTE NECROSIS", "MYOCARDIAL NECROSIS",
-                      "DEGENERATION", "FIBROSIS"],
-        "min_n_affected": 2,
-        "min_severity": 2,
-    },
-    {
-        "id": "C11",
-        "name": "Lung diffuse alveolar damage/hemorrhage",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["LUNG", "LUNGS"],
-        "findings": ["ALVEOLAR DAMAGE", "HEMORRHAGE", "EDEMA"],
-        "min_n_affected": 2,
-        "min_severity": 2,
-    },
-    {
-        "id": "C12",
-        "name": "GI tract ulceration/perforation",
-        "clinical_class": "Sentinel",
-        "elevate_to": "adverse",
-        "specimens": ["STOMACH", "ESOPHAGUS", "SMALL INTESTINE",
-                       "LARGE INTESTINE", "COLON", "CECUM", "RECTUM",
-                       "DUODENUM", "JEJUNUM", "ILEUM"],
-        "findings": ["ULCERATION", "PERFORATION", "ULCER"],
-        "min_n_affected": 1,
-        "min_severity": 2,
-    },
-    {
-        "id": "C13",
-        "name": "Lymphoid depletion (immune organs)",
-        "clinical_class": "HighConcern",
-        "elevate_to": "adverse",
-        "specimens": ["THYMUS", "SPLEEN", "LYMPH NODE"],
-        "findings": ["LYMPHOID DEPLETION", "ATROPHY", "DECREASED CELLULARITY",
-                      "APOPTOSIS"],
-        "min_n_affected": 3,
-        "min_severity": 2,
-    },
-    {
-        "id": "C14",
-        "name": "Liver hypertrophy (adaptive)",
-        "clinical_class": "ModerateConcern",
-        "elevate_to": None,  # flag only
-        "specimens": ["LIVER"],
-        "findings": ["HEPATOCELLULAR HYPERTROPHY", "CENTRILOBULAR HYPERTROPHY",
-                      "HYPERTROPHY"],
-        "min_n_affected": 3,
-        "min_severity": 2,
-    },
-    {
-        "id": "C15",
-        "name": "Thyroid follicular hypertrophy/hyperplasia",
-        "clinical_class": "ModerateConcern",
-        "elevate_to": None,  # flag only
-        "specimens": ["THYROID"],
-        "findings": ["FOLLICULAR HYPERTROPHY", "FOLLICULAR HYPERPLASIA"],
-        "min_n_affected": 3,
-        "min_severity": 2,
-    },
-]
+_RULES_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "rules" / "clinical-catalog-rules.json"
+_LOADED: dict | None = None
+
+
+def _load() -> dict:
+    global _LOADED
+    if _LOADED is None:
+        with open(_RULES_PATH) as f:
+            _LOADED = json.load(f)
+    return _LOADED
+
+
+CLINICAL_CATALOG: list[dict] = _load()["rules"]
+
+# Protective exclusion data
+_pex = _load()["protective_exclusions"]
+_EXCLUDED_ORGAN_SYSTEMS: set[str] = set(_pex["excluded_organ_systems"])
+_EXCLUDED_PROTECTIVE_FINDINGS: list[str] = _pex["excluded_findings"]
+PROTECTIVE_EXCLUSIONS: list[dict] = _pex["rules"]
 
 # ---------------------------------------------------------------------------
-# Protective exclusions — block protective labeling for these findings
+# Legacy inline catalog removed — now loaded from JSON above
 # ---------------------------------------------------------------------------
+# See shared/rules/clinical-catalog-rules.json for all 15 entries (C01-C15)
+# and 7 protective exclusion rules (PEX01-PEX07).
 
-# Organ systems that should never be labeled protective
-_EXCLUDED_ORGAN_SYSTEMS = {"reproductive", "hematopoietic", "immune", "hematologic"}
-
-# Findings that should never be labeled protective (neoplasia)
-_EXCLUDED_PROTECTIVE_FINDINGS = [
-    "CARCINOMA", "SARCOMA", "LYMPHOMA", "LEUKEMIA", "MALIGNANT",
-    "ADENOMA", "FIBROMA", "BENIGN",
-]
-
-PROTECTIVE_EXCLUSIONS = [
-    {"id": "PEX01", "desc": "Reproductive organs",
-     "check": "organ_system"},
-    {"id": "PEX02", "desc": "Neoplasia",
-     "check": "neoplasia_finding"},
-    {"id": "PEX03", "desc": "Low baseline (control < 10%)",
-     "check": "low_control_incidence", "max_control_incidence": 0.10},
-    {"id": "PEX04", "desc": "Sentinel/HighConcern finding",
-     "check": "catalog_class"},
-    {"id": "PEX05", "desc": "Single-animal decrease",
-     "check": "single_animal", "max_n_affected_treated": 1},
-    {"id": "PEX06", "desc": "Hematopoietic/immune organs",
-     "check": "organ_system"},
-    {"id": "PEX07", "desc": "Non-monotonic without significance",
-     "check": "non_monotonic"},
-]
 
 
 # ---------------------------------------------------------------------------

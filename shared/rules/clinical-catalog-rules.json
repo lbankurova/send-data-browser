@@ -1,0 +1,141 @@
+{
+  "$schema": "../schemas/clinical-catalog-rules.schema.json",
+  "version": "1.0.0",
+
+  "rules": [
+    {
+      "id": "C01", "name": "Male reproductive — atrophy/degeneration",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": ["TESTIS", "EPIDIDYMIS", "SEMINAL VESICLE", "PROSTATE"],
+      "findings": ["ATROPHY", "DEGENERATION", "HYPOSPERMIA", "ASPERMIA", "GERM CELL DEPLETION"],
+      "min_n_affected": 1, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C02", "name": "Ovary atrophy/follicular depletion",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": ["OVARY"],
+      "findings": ["ATROPHY", "DEGENERATION", "FOLLICULAR DEPLETION", "DECREASED CORPORA LUTEA"],
+      "min_n_affected": 1, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C03", "name": "Uterus atrophy",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["UTERUS"],
+      "findings": ["ATROPHY"],
+      "min_n_affected": 2, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C04", "name": "Malignant neoplasia (any organ)",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": null,
+      "findings": ["CARCINOMA", "SARCOMA", "LYMPHOMA", "LEUKEMIA", "MALIGNANT"],
+      "min_n_affected": 1, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C05", "name": "Benign neoplasia",
+      "clinical_class": "ContextDependent", "elevate_to": null,
+      "specimens": null,
+      "findings": ["ADENOMA", "FIBROMA", "BENIGN"],
+      "min_n_affected": 2, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C06", "name": "Neurotoxic injury",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": ["BRAIN", "SPINAL CORD", "SCIATIC NERVE", "PERIPHERAL NERVE", "DORSAL ROOT GANGLIA"],
+      "findings": ["NECROSIS", "DEGENERATION", "GLIOSIS", "DEMYELINATION", "AXONAL DEGENERATION", "NEURONAL NECROSIS"],
+      "min_n_affected": 1, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C07", "name": "Bone marrow hypocellularity/aplasia",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": ["BONE MARROW", "STERNUM", "FEMUR"],
+      "findings": ["HYPOCELLULARITY", "APLASIA", "DECREASED CELLULARITY"],
+      "min_n_affected": 1, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C08", "name": "Liver necrosis/degeneration",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["LIVER"],
+      "findings": ["NECROSIS", "HEPATOCELLULAR NECROSIS", "SINGLE CELL NECROSIS", "CENTRILOBULAR NECROSIS", "DEGENERATION", "HEPATOCELLULAR DEGENERATION"],
+      "min_n_affected": 2, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C09", "name": "Kidney tubular necrosis/degeneration",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["KIDNEY"],
+      "findings": ["TUBULAR NECROSIS", "CORTICAL NECROSIS", "TUBULAR DEGENERATION", "PAPILLARY NECROSIS"],
+      "min_n_affected": 2, "min_severity": 1,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C10", "name": "Heart myocardial necrosis/degeneration",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["HEART"],
+      "findings": ["MYOCYTE NECROSIS", "MYOCARDIAL NECROSIS", "DEGENERATION", "FIBROSIS"],
+      "min_n_affected": 2, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER", "SAFETY_PHARM_CARDIOVASCULAR"]
+    },
+    {
+      "id": "C11", "name": "Lung diffuse alveolar damage/hemorrhage",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["LUNG", "LUNGS"],
+      "findings": ["ALVEOLAR DAMAGE", "HEMORRHAGE", "EDEMA"],
+      "min_n_affected": 2, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C12", "name": "GI tract ulceration/perforation",
+      "clinical_class": "Sentinel", "elevate_to": "adverse",
+      "specimens": ["STOMACH", "ESOPHAGUS", "SMALL INTESTINE", "LARGE INTESTINE", "COLON", "CECUM", "RECTUM", "DUODENUM", "JEJUNUM", "ILEUM"],
+      "findings": ["ULCERATION", "PERFORATION", "ULCER"],
+      "min_n_affected": 1, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C13", "name": "Lymphoid depletion (immune organs)",
+      "clinical_class": "HighConcern", "elevate_to": "adverse",
+      "specimens": ["THYMUS", "SPLEEN", "LYMPH NODE"],
+      "findings": ["LYMPHOID DEPLETION", "ATROPHY", "DECREASED CELLULARITY", "APOPTOSIS"],
+      "min_n_affected": 3, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C14", "name": "Liver hypertrophy (adaptive)",
+      "clinical_class": "ModerateConcern", "elevate_to": null,
+      "specimens": ["LIVER"],
+      "findings": ["HEPATOCELLULAR HYPERTROPHY", "CENTRILOBULAR HYPERTROPHY", "HYPERTROPHY"],
+      "min_n_affected": 3, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    {
+      "id": "C15", "name": "Thyroid follicular hypertrophy/hyperplasia",
+      "clinical_class": "ModerateConcern", "elevate_to": null,
+      "specimens": ["THYROID"],
+      "findings": ["FOLLICULAR HYPERTROPHY", "FOLLICULAR HYPERPLASIA"],
+      "min_n_affected": 3, "min_severity": 2,
+      "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
+    }
+  ],
+
+  "protective_exclusions": {
+    "excluded_organ_systems": ["reproductive", "hematopoietic", "immune", "hematologic"],
+    "excluded_findings": ["CARCINOMA", "SARCOMA", "LYMPHOMA", "LEUKEMIA", "MALIGNANT", "ADENOMA", "FIBROMA", "BENIGN"],
+    "rules": [
+      {"id": "PEX01", "desc": "Reproductive organs", "check": "organ_system"},
+      {"id": "PEX02", "desc": "Neoplasia", "check": "neoplasia_finding"},
+      {"id": "PEX03", "desc": "Low baseline (control < 10%)", "check": "low_control_incidence", "max_control_incidence": 0.10},
+      {"id": "PEX04", "desc": "Sentinel/HighConcern finding", "check": "catalog_class"},
+      {"id": "PEX05", "desc": "Single-animal decrease", "check": "single_animal", "max_n_affected_treated": 1},
+      {"id": "PEX06", "desc": "Hematopoietic/immune organs", "check": "organ_system"},
+      {"id": "PEX07", "desc": "Non-monotonic without significance", "check": "non_monotonic"}
+    ]
+  }
+}
