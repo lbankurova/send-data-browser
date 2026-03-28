@@ -62,6 +62,25 @@ export function routeStudyType(tsStype: string | null): StudyTypeConfig {
   return REPEAT_DOSE_FALLBACK;
 }
 
+/** Route by study metadata when TS.STYPE is absent or non-standard.
+ *  Uses GLP status and duration as heuristics for DRF detection. */
+export function routeByMetadata(
+  glpCompliant: boolean,
+  durationWeeks: number | null,
+  availableDomains: string[],
+): StudyTypeConfig {
+  // Non-GLP + short duration → dose range finder
+  if (!glpCompliant && (durationWeeks === null || durationWeeks <= 4)) {
+    return configById.get("DOSE_RANGE_FINDER") ?? REPEAT_DOSE_FALLBACK;
+  }
+  // Safety pharm sub-routing
+  const domains = new Set(availableDomains.map((d) => d.toUpperCase()));
+  if (domains.has("EG") && !domains.has("LB") && !domains.has("MI")) {
+    return configById.get("SAFETY_PHARM_CARDIOVASCULAR") ?? REPEAT_DOSE_FALLBACK;
+  }
+  return REPEAT_DOSE_FALLBACK;
+}
+
 /** Route safety pharmacology by domain presence.
  *  SAFETY PHARMACOLOGY is a single TS.STYPE — sub-type by available domains. */
 export function routeSafetyPharm(availableDomains: string[]): StudyTypeConfig {
@@ -69,6 +88,16 @@ export function routeSafetyPharm(availableDomains: string[]): StudyTypeConfig {
   if (domains.has("EG")) return configById.get("SAFETY_PHARM_CARDIOVASCULAR") ?? REPEAT_DOSE_FALLBACK;
   // Future: RE → SAFETY_PHARM_RESPIRATORY, BH → SAFETY_PHARM_CNS
   return REPEAT_DOSE_FALLBACK;
+}
+
+/** Register an additional study type at runtime. No code changes needed.
+ *  Automatically updates routing maps. */
+export function registerStudyType(config: StudyTypeConfig): void {
+  ALL_CONFIGS.push(config);
+  configById.set(config.study_type, config);
+  for (const stype of config.ts_stype_values) {
+    configByStype.set(stype.toUpperCase(), config);
+  }
 }
 
 /** Get all registered study type configs. */

@@ -93,17 +93,22 @@ describe("Profile Loader", () => {
   });
 
   test("getProvenance: default profile has 0 overrides", () => {
-    const prov = getProvenance("default");
+    const prov = getProvenance("default", "REPEAT_DOSE");
     expect(prov.profile_name).toBe("FDA Default");
     expect(prov.override_count).toBe(0);
     expect(prov.regulatory_context).toBe("FDA");
+    expect(prov.study_type).toBe("REPEAT_DOSE");
+    expect(prov.overrides).toEqual([]);
   });
 
-  test("getProvenance: EMA profile has override count > 0", () => {
-    const prov = getProvenance("ema-conservative");
+  test("getProvenance: EMA profile has override count > 0 with section list", () => {
+    const prov = getProvenance("ema-conservative", "ACUTE");
     expect(prov.profile_name).toBe("EMA Conservative");
     expect(prov.override_count).toBeGreaterThan(0);
     expect(prov.regulatory_context).toBe("EMA");
+    expect(prov.study_type).toBe("ACUTE");
+    expect(prov.overrides).toContain("thresholds");
+    expect(prov.overrides).toContain("scoring-weights");
   });
 
   test("getProvenance: unknown profile falls back to default", () => {

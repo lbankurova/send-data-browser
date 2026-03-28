@@ -40,10 +40,12 @@ export interface WatchlistItem {
 export interface NoaelReconciliation {
   study_id: string;
   species: string;
+  route: string;
   noael_dose: number | null;
   noael_unit: string;
   hed: number | null;
   most_sensitive: boolean;
+  route_differs: boolean;
 }
 
 /** Aggregated output of cross-study analysis for a program. */
@@ -108,6 +110,15 @@ function evaluateConcordance(
   }
   if (crossSpecies.some((r) => !doseLevelsOverlap(anchor, r))) {
     notes.push("Dose ranges do not overlap — non-concordance may reflect dose ceiling");
+  }
+  // #6: NHP high spontaneous background caveat
+  const NHP_HIGH_BG_ORGANS = new Set(["LIVER", "KIDNEY", "ADRENAL GLAND"]);
+  const hasNhp = [anchor, ...crossSpecies].some((s) => s.species.toUpperCase().includes("MONKEY") || s.species.toUpperCase().includes("NHP") || s.species.toUpperCase().includes("CYNOMOLGUS") || s.species.toUpperCase().includes("RHESUS"));
+  if (hasNhp) {
+    const nhpBgOrgans = shared.filter((o) => NHP_HIGH_BG_ORGANS.has(o));
+    if (nhpBgOrgans.length > 0) {
+      notes.push(`NHP has high spontaneous background for: ${nhpBgOrgans.join(", ")}. Concordance may reflect background incidence, not treatment effect.`);
+    }
   }
 
   return {
@@ -206,8 +217,11 @@ function evaluateNoael(
   const humanKm = kmFactors.human_km;
   const speciesKm = kmFactors.species as Record<string, { km: number }>;
 
-  return studies
-    .filter((s) => s.combined_noael !== null)
+  const withNoael = studies.filter((s) => s.combined_noael !== null);
+  const routes = new Set(withNoael.map((s) => s.route.toUpperCase()));
+  const routesDiffer = routes.size > 1;
+
+  return withNoael
     .map((s) => {
       const noaelDose = s.combined_noael!.dose_value;
       const sp = s.species.toLowerCase();
@@ -217,10 +231,12 @@ function evaluateNoael(
       return {
         study_id: s.study_id,
         species: s.species,
+        route: s.route,
         noael_dose: noaelDose,
         noael_unit: s.combined_noael!.dose_unit,
         hed,
         most_sensitive: false,
+        route_differs: routesDiffer,
       };
     })
     .sort((a, b) => (a.hed ?? Infinity) - (b.hed ?? Infinity))
@@ -232,30 +248,44 @@ function evaluateNoael(
 function evaluateWatchlist(
   submittedStudies: StudySummaryRecord[],
 ): WatchlistItem[] {
-  const organCount = new Map<string, { seenIn: string[]; params: Set<string> }>();
+  const organData = new Map<string, {
+    seenIn: string[];
+    params: Set<string>;
+    maxSeverity: string;
+    earliestOnset: string | null;
+  }>();
 
   for (const s of submittedStudies) {
     for (const to of s.target_organs) {
       const organ = to.organ_system.toUpperCase();
-      const entry = organCount.get(organ) ?? { seenIn: [], params: new Set() };
+      const entry = organData.get(organ) ?? { seenIn: [], params: new Set(), maxSeverity: "normal", earliestOnset: null };
       entry.seenIn.push(s.study_id);
+      // Track max severity across studies
+      if (to.max_severity && to.max_severity !== "normal") {
+        entry.maxSeverity = to.max_severity;
+      }
       for (const syn of s.detected_syndromes) {
         if (syn.target_organ.toUpperCase() === organ) {
           syn.affected_parameters.forEach((p) => entry.params.add(p));
+          // Build onset context from study duration
+          if (s.duration_weeks !== null) {
+            const onset = `week ${s.duration_weeks} in ${s.species} ${s.duration_weeks}-week study`;
+            if (!entry.earliestOnset) entry.earliestOnset = onset;
+          }
         }
       }
-      organCount.set(organ, entry);
+      organData.set(organ, entry);
     }
   }
 
-  return [...organCount.entries()].map(([organ, data]) => ({
+  return [...organData.entries()].map(([organ, data]) => ({
     priority: data.seenIn.length >= 2 ? 1 : 2,
     organ_system: organ,
     parameters: [...data.params],
     seen_in: data.seenIn,
     not_confirmed_in: [],
-    onset_context: null,
-    severity_at_loael: null,
+    onset_context: data.earliestOnset,
+    severity_at_loael: data.maxSeverity !== "normal" ? data.maxSeverity : null,
   }));
 }
 
@@ -278,6 +308,8 @@ function evaluateNovel(
 
   for (const syn of anchor.detected_syndromes) {
     let classification: string;
+    const notes: string[] = [];
+
     if (priorSameSpecies.has(syn.syndrome_id)) {
       const count = priorStudies.filter(
         (s) => sameSpecies(anchor, s) && s.detected_syndromes.some((ss) => ss.syndrome_id === syn.syndrome_id),
@@ -290,13 +322,23 @@ function evaluateNovel(
       classification = "NOVEL_ALL_SPECIES";
     }
 
+    // #9: Dose level context check — a finding may appear novel because prior
+    // studies used lower doses that never reached the affected threshold.
+    if (classification === "NOVEL_SAME_SPECIES" || classification === "NOVEL_ALL_SPECIES") {
+      const anchorMaxDose = Math.max(...anchor.dose_levels);
+      const priorMaxDoses = priorStudies.map((s) => Math.max(...s.dose_levels));
+      if (priorMaxDoses.some((d) => d < anchorMaxDose)) {
+        notes.push("Prior studies used lower maximum doses — finding may appear novel because affected dose threshold was not reached in earlier studies.");
+      }
+    }
+
     results.push({
       pattern_id: "XSI_NOVEL",
       pattern_name: "Novel Finding Flag",
       classification,
       studies_compared: [anchor.study_id, ...priorStudies.map((s) => s.study_id)],
       details: { syndrome_id: syn.syndrome_id, target_organ: syn.target_organ },
-      confidence_notes: [],
+      confidence_notes: notes,
     });
   }
 

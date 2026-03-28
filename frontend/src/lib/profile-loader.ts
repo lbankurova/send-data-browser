@@ -25,7 +25,9 @@ export interface ProfileProvenance {
   profile_name: string;
   profile_version: string;
   regulatory_context: string;
+  study_type: string;
   override_count: number;
+  overrides: string[];
 }
 
 // ─── Registry ───────────────────────────────────────────────
@@ -112,14 +114,20 @@ export function resolveConfig<T extends Record<string, unknown>>(
  * Get provenance info for the active profile.
  * Attach to every generated output for audit trail.
  */
-export function getProvenance(profileName: string = "default"): ProfileProvenance {
+export function getProvenance(
+  profileName: string = "default",
+  studyType: string = "REPEAT_DOSE",
+): ProfileProvenance {
   const profile = PROFILES.get(profileName) ?? PROFILES.get("default")!;
   const overrideCount = countOverrides(profile.overrides);
+  const overrideSections = Object.keys(profile.overrides);
   return {
     profile_name: profile.name,
     profile_version: profile.version,
     regulatory_context: profile.regulatory_context,
+    study_type: studyType,
     override_count: overrideCount,
+    overrides: overrideSections,
   };
 }
 
