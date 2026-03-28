@@ -8,6 +8,7 @@ import { useAESummary } from "@/hooks/useAESummary";
 import { generateStudyReport } from "@/lib/report-generator";
 import { CollapsiblePane } from "@/components/analysis/panes/CollapsiblePane";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
+import { useProjects } from "@/hooks/useProjects";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
@@ -20,6 +21,7 @@ const StudyDetailsContextPanel = lazy(() => import("@/components/analysis/panes/
 const ValidationContextPanel = lazy(() => import("@/components/analysis/panes/ValidationContextPanel").then(m => ({ default: m.ValidationContextPanel })));
 const SubjectProfilePanel = lazy(() => import("@/components/analysis/panes/SubjectProfilePanel").then(m => ({ default: m.SubjectProfilePanel })));
 const StudyPortfolioContextPanel = lazy(() => import("@/components/portfolio/StudyPortfolioContextPanel").then(m => ({ default: m.StudyPortfolioContextPanel })));
+const ProgramContextPanel = lazy(() => import("@/components/portfolio/ProgramContextPanel").then(m => ({ default: m.ProgramContextPanel })));
 const CohortContextPanel = lazy(() => import("@/components/analysis/panes/CohortContextPanel").then(m => ({ default: m.CohortContextPanel })));
 
 function PanelFallback() {
@@ -364,6 +366,7 @@ export function ContextPanel() {
   const location = useLocation();
   const { selectedSubject, setSelectedSubject, selection } = useViewSelection();
   const { data: allStudies } = useStudyPortfolio();
+  const { data: projects } = useProjects();
 
   const activeStudyId = studyId ?? selectedStudyId;
 
@@ -391,16 +394,28 @@ export function ContextPanel() {
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
   const isCohortRoute = /\/studies\/[^/]+\/cohort/.test(location.pathname);
 
-  // Landing page in portfolio mode with program selected — show portfolio context panel
-  if (isLandingPageRoute && selectedProjectId && selectedStudyId && allStudies) {
-    const selectedStudy = allStudies.find((s) => s.id === selectedStudyId);
-    if (selectedStudy) {
+  // Landing page in portfolio mode with program selected — show program context panel
+  if (isLandingPageRoute && selectedProjectId && allStudies) {
+    const project = projects?.find((p) => p.id === selectedProjectId);
+    if (project) {
+      // If a study is also selected, show study-level portfolio panel
+      if (selectedStudyId) {
+        const selectedStudy = allStudies.find((s) => s.id === selectedStudyId);
+        if (selectedStudy) {
+          return (
+            <LazyPane>
+              <StudyPortfolioContextPanel
+                selectedStudy={selectedStudy}
+                allStudies={allStudies}
+              />
+            </LazyPane>
+          );
+        }
+      }
+      // Otherwise show program-level panel
       return (
         <LazyPane>
-          <StudyPortfolioContextPanel
-            selectedStudy={selectedStudy}
-            allStudies={allStudies}
-          />
+          <ProgramContextPanel project={project} studies={allStudies} />
         </LazyPane>
       );
     }

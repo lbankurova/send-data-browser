@@ -125,6 +125,11 @@ Currently single-study. Three PHUSE repos (toxSummary, send-summarizer, phuse-sc
 - **Reference implementations:** send-summarizer (radar charts, z-score comparison), toxSummary (safety margin visualization), phuse-scripts HistoGraphicApp (multi-study histopath sunburst)
 - **Depends on:** HC-01 (dynamic dose mapping), HC-02 (dynamic recovery arms), database infrastructure
 
+### Feature: Program Context Panel (**done — spike**)
+- **Source:** Spike implementation, `Spec: incoming/program-context-panel.md`
+- **What:** Program-level context panel on landing page. Clicking a program in portfolio mode shows program identity, summary stats, and clickable study list. Clicking a study navigates to it. Mock portfolio data removed; portfolio now uses only auto-derived data from real studies.
+- **Why:** Entry point to cross-study views. Previously, clicking a program auto-selected a study — no program-level orientation existed.
+
 ### Feature: Exposure Margin / Safety Margin Calculation
 - **Source:** toxSummary cross-reference
 - **What:** HED computation with species conversion factors, Cmax/AUC-based safety margins. Standard regulatory deliverable.

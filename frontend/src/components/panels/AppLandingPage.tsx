@@ -542,7 +542,7 @@ export function AppLandingPage() {
     };
   });
 
-  // Add portfolio studies (mock studies with metadata) to the list
+  // Add portfolio-only studies (auto-derived from TS domain) to the list
   const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => {
     const resolvedNoael = noael(s);
     const noaelDisplay = resolvedNoael
@@ -802,9 +802,7 @@ export function AppLandingPage() {
               setProjectFilter(next);
               if (next) {
                 selectProject(next);
-                // Select first study in program so portfolio context panel has data
-                const firstStudy = (portfolioStudies ?? []).find((s) => s.project === next);
-                if (firstStudy) selectStudy(firstStudy.id);
+                selectStudy(null);
               } else {
                 selectProject(null);
                 selectStudy(null);
