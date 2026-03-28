@@ -7,7 +7,7 @@ Automated validation of SENDEX signal detection against known ground truth and e
 SENDEX is validated at three levels:
 
 1. **Ground truth** — PointCross (PC201708) is a synthetic 13-week rat toxicity study with 13 explicitly engineered signals documented in the nSDRG. We verify detection of every known signal.
-2. **Cross-study benchmark** — 7 additional studies spanning repeat-dose, single-dose, vaccine, gene therapy, and safety pharmacology designs. Automated results are compared against conclusions from submission reports (nSDRGs, define.xml, study reports).
+2. **Cross-study benchmark** — 16 additional studies spanning repeat-dose, single-dose, vaccine, gene therapy, safety pharmacology, and multi-compound designs across rat, dog, rabbit, and monkey species. Automated results are compared against conclusions from submission reports (nSDRGs, define.xml, study reports). 9 studies added 2026-03-28 are pending generator run.
 3. **Classification verdicts** — Expert evaluation of every partial match, gap, and over-classification to determine whether each is (a) correct behavior requiring human judgment, (b) a genuine algorithmic issue to fix, or (c) a valid additional signal.
 
 ## Study Sources
@@ -24,6 +24,15 @@ All datasets are from [PhUSE SEND pilot](https://github.com/phuse-org/phuse-scri
 | Study5 (CBER-POC) | CV safety pharmacology | Beagle Dog | Latin square crossover | Unsupported design validation |
 | CJUGSEND00 | CV safety pharmacology | Cynomolgus | Dose escalation | Unsupported design validation |
 | CJ16050 | Respiratory safety pharm | SD Rat | Parallel, single dose | Non-monotonic dose-response |
+| CV01 (CDISC POC) | CV safety pharmacology | Beagle Dog | Latin square crossover, 4 doses | Proper crossover with CV+EG+VS |
+| FFU | Repeat-dose IV (multi-compound) | Cynomolgus | 5 groups, 3 compounds | Multi-compound handling, small N |
+| Nimort-01 (Nimble) | 3-week repeat-dose | F344 Rat | 3 groups, parallel | Non-SD rat strain, unbalanced sex |
+| PDS2014 | 1-month repeat-dose + recovery | SD Rat | 4 groups + TK subsets | Comprehensive PointCross-like |
+| 35449 (TOXSCI) | 1-month repeat-dose | Beagle Dog | 4 groups + recovery | First non-crossover dog, IDO1 inhibitor |
+| 43066 (TOXSCI) | 1-month repeat-dose | Beagle Dog | 4 groups + recovery | Cross-compound comparison |
+| 87497 (TOXSCI) | 1-month repeat-dose | SD Rat | 4 groups + recovery | Largest rat study (n=160), cross-species |
+| 96298 (TOXSCI) | 1-month repeat-dose | SD Rat | 4 groups + recovery | Death data, cross-species comparison |
+| GLP003 (instem) | 1-month repeat-dose + recovery | SD Rat | 5 groups (dual control) | Largest study (n=241), dual control |
 
 ## Automated Regression
 

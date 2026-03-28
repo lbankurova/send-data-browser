@@ -14,8 +14,17 @@ Automated SENDEX results compared against expert conclusions from submission rep
 | **Study5** | CV safety pharm | 2 | 1 | 0 | 5 | Non-functional — unsupported study design |
 | **CJUGSEND00** | CV safety pharm | 1 | 1 | 0 | 6 | Non-functional — unsupported study design |
 | **CJ16050** | Respiratory safety pharm | 3 | 1 | 0 | 3 | Imported, primary domain (RE) not processed |
+| **CV01** | CV safety pharm (crossover) | — | — | — | — | No output — crossover unsupported |
+| **FFU** | Repeat-dose IV (multi-compound) | — | — | — | — | 584 findings — pending SME comparison |
+| **Nimort-01** | 3-wk repeat-dose (F344 rat) | — | — | — | — | 7 findings — data quality concern (control mortality) |
+| **PDS2014** | 1-mo repeat-dose + recovery | — | — | — | — | 426 findings — pending SME comparison |
+| **35449** | 1-mo repeat-dose (dog) | — | — | — | — | CRASHED — only mortality file |
+| **43066** | 1-mo repeat-dose (dog) | — | — | — | — | 378 findings — first working dog study |
+| **87497** | 1-mo repeat-dose (rat, n=160) | — | — | — | — | 210 findings — clean results |
+| **96298** | 1-mo repeat-dose (rat) | — | — | — | — | 266 findings, 1 death — dose label issues |
+| **GLP003** | 1-mo repeat-dose (rat, n=241) | — | — | — | — | 1661 findings — dose group labeling broken |
 
-**Key finding: 0 WRONG classifications across all studies.** All "partial" items reflect correctly graded borderline evidence or inherent limitations of automated classification (adversity requires mechanism-of-action knowledge per ICH S6(R1)). All "missing" items are documented capability gaps (IS/CV/RE domains, within-animal statistics).
+**Key finding: 0 WRONG classifications across all validated studies.** All "partial" items reflect correctly graded borderline evidence or inherent limitations of automated classification (adversity requires mechanism-of-action knowledge per ICH S6(R1)). All "missing" items are documented capability gaps (IS/CV/RE domains, within-animal statistics).
 
 ## Study2 — 456a Vaccine (NZW Rabbits)
 
@@ -90,6 +99,39 @@ Automated SENDEX results compared against expert conclusions from submission rep
 
 These studies require unsupported capabilities (within-animal crossover/escalation statistics, CV/RE domain processing, non-monotonic dose-response handling). The engine correctly identifies structural metadata (has_concurrent_control, mortality) but cannot perform the core scientific analysis. See classification-verdicts.md §SG-04 through §SG-08 for assessment.
 
+## New Studies — Pending Validation (2026-03-28)
+
+Nine additional studies imported. Generator output in `backend/generated/`. 7 completed, 1 crashed, 1 unsupported. No study reports available for SME comparison — verdicts pending.
+
+### Completed Successfully (7 studies)
+
+| Study | Species | Findings | Adverse | Tx-Related | NOAEL | Key Observations |
+|---|---|---|---|---|---|---|
+| **FFU** | Cynomolgus | 584 | 172 | 192 | 0 mg/kg | Multi-compound (3 articles in 1 study), M NOAEL not established |
+| **Nimort-01** | F344 Rat | 7 | 3 | 7 | 0 mg/kg (control) | 26 deaths (mostly control) — F344 background pathology |
+| **PDS2014** | SD Rat | 426 | 321 | 289 | 0 mg/kg | Sex-stratified groups (8 instead of 4), sex-discordant NOAEL |
+| **43066** | Beagle Dog | 378 | 108 | 96 | 0 mg/kg | First working dog study, sex-discordant NOAEL |
+| **87497** | SD Rat | 210 | 141 | 129 | 0 mg/kg | Clean results, LOAEL only at highest dose (1000 mg/kg) |
+| **96298** | SD Rat | 266 | 172 | 163 | 0 mg/kg | 1 moribund sacrifice, dose label formatting issues |
+| **GLP003** | SD Rat | 1661 | 719 | 652 | Not established | Dose group labels broken ("Group ?"), 4 deaths |
+
+### Crashed or Unsupported (2 studies)
+
+| Study | Type | Species | Status |
+|---|---|---|---|
+| **CV01** | CV safety pharm, Latin square crossover | Beagle Dog | No output — within-animal stats (SG-04), CV domain (SG-05) |
+| **35449** | 1-mo repeat-dose (dog) | Beagle Dog | Crashed — only mortality file, null dose values (SG-15) |
+
+### New Gaps Identified
+
+| Gap | Type | Automatable? | Priority |
+|---|---|---|---|
+| Multi-compound study handling (SG-11) | **Missing capability** — generator assumes single test article | Yes (TX parsing) | P1 |
+| Dual control group detection (SG-12) | **Missing capability** — engine may misidentify which is the reference control | Yes (TCNTRL logic) | P1 |
+| Non-SD rat HCD coverage (SG-13) | **Data gap** — F344 baseline ranges may not be in HCD tables | Partially (degrades gracefully) | P2 |
+| Dose label/value parsing (SG-15) | **Algorithmic issue** — concatenated labels, null values, non-sequential ordering | Yes (TX/EX parsing) | P1 |
+| Cross-study comparison (SG-14) | **Missing capability** — no mechanism to compare same compound across species | Yes (new feature) | P2 |
+
 ## Capability Gap Summary
 
 | Gap | Type | Automatable? | Priority |
@@ -98,6 +140,11 @@ These studies require unsupported capabilities (within-animal crossover/escalati
 | Target organ over-classification | **Algorithmic improvement** | Partially — tiered evidence, BW normalization | P1 |
 | Small-N power caveat | **Missing feature** | Yes | P1 |
 | Study type routing | **Missing feature** | Yes | P1 |
+| Multi-compound study handling | **Missing capability** | Yes (TX parsing) | P1 |
+| Dual control group detection | **Missing capability** | Yes (TCNTRL logic) | P1 |
 | Non-monotonic dose-response detection | **Missing feature** | Yes | P2 |
 | Within-animal statistics | **Missing capability** | Yes (new engine) | P2 |
 | IS/CV/RE domain processing | **Missing capability** | Yes (new parsers) | P2-P3 |
+| Non-SD rat HCD coverage | **Data gap** | Partially | P2 |
+| Cross-study comparison | **Missing capability** | Yes (new feature) | P2 |
+| Dose label/value parsing | **Algorithmic issue** | Yes (TX/EX parsing) | P1 |

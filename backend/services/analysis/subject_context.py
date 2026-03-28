@@ -694,5 +694,6 @@ def build_subject_context(study: StudyInfo) -> dict:
             "strain_source": strain_source,
             "ex_subject_count": ex_subject_count,
             "non_ex_subject_count": non_ex_subject_count,
+            "tk_report": dg_data.get("tk_report", []),
         },
     }

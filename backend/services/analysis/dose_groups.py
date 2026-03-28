@@ -1,28 +1,378 @@
 """Read DM + TX domains to build dose group map and subject roster."""
 
+import logging
+import re
+
 import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 
+logger = logging.getLogger(__name__)
+
+# TK classification constants
+_TK_SATELLITE = "satellite"
+_TK_COMBINED = "combined"
+_TK_MAIN = "main"
+
+
+def _prescan_domain_subjects(study: StudyInfo, domain: str) -> set[str]:
+    """Read USUBJIDs from a domain XPT for TK domain-data validation (Step 4)."""
+    if domain not in study.xpt_files:
+        return set()
+    try:
+        df, _ = read_xpt(study.xpt_files[domain])
+        col = next((c for c in df.columns if c.upper() == "USUBJID"), None)
+        if col:
+            return set(df[col].dropna().astype(str).unique())
+        return set()
+    except Exception:
+        return set()
+
+
+def _classify_tk_sets(
+    study: StudyInfo,
+    tx_df: pd.DataFrame,
+    dm_df: pd.DataFrame,
+) -> dict[str, dict]:
+    """5-step cascading TK satellite classification.
+
+    Implements the algorithm from deep-research-TKclass-28mar2026.md:
+      Step 1: TKDESC param lookup (highest reliability)
+      Step 2: SET label text matching
+      Step 3: SETCD pattern matching
+      Step 4: Domain-data validation (resolves satellite vs combined)
+
+    Returns dict of setcd_str -> {classification, method, detail}.
+    """
+    classifications: dict[str, dict] = {}
+    unresolved: set[str] = set()
+
+    # Gather per-SETCD params and SET column labels
+    set_params: dict[str, dict[str, str]] = {}
+    set_labels: dict[str, str] = {}
+
+    for setcd in tx_df["SETCD"].unique():
+        setcd_str = str(setcd).strip()
+        set_rows = tx_df[tx_df["SETCD"] == setcd]
+
+        params: dict[str, str] = {}
+        for _, row in set_rows.iterrows():
+            parm = str(row.get("TXPARMCD", "")).strip().upper()
+            val = str(row.get("TXVAL", "")).strip()
+            if parm and val and val.lower() != "nan":
+                params[parm] = val
+        set_params[setcd_str] = params
+
+        if "SET" in set_rows.columns:
+            set_labels[setcd_str] = str(set_rows["SET"].iloc[0]).strip()
+
+        unresolved.add(setcd_str)
+
+    # ── Step 1: TKDESC param lookup ──────────────────────────────
+    for setcd_str in list(unresolved):
+        tkdesc = set_params.get(setcd_str, {}).get("TKDESC", "")
+        if not tkdesc:
+            continue
+
+        tu = tkdesc.upper().strip()
+        if tu == "SATELLITE" or ("SATELLITE" in tu and "CONCOMITANT" not in tu):
+            classifications[setcd_str] = {
+                "classification": _TK_SATELLITE, "method": "TKDESC",
+                "detail": f"TKDESC={tkdesc}",
+            }
+        elif tu in ("CONCOMITANT", "MAIN AND TK", "MAIN+TK", "COMBINED"):
+            classifications[setcd_str] = {
+                "classification": _TK_COMBINED, "method": "TKDESC",
+                "detail": f"TKDESC={tkdesc}",
+            }
+        elif tu in ("NO TK", "NON-TK", "NONE", "N/A", "NO"):
+            classifications[setcd_str] = {
+                "classification": _TK_MAIN, "method": "TKDESC",
+                "detail": f"TKDESC={tkdesc}",
+            }
+        elif tu in ("TK", "TK ONLY", "TOXICOKINETIC", "TK SATELLITE"):
+            classifications[setcd_str] = {
+                "classification": _TK_SATELLITE, "method": "TKDESC",
+                "detail": f"TKDESC={tkdesc} (non-standard)",
+            }
+        elif "CONCOMITANT" in tu or ("MAIN" in tu and "TK" in tu):
+            # Only classify as combined if MAIN appears alongside TK (e.g., "MAIN AND TK").
+            # Plain "MAIN STUDY" without TK is just a main-study set.
+            classifications[setcd_str] = {
+                "classification": _TK_COMBINED, "method": "TKDESC",
+                "detail": f"TKDESC={tkdesc} (non-standard)",
+            }
+        else:
+            continue  # Unrecognised TKDESC — fall through to Step 2
+
+        unresolved.discard(setcd_str)
+
+    # ── Step 2: SET label + GRPLBL/SETLBL text matching ──────────
+    _COMBINED_KW = ("main + tk", "main and tk", "combined", "concomitant",
+                     "tox + tk", "toxicology and tk", "main+tk")
+    _SATELLITE_KW = ("tk satellite", "toxicokinetic satellite", "pk satellite",
+                      "tk only", "satellite tk")
+
+    for setcd_str in list(unresolved):
+        params = set_params.get(setcd_str, {})
+        set_label = set_labels.get(setcd_str, "")
+        grplbl = params.get("GRPLBL", "")
+        setlbl = params.get("SETLBL", "")
+        all_text = f"{set_label} | {grplbl} | {setlbl}".lower()
+
+        # Skip if no TK-related keywords at all
+        if not any(kw in all_text for kw in ("tk", "satellite", "toxicokinetic", "pharmacokinetic")):
+            continue
+
+        best_label = set_label or grplbl or setlbl
+        if any(kw in all_text for kw in _COMBINED_KW):
+            classifications[setcd_str] = {
+                "classification": _TK_COMBINED, "method": "SET_label",
+                "detail": f"Combined keyword in '{best_label}'",
+            }
+        elif any(kw in all_text for kw in _SATELLITE_KW) or "satellite" in all_text:
+            classifications[setcd_str] = {
+                "classification": _TK_SATELLITE, "method": "SET_label",
+                "detail": f"Satellite keyword in '{best_label}'",
+            }
+        elif "tk" in all_text or "toxicokinetic" in all_text:
+            # Weak signal — Step 4 will validate
+            classifications[setcd_str] = {
+                "classification": _TK_SATELLITE, "method": "SET_label_candidate",
+                "detail": f"TK keyword in '{best_label}' — pending domain validation",
+            }
+        else:
+            continue
+
+        unresolved.discard(setcd_str)
+
+    # ── Step 3: SETCD pattern matching ───────────────────────────
+    for setcd_str in list(unresolved):
+        su = setcd_str.upper()
+
+        # Combined patterns (contains "+")
+        if re.search(r"\+.*TK|TK.*\+", su):
+            cls, meth = _TK_COMBINED, f"SETCD '+TK' pattern '{setcd_str}'"
+        # Pure satellite: {n}TK, {n}.TK
+        elif re.match(r"^\d+\.?TK$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD suffix '{setcd_str}'"
+        # Pure satellite: TK{n}, TK, TKHIGH, TKMID, TKLOW, TKCTRL
+        elif re.match(r"^TK(\d+|HIGH|MID|LOW|CTRL)?$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD TK prefix '{setcd_str}'"
+        # Pure satellite: {n}{sex}TK
+        elif re.match(r"^\d+[MF]TK$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD sex-split '{setcd_str}'"
+        # Recovery + TK: {n}RTK
+        elif re.match(r"^\d+RTK$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD recovery+TK '{setcd_str}'"
+        # Pure satellite: SAT{n}, SATPK, {n}SAT
+        elif re.match(r"^(SAT(PK)?\d*|\d+SAT)$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD SAT pattern '{setcd_str}'"
+        # Pure satellite: PK{n}, PK
+        elif re.match(r"^PK\d*$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD PK prefix '{setcd_str}'"
+        # Ambiguous: {n}{sex}?N?TK (e.g., 1FNTK), MNTK
+        elif re.match(r"^(\d+[MF]?N?TK|MNTK)$", su):
+            cls, meth = _TK_SATELLITE, f"SETCD ambiguous '{setcd_str}' — pending domain validation"
+        else:
+            continue
+
+        classifications[setcd_str] = {
+            "classification": cls, "method": "SETCD_pattern", "detail": meth,
+        }
+        unresolved.discard(setcd_str)
+
+    # All remaining are main study
+    for setcd_str in unresolved:
+        classifications[setcd_str] = {
+            "classification": _TK_MAIN, "method": "default",
+            "detail": "No TK indicators",
+        }
+
+    # ── Step 4: Domain-data validation ───────────────────────────
+    # For satellite / candidate sets, check if subjects actually have tox data.
+    # If they do, they're combined cohort (not pure satellites).
+    needs_validation = [
+        s for s, c in classifications.items()
+        if c["classification"] == _TK_SATELLITE
+    ]
+
+    if needs_validation and dm_df is not None and "SETCD" in dm_df.columns:
+        tox_subjects = (
+            _prescan_domain_subjects(study, "mi")
+            | _prescan_domain_subjects(study, "ma")
+            | _prescan_domain_subjects(study, "om")
+            | _prescan_domain_subjects(study, "lb")
+        )
+        pc_subjects = _prescan_domain_subjects(study, "pc")
+
+        # Group size heuristic: compute median main-study group size
+        dm_setcd = dm_df["SETCD"].astype(str).str.strip()
+        main_setcds = [
+            s for s, c in classifications.items()
+            if c["classification"] == _TK_MAIN
+        ]
+        main_sizes = [int((dm_setcd == s).sum()) for s in main_setcds]
+        median_main = sorted(main_sizes)[len(main_sizes) // 2] if main_sizes else 0
+
+        for setcd_str in needs_validation:
+            set_mask = dm_setcd == setcd_str
+            set_ids = set(dm_df.loc[set_mask, "USUBJID"].astype(str).unique())
+            if not set_ids:
+                continue
+
+            has_tox = bool(set_ids & tox_subjects)
+            has_pc = bool(set_ids & pc_subjects)
+            set_size = len(set_ids)
+            prev = classifications[setcd_str]
+
+            # Group size confidence signal
+            small_group = median_main > 0 and set_size < 0.5 * median_main
+            size_note = (
+                f" Group size {set_size} < 50% of median main ({median_main})"
+                f" — supports satellite." if small_group else ""
+            )
+
+            if has_tox:
+                # Subjects have MI/MA/OM/LB data → combined cohort, NOT satellite
+                is_ambiguous = "candidate" in prev.get("method", "")
+                classifications[setcd_str] = {
+                    "classification": _TK_COMBINED,
+                    "method": f"{prev['method']}→domain_validated",
+                    "detail": (
+                        f"Reclassified combined: subjects have tox domain data. "
+                        f"Original: {prev['detail']}"
+                    ),
+                    "ambiguous": is_ambiguous,
+                }
+                if is_ambiguous:
+                    logger.warning(
+                        "SETCD %s: ambiguous TK classification — TK keyword in label "
+                        "but subjects have tox data. Classified as combined. "
+                        "Manual review recommended.", setcd_str,
+                    )
+            elif not has_pc:
+                # No PK data → probably not TK at all
+                classifications[setcd_str] = {
+                    "classification": _TK_MAIN,
+                    "method": f"{prev['method']}→domain_validated",
+                    "detail": (
+                        f"Reclassified main: no PC data found. "
+                        f"Original: {prev['detail']}"
+                    ),
+                }
+            else:
+                # has PC but no tox → confirmed satellite
+                classifications[setcd_str]["method"] = (
+                    f"{prev['method']}→domain_confirmed"
+                )
+                classifications[setcd_str]["detail"] = (
+                    f"Confirmed satellite: PC data present, no tox domains."
+                    f"{size_note} Original: {prev['detail']}"
+                )
+
+    # ── Step 5: Cross-validation ─────────────────────────────────
+    # Check SPGRPCD linkage and dose consistency between satellite/main pairs.
+    satellite_setcds = {
+        s for s, c in classifications.items() if c["classification"] == _TK_SATELLITE
+    }
+    main_setcds_set = {
+        s for s, c in classifications.items() if c["classification"] == _TK_MAIN
+    }
+
+    if satellite_setcds:
+        # SPGRPCD linkage: verify each satellite pairs with a main set
+        sat_spgrpcds = {}
+        main_spgrpcds = {}
+        sat_doses = {}
+        main_doses = {}
+        for setcd_str, params in set_params.items():
+            spgrpcd = params.get("SPGRPCD")
+            trtdos = params.get("TRTDOS")
+            if setcd_str in satellite_setcds:
+                if spgrpcd:
+                    sat_spgrpcds[setcd_str] = spgrpcd
+                if trtdos:
+                    sat_doses[setcd_str] = trtdos
+            elif setcd_str in main_setcds_set:
+                if spgrpcd:
+                    main_spgrpcds[setcd_str] = spgrpcd
+                if trtdos:
+                    main_doses[setcd_str] = trtdos
+
+        # Check orphan satellites (no matching main SPGRPCD)
+        main_grp_values = set(main_spgrpcds.values())
+        for sat_set, sat_grp in sat_spgrpcds.items():
+            if sat_grp not in main_grp_values:
+                prev = classifications[sat_set]
+                classifications[sat_set]["detail"] += (
+                    f" WARNING: orphan satellite — SPGRPCD '{sat_grp}' has no "
+                    f"matching main-study set."
+                )
+
+        # Dose consistency: satellite TRTDOS should match paired main set
+        grp_to_main_dose: dict[str, str] = {}
+        for main_set, grp in main_spgrpcds.items():
+            if main_set in main_doses:
+                grp_to_main_dose[grp] = main_doses[main_set]
+
+        for sat_set, sat_grp in sat_spgrpcds.items():
+            expected_dose = grp_to_main_dose.get(sat_grp)
+            actual_dose = sat_doses.get(sat_set)
+            if expected_dose and actual_dose and expected_dose != actual_dose:
+                classifications[sat_set]["detail"] += (
+                    f" WARNING: dose mismatch — satellite TRTDOS={actual_dose}, "
+                    f"main set TRTDOS={expected_dose}."
+                )
+
+        # PC ground truth: subjects with PC data not in any TK or combined set
+        if dm_df is not None and "SETCD" in dm_df.columns:
+            combined_setcds = {
+                s for s, c in classifications.items()
+                if c["classification"] == _TK_COMBINED
+            }
+            tk_or_combined = satellite_setcds | combined_setcds
+            pc_subjects_local = _prescan_domain_subjects(study, "pc")
+            if pc_subjects_local:
+                dm_setcd_col = dm_df["SETCD"].astype(str).str.strip()
+                tk_combined_subjects = set(
+                    dm_df.loc[dm_setcd_col.isin(tk_or_combined), "USUBJID"]
+                    .astype(str).unique()
+                )
+                unaccounted_pc = pc_subjects_local - tk_combined_subjects
+                if unaccounted_pc:
+                    logger.info(
+                        "%d subject(s) with PC data not in TK/combined sets — "
+                        "possible concomitant TK from main-study animals: %s",
+                        len(unaccounted_pc),
+                        sorted(list(unaccounted_pc))[:5],
+                    )
+
+    return classifications
+
 
 def _parse_tx(
     study: StudyInfo, dm_df: pd.DataFrame | None = None,
-) -> tuple[dict[str, dict], set[str]]:
+) -> tuple[dict[str, dict], set[str], list[dict]]:
     """Parse TX domain into a map of ARMCD -> {dose_value, dose_unit, label, ...}.
 
+    Uses 5-step cascading TK classification (see _classify_tk_sets).
     Recovery detection priority:
       1. DM.ARM (200-char, untruncated) — primary
       2. TX RECOVDUR parameter — secondary
       3. TX GRPLBL/SETLBL "recovery" substring — fallback
 
-    Returns (tx_map, tk_setcds) where tk_setcds is the set of SETCD values for TK satellite sets.
-    TK sets are excluded from tx_map to avoid ARMCD collision (TK and main arms share ARMCD).
+    Returns (tx_map, tk_setcds, tk_report):
+      - tx_map: ARMCD -> metadata for non-satellite sets
+      - tk_setcds: set of SETCD values for TK satellite sets (excluded from tx_map)
+      - tk_report: list of classification dicts for provenance messages
     """
     tx_map: dict[str, dict] = {}
     tk_setcds: set[str] = set()
+    tk_report: list[dict] = []
     if "tx" not in study.xpt_files:
-        return tx_map, tk_setcds
+        return tx_map, tk_setcds, tk_report
 
     tx_df, _ = read_xpt(study.xpt_files["tx"])
     tx_df.columns = [c.upper() for c in tx_df.columns]
@@ -34,20 +384,43 @@ def _parse_tx(
             arm_rows = dm_df[dm_df["ARMCD"] == armcd_val]
             dm_arm_map[str(armcd_val).strip()] = str(arm_rows["ARM"].iloc[0]).strip()
 
+    # ── 5-step TK classification ─────────────────────────────────
+    tk_classifications = _classify_tk_sets(study, tx_df, dm_df)
+    for setcd_str, info in tk_classifications.items():
+        if info["classification"] == _TK_SATELLITE:
+            tk_setcds.add(setcd_str)
+        if info["classification"] != _TK_MAIN:
+            tk_report.append({"setcd": setcd_str, **info})
+
+    if tk_report:
+        n_sat = sum(1 for r in tk_report if r["classification"] == _TK_SATELLITE)
+        n_comb = sum(1 for r in tk_report if r["classification"] == _TK_COMBINED)
+        logger.info(
+            "TK classification: %d satellite set(s), %d combined set(s)",
+            n_sat, n_comb,
+        )
+
+    # ── Build tx_map from non-satellite sets ─────────────────────
     for setcd in tx_df["SETCD"].unique():
+        setcd_str = str(setcd).strip()
+
+        # Skip satellite sets — they'd cause ARMCD collisions with main sets
+        if setcd_str in tk_setcds:
+            continue
+
         set_rows = tx_df[tx_df["SETCD"] == setcd]
         params: dict[str, str] = {}
         for _, row in set_rows.iterrows():
             parm = str(row.get("TXPARMCD", "")).strip()
             val = str(row.get("TXVAL", "")).strip()
-            if parm and val and val != "nan":
+            if parm and val and val.lower() != "nan":
                 params[parm] = val
 
         armcd = params.get("ARMCD", str(setcd))
         dose_val = None
         if "TRTDOS" in params:
             try:
-                dose_val = float(params["TRTDOS"])
+                dose_val = float(params["TRTDOS"].replace(",", ""))
             except ValueError:
                 pass
 
@@ -63,31 +436,8 @@ def _parse_tx(
             or "recovery" in label.lower()
         )
 
-        # Detect satellite/TK arms via multiple heuristics:
-        # 1. Any TK-prefixed param with a value indicating TK (not "non-TK", "none", etc.)
-        # 2. SETCD string contains "TK"
-        # 3. SETLBL/GRPLBL contains "satellite" or "toxicokinetic"
-        tk_positive_values = set()
-        for p, v in params.items():
-            if p.startswith("TK"):
-                vl = v.lower()
-                if vl not in ("non-tk", "none", "no", "n/a", ""):
-                    tk_positive_values.add(v)
-        setcd_str = str(setcd).strip()
-        is_satellite = (
-            bool(tk_positive_values)
-            or "TK" in setcd_str.upper()
-            or "satellite" in label.lower()
-            or "toxicokinetic" in label.lower()
-            or "satellite" in setlbl.lower()
-            or "toxicokinetic" in setlbl.lower()
-            or "satellite" in grplbl.lower()
-            or "toxicokinetic" in grplbl.lower()
-        )
-
-        if is_satellite:
-            # Track TK SETCD but don't add to tx_map — avoids ARMCD collision
-            tk_setcds.add(setcd_str)
+        # Skip if ARMCD already in tx_map (combined set duplicating a main set)
+        if armcd in tx_map:
             continue
 
         tx_map[armcd] = {
@@ -111,7 +461,7 @@ def _parse_tx(
                 if base_armcd in tx_map and not tx_map[base_armcd]["is_recovery"]:
                     info["is_recovery"] = True
 
-    return tx_map, tk_setcds
+    return tx_map, tk_setcds, tk_report
 
 
 def _resolve_label(tx_info: dict, dm_arm_label: str = "") -> str:
@@ -149,7 +499,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
     dm_df.columns = [c.upper() for c in dm_df.columns]
 
     # Parse TX (pass DM for untruncated ARM labels)
-    tx_map, tk_setcds = _parse_tx(study, dm_df)
+    tx_map, tk_setcds, tk_report = _parse_tx(study, dm_df)
 
     # DM ARM lookup for label resolution
     dm_arm_map: dict[str, str] = {}
@@ -278,6 +628,8 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "subjects": subjects,
         "tx_map": tx_map,
         "tk_count": tk_count,
+        "tk_setcds": tk_setcds,
+        "tk_report": tk_report,
         "has_concurrent_control": has_concurrent_control,
     }
 
@@ -300,7 +652,7 @@ def _is_control(tx_info: dict) -> bool:
     if dv is not None and dv == 0:
         return True
     label = tx_info.get("label", "").lower()
-    if "control" in label or "vehicle" in label:
+    if "control" in label or "vehicle" in label or "reference" in label:
         return True
     return False
 

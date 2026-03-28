@@ -41,7 +41,7 @@ def generate_provenance_messages(context_result: dict) -> list[dict]:
     messages.append(_prov_002(hints, ts_meta, ctx))
 
     # Prov-003: TK Subjects Detected (conditional)
-    msg = _prov_003(ctx)
+    msg = _prov_003(ctx, hints.get("tk_report", []))
     if msg:
         messages.append(msg)
 
@@ -150,17 +150,54 @@ def _prov_002(hints: dict, ts_meta: dict, ctx: pd.DataFrame) -> dict:
     }
 
 
-def _prov_003(ctx: pd.DataFrame) -> dict | None:
-    """Prov-003: TK subjects detected."""
+def _prov_003(ctx: pd.DataFrame, tk_report: list[dict] | None = None) -> dict | None:
+    """Prov-003: TK subjects detected.
+
+    Reports classification method and satellite/combined breakdown from the
+    5-step cascading algorithm in dose_groups._classify_tk_sets().
+    """
     if "IS_TK" not in ctx.columns:
         return None
     tk_count = int(ctx["IS_TK"].sum())
-    if tk_count == 0:
+
+    tk_report = tk_report or []
+    n_sat_sets = sum(1 for r in tk_report if r.get("classification") == "satellite")
+    n_comb_sets = sum(1 for r in tk_report if r.get("classification") == "combined")
+
+    if tk_count == 0 and n_comb_sets == 0:
         return None
+
+    parts: list[str] = []
+    if tk_count > 0:
+        methods = sorted({r.get("method", "").split("→")[0] for r in tk_report
+                          if r.get("classification") == "satellite"})
+        method_str = f" (detection: {', '.join(methods)})" if methods else ""
+        parts.append(
+            f"{tk_count} TK satellite subject(s) in {n_sat_sets} set(s) "
+            f"excluded from statistical analysis{method_str}."
+        )
+    n_ambiguous = sum(1 for r in tk_report if r.get("ambiguous"))
+    if n_ambiguous > 0:
+        parts.append(
+            f"{n_ambiguous} set(s) had ambiguous TK classification "
+            f"(TK keyword present but subjects have tox data) — "
+            f"classified as combined, manual review recommended."
+        )
+    if n_comb_sets > 0:
+        # Count combined subjects (those NOT marked satellite but in combined sets)
+        comb_setcds = {r["setcd"] for r in tk_report if r.get("classification") == "combined"}
+        n_comb_subj = 0
+        if "SETCD" in ctx.columns and comb_setcds:
+            n_comb_subj = int(ctx["SETCD"].astype(str).str.strip().isin(comb_setcds).sum())
+        parts.append(
+            f"{n_comb_subj} subject(s) in {n_comb_sets} combined TK set(s) "
+            f"retained in analysis (same animals serve tox + PK)."
+        )
+
     return {
         "rule_id": "Prov-003",
         "icon": "info",
-        "message": f"{tk_count} TK subject(s) detected and excluded from statistical analysis by default.",
+        "message": " ".join(parts),
         "link_to_rule": None,
     }
 

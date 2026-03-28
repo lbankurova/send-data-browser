@@ -43,7 +43,7 @@ def main():
         sys.exit(1)
 
     print("=== TK Detection: _parse_tx() ===")
-    tx_map, tk_setcds = _parse_tx(study)
+    tx_map, tk_setcds, tk_report = _parse_tx(study)
 
     check(
         "tk_setcds contains 2TK, 3TK, 4TK",

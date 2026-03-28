@@ -177,7 +177,7 @@ subjects["dose_level"] = subjects["ARMCD"].apply(map_dose_level)
 
 **Step 4: Read TX domain (if present).**
 
-TX is a long-format table. `_parse_tx(study)` returns `(tx_map, tk_setcds)` — the dose group map plus a set of TK satellite SETCDs. For each unique `SETCD`, collect `TXPARMCD`/`TXVAL` pairs:
+TX is a long-format table. `_parse_tx(study, dm_df)` returns `(tx_map, tk_setcds, tk_report)` — the dose group map, a set of TK satellite SETCDs, and classification details for provenance. For each unique `SETCD`, collect `TXPARMCD`/`TXVAL` pairs:
 
 ```python
 for setcd in tx_df["SETCD"].unique():
@@ -208,22 +208,32 @@ if not tx_map:
 
 **Step 4a: TK satellite detection and segregation.**
 
-TK (toxicokinetic) satellite animals exist solely for plasma exposure data. They share ARMCD values with main study animals but have distinct SETCD values (e.g., "2TK", "3TK", "4TK"). Satellites must be excluded from all statistical analyses — including them inflates group N and corrupts p-values, incidence denominators, and group means.
+TK (toxicokinetic) satellite animals exist solely for plasma exposure data. They share ARMCD values with main study animals but have distinct SETCD values (e.g., "2TK", "3TK", "4TK"). Satellites must be excluded from all statistical analyses — including them inflates group N and corrupts p-values, incidence denominators, and group means. Combined-cohort animals (same animals serve tox + PK, e.g., dog studies with "M+TK" sets) must NOT be excluded.
 
-Detection uses a waterfall of heuristics (first match wins):
+Detection uses a 5-step cascading algorithm (`_classify_tk_sets()`) that classifies each SETCD as `satellite`, `combined`, or `main`:
 
-| Heuristic | What it checks | Example |
-|-----------|----------------|---------|
-| TK-prefixed param value | Any `TXPARMCD` starting with "TK" where value is not "non-TK"/"none"/"no" | `TKDESC="TK"` (positive), `TKDESC="non-TK"` (negative) |
-| SETCD substring | `"TK"` appears in SETCD string | `SETCD="2TK"` |
-| Label keywords | SETLBL or GRPLBL contains "satellite" or "toxicokinetic" | `SETLBL="Group 2, TK"` |
+| Step | Signal | Reliability | Example |
+|------|--------|-------------|---------|
+| 1. TKDESC param | `TXPARMCD=TKDESC` with CT values SATELLITE / CONCOMITANT / NO TK | Highest | `TKDESC="SATELLITE"` → exclude; `TKDESC="CONCOMITANT"` → retain |
+| 2. SET label text | TX.SET column + GRPLBL/SETLBL checked for satellite/combined keywords | High | `SET="Control Vehicle TK"` → satellite candidate |
+| 3. SETCD pattern | Regex patterns: `{n}TK` (satellite), `{n}M+TK` (combined), `TK{n}`, `SAT{n}`, `PK{n}` | Medium | `SETCD="2TK"` → satellite; `SETCD="1M+TK"` → combined |
+| 4. Domain-data validation | Pre-scan MI/MA/OM/LB for subjects in TK-flagged sets; if tox data exists → reclassify combined | Resolves ambiguity | Subjects with MI data → not pure satellite |
 
-When a set is identified as TK satellite:
+Three classifications: **satellite** (exclude from tox, use for PK), **combined** (retain in tox, also used for PK), **main** (standard tox).
+
+When a set is classified as satellite:
 1. Its SETCD is added to `tk_setcds` set
 2. It is **not** written to `tx_map` (avoids ARMCD collision — TK and main arms share ARMCD)
 3. `is_satellite` is assigned via `DM.SETCD.isin(tk_setcds)` (not ARMCD lookup)
+4. `tk_report` records classification details for Prov-003 provenance messages
+
+Combined sets are included in `tx_map` (they ARE main study animals). Duplicate ARMCD entries from combined sets are skipped if a main set already covers that ARMCD.
+
+Additional fixes in this module: TRTDOS values with commas (e.g., "1,000.0") are stripped before float parsing. `_is_control()` recognizes "reference" as a control keyword.
 
 Fallback: if DM lacks a SETCD column, `is_satellite` falls back to ARMCD-based detection from `tx_map`.
+
+Design reference: `docs/_internal/research/deep-research-TKclass-28mar2026.md`.
 
 **Step 5: Build dose_groups summary (main study only, excluding recovery and satellite arms).**
 
@@ -242,7 +252,7 @@ for armcd in sorted(ARMCD_TO_DOSE_LEVEL.keys()):  # "1", "2", "3", "4"
     })
 ```
 
-**Output:** `{"dose_groups": list[dict], "subjects": DataFrame, "tx_map": dict, "tk_count": int}`
+**Output:** `{"dose_groups": list[dict], "subjects": DataFrame, "tx_map": dict, "tk_count": int, "tk_setcds": set[str], "tk_report": list[dict]}`
 
 The `subjects` DataFrame includes columns: `USUBJID`, `SEX`, `ARMCD`, `dose_level`, `is_recovery`, `is_satellite`.
 
@@ -1217,7 +1227,7 @@ Three caching layers serve findings data:
 - No incremental recomputation -- full pipeline reruns on each generation
 - FW domain only in generator pipeline, not in on-demand adverse effects pipeline
 - Recovery subjects pooled with main study during treatment period for in-life domains (DATA-01). Terminal domains (MI, MA, OM, TF) and mortality (DS, DD) remain main-study-only. Recovery reversibility assessments computed frontend-side via `lib/recovery-assessment.ts` using subject-level data from the temporal API.
-- TK satellite subjects excluded from all statistical analyses. Detected via TX domain heuristics (TXPARMCD values, SETCD substring, label keywords) and classified via DM.SETCD membership. Frontend `StudyBanner` displays exclusion count for reviewer transparency.
+- TK satellite subjects excluded from all statistical analyses. Detected via 5-step cascading classification (`_classify_tk_sets`): TKDESC lookup → SET label text → SETCD regex → domain-data validation. Distinguishes satellite (exclude) from combined (retain) cohorts. TRTDOS comma parsing, "reference" control keyword added. `pk_integration.py` reuses `tk_setcds` from dose_groups. Design reference: `docs/_internal/research/deep-research-TKclass-28mar2026.md`.
 
 ---
 
@@ -1270,7 +1280,7 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `generator/organ_map.py` | Organ system resolution (specimen/test_code/domain -> system) | `get_organ_system(specimen, test_code, domain)`, `get_organ_name(specimen, test_code)` |
 | `generator/static_charts.py` | HTML bar chart generation | `generate_target_organ_bar_chart(target_organs)` |
 | `services/xpt_processor.py` | XPT loading, CSV caching, TS metadata extraction | `read_xpt(xpt_path)`, `ensure_cached(study, domain)`, `extract_full_ts_metadata(study)` |
-| `services/analysis/dose_groups.py` | Dose group construction from DM+TX, TK satellite detection | `_parse_tx(study)` → `(tx_map, tk_setcds)`, `build_dose_groups(study)` → `{dose_groups, subjects, tx_map, tk_count}` |
+| `services/analysis/dose_groups.py` | Dose group construction from DM+TX, 5-step TK classification | `_parse_tx(study, dm_df)` → `(tx_map, tk_setcds, tk_report)`, `build_dose_groups(study)` → `{dose_groups, subjects, tx_map, tk_count, tk_setcds, tk_report}` |
 | `services/analysis/phase_filter.py` | Phase-aware subject/record filtering (DATA-01) | `get_treatment_subjects()`, `get_terminal_subjects()`, `filter_treatment_period_records()`, `compute_last_dosing_day()` |
 | `services/analysis/findings_lb.py` | LB domain continuous analysis | `compute_lb_findings(study, subjects, last_dosing_day)` |
 | `services/analysis/findings_bw.py` | BW domain continuous analysis with baseline % change | `compute_bw_findings(study, subjects, last_dosing_day)` |

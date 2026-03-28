@@ -312,7 +312,7 @@ def generate(study_id: str):
     _tick("2b34_start")
     print("Phases 2b/4: PK, charts (parallel)...")
     with ThreadPoolExecutor(max_workers=2) as pool:
-        fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael)
+        fut_pk = pool.submit(build_pk_integration, study, dose_groups, noael, dg_data.get("tk_setcds"))
         fut_chart = pool.submit(generate_target_organ_bar_chart, target_organs)
 
         # Write view outputs while parallel computations run

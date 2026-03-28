@@ -36,6 +36,7 @@ def build_pk_integration(
     study: StudyInfo,
     dose_groups: list[dict],
     noael: list[dict],
+    tk_setcds: set[str] | None = None,
 ) -> dict:
     """Build PK integration summary from PC + PP + DM domains.
 
@@ -65,11 +66,11 @@ def build_pk_integration(
     if pc_df.empty or pp_df.empty:
         return {"available": False}
 
-    # Detect TK satellite design from DM SETCD
-    tk_design = _detect_tk_design(dm_df)
+    # Detect TK satellite design — use authoritative tk_setcds from dose_groups
+    tk_design = _detect_tk_design(dm_df, tk_setcds=tk_setcds)
 
     # Link TK subjects to dose levels
-    pp_merged = _link_tk_to_dose(pp_df, dm_df, dose_groups)
+    pp_merged = _link_tk_to_dose(pp_df, dm_df, dose_groups, tk_setcds=tk_setcds)
     if pp_merged.empty:
         return {"available": False}
 
@@ -152,8 +153,13 @@ def _read_domain(study: StudyInfo, domain: str) -> pd.DataFrame | None:
 # ─── TK satellite design detection ────────────────────────────
 
 
-def _detect_tk_design(dm_df: pd.DataFrame) -> dict:
-    """Detect TK satellite groups from DM SETCD column."""
+def _detect_tk_design(dm_df: pd.DataFrame, tk_setcds: set[str] | None = None) -> dict:
+    """Detect TK satellite groups from DM SETCD column.
+
+    When tk_setcds is provided (from dose_groups._classify_tk_sets), uses
+    that authoritative classification instead of the simple endswith("TK")
+    heuristic.
+    """
     if "SETCD" not in dm_df.columns:
         return {
             "has_satellite_groups": False,
@@ -164,19 +170,25 @@ def _detect_tk_design(dm_df: pd.DataFrame) -> dict:
         }
 
     set_codes = dm_df["SETCD"].dropna().unique()
-    tk_codes = sorted(str(s) for s in set_codes if str(s).upper().endswith("TK"))
-    main_codes = sorted(str(s) for s in set_codes if not str(s).upper().endswith("TK"))
+
+    if tk_setcds is not None:
+        # Use authoritative classification from dose_groups
+        tk_codes = sorted(s for s in (str(sc).strip() for sc in set_codes) if s in tk_setcds)
+        main_codes = sorted(s for s in (str(sc).strip() for sc in set_codes) if s not in tk_setcds)
+    else:
+        # Fallback: simple suffix match (legacy behavior)
+        tk_codes = sorted(str(s) for s in set_codes if str(s).upper().endswith("TK"))
+        main_codes = sorted(str(s) for s in set_codes if not str(s).upper().endswith("TK"))
 
     n_tk = 0
     if tk_codes:
-        n_tk = int(dm_df[dm_df["SETCD"].isin(tk_codes)].shape[0])
+        n_tk = int(dm_df[dm_df["SETCD"].astype(str).str.strip().isin(tk_codes)].shape[0])
 
     return {
         "has_satellite_groups": len(tk_codes) > 0,
         "satellite_set_codes": tk_codes,
         "main_study_set_codes": main_codes,
         "n_tk_subjects": n_tk,
-        # Satellite TK animals can't be individually correlated with main study toxicity
         "individual_correlation_possible": len(tk_codes) == 0,
     }
 
@@ -188,6 +200,7 @@ def _link_tk_to_dose(
     pp_df: pd.DataFrame,
     dm_df: pd.DataFrame,
     dose_groups: list[dict],
+    tk_setcds: set[str] | None = None,
 ) -> pd.DataFrame:
     """Merge PP with DM to get dose_level and sex per TK subject."""
     if "USUBJID" not in pp_df.columns or "USUBJID" not in dm_df.columns:
@@ -209,7 +222,7 @@ def _link_tk_to_dose(
 
     # Map SETCD to dose_level
     if "SETCD" in merged.columns:
-        setcd_dose_map = _build_setcd_dose_map(dm_df, dose_groups)
+        setcd_dose_map = _build_setcd_dose_map(dm_df, dose_groups, tk_setcds=tk_setcds)
         merged["dose_level"] = merged["SETCD"].map(setcd_dose_map)
         # Filter to TK subjects only (those with a TK SETCD that maps to a dose)
         merged = merged.dropna(subset=["dose_level"])
@@ -229,33 +242,56 @@ def _link_tk_to_dose(
     return merged
 
 
-def _build_setcd_dose_map(dm_df: pd.DataFrame, dose_groups: list[dict]) -> dict:
+def _build_setcd_dose_map(
+    dm_df: pd.DataFrame,
+    dose_groups: list[dict],
+    tk_setcds: set[str] | None = None,
+) -> dict:
     """Build mapping from SETCD to dose_level.
 
-    TK satellite SETCDs follow pattern: <group_number>TK
-    Main study SETCDs are just the group number.
-    We match TK SETCD prefixes to main study group numbers.
+    Uses tk_setcds from dose_groups when available (authoritative).
+    Falls back to matching TK SETCD prefixes to main study group numbers.
     """
+    import re as _re
+
     setcd_dose = {}
 
     # Build group_number → dose_level from dose_groups
-    # dose_groups are ordered: index 0 = control (dose_level 0), etc.
     group_num_to_dose = {}
+    armcd_to_dose = {}
     for dg in dose_groups:
-        # group_label often starts with "Group N" or similar
         dose_level = dg["dose_level"]
-        # Main study SETCD is typically dose_level + 1 (1-indexed)
         group_num = str(dose_level + 1)
         group_num_to_dose[group_num] = dose_level
+        if "armcd" in dg:
+            armcd_to_dose[str(dg["armcd"])] = dose_level
 
-    # Map TK SETCDs: extract numeric prefix
     all_setcds = dm_df["SETCD"].dropna().unique()
+    resolved = set(tk_setcds) if tk_setcds else set()
+
     for setcd in all_setcds:
-        s = str(setcd).upper()
-        if s.endswith("TK"):
-            prefix = s[:-2]  # Remove "TK" suffix
+        s = str(setcd).strip()
+        su = s.upper()
+
+        # Only map TK satellite SETCDs (not main study or combined)
+        if resolved and s not in resolved:
+            continue
+
+        # Try extracting numeric prefix via regex
+        m = _re.match(r"^(\d+)", su.replace("TK", "").replace("SAT", "").replace("PK", ""))
+        if m:
+            prefix = m.group(1)
             if prefix in group_num_to_dose:
-                setcd_dose[str(setcd)] = group_num_to_dose[prefix]
+                setcd_dose[s] = group_num_to_dose[prefix]
+                continue
+
+        # Fallback: match via ARMCD from DM
+        if "ARMCD" in dm_df.columns:
+            set_rows = dm_df[dm_df["SETCD"].astype(str).str.strip() == s]
+            if not set_rows.empty:
+                armcd = str(set_rows["ARMCD"].iloc[0]).strip()
+                if armcd in armcd_to_dose:
+                    setcd_dose[s] = armcd_to_dose[armcd]
 
     return setcd_dose
 
