@@ -28,7 +28,7 @@ def get_pointcross_study() -> StudyInfo:
     """Get PointCross study info."""
     study_path = SEND_DATA_DIR / "PointCross"
     assert study_path.is_dir(), f"PointCross study not found at {study_path}"
-    xpt_files = _find_xpt_files(study_path)
+    xpt_files, _ = _find_xpt_files(study_path)
     return StudyInfo(
         study_id="PointCross",
         name="PointCross",

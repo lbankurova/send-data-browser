@@ -57,13 +57,13 @@ async def import_study(
 
         # Find .xpt files: either at root of extracted or in a single subfolder
         extracted = tmp / "extracted"
-        xpts = _find_xpt_files(extracted)
+        xpts, _ = _find_xpt_files(extracted)
 
         if not xpts:
             # Check for a single subdirectory
             subdirs = [d for d in extracted.iterdir() if d.is_dir()]
             for subdir in subdirs:
-                xpts = _find_xpt_files(subdir)
+                xpts, _ = _find_xpt_files(subdir)
                 if xpts:
                     extracted = subdir
                     break
@@ -80,7 +80,7 @@ async def import_study(
         shutil.rmtree(tmp, ignore_errors=True)
 
     # Re-discover xpt files from the final location
-    final_xpts = _find_xpt_files(study_dir)
+    final_xpts, _ = _find_xpt_files(study_dir)
     if not final_xpts:
         shutil.rmtree(study_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail="Failed to read imported files")

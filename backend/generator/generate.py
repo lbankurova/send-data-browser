@@ -83,7 +83,7 @@ def generate(study_id: str):
         from services.study_discovery import StudyInfo, _find_xpt_files
         study_path = SEND_DATA_DIR / study_id
         if study_path.is_dir():
-            xpt_files = _find_xpt_files(study_path)
+            xpt_files, _ = _find_xpt_files(study_path)
             if xpt_files:
                 studies[study_id] = StudyInfo(
                     study_id=study_id,
