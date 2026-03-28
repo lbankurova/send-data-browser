@@ -1,10 +1,12 @@
 /**
- * Concordant syndrome detection — 11 well-established toxicological syndromes.
- * Hardcoded rules + matching loop. No admin UI, no JSON loading.
+ * Concordant syndrome detection — histopathology-specific syndrome rules.
+ * Rules loaded from shared/rules/histopath-syndromes.json.
+ * Matching logic and detection algorithm remain in code.
  */
 
 import type { LesionSeverityRow, SignalSummaryRow } from "@/types/analysis-views";
 import type { StudyContext } from "@/types/study-context";
+import histopathConfig from "../../../shared/rules/histopath-syndromes.json";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -53,248 +55,23 @@ export interface SyndromeMatch {
   confidenceAdjustment: number;
 }
 
-// ── Hardcoded ruleset ────────────────────────────────────────
+// ── Rules loaded from JSON ────────────────────────────────────
 
-export const SYNDROME_RULES: SyndromeRule[] = [
-  {
-    syndrome_id: "testicular_degeneration",
-    syndrome_name: "Testicular Degeneration Syndrome",
-    organ: ["TESTIS"],
-    sex: "M",
-    required_findings: ["atrophy", "degeneration", "tubular degeneration"],
-    supporting_findings: [
-      "azoospermia", "aspermia", "small", "soft",
-      "decreased spermatogenesis", "sertoli cell only",
-      "mineralization", "giant cells",
-    ],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "EPIDIDYMIS", findings: ["hypospermia", "aspermia", "oligospermia", "cell debris", "decreased sperm", "atrophy", "small"] },
-      { organ: "PROSTATE", findings: ["atrophy", "decreased secretion", "small"] },
-      { organ: "SEMINAL VESICLE", findings: ["atrophy", "decreased secretion", "small"] },
-    ],
-    related_endpoints: [
-      { type: "organ_weight", organ: "TESTIS", direction: "decreased" },
-      { type: "organ_weight", organ: "EPIDIDYMIS", direction: "decreased" },
-    ],
-    interpretation_note: "Testicular degeneration is common in rodent studies. Atrophy with secondary changes (azoospermia, reduced size/consistency) indicates tubular damage. When confined to a single dose group without dose-response, consider age-related spontaneous degeneration.",
-  },
-  {
-    syndrome_id: "hepatotoxicity_classic",
-    syndrome_name: "Hepatotoxicity (Classic Pattern)",
-    organ: ["LIVER"],
-    sex: "both",
-    required_findings: ["necrosis", "hepatocellular necrosis", "single cell necrosis"],
-    supporting_findings: [
-      "hypertrophy", "hepatocellular hypertrophy", "vacuolation",
-      "inflammation", "increased mitosis", "bile duct hyperplasia",
-      "karyomegaly", "pigment",
-    ],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "GALLBLADDER", findings: ["hyperplasia", "inflammation"] },
-    ],
-    related_endpoints: [
-      { type: "organ_weight", organ: "LIVER", direction: "increased" },
-    ],
-    interpretation_note: "Classic hepatotoxicity pattern: necrosis as the primary lesion with secondary adaptive and inflammatory responses.",
-  },
-  {
-    syndrome_id: "hepatocellular_adaptation",
-    syndrome_name: "Hepatocellular Adaptation",
-    organ: ["LIVER"],
-    sex: "both",
-    required_findings: ["hypertrophy", "hepatocellular hypertrophy"],
-    supporting_findings: ["increased liver weight", "enzyme induction"],
-    min_supporting: 0,
-    exclusion_findings: ["necrosis", "hepatocellular necrosis", "single cell necrosis", "apoptosis", "inflammation"],
-    max_severity_for_required: 2.0,
-    related_organ_findings: [],
-    related_endpoints: [
-      { type: "organ_weight", organ: "LIVER", direction: "increased" },
-    ],
-    interpretation_note: "Hepatocellular hypertrophy without necrosis or inflammation typically represents enzyme induction \u2014 an adaptive, non-adverse response. If necrosis is also present, evaluate for progression to toxicity.",
-  },
-  {
-    syndrome_id: "nephrotoxicity_tubular",
-    syndrome_name: "Tubular Nephrotoxicity",
-    organ: ["KIDNEY"],
-    sex: "both",
-    required_findings: ["tubular degeneration", "tubular necrosis", "necrosis"],
-    supporting_findings: [
-      "regeneration", "basophilic tubules", "casts", "dilatation",
-      "mineralization", "tubular regeneration",
-    ],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "URINARY BLADDER", findings: ["hyperplasia", "inflammation"] },
-    ],
-    related_endpoints: [
-      { type: "organ_weight", organ: "KIDNEY", direction: "increased" },
-    ],
-    interpretation_note: "Tubular degeneration/necrosis with regenerative response indicates active nephrotoxicity.",
-  },
-  {
-    syndrome_id: "cpn",
-    syndrome_name: "Chronic Progressive Nephropathy",
-    organ: ["KIDNEY"],
-    sex: "both",
-    required_findings: ["basophilic tubules"],
-    supporting_findings: [
-      "tubular regeneration", "interstitial fibrosis",
-      "glomerulosclerosis", "protein casts", "chronic progressive nephropathy",
-    ],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "CPN is a spontaneous, age-related condition in rats. Its exacerbation by treatment is common but must be distinguished from direct nephrotoxicity.",
-  },
-  {
-    syndrome_id: "bone_marrow_suppression",
-    syndrome_name: "Bone Marrow Suppression",
-    organ: ["BONE MARROW"],
-    sex: "both",
-    required_findings: ["hypocellularity", "decreased cellularity", "atrophy"],
-    supporting_findings: ["necrosis", "hemorrhage"],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "SPLEEN", findings: ["atrophy", "decreased cellularity", "lymphoid depletion"] },
-      { organ: "THYMUS", findings: ["atrophy", "decreased cellularity", "lymphoid depletion"] },
-      { organ: "LYMPH NODE", findings: ["atrophy", "decreased cellularity", "lymphoid depletion"] },
-    ],
-    related_endpoints: [],
-    interpretation_note: "Bone marrow hypocellularity with secondary lymphoid organ effects indicates systemic hematopoietic suppression.",
-  },
-  {
-    syndrome_id: "lymphoid_depletion",
-    syndrome_name: "Lymphoid Depletion",
-    organ: ["SPLEEN", "THYMUS", "LYMPH NODE"],
-    sex: "both",
-    required_findings: ["lymphoid depletion", "atrophy", "decreased cellularity"],
-    supporting_findings: ["necrosis", "apoptosis"],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "BONE MARROW", findings: ["hypocellularity", "decreased cellularity"] },
-    ],
-    related_endpoints: [],
-    interpretation_note: "Lymphoid depletion across multiple organs suggests immunosuppression. Check for correlation with bone marrow findings.",
-  },
-  {
-    syndrome_id: "gi_toxicity",
-    syndrome_name: "Gastrointestinal Toxicity",
-    organ: ["STOMACH", "INTESTINE", "DUODENUM", "JEJUNUM", "ILEUM", "CECUM", "COLON", "RECTUM"],
-    sex: "both",
-    required_findings: ["erosion", "ulceration", "necrosis"],
-    supporting_findings: ["inflammation", "hemorrhage", "hyperplasia", "degeneration"],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "Erosion/ulceration with inflammation in GI tract. Check for correlation across multiple GI segments.",
-  },
-  {
-    syndrome_id: "cardiac_toxicity",
-    syndrome_name: "Cardiac Toxicity",
-    organ: ["HEART"],
-    sex: "both",
-    required_findings: ["degeneration", "necrosis", "myocardial degeneration", "myocardial necrosis"],
-    supporting_findings: ["inflammation", "fibrosis", "vacuolation", "mineralization"],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "Myocardial degeneration/necrosis is a serious finding. Even minimal severity warrants attention.",
-  },
-  {
-    syndrome_id: "adrenal_hypertrophy",
-    syndrome_name: "Adrenal Cortical Hypertrophy",
-    organ: ["ADRENAL GLAND", "ADRENAL"],
-    sex: "both",
-    required_findings: ["cortical hypertrophy", "hypertrophy"],
-    supporting_findings: ["vacuolation", "increased weight"],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [
-      { type: "organ_weight", organ: "ADRENAL", direction: "increased" },
-    ],
-    interpretation_note: "Adrenal cortical hypertrophy may be a stress response or direct pharmacological effect.",
-  },
-  {
-    syndrome_id: "phospholipidosis",
-    syndrome_name: "Phospholipidosis",
-    organ: ["LIVER", "LUNG", "KIDNEY", "LYMPH NODE", "SPLEEN"],
-    sex: "both",
-    required_findings: ["vacuolation", "foamy macrophages", "foamy vacuolation"],
-    supporting_findings: [],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "Foamy/lamellar vacuolation across multiple organs simultaneously suggests phospholipidosis \u2014 a class effect of cationic amphiphilic drugs.",
-  },
-  // IMP-06c: New syndromes
-  {
-    syndrome_id: "spontaneous_cardiomyopathy",
-    syndrome_name: "Spontaneous Cardiomyopathy",
-    organ: ["HEART"],
-    sex: "M",
-    required_findings: ["cardiomyopathy"],
-    supporting_findings: ["myocardial degeneration", "fibrosis", "mononuclear cell infiltrate"],
-    min_supporting: 0,
-    exclusion_findings: ["necrosis", "myocardial necrosis"],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "Spontaneous cardiomyopathy is a common age-related finding in male SD rats. If severity is minimal-mild and without necrosis, consider background origin before attributing to treatment.",
-  },
-  {
-    syndrome_id: "gi_mucosal_toxicity",
-    syndrome_name: "GI Mucosal Toxicity",
-    organ: ["DUODENUM", "JEJUNUM", "ILEUM", "COLON"],
-    sex: "both",
-    required_findings: ["villous atrophy", "crypt hyperplasia", "erosion"],
-    supporting_findings: ["inflammation", "necrosis", "degeneration", "hemorrhage"],
-    min_supporting: 1,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [
-      { organ: "STOMACH", findings: ["erosion", "ulceration", "inflammation"] },
-    ],
-    related_endpoints: [],
-    interpretation_note: "Villous atrophy with crypt hyperplasia and mucosal erosion across GI segments is a hallmark of cytotoxic compound effects.",
-  },
-  { // @route ROUTE-03, ROUTE-04, ROUTE-05 — injection site findings are route-dependent (parenteral only)
-    syndrome_id: "injection_site_reaction",
-    syndrome_name: "Injection Site Reaction",
-    organ: ["INJECTION SITE", "SKIN"],
-    sex: "both",
-    required_findings: ["inflammation", "necrosis"],
-    supporting_findings: ["fibrosis", "hemorrhage", "edema", "granuloma"],
-    min_supporting: 0,
-    exclusion_findings: [],
-    max_severity_for_required: null,
-    related_organ_findings: [],
-    related_endpoints: [],
-    interpretation_note: "Injection site inflammation/necrosis is route-dependent. Expected for parenteral (SC/IM/IV) routes. If study uses oral gavage, this is an unexpected finding.",
-  },
-];
+export const SYNDROME_RULES: SyndromeRule[] = histopathConfig.rules as SyndromeRule[];
+
+// Legacy inline rules removed — see shared/rules/histopath-syndromes.json
+
+// ── Strain suppressions ──────────────────────────────────────
+
+interface StrainSuppression {
+  syndrome_id: string;
+  strains: string[];
+  sex: "M" | "F" | null;
+  confidence_adjustment: number;
+  note: string;
+}
+
+const STRAIN_SUPPRESSIONS: StrainSuppression[] = histopathConfig.strain_suppressions as StrainSuppression[];
 
 // ── Finding name matching ────────────────────────────────────
 
@@ -320,47 +97,6 @@ export function findingMatches(studyFinding: string, ruleFinding: string): boole
 
   return false;
 }
-
-// ── Strain-specific syndrome suppression (IMP-06b) ───────────
-
-interface StrainSuppression {
-  syndromeId: string;
-  strains: string[];
-  sex: "M" | "F" | null;
-  confidenceAdjustment: number;
-  note: string;
-}
-
-const STRAIN_SUPPRESSIONS: StrainSuppression[] = [
-  {
-    syndromeId: "cpn",
-    strains: ["SPRAGUE-DAWLEY", "SD"],
-    sex: "M",
-    confidenceAdjustment: -0.3,
-    note: "CPN is a common spontaneous finding in SD males (15-30% background)",
-  },
-  {
-    syndromeId: "spontaneous_cardiomyopathy",
-    strains: ["SPRAGUE-DAWLEY", "SD"],
-    sex: "M",
-    confidenceAdjustment: -0.3,
-    note: "Spontaneous cardiomyopathy is common in SD males (8-40% background)",
-  },
-  {
-    syndromeId: "nephrotoxicity_tubular",
-    strains: ["SPRAGUE-DAWLEY", "SD"],
-    sex: null,
-    confidenceAdjustment: -0.2,
-    note: "Renal mineralization/tubular changes are common spontaneous findings in SD rats",
-  },
-  {
-    syndromeId: "kidney_mineral_deposition",
-    strains: ["SPRAGUE-DAWLEY", "SD"],
-    sex: null,
-    confidenceAdjustment: -0.2,
-    note: "Kidney mineral deposition is a common spontaneous finding in SD rats, esp. females",
-  },
-];
 
 // ── Detection algorithm ──────────────────────────────────────
 
@@ -500,13 +236,13 @@ export function detectSyndromes(
           const strain = studyContext.strain.toUpperCase();
           const suppression = STRAIN_SUPPRESSIONS.find(
             (s) =>
-              s.syndromeId === rule.syndrome_id &&
-              s.strains.some((st) => strain.includes(st)) &&
+              s.syndrome_id === rule.syndrome_id &&
+              s.strains.some((st: string) => strain.includes(st)) &&
               (s.sex === null || s.sex === detectedInSex),
           );
           if (suppression) {
             strainNote = suppression.note;
-            confidenceAdjustment = suppression.confidenceAdjustment;
+            confidenceAdjustment = suppression.confidence_adjustment;
           }
 
           // IMP-06c: Suppress injection site reaction for oral routes
