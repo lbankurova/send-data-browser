@@ -202,6 +202,18 @@ def generate(study_id: str):
         context_result = fut_ctx.result()
         provenance_msgs = generate_provenance_messages(context_result)
 
+        # Flag 0-byte XPT files that were skipped during discovery
+        if study.empty_xpt_files:
+            domains = ", ".join(d.upper() for d in sorted(study.empty_xpt_files))
+            provenance_msgs.append({
+                "rule_id": "Prov-011",
+                "icon": "error",
+                "message": f"Empty (0-byte) XPT file(s) skipped: {domains}. "
+                           "These domains were excluded from the analysis. "
+                           "Replace with valid XPT files and re-run the generator.",
+                "link_to_rule": None,
+            })
+
         # Flag unsupported domains that are present in the source data
         if "is" in study.xpt_files and not any(f.get("domain") == "IS" for f in findings):
             provenance_msgs.append({
@@ -285,6 +297,7 @@ def generate(study_id: str):
         mortality=mortality,
         precomputed_findings=findings,
         precomputed_dose_groups=dose_groups,
+        has_concurrent_control=dg_data.get("has_concurrent_control", True),
     )
 
     # Extract views for downstream consumers

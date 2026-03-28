@@ -210,26 +210,31 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
                 target_organs.add(f["specimen"])
 
     # Suggested NOAEL: highest dose where no adverse findings
+    # Skip if no concurrent control — NOAEL requires a reference group
+    has_concurrent_control = dg_data.get("has_concurrent_control", True)
     suggested_noael = None
-    adverse_dose_levels = set()
-    for f in all_findings:
-        if f.get("severity") == "adverse":
-            for pw in f.get("pairwise", []):
-                if pw.get("p_value_adj") is not None and pw["p_value_adj"] < 0.05:
-                    adverse_dose_levels.add(pw["dose_level"])
+    if not has_concurrent_control:
+        suggested_noael = None  # explicitly indeterminate
+    else:
+        adverse_dose_levels = set()
+        for f in all_findings:
+            if f.get("severity") == "adverse":
+                for pw in f.get("pairwise", []):
+                    if pw.get("p_value_adj") is not None and pw["p_value_adj"] < 0.05:
+                        adverse_dose_levels.add(pw["dose_level"])
 
-    if adverse_dose_levels:
-        min_adverse = min(adverse_dose_levels)
-        if min_adverse > 0:
-            noael_level = min_adverse - 1
-            noael_group = next((d for d in dose_groups if d["dose_level"] == noael_level), None)
-            if noael_group:
-                suggested_noael = {
-                    "dose_level": noael_level,
-                    "label": noael_group["label"],
-                    "dose_value": noael_group["dose_value"],
-                    "dose_unit": noael_group["dose_unit"],
-                }
+        if adverse_dose_levels:
+            min_adverse = min(adverse_dose_levels)
+            if min_adverse > 0:
+                noael_level = min_adverse - 1
+                noael_group = next((d for d in dose_groups if d["dose_level"] == noael_level), None)
+                if noael_group:
+                    suggested_noael = {
+                        "dose_level": noael_level,
+                        "label": noael_group["label"],
+                        "dose_value": noael_group["dose_value"],
+                        "dose_unit": noael_group["dose_unit"],
+                    }
 
     summary = {
         "total_findings": len(all_findings),

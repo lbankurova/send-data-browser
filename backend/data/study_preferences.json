@@ -1,5 +1,9 @@
 {
-  "display_names": {},
+  "display_names": {
+    "CJ16050-xptonly": "CJ16050",
+    "CBER-POC-Pilot-Study2-Vaccine_xpt": "CBER-POC-Pilot-Study2-Vaccine",
+    "CBER-POC-Pilot-Study1-Vaccine_xpt_only": "CBER-POC-Pilot-Study1-Vaccine"
+  },
   "order": [
     "PointCross",
     "CBER-POC-Pilot-Study4-Vaccine",

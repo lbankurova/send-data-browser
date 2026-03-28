@@ -251,6 +251,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
             "dose_level": armcd_to_level.get(armcd, -1),
             "armcd": armcd,
             "label": group_label,
+            "is_control": _is_control(tx_info),
             "dose_value": tx_info.get("dose_value"),
             "dose_unit": tx_info.get("dose_unit"),
             "n_male": int((arm_subs["SEX"] == "M").sum()),
@@ -270,12 +271,14 @@ def build_dose_groups(study: StudyInfo) -> dict:
         })
 
     tk_count = int(subjects["is_satellite"].sum())
+    has_concurrent_control = any(dg["is_control"] for dg in dose_groups)
 
     return {
         "dose_groups": dose_groups,
         "subjects": subjects,
         "tx_map": tx_map,
         "tk_count": tk_count,
+        "has_concurrent_control": has_concurrent_control,
     }
 
 
@@ -284,8 +287,14 @@ def build_dose_groups(study: StudyInfo) -> dict:
 # ---------------------------------------------------------------------------
 
 def _is_control(tx_info: dict) -> bool:
-    """Detect control arm from TX metadata."""
-    if tx_info.get("tcntrl"):
+    """Detect control arm from TX metadata.
+
+    TCNTRL in SEND marks control treatments (e.g. "VEHICLE CONTROL",
+    "PLACEBO").  Some XPTs store SAS-missing as the literal string "None"
+    — filter that out.
+    """
+    tcntrl = tx_info.get("tcntrl")
+    if tcntrl and str(tcntrl).strip().lower() not in ("none", ""):
         return True
     dv = tx_info.get("dose_value")
     if dv is not None and dv == 0:

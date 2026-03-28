@@ -327,6 +327,17 @@ def process_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
     )
+    # Reconcile severity/treatment_related with finding_class.
+    # finding_class is a higher-order judgment that uses biological context
+    # (corroboration, dose-response pattern, neoplastic flag) beyond raw
+    # statistics.  When it says tr_adverse but severity is still normal
+    # (e.g., rare tumors with n too small for Fisher's exact), promote.
+    for f in enriched:
+        fc = f.get("finding_class", "")
+        if fc in ("tr_adverse", "tr_nonadverse") and not f.get("treatment_related"):
+            f["treatment_related"] = True
+        if fc == "tr_adverse" and f.get("severity") == "normal":
+            f["severity"] = "adverse"
     # GRADE-style confidence scoring (requires finding_class, _hcd_assessment, corroboration_status)
     enriched = compute_all_confidence(enriched)
     return enriched

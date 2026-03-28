@@ -4,6 +4,7 @@ export interface DoseGroup {
   dose_level: number;
   armcd: string;
   label: string;
+  is_control?: boolean;
   dose_value: number | null;
   dose_unit: string | null;
   n_male: number;

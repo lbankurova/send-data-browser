@@ -75,6 +75,9 @@ async def lifespan(app: FastAPI):
     print(f"Found {len(studies)} studies: {list(studies.keys())}")
     for sid, info in studies.items():
         print(f"[DIAG] Study '{sid}': path={info.path}, xpt_count={len(info.xpt_files)}")
+        if info.empty_xpt_files:
+            domains = ", ".join(d.upper() for d in sorted(info.empty_xpt_files))
+            print(f"[WARN] Study '{sid}': 0-byte XPT files excluded: {domains}")
 
     # Auto-generate analysis data if missing for any discovered study
     for sid in list(studies.keys()):

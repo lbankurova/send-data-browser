@@ -166,6 +166,26 @@ class ValidationEngine:
                 logger.error(f"Error running rule {rule.id}: {e}", exc_info=True)
                 continue
 
+        # Flag 0-byte XPT files that were excluded from analysis
+        if study.empty_xpt_files:
+            for domain_name in sorted(study.empty_xpt_files):
+                result = ValidationRuleResult(
+                    rule_id=f"SD-EMPTY-XPT-{domain_name.upper()}",
+                    severity="Warning",
+                    domain=domain_name.upper(),
+                    category="Data Completeness",
+                    description=(
+                        f"{domain_name.upper()} domain XPT file is 0 bytes and was excluded "
+                        f"from the analysis. Replace with a valid file and re-run."
+                    ),
+                    records_affected=0,
+                    standard="Study Data",
+                    section="File Integrity",
+                    rationale="0-byte XPT files cannot be read and indicate a corrupt or incomplete upload.",
+                    how_to_fix=f"Replace {domain_name}.xpt with a valid (non-empty) XPT file.",
+                )
+                all_rule_results.append(result)
+
         # Mark all custom rules with source="custom"
         for rule in all_rule_results:
             rule.source = "custom"

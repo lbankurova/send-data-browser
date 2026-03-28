@@ -20,6 +20,7 @@ class DoseGroupSchema(BaseModel):
     dose_level: int
     armcd: str
     label: str
+    is_control: bool = False
     dose_value: float | None = None
     dose_unit: str | None = None
     n_male: int = 0

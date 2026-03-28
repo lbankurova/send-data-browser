@@ -57,6 +57,7 @@ class ParameterizedAnalysisPipeline:
         mortality: dict | None = None,
         precomputed_findings: list[dict] | None = None,
         precomputed_dose_groups: list[dict] | None = None,
+        has_concurrent_control: bool = True,
     ) -> dict[str, list | dict]:
         """Run pipeline and return all view JSONs.
 
@@ -65,6 +66,7 @@ class ParameterizedAnalysisPipeline:
                 use these findings directly. Used by the generator to avoid
                 re-running the expensive 3-pass computation.
             precomputed_dose_groups: Required when precomputed_findings is provided.
+            has_concurrent_control: Whether the study has a vehicle/placebo control.
 
         Returns dict mapping view_name (underscore form) to JSON data.
         """
@@ -79,6 +81,7 @@ class ParameterizedAnalysisPipeline:
                 last_dosing_day_override=last_dosing_day_override,
             )
             dose_groups = dg_data["dose_groups"]
+            has_concurrent_control = dg_data.get("has_concurrent_control", True)
 
         # 2. Apply settings transforms (post-processing)
         findings = apply_settings_transforms(findings, settings)
@@ -89,7 +92,10 @@ class ParameterizedAnalysisPipeline:
         # 3. Build all view JSONs (order matters: rules need target_organs + noael)
         signal_summary = build_study_signal_summary(findings, dose_groups, params=scoring)
         target_organs = build_target_organ_summary(findings, params=scoring)
-        noael = build_noael_summary(findings, dose_groups, mortality=mortality, params=scoring)
+        noael = build_noael_summary(
+            findings, dose_groups, mortality=mortality, params=scoring,
+            has_concurrent_control=has_concurrent_control,
+        )
         rules = evaluate_rules(findings, target_organs, noael, dose_groups)
 
         # 4. Build unified_findings response (IDs + correlations + summary)

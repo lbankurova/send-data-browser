@@ -44,7 +44,17 @@ def _get_significant_doses(finding: dict, dose_groups: list[dict], alpha: float 
 
 
 def _compute_per_finding_noael(finding: dict, dose_groups: list[dict]) -> str | None:
-    """Return the dose label of the highest dose without significant effect, or None."""
+    """Return the dose label of the highest dose without significant effect, or None.
+
+    Returns None when no concurrent control group exists (is_control flag on
+    dose_groups) — NOAEL requires comparison against a reference group.
+    """
+    # Check for concurrent control; if no dose group is flagged as control,
+    # NOAEL is indeterminate
+    has_control = any(dg.get("is_control") for dg in dose_groups)
+    if not has_control:
+        return None
+
     group_stats = finding.get("group_stats", [])
     pairwise = finding.get("pairwise", [])
     if not group_stats:

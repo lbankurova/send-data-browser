@@ -369,12 +369,52 @@ def build_noael_summary(
     dose_groups: list[dict],
     mortality: dict | None = None,
     params: ScoringParams | None = None,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
-    """Build NOAEL summary: 3 rows (M, F, combined)."""
+    """Build NOAEL summary: 3 rows (M, F, combined).
+
+    When has_concurrent_control is False (no vehicle/placebo group), NOAEL
+    cannot be determined — all rows report "Not established" with method
+    "no_concurrent_control".
+    """
     rows = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
     dose_unit_map = {dg["dose_level"]: dg.get("dose_unit") for dg in dose_groups}
+
+    # If no concurrent control, NOAEL is indeterminate for all sexes
+    if not has_concurrent_control:
+        for sex_filter in ["M", "F", "Combined"]:
+            rows.append({
+                "sex": sex_filter,
+                "noael_dose_level": None,
+                "noael_label": "Not established",
+                "noael_dose_value": None,
+                "noael_dose_unit": None,
+                "loael_dose_level": None,
+                "loael_label": "N/A",
+                "n_adverse_at_loael": 0,
+                "adverse_domains_at_loael": [],
+                "noael_confidence": 0.0,
+                "noael_derivation": {
+                    "method": "no_concurrent_control",
+                    "classification_method": "n/a",
+                    "loael_dose_level": None,
+                    "loael_label": None,
+                    "adverse_findings_at_loael": [],
+                    "n_adverse_at_loael": 0,
+                    "confidence": 0.0,
+                    "confidence_penalties": ["no_concurrent_control"],
+                },
+                "mortality_cap_applied": False,
+                "mortality_cap_dose_value": None,
+                "scheduled_noael_dose_level": None,
+                "scheduled_noael_label": "Not established",
+                "scheduled_noael_dose_value": None,
+                "scheduled_loael_dose_level": None,
+                "scheduled_noael_differs": False,
+            })
+        return rows
 
     for sex_filter in ["M", "F", "Combined"]:
         sex_findings = [
