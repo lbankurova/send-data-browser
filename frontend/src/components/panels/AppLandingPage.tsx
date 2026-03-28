@@ -140,35 +140,45 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [studyId, setStudyId] = useState("");
   const [validate, setValidate] = useState(true);
   const [autoFix, setAutoFix] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  const handleFile = useCallback(async (file: File) => {
+  const isXpt = selectedFiles.length > 0 && selectedFiles[0].name.toLowerCase().endsWith(".xpt");
+  const isZip = selectedFiles.length === 1 && selectedFiles[0].name.toLowerCase().endsWith(".zip");
+  const canImport = selectedFiles.length > 0 && !importing && (isZip || (isXpt && studyId.trim()));
+
+  const handleFiles = useCallback(async (files: File[]) => {
     setImportError(null);
     setImportSuccess(null);
     setImporting(true);
     try {
-      const result = await importStudy(file, { validate, autoFix: autoFix });
+      const result = await importStudy(files, {
+        validate,
+        autoFix,
+        studyId: studyId.trim() || undefined,
+      });
       setImportSuccess(`Imported ${result.study_id} (${result.domain_count} domains)`);
-      setSelectedFile(null);
+      setSelectedFiles([]);
+      setStudyId("");
       queryClient.invalidateQueries({ queryKey: ["studies"] });
     } catch (err) {
       setImportError(err instanceof Error ? err.message : "Import failed");
     } finally {
       setImporting(false);
     }
-  }, [queryClient, validate, autoFix]);
+  }, [queryClient, validate, autoFix, studyId]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        setSelectedFile(file);
+      const dropped = Array.from(e.dataTransfer.files);
+      if (dropped.length) {
+        setSelectedFiles(dropped);
         setImportError(null);
         setImportSuccess(null);
       }
@@ -197,7 +207,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
               "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-5 transition-colors",
               isDragging
                 ? "border-primary bg-primary/5"
-                : selectedFile
+                : selectedFiles.length
                   ? "border-primary/50 bg-primary/5"
                   : "border-muted-foreground/25 bg-muted/30"
             )}
@@ -213,15 +223,19 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 <p className="text-xs text-muted-foreground">Importing study...</p>
               </>
-            ) : selectedFile ? (
+            ) : selectedFiles.length ? (
               <>
                 <Upload className="h-5 w-5 text-primary/60" />
-                <p className="text-xs font-medium">{selectedFile.name}</p>
+                <p className="text-xs font-medium">
+                  {selectedFiles.length === 1
+                    ? selectedFiles[0].name
+                    : `${selectedFiles.length} .xpt files`}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {(selectedFile.size / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
+                  {(selectedFiles.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
                   {" "}<button
                     className="text-muted-foreground underline hover:text-foreground"
-                    onClick={() => { setSelectedFile(null); setImportError(null); setImportSuccess(null); }}
+                    onClick={() => { setSelectedFiles([]); setStudyId(""); setImportError(null); setImportSuccess(null); }}
                   >
                     Remove
                   </button>
@@ -230,16 +244,17 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
             ) : (
               <div className="flex flex-col items-center gap-1.5">
                 <Upload className="h-5 w-5 text-muted-foreground/50" />
-                <p className="text-xs font-medium text-muted-foreground">drop SEND study folder</p>
+                <p className="text-xs font-medium text-muted-foreground">drop .zip or .xpt files</p>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".zip"
+                  accept=".zip,.xpt"
+                  multiple
                   className="hidden"
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedFile(file);
+                    const picked = Array.from(e.target.files || []);
+                    if (picked.length) {
+                      setSelectedFiles(picked);
                       setImportError(null);
                       setImportSuccess(null);
                     }
@@ -255,6 +270,26 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
               </div>
             )}
           </div>
+
+          {/* Study ID field */}
+          {selectedFiles.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label className="shrink-0 text-xs text-muted-foreground">Study ID</label>
+              <input
+                type="text"
+                value={studyId}
+                onChange={(e) => setStudyId(e.target.value)}
+                placeholder={isZip ? selectedFiles[0].name.replace(/\.zip$/i, "") : "required"}
+                className={cn(
+                  "w-[220px] max-w-full rounded-md border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none",
+                  isXpt && !studyId.trim() ? "border-amber-400" : "border-border/50"
+                )}
+              />
+              {isXpt && !studyId.trim() && (
+                <span className="text-[10px] text-amber-600">required</span>
+              )}
+            </div>
+          )}
 
           {/* Description field */}
           <div className="flex items-start gap-3">
@@ -290,11 +325,11 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
 
           {/* Import button */}
           <button
-            disabled={!selectedFile || importing}
-            onClick={() => selectedFile && handleFile(selectedFile)}
+            disabled={!canImport}
+            onClick={() => canImport && handleFiles(selectedFiles)}
             className={cn(
               "rounded-md px-4 py-2 text-xs font-medium",
-              selectedFile && !importing
+              canImport
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "bg-primary/50 text-primary-foreground/70 cursor-not-allowed"
             )}

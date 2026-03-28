@@ -34,12 +34,14 @@ export function fetchDomainData(
 }
 
 export async function importStudy(
-  file: File,
-  options?: { validate?: boolean; autoFix?: boolean }
+  files: File | File[],
+  options?: { validate?: boolean; autoFix?: boolean; studyId?: string }
 ): Promise<{ study_id: string; domain_count: number; domains: string[] }> {
   const form = new FormData();
-  form.append("file", file);
+  const fileList = Array.isArray(files) ? files : [files];
+  for (const f of fileList) form.append("files", f);
   const params = new URLSearchParams();
+  if (options?.studyId) params.set("study_id", options.studyId);
   if (options?.validate === false) params.set("validate", "false");
   if (options?.autoFix) params.set("auto_fix", "true");
   const qs = params.toString();
