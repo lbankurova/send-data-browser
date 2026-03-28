@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useProjects } from "@/hooks/useProjects";
+import type { Project } from "@/hooks/useProjects";
 import { useStudyPreferences, useRenameStudy, useUpdateStudyOrder } from "@/hooks/useStudyPreferences";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -466,10 +467,11 @@ export function AppLandingPage() {
   const orderMutation = useUpdateStudyOrder();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedStudyId, selectStudy } = useSelection();
+  const { selectedStudyId, selectStudy, selectProject } = useSelection();
   const { designMode, toggleDesignMode } = useDesignMode();
   const { data: scenarios } = useScenarios(designMode);
   const [projectFilter, setProjectFilter] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"studies" | "portfolio">("studies");
 
   // Rename state
   const [renamingStudyId, setRenamingStudyId] = useState<string | null>(null);
@@ -506,6 +508,13 @@ export function AppLandingPage() {
     setRenamingStudyId(null);
   }, []);
 
+  // Build portfolio lookup so real studies can be linked to their portfolio metadata
+  const portfolioById = useMemo(() => {
+    const map = new Map<string, StudyMetadata>();
+    for (const s of portfolioStudies ?? []) map.set(s.id, s);
+    return map;
+  }, [portfolioStudies]);
+
   const realStudies: DisplayStudy[] = (studies ?? []).map((s) => {
     // Try to calculate duration from start/end dates if available
     let durationWeeks: number | undefined = undefined;
@@ -521,14 +530,15 @@ export function AppLandingPage() {
       }
     }
 
+    const pm = portfolioById.get(s.study_id);
+
     return {
       ...s,
       validation: "Not Run",
-      // Populate portfolio-style fields from regular study data where available
-      pipeline_stage: undefined, // Regular studies don't have pipeline stage
-      duration_weeks: durationWeeks,
-      noael_value: undefined, // Regular studies don't have NOAEL metadata
-      portfolio_metadata: undefined,
+      pipeline_stage: pm?.pipeline_stage,
+      duration_weeks: pm?.duration_weeks ?? durationWeeks,
+      noael_value: undefined,
+      portfolio_metadata: pm,
     };
   });
 
@@ -544,21 +554,21 @@ export function AppLandingPage() {
 
     return {
       study_id: s.id,
-      name: s.title,
+      name: s.title ?? s.id,
       display_name: null,
       domain_count: s.domains?.length ?? 0,
-      species: s.species,
-      study_type: s.study_type,
-      protocol: s.protocol,
+      species: s.species ?? null,
+      study_type: s.study_type ?? null,
+      protocol: s.protocol ?? null,
       standard: null,
-      subjects: s.subjects,
+      subjects: s.subjects ?? null,
       start_date: null,
       end_date: null,
       status: s.status,
       validation: s.validation ? (s.validation.errors > 0 ? "Fail" : s.validation.warnings > 0 ? "Warnings" : "Pass") : "Not Run",
       // Portfolio-specific fields
       pipeline_stage: s.pipeline_stage,
-      duration_weeks: s.duration_weeks,
+      duration_weeks: s.duration_weeks ?? undefined,
       noael_value: noaelWithSuffix,
       portfolio_metadata: s,
     };
@@ -582,9 +592,10 @@ export function AppLandingPage() {
       }))
     : [];
 
-  // Portfolio studies are mock data — only show them in design mode
+  // In design mode, add portfolio-only studies (those not already in real studies)
+  const realStudyIds = useMemo(() => new Set((studies ?? []).map((s) => s.study_id)), [studies]);
   const allStudiesUnfiltered: DisplayStudy[] = designMode
-    ? [...realStudies, ...portfolioDisplayStudies]
+    ? [...realStudies, ...portfolioDisplayStudies.filter((s) => !realStudyIds.has(s.study_id))]
     : [...realStudies];
 
   // Filter by program if selected, then apply custom order
@@ -729,9 +740,37 @@ export function AppLandingPage() {
       {/* Studies table */}
       <div className="px-8 py-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Studies ({allStudies.length + scenarioStudies.length})
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {viewMode === "studies" ? `Studies (${allStudies.length + scenarioStudies.length})` : `Programs (${(projects ?? []).length})`}
+            </h2>
+
+            {/* View mode toggle */}
+            <div className="flex rounded-md border border-border bg-muted/30 p-0.5">
+              <button
+                onClick={() => { setViewMode("studies"); selectProject(null); }}
+                className={cn(
+                  "rounded px-2.5 py-0.5 text-[10px] font-medium transition-colors",
+                  viewMode === "studies"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Studies
+              </button>
+              <button
+                onClick={() => setViewMode("portfolio")}
+                className={cn(
+                  "rounded px-2.5 py-0.5 text-[10px] font-medium transition-colors",
+                  viewMode === "portfolio"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Portfolio
+              </button>
+            </div>
+          </div>
 
           {/* Program Filter */}
           {projects && projects.length > 0 && (
@@ -753,7 +792,26 @@ export function AppLandingPage() {
           )}
         </div>
 
-        {isLoading ? (
+        {viewMode === "portfolio" ? (
+          <ProgramList
+            studies={portfolioStudies ?? []}
+            projects={projects ?? []}
+            selectedProjectId={projectFilter}
+            onProjectClick={(id) => {
+              const next = id === projectFilter ? "" : id;
+              setProjectFilter(next);
+              if (next) {
+                selectProject(next);
+                // Select first study in program so portfolio context panel has data
+                const firstStudy = (portfolioStudies ?? []).find((s) => s.project === next);
+                if (firstStudy) selectStudy(firstStudy.id);
+              } else {
+                selectProject(null);
+                selectStudy(null);
+              }
+            }}
+          />
+        ) : isLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
@@ -1011,6 +1069,90 @@ export function AppLandingPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+    </div>
+  );
+}
+
+
+/* ── Program list (Portfolio mode) ────────────────────────────── */
+
+function ProgramList({
+  studies,
+  projects,
+  selectedProjectId,
+  onProjectClick,
+}: {
+  studies: StudyMetadata[];
+  projects: Project[];
+  selectedProjectId: string;
+  onProjectClick: (id: string) => void;
+}) {
+  // Build program summaries from studies
+  const programs = useMemo(() => {
+    const byProject = new Map<string, StudyMetadata[]>();
+    for (const s of studies) {
+      if (!s.project) continue;
+      let arr = byProject.get(s.project);
+      if (!arr) { arr = []; byProject.set(s.project, arr); }
+      arr.push(s);
+    }
+    const projectMap = new Map(projects.map((p) => [p.id, p]));
+    const result: { id: string; name: string; compound: string; species: string[]; studyCount: number; phase: string }[] = [];
+    for (const [pid, arr] of byProject) {
+      const p = projectMap.get(pid);
+      const species = [...new Set(arr.map((s) => s.species).filter(Boolean) as string[])].sort();
+      result.push({
+        id: pid,
+        name: p?.name ?? pid,
+        compound: p?.compound ?? "",
+        species,
+        studyCount: arr.length,
+        phase: p?.phase ?? "",
+      });
+    }
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  }, [studies, projects]);
+
+  if (programs.length === 0) {
+    return (
+      <div className="rounded-md border bg-card py-12 text-center">
+        <p className="text-xs text-muted-foreground">No programs detected. Import studies with TS domain metadata.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
+      <table className="w-full text-[11px]">
+        <thead className="sticky top-0 z-10 bg-background">
+          <tr className="border-b bg-muted/30">
+            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Program</th>
+            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Compound</th>
+            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+            <th className="px-3 py-1.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Studies</th>
+            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          {programs.map((prog) => (
+            <tr
+              key={prog.id}
+              className={cn(
+                "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
+                selectedProjectId === prog.id && "bg-accent"
+              )}
+              onClick={() => onProjectClick(prog.id)}
+            >
+              <td className="px-3 py-2 font-medium text-primary">{prog.name}</td>
+              <td className="px-3 py-2 text-muted-foreground">{prog.compound}</td>
+              <td className="px-3 py-2 text-muted-foreground">{prog.species.join(", ") || "—"}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{prog.studyCount}</td>
+              <td className="px-3 py-2 text-muted-foreground">{prog.phase || "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

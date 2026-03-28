@@ -43,6 +43,10 @@ def _register_and_generate(study_id: str, study_dir: Path,
     register_analysis_study(study)
     register_validation_study(study, validate=validate, auto_fix=auto_fix)
 
+    # Auto-register into portfolio
+    from services.study_metadata_service import get_study_metadata_service
+    get_study_metadata_service().register_discovered_studies({study_id: study})
+
     try:
         backend_dir = Path(__file__).parent.parent
         subprocess.Popen(
@@ -172,8 +176,12 @@ async def import_study(
                 )
 
             study_dir.mkdir(parents=True, exist_ok=True)
-            for xpt_name, xpt_path in xpts.items():
-                shutil.copy2(str(xpt_path), str(study_dir / xpt_path.name))
+            try:
+                for xpt_name, xpt_path in xpts.items():
+                    shutil.copy2(str(xpt_path), str(study_dir / xpt_path.name))
+            except Exception:
+                shutil.rmtree(study_dir, ignore_errors=True)
+                raise
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     else:

@@ -4,9 +4,9 @@ export interface Project {
   id: string;
   name: string;
   compound: string;
-  cas: string;
-  phase: string;
-  therapeutic_area: string;
+  cas?: string | null;
+  phase?: string | null;
+  therapeutic_area?: string | null;
 }
 
 export function useProjects() {

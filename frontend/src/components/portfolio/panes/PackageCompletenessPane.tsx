@@ -12,9 +12,9 @@ export function PackageCompletenessPane({ study }: Props) {
       <div className="space-y-2">
         {/* File presence */}
         <div className="space-y-1 text-xs">
-          <FileStatus label="nSDRG" present={study.has_nsdrg} />
-          <FileStatus label="define.xml" present={study.has_define} />
-          <FileStatus label="XPT domains" present={study.has_xpt} />
+          <FileStatus label="nSDRG" present={study.has_nsdrg ?? false} />
+          <FileStatus label="define.xml" present={study.has_define ?? false} />
+          <FileStatus label="XPT domains" present={study.has_xpt ?? true} />
         </div>
 
         {/* Validation summary */}

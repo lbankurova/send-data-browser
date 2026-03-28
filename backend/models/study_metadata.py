@@ -53,35 +53,43 @@ class StudyValidation(BaseModel):
 
 
 class StudyMetadata(BaseModel):
-    """Complete study metadata with dual-layer (reported/derived) architecture."""
+    """Complete study metadata with dual-layer (reported/derived) architecture.
+
+    Fields are Optional where auto-derivation from TS domain may not provide
+    them.  Manually-curated entries in study_metadata.json populate everything;
+    auto-derived entries fill what the TS domain offers.
+    """
 
     # Identity
     id: str
-    project: str
-    test_article: str
-    title: str
-    protocol: str
+    project: Optional[str] = None
+    test_article: Optional[str] = None
+    title: Optional[str] = None
+    protocol: Optional[str] = None
 
     # Design (always known from protocol/TS/TX)
-    species: str
-    strain: str
-    route: str
-    study_type: str
-    duration_weeks: int
-    recovery_weeks: int
-    doses: List[float]
-    dose_unit: str
-    subjects: int
+    species: Optional[str] = None
+    strain: Optional[str] = None
+    route: Optional[str] = None
+    study_type: Optional[str] = None
+    duration_weeks: Optional[int] = None
+    recovery_weeks: Optional[int] = None
+    doses: Optional[List[float]] = None
+    dose_unit: Optional[str] = None
+    subjects: Optional[int] = None
 
     # Pipeline
-    pipeline_stage: str  # "submitted" | "pre_submission" | "ongoing" | "planned"
+    pipeline_stage: str = "submitted"
     submission_date: Optional[str] = None
-    status: str
+    status: str = "Complete"
 
     # Data availability flags
-    has_nsdrg: bool
-    has_define: bool
-    has_xpt: bool
+    has_nsdrg: bool = False
+    has_define: bool = False
+    has_xpt: bool = True
+
+    # Source tracking
+    auto_derived: bool = False  # True = auto-derived from TS domain, not manually curated
 
     # Reported layer (from nSDRG — null if not parsed)
     target_organs_reported: Optional[List[str]] = None
@@ -115,6 +123,6 @@ class Project(BaseModel):
     id: str
     name: str
     compound: str
-    cas: str
-    phase: str
-    therapeutic_area: str
+    cas: Optional[str] = None
+    phase: Optional[str] = None
+    therapeutic_area: Optional[str] = None

@@ -359,7 +359,7 @@ function ScenarioInspector({ scenarioId }: { scenarioId: string }) {
 }
 
 export function ContextPanel() {
-  const { selectedStudyId } = useSelection();
+  const { selectedStudyId, selectedProjectId } = useSelection();
   const { studyId } = useParams<{ studyId: string }>();
   const location = useLocation();
   const { selectedSubject, setSelectedSubject, selection } = useViewSelection();
@@ -391,8 +391,8 @@ export function ContextPanel() {
   const isValidationRoute = /\/studies\/[^/]+\/validation/.test(location.pathname);
   const isCohortRoute = /\/studies\/[^/]+\/cohort/.test(location.pathname);
 
-  // Landing page with study selected - show portfolio context panel
-  if (isLandingPageRoute && selectedStudyId && allStudies) {
+  // Landing page in portfolio mode with program selected — show portfolio context panel
+  if (isLandingPageRoute && selectedProjectId && selectedStudyId && allStudies) {
     const selectedStudy = allStudies.find((s) => s.id === selectedStudyId);
     if (selectedStudy) {
       return (

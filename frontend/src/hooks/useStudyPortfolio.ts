@@ -45,21 +45,21 @@ export interface StudyValidation {
 export interface StudyMetadata {
   // Identity
   id: string;
-  project: string;
-  test_article: string;
-  title: string;
-  protocol: string;
+  project?: string | null;
+  test_article?: string | null;
+  title?: string | null;
+  protocol?: string | null;
 
   // Design
-  species: string;
-  strain: string;
-  route: string;
-  study_type: string;
-  duration_weeks: number;
-  recovery_weeks: number;
-  doses: number[];
-  dose_unit: string;
-  subjects: number;
+  species?: string | null;
+  strain?: string | null;
+  route?: string | null;
+  study_type?: string | null;
+  duration_weeks?: number | null;
+  recovery_weeks?: number | null;
+  doses?: number[] | null;
+  dose_unit?: string | null;
+  subjects?: number | null;
 
   // Pipeline
   pipeline_stage: string;
@@ -67,9 +67,12 @@ export interface StudyMetadata {
   status: string;
 
   // Data availability
-  has_nsdrg: boolean;
-  has_define: boolean;
-  has_xpt: boolean;
+  has_nsdrg?: boolean;
+  has_define?: boolean;
+  has_xpt?: boolean;
+
+  // Source tracking
+  auto_derived?: boolean;
 
   // Reported layer (from nSDRG)
   target_organs_reported?: string[] | null;

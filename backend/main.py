@@ -98,6 +98,14 @@ async def lifespan(app: FastAPI):
     init_analysis_views(studies)
     init_validation(studies)
     init_temporal(studies)
+
+    # Auto-register discovered studies into the portfolio system
+    from services.study_metadata_service import get_study_metadata_service
+    portfolio = get_study_metadata_service()
+    portfolio.register_discovered_studies(studies)
+    print(f"Portfolio: {len(portfolio.get_all_studies())} studies, "
+          f"{len(portfolio.get_all_projects())} projects")
+
     print("Study metadata loaded.")
     yield
 

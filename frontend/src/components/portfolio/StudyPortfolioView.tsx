@@ -169,10 +169,10 @@ function StudyRow({ study, selected, onClick }: StudyRowProps) {
   const resolvedNoael = noael(study);
 
   // Abbreviate study type
-  const typeAbbrev = study.study_type
+  const typeAbbrev = (study.study_type ?? "")
     .replace("Repeat Dose", "")
     .replace("Toxicity", "")
-    .trim();
+    .trim() || "—";
 
   return (
     <tr
@@ -185,15 +185,16 @@ function StudyRow({ study, selected, onClick }: StudyRowProps) {
       <td className="px-3 py-2 text-xs font-semibold" style={{ color: selected ? "#3b82f6" : undefined }}>
         {study.id}
       </td>
-      <td className="px-3 py-2 text-xs text-muted-foreground">{study.protocol}</td>
-      <td className="px-3 py-2 text-xs">{study.species}</td>
+      <td className="px-3 py-2 text-xs text-muted-foreground">{study.protocol ?? "—"}</td>
+      <td className="px-3 py-2 text-xs">{study.species ?? "—"}</td>
       <td className="px-3 py-2 text-xs font-medium" style={{ color: stageColor }}>
         {formatStage(study.pipeline_stage)}
       </td>
-      <td className="px-3 py-2 text-right text-xs">{study.subjects}</td>
+      <td className="px-3 py-2 text-right text-xs">{study.subjects ?? "—"}</td>
       <td className="px-3 py-2 text-xs">
-        {study.duration_weeks}wk
-        {study.recovery_weeks > 0 && ` (+${study.recovery_weeks}wk)`}
+        {study.duration_weeks != null
+          ? `${study.duration_weeks}wk${(study.recovery_weeks ?? 0) > 0 ? ` (+${study.recovery_weeks}wk)` : ""}`
+          : "—"}
       </td>
       <td className="px-3 py-2 text-xs">{typeAbbrev}</td>
       <td className="px-3 py-2 text-right text-xs">

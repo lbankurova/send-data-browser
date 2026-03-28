@@ -10,7 +10,7 @@ interface Props {
 export function ProgramNoaelsPane({ study, allStudies }: Props) {
   // Find other studies of the same test article
   const relatedStudies = allStudies.filter(
-    (s) => s.test_article === study.test_article && s.id !== study.id
+    (s) => s.test_article && s.test_article === study.test_article && s.id !== study.id
   );
 
   // Filter to only those with NOAELs
@@ -24,7 +24,7 @@ export function ProgramNoaelsPane({ study, allStudies }: Props) {
   }
 
   return (
-    <CollapsiblePane title={`Program NOAELs (${study.test_article})`} defaultOpen>
+    <CollapsiblePane title={`Program NOAELs (${study.test_article ?? "Unknown"})`} defaultOpen>
       <div className="space-y-2">
         {studiesWithNoael.map(({ study: s, noael: n }) => (
           <div key={s.id} className="text-xs">
@@ -38,7 +38,7 @@ export function ProgramNoaelsPane({ study, allStudies }: Props) {
               </span>
             </div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">
-              {s.species} · {s.duration_weeks}w
+              {s.species ?? "—"} · {s.duration_weeks != null ? `${s.duration_weeks}w` : "—"}
             </div>
           </div>
         ))}
