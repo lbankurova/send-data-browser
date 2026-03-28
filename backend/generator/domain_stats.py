@@ -4,6 +4,9 @@ Reuses existing findings modules to extract per-endpoint statistics,
 then enriches with ANOVA, Dunnett's, and Jonckheere-Terpstra tests.
 """
 
+import time
+from concurrent.futures import ProcessPoolExecutor
+
 import numpy as np
 import pandas as pd
 from scipy import stats as sp_stats
@@ -129,57 +132,81 @@ def compute_all_findings(
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
     n_excluded = len(excluded_set) if excluded_set else 0
 
-    # Collect all findings from existing modules (pass 1 — all animals)
-    # In-life domains receive last_dosing_day for recovery pooling;
-    # terminal domains (MI, MA, OM, TF) and DS are main-study-only.
-    all_findings = []
-    all_findings.extend(compute_lb_findings(study, subjects, last_dosing_day=last_dosing_day))
-    all_findings.extend(compute_bw_findings(study, subjects, last_dosing_day=last_dosing_day))
-    all_findings.extend(compute_om_findings(study, subjects))
-    all_findings.extend(compute_mi_findings(study, subjects))
-    all_findings.extend(compute_ma_findings(study, subjects))
-    all_findings.extend(compute_tf_findings(study, subjects))
-    all_findings.extend(compute_cl_findings(study, subjects, last_dosing_day=last_dosing_day))
-    all_findings.extend(compute_ds_findings(study, subjects))
-    all_findings.extend(compute_eg_findings(study, subjects, last_dosing_day=last_dosing_day))
-    all_findings.extend(compute_vs_findings(study, subjects, last_dosing_day=last_dosing_day))
-    all_findings.extend(compute_bg_findings(study, subjects, last_dosing_day=last_dosing_day))
-
-    # Pass 2 — build scheduled-only map for terminal + LB domains
-    scheduled_map = None
-    if excluded_set:
-        sched_findings = []
-        sched_findings.extend(compute_mi_findings(study, subjects, excluded_subjects=excluded_set))
-        sched_findings.extend(compute_ma_findings(study, subjects, excluded_subjects=excluded_set))
-        sched_findings.extend(compute_om_findings(study, subjects, excluded_subjects=excluded_set))
-        sched_findings.extend(compute_tf_findings(study, subjects, excluded_subjects=excluded_set))
-        sched_findings.extend(compute_lb_findings(study, subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day))
-        sched_findings.extend(compute_ds_findings(study, subjects, excluded_subjects=excluded_set))
-        scheduled_map = build_findings_map(sched_findings, "scheduled")
-
-    # Try FW domain (food/water consumption) — mirrors BW pattern
-    if "fw" in study.xpt_files:
-        all_findings.extend(_compute_fw_findings(study, subjects, last_dosing_day=last_dosing_day))
-
-    # Try IS domain (immunogenicity) — log-scale GMT with seroconversion
-    if "is" in study.xpt_files:
-        all_findings.extend(compute_is_findings(study, subjects))
-
-    # Pass 3 — build separate (main-only) map for in-life domains
-    separate_map = None
+    # ── Run all domain computations concurrently across passes ──
+    # Pass 1 = all animals, Pass 2 = scheduled-only (early deaths excluded),
+    # Pass 3 = main-only (recovery animals excluded).
+    # All passes are independent — submit everything to one thread pool.
     has_recovery = subjects["is_recovery"].any()
-    if has_recovery:
-        main_only_subs = get_terminal_subjects(subjects)
-        sep_findings = []
-        sep_findings.extend(compute_bw_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        sep_findings.extend(compute_lb_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        sep_findings.extend(compute_cl_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        sep_findings.extend(compute_eg_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        sep_findings.extend(compute_vs_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        sep_findings.extend(compute_bg_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
+    main_only_subs = get_terminal_subjects(subjects) if has_recovery else None
+
+    t_domains = time.perf_counter()
+    with ProcessPoolExecutor(max_workers=4) as pool:
+        # Pass 1 — all animals
+        p1_futs = [
+            pool.submit(compute_lb_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_bw_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_om_findings, study, subjects),
+            pool.submit(compute_mi_findings, study, subjects),
+            pool.submit(compute_ma_findings, study, subjects),
+            pool.submit(compute_tf_findings, study, subjects),
+            pool.submit(compute_cl_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_ds_findings, study, subjects),
+            pool.submit(compute_eg_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_vs_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_bg_findings, study, subjects, last_dosing_day=last_dosing_day),
+        ]
         if "fw" in study.xpt_files:
-            sep_findings.extend(_compute_fw_findings(study, main_only_subs, last_dosing_day=last_dosing_day))
-        separate_map = build_findings_map(sep_findings, "separate")
+            p1_futs.append(pool.submit(_compute_fw_findings, study, subjects, last_dosing_day=last_dosing_day))
+        if "is" in study.xpt_files:
+            p1_futs.append(pool.submit(compute_is_findings, study, subjects))
+
+        # Pass 2 — scheduled-only for terminal + LB domains (concurrent with Pass 1)
+        p2_futs = []
+        if excluded_set:
+            p2_futs = [
+                pool.submit(compute_mi_findings, study, subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_ma_findings, study, subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_om_findings, study, subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_tf_findings, study, subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_lb_findings, study, subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
+                pool.submit(compute_ds_findings, study, subjects, excluded_subjects=excluded_set),
+            ]
+
+        # Pass 3 — main-only for in-life domains (concurrent with Pass 1 and 2)
+        p3_futs = []
+        if has_recovery and main_only_subs is not None:
+            p3_futs = [
+                pool.submit(compute_bw_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_lb_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_cl_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_eg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_vs_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_bg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+            ]
+            if "fw" in study.xpt_files:
+                p3_futs.append(pool.submit(_compute_fw_findings, study, main_only_subs, last_dosing_day=last_dosing_day))
+
+        # Collect results
+        all_findings = []
+        for fut in p1_futs:
+            all_findings.extend(fut.result())
+
+        scheduled_map = None
+        if p2_futs:
+            sched_findings = []
+            for fut in p2_futs:
+                sched_findings.extend(fut.result())
+            scheduled_map = build_findings_map(sched_findings, "scheduled")
+
+        separate_map = None
+        if p3_futs:
+            sep_findings = []
+            for fut in p3_futs:
+                sep_findings.extend(fut.result())
+            separate_map = build_findings_map(sep_findings, "separate")
+
+    dt_domains = time.perf_counter() - t_domains
+    print(f"    domain computations: {dt_domains:.1f}s (parallel)")
 
     # Resolve study metadata for organ-specific thresholds and HCD
     species = get_species(study)
@@ -234,6 +261,9 @@ def compute_all_findings(
                     finding["scheduled_trend_p"] = None
 
     # Generator-specific: ANOVA, Dunnett's, JT, organ_name, endpoint_type
+    t_stats = time.perf_counter()
+    n_dunnett_reused = 0
+    n_dunnett_computed = 0
     for finding in all_findings:
         finding["organ_name"] = get_organ_name(
             finding.get("specimen"),
@@ -247,14 +277,30 @@ def compute_all_findings(
             raw_values = finding.get("raw_values")
             if raw_values and len(raw_values) >= 2:
                 finding["anova_p"] = _anova_p(raw_values)
-                control = raw_values[0]
-                treated = raw_values[1:]
-                if len(control) >= 2 and treated:
-                    dunnett_pvals = _dunnett_p(control, treated)
-                    finding["dunnett_p"] = [_safe_float(p) for p in dunnett_pvals]
+
+                # Reuse pairwise Dunnett p-values from domain modules when available.
+                # OM is excluded: its pairwise is computed on the recommended metric
+                # (ratio_to_bw, ratio_to_brain, etc.) which may differ from raw_values
+                # (always absolute).
+                pairwise = finding.get("pairwise")
+                if pairwise and finding.get("domain") != "OM":
+                    finding["dunnett_p"] = [_safe_float(pw.get("p_value_adj")) for pw in pairwise]
+                    n_dunnett_reused += 1
                 else:
-                    finding["dunnett_p"] = None
-                finding["jt_p"] = _jonckheere_terpstra_p(raw_values)
+                    control = raw_values[0]
+                    treated = raw_values[1:]
+                    if len(control) >= 2 and treated:
+                        dunnett_pvals = _dunnett_p(control, treated)
+                        finding["dunnett_p"] = [_safe_float(p) for p in dunnett_pvals]
+                    else:
+                        finding["dunnett_p"] = None
+                    n_dunnett_computed += 1
+
+                # Reuse trend_p from domain modules (same JT computation)
+                if finding.get("trend_p") is not None:
+                    finding["jt_p"] = _safe_float(finding["trend_p"])
+                else:
+                    finding["jt_p"] = _jonckheere_terpstra_p(raw_values)
             else:
                 finding["anova_p"] = _safe_float(finding.get("min_p_adj"))
                 finding["dunnett_p"] = None
@@ -267,6 +313,8 @@ def compute_all_findings(
         finding["endpoint_type"] = _classify_endpoint_type(
             finding.get("domain", ""), finding.get("test_code"),
         )
+    dt_stats = time.perf_counter() - t_stats
+    print(f"    stats enrichment: {dt_stats:.1f}s (Dunnett: {n_dunnett_reused} reused, {n_dunnett_computed} computed)")
 
     return all_findings, dg_data
 
