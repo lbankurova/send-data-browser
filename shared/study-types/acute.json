@@ -1,0 +1,20 @@
+{
+  "$schema": "../schemas/study-type-config.schema.json",
+  "version": "1.0.0",
+  "study_type": "ACUTE",
+  "display_name": "Single-Dose / Acute Toxicity",
+  "description": "Single-dose or short-duration acute studies. Evidence is a single terminal snapshot — no multi-timepoint trajectory. Small n (2-3/group) is common in MTD designs.",
+  "ts_stype_values": ["ACUTE"],
+  "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "DS", "TF"],
+  "required_domains": ["LB", "BW"],
+  "time_course": false,
+  "statistical_unit": "individual",
+  "statistical_mode": "between_group",
+  "noael_type": "single",
+  "enabled_syndrome_groups": ["XS", "XC"],
+  "ui_profile": "repeat_dose",
+  "caveats": [
+    "ACUTE_TMAX_TIMING",
+    "SMALL_N_ADVISORY"
+  ]
+}

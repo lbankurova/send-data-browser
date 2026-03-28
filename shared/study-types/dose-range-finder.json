@@ -1,0 +1,20 @@
+{
+  "$schema": "../schemas/study-type-config.schema.json",
+  "version": "1.0.0",
+  "study_type": "DOSE_RANGE_FINDER",
+  "display_name": "Dose Range Finding Study",
+  "description": "Non-GLP dose range finder, typically 2 weeks. Same pipeline as acute — collapsed timepoint, same syndrome logic. Confidence level flagged as non-GLP.",
+  "ts_stype_values": [],
+  "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "DS"],
+  "required_domains": ["LB", "BW"],
+  "time_course": false,
+  "statistical_unit": "individual",
+  "statistical_mode": "between_group",
+  "noael_type": "single",
+  "enabled_syndrome_groups": ["XS", "XC"],
+  "ui_profile": "repeat_dose",
+  "caveats": [
+    "NON_GLP_STUDY",
+    "SMALL_N_ADVISORY"
+  ]
+}

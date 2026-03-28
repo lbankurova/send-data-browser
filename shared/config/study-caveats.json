@@ -1,0 +1,25 @@
+{
+  "$schema": "../schemas/study-caveats.schema.json",
+  "version": "1.0.0",
+
+  "caveats": {
+    "ACUTE_TMAX_TIMING": {
+      "severity": "info",
+      "title": "Acute study timing caveat",
+      "message": "Acute studies may underrepresent peak enzyme activity — confirm timing of clinical pathology relative to expected Tmax. A single terminal timepoint captures only the snapshot at sacrifice, not the peak.",
+      "applies_to": ["ACUTE"]
+    },
+    "SMALL_N_ADVISORY": {
+      "severity": "info",
+      "title": "Small group size advisory",
+      "message": "Studies with n < 5 per group have reduced statistical power. Certainty scores are explicitly discounted. At n = 2-3, output should be considered descriptive, not conclusive.",
+      "applies_to": ["ACUTE", "DOSE_RANGE_FINDER"]
+    },
+    "NON_GLP_STUDY": {
+      "severity": "warning",
+      "title": "Non-GLP study",
+      "message": "This study was conducted under non-GLP conditions. Results may have reduced regulatory weight. Data quality and documentation standards may differ from GLP studies.",
+      "applies_to": ["DOSE_RANGE_FINDER"]
+    }
+  }
+}
