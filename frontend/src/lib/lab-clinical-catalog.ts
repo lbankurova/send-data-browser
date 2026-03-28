@@ -67,7 +67,9 @@ export interface LabClinicalMatch {
   sex: string | null;  // "M" | "F" | null (aggregate)
 }
 
-// ─── Constants ─────────────────────────────────────────────
+// ─── Constants (from shared/config/) ──────────────────────
+
+import scoringConfig from "../../../shared/config/scoring-weights.json";
 
 const SEVERITY_LABELS: Record<string, string> = {
   S1: "Monitor",
@@ -76,80 +78,32 @@ const SEVERITY_LABELS: Record<string, string> = {
   S4: "Critical",
 };
 
-const CLINICAL_FLOOR: Record<string, number> = {
-  S4: 15,
-  S3: 8,
-  S2: 4,
-  S1: 0,
-};
+const CLINICAL_FLOOR: Record<string, number> = Object.fromEntries(
+  Object.entries(scoringConfig.clinical_severity_floors)
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([k, v]) => [k, (v as { floor: number }).floor])
+);
 
 export function getClinicalFloor(severity: "S1" | "S2" | "S3" | "S4"): number {
   return CLINICAL_FLOOR[severity];
 }
 
-// GAP-123: Additive boost — always added to base score (floor only rescues weak-stats endpoints;
-// the additive ensures clinical significance always contributes to ranking differentiation).
-const CLINICAL_ADDITIVE: Record<string, number> = {
-  S4: 5,  // Critical (Hy's Law etc.)
-  S3: 3,  // Adverse (marked ALT, severe hematology)
-  S2: 2,  // Concern (moderate changes)
-  S1: 0,  // Monitor (no additive)
-};
+// GAP-123: Additive boost — always added to base score
+const CLINICAL_ADDITIVE: Record<string, number> = Object.fromEntries(
+  Object.entries(scoringConfig.clinical_severity_floors)
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([k, v]) => [k, (v as { additive: number }).additive])
+);
 
 export function getClinicalAdditive(severity: "S1" | "S2" | "S3" | "S4"): number {
   return CLINICAL_ADDITIVE[severity];
 }
 
-// ─── Synonym Lookup ────────────────────────────────────────
+// ─── Synonym Lookup (from shared/rules/lab-clinical-rules.json) ────
 
-// Exact-label architecture (following finding-term-map.ts pattern).
-// Each canonical maps to: [testCode aliases..., exact normalized endpoint labels...]
-// No substring matching, no regex — O(1) Map lookups only.
-const LAB_SYNONYMS: Record<string, string[]> = {
-  ALT: ["alt", "alat", "alanine aminotransferase", "sgpt", "gpt"],
-  AST: ["ast", "asat", "aspartate aminotransferase", "sgot", "got"],
-  ALP: ["alp", "alkp", "alkaline phosphatase"],
-  GGT: ["ggt", "gamma-glutamyl transferase", "gamma-glutamyl", "gamma gt"],
-  SDH: ["sdh", "sorbitol dehydrogenase"],
-  GDH: ["gldh", "gdh", "glutamate dehydrogenase"],
-  "5NT": ["5'nt", "5'-nucleotidase", "5nt"],
-  BUN: ["bun", "blood urea nitrogen", "urea nitrogen", "urea"],
-  CREAT: ["creatinine", "crea", "creat"],
-  TBILI: ["bilirubin", "tbili", "total bilirubin", "bili", "dbili"],
-  HGB: ["hemoglobin", "hgb", "hb"],
-  RBC: ["rbc", "red blood cell", "red blood cells", "erythrocyte", "erythrocytes"],
-  HCT: ["hematocrit", "hct"],
-  PLAT: ["platelet", "platelets", "platelet count", "plt", "thrombocyte", "thrombocytes"],
-  WBC: ["wbc", "white blood cell", "white blood cells", "leukocyte", "leukocytes", "total leukocytes"],
-  NEUT: ["neutrophil", "neutrophils", "neutrophil count", "absolute neutrophil count",
-         "neutrophil absolute count", "neut", "anc"],
-  LYMPH: ["lymphocyte", "lymphocytes", "lymphocyte count", "lymph", "lym"],
-  MONO: ["monocyte", "monocytes", "monocyte count", "mono"],
-  EOS: ["eosinophil", "eosinophils", "eosinophil count", "eos"],
-  BASO: ["basophil", "basophils", "basophil count", "baso"],
-  RETIC: ["reticulocyte", "reticulocytes", "reticulocyte count", "retic", "ret"],
-  MCV: ["mean corpuscular volume", "mcv"],
-  MCH: ["mean corpuscular hemoglobin", "mch"],
-  MCHC: ["mchc"],
-  K: ["potassium"],
-  NA: ["sodium"],
-  CA: ["calcium"],
-  PHOS: ["phosphate", "phosphorus", "inorganic phosphorus"],
-  GLUC: ["glucose", "blood glucose"],
-  CHOL: ["cholesterol", "total cholesterol"],
-  TRIG: ["triglycerides", "triglyceride", "trig"],
-  ALB: ["albumin", "alb"],
-  GLOBUL: ["globulin", "globul"],
-  PROT: ["total protein", "protein", "prot"],
-  PT: ["prothrombin time"],
-  INR: ["inr", "international normalized ratio"],
-  APTT: ["aptt", "activated partial thromboplastin time", "activated partial thromboplastin", "ptt"],
-  FIBRINO: ["fibrinogen", "fibrino", "fib"],
-  MG: ["magnesium"],
-  CL: ["chloride"],
-  URINE_VOL: ["urine volume", "urine output", "volume"],
-  URINE_SG: ["specific gravity", "urine specific gravity", "spgrav"],
-};
+import labRulesConfig from "../../../shared/rules/lab-clinical-rules.json";
+
+const LAB_SYNONYMS: Record<string, string[]> = labRulesConfig.synonyms;
 
 // Pre-built exact-match indexes (constructed once at module load, O(1) lookups).
 // Follows the finding-term-map.ts pattern: no includes(), no regex.
