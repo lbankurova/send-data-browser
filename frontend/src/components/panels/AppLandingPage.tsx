@@ -142,35 +142,48 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [studyId, setStudyId] = useState("");
+  const [importMode, setImportMode] = useState<"new" | "existing">("new");
+  const [targetStudyId, setTargetStudyId] = useState("");
   const [validate, setValidate] = useState(true);
   const [autoFix, setAutoFix] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { data: studies } = useStudies();
 
   const isXpt = selectedFiles.length > 0 && selectedFiles[0].name.toLowerCase().endsWith(".xpt");
   const isZip = selectedFiles.length === 1 && selectedFiles[0].name.toLowerCase().endsWith(".zip");
-  const canImport = selectedFiles.length > 0 && !importing && (isZip || (isXpt && studyId.trim()));
+  const canImport = selectedFiles.length > 0 && !importing && (
+    isZip
+    || (isXpt && importMode === "new" && studyId.trim())
+    || (isXpt && importMode === "existing" && targetStudyId)
+  );
 
   const handleFiles = useCallback(async (files: File[]) => {
     setImportError(null);
     setImportSuccess(null);
     setImporting(true);
     try {
+      const isAppend = isXpt && importMode === "existing";
       const result = await importStudy(files, {
         validate,
         autoFix,
-        studyId: studyId.trim() || undefined,
+        studyId: isAppend ? targetStudyId : (studyId.trim() || undefined),
+        append: isAppend || undefined,
       });
-      setImportSuccess(`Imported ${result.study_id} (${result.domain_count} domains)`);
+      const msg = isAppend
+        ? `Added ${files.length} file${files.length > 1 ? "s" : ""} to ${result.study_id} (${result.domain_count} domains total${result.overwritten?.length ? `, replaced: ${result.overwritten.join(", ")}` : ""})`
+        : `Imported ${result.study_id} (${result.domain_count} domains)`;
+      setImportSuccess(msg);
       setSelectedFiles([]);
       setStudyId("");
+      setTargetStudyId("");
       queryClient.invalidateQueries({ queryKey: ["studies"] });
     } catch (err) {
       setImportError(err instanceof Error ? err.message : "Import failed");
     } finally {
       setImporting(false);
     }
-  }, [queryClient, validate, autoFix, studyId]);
+  }, [queryClient, validate, autoFix, studyId, importMode, targetStudyId, isXpt]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -235,7 +248,7 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
                   {(selectedFiles.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1)} MB &mdash; ready to import
                   {" "}<button
                     className="text-muted-foreground underline hover:text-foreground"
-                    onClick={() => { setSelectedFiles([]); setStudyId(""); setImportError(null); setImportSuccess(null); }}
+                    onClick={() => { setSelectedFiles([]); setStudyId(""); setTargetStudyId(""); setImportMode("new"); setImportError(null); setImportSuccess(null); }}
                   >
                     Remove
                   </button>
@@ -271,23 +284,81 @@ function ImportSection({ defaultOpen = false }: { defaultOpen?: boolean }) {
             )}
           </div>
 
-          {/* Study ID field */}
-          {selectedFiles.length > 0 && (
+          {/* Study target — mode toggle for .xpt, simple ID for .zip */}
+          {isXpt && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <input
+                    type="radio"
+                    name="import-mode"
+                    checked={importMode === "new"}
+                    onChange={() => setImportMode("new")}
+                    className="h-3 w-3"
+                  />
+                  New study
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <input
+                    type="radio"
+                    name="import-mode"
+                    checked={importMode === "existing"}
+                    onChange={() => setImportMode("existing")}
+                    className="h-3 w-3"
+                  />
+                  Add to existing study
+                </label>
+              </div>
+
+              {importMode === "new" ? (
+                <div className="flex items-center gap-3">
+                  <label className="shrink-0 text-xs text-muted-foreground">Study ID</label>
+                  <input
+                    type="text"
+                    value={studyId}
+                    onChange={(e) => setStudyId(e.target.value)}
+                    placeholder="required"
+                    className={cn(
+                      "w-[220px] max-w-full rounded-md border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none",
+                      !studyId.trim() ? "border-amber-400" : "border-border/50"
+                    )}
+                  />
+                  {!studyId.trim() && (
+                    <span className="text-[10px] text-amber-600">required</span>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <label className="shrink-0 text-xs text-muted-foreground">Study</label>
+                  <select
+                    value={targetStudyId}
+                    onChange={(e) => setTargetStudyId(e.target.value)}
+                    className={cn(
+                      "w-[220px] max-w-full rounded-md border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none",
+                      !targetStudyId ? "border-amber-400 text-muted-foreground/50" : "border-border/50"
+                    )}
+                  >
+                    <option value="">Select study...</option>
+                    {studies?.map((s) => (
+                      <option key={s.study_id} value={s.study_id}>
+                        {s.display_name || s.name || s.study_id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+          {isZip && (
             <div className="flex items-center gap-3">
               <label className="shrink-0 text-xs text-muted-foreground">Study ID</label>
               <input
                 type="text"
                 value={studyId}
                 onChange={(e) => setStudyId(e.target.value)}
-                placeholder={isZip ? selectedFiles[0].name.replace(/\.zip$/i, "") : "required"}
-                className={cn(
-                  "w-[220px] max-w-full rounded-md border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none",
-                  isXpt && !studyId.trim() ? "border-amber-400" : "border-border/50"
-                )}
+                placeholder={selectedFiles[0].name.replace(/\.zip$/i, "")}
+                className="w-[220px] max-w-full rounded-md border border-border/50 bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
               />
-              {isXpt && !studyId.trim() && (
-                <span className="text-[10px] text-amber-600">required</span>
-              )}
             </div>
           )}
 

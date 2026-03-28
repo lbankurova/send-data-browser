@@ -64,6 +64,7 @@ def _register_and_generate(study_id: str, study_dir: Path,
 async def import_study(
     files: list[UploadFile] = File(...),
     study_id: Optional[str] = Query(None, description="Custom study identifier (required for .xpt uploads, optional for .zip)"),
+    append: bool = Query(False, description="Add files to an existing study instead of creating a new one"),
     validate: bool = Query(True, description="Run SEND validation after import"),
     auto_fix: bool = Query(False, description="Attempt automatic fixes after validation"),
 ):
@@ -71,6 +72,7 @@ async def import_study(
 
     - **Single .zip:** extracts and discovers .xpt files inside.
     - **One or more .xpt files:** imported directly as a study.
+    - **append=true** with .xpt files: adds domains to an existing study.
 
     ``study_id`` overrides the default (zip filename stem). Required when
     uploading raw .xpt files.
@@ -90,6 +92,12 @@ async def import_study(
             detail="Upload either a single .zip or one or more .xpt files",
         )
 
+    if append and is_zip:
+        raise HTTPException(
+            status_code=400,
+            detail="Append mode is only supported for .xpt files, not .zip archives",
+        )
+
     # Resolve study_id
     if is_zip:
         sid = study_id or Path(filenames[0]).stem
@@ -102,11 +110,42 @@ async def import_study(
         sid = study_id
 
     study_dir = SEND_DATA_DIR / sid
+
+    if append:
+        # --- Append to existing study ---
+        if not study_dir.exists():
+            raise HTTPException(status_code=404, detail=f"Study '{sid}' not found")
+
+        existing, _ = _find_xpt_files(study_dir)
+        uploaded_names = [Path(fn).stem.lower() for fn in filenames]
+        overwritten = [n for n in uploaded_names if n in existing]
+
+        for upload in files:
+            dest = study_dir / (upload.filename or "unknown.xpt")
+            with open(dest, "wb") as f:
+                f.write(await upload.read())
+
+        # Clear cached CSV for overwritten domains
+        cache_dir = CACHE_DIR / sid
+        for domain in overwritten:
+            cached = cache_dir / f"{domain}.csv"
+            if cached.exists():
+                cached.unlink()
+
+        # Clear generated output so the generator rebuilds
+        gen_dir = GENERATED_DIR / sid
+        if gen_dir.exists():
+            shutil.rmtree(gen_dir, ignore_errors=True)
+
+        result = _register_and_generate(sid, study_dir, validate, auto_fix)
+        result["overwritten"] = overwritten
+        return result
+
+    # --- New study (zip or xpt) ---
     if study_dir.exists():
         raise HTTPException(status_code=409, detail=f"Study '{sid}' already exists")
 
     if is_zip:
-        # --- Zip import (original flow) ---
         tmp = Path(tempfile.mkdtemp())
         zip_path = tmp / filenames[0]
         try:
@@ -138,7 +177,6 @@ async def import_study(
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     else:
-        # --- Raw .xpt import ---
         study_dir.mkdir(parents=True, exist_ok=True)
         try:
             for upload in files:
