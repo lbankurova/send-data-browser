@@ -31,16 +31,55 @@ def mann_whitney_u(group1: list | np.ndarray, group2: list | np.ndarray) -> dict
         return {"statistic": None, "p_value": None}
 
 
-def fisher_exact_2x2(table: list[list[int]]) -> dict:
-    """Fisher's exact test on 2x2 contingency table.
+def incidence_exact_test(
+    table: list[list[int]],
+    method: str = "boschloo",
+) -> dict:
+    """Exact test on 2x2 contingency table for incidence data.
+
     table = [[a, b], [c, d]] where a=affected_treatment, b=unaffected_treatment,
     c=affected_control, d=unaffected_control.
+
+    Methods:
+        "boschloo" (default) — Boschloo's unconditional exact test. Uniformly
+            more powerful than Fisher's. Conditions only on the fixed margin
+            (group sizes), matching the one-margin-fixed design of preclinical
+            trials. Uses Fisher's p-value as the test statistic and maximizes
+            over the nuisance parameter. [scipy.stats.boschloo_exact]
+        "fisher" — Fisher's conditional exact test. Conditions on both margins.
+            Available as an override for comparability with legacy analyses.
+            [scipy.stats.fisher_exact]
     """
+    # Compute odds ratio from the table directly (property of the data, not the test)
+    a, b = table[0]
+    c, d = table[1]
+    if b > 0 and c > 0:
+        odds_ratio = round(float((a * d) / (b * c)), 6)
+    elif a == 0 and c == 0:
+        odds_ratio = None
+    else:
+        odds_ratio = None  # inf not JSON-serializable; callers check incidence rates directly
+
     try:
-        odds_ratio, p_val = stats.fisher_exact(table)
-        return {"odds_ratio": float(odds_ratio), "p_value": float(p_val)}
+        if method == "fisher":
+            _, p_val = stats.fisher_exact(table)
+        else:
+            result = stats.boschloo_exact(table, alternative="two-sided")
+            p_val = result.pvalue
+        # Guard against NaN (e.g. Boschloo on degenerate tables like [[0,n],[0,m]])
+        if np.isnan(p_val):
+            p_val = 1.0
+        return {
+            "odds_ratio": odds_ratio,
+            "p_value": float(p_val),
+            "test_method": method,
+        }
     except ValueError:
-        return {"odds_ratio": None, "p_value": None}
+        return {"odds_ratio": None, "p_value": None, "test_method": method}
+
+
+# Backwards-compatible alias
+fisher_exact_2x2 = incidence_exact_test
 
 
 def trend_test(groups: list[np.ndarray]) -> dict:

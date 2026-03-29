@@ -55,6 +55,12 @@ The core scientific computation layer. Most items here are unique to SENDEX — 
 - **Result:** Study5 → 18 findings (QTc detected as tr_adverse, NOAEL=50 mg/kg). CJUGSEND00 → 7 findings. All parallel studies unaffected. GAP-131 through GAP-135 all resolved (Friedman omnibus, carryover test, McNemar's incidence, EGBLFL predose detection, study_type_config routing).
 - **Impl:** 8 new files in `generator/adapters/`, 1 modified (`generate.py`), 1 new contract (`finding_record.py`), 0 changes to existing domain modules or shared core.
 
+### Improvement: Boschloo's exact test as default for incidence (**done**)
+- **Source:** Statistician recommendation. Spec: `incoming/boschloo-exact-test-default.md`
+- **What:** Replaced Fisher's exact test with Boschloo's unconditional exact test as the default pairwise comparison for all incidence domains (MI, MA, CL, TF, DS). Fisher's retained as override via `method="fisher"`.
+- **Why:** Uniformly more powerful than Fisher's; power gap most pronounced at small n (3–10 per group, typical in tox). Conditions only on the fixed margin (group sizes), matching preclinical trial design. No distributional assumptions.
+- **Depends on:** None (drop-in replacement via `scipy.stats.boschloo_exact`)
+
 ### Improvement: Cross-check BIOMARKER_MAP completeness
 - **Source:** send-summarizer organ-system TESTCD panels
 - **What:** Compare `send_knowledge.py` BIOMARKER_MAP against send-summarizer's reproductive (GNRH, LH, FSH, DHT, TESTOS...), endocrine, and hematopoietic panels.
@@ -358,7 +364,7 @@ Per-domain technical debt and missing capabilities.
 ### Feature: Compound-Class Contextual Warnings
 - **Source:** GAP-16
 - **What:** Warn when syndrome matches known compound-class effect profile.
-- **Blocked on:** External compound-class-to-findings reference database
+- ~~**Blocked on:** External compound-class-to-findings reference database~~ Unblocked — compound profile foundation shipped (composition engine, cross-reactivity gating, never-reclassifiable expansion). Integration into syndrome interpretation layer remains.
 
 ### Improvement: OM Pattern Classifier Metric Verification
 - **Source:** GAP-42

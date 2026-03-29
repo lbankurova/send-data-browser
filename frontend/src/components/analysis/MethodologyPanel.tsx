@@ -68,9 +68,11 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
             family-wise error rate control. Min n &ge; 2 per group. <Ref>scipy.stats.dunnett</Ref>
           </div>
           <div>
-            <span className="font-medium text-foreground">Incidence endpoints</span> (MI, MA, CL, DS):
-            Fisher&apos;s exact test on 2&times;2 contingency table (affected/unaffected &times; treated/control).
-            Returns odds ratio and p-value. <Ref>scipy.stats.fisher_exact</Ref>
+            <span className="font-medium text-foreground">Incidence endpoints</span> (MI, MA, CL, DS, TF):
+            Boschloo&apos;s unconditional exact test on 2&times;2 contingency table (affected/unaffected &times; treated/control).
+            Uniformly more powerful than Fisher&apos;s exact test; conditions only on the fixed margin (group sizes),
+            matching the one-margin-fixed design of preclinical trials. Returns odds ratio and p-value.
+            Fisher&apos;s exact test available as user override. <Ref>scipy.stats.boschloo_exact</Ref>
           </div>
         </MethodSection>
 
@@ -220,6 +222,7 @@ export function MethodologyPanel({ expandAll, collapseAll, activeEffectSizeMetho
         <MethodSection title="Software and references">
           <div className="space-y-0.5">
             <div>&bull; SciPy 1.x (scipy.stats) for all statistical tests</div>
+            <div>&bull; Boschloo&apos;s test per Boschloo (1970); unconditional exact test for 2&times;2 tables</div>
             <div>&bull; Bonferroni correction per Dunn (1961)</div>
             <div>&bull; Dunnett&apos;s test per Dunnett (1955, 1964)</div>
             <div>&bull; Cochran-Armitage per Cochran (1954) and Armitage (1955)</div>

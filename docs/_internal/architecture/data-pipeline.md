@@ -512,15 +512,15 @@ mi_abnormal["sev_score"] = mi_abnormal[severity_col].str.strip().str.upper().map
 | `incidence` | `round(affected / n, 4)` |
 | `avg_severity` | `round(float(np.mean(sev_vals)), 2)` among affected animals (null if no severity data) |
 
-**Pairwise tests (Fisher's exact):**
+**Pairwise tests (Boschloo's exact — default; Fisher's as override):**
 
 ```python
 table = [
     [treat_affected, treat_total - treat_affected],
     [control_affected, control_total - control_affected],
 ]
-result = fisher_exact_2x2(table)
-# Returns: {"odds_ratio": float, "p_value": float}
+result = fisher_exact_2x2(table)  # alias for incidence_exact_test(); defaults to method="boschloo"
+# Returns: {"odds_ratio": float, "p_value": float, "test_method": str}
 ```
 
 For MI, `p_value_adj` is set equal to `p_value` (no Bonferroni correction for incidence domains).
@@ -551,7 +551,7 @@ Follows MI pattern exactly, except:
 - No severity scoring (no MISEV equivalent).
 - `avg_severity` is not computed; not included in output.
 - `max_effect_size` is `None`.
-- Pairwise: Fisher's exact (same as MI). `p_value_adj = p_value` (no Bonferroni).
+- Pairwise: Boschloo's exact (same as MI). `p_value_adj = p_value` (no Bonferroni).
 - Trend: Cochran-Armitage (same as MI).
 
 #### CL -- Clinical Observations
@@ -567,7 +567,7 @@ Follows MI pattern exactly, except:
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE", "NONE"}
 ```
 
-Follows MI incidence pattern (Fisher's exact + Cochran-Armitage trend), except:
+Follows MI incidence pattern (Boschloo's exact + Cochran-Armitage trend), except:
 - No specimen column; `specimen` is `None` in output.
 - `test_code` is the finding string itself (e.g., `"EXCESSIVE SALIVATION"`).
 - `max_effect_size` is `None`.
@@ -600,7 +600,7 @@ DEATH_TERMS = {"DEAD", "DEATH", "FOUND DEAD", "DIED", "EUTHANIZED", "EUTHANASIA"
                "MORIBUND", "TERMINAL SACRIFICE", "SCHEDULED EUTHANASIA"}
 ```
 
-Follows the MI incidence pattern: counts unique USUBJID per dose group, Fisher's exact pairwise tests, Cochran-Armitage trend test. No Bonferroni correction.
+Follows the MI incidence pattern: counts unique USUBJID per dose group, Boschloo's exact pairwise tests, Cochran-Armitage trend test. No Bonferroni correction.
 
 **Output fields:** `domain="DS"`, `test_code="MORTALITY"`, `data_type="incidence"`, `mortality_count=<int>`. No specimen, no avg_severity, no max_effect_size.
 
@@ -1185,7 +1185,7 @@ evidence_score = mean_signal * convergence_multiplier
 | Test | scipy Function | When Used | Parameters | Min Group Size | Output |
 |------|---------------|-----------|------------|----------------|--------|
 | Welch's t-test | `stats.ttest_ind(a1, a2, equal_var=False)` | Continuous pairwise (LB, BW, OM, FW) | NaN removed; `equal_var=False` | n >= 2 per group | `{statistic: float, p_value: float}` |
-| Fisher's exact | `stats.fisher_exact([[a,b],[c,d]])` | Incidence pairwise (MI, MA, CL) | 2x2 table: `[[treat_affected, treat_unaffected], [ctrl_affected, ctrl_unaffected]]` | -- | `{odds_ratio: float, p_value: float}` |
+| Boschloo's exact (default) | `stats.boschloo_exact([[a,b],[c,d]])` | Incidence pairwise (MI, MA, CL, TF, DS) | 2x2 table: `[[treat_affected, treat_unaffected], [ctrl_affected, ctrl_unaffected]]` | -- | `{odds_ratio: float, p_value: float, test_method: str}` |
 | Spearman (trend) | `stats.spearmanr(dose_levels, values)` | Continuous trend (LB, BW, OM, FW) | dose_levels = ordinal ints; values = individual measurements; NaN removed | >= 4 total obs | `{statistic: float, p_value: float}` |
 | Cochran-Armitage | Custom (chi-square z-test) | Incidence trend (MI, MA, CL) | scores = `[0,1,...,k-1]`; counts and totals per dose | >= 2 groups; p_bar not 0 or 1 | `{statistic: float, p_value: float}` |
 | Cohen's d | Custom (pooled SD formula) | Effect size for continuous | `pooled_std = sqrt(((n1-1)*var1 + (n2-1)*var2) / (n1+n2-2))` ; `d = (mean1 - mean2) / pooled_std` | n >= 2 per group; pooled_std != 0 | `float` or `None` |
@@ -1256,7 +1256,7 @@ Three caching layers serve findings data:
 ## Current State
 
 **Real (computing actual statistics from XPT data):**
-- Full statistical pipeline: Welch's t, Fisher's exact, Cochran-Armitage, Cohen's d, Bonferroni, Spearman trend
+- Full statistical pipeline: Welch's t, Boschloo's exact (Fisher's as override), Cochran-Armitage, Cohen's d, Bonferroni, Spearman trend
 - All per-domain finding modules (LB, BW, OM, MI, MA, CL, FW)
 - Classification engine (severity, dose-response pattern, treatment-relatedness)
 - Signal scoring and rule engine (16 rules)
@@ -1336,7 +1336,7 @@ activeFindings                         ← consumed by all downstream useMemo ch
 | `services/analysis/findings_ma.py` | MA domain incidence analysis | `compute_ma_findings(study, subjects)` |
 | `services/analysis/findings_cl.py` | CL domain incidence analysis | `compute_cl_findings(study, subjects)` |
 | `services/analysis/findings_ds.py` | DS domain mortality incidence analysis | `compute_ds_findings(study, subjects)` |
-| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `fisher_exact_2x2()`, `trend_test()`, `trend_test_incidence()`, `compute_effect_size()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
+| `services/analysis/statistics.py` | Pure function wrappers for all statistical tests | `dunnett_pairwise()`, `welch_pairwise()`, `welch_t_test()`, `incidence_exact_test()` (alias: `fisher_exact_2x2()`), `trend_test()`, `trend_test_incidence()`, `compute_effect_size()`, `spearman_correlation()`, `severity_trend()`, `bonferroni_correct()`, `mann_whitney_u()` |
 | `services/analysis/classification.py` | Finding classification (severity, pattern, treatment-related) | `classify_severity(finding)`, `classify_dose_response(group_stats, data_type)`, `determine_treatment_related(finding)` |
 | `services/analysis/send_knowledge.py` | Static SEND domain knowledge tables | `BIOMARKER_MAP`, `ORGAN_SYSTEM_MAP`, `THRESHOLDS`, `DOMAIN_EFFECT_THRESHOLDS` |
 | `services/analysis/findings_pipeline.py` | Shared enrichment pipeline (pass merging, classification, labels) | `finding_key(f)`, `build_findings_map(findings, label)`, `process_findings(base, scheduled_map, separate_map, n_excluded)`, `enrich_findings(findings)`, `attach_scheduled_stats()`, `attach_separate_stats()` |

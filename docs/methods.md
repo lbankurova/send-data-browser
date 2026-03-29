@@ -42,21 +42,30 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 
 ---
 
-### STAT-03 — Fisher's Exact Test (2x2)
+### STAT-03 — Boschloo's Exact Test (2x2) — default; Fisher's exact as override
 
 **Purpose:** Pairwise comparison of treated vs. control incidence rates for binary endpoints (affected/not affected).
 
-**Implementation:** `scipy.stats.fisher_exact(table)` — backend `statistics.py:34`. Table format: `[[affected_treated, unaffected_treated], [affected_control, unaffected_control]]`.
+**Implementation:** `incidence_exact_test(table, method="boschloo")` — backend `statistics.py:34`. Table format: `[[affected_treated, unaffected_treated], [affected_control, unaffected_control]]`. Odds ratio computed directly from the table (property of the data, independent of the test).
 
-**Parameters:** Two-tailed. Returns odds ratio and p-value. ValueError caught. No Bonferroni correction applied to incidence domains (see design note below).
+**Parameters:** Two-tailed. Returns odds ratio, p-value, and `test_method` identifier. ValueError caught. No Bonferroni correction applied to incidence domains (see design note below).
 
-**Why this method:** Fisher's exact test is the gold standard for 2x2 tables with small cell counts (common in histopathology incidence — e.g., 3/10 treated vs. 0/10 control). Chi-square approximation breaks down below expected count of 5.
+**Default method — Boschloo's unconditional exact test:**
+Boschloo's test (1970) uses Fisher's p-value as its test statistic but computes the overall p-value by maximizing over the nuisance parameter (the unknown marginal probability), making it an unconditional test. It is uniformly more powerful than Fisher's exact test (UMP unbiased for one-sided; strictly more powerful two-sided). `scipy.stats.boschloo_exact(table, alternative="two-sided")`.
 
-**Alternatives considered:** Chi-square test (invalid for small expected counts, common in tox). Barnard's test (computationally expensive, marginal gain in power).
+**Why Boschloo's over Fisher's:**
+1. **Uniformly more powerful.** Boschloo's can never be less powerful and is typically more powerful, with the difference most pronounced at small sample sizes (n=3–10 per group — typical in preclinical tox).
+2. **One-margin-fixed design.** In preclinical trials, group sizes (treated vs. control) are fixed by protocol, but affected/unaffected counts are random. Fisher's conditions on both margins (both row and column totals fixed), which over-constrains the problem. Boschloo's conditions only on the fixed margin — a better match for the actual experimental design.
+3. **No distributional assumptions.** Like Fisher's, Boschloo's is an exact test — no large-sample approximation needed.
 
-**Design note:** Pairwise Fisher's results are not Bonferroni-corrected for incidence domains (MI, MA, CL, TF, DS). The test is inherently conservative with small counts, and individual comparisons are the primary interest.
+**Override — Fisher's exact test:**
+Fisher's conditional exact test is available via `method="fisher"` for comparability with legacy analyses or other tools that report Fisher's p-values. `scipy.stats.fisher_exact(table)`.
 
-**Consumers:** MI (`findings_mi.py:140`), MA (`findings_ma.py:119`), CL (`findings_cl.py:102`), TF (`findings_tf.py:166`), DS (`findings_ds.py:112`).
+**Performance note:** Boschloo's is computationally heavier than Fisher's (~10-100x), but negligible at our scale (hundreds of tables per study, not millions).
+
+**Design note:** Pairwise results are not Bonferroni-corrected for incidence domains (MI, MA, CL, TF, DS). Individual comparisons are the primary interest.
+
+**Consumers:** MI (`findings_mi.py`), MA (`findings_ma.py`), CL (`findings_cl.py`), TF (`findings_tf.py`), DS (`findings_ds.py`).
 
 ---
 
@@ -341,7 +350,7 @@ Companion to `dependencies.md`, which documents **what we depend on** (external 
 | Data type | Pairwise | Trend | Rationale |
 |-----------|----------|-------|-----------|
 | Continuous | Dunnett's (FWER) | JT (nonparametric) | Dunnett's + Welch robustness; JT already nonparametric |
-| Incidence | Fisher's exact | Cochran-Armitage | Exact methods, no distributional assumptions |
+| Incidence | Boschloo's exact (Fisher's override) | Cochran-Armitage | Exact methods, no distributional assumptions; Boschloo's uniformly more powerful |
 
 **Why we don't use adaptive normality-based selection:**
 
@@ -376,12 +385,12 @@ This table documents which statistical test is applied to each endpoint type in 
 | BW | Body weight | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | Percent change from baseline (METH-02) |
 | OM | Organ weights (relative) | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | STAT-15 ANCOVA (tier ≥ 3) | Organ-to-body ratio (METH-03); Williams' (STAT-14) pre-computed alongside Dunnett |
 | FW | Food/water consumption | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
-| MI | Histopath incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | No effect size for binary data |
+| MI | Histopath incidence | STAT-03 Boschloo's exact | STAT-05 Cochran-Armitage | — | — | No effect size for binary data; Fisher's as override |
 | MI | Histopath severity (ordinal) | STAT-02 Mann-Whitney U† | — | — | — | †Reserved, not in active pipeline |
-| MA | Macroscopic incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
-| CL | Clinical signs incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
-| TF | Tumor findings incidence | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
-| DS | Death/sacrifice | STAT-03 Fisher's exact | STAT-05 Cochran-Armitage | — | — | |
+| MA | Macroscopic incidence | STAT-03 Boschloo's exact | STAT-05 Cochran-Armitage | — | — | Fisher's as override |
+| CL | Clinical signs incidence | STAT-03 Boschloo's exact | STAT-05 Cochran-Armitage | — | — | Fisher's as override |
+| TF | Tumor findings incidence | STAT-03 Boschloo's exact | STAT-05 Cochran-Armitage | — | — | Fisher's as override |
+| DS | Death/sacrifice | STAT-03 Boschloo's exact | STAT-05 Cochran-Armitage | — | — | Fisher's as override |
 | EG | ECG continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 | VS | Vital signs continuous | STAT-07 Dunnett (REM-28) | STAT-04 JT (REM-29) | STAT-12 Hedges' g | — | |
 
@@ -391,7 +400,8 @@ This table documents which statistical test is applied to each endpoint type in 
 - No multiplicity correction is applied within domains for incidence tests (see STAT-03 design note).
 
 **User-switchable methods:** The following are switchable at runtime via the Study Details context panel:
-- **Pairwise test:** Dunnett (STAT-07, default), Williams' step-down (STAT-14), Bonferroni (via STAT-13 raw Welch p-values)
+- **Pairwise test (continuous):** Dunnett (STAT-07, default), Williams' step-down (STAT-14), Bonferroni (via STAT-13 raw Welch p-values)
+- **Pairwise test (incidence):** Boschloo's exact (STAT-03, default), Fisher's exact (STAT-03 override) — override via `method="fisher"` parameter; not yet wired to settings UI
 - **Trend test:** Jonckheere-Terpstra (STAT-04, default), Williams' trend (STAT-14b)
 - **Effect size:** Hedges' g (STAT-12, default), Cohen's d (STAT-12b), Glass's Δ (STAT-12c)
 - **Organ weight metric:** Recommended auto-selection (METH-03a, default), absolute, ratio-to-BW, ratio-to-brain
@@ -510,7 +520,7 @@ Tie-breaking: latest day first, then males (males typically show larger absolute
 
 **Parameters:** `incidence = affected / total` per (dose_level, sex). Affected = unique USUBJID count with finding. Total from pre-computed `n_per_group`. Returns 0 if total = 0. Precision: 4 decimals.
 
-**Why this method:** Standard incidence calculation. Necessary for Fisher's exact (STAT-03) and Cochran-Armitage (STAT-05) inputs. Group size normalization handles unequal arms. Note: TK satellite subjects are excluded before incidence calculation (METH-08a), so `n_per_group` reflects main study animals only.
+**Why this method:** Standard incidence calculation. Necessary for Boschloo's/Fisher's exact (STAT-03) and Cochran-Armitage (STAT-05) inputs. Group size normalization handles unequal arms. Note: TK satellite subjects are excluded before incidence calculation (METH-08a), so `n_per_group` reflects main study animals only.
 
 **Alternatives considered:** None — this is the universal definition of incidence.
 
