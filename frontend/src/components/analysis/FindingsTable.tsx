@@ -21,6 +21,8 @@ import {
   formatDoseShortLabel,
   getPValueHex,
   getNeutralHeatColor,
+  isExactTestSuppressed,
+  EXACT_TEST_SUPPRESSED_TITLE,
 } from "@/lib/severity-colors";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { effectSizeLabel } from "@/lib/domain-types";
@@ -721,6 +723,10 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
       col.accessor("min_p_adj", {
         header: () => <span title="Minimum adjusted pairwise p-value across dose groups">Pairwise p</span>,
         cell: (info) => {
+          const f = info.row.original;
+          if (isExactTestSuppressed(f.data_type, f.group_stats)) {
+            return <span className="font-mono text-muted-foreground/40 cursor-help" title={EXACT_TEST_SUPPRESSED_TITLE}>N/I</span>;
+          }
           const v = info.getValue();
           const hex = getPValueHex(v);
           return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
@@ -980,6 +986,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          if (isExactTestSuppressed(r.data_type, r.original.group_stats)) {
+            return <span className="font-mono text-muted-foreground/40 cursor-help" title={EXACT_TEST_SUPPRESSED_TITLE}>N/I</span>;
+          }
           const v = info.getValue();
           const hex = getPValueHex(v);
           return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;

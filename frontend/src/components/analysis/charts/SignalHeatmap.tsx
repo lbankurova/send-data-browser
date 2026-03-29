@@ -4,8 +4,11 @@ import {
   getSignalScoreHeatmapColor,
   getSignificanceStars,
   formatDoseShortLabel,
+  EXACT_TEST_SUPPRESSED_TITLE,
 } from "@/lib/severity-colors";
 import { DoseHeader } from "@/components/ui/DoseLabel";
+
+const INCIDENCE_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
 
 interface Props {
   data: SignalSummaryRow[];
@@ -100,7 +103,8 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
               const key = `${ep}__${dl.level}`;
               const cell = cellMap.get(key);
               const score = cell?.signal_score ?? 0;
-              const stars = cell ? getSignificanceStars(cell.p_value) : "";
+              const suppressed = cell != null && INCIDENCE_DOMAINS.has(cell.domain) && cell.n <= 2;
+              const stars = cell && !suppressed ? getSignificanceStars(cell.p_value) : "";
               const isSelected =
                 selection &&
                 selection.endpoint_label === ep &&
@@ -118,7 +122,7 @@ export function SignalHeatmap({ data, selection, onSelect }: Props) {
                       : "1px solid rgba(0,0,0,0.05)",
                     outlineOffset: isSelected ? "-2px" : "0",
                   }}
-                  title={`${ep} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}`}
+                  title={suppressed ? `${ep} @ ${dl.label}: ${EXACT_TEST_SUPPRESSED_TITLE}` : `${ep} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}`}
                   onClick={() => {
                     if (!cell) return;
                     if (isSelected) {

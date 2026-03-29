@@ -101,6 +101,28 @@ export function formatPValue(p: number | null | undefined): string {
   return p.toFixed(2);
 }
 
+/** Minimum treated-group N for an incidence finding. Returns Infinity if no treated groups. */
+export function minTreatedN(groupStats: { dose_level: number; n: number }[]): number {
+  let min = Infinity;
+  for (const gs of groupStats) {
+    if (gs.dose_level > 0 && gs.n < min) min = gs.n;
+  }
+  return min;
+}
+
+/** True when an incidence exact test p-value is non-interpretable due to tiny N.
+ *  At N ≤ 2 per group, minimum achievable p ≈ 0.17 regardless of method. */
+export function isExactTestSuppressed(
+  dataType: string,
+  groupStats: { dose_level: number; n: number }[],
+): boolean {
+  return dataType === "incidence" && minTreatedN(groupStats) <= 2;
+}
+
+/** Tooltip text for suppressed exact test p-values. */
+export const EXACT_TEST_SUPPRESSED_TITLE =
+  "Exact test non-interpretable at N \u2264 2 \u2014 minimum achievable p \u2248 0.17 regardless of method";
+
 export function formatEffectSize(d: number | null | undefined): string {
   if (d == null) return "—";
   return d.toFixed(2);

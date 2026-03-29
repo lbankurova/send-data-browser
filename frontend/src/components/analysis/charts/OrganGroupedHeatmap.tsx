@@ -7,8 +7,11 @@ import {
   getNeutralHeatColor,
   getSignificanceStars,
   formatDoseShortLabel,
+  EXACT_TEST_SUPPRESSED_TITLE,
 } from "@/lib/severity-colors";
 import { DoseHeader } from "@/components/ui/DoseLabel";
+
+const INCIDENCE_DOMAINS = new Set(["MI", "MA", "CL", "TF", "DS"]);
 import type {
   SignalSummaryRow,
   SignalSelection,
@@ -359,7 +362,8 @@ export function OrganGroupedHeatmap({
                       {doseLabels.map((dl) => {
                         const cell = ep.cells.get(dl.level);
                         const score = cell?.signal_score ?? 0;
-                        const stars = cell
+                        const suppressed = cell != null && INCIDENCE_DOMAINS.has(cell.domain) && cell.n <= 2;
+                        const stars = cell && !suppressed
                           ? getSignificanceStars(cell.p_value)
                           : "";
                         const isCellSelected =
@@ -378,7 +382,7 @@ export function OrganGroupedHeatmap({
                                 : "1px solid rgba(0,0,0,0.05)",
                               outlineOffset: isCellSelected ? "-2px" : "0",
                             }}
-                            title={cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` ${!CONTINUOUS_DOMAINS.has(cell.domain) ? "avg sev" : `|${effectSizeSymbol}|`}=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
+                            title={suppressed ? `${ep.label} @ ${dl.label}: ${EXACT_TEST_SUPPRESSED_TITLE}` : cell ? `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}${stars ? ` (${stars})` : ""}${cell.direction && cell.direction !== "none" ? ` ${cell.direction === "up" ? "↑" : "↓"}` : ""}${cell.effect_size != null ? ` ${!CONTINUOUS_DOMAINS.has(cell.domain) ? "avg sev" : `|${effectSizeSymbol}|`}=${Math.abs(cell.effect_size).toFixed(2)}` : ""}${cell.trend_p != null ? ` trend_p=${cell.trend_p < 0.0001 ? "<0.0001" : cell.trend_p.toFixed(3)}` : ""}${cell.dose_response_pattern ? ` (${cell.dose_response_pattern})` : ""}` : `${ep.label} @ ${dl.label}: score=${score.toFixed(3)}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!cell) return;

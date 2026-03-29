@@ -2,7 +2,7 @@ import type { FindingContext, UnifiedFinding } from "@/types/analysis";
 import type { FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import type { SexEndpointSummary } from "@/lib/derive-summaries";
-import { formatPValue } from "@/lib/severity-colors";
+import { formatPValue, isExactTestSuppressed, EXACT_TEST_SUPPRESSED_TITLE } from "@/lib/severity-colors";
 import {
   resolveCanonical,
   findClinicalMatchForEndpoint,
@@ -42,10 +42,13 @@ function buildDedupedBullets(
   const isContinuous = statistics?.data_type === "continuous";
 
   // 1. Significance comparison
-  if (statistics?.rows && statistics.rows.length >= 2) {
+  const suppressed = isExactTestSuppressed(finding.data_type, finding.group_stats);
+  if (suppressed) {
+    bullets.push({ text: EXACT_TEST_SUPPRESSED_TITLE, important: false });
+  } else if (statistics?.rows && statistics.rows.length >= 2) {
     const sigDoses: string[] = [];
     const nonSigDoses: string[] = [];
-    const testName = isContinuous ? "Dunnett\u2019s" : "Fisher\u2019s exact";
+    const testName = isContinuous ? "Dunnett\u2019s" : "Boschloo\u2019s exact";
 
     for (let i = 1; i < statistics.rows.length; i++) {
       const row = statistics.rows[i];
