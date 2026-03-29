@@ -1,0 +1,107 @@
+{
+  "profile_id": "anti_vegf_mab",
+  "display_name": "Anti-VEGF mAb (bevacizumab class)",
+  "modality": "monoclonal_antibody",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "Gordon et al., 2001, Cancer Research; Kramer et al., 2007, Wiley; Mourad et al., PMC5785435; Bevacizumab SmPC; Safety meta-analysis PMC3227908; PF-06439535 biosimilar study, Regulatory Toxicology and Pharmacology, 2018",
+  "description": "Expected findings for anti-VEGF and anti-VEGFR monoclonal antibodies (bevacizumab class). VEGF-A is essential for vascular maintenance, glomerular integrity, and wound healing. Cynomolgus monkey VEGF is 99% homologous to human VEGF. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "LB_proteinuria_up",
+      "domain": "LB",
+      "test_codes": ["UPROTEIN", "UPRO", "UPCR"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Proteinuria (glomerular endothelial permeability from VEGF blockade)",
+      "typical_magnitude": "Grade 1-2 (trace to 1+ dipstick)",
+      "severity_threshold": "Grade 3 (nephrotic, >3.5 g/24h) = adverse. Renal insufficiency = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "VEGF regulates glomerular endothelial permeability (podocyte fenestration). Dose-dependent increase (22-38% with bevacizumab). (Kramer et al., 2007, Wiley; Bevacizumab SmPC)"
+    },
+    {
+      "key": "MA_hemorrhage",
+      "domain": "MA",
+      "organs": ["NASAL CAVITY", "SKIN", "GINGIVA"],
+      "findings": ["HEMORRHAGE", "PETECHIAE", "EPISTAXIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Petechiae / mild hemorrhage (vascular integrity disruption)",
+      "severity_threshold": "Major hemorrhage (GI, pulmonary, intracranial) = adverse. Fatal hemorrhage = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "VEGF maintains vascular integrity. Blockade disrupts this producing capillary fragility, petechiae, and epistaxis. (Sandler et al., 2006; Bevacizumab SmPC)"
+    },
+    {
+      "key": "MI_hemorrhage",
+      "domain": "MI",
+      "organs": ["NASAL CAVITY", "SKIN", "GINGIVA", "LUNG"],
+      "findings": ["HEMORRHAGE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Microscopic hemorrhage (vascular fragility)",
+      "severity_threshold": "Major organ hemorrhage (pulmonary, intracranial) = adverse. Fatal hemorrhage = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Microscopic correlate of vascular integrity disruption from VEGF blockade. (Bevacizumab SmPC)"
+    },
+    {
+      "key": "MI_physis_dysplasia",
+      "domain": "MI",
+      "organs": ["GROWTH PLATE", "EPIPHYSIS", "FEMUR", "TIBIA", "STERNUM"],
+      "findings": ["DYSPLASIA", "PHYSEAL DYSPLASIA", "GROWTH PLATE ABNORMALITY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Physeal dysplasia in juvenile animals (impaired endochondral ossification)",
+      "severity_threshold": "Progressive epiphyseal changes = adverse. Severe skeletal dysplasia = never reclassify.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "species_note": "Critical for pediatric risk assessment. Documented in juvenile bevacizumab studies.",
+      "rationale": "VEGF is essential for endochondral ossification and bone remodeling. Anti-VEGF produces physis dysplasia in growing animals. (Gordon et al., 2001, Cancer Research)"
+    },
+    {
+      "key": "OM_ovarian_weight_down",
+      "domain": "OM",
+      "test_codes": ["OVARWT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Ovarian weight reduction (impaired follicular angiogenesis)",
+      "severity_threshold": "Complete follicular atresia = adverse",
+      "species_applicability": ["MONKEY"],
+      "species_note": "Female animals only. VEGF required for follicular development and corpus luteum formation.",
+      "rationale": "VEGF is required for follicular angiogenesis and corpus luteum formation. Anti-VEGF disrupts reproductive organ angiogenesis. (Bevacizumab reproductive toxicology)"
+    },
+    {
+      "key": "OM_adrenal_weight_change",
+      "domain": "OM",
+      "test_codes": ["ADRNLWT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Adrenal weight/cortex changes (reduced cortical vascularity)",
+      "severity_threshold": "Adrenocortical necrosis = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Adrenal cortex is highly vascularized; VEGF blockade may reduce cortical vascularity. (Bevacizumab nonclinical studies)"
+    },
+    {
+      "key": "MI_glomerular_changes",
+      "domain": "MI",
+      "organs": ["KIDNEY"],
+      "findings": ["GLOMERULONEPHRITIS", "GLOMERULOPATHY", "THROMBOTIC MICROANGIOPATHY", "TMA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Kidney glomerular changes (dose-dependent VEGF deprivation)",
+      "severity_threshold": "TMA or progressive glomerulopathy = adverse. Frank renal failure = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Severe VEGF inhibition produces TMA-like changes in the kidney; reflects dose-dependent adversity continuum. (Bevacizumab SmPC)"
+    },
+    {
+      "key": "MA_wound_healing",
+      "domain": "MA",
+      "organs": ["INCISION SITE", "SURGICAL SITE", "SKIN"],
+      "findings": ["DELAYED WOUND HEALING", "WOUND DEHISCENCE", "GRANULATION TISSUE ABSENCE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Wound healing impairment at surgical/incision sites",
+      "severity_threshold": "Non-healing wound with infection or wound dehiscence = adverse",
+      "species_applicability": ["MONKEY", "RABBIT"],
+      "rationale": "VEGF is essential for granulation tissue neovascularization in wound repair. Anti-VEGF should be withheld 28 days pre/post surgery. (Bevacizumab SmPC)"
+    }
+  ]
+}

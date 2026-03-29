@@ -1,0 +1,120 @@
+{
+  "profile_id": "anti_il6_mab",
+  "display_name": "Anti-IL-6/IL-6R mAb (tocilizumab class)",
+  "modality": "monoclonal_antibody",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "ICH S6(R1), 2012; Nishimoto & Kishimoto, 2006; Tanaka et al., 2012 PMC3306224; Rossi et al., 2015, AACR; Tocilizumab SmPC",
+  "description": "Expected findings for anti-IL-6 and anti-IL-6R monoclonal antibodies (tocilizumab, sarilumab, siltuximab). IL-6 blockade produces a characteristic signature: acute phase protein suppression, mild neutropenia, lipid changes, and albumin normalization. Cynomolgus monkey is the primary pharmacologically relevant species. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "LB_CRP_down",
+      "domain": "LB",
+      "test_codes": ["CRP", "CRPTN"],
+      "direction": "down",
+      "layer": "target",
+      "description": "CRP suppression (pharmacodynamic endpoint of IL-6R blockade)",
+      "typical_magnitude": "Near-complete suppression to <1 mg/L",
+      "severity_threshold": "N/A — complete suppression is the expected PD endpoint. Adversity relates only to downstream infection risk, not CRP level itself.",
+      "species_applicability": ["MONKEY", "RAT", "RABBIT"],
+      "species_note": "Cynomolgus is primary species. Rat may cross-react with surrogate compound. Rabbit cross-reactivity generally absent for human IL-6R-specific mAbs.",
+      "rationale": "IL-6 is the dominant regulator of hepatic CRP production. Suppression is the PD marker of effective IL-6R blockade. (Nishimoto & Kishimoto, 2006; Tanaka et al., 2012 PMC3306224)"
+    },
+    {
+      "key": "LB_SAA_down",
+      "domain": "LB",
+      "test_codes": ["SAA"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Serum amyloid A reduction (acute phase protein suppression)",
+      "typical_magnitude": "Rapid suppression within 2 days; mirrors CRP kinetics",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY"],
+      "rationale": "SAA is an IL-6-driven acute phase protein; decreases alongside CRP with anti-IL-6 therapy. (Rossi et al., 2015, AACR)"
+    },
+    {
+      "key": "LB_ALB_up",
+      "domain": "LB",
+      "test_codes": ["ALB", "ALBUM"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Albumin increase (reversal of IL-6-driven suppression)",
+      "typical_magnitude": "10-20% increase from baseline over 20 days",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-6 suppresses albumin synthesis; anti-IL-6 reverses this. Serum albumin increases as acute phase response resolves. (Rossi et al., 2015, AACR)"
+    },
+    {
+      "key": "LB_NEUT_down",
+      "domain": "LB",
+      "test_codes": ["NEUT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Neutropenia (mild, expected pharmacology of IL-6 blockade)",
+      "typical_magnitude": "Mild-moderate; typically Grade 1-2 (ANC 1.0-1.5 x 10^9/L)",
+      "severity_threshold": "Grade 3 (ANC <1.0 x 10^9/L) = adverse threshold. Grade 4 (ANC <0.5 x 10^9/L) = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-6 promotes granulopoiesis. Blockade produces pharmacologically expected mild neutropenia; severe neutropenia increases infection risk = adverse. (Tocilizumab SmPC; ICH S6(R1))"
+    },
+    {
+      "key": "LB_CHOL_up",
+      "domain": "LB",
+      "test_codes": ["CHOL"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Total cholesterol increase (reversal of IL-6-driven lipoprotein catabolism)",
+      "typical_magnitude": "10-30% increase from baseline",
+      "severity_threshold": ">2x ULN sustained or Grade 3 dyslipidemia = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-6 induces VLDL receptor expression increasing LDL-C consumption. Anti-IL-6 reverses this, raising total cholesterol. (Nishimoto et al., PMC3306224)"
+    },
+    {
+      "key": "LB_TRIG_up",
+      "domain": "LB",
+      "test_codes": ["TRIG"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Triglycerides increase",
+      "typical_magnitude": "10-30% increase from baseline",
+      "severity_threshold": ">2x ULN sustained = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Same mechanism as cholesterol increase — reversal of IL-6-driven lipoprotein metabolism. (Nishimoto et al., PMC3306224)"
+    },
+    {
+      "key": "LB_ALT_up",
+      "domain": "LB",
+      "test_codes": ["ALT", "ALAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "ALT mild elevation (immune modulation context)",
+      "typical_magnitude": "Transient, mild (<3x ULN)",
+      "severity_threshold": ">3x ULN = adverse. >5x ULN = never reclassify (Hy's Law range).",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Noted as expected pharmacology-adjacent effect in clinical trials; mechanism unclear but seen in context of immune modulation. (Tocilizumab SmPC)"
+    },
+    {
+      "key": "LB_AST_up",
+      "domain": "LB",
+      "test_codes": ["AST", "ASAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "AST mild elevation",
+      "typical_magnitude": "Transient, mild (<3x ULN)",
+      "severity_threshold": ">3x ULN = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Parallels ALT pattern in anti-IL-6 context. (Tocilizumab SmPC)"
+    },
+    {
+      "key": "MI_spleen_lymphoid_hyperplasia",
+      "domain": "MI",
+      "organs": ["SPLEEN", "LYMPH NODE", "MESENTERIC LYMPH NODE"],
+      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA", "GERMINAL CENTER HYPERPLASIA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Lymphoid hyperplasia (spleen, lymph nodes) from cytokine modulation",
+      "severity_threshold": "Lymphoma-like transformation or >Grade 3 severity = never reclassify",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Expected immune organ response to cytokine modulation. (General toxicological pathology)"
+    }
+  ]
+}
