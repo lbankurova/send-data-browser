@@ -1,0 +1,72 @@
+{
+  "profile_id": "general_mab",
+  "display_name": "General monoclonal antibody (non-ICI)",
+  "modality": "monoclonal_antibody",
+  "source": "ICH S6(R1), 2012; Hey et al., 2021, Int J Toxicol; Pandher et al., 2012, Toxicol Pathol",
+  "description": "Fc-mediated class effects expected for all human-sequence or humanized mAbs and Fc-fusion proteins, regardless of target. These findings arise from Fc biology (FcγR interactions, complement activation, FcRn recycling), immunogenicity (ADA formation), and local reactions to protein administration. This is the base layer for all mAb overlay profiles.",
+  "cross_reactivity_required": false,
+  "expected_findings": [
+    {
+      "key": "MA_injection_site_inflammation",
+      "domain": "MA",
+      "organs": ["INJECTION SITE"],
+      "findings": ["INFLAMMATION", "ERYTHEMA", "EDEMA", "SWELLING"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Injection site inflammation (SC/IM dosing)",
+      "severity_threshold": "Necrosis or non-healing ulceration = never reclassify as expected",
+      "species_applicability": ["MONKEY", "RAT", "RABBIT", "DOG"],
+      "rationale": "Local protein antigen induces mild inflammation at SC/IM administration site; universal class effect for biologics. (ICH S6(R1); Pandher et al., 2012, Toxicol Pathol)"
+    },
+    {
+      "key": "MI_injection_site_ln_hyperplasia",
+      "domain": "MI",
+      "organs": ["LYMPH NODE", "AXILLARY LYMPH NODE", "INGUINAL LYMPH NODE", "POPLITEAL LYMPH NODE", "ILIAC LYMPH NODE"],
+      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA", "GERMINAL CENTER HYPERPLASIA", "GERMINAL CENTER CELLULARITY"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Lymphoid hyperplasia in injection site draining nodes",
+      "severity_threshold": "Lymphoma-like transformation = never reclassify",
+      "species_applicability": ["MONKEY", "RAT", "RABBIT", "DOG"],
+      "rationale": "Immune response to protein antigen drains to regional lymph nodes; expected germinal center activation from repeated dosing. (ICH S6(R1); general toxicological pathology)"
+    },
+    {
+      "key": "OM_spleen_weight_up",
+      "domain": "OM",
+      "test_codes": ["SPLNWT"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Spleen weight increase (non-specific immune activation)",
+      "severity_threshold": "Splenomegaly >3x reference weight or spontaneous rupture = never reclassify",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Non-specific immune organ activation from repeated protein antigen administration; Fc-mediated FcγR stimulation. (ICH S6(R1); general toxicological precedent)"
+    },
+    {
+      "key": "MI_spleen_hyperplasia",
+      "domain": "MI",
+      "organs": ["SPLEEN"],
+      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA", "GERMINAL CENTER CELLULARITY", "GERMINAL CENTER HYPERPLASIA"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Splenic germinal center expansion from repeated antigen exposure",
+      "severity_threshold": {
+        "type": "grade",
+        "max_non_adverse": 3,
+        "condition": null
+      },
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Expected immune organ response to repeated protein administration; germinal center expansion reflects active humoral immunity. (ICH S6(R1))"
+    },
+    {
+      "key": "LB_GLOB_up",
+      "domain": "LB",
+      "test_codes": ["GLOBUL", "GLOB"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Globulin increase (immune stimulation from protein antigen)",
+      "severity_threshold": null,
+      "species_applicability": null,
+      "rationale": "Expected humoral immune response to repeated protein antigen exposure; polyclonal immunoglobulin production driven by Fc-mediated immune activation. (ICH S6(R1); Hey et al., 2021, Int J Toxicol)"
+    }
+  ]
+}

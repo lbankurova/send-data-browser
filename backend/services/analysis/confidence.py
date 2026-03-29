@@ -586,9 +586,22 @@ def _score_d9_pharmacological(
         if _matches_expected_finding(f, ee_key, ee_config):
             compound_class = expected_profile.get("compound_class",
                                                    expected_profile.get("profile_id", "unknown"))
+            # Layer-aware rationale: distinguish Fc-mediated from on-target
+            layer = ee_config.get("layer") if isinstance(ee_config, dict) else None
+            if layer == "base":
+                layer_text = "Fc-mediated class effect"
+            elif layer == "target":
+                layer_text = "on-target pharmacological effect"
+            else:
+                layer_text = "pharmacological effect"
+            # Cross-reactivity qualifier
+            xr_filter = expected_profile.get("_cross_reactivity_filter")
+            xr_note = ""
+            if xr_filter == "partial_qualifier":
+                xr_note = " (partial cross-reactivity — findings may be attenuated)"
             return _dim("D9", "Pharmacological expectation", -1,
-                         f"Matches expected pharmacological effect '{ee_key}' "
-                         f"from {compound_class} profile")
+                         f"Matches expected {layer_text} '{ee_key}' "
+                         f"from {compound_class} profile{xr_note}")
 
     return _dim("D9", "Pharmacological expectation", 0,
                  "No match against expected-effect profile")

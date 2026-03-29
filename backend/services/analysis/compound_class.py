@@ -305,6 +305,8 @@ _ANTIBODY_KEYWORDS = {
     "immunoglobulin", "antibody", "monoclonal", "mab", "bispecific",
     "anti-pd", "anti-ctla", "anti-vegf", "anti-her2", "anti-tnf",
     "checkpoint inhibitor", "immune checkpoint",
+    "anti-il", "tocilizumab", "adalimumab", "bevacizumab",
+    "t-cell engager", "cd3",
 }
 
 _VACCINE_KEYWORDS = {
@@ -322,6 +324,73 @@ _OLIGONUCLEOTIDE_KEYWORDS = {
     "aso", "gapmer", "phosphorothioate", "aptamer",
 }
 
+# ── mAb sub-classification keyword sets (ordered by specificity) ──────────
+
+_ICI_KEYWORDS = {
+    "checkpoint", "anti-pd", "anti-ctla", "pd-1", "pd-l1", "ctla-4",
+    "immune checkpoint", "checkpoint inhibitor",
+    "nivolumab", "pembrolizumab", "ipilimumab", "atezolizumab",
+    "durvalumab", "avelumab", "cemiplimab", "tremelimumab",
+}
+
+_ANTI_VEGF_KEYWORDS = {
+    "anti-vegf", "anti-vegfr", "bevacizumab", "ranibizumab",
+    "vegf-trap", "vegf trap", "aflibercept", "ramucirumab",
+}
+
+_BISPECIFIC_TCE_KEYWORDS = {
+    "bispecific", "t-cell engager", "tce", "bite",
+    "cd3x", "cd3 x", "dual-targeting",
+    "blinatumomab", "mosunetuzumab", "glofitamab",
+    "teclistamab", "epcoritamab",
+}
+
+_ANTI_IL6_KEYWORDS = {
+    "anti-il-6", "anti-il6", "anti-il-6r", "anti-il6r",
+    "tocilizumab", "sarilumab", "siltuximab",
+}
+
+_ANTI_TNF_KEYWORDS = {
+    "anti-tnf", "anti-tnfa", "anti-tnf-alpha",
+    "adalimumab", "infliximab", "golimumab", "certolizumab",
+}
+
+_ANTI_IL17_KEYWORDS = {
+    "anti-il-17", "anti-il17",
+    "secukinumab", "ixekizumab", "brodalumab",
+}
+
+_ANTI_IL4_IL13_KEYWORDS = {
+    "anti-il-4", "anti-il4", "anti-il-13", "anti-il13",
+    "anti-il-4/13", "anti-il4/il13",
+    "dupilumab", "tralokinumab",
+}
+
+_ANTI_IL1_KEYWORDS = {
+    "anti-il-1", "anti-il1",
+    "canakinumab", "anakinra", "rilonacept",
+}
+
+_FC_FUSION_KEYWORDS = {
+    "fc-fusion", "fc fusion", "receptor-fc", "receptor fc",
+    "abatacept", "ctla4-ig", "ctla-4-ig",
+}
+
+_RECOMBINANT_EPO_KEYWORDS = {
+    "erythropoietin", "epoetin", "darbepoetin",
+    " epo", "epo ", "(epo)",  # word-boundary variants to avoid "repository" false match
+}
+
+_RECOMBINANT_GCSF_KEYWORDS = {
+    "filgrastim", "pegfilgrastim", "g-csf",
+    "granulocyte colony-stimulating", "granulocyte colony stimulating",
+}
+
+_RECOMBINANT_IFN_KEYWORDS = {
+    "interferon", "ifn-alpha", "ifn-beta", "ifn-gamma",
+    "peginterferon",
+}
+
 
 def _contains_any(text: str, keywords: set[str]) -> bool:
     """Check if text contains any keyword (case-insensitive)."""
@@ -329,19 +398,108 @@ def _contains_any(text: str, keywords: set[str]) -> bool:
     return any(kw in text_lower for kw in keywords)
 
 
+def _classify_antibody(text: str) -> dict:
+    """Sub-classify within the antibody/mAb branch.
+
+    13-step cascade ordered by specificity (first match wins).
+    Profiles that don't exist yet still route correctly — the SME
+    will see the suggestion and can override.
+    """
+    # 1. ICI (checkpoint inhibitors)
+    if _contains_any(text, _ICI_KEYWORDS):
+        return {"compound_class": "checkpoint_inhibitor",
+                "suggested_profiles": ["checkpoint_inhibitor"]}
+
+    # 2. Anti-VEGF
+    if _contains_any(text, _ANTI_VEGF_KEYWORDS):
+        return {"compound_class": "anti_vegf_mab",
+                "suggested_profiles": ["anti_vegf_mab"]}
+
+    # 3. Bispecific TCE
+    if _contains_any(text, _BISPECIFIC_TCE_KEYWORDS):
+        return {"compound_class": "bispecific_tce",
+                "suggested_profiles": ["bispecific_tce"]}
+
+    # 4. Anti-IL-6
+    if _contains_any(text, _ANTI_IL6_KEYWORDS):
+        return {"compound_class": "anti_il6_mab",
+                "suggested_profiles": ["anti_il6_mab"]}
+
+    # 5. Anti-TNF
+    if _contains_any(text, _ANTI_TNF_KEYWORDS):
+        return {"compound_class": "anti_tnf_mab",
+                "suggested_profiles": ["anti_tnf_mab"]}
+
+    # 6. Anti-IL-17
+    if _contains_any(text, _ANTI_IL17_KEYWORDS):
+        return {"compound_class": "anti_il17_mab",
+                "suggested_profiles": ["anti_il17_mab"]}
+
+    # 7. Anti-IL-4/13
+    if _contains_any(text, _ANTI_IL4_IL13_KEYWORDS):
+        return {"compound_class": "anti_il4_il13_mab",
+                "suggested_profiles": ["anti_il4_il13_mab"]}
+
+    # 8. Anti-IL-1
+    if _contains_any(text, _ANTI_IL1_KEYWORDS):
+        return {"compound_class": "anti_il1_mab",
+                "suggested_profiles": ["anti_il1_mab"]}
+
+    # 9. Fc-fusion
+    if _contains_any(text, _FC_FUSION_KEYWORDS):
+        return {"compound_class": "fc_fusion_ctla4",
+                "suggested_profiles": ["fc_fusion_ctla4"]}
+
+    # 10. Recombinant EPO
+    if _contains_any(text, _RECOMBINANT_EPO_KEYWORDS):
+        return {"compound_class": "recombinant_epo",
+                "suggested_profiles": ["recombinant_epo"]}
+
+    # 11. Recombinant G-CSF
+    if _contains_any(text, _RECOMBINANT_GCSF_KEYWORDS):
+        return {"compound_class": "recombinant_gcsf",
+                "suggested_profiles": ["recombinant_gcsf"]}
+
+    # 12. Recombinant IFN
+    if _contains_any(text, _RECOMBINANT_IFN_KEYWORDS):
+        return {"compound_class": "recombinant_ifn",
+                "suggested_profiles": ["recombinant_ifn"]}
+
+    # 13. Generic mAb — no sub-class match → general_mab base profile
+    return {"compound_class": "monoclonal_antibody",
+            "suggested_profiles": ["general_mab"]}
+
+
 # Non-informative PCLASS values that should be treated as absent
 _PCLASS_EMPTY = {"", "not provided", "not available", "none", "unknown", "na", "n/a"}
 
 
 def _classify_text(text: str) -> dict | None:
-    """Try to classify compound modality from a free-text string.
+    """Classify compound modality from a free-text string.
+
+    Cascade ordering (first match wins, most specific first):
+      1. Recombinant proteins (EPO, G-CSF, IFN) — before antibody (not mAbs)
+      2. Fc-fusion proteins — before generic antibody
+      3. Antibody/mAb → sub-classification via _classify_antibody()
+      4. Vaccine
+      5. Gene therapy (AAV)
+      6. Oligonucleotide
 
     Returns a partial result dict (compound_class, suggested_profiles) or None.
     """
+    # Recombinant proteins — check before antibody (these are not mAbs)
+    if _contains_any(text, _RECOMBINANT_EPO_KEYWORDS):
+        return {"compound_class": "recombinant_epo", "suggested_profiles": ["recombinant_epo"]}
+    if _contains_any(text, _RECOMBINANT_GCSF_KEYWORDS):
+        return {"compound_class": "recombinant_gcsf", "suggested_profiles": ["recombinant_gcsf"]}
+    if _contains_any(text, _RECOMBINANT_IFN_KEYWORDS):
+        return {"compound_class": "recombinant_ifn", "suggested_profiles": ["recombinant_ifn"]}
+    # Fc-fusion — check before generic antibody
+    if _contains_any(text, _FC_FUSION_KEYWORDS):
+        return {"compound_class": "fc_fusion_ctla4", "suggested_profiles": ["fc_fusion_ctla4"]}
+    # Antibody/mAb — sub-classification cascade
     if _contains_any(text, _ANTIBODY_KEYWORDS):
-        if _contains_any(text, {"checkpoint", "anti-pd", "anti-ctla", "pd-1", "pd-l1", "ctla-4"}):
-            return {"compound_class": "checkpoint_inhibitor", "suggested_profiles": ["checkpoint_inhibitor"]}
-        return {"compound_class": "monoclonal_antibody", "suggested_profiles": ["checkpoint_inhibitor"]}
+        return _classify_antibody(text)
     if _contains_any(text, _VACCINE_KEYWORDS):
         return {"compound_class": "vaccine", "suggested_profiles": ["vaccine_adjuvanted", "vaccine_non_adjuvanted"]}
     if _contains_any(text, _GENE_THERAPY_KEYWORDS):
@@ -423,13 +581,14 @@ def infer_compound_class(
         }
 
     # Tier 6: ROUTE = SC/IM + species = NHP -> biologic unspecified
+    # Suggest general_mab as starting point for SME override
     if route in {"SUBCUTANEOUS", "INTRAMUSCULAR", "SC", "IM"}:
         if any(nhp in species_val for nhp in ["MONKEY", "CYNOMOLGUS", "MACAQUE", "NHP", "PRIMATE"]):
             return {
                 "compound_class": "biologic_unspecified",
                 "confidence": "LOW",
                 "inference_method": "route_plus_nhp_species",
-                "suggested_profiles": [],
+                "suggested_profiles": ["general_mab"],
             }
 
     # Tier 7: INTTYPE = BIOLOGICAL
@@ -438,7 +597,7 @@ def infer_compound_class(
             "compound_class": "biologic_unspecified",
             "confidence": "LOW",
             "inference_method": "INTTYPE_biological",
-            "suggested_profiles": [],
+            "suggested_profiles": ["general_mab"],
         }
 
     # Default: small molecule (no expected-effect profile)
