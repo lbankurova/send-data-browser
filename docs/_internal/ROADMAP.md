@@ -48,6 +48,13 @@ The core scientific computation layer. Most items here are unique to SENDEX — 
 - **Source:** send-summarizer cross-reference
 - **What:** Ensure MI severity parsing handles "X OF 4" format (1-of-4 = 2, 2-of-4 = 3, 3-of-4 = 4, 4-of-4 = 5).
 
+### Epic: Design-Adapter Architecture (**done**)
+- **Source:** `incoming/design-adapter-architecture-plan.md` (RC-4 + RC-2), archived 2026-03-28
+- **What:** Refactored generator pipeline from monolithic parallel-between-group into adapter architecture. Design-specific adapters (parallel, crossover, escalation) produce a normalized findings contract consumed by the shared analysis core.
+- **Why:** Enables Study5 (Latin-square crossover, 6 dogs) and CJUGSEND00 (dose-escalation, 4 dogs) to produce findings using within-subject statistics. Previously these studies generated 0 usable findings.
+- **Result:** Study5 → 18 findings (QTc detected as tr_adverse, NOAEL=50 mg/kg). CJUGSEND00 → 7 findings. All parallel studies unaffected. Open gaps: GAP-131 through GAP-135 (RM ANOVA, carryover test, CL McNemar's, EGTPTNUM fallback, study_type_config routing).
+- **Impl:** 8 new files in `generator/adapters/`, 1 modified (`generate.py`), 0 changes to existing domain modules or shared core.
+
 ### Improvement: Cross-check BIOMARKER_MAP completeness
 - **Source:** send-summarizer organ-system TESTCD panels
 - **What:** Compare `send_knowledge.py` BIOMARKER_MAP against send-summarizer's reproductive (GNRH, LH, FSH, DHT, TESTOS...), endocrine, and hematopoietic panels.

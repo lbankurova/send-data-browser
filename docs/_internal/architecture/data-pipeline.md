@@ -65,6 +65,53 @@ fw.xpt --------+--> _compute_fw_findings(study, subjects) -+
 
 ---
 
+## Design Adapter Architecture
+
+The generator pipeline uses a **study design adapter** pattern to support both parallel (between-group) and crossover/escalation (within-animal) study designs. The adapter is selected automatically based on TX domain heuristics.
+
+### Routing
+
+`generate.py` calls `select_adapter(study)` which examines TX.TRTDOS for semicolon-delimited dose sequences (e.g., `"0;20;50;150"` indicates a crossover/escalation design). If found, `CrossoverDesignAdapter` is used; otherwise `ParallelDesignAdapter`.
+
+### Adapter Interface
+
+```
+StudyDesignAdapter (ABC)
+├── build_dose_context(study) → DoseContext
+├── compute_findings(study, dose_context, ...) → (findings[], dg_data)
+└── get_design_type() → str
+```
+
+### ParallelDesignAdapter
+
+Thin wrapper around existing `build_dose_groups()` and `compute_all_findings()`. Zero logic changes — all existing between-group statistics (Dunnett's, JT, ANOVA) are preserved.
+
+### CrossoverDesignAdapter
+
+Processes EG, VS, CL domains using within-subject methods:
+
+1. **Treatment periods** (`treatment_periods.py`): Parses semicolon TRTDOS per SETCD, maps subjects to periods via SE domain.
+2. **Per-occasion baselines** (`per_occasion_baseline.py`): Computes predose baselines per subject × period × endpoint.
+3. **Within-subject statistics** (`within_subject_stats.py`): Paired t-test, Page's L trend test, Cohen's d_z, Holm adjustment.
+4. **Domain processing** (`crossover.py`): Produces FindingRecord-compatible dicts with `group_stats[].mean` = mean change-from-baseline (averaged across subjects per dose level).
+
+The shared analysis core (classification, confidence, NOAEL, corroboration) consumes crossover findings identically to parallel findings — it reads `pairwise[].p_value_adj`, `trend_p`, `direction`, `max_effect_size` without knowing the source design.
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `generator/adapters/__init__.py` | `select_adapter()` — routes by semicolon TRTDOS heuristic |
+| `generator/adapters/base.py` | `StudyDesignAdapter` ABC, `DoseContext` dataclass |
+| `generator/adapters/parallel.py` | `ParallelDesignAdapter` — wraps existing pipeline |
+| `generator/adapters/crossover.py` | `CrossoverDesignAdapter` — within-subject analysis |
+| `generator/adapters/treatment_periods.py` | Period parsing from TX/SE domains |
+| `generator/adapters/per_occasion_baseline.py` | Predose baseline computation |
+| `generator/adapters/within_subject_stats.py` | Paired t-test, Page's trend, Cohen's d_z |
+| `services/analysis/finding_record.py` | FindingRecord contract (dataclass documentation) |
+
+---
+
 ## Contracts
 
 ### Input: XPT Files

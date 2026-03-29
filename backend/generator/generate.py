@@ -17,7 +17,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from services.study_discovery import discover_studies
-from generator.domain_stats import compute_all_findings
+from generator.adapters import select_adapter
 from generator.static_charts import generate_target_organ_bar_chart
 from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeline
 from services.analysis.analysis_settings import AnalysisSettings
@@ -107,14 +107,16 @@ def generate(study_id: str):
     def _tick(label: str):
         timings[label] = time.perf_counter()
 
-    # Phase 1a: Compute mortality summary (DS + DD domains) — must run before domain stats
-    # so early_death_subjects can feed into dual-pass statistics
+    # Select design adapter (parallel vs crossover/escalation)
+    adapter = select_adapter(study)
+    print(f"  Design adapter: {adapter.get_design_type()}")
+
+    # Phase 1a: Build dose context via adapter, then compute mortality
     _tick("1a_start")
     print("Phase 1a: Computing mortality summary...")
-    from services.analysis.dose_groups import build_dose_groups as _build_dg
-    _dg_data = _build_dg(study)
-    _subjects = _dg_data["subjects"]
-    _dose_groups = _dg_data["dose_groups"]
+    dose_context = adapter.build_dose_context(study)
+    _subjects = dose_context.subjects
+    _dose_groups = dose_context.dose_groups
     mortality = None
     early_death_subjects = None
     try:
@@ -133,11 +135,12 @@ def generate(study_id: str):
 
     _tick("1a_end")
 
-    # Phase 1b: Compute all findings with enriched stats (dual-pass for terminal domains)
+    # Phase 1b: Compute all findings via adapter
     _tick("1b_start")
     print("Phase 1b: Computing domain statistics...")
-    findings, dg_data = compute_all_findings(
-        study, early_death_subjects=early_death_subjects,
+    findings, dg_data = adapter.compute_findings(
+        study, dose_context,
+        early_death_subjects=early_death_subjects,
         last_dosing_day_override=last_dosing_day_override,
     )
     dose_groups = dg_data["dose_groups"]
