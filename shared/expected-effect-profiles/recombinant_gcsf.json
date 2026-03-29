@@ -1,0 +1,72 @@
+{
+  "profile_id": "recombinant_gcsf",
+  "display_name": "Recombinant G-CSF (filgrastim class)",
+  "modality": "recombinant_protein",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "ICH S6(R1); G-CSF prescribing information; ScienceDirect Topics (splenic rupture case reports)",
+  "description": "Expected findings for granulocyte colony-stimulating factor (filgrastim, pegfilgrastim). Primary pharmacology is neutrophil production and release from marrow. Rat, monkey, and dog are relevant species. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "LB_NEUT_up",
+      "domain": "LB",
+      "test_codes": ["NEUT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Neutrophilia (primary pharmacodynamic effect)",
+      "typical_magnitude": "3-10x baseline; dose-dependent",
+      "severity_threshold": "Extreme leukocytosis (WBC >100 x 10^9/L) or leukostasis = adverse. Splenic rupture = never reclassify.",
+      "species_applicability": ["RAT", "MONKEY", "DOG"],
+      "rationale": "Primary pharmacodynamic effect of G-CSF; stimulus for neutrophil production and release from marrow. (G-CSF prescribing information)"
+    },
+    {
+      "key": "LB_WBC_up",
+      "domain": "LB",
+      "test_codes": ["WBC"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Leukocytosis (total white blood cell increase)",
+      "typical_magnitude": "3-10x baseline",
+      "severity_threshold": ">100 x 10^9/L = adverse (leukostasis risk)",
+      "species_applicability": ["RAT", "MONKEY", "DOG"],
+      "rationale": "Reflects neutrophil-driven increase in total WBC."
+    },
+    {
+      "key": "MI_bm_granulocyte_hyperplasia",
+      "domain": "MI",
+      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
+      "findings": ["HYPERPLASIA", "GRANULOCYTIC HYPERPLASIA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Bone marrow granulocyte hyperplasia",
+      "severity_threshold": "Near-total granulocytic replacement of marrow = adverse",
+      "species_applicability": ["RAT", "MONKEY"],
+      "rationale": "Expected histological correlate of G-CSF pharmacology."
+    },
+    {
+      "key": "MI_spleen_emh",
+      "domain": "MI",
+      "organs": ["SPLEEN"],
+      "findings": ["HEMATOPOIESIS", "EXTRAMEDULLARY HEMATOPOIESIS", "EMH"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Splenic extramedullary hematopoiesis (granulocytic)",
+      "typical_magnitude": "2-4x reference spleen weight in rat",
+      "severity_threshold": "Spontaneous splenic rupture = never reclassify",
+      "species_applicability": ["RAT", "MONKEY"],
+      "rationale": "G-CSF mobilizes stem cells to spleen; granulocytic extramedullary hematopoiesis. Spontaneous splenic rupture documented as rare adverse event. (ScienceDirect Topics)"
+    },
+    {
+      "key": "OM_spleen_weight_up_gcsf",
+      "domain": "OM",
+      "test_codes": ["SPLNWT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Spleen weight increase (granulocytic EMH)",
+      "typical_magnitude": "Proportional to dose and duration",
+      "severity_threshold": ">5x reference weight = adverse",
+      "species_applicability": ["RAT"],
+      "rationale": "Granulocytic extramedullary hematopoiesis drives spleen weight increase."
+    }
+  ]
+}

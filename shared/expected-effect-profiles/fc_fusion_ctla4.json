@@ -1,0 +1,35 @@
+{
+  "profile_id": "fc_fusion_ctla4",
+  "display_name": "Fc-fusion protein (CTLA4-Ig, abatacept class)",
+  "modality": "fc_fusion",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "ICH S6(R1), 2012; Abatacept prescribing information",
+  "description": "Expected findings for CTLA4-Ig Fc-fusion proteins (abatacept). Blocks CD28-B7 co-stimulation, attenuating T-cell activation. For TNFR-Fc (etanercept), use anti_tnf_mab profile instead — pharmacologically equivalent to anti-TNF mAbs. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "MI_germinal_center_suppression",
+      "domain": "MI",
+      "organs": ["SPLEEN", "LYMPH NODE"],
+      "findings": ["HYPOPLASIA", "LYMPHOID HYPOPLASIA", "DECREASED GERMINAL CENTERS"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Germinal center suppression (CD28-B7 blockade impairs B-cell maturation)",
+      "severity_threshold": "Loss of humoral immune competence = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "CD28-B7 blockade impairs B-cell maturation and germinal center responses. (Abatacept prescribing information)"
+    },
+    {
+      "key": "LB_IGG_down",
+      "domain": "LB",
+      "test_codes": ["IGG", "IGM", "IGA"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Immunoglobulin levels decrease",
+      "typical_magnitude": "20-40% reduction from baseline",
+      "severity_threshold": "Hypogammaglobulinemia (<40% LLN) with infection susceptibility = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Secondary to germinal center suppression from CD28-B7 blockade."
+    }
+  ]
+}

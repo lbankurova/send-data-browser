@@ -1,0 +1,35 @@
+{
+  "profile_id": "anti_il17_mab",
+  "display_name": "Anti-IL-17 mAb (secukinumab class)",
+  "modality": "monoclonal_antibody",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "ICH S6(R1); Secukinumab prescribing information",
+  "description": "Expected findings for anti-IL-17 monoclonal antibodies (secukinumab, ixekizumab, brodalumab). IL-17 drives neutrophil recruitment and anti-fungal defense at mucosal barriers. Blockade produces modest immunomodulatory effects. Cynomolgus monkey is the typical species. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "LB_NEUT_down",
+      "domain": "LB",
+      "test_codes": ["NEUT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Neutrophil count reduction (mild)",
+      "typical_magnitude": "Mild; typically remains in normal range",
+      "severity_threshold": "Grade 3 neutropenia = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-17 promotes neutrophil survival and recruitment; mild reduction expected with blockade."
+    },
+    {
+      "key": "MI_mucosal_inflammation_resolution",
+      "domain": "MI",
+      "organs": ["LARGE INTESTINE", "COLON", "SMALL INTESTINE", "ORAL MUCOSA"],
+      "findings": ["INFLAMMATION", "MUCOSAL INFLAMMATION"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Mucosal inflammatory resolution",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-17 blockade reduces neutrophil-driven mucosal inflammation — expected PD effect."
+    }
+  ]
+}

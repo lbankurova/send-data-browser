@@ -1,0 +1,47 @@
+{
+  "profile_id": "anti_il4_il13_mab",
+  "display_name": "Anti-IL-4/IL-13 mAb (dupilumab class)",
+  "modality": "monoclonal_antibody",
+  "base_profiles": ["general_mab"],
+  "cross_reactivity_required": true,
+  "source": "ICH S6(R1); Dupilumab prescribing information",
+  "description": "Expected findings for anti-IL-4 and anti-IL-13 monoclonal antibodies (dupilumab, tralokinumab). IL-4 and IL-13 drive Th2 responses, IgE production, and goblet cell hyperplasia. Blockade primarily relevant for atopic/allergic indications. Cynomolgus monkey is the typical species. Inherits Fc-mediated base findings from general_mab.",
+  "expected_findings": [
+    {
+      "key": "LB_IGE_down",
+      "domain": "LB",
+      "test_codes": ["IGE"],
+      "direction": "down",
+      "layer": "target",
+      "description": "IgE reduction (pharmacodynamic endpoint)",
+      "typical_magnitude": "Marked reduction (>50%)",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-4 drives IgE class switching; blockade expected to reduce IgE. (Dupilumab prescribing information)"
+    },
+    {
+      "key": "LB_EOS_variable",
+      "domain": "LB",
+      "test_codes": ["EOS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Eosinophil count modulation (transient eosinophilia, then suppression)",
+      "typical_magnitude": "Transient eosinophilia early, then suppression",
+      "severity_threshold": "Hypereosinophilia (>5.0 x 10^9/L) with organ involvement = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-4/IL-13 are eosinophil survival factors; complex biphasic response. Initial eosinophilia followed by suppression."
+    },
+    {
+      "key": "MI_goblet_cell_hypoplasia",
+      "domain": "MI",
+      "organs": ["LUNG", "TRACHEA", "BRONCHUS", "LARGE INTESTINE", "SMALL INTESTINE"],
+      "findings": ["HYPOPLASIA", "GOBLET CELL HYPOPLASIA", "DECREASED MUCUS"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Goblet cell hypoplasia in respiratory/GI mucosa",
+      "severity_threshold": "Progressive loss of mucosal barrier = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-13 drives goblet cell differentiation; blockade reduces mucus production."
+    }
+  ]
+}
