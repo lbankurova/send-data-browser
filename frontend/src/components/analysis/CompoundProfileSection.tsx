@@ -271,6 +271,24 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
         </div>
       )}
 
+      {/* Active profile — shows which specific profile is resolved when
+           the inferred class is generic (e.g., "Vaccine" → "Adjuvanted vaccine") */}
+      {!isOverridden && activeProfile && activeProfile.profile_id !== inference.compound_class && (
+        <div className="text-[10px] text-muted-foreground pl-5">
+          Active profile: {activeProfile.display_name}
+        </div>
+      )}
+
+      {/* Prompt when multiple profiles match but none is auto-assigned */}
+      {!isOverridden && !activeProfile && inference.suggested_profiles.length > 1 && (
+        <div className="flex items-start gap-1.5 text-[10px] text-amber-600 leading-snug">
+          <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          <span>
+            {inference.suggested_profiles.length} profiles match — select one below to enable expected-effect rules.
+          </span>
+        </div>
+      )}
+
       {/* Override metadata */}
       {isOverridden && sme_confirmed && (
         <div className="text-[10px] text-muted-foreground pl-5">
@@ -293,7 +311,9 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={AUTO_DETECT} className="text-xs">
-                Auto-detect{!isSmallMoleculeDefault && ` (${classDisplayName(inference.compound_class)})`}
+                Auto-detect{activeProfile && selectedProfileId === AUTO_DETECT
+                  ? ` (${activeProfile.display_name})`
+                  : !isSmallMoleculeDefault ? ` (${classDisplayName(inference.compound_class)})` : ""}
               </SelectItem>
               {available_profiles.map((p) => (
                 <SelectItem key={p.profile_id} value={p.profile_id} className="text-xs">
@@ -322,7 +342,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       {activeProfile && activeProfile.expected_findings.length > 0 && (
         <div className="mt-1">
           <div className="text-[11px] font-medium text-muted-foreground mb-1">
-            Expected findings ({activeProfile.expected_findings.length})
+            {activeProfile.display_name} — {activeProfile.expected_findings.length} expected findings
           </div>
           <div className="max-h-48 overflow-y-auto rounded border border-gray-100 bg-muted/5 px-2 py-1">
             {activeProfile.expected_findings.map((f) => (

@@ -99,9 +99,11 @@ async def get_compound_profile(study_id: str):
     active_profile_id = None
     if sme_confirmed and sme_confirmed.get("compound_class"):
         active_profile_id = sme_confirmed["compound_class"]
-    elif inference.get("suggested_profiles"):
-        # Use first suggested profile from inference
+    elif len(inference.get("suggested_profiles", [])) == 1:
+        # Auto-assign only when inference is unambiguous (single suggestion)
         active_profile_id = inference["suggested_profiles"][0]
+    # When multiple profiles are suggested (e.g., adjuvanted vs non-adjuvanted),
+    # leave active_profile null — user must select.
 
     active_profile = get_profile(active_profile_id) if active_profile_id else None
 

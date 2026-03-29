@@ -102,11 +102,11 @@ def resolve_active_profile(
         if species is None:
             species = ts_meta.get("species")
 
-    # Inference from TS metadata
+    # Inference from TS metadata — only auto-resolve when unambiguous
     if ts_meta:
         inference = infer_compound_class(ts_meta, available_domains, species)
         suggested = inference.get("suggested_profiles", [])
-        if suggested:
+        if len(suggested) == 1:
             return get_profile(suggested[0])
 
     return None
