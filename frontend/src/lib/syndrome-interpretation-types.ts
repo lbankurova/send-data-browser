@@ -380,7 +380,31 @@ export interface SyndromeInterpretation {
   /** v0.3.0 PATCH-04: Upgrade evidence evaluation for liver enzyme tier cap */
   upgradeEvidence?: UpgradeEvidenceResult | null;
 
+  /** GAP-16: Compound-class pharmacological context for this syndrome */
+  compoundProfileContext?: CompoundProfileSyndromeContext | null;
+
   /** Assembled narrative */
+  narrative: string;
+}
+
+/** GAP-16: Overlap between detected syndrome endpoints and expected pharmacological effects. */
+export interface CompoundProfileSyndromeContext {
+  /** Display name of the active compound profile */
+  profileName: string;
+  /** Syndrome endpoints that match expected pharmacological effects */
+  overlappingFindings: Array<{
+    /** Endpoint label from the syndrome match */
+    endpointLabel: string;
+    /** Domain of the match */
+    domain: string;
+    /** Key of the matching expected finding in the profile */
+    expectedFindingKey: string;
+    /** Description from the expected finding */
+    expectedDescription: string;
+    /** Whether this is an Fc-mediated or on-target effect */
+    layer: "base" | "target" | undefined;
+  }>;
+  /** Narrative warning for the pathologist */
   narrative: string;
 }
 

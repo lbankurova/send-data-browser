@@ -361,10 +361,9 @@ Per-domain technical debt and missing capabilities.
 - **Source:** GAP-43
 - **What:** Extract MIMETHOD for special stain identification.
 
-### Feature: Compound-Class Contextual Warnings
+### ~~Feature: Compound-Class Contextual Warnings~~
 - **Source:** GAP-16
-- **What:** Warn when syndrome matches known compound-class effect profile.
-- ~~**Blocked on:** External compound-class-to-findings reference database~~ Unblocked — compound profile foundation shipped (composition engine, cross-reactivity gating, never-reclassifiable expansion). Integration into syndrome interpretation layer remains.
+- **What:** ~~Warn when syndrome matches known compound-class effect profile.~~ Done — `assessCompoundProfileOverlap()` in syndrome-translational.ts matches syndrome endpoints against expected pharmacological effects. Renders pharmacological context card in SyndromeContextPanel.
 
 ### Improvement: OM Pattern Classifier Metric Verification
 - **Source:** GAP-42

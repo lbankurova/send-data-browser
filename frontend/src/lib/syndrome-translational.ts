@@ -25,6 +25,7 @@ import type {
   UpgradeEvidenceResult,
   TranslationalConfidence,
   SyndromeInterpretation,
+  CompoundProfileSyndromeContext,
   RecoveryRow,
   OrganWeightRow,
   TumorFinding,
@@ -32,6 +33,7 @@ import type {
   FoodConsumptionSummaryResponse,
   ClinicalObservation,
 } from "@/lib/syndrome-interpretation-types";
+import type { ExpectedEffectProfile } from "@/types/compound-profile";
 
 // Certainty module
 import {
@@ -287,6 +289,102 @@ export function assessTranslationalConfidence(
   };
 }
 
+// ─── GAP-16: Compound Profile Overlap ─────────────────────
+
+/**
+ * Check if a syndrome's matched endpoints overlap with expected
+ * pharmacological effects from the active compound profile.
+ *
+ * When overlap exists, the pathologist needs to distinguish:
+ * - Class effect (expected pharmacology) → lower concern
+ * - Novel toxicity beyond expected pharmacology → higher concern
+ */
+function assessCompoundProfileOverlap(
+  syndrome: CrossDomainSyndrome,
+  profile: ExpectedEffectProfile,
+): CompoundProfileSyndromeContext | null {
+  const expectedFindings = profile.expected_findings;
+  if (!expectedFindings || expectedFindings.length === 0) return null;
+
+  const overlaps: CompoundProfileSyndromeContext["overlappingFindings"] = [];
+
+  for (const ep of syndrome.matchedEndpoints) {
+    const epDomain = ep.domain;
+    const epLabel = ep.endpoint_label.toUpperCase();
+    const epDirection = ep.direction;
+
+    for (const ef of expectedFindings) {
+      if (ef.domain !== epDomain) continue;
+
+      // Direction must be compatible (skip if expected is "present"/"absent"/"normal")
+      if (ef.direction === "up" || ef.direction === "down") {
+        if (epDirection !== ef.direction) continue;
+      }
+
+      // Match by test_codes (LB, BW, OM domains)
+      if (ef.test_codes && ef.test_codes.length > 0) {
+        if (ef.test_codes.some((tc) => epLabel.includes(tc.toUpperCase()))) {
+          overlaps.push({
+            endpointLabel: ep.endpoint_label,
+            domain: epDomain,
+            expectedFindingKey: ef.key,
+            expectedDescription: ef.description,
+            layer: ef.layer,
+          });
+          break; // one match per endpoint is sufficient
+        }
+      }
+
+      // Match by organs + findings (MI, MA domains)
+      if (ef.organs && ef.organs.length > 0) {
+        const organMatch = ef.organs.some((o) => epLabel.includes(o.toUpperCase()));
+        if (organMatch) {
+          const findingMatch = !ef.findings || ef.findings.length === 0 ||
+            ef.findings.some((f) => epLabel.includes(f.toUpperCase()));
+          if (findingMatch) {
+            overlaps.push({
+              endpointLabel: ep.endpoint_label,
+              domain: epDomain,
+              expectedFindingKey: ef.key,
+              expectedDescription: ef.description,
+              layer: ef.layer,
+            });
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (overlaps.length === 0) return null;
+
+  const totalEndpoints = syndrome.matchedEndpoints.length;
+  const overlapCount = overlaps.length;
+  const profileName = profile.display_name;
+
+  // Build narrative
+  const overlapDescriptions = overlaps.map((o) => o.expectedDescription);
+  const uniqueDescriptions = [...new Set(overlapDescriptions)];
+  const layerTypes = [...new Set(overlaps.map((o) => o.layer).filter(Boolean))];
+  const layerNote = layerTypes.length === 1 && layerTypes[0] === "base"
+    ? " (Fc-mediated class effects)"
+    : layerTypes.length === 1 && layerTypes[0] === "target"
+      ? " (on-target pharmacology)"
+      : "";
+
+  let narrative: string;
+  if (overlapCount === totalEndpoints) {
+    narrative = `Compound profile overlap: all ${overlapCount} endpoints in this syndrome match expected pharmacological effects for ${profileName}${layerNote}. ` +
+      `Consider class effect vs. novel toxicity. Expected: ${uniqueDescriptions.join("; ")}.`;
+  } else {
+    narrative = `Compound profile overlap: ${overlapCount}/${totalEndpoints} endpoints match expected effects for ${profileName}${layerNote}. ` +
+      `Overlapping: ${uniqueDescriptions.join("; ")}. ` +
+      `Remaining endpoints may represent novel toxicity beyond expected pharmacology.`;
+  }
+
+  return { profileName, overlappingFindings: overlaps, narrative };
+}
+
 // ─── Orchestrator ──────────────────────────────────────────
 
 /**
@@ -309,6 +407,8 @@ export function interpretSyndrome(
   allDetectedSyndromeIds?: string[],
   /** Organ weight normalization contexts for B-7 BW confounding assessment */
   normalizationContexts?: NormalizationContext[],
+  /** GAP-16: Active compound expected-effect profile for pharmacological context */
+  compoundProfile?: ExpectedEffectProfile | null,
 ): SyndromeInterpretation {
   const discriminators = DISCRIMINATOR_REGISTRY[syndrome.id];
 
@@ -583,6 +683,14 @@ export function interpretSyndrome(
     narrativeParts.push(translationalConfidence.summary);
   }
 
+  // ── GAP-16: Compound profile pharmacological context ──
+  const compoundProfileContext = compoundProfile
+    ? assessCompoundProfileOverlap(syndrome, compoundProfile)
+    : null;
+  if (compoundProfileContext) {
+    narrativeParts.push(compoundProfileContext.narrative);
+  }
+
   return {
     syndromeId: syndrome.id,
     certainty: certaintyResult.certainty,
@@ -604,6 +712,7 @@ export function interpretSyndrome(
     histopathSeverityGrade: deriveHistopathSeverityGrade(histopathData),
     translationalConfidence,
     speciesMarkers,
+    compoundProfileContext,
     narrative: narrativeParts.join(" "),
   };
 }

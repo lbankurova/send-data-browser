@@ -45,6 +45,7 @@ import { useSyndromeCorrelations } from "@/hooks/useSyndromeCorrelations";
 import type { SyndromeMember } from "@/hooks/useSyndromeCorrelations";
 import { SyndromeCorrelationPane } from "./SyndromeCorrelationPane";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useCompoundProfile } from "@/hooks/useCompoundProfile";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -351,6 +352,9 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
   // Food consumption data for interpretation layer
   const { data: foodConsumptionSummary } = useFoodConsumptionSummary(studyId);
 
+  // GAP-16: Compound profile for pharmacological context
+  const { data: compoundProfile } = useCompoundProfile(studyId);
+
   // Exclusion state for reactive confounder checks
   const { excludedSubjects } = useScheduledOnly();
 
@@ -457,8 +461,9 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
       mortalityRaw?.mortality_noael_cap,
       analytics.syndromes.map((s) => s.id),
       normContexts,
+      compoundProfile?.active_profile,
     );
-  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, organWeightRows, analytics.syndromes, normContexts]);
+  }, [detected, allEndpoints, histopathData, studyContext, mortalityRaw, tumorFindings, foodConsumptionSummary, clinicalObservations, recoveryData, organWeightRows, analytics.syndromes, normContexts, compoundProfile]);
 
   // Organ Proportionality Index (XS09 only) — computed after syndromeInterp for FC driver
   const fcDriver = useMemo(() => {
@@ -650,6 +655,32 @@ export function SyndromeContextPanel({ syndromeId, nav }: SyndromeContextPanelPr
       {/* Loading state */}
       {!syndromeInterp && (
         <div className="px-4 py-6 text-xs text-muted-foreground">Loading interpretation…</div>
+      )}
+
+      {/* ══ GAP-16: COMPOUND PROFILE CONTEXT ══ */}
+      {syndromeInterp?.compoundProfileContext && (
+        <div className="mx-3 mt-2 rounded border border-violet-200 bg-violet-50/50 px-3 py-2 text-[11px]">
+          <div className="font-medium text-violet-700">
+            Pharmacological context: {syndromeInterp.compoundProfileContext.profileName}
+          </div>
+          <div className="mt-1 text-muted-foreground">
+            {syndromeInterp.compoundProfileContext.overlappingFindings.length === (detected?.matchedEndpoints.length ?? 0)
+              ? "All endpoints in this syndrome match expected pharmacological effects."
+              : `${syndromeInterp.compoundProfileContext.overlappingFindings.length}/${detected?.matchedEndpoints.length ?? 0} endpoints match expected effects.`
+            }
+            {" "}Consider class effect vs. novel toxicity.
+          </div>
+          <div className="mt-1.5 space-y-0.5">
+            {syndromeInterp.compoundProfileContext.overlappingFindings.map((o) => (
+              <div key={o.expectedFindingKey} className="flex items-baseline gap-1.5">
+                <span className="inline-flex items-center rounded border border-gray-200 bg-gray-100 px-1 py-px text-[9px] font-medium text-gray-500">
+                  {o.layer === "base" ? "Fc-mediated" : o.layer === "target" ? "On-target" : o.domain}
+                </span>
+                <span>{o.expectedDescription}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ══ EVIDENCE PANE ══ */}
