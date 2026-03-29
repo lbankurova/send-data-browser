@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 # Data structures (plain dicts for JSON serialisation)
 # ---------------------------------------------------------------------------
 
-def _dim(dimension: str, label: str, score: int | None, rationale: str) -> dict:
+def _dim(dimension: str, label: str, score: int | float | None, rationale: str) -> dict:
     """Build a ConfidenceDimension dict."""
     return {
         "dimension": dimension,
@@ -565,10 +565,11 @@ _NMDR_EXPECTED: dict[str, set[str]] = {
 def _score_d2_dose_response_v2(f: dict, compound_class: str | None = None) -> dict:
     """Compound-class-aware dose-response quality scoring.
 
-    Non-monotonic patterns scored via 3-tier decision tree:
-    - Expected NMDR (compound class + endpoint match): +1
-    - Ambiguous NMDR: 0
-    - Noise/unexplained NMDR: -1
+    Non-monotonic patterns scored via 4-tier decision tree:
+    - Tier 1: Expected NMDR (compound class + endpoint match): +1
+    - Tier 2: Plausible NMDR (class has NMDR capability, different endpoint): +0.5
+    - Tier 3: Ambiguous NMDR (class has no documented NMDR): 0
+    - Tier 4: Noise/unexplained NMDR (no compound class): -1
     """
     pattern = f.get("dose_response_pattern", "insufficient_data")
 
@@ -584,24 +585,35 @@ def _score_d2_dose_response_v2(f: dict, compound_class: str | None = None) -> di
     if pattern not in _DOWNGRADE_PATTERNS:
         return _dim("D2", "Dose-response quality", 0, f"Pattern: {pattern} (unknown — neutral)")
 
-    # Non-monotonic pattern detected — apply compound-class-aware scoring
+    # Non-monotonic pattern detected — apply compound-class-aware 4-tier scoring
     if compound_class:
         test_code = (f.get("test_code") or "").upper()
         cc_lower = compound_class.lower().replace("-", "_").replace(" ", "_")
+        class_has_nmdr = False
         # Check all matching compound class entries
         for cc_key, expected_endpoints in _NMDR_EXPECTED.items():
             if cc_key in cc_lower:
+                class_has_nmdr = True
                 if test_code in expected_endpoints:
+                    # Tier 1: Expected NMDR — this endpoint is documented biphasic
                     return _dim("D2", "Dose-response quality", +1,
                                  f"Pattern: {pattern} — expected NMDR for "
                                  f"{compound_class} at {test_code}")
 
-        # Compound class known but endpoint not in NMDR-expected list → ambiguous
+        if class_has_nmdr:
+            # Tier 2: Plausible NMDR — class has biphasic pharmacology,
+            # this specific endpoint not documented but mechanism is plausible
+            return _dim("D2", "Dose-response quality", 0.5,
+                         f"Pattern: {pattern} — {compound_class} has documented "
+                         f"biphasic pharmacology but {test_code} not in expected "
+                         f"NMDR endpoints (plausible)")
+
+        # Tier 3: Ambiguous — compound class known but has no documented NMDR
         return _dim("D2", "Dose-response quality", 0,
                      f"Pattern: {pattern} — compound class '{compound_class}' "
-                     f"known but {test_code} not in expected NMDR endpoints")
+                     f"has no documented NMDR endpoints (ambiguous)")
 
-    # No compound class → default penalty
+    # Tier 4: No compound class → default penalty
     return _dim("D2", "Dose-response quality", -1, f"Pattern: {pattern}")
 
 

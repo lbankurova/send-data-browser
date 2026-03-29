@@ -9,6 +9,7 @@ import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
+import { CompoundProfileSection } from "@/components/analysis/CompoundProfileSection";
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { CollapseAllButtons } from "./CollapseAllButtons";
@@ -141,6 +142,11 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       </div>
 
       <div className="flex-1 overflow-auto">
+      {/* ── Compound profile ─────────────────────────────── */}
+      <CollapsiblePane title="Compound profile" defaultOpen={false} sessionKey="pcc.studySettings.compoundProfile" expandAll={expandGen} collapseAll={collapseGen}>
+        <CompoundProfileSection studyId={studyId} />
+      </CollapsiblePane>
+
       {/* ── Analysis methods ─────────────────────────────── */}
       <CollapsiblePane title="Analysis methods" defaultOpen={false} sessionKey="pcc.studySettings.analysisMethods" expandAll={expandGen} collapseAll={collapseGen}>
         {/* Control group */}

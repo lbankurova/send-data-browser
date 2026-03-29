@@ -34,7 +34,6 @@ import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useRuleResults } from "@/hooks/useRuleResults";
 import { RuleInspectorTab } from "./RuleInspectorTab";
-import { CompoundProfileSection } from "./CompoundProfileSection";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { StudyMetadata } from "@/types";
@@ -982,11 +981,6 @@ function DetailsTab({
           <PkExposureSection pkData={pkData} doseGroups={doseGroups} />
         </CollapsiblePane>
       )}
-
-      {/* ── Compound profile ── */}
-      <CollapsiblePane title="Compound profile" defaultOpen={false} sessionKey="pcc.studyDetails.compoundProfile" expandAll={expandGen} collapseAll={collapseGen}>
-        <CompoundProfileSection studyId={studyId} />
-      </CollapsiblePane>
 
       {/* ── Data quality ── */}
       <CollapsiblePane

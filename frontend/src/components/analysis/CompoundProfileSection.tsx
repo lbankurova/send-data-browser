@@ -1,14 +1,16 @@
 /**
- * CompoundProfileSection — compound class selector for the Study Summary view.
+ * CompoundProfileSection — compound class override for the context panel.
  *
- * Shows inferred compound class, lets SME confirm/change via dropdown,
- * displays expected-effect checklist from the selected profile, and
- * persists the confirmation as an annotation.
+ * Shows auto-inferred compound class. User can override by selecting a
+ * different profile. Follows the standard override pattern: saves
+ * original value, timestamp, and optional note via OverridePill.
+ * "Reset to auto" clears the annotation.
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { useCompoundProfile, useSaveCompoundProfile } from "@/hooks/useCompoundProfile";
-import { Loader2, Check, FlaskConical, Info } from "lucide-react";
+import { useCompoundProfile, useSaveCompoundProfile, useResetCompoundProfile } from "@/hooks/useCompoundProfile";
+import { OverridePill } from "@/components/ui/OverridePill";
+import { Loader2, FlaskConical, Info } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -19,7 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import type { ExpectedFinding } from "@/types/compound-profile";
 
-// ── Display name mapping for compound classes ────────────────────────────
+// ── Display name mapping for inferred compound classes ──────────────────
 
 const CLASS_DISPLAY_NAMES: Record<string, string> = {
   small_molecule: "Small molecule",
@@ -54,6 +56,9 @@ function ConfidenceBadge({ level }: { level: string }) {
     </span>
   );
 }
+
+// Sentinel value for "auto-detect" in the Select
+const AUTO_DETECT = "__auto__";
 
 // ── Expected finding row ─────────────────────────────────────────────────
 
@@ -107,13 +112,12 @@ function FindingRow({
 export function CompoundProfileSection({ studyId }: { studyId: string }) {
   const { data: profile, isLoading } = useCompoundProfile(studyId);
   const saveMutation = useSaveCompoundProfile(studyId);
+  const resetMutation = useResetCompoundProfile(studyId);
 
-  // Selected profile ID (for the dropdown)
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  // Selected profile ID (for the dropdown) — AUTO_DETECT means "use inferred"
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(AUTO_DETECT);
   // Checked expected findings (key -> boolean)
   const [checkedFindings, setCheckedFindings] = useState<Record<string, boolean>>({});
-  // Track if user has changed anything from confirmed state
-  const [dirty, setDirty] = useState(false);
 
   // Initialize from API response
   useEffect(() => {
@@ -124,67 +128,94 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       if (profile.sme_confirmed.expected_findings) {
         setCheckedFindings(profile.sme_confirmed.expected_findings);
       } else if (profile.active_profile) {
-        // Default all checked
         const defaults: Record<string, boolean> = {};
         for (const f of profile.active_profile.expected_findings) {
           defaults[f.key] = true;
         }
         setCheckedFindings(defaults);
       }
-    } else if (profile.active_profile) {
-      setSelectedProfileId(profile.active_profile.profile_id);
-      const defaults: Record<string, boolean> = {};
-      for (const f of profile.active_profile.expected_findings) {
-        defaults[f.key] = true;
+    } else {
+      setSelectedProfileId(AUTO_DETECT);
+      if (profile.active_profile) {
+        const defaults: Record<string, boolean> = {};
+        for (const f of profile.active_profile.expected_findings) {
+          defaults[f.key] = true;
+        }
+        setCheckedFindings(defaults);
       }
-      setCheckedFindings(defaults);
-    } else if (profile.inference.suggested_profiles.length > 0) {
-      setSelectedProfileId(profile.inference.suggested_profiles[0]);
     }
-    setDirty(false);
   }, [profile]);
 
-  // Find the active profile object to display findings from
+  // The profile to display findings from
   const activeProfile = useMemo(() => {
     if (!profile) return null;
-    // If selected matches the fetched active_profile, use it directly
+    if (selectedProfileId === AUTO_DETECT) {
+      // Use inferred profile if available
+      return profile.active_profile;
+    }
     if (profile.active_profile && profile.active_profile.profile_id === selectedProfileId) {
       return profile.active_profile;
     }
     return null;
   }, [profile, selectedProfileId]);
 
+  const isOverridden = !!profile?.sme_confirmed;
+
   // When profile dropdown changes
-  const handleProfileChange = (profileId: string) => {
-    setSelectedProfileId(profileId);
-    setDirty(true);
-    // Reset checklist — need to fetch the profile's findings
-    // If the newly selected profile matches active_profile, use its findings
-    if (profile?.active_profile && profile.active_profile.profile_id === profileId) {
-      const defaults: Record<string, boolean> = {};
-      for (const f of profile.active_profile.expected_findings) {
-        defaults[f.key] = true;
-      }
-      setCheckedFindings(defaults);
-    } else {
-      // Clear findings for profiles we don't have loaded
-      setCheckedFindings({});
+  const handleProfileChange = (value: string) => {
+    setSelectedProfileId(value);
+
+    if (value === AUTO_DETECT) {
+      // Reset to auto-detected
+      resetMutation.mutate();
+      return;
     }
+
+    // Auto-save on selection (with metadata)
+    const findings: Record<string, boolean> = {};
+    if (profile?.active_profile && profile.active_profile.profile_id === value) {
+      for (const f of profile.active_profile.expected_findings) {
+        findings[f.key] = true;
+      }
+    }
+    setCheckedFindings(findings);
+
+    saveMutation.mutate({
+      compound_class: value,
+      original_compound_class: profile?.inference.compound_class ?? "small_molecule",
+      confirmed_by_sme: true,
+      expected_findings: findings,
+      reviewDate: new Date().toISOString(),
+    });
   };
 
   const handleToggleFinding = (key: string) => {
-    setCheckedFindings(prev => ({ ...prev, [key]: !prev[key] }));
-    setDirty(true);
-  };
+    if (!selectedProfileId || selectedProfileId === AUTO_DETECT) return;
 
-  const handleConfirm = () => {
-    if (!selectedProfileId) return;
+    const updated = { ...checkedFindings, [key]: !checkedFindings[key] };
+    setCheckedFindings(updated);
+
+    // Auto-save the updated findings
     saveMutation.mutate({
       compound_class: selectedProfileId,
+      original_compound_class: profile?.inference.compound_class ?? "small_molecule",
+      confirmed_by_sme: true,
+      expected_findings: updated,
+      note: profile?.sme_confirmed?.note,
+      reviewDate: new Date().toISOString(),
+    });
+  };
+
+  const handleSaveNote = (text: string) => {
+    if (!profile?.sme_confirmed) return;
+    saveMutation.mutate({
+      compound_class: profile.sme_confirmed.compound_class,
+      original_compound_class: profile.sme_confirmed.original_compound_class ?? profile.inference.compound_class,
       confirmed_by_sme: true,
       expected_findings: checkedFindings,
+      note: text,
+      reviewDate: profile.sme_confirmed.reviewDate ?? new Date().toISOString(),
     });
-    setDirty(false);
   };
 
   // ── Loading state ──
@@ -202,60 +233,6 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
 
   const { inference, sme_confirmed, available_profiles } = profile;
   const isSmallMoleculeDefault = inference.compound_class === "small_molecule" && inference.confidence === "DEFAULT";
-  const isConfirmed = !!sme_confirmed && !dirty;
-
-  // ── Small molecule default: subtle indicator ──
-
-  if (isSmallMoleculeDefault && !sme_confirmed) {
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <FlaskConical className="h-3 w-3" />
-          <span>No expected-effect profile</span>
-          <ConfidenceBadge level="DEFAULT" />
-        </div>
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Info className="h-2.5 w-2.5" />
-          <span>Small molecule default. Select a profile below if this study tests a biologic.</span>
-        </div>
-        {available_profiles.length > 0 && (
-          <div className="flex items-center gap-2">
-            <Select
-              value={selectedProfileId ?? ""}
-              onValueChange={handleProfileChange}
-            >
-              <SelectTrigger className="h-7 w-fit min-w-[180px] text-xs">
-                <SelectValue placeholder="Assign profile..." />
-              </SelectTrigger>
-              <SelectContent>
-                {available_profiles.map((p) => (
-                  <SelectItem key={p.profile_id} value={p.profile_id} className="text-xs">
-                    {p.display_name} ({p.finding_count} findings)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedProfileId && (
-              <button
-                className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                onClick={handleConfirm}
-                disabled={saveMutation.isPending}
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Check className="h-3 w-3" />
-                )}
-                Confirm profile
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Profile detected or confirmed ──
 
   return (
     <div className="space-y-2">
@@ -266,57 +243,80 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
           {classDisplayName(inference.compound_class)}
         </span>
         <ConfidenceBadge level={inference.confidence} />
-        <span className="text-[10px] text-muted-foreground">
-          via {inference.inference_method.replace(/_/g, " ")}
-        </span>
+        {isOverridden && (
+          <OverridePill
+            isOverridden
+            note={sme_confirmed?.note}
+            timestamp={sme_confirmed?.reviewDate ? new Date(sme_confirmed.reviewDate).toLocaleDateString() : undefined}
+            onSaveNote={handleSaveNote}
+            placeholder="Confirmed via PCLAS review"
+            popoverSide="bottom"
+            popoverAlign="start"
+          />
+        )}
       </div>
 
-      {/* Confirmation status */}
-      {isConfirmed && sme_confirmed && (
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Check className="h-2.5 w-2.5 text-green-600" />
-          <span>
-            Confirmed by {sme_confirmed.pathologist ?? "User"}
-            {sme_confirmed.reviewDate && (
-              <> on {new Date(sme_confirmed.reviewDate).toLocaleDateString()}</>
-            )}
-          </span>
+      {/* Inference method — subtle detail */}
+      {!isSmallMoleculeDefault && (
+        <div className="text-[10px] text-muted-foreground pl-5">
+          via {inference.inference_method.replace(/_/g, " ")}
+        </div>
+      )}
+
+      {/* Small molecule default hint */}
+      {isSmallMoleculeDefault && !sme_confirmed && (
+        <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground leading-snug">
+          <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          <span>No biologic signals detected in study metadata. Compound profile defaults to small molecule. To apply expected-effect rules for a biologic, select a profile below.</span>
+        </div>
+      )}
+
+      {/* Override metadata */}
+      {isOverridden && sme_confirmed && (
+        <div className="text-[10px] text-muted-foreground pl-5">
+          Overridden to {classDisplayName(sme_confirmed.compound_class)}
+          {sme_confirmed.reviewDate && (
+            <> on {new Date(sme_confirmed.reviewDate).toLocaleDateString()}</>
+          )}
         </div>
       )}
 
       {/* Profile selector */}
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-muted-foreground">Profile:</span>
-        <Select
-          value={selectedProfileId ?? ""}
-          onValueChange={handleProfileChange}
-        >
-          <SelectTrigger className="h-7 w-fit min-w-[180px] text-xs">
-            <SelectValue placeholder="Select profile..." />
-          </SelectTrigger>
-          <SelectContent>
-            {available_profiles.map((p) => (
-              <SelectItem key={p.profile_id} value={p.profile_id} className="text-xs">
-                {p.display_name} ({p.finding_count} findings)
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {!isConfirmed && selectedProfileId && (
-          <button
-            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            onClick={handleConfirm}
-            disabled={saveMutation.isPending}
+      {available_profiles.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select
+            value={selectedProfileId}
+            onValueChange={handleProfileChange}
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Check className="h-3 w-3" />
-            )}
-            Confirm profile
-          </button>
-        )}
-      </div>
+            <SelectTrigger className="h-7 w-fit min-w-[180px] text-xs">
+              <SelectValue placeholder="Select profile..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={AUTO_DETECT} className="text-xs">
+                Auto-detect{!isSmallMoleculeDefault && ` (${classDisplayName(inference.compound_class)})`}
+              </SelectItem>
+              {available_profiles.map((p) => (
+                <SelectItem key={p.profile_id} value={p.profile_id} className="text-xs">
+                  {p.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* Reset link — visible when overridden */}
+          {isOverridden && (
+            <button
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setSelectedProfileId(AUTO_DETECT);
+                resetMutation.mutate();
+              }}
+              disabled={resetMutation.isPending}
+            >
+              Reset to auto
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Expected findings checklist */}
       {activeProfile && activeProfile.expected_findings.length > 0 && (
@@ -334,32 +334,13 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
               />
             ))}
           </div>
-          {dirty && (
-            <div className="mt-1.5 flex items-center gap-2">
-              <button
-                className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                onClick={handleConfirm}
-                disabled={saveMutation.isPending}
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Check className="h-3 w-3" />
-                )}
-                Confirm profile
-              </button>
-              {saveMutation.isSuccess && !dirty && (
-                <span className="text-[10px] text-green-600">Saved</span>
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {/* No findings available for selected profile */}
-      {selectedProfileId && !activeProfile && !isSmallMoleculeDefault && (
+      {/* No findings available for selected profile that isn't loaded */}
+      {selectedProfileId !== AUTO_DETECT && !activeProfile && (
         <div className="text-[10px] text-muted-foreground">
-          Expected-effect checklist will be available after confirming this profile.
+          Profile data will load after page refresh.
         </div>
       )}
     </div>
