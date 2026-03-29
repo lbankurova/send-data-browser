@@ -52,8 +52,8 @@ The core scientific computation layer. Most items here are unique to SENDEX — 
 - **Source:** `incoming/design-adapter-architecture-plan.md` (RC-4 + RC-2), archived 2026-03-28
 - **What:** Refactored generator pipeline from monolithic parallel-between-group into adapter architecture. Design-specific adapters (parallel, crossover, escalation) produce a normalized findings contract consumed by the shared analysis core.
 - **Why:** Enables Study5 (Latin-square crossover, 6 dogs) and CJUGSEND00 (dose-escalation, 4 dogs) to produce findings using within-subject statistics. Previously these studies generated 0 usable findings.
-- **Result:** Study5 → 18 findings (QTc detected as tr_adverse, NOAEL=50 mg/kg). CJUGSEND00 → 7 findings. All parallel studies unaffected. Open gaps: GAP-131 through GAP-135 (RM ANOVA, carryover test, CL McNemar's, EGTPTNUM fallback, study_type_config routing).
-- **Impl:** 8 new files in `generator/adapters/`, 1 modified (`generate.py`), 0 changes to existing domain modules or shared core.
+- **Result:** Study5 → 18 findings (QTc detected as tr_adverse, NOAEL=50 mg/kg). CJUGSEND00 → 7 findings. All parallel studies unaffected. GAP-131 through GAP-135 all resolved (Friedman omnibus, carryover test, McNemar's incidence, EGBLFL predose detection, study_type_config routing).
+- **Impl:** 8 new files in `generator/adapters/`, 1 modified (`generate.py`), 1 new contract (`finding_record.py`), 0 changes to existing domain modules or shared core.
 
 ### Improvement: Cross-check BIOMARKER_MAP completeness
 - **Source:** send-summarizer organ-system TESTCD panels
