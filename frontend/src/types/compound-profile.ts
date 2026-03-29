@@ -21,12 +21,15 @@ export interface ExpectedFinding {
   organs?: string[];
   findings?: string[];
   test_codes?: string[];
-  direction: "up" | "down";
+  direction: "up" | "down" | "present" | "absent" | "normal";
   description: string;
   severity_threshold: SeverityThreshold | string | null;
   species_applicability?: string[];
+  species_note?: string;
   rationale: string;
   typical_magnitude?: string;
+  /** Biological provenance: base = Fc-mediated class effect, target = on-target pharmacology */
+  layer?: "base" | "target";
 }
 
 export interface ExpectedEffectProfile {
@@ -36,6 +39,9 @@ export interface ExpectedEffectProfile {
   source: string;
   description: string;
   expected_findings: ExpectedFinding[];
+  base_profiles?: string[];
+  user_selectable?: boolean;
+  cross_reactivity_required?: boolean;
 }
 
 export interface ProfileSummary {
@@ -43,12 +49,14 @@ export interface ProfileSummary {
   display_name: string;
   modality: string;
   finding_count: number;
+  base_profiles?: string[];
 }
 
 export interface SmeConfirmedProfile {
   compound_class: string;
   original_compound_class?: string;
   confirmed_by_sme: boolean;
+  cross_reactivity?: "full" | "partial" | "unknown";
   expected_findings?: Record<string, boolean>;
   confidence?: string;
   inference_method?: string;
@@ -64,4 +72,5 @@ export interface CompoundProfileResponse {
   sme_confirmed: SmeConfirmedProfile | null;
   active_profile: ExpectedEffectProfile | null;
   available_profiles: ProfileSummary[];
+  cross_reactivity?: "full" | "partial" | "unknown" | null;
 }

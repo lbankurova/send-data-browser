@@ -21,7 +21,11 @@ _profile_cache: dict[str, dict] | None = None
 
 
 def _load_profiles() -> dict[str, dict]:
-    """Load all expected-effect profile JSONs from shared/expected-effect-profiles/.
+    """Load all expected-effect profile JSONs and resolve composition.
+
+    After this function returns, every profile has a flat expected_findings
+    array.  Downstream consumers (D9 matcher, API, frontend) never see
+    base_profiles — composition is resolved here.
 
     Returns: {profile_id: profile_dict}
     """
@@ -44,14 +48,140 @@ def _load_profiles() -> dict[str, dict]:
         except Exception as e:
             logger.warning("Failed to load profile %s: %s", path.name, e)
 
+    # ── Composition pass: resolve base_profiles into flat expected_findings ──
+    resolved: set[str] = set()
+
+    def _resolve(pid: str, chain: list[str] | None = None) -> None:
+        if pid in resolved:
+            return
+        if chain is None:
+            chain = []
+        if pid in chain:
+            logger.warning(
+                "Circular base_profiles reference: %s -> %s",
+                " -> ".join(chain), pid,
+            )
+            resolved.add(pid)
+            return
+
+        profile = profiles.get(pid)
+        if not profile:
+            return
+
+        base_ids = profile.get("base_profiles", [])
+        if not base_ids:
+            resolved.add(pid)
+            return
+
+        # Resolve bases first (recursive)
+        for base_id in base_ids:
+            _resolve(base_id, chain + [pid])
+
+        # Merge: collect base findings, then child findings.
+        # Child findings override base findings with the same key.
+        child_findings = profile.get("expected_findings", [])
+        child_keys = {f.get("key") for f in child_findings if f.get("key")}
+
+        merged: list[dict] = []
+        total_base_count = 0
+        base_profile_ids: list[str] = []
+
+        for base_id in base_ids:
+            base = profiles.get(base_id)
+            if not base:
+                logger.warning(
+                    "base_profiles references unknown profile: %s (in %s)",
+                    base_id, pid,
+                )
+                continue
+            base_findings = base.get("expected_findings", [])
+            for bf in base_findings:
+                if bf.get("key") not in child_keys:
+                    merged.append(bf)
+            total_base_count += len(base_findings)
+            base_profile_ids.append(base_id)
+
+        merged.extend(child_findings)
+        profile["expected_findings"] = merged
+
+        # Provenance metadata (underscore prefix = internal, not schema)
+        if base_profile_ids:
+            profile["_base_profile_ids"] = base_profile_ids
+            profile["_base_finding_count"] = total_base_count
+
+        # Inherit display metadata from first base if not overridden
+        first_base = profiles.get(base_ids[0]) if base_ids else None
+        if first_base:
+            for field in ("source", "modality"):
+                if field not in profile and field in first_base:
+                    profile[field] = first_base[field]
+
+        resolved.add(pid)
+
+    for pid in list(profiles.keys()):
+        _resolve(pid)
+
     _profile_cache = profiles
     logger.info("Loaded %d expected-effect profiles from %s", len(profiles), _PROFILES_DIR)
     return profiles
 
 
 def get_profile(profile_id: str) -> dict | None:
-    """Get a single expected-effect profile by ID."""
+    """Get a single expected-effect profile by ID.
+
+    Returns the resolved profile (base_profiles already merged into a flat
+    expected_findings array).  Composition is resolved at load time in
+    _load_profiles(), so this is a simple dict lookup.
+    """
     return _load_profiles().get(profile_id)
+
+
+def _read_sme_annotation(study_id: str) -> dict | None:
+    """Read compound profile SME annotation for a study."""
+    from pathlib import Path as _Path
+    ann_dir = _Path(__file__).resolve().parent.parent.parent / "annotations"
+    ann_path = ann_dir / study_id / "compound_profile.json"
+    if not ann_path.exists():
+        return None
+    try:
+        import json as _json
+        with open(ann_path, "r") as f:
+            data = _json.load(f)
+        return data.get("study")
+    except Exception:
+        return None
+
+
+def _apply_cross_reactivity_filter(
+    profile: dict, cross_reactivity: str,
+) -> dict:
+    """Apply cross-reactivity gating to a resolved profile.
+
+    When a profile has ``cross_reactivity_required: true``, target-layer
+    findings are gated by the SME-declared cross-reactivity status:
+
+    - ``"unknown"`` (default) → strip target-layer findings (conservative)
+    - ``"partial"`` → keep all findings, add qualifier metadata
+    - ``"full"`` → keep all findings without modification
+    """
+    if not profile.get("cross_reactivity_required"):
+        return profile
+    if cross_reactivity == "full":
+        return profile
+
+    # Shallow copy so we don't mutate the cached profile dict
+    filtered = {**profile}
+
+    if cross_reactivity == "unknown" or not cross_reactivity:
+        filtered["expected_findings"] = [
+            f for f in profile.get("expected_findings", [])
+            if f.get("layer") != "target"
+        ]
+        filtered["_cross_reactivity_filter"] = "base_only"
+    elif cross_reactivity == "partial":
+        filtered["_cross_reactivity_filter"] = "partial_qualifier"
+
+    return filtered
 
 
 def resolve_active_profile(
@@ -70,46 +200,45 @@ def resolve_active_profile(
     study_title), reads the TS domain directly from the study's XPT files.
     This avoids depending on build_subject_context() which can crash on
     studies with unparseable dose values.
+
+    Cross-reactivity gating: when the resolved profile has
+    ``cross_reactivity_required: true``, target-layer findings are filtered
+    based on the SME annotation's ``cross_reactivity`` field.
     """
-    from pathlib import Path as _Path
-    ann_dir = _Path(__file__).resolve().parent.parent.parent / "annotations"
-    ann_path = ann_dir / study_id / "compound_profile.json"
+    sme_data = _read_sme_annotation(study_id)
 
     # Check SME-confirmed override
     sme_profile_id = None
-    if ann_path.exists():
-        try:
-            import json as _json
-            with open(ann_path, "r") as f:
-                data = _json.load(f)
-            sme_data = data.get("study")
-            if sme_data and sme_data.get("confirmed_by_sme") and sme_data.get("compound_class"):
-                sme_profile_id = sme_data["compound_class"]
-        except Exception:
-            pass
+    if sme_data and sme_data.get("confirmed_by_sme") and sme_data.get("compound_class"):
+        sme_profile_id = sme_data["compound_class"]
 
+    profile = None
     if sme_profile_id:
         profile = get_profile(sme_profile_id)
-        if profile:
-            return profile
 
-    # Enrich ts_meta from TS domain if missing key inference fields
-    _inference_keys = {"pharmacologic_class", "treatment", "study_title"}
-    if not ts_meta or not any(ts_meta.get(k) for k in _inference_keys):
-        ts_meta = _read_ts_for_study(study_id, ts_meta)
-        if available_domains is None:
-            available_domains = _get_study_domains(study_id)
-        if species is None:
-            species = ts_meta.get("species")
+    if profile is None:
+        # Enrich ts_meta from TS domain if missing key inference fields
+        _inference_keys = {"pharmacologic_class", "treatment", "study_title"}
+        if not ts_meta or not any(ts_meta.get(k) for k in _inference_keys):
+            ts_meta = _read_ts_for_study(study_id, ts_meta)
+            if available_domains is None:
+                available_domains = _get_study_domains(study_id)
+            if species is None:
+                species = ts_meta.get("species")
 
-    # Inference from TS metadata — only auto-resolve when unambiguous
-    if ts_meta:
-        inference = infer_compound_class(ts_meta, available_domains, species)
-        suggested = inference.get("suggested_profiles", [])
-        if len(suggested) == 1:
-            return get_profile(suggested[0])
+        # Inference from TS metadata — only auto-resolve when unambiguous
+        if ts_meta:
+            inference = infer_compound_class(ts_meta, available_domains, species)
+            suggested = inference.get("suggested_profiles", [])
+            if len(suggested) == 1:
+                profile = get_profile(suggested[0])
 
-    return None
+    if profile is None:
+        return None
+
+    # Cross-reactivity gating for layered profiles
+    cross_reactivity = (sme_data or {}).get("cross_reactivity", "unknown")
+    return _apply_cross_reactivity_filter(profile, cross_reactivity)
 
 
 def _read_ts_for_study(study_id: str, base_meta: dict | None = None) -> dict:
@@ -148,17 +277,26 @@ def _get_study_domains(study_id: str) -> set[str]:
 
 
 def list_profiles() -> list[dict]:
-    """Return summary metadata for all available profiles."""
+    """Return summary metadata for all user-selectable profiles.
+
+    Profiles with ``user_selectable: false`` are loadable by ID (for
+    composition) but excluded from the user-facing dropdown.
+    """
     profiles = _load_profiles()
-    return [
-        {
+    result = []
+    for p in profiles.values():
+        if not p.get("user_selectable", True):
+            continue
+        entry: dict = {
             "profile_id": p["profile_id"],
             "display_name": p.get("display_name", p["profile_id"]),
             "modality": p.get("modality"),
             "finding_count": len(p.get("expected_findings", [])),
         }
-        for p in profiles.values()
-    ]
+        if "_base_profile_ids" in p:
+            entry["base_profiles"] = p["_base_profile_ids"]
+        result.append(entry)
+    return result
 
 
 # ── Keyword sets for heuristic matching ────────────────────────────────────

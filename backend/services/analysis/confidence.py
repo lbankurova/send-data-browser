@@ -384,9 +384,16 @@ def _plt_severe_check(f: dict) -> bool:
     return fc is not None and fc < 0.05
 
 
+def _specimen_is_spleen(f: dict) -> bool:
+    """Gate: only fire when the specimen/organ is spleen."""
+    specimen = (f.get("specimen") or "").upper()
+    return "SPLEEN" in specimen
+
+
 _NEVER_RECLASSIFIABLE: list[
     tuple[str, set[str], str | None, str, object | None]
 ] = [
+    # ── Existing entries ──────────────────────────────────────────────────
     ("MI", {"MYOCARDITIS"}, None,
      "Myocarditis at any grade", None),
     ("LB", {"TROPI", "TROPONI", "CTNI", "CTNNI", "CTNT"}, "up",
@@ -399,6 +406,37 @@ _NEVER_RECLASSIFIABLE: list[
      "Platelet count <20k/uL (severe thrombocytopenia)", _plt_severe_check),
     ("MI", {"DORSAL ROOT GANGLION", "DRG", "NEURON DEGENERATION", "AXONAL DEGENERATION"}, None,
      "DRG toxicity — always adverse for gene therapy studies", None),
+
+    # ── Biologic safety signals (cross-profile guards) ────────────────────
+    # GI perforation — zero tolerance at any dose for any biologic
+    ("MI", {"PERFORATION"}, None,
+     "GI perforation — zero tolerance at any dose for any biologic", None),
+    ("MA", {"PERFORATION"}, None,
+     "GI perforation — zero tolerance at any dose for any biologic", None),
+    # Thromboembolism — confirmed symptomatic vascular occlusion
+    ("MI", {"THROMBOEMBOLI", "THROMBOSIS", "EMBOLISM", "THROMBUS", "EMBOLUS"}, None,
+     "Thromboembolism — confirmed symptomatic vascular occlusion", None),
+    ("MA", {"THROMBOEMBOLI", "THROMBOSIS", "EMBOLISM", "THROMBUS", "EMBOLUS"}, None,
+     "Thromboembolism — confirmed symptomatic vascular occlusion", None),
+    # Opportunistic infection — immunosuppression-associated pathogens
+    ("MI", {"MYCOBACTER", "PNEUMOCYSTIS", "ASPERGILL", "CRYPTOCOC", "HISTOPLASM"}, None,
+     "Opportunistic infection — immunosuppression-associated pathogen", None),
+    # HLH / Macrophage Activation Syndrome
+    ("MI", {"HEMOPHAGOCYTIC", "HLH", "MACROPHAGE ACTIVATION"}, None,
+     "HLH/MAS — life-threatening dysregulated macrophage activation", None),
+    # Thrombotic microangiopathy
+    ("MI", {"THROMBOTIC MICROANGIOPATHY", "TMA"}, None,
+     "TMA — progressive microangiopathic renal/systemic injury", None),
+    # Anaphylaxis — severe hypersensitivity
+    ("MI", {"ANAPHYLA"}, None,
+     "Anaphylaxis — severe hypersensitivity reaction", None),
+    ("CL", {"ANAPHYLA"}, None,
+     "Anaphylaxis — severe hypersensitivity reaction", None),
+    # Splenic rupture — organ-gated (only when specimen is spleen)
+    ("MI", {"RUPTURE"}, None,
+     "Splenic rupture — acute organ failure", _specimen_is_spleen),
+    ("MA", {"RUPTURE"}, None,
+     "Splenic rupture — acute organ failure", _specimen_is_spleen),
 ]
 
 

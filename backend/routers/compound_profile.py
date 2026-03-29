@@ -107,12 +107,18 @@ async def get_compound_profile(study_id: str):
 
     active_profile = get_profile(active_profile_id) if active_profile_id else None
 
+    # Cross-reactivity from SME annotation (null if not set)
+    cross_reactivity = None
+    if sme_confirmed:
+        cross_reactivity = sme_confirmed.get("cross_reactivity")
+
     return {
         "study_id": study_id,
         "inference": inference,
         "sme_confirmed": sme_confirmed,
         "active_profile": active_profile,
         "available_profiles": list_profiles(),
+        "cross_reactivity": cross_reactivity,
     }
 
 

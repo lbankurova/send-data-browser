@@ -98,7 +98,12 @@ function FindingRow({
             </span>
           )}
           <span className="ml-1">
-            {finding.direction === "up" ? "\u2191" : "\u2193"}
+            {finding.direction === "up" ? "\u2191"
+              : finding.direction === "down" ? "\u2193"
+              : finding.direction === "present" ? "\u25CF"
+              : finding.direction === "absent" ? "\u25CB"
+              : finding.direction === "normal" ? "\u2550"
+              : "?"}
           </span>
         </div>
       </div>

@@ -345,9 +345,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 
 ### GAP-16: Compound-class contextual warnings (REM-20 deferred)
 - **Files:** `frontend/src/lib/syndrome-interpretation.ts`
-- **Issue:** REM-20 originally called for explicit missing-domain warnings and compound-class context. The missing-domain warnings were implemented as part of REM-15 (data sufficiency gate, METH-29). The compound-class comparison aspect — warning when a syndrome is detected for a compound whose pharmacological class has known organ-specific effects — requires an external reference database mapping compound classes to expected finding profiles. This database does not currently exist in the system. When available, it would enable contextual warnings like "XS01 detected; compound class (NSAID) has known hepatotoxicity — consider class effect vs. novel finding."
-- **Blocked on:** External compound-class-to-findings reference database
-- **Status:** Open (deferred — no data source available)
+- **Issue:** REM-20 originally called for explicit missing-domain warnings and compound-class context. The missing-domain warnings were implemented as part of REM-15 (data sufficiency gate, METH-29). The compound-class comparison aspect — warning when a syndrome is detected for a compound whose pharmacological class has known organ-specific effects — requires an external reference database mapping compound classes to expected finding profiles.
+- **Blocked on:** ~~External compound-class-to-findings reference database~~ The compound profile system (`shared/expected-effect-profiles/`) now provides this reference database. Foundation infrastructure shipped (composition engine, cross-reactivity gating, never-reclassifiable expansion). Integration into syndrome interpretation layer remains.
+- **Status:** Open — unblocked by compound profile foundation. Needs integration of `resolve_active_profile()` result into syndrome contextual warnings.
 - **Owner hint:** backend-dev (database), frontend-dev (integration into interpretation layer)
 
 ### ~~GAP-18: Auto-select organ weight method — full spec implementation~~
