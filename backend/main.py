@@ -16,6 +16,7 @@ from routers.temporal import init_temporal, router as temporal_router
 from routers.import_study import router as import_router
 from routers.scenarios import router as scenarios_router
 from routers.study_portfolio import router as portfolio_router
+from routers.compound_profile import init_compound_profile, router as compound_profile_router
 from services.study_discovery import discover_studies
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -98,6 +99,7 @@ async def lifespan(app: FastAPI):
     init_analysis_views(studies)
     init_validation(studies)
     init_temporal(studies)
+    init_compound_profile(studies)
 
     # Auto-register discovered studies into the portfolio system
     from services.study_metadata_service import get_study_metadata_service
@@ -149,6 +151,7 @@ app.include_router(temporal_router)
 app.include_router(import_router)
 app.include_router(scenarios_router)
 app.include_router(portfolio_router)
+app.include_router(compound_profile_router)
 
 @app.get("/api/debug/health")
 async def debug_health():

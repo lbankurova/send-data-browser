@@ -1745,6 +1745,15 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
           )}
         </span>
         {/* --- Indicator columns: fixed-width slots for vertical alignment --- */}
+        {/* Pharmacological candidate — w-[10px] reserves space for 6px violet dot */}
+        <span className="shrink-0 w-[10px] flex items-center justify-center">
+          {endpoint.isPharmacologicalCandidate ? (
+            <span
+              className="inline-block h-[6px] w-[6px] rounded-full bg-violet-400"
+              title={endpoint.pharmacologicalRationale ?? "Matches expected pharmacological effect profile"}
+            />
+          ) : null}
+        </span>
         {/* Clinical tier — w-[22px] reserves space for "S2"/"S3"/"S4" */}
         <span className="shrink-0 w-[22px] flex items-center justify-center">
           {clinicalTier ? (

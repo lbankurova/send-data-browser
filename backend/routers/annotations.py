@@ -22,6 +22,7 @@ VALID_SCHEMA_TYPES = {
     "pattern-overrides", "noael-overrides", "mortality-overrides",
     "recovery-overrides",
     "saved-cohorts",
+    "compound-profile",
 }
 
 # Map URL slugs to file names

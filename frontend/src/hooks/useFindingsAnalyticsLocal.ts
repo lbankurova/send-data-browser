@@ -70,6 +70,18 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     }
     // ECI: attach endpoint confidence integrity assessment
     attachEndpointConfidence(summaries, activeFindings, studyMeta?.has_estrous_data ?? false);
+    // Pharmacological candidate: bubble up from finding-level _confidence to endpoint summary
+    for (const ep of summaries) {
+      for (const f of activeFindings) {
+        if ((f.endpoint_label ?? f.finding) === ep.endpoint_label && f._confidence?._pharmacological_candidate) {
+          ep.isPharmacologicalCandidate = true;
+          // Extract D9 rationale for tooltip
+          const d9 = f._confidence.dimensions?.find(d => d.dimension === "D9");
+          if (d9?.rationale) ep.pharmacologicalRationale = d9.rationale;
+          break;
+        }
+      }
+    }
     return summaries;
   }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data]);
 

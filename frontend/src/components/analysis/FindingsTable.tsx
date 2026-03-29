@@ -743,6 +743,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const signal = signalScores?.get(label) ?? 0;
           const tier = getSignalTier(signal);
           const isNormal = severity === "normal";
+          const isPharmCandidate = f._confidence?._pharmacological_candidate === true;
 
           const borderClass = isNormal
             ? "border-l"
@@ -753,12 +754,26 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
             : tier === 2 ? "font-medium text-gray-600"
             : "text-gray-600";
 
+          const pharmTooltip = isPharmCandidate
+            ? (f._confidence?.dimensions?.find(d => d.dimension === "D9")?.rationale ?? "Matches expected pharmacological effect profile")
+            : undefined;
+
           return (
-            <span
-              className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
-              style={{ borderLeftColor: isNormal ? "transparent" : getSeverityDotColor(severity) }}
-            >
-              {severity}
+            <span className="inline-flex items-center gap-1">
+              <span
+                className={`inline-block ${borderClass} pl-1.5 py-0.5 ${fontClass}`}
+                style={{ borderLeftColor: isNormal ? "transparent" : getSeverityDotColor(severity) }}
+              >
+                {severity}
+              </span>
+              {isPharmCandidate && (
+                <span
+                  className="inline-flex items-center rounded-full border px-1 py-0.5 text-[9px] font-medium leading-none bg-violet-50 text-violet-600 border-violet-200"
+                  title={pharmTooltip}
+                >
+                  Pharm
+                </span>
+              )}
             </span>
           );
         },

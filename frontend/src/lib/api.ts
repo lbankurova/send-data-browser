@@ -9,6 +9,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 import type { StudySummary, StudyMetadata, DomainSummary, DomainData } from "@/types";
+import type { CompoundProfileResponse, ProfileSummary } from "@/types/compound-profile";
 
 export function fetchStudies(): Promise<StudySummary[]> {
   return fetchJson("/studies");
@@ -109,4 +110,14 @@ export async function deleteStudy(
     throw new Error(body.detail || `Delete failed: ${res.status}`);
   }
   return res.json();
+}
+
+// ── Compound profile ──────────────────────────────────────────────────────
+
+export function fetchCompoundProfile(studyId: string): Promise<CompoundProfileResponse> {
+  return fetchJson(`/studies/${encodeURIComponent(studyId)}/compound-profile`);
+}
+
+export function fetchExpectedEffectProfiles(): Promise<ProfileSummary[]> {
+  return fetchJson("/expected-effect-profiles");
 }

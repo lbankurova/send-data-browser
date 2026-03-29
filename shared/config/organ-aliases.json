@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "description": "Organ name hierarchy for SEND data normalization. Maps variant organ/specimen names to canonical forms. Source: 6-study vocabulary analysis (send-test-code-matching.md Sections 1.4, 1.5, 4).",
+
+  "organ_groups": {
+    "BONE MARROW": [
+      "BONE MARROW, FEMUR",
+      "BONE MARROW, STERNUM",
+      "BONE MARROW SMEAR",
+      "STERNAL MARROW",
+      "FEMORAL MARROW"
+    ],
+    "LUNG": [
+      "LUNG/BRONCHUS",
+      "LUNGS"
+    ],
+    "SPINAL CORD": [
+      "SPINAL CORD, CERVICAL",
+      "SPINAL CORD, LUMBAR",
+      "SPINAL CORD, THORACIC"
+    ],
+    "SKIN": [
+      "SKIN/SUBCUTIS"
+    ],
+    "INJECTION SITE": [
+      "SITE, INJECTION",
+      "SITE, APPLICATION",
+      "SITE OF INJECTION",
+      "APPLICATION SITE",
+      "INJECTION SITE SKIN",
+      "INJECTION SITE MUSCLE"
+    ],
+    "LYMPH NODE": [
+      "LYMPH NODE, ILIAC",
+      "LYMPH NODE, INGUINAL",
+      "LYMPH NODE, AXILLARY",
+      "LYMPH NODE, MESENTERIC",
+      "LYMPH NODE, MANDIBULAR",
+      "LYMPH NODE, SUBMANDIBULAR",
+      "LYMPH NODE, POPLITEAL",
+      "LYMPH NODE, SACRAL",
+      "LYMPH NODE, MEDIASTINAL"
+    ],
+    "ADRENAL GLAND": [
+      "GLAND, ADRENAL",
+      "ADRENAL GLANDS",
+      "ADRENAL"
+    ],
+    "THYROID GLAND": [
+      "GLAND, THYROID",
+      "THYROID"
+    ],
+    "PITUITARY GLAND": [
+      "GLAND, PITUITARY",
+      "PITUITARY"
+    ],
+    "PROSTATE GLAND": [
+      "GLAND, PROSTATE",
+      "PROSTATE"
+    ],
+    "OVARY": [
+      "OVARIES",
+      "OVARY/OVIDUCT"
+    ],
+    "UTERUS": [
+      "UTERUS/CERVIX"
+    ],
+    "TESTIS": [
+      "TESTES"
+    ],
+    "JOINT": [
+      "JOINT, HIP",
+      "JOINT, STIFLE"
+    ],
+    "KIDNEY": [
+      "KIDNEYS"
+    ],
+    "EYE": [
+      "EYES"
+    ]
+  }
+}

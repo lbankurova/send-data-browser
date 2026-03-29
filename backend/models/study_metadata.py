@@ -88,6 +88,9 @@ class StudyMetadata(BaseModel):
     has_define: bool = False
     has_xpt: bool = True
 
+    # Compound classification
+    compound_class: Optional[str] = None  # Inferred or SME-confirmed modality (e.g., vaccine_adjuvanted, aav_gene_therapy)
+
     # Source tracking
     auto_derived: bool = False  # True = auto-derived from TS domain, not manually curated
 

@@ -187,9 +187,9 @@ describe("HCD Phase 2 — SQLite integration", () => {
       }
     });
 
-    test.skipIf(!hasGenerated)("non-OM findings do NOT have _hcd_assessment", () => {
-      const nonOm = findings.filter((f) => f.domain !== "OM");
-      for (const f of nonOm) {
+    test.skipIf(!hasGenerated)("non-OM/LB findings do NOT have _hcd_assessment", () => {
+      const nonOmLb = findings.filter((f) => f.domain !== "OM" && f.domain !== "LB");
+      for (const f of nonOmLb) {
         expect(f._hcd_assessment).toBeUndefined();
       }
     });

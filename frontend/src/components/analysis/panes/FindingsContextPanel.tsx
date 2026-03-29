@@ -32,6 +32,7 @@ import { ChevronRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DoseLabel } from "@/components/ui/DoseLabel";
+import { PharmacologicalBadge } from "@/components/ui/PharmacologicalBadge";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getOrganCorrelationCategory, OrganCorrelationCategory } from "@/lib/organ-weight-normalization";
@@ -64,6 +65,7 @@ import { classifyFindingNature } from "@/lib/finding-nature";
 import { getRelevantTests } from "@/lib/organ-test-mapping";
 import type { RecoveryAssessment } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
+import { GradeConfidencePane, GradeConfidenceBadge } from "./GradeConfidencePane";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
 
@@ -1792,6 +1794,12 @@ export function FindingsContextPanel() {
               {selectedFinding.severity}
             </span>
           )}
+          {/* Pharmacological candidate badge (D9 fired) */}
+          {selectedFinding._confidence?._pharmacological_candidate && (
+            <PharmacologicalBadge
+              rationale={selectedFinding._confidence.dimensions?.find(d => d.dimension === "D9")?.rationale}
+            />
+          )}
           {/* Clinical tier badge (S2+ only, matching rail) */}
           {(() => {
             if (!analytics?.labMatches.length) return null;
@@ -2112,6 +2120,22 @@ export function FindingsContextPanel() {
               </CollapsiblePane>
             );
           })()}
+
+          {/* GRADE confidence — backend D1-D9 evidence dimensions */}
+          {selectedFinding?._confidence && (
+            <CollapsiblePane
+              title="Evidence confidence"
+              defaultOpen={selectedFinding._confidence.grade === "LOW"}
+              sessionKey="pcc.ep.grade-confidence"
+              expandAll={expandGen}
+              collapseAll={collapseGen}
+              badge={
+                <GradeConfidenceBadge confidence={selectedFinding._confidence} />
+              }
+            >
+              <GradeConfidencePane confidence={selectedFinding._confidence} />
+            </CollapsiblePane>
+          )}
 
         </>
       ) : (

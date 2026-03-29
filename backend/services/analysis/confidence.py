@@ -1,18 +1,22 @@
 """GRADE-inspired per-finding confidence scoring (Track 4A).
 
 Each finding receives a confidence grade (HIGH / MODERATE / LOW) based on
-6 evidence dimensions.  The baseline is MODERATE (sum = 0).
+9 evidence dimensions.  The baseline is MODERATE (sum = 0).
 
-| Dim | Upgrade (+1)                      | Neutral (0)  | Downgrade (-1)              | Skip              |
+| Dim | Upgrade (+1)                      | Neutral (0)  | Downgrade (-1/-2)           | Skip              |
 |-----|-----------------------------------|--------------|-----------------------------|---------------------|
 | D1  | p_adj<0.01 AND trend<0.05         | p_adj<0.05   | Neither significant         | —                  |
-| D2  | Monotonic                         | Threshold    | Non-monotonic / flat        | Insufficient data  |
-| D3  | Corroborated                      | —            | Uncorroborated              | Not applicable     |
-| D4  | Outside HCD range                 | —            | Within HCD range            | No HCD data        |
-| D5  | Both sexes concordant + TR        | Same dir,    | Discordant                  | No sibling         |
-|     |                                   | opp not TR   |                             |                    |
+| D2  | Monotonic (or expected NMDR)      | Threshold    | Non-monotonic / flat        | Insufficient data  |
+| D3  | Corroborated                      | —            | Uncorroborated              | N/A or D9 suppressed |
+| D4  | Outside HCD range                 | —            | Within HCD range            | No HCD or D9 supp  |
+| D5  | Both sexes concordant + TR        | Same dir     | Discordant                  | No sib or D9 supp  |
 | D6  | —                                 | Outside zone | Max step 0.75-1.0 SD        | Not Tier 2         |
-| D7  | Aligns with concern + TR          | —            | —                           | No concern dir     |
+| D7  | Aligns with concern + TR          | —            | —                           | No concern or D9   |
+| D8  | N ≥ reference                     | 50-99% ref   | 25-49% ref (-1) / <25% (-2)| —                  |
+| D9  | —                                 | No match     | Matches expected-effect     | No profile set     |
+
+D9 interaction: when D9 = -1, D3/D4/D5/D7 are suppressed (Option B).
+D1×D8 interaction: D8 capped at -1 when D1 ≥ +1 (strong stat overcomes severe underpower).
 
 Grade: sum ≥ 2 → HIGH, 0–1 → MODERATE, ≤ -1 → LOW
 """
@@ -267,25 +271,370 @@ def _score_d7_direction_concern(f: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# D8: Sample-size adequacy
+# ---------------------------------------------------------------------------
+
+# Reference N per sex per group by study type (from sample-size research)
+_REFERENCE_N: dict[str, int] = {
+    "rodent_repeat_dose": 10,        # OECD TG 408 / pharma practice
+    "rodent_subacute": 5,            # OECD TG 407
+    "dog_repeat_dose": 4,            # OECD TG 409
+    "nhp_biologics": 3,              # ICH S6(R1) / NC3Rs
+    "safety_pharm_cv_crossover": 6,  # 4 crossover = 6 parallel-equivalent
+    "safety_pharm_cv_parallel": 6,   # ICH S7A / Leishman 2023
+    "safety_pharm_cns_resp": 8,      # ICH S7A / industry practice
+    "carcinogenicity": 50,           # OECD TG 451
+    "reproductive_definitive": 20,   # OECD TG 414 / ICH S5(R3)
+    "dose_range_finder_rodent": 5,   # Industry practice
+    "dose_range_finder_nonrodent": 2, # Industry practice
+    "default": 5,                    # Conservative fallback
+}
+
+
+def _get_reference_n(f: dict, study_meta: dict | None = None) -> int:
+    """Determine reference N for this finding's study context."""
+    if study_meta:
+        ref_key = study_meta.get("reference_n_key")
+        if ref_key and ref_key in _REFERENCE_N:
+            return _REFERENCE_N[ref_key]
+    return _REFERENCE_N["default"]
+
+
+def _get_effective_n(f: dict) -> int | None:
+    """Extract the minimum per-group N from group_stats (excluding control)."""
+    group_stats = f.get("group_stats", [])
+    if len(group_stats) < 2:
+        return None
+    # N from treated groups (dose_level > 0)
+    treated_ns = [
+        g.get("n", 0) for g in group_stats
+        if g.get("dose_level", 0) > 0 and g.get("n") is not None
+    ]
+    if not treated_ns:
+        # Fallback: use all groups
+        treated_ns = [g.get("n", 0) for g in group_stats if g.get("n") is not None]
+    return min(treated_ns) if treated_ns else None
+
+
+def _score_d8_sample_size(f: dict, d1_score: int | None, study_meta: dict | None = None) -> dict:
+    """Score sample-size adequacy based on effective N vs reference N.
+
+    D1×D8 interaction: when D1 ≥ +1, D8 is capped at -1 (not -2).
+    """
+    effective_n = _get_effective_n(f)
+    if effective_n is None:
+        return _dim("D8", "Sample-size adequacy", None, "Cannot determine group N — skipped")
+
+    ref_n = _get_reference_n(f, study_meta)
+    ratio = effective_n / ref_n if ref_n > 0 else 0
+
+    if ratio >= 1.0:
+        score = +1
+        rationale = f"N={effective_n} ≥ reference N={ref_n} — adequately powered"
+    elif ratio >= 0.5 and effective_n >= 3:
+        score = 0
+        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — acceptable"
+    elif ratio >= 0.25 and effective_n >= 2:
+        score = -1
+        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — underpowered"
+    else:
+        score = -2
+        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — severely underpowered"
+
+    # D1×D8 interaction: cap at -1 when D1 is strong
+    if score == -2 and d1_score is not None and d1_score >= 1:
+        score = -1
+        rationale += " (capped at -1: strong statistical signal despite low N)"
+
+    return _dim("D8", "Sample-size adequacy", score, rationale)
+
+
+# ---------------------------------------------------------------------------
+# D9: Pharmacological expectation
+# ---------------------------------------------------------------------------
+
+# 7 never-reclassifiable conditions (from severity-thresholds research)
+_NEVER_RECLASSIFIABLE = [
+    ("MI", {"MYOCARDITIS"}, None, "Myocarditis at any grade"),
+    ("LB", {"TROPI", "TROPONI", "CTNI", "CTNNI", "CTNT"}, "up",
+     "Troponin elevation above reference range"),
+    # Hy's Law: checked separately (ALT >3x + BILI >2x)
+    ("MI", {"NECROSIS"}, None,
+     "Necrosis at injection site — non-reversible tissue destruction"),
+    ("LB", {"PLAT", "PLT"}, "down",
+     "Platelet count <20k/uL (checked via magnitude, not just direction)"),
+]
+
+
+def _is_never_reclassifiable(f: dict) -> tuple[bool, str]:
+    """Check if finding matches a never-reclassifiable condition."""
+    domain = f.get("domain", "")
+    test_code = (f.get("test_code") or "").upper()
+    finding_text = (f.get("finding") or "").upper()
+    direction = f.get("direction", "")
+
+    for nr_domain, nr_terms, nr_direction, reason in _NEVER_RECLASSIFIABLE:
+        if domain != nr_domain:
+            continue
+        if nr_direction and direction != nr_direction:
+            continue
+        # Check test_code or finding text against terms
+        if test_code in nr_terms or any(t in finding_text for t in nr_terms):
+            return True, reason
+
+    # BW loss >20% (check max_fold_change)
+    if domain == "BW" and direction == "down":
+        fc = f.get("max_fold_change")
+        if fc is not None and fc >= 0.20:
+            return True, "Body weight loss ≥20%"
+
+    return False, ""
+
+
+def _matches_expected_finding(f: dict, ee_key: str, ee_config: dict) -> bool:
+    """Check if a finding matches an expected-effect profile entry."""
+    domain = f.get("domain", "")
+    if domain != ee_config.get("domain", ""):
+        return False
+
+    # Direction check
+    ee_direction = ee_config.get("direction")
+    if ee_direction and f.get("direction") != ee_direction:
+        return False
+
+    # Species applicability check
+    species_list = ee_config.get("species_applicability")
+    if species_list:
+        # Species is not always on the finding — skip check if unavailable
+        f_species = (f.get("_species") or "").upper()
+        if f_species and not any(s.upper() in f_species for s in species_list):
+            return False
+
+    test_code = (f.get("test_code") or "").upper()
+    specimen = (f.get("specimen") or "").upper()
+    finding_text = (f.get("finding") or "").upper()
+
+    # LB/BW/OM/EG/VS: match by test_codes
+    if "test_codes" in ee_config:
+        ee_codes = {c.upper() for c in ee_config["test_codes"]}
+        # Try normalized test code too
+        try:
+            from services.analysis.send_knowledge import normalize_test_code
+            normalized = normalize_test_code(test_code)
+            if normalized.upper() in ee_codes or test_code in ee_codes:
+                return True
+        except ImportError:
+            if test_code in ee_codes:
+                return True
+        return False
+
+    # MI/MA/CL: match by organs + findings
+    if "organs" in ee_config:
+        ee_organs = {o.upper() for o in ee_config["organs"]}
+        # Check specimen against organ list (with normalization)
+        organ_match = specimen in ee_organs
+        if not organ_match:
+            try:
+                from services.analysis.send_knowledge import normalize_organ
+                normalized_organ = normalize_organ(specimen)
+                organ_match = normalized_organ.upper() in ee_organs
+            except ImportError:
+                pass
+        if not organ_match:
+            return False
+
+        # Check finding text
+        if "findings" in ee_config:
+            ee_findings = {ft.upper() for ft in ee_config["findings"]}
+            if not any(ef in finding_text for ef in ee_findings):
+                return False
+
+        return True
+
+    return False
+
+
+def _score_d9_pharmacological(
+    f: dict,
+    expected_profile: dict | None,
+) -> dict:
+    """Score pharmacological expectation.
+
+    When a finding matches a confirmed expected-effect profile, D9 = -1.
+    When D9 fires, D3/D4/D5/D7 should be suppressed (handled in compute_confidence).
+    """
+    if not expected_profile or not expected_profile.get("confirmed_by_sme"):
+        return _dim("D9", "Pharmacological expectation", None,
+                     "No confirmed compound profile — skipped")
+
+    # Never-reclassifiable guard
+    is_nr, nr_reason = _is_never_reclassifiable(f)
+    if is_nr:
+        return _dim("D9", "Pharmacological expectation", 0,
+                     f"Finding matches never-reclassifiable condition: {nr_reason}")
+
+    expected_findings = expected_profile.get("expected_findings", [])
+    # Support both list (profile JSON) and dict (annotation override) formats
+    if isinstance(expected_findings, dict):
+        items = expected_findings.items()
+    else:
+        items = [(ef.get("key", ""), ef) for ef in expected_findings]
+
+    for ee_key, ee_config in items:
+        if isinstance(ee_config, dict) and not ee_config.get("included", True):
+            continue
+        if _matches_expected_finding(f, ee_key, ee_config):
+            compound_class = expected_profile.get("compound_class",
+                                                   expected_profile.get("profile_id", "unknown"))
+            return _dim("D9", "Pharmacological expectation", -1,
+                         f"Matches expected pharmacological effect '{ee_key}' "
+                         f"from {compound_class} profile")
+
+    return _dim("D9", "Pharmacological expectation", 0,
+                 "No match against expected-effect profile")
+
+
+# ---------------------------------------------------------------------------
+# D2 redesign: compound-class-aware non-monotonic scoring
+# ---------------------------------------------------------------------------
+
+# Compound classes with expected NMDR endpoints (from non-monotonic DR research)
+_NMDR_EXPECTED: dict[str, set[str]] = {
+    "beta_agonist": {"RR", "TV", "MV", "HR", "SBP", "DBP", "MAP"},
+    "sympathomimetic": {"RR", "TV", "MV", "HR", "SBP", "DBP", "MAP"},
+    "partial_mor_agonist": {"RR", "TV", "MV"},
+    "full_mor_agonist": {"ACTIVITY", "LOCOMOTOR"},
+    "anticholinergic": {"HR"},
+    "muscarinic_antagonist": {"HR"},
+    "alpha2_agonist": {"MAP", "HR", "RR", "SBP", "DBP"},
+    "dopamine_agonist": {"ACTIVITY", "LOCOMOTOR"},
+    "vasodilator": {"HR"},
+    "gabaergic": {"ACTIVITY", "LOCOMOTOR"},
+    "mtor_inhibitor": {"LYM", "LYMPH"},
+}
+
+
+def _score_d2_dose_response_v2(f: dict, compound_class: str | None = None) -> dict:
+    """Compound-class-aware dose-response quality scoring.
+
+    Non-monotonic patterns scored via 3-tier decision tree:
+    - Expected NMDR (compound class + endpoint match): +1
+    - Ambiguous NMDR: 0
+    - Noise/unexplained NMDR: -1
+    """
+    pattern = f.get("dose_response_pattern", "insufficient_data")
+
+    if pattern == "insufficient_data":
+        return _dim("D2", "Dose-response quality", None, "Insufficient data — skipped")
+
+    if pattern in _UPGRADE_PATTERNS:
+        return _dim("D2", "Dose-response quality", +1, f"Pattern: {pattern}")
+
+    if pattern in _NEUTRAL_PATTERNS:
+        return _dim("D2", "Dose-response quality", 0, f"Pattern: {pattern}")
+
+    if pattern not in _DOWNGRADE_PATTERNS:
+        return _dim("D2", "Dose-response quality", 0, f"Pattern: {pattern} (unknown — neutral)")
+
+    # Non-monotonic pattern detected — apply compound-class-aware scoring
+    if compound_class:
+        test_code = (f.get("test_code") or "").upper()
+        cc_lower = compound_class.lower().replace("-", "_").replace(" ", "_")
+        # Check all matching compound class entries
+        for cc_key, expected_endpoints in _NMDR_EXPECTED.items():
+            if cc_key in cc_lower:
+                if test_code in expected_endpoints:
+                    return _dim("D2", "Dose-response quality", +1,
+                                 f"Pattern: {pattern} — expected NMDR for "
+                                 f"{compound_class} at {test_code}")
+
+        # Compound class known but endpoint not in NMDR-expected list → ambiguous
+        return _dim("D2", "Dose-response quality", 0,
+                     f"Pattern: {pattern} — compound class '{compound_class}' "
+                     f"known but {test_code} not in expected NMDR endpoints")
+
+    # No compound class → default penalty
+    return _dim("D2", "Dose-response quality", -1, f"Pattern: {pattern}")
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def compute_confidence(finding: dict, sibling: dict | None) -> dict:
-    """Compute GRADE-style confidence for a single finding."""
-    dims = [
-        _score_d1_statistical(finding),
-        _score_d2_dose_response(finding),
-        _score_d3_concordance(finding),
-        _score_d4_hcd(finding),
-        _score_d5_cross_sex(finding, sibling),
-        _score_d6_tier2_equivocal(finding),
-        _score_d7_direction_concern(finding),
-    ]
-    return _result(dims)
+def compute_confidence(
+    finding: dict,
+    sibling: dict | None,
+    expected_profile: dict | None = None,
+    study_meta: dict | None = None,
+) -> dict:
+    """Compute GRADE-style confidence for a single finding.
+
+    Args:
+        finding: The finding dict with stats and classification fields.
+        sibling: Cross-sex sibling finding (same endpoint, opposite sex).
+        expected_profile: Confirmed expected-effect profile (for D9).
+        study_meta: Study-level metadata (for D8 reference N lookup).
+    """
+    d1 = _score_d1_statistical(finding)
+
+    # D2: use compound-class-aware version if profile available
+    compound_class = None
+    if expected_profile:
+        compound_class = expected_profile.get("compound_class",
+                                               expected_profile.get("profile_id"))
+    if study_meta:
+        compound_class = compound_class or study_meta.get("compound_class")
+    d2 = _score_d2_dose_response_v2(finding, compound_class)
+
+    d3 = _score_d3_concordance(finding)
+    d4 = _score_d4_hcd(finding)
+    d5 = _score_d5_cross_sex(finding, sibling)
+    d6 = _score_d6_tier2_equivocal(finding)
+    d7 = _score_d7_direction_concern(finding)
+    d8 = _score_d8_sample_size(finding, d1["score"], study_meta)
+    d9 = _score_d9_pharmacological(finding, expected_profile)
+
+    # D9 interaction (Option B): when D9 fires, suppress D3/D4/D5/D7
+    if d9["score"] is not None and d9["score"] < 0:
+        _pharm_reason = "Suppressed — finding matches expected pharmacological profile"
+        if d3["score"] is not None:
+            d3 = _dim("D3", "Concordance", None,
+                       f"{_pharm_reason}; cross-domain concordance is expected "
+                       f"for pharmacological effects (was {d3['score']:+d})")
+        if d4["score"] is not None:
+            d4 = _dim("D4", "Historical controls", None,
+                       f"{_pharm_reason}; being outside HCD is expected "
+                       f"for pharmacological effects (was {d4['score']:+d})")
+        if d5["score"] is not None:
+            d5 = _dim("D5", "Cross-sex consistency", None,
+                       f"{_pharm_reason}; cross-sex consistency is expected "
+                       f"for pharmacological effects (was {d5['score']:+d})")
+        if d7["score"] is not None:
+            d7 = _dim("D7", "Direction alignment", None,
+                       f"{_pharm_reason}; direction alignment is expected "
+                       f"for pharmacological effects (was {d7['score']:+d})")
+
+    dims = [d1, d2, d3, d4, d5, d6, d7, d8, d9]
+    result = _result(dims)
+
+    # Flag for downstream: finding is a pharmacological candidate
+    if d9["score"] is not None and d9["score"] < 0:
+        result["_pharmacological_candidate"] = True
+
+    return result
 
 
-def compute_all_confidence(findings: list[dict]) -> list[dict]:
+def compute_all_confidence(
+    findings: list[dict],
+    expected_profile: dict | None = None,
+    study_meta: dict | None = None,
+) -> list[dict]:
     """Score confidence for all findings, building cross-sex index internally.
+
+    Args:
+        findings: List of finding dicts.
+        expected_profile: Confirmed expected-effect profile (for D9).
+        study_meta: Study-level metadata (for D8 reference N, compound class).
 
     Cross-sex sibling: same (endpoint_label, day) but opposite sex.
     Sex-specific organs (TESTES, OVARIES, UTERUS, PROSTATE, EPIDIDYMIS,
@@ -314,6 +663,10 @@ def compute_all_confidence(findings: list[dict]) -> list[dict]:
             sib_key = (f.get("endpoint_label", ""), f.get("day"), opp_sex)
             sibling = sex_index.get(sib_key)
 
-        f["_confidence"] = compute_confidence(f, sibling)
+        f["_confidence"] = compute_confidence(
+            f, sibling,
+            expected_profile=expected_profile,
+            study_meta=study_meta,
+        )
 
     return findings

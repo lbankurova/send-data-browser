@@ -176,7 +176,7 @@ export interface UnifiedFinding {
 export interface ConfidenceDimension {
   dimension: string;
   label: string;
-  /** +1 (upgrade), 0 (neutral), -1 (downgrade), null (skipped). */
+  /** +1 (upgrade), 0 (neutral), -1 (downgrade), -2 (D8 severe underpower), null (skipped/suppressed). */
   score: number | null;
   rationale: string;
 }
@@ -187,6 +187,8 @@ export interface EvidenceConfidence {
   n_scored: number;
   n_skipped: number;
   grade: "HIGH" | "MODERATE" | "LOW";
+  /** True when D9 fired — finding matches expected pharmacological profile. */
+  _pharmacological_candidate?: boolean;
 }
 
 export interface WilliamsStepDownResult {

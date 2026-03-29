@@ -64,6 +64,8 @@ _TS_PARAMS = {
     "TRTV": "vehicle",
     "SPONSOR": "sponsor",
     "TESTCD": "test_article",
+    "PCLAS": "pharmacologic_class",
+    "INTTYPE": "intervention_type",
 }
 
 

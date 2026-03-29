@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "description": "Canonical test code registry. Maps LBTESTCD aliases to canonical codes across heterogeneous SEND datasets. Source: 6-study vocabulary analysis (send-test-code-matching.md).",
+
+  "alias_groups": {
+    "BUN_GROUP": { "canonical": "BUN", "aliases": ["UREAN", "UREA"], "analyte": "Blood urea nitrogen" },
+    "ALT_GROUP": { "canonical": "ALT", "aliases": ["ALAT"], "analyte": "Alanine aminotransferase" },
+    "AST_GROUP": { "canonical": "AST", "aliases": ["ASAT"], "analyte": "Aspartate aminotransferase" },
+    "ALP_GROUP": { "canonical": "ALP", "aliases": ["ALKP"], "analyte": "Alkaline phosphatase" },
+    "BILI_GROUP": { "canonical": "BILI", "aliases": ["TBILI", "TBIL"], "analyte": "Total bilirubin" },
+    "CREAT_GROUP": { "canonical": "CREAT", "aliases": ["CREA"], "analyte": "Creatinine" },
+    "RETI_GROUP": { "canonical": "RETI", "aliases": ["RETIC", "RET"], "analyte": "Reticulocytes" },
+    "RETIRBC_GROUP": { "canonical": "RETIRBC", "aliases": [], "analyte": "Reticulocyte/RBC ratio" },
+    "PLAT_GROUP": { "canonical": "PLAT", "aliases": ["PLT"], "analyte": "Platelet count" },
+    "HGB_GROUP": { "canonical": "HGB", "aliases": ["HB"], "analyte": "Hemoglobin" },
+    "NEUT_GROUP": { "canonical": "NEUT", "aliases": ["ANC", "HET", "HETERO"], "analyte": "Neutrophils" },
+    "LYM_GROUP": { "canonical": "LYM", "aliases": ["LYMPH", "LYMLE"], "analyte": "Lymphocytes" },
+    "SODIUM_GROUP": { "canonical": "SODIUM", "aliases": ["NA"], "analyte": "Sodium" },
+    "GLOB_GROUP": { "canonical": "GLOB", "aliases": ["GLOBUL"], "analyte": "Globulin" },
+    "PROT_GROUP": { "canonical": "PROT", "aliases": ["TP"], "analyte": "Total protein" },
+    "SPGRAV_GROUP": { "canonical": "SPGRAV", "aliases": ["SG", "UOSMO"], "analyte": "Specific gravity" },
+    "GLDH_GROUP": { "canonical": "GLDH", "aliases": ["GDH"], "analyte": "Glutamate dehydrogenase" },
+    "CRP_GROUP": { "canonical": "CRP", "aliases": ["CRPTN"], "analyte": "C-reactive protein" },
+    "FIBRINO_GROUP": { "canonical": "FIBRINO", "aliases": ["FIB"], "analyte": "Fibrinogen" },
+    "T4_GROUP": { "canonical": "T4", "aliases": ["THYROX"], "analyte": "Thyroxine" },
+    "CORTCST_GROUP": { "canonical": "CORTCST", "aliases": ["CORT"], "analyte": "Corticosterone/cortisol" },
+    "HAPTO_GROUP": { "canonical": "HAPTO", "aliases": ["HPT"], "analyte": "Haptoglobin" },
+    "QTC_GROUP": { "canonical": "QTCB", "aliases": ["QTCBAG", "QTCFAG", "QTCVAG", "QTCAG"], "analyte": "QTc interval" },
+    "TROPONIN_GROUP": { "canonical": "TROP", "aliases": ["CTNI", "CTNT", "TNNI", "TNNT"], "analyte": "Cardiac troponin" },
+    "ALBGLOB_GROUP": { "canonical": "ALBGLOB", "aliases": ["ALGLOB", "A/G", "AGRATIO"], "analyte": "Albumin/globulin ratio" }
+  },
+
+  "self_canonical": [
+    "ALB", "ALP", "ALT", "AST", "BASO", "BILI", "CA", "CHOL", "CL", "CREAT",
+    "EOS", "FIBRINO", "GGT", "GLOB", "GLUC", "HCT", "HGB", "K", "LYM",
+    "MCH", "MCHC", "MCV", "MONO", "NEUT", "PHOS", "PLAT", "PROT", "PT",
+    "RBC", "RDW", "SODIUM", "TRIG", "WBC", "RETIRBC"
+  ]
+}

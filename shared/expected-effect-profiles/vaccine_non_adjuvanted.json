@@ -1,0 +1,74 @@
+{
+  "profile_id": "vaccine_non_adjuvanted",
+  "display_name": "Non-adjuvanted vaccine",
+  "modality": "vaccine",
+  "source": "STP Points to Consider (Sellers et al., 2020)",
+  "description": "Expected findings for non-adjuvanted vaccine studies. Subset of adjuvanted profile: no injection site inflammation, lower acute phase magnitude",
+  "expected_findings": [
+    {
+      "key": "LB_CRP_up",
+      "domain": "LB",
+      "test_codes": ["CRP", "CRPTN"],
+      "direction": "up",
+      "description": "C-reactive protein elevation (acute phase response)",
+      "typical_magnitude": "2-10x baseline",
+      "severity_threshold": null,
+      "species_applicability": ["RABBIT", "MONKEY", "DOG"],
+      "species_note": "Not a sensitive marker in rodents (use alpha-1-acid glycoprotein)",
+      "rationale": "Acute phase response to antigen. Lower magnitude than adjuvanted vaccines"
+    },
+    {
+      "key": "LB_Fibrinogen_up",
+      "domain": "LB",
+      "test_codes": ["FIBRINO", "FIB"],
+      "direction": "up",
+      "description": "Fibrinogen elevation (acute phase)",
+      "typical_magnitude": "1.2-1.5x baseline",
+      "severity_threshold": null,
+      "species_applicability": ["RABBIT", "MONKEY", "DOG"],
+      "rationale": "Acute phase protein, secondary to immune activation"
+    },
+    {
+      "key": "MI_spleen_hyperplasia",
+      "domain": "MI",
+      "organs": ["SPLEEN"],
+      "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY", "LYMPHOID HYPERPLASIA"],
+      "direction": "up",
+      "description": "Splenic lymphoid hyperplasia",
+      "severity_threshold": "moderate",
+      "species_applicability": null,
+      "rationale": "Expected immune response - active germinal center reaction to antigen"
+    },
+    {
+      "key": "MI_ln_hyperplasia",
+      "domain": "MI",
+      "organs": ["LYMPH NODE", "ILIAC LYMPH NODE", "INGUINAL LYMPH NODE"],
+      "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY"],
+      "direction": "up",
+      "description": "Draining lymph node hyperplasia",
+      "severity_threshold": null,
+      "species_applicability": null,
+      "rationale": "Expected draining lymph node reaction to vaccine antigen"
+    },
+    {
+      "key": "LB_Globulin_up",
+      "domain": "LB",
+      "test_codes": ["GLOBUL", "GLOB"],
+      "direction": "up",
+      "description": "Globulin increase (immunoglobulin production)",
+      "severity_threshold": null,
+      "species_applicability": null,
+      "rationale": "Expected humoral immune response"
+    },
+    {
+      "key": "LB_AG_ratio_down",
+      "domain": "LB",
+      "test_codes": ["A/G", "AGRATIO", "ALGLOB"],
+      "direction": "down",
+      "description": "A/G ratio decrease",
+      "severity_threshold": null,
+      "species_applicability": null,
+      "rationale": "Secondary to globulin increase - not an independent finding"
+    }
+  ]
+}

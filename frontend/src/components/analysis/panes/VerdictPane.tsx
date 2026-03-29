@@ -12,6 +12,7 @@ import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-trans
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
+import { PharmacologicalBadge } from "@/components/ui/PharmacologicalBadge";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -174,8 +175,26 @@ export function VerdictPane({
     return `Clinical sig. ${tier}${fcStr}`;
   })();
 
+  // Pharmacological candidate (D9 fired)
+  const isPharmCandidate = finding._confidence?._pharmacological_candidate === true;
+  const pharmRationale = isPharmCandidate
+    ? (finding._confidence?.dimensions?.find(d => d.dimension === "D9")?.rationale ?? null)
+    : null;
+
   return (
     <div>
+      {/* Pharmacological candidate indicator */}
+      {isPharmCandidate && (
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <PharmacologicalBadge rationale={pharmRationale} />
+          {pharmRationale && (
+            <span className="text-[10px] text-muted-foreground truncate" title={pharmRationale}>
+              {pharmRationale}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Clinical significance line */}
       {clinicalLine && (
         <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">

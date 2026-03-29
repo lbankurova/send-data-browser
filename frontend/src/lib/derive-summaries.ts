@@ -99,6 +99,10 @@ export interface EndpointSummary {
   domains?: string[];
   /** Pre-computed qualifier tag string for MI/MA (e.g. "acute, centrilobular"). */
   qualifierTags?: string | null;
+  /** True when any finding for this endpoint has _confidence._pharmacological_candidate set. */
+  isPharmacologicalCandidate?: boolean;
+  /** D9 rationale string from the confidence dimension (for tooltip display). */
+  pharmacologicalRationale?: string;
 }
 
 export interface OrganCoherence {

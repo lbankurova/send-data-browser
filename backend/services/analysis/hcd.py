@@ -375,6 +375,162 @@ def _evaluate_hcd(
 
 
 # ---------------------------------------------------------------------------
+# A-3 assessment for LB (clinical pathology) domain
+# ---------------------------------------------------------------------------
+
+def assess_a3_lb(
+    treated_group_mean: float | None,
+    test_code: str,
+    sex: str,
+    species: str | None,
+    strain: str | None,
+    duration_days: int | None,
+    *,
+    control_group_mean: float | None = None,
+) -> dict:
+    """Assess A-3 factor for LB findings: is the treated-group mean within HCD?
+
+    Looks up clinical pathology reference ranges from the LB HCD database
+    (populated by etl.hcd_lb_etl from published reference data).
+
+    The LB HCD database is keyed by species (not strain like OM), with
+    optional strain-specific refinement. Query hierarchy:
+      1. Exact species + strain match
+      2. Species-only match (highest confidence source)
+
+    For log-normal parameters (ViCoG Wistar Han data), the bounds are
+    tolerance intervals, not mean +/- 2*SD. The comparison logic is the
+    same: value inside [lower, upper] = within_hcd.
+
+    Returns dict with:
+      result: 'within_hcd' | 'outside_hcd' | 'no_hcd'
+      score: -0.5 | +0.5 | 0.0
+      detail: human-readable annotation
+      domain: 'LB' (to distinguish from OM HCD assessments)
+    """
+    if treated_group_mean is None:
+        return {"result": "no_hcd", "score": 0.0, "detail": "No treated-group mean available",
+                "domain": "LB"}
+
+    dur_cat = _duration_to_category(duration_days)
+    if not dur_cat:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"Duration {duration_days}d outside HCD coverage",
+                "domain": "LB"}
+
+    sqlite_db = _load_sqlite_db()
+    if sqlite_db is None or not getattr(sqlite_db, 'lb_available', False):
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": "LB HCD database not available",
+                "domain": "LB"}
+
+    # Resolve species
+    canonical_species = sqlite_db.resolve_species(species)
+    if not canonical_species:
+        # Try extracting from strain
+        canonical_strain, canonical_species_from_strain = sqlite_db.resolve_lb_strain(strain)
+        if canonical_species_from_strain:
+            canonical_species = canonical_species_from_strain
+        else:
+            return {"result": "no_hcd", "score": 0.0,
+                    "detail": f"Species '{species}' not in LB HCD database",
+                    "domain": "LB"}
+
+    # Resolve strain for refinement
+    canonical_strain = None
+    if strain:
+        resolved_strain, _ = sqlite_db.resolve_lb_strain(strain)
+        if resolved_strain:
+            canonical_strain = resolved_strain
+
+    # Normalize test code before lookup (BUN/UREAN/UREA → canonical)
+    # Also collect all aliases to try — the HCD database may use a different
+    # variant of the same analyte code than the study data.
+    try:
+        from services.analysis.send_knowledge import normalize_test_code, get_test_code_aliases
+        normalized_code = normalize_test_code(test_code)
+        codes_to_try = get_test_code_aliases(test_code)
+        # Ensure normalized code is first (most likely match)
+        if normalized_code in codes_to_try:
+            codes_to_try.remove(normalized_code)
+        codes_to_try.insert(0, normalized_code)
+    except ImportError:
+        normalized_code = test_code
+        codes_to_try = [test_code]
+
+    # Query LB HCD — try each code variant until we find a match
+    hcd = None
+    matched_code = normalized_code
+    for code_variant in codes_to_try:
+        hcd = sqlite_db.query_lb(
+            species=canonical_species,
+            sex=sex,
+            test_code=code_variant,
+            duration_category=dur_cat,
+            strain=canonical_strain,
+        )
+        if hcd:
+            matched_code = code_variant
+            break
+
+    if not hcd:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"No LB HCD for {canonical_species}/{normalized_code}/{sex}/{dur_cat} "
+                          f"(tried: {', '.join(codes_to_try)})",
+                "domain": "LB"}
+
+    # Evaluate: is treated mean within [lower, upper]?
+    lower = hcd["lower"]
+    upper = hcd["upper"]
+    within = lower <= treated_group_mean <= upper
+
+    result_str = "within_hcd" if within else "outside_hcd"
+    score = -0.5 if within else 0.5
+
+    # Build center description
+    center_desc = ""
+    if hcd.get("mean") is not None and hcd.get("sd") is not None:
+        center_desc = f"ref: {hcd['mean']:.4f}+/-{hcd['sd']:.4f}"
+    elif hcd.get("geom_mean") is not None:
+        center_desc = f"ref: geom_mean={hcd['geom_mean']:.4f} (log-normal)"
+    elif hcd.get("median") is not None:
+        center_desc = f"ref: median={hcd['median']:.4f} (nonparametric RI)"
+
+    detail = (
+        f"Treated mean {treated_group_mean:.4f} vs LB HCD "
+        f"[{lower:.4f}, {upper:.4f}] "
+        f"({center_desc}, n={hcd['n']}, {hcd['source']})"
+    )
+
+    out: dict = {
+        "result": result_str,
+        "score": score,
+        "detail": detail,
+        "domain": "LB",
+        "n": hcd["n"],
+        "source": hcd["source"],
+        "confidence": hcd.get("confidence", "MODERATE"),
+        "test_code": test_code,
+    }
+
+    # Warn if this is a flagged parameter
+    notes = hcd.get("notes", "")
+    if notes and "CAUTION" in notes:
+        out["caution"] = notes
+
+    # Control vs HCD check
+    if control_group_mean is not None:
+        hcd_mean = hcd.get("mean") or hcd.get("geom_mean") or hcd.get("median") or 0
+        hcd_sd = hcd.get("sd") or (abs(upper - lower) / 4) or 1  # estimate SD from range
+        _check_control_vs_hcd(out, control_group_mean, lower, upper, hcd_mean, hcd_sd)
+    else:
+        out["control_outside_hcd"] = False
+        out["control_hcd_detail"] = "No control mean available"
+
+    return out
+
+
+# ---------------------------------------------------------------------------
 # TS domain extraction helpers
 # ---------------------------------------------------------------------------
 

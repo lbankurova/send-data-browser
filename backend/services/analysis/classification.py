@@ -795,6 +795,36 @@ def _compute_a3_for_om(
                      control_group_mean=control_mean)
 
 
+def _compute_a3_for_lb(
+    finding: dict,
+    species: str | None,
+    strain: str | None,
+    duration_days: int | None,
+) -> dict:
+    """Compute A-3 (HCD) score for an LB (clinical pathology) finding.
+
+    Compares the highest-dose group mean against the LB HCD reference range
+    for the matching species/sex/test_code/duration.
+    """
+    from services.analysis.hcd import assess_a3_lb
+
+    # Get highest-dose and control group means
+    gs = finding.get("group_stats", [])
+    treated_mean = None
+    control_mean = None
+    if gs:
+        treated_mean = gs[-1].get("mean")
+        control_mean = gs[0].get("mean")  # dose_level 0 = vehicle control
+
+    test_code = finding.get("test_code", "")
+    sex = finding.get("sex", "")
+
+    return assess_a3_lb(
+        treated_mean, test_code, sex, species, strain, duration_days,
+        control_group_mean=control_mean,
+    )
+
+
 def _evaluate_b6_for_finding(
     finding: dict,
     index,
@@ -870,6 +900,14 @@ def assess_finding_with_context(
                                         route=route, vehicle=vehicle)
         a3_score = a3_result["score"]
         finding["_hcd_assessment"] = a3_result
+
+    # Compute A-3 for LB findings (clinical pathology vs HCD reference ranges)
+    if domain == "LB":
+        a3_result = _compute_a3_for_lb(
+            finding, species, strain, duration_days,
+        )
+        if a3_result["result"] != "no_hcd":
+            finding["_hcd_assessment"] = a3_result
 
     # OM domain → two-gate organ-specific classification
     if domain == "OM":

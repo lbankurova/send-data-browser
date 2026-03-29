@@ -581,7 +581,7 @@ describe.runIf(hasGenerated)(
     });
 
     test("_confidence structure is valid", () => {
-      const VALID_DIMS = new Set(["D1", "D2", "D3", "D4", "D5", "D6", "D7"]);
+      const VALID_DIMS = new Set(["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9"]);
       const VALID_GRADES = new Set(["HIGH", "MODERATE", "LOW"]);
       const bad: string[] = [];
       for (const f of findings) {
@@ -589,19 +589,20 @@ describe.runIf(hasGenerated)(
         if (!VALID_GRADES.has(c.grade)) {
           bad.push(`${f.id}: invalid grade "${c.grade}"`);
         }
-        if (c.dimensions.length !== 7) {
-          bad.push(`${f.id}: expected 7 dimensions, got ${c.dimensions.length}`);
+        if (c.dimensions.length !== 9) {
+          bad.push(`${f.id}: expected 9 dimensions, got ${c.dimensions.length}`);
         }
         for (const d of c.dimensions) {
           if (!VALID_DIMS.has(d.dimension)) {
             bad.push(`${f.id}: unknown dimension "${d.dimension}"`);
           }
-          if (d.score !== null && ![-1, 0, 1].includes(d.score)) {
+          // D8 can score -2 (severely underpowered)
+          if (d.score !== null && ![-2, -1, 0, 1].includes(d.score)) {
             bad.push(`${f.id}/${d.dimension}: invalid score ${d.score}`);
           }
         }
-        if (c.n_scored + c.n_skipped !== 7) {
-          bad.push(`${f.id}: n_scored(${c.n_scored}) + n_skipped(${c.n_skipped}) != 7`);
+        if (c.n_scored + c.n_skipped !== 9) {
+          bad.push(`${f.id}: n_scored(${c.n_scored}) + n_skipped(${c.n_skipped}) != 9`);
         }
       }
       expect(bad).toEqual([]);

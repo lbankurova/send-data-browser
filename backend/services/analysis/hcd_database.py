@@ -268,6 +268,153 @@ class HcdSqliteDB:
 
         return round(100.0 * below / total, 1)
 
+    # ------------------------------------------------------------------
+    # LB domain queries
+    # ------------------------------------------------------------------
+
+    @property
+    def lb_available(self) -> bool:
+        """True if the LB HCD tables exist and have data."""
+        conn = self._get_conn()
+        if conn is None:
+            return False
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_aggregates" not in tables:
+            return False
+        count = conn.execute("SELECT COUNT(*) FROM hcd_lb_aggregates").fetchone()[0]
+        return count > 0
+
+    def resolve_species(self, species_raw: str | None) -> str | None:
+        """Map raw TS SPECIES value to canonical species key for LB lookups."""
+        if not species_raw:
+            return None
+        conn = self._get_conn()
+        if conn is None:
+            return None
+        # Check LB species aliases table
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_species_aliases" not in tables:
+            return None
+        row = conn.execute(
+            "SELECT canonical FROM hcd_lb_species_aliases WHERE alias = ?",
+            (species_raw.strip().upper(),),
+        ).fetchone()
+        return row[0] if row else None
+
+    def resolve_lb_strain(self, strain_raw: str | None) -> tuple[str | None, str | None]:
+        """Map raw TS STRAIN value to (canonical_strain, canonical_species) for LB.
+
+        Returns (None, None) if no match.
+        """
+        if not strain_raw:
+            return None, None
+        conn = self._get_conn()
+        if conn is None:
+            return None, None
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_strain_aliases" not in tables:
+            return None, None
+        row = conn.execute(
+            "SELECT canonical_strain, canonical_species FROM hcd_lb_strain_aliases WHERE alias = ?",
+            (strain_raw.strip().upper(),),
+        ).fetchone()
+        if row:
+            return row[0], row[1]
+        return None, None
+
+    def query_lb(
+        self,
+        species: str,
+        sex: str,
+        test_code: str,
+        duration_category: str,
+        strain: str | None = None,
+    ) -> dict | None:
+        """Look up LB HCD aggregate by species/sex/test_code/duration.
+
+        Tries strain-specific match first, then falls back to species-only.
+
+        Returns dict with: mean, sd, geom_mean, lower, upper, n, source,
+        confidence, unit, notes. Or None if no match.
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_aggregates" not in tables:
+            return None
+
+        sex_upper = sex.strip().upper()
+        tc_upper = test_code.strip().upper()
+
+        # Try strain-specific first
+        if strain:
+            row = conn.execute(
+                """SELECT * FROM hcd_lb_aggregates
+                   WHERE species = ? AND strain = ? AND sex = ?
+                   AND test_code = ? AND duration_category = ?""",
+                (species, strain, sex_upper, tc_upper, duration_category),
+            ).fetchone()
+            if row:
+                return self._lb_row_to_dict(row, conn)
+
+        # Fall back to any strain for this species
+        row = conn.execute(
+            """SELECT * FROM hcd_lb_aggregates
+               WHERE species = ? AND sex = ?
+               AND test_code = ? AND duration_category = ?
+               ORDER BY
+                   CASE confidence
+                       WHEN 'HIGH' THEN 1
+                       WHEN 'MODERATE' THEN 2
+                       WHEN 'LOW' THEN 3
+                       ELSE 4
+                   END,
+                   n DESC
+               LIMIT 1""",
+            (species, sex_upper, tc_upper, duration_category),
+        ).fetchone()
+        if row:
+            return self._lb_row_to_dict(row, conn)
+
+        return None
+
+    @staticmethod
+    def _lb_row_to_dict(row: sqlite3.Row, conn: sqlite3.Connection) -> dict:
+        """Convert a sqlite3.Row from hcd_lb_aggregates to a dict."""
+        return {
+            "species": row["species"],
+            "strain": row["strain"],
+            "sex": row["sex"],
+            "test_code": row["test_code"],
+            "duration_category": row["duration_category"],
+            "mean": row["mean"],
+            "sd": row["sd"],
+            "geom_mean": row["geom_mean"],
+            "geom_sd": row["geom_sd"],
+            "lower": row["lower"],
+            "upper": row["upper"],
+            "median": row["median"],
+            "n": row["n"],
+            "unit": row["unit"],
+            "source": row["source"],
+            "confidence": row["confidence"],
+            "notes": row["notes"],
+        }
+
     def coverage_summary(self) -> dict:
         """Return a summary of what's in the database."""
         conn = self._get_conn()
@@ -289,7 +436,7 @@ class HcdSqliteDB:
         total_agg = conn.execute("SELECT COUNT(*) FROM hcd_aggregates").fetchone()[0]
         total_animals = conn.execute("SELECT COUNT(*) FROM animal_organ_weights").fetchone()[0]
 
-        return {
+        summary = {
             "available": True,
             "strains": strains,
             "organs": organs,
@@ -297,6 +444,30 @@ class HcdSqliteDB:
             "total_aggregates": total_agg,
             "total_animal_records": total_animals,
         }
+
+        # LB coverage (if available)
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_aggregates" in tables:
+            lb_total = conn.execute("SELECT COUNT(*) FROM hcd_lb_aggregates").fetchone()[0]
+            lb_species = [
+                r[0] for r in
+                conn.execute("SELECT DISTINCT species FROM hcd_lb_aggregates ORDER BY species")
+            ]
+            lb_tests = [
+                r[0] for r in
+                conn.execute("SELECT DISTINCT test_code FROM hcd_lb_aggregates ORDER BY test_code")
+            ]
+            summary["lb_available"] = lb_total > 0
+            summary["lb_total_aggregates"] = lb_total
+            summary["lb_species"] = lb_species
+            summary["lb_test_codes"] = lb_tests
+        else:
+            summary["lb_available"] = False
+
+        return summary
 
     @staticmethod
     def _row_to_dict(row: sqlite3.Row) -> dict:
