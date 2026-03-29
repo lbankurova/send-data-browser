@@ -757,5 +757,7 @@ def build_subject_context(study: StudyInfo) -> dict:
             "expected_profile": None,
             # Multi-control info from dose_groups (Prov-009)
             "control_info": _build_control_info(dg_data),
+            # Sex-stratified arm merge messages (Prov-010)
+            "sex_stratified_merge": dg_data.get("sex_stratified_merge", []),
         },
     }

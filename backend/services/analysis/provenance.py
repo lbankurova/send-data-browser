@@ -1,4 +1,4 @@
-"""Generate provenance messages (Prov-001 to Prov-007) from enrichment results.
+"""Generate provenance messages (Prov-001 to Prov-010) from enrichment results.
 
 Provenance messages are transparency annotations that tell the user how the
 enrichment layer interpreted the study data. They appear on the Study Summary
@@ -70,6 +70,11 @@ def generate_provenance_messages(context_result: dict) -> list[dict]:
 
     # Prov-009: Multiple control groups (conditional)
     msg = _prov_009(ctx, hints)
+    if msg:
+        messages.append(msg)
+
+    # Prov-010: Sex-stratified arm merging (conditional)
+    msg = _prov_010(hints)
     if msg:
         messages.append(msg)
 
@@ -379,5 +384,18 @@ def _prov_009(ctx: pd.DataFrame, hints: dict) -> dict | None:
             f"'{primary}' designated as primary reference for statistical tests. "
             f"Secondary control(s): {', '.join(secondary_labels)}."
         ),
+        "link_to_rule": None,
+    }
+
+
+def _prov_010(hints: dict) -> dict | None:
+    """Prov-010: Sex-stratified arms merged into combined dose groups."""
+    merge_msgs = hints.get("sex_stratified_merge", [])
+    if not merge_msgs:
+        return None
+    return {
+        "rule_id": "Prov-010",
+        "icon": "info",
+        "message": merge_msgs[0],
         "link_to_rule": None,
     }
