@@ -22,6 +22,7 @@ from services.analysis.findings_tf import compute_tf_findings
 from services.analysis.findings_cl import compute_cl_findings
 from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.findings_eg import compute_eg_findings
+from services.analysis.findings_re import compute_re_findings
 from services.analysis.findings_vs import compute_vs_findings
 from services.analysis.findings_bg import compute_bg_findings
 from services.analysis.findings_is import compute_is_findings
@@ -152,6 +153,7 @@ def compute_all_findings(
             pool.submit(compute_cl_findings, study, subjects, last_dosing_day=last_dosing_day),
             pool.submit(compute_ds_findings, study, subjects),
             pool.submit(compute_eg_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_re_findings, study, subjects, last_dosing_day=last_dosing_day),
             pool.submit(compute_vs_findings, study, subjects, last_dosing_day=last_dosing_day),
             pool.submit(compute_bg_findings, study, subjects, last_dosing_day=last_dosing_day),
         ]
@@ -180,6 +182,7 @@ def compute_all_findings(
                 pool.submit(compute_lb_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_cl_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_eg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_re_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_vs_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_bg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
             ]
@@ -220,6 +223,19 @@ def compute_all_findings(
     relrec_links = load_relrec_links(study)
     comments_map = load_comments(study)
 
+    # Resolve expected-effect profile for D9 scoring
+    from services.analysis.compound_class import resolve_active_profile
+    expected_profile = resolve_active_profile(
+        study.study_id, ts_meta={"species": species, "strain": strain, "route": route},
+        available_domains=set(study.xpt_files.keys()), species=species,
+    )
+    study_meta = {
+        "study_type": dg_data.get("study_type", "repeat_dose"),
+        "species": species,
+        "strain": strain,
+        "design": dg_data.get("study_design"),
+    }
+
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
@@ -227,6 +243,7 @@ def compute_all_findings(
         route=route, vehicle=vehicle,
         relrec_links=relrec_links if relrec_links else None,
         has_concurrent_control=dg_data.get("has_concurrent_control", True),
+        expected_profile=expected_profile, study_meta=study_meta,
     )
 
     # Attach CO comments to findings (display-only annotations with subject linkage).
@@ -333,6 +350,7 @@ def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
         "TF": "tumor",
         "PM": "palpable_mass",
         "EG": "electrocardiogram",
+        "RE": "respiratory",
         "VS": "vital_signs",
         "BG": "body_weight_gain",
     }

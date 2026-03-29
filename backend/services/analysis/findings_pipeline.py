@@ -286,6 +286,8 @@ def process_findings(
     route: str | None = None,
     vehicle: str | None = None,
     has_concurrent_control: bool = True,
+    expected_profile: dict | None = None,
+    study_meta: dict | None = None,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -343,7 +345,9 @@ def process_findings(
         if fc == "tr_adverse" and f.get("severity") == "normal":
             f["severity"] = "adverse"
     # GRADE-style confidence scoring (requires finding_class, _hcd_assessment, corroboration_status)
-    enriched = compute_all_confidence(enriched)
+    enriched = compute_all_confidence(
+        enriched, expected_profile=expected_profile, study_meta=study_meta,
+    )
     return enriched
 
 

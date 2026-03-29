@@ -177,11 +177,20 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     route = get_route(study)
     vehicle = get_vehicle(study)
 
+    # Resolve expected-effect profile for D9 scoring
+    from services.analysis.compound_class import resolve_active_profile
+    expected_profile = resolve_active_profile(
+        study.study_id, ts_meta={"species": species, "strain": strain, "route": route},
+        available_domains=set(study.xpt_files.keys()), species=species,
+    )
+    study_meta = {"species": species, "strain": strain}
+
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
         species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
+        expected_profile=expected_profile, study_meta=study_meta,
     )
 
     # API-specific: assign deterministic IDs

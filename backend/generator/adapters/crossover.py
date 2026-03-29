@@ -208,11 +208,20 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
         vehicle = get_vehicle(study)
         relrec_links = load_relrec_links(study)
 
+        # Resolve expected-effect profile for D9 scoring
+        from services.analysis.compound_class import resolve_active_profile
+        expected_profile = resolve_active_profile(
+            study.study_id, ts_meta={"species": species, "strain": strain, "route": route},
+            available_domains=set(study.xpt_files.keys()), species=species,
+        )
+        study_meta = {"study_type": "safety_pharm_cv_crossover", "species": species}
+
         enriched = process_findings(
             all_findings,
             species=species, strain=strain, duration_days=duration_days,
             route=route, vehicle=vehicle,
             relrec_links=relrec_links if relrec_links else None,
+            expected_profile=expected_profile, study_meta=study_meta,
         )
 
         # Generator-specific enrichment (organ_name, endpoint_type)

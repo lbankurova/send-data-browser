@@ -54,6 +54,50 @@ def get_profile(profile_id: str) -> dict | None:
     return _load_profiles().get(profile_id)
 
 
+def resolve_active_profile(
+    study_id: str,
+    ts_meta: dict | None = None,
+    available_domains: set[str] | None = None,
+    species: str | None = None,
+) -> dict | None:
+    """Resolve the active expected-effect profile for a study.
+
+    Priority: SME-confirmed annotation > inference suggestion.
+    Returns the full profile dict, or None if no profile applies.
+    Used by the findings pipeline to wire D9 scoring.
+    """
+    from pathlib import Path as _Path
+    ann_dir = _Path(__file__).resolve().parent.parent.parent / "annotations"
+    ann_path = ann_dir / study_id / "compound_profile.json"
+
+    # Check SME-confirmed override
+    sme_profile_id = None
+    if ann_path.exists():
+        try:
+            import json as _json
+            with open(ann_path, "r") as f:
+                data = _json.load(f)
+            sme_data = data.get("study")
+            if sme_data and sme_data.get("confirmed_by_sme") and sme_data.get("compound_class"):
+                sme_profile_id = sme_data["compound_class"]
+        except Exception:
+            pass
+
+    if sme_profile_id:
+        profile = get_profile(sme_profile_id)
+        if profile:
+            return profile
+
+    # Fallback: inference from TS metadata
+    if ts_meta:
+        inference = infer_compound_class(ts_meta, available_domains, species)
+        suggested = inference.get("suggested_profiles", [])
+        if suggested:
+            return get_profile(suggested[0])
+
+    return None
+
+
 def list_profiles() -> list[dict]:
     """Return summary metadata for all available profiles."""
     profiles = _load_profiles()
