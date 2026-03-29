@@ -72,8 +72,9 @@ function scoreClass(dim: ConfidenceDimension): string {
     return "text-muted-foreground/40";
   }
   if (dim.score >= 1) return "text-foreground font-semibold";
+  if (dim.score > 0) return "text-foreground font-medium"; // +0.5 (plausible NMDR)
   if (dim.score === 0) return "text-muted-foreground";
-  if (dim.score === -2) return "text-foreground font-semibold";
+  if (dim.score <= -2) return "text-foreground font-semibold";
   return "text-foreground font-medium"; // -1
 }
 

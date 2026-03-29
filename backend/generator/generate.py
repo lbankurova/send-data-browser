@@ -203,6 +203,15 @@ def generate(study_id: str):
     ctx_df = None
     try:
         context_result = fut_ctx.result()
+
+        # Inject expected_profile into provenance hints (resolved in Phase 1b,
+        # needed by Prov-008). Profile resolution uses compound_class.py which
+        # is cheap to call again — avoids changing the adapter return contract.
+        from services.analysis.compound_class import resolve_active_profile
+        _ep = resolve_active_profile(study_id, species=context_result.get("study_metadata", {}).get("species"))
+        if _ep:
+            context_result.setdefault("_provenance_hints", {})["expected_profile"] = _ep
+
         provenance_msgs = generate_provenance_messages(context_result)
 
         # Flag 0-byte XPT files that were skipped during discovery

@@ -214,7 +214,11 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
             study.study_id, ts_meta={"species": species, "strain": strain, "route": route},
             available_domains=set(study.xpt_files.keys()), species=species,
         )
-        study_meta = {"study_type": "safety_pharm_cv_crossover", "species": species}
+        study_meta = {
+            "study_type": "safety_pharm_cv_crossover",
+            "species": species,
+            "design": "crossover",
+        }
 
         enriched = process_findings(
             all_findings,
