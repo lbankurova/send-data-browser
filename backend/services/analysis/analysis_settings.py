@@ -1,10 +1,10 @@
 """Analysis settings dataclass, scoring parameters, and FastAPI query parameter parser.
 
-Defines the 10 user-configurable analysis settings. Phase 1-2 implements
+Defines the 11 user-configurable analysis settings. Phase 1-2 implements
 4 active settings (scheduled_only, recovery_pooling, effect_size, multiplicity).
-Phase 3 enables 4 more (pairwise_test=williams, trend_test=williams-trend,
-organ_weight_method, adversity_threshold). control_group and incidence_trend
-remain no-op.
+Phase 3 enables 5 more (pairwise_test=williams, incidence_pairwise=fisher,
+trend_test=williams-trend, organ_weight_method, adversity_threshold).
+control_group and incidence_trend remain no-op.
 
 ScoringParams: expert-configurable signal scoring weights, pattern scores,
 key thresholds, and NOAEL confidence penalties.  Loaded from the annotation
@@ -179,7 +179,7 @@ def load_scoring_params(study_id: str) -> ScoringParams:
 
 @dataclass
 class AnalysisSettings:
-    """All 10 user-configurable analysis settings with defaults."""
+    """All 11 user-configurable analysis settings with defaults."""
 
     # Phase 1 — active
     scheduled_only: bool = False
@@ -191,6 +191,7 @@ class AnalysisSettings:
     control_group: str = "vehicle"  # no-op (PointCross has one control)
     adversity_threshold: str = "grade-ge-2-or-dose-dep"
     pairwise_test: Literal["dunnett", "williams", "steel"] = "dunnett"
+    incidence_pairwise: Literal["boschloo", "fisher"] = "boschloo"
     trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = "jonckheere"
     incidence_trend: Literal["cochran-armitage", "logistic-slope"] = "cochran-armitage"
     organ_weight_method: Literal["recommended", "absolute", "ratio-bw", "ratio-brain"] = "recommended"
@@ -222,11 +223,12 @@ def parse_settings_from_query(
     control_group: str = Query("vehicle"),
     adversity_threshold: str = Query("grade-ge-2-or-dose-dep"),
     pairwise_test: Literal["dunnett", "williams", "steel"] = Query("dunnett"),
+    incidence_pairwise: Literal["boschloo", "fisher"] = Query("boschloo"),
     trend_test: Literal["jonckheere", "cuzick", "williams-trend"] = Query("jonckheere"),
     incidence_trend: Literal["cochran-armitage", "logistic-slope"] = Query("cochran-armitage"),
     organ_weight_method: Literal["recommended", "absolute", "ratio-bw", "ratio-brain"] = Query("recommended"),
 ) -> AnalysisSettings:
-    """FastAPI Depends() parser — reads all 10 query params with defaults."""
+    """FastAPI Depends() parser — reads all 11 query params with defaults."""
     return AnalysisSettings(
         scheduled_only=scheduled_only,
         recovery_pooling=recovery_pooling,
@@ -235,6 +237,7 @@ def parse_settings_from_query(
         control_group=control_group,
         adversity_threshold=adversity_threshold,
         pairwise_test=pairwise_test,
+        incidence_pairwise=incidence_pairwise,
         trend_test=trend_test,
         incidence_trend=incidence_trend,
         organ_weight_method=organ_weight_method,

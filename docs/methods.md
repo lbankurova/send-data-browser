@@ -401,7 +401,7 @@ This table documents which statistical test is applied to each endpoint type in 
 
 **User-switchable methods:** The following are switchable at runtime via the Study Details context panel:
 - **Pairwise test (continuous):** Dunnett (STAT-07, default), Williams' step-down (STAT-14), Bonferroni (via STAT-13 raw Welch p-values)
-- **Pairwise test (incidence):** Boschloo's exact (STAT-03, default), Fisher's exact (STAT-03 override) — override via `method="fisher"` parameter; not yet wired to settings UI
+- **Pairwise test (incidence):** Boschloo's exact (STAT-03, default), Fisher's exact (STAT-03 override) — switchable via "Incidence pairwise" dropdown. Both p-values pre-computed; `apply_incidence_fisher()` swaps when selected.
 - **Trend test:** Jonckheere-Terpstra (STAT-04, default), Williams' trend (STAT-14b)
 - **Effect size:** Hedges' g (STAT-12, default), Cohen's d (STAT-12b), Glass's Δ (STAT-12c)
 - **Organ weight metric:** Recommended auto-selection (METH-03a, default), absolute, ratio-to-BW, ratio-to-brain

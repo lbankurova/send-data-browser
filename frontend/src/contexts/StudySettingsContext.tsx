@@ -13,6 +13,7 @@ export const RECOVERY_POOLING_VALUES = ["pool", "separate"] as const;
 export const EFFECT_SIZE_VALUES = ["hedges-g", "cohens-d", "glass-delta"] as const;
 export const MULTIPLICITY_VALUES = ["dunnett-fwer", "bonferroni"] as const;
 export const PAIRWISE_TEST_VALUES = ["dunnett", "williams", "steel"] as const;
+export const INCIDENCE_PAIRWISE_VALUES = ["boschloo", "fisher"] as const;
 export const TREND_TEST_VALUES = ["jonckheere", "cuzick", "williams-trend"] as const;
 export const INCIDENCE_TREND_VALUES = ["cochran-armitage", "logistic-slope"] as const;
 export const ORGAN_WEIGHT_METHOD_VALUES = ["recommended", "absolute", "ratio-bw", "ratio-brain"] as const;
@@ -28,6 +29,7 @@ export interface StudySettings {
   controlGroup: string;
   adversityThreshold: string;
   pairwiseTest: typeof PAIRWISE_TEST_VALUES[number];
+  incidencePairwise: typeof INCIDENCE_PAIRWISE_VALUES[number];
   trendTest: typeof TREND_TEST_VALUES[number];
   incidenceTrend: typeof INCIDENCE_TREND_VALUES[number];
   organWeightMethod: typeof ORGAN_WEIGHT_METHOD_VALUES[number];
@@ -52,6 +54,7 @@ export const SETTINGS_DEFAULTS: StudySettings = {
   controlGroup: "vehicle",
   adversityThreshold: "grade-ge-2-or-dose-dep",
   pairwiseTest: "dunnett",
+  incidencePairwise: "boschloo",
   trendTest: "jonckheere",
   incidenceTrend: "cochran-armitage",
   organWeightMethod: "recommended",
@@ -96,6 +99,10 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
     `pcc.${studyId}.pairwiseTest`, SETTINGS_DEFAULTS.pairwiseTest,
     isOneOf(PAIRWISE_TEST_VALUES),
   );
+  const [incidencePairwise, setIncidencePairwise] = useSessionState(
+    `pcc.${studyId}.incidencePairwise`, SETTINGS_DEFAULTS.incidencePairwise,
+    isOneOf(INCIDENCE_PAIRWISE_VALUES),
+  );
   const [trendTest, setTrendTest] = useSessionState(
     `pcc.${studyId}.trendTest`, SETTINGS_DEFAULTS.trendTest,
     isOneOf(TREND_TEST_VALUES),
@@ -118,12 +125,13 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
       controlGroup,
       adversityThreshold,
       pairwiseTest,
+      incidencePairwise,
       trendTest,
       incidenceTrend,
       organWeightMethod,
     }),
     [scheduledOnly, recoveryPooling, effectSize, multiplicity, controlGroup,
-     adversityThreshold, pairwiseTest, trendTest, incidenceTrend, organWeightMethod],
+     adversityThreshold, pairwiseTest, incidencePairwise, trendTest, incidenceTrend, organWeightMethod],
   );
 
   // Setter dispatch table
@@ -135,6 +143,7 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
     controlGroup: setControlGroup,
     adversityThreshold: setAdversityThreshold,
     pairwiseTest: setPairwiseTest,
+    incidencePairwise: setIncidencePairwise,
     trendTest: setTrendTest,
     incidenceTrend: setIncidenceTrend,
     organWeightMethod: setOrganWeightMethod,

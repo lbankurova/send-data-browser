@@ -4,7 +4,7 @@ import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
-from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.statistics import incidence_exact_both, trend_test_incidence
 from services.analysis.supp_qualifiers import (
     load_supp_modifiers, aggregate_modifiers, count_distributions,
 )
@@ -116,7 +116,7 @@ def compute_ma_findings(
                 [treat_affected, treat_total - treat_affected],
                 [control_affected, control_total - control_affected],
             ]
-            result = fisher_exact_2x2(table)
+            result = incidence_exact_both(table)
             rr = None
             if treat_total > 0 and control_total > 0:
                 p_treat = treat_affected / treat_total
@@ -128,6 +128,7 @@ def compute_ma_findings(
                 "p_value_adj": result["p_value"],
                 "odds_ratio": result["odds_ratio"],
                 "risk_ratio": rr,
+                "p_value_fisher": result["p_value_fisher"],
             })
 
         trend_result = trend_test_incidence(incidence_counts, incidence_totals)

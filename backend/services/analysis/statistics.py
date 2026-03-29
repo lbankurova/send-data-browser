@@ -78,6 +78,24 @@ def incidence_exact_test(
         return {"odds_ratio": None, "p_value": None, "test_method": method}
 
 
+def incidence_exact_both(table: list[list[int]]) -> dict:
+    """Compute both Boschloo and Fisher p-values for a 2x2 table.
+
+    Returns the Boschloo result as primary (p_value, odds_ratio) plus
+    p_value_fisher for the settings override swap — same pattern as
+    storing p_value_welch alongside Dunnett for continuous endpoints.
+    """
+    primary = incidence_exact_test(table, method="boschloo")
+    try:
+        _, fisher_p = stats.fisher_exact(table)
+        if np.isnan(fisher_p):
+            fisher_p = 1.0
+        primary["p_value_fisher"] = float(fisher_p)
+    except ValueError:
+        primary["p_value_fisher"] = None
+    return primary
+
+
 # Backwards-compatible alias
 fisher_exact_2x2 = incidence_exact_test
 

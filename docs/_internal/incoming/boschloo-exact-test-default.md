@@ -86,8 +86,8 @@ Replaces Fisher's exact test with Boschloo's unconditional exact test as the def
 ## Scope Boundary — Not Changed
 
 - **Frontend `statistics.ts:fishersExact2x2`** — Pure JS Fisher's implementation used in `comparison-engine.ts` for client-side cohort comparison (cross-study, not within-study treatment-vs-control). Different use case with different design constraints. Could be upgraded separately.
-- **Pipeline module files** — Zero changes. All 5 modules call through the `fisher_exact_2x2` alias which now routes to Boschloo's by default.
-- **User-switchable method UI** — The `method` parameter exists in the function but is not yet wired to the Study Details settings panel. Fisher's override requires a code-level argument change or future UI wiring.
+- **Pipeline module files** — All 5 modules now call `incidence_exact_both()` and store both `p_value` (Boschloo) and `p_value_fisher`. The `apply_incidence_fisher()` transform swaps p-values when the user selects Fisher's in the "Incidence pairwise" dropdown.
+- **User-switchable method UI** — Wired. "Incidence pairwise" dropdown in Study Details with Boschloo's (default) and Fisher's exact options. Setting persisted per study via `StudySettingsContext`.
 
 ## Performance
 

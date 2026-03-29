@@ -10,6 +10,7 @@ const DEFAULTS: StudySettings = {
   controlGroup: "vehicle",
   adversityThreshold: "grade-ge-2-or-dose-dep",
   pairwiseTest: "dunnett",
+  incidencePairwise: "boschloo",
   trendTest: "jonckheere",
   incidenceTrend: "cochran-armitage",
   organWeightMethod: "recommended",
@@ -128,7 +129,7 @@ describe("buildSettingsParams", () => {
 
   // ── Key name correctness (snake_case mapping) ────────────
 
-  it("uses correct snake_case keys for all 10 settings", () => {
+  it("uses correct snake_case keys for all 11 settings", () => {
     // Set every setting to non-default to verify all key mappings
     const allNonDefault: StudySettings = {
       scheduledOnly: true,
@@ -138,17 +139,18 @@ describe("buildSettingsParams", () => {
       controlGroup: "saline",
       adversityThreshold: "grade-ge-1",
       pairwiseTest: "williams",
+      incidencePairwise: "fisher",
       trendTest: "cuzick",
       incidenceTrend: "logistic-slope",
       organWeightMethod: "ratio-brain",
     };
     const params = parseQS(buildSettingsParams(allNonDefault));
-    expect(params.size).toBe(10);
+    expect(params.size).toBe(11);
 
     const expectedKeys = [
       "scheduled_only", "recovery_pooling", "effect_size", "multiplicity",
-      "control_group", "adversity_threshold", "pairwise_test", "trend_test",
-      "incidence_trend", "organ_weight_method",
+      "control_group", "adversity_threshold", "pairwise_test", "incidence_pairwise",
+      "trend_test", "incidence_trend", "organ_weight_method",
     ];
     for (const key of expectedKeys) {
       expect(params.has(key), `missing key: ${key}`).toBe(true);

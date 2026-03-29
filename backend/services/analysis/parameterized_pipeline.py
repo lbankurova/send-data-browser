@@ -203,7 +203,7 @@ def apply_settings_transforms(
     For default settings, this is a no-op — findings pass through unchanged.
 
     Order: scheduled_only → recovery_separate → effect_size → multiplicity
-           → organ_weight_method → pairwise_williams → trend_williams
+           → organ_weight_method → pairwise_williams → incidence_fisher → trend_williams
     Then: rederive_enrichment(findings, threshold=adversity_threshold)
     """
     if settings.is_default():
@@ -236,6 +236,10 @@ def apply_settings_transforms(
 
     if settings.pairwise_test == "williams":
         apply_pairwise_williams(findings)
+        changed = True
+
+    if settings.incidence_pairwise == "fisher":
+        apply_incidence_fisher(findings)
         changed = True
 
     if settings.trend_test == "williams-trend":
@@ -505,6 +509,28 @@ def apply_pairwise_williams(findings: list[dict]):
                 for r in result.step_down_results
             ],
         }
+
+
+def apply_incidence_fisher(findings: list[dict]):
+    """Swap incidence pairwise p-values from Boschloo's (default) to Fisher's.
+
+    Each incidence finding's pairwise entries store p_value_fisher alongside
+    the default Boschloo p_value. This transform swaps them, matching the
+    pattern used by apply_pairwise_williams for continuous endpoints.
+    """
+    INCIDENCE_DOMAINS = {"MI", "MA", "CL", "TF", "DS"}
+    for f in findings:
+        if f.get("domain") not in INCIDENCE_DOMAINS:
+            continue
+        if f.get("data_type") != "incidence":
+            continue
+        pairwise = f.get("pairwise", [])
+        for pw in pairwise:
+            fisher_p = pw.get("p_value_fisher")
+            if fisher_p is not None:
+                pw["p_value"] = fisher_p
+                pw["p_value_adj"] = fisher_p
+        f["min_p_adj"] = _recompute_min_p_adj(pairwise)
 
 
 def apply_trend_williams(findings: list[dict]):

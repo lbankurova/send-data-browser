@@ -10,6 +10,7 @@ const KEY_MAP: Record<keyof StudySettings, string> = {
   controlGroup: "control_group",
   adversityThreshold: "adversity_threshold",
   pairwiseTest: "pairwise_test",
+  incidencePairwise: "incidence_pairwise",
   trendTest: "trend_test",
   incidenceTrend: "incidence_trend",
   organWeightMethod: "organ_weight_method",
@@ -40,6 +41,11 @@ export const TREND_TEST_LABELS: Record<string, string> = {
   jonckheere: "Jonckheere-Terpstra",
   cuzick: "Cuzick's test",
   "williams-trend": "Williams' trend",
+};
+
+export const INCIDENCE_PAIRWISE_LABELS: Record<string, string> = {
+  boschloo: "Boschloo's exact",
+  fisher: "Fisher's exact",
 };
 
 export const INCIDENCE_TREND_LABELS: Record<string, string> = {

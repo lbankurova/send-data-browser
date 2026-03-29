@@ -519,9 +519,11 @@ table = [
     [treat_affected, treat_total - treat_affected],
     [control_affected, control_total - control_affected],
 ]
-result = fisher_exact_2x2(table)  # alias for incidence_exact_test(); defaults to method="boschloo"
-# Returns: {"odds_ratio": float, "p_value": float, "test_method": str}
+result = incidence_exact_both(table)
+# Returns: {"odds_ratio": float, "p_value": float, "test_method": str, "p_value_fisher": float}
 ```
+
+Both Boschloo (`p_value`) and Fisher (`p_value_fisher`) are pre-computed and stored in each pairwise entry. When the user selects Fisher's in the "Incidence pairwise" dropdown, `apply_incidence_fisher()` swaps `p_value_fisher` into `p_value` and `p_value_adj`. Same pattern as `p_value_welch` for continuous endpoints.
 
 For MI, `p_value_adj` is set equal to `p_value` (no Bonferroni correction for incidence domains).
 

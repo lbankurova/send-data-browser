@@ -5,7 +5,7 @@ import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
-from services.analysis.statistics import fisher_exact_2x2, trend_test_incidence
+from services.analysis.statistics import incidence_exact_both, trend_test_incidence
 from services.analysis.day_utils import mode_day
 
 
@@ -109,12 +109,13 @@ def compute_ds_findings(
                 [treat_affected, treat_total - treat_affected],
                 [control_affected, control_total - control_affected],
             ]
-            result = fisher_exact_2x2(table)
+            result = incidence_exact_both(table)
             pairwise.append({
                 "dose_level": int(dose_level),
                 "p_value": result["p_value"],
                 "p_value_adj": result["p_value"],
                 "odds_ratio": result["odds_ratio"],
+                "p_value_fisher": result["p_value_fisher"],
             })
 
         # Trend test

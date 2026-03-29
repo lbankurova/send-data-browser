@@ -84,7 +84,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
   // Analysis settings via centralized StudySettingsContext
   const { settings, updateSetting } = useStudySettings();
-  const { controlGroup, organWeightMethod, adversityThreshold, pairwiseTest, trendTest, incidenceTrend, multiplicity, effectSize, recoveryPooling } = settings;
+  const { controlGroup, organWeightMethod, adversityThreshold, pairwiseTest, incidencePairwise, trendTest, incidenceTrend, multiplicity, effectSize, recoveryPooling } = settings;
 
   // Control groups: exclude recovery controls per spec §2A
   const controlGroups = useMemo(() => {
@@ -337,10 +337,25 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
           {pairwiseTest === "williams"
             ? "Williams\u2019 step-down controls FWER inherently. Multiplicity setting has no effect."
             : multiplicity === "dunnett-fwer" && pairwiseTest === "dunnett"
-              ? "FWER-controlled many-to-one. Incidence: Fisher exact, no correction."
+              ? `FWER-controlled many-to-one. Incidence: ${incidencePairwise === "fisher" ? "Fisher\u2019s" : "Boschloo\u2019s"} exact, no correction.`
               : multiplicity === "bonferroni"
                 ? "Bonferroni: min(p \u00d7 k, 1.0) applied to raw Welch t-test p-values"
-                : "Separate correction needed. Incidence: Fisher exact, no correction."}
+                : `Separate correction needed. Incidence: ${incidencePairwise === "fisher" ? "Fisher\u2019s" : "Boschloo\u2019s"} exact, no correction.`}
+        </div>
+        <SettingsRow label="Incidence pairwise">
+          <SettingsSelect
+            value={incidencePairwise}
+            options={[
+              { value: "boschloo", label: "Boschloo's exact" },
+              { value: "fisher", label: "Fisher's exact" },
+            ]}
+            onChange={(v) => updateSetting("incidencePairwise", v as "boschloo" | "fisher")}
+          />
+        </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
+          {incidencePairwise === "boschloo"
+            ? "Uniformly more powerful than Fisher\u2019s; conditions on fixed margin only"
+            : "Conditional exact test; included for comparability with legacy analyses"}
         </div>
         <SettingsRow label="Trend test">
           <SettingsSelect
