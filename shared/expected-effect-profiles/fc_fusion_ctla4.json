@@ -30,6 +30,17 @@
       "severity_threshold": "Hypogammaglobulinemia (<40% LLN) with infection susceptibility = adverse",
       "species_applicability": ["MONKEY"],
       "rationale": "Secondary to germinal center suppression from CD28-B7 blockade."
+    },
+    {
+      "key": "LB_tcell_attenuation",
+      "domain": "LB",
+      "test_codes": ["LYMPH"],
+      "direction": "down",
+      "layer": "target",
+      "description": "T-cell response attenuation (reduced effector T-cell function, Treg enrichment)",
+      "severity_threshold": "Severe combined immunodeficiency-like state = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "CTLA4-Ig attenuates CD28-B7 co-stimulation; T-cell functionality reduced as primary pharmacological effect. Reduced T-cell proliferation upon stimulation; Treg enrichment."
     }
   ]
 }

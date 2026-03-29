@@ -92,6 +92,18 @@
       "severity_threshold": ">1000 x 10^9/L sustained = adverse",
       "species_applicability": ["RAT"],
       "rationale": "Secondary effect of erythropoietic stimulation."
+    },
+    {
+      "key": "CL_hypertension",
+      "domain": "CL",
+      "findings": ["SYSTOLIC BLOOD PRESSURE INCREASE", "HYPERTENSION", "BLOOD PRESSURE INCREASE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hypertension (EPO vasoconstrictor properties + hyperviscosity)",
+      "typical_magnitude": "Mild SBP increase at pharmacological doses",
+      "severity_threshold": "Grade 3 sustained HTN = adverse",
+      "species_applicability": ["RAT", "MONKEY"],
+      "rationale": "Vasoconstrictor properties of EPO independent of hematocrit; also hyperviscosity contribution from polycythemia."
     }
   ]
 }

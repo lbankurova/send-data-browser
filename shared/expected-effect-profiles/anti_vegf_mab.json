@@ -102,6 +102,18 @@
       "severity_threshold": "Non-healing wound with infection or wound dehiscence = adverse",
       "species_applicability": ["MONKEY", "RABBIT"],
       "rationale": "VEGF is essential for granulation tissue neovascularization in wound repair. Anti-VEGF should be withheld 28 days pre/post surgery. (Bevacizumab SmPC)"
+    },
+    {
+      "key": "CL_hypertension",
+      "domain": "CL",
+      "findings": ["SYSTOLIC BLOOD PRESSURE INCREASE", "DIASTOLIC BLOOD PRESSURE INCREASE", "HYPERTENSION"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hypertension (VEGF-NO pathway disruption)",
+      "typical_magnitude": "Grade 1-2 (SBP 140-159 mmHg); clinical incidence ~20%",
+      "severity_threshold": "Grade 3 (SBP >=160 or requiring >=2 antihypertensives) = adverse. Hypertensive crisis = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "VEGF drives NO production leading to vasodilation. Blockade causes vasoconstriction and hypertension. Mechanism well established. (Mourad et al., PMC5785435; Bevacizumab SmPC)"
     }
   ]
 }

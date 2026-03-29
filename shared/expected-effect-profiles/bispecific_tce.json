@@ -78,6 +78,63 @@
       "severity_threshold": "Grade 3 (>5x ULN) = adverse",
       "species_applicability": ["MONKEY"],
       "rationale": "Parallels ALT pattern in CRS context."
+    },
+    {
+      "key": "LB_IL10_up",
+      "domain": "LB",
+      "test_codes": ["IL10"],
+      "direction": "up",
+      "layer": "target",
+      "description": "IL-10 elevation (anti-inflammatory feedback in CRS)",
+      "typical_magnitude": "2-30x fold-change",
+      "severity_threshold": "Correlates with CRS severity. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Anti-inflammatory feedback cytokine elevated in CRS. Correlates with CRS severity."
+    },
+    {
+      "key": "LB_TNFA_up",
+      "domain": "LB",
+      "test_codes": ["TNFA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "TNF-alpha elevation (CRS cytokine)",
+      "typical_magnitude": "2-10x fold-change",
+      "severity_threshold": "Sustained elevation = adverse. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Co-elevated with other CRS cytokines (IL-6, IFN-gamma)."
+    },
+    {
+      "key": "CL_fever",
+      "domain": "CL",
+      "findings": ["PYREXIA", "FEVER", "TEMPERATURE INCREASE", "BODY TEMPERATURE INCREASE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Fever / body temperature increase (CRS Grade 1-2)",
+      "severity_threshold": "Grade 1 fever (<=38.3C) = expected. Grade 2 requiring antipyretics = monitor. Grade 3+ (refractory fever requiring ICU intervention) = adverse. Grade 4 life-threatening = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Cytokine-driven fever is universal expected finding for all T-cell engagers. (Lee et al., ASTCT 2019)"
+    },
+    {
+      "key": "CL_hypotension",
+      "domain": "CL",
+      "findings": ["HYPOTENSION", "BLOOD PRESSURE DECREASE"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Hypotension (CRS-associated vasodilation)",
+      "severity_threshold": "Grade 2 (not requiring vasopressors, transient) = expected. Grade 3 (requiring vasopressors) = adverse. Grade 4 (refractory) = never reclassify.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Vasodilation from IL-6/TNF-alpha/NO pathway. (Lee et al., ASTCT 2019)"
+    },
+    {
+      "key": "OM_spleen_weight_variable",
+      "domain": "OM",
+      "test_codes": ["SPLNWT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Spleen weight change (initial reduction from T-cell egress, then enlargement)",
+      "severity_threshold": "Marked splenomegaly (>3x reference) = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Complex immune organ response to T-cell activation. Initial reduction from T-cell egress, followed by enlargement from immune activation."
     }
   ]
 }

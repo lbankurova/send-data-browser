@@ -88,7 +88,8 @@
     {
       "key": "CV_cardiac_dysfunction",
       "domain": "LB",
-      "test_codes": ["LVEF"],
+      "test_codes": ["LVEF", "TROPNI", "CTNI"],
+      "organs": ["HEART"],
       "direction": "down",
       "layer": "target",
       "description": "Cardiac dysfunction (HER2-specific, antibody-mediated)",

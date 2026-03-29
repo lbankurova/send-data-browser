@@ -115,6 +115,29 @@
       "severity_threshold": "Lymphoma-like transformation or >Grade 3 severity = never reclassify",
       "species_applicability": ["MONKEY", "RAT"],
       "rationale": "Expected immune organ response to cytokine modulation. (General toxicological pathology)"
+    },
+    {
+      "key": "LB_LYMPH_variable",
+      "domain": "LB",
+      "test_codes": ["LYMPH"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Lymphocyte count shift (CD4+ T-cell and Th17 modulation)",
+      "severity_threshold": "Marked lymphopenia (<0.5 x 10^9/L) = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "IL-6 drives Th17 differentiation. Blockade shifts T-cell balance; downstream immunophenotyping changes expected. (Tocilizumab MOA review)"
+    },
+    {
+      "key": "OM_spleen_weight_up",
+      "domain": "OM",
+      "test_codes": ["SPLNWT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Spleen weight increase (cytokine modulation)",
+      "typical_magnitude": "Modest, proportional to lymphoid hyperplasia",
+      "severity_threshold": "Marked splenomegaly (>3x reference) = adverse",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Expected immunological effect of cytokine modulation; extramedullary hematopoiesis may contribute."
     }
   ]
 }

@@ -67,6 +67,17 @@
       "severity_threshold": null,
       "species_applicability": null,
       "rationale": "Expected humoral immune response to repeated protein antigen exposure; polyclonal immunoglobulin production driven by Fc-mediated immune activation. (ICH S6(R1); Hey et al., 2021, Int J Toxicol)"
+    },
+    {
+      "key": "LB_ADA_up",
+      "domain": "LB",
+      "test_codes": ["ADA"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Anti-drug antibody (ADA) formation",
+      "severity_threshold": "Immune complex disease (vasculitis, glomerulonephritis) or anaphylaxis = never reclassify. ADA with PK/PD impact = study interpretation flag, not adverse per se.",
+      "species_applicability": ["MONKEY", "RAT", "RABBIT", "DOG"],
+      "rationale": "Universal immunogenic response to human-sequence proteins in preclinical species. ICH S6(R1): 'induction of antibody formation in animals is not predictive of potential for antibody formation in humans.' (ICH S6(R1), EMA 2012; Hey et al., 2021, Int J Toxicol)"
     }
   ]
 }
