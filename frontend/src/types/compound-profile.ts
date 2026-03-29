@@ -7,6 +7,14 @@ export interface CompoundClassInference {
   suggested_profiles: string[];
 }
 
+export interface SeverityThreshold {
+  type: "grade" | "magnitude" | "fold_change" | "descriptive";
+  max_non_adverse?: number;
+  condition?: string;
+  never_reclassifiable?: string[];
+  text?: string;
+}
+
 export interface ExpectedFinding {
   key: string;
   domain: string;
@@ -15,7 +23,7 @@ export interface ExpectedFinding {
   test_codes?: string[];
   direction: "up" | "down";
   description: string;
-  severity_threshold: string | null;
+  severity_threshold: SeverityThreshold | string | null;
   species_applicability?: string[];
   rationale: string;
   typical_magnitude?: string;
@@ -39,8 +47,13 @@ export interface ProfileSummary {
 
 export interface SmeConfirmedProfile {
   compound_class: string;
+  original_compound_class?: string;
   confirmed_by_sme: boolean;
   expected_findings?: Record<string, boolean>;
+  confidence?: string;
+  inference_method?: string;
+  justification?: string;
+  note?: string;
   pathologist?: string;
   reviewDate?: string;
 }

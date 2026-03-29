@@ -63,6 +63,16 @@ def generate_provenance_messages(context_result: dict) -> list[dict]:
     # Prov-007: Incomplete Metadata Fallbacks (conditional, may emit multiple)
     messages.extend(_prov_007(hints))
 
+    # Prov-008: Pharmacological classification (conditional)
+    msg = _prov_008(ctx, hints)
+    if msg:
+        messages.append(msg)
+
+    # Prov-009: Multiple control groups (conditional)
+    msg = _prov_009(ctx, hints)
+    if msg:
+        messages.append(msg)
+
     logger.info("Generated %d provenance messages", len(messages))
     return messages
 
@@ -328,3 +338,46 @@ def _prov_007(hints: dict) -> list[dict]:
             })
 
     return messages
+
+
+def _prov_008(ctx: pd.DataFrame, hints: dict) -> dict | None:
+    """Prov-008: Pharmacological classification active."""
+    profile = hints.get("expected_profile")
+    if not profile:
+        return None
+    compound_class = profile.get("display_name", profile.get("profile_id", "unknown"))
+    n_expected = len(profile.get("expected_findings", []))
+    confirmed = "confirmed" if profile.get("confirmed_by_sme") else "inferred"
+    return {
+        "rule_id": "Prov-008",
+        "icon": "info",
+        "message": (
+            f"Compound classified as {compound_class} ({confirmed}). "
+            f"Expected-effect profile has {n_expected} entries. "
+            f"D9 pharmacological scoring active — matching findings receive "
+            f"reduced adversity confidence."
+        ),
+        "link_to_rule": None,
+    }
+
+
+def _prov_009(ctx: pd.DataFrame, hints: dict) -> dict | None:
+    """Prov-009: Multiple control groups detected."""
+    control_info = hints.get("control_info")
+    if not control_info:
+        return None
+    n_controls = control_info.get("n_control_arms", 0)
+    if n_controls <= 1:
+        return None
+    primary = control_info.get("primary_control_label", "")
+    secondary_labels = control_info.get("secondary_control_labels", [])
+    return {
+        "rule_id": "Prov-009",
+        "icon": "info",
+        "message": (
+            f"{n_controls} control groups detected. "
+            f"'{primary}' designated as primary reference for statistical tests. "
+            f"Secondary control(s): {', '.join(secondary_labels)}."
+        ),
+        "link_to_rule": None,
+    }

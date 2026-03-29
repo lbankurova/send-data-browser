@@ -35,7 +35,11 @@
       "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY", "LYMPHOID HYPERPLASIA"],
       "direction": "up",
       "description": "Splenic lymphoid hyperplasia",
-      "severity_threshold": "moderate",
+      "severity_threshold": {
+        "type": "grade",
+        "max_non_adverse": 3,
+        "condition": null
+      },
       "species_applicability": null,
       "rationale": "Expected immune response - active germinal center reaction to antigen"
     },

@@ -353,16 +353,38 @@ def _score_d8_sample_size(f: dict, d1_score: int | None, study_meta: dict | None
 # D9: Pharmacological expectation
 # ---------------------------------------------------------------------------
 
-# 7 never-reclassifiable conditions (from severity-thresholds research)
-_NEVER_RECLASSIFIABLE = [
-    ("MI", {"MYOCARDITIS"}, None, "Myocarditis at any grade"),
+# Never-reclassifiable conditions (from severity-thresholds research)
+# Each entry: (domain, terms, direction, reason, magnitude_check_fn | None)
+# magnitude_check_fn: optional callable(f: dict) -> bool that must return True
+# for the match to count.  None = no magnitude gate (any match suffices).
+
+def _alt_severe_check(f: dict) -> bool:
+    """ALT >5x fold change — Hy's Law candidate threshold."""
+    fc = f.get("max_fold_change")
+    return fc is not None and fc > 5.0
+
+
+def _plt_severe_check(f: dict) -> bool:
+    """PLT <20k equivalent — fold change <0.05 (>95% decrease)."""
+    fc = f.get("max_fold_change")
+    return fc is not None and fc < 0.05
+
+
+_NEVER_RECLASSIFIABLE: list[
+    tuple[str, set[str], str | None, str, object | None]
+] = [
+    ("MI", {"MYOCARDITIS"}, None,
+     "Myocarditis at any grade", None),
     ("LB", {"TROPI", "TROPONI", "CTNI", "CTNNI", "CTNT"}, "up",
-     "Troponin elevation above reference range"),
-    # Hy's Law: checked separately (ALT >3x + BILI >2x)
+     "Troponin elevation above reference range", None),
+    ("LB", {"ALT", "ALAT", "SGPT"}, "up",
+     "Severe ALT elevation (>5x) — Hy's Law candidate", _alt_severe_check),
     ("MI", {"NECROSIS"}, None,
-     "Necrosis at injection site — non-reversible tissue destruction"),
+     "Necrosis at injection site — non-reversible tissue destruction", None),
     ("LB", {"PLAT", "PLT"}, "down",
-     "Platelet count <20k/uL (checked via magnitude, not just direction)"),
+     "Platelet count <20k/uL (severe thrombocytopenia)", _plt_severe_check),
+    ("MI", {"DORSAL ROOT GANGLION", "DRG", "NEURON DEGENERATION", "AXONAL DEGENERATION"}, None,
+     "DRG toxicity — always adverse for gene therapy studies", None),
 ]
 
 
@@ -373,13 +395,16 @@ def _is_never_reclassifiable(f: dict) -> tuple[bool, str]:
     finding_text = (f.get("finding") or "").upper()
     direction = f.get("direction", "")
 
-    for nr_domain, nr_terms, nr_direction, reason in _NEVER_RECLASSIFIABLE:
+    for nr_domain, nr_terms, nr_direction, reason, mag_check in _NEVER_RECLASSIFIABLE:
         if domain != nr_domain:
             continue
         if nr_direction and direction != nr_direction:
             continue
         # Check test_code or finding text against terms
         if test_code in nr_terms or any(t in finding_text for t in nr_terms):
+            # Apply optional magnitude gate
+            if mag_check is not None and not mag_check(f):
+                continue  # magnitude threshold not met
             return True, reason
 
     # BW loss >20% (check max_fold_change)
@@ -389,6 +414,29 @@ def _is_never_reclassifiable(f: dict) -> tuple[bool, str]:
             return True, "Body weight loss ≥20%"
 
     return False, ""
+
+
+def _parse_severity_threshold(threshold: object) -> dict | None:
+    """Normalise severity_threshold to structured format.
+
+    Accepts:
+      - None / null  → None
+      - str (legacy)  → {"type": "grade", "max_non_adverse": <inferred>, "condition": None}
+      - dict (new)    → passed through
+    """
+    if threshold is None:
+        return None
+    if isinstance(threshold, str):
+        t_lower = threshold.lower().strip()
+        if t_lower == "severe":
+            return {"type": "grade", "max_non_adverse": 4, "condition": "reversible"}
+        if t_lower == "moderate":
+            return {"type": "grade", "max_non_adverse": 3, "condition": None}
+        # Other string thresholds (descriptive text) — return as-is dict
+        return {"type": "descriptive", "text": threshold, "max_non_adverse": None, "condition": None}
+    if isinstance(threshold, dict):
+        return threshold
+    return None
 
 
 def _matches_expected_finding(f: dict, ee_key: str, ee_config: dict) -> bool:

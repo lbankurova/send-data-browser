@@ -35,7 +35,12 @@
       "findings": ["INFLAMMATION", "MONONUCLEAR CELL INFILTRATE", "NECROSIS"],
       "direction": "up",
       "description": "Injection site inflammation",
-      "severity_threshold": "severe",
+      "severity_threshold": {
+        "type": "grade",
+        "max_non_adverse": 4,
+        "condition": "reversible AND no tissue destruction",
+        "never_reclassifiable": ["necrosis"]
+      },
       "species_applicability": null,
       "rationale": "Expected local reaction. Non-adverse even at marked severity when reversible. STP: reversibility is key criterion"
     },
@@ -46,7 +51,11 @@
       "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY", "LYMPHOID HYPERPLASIA"],
       "direction": "up",
       "description": "Splenic lymphoid hyperplasia",
-      "severity_threshold": "moderate",
+      "severity_threshold": {
+        "type": "grade",
+        "max_non_adverse": 3,
+        "condition": null
+      },
       "species_applicability": null,
       "rationale": "Expected immune response - active germinal center reaction to antigen"
     },

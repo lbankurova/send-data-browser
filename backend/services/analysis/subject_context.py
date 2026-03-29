@@ -408,6 +408,41 @@ def _detect_issues(
     return issues
 
 
+# ── Control info for provenance ───────────────────────────────────────────
+
+def _build_control_info(dg_data: dict) -> dict | None:
+    """Extract multi-control resolution info for Prov-009.
+
+    Returns None when there is at most one control arm (no provenance needed).
+    """
+    resolution = dg_data.get("control_resolution", "single")
+    if resolution == "single":
+        return None
+
+    primary_armcd = dg_data.get("primary_control_arm")
+    secondary_armcds = dg_data.get("secondary_control_arms", [])
+    dose_groups = dg_data.get("dose_groups", [])
+    tx_map = dg_data.get("tx_map", {})
+
+    # Resolve labels
+    def _label(armcd: str) -> str:
+        for dg in dose_groups:
+            if dg.get("armcd") == armcd:
+                return dg.get("label", armcd)
+        return tx_map.get(armcd, {}).get("label", armcd)
+
+    primary_label = _label(primary_armcd) if primary_armcd else ""
+    secondary_labels = [_label(a) for a in secondary_armcds]
+
+    n_control_arms = (1 if primary_armcd else 0) + len(secondary_armcds)
+
+    return {
+        "n_control_arms": n_control_arms,
+        "primary_control_label": primary_label,
+        "secondary_control_labels": secondary_labels,
+    }
+
+
 # ── Main builder ──────────────────────────────────────────────────────────
 
 def build_subject_context(study: StudyInfo) -> dict:
@@ -697,5 +732,9 @@ def build_subject_context(study: StudyInfo) -> dict:
             "ex_subject_count": ex_subject_count,
             "non_ex_subject_count": non_ex_subject_count,
             "tk_report": dg_data.get("tk_report", []),
+            # Populated by generator after profile resolution (Prov-008)
+            "expected_profile": None,
+            # Multi-control info from dose_groups (Prov-009)
+            "control_info": _build_control_info(dg_data),
         },
     }

@@ -7,15 +7,24 @@ import type { ToxFinding, ToxSystemSuggestion } from "@/types/annotations";
 const TREATMENT_OPTIONS = ["Yes", "No", "Equivocal", "Not Evaluated"] as const;
 const ADVERSITY_OPTIONS = ["Adverse", "Non-Adverse/Adaptive", "Not Determined"] as const;
 
+interface PharmacologicalContext {
+  isCandidate: boolean;
+  profileName: string;
+  matchedEntry: string;
+  rationale: string;
+}
+
 interface Props {
   studyId: string;
   endpointLabel: string;
   defaultOpen?: boolean;
   /** System suggestion from signal analysis — enables override tracking */
   systemSuggestion?: ToxSystemSuggestion;
+  /** Pharmacological profile context — shows when finding matches expected effect */
+  pharmacologicalContext?: PharmacologicalContext;
 }
 
-export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, systemSuggestion }: Props) {
+export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, systemSuggestion, pharmacologicalContext }: Props) {
   const { data: annotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { mutate: save, isPending, isSuccess, reset } = useSaveAnnotation<ToxFinding>(studyId, "tox-findings");
 
@@ -180,6 +189,20 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
           <p className="text-[10px] text-muted-foreground/60">
             {systemSuggestion.basis}
           </p>
+        )}
+
+        {/* Pharmacological context */}
+        {pharmacologicalContext?.isCandidate && (
+          <div className="rounded border border-violet-200 bg-violet-50 px-2 py-1.5 text-[11px]">
+            <div className="font-medium text-violet-700">
+              Expected pharmacological effect
+            </div>
+            <div className="mt-0.5 text-violet-600">
+              Matches &quot;{pharmacologicalContext.matchedEntry}&quot; from{" "}
+              {pharmacologicalContext.profileName} profile.{" "}
+              {pharmacologicalContext.rationale}
+            </div>
+          </div>
         )}
       </div>
     </CollapsiblePane>
