@@ -189,6 +189,19 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
             )
             all_findings.extend(vs_findings)
 
+        if "cv" in study.xpt_files:
+            cv_findings = self._process_continuous_domain(
+                study, "cv", "CV",
+                day_col="CVDY", testcd_col="CVTESTCD", test_col="CVTEST",
+                value_col_candidates=["CVSTRESN", "CVORRES"],
+                unit_col_candidates=["CVSTRESU", "CVORRESU"],
+                tpt_col="CVTPT", tptnum_col="CVTPTNUM",
+                unique_doses=unique_doses, dose_unit=dose_unit,
+                subject_periods=subject_periods,
+                subject_period_doses=subject_period_doses,
+            )
+            all_findings.extend(cv_findings)
+
         if "cl" in study.xpt_files:
             cl_findings = self._process_incidence_domain(
                 study, unique_doses, dose_unit,
