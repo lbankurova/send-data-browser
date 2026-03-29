@@ -440,6 +440,14 @@ def _parse_tx(
         if armcd in tx_map:
             continue
 
+        # Compound identity: TRT > COMPTRT > parsed from GRPLBL
+        compound = params.get("TRT") or params.get("COMPTRT") or params.get("TRTNAM") or ""
+        if not compound and grplbl:
+            # Parse "G2 - Compound 1: 12 mg/kg" → "Compound 1"
+            m = re.match(r'.*?[-–]\s*(.+?):\s*\d', grplbl)
+            if m:
+                compound = m.group(1).strip()
+
         tx_map[armcd] = {
             "dose_value": dose_val,
             "dose_unit": params.get("TRTDOSU"),
@@ -447,6 +455,7 @@ def _parse_tx(
             "setlbl": setlbl,
             "spgrpcd": params.get("SPGRPCD"),
             "tcntrl": params.get("TCNTRL"),
+            "compound": compound or None,
             "is_recovery": is_recovery,
             "is_satellite": False,
         }
@@ -760,6 +769,26 @@ def build_dose_groups(study: StudyInfo) -> dict:
         for dg in dose_groups
     )
 
+    # ── Multi-compound detection ────────────────────────────────────
+    # Collect unique compound identities across treated (non-control) arms.
+    # When > 1 compound detected, JT trend test across compounds is
+    # scientifically meaningless — flag for per-compound stratification.
+    compounds = set()
+    for g in dose_groups:
+        tx_info = tx_map.get(g["armcd"], {})
+        compound = tx_info.get("compound")
+        g["compound"] = compound
+        if compound and not g["is_control"] and g["dose_level"] >= 0:
+            compounds.add(compound)
+
+    is_multi_compound = len(compounds) > 1
+    if is_multi_compound:
+        logger.info(
+            "Multi-compound study detected: %d compounds (%s). "
+            "JT trend test across compounds is suppressed.",
+            len(compounds), sorted(compounds),
+        )
+
     return {
         "dose_groups": dose_groups,
         "subjects": subjects,
@@ -772,6 +801,8 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "primary_control_arm": primary_control_arm,
         "secondary_control_arms": list(secondary_control_arms),
         "positive_control_arms": list(positive_control_arms),
+        "is_multi_compound": is_multi_compound,
+        "compounds": sorted(compounds) if compounds else [],
     }
 
 
@@ -851,6 +882,24 @@ def _classify_control(tx_info: dict) -> str | None:
     tcntrl = tx_info.get("tcntrl")
     tcntrl_str = str(tcntrl).strip() if tcntrl else ""
     tcntrl_lower = tcntrl_str.lower()
+
+    # ── Cross-check: TCNTRL on a treated arm (dose > 0) ──
+    # Some sponsors put TCNTRL on ALL arms to document the vehicle formulation
+    # (FFU pattern: TCNTRL="Vehicle Control" + TRTDOS=12 on a treated arm).
+    # If dose_value > 0 and TCNTRL is a vehicle/negative type, the arm is
+    # treated, not control. Only dose_value=0 arms are true vehicle controls.
+    dv = tx_info.get("dose_value")
+    if dv is not None and dv > 0 and tcntrl_lower:
+        # Positive controls at dose > 0 are still positive controls
+        if "positive" in tcntrl_lower:
+            return CTRL_POSITIVE
+        # Active comparators at dose > 0 are still active comparators
+        if tcntrl_lower in _TCNTRL_TIER2:
+            tier2_resolved = _TCNTRL_TIER1.get(tcntrl_lower)
+            if tier2_resolved == CTRL_ACTIVE_COMPARATOR:
+                return CTRL_ACTIVE_COMPARATOR
+        # Otherwise: TCNTRL on a dosed arm is vehicle documentation, not control classification
+        return CTRL_NONE
 
     # ── Tier 1: Direct match ──
     if tcntrl_lower in _TCNTRL_TIER1:

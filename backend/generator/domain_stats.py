@@ -243,6 +243,7 @@ def compute_all_findings(
         route=route, vehicle=vehicle,
         relrec_links=relrec_links if relrec_links else None,
         has_concurrent_control=dg_data.get("has_concurrent_control", True),
+        is_multi_compound=dg_data.get("is_multi_compound", False),
         expected_profile=expected_profile, study_meta=study_meta,
     )
 
