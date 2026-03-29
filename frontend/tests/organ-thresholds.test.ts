@@ -400,11 +400,15 @@ describe("Adaptive decision trees (_tree_result)", () => {
     }
   });
 
-  // Hall 2012 LB panel verification
+  // Hall 2012 LB panel verification — only applies to findings that reached
+  // the N2 panel analysis branch (not the N1 concurrent-adverse early exit)
   test.skipIf(!hasGenerated)("liver tree reports panel marker breakdown in ecetoc_factors", () => {
     for (const f of miFindings) {
       const tr = f._tree_result;
       if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      // Skip findings that took the N1 early exit (concurrent adverse histopath)
+      const reachedPanel = (tr.node_path ?? []).some((n: string) => n.startsWith("N2:"));
+      if (!reachedPanel) continue;
       // ecetoc_factors should contain panel summary (e.g. "3/7 clean; changed: ALT,AST")
       const factors = tr.ecetoc_factors ?? [];
       const hasPanelDetail = factors.some(
@@ -421,6 +425,8 @@ describe("Adaptive decision trees (_tree_result)", () => {
     for (const f of miFindings) {
       const tr = f._tree_result;
       if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      const reachedPanel = (tr.node_path ?? []).some((n: string) => n.startsWith("N2:"));
+      if (!reachedPanel) continue;
       // Rationale should contain "panel:" with marker detail
       expect(
         tr.rationale.toLowerCase(),
@@ -433,6 +439,8 @@ describe("Adaptive decision trees (_tree_result)", () => {
     for (const f of miFindings) {
       const tr = f._tree_result;
       if (!tr || tr.tree_id !== "liver_hall_2012") continue;
+      const reachedPanel = (tr.node_path ?? []).some((n: string) => n.startsWith("N2:"));
+      if (!reachedPanel) continue;
       const panelNode = (tr.node_path ?? []).find(
         (n: string) => n.startsWith("N2:panel_available="),
       );
