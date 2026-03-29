@@ -226,6 +226,7 @@ def compute_all_findings(
         species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
         relrec_links=relrec_links if relrec_links else None,
+        has_concurrent_control=dg_data.get("has_concurrent_control", True),
     )
 
     # Attach CO comments to findings (display-only annotations with subject linkage).

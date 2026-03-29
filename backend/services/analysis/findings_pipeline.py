@@ -285,6 +285,7 @@ def process_findings(
     relrec_links: dict[tuple, list[tuple]] | None = None,
     route: str | None = None,
     vehicle: str | None = None,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -308,6 +309,8 @@ def process_findings(
         duration_days: Study dosing duration in days (from TS DOSDUR) for HCD matching.
         route: Route of administration (from TS domain) for HCD matching.
         vehicle: Treatment vehicle (from TS domain) for HCD matching.
+        has_concurrent_control: Whether the study has a concurrent control group.
+            When False, adversity classification is suppressed (RC-7).
     """
     if scheduled_map is not None:
         base_findings = attach_scheduled_stats(
@@ -326,6 +329,7 @@ def process_findings(
     enriched = _assess_all_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
+        has_concurrent_control=has_concurrent_control,
     )
     # Reconcile severity/treatment_related with finding_class.
     # finding_class is a higher-order judgment that uses biological context
@@ -350,6 +354,7 @@ def _assess_all_findings(
     duration_days: int | None = None,
     route: str | None = None,
     vehicle: str | None = None,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Run ECETOC per-finding adversity assessment on all findings.
 
@@ -357,11 +362,30 @@ def _assess_all_findings(
     uses ``corroboration_status`` as an input (A-2 concordance factor and
     B-2 moderate-magnitude escalation).
 
+    When has_concurrent_control=False, adversity classification is suppressed:
+    all findings get finding_class="not_treatment_related" with a
+    _no_control_suppressed flag. Pairwise stats are treatment-vs-treatment
+    comparisons without a reference group, so adversity calls are meaningless.
+    (RC-7, control-groups-model-29mar2026.md §3)
+
     Tier 2: builds ConcurrentFindingIndex for cross-finding lookups and
     uses assess_finding_with_context() for organ-specific thresholds and
     adaptive decision trees.
     Tier 3A: passes strain + duration for A-3 HCD assessment.
     """
+    if not has_concurrent_control:
+        for f in findings:
+            f["finding_class"] = "not_treatment_related"
+            f["_no_control_suppressed"] = True
+            f["severity"] = "normal"
+            f["treatment_related"] = False
+        log.info(
+            "No concurrent control — adversity classification suppressed for %d findings. "
+            "Descriptive statistics retained.",
+            len(findings),
+        )
+        return findings
+
     from services.analysis.concurrent_findings import ConcurrentFindingIndex
     index = ConcurrentFindingIndex(findings)
     for f in findings:

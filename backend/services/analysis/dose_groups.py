@@ -574,6 +574,85 @@ def build_dose_groups(study: StudyInfo) -> dict:
     # Recovery arm linkage
     recovery_subjects = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
 
+    # ── Classify control types and resolve multi-control ──────────
+    # Detect all control arms and their types before building dose groups
+    arm_control_types: dict[str, str | None] = {}
+    for armcd in main_armcds:
+        tx_info = tx_map.get(armcd, {})
+        arm_control_types[armcd] = _classify_control(tx_info)
+
+    # Separate positive controls (excluded from dose-response)
+    positive_control_arms = {
+        a for a, ct in arm_control_types.items()
+        if ct in (CTRL_POSITIVE, CTRL_ACTIVE_COMPARATOR)
+    }
+
+    # Reference controls (vehicle, negative, untreated, procedural, air, unknown)
+    reference_control_arms = {
+        a for a, ct in arm_control_types.items()
+        if ct is not None and a not in positive_control_arms
+    }
+
+    # Multi-control resolution (Path C from control-groups research):
+    # When 2+ reference controls exist, designate vehicle as primary.
+    # Negative/untreated becomes secondary (informational QC, not in dose-response).
+    primary_control_arm: str | None = None
+    secondary_control_arms: set[str] = set()
+    control_resolution = "single"
+
+    if len(reference_control_arms) > 1:
+        control_resolution = "multi_control_path_c"
+        # Priority: VEHICLE > UNKNOWN > NEGATIVE > UNTREATED > AIR > PROCEDURAL
+        _CTRL_PRIORITY = {
+            CTRL_VEHICLE: 0, CTRL_UNKNOWN: 1, CTRL_NEGATIVE: 2,
+            CTRL_UNTREATED: 3, CTRL_AIR: 4, CTRL_PROCEDURAL: 5,
+        }
+        sorted_controls = sorted(
+            reference_control_arms,
+            key=lambda a: _CTRL_PRIORITY.get(arm_control_types.get(a, ""), 99),
+        )
+        primary_control_arm = sorted_controls[0]
+        secondary_control_arms = set(sorted_controls[1:])
+        logger.info(
+            "Multi-control detected: primary=%s (%s), secondary=%s. "
+            "Path C: vehicle designated as primary reference.",
+            primary_control_arm, arm_control_types[primary_control_arm],
+            {a: arm_control_types[a] for a in secondary_control_arms},
+        )
+    elif len(reference_control_arms) == 1:
+        primary_control_arm = next(iter(reference_control_arms))
+
+    if positive_control_arms:
+        logger.info(
+            "Positive control arm(s) excluded from dose-response: %s",
+            positive_control_arms,
+        )
+
+    # Arms excluded from dose-response: positive controls + secondary controls
+    excluded_arms = positive_control_arms | secondary_control_arms
+
+    # Filter main_armcds: exclude non-dose-response arms
+    dose_response_armcds = [a for a in main_armcds if a not in excluded_arms]
+
+    # Re-assign dose levels after exclusion (control at 0, treated ascending)
+    if excluded_arms:
+        level = 0
+        for armcd in dose_response_armcds:
+            armcd_to_level[armcd] = level
+            level += 1
+        # Excluded arms get negative sentinel dose_levels
+        for armcd in positive_control_arms:
+            armcd_to_level[armcd] = -2  # positive control sentinel
+        for armcd in secondary_control_arms:
+            armcd_to_level[armcd] = -3  # secondary control sentinel
+        # Re-assign recovery arms to match their main arm
+        for main_arm, rec_arm in recovery_pairing.items():
+            if rec_arm and main_arm in armcd_to_level:
+                armcd_to_level[rec_arm] = armcd_to_level[main_arm]
+        # Update subjects
+        subjects["dose_level"] = subjects["ARMCD"].map(armcd_to_level).fillna(-1).astype(int)
+
+    # ── Build dose groups ───────────────────────────────────────────
     dose_groups = []
     for armcd in main_armcds:
         arm_subs = main_subjects[main_subjects["ARMCD"] == armcd]
@@ -597,11 +676,20 @@ def build_dose_groups(study: StudyInfo) -> dict:
         # Label: GRPLBL (group-level) > DM.ARM > SETLBL (arm-specific)
         group_label = _resolve_label(tx_info, dm_arm_map.get(armcd, ""))
 
+        ctrl_type = arm_control_types.get(armcd)
+        is_primary_control = (armcd == primary_control_arm)
+        is_secondary_control = (armcd in secondary_control_arms)
+        is_positive_control = (armcd in positive_control_arms)
+
         dose_groups.append({
             "dose_level": armcd_to_level.get(armcd, -1),
             "armcd": armcd,
             "label": group_label,
             "is_control": _is_control(tx_info),
+            "control_type": ctrl_type,
+            "is_primary_control": is_primary_control,
+            "is_secondary_control": is_secondary_control,
+            "is_positive_control": is_positive_control,
             "dose_value": tx_info.get("dose_value"),
             "dose_unit": tx_info.get("dose_unit"),
             "n_male": int((arm_subs["SEX"] == "M").sum()),
@@ -621,7 +709,10 @@ def build_dose_groups(study: StudyInfo) -> dict:
         })
 
     tk_count = int(subjects["is_satellite"].sum())
-    has_concurrent_control = any(dg["is_control"] for dg in dose_groups)
+    has_concurrent_control = any(
+        dg["is_control"] and not dg["is_positive_control"]
+        for dg in dose_groups
+    )
 
     return {
         "dose_groups": dose_groups,
@@ -631,6 +722,10 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "tk_setcds": tk_setcds,
         "tk_report": tk_report,
         "has_concurrent_control": has_concurrent_control,
+        "control_resolution": control_resolution,
+        "primary_control_arm": primary_control_arm,
+        "secondary_control_arms": list(secondary_control_arms),
+        "positive_control_arms": list(positive_control_arms),
     }
 
 
@@ -638,23 +733,134 @@ def build_dose_groups(study: StudyInfo) -> dict:
 # Grouping strategies
 # ---------------------------------------------------------------------------
 
-def _is_control(tx_info: dict) -> bool:
-    """Detect control arm from TX metadata.
+# ── Control type constants ──────────────────────────────────────────────
+CTRL_VEHICLE = "VEHICLE_CONTROL"
+CTRL_NEGATIVE = "NEGATIVE_CONTROL"
+CTRL_POSITIVE = "POSITIVE_CONTROL"
+CTRL_PROCEDURAL = "PROCEDURAL_CONTROL"
+CTRL_UNTREATED = "UNTREATED_CONTROL"
+CTRL_AIR = "AIR_CONTROL"
+CTRL_ACTIVE_COMPARATOR = "ACTIVE_COMPARATOR"
+CTRL_UNKNOWN = "UNKNOWN_CONTROL"
+CTRL_NONE = None  # Not a control arm
 
-    TCNTRL in SEND marks control treatments (e.g. "VEHICLE CONTROL",
-    "PLACEBO").  Some XPTs store SAS-missing as the literal string "None"
-    — filter that out.
+# TCNTRL normalization map — Tier 1 (high confidence, direct match)
+# Source: Carfagna et al. 2021, PhUSE WP-058, FDA SEND repository (>1,800 studies)
+_TCNTRL_TIER1: dict[str, str] = {}
+for _val, _type in [
+    # Vehicle controls
+    ("vehicle control", CTRL_VEHICLE),
+    ("vehicle", CTRL_VEHICLE),
+    ("saline control", CTRL_VEHICLE),
+    ("peg control", CTRL_VEHICLE),
+    ("citrate buffer control", CTRL_VEHICLE),
+    ("formulation buffer", CTRL_VEHICLE),
+    ("excipient", CTRL_VEHICLE),
+    ("excipient control", CTRL_VEHICLE),
+    ("control article (vehicle)", CTRL_VEHICLE),
+    ("control (vehicle)", CTRL_VEHICLE),
+    ("capsule control", CTRL_VEHICLE),
+    ("solution vehicle control", CTRL_VEHICLE),
+    ("gel vehicle control", CTRL_VEHICLE),
+    # Negative controls
+    ("negative control", CTRL_NEGATIVE),
+    ("placebo control", CTRL_NEGATIVE),
+    ("placebo", CTRL_NEGATIVE),
+    # Procedural controls
+    ("sham control", CTRL_PROCEDURAL),
+    ("sham", CTRL_PROCEDURAL),
+    ("mock-infected control", CTRL_PROCEDURAL),
+    ("procedural control", CTRL_PROCEDURAL),
+    # Untreated controls
+    ("untreated control", CTRL_UNTREATED),
+    ("untreated", CTRL_UNTREATED),
+    ("absolute control", CTRL_UNTREATED),
+    # Air controls
+    ("air control", CTRL_AIR),
+]:
+    _TCNTRL_TIER1[_val] = _type
+
+# Tier 2 — ambiguous TCNTRL values that need secondary resolution
+_TCNTRL_TIER2 = {
+    "control", "control article", "control item", "reference item",
+    "reference control", "dosed control", "water control", "water",
+}
+
+# Tier 3 — data quality errors (provide no information)
+_TCNTRL_TIER3 = {
+    "not applicable", "not available", "none", "see protocol", "n/a",
+}
+
+
+def _classify_control(tx_info: dict) -> str | None:
+    """Classify control type from TX metadata using 3-tier TCNTRL normalization.
+
+    Returns a CTRL_* constant, or None if the arm is not a control.
+
+    Normalization tiers (from control-groups-model-29mar2026.md §5):
+      Tier 1: High-confidence direct match (40+ known TCNTRL values)
+      Tier 2: Ambiguous values resolved via dose_value / label context
+      Tier 3: Data quality errors treated as missing
     """
     tcntrl = tx_info.get("tcntrl")
-    if tcntrl and str(tcntrl).strip().lower() not in ("none", ""):
-        return True
+    tcntrl_str = str(tcntrl).strip() if tcntrl else ""
+    tcntrl_lower = tcntrl_str.lower()
+
+    # ── Tier 1: Direct match ──
+    if tcntrl_lower in _TCNTRL_TIER1:
+        return _TCNTRL_TIER1[tcntrl_lower]
+
+    # Positive control: any TCNTRL containing "positive" (case-insensitive)
+    if tcntrl_lower and "positive" in tcntrl_lower:
+        return CTRL_POSITIVE
+
+    # ── Tier 3: Data quality errors → treat as no TCNTRL ──
+    if tcntrl_lower in _TCNTRL_TIER3:
+        tcntrl_lower = ""
+
+    # ── Tier 2: Ambiguous TCNTRL → resolve with context ──
+    if tcntrl_lower in _TCNTRL_TIER2:
+        dv = tx_info.get("dose_value")
+        if dv is not None and dv == 0:
+            return CTRL_VEHICLE
+        # Has dose > 0 → could be active comparator or positive control
+        if dv is not None and dv > 0:
+            return CTRL_ACTIVE_COMPARATOR
+        # No dose info → assume vehicle control (most common case)
+        return CTRL_VEHICLE
+
+    # ── No TCNTRL or unrecognized → fall back to heuristics ──
     dv = tx_info.get("dose_value")
     if dv is not None and dv == 0:
-        return True
+        return CTRL_VEHICLE
+
     label = tx_info.get("label", "").lower()
-    if "control" in label or "vehicle" in label or "reference" in label:
-        return True
-    return False
+    if "vehicle" in label:
+        return CTRL_VEHICLE
+    if "negative control" in label or "untreated" in label:
+        return CTRL_UNTREATED
+    if "positive control" in label:
+        return CTRL_POSITIVE
+    if "sham" in label:
+        return CTRL_PROCEDURAL
+    if "control" in label or "reference" in label:
+        # Generic "control" in label without more context → vehicle (most common)
+        return CTRL_VEHICLE
+
+    return CTRL_NONE
+
+
+def _is_control(tx_info: dict) -> bool:
+    """Backwards-compatible boolean control check.
+
+    Returns True for any control type EXCEPT positive control and
+    active comparator (these are excluded from dose-response analysis).
+    """
+    ctrl_type = _classify_control(tx_info)
+    if ctrl_type is None:
+        return False
+    # Positive controls and active comparators are NOT the reference group
+    return ctrl_type not in (CTRL_POSITIVE, CTRL_ACTIVE_COMPARATOR)
 
 
 def _build_groups_spgrpcd(
