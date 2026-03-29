@@ -470,11 +470,29 @@ def _resolve_label(tx_info: dict, dm_arm_label: str = "") -> str:
     GRPLBL is the group-level label (shared across main+recovery arms).
     SETLBL may include arm-specific suffixes ("nonrec", "rec", "TK").
     DM.ARM may include "Recovery" suffix for recovery arms, so filter those out.
+
+    Detects concatenated GRPLBL patterns (e.g., "Group 250mg/kg/day" where
+    group number runs into dose with no separator) and falls back to SETLBL
+    or constructed label from dose_value + dose_unit.
     """
-    label = tx_info.get("label", "")  # GRPLBL or SETLBL from _parse_tx
-    if label:
-        return label
+    grplbl = tx_info.get("label", "")  # GRPLBL or SETLBL from _parse_tx
     setlbl = tx_info.get("setlbl", "")
+
+    # Check for concatenated GRPLBL: "Group N{dose}{unit}" with no space
+    # between group number and dose value (e.g., "Group 250mg/kg/day")
+    if grplbl and re.match(r'^Group \d+\d+\s*mg', grplbl, re.IGNORECASE):
+        # GRPLBL is corrupted — prefer SETLBL or constructed label
+        if setlbl:
+            return setlbl
+        dv = tx_info.get("dose_value")
+        du = tx_info.get("dose_unit", "mg/kg")
+        if dv is not None:
+            return f"{dv:g} {du or 'mg/kg'}"
+        # Can't fix — use as-is
+        return grplbl
+
+    if grplbl:
+        return grplbl
     if setlbl:
         return setlbl
     if dm_arm_label and "recovery" not in dm_arm_label.lower():
@@ -523,6 +541,34 @@ def build_dose_groups(study: StudyInfo) -> dict:
                 "is_recovery": "recovery" in label.lower(),
                 "is_satellite": "satellite" in label.lower() or "toxicokinetic" in label.lower(),
             }
+
+    # Fill gaps: DM ARMCDs not in tx_map (e.g., recovery arms encoded as
+    # separate DM ARMCDs but sharing TX ARMCD with main arms — GLP003 pattern)
+    if tx_map:
+        dm_armcds = set(dm_df["ARMCD"].astype(str).str.strip().unique())
+        missing = dm_armcds - set(tx_map.keys())
+        if missing:
+            for armcd in missing:
+                arm_rows = dm_df[dm_df["ARMCD"].astype(str).str.strip() == armcd]
+                dm_arm = str(arm_rows["ARM"].iloc[0]).strip() if "ARM" in arm_rows.columns else ""
+                is_recovery = "recovery" in dm_arm.lower()
+                # Inherit dose_value from paired main arm (strip trailing R/r)
+                base_armcd = re.sub(r'[Rr]+$', '', armcd)
+                base_info = tx_map.get(base_armcd, {})
+                tx_map[armcd] = {
+                    "dose_value": base_info.get("dose_value"),
+                    "dose_unit": base_info.get("dose_unit"),
+                    "label": dm_arm or f"Group {armcd}",
+                    "setlbl": "",
+                    "spgrpcd": base_info.get("spgrpcd"),
+                    "tcntrl": base_info.get("tcntrl"),
+                    "is_recovery": is_recovery,
+                    "is_satellite": "satellite" in dm_arm.lower() or "toxicokinetic" in dm_arm.lower(),
+                }
+            logger.info(
+                "Filled %d DM ARMCDs not in TX: %s (recovery detection via DM.ARM)",
+                len(missing), sorted(missing),
+            )
 
     # Build subject roster from DM
     subjects = dm_df[["USUBJID", "SEX", "ARMCD"]].copy()
