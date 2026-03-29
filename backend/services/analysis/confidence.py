@@ -280,7 +280,6 @@ _REFERENCE_N: dict[str, int] = {
     "rodent_subacute": 5,            # OECD TG 407
     "dog_repeat_dose": 4,            # OECD TG 409
     "nhp_biologics": 3,              # ICH S6(R1) / NC3Rs
-    "safety_pharm_cv_crossover": 6,  # 4 crossover = 6 parallel-equivalent
     "safety_pharm_cv_parallel": 6,   # ICH S7A / Leishman 2023
     "safety_pharm_cns_resp": 8,      # ICH S7A / industry practice
     "carcinogenicity": 50,           # OECD TG 451
@@ -289,6 +288,11 @@ _REFERENCE_N: dict[str, int] = {
     "dose_range_finder_nonrodent": 2, # Industry practice
     "default": 5,                    # Conservative fallback
 }
+
+# Crossover multiplier: within-subject designs eliminate between-animal
+# variance, so N=4 crossover ≈ N=6 parallel in statistical power.
+# Applied to effective_n before comparison with reference_n.
+_CROSSOVER_MULTIPLIER = 1.5
 
 
 def _get_reference_n(f: dict, study_meta: dict | None = None) -> int:
@@ -319,27 +323,37 @@ def _get_effective_n(f: dict) -> int | None:
 def _score_d8_sample_size(f: dict, d1_score: int | None, study_meta: dict | None = None) -> dict:
     """Score sample-size adequacy based on effective N vs reference N.
 
+    Crossover multiplier: within-subject designs get effective_n × 1.5
+    because eliminating between-animal variance gives N=4 crossover
+    the statistical power of N=6 parallel (Authier 2020, Leishman 2023).
+
     D1×D8 interaction: when D1 ≥ +1, D8 is capped at -1 (not -2).
     """
     effective_n = _get_effective_n(f)
     if effective_n is None:
         return _dim("D8", "Sample-size adequacy", None, "Cannot determine group N — skipped")
 
+    # Apply crossover multiplier before comparison
+    is_crossover = study_meta.get("design") in ("crossover", "latin_square") if study_meta else False
+    if is_crossover:
+        effective_n = int(effective_n * _CROSSOVER_MULTIPLIER)
+
     ref_n = _get_reference_n(f, study_meta)
     ratio = effective_n / ref_n if ref_n > 0 else 0
 
+    xover_note = f" (crossover ×{_CROSSOVER_MULTIPLIER})" if is_crossover else ""
     if ratio >= 1.0:
         score = +1
-        rationale = f"N={effective_n} ≥ reference N={ref_n} — adequately powered"
+        rationale = f"N={effective_n}{xover_note} ≥ reference N={ref_n} — adequately powered"
     elif ratio >= 0.5 and effective_n >= 3:
         score = 0
-        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — acceptable"
+        rationale = f"N={effective_n}{xover_note}, {ratio:.0%} of reference N={ref_n} — acceptable"
     elif ratio >= 0.25 and effective_n >= 2:
         score = -1
-        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — underpowered"
+        rationale = f"N={effective_n}{xover_note}, {ratio:.0%} of reference N={ref_n} — underpowered"
     else:
         score = -2
-        rationale = f"N={effective_n}, {ratio:.0%} of reference N={ref_n} — severely underpowered"
+        rationale = f"N={effective_n}{xover_note}, {ratio:.0%} of reference N={ref_n} — severely underpowered"
 
     # D1×D8 interaction: cap at -1 when D1 is strong
     if score == -2 and d1_score is not None and d1_score >= 1:
