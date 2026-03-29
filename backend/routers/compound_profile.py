@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from services.study_discovery import StudyInfo
-from services.analysis.subject_context import build_subject_context
+from services.analysis.subject_context import get_ts_metadata
 from services.analysis.compound_class import (
     infer_compound_class,
     get_profile,
@@ -80,13 +80,8 @@ async def get_compound_profile(study_id: str):
     """
     study = _resolve_study(study_id)
 
-    # Build subject context to get TS metadata
-    try:
-        ctx = build_subject_context(study)
-        ts_meta = ctx.get("study_metadata", {})
-    except Exception as e:
-        log.warning("Failed to build subject context for %s: %s", study_id, e)
-        ts_meta = {}
+    # Read TS metadata directly (lightweight — doesn't need full subject context)
+    ts_meta = get_ts_metadata(study)
 
     # Get available domains from study
     available_domains = set(study.xpt_files.keys())

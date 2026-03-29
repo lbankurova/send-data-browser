@@ -1,8 +1,8 @@
 """Compound-class inference from TS metadata and study characteristics.
 
 Phase 1 of Expected Pharmacological Effect Classification (SG-01).
-Infers compound modality from PCLAS, INTTYPE, available domains, route,
-and species using a cascading heuristic (first match wins).
+Infers compound modality from PCLASS, TRT, STITLE, INTTYPE, available
+domains, route, and species using a cascading heuristic (first match wins).
 """
 
 from __future__ import annotations
@@ -65,6 +65,11 @@ def resolve_active_profile(
     Priority: SME-confirmed annotation > inference suggestion.
     Returns the full profile dict, or None if no profile applies.
     Used by the findings pipeline to wire D9 scoring.
+
+    If ts_meta is None or missing key fields (pharmacologic_class, treatment,
+    study_title), reads the TS domain directly from the study's XPT files.
+    This avoids depending on build_subject_context() which can crash on
+    studies with unparseable dose values.
     """
     from pathlib import Path as _Path
     ann_dir = _Path(__file__).resolve().parent.parent.parent / "annotations"
@@ -88,7 +93,16 @@ def resolve_active_profile(
         if profile:
             return profile
 
-    # Fallback: inference from TS metadata
+    # Enrich ts_meta from TS domain if missing key inference fields
+    _inference_keys = {"pharmacologic_class", "treatment", "study_title"}
+    if not ts_meta or not any(ts_meta.get(k) for k in _inference_keys):
+        ts_meta = _read_ts_for_study(study_id, ts_meta)
+        if available_domains is None:
+            available_domains = _get_study_domains(study_id)
+        if species is None:
+            species = ts_meta.get("species")
+
+    # Inference from TS metadata
     if ts_meta:
         inference = infer_compound_class(ts_meta, available_domains, species)
         suggested = inference.get("suggested_profiles", [])
@@ -96,6 +110,41 @@ def resolve_active_profile(
             return get_profile(suggested[0])
 
     return None
+
+
+def _read_ts_for_study(study_id: str, base_meta: dict | None = None) -> dict:
+    """Read TS metadata directly from study XPT files.
+
+    Merges with base_meta if provided (base_meta values take priority
+    for fields that are already populated).
+    """
+    try:
+        from services.study_discovery import discover_studies
+        from services.analysis.subject_context import get_ts_metadata
+        studies = discover_studies()
+        study = studies.get(study_id)
+        if not study:
+            return base_meta or {}
+        ts_meta = get_ts_metadata(study)
+        # Merge: keep existing non-None values from base_meta
+        if base_meta:
+            for k, v in base_meta.items():
+                if v is not None:
+                    ts_meta[k] = v
+        return ts_meta
+    except Exception:
+        return base_meta or {}
+
+
+def _get_study_domains(study_id: str) -> set[str]:
+    """Get available domains for a study."""
+    try:
+        from services.study_discovery import discover_studies
+        studies = discover_studies()
+        study = studies.get(study_id)
+        return set(study.xpt_files.keys()) if study else set()
+    except Exception:
+        return set()
 
 
 def list_profiles() -> list[dict]:
@@ -142,6 +191,28 @@ def _contains_any(text: str, keywords: set[str]) -> bool:
     return any(kw in text_lower for kw in keywords)
 
 
+# Non-informative PCLASS values that should be treated as absent
+_PCLASS_EMPTY = {"", "not provided", "not available", "none", "unknown", "na", "n/a"}
+
+
+def _classify_text(text: str) -> dict | None:
+    """Try to classify compound modality from a free-text string.
+
+    Returns a partial result dict (compound_class, suggested_profiles) or None.
+    """
+    if _contains_any(text, _ANTIBODY_KEYWORDS):
+        if _contains_any(text, {"checkpoint", "anti-pd", "anti-ctla", "pd-1", "pd-l1", "ctla-4"}):
+            return {"compound_class": "checkpoint_inhibitor", "suggested_profiles": ["checkpoint_inhibitor"]}
+        return {"compound_class": "monoclonal_antibody", "suggested_profiles": ["checkpoint_inhibitor"]}
+    if _contains_any(text, _VACCINE_KEYWORDS):
+        return {"compound_class": "vaccine", "suggested_profiles": ["vaccine_adjuvanted", "vaccine_non_adjuvanted"]}
+    if _contains_any(text, _GENE_THERAPY_KEYWORDS):
+        return {"compound_class": "aav_gene_therapy", "suggested_profiles": ["aav_gene_therapy"]}
+    if _contains_any(text, _OLIGONUCLEOTIDE_KEYWORDS):
+        return {"compound_class": "oligonucleotide", "suggested_profiles": ["oligonucleotide"]}
+    return None
+
+
 # ── Main inference function ────────────────────────────────────────────────
 
 def infer_compound_class(
@@ -151,16 +222,16 @@ def infer_compound_class(
 ) -> dict:
     """Infer compound modality from TS metadata and study characteristics.
 
-    Uses a cascading heuristic (first match wins) as defined in the spec:
+    Uses a cascading heuristic (first match wins):
 
-    1. PCLAS contains immunoglobulin/antibody terms -> Monoclonal antibody (HIGH)
-    2. PCLAS contains vaccine/antigen terms -> Vaccine (HIGH)
-    3. PCLAS contains gene therapy/AAV terms -> AAV gene therapy (HIGH)
-    4. PCLAS contains oligonucleotide terms -> Oligonucleotide (HIGH)
-    5. IS domain present + ROUTE = IM/SC -> Biologic probable vaccine (MEDIUM)
-    6. ROUTE = SC/IM + species = NHP -> Biologic unspecified (LOW)
-    7. INTTYPE = BIOLOGICAL -> Biologic unspecified (LOW)
-    8. Default -> Small molecule
+    Tier 1 — PCLASS keyword match (HIGH confidence)
+    Tier 2 — Treatment name (TRT) keyword match (MEDIUM confidence)
+    Tier 3 — Study title (STITLE) keyword match (MEDIUM confidence)
+    Tier 4 — INTTYPE contains gene therapy signal (MEDIUM confidence)
+    Tier 5 — IS domain present + ROUTE = IM/SC (MEDIUM confidence)
+    Tier 6 — ROUTE = SC/IM + NHP species (LOW confidence)
+    Tier 7 — INTTYPE = BIOLOGICAL (LOW confidence)
+    Tier 8 — Default: small molecule
 
     Returns: {
         "compound_class": str,         # Profile ID or class name
@@ -174,52 +245,28 @@ def infer_compound_class(
     inttype = (ts_meta.get("intervention_type") or "").strip()
     route = (ts_meta.get("route") or "").strip().upper()
     species_val = (species or ts_meta.get("species") or "").strip().upper()
+    treatment = (ts_meta.get("treatment") or "").strip()
+    study_title = (ts_meta.get("study_title") or "").strip()
 
-    # Heuristic 1: PCLAS contains checkpoint inhibitor / antibody terms
-    if pclas and _contains_any(pclas, _ANTIBODY_KEYWORDS):
-        # Distinguish checkpoint inhibitors from other mAbs
-        if _contains_any(pclas, {"checkpoint", "anti-pd", "anti-ctla", "pd-1", "pd-l1", "ctla-4"}):
-            return {
-                "compound_class": "checkpoint_inhibitor",
-                "confidence": "HIGH",
-                "inference_method": "PCLAS_checkpoint_inhibitor",
-                "suggested_profiles": ["checkpoint_inhibitor"],
-            }
-        return {
-            "compound_class": "monoclonal_antibody",
-            "confidence": "HIGH",
-            "inference_method": "PCLAS_antibody",
-            "suggested_profiles": ["checkpoint_inhibitor"],  # Offer as option
-        }
+    # Tier 1: PCLASS keyword match (highest signal — explicit pharmacologic class)
+    if pclas and pclas.lower() not in _PCLASS_EMPTY:
+        result = _classify_text(pclas)
+        if result:
+            return {**result, "confidence": "HIGH", "inference_method": f"PCLASS_{result['compound_class']}"}
 
-    # Heuristic 2: PCLAS contains vaccine/antigen terms
-    if pclas and _contains_any(pclas, _VACCINE_KEYWORDS):
-        return {
-            "compound_class": "vaccine",
-            "confidence": "HIGH",
-            "inference_method": "PCLAS_vaccine",
-            "suggested_profiles": ["vaccine_adjuvanted", "vaccine_non_adjuvanted"],
-        }
+    # Tier 2: Treatment name keyword match
+    if treatment:
+        result = _classify_text(treatment)
+        if result:
+            return {**result, "confidence": "MEDIUM", "inference_method": f"TRT_{result['compound_class']}"}
 
-    # Heuristic 3: PCLAS contains gene therapy / AAV terms
-    if pclas and _contains_any(pclas, _GENE_THERAPY_KEYWORDS):
-        return {
-            "compound_class": "aav_gene_therapy",
-            "confidence": "HIGH",
-            "inference_method": "PCLAS_gene_therapy",
-            "suggested_profiles": ["aav_gene_therapy"],
-        }
+    # Tier 3: Study title keyword match
+    if study_title:
+        result = _classify_text(study_title)
+        if result:
+            return {**result, "confidence": "MEDIUM", "inference_method": f"STITLE_{result['compound_class']}"}
 
-    # Heuristic 4: PCLAS contains oligonucleotide terms
-    if pclas and _contains_any(pclas, _OLIGONUCLEOTIDE_KEYWORDS):
-        return {
-            "compound_class": "oligonucleotide",
-            "confidence": "HIGH",
-            "inference_method": "PCLAS_oligonucleotide",
-            "suggested_profiles": ["oligonucleotide"],
-        }
-
-    # Heuristic 5: INTTYPE contains gene therapy signal
+    # Tier 4: INTTYPE contains gene therapy signal
     if inttype and _contains_any(inttype, {"genetic", "gene therapy"}):
         return {
             "compound_class": "aav_gene_therapy",
@@ -228,7 +275,7 @@ def infer_compound_class(
             "suggested_profiles": ["aav_gene_therapy"],
         }
 
-    # Heuristic 6: IS domain present + ROUTE = IM/SC -> probable vaccine
+    # Tier 5: IS domain present + ROUTE = IM/SC -> probable vaccine
     if "is" in available_domains and route in {"INTRAMUSCULAR", "SUBCUTANEOUS", "IM", "SC"}:
         return {
             "compound_class": "vaccine",
@@ -237,7 +284,7 @@ def infer_compound_class(
             "suggested_profiles": ["vaccine_adjuvanted", "vaccine_non_adjuvanted"],
         }
 
-    # Heuristic 7: ROUTE = SC/IM + species = NHP -> biologic unspecified
+    # Tier 6: ROUTE = SC/IM + species = NHP -> biologic unspecified
     if route in {"SUBCUTANEOUS", "INTRAMUSCULAR", "SC", "IM"}:
         if any(nhp in species_val for nhp in ["MONKEY", "CYNOMOLGUS", "MACAQUE", "NHP", "PRIMATE"]):
             return {
@@ -247,7 +294,7 @@ def infer_compound_class(
                 "suggested_profiles": [],
             }
 
-    # Heuristic 8: INTTYPE = BIOLOGICAL
+    # Tier 7: INTTYPE = BIOLOGICAL
     if inttype and inttype.upper() in {"BIOLOGICAL", "BIOLOGIC"}:
         return {
             "compound_class": "biologic_unspecified",

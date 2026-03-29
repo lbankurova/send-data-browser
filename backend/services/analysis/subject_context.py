@@ -64,13 +64,20 @@ _TS_PARAMS = {
     "TRTV": "vehicle",
     "SPONSOR": "sponsor",
     "TESTCD": "test_article",
-    "PCLAS": "pharmacologic_class",
+    "PCLASS": "pharmacologic_class",
+    "PCLAS": "pharmacologic_class",  # non-standard alias
     "INTTYPE": "intervention_type",
+    "TRT": "treatment",
+    "STITLE": "study_title",
 }
 
 
-def _parse_ts(ts_df: pd.DataFrame | None) -> dict[str, str | None]:
-    """Extract study-level metadata from TS domain."""
+def parse_ts(ts_df: pd.DataFrame | None) -> dict[str, str | None]:
+    """Extract study-level metadata from TS domain.
+
+    Public API — used by compound profile inference and the router
+    when the full build_subject_context() pipeline isn't needed.
+    """
     meta: dict[str, str | None] = {v: None for v in _TS_PARAMS.values()}
     if ts_df is None:
         return meta
@@ -80,6 +87,20 @@ def _parse_ts(ts_df: pd.DataFrame | None) -> dict[str, str | None]:
         if parm in _TS_PARAMS and val and val != "nan":
             meta[_TS_PARAMS[parm]] = val
     return meta
+
+
+# Keep private alias for internal callers
+_parse_ts = parse_ts
+
+
+def get_ts_metadata(study: StudyInfo) -> dict[str, str | None]:
+    """Read TS domain from a study and return parsed metadata.
+
+    Lightweight alternative to build_subject_context() when only TS
+    metadata is needed (e.g., compound profile inference).
+    """
+    ts_df = _safe_read(study, "ts")
+    return parse_ts(ts_df)
 
 
 # ── TA + TE parsing ──────────────────────────────────────────────────────
