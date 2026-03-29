@@ -130,7 +130,7 @@ async def log_request_timing(request, call_next):
     if path.startswith("/api/"):
         size = response.headers.get("content-length", "?")
         enc = response.headers.get("content-encoding", "none")
-        print(f"[PERF] {request.method} {path} → {response.status_code} {elapsed*1000:.0f}ms size={size} enc={enc}")
+        print(f"[PERF] {request.method} {path} -> {response.status_code} {elapsed*1000:.0f}ms size={size} enc={enc}")
     return response
 
 
