@@ -1,0 +1,153 @@
+{
+  "profile_id": "lentiviral_gene_therapy",
+  "display_name": "Lentiviral gene therapy vector",
+  "modality": "gene_therapy",
+  "vector_class": "integrating_viral",
+  "source": "Montini 2006, Cavazzana-Calvo 2010, Brown 2007, Zufferey 1998, SIN-LV safety data",
+  "description": "Expected findings for lentiviral/retroviral gene therapy vectors. Integrating vector with VSV-G pseudotyping. NO DRG toxicity (AAV-specific). Requires 15-year LTFU, RCL testing, and integration site analysis.",
+  "expected_findings": [
+    {
+      "key": "LB_leukopenia",
+      "domain": "LB",
+      "test_codes": ["WBC", "LYMPH"],
+      "direction": "down",
+      "description": "Transient leukopenia (lymphopenia) — Day 1, resolves by 72h",
+      "typical_magnitude": "Significant, Day 1",
+      "severity_threshold": "Severe if sustained >72h",
+      "species_applicability": ["MONKEY"],
+      "time_course": {"onset_hours": 1, "peak_hours": 6, "expected_resolution_days": 3, "self_limiting": true},
+      "rationale": "Lymphocyte margination/migration to liver following IV administration of VSV-G-pseudotyped vector."
+    },
+    {
+      "key": "LB_IFNa_up",
+      "domain": "LB",
+      "test_codes": ["IFNA"],
+      "direction": "up",
+      "description": "IFN-alpha elevation (peaks 4-6h)",
+      "typical_magnitude": "Significant, peaks 4-6h",
+      "severity_threshold": "Sustained >24h suggests non-expected response",
+      "species_applicability": ["MONKEY", "RAT"],
+      "time_course": {"onset_hours": 2, "peak_hours": 5, "expected_resolution_days": 1, "self_limiting": true},
+      "mechanism": "TLR9 activation by VSV-G/tubulovesicular structures via plasmacytoid dendritic cells",
+      "rationale": "Innate immune sensing of lentiviral particles via TLR9. Peaks 4-6h post-dose, resolves within 24h."
+    },
+    {
+      "key": "LB_TNFa_up",
+      "domain": "LB",
+      "test_codes": ["TNFA"],
+      "direction": "up",
+      "description": "TNF-alpha elevation (tissue/serum)",
+      "typical_magnitude": "Up to 14-fold",
+      "severity_threshold": ">20-fold or sustained >24h = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "time_course": {"onset_hours": 2, "peak_hours": 6, "expected_resolution_days": 1, "self_limiting": true},
+      "rationale": "Innate immune sensing of lentiviral particles."
+    },
+    {
+      "key": "LB_chemokines_up",
+      "domain": "LB",
+      "test_codes": ["MIP1A", "MIP1B", "MCP1"],
+      "direction": "up",
+      "description": "MIP-1alpha/beta, MCP-1 chemokine elevation",
+      "typical_magnitude": "Significant at 3h",
+      "severity_threshold": "Sustained elevation >48h = adverse",
+      "species_applicability": ["MONKEY"],
+      "time_course": {"onset_hours": 1, "peak_hours": 3, "expected_resolution_days": 2, "self_limiting": true},
+      "rationale": "Kupffer cell/macrophage phagocytosis of lentiviral particles."
+    },
+    {
+      "key": "LB_anti_VSVG",
+      "domain": "LB",
+      "test_codes": ["VSVG"],
+      "direction": "up",
+      "description": "Anti-VSV-G antibodies",
+      "severity_threshold": "Titer-dependent; affects redosing feasibility",
+      "rationale": "Humoral response to envelope glycoprotein. Variable titer."
+    },
+    {
+      "key": "MI_kupffer_activation",
+      "domain": "MI",
+      "organs": ["LIVER"],
+      "findings": ["KUPFFER CELL HYPERTROPHY", "KUPFFER CELL ACTIVATION", "HEPATIC MACROPHAGE"],
+      "direction": "up",
+      "description": "Kupffer cell activation/hypertrophy",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Rapid phagocytosis of lentiviral particles by liver macrophages. Occurs within minutes post-IV."
+    },
+    {
+      "key": "BW_weight_gain_reduction",
+      "domain": "BW",
+      "test_codes": ["BODYWEIGHT", "BW"],
+      "direction": "down",
+      "description": "Body weight gain reduction",
+      "typical_magnitude": "Slight (3.2-3.7x vs 4.2x fold gain in controls)",
+      "severity_threshold": ">10% decrease from controls = adverse",
+      "species_applicability": ["RAT"],
+      "rationale": "Subacute immune activation."
+    },
+    {
+      "key": "MI_spleen_hyperplasia",
+      "domain": "MI",
+      "organs": ["SPLEEN", "LYMPH NODE"],
+      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA"],
+      "direction": "up",
+      "description": "Splenic/lymphoid hyperplasia (immune activation)",
+      "severity_threshold": ">25% spleen weight increase over controls = monitor",
+      "species_applicability": ["RAT"],
+      "rationale": "Immune activation, splenic macrophage transduction."
+    },
+    {
+      "key": "LB_VCN",
+      "domain": "LB",
+      "test_codes": ["VCN"],
+      "direction": "present",
+      "description": "Vector copy number monitoring",
+      "typical_magnitude": "~1 copy/diploid genome for ex vivo HSPC",
+      "severity_threshold": ">5 copies/diploid genome raises safety concern",
+      "rationale": "Integration efficiency marker. Monitored by qPCR across multiple tissues."
+    },
+    {
+      "key": "LB_ISA_polyclonal",
+      "domain": "LB",
+      "direction": "normal",
+      "description": "Polyclonal integration site analysis (expected normal)",
+      "severity_threshold": "Any clone >20% of ISA reads = clonal dominance concern",
+      "rationale": "SIN-LV shows benign integration bias. No clonal dominance expected. (Zynteglo/BB305 ISA data confirmed polyclonal reconstitution.)",
+      "negative_finding": false
+    },
+    {
+      "key": "MI_no_hepatocyte_necrosis",
+      "domain": "MI",
+      "organs": ["LIVER"],
+      "findings": ["NECROSIS", "DEGENERATION"],
+      "direction": "absent",
+      "description": "No hepatocyte necrosis (lentiviral alone does not injure hepatocytes)",
+      "severity_threshold": "Any necrosis = unexpected finding — investigate for AAV contamination or disease",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Key distinction from AAV: lentiviral vectors alone do not cause hepatocyte necrosis/degeneration in healthy animals.",
+      "negative_finding": true
+    },
+    {
+      "key": "MI_no_DRG_pathology",
+      "domain": "MI",
+      "organs": ["DORSAL ROOT GANGLION", "SCIATIC NERVE", "PERIPHERAL NERVE"],
+      "findings": ["DEGENERATION", "NECROSIS", "AXONAL DEGENERATION"],
+      "direction": "absent",
+      "description": "No DRG pathology (AAV-specific, absent in lentiviral)",
+      "severity_threshold": "Any DRG findings = unexpected — investigate for AAV contamination or misclassification",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Lentiviral vectors lack AAV-mediated DRG tropism. DRG pathology is AAV-specific.",
+      "negative_finding": true
+    },
+    {
+      "key": "MI_no_tumors",
+      "domain": "MI",
+      "direction": "absent",
+      "description": "No tumors expected with SIN-LV design",
+      "severity_threshold": "Any tumor above background incidence = investigate",
+      "rationale": "Low genotoxicity of SIN-LV confirmed by IVIM assay. Montini et al. showed no dose-dependent tumor acceleration in Cdkn2a-/- tumor-prone mice.",
+      "negative_finding": true
+    }
+  ]
+}

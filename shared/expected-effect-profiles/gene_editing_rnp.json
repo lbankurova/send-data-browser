@@ -1,0 +1,88 @@
+{
+  "profile_id": "gene_editing_rnp",
+  "display_name": "RNP/electroporation gene editing (ex vivo)",
+  "modality": "gene_editing",
+  "vector_class": "none",
+  "source": "BEAM-101 clinical data, Casgevy (exagamglogene autotemcel), FDA 2024 Gene Editing Guidance",
+  "description": "Expected effects for RNP/electroporation-delivered gene editing in ex vivo context. Cleanest toxicity profile — no viral or LNP vehicle effects. Conditioning regimen (busulfan myeloablation) dominates the safety profile.",
+  "expected_findings": [
+    {
+      "key": "LB_ontarget_PD",
+      "domain": "LB",
+      "direction": "present",
+      "description": "On-target pharmacodynamic biomarker change (target-specific assay)",
+      "severity_threshold": null,
+      "rationale": "Successful gene knockout/correction. E.g., >60% HbF (BEAM-101)."
+    },
+    {
+      "key": "QC_electroporation_viability",
+      "domain": "cell_product_QC",
+      "direction": "down",
+      "description": "Electroporation-induced cell viability loss (10-30%)",
+      "typical_magnitude": "10-30% viability loss",
+      "severity_threshold": "<50% viability post-electroporation = process concern",
+      "rationale": "Electroporation-induced cell stress. Expected in ex vivo manufacturing."
+    },
+    {
+      "key": "QC_residual_Cas9",
+      "domain": "cell_product_QC",
+      "direction": "present",
+      "description": "Residual Cas9 protein in cell product",
+      "severity_threshold": "Above assay-specific threshold = release criteria concern",
+      "rationale": "RNP Cas9 protein degrades within 24-48h. Monitored as quality attribute in cell product."
+    },
+    {
+      "key": "LB_p53_activation",
+      "domain": "LB",
+      "direction": "up",
+      "description": "p53 pathway activation (gamma-H2AX, DSB response)",
+      "typical_magnitude": "~33% of TP53-WT cell lines",
+      "severity_threshold": "Selection of p53-null clones = oncogenic concern",
+      "editing_modality": "nuclease",
+      "rationale": "DSB-induced DNA damage response. Nuclease editors only."
+    },
+    {
+      "key": "MOL_chromosomal_integrity",
+      "domain": "molecular",
+      "direction": "present",
+      "description": "Chromosomal integrity assessment (FISH/karyotype)",
+      "severity_threshold": "Balanced translocations or clonal abnormalities = adverse",
+      "editing_modality": "nuclease",
+      "rationale": "NHEJ between DSB sites can produce translocations. Required by FDA 2024 guidance."
+    },
+    {
+      "key": "MOL_clonal_architecture",
+      "domain": "molecular",
+      "direction": "normal",
+      "description": "Clonal architecture assessment (polyclonal expected)",
+      "severity_threshold": "Any clone >20% dominance = investigate for clonal selection",
+      "rationale": "Expected polyclonal engraftment. Clonal dominance may indicate selective advantage from unintended editing."
+    },
+    {
+      "key": "LB_engraftment",
+      "domain": "LB",
+      "direction": "up",
+      "description": "Engraftment kinetics (neutrophil/platelet recovery)",
+      "severity_threshold": "Delayed engraftment (ANC >500 after Day 42) = adverse",
+      "rationale": "Expected engraftment kinetics post-conditioning. BEAM-101: safety profile consistent with busulfan conditioning and autologous HSCT."
+    },
+    {
+      "key": "LB_anti_Cas9_response",
+      "domain": "LB",
+      "direction": "up",
+      "description": "Anti-Cas9 immune response (minimal for RNP ex vivo)",
+      "severity_threshold": null,
+      "rationale": "Minimal for RNP delivery — Cas9 protein degrades rapidly in ex vivo product. Lower concern than in vivo delivery."
+    },
+    {
+      "key": "MOL_deaminase_offtargets",
+      "domain": "molecular",
+      "direction": "up",
+      "description": "Genome-wide C-to-T SNVs (gRNA-independent deaminase activity)",
+      "typical_magnitude": "Hundreds per genome for rAPOBEC1-based CBEs",
+      "severity_threshold": "SNVs in tumor suppressor genes = adverse",
+      "editing_modality": "base_editor",
+      "rationale": "APOBEC deaminase activity on single-stranded DNA. Base editor-specific."
+    }
+  ]
+}

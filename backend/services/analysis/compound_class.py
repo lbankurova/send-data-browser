@@ -314,10 +314,26 @@ _VACCINE_KEYWORDS = {
     "toxoid", "conjugate vaccine", "mrna vaccine", "subunit vaccine",
 }
 
-_GENE_THERAPY_KEYWORDS = {
-    "gene therapy", "aav", "adeno-associated", "adenovir",
-    "lentivir", "retrovir", "vector", "transgene",
+# ── Gene therapy keyword sets (platform-specific) ────────────────────────
+
+_AAV_KEYWORDS = {"aav", "adeno-associated"}
+
+_LENTIVIRAL_KEYWORDS = {"lentivir", "retrovir", "gamma-retrovir", "gamma retrovir"}
+
+_LNP_MRNA_KEYWORDS = {
+    "lipid nanoparticle", "lnp", "ionizable lipid",
 }
+
+_GENE_EDITING_KEYWORDS = {
+    "crispr", "cas9", "cas13", "gene editing", "gene edit",
+    "base editor", "base editing", "prime editor", "prime editing",
+    "zinc finger nuclease", "zfn", "talen",
+}
+
+_GENERIC_GENE_THERAPY_KEYWORDS = {"gene therapy", "transgene"}
+
+# Legacy alias — kept for backward compatibility with existing Tier 4
+_GENE_THERAPY_KEYWORDS = _AAV_KEYWORDS | _LENTIVIRAL_KEYWORDS | _LNP_MRNA_KEYWORDS | _GENERIC_GENE_THERAPY_KEYWORDS
 
 _OLIGONUCLEOTIDE_KEYWORDS = {
     "oligonucleotide", "antisense", "sirna", "shrna", "mirna",
@@ -551,8 +567,37 @@ def _classify_text(text: str) -> dict | None:
         return _classify_antibody(text)
     if _contains_any(text, _VACCINE_KEYWORDS):
         return {"compound_class": "vaccine", "suggested_profiles": ["vaccine_adjuvanted", "vaccine_non_adjuvanted"]}
-    if _contains_any(text, _GENE_THERAPY_KEYWORDS):
-        return {"compound_class": "aav_gene_therapy", "suggested_profiles": ["aav_gene_therapy"]}
+    # Gene editing — most specific gene therapy check (before platform keywords)
+    if _contains_any(text, _GENE_EDITING_KEYWORDS):
+        # Sub-classify by delivery vehicle
+        if _contains_any(text, _AAV_KEYWORDS):
+            return {"compound_class": "gene_editing_aav",
+                    "suggested_profiles": ["gene_editing_aav"]}
+        if _contains_any(text, _LNP_MRNA_KEYWORDS):
+            return {"compound_class": "gene_editing_lnp",
+                    "suggested_profiles": ["gene_editing_lnp"]}
+        if _contains_any(text, _LENTIVIRAL_KEYWORDS):
+            return {"compound_class": "gene_editing_lentiviral",
+                    "suggested_profiles": ["lentiviral_gene_therapy"]}
+        # Editing without identifiable vehicle — ambiguous
+        return {"compound_class": "gene_editing",
+                "suggested_profiles": ["gene_editing_aav", "gene_editing_lnp", "gene_editing_rnp"]}
+    # AAV-specific
+    if _contains_any(text, _AAV_KEYWORDS):
+        return {"compound_class": "aav_gene_therapy",
+                "suggested_profiles": ["aav_gene_therapy"]}
+    # Lentiviral-specific
+    if _contains_any(text, _LENTIVIRAL_KEYWORDS):
+        return {"compound_class": "lentiviral_gene_therapy",
+                "suggested_profiles": ["lentiviral_gene_therapy"]}
+    # LNP/mRNA-specific (NOT "mrna" alone — too ambiguous with vaccines)
+    if _contains_any(text, _LNP_MRNA_KEYWORDS):
+        return {"compound_class": "lnp_mrna",
+                "suggested_profiles": ["lnp_mrna"]}
+    # Generic gene therapy — ambiguous, suggest all GT profiles
+    if _contains_any(text, _GENERIC_GENE_THERAPY_KEYWORDS):
+        return {"compound_class": "gene_therapy",
+                "suggested_profiles": ["aav_gene_therapy", "lentiviral_gene_therapy", "lnp_mrna"]}
     if _contains_any(text, _OLIGONUCLEOTIDE_KEYWORDS):
         return {"compound_class": "oligonucleotide", "suggested_profiles": ["oligonucleotide"]}
     return None
@@ -611,13 +656,13 @@ def infer_compound_class(
         if result:
             return {**result, "confidence": "MEDIUM", "inference_method": f"STITLE_{result['compound_class']}"}
 
-    # Tier 4: INTTYPE contains gene therapy signal
+    # Tier 4: INTTYPE contains gene therapy signal — now ambiguous
     if inttype and _contains_any(inttype, {"genetic", "gene therapy"}):
         return {
-            "compound_class": "aav_gene_therapy",
+            "compound_class": "gene_therapy",
             "confidence": "MEDIUM",
             "inference_method": "INTTYPE_genetic",
-            "suggested_profiles": ["aav_gene_therapy"],
+            "suggested_profiles": ["aav_gene_therapy", "lentiviral_gene_therapy", "lnp_mrna"],
         }
 
     # Tier 5: IS domain present + ROUTE = IM/SC -> probable vaccine

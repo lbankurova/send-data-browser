@@ -1,0 +1,76 @@
+{
+  "profile_id": "gene_editing_aav",
+  "display_name": "AAV-delivered gene editing",
+  "modality": "gene_editing",
+  "vector_class": "non_integrating_viral",
+  "base_profiles": ["aav_gene_therapy"],
+  "source": "EDIT-101 NHP data, FDA 2024 Gene Editing Guidance",
+  "description": "Gene editing-specific expected effects when delivered by AAV. Inherits full AAV gene therapy profile (~31 entries) plus editing-specific additions. Key concern: prolonged Cas9 expression from persistent AAV episomes increases cumulative off-target editing risk.",
+  "expected_findings": [
+    {
+      "key": "LB_ontarget_PD",
+      "domain": "LB",
+      "direction": "present",
+      "description": "On-target pharmacodynamic biomarker change (target-specific assay)",
+      "severity_threshold": null,
+      "rationale": "Successful gene knockout/correction. E.g., 52-96% TTR reduction (NTLA-2001); >60% HbF (BEAM-101)."
+    },
+    {
+      "key": "LB_anti_Cas9_antibody",
+      "domain": "LB",
+      "direction": "up",
+      "description": "Anti-Cas9 IgG antibodies (pre-existing + treatment-induced)",
+      "typical_magnitude": "58-79% prevalence in humans; universal in NHP",
+      "severity_threshold": "Titer-dependent; may limit redosing or cause immune-mediated organ injury",
+      "rationale": "Prior S. aureus/S. pyogenes exposure creates pre-existing anti-Cas9 immunity. Treatment amplifies response."
+    },
+    {
+      "key": "LB_anti_Cas9_Tcell",
+      "domain": "LB",
+      "direction": "up",
+      "description": "Anti-Cas9 T-cell response (PBMC/ELISpot)",
+      "typical_magnitude": "67-78% prevalence",
+      "severity_threshold": "T-cell-mediated clearance of edited cells = loss of therapeutic effect",
+      "rationale": "Memory T cells from prior bacterial exposure. More concerning for AAV delivery due to prolonged Cas9 expression from persistent episomes."
+    },
+    {
+      "key": "LB_p53_activation",
+      "domain": "LB",
+      "direction": "up",
+      "description": "p53 pathway activation (gamma-H2AX, DSB response)",
+      "typical_magnitude": "~33% of TP53-WT cell lines show detectable p53 activation",
+      "severity_threshold": "Selection of p53-null clones = oncogenic concern",
+      "editing_modality": "nuclease",
+      "rationale": "DSB-induced DNA damage response activates p53. Nuclease editors only — base/prime editors use nicks, not DSBs."
+    },
+    {
+      "key": "MOL_chromosomal_translocations",
+      "domain": "molecular",
+      "direction": "present",
+      "description": "Chromosomal translocations between DSB sites",
+      "typical_magnitude": "1-4% between DSB sites",
+      "severity_threshold": "Any translocation involving oncogene = adverse",
+      "editing_modality": "nuclease",
+      "rationale": "NHEJ between multiple DSB sites. Nuclease editors only."
+    },
+    {
+      "key": "MOL_large_deletions",
+      "domain": "molecular",
+      "direction": "present",
+      "description": "Large deletions (>1 kb) at DSB sites",
+      "typical_magnitude": "Variable, up to megabase-scale",
+      "severity_threshold": "Deletion of tumor suppressor or essential gene = adverse",
+      "editing_modality": "nuclease",
+      "rationale": "Error-prone DSB repair. Nuclease editors only."
+    },
+    {
+      "key": "MOL_AAV_integration_at_DSB",
+      "domain": "molecular",
+      "direction": "present",
+      "description": "AAV vector integration at Cas9-induced DSB sites",
+      "severity_threshold": "Integration near oncogene = investigate",
+      "editing_modality": "nuclease",
+      "rationale": "AAV episomes can integrate at DSB sites created by Cas9. Unique to AAV-delivered nuclease editing."
+    }
+  ]
+}

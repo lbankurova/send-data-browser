@@ -15,6 +15,13 @@ export interface SeverityThreshold {
   text?: string;
 }
 
+export interface TimeCourse {
+  onset_hours?: number;
+  peak_hours?: number;
+  expected_resolution_days?: number;
+  self_limiting: boolean;
+}
+
 export interface ExpectedFinding {
   key: string;
   domain: string;
@@ -30,6 +37,28 @@ export interface ExpectedFinding {
   typical_magnitude?: string;
   /** Biological provenance: base = Fc-mediated class effect, target = on-target pharmacology */
   layer?: "base" | "target";
+  /** Temporal kinetics — critical for LNP/mRNA adversity classification */
+  time_course?: TimeCourse;
+  /** Which molecular component drives this finding (e.g., ionizable_lipid, PEG_lipid, mRNA) */
+  component_attribution?: string;
+  /** Which administration routes produce this finding (e.g., ["IV", "IM"]) */
+  route_applicability?: string[];
+  /** Scientific mechanism (distinct from rationale) */
+  mechanism?: string;
+  /** Gene editing tool specificity */
+  editing_modality?: "nuclease" | "base_editor" | "prime_editor";
+  /** Confirmatory negatives — "expected absent" */
+  negative_finding?: boolean;
+  /** ADC: how linker stability modulates the finding */
+  linker_note?: string;
+  /** ADC: which PK analyte drives the finding */
+  pk_correlate?: string;
+  /** Reversible / partially reversible / irreversible */
+  reversibility?: string;
+  /** Known preclinical-to-clinical disconnect */
+  translation_gap?: string;
+  /** ADC: when finding differs between payload subtypes */
+  payload_subclass_note?: string;
 }
 
 export interface ExpectedEffectProfile {
@@ -42,6 +71,7 @@ export interface ExpectedEffectProfile {
   base_profiles?: string[];
   user_selectable?: boolean;
   cross_reactivity_required?: boolean;
+  vector_class?: string;
 }
 
 export interface ProfileSummary {

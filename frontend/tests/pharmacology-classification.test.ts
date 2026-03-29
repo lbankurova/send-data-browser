@@ -246,7 +246,7 @@ describe("Pharmacological Classification", () => {
         for (const ef of profile.expected_findings) {
           expect(ef.key).toBeTruthy();
           expect(ef.domain).toBeTruthy();
-          expect(ef.direction).toMatch(/^(up|down|present)$/);
+          expect(ef.direction).toMatch(/^(up|down|present|absent|normal)$/);
           expect(ef.description).toBeTruthy();
           expect(ef.rationale).toBeTruthy();
         }
