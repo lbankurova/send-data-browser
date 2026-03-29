@@ -1,0 +1,101 @@
+{
+  "profile_id": "adc_topo1",
+  "display_name": "ADC — Topoisomerase I inhibitor payload (SN-38 / DXd)",
+  "modality": "adc",
+  "base_profiles": ["adc_base"],
+  "cross_reactivity_required": false,
+  "source": "FDA 2024 ADC Guidance; T-DXd clinical trials; sacituzumab govitecan BLA review",
+  "description": "Topoisomerase I inhibitors (SN-38, exatecan derivative DXd) cause DNA single-strand breaks leading to replication fork collapse. DXd is membrane-permeable with bystander effect. Primary DLT: neutropenia. CRITICAL: ILD (interstitial lung disease) occurs in 10-15% of T-DXd patients but is NOT reproduced in cynomolgus — a known preclinical-to-clinical translation gap.",
+  "expected_findings": [
+    {
+      "key": "LB_neutropenia",
+      "domain": "LB",
+      "test_codes": ["NEUT", "WBC"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Neutropenia (primary DLT)",
+      "severity_threshold": "ANC <1.0 x 10^9/L = adverse. Severity correlates with free SN-38/DXd AUC.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Myeloid progenitor cytotoxicity from topoisomerase I inhibition.",
+      "pk_correlate": "Free SN-38/DXd AUC",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_gi_toxicity",
+      "domain": "MI",
+      "organs": ["SMALL INTESTINE", "LARGE INTESTINE", "COLON", "ORAL MUCOSA"],
+      "findings": ["ATROPHY", "MUCOSAL ATROPHY", "NECROSIS", "INFLAMMATION"],
+      "direction": "up",
+      "layer": "target",
+      "description": "GI toxicity (mucosal injury)",
+      "severity_threshold": "Mucosal necrosis or hemorrhagic enteritis = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Intestinal crypt cell cytotoxicity. UGT1A1 polymorphism modulates sensitivity in humans.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_ild",
+      "domain": "MI",
+      "organs": ["LUNG"],
+      "findings": ["PNEUMONITIS", "INTERSTITIAL", "DIFFUSE ALVEOLAR DAMAGE", "ORGANIZING PNEUMONIA", "FIBROSIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Interstitial lung disease (CRITICAL translation gap)",
+      "severity_threshold": "ALWAYS ADVERSE when present in preclinical models. ILD is a clinically emergent signal (~10-15% with T-DXd) not reproduced in cynomolgus. Preclinical absence does NOT rule out clinical risk.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "ILD is NOT expected in preclinical models (typically absent in cyno). Any DAD or organizing pneumonia is always adverse. Immune-mediated component suspected.",
+      "translation_gap": "ILD absent in cyno, 10-15% clinical incidence with T-DXd. Potentially fatal. Preclinical absence does NOT rule out risk.",
+      "reversibility": "partially reversible"
+    },
+    {
+      "key": "LB_anemia",
+      "domain": "LB",
+      "test_codes": ["RBC", "HGB", "HCT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Anemia (mild-moderate)",
+      "severity_threshold": "HGB <8 g/dL or transfusion-requiring = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Erythroid progenitor cytotoxicity from topoisomerase I inhibition.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "LB_hepatotoxicity",
+      "domain": "LB",
+      "test_codes": ["ALT", "ALAT", "AST", "ASAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hepatotoxicity (mild at standard doses)",
+      "severity_threshold": ">3x ULN = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Hepatocyte uptake of bystander-released DXd.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_alopecia",
+      "domain": "MI",
+      "organs": ["SKIN"],
+      "findings": ["ATROPHY", "HAIR FOLLICLE ATROPHY", "ALOPECIA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Alopecia / hair follicle atrophy",
+      "severity_threshold": "Complete alopecia = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Cycling follicular keratinocytes sensitive to topoisomerase I inhibition.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_bone_marrow_hypocellularity",
+      "domain": "MI",
+      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
+      "findings": ["HYPOCELLULARITY", "DECREASED CELLULARITY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Bone marrow hypocellularity",
+      "severity_threshold": ">50% cellularity reduction = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Hematopoietic progenitor cytotoxicity.",
+      "reversibility": "reversible"
+    }
+  ]
+}

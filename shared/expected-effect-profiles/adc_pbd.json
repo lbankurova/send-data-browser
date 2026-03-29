@@ -1,0 +1,74 @@
+{
+  "profile_id": "adc_pbd",
+  "display_name": "ADC — PBD dimer / duocarmycin payload",
+  "modality": "adc",
+  "base_profiles": ["adc_base"],
+  "cross_reactivity_required": false,
+  "source": "FDA 2024 ADC Guidance; loncastuximab tesirine BLA review",
+  "description": "PBD dimers cause sequence-selective DNA minor groove alkylation producing interstrand crosslinks. Extremely potent (picomolar IC50) with very long DNA damage half-life. Very narrow therapeutic index. Used in: loncastuximab tesirine.",
+  "expected_findings": [
+    {
+      "key": "MI_bone_marrow_aplasia",
+      "domain": "MI",
+      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
+      "findings": ["APLASIA", "HYPOCELLULARITY", "DEPLETION"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Bone marrow aplasia (severe — narrow therapeutic index)",
+      "severity_threshold": "Any significant marrow aplasia = adverse. PBD ADCs have the narrowest TI of any payload class.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "PBD interstrand crosslinks are exceptionally cytotoxic to dividing hematopoietic progenitors. Narrow TI means dose-proportional progression to aplasia.",
+      "reversibility": "partially reversible"
+    },
+    {
+      "key": "LB_pancytopenia",
+      "domain": "LB",
+      "test_codes": ["NEUT", "PLAT", "PLT", "RBC", "HGB"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Pancytopenia (multilineage — all hematopoietic lineages affected)",
+      "severity_threshold": "Any multilineage cytopenia = adverse for PBD class",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "DNA crosslinks affect all dividing progenitors. Pancytopenia expected at near-therapeutic doses.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "LB_hepatotoxicity",
+      "domain": "LB",
+      "test_codes": ["ALT", "ALAT", "AST", "ASAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hepatotoxicity",
+      "severity_threshold": ">3x ULN = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Hepatocyte DNA damage from systemic PBD exposure.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_gi_mucosal_necrosis",
+      "domain": "MI",
+      "organs": ["SMALL INTESTINE", "LARGE INTESTINE", "COLON"],
+      "findings": ["NECROSIS", "MUCOSAL NECROSIS", "ATROPHY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "GI mucosal necrosis (more severe than microtubule inhibitor ADCs)",
+      "severity_threshold": "Mucosal necrosis = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Intestinal crypt cell DNA damage. More severe GI toxicity than microtubule inhibitor payloads.",
+      "reversibility": "partially reversible"
+    },
+    {
+      "key": "MI_pulmonary_toxicity",
+      "domain": "MI",
+      "organs": ["LUNG"],
+      "findings": ["EDEMA", "HEMORRHAGE", "INFLAMMATION", "PNEUMONITIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Pulmonary toxicity",
+      "severity_threshold": "Any pulmonary histopathological finding = adverse for PBD class",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Pulmonary endothelial and epithelial DNA damage from systemic PBD exposure.",
+      "reversibility": "partially reversible"
+    }
+  ]
+}

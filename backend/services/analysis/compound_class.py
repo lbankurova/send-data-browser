@@ -470,6 +470,42 @@ def _classify_antibody(text: str) -> dict:
             "suggested_profiles": ["general_mab"]}
 
 
+# ── ADC keyword sets ──────────────────────────────────────────────────────
+
+_ADC_KEYWORDS = {
+    "antibody-drug conjugate", "antibody drug conjugate",
+    "adc", "immunoconjugate", "drug conjugate",
+    # Payload chemistry shorthand
+    "mmae", "mmaf", "dm1", "dm4", "dxd", "sn-38", "sn38",
+    "calicheamicin", "pbd", "duocarmycin",
+    # Specific approved ADC names
+    "brentuximab", "polatuzumab", "enfortumab",
+    "trastuzumab emtansine", "trastuzumab deruxtecan",
+    "sacituzumab", "loncastuximab", "gemtuzumab",
+    "belantamab", "tisotumab", "mirvetuximab",
+    "inotuzumab",
+}
+
+# INN suffix → specific payload profile auto-resolution
+_INN_PAYLOAD_MAP = {
+    "vedotin": "adc_mmae",
+    "mafodotin": "adc_mmaf",
+    "emtansine": "adc_maytansinoid",
+    "ravtansine": "adc_maytansinoid",
+    "soravtansine": "adc_maytansinoid",
+    "ozogamicin": "adc_calicheamicin",
+    "deruxtecan": "adc_topo1",
+    "govitecan": "adc_topo1",
+    "tesirine": "adc_pbd",
+}
+
+_ALL_ADC_PROFILES = [
+    "adc_mmae", "adc_mmaf", "adc_maytansinoid",
+    "adc_calicheamicin", "adc_topo1", "adc_pbd",
+    "adc_immune_stimulator",
+]
+
+
 # Non-informative PCLASS values that should be treated as absent
 _PCLASS_EMPTY = {"", "not provided", "not available", "none", "unknown", "na", "n/a"}
 
@@ -478,15 +514,28 @@ def _classify_text(text: str) -> dict | None:
     """Classify compound modality from a free-text string.
 
     Cascade ordering (first match wins, most specific first):
-      1. Recombinant proteins (EPO, G-CSF, IFN) — before antibody (not mAbs)
-      2. Fc-fusion proteins — before generic antibody
-      3. Antibody/mAb → sub-classification via _classify_antibody()
-      4. Vaccine
-      5. Gene therapy (AAV)
-      6. Oligonucleotide
+      1. ADC (+ INN suffix sub-resolution) — most specific antibody subtype
+      2. Recombinant proteins (EPO, G-CSF, IFN) — before antibody (not mAbs)
+      3. Fc-fusion proteins — before generic antibody
+      4. Antibody/mAb → sub-classification via _classify_antibody()
+      5. Vaccine
+      6. Gene therapy (AAV)
+      7. Oligonucleotide
 
     Returns a partial result dict (compound_class, suggested_profiles) or None.
     """
+    # ADC — check FIRST (more specific than generic antibody; 'antibody'
+    # appears in 'antibody-drug conjugate')
+    if _contains_any(text, _ADC_KEYWORDS):
+        # Try INN suffix for auto-resolution to specific payload profile
+        text_lower = text.lower()
+        for suffix, profile_id in _INN_PAYLOAD_MAP.items():
+            if suffix in text_lower:
+                return {"compound_class": "adc",
+                        "suggested_profiles": [profile_id]}
+        # Generic ADC — suggest all payload profiles for SME selection
+        return {"compound_class": "adc",
+                "suggested_profiles": list(_ALL_ADC_PROFILES)}
     # Recombinant proteins — check before antibody (these are not mAbs)
     if _contains_any(text, _RECOMBINANT_EPO_KEYWORDS):
         return {"compound_class": "recombinant_epo", "suggested_profiles": ["recombinant_epo"]}

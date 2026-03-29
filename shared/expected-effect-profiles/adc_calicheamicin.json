@@ -1,0 +1,89 @@
+{
+  "profile_id": "adc_calicheamicin",
+  "display_name": "ADC — Calicheamicin payload (hydrazone linker)",
+  "modality": "adc",
+  "base_profiles": ["adc_base"],
+  "cross_reactivity_required": false,
+  "source": "FDA 2024 ADC Guidance; gemtuzumab ozogamicin/inotuzumab ozogamicin BLA reviews",
+  "description": "Calicheamicin causes DNA double-strand breaks via oxidative radical mechanism. pH-sensitive hydrazone linker is relatively unstable (plasma half-life 1-2 days), driving significant free calicheamicin exposure. Kupffer cell uptake delivers payload to hepatic sinusoidal endothelium. Primary DLTs: severe thrombocytopenia and hepatic SOS/VOD.",
+  "expected_findings": [
+    {
+      "key": "LB_thrombocytopenia_severe",
+      "domain": "LB",
+      "test_codes": ["PLAT", "PLT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Severe thrombocytopenia (class-defining for calicheamicin ADCs)",
+      "severity_threshold": "Even moderate preclinical thrombocytopenia for this class should trigger adversity flag. 77-99% Grade 3+ incidence clinically.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "DNA damage to megakaryocytes. Most severe thrombocytopenia of any ADC payload class.",
+      "translation_gap": "77-99% Grade 3+ incidence clinically. Even moderate preclinical findings are significant.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_hepatic_sinusoidal_injury",
+      "domain": "MI",
+      "organs": ["LIVER"],
+      "findings": ["SINUSOIDAL", "SINUSOIDAL DILATATION", "SINUSOIDAL OBSTRUCTION", "CONGESTION", "HEPATOCYTE NECROSIS", "FIBROSIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hepatic sinusoidal injury / SOS/VOD",
+      "severity_threshold": "Any histopathological SOS evidence = adverse. Fatal SOS reported with inotuzumab ozogamicin.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Target-independent (confirmed with non-binding control ADC). Kupffer cell uptake delivers calicheamicin to hepatic sinusoidal endothelium.",
+      "translation_gap": "SOS underestimated in some preclinical programs; fatal SOS reported in inotuzumab trials.",
+      "reversibility": "partially reversible"
+    },
+    {
+      "key": "MI_bone_marrow_aplasia",
+      "domain": "MI",
+      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
+      "findings": ["APLASIA", "HYPOCELLULARITY", "DEPLETION", "DECREASED CELLULARITY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Bone marrow aplasia (severe at near-HNSTD)",
+      "severity_threshold": "Severe hypocellularity or aplasia = adverse. More severe than microtubule inhibitor ADCs.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "DNA double-strand breaks in hematopoietic progenitors. More severe than microtubule inhibitor ADCs.",
+      "reversibility": "partially reversible"
+    },
+    {
+      "key": "LB_pancytopenia",
+      "domain": "LB",
+      "test_codes": ["NEUT", "WBC", "RBC", "HGB", "HCT"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Pancytopenia (multilineage pattern)",
+      "severity_threshold": "Any multilineage cytopenia with clinical consequences = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Multilineage pattern distinguishes DNA-damaging ADCs from MMAE (primarily neutropenia) or MMAF (primarily thrombocytopenia).",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_gi_mucosal_injury",
+      "domain": "MI",
+      "organs": ["SMALL INTESTINE", "ORAL MUCOSA", "COLON"],
+      "findings": ["NECROSIS", "MUCOSAL INJURY", "ATROPHY", "STOMATITIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "GI mucosal injury (more severe than microtubule inhibitor ADCs)",
+      "severity_threshold": "Mucosal necrosis or hemorrhagic enteritis = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "More severe than microtubule inhibitor ADCs; stomatitis more prominent.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "LB_vod_markers",
+      "domain": "LB",
+      "test_codes": ["BILI", "ALT", "ALAT", "AST", "ASAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "VOD/SOS markers (elevated bilirubin + transaminases)",
+      "severity_threshold": "Elevated bilirubin + hepatomegaly = SOS sentinel. Any SOS histopathological evidence = adverse.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Bilirubin elevation with transaminase increase is the sentinel laboratory pattern for SOS.",
+      "linker_note": "Hydrazone linker instability is the primary driver of off-target toxicity. Premature calicheamicin release produces systemic exposure that amplifies all findings. Free calicheamicin AUC / total ADC AUC ratio >10% indicates significant systemic payload release.",
+      "reversibility": "partially reversible"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "profile_id": "adc_immune_stimulator",
+  "display_name": "ADC — Immune stimulator payload (STING / TLR agonist)",
+  "modality": "adc",
+  "base_profiles": ["adc_base"],
+  "cross_reactivity_required": false,
+  "source": "Emerging clinical data; preclinical literature on XMT-2056, SBT6050 class",
+  "description": "Targeted delivery of innate immune agonists (STING, TLR7/8) to tumor microenvironment. Expected to produce systemic immune activation when payload is released. Toxicity profile is immune-mediated, not cytotoxic — fundamentally different from all other ADC payload classes.",
+  "expected_findings": [
+    {
+      "key": "LB_cytokine_release",
+      "domain": "LB",
+      "test_codes": ["CRP", "CRPTN", "FIBRINO", "HAPTO"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Cytokine release / acute phase response",
+      "severity_threshold": "Severe cytokine storm with hemodynamic instability = adverse. Grade 3+ CRS = never reclassify.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Systemic innate immune activation from STING/TLR agonist release. Acute phase proteins (CRP, fibrinogen, haptoglobin) are downstream markers.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "LB_transient_lymphopenia",
+      "domain": "LB",
+      "test_codes": ["LYMPH"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Transient lymphopenia (immune redistribution)",
+      "severity_threshold": "Sustained lymphopenia >72h = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Lymphocyte redistribution during immune activation. Expected to be transient and self-resolving.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "LB_liver_enzyme_elevation",
+      "domain": "LB",
+      "test_codes": ["ALT", "ALAT", "AST", "ASAT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Liver enzyme elevation (immune-mediated)",
+      "severity_threshold": ">3x ULN = adverse. Immune-mediated hepatitis pattern.",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Hepatic immune activation from systemically distributed STING/TLR agonist.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_spleen_lymph_node_enlargement",
+      "domain": "MI",
+      "organs": ["SPLEEN", "LYMPH NODE"],
+      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA", "ENLARGEMENT", "GERMINAL CENTER HYPERPLASIA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Spleen / lymph node enlargement (immune activation)",
+      "severity_threshold": "Splenomegaly >3x reference = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Lymphoid organ activation from innate immune stimulation.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "MI_injection_site_reaction",
+      "domain": "MI",
+      "organs": ["INJECTION SITE"],
+      "findings": ["INFLAMMATION", "NECROSIS", "INFILTRATE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Injection site reaction (immune-mediated, may be more severe than non-immune ADCs)",
+      "severity_threshold": "Necrosis at injection site = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Local innate immune activation at injection site. May be more severe than standard ADC injection site reactions.",
+      "reversibility": "reversible"
+    },
+    {
+      "key": "CL_fever",
+      "domain": "CL",
+      "findings": ["PYREXIA", "FEVER", "TEMPERATURE INCREASE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Fever (cytokine-driven)",
+      "severity_threshold": "Refractory fever requiring ICU intervention = adverse. Grade 1-2 is expected.",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Cytokine-driven fever from innate immune activation. Expected class effect of STING/TLR agonist payloads.",
+      "reversibility": "reversible"
+    }
+  ]
+}
