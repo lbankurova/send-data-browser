@@ -47,11 +47,14 @@ bash scripts/regenerate-validation.sh
 ## Documents
 
 - [pointcross-ground-truth.md](pointcross-ground-truth.md) — Signal-by-signal detection results for the synthetic benchmark study
-- [multi-study-benchmark.md](multi-study-benchmark.md) — Cross-study comparison: automated vs SME conclusions
+- [multi-study-benchmark.md](multi-study-benchmark.md) — Combined validation: trial design (dose groups, controls, recovery, TK, crossover), classification (findings, adversity, NOAEL), and systemic gap resolution
 - [classification-verdicts.md](classification-verdicts.md) — Expert evaluation of every discrepancy with literature references
 
 ## Validation Version
 
-- **Engine version:** Commit `119dcdf` (2026-03-28)
-- **Last full validation:** 2026-03-28
-- **Frontend tests at validation time:** 1784 passing
+- **Engine version:** Commit `6aadd74` (2026-03-29)
+- **Last full validation:** 2026-03-29
+- **Frontend tests at validation time:** 1826 passing
+- **Studies generating:** 16 of 16
+- **Root causes resolved:** 9 of 9 (RC-1 through RC-9)
+- **Previous validation:** Commit `119dcdf` (2026-03-28) — 7 of 16 studies, pre root-cause fixes
