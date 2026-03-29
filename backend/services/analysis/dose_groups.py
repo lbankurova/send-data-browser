@@ -455,6 +455,7 @@ def _parse_tx(
             "setlbl": setlbl,
             "spgrpcd": params.get("SPGRPCD"),
             "tcntrl": params.get("TCNTRL"),
+            "sexpop": params.get("SEXPOP"),
             "compound": compound or None,
             "is_recovery": is_recovery,
             "is_satellite": False,
@@ -507,6 +508,133 @@ def _resolve_label(tx_info: dict, dm_arm_label: str = "") -> str:
     if dm_arm_label and "recovery" not in dm_arm_label.lower():
         return dm_arm_label
     return f"Group {tx_info.get('armcd', '?')}"
+
+
+def _detect_sex_stratified_arms(tx_map: dict) -> bool:
+    """Detect whether arms are sex-stratified (separate M/F arms with matching doses).
+
+    Returns True when:
+    1. TX.SEXPOP contains single-sex values (M/F) across different arms
+    2. Both sexes are represented (not a single-sex study)
+    3. At least one dose value appears for both M and F arms
+    """
+    m_doses: set[float | None] = set()
+    f_doses: set[float | None] = set()
+    for info in tx_map.values():
+        sexpop = (info.get("sexpop") or "").strip().upper()
+        if sexpop in ("M", "MALE"):
+            m_doses.add(info.get("dose_value"))
+        elif sexpop in ("F", "FEMALE"):
+            f_doses.add(info.get("dose_value"))
+    if not m_doses or not f_doses:
+        return False
+    return bool(m_doses & f_doses)
+
+
+def _strip_sex_prefix(label: str) -> str:
+    """Remove sex prefix from sex-stratified arm labels.
+
+    Handles: "M-Vehicle", "F - Low", "Male Vehicle", "Female-Low"
+    Single-letter M/F requires a dash to avoid false positives ("Medium" → "edium").
+    """
+    # Try "Male"/"Female" first (optional dash)
+    cleaned = re.sub(r'^(?:Male|Female)\s*[-–]?\s*', '', label, flags=re.IGNORECASE).strip()
+    if cleaned and cleaned != label:
+        return cleaned
+    # Then single-letter M/F (requires dash)
+    cleaned = re.sub(r'^[MF]\s*[-–]\s*', '', label, flags=re.IGNORECASE).strip()
+    return cleaned if cleaned else label
+
+
+def _merge_sex_stratified_arms(
+    tx_map: dict,
+    subjects: pd.DataFrame,
+    dm_arm_map: dict,
+) -> tuple[dict, pd.DataFrame, list[str]]:
+    """Merge sex-stratified arms into combined dose groups.
+
+    Groups arms by (dose_value, control_type) and merges M/F variants.
+    Returns updated (tx_map, subjects, provenance_messages).
+    """
+    # Group arms by dose_value, then verify TCNTRL consistency within main arms.
+    from collections import defaultdict
+    dose_val_groups: dict[float | None, list[str]] = defaultdict(list)
+    for armcd, info in tx_map.items():
+        sexpop = (info.get("sexpop") or "").strip().upper()
+        if sexpop not in ("M", "F", "MALE", "FEMALE"):
+            continue
+        dose_val_groups[info.get("dose_value")].append(armcd)
+
+    # Only merge groups that have both sexes and consistent TCNTRL on main arms
+    merge_map: dict[str, str] = {}  # old_armcd -> canonical_armcd
+    merged_count = 0
+    for dose_val, armcds in dose_val_groups.items():
+        if len(armcds) < 2:
+            continue
+        sexes = {(tx_map[a].get("sexpop") or "").strip().upper()[0] for a in armcds
+                 if (tx_map[a].get("sexpop") or "").strip()}
+        if sexes != {"M", "F"}:
+            continue  # Not a M/F pair
+        # Verify TCNTRL consistency among main (non-recovery) arms
+        main_ctrls = {(tx_map[a].get("tcntrl") or "").upper().strip()
+                      for a in armcds if not tx_map[a].get("is_recovery")}
+        if len(main_ctrls) > 1:
+            continue  # Different control types — don't merge (spec edge case #2)
+
+        # Separate main and recovery arms within this dose group
+        main_arms = [a for a in armcds if not tx_map[a].get("is_recovery")]
+        rec_arms = [a for a in armcds if tx_map[a].get("is_recovery")]
+
+        # Merge main arms: pick first as canonical, remap others
+        if len(main_arms) >= 2:
+            canonical = main_arms[0]
+            # Update label to strip sex prefix
+            tx_map[canonical]["label"] = _strip_sex_prefix(tx_map[canonical]["label"])
+            tx_map[canonical]["setlbl"] = _strip_sex_prefix(tx_map[canonical].get("setlbl", ""))
+            tx_map[canonical]["sexpop"] = "BOTH"
+            for other in main_arms[1:]:
+                merge_map[other] = canonical
+            merged_count += 1
+
+        # Merge recovery arms the same way
+        if len(rec_arms) >= 2:
+            rec_canonical = rec_arms[0]
+            tx_map[rec_canonical]["label"] = _strip_sex_prefix(tx_map[rec_canonical]["label"])
+            tx_map[rec_canonical]["setlbl"] = _strip_sex_prefix(tx_map[rec_canonical].get("setlbl", ""))
+            tx_map[rec_canonical]["sexpop"] = "BOTH"
+            # Update spgrpcd to match canonical main arm's spgrpcd
+            if main_arms:
+                tx_map[rec_canonical]["spgrpcd"] = tx_map[main_arms[0]].get("spgrpcd")
+            for other in rec_arms[1:]:
+                merge_map[other] = rec_canonical
+
+    if not merge_map:
+        return tx_map, subjects, []
+
+    # Remap subjects: change ARMCD from merged arm to canonical
+    subjects["ARMCD"] = subjects["ARMCD"].map(lambda a: merge_map.get(a, a))
+    # Update is_recovery after remap
+    subjects["is_recovery"] = subjects["ARMCD"].apply(
+        lambda a: tx_map.get(a, {}).get("is_recovery", False)
+    )
+
+    # Update dm_arm_map for canonical arms
+    for old, canonical in merge_map.items():
+        if old in dm_arm_map and canonical not in dm_arm_map:
+            dm_arm_map[canonical] = dm_arm_map[old]
+
+    # Remove merged arms from tx_map (keep canonical only)
+    for old in merge_map:
+        tx_map.pop(old, None)
+
+    prov = [
+        f"Sex-stratified arms detected: {len(merge_map) + merged_count} sex-specific arms "
+        f"merged into {merged_count} combined dose groups by dose value. "
+        f"Per-sex statistical comparisons preserved within each merged group."
+    ]
+    logger.info("Sex-stratified arm merge: remapped %d arms → %d canonical", len(merge_map), merged_count)
+
+    return tx_map, subjects, prov
 
 
 def build_dose_groups(study: StudyInfo) -> dict:
@@ -598,10 +726,18 @@ def build_dose_groups(study: StudyInfo) -> dict:
             lambda a: tx_map.get(a, {}).get("is_satellite", False)
         )
 
+    # --- Sex-stratified arm merging (before grouping) ---
+    sex_strat_prov: list[str] = []
+    if _detect_sex_stratified_arms(tx_map):
+        tx_map, subjects, sex_strat_prov = _merge_sex_stratified_arms(
+            tx_map, subjects, dm_arm_map,
+        )
+
     # --- Determine grouping mode: SPGRPCD vs legacy ---
     has_spgrpcd = any(info.get("spgrpcd") for info in tx_map.values())
 
-    all_armcds = list(dm_df["ARMCD"].astype(str).str.strip().unique())
+    # Use post-merge ARMCDs (subjects may have been remapped)
+    all_armcds = list(subjects["ARMCD"].unique())
 
     if has_spgrpcd:
         armcd_to_level, main_armcds, recovery_pairing = _build_groups_spgrpcd(
@@ -803,6 +939,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "positive_control_arms": list(positive_control_arms),
         "is_multi_compound": is_multi_compound,
         "compounds": sorted(compounds) if compounds else [],
+        "sex_stratified_merge": sex_strat_prov,
     }
 
 
