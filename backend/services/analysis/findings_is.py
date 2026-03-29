@@ -44,11 +44,26 @@ def compute_is_findings(
     if len(is_df) == 0:
         return []
 
-    # Parse numeric columns
-    is_df["value"] = pd.to_numeric(is_df.get("ISSTRESN"), errors="coerce")
-    is_df["day"] = pd.to_numeric(is_df.get("ISDY"), errors="coerce")
-    is_df["blq"] = is_df.get("ISLOBXFL", "").astype(str).str.strip().str.upper() == "Y"
-    is_df["baseline"] = is_df.get("ISBLFL", "").astype(str).str.strip().str.upper() == "Y"
+    # Parse numeric columns — use column check, not df.get() with scalar default,
+    # because scalar defaults don't support Series methods (.astype, .str).
+    is_df["value"] = pd.to_numeric(
+        is_df["ISSTRESN"] if "ISSTRESN" in is_df.columns else pd.Series(dtype=float, index=is_df.index),
+        errors="coerce",
+    )
+    is_df["day"] = pd.to_numeric(
+        is_df["ISDY"] if "ISDY" in is_df.columns else pd.Series(dtype=float, index=is_df.index),
+        errors="coerce",
+    )
+    is_df["blq"] = (
+        is_df["ISLOBXFL"].astype(str).str.strip().str.upper() == "Y"
+        if "ISLOBXFL" in is_df.columns
+        else False
+    )
+    is_df["baseline"] = (
+        is_df["ISBLFL"].astype(str).str.strip().str.upper() == "Y"
+        if "ISBLFL" in is_df.columns
+        else False
+    )
 
     # Derive LLOQ: use ISLLOQ if available, else estimate from data
     lloq = _derive_lloq(is_df)
