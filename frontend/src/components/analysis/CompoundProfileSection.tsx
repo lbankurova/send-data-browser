@@ -106,6 +106,12 @@ function FindingRow({
               : "?"}
           </span>
         </div>
+        {finding.translation_gap && (
+          <div className="mt-0.5 bg-amber-50 border-l-2 border-amber-400 px-2 py-0.5 text-[9px]">
+            <span className="font-semibold text-amber-700">Translation gap: </span>
+            <span className="text-amber-600">{finding.translation_gap}</span>
+          </div>
+        )}
       </div>
     </label>
   );

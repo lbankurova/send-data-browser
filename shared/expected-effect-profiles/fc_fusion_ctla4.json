@@ -41,6 +41,41 @@
       "severity_threshold": "Severe combined immunodeficiency-like state = adverse",
       "species_applicability": ["MONKEY"],
       "rationale": "CTLA4-Ig attenuates CD28-B7 co-stimulation; T-cell functionality reduced as primary pharmacological effect. Reduced T-cell proliferation upon stimulation; Treg enrichment."
+    },
+    {
+      "key": "MI_infection_susceptibility",
+      "domain": "MI",
+      "findings": ["INFECTION", "ABSCESS", "SEPSIS", "BACTERIAL", "FUNGAL"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Increased infection susceptibility (secondary to immunosuppression)",
+      "severity_threshold": "Opportunistic infection = never reclassify",
+      "species_applicability": ["MONKEY"],
+      "rationale": "Consequence of combined T-cell attenuation and reduced humoral immunity. Risk proportional to depth and duration of immunosuppression."
+    },
+    {
+      "key": "LB_complement",
+      "domain": "LB",
+      "test_codes": ["C3", "C4", "CH50"],
+      "direction": "down",
+      "layer": "base",
+      "description": "Complement consumption (Fc-mediated)",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY"],
+      "rationale": "Fc region of the fusion protein can activate complement. Typically mild and transient."
+    },
+    {
+      "key": "MI_injection_site",
+      "domain": "MI",
+      "organs": ["INJECTION SITE", "SITE, APPLICATION"],
+      "findings": ["INFLAMMATION", "GRANULOMA", "FIBROSIS"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Injection site reactions (SC route)",
+      "severity_threshold": "Necrosis = adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "route_applicability": ["SC"],
+      "rationale": "Common for all SC-administered protein therapeutics. Covered by general_mab base but listed for completeness."
     }
   ]
 }

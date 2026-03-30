@@ -339,21 +339,29 @@ def process_findings(
             len(enriched),
         )
 
-    # Multi-compound trend suppression (RC-8): JT trend test across different
-    # compounds is scientifically meaningless. Null out trend_p/jt_p and flag.
+    # Multi-compound trend suppression (RC-8): when domain stats were run
+    # per-compound partition (Phase A), trend tests are already compound-scoped
+    # and valid. Only suppress if findings lack compound_id (legacy/fallback).
     if is_multi_compound:
-        for f in enriched:
-            if f.get("trend_p") is not None:
-                f["_original_trend_p"] = f["trend_p"]
-                f["trend_p"] = None
-            if f.get("jt_p") is not None:
-                f["_original_jt_p"] = f["jt_p"]
-                f["jt_p"] = None
-            f["_multi_compound_suppressed"] = True
-        log.info(
-            "Multi-compound: trend tests suppressed for %d findings",
-            len(enriched),
-        )
+        unpartitioned = [f for f in enriched if not f.get("compound_id")]
+        if unpartitioned:
+            for f in unpartitioned:
+                if f.get("trend_p") is not None:
+                    f["_original_trend_p"] = f["trend_p"]
+                    f["trend_p"] = None
+                if f.get("jt_p") is not None:
+                    f["_original_jt_p"] = f["jt_p"]
+                    f["jt_p"] = None
+                f["_multi_compound_suppressed"] = True
+            log.info(
+                "Multi-compound: trend tests suppressed for %d unpartitioned findings",
+                len(unpartitioned),
+            )
+        else:
+            log.info(
+                "Multi-compound: %d findings have compound_id (per-compound stats, trends valid)",
+                len(enriched),
+            )
 
     # Pattern overrides applied at endpoint level (analysis_views.py) so they
     # work for both static file serving and parameterized pipeline results

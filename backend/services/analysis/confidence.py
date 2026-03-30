@@ -390,6 +390,47 @@ def _specimen_is_spleen(f: dict) -> bool:
     return "SPLEEN" in specimen
 
 
+def _bw_severe_check(f: dict) -> bool:
+    """Body weight loss >= 20% from control (fold change <= 0.80)."""
+    fc = f.get("max_fold_change")
+    return fc is not None and fc <= 0.80
+
+
+def _creat_severe_check(f: dict) -> bool:
+    """Creatinine > 3x fold change — renal failure threshold."""
+    fc = f.get("max_fold_change")
+    return fc is not None and fc > 3.0
+
+
+def _get_observed_severity(f: dict, metric: str = "fold_change") -> float | None:
+    """Extract observed severity from a finding based on the metric type.
+
+    Phase B: used by severity-gated D9 matching to compare observed values
+    against profile-defined severity_threshold.
+    """
+    if metric == "fold_change":
+        return f.get("max_fold_change")
+    elif metric == "grade":
+        # MI/MA severity grade (1-5 scale)
+        return f.get("avg_severity")
+    elif metric == "incidence":
+        # Incidence fraction (0-1)
+        gs = f.get("group_stats")
+        if gs and isinstance(gs, list):
+            max_inc = 0.0
+            for g in gs:
+                n = g.get("n", 0)
+                affected = g.get("affected", 0)
+                if n > 0:
+                    max_inc = max(max_inc, affected / n)
+            return max_inc if max_inc > 0 else None
+        return None
+    elif metric == "effect_size":
+        es = f.get("effect_size")
+        return abs(es) if es is not None else None
+    return None
+
+
 _NEVER_RECLASSIFIABLE: list[
     tuple[str, set[str], str | None, str, object | None]
 ] = [
@@ -437,6 +478,26 @@ _NEVER_RECLASSIFIABLE: list[
      "Splenic rupture — acute organ failure", _specimen_is_spleen),
     ("MA", {"RUPTURE"}, None,
      "Splenic rupture — acute organ failure", _specimen_is_spleen),
+    # Body weight loss >= 20%
+    ("BW", {"BODY WEIGHT", "BW", "BWGHT"}, "down",
+     "Body weight loss >= 20% from baseline", _bw_severe_check),
+
+    # ── Phase B additions (audit-identified gaps) ─────────────────────
+    # ILD / diffuse alveolar damage (DXd/SN-38 ADC class — always adverse)
+    ("MI", {"INTERSTITIAL LUNG", "DIFFUSE ALVEOLAR", "ALVEOLAR DAMAGE", "PNEUMONITIS", "ILD"}, None,
+     "ILD / diffuse alveolar damage — always adverse if present", None),
+    # SOS / VOD (calicheamicin class)
+    ("MI", {"SINUSOIDAL OBSTRUCTION", "VENO-OCCLUSIVE", "VOD", "SOS"}, None,
+     "SOS/VOD — sinusoidal obstruction syndrome", None),
+    # Bone marrow aplasia (non-recovering — PBD, calicheamicin class)
+    ("MI", {"MARROW APLASIA", "APLASTIC", "PANCYTOPENIA"}, None,
+     "Bone marrow aplasia — multi-lineage failure", None),
+    # Renal failure / nephrotic syndrome (anti-VEGF class)
+    ("LB", {"CREAT", "CREA"}, "up",
+     "Renal failure — creatinine > 3x ULN", _creat_severe_check),
+    # PML (deep immunosuppression agents)
+    ("MI", {"LEUKOENCEPHALOPATHY", "PML", "JC VIRUS"}, None,
+     "PML — progressive multifocal leukoencephalopathy", None),
 ]
 
 
@@ -598,7 +659,30 @@ def _score_d9_pharmacological(
             xr_filter = expected_profile.get("_cross_reactivity_filter")
             xr_note = ""
             if xr_filter == "partial_qualifier":
-                xr_note = " (partial cross-reactivity — findings may be attenuated)"
+                xr_note = " (partial cross-reactivity -- findings may be attenuated)"
+
+            # ── Phase B: severity-gated D9 matching ──
+            # When the profile entry has severity_threshold, check observed
+            # severity against expected range. Findings exceeding the
+            # adverse_trigger are NOT pharmacologically expected at that magnitude.
+            if isinstance(ee_config, dict):
+                sev_thresh = ee_config.get("severity_threshold")
+                if isinstance(sev_thresh, dict):
+                    observed = _get_observed_severity(f, sev_thresh.get("metric", "fold_change"))
+                    if observed is not None:
+                        adverse_trigger = sev_thresh.get("adverse_trigger")
+                        non_adverse_ceiling = sev_thresh.get("non_adverse_ceiling")
+                        if adverse_trigger is not None and observed > adverse_trigger:
+                            return _dim("D9", "Pharmacological expectation", 0,
+                                f"Matches '{ee_key}' but observed severity "
+                                f"{observed:.2f} exceeds adverse trigger "
+                                f"{adverse_trigger} -- not expected at this magnitude")
+                        if non_adverse_ceiling is not None and observed > non_adverse_ceiling:
+                            return _dim("D9", "Pharmacological expectation", -0.5,
+                                f"Matches '{ee_key}' but observed severity "
+                                f"{observed:.2f} exceeds non-adverse ceiling "
+                                f"{non_adverse_ceiling} -- partially expected{xr_note}")
+
             return _dim("D9", "Pharmacological expectation", -1,
                          f"Matches expected {layer_text} '{ee_key}' "
                          f"from {compound_class} profile{xr_note}")

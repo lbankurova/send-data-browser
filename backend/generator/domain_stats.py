@@ -138,83 +138,122 @@ def compute_all_findings(
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
     n_excluded = len(excluded_set) if excluded_set else 0
 
-    # ── Run all domain computations concurrently across passes ──
+    # ── Run all domain computations ──
     # Pass 1 = all animals, Pass 2 = scheduled-only (early deaths excluded),
     # Pass 3 = main-only (recovery animals excluded).
-    # All passes are independent — submit everything to one thread pool.
+    #
+    # Phase A: when multi-compound, run per compound partition. Each partition
+    # contains the compound's treated groups + shared vehicle control. Domain
+    # functions see filtered subjects and produce per-compound findings.
     has_recovery = analysis_subjects["is_recovery"].any()
-    main_only_subs = get_terminal_subjects(analysis_subjects) if has_recovery else None
+    compound_partitions = dg_data.get("compound_partitions", {})
+    is_multi_compound = dg_data.get("is_multi_compound", False)
 
-    t_domains = time.perf_counter()
-    with ProcessPoolExecutor(max_workers=4) as pool:
-        # Pass 1 — all animals (excluding secondary/positive controls)
-        p1_futs = [
-            pool.submit(compute_lb_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_bw_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_om_findings, study, analysis_subjects),
-            pool.submit(compute_mi_findings, study, analysis_subjects),
-            pool.submit(compute_ma_findings, study, analysis_subjects),
-            pool.submit(compute_tf_findings, study, analysis_subjects),
-            pool.submit(compute_cl_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_ds_findings, study, analysis_subjects),
-            pool.submit(compute_eg_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_re_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_vs_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_bg_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
-        ]
-        if "fw" in study.xpt_files:
-            p1_futs.append(pool.submit(_compute_fw_findings, study, analysis_subjects, last_dosing_day=last_dosing_day))
-        if "is" in study.xpt_files:
-            p1_futs.append(pool.submit(compute_is_findings, study, analysis_subjects))
-
-        # Pass 2 — scheduled-only for terminal + LB domains (concurrent with Pass 1)
-        p2_futs = []
-        if excluded_set:
-            p2_futs = [
-                pool.submit(compute_mi_findings, study, analysis_subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_ma_findings, study, analysis_subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_om_findings, study, analysis_subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_tf_findings, study, analysis_subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_lb_findings, study, analysis_subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
-                pool.submit(compute_ds_findings, study, analysis_subjects, excluded_subjects=excluded_set),
-            ]
-
-        # Pass 3 — main-only for in-life domains (concurrent with Pass 1 and 2)
-        p3_futs = []
-        if has_recovery and main_only_subs is not None:
-            p3_futs = [
-                pool.submit(compute_bw_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_lb_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_cl_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_eg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_re_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_vs_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
-                pool.submit(compute_bg_findings, study, main_only_subs, last_dosing_day=last_dosing_day),
+    def _run_domain_passes(
+        subs: pd.DataFrame, compound_id: str | None = None,
+    ) -> tuple[list[dict], dict | None, dict | None]:
+        """Run the 3-pass domain computation for a subject set."""
+        main_only = get_terminal_subjects(subs) if has_recovery and subs["is_recovery"].any() else None
+        with ProcessPoolExecutor(max_workers=4) as pool:
+            p1 = [
+                pool.submit(compute_lb_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_bw_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_om_findings, study, subs),
+                pool.submit(compute_mi_findings, study, subs),
+                pool.submit(compute_ma_findings, study, subs),
+                pool.submit(compute_tf_findings, study, subs),
+                pool.submit(compute_cl_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_ds_findings, study, subs),
+                pool.submit(compute_eg_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_re_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_vs_findings, study, subs, last_dosing_day=last_dosing_day),
+                pool.submit(compute_bg_findings, study, subs, last_dosing_day=last_dosing_day),
             ]
             if "fw" in study.xpt_files:
-                p3_futs.append(pool.submit(_compute_fw_findings, study, main_only_subs, last_dosing_day=last_dosing_day))
+                p1.append(pool.submit(_compute_fw_findings, study, subs, last_dosing_day=last_dosing_day))
+            if "is" in study.xpt_files:
+                p1.append(pool.submit(compute_is_findings, study, subs))
 
-        # Collect results
+            p2 = []
+            if excluded_set:
+                p2 = [
+                    pool.submit(compute_mi_findings, study, subs, excluded_subjects=excluded_set),
+                    pool.submit(compute_ma_findings, study, subs, excluded_subjects=excluded_set),
+                    pool.submit(compute_om_findings, study, subs, excluded_subjects=excluded_set),
+                    pool.submit(compute_tf_findings, study, subs, excluded_subjects=excluded_set),
+                    pool.submit(compute_lb_findings, study, subs, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_ds_findings, study, subs, excluded_subjects=excluded_set),
+                ]
+
+            p3 = []
+            if main_only is not None:
+                p3 = [
+                    pool.submit(compute_bw_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_lb_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_cl_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_eg_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_re_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_vs_findings, study, main_only, last_dosing_day=last_dosing_day),
+                    pool.submit(compute_bg_findings, study, main_only, last_dosing_day=last_dosing_day),
+                ]
+                if "fw" in study.xpt_files:
+                    p3.append(pool.submit(_compute_fw_findings, study, main_only, last_dosing_day=last_dosing_day))
+
+            findings = []
+            for fut in p1:
+                findings.extend(fut.result())
+
+            sched = None
+            if p2:
+                sf = []
+                for fut in p2:
+                    sf.extend(fut.result())
+                sched = build_findings_map(sf, "scheduled")
+
+            sep = None
+            if p3:
+                sf = []
+                for fut in p3:
+                    sf.extend(fut.result())
+                sep = build_findings_map(sf, "separate")
+
+        # Tag compound_id when running per-compound
+        if compound_id:
+            for f in findings:
+                f["compound_id"] = compound_id
+
+        return findings, sched, sep
+
+    t_domains = time.perf_counter()
+
+    if is_multi_compound and compound_partitions:
+        # Per-compound: run domain passes for each partition independently
         all_findings = []
-        for fut in p1_futs:
-            all_findings.extend(fut.result())
-
         scheduled_map = None
-        if p2_futs:
-            sched_findings = []
-            for fut in p2_futs:
-                sched_findings.extend(fut.result())
-            scheduled_map = build_findings_map(sched_findings, "scheduled")
-
         separate_map = None
-        if p3_futs:
-            sep_findings = []
-            for fut in p3_futs:
-                sep_findings.extend(fut.result())
-            separate_map = build_findings_map(sep_findings, "separate")
+        for comp_id, partition in compound_partitions.items():
+            partition_armcds = set(partition["armcds"])
+            partition_subs = analysis_subjects[analysis_subjects["ARMCD"].isin(partition_armcds)].copy()
+            comp_findings, comp_sched, comp_sep = _run_domain_passes(partition_subs, compound_id=comp_id)
+            all_findings.extend(comp_findings)
+            # Merge scheduled/separate maps across compounds
+            if comp_sched:
+                if scheduled_map is None:
+                    scheduled_map = comp_sched
+                else:
+                    scheduled_map.update(comp_sched)
+            if comp_sep:
+                if separate_map is None:
+                    separate_map = comp_sep
+                else:
+                    separate_map.update(comp_sep)
+        print(f"    Per-compound domain stats: {len(compound_partitions)} compounds")
+    else:
+        # Single-compound: existing behavior
+        all_findings, scheduled_map, separate_map = _run_domain_passes(analysis_subjects)
 
     dt_domains = time.perf_counter() - t_domains
-    print(f"    domain computations: {dt_domains:.1f}s (parallel)")
+    print(f"    domain computations: {dt_domains:.1f}s")
 
     # Resolve study metadata for organ-specific thresholds and HCD
     species = get_species(study)

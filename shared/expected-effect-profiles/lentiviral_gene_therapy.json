@@ -148,6 +148,66 @@
       "severity_threshold": "Any tumor above background incidence = investigate",
       "rationale": "Low genotoxicity of SIN-LV confirmed by IVIM assay. Montini et al. showed no dose-dependent tumor acceleration in Cdkn2a-/- tumor-prone mice.",
       "negative_finding": true
+    },
+    {
+      "key": "LB_GCSF_up",
+      "domain": "LB",
+      "test_codes": ["GCSF"],
+      "direction": "up",
+      "description": "G-CSF elevation (innate immune response to viral particles)",
+      "typical_magnitude": "Transient, peaks 4-8h",
+      "severity_threshold": {"metric": "fold_change", "non_adverse_ceiling": 5.0, "adverse_trigger": 20.0},
+      "species_applicability": ["MONKEY"],
+      "time_course": {"onset_hours": 2, "peak_hours": 6, "expected_resolution_days": 1, "self_limiting": true},
+      "rationale": "Innate immune-mediated neutrophil mobilization cytokine. Part of acute inflammatory response to VSV-G pseudotyped vector."
+    },
+    {
+      "key": "LB_anti_inflammatory",
+      "domain": "LB",
+      "test_codes": ["IL1RA", "IL10"],
+      "direction": "up",
+      "description": "IL-1RA / IL-10 anti-inflammatory response",
+      "typical_magnitude": "Transient, secondary to pro-inflammatory peak",
+      "severity_threshold": "Sustained elevation suggests unresolved inflammation",
+      "species_applicability": ["MONKEY"],
+      "time_course": {"onset_hours": 6, "peak_hours": 12, "expected_resolution_days": 2, "self_limiting": true},
+      "rationale": "Counter-regulatory anti-inflammatory cytokines released in response to initial pro-inflammatory burst (TNF-alpha, IFN-alpha)."
+    },
+    {
+      "key": "MI_splenic_lymphoid_hyperplasia",
+      "domain": "MI",
+      "organs": ["SPLEEN"],
+      "findings": ["LYMPHOID HYPERPLASIA", "GERMINAL CENTER HYPERPLASIA"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Splenic lymphoid/germinal center hyperplasia",
+      "severity_threshold": null,
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Adaptive immune activation following vector exposure. B-cell and T-cell expansion in splenic white pulp."
+    },
+    {
+      "key": "LB_transgene_immune",
+      "domain": "LB",
+      "test_codes": ["IFNG", "ELISPOT"],
+      "direction": "up",
+      "description": "Transgene-specific immune response (T-cell or antibody)",
+      "layer": "target",
+      "severity_threshold": "Neutralizing response may limit efficacy but is not inherently adverse",
+      "species_applicability": ["MONKEY", "RAT"],
+      "rationale": "Immune response to expressed transgene protein. Depends on immunogenicity of the therapeutic protein and species cross-reactivity."
+    },
+    {
+      "key": "LB_acute_phase",
+      "domain": "LB",
+      "test_codes": ["CRP", "SAA", "FIB"],
+      "direction": "up",
+      "layer": "base",
+      "description": "Acute phase protein elevation (CRP, SAA, fibrinogen)",
+      "typical_magnitude": "Transient, peaks 24-48h",
+      "severity_threshold": {"metric": "fold_change", "non_adverse_ceiling": 5.0, "adverse_trigger": 10.0},
+      "species_applicability": ["MONKEY"],
+      "time_course": {"onset_hours": 6, "peak_hours": 24, "expected_resolution_days": 5, "self_limiting": true},
+      "rationale": "Hepatic acute phase response to systemic innate immune activation. CRP and SAA are IL-6-driven."
     }
   ]
 }

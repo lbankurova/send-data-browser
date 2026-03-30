@@ -2,7 +2,9 @@
   "profile_id": "recombinant_ifn",
   "display_name": "Recombinant interferon (IFN-alpha/beta/gamma)",
   "modality": "recombinant_protein",
-  "base_profiles": ["general_mab"],
+  "base_profiles": [
+    "general_mab"
+  ],
   "cross_reactivity_required": true,
   "source": "ICH S6(R1); IFN prescribing information; General toxicological pathology",
   "description": "Expected findings for recombinant interferons (IFN-alpha, IFN-beta, IFN-gamma, peginterferon). IFN drives acute inflammatory response, dose-dependent cytopenias, and potential hepatotoxicity. Cynomolgus is the most sensitive species. Inherits Fc-mediated base findings from general_mab.",
@@ -10,98 +12,140 @@
     {
       "key": "LB_NEUT_down",
       "domain": "LB",
-      "test_codes": ["NEUT"],
+      "test_codes": [
+        "NEUT"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Neutropenia (dose-dependent)",
       "typical_magnitude": "Moderate; dose-dependent",
       "severity_threshold": "Grade 3 (ANC <1.0 x 10^9/L) = adverse. Grade 4 = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IFN-alpha causes dose-dependent cytopenias. (IFN prescribing information)"
     },
     {
       "key": "LB_LYMPH_down",
       "domain": "LB",
-      "test_codes": ["LYMPH"],
+      "test_codes": [
+        "LYMPH"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Lymphopenia",
       "typical_magnitude": "Moderate; dose-dependent",
       "severity_threshold": "Grade 3 (<0.5 x 10^9/L) = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IFN-driven lymphopenia. (IFN prescribing information)"
     },
     {
       "key": "LB_PLAT_down",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Thrombocytopenia",
       "typical_magnitude": "Moderate",
       "severity_threshold": "Grade 3 (<50 x 10^9/L) = adverse. Grade 4 (<25 x 10^9/L) = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Dose-limiting toxicity for IFN therapy clinically."
     },
     {
       "key": "LB_ALT_up",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "ALT elevation (IFN hepatotoxicity)",
       "typical_magnitude": "Mild to moderate",
       "severity_threshold": ">3x ULN = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IFN hepatotoxicity; autoimmune hepatitis risk with chronic dosing."
     },
     {
       "key": "LB_AST_up",
       "domain": "LB",
-      "test_codes": ["AST", "ASAT"],
+      "test_codes": [
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "AST elevation",
       "typical_magnitude": "Mild to moderate",
       "severity_threshold": ">3x ULN = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Parallels ALT in IFN hepatotoxicity."
     },
     {
       "key": "OM_spleen_weight_up_ifn",
       "domain": "OM",
-      "test_codes": ["SPLNWT"],
+      "test_codes": [
+        "SPLNWT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Spleen weight increase (immune activation)",
       "typical_magnitude": "Modest",
       "severity_threshold": ">3x reference = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Lymphoid hyperplasia and immune activation from IFN pharmacology."
     },
     {
       "key": "CL_flu_like_syndrome",
       "domain": "CL",
-      "findings": ["PYREXIA", "FEVER", "LETHARGY", "HYPOACTIVITY", "TEMPERATURE INCREASE"],
+      "findings": [
+        "PYREXIA",
+        "FEVER",
+        "LETHARGY",
+        "HYPOACTIVITY",
+        "TEMPERATURE INCREASE"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Flu-like syndrome (fever, lethargy, weight loss — classic IFN pharmacology)",
       "typical_magnitude": "Pyrexia 1-2 deg C; lethargy, weight loss",
       "severity_threshold": "Severe constitutional symptoms = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "species_note": "NHP most sensitive for IFN pharmacology; rat if cross-reactive.",
       "rationale": "IFN drives acute inflammatory response including pyrexia and lethargy; classic expected pharmacology."
     },
     {
       "key": "LB_thyroid_variable",
       "domain": "LB",
-      "test_codes": ["TSH", "T4"],
+      "test_codes": [
+        "TSH",
+        "T4"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Thyroid function abnormalities (IFN-driven thyroid autoimmunity)",
       "severity_threshold": "Clinical hypothyroidism or hyperthyroidism = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IFN-alpha drives thyroid autoimmunity; relevant for safety monitoring."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

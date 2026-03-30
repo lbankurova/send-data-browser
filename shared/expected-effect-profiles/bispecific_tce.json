@@ -2,7 +2,9 @@
   "profile_id": "bispecific_tce",
   "display_name": "Bispecific T-cell engager (CD3 x target)",
   "modality": "monoclonal_antibody",
-  "base_profiles": ["general_mab"],
+  "base_profiles": [
+    "general_mab"
+  ],
   "cross_reactivity_required": true,
   "source": "Lee et al., 2019, ASTCT CRS grading; PMC11739781; Blinatumomab SmPC; PMC6853151 (Pfizer modeling)",
   "description": "Expected findings for bispecific T-cell engagers (CD3 x target format). CRS is the primary on-target expected toxicity — Grade 1-2 is expected pharmacology, Grade 3+ is adverse. Cynomolgus monkey used when molecule cross-reacts with NHP CD3 AND target antigen. Inherits Fc-mediated base findings from general_mab.",
@@ -10,131 +12,187 @@
     {
       "key": "LB_IL6_up",
       "domain": "LB",
-      "test_codes": ["IL6"],
+      "test_codes": [
+        "IL6"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "IL-6 elevation (CRS cytokine)",
       "typical_magnitude": "2-50x fold-change from baseline; peaks within 24h",
       "severity_threshold": "Grade 1-2 CRS is expected on-target pharmacology. Grade 3+ (>50x with clinical signs, vasopressors required, refractory fever) is adverse — do not reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IL-6 is the key CRS cytokine and primary driver of fever and hypotension. Tocilizumab (anti-IL-6R) used to treat Grade 3+ CRS. (PMC11739781; Lee et al., ASTCT 2019)"
     },
     {
       "key": "LB_IFNG_up",
       "domain": "LB",
-      "test_codes": ["IFNG"],
+      "test_codes": [
+        "IFNG"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "IFN-gamma elevation (T-cell activation marker)",
       "typical_magnitude": "2-20x fold-change; peaks with first dose",
       "severity_threshold": "Correlates with CRS severity. HLH signature (IFN-gamma + extreme ferritin + cytopenias) = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "IFN-gamma is the primary product of activated CD8+ T-cells; mediates many CRS manifestations. (PMC11739781)"
     },
     {
       "key": "LB_CRP_up",
       "domain": "LB",
-      "test_codes": ["CRP", "CRPTN"],
+      "test_codes": [
+        "CRP",
+        "CRPTN"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "CRP elevation (downstream of IL-6 in CRS)",
       "typical_magnitude": "5-50 mg/L rise",
       "severity_threshold": ">100 mg/L with Grade 3 CRS clinical features = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "CRP elevates as downstream acute phase response to CRS IL-6 surge."
     },
     {
       "key": "LB_LYMPH_down",
       "domain": "LB",
-      "test_codes": ["LYMPH"],
+      "test_codes": [
+        "LYMPH"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Transient T-lymphocyte depletion (first-dose redistribution)",
       "typical_magnitude": "50-90% depletion within hours; recovers within 24-48h",
       "severity_threshold": "Transient (<48h recovery) on first dose = expected. Sustained depletion >72h or Grade 3 CRS with lymphopenia = adverse.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "T-cells undergo redistribution/margination during immune synapse formation; transient depletion is the primary pharmacological response, NOT toxicity. (Blinatumomab SmPC; PMC6853151)"
     },
     {
       "key": "LB_ALT_up",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "ALT elevation (hepatic involvement in CRS)",
       "typical_magnitude": "Grade 1-2 (1-5x ULN) in context of CRS",
       "severity_threshold": "Grade 3 (>5x ULN) = adverse. Grade 4 (>20x ULN) = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Hepatic involvement in CRS/inflammatory cascade; Grade 3+ hepatotoxicity = adverse. (ASTCT CRS grading 2019)"
     },
     {
       "key": "LB_AST_up",
       "domain": "LB",
-      "test_codes": ["AST", "ASAT"],
+      "test_codes": [
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "AST elevation (hepatic involvement in CRS)",
       "typical_magnitude": "Grade 1-2 (1-5x ULN)",
       "severity_threshold": "Grade 3 (>5x ULN) = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Parallels ALT pattern in CRS context."
     },
     {
       "key": "LB_IL10_up",
       "domain": "LB",
-      "test_codes": ["IL10"],
+      "test_codes": [
+        "IL10"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "IL-10 elevation (anti-inflammatory feedback in CRS)",
       "typical_magnitude": "2-30x fold-change",
       "severity_threshold": "Correlates with CRS severity. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Anti-inflammatory feedback cytokine elevated in CRS. Correlates with CRS severity."
     },
     {
       "key": "LB_TNFA_up",
       "domain": "LB",
-      "test_codes": ["TNFA"],
+      "test_codes": [
+        "TNFA"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "TNF-alpha elevation (CRS cytokine)",
       "typical_magnitude": "2-10x fold-change",
       "severity_threshold": "Sustained elevation = adverse. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Co-elevated with other CRS cytokines (IL-6, IFN-gamma)."
     },
     {
       "key": "CL_fever",
       "domain": "CL",
-      "findings": ["PYREXIA", "FEVER", "TEMPERATURE INCREASE", "BODY TEMPERATURE INCREASE"],
+      "findings": [
+        "PYREXIA",
+        "FEVER",
+        "TEMPERATURE INCREASE",
+        "BODY TEMPERATURE INCREASE"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Fever / body temperature increase (CRS Grade 1-2)",
       "severity_threshold": "Grade 1 fever (<=38.3C) = expected. Grade 2 requiring antipyretics = monitor. Grade 3+ (refractory fever requiring ICU intervention) = adverse. Grade 4 life-threatening = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Cytokine-driven fever is universal expected finding for all T-cell engagers. (Lee et al., ASTCT 2019)"
     },
     {
       "key": "CL_hypotension",
       "domain": "CL",
-      "findings": ["HYPOTENSION", "BLOOD PRESSURE DECREASE"],
+      "findings": [
+        "HYPOTENSION",
+        "BLOOD PRESSURE DECREASE"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Hypotension (CRS-associated vasodilation)",
       "severity_threshold": "Grade 2 (not requiring vasopressors, transient) = expected. Grade 3 (requiring vasopressors) = adverse. Grade 4 (refractory) = never reclassify.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Vasodilation from IL-6/TNF-alpha/NO pathway. (Lee et al., ASTCT 2019)"
     },
     {
       "key": "OM_spleen_weight_variable",
       "domain": "OM",
-      "test_codes": ["SPLNWT"],
+      "test_codes": [
+        "SPLNWT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Spleen weight change (initial reduction from T-cell egress, then enlargement)",
       "severity_threshold": "Marked splenomegaly (>3x reference) = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Complex immune organ response to T-cell activation. Initial reduction from T-cell egress, followed by enlargement from immune activation."
     }
-  ]
+  ],
+  "default_reversibility": "variable",
+  "default_time_course": {
+    "crs_onset_hours": "2-24",
+    "crs_resolution_days": "3-7"
+  }
 }

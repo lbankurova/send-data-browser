@@ -1,6 +1,7 @@
 """Read DM + TX domains to build dose group map and subject roster."""
 
 import logging
+import math
 import re
 
 import pandas as pd
@@ -637,6 +638,212 @@ def _merge_sex_stratified_arms(
     return tx_map, subjects, prov
 
 
+# ---------------------------------------------------------------------------
+# Dose group display configuration (short labels, abbreviations, colors)
+# ---------------------------------------------------------------------------
+
+# Positional color palette: always maps lowest treatment -> blue, highest -> red.
+# Controls always get gray.  Intermediate stops selected by treatment count.
+_DOSE_PALETTE = {
+    "control": "#6b7280",  # gray-500 — all controls
+    "low":     "#3b82f6",  # blue-500
+    "low_mid": "#84cc16",  # lime-500
+    "mid":     "#f59e0b",  # amber-500
+    "mid_high":"#8b5cf6",  # violet-500 (purple)
+    "high":    "#ef4444",  # red-400
+}
+
+# Which palette stops to use based on treatment group count (1-5+)
+_PALETTE_STOPS = {
+    1: ["low"],
+    2: ["low", "high"],
+    3: ["low", "mid", "high"],
+    4: ["low", "low_mid", "mid", "high"],
+    5: ["low", "low_mid", "mid", "mid_high", "high"],
+}
+
+# Control type -> short label mapping
+_CTRL_SHORT_LABELS: dict[str | None, str] = {
+    "VEHICLE_CONTROL": "Vehicle",
+    "NEGATIVE_CONTROL": "Neg Ctrl",
+    "POSITIVE_CONTROL": "Pos Ctrl",
+    "PROCEDURAL_CONTROL": "Sham Ctrl",
+    "UNTREATED_CONTROL": "Untreated",
+    "AIR_CONTROL": "Air Ctrl",
+    "ACTIVE_COMPARATOR": "Comparator",
+    "UNKNOWN_CONTROL": "Control",
+}
+
+_CTRL_ABBREVIATIONS: dict[str | None, str] = {
+    "VEHICLE_CONTROL": "VC",
+    "NEGATIVE_CONTROL": "NC",
+    "POSITIVE_CONTROL": "PC",
+    "PROCEDURAL_CONTROL": "SC",
+    "UNTREATED_CONTROL": "UT",
+    "AIR_CONTROL": "AC",
+    "ACTIVE_COMPARATOR": "Cmp",
+    "UNKNOWN_CONTROL": "C",
+}
+
+
+def _format_dose_number(val: float) -> str:
+    """Format a dose value for display, stripping unnecessary decimals."""
+    if val == 0:
+        return "0"
+    if val == int(val):
+        return str(int(val))
+    # Keep up to 2 decimals, strip trailing zeros
+    return f"{val:.2f}".rstrip("0").rstrip(".")
+
+
+def _compute_display_config(dose_groups: list[dict]) -> None:
+    """Compute short_label, abbreviation, and display_color for each dose group.
+
+    Mutates dose_groups in place.
+    """
+    # Separate controls from treatment groups
+    controls = [dg for dg in dose_groups if dg.get("is_control")]
+    treatments = [dg for dg in dose_groups if not dg.get("is_control") and dg["dose_level"] >= 0]
+    excluded = [dg for dg in dose_groups if not dg.get("is_control") and dg["dose_level"] < 0]
+
+    # Sort treatments by dose_level (ascending = low to high)
+    treatments.sort(key=lambda d: d["dose_level"])
+
+    n_controls = len(controls)
+    n_treatments = len(treatments)
+
+    # --- Shared dose unit detection ---
+    # If all treatment groups share the same dose_unit, we can omit it from
+    # individual labels and just show the number.
+    treatment_units = {dg.get("dose_unit") for dg in treatments if dg.get("dose_unit")}
+    shared_unit = treatment_units.pop() if len(treatment_units) == 1 else None
+
+    # --- Detect duplicate dose values among treatments ---
+    # When multiple treatments share the same dose_value, append compound name
+    dose_val_counts: dict[float, int] = {}
+    for dg in treatments:
+        dv = dg.get("dose_value")
+        if dv is not None:
+            dose_val_counts[dv] = dose_val_counts.get(dv, 0) + 1
+    has_duplicate_doses = any(c > 1 for c in dose_val_counts.values())
+
+    # --- Control labels ---
+    for dg in controls:
+        ct = dg.get("control_type")
+        if n_controls == 1:
+            # Single control: just "Control" / "C"
+            dg["short_label"] = "Control"
+            dg["abbreviation"] = "C"
+        else:
+            # Multiple controls: use type-specific labels
+            dg["short_label"] = _CTRL_SHORT_LABELS.get(ct, "Control")
+            dg["abbreviation"] = _CTRL_ABBREVIATIONS.get(ct, "C")
+        dg["display_color"] = _DOSE_PALETTE["control"]
+
+    # --- Treatment labels ---
+    for dg in treatments:
+        dv = dg.get("dose_value")
+        du = dg.get("dose_unit") or ""
+        compound = dg.get("compound") or ""
+
+        if dv is not None and (dv > 0 or not dg.get("is_control")):
+            num_str = _format_dose_number(dv)
+            # When multiple groups share the same dose value, append compound
+            needs_compound = (
+                has_duplicate_doses
+                and dose_val_counts.get(dv, 0) > 1
+                and compound
+            )
+            if needs_compound:
+                # "12.5 SENDVACC10" or "13 Vector A"
+                comp_short = compound[:12]
+                if shared_unit:
+                    dg["short_label"] = f"{num_str} {comp_short}"
+                else:
+                    dg["short_label"] = f"{num_str} {du} {comp_short}".strip()
+                dg["abbreviation"] = f"{num_str} {comp_short[:4]}"
+            else:
+                if shared_unit:
+                    dg["short_label"] = num_str
+                else:
+                    dg["short_label"] = f"{num_str} {du}".strip()
+                dg["abbreviation"] = num_str
+        else:
+            # No numeric dose -- use label minus group prefix
+            raw = dg.get("label", "")
+            # Strip "Group N, " or "Group N - " or "GN - " prefixes
+            stripped = re.sub(
+                r"^(?:G(?:roup)?\s*\d+\s*[-,]\s*)", "", raw, flags=re.IGNORECASE
+            ).strip()
+            # Also strip compound names if a dose value follows
+            dose_match = re.match(r".*?(\d+[\d.]*\s*\S+/\S+)", stripped)
+            if dose_match:
+                dg["short_label"] = dose_match.group(1)
+            elif len(stripped) <= 20:
+                dg["short_label"] = stripped
+            else:
+                dg["short_label"] = stripped[:18] + ".."
+            # Abbreviation: first word or truncate
+            words = dg["short_label"].split()
+            dg["abbreviation"] = words[0] if words else dg["short_label"][:8]
+
+    # --- Deduplicate short labels among treatments ---
+    # When two treatments end up with the same short_label (e.g., same dose,
+    # different compounds/vectors), extract a distinguisher from the full label.
+    seen_labels: dict[str, list[dict]] = {}
+    for dg in treatments:
+        sl = dg["short_label"]
+        seen_labels.setdefault(sl, []).append(dg)
+    for sl, group in seen_labels.items():
+        if len(group) <= 1:
+            continue
+        # Try to extract distinguishing suffix from the full label
+        for dg in group:
+            raw = dg.get("label", "")
+            # Strip group prefix
+            stripped = re.sub(
+                r"^(?:G(?:roup)?\s*\d+\s*[-,]\s*)", "", raw, flags=re.IGNORECASE,
+            ).strip()
+            # Strip dose portion (numbers + unit) to find the distinguishing part
+            suffix = re.sub(
+                r"^[\d.eE+]+\s*\S*/\S*\s*", "", stripped,
+            ).strip()
+            if not suffix:
+                # Try after comma: "SENDVACC10" from "Group 2, SENDVACC10"
+                parts = raw.split(",")
+                if len(parts) > 1:
+                    suffix = parts[-1].strip()
+            if suffix and suffix.lower() != raw.lower():
+                dg["short_label"] = f"{sl} {suffix[:12]}".strip()
+                words = dg["short_label"].split()
+                dg["abbreviation"] = " ".join(words[:2]) if len(words) > 1 else words[0]
+
+    # --- Treatment colors (positional) ---
+    n_capped = min(n_treatments, 5)
+    stops = _PALETTE_STOPS.get(n_capped, _PALETTE_STOPS[5])
+    for i, dg in enumerate(treatments):
+        if i < len(stops):
+            dg["display_color"] = _DOSE_PALETTE[stops[i]]
+        else:
+            # More than 5 treatment groups: cycle from the end
+            dg["display_color"] = _DOSE_PALETTE[stops[i % len(stops)]]
+
+    # --- Excluded groups (positive controls, secondary controls not in D-R) ---
+    for dg in excluded:
+        ct = dg.get("control_type")
+        if ct:
+            dg["short_label"] = _CTRL_SHORT_LABELS.get(ct, "Excluded")
+            dg["abbreviation"] = _CTRL_ABBREVIATIONS.get(ct, "X")
+        else:
+            dg["short_label"] = dg.get("label", "Excluded")[:20]
+            dg["abbreviation"] = "X"
+        dg["display_color"] = _DOSE_PALETTE["control"]
+
+    # --- Shared unit field (for DoseHeader unit annotation) ---
+    for dg in dose_groups:
+        dg["shared_unit"] = shared_unit
+
+
 def build_dose_groups(study: StudyInfo) -> dict:
     """Build dose group mapping from DM and TX domains.
 
@@ -954,6 +1161,44 @@ def build_dose_groups(study: StudyInfo) -> dict:
             len(compounds), sorted(compounds),
         )
 
+    # ── Per-compound partitioning (Phase A) ──────────────────────────
+    # Build CompoundPartition structures for multi-compound studies.
+    # Each partition contains the compound's treated groups + shared vehicle,
+    # and the subjects belonging to those groups. Single-compound studies
+    # get an empty dict (no partitioning needed).
+    compound_partitions: dict[str, dict] = {}
+    if is_multi_compound:
+        # Identify vehicle/control ARMCDs (shared across all partitions)
+        control_armcds = {g["armcd"] for g in dose_groups if g["is_control"]}
+        # Group treated arms by compound
+        compound_arms: dict[str, list[str]] = {}
+        for g in dose_groups:
+            if g.get("compound") and not g["is_control"]:
+                compound_arms.setdefault(g["compound"], []).append(g["armcd"])
+
+        analysis_subs = subjects[~subjects["is_satellite"]]
+        for comp_id, treated_armcds in sorted(compound_arms.items()):
+            partition_armcds = set(treated_armcds) | control_armcds
+            partition_groups = [g for g in dose_groups if g["armcd"] in partition_armcds]
+            partition_subjects = analysis_subs[analysis_subs["ARMCD"].isin(partition_armcds)]
+            dose_count = len(treated_armcds)
+            compound_partitions[comp_id] = {
+                "compound_id": comp_id,
+                "dose_groups": partition_groups,
+                "armcds": sorted(partition_armcds),
+                "dose_count": dose_count,
+                "is_single_dose": dose_count == 1,
+                "n_subjects": len(partition_subjects),
+            }
+        logger.info(
+            "Compound partitions: %s",
+            {k: f"{v['dose_count']} doses, {v['n_subjects']} subjects"
+             for k, v in compound_partitions.items()},
+        )
+
+    # Compute display configuration (short labels, abbreviations, colors)
+    _compute_display_config(dose_groups)
+
     return {
         "dose_groups": dose_groups,
         "subjects": subjects,
@@ -969,6 +1214,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "positive_control_arms": list(positive_control_arms),
         "is_multi_compound": is_multi_compound,
         "compounds": sorted(compounds) if compounds else [],
+        "compound_partitions": compound_partitions,
         "sex_stratified_merge": sex_strat_prov,
     }
 

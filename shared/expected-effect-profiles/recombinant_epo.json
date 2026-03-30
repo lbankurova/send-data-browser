@@ -2,7 +2,9 @@
   "profile_id": "recombinant_epo",
   "display_name": "Recombinant EPO / erythropoiesis-stimulating agent",
   "modality": "recombinant_protein",
-  "base_profiles": ["general_mab"],
+  "base_profiles": [
+    "general_mab"
+  ],
   "cross_reactivity_required": true,
   "source": "Hematide ESA study, Drug Chem Toxicol 2008; Pandher et al., 2012, Toxicol Pathol; ICH S6(R1)",
   "description": "Expected findings for erythropoiesis-stimulating agents (epoetin alfa/beta, darbepoetin). Primary toxicity is exaggerated pharmacology: polycythemia and its cardiovascular sequelae. Rat and cynomolgus are the primary species. Inherits Fc-mediated base findings from general_mab.",
@@ -10,100 +12,152 @@
     {
       "key": "LB_RBC_up",
       "domain": "LB",
-      "test_codes": ["RBC"],
+      "test_codes": [
+        "RBC"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Red blood cell count increase (polycythemia)",
       "typical_magnitude": "HGB 2-5 g/dL above baseline; HCT >60% in rats at high dose",
       "severity_threshold": "HCT >65% or cardiovascular sequelae (thrombosis, hypertension) = adverse. Cardiovascular death = never reclassify.",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Primary exaggerated EPO pharmacology. Secondary sequelae from severe polycythemia cause deaths in rats at high dose. (Hematide ESA study, Drug Chem Toxicol 2008)"
     },
     {
       "key": "LB_HGB_up",
       "domain": "LB",
-      "test_codes": ["HGB", "HB"],
+      "test_codes": [
+        "HGB",
+        "HB"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Hemoglobin increase (polycythemia)",
       "typical_magnitude": "2-5 g/dL above baseline",
       "severity_threshold": "HCT >65% or cardiovascular sequelae = adverse",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Direct correlate of EPO-driven erythropoiesis."
     },
     {
       "key": "LB_HCT_up",
       "domain": "LB",
-      "test_codes": ["HCT"],
+      "test_codes": [
+        "HCT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Hematocrit increase (polycythemia)",
       "typical_magnitude": "HCT 50-60% at pharmacological doses",
       "severity_threshold": "HCT >60% = monitor. HCT >65% with cardiovascular sequelae = adverse.",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Primary measure of polycythemia severity."
     },
     {
       "key": "LB_RETIC_up",
       "domain": "LB",
-      "test_codes": ["RETIC"],
+      "test_codes": [
+        "RETIC"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Reticulocytosis (pharmacodynamic response)",
       "typical_magnitude": "3-10x fold increase; dose-dependent",
       "severity_threshold": null,
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Reticulocyte surge is the primary pharmacodynamic response; indicator of effective EPO activity."
     },
     {
       "key": "MI_bm_erythroid_hyperplasia",
       "domain": "MI",
-      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
-      "findings": ["HYPERPLASIA", "ERYTHROID HYPERPLASIA"],
+      "organs": [
+        "BONE MARROW",
+        "STERNUM",
+        "FEMUR"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "ERYTHROID HYPERPLASIA"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Bone marrow erythroid hyperplasia",
       "severity_threshold": "Near-total erythroid replacement of marrow space (E:M ratio >5:1) = adverse",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Expected histological correlate of EPO-driven erythropoiesis."
     },
     {
       "key": "MI_spleen_emh",
       "domain": "MI",
-      "organs": ["SPLEEN"],
-      "findings": ["HEMATOPOIESIS", "EXTRAMEDULLARY HEMATOPOIESIS", "EMH"],
+      "organs": [
+        "SPLEEN"
+      ],
+      "findings": [
+        "HEMATOPOIESIS",
+        "EXTRAMEDULLARY HEMATOPOIESIS",
+        "EMH"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Splenic extramedullary hematopoiesis",
       "typical_magnitude": "Marked splenomegaly (2-4x reference in rodents)",
       "severity_threshold": "Splenic rupture = never reclassify",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "species_note": "Rat has significant splenic erythropoietic reserve; EMH expected at pharmacological doses.",
       "rationale": "Rat splenic erythropoiesis is physiologically prominent; EPO drives marked expansion. (Hematide ESA study)"
     },
     {
       "key": "LB_PLAT_up",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Platelet count increase (secondary thrombocytosis)",
       "typical_magnitude": "Mild thrombocytosis",
       "severity_threshold": ">1000 x 10^9/L sustained = adverse",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "rationale": "Secondary effect of erythropoietic stimulation."
     },
     {
       "key": "CL_hypertension",
       "domain": "CL",
-      "findings": ["SYSTOLIC BLOOD PRESSURE INCREASE", "HYPERTENSION", "BLOOD PRESSURE INCREASE"],
+      "findings": [
+        "SYSTOLIC BLOOD PRESSURE INCREASE",
+        "HYPERTENSION",
+        "BLOOD PRESSURE INCREASE"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Hypertension (EPO vasoconstrictor properties + hyperviscosity)",
       "typical_magnitude": "Mild SBP increase at pharmacological doses",
       "severity_threshold": "Grade 3 sustained HTN = adverse",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "Vasoconstrictor properties of EPO independent of hematocrit; also hyperviscosity contribution from polycythemia."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

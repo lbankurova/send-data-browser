@@ -2,7 +2,9 @@
   "profile_id": "anti_tnf_mab",
   "display_name": "Anti-TNF mAb (adalimumab class)",
   "modality": "monoclonal_antibody",
-  "base_profiles": ["general_mab"],
+  "base_profiles": [
+    "general_mab"
+  ],
   "cross_reactivity_required": true,
   "source": "ICH S6(R1), 2012; Nishimoto et al., PMC3306224; Tocilizumab SmPC (anti-TNF cross-reference)",
   "description": "Expected findings for anti-TNF-alpha monoclonal antibodies (adalimumab, infliximab, golimumab, certolizumab). TNF-alpha is a central mediator of innate immunity; blockade produces immunomodulatory effects including acute phase protein suppression and lipid changes. Cynomolgus monkey is the primary species. TNFR-Fc (etanercept) is pharmacologically equivalent — SME should select this profile for those studies. Inherits Fc-mediated base findings from general_mab.",
@@ -10,49 +12,67 @@
     {
       "key": "LB_CRP_down",
       "domain": "LB",
-      "test_codes": ["CRP", "CRPTN"],
+      "test_codes": [
+        "CRP",
+        "CRPTN"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "CRP / acute phase protein suppression",
       "typical_magnitude": "Significant reduction; mirrors anti-IL-6 effects (TNF-alpha is a potent IL-6 inducer)",
       "severity_threshold": "N/A — expected PD endpoint. Adversity relates to downstream infection risk.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "TNF-alpha blockade reduces serum IL-6 rapidly, secondarily reducing CRP and SAA. (Nishimoto et al., PMC3306224)"
     },
     {
       "key": "LB_CHOL_up",
       "domain": "LB",
-      "test_codes": ["CHOL"],
+      "test_codes": [
+        "CHOL"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Total cholesterol increase",
       "typical_magnitude": "10-25% from baseline",
       "severity_threshold": ">2x ULN sustained = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "TNF-alpha suppression of IL-6 leads to lipid profile normalization; paradoxically raises total cholesterol. (Nishimoto et al., 2010)"
     },
     {
       "key": "LB_TRIG_up",
       "domain": "LB",
-      "test_codes": ["TRIG"],
+      "test_codes": [
+        "TRIG"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Triglycerides increase",
       "typical_magnitude": "10-25% from baseline",
       "severity_threshold": ">2x ULN sustained = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Same mechanism as cholesterol — reversal of TNF-driven lipoprotein catabolism."
     },
     {
       "key": "LB_LYMPH_variable",
       "domain": "LB",
-      "test_codes": ["LYMPH"],
+      "test_codes": [
+        "LYMPH"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Lymphocyte subset shift (Treg increase, Th17 decrease)",
       "severity_threshold": "Marked lymphopenia (<0.5 x 10^9/L) = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "TNF-alpha plays a role in T-cell survival; blockade shifts Treg/Th17 balance."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

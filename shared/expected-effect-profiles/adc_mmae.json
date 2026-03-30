@@ -6,6 +6,13 @@
   "cross_reactivity_required": false,
   "source": "FDA 2024 ADC Guidance; Saber et al. 2015; Doronina et al. 2016; brentuximab vedotin BLA review",
   "description": "MMAE (monomethyl auristatin E) is a membrane-permeable microtubule inhibitor with bystander effect. Primary DLTs: neutropenia and peripheral neuropathy. Used in: brentuximab vedotin, polatuzumab vedotin, enfortumab vedotin, tisotumab vedotin.",
+  "default_reversibility": "expected_reversible",
+  "default_time_course": {
+    "neutropenia_nadir_days": "7-14",
+    "neuropathy_onset_cycles": "2-4",
+    "hepatotoxicity_onset_weeks": "1-2"
+  },
+  "component_attribution": "payload",
   "expected_findings": [
     {
       "key": "LB_neutropenia",

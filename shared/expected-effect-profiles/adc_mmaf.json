@@ -2,7 +2,9 @@
   "profile_id": "adc_mmaf",
   "display_name": "ADC — MMAF payload (auristatin, charged/non-permeable)",
   "modality": "adc",
-  "base_profiles": ["adc_base"],
+  "base_profiles": [
+    "adc_base"
+  ],
   "cross_reactivity_required": false,
   "source": "FDA 2024 ADC Guidance; belantamab mafodotin BLA review",
   "description": "MMAF (monomethyl auristatin F) is a charged, membrane-impermeable auristatin with no bystander effect. Primary DLTs: thrombocytopenia and ocular keratopathy. Used in: belantamab mafodotin.",
@@ -10,25 +12,42 @@
     {
       "key": "LB_thrombocytopenia",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Thrombocytopenia (more severe than MMAE — charged metabolite lys-SMCC is more potent on megakaryocytes)",
       "severity_threshold": "PLAT <50% baseline with hemorrhage = adverse. Moderate (50-75% baseline) without hemorrhage is expected.",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Charged MMAF metabolite (lys-SMCC) is more potent on megakaryocytes than MMAE. Primary DLT for MMAF class.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_ocular_keratopathy",
       "domain": "MI",
-      "organs": ["CORNEA", "EYE", "CONJUNCTIVA"],
-      "findings": ["KERATOPATHY", "CORNEAL CHANGE", "EPITHELIAL CHANGE", "MICROCYST"],
+      "organs": [
+        "CORNEA",
+        "EYE",
+        "CONJUNCTIVA"
+      ],
+      "findings": [
+        "KERATOPATHY",
+        "CORNEAL CHANGE",
+        "EPITHELIAL CHANGE",
+        "MICROCYST"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Ocular keratopathy (class-defining toxicity for MMAF)",
       "severity_threshold": "Any corneal finding beyond minimal epithelial changes = adverse. Dose-limiting clinically.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Corneal epithelial macropinocytosis of charged MMAF metabolites. Class-defining toxicity for MMAF ADCs.",
       "translation_gap": "Preclinical corneal findings may understate clinical severity. Ophthalmologic exams required.",
       "reversibility": "partially reversible"
@@ -36,65 +55,117 @@
     {
       "key": "LB_neutropenia",
       "domain": "LB",
-      "test_codes": ["NEUT", "WBC"],
+      "test_codes": [
+        "NEUT",
+        "WBC"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Neutropenia (present but less prominent than MMAE)",
       "severity_threshold": "ANC <1.0 x 10^9/L = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Myeloid progenitor cytotoxicity. Less prominent than in MMAE due to lack of bystander effect.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_bone_marrow_hypocellularity",
       "domain": "MI",
-      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
-      "findings": ["HYPOCELLULARITY", "DECREASED CELLULARITY", "DEPLETION"],
+      "organs": [
+        "BONE MARROW",
+        "STERNUM",
+        "FEMUR"
+      ],
+      "findings": [
+        "HYPOCELLULARITY",
+        "DECREASED CELLULARITY",
+        "DEPLETION"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Bone marrow hypocellularity",
       "severity_threshold": ">50% cellularity reduction = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Histopathological correlate of peripheral cytopenias.",
       "reversibility": "reversible"
     },
     {
       "key": "LB_hepatotoxicity",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT", "AST", "ASAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT",
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Hepatotoxicity (ALT/AST elevation)",
       "severity_threshold": ">3x ULN = adverse. >5x ULN = never reclassify.",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Hepatocyte cytotoxicity from internalized ADC.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_gi_mucosal_atrophy",
       "domain": "MI",
-      "organs": ["SMALL INTESTINE", "DUODENUM", "JEJUNUM", "ILEUM", "COLON"],
-      "findings": ["ATROPHY", "MUCOSAL ATROPHY"],
+      "organs": [
+        "SMALL INTESTINE",
+        "DUODENUM",
+        "JEJUNUM",
+        "ILEUM",
+        "COLON"
+      ],
+      "findings": [
+        "ATROPHY",
+        "MUCOSAL ATROPHY"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "GI mucosal atrophy",
       "severity_threshold": "Diffuse villous blunting with hemorrhage = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Expected class effect of microtubule inhibitor ADCs on intestinal crypt cells.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_alopecia",
       "domain": "MI",
-      "organs": ["SKIN"],
-      "findings": ["ATROPHY", "HAIR FOLLICLE ATROPHY", "ALOPECIA"],
+      "organs": [
+        "SKIN"
+      ],
+      "findings": [
+        "ATROPHY",
+        "HAIR FOLLICLE ATROPHY",
+        "ALOPECIA"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Alopecia / hair follicle atrophy",
       "severity_threshold": "Complete alopecia or skin ulceration = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Cycling follicular keratinocytes sensitive to microtubule disruption.",
       "reversibility": "reversible"
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible",
+  "component_attribution": "payload",
+  "default_time_course": {
+    "ocular_onset_weeks": "2-4",
+    "neutropenia_nadir_days": "7-14"
+  }
 }

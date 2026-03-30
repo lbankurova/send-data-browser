@@ -5,6 +5,7 @@ export interface DoseGroup {
   armcd: string;
   label: string;
   is_control?: boolean;
+  control_type?: string | null;
   dose_value: number | null;
   dose_unit: string | null;
   n_male: number;
@@ -13,6 +14,16 @@ export interface DoseGroup {
   pooled_n_male?: number;
   pooled_n_female?: number;
   pooled_n_total?: number;
+  /** Auto-generated concise label (e.g., "200", "Vehicle", "Neg Ctrl") */
+  short_label?: string;
+  /** Ultra-short variant for tight spaces (e.g., "200", "C", "NC") */
+  abbreviation?: string;
+  /** Positional hex color (blue->lime->amber->purple->red by dose intensity) */
+  display_color?: string;
+  /** Shared dose unit across all treatment groups (e.g., "mg/kg") — null if mixed units */
+  shared_unit?: string | null;
+  /** Phase A: compound identity for multi-compound studies (null for vehicle) */
+  compound?: string | null;
 }
 
 export interface GroupStat {
@@ -177,6 +188,8 @@ export interface UnifiedFinding {
   organ_name?: string | null;
   /** Pathologist/clinician comments from CO domain, linked via record sequence. */
   comments?: { text: string; subject_id: string }[];
+  /** Phase A: compound identity for multi-compound studies. */
+  compound_id?: string;
 }
 
 export interface ConfidenceDimension {

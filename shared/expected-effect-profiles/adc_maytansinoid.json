@@ -2,7 +2,9 @@
   "profile_id": "adc_maytansinoid",
   "display_name": "ADC — Maytansinoid payload (DM1 / DM4)",
   "modality": "adc",
-  "base_profiles": ["adc_base"],
+  "base_profiles": [
+    "adc_base"
+  ],
   "cross_reactivity_required": false,
   "source": "FDA 2024 ADC Guidance; T-DM1 BLA review; CKAP5 hepatotoxicity mechanism (2016)",
   "description": "Maytansinoid payloads (DM1 with non-cleavable SMCC linker; DM4 with disulfide SPDB linker) cause G2/M arrest via microtubule disruption. Primary DLTs: thrombocytopenia (via lys-SMCC-DM1 metabolite) and hepatotoxicity (dual HER2-dependent and CKAP5 mechanism). Used in: trastuzumab emtansine (T-DM1), mirvetuximab soravtansine.",
@@ -10,12 +12,18 @@
     {
       "key": "LB_thrombocytopenia",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Thrombocytopenia (primary clinical DLT for maytansinoid ADCs)",
       "severity_threshold": "PLAT <50% baseline with hemorrhage = adverse. NOTE: cyno underestimates clinical thrombocytopenia for DM1 class — primary clinical DLT.",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Lys-SMCC-DM1 metabolite inhibits megakaryocyte differentiation independently of target antigen.",
       "translation_gap": "Cyno mild thrombocytopenia → clinical DLT. Primary clinical DLT for T-DM1.",
       "reversibility": "reversible"
@@ -23,25 +31,44 @@
     {
       "key": "LB_hepatotoxicity",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT", "AST", "ASAT", "ALP"],
+      "test_codes": [
+        "ALT",
+        "ALAT",
+        "AST",
+        "ASAT",
+        "ALP"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Hepatotoxicity (dual mechanism: target-mediated internalization + CKAP5 binding)",
       "severity_threshold": ">3x ULN = adverse. >5x ULN = never reclassify.",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Dual mechanism: HER2-mediated internalization + HER2-independent CKAP5 binding in hepatocytes.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_ocular_toxicity",
       "domain": "MI",
-      "organs": ["CORNEA", "EYE", "CONJUNCTIVA"],
-      "findings": ["KERATOPATHY", "CORNEAL CHANGE", "EPITHELIAL CHANGE"],
+      "organs": [
+        "CORNEA",
+        "EYE",
+        "CONJUNCTIVA"
+      ],
+      "findings": [
+        "KERATOPATHY",
+        "CORNEAL CHANGE",
+        "EPITHELIAL CHANGE"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Ocular toxicity (DM4 >> DM1)",
       "severity_threshold": "Any corneal finding beyond minimal = adverse for DM4. DM1 ocular toxicity is less prominent.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "payload_subclass_note": "DM4 ADCs (SPDB disulfide linker) have significantly higher ocular toxicity than DM1 ADCs. DM4 metabolites have greater lipophilicity leading to greater corneal epithelial penetration. Ophthalmologic exams required.",
       "rationale": "Corneal epithelial macropinocytosis of maytansinoid metabolites.",
       "reversibility": "partially reversible"
@@ -49,55 +76,99 @@
     {
       "key": "MI_peripheral_neuropathy",
       "domain": "MI",
-      "organs": ["SCIATIC NERVE", "DORSAL ROOT GANGLION"],
-      "findings": ["DEGENERATION", "AXONAL DEGENERATION", "NEUROPATHY"],
+      "organs": [
+        "SCIATIC NERVE",
+        "DORSAL ROOT GANGLION"
+      ],
+      "findings": [
+        "DEGENERATION",
+        "AXONAL DEGENERATION",
+        "NEUROPATHY"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Peripheral neuropathy",
       "severity_threshold": "Grade 2+ axonal degeneration = adverse",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "On-target when target expressed on peripheral nerve glia (e.g., RET, HER2 on glial cells).",
       "reversibility": "partially reversible"
     },
     {
       "key": "MI_gi_effects",
       "domain": "MI",
-      "organs": ["SMALL INTESTINE", "LARGE INTESTINE", "COLON"],
-      "findings": ["ATROPHY", "MUCOSAL ATROPHY", "INFLAMMATION"],
+      "organs": [
+        "SMALL INTESTINE",
+        "LARGE INTESTINE",
+        "COLON"
+      ],
+      "findings": [
+        "ATROPHY",
+        "MUCOSAL ATROPHY",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "GI mucosal effects",
       "severity_threshold": "Diffuse mucosal injury with hemorrhage = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "More prominent than auristatins at equivalent doses.",
       "reversibility": "reversible"
     },
     {
       "key": "MI_bone_marrow_hypocellularity",
       "domain": "MI",
-      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
-      "findings": ["HYPOCELLULARITY", "DECREASED CELLULARITY"],
+      "organs": [
+        "BONE MARROW",
+        "STERNUM",
+        "FEMUR"
+      ],
+      "findings": [
+        "HYPOCELLULARITY",
+        "DECREASED CELLULARITY"
+      ],
       "direction": "up",
       "layer": "target",
       "description": "Bone marrow hypocellularity",
       "severity_threshold": ">50% cellularity reduction = adverse",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "rationale": "Hematopoietic progenitor cytotoxicity from maytansinoid microtubule disruption.",
       "reversibility": "reversible"
     },
     {
       "key": "CV_cardiac_dysfunction",
       "domain": "LB",
-      "test_codes": ["LVEF", "TROPNI", "CTNI"],
-      "organs": ["HEART"],
+      "test_codes": [
+        "LVEF",
+        "TROPNI",
+        "CTNI"
+      ],
+      "organs": [
+        "HEART"
+      ],
       "direction": "down",
       "layer": "target",
       "description": "Cardiac dysfunction (HER2-specific, antibody-mediated)",
       "severity_threshold": "LVEF decline >10% from baseline or below institutional LLN = adverse. Only applicable to HER2-directed ADCs.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "HER2 signaling is essential for cardiomyocyte maintenance. Cardiac dysfunction is antibody-mediated (not payload). Only applicable to HER2-directed maytansinoid ADCs (T-DM1).",
       "translation_gap": "Cyno cardiac findings are subtle; clinical cardiomyopathy is the primary concern. Troponin monitoring recommended.",
       "reversibility": "partially reversible"
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible",
+  "component_attribution": "payload",
+  "default_time_course": {
+    "thrombocytopenia_nadir_days": "7-10",
+    "hepatotoxicity_onset_weeks": "1-2"
+  }
 }
