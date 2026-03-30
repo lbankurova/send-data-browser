@@ -1,15 +1,16 @@
-"""EG (Electrocardiogram) domain findings: per (EGTESTCD, EGDY, SEX) → group stats + pairwise tests."""
+"""EG (Electrocardiogram) domain findings: per (EGTESTCD, EGDY, SEX) -> group stats + pairwise tests."""
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -22,34 +23,34 @@ def compute_eg_findings(
     if "eg" not in study.xpt_files:
         return []
 
-    eg_df, _ = read_xpt(study.xpt_files["eg"])
-    eg_df.columns = [c.upper() for c in eg_df.columns]
+    eg_df = read_xpt_as_polars(study.xpt_files["eg"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    eg_df = eg_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    eg_df = eg_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # Parse numeric result
     if "EGSTRESN" in eg_df.columns:
-        eg_df["value"] = pd.to_numeric(eg_df["EGSTRESN"], errors="coerce")
+        eg_df = eg_df.with_columns(pl.col("EGSTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "EGORRES" in eg_df.columns:
-        eg_df["value"] = pd.to_numeric(eg_df["EGORRES"], errors="coerce")
+        eg_df = eg_df.with_columns(pl.col("EGORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
     # Day column
     if "EGDY" in eg_df.columns:
-        eg_df["EGDY"] = pd.to_numeric(eg_df["EGDY"], errors="coerce")
+        eg_df = eg_df.with_columns(pl.col("EGDY").cast(pl.Float64, strict=False))
     else:
-        eg_df["EGDY"] = 1
+        eg_df = eg_df.with_columns(pl.lit(1.0).alias("EGDY"))
 
     # Filter recovery animals' records to treatment period only
-    eg_df = filter_treatment_period_records(eg_df, subjects, "EGDY", last_dosing_day)
+    eg_df = filter_treatment_period_records_pl(eg_df, subs, "EGDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "EGTESTCD" in eg_df.columns
     if not has_testcd:
-        eg_df["EGTESTCD"] = "EG"
+        eg_df = eg_df.with_columns(pl.lit("EG").alias("EGTESTCD"))
     has_test = "EGTEST" in eg_df.columns
 
     unit_col = "EGSTRESU" if "EGSTRESU" in eg_df.columns else (
@@ -57,28 +58,33 @@ def compute_eg_findings(
     )
 
     findings = []
-    grouped = eg_df.groupby(["EGTESTCD", "EGDY", "SEX"])
 
-    for (testcd, day, sex), grp in grouped:
-        if grp["value"].isna().all():
+    for (testcd, day, sex), grp_idx in eg_df.group_by(["EGTESTCD", "EGDY", "SEX"], maintain_order=True):
+        grp = grp_idx
+
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else "ms"
-        if unit == "nan":
+        day_val = int(day) if day is not None and not np.isnan(day) else None
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else "ms"
+        if unit == "None" or unit == "null" or unit == "nan":
             unit = "ms"
 
-        test_name = str(grp["EGTEST"].iloc[0]) if has_test else str(testcd)
+        test_name = str(grp["EGTEST"][0]) if has_test else str(testcd)
 
         group_stats = []
         control_values = None
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            subj_ids = dose_data["USUBJID"].to_list()
+            subj_vals = dict(zip(subj_ids, vals.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -105,8 +111,10 @@ def compute_eg_findings(
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)

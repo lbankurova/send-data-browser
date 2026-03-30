@@ -1,20 +1,21 @@
-"""RE (Respiratory) domain findings: per (RETESTCD, REDY, SEX) → group stats + pairwise tests.
+"""RE (Respiratory) domain findings: per (RETESTCD, REDY, SEX) -> group stats + pairwise tests.
 
-Structurally identical to EG (electrocardiogram) — continuous in-life domain
+Structurally identical to EG (electrocardiogram) -- continuous in-life domain
 with discrete timepoint measurements. CJ16050 has 3 endpoints: respiratory
 rate (breaths/min), tidal volume (mL/breath), minute volume (mL/min).
 """
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -27,34 +28,34 @@ def compute_re_findings(
     if "re" not in study.xpt_files:
         return []
 
-    re_df, _ = read_xpt(study.xpt_files["re"])
-    re_df.columns = [c.upper() for c in re_df.columns]
+    re_df = read_xpt_as_polars(study.xpt_files["re"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    re_df = re_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    re_df = re_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # Parse numeric result
     if "RESTRESN" in re_df.columns:
-        re_df["value"] = pd.to_numeric(re_df["RESTRESN"], errors="coerce")
+        re_df = re_df.with_columns(pl.col("RESTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "REORRES" in re_df.columns:
-        re_df["value"] = pd.to_numeric(re_df["REORRES"], errors="coerce")
+        re_df = re_df.with_columns(pl.col("REORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
     # Day column
     if "REDY" in re_df.columns:
-        re_df["REDY"] = pd.to_numeric(re_df["REDY"], errors="coerce")
+        re_df = re_df.with_columns(pl.col("REDY").cast(pl.Float64, strict=False))
     else:
-        re_df["REDY"] = 1
+        re_df = re_df.with_columns(pl.lit(1.0).alias("REDY"))
 
     # Filter recovery animals' records to treatment period only
-    re_df = filter_treatment_period_records(re_df, subjects, "REDY", last_dosing_day)
+    re_df = filter_treatment_period_records_pl(re_df, subs, "REDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "RETESTCD" in re_df.columns
     if not has_testcd:
-        re_df["RETESTCD"] = "RE"
+        re_df = re_df.with_columns(pl.lit("RE").alias("RETESTCD"))
     has_test = "RETEST" in re_df.columns
 
     unit_col = "RESTRESU" if "RESTRESU" in re_df.columns else (
@@ -62,28 +63,30 @@ def compute_re_findings(
     )
 
     findings = []
-    grouped = re_df.groupby(["RETESTCD", "REDY", "SEX"])
 
-    for (testcd, day, sex), grp in grouped:
-        if grp["value"].isna().all():
+    for (testcd, day, sex), grp in re_df.group_by(["RETESTCD", "REDY", "SEX"], maintain_order=True):
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else None
-        if unit == "nan" or unit == "":
+        day_val = int(day) if day is not None and not np.isnan(day) else None
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else None
+        if unit in ("None", "null", "nan", ""):
             unit = None
 
-        test_name = str(grp["RETEST"].iloc[0]) if has_test else str(testcd)
+        test_name = str(grp["RETEST"][0]) if has_test else str(testcd)
 
         group_stats = []
         control_values = None
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            subj_vals = dict(zip(dose_data["USUBJID"].to_list(), vals.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -110,8 +113,10 @@ def compute_re_findings(
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)

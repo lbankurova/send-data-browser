@@ -3,6 +3,8 @@ uvicorn[standard]
 orjson
 pyreadstat
 pandas
+polars>=1.0
+pyarrow
 scipy>=1.11
 python-multipart
 openpyxl

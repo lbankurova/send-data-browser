@@ -1,15 +1,16 @@
-"""VS (Vital Signs) domain findings: per (VSTESTCD, VSDY, SEX) → group stats + pairwise tests."""
+"""VS (Vital Signs) domain findings: per (VSTESTCD, VSDY, SEX) -> group stats + pairwise tests."""
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -22,34 +23,34 @@ def compute_vs_findings(
     if "vs" not in study.xpt_files:
         return []
 
-    vs_df, _ = read_xpt(study.xpt_files["vs"])
-    vs_df.columns = [c.upper() for c in vs_df.columns]
+    vs_df = read_xpt_as_polars(study.xpt_files["vs"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    vs_df = vs_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    vs_df = vs_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # Parse numeric result
     if "VSSTRESN" in vs_df.columns:
-        vs_df["value"] = pd.to_numeric(vs_df["VSSTRESN"], errors="coerce")
+        vs_df = vs_df.with_columns(pl.col("VSSTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "VSORRES" in vs_df.columns:
-        vs_df["value"] = pd.to_numeric(vs_df["VSORRES"], errors="coerce")
+        vs_df = vs_df.with_columns(pl.col("VSORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
     # Day column
     if "VSDY" in vs_df.columns:
-        vs_df["VSDY"] = pd.to_numeric(vs_df["VSDY"], errors="coerce")
+        vs_df = vs_df.with_columns(pl.col("VSDY").cast(pl.Float64, strict=False))
     else:
-        vs_df["VSDY"] = 1
+        vs_df = vs_df.with_columns(pl.lit(1.0).alias("VSDY"))
 
     # Filter recovery animals' records to treatment period only
-    vs_df = filter_treatment_period_records(vs_df, subjects, "VSDY", last_dosing_day)
+    vs_df = filter_treatment_period_records_pl(vs_df, subs, "VSDY", last_dosing_day)
 
     # Test code / test name
     has_testcd = "VSTESTCD" in vs_df.columns
     if not has_testcd:
-        vs_df["VSTESTCD"] = "VS"
+        vs_df = vs_df.with_columns(pl.lit("VS").alias("VSTESTCD"))
     has_test = "VSTEST" in vs_df.columns
 
     unit_col = "VSSTRESU" if "VSSTRESU" in vs_df.columns else (
@@ -57,28 +58,30 @@ def compute_vs_findings(
     )
 
     findings = []
-    grouped = vs_df.groupby(["VSTESTCD", "VSDY", "SEX"])
 
-    for (testcd, day, sex), grp in grouped:
-        if grp["value"].isna().all():
+    for (testcd, day, sex), grp in vs_df.group_by(["VSTESTCD", "VSDY", "SEX"], maintain_order=True):
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else "beats/min"
-        if unit == "nan":
+        day_val = int(day) if day is not None and not np.isnan(day) else None
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else "beats/min"
+        if unit in ("None", "null", "nan"):
             unit = "beats/min"
 
-        test_name = str(grp["VSTEST"].iloc[0]) if has_test else str(testcd)
+        test_name = str(grp["VSTEST"][0]) if has_test else str(testcd)
 
         group_stats = []
         control_values = None
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            subj_vals = dict(zip(dose_data["USUBJID"].to_list(), vals.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -105,8 +108,10 @@ def compute_vs_findings(
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)

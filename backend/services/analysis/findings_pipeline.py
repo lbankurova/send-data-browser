@@ -323,6 +323,22 @@ def process_findings(
         base_findings = attach_separate_stats(base_findings, separate_map)
     enriched = enrich_findings(base_findings)
 
+    # No-control suppression (RC-7, control-groups-model §3): without a concurrent
+    # control, Dunnett's pairwise and trend tests are scientifically meaningless.
+    # Strip them so consumers see descriptive group_stats only.
+    if not has_concurrent_control:
+        for f in enriched:
+            f["pairwise"] = []
+            f["trend_p"] = None
+            f["min_p_adj"] = None
+            f["max_effect_size"] = None
+            if f.get("jt_p") is not None:
+                f["jt_p"] = None
+        log.info(
+            "No concurrent control: pairwise/trend stripped from %d findings.",
+            len(enriched),
+        )
+
     # Multi-compound trend suppression (RC-8): JT trend test across different
     # compounds is scientifically meaningless. Null out trend_p/jt_p and flag.
     if is_multi_compound:
