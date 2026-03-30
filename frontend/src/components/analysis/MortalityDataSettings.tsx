@@ -16,6 +16,7 @@ import type { StudyMortality, DeathRecord } from "@/types/mortality";
 function isOverride(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): boolean {
   if (d.is_recovery) return !isExcluded; // default: excluded
   if (d.attribution === "Accidental") return isExcluded; // default: included
+  if (d.attribution === "Background") return isExcluded; // default: included (control deaths don't skew treated stats)
   if (isTr) return !isExcluded; // default: excluded
   return false;
 }
@@ -38,7 +39,14 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
       : `${id}: Included (default). Valid drug-exposure data through day ${d.study_day ?? "?"}; death not treatment-related.`;
   }
 
-  // TR early death — default: excluded
+  // Background (control group death) — default: included
+  if (d.attribution === "Background") {
+    return isExcluded
+      ? `${id}: Excluded by reviewer override. Default: included — control group death (background mortality).`
+      : `${id}: Included (default). Control group death — background mortality, not treatment-related.`;
+  }
+
+  // Early death (treated group) — default: excluded
   if (isTr) {
     return isExcluded
       ? `${id}: Excluded (default). Terminal data from moribund/found-dead animals skews group means.`
@@ -154,10 +162,15 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
     setPendingRevert(null);
   };
 
-  // Combine all deaths: TR (main + recovery) + accidental, sorted by study_day
+  // Combine all deaths + accidentals, sorted by study_day.
+  // Attribution: control deaths (dose_level 0) are "Background" not "TR";
+  // accidentals are "Accidental"; treated deaths are "Early death".
   const allDeaths: (DeathRecord & { attribution: string })[] = mortality
     ? [
-        ...mortality.deaths.map(d => ({ ...d, attribution: "TR" as const })),
+        ...mortality.deaths.map(d => ({
+          ...d,
+          attribution: d.dose_level === 0 ? "Background" : "Early death",
+        })),
         ...mortality.accidentals.map(d => ({ ...d, attribution: "Accidental" as const })),
       ].sort((a, b) => (a.study_day ?? 999) - (b.study_day ?? 999))
     : [];
@@ -218,7 +231,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                   <tr
                     className={cn(
                       "border-b border-dashed border-border/30",
-                      d.attribution === "TR" && "bg-amber-50/50",
+                      d.attribution === "Early death" && "bg-amber-50/50",
                     )}
                   >
                     {/* Include: dot (override indicator) + checkbox */}

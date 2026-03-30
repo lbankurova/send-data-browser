@@ -193,7 +193,7 @@ def compute_study_mortality(
             "cause": cause,
             "cause_category": _classify_cause_category(cause, strain),
             "relatedness": dd["relatedness"] if dd else None,
-            "study_day": dd["study_day"] if dd else None,
+            "study_day": dd["study_day"] if dd else d.get("ds_study_day"),
             "dose_label": dose_label_map.get(d["dose_level"], ""),
         })
 
@@ -209,7 +209,7 @@ def compute_study_mortality(
             "disposition": a.get("dsdecod", ""),
             "cause": dd["cause"] if dd else None,
             "relatedness": dd["relatedness"] if dd else None,
-            "study_day": dd["study_day"] if dd else None,
+            "study_day": dd["study_day"] if dd else a.get("ds_study_day"),
             "dose_label": dose_label_map.get(a["dose_level"], ""),
         })
 
@@ -447,10 +447,25 @@ def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dic
         how="inner",
     )
 
+    # Extract study day from DSDY or VISITDY (fallback for studies without DD domain)
+    ds_day_col = None
+    for col in ("DSDY", "VISITDY", "DSSTDY"):
+        if col in ds_df.columns:
+            ds_day_col = col
+            break
+
     records = []
     for _, row in ds_df.iterrows():
         dsdecod = str(row["DSDECOD"]).strip().upper()
         cat = classify_disposition(dsdecod)
+        ds_day = None
+        if ds_day_col:
+            v = row.get(ds_day_col)
+            if pd.notna(v):
+                try:
+                    ds_day = int(float(v))
+                except (ValueError, TypeError):
+                    pass
         records.append({
             "USUBJID": str(row["USUBJID"]),
             "SEX": str(row["SEX"]),
@@ -459,6 +474,7 @@ def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dic
             "is_satellite": bool(row.get("is_satellite", False)),
             "dsdecod": dsdecod,
             "category": cat,
+            "ds_study_day": ds_day,
         })
 
     return records
