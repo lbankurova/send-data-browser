@@ -16,6 +16,7 @@ import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
 import { useValidationResults } from "@/hooks/useValidationResults";
+import { useAssayValidation } from "@/hooks/useAssayValidation";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useSessionState, isOneOf } from "@/hooks/useSessionState";
 import { useStudySettings, ORGAN_WEIGHT_METHOD_VALUES, RECOVERY_POOLING_VALUES } from "@/contexts/StudySettingsContext";
@@ -672,6 +673,7 @@ function DetailsTab({
   const { data: studyCtx } = useStudyContext(studyId);
   const { data: crossFlags } = useCrossAnimalFlags(studyId);
   const { data: valData, isLoading: valLoading } = useValidationResults(studyId);
+  const { data: assayValidation } = useAssayValidation(studyId);
   const { data: pkData } = usePkIntegration(studyId);
   const { excludedSubjects } = useScheduledOnly();
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
@@ -1011,6 +1013,26 @@ function DetailsTab({
         ) : undefined}
       >
         <div className="space-y-2">
+          {/* Assay validation (positive control studies) */}
+          {assayValidation && (
+            <div>
+              {assayValidation.validity_concern && (
+                <div className="mb-1 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-800">
+                  No endpoint showed adequate positive control response (significant + |d| &ge; 0.5).
+                  Study assay sensitivity not demonstrated.
+                </div>
+              )}
+              <div className={`flex items-start gap-1 text-[11px] leading-snug ${assayValidation.validity_concern ? "text-red-700" : "text-muted-foreground"}`}>
+                {assayValidation.validity_concern && <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />}
+                <span>
+                  {assayValidation.validity_concern
+                    ? `Positive control response inadequate -- assay validity in question.`
+                    : `Positive control (${assayValidation.pc_arm_label}): ${assayValidation.n_adequate}/${assayValidation.n_endpoints} endpoints show adequate response.`}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Domain completeness — exception-only */}
           <div>
             <div className="text-[11px] font-medium text-muted-foreground">

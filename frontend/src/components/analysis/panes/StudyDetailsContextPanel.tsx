@@ -73,7 +73,7 @@ interface StudyNote {
 
 // ── Vehicle Effect Comparison ────────────────────────────────
 
-function VehicleEffectSection({ data }: { data: import("@/lib/analysis-view-api").ControlComparison }) {
+function VehicleEffectSection({ data, expandAll, collapseAll }: { data: import("@/lib/analysis-view-api").ControlComparison; expandAll?: number; collapseAll?: number }) {
   const [showDetail, setShowDetail] = useState(false);
   const hasSig = data.n_significant > 0;
 
@@ -85,8 +85,7 @@ function VehicleEffectSection({ data }: { data: import("@/lib/analysis-view-api"
   );
 
   return (
-    <div className="mb-2 mt-1 rounded border border-border/50 px-2 py-1.5">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Vehicle effect comparison</div>
+    <CollapsiblePane title="Vehicle effect comparison" defaultOpen={false} sessionKey="pcc.studySettings.vehicleComparison" expandAll={expandAll} collapseAll={collapseAll}>
       <div className={`flex items-start gap-1 text-[11px] leading-snug ${hasSig ? "text-amber-700" : "text-muted-foreground"}`}>
         {hasSig && <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />}
         <span>{data.summary}</span>
@@ -101,39 +100,39 @@ function VehicleEffectSection({ data }: { data: import("@/lib/analysis-view-api"
         </button>
       )}
       {showDetail && (
-        <div className="mt-1 overflow-auto">
+        <div className="-mx-4 mt-1 overflow-auto">
           <table className="w-full text-[10px]">
             <thead>
               <tr className="border-b text-left">
-                <th className="py-0.5 pr-2 font-medium">Endpoint</th>
-                <th className="py-0.5 px-1 text-center font-medium">Sex</th>
-                <th className="py-0.5 px-1 text-right font-medium">Vehicle</th>
-                <th className="py-0.5 px-1 text-right font-medium">Negative</th>
-                <th className="py-0.5 px-1 text-right font-medium">d</th>
-                <th className="py-0.5 px-1 text-right font-medium">p</th>
+                <th className="py-0.5 px-1.5 font-medium">Endpoint</th>
+                <th className="w-px whitespace-nowrap py-0.5 px-1 text-center font-medium">Sex</th>
+                <th className="w-px whitespace-nowrap py-0.5 px-1 text-right font-medium">Vehicle mean</th>
+                <th className="w-px whitespace-nowrap py-0.5 px-1 text-right font-medium">Negative mean</th>
+                <th className="w-px whitespace-nowrap py-0.5 px-1 text-right font-medium">d</th>
+                <th className="w-px whitespace-nowrap py-0.5 px-1 text-right font-medium">p</th>
               </tr>
             </thead>
             <tbody>
               {(sigEndpoints.length > 0 ? sigEndpoints : data.endpoints).slice(0, 20).map((e, i) => (
                 <tr key={i} className={`border-b border-dashed border-border/30 ${e.significant ? "" : "text-muted-foreground"}`}>
-                  <td className="py-0.5 pr-2 whitespace-nowrap">{e.endpoint_label}</td>
-                  <td className="py-0.5 px-1 text-center">{e.sex}</td>
-                  <td className="py-0.5 px-1 text-right tabular-nums">{e.vehicle_mean.toFixed(2)}</td>
-                  <td className="py-0.5 px-1 text-right tabular-nums">{e.negative_mean.toFixed(2)}</td>
-                  <td className="py-0.5 px-1 text-right tabular-nums">{e.cohens_d.toFixed(2)}</td>
-                  <td className="py-0.5 px-1 text-right tabular-nums">{e.p_value != null ? e.p_value.toFixed(4) : "--"}</td>
+                  <td className="py-0.5 px-1.5">{e.endpoint_label}</td>
+                  <td className="w-px whitespace-nowrap py-0.5 px-1 text-center">{e.sex}</td>
+                  <td className="w-px whitespace-nowrap py-0.5 px-1 text-right tabular-nums">{e.vehicle_mean.toFixed(2)}</td>
+                  <td className="w-px whitespace-nowrap py-0.5 px-1 text-right tabular-nums">{e.negative_mean.toFixed(2)}</td>
+                  <td className="w-px whitespace-nowrap py-0.5 px-1 text-right tabular-nums">{e.cohens_d.toFixed(2)}</td>
+                  <td className="w-px whitespace-nowrap py-0.5 px-1 text-right tabular-nums">{e.p_value != null ? e.p_value.toFixed(4) : "--"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {(sigEndpoints.length > 20 || (!sigEndpoints.length && data.endpoints.length > 20)) && (
-            <div className="mt-0.5 text-[10px] text-muted-foreground">
+            <div className="mt-0.5 px-1.5 text-[10px] text-muted-foreground">
               and {(sigEndpoints.length || data.endpoints.length) - 20} more
             </div>
           )}
         </div>
       )}
-    </div>
+    </CollapsiblePane>
   );
 }
 
@@ -244,7 +243,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
         )}
 
         {/* Vehicle effect comparison (dual-control studies only) */}
-        {controlComparison && <VehicleEffectSection data={controlComparison} />}
+        {controlComparison && <VehicleEffectSection data={controlComparison} expandAll={expandGen} collapseAll={collapseGen} />}
 
         {/* Organ weight method */}
         <SettingsRow label="Organ weight method">
