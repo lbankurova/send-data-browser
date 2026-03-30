@@ -1,4 +1,6 @@
-"""Reads analysis-settings and pattern overrides from the annotations store."""
+"""Reads analysis-settings, pattern overrides, tox overrides, and NOAEL
+overrides from the annotations store.
+"""
 
 import json
 import logging
@@ -184,3 +186,156 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
         from services.analysis.confidence import compute_all_confidence
         compute_all_confidence(findings)
     return findings
+
+
+# ---------------------------------------------------------------------------
+# Tox assessment overrides (Level 3 — highest finding-level authority)
+# ---------------------------------------------------------------------------
+
+def load_tox_overrides(study_id: str) -> dict[str, dict]:
+    """Load tox-findings annotations.
+
+    Returns {endpoint_label: override_dict}.
+    Filters out entries where treatmentRelated == "Not Evaluated" (no override).
+    """
+    path = ANNOTATIONS_DIR / study_id / "tox_findings.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+        return {
+            k: v for k, v in data.items()
+            if isinstance(v, dict) and v.get("treatmentRelated") != "Not Evaluated"
+        }
+    except (json.JSONDecodeError, TypeError):
+        log.warning("Failed to read tox overrides for %s", study_id)
+        return {}
+
+
+def apply_tox_overrides(findings: list[dict], study_id: str) -> list[dict]:
+    """Apply tox assessment overrides (Level 3). Highest finding-level precedence.
+
+    Sets treatment_related and/or finding_class directly from expert
+    determination. Adds has_tox_override=True metadata flag.
+
+    Matching: endpoint_label lookup (applies to both sexes).
+    """
+    overrides = load_tox_overrides(study_id)
+    if not overrides:
+        return findings
+
+    applied = 0
+    for f in findings:
+        key = f.get("endpoint_label") or f.get("finding")
+        if not key:
+            continue
+        ov = overrides.get(key)
+        if not ov:
+            continue
+
+        tr_val = ov.get("treatmentRelated")
+        adv_val = ov.get("adversity")
+
+        # Coherence check: TR="No" + adversity="Adverse" is contradictory
+        if tr_val in ("No", "Equivocal") and adv_val == "Adverse":
+            log.warning(
+                "Contradictory tox override for %s: TR=%s but adversity=%s "
+                "-- TR wins, setting not_treatment_related",
+                key, tr_val, adv_val,
+            )
+
+        # TR override — always set finding_class when TR is No/Equivocal,
+        # regardless of adversity value (TR wins over contradictory adversity)
+        if tr_val == "No":
+            f["treatment_related"] = False
+            f["finding_class"] = "not_treatment_related"
+        elif tr_val == "Equivocal":
+            f["treatment_related"] = False
+            f["finding_class"] = "equivocal"
+        elif tr_val == "Yes":
+            f["treatment_related"] = True
+
+        # Adversity override (only meaningful when TR is true)
+        if f.get("treatment_related"):
+            if adv_val == "Adverse":
+                f["finding_class"] = "tr_adverse"
+            elif adv_val == "Non-Adverse/Adaptive":
+                f["finding_class"] = "tr_non_adverse"
+
+        f["has_tox_override"] = True
+        applied += 1
+
+    if applied:
+        log.info("Applied %d tox override(s) for %s", applied, study_id)
+    return findings
+
+
+# ---------------------------------------------------------------------------
+# NOAEL overrides (Level 4 — independent axis, authoritative)
+# ---------------------------------------------------------------------------
+
+def load_noael_overrides(study_id: str) -> dict[str, dict]:
+    """Load noael-overrides annotations.
+
+    Returns {noael:sex: override_dict} (e.g. {"noael:Combined": {...}}).
+    """
+    path = ANNOTATIONS_DIR / study_id / "noael_overrides.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+        return {k: v for k, v in data.items() if isinstance(v, dict)}
+    except (json.JSONDecodeError, TypeError):
+        log.warning("Failed to read NOAEL overrides for %s", study_id)
+        return {}
+
+
+def apply_noael_overrides(noael_rows: list[dict], study_id: str) -> list[dict]:
+    """Apply NOAEL expert overrides to NOAEL summary rows.
+
+    Replaces noael_dose_level/value when an override exists for that sex.
+    Preserves system values in _system_* fields for provenance display.
+    """
+    overrides = load_noael_overrides(study_id)
+    if not overrides:
+        return noael_rows
+
+    applied = 0
+    for row in noael_rows:
+        sex = row.get("sex", "")
+        ov = overrides.get(f"noael:{sex}")
+        if not ov:
+            continue
+
+        override_type = ov.get("override_type")
+        if not override_type or override_type == "agree":
+            # "agree" = expert confirms algorithm, no change needed
+            continue
+
+        # Preserve system values before overwriting
+        row["_overridden"] = True
+        row["_system_dose_level"] = row.get("noael_dose_level")
+        row["_system_dose_value"] = row.get("noael_dose_value")
+        row["_override_rationale"] = ov.get("rationale", "")
+
+        if override_type == "not_established":
+            row["noael_dose_level"] = None
+            row["noael_dose_value"] = None
+            row["noael_label"] = "Not established (expert)"
+        else:
+            # "higher" or "lower" — use the expert's dose
+            override_level = ov.get("override_dose_level")
+            override_value = ov.get("override_dose_value")
+            if override_level is not None:
+                row["noael_dose_level"] = override_level
+            if override_value is not None:
+                row["noael_dose_value"] = override_value
+                # Update label to reflect override
+                unit = row.get("noael_dose_unit", "")
+                row["noael_label"] = f"{override_value} {unit}".strip()
+
+        applied += 1
+
+    if applied:
+        log.info("Applied %d NOAEL override(s) for %s", applied, study_id)
+    return noael_rows

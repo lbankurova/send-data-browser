@@ -31,12 +31,12 @@
 | Hardcoded | 8 | 1 | Values that should be configurable or derived |
 | Spec divergence | 2 | 9 | Code differs from spec — decide which is right |
 | Missing feature | 4 | 5 | Spec'd but not implemented |
-| Gap | 75 | 44 | Missing capability, no spec exists |
+| Gap | 72 | 47 | Missing capability, no spec exists |
 | Stub | 0 | 1 | Partial implementation |
 | UI redundancy | 0 | 4 | Center view / context panel data overlap |
 | Incoming feature | 0 | 9 | All 9 done (FEAT-01–09) |
 | DG knowledge gaps | 15 | 0 | Moved to `docs/portability/dg-knowledge-gaps.md` |
-| **Total open** | **99** | **80** | |
+| **Total open** | **96** | **83** | |
 
 ## Defer to Production (Infrastructure Chain)
 
@@ -716,16 +716,10 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
 - **Priority:** P3 — cosmetic correctness, no runtime impact
 - **Owner hint:** backend-dev + frontend-dev (coordinated rename)
 
-### GAP-74: ToxFindingForm missing from FindingsContextPanel (Phase A-3)
+### ~~GAP-74: ToxFindingForm missing from FindingsContextPanel (Phase A-3)~~ ✅
 - **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 4 (line 218)
-- **Dimension:** WHEN — component not rendered
-- **Spec quote:** "ToxFindingForm — already present. Ensure system suggestion is wired (check D-R version passes systemSuggestion prop)."
-- **Actual:** ToxFindingForm is not imported or rendered in FindingsContextPanel. Only present in DoseResponseContextPanel, HistopathologyContextPanel, NoaelContextPanel.
-- **Fix:** Import ToxFindingForm, render after CausalityWorksheet (before EvidencePane), wire `systemSuggestion` via `deriveToxSuggestion()` using selected finding's treatment_related + severity. Reference: DoseResponseContextPanel.tsx lines 342-348.
-- **Files:** `frontend/src/components/analysis/panes/FindingsContextPanel.tsx`
-- **Status:** Open
-- **Priority:** P1 — blocks annotation workflow in Findings view
-- **Owner hint:** frontend-dev
+- **Fix:** ToxFindingForm imported (line 29) and rendered (lines 2295-2299) in FindingsContextPanel.tsx with `systemSuggestion` wired via `deriveToxSuggestion()`.
+- **Status:** ~~Open~~ Fixed
 
 ### GAP-75: Context panel header missing incremental info (Phase A-4)
 - **Spec:** `docs/incoming/view-merge-spec.md` section 5, item 1 (lines 205-209)
@@ -1039,9 +1033,9 @@ HC-01–07 (dose mapping, recovery arms, single-study, file annotations, reviewe
   3. **Frontend descriptive views** — new view mode that shows per-endpoint summaries, time-course charts, individual animal profiles, and incidence tables without dose-group comparison columns.
   4. **Graceful degradation in existing views** — when loaded study has 1 arm, show an informational banner ("Single-arm study — comparative analysis not available") instead of empty panels.
   5. **Historical control comparison (stretch)** — allow users to supply historical control data for single-arm studies to enable limited comparative analysis.
-- **Priority:** P2 (blocks onboarding of vaccine/biologics studies — common in CBER submissions)
-- **Status:** Open
-- **Owner hint:** backend-dev (generator pipeline + study classifier) + frontend-dev (descriptive views + degradation) + ux-designer (descriptive view design)
+- **Priority:** ~~P2~~ Substantially resolved
+- **Status:** ~~Open~~ Addressed — adapter architecture (`93c14d3`), vaccine pipeline with SPGRPCD arm pairing + IS domain (`d9c8b95`), crossover adapter (`93c14d3`), control model normalization (`dd1f345`), study type registry (`6dfd702`), root cause audit (`6e8e399`). Non-standard designs (crossover, escalation, vaccine factorial, sex-stratified) now route through design-specific adapters. Single-arm descriptive-only mode (roadmap item 2-3) still open as stretch.
+- **Owner hint:** backend-dev (remaining: single-arm descriptive mode)
 
 ### GAP-114: FindingsView view spec needs full rewrite after histopath merge
 - **Source:** Post-implementation review 2026-03-25
@@ -1147,8 +1141,8 @@ Implemented: "View dose group cohort" text link in SubjectProfilePanel subtitle,
   2. **Organ-specific sex concordance/divergence scoring.** 16 organ bands with calibrated boosts (concordance 1.0–2.0, divergence 0.3–1.8). Routing priority: specimen → domain+testcd → organ_system fallback. Key split: LB hematologic → HEMATOPOIETIC (conc 1.8, div 0.5) vs MI bone marrow → BONE_MARROW (conc 1.2, div 1.5). Static data in `shared/organ-sex-concordance-bands.json`.
 - **Files:** `frontend/src/lib/findings-rail-engine.ts` (scoring formula), `frontend/src/hooks/useFindingsAnalyticsLocal.ts` (boost pipeline + routing), `frontend/src/lib/lab-clinical-catalog.ts` (additive export), `frontend/src/lib/derive-summaries.ts` (propagate specimen/testCode), `shared/organ-sex-concordance-bands.json` (new — static organ band data), `frontend/src/lib/organ-sex-concordance.ts` (new — routing logic)
 - **Owner:** frontend-dev + ux-designer (scoring design review)
-- **Priority:** P2 — scoring correctness affects all signal-sorted views
-- **Status:** In progress — implementing with rat priors. Other species (mouse, dog, NHP) deferred to follow-up.
+- **Priority:** ~~P2~~ Resolved
+- **Status:** ~~In progress~~ Done — clinical additive (`getClinicalAdditive` in lab-clinical-catalog.ts), organ-specific sex concordance (`getSexConcordanceBoost` in organ-sex-concordance.ts), 14 organ bands in `shared/organ-sex-concordance-bands.json`, boost pipeline wired in `useFindingsAnalyticsLocal.ts`, 500 lines of tests. Other species (mouse, dog, NHP) deferred to follow-up.
 
 ### GAP-124: Automated vs expert assessment comparison report [Area: Validation]
 - **Source:** User requirement, customer feedback

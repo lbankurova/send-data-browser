@@ -1840,11 +1840,24 @@ export function FindingsContextPanel() {
                 ? "Treatment-related"
                 : tox.treatmentRelated === "No"
                   ? "Not treatment-related"
-                  : null;
+                  : tox.treatmentRelated === "Equivocal"
+                    ? "Equivocal"
+                    : null;
             if (!status) return null;
+            // Show provenance: "Expert override" when backend has_tox_override is set
+            const isOverride = selectedFinding.has_tox_override;
             return (
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200">
-                {status}
+              <span
+                className={`rounded px-1.5 py-0.5 border ${
+                  isOverride
+                    ? "bg-violet-100/50 text-violet-700 border-violet-200"
+                    : "bg-gray-100 text-gray-600 border-gray-200"
+                }`}
+                title={isOverride
+                  ? `Expert override -- algorithm: ${selectedFinding.treatment_related ? "TR" : "Not TR"}`
+                  : "Expert tox assessment (not yet applied to pipeline)"}
+              >
+                {status}{isOverride ? " (expert)" : ""}
               </span>
             );
           })()}

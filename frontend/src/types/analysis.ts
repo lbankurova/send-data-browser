@@ -161,6 +161,12 @@ export interface UnifiedFinding {
     timestamp: string;
     pathologist?: string;
   };
+  /** True when expert tox assessment overrides algorithm TR/adversity (Level 3). */
+  has_tox_override?: boolean;
+  /** True when pathology review denied finding presence (Level 2). */
+  excluded_by_review?: boolean;
+  /** True when pathology review is unresolved/PWG pending. */
+  review_pending?: boolean;
   /** Per-subject raw values — array of {USUBJID: value} maps. Used by Cohort View. */
   raw_subject_values?: Record<string, number | string | null>[];
   /** Per-subject CL onset days — array of {USUBJID: day} maps. CL domain only. */

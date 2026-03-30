@@ -136,6 +136,20 @@ export interface NoaelSummaryRow {
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];
   noael_confidence: number;
+  /** True when expert NOAEL override replaced the algorithmic value. */
+  _overridden?: boolean;
+  /** Algorithmic NOAEL dose level before expert override. */
+  _system_dose_level?: number | null;
+  /** Algorithmic NOAEL dose value before expert override. */
+  _system_dose_value?: number | null;
+  /** Expert's rationale for the override. */
+  _override_rationale?: string;
+  /** True when finding-level overrides (tox/pathology) caused NOAEL recomputation. */
+  _recomputed?: boolean;
+  /** Original NOAEL dose level before recomputation from finding overrides. */
+  _original_noael_dose_level?: number | null;
+  /** Original NOAEL dose value before recomputation from finding overrides. */
+  _original_noael_dose_value?: number | null;
 }
 
 export interface AdverseEffectSummaryRow {

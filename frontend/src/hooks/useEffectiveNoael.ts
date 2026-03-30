@@ -1,49 +1,20 @@
-import { useMemo } from "react";
 import { useNoaelSummary } from "./useNoaelSummary";
-import { useAnnotations } from "./useAnnotations";
-import type { NoaelOverride } from "@/types/annotations";
 import type { NoaelSummaryRow } from "@/types/analysis-views";
 
-export interface EffectiveNoaelRow extends NoaelSummaryRow {
-  _overridden?: boolean;
-  _override_rationale?: string;
-  _system_dose_value?: number;
-  _system_dose_level?: number;
-}
+export type EffectiveNoaelRow = NoaelSummaryRow;
 
 /**
- * Merges computed NOAEL data with any expert override annotations.
- * Returns the same shape as useNoaelSummary but with override fields.
+ * Returns NOAEL data with expert overrides already applied by the backend.
+ *
+ * Previously this hook fetched noael-overrides annotations and merged them
+ * client-side. The backend now applies NOAEL overrides (Level 4) and
+ * finding-level recomputation at serve time in _apply_overrides(), so this
+ * hook is a thin wrapper around useNoaelSummary.
+ *
+ * Override provenance fields on each row (when applicable):
+ *   _overridden, _system_dose_level, _system_dose_value, _override_rationale
+ *   _recomputed, _original_noael_dose_level, _original_noael_dose_value
  */
 export function useEffectiveNoael(studyId: string | undefined) {
-  const computed = useNoaelSummary(studyId);
-  const { data: overrides } = useAnnotations<NoaelOverride>(studyId, "noael-overrides");
-
-  const data = useMemo((): EffectiveNoaelRow[] | undefined => {
-    if (!computed.data) return undefined;
-    if (!overrides) return computed.data;
-
-    return computed.data.map((entry) => {
-      const override = overrides[`noael:${entry.sex}`];
-      if (override) {
-        return {
-          ...entry,
-          noael_dose_value: override.override_dose_level != null
-            ? parseFloat(override.override_dose_value) || entry.noael_dose_value
-            : entry.noael_dose_value,
-          noael_dose_level: override.override_dose_level ?? entry.noael_dose_level,
-          _overridden: true,
-          _override_rationale: override.rationale,
-          _system_dose_value: entry.noael_dose_value,
-          _system_dose_level: entry.noael_dose_level,
-        };
-      }
-      return entry;
-    });
-  }, [computed.data, overrides]);
-
-  return {
-    ...computed,
-    data,
-  };
+  return useNoaelSummary(studyId);
 }

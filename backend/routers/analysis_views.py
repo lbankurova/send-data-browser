@@ -22,7 +22,11 @@ from services.analysis.analysis_cache import (
 from services.analysis.override_reader import (
     get_last_dosing_day_override,
     apply_pattern_overrides,
+    apply_tox_overrides,
+    apply_noael_overrides,
     load_all_pattern_overrides,
+    load_tox_overrides,
+    load_noael_overrides,
     VALID_PATTERN_OVERRIDES,
     _resolve_override,
 )
@@ -125,29 +129,123 @@ def _strip_fields(findings: list[dict]) -> list[dict]:
     return [{k: v for k, v in f.items() if k not in _STRIP_FIELDS} for f in findings]
 
 
+def _apply_finding_overrides(findings: list[dict], study_id: str) -> list[dict]:
+    """Apply all finding-level overrides in precedence order.
+
+    Precedence (applied in order, later overrides earlier):
+      Level 1: Pattern overrides (existing)
+      Level 3: Tox assessment overrides (highest finding-level authority)
+
+    After all overrides, full D1-D9 confidence recomputation runs.
+    compute_all_confidence() already does full recomputation (same function
+    called after pattern overrides in override_reader.py).
+    """
+    findings = apply_pattern_overrides(findings, study_id)
+    tox_overrides = load_tox_overrides(study_id)
+    if tox_overrides:
+        findings = apply_tox_overrides(findings, study_id)
+        # Full D1-D9 confidence recomputation. Required because tox overrides
+        # change treatment_related (D5 cross-sex concordance), finding_class
+        # (D2 pattern quality interpretation), and corroboration counts (D3).
+        from services.analysis.confidence import compute_all_confidence
+        compute_all_confidence(findings)
+    return findings
+
+
 def _apply_overrides(data, study_id: str, view_name: str):
     """Apply user annotation overrides and strip internal fields before serving.
 
-    Handles pattern overrides for unified-findings and strips generator-internal
-    fields (e.g. raw_subject_values) that the frontend never consumes.
+    Handles:
+      - unified-findings: pattern overrides + tox overrides + strip
+      - noael-summary: recompute from finding-level overrides, then
+        apply expert NOAEL override on top
+
     Works on copies to avoid mutating LRU-cached originals.
     """
     if view_name == "unified-findings" and isinstance(data, dict):
         findings = data.get("findings")
         if findings and isinstance(findings, list):
-            overrides = load_all_pattern_overrides(study_id)
-            if not overrides:
-                # No overrides — strip creates new dicts (protects LRU cache)
+            has_pattern = bool(load_all_pattern_overrides(study_id))
+            has_tox = bool(load_tox_overrides(study_id))
+            if not has_pattern and not has_tox:
                 return {**data, "findings": _strip_fields(findings)}
-            # Shallow-copy + apply overrides, then strip in-place (copies
-            # already exist, so mutating them to delete keys is safe)
             findings_copy = [{**f} for f in findings]
-            applied = apply_pattern_overrides(findings_copy, study_id)
-            for f in applied:
-                for key in _STRIP_FIELDS:
-                    f.pop(key, None)
-            return {**data, "findings": applied}
+            findings_copy = _apply_finding_overrides(findings_copy, study_id)
+            return {**data, "findings": _strip_fields(findings_copy)}
+
+    if view_name == "noael-summary" and isinstance(data, list):
+        noael_result = [{**row} for row in data]
+
+        # Step 1: Recompute NOAEL from finding-level overrides FIRST.
+        # Check both pattern and tox overrides — either can change TR/finding_class.
+        has_pattern = bool(load_all_pattern_overrides(study_id))
+        has_tox = bool(load_tox_overrides(study_id))
+        if has_pattern or has_tox:
+            from routers.analyses import _load_unified_findings
+            try:
+                unified = _load_unified_findings(study_id)
+            except Exception:
+                unified = None
+            if unified:
+                uf_copy = [{**f} for f in unified.get("findings", [])]
+                overridden = _apply_finding_overrides(uf_copy, study_id)
+                # Check if any finding was actually changed
+                has_changes = any(
+                    f.get("has_tox_override") or f.get("_pattern_override")
+                    for f in overridden
+                )
+                if has_changes:
+                    dose_groups = unified.get("dose_groups", [])
+                    mortality = _load_mortality(study_id)
+                    scoring = load_scoring_params(study_id)
+                    has_control = unified.get("has_concurrent_control", True)
+                    noael_result = _recompute_noael(
+                        overridden, dose_groups, mortality, scoring,
+                        noael_result, has_control,
+                    )
+
+        # Step 2: Apply NOAEL expert overrides AFTER recomputation.
+        # Expert NOAEL is the final authority (Level 4 > recomputation).
+        noael_result = apply_noael_overrides(noael_result, study_id)
+        return noael_result
+
     return data
+
+
+def _recompute_noael(
+    overridden_findings: list[dict],
+    dose_groups: list[dict],
+    mortality: dict | None,
+    params,
+    original_noael: list[dict],
+    has_concurrent_control: bool = True,
+) -> list[dict]:
+    """Full NOAEL recomputation using overridden findings.
+
+    Calls build_noael_summary() with the post-override findings list.
+    Re-runs ALL logic: LOAEL identification, NOAEL bracketing, mortality
+    cap, confidence penalties, derivation trace.
+
+    Adds provenance to rows where the NOAEL shifted.
+    """
+    from generator.view_dataframes import build_noael_summary
+
+    recomputed = build_noael_summary(
+        overridden_findings, dose_groups,
+        mortality=mortality, params=params,
+        has_concurrent_control=has_concurrent_control,
+    )
+
+    # Build lookup of original NOAEL for provenance
+    orig_by_sex = {r["sex"]: r for r in original_noael}
+    for row in recomputed:
+        sex = row.get("sex", "")
+        orig = orig_by_sex.get(sex)
+        if orig and orig.get("noael_dose_level") != row.get("noael_dose_level"):
+            row["_recomputed"] = True
+            row["_original_noael_dose_level"] = orig.get("noael_dose_level")
+            row["_original_noael_dose_value"] = orig.get("noael_dose_value")
+    return recomputed
 
 
 # Regenerate endpoint — runs the full generation pipeline synchronously.
