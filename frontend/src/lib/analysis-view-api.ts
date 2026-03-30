@@ -121,6 +121,69 @@ export function fetchStudyMortality(
   );
 }
 
+// ── Control comparison (dual-control studies) ──────────────────
+
+export interface ControlComparisonEndpoint {
+  domain: string;
+  test_code: string;
+  endpoint_label: string;
+  sex: string;
+  vehicle_mean: number;
+  vehicle_sd: number;
+  vehicle_n: number;
+  negative_mean: number;
+  negative_sd: number;
+  negative_n: number;
+  p_value: number | null;
+  cohens_d: number;
+  significant: boolean;
+}
+
+export interface ControlComparison {
+  vehicle_label: string;
+  negative_label: string;
+  n_endpoints: number;
+  n_significant: number;
+  summary: string;
+  endpoints: ControlComparisonEndpoint[];
+}
+
+export function fetchControlComparison(studyId: string): Promise<ControlComparison> {
+  return fetchJson(`/studies/${encodeURIComponent(studyId)}/analysis/control-comparison`);
+}
+
+// ── Assay validation (positive control studies) ────────────────
+
+export interface AssayValidationEndpoint {
+  domain: string;
+  test_code: string;
+  endpoint_label: string;
+  sex: string;
+  vehicle_mean: number;
+  vehicle_n: number;
+  pc_mean: number;
+  pc_n: number;
+  p_value: number | null;
+  cohens_d: number;
+  direction: string;
+  response_adequate: boolean;
+}
+
+export interface AssayValidation {
+  pc_arm_label: string;
+  pc_compound: string | null;
+  vehicle_label: string;
+  n_endpoints: number;
+  n_significant: number;
+  n_adequate: number;
+  validity_concern: boolean;
+  endpoints: AssayValidationEndpoint[];
+}
+
+export function fetchAssayValidation(studyId: string): Promise<AssayValidation> {
+  return fetchJson(`/studies/${encodeURIComponent(studyId)}/analysis/assay-validation`);
+}
+
 export interface TumorSummary {
   has_tumors: boolean;
   total_tumor_animals: number;

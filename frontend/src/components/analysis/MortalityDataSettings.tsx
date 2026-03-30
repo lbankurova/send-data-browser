@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -49,6 +50,47 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
     ? `${id}: Excluded from terminal statistics.`
     : `${id}: Included in terminal statistics.`;
 }
+
+// ── Qualification Section ────────────────────────────────────
+
+function MortalityQualification({ q }: { q: import("@/types/mortality").MortalityQualification }) {
+  if (q.control_mortality_rate == null) {
+    return (
+      <div className="mb-2 text-[11px] text-muted-foreground">
+        No concurrent control -- mortality qualification not applicable
+      </div>
+    );
+  }
+
+  const pct = (q.control_mortality_rate * 100).toFixed(1);
+  const dur = q.duration_weeks != null ? `${q.duration_weeks}w` : "unknown duration";
+
+  return (
+    <div className="mb-2 space-y-1">
+      <div className="text-[11px] text-muted-foreground">
+        Control mortality: {pct}% ({q.control_deaths}/{q.control_n}) in {dur} study
+      </div>
+      {q.qualification_flags.map((flag, i) => (
+        <div
+          key={i}
+          className={cn(
+            "flex items-start gap-1 text-[11px] leading-snug",
+            flag.severity === "critical" ? "text-red-700" : "text-amber-700",
+          )}
+        >
+          <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          <span>{flag.message}</span>
+        </div>
+      ))}
+      {q.suppress_noael && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-800">
+          NOAEL determination suppressed due to critical control mortality.
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // ── Main Component ───────────────────────────────────────────
 
@@ -142,6 +184,9 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
 
   return (
     <CollapsiblePane title="Mortality" defaultOpen={false} sessionKey="pcc.studySettings.mortality" headerRight={summary} expandAll={expandAll} collapseAll={collapseAll}>
+      {/* Qualification summary (Phase B) */}
+      {mortality?.qualification && <MortalityQualification q={mortality.qualification} />}
+
       {/* Per-subject table — standard orientation matching SubjectContextPanel */}
       {mortality && (
         <div className="-mx-4 overflow-auto">
@@ -215,9 +260,15 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                     <td className="px-1.5 py-1 text-center font-mono tabular-nums">{d.sex}</td>
                     {/* Day */}
                     <td className="px-1.5 py-1 text-right font-mono tabular-nums">{d.study_day ?? "\u2014"}</td>
-                    {/* Type */}
+                    {/* Type + cause category badge */}
                     <td className={cn("px-1.5 py-1", d.attribution === "TR" ? "font-medium" : "text-muted-foreground")}>
-                      {d.attribution}
+                      <span>{d.attribution}</span>
+                      {d.cause_category === "strain_pathology" && (
+                        <span className="ml-1 rounded bg-gray-100 px-1 py-0.5 text-[9px] text-gray-600">Strain</span>
+                      )}
+                      {d.cause_category === "intercurrent" && (
+                        <span className="ml-1 rounded bg-amber-50 px-1 py-0.5 text-[9px] text-amber-700">Intercurrent</span>
+                      )}
                     </td>
                     {/* Cause */}
                     <td className="px-1.5 py-1 text-muted-foreground" title={cause.length > 20 ? cause : undefined}>

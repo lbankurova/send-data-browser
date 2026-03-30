@@ -6,6 +6,7 @@ import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from 
 import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
+import { useControlComparison } from "@/hooks/useControlComparison";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
@@ -69,11 +70,80 @@ interface StudyNote {
   lastEdited?: string;
 }
 
+
+// ── Vehicle Effect Comparison ────────────────────────────────
+
+function VehicleEffectSection({ data }: { data: import("@/lib/analysis-view-api").ControlComparison }) {
+  const [showDetail, setShowDetail] = useState(false);
+  const hasSig = data.n_significant > 0;
+
+  const sigEndpoints = useMemo(
+    () => data.endpoints
+      .filter(e => e.significant)
+      .sort((a, b) => Math.abs(b.cohens_d) - Math.abs(a.cohens_d)),
+    [data.endpoints],
+  );
+
+  return (
+    <div className="mb-2 mt-1 rounded border border-border/50 px-2 py-1.5">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Vehicle effect comparison</div>
+      <div className={`flex items-start gap-1 text-[11px] leading-snug ${hasSig ? "text-amber-700" : "text-muted-foreground"}`}>
+        {hasSig && <AlertTriangle className="mt-0.5 h-2.5 w-2.5 shrink-0" />}
+        <span>{data.summary}</span>
+      </div>
+      {data.n_endpoints > 0 && (
+        <button
+          type="button"
+          className="mt-0.5 text-[10px] text-primary hover:underline"
+          onClick={() => setShowDetail(v => !v)}
+        >
+          {showDetail ? "Hide details" : "Show details"}
+        </button>
+      )}
+      {showDetail && (
+        <div className="mt-1 overflow-auto">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-0.5 pr-2 font-medium">Endpoint</th>
+                <th className="py-0.5 px-1 text-center font-medium">Sex</th>
+                <th className="py-0.5 px-1 text-right font-medium">Vehicle</th>
+                <th className="py-0.5 px-1 text-right font-medium">Negative</th>
+                <th className="py-0.5 px-1 text-right font-medium">d</th>
+                <th className="py-0.5 px-1 text-right font-medium">p</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(sigEndpoints.length > 0 ? sigEndpoints : data.endpoints).slice(0, 20).map((e, i) => (
+                <tr key={i} className={`border-b border-dashed border-border/30 ${e.significant ? "" : "text-muted-foreground"}`}>
+                  <td className="py-0.5 pr-2 whitespace-nowrap">{e.endpoint_label}</td>
+                  <td className="py-0.5 px-1 text-center">{e.sex}</td>
+                  <td className="py-0.5 px-1 text-right tabular-nums">{e.vehicle_mean.toFixed(2)}</td>
+                  <td className="py-0.5 px-1 text-right tabular-nums">{e.negative_mean.toFixed(2)}</td>
+                  <td className="py-0.5 px-1 text-right tabular-nums">{e.cohens_d.toFixed(2)}</td>
+                  <td className="py-0.5 px-1 text-right tabular-nums">{e.p_value != null ? e.p_value.toFixed(4) : "--"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(sigEndpoints.length > 20 || (!sigEndpoints.length && data.endpoints.length > 20)) && (
+            <div className="mt-0.5 text-[10px] text-muted-foreground">
+              and {(sigEndpoints.length || data.endpoints.length) - 20} more
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ── Main Component ───────────────────────────────────────────
 
 export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
+  const { data: controlComparison } = useControlComparison(studyId);
   // Study notes via annotation API
   const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
   const saveNote = useSaveAnnotation<StudyNote>(studyId, "study-notes");
@@ -172,6 +242,9 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             )}
           </>
         )}
+
+        {/* Vehicle effect comparison (dual-control studies only) */}
+        {controlComparison && <VehicleEffectSection data={controlComparison} />}
 
         {/* Organ weight method */}
         <SettingsRow label="Organ weight method">

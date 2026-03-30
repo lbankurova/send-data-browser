@@ -59,6 +59,8 @@ VALID_VIEW_NAMES = {
     "subject-syndromes",
     "subject-onset-days",
     "recovery-verdicts",
+    "control-comparison",
+    "assay-validation",
 }
 
 # The 10 view names that the parameterized pipeline produces

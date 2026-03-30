@@ -7,6 +7,7 @@ export interface DeathRecord {
   is_recovery: boolean;
   disposition: string;
   cause: string | null;
+  cause_category?: string | null;
   relatedness: string | null;
   study_day: number | null;
   dose_label: string;
@@ -20,6 +21,17 @@ export interface DoseGroupMortality {
   accidental: number;
   subjects: string[];
   accidental_subjects: string[];
+}
+
+export interface MortalityQualification {
+  control_mortality_rate: number | null;
+  control_survival_rate: number | null;
+  control_n: number | null;
+  control_deaths: number | null;
+  duration_days: number | null;
+  duration_weeks: number | null;
+  qualification_flags: Array<{ severity: string; code: string; message: string }>;
+  suppress_noael: boolean;
 }
 
 export interface StudyMortality {
@@ -43,4 +55,6 @@ export interface StudyMortality {
     disposition: string;
     dose_label: string;
   }>;
+  /** Control mortality qualification (Phase B) */
+  qualification?: MortalityQualification;
 }
