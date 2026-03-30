@@ -99,7 +99,7 @@ def compute_ma_findings(
 
             group_stats.append(gs_entry)
 
-            if dose_level == all_dose_levels[0]:
+            if dose_level == 0:
                 control_affected = affected
                 control_total = total
 
@@ -107,7 +107,7 @@ def compute_ma_findings(
         incidence_totals = [dose_counts[dl][1] for dl in all_dose_levels]
 
         pairwise = []
-        treated_levels = [dl for dl in all_dose_levels if dl != all_dose_levels[0]]
+        treated_levels = [dl for dl in all_dose_levels if dl > 0]
         for dose_level in treated_levels:
             treat_affected, treat_total = dose_counts[dose_level]
             if treat_total == 0 or control_total == 0:

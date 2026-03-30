@@ -194,7 +194,7 @@ def _extract_mi_ma_onset(
             affected = gs.get("affected", 0)
             if dl is not None:
                 dose_level_labels[dl] = str(dl)
-                if affected and affected > 0 and dl != 0:
+                if affected and affected > 0 and dl > 0:
                     affected_doses.add(dl)
 
         if not affected_doses:

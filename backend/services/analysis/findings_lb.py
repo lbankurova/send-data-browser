@@ -139,7 +139,7 @@ def compute_lb_findings(
         if control_values is not None and len(control_values) >= 2:
             treated = [
                 (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl != 0
+                for dl in sorted(grp["dose_level"].unique()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)

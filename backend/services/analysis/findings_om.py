@@ -60,7 +60,7 @@ def _compute_metric_stats(
     if control_values is not None and len(control_values) >= 2:
         treated = [
             (int(dl), vals[~np.isnan(vals)] if len(vals) > 0 else vals)
-            for dl, vals in zip(dose_levels, dose_groups_values) if dl != 0
+            for dl, vals in zip(dose_levels, dose_groups_values) if dl > 0
         ]
         treated = [(dl, v) for dl, v in treated if len(v) >= 1]
         if treated:

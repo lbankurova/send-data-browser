@@ -1,0 +1,42 @@
+# instem/GLP003 — 1-Month Repeat-Dose + Recovery (Dual Control)
+# Source: instem readme.txt, define.pdf. No study report.
+
+study_id: instem
+origin: synthetic
+source: "instem readme.txt. No study report — no signal documentation."
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 5  # Vehicle + Negative Control + 3 treated
+  doses: [0, 0, 60, 200, 600]  # two controls at 0
+  dose_unit: "mg/kg/day"
+  duration: "1 month (30 days)"
+  recovery: true
+  recovery_pairs: 5  # all groups have recovery
+  n_per_group: 20  # 10M+10F main
+  n_recovery_per_group: 10  # 5M+5F
+  control_type: "dual"  # Vehicle + Negative
+  vehicle: "Saline"
+  treatment: "XYZ-12345"
+  tk_satellites: true  # ~18 per group
+  note: "Most complex design in validation suite: dual controls, TK in all groups, all 5 groups have recovery."
+
+noael:
+  combined:
+    dose_level: 0
+    label: "0 mg/kg/day Vehicle Control"
+    note: "NOAEL at vehicle control = LOAEL at lowest treated dose (60 mg/kg/day). Synthetic data — no documented signals to validate against."
+
+target_organs: {}
+
+injected_signals: []  # No signal documentation
+
+assertions:
+  - type: "dual_control"
+    description: "Dual control (Vehicle primary, Negative secondary) correctly detected"
+  - type: "recovery_all_groups"
+    description: "All 5 groups have recovery arms"
+  - type: "tk_excluded"
+    description: "TK satellites (~18/group) excluded from analysis"

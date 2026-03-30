@@ -127,6 +127,11 @@ def compute_all_findings(
     subjects = dg_data["subjects"]
     dose_groups = dg_data["dose_groups"]
 
+    # Exclude secondary controls (dose_level -3) and positive controls (dose_level -2)
+    # from dose-response analysis — they are not part of the test-article dose ordering.
+    # VC-UC supplementary comparison will be a separate analysis step.
+    analysis_subjects = subjects[subjects["dose_level"] >= 0].copy()
+
     # Compute last dosing day for recovery animal treatment-period pooling
     last_dosing_day = compute_last_dosing_day(study, override=last_dosing_day_override)
 
@@ -137,41 +142,41 @@ def compute_all_findings(
     # Pass 1 = all animals, Pass 2 = scheduled-only (early deaths excluded),
     # Pass 3 = main-only (recovery animals excluded).
     # All passes are independent — submit everything to one thread pool.
-    has_recovery = subjects["is_recovery"].any()
-    main_only_subs = get_terminal_subjects(subjects) if has_recovery else None
+    has_recovery = analysis_subjects["is_recovery"].any()
+    main_only_subs = get_terminal_subjects(analysis_subjects) if has_recovery else None
 
     t_domains = time.perf_counter()
     with ProcessPoolExecutor(max_workers=4) as pool:
-        # Pass 1 — all animals
+        # Pass 1 — all animals (excluding secondary/positive controls)
         p1_futs = [
-            pool.submit(compute_lb_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_bw_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_om_findings, study, subjects),
-            pool.submit(compute_mi_findings, study, subjects),
-            pool.submit(compute_ma_findings, study, subjects),
-            pool.submit(compute_tf_findings, study, subjects),
-            pool.submit(compute_cl_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_ds_findings, study, subjects),
-            pool.submit(compute_eg_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_re_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_vs_findings, study, subjects, last_dosing_day=last_dosing_day),
-            pool.submit(compute_bg_findings, study, subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_lb_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_bw_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_om_findings, study, analysis_subjects),
+            pool.submit(compute_mi_findings, study, analysis_subjects),
+            pool.submit(compute_ma_findings, study, analysis_subjects),
+            pool.submit(compute_tf_findings, study, analysis_subjects),
+            pool.submit(compute_cl_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_ds_findings, study, analysis_subjects),
+            pool.submit(compute_eg_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_re_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_vs_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
+            pool.submit(compute_bg_findings, study, analysis_subjects, last_dosing_day=last_dosing_day),
         ]
         if "fw" in study.xpt_files:
-            p1_futs.append(pool.submit(_compute_fw_findings, study, subjects, last_dosing_day=last_dosing_day))
+            p1_futs.append(pool.submit(_compute_fw_findings, study, analysis_subjects, last_dosing_day=last_dosing_day))
         if "is" in study.xpt_files:
-            p1_futs.append(pool.submit(compute_is_findings, study, subjects))
+            p1_futs.append(pool.submit(compute_is_findings, study, analysis_subjects))
 
         # Pass 2 — scheduled-only for terminal + LB domains (concurrent with Pass 1)
         p2_futs = []
         if excluded_set:
             p2_futs = [
-                pool.submit(compute_mi_findings, study, subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_ma_findings, study, subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_om_findings, study, subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_tf_findings, study, subjects, excluded_subjects=excluded_set),
-                pool.submit(compute_lb_findings, study, subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
-                pool.submit(compute_ds_findings, study, subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_mi_findings, study, analysis_subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_ma_findings, study, analysis_subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_om_findings, study, analysis_subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_tf_findings, study, analysis_subjects, excluded_subjects=excluded_set),
+                pool.submit(compute_lb_findings, study, analysis_subjects, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
+                pool.submit(compute_ds_findings, study, analysis_subjects, excluded_subjects=excluded_set),
             ]
 
         # Pass 3 — main-only for in-life domains (concurrent with Pass 1 and 2)
@@ -469,7 +474,7 @@ def _compute_fw_findings(
         if control_values is not None and len(control_values) >= 2:
             treated = [
                 (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl != 0
+                for dl in sorted(grp["dose_level"].unique()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
 

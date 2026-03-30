@@ -90,7 +90,7 @@ def compute_ds_findings(
                 "avg_severity": None,
             })
 
-            if dose_level == all_dose_levels[0]:
+            if dose_level == 0:
                 control_affected = affected
                 control_total = total
 
@@ -100,7 +100,7 @@ def compute_ds_findings(
         # Fisher exact tests (each dose vs control)
         pairwise = []
         for dose_level in all_dose_levels:
-            if dose_level == all_dose_levels[0]:
+            if dose_level <= 0:
                 continue
             treat_affected, treat_total = dose_counts[dose_level]
             if treat_total == 0 or control_total == 0:
