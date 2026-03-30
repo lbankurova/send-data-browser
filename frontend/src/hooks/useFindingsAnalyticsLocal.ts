@@ -3,34 +3,46 @@
  *
  * All findings consumers (FindingsView, FindingsRail, FindingsContextPanel,
  * OrganContextPanel, SyndromeContextPanel) use this hook instead of
- * duplicating the derivation pipeline. React Query's 5-min stale cache
+ * duplicating the derivation pipeline. React Query's 30-min stale cache
  * ensures the underlying useFindings() call returns the same cached
  * response — no extra API calls.
  *
- * Phase 2b: Settings transforms (scheduled-only, recovery pooling, effect
- * size, multiplicity) are now applied server-side. This hook receives
- * pre-transformed findings and runs only the derivation pipeline
- * (endpoint summaries, syndromes, coherence, signal scores).
+ * Phase 3A: Heavy computation (endpoint summaries, syndromes, signal scores)
+ * runs in a Web Worker to avoid blocking the main thread. Falls back to
+ * synchronous computation if the worker fails to load.
  */
 
-import { useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useFindings } from "@/hooks/useFindings";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
+import type { FindingsAnalyticsResult, FindingsAnalytics } from "@/contexts/FindingsAnalyticsContext";
+import type { FindingsFilters } from "@/types/analysis";
+import type { AnalyticsWorkerInput, AnalyticsWorkerOutput } from "@/workers/findingsAnalytics.worker";
+
+// Sync fallback imports — only used if worker fails
 import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
 import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
-import { evaluateLabRules, getClinicalFloor, getClinicalAdditive } from "@/lib/lab-clinical-catalog";
+import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
+import { computeGLower } from "@/lib/g-lower";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
-import type { FindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
-import type { FindingsFilters } from "@/types/analysis";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
   organ_system: null, endpoint_label: null, dose_response_pattern: null,
+};
+
+const EMPTY_ANALYTICS: FindingsAnalytics = {
+  endpoints: [],
+  syndromes: [],
+  organCoherence: new Map(),
+  labMatches: [],
+  signalScores: new Map(),
+  endpointSexes: new Map(),
 };
 
 export function useFindingsAnalyticsLocal(studyId: string | undefined): FindingsAnalyticsResult {
@@ -38,117 +50,198 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
   const { settings } = useStudySettings();
   const statMethods = { effectSize: settings.effectSize, multiplicity: settings.multiplicity };
   const { data: studyMeta } = useStudyMetadata(studyId ?? "");
-
-  // Organ weight normalization — shared React Query key with findings, zero extra API calls.
-  // Provides NormalizationContext[] for syndrome magnitude floors and B-7 adversity.
   const normalization = useOrganWeightNormalization(studyId, true, statMethods.effectSize);
 
-  // Findings arrive pre-transformed from backend (settings already applied)
   const activeFindings = useMemo(() => data?.findings ?? [], [data?.findings]);
-
-  // Detect Welch p-value availability for dropdown enablement
-  const welchAvailable = useMemo(
-    () => checkWelchPValues(activeFindings),
-    [activeFindings],
-  );
-
-  const endpointSummaries = useMemo(() => {
-    if (!activeFindings.length) return [];
-    const rows = mapFindingsToRows(activeFindings);
-    const summaries = deriveEndpointSummaries(rows);
-    if (data?.dose_groups) {
-      const noaelMap = computeEndpointNoaelMap(activeFindings, data.dose_groups);
-      for (const ep of summaries) {
-        const noael = noaelMap.get(ep.endpoint_label);
-        if (noael) {
-          ep.noaelTier = noael.combined.tier;
-          ep.noaelDoseValue = noael.combined.doseValue;
-          ep.noaelDoseUnit = noael.combined.doseUnit;
-          if (noael.bySex.size >= 2) ep.noaelBySex = noael.bySex;
-        }
-      }
-    }
-    // ECI: attach endpoint confidence integrity assessment
-    attachEndpointConfidence(summaries, activeFindings, studyMeta?.has_estrous_data ?? false);
-    // Pharmacological candidate: bubble up from finding-level _confidence to endpoint summary
-    for (const ep of summaries) {
-      for (const f of activeFindings) {
-        if ((f.endpoint_label ?? f.finding) === ep.endpoint_label && f._confidence?._pharmacological_candidate) {
-          ep.isPharmacologicalCandidate = true;
-          // Extract D9 rationale for tooltip
-          const d9 = f._confidence.dimensions?.find(d => d.dimension === "D9");
-          if (d9?.rationale) ep.pharmacologicalRationale = d9.rationale;
-          break;
-        }
-      }
-    }
-    return summaries;
-  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data]);
-
   const normContexts = normalization.state?.contexts;
-  const organCoherence = useMemo(() => deriveOrganCoherence(endpointSummaries), [endpointSummaries]);
-  const syndromes = useMemo(
-    () => detectCrossDomainSyndromes(endpointSummaries, normContexts),
-    [endpointSummaries, normContexts],
-  );
-  const labMatches = useMemo(
-    () => evaluateLabRules(endpointSummaries, organCoherence, syndromes),
-    [endpointSummaries, organCoherence, syndromes],
-  );
 
-  const signalScores = useMemo(() => {
-    const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; clinicalAdditive: number; sexConcordanceBoost: number; confidenceMultiplier: number }>();
-    for (const ep of endpointSummaries) {
-      let synBoost = 0;
-      for (const syn of syndromes) {
-        if (syn.matchedEndpoints.some((m) => m.endpoint_label === ep.endpoint_label)) {
-          synBoost = syn.confidence === "HIGH" ? 6 : syn.confidence === "MODERATE" ? 3 : 1;
-          break;
-        }
-      }
-      const coh = organCoherence.get(ep.organ_system);
-      const cohBoost = coh ? Math.min(coh.domainCount - 1, 3) * 2 : 0;
-      let floor = 0;
-      let clinAdd = 0;
-      for (const match of labMatches) {
-        if (match.matchedEndpoints.includes(ep.endpoint_label)) {
-          floor = Math.max(floor, getClinicalFloor(match.severity));
-          clinAdd = Math.max(clinAdd, getClinicalAdditive(match.severity));
-        }
-      }
-      const sexConc = getSexConcordanceBoost(ep);
-      const conf = classifyEndpointConfidence(ep);
-      const confMult = getConfidenceMultiplier(conf);
-      if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinAdd > 0 || sexConc !== 0 || confMult !== 1) {
-        boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalAdditive: clinAdd, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult });
+  // ── Worker lifecycle ──
+  // Check support once during state init (avoids setState in effect body).
+  // Runtime errors (script load failure) handled via onerror callback.
+  const workerRef = useRef<Worker | null>(null);
+  const [workerSupported] = useState(() => typeof Worker !== "undefined");
+  const [workerFailed, setWorkerFailed] = useState(false);
+  const [workerResult, setWorkerResult] = useState<AnalyticsWorkerOutput | null>(null);
+  const useWorker = workerSupported && !workerFailed;
+
+  useEffect(() => {
+    if (!workerSupported) return;
+    const worker = new Worker(
+      new URL("../workers/findingsAnalytics.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    worker.onmessage = (e: MessageEvent<AnalyticsWorkerOutput>) => {
+      setWorkerResult(e.data);
+    };
+    worker.onerror = () => {
+      setWorkerFailed(true);
+      worker.terminate();
+      workerRef.current = null;
+    };
+    workerRef.current = worker;
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [workerSupported]);
+
+  // Post data to worker when inputs change
+  useEffect(() => {
+    if (!workerRef.current || !activeFindings.length) return;
+    const input: AnalyticsWorkerInput = {
+      findings: activeFindings,
+      doseGroups: data?.dose_groups,
+      hasEstrousData: studyMeta?.has_estrous_data ?? false,
+      normContexts,
+    };
+    workerRef.current.postMessage(input);
+  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts]);
+
+  // ── Sync fallback (used when worker not available) ──
+  const syncAnalytics = useMemo(() => {
+    if (useWorker) return null; // worker handles it
+    if (!activeFindings.length) return EMPTY_ANALYTICS;
+    return computeAnalyticsSync(activeFindings, data?.dose_groups, studyMeta?.has_estrous_data ?? false, normContexts);
+  }, [useWorker, activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts]);
+
+  // ── Merge worker result into analytics shape ──
+  const analytics = useMemo((): FindingsAnalytics => {
+    // Prefer worker result when available
+    if (workerResult && useWorker) {
+      return {
+        endpoints: workerResult.endpoints,
+        syndromes: workerResult.syndromes,
+        organCoherence: workerResult.organCoherence,
+        labMatches: workerResult.labMatches,
+        signalScores: workerResult.signalScores,
+        endpointSexes: workerResult.endpointSexes,
+        activeEffectSizeMethod: statMethods.effectSize,
+        activeMultiplicityMethod: statMethods.multiplicity,
+        hasWelchPValues: workerResult.hasWelchPValues,
+        normalizationContexts: normContexts,
+      };
+    }
+    // Sync fallback
+    if (syncAnalytics) {
+      return {
+        ...syncAnalytics,
+        activeEffectSizeMethod: statMethods.effectSize,
+        activeMultiplicityMethod: statMethods.multiplicity,
+        normalizationContexts: normContexts,
+      };
+    }
+    // Worker is computing — return previous result or empty
+    return {
+      ...EMPTY_ANALYTICS,
+      activeEffectSizeMethod: statMethods.effectSize,
+      activeMultiplicityMethod: statMethods.multiplicity,
+      normalizationContexts: normContexts,
+    };
+  }, [workerResult, useWorker, syncAnalytics, statMethods.effectSize, statMethods.multiplicity, normContexts]);
+
+  return { analytics, data, activeFindings, isLoading, isFetching, isPlaceholderData, error: error as Error | null };
+}
+
+
+// ── Sync computation (identical logic to worker, used as fallback) ──
+
+function computeAnalyticsSync(
+  findings: import("@/types/analysis").UnifiedFinding[],
+  doseGroups: import("@/types/analysis").DoseGroup[] | undefined,
+  hasEstrousData: boolean,
+  normContexts: import("@/lib/organ-weight-normalization").NormalizationContext[] | undefined,
+): FindingsAnalytics {
+  const rows = mapFindingsToRows(findings);
+  const endpoints = deriveEndpointSummaries(rows);
+  if (doseGroups) {
+    const noaelMap = computeEndpointNoaelMap(findings, doseGroups);
+    for (const ep of endpoints) {
+      const noael = noaelMap.get(ep.endpoint_label);
+      if (noael) {
+        ep.noaelTier = noael.combined.tier;
+        ep.noaelDoseValue = noael.combined.doseValue;
+        ep.noaelDoseUnit = noael.combined.doseUnit;
+        if (noael.bySex.size >= 2) ep.noaelBySex = noael.bySex;
       }
     }
-    const scored = withSignalScores(endpointSummaries, boostMap);
-    const map = new Map<string, number>();
-    for (const ep of scored) map.set(ep.endpoint_label, ep.signal);
-    return map;
-  }, [endpointSummaries, organCoherence, syndromes, labMatches]);
-
-  const endpointSexes = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const ep of endpointSummaries) {
-      map.set(ep.endpoint_label, ep.sexes);
+  }
+  attachEndpointConfidence(endpoints, findings, hasEstrousData);
+  for (const ep of endpoints) {
+    for (const f of findings) {
+      if ((f.endpoint_label ?? f.finding) === ep.endpoint_label && f._confidence?._pharmacological_candidate) {
+        ep.isPharmacologicalCandidate = true;
+        const d9 = f._confidence.dimensions?.find((d: { dimension: string }) => d.dimension === "D9");
+        if (d9?.rationale) ep.pharmacologicalRationale = d9.rationale;
+        break;
+      }
     }
-    return map;
-  }, [endpointSummaries]);
+  }
+  const organCoherence = deriveOrganCoherence(endpoints);
+  const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
+  const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
 
-  const analytics = useMemo(() => ({
-    endpoints: endpointSummaries,
+  // R1: Attach g_lower to each endpoint (per-sex worst-case when bySex available)
+  for (const ep of endpoints) {
+    if (ep.controlStats && ep.worstTreatedStats && ep.maxEffectSize !== null) {
+      const n1 = ep.controlStats.n;
+      const n2 = ep.worstTreatedStats.n;
+      // Aggregate g_lower as baseline
+      let gl = computeGLower(ep.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
+      // Per-sex: use each sex's effect size with aggregate n (SexEndpointSummary
+      // doesn't carry per-sex n, but n1/n2 are conservative approximations since
+      // per-sex groups are same size or smaller). Take worst-case across sexes.
+      if (ep.bySex && ep.bySex.size >= 2) {
+        for (const sexData of ep.bySex.values()) {
+          if (sexData.maxEffectSize != null) {
+            const sexGL = computeGLower(sexData.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
+            if (sexGL > gl) gl = sexGL;
+          }
+        }
+      }
+      ep.gLower = gl;
+    }
+  }
+
+  const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; clinicalMultiplier: number; sexConcordanceBoost: number; confidenceMultiplier: number }>();
+  for (const ep of endpoints) {
+    let synBoost = 0;
+    for (const syn of syndromes) {
+      if (syn.matchedEndpoints.some((m) => m.endpoint_label === ep.endpoint_label)) {
+        synBoost = syn.confidence === "HIGH" ? 6 : syn.confidence === "MODERATE" ? 3 : 1;
+        break;
+      }
+    }
+    const coh = organCoherence.get(ep.organ_system);
+    const cohBoost = coh ? Math.min(coh.domainCount - 1, 3) * 2 : 0;
+    let floor = 0;
+    let clinMult = 1.0;
+    for (const match of labMatches) {
+      if (match.matchedEndpoints.includes(ep.endpoint_label)) {
+        floor = Math.max(floor, getClinicalFloor(match.severity));
+        clinMult = Math.max(clinMult, getClinicalMultiplier(match.severity));
+      }
+    }
+    const sexConc = getSexConcordanceBoost(ep);
+    const conf = classifyEndpointConfidence(ep);
+    const confMult = getConfidenceMultiplier(conf);
+    if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1) {
+      boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalMultiplier: clinMult, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult });
+    }
+  }
+  const scored = withSignalScores(endpoints, boostMap);
+  const signalScores = new Map<string, number>();
+  for (const ep of scored) signalScores.set(ep.endpoint_label, ep.signal);
+
+  const endpointSexes = new Map<string, string[]>();
+  for (const ep of endpoints) endpointSexes.set(ep.endpoint_label, ep.sexes);
+
+  return {
+    endpoints,
     syndromes,
     organCoherence,
     labMatches,
     signalScores,
     endpointSexes,
-    activeEffectSizeMethod: statMethods.effectSize,
-    activeMultiplicityMethod: statMethods.multiplicity,
-    hasWelchPValues: welchAvailable,
-    normalizationContexts: normContexts,
-  }), [endpointSummaries, syndromes, organCoherence, labMatches, signalScores, endpointSexes, statMethods.effectSize, statMethods.multiplicity, welchAvailable, normContexts]);
-
-  return { analytics, data, activeFindings, isLoading, isFetching, isPlaceholderData, error: error as Error | null };
+    hasWelchPValues: checkWelchPValues(findings),
+  };
 }

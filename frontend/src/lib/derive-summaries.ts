@@ -89,6 +89,8 @@ export interface EndpointSummary {
   controlStats?: { n: number; mean: number; sd: number } | null;
   /** REM-05: Group statistics for the worst treated group (highest |effect size|) */
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
+  /** R1: Lower confidence bound of |Hedges' g| (non-central t CI). Cross-study comparable. */
+  gLower?: number;
   /** Endpoint confidence integrity assessment (ECI) — SPEC-ECI-AMD-002 */
   endpointConfidence?: import("./endpoint-confidence").EndpointConfidenceResult;
   /** Per-sex ECI breakdown. Present when endpoint has data for multiple sexes. */

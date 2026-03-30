@@ -77,6 +77,24 @@
     "S1": { "floor": 0, "additive": 0 }
   },
 
+  "clinical_significance_multipliers": {
+    "_comment":"R3: Multiplicative boost on evidence components. Applied to evidence portion only (not base constants). Configurable per study.",
+    "S4": 3.0,
+    "S3": 2.0,
+    "S2": 1.4,
+    "S1": 1.0
+  },
+
+  "effect_size_confidence_level": {
+    "_comment":"R1: One-sided confidence level for g_lower CI (non-central t). 0 = point estimate, 0.80 = default, 0.95 = conservative.",
+    "default": 0.80
+  },
+
+  "effect_size_sigmoid_scale": {
+    "_comment":"R2: Maximum contribution of the statistical component. sigmoid(g_lower) * this value.",
+    "default": 4.0
+  },
+
   "backend_pattern_scores": {
     "_comment":"Backend default pattern scores (overridable per study via threshold_config.json)",
     "monotonic_increase": 1.0,

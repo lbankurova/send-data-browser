@@ -91,7 +91,7 @@ export function getClinicalFloor(severity: "S1" | "S2" | "S3" | "S4"): number {
   return CLINICAL_FLOOR[severity];
 }
 
-// GAP-123: Additive boost — always added to base score
+// GAP-123: Additive boost — always added to base score (legacy, kept for backward compat)
 const CLINICAL_ADDITIVE: Record<string, number> = Object.fromEntries(
   Object.entries(scoringConfig.clinical_severity_floors)
     .filter(([k]) => !k.startsWith("_"))
@@ -101,6 +101,25 @@ const CLINICAL_ADDITIVE: Record<string, number> = Object.fromEntries(
 export function getClinicalAdditive(severity: "S1" | "S2" | "S3" | "S4"): number {
   return CLINICAL_ADDITIVE[severity];
 }
+
+// R3: Multiplicative boost on evidence components
+const CLINICAL_MULTIPLIER: Record<string, number> = Object.fromEntries(
+  Object.entries(
+    (scoringConfig as Record<string, unknown>).clinical_significance_multipliers as Record<string, number>
+  ).filter(([k]) => !k.startsWith("_"))
+);
+
+export function getClinicalMultiplier(severity: "S1" | "S2" | "S3" | "S4"): number {
+  return CLINICAL_MULTIPLIER[severity] ?? 1.0;
+}
+
+// R1: g_lower confidence level from config
+const _esConf = (scoringConfig as Record<string, unknown>).effect_size_confidence_level as { default: number } | undefined;
+export const EFFECT_SIZE_CONFIDENCE_LEVEL: number = _esConf?.default ?? 0.80;
+
+// R2: sigmoid scale from config
+const _esScale = (scoringConfig as Record<string, unknown>).effect_size_sigmoid_scale as { default: number } | undefined;
+export const EFFECT_SIZE_SIGMOID_SCALE: number = _esScale?.default ?? 4.0;
 
 // ─── Synonym Lookup (from shared/rules/lab-clinical-rules.json) ────
 

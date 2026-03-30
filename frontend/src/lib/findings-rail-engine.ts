@@ -6,6 +6,7 @@
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
+import { EFFECT_SIZE_SIGMOID_SCALE } from "@/lib/lab-clinical-catalog";
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ export interface SignalBoosts {
   syndromeBoost: number;    // 3 if in syndrome, 0 otherwise
   coherenceBoost: number;   // 2 for 3+ domains, 1 for 2, 0 otherwise
   clinicalFloor: number;    // S4=15, S3=8, S2=4, S1=0
-  clinicalAdditive: number; // GAP-123: always added to base (S4=5, S3=3, S2=2, S1=0)
+  clinicalMultiplier: number; // R3: evidence multiplier (S4=3.0, S3=2.0, S2=1.4, S1=1.0)
   sexConcordanceBoost: number; // GAP-123: organ-specific concordance/divergence boost
   confidenceMultiplier: number; // HIGH=1.0, MODERATE=0.7, LOW=0.4
 }
@@ -57,25 +58,40 @@ const PATTERN_WEIGHTS: Record<string, number> = {
 
 /**
  * SLA-02: Incidence domains get effectWeight=0 (no Cohen's d). To prevent
- * structural signal-score cap, boost pValueWeight by 25% and patternWeight
- * by 15% for non-continuous domains, allowing strong statistical evidence
- * alone to produce scores comparable to continuous endpoints.
+ * structural signal-score cap, boost patternWeight by 15% for non-continuous
+ * domains. (p-value boost removed in R1 — p-value no longer in formula.)
  */
-const INCIDENCE_P_VALUE_BOOST = 1.25;
 const INCIDENCE_PATTERN_BOOST = 1.15;
 
-// @field FIELD-34 — endpoint composite signal score
-export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
-  const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
-  const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
-  const rawP = ep.minPValue !== null ? Math.max(0, -Math.log10(Math.max(ep.minPValue, 1e-10))) : 0;
-  // SLA-02: boost p-value weight for incidence domains to compensate for missing effectWeight
-  const pValueWeight = isContinuous ? rawP : rawP * INCIDENCE_P_VALUE_BOOST;
-  const rawEffect = isContinuous ? (ep.maxEffectSize !== null ? Math.min(Math.abs(ep.maxEffectSize), 5) : 0) : 0;
-  const effectWeight = rawEffect;
-  const trBoost = ep.treatmentRelated ? 2 : 0;
+/** R2: Sigmoid transform — maps [0, inf) to [0, scale) with diminishing returns. */
+function sigmoid(x: number, scale: number): number {
+  return x <= 0 ? 0 : scale * x / (x + 1);
+}
 
-  // Per-sex pattern: use worst (highest-weight) per-sex pattern when patterns disagree
+// R2+R6: Sigmoid scale from config (loaded once at module init)
+const DEFAULT_SIGMOID_SCALE = EFFECT_SIZE_SIGMOID_SCALE;
+
+// @field FIELD-34 — endpoint composite signal score
+// R1: g_lower replaces -log10(p) + effect size as the statistical dimension
+// R2: sigmoid transform bounds statistical component to 0-4
+// R3: multiplicative clinical boost on evidence components only
+export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
+  // ── Statistical component (R1 + R2) ──
+  // Use g_lower (pre-computed, attached to ep) when available.
+  // For incidence endpoints without g_lower, use maxIncidence as proxy.
+  const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
+  const gLower = ep.gLower ?? (isContinuous && ep.maxEffectSize !== null ? Math.abs(ep.maxEffectSize) : 0);
+  const statistical = isContinuous || gLower > 0
+    ? sigmoid(gLower, DEFAULT_SIGMOID_SCALE)
+    : (ep.maxIncidence != null ? sigmoid(ep.maxIncidence * 3, DEFAULT_SIGMOID_SCALE) : 0);
+    // Incidence proxy: maxIncidence * 3 maps 0.6 (60% incidence) -> sigmoid(1.8) -> 2.57
+
+  // ── Base constants (R3: categorical labels, not evidence) ──
+  const severityWeight = ep.worstSeverity === "adverse" ? 3 : 1;
+  const trBoost = ep.treatmentRelated ? 2 : 0;
+  const baseConstants = severityWeight + trBoost;
+
+  // ── Pattern weight (unchanged logic) ──
   let rawPatternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
   if (ep.bySex && ep.bySex.size >= 2) {
     const sexPatterns = [...ep.bySex.values()].map(s => s.pattern);
@@ -86,18 +102,21 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
       }
     }
   }
-
   const confMult = boosts?.confidenceMultiplier ?? 1;
-  // SLA-02: boost pattern weight for incidence domains
   const patternMult = isContinuous ? 1.0 : INCIDENCE_PATTERN_BOOST;
   const patternWeight = rawPatternWeight * confMult * patternMult;
-  const base = severityWeight + pValueWeight + effectWeight + trBoost + patternWeight;
+
+  // ── Evidence components (R3: multiplied by clinical tier) ──
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;
-  const clinAdd = boosts?.clinicalAdditive ?? 0;
   const sexConc = boosts?.sexConcordanceBoost ?? 0;
+  const evidence = statistical + patternWeight + synBoost + cohBoost + sexConc;
+
+  // ── Clinical multiplier (R3: amplifies evidence, not constants) ──
+  const clinMult = boosts?.clinicalMultiplier ?? 1.0;
   const floor = boosts?.clinicalFloor ?? 0;
-  return Math.max(base + synBoost + cohBoost + clinAdd + sexConc, floor);
+
+  return Math.max(baseConstants + evidence * clinMult, floor);
 }
 
 // ─── Endpoint confidence classification ──────────────────────

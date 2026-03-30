@@ -391,41 +391,42 @@ describe("computeEndpointSignal — new boost fields", () => {
     expect(score).toBeGreaterThan(0);
   });
 
-  test("new fields default to 0 when not provided (backward compat)", () => {
-    const withOldBoosts = computeEndpointSignal(base, {
+  test("new fields default to neutral when not provided (backward compat)", () => {
+    const withDefaultBoosts = computeEndpointSignal(base, {
       syndromeBoost: 0,
       coherenceBoost: 0,
       clinicalFloor: 0,
-      clinicalAdditive: 0,
+      clinicalMultiplier: 1,
       sexConcordanceBoost: 0,
       confidenceMultiplier: 1,
     });
     const withoutBoosts = computeEndpointSignal(base);
-    expect(withOldBoosts).toBe(withoutBoosts);
+    expect(withDefaultBoosts).toBe(withoutBoosts);
   });
 
-  test("clinicalAdditive adds to score above floor", () => {
+  test("clinicalMultiplier amplifies evidence portion of score", () => {
     const without = computeEndpointSignal(base, {
       syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 4,
-      clinicalAdditive: 0, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
     });
-    const with2 = computeEndpointSignal(base, {
+    const with1_4 = computeEndpointSignal(base, {
       syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 4,
-      clinicalAdditive: 2, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      clinicalMultiplier: 1.4, sexConcordanceBoost: 0, confidenceMultiplier: 1,
     });
-    expect(with2).toBe(without + 2);
+    // Multiplier only applies to evidence portion, so with1_4 > without
+    expect(with1_4).toBeGreaterThan(without);
   });
 
-  test("sexConcordanceBoost adds to score", () => {
+  test("sexConcordanceBoost increases score", () => {
     const without = computeEndpointSignal(base, {
       syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
-      clinicalAdditive: 0, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
     });
     const with1_8 = computeEndpointSignal(base, {
       syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
-      clinicalAdditive: 0, sexConcordanceBoost: 1.8, confidenceMultiplier: 1,
+      clinicalMultiplier: 1, sexConcordanceBoost: 1.8, confidenceMultiplier: 1,
     });
-    expect(with1_8).toBe(without + 1.8);
+    expect(with1_8).toBeGreaterThan(without);
   });
 
   test("floor still acts as minimum when base + boosts < floor", () => {
@@ -439,21 +440,22 @@ describe("computeEndpointSignal — new boost fields", () => {
     });
     const score = computeEndpointSignal(weakBase, {
       syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 8,
-      clinicalAdditive: 3, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      clinicalMultiplier: 2.0, sexConcordanceBoost: 0, confidenceMultiplier: 1,
     });
-    expect(score).toBe(8); // floor wins over weak base + additive
+    expect(score).toBe(8); // floor wins over weak base * multiplier
   });
 
-  test("both new boosts stack with existing boosts", () => {
+  test("multiplier and concordance stack with existing boosts", () => {
     const noNew = computeEndpointSignal(base, {
       syndromeBoost: 3, coherenceBoost: 4, clinicalFloor: 0,
-      clinicalAdditive: 0, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
     });
     const withNew = computeEndpointSignal(base, {
       syndromeBoost: 3, coherenceBoost: 4, clinicalFloor: 0,
-      clinicalAdditive: 2, sexConcordanceBoost: 1.5, confidenceMultiplier: 1,
+      clinicalMultiplier: 1.4, sexConcordanceBoost: 1.5, confidenceMultiplier: 1,
     });
-    expect(withNew).toBe(noNew + 2 + 1.5);
+    // Both multiplier and concordance increase the score
+    expect(withNew).toBeGreaterThan(noNew);
   });
 });
 
