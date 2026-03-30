@@ -20,7 +20,7 @@ from services.analysis.parameterized_pipeline import ParameterizedAnalysisPipeli
 from services.analysis.analysis_settings import AnalysisSettings
 from services.analysis.subject_context import build_subject_context
 from services.analysis.provenance import generate_provenance_messages
-from services.analysis.mortality import compute_study_mortality
+from services.analysis.mortality import compute_study_mortality, qualify_control_mortality
 from generator.tumor_summary import build_tumor_summary
 from generator.food_consumption_summary import build_food_consumption_summary_with_subjects
 from generator.pk_integration import build_pk_integration
@@ -102,6 +102,17 @@ def generate(study_id: str):
     try:
         mortality = compute_study_mortality(study, _subjects, _dose_groups)
         early_death_subjects = mortality.get("early_death_subjects") or None
+
+        # Phase B: Control mortality qualification (regulatory thresholds)
+        from services.analysis.hcd import get_study_duration_days
+        duration_days = get_study_duration_days(study)
+        qualification = qualify_control_mortality(mortality, _dose_groups, duration_days)
+        mortality["qualification"] = qualification
+        if qualification["suppress_noael"]:
+            print(f"  CRITICAL: Control mortality qualification suppresses NOAEL")
+        for flag in qualification.get("qualification_flags", []):
+            print(f"  {flag['severity'].upper()}: {flag['message']}")
+
         _write_json(out_dir / "study_mortality.json", mortality)
         n_early = len(early_death_subjects) if early_death_subjects else 0
         print(f"  {mortality['total_deaths']} deaths, {mortality['total_accidental']} accidental, {n_early} early-death subjects")

@@ -236,6 +236,131 @@ def compute_study_mortality(
     }
 
 
+def qualify_control_mortality(
+    mortality: dict,
+    dose_groups: list[dict],
+    duration_days: int | None,
+) -> dict:
+    """Qualify control group mortality against regulatory thresholds.
+
+    Implements Section 6 of control-groups-model-29mar2026.md:
+      Step 1: mortality_rate = control_deaths / control_n
+      Step 2: duration-specific regulatory thresholds (EPA/OECD)
+
+    Returns dict with qualification results merged into the mortality summary.
+    """
+    # Find control group (dose_level 0)
+    control_dg = next((dg for dg in dose_groups if dg["dose_level"] == 0), None)
+    if control_dg is None:
+        return {
+            "control_mortality_rate": None,
+            "control_survival_rate": None,
+            "control_n": None,
+            "control_deaths": None,
+            "duration_days": duration_days,
+            "duration_weeks": round(duration_days / 7, 1) if duration_days else None,
+            "qualification_flags": [],
+            "suppress_noael": False,
+        }
+
+    control_n = control_dg.get("n_total", 0)
+    if control_n == 0:
+        return {
+            "control_mortality_rate": None,
+            "control_survival_rate": None,
+            "control_n": 0,
+            "control_deaths": 0,
+            "duration_days": duration_days,
+            "duration_weeks": round(duration_days / 7, 1) if duration_days else None,
+            "qualification_flags": [],
+            "suppress_noael": False,
+        }
+
+    # Count control deaths from by_dose
+    control_deaths = 0
+    for bd in mortality.get("by_dose", []):
+        if bd["dose_level"] == 0:
+            control_deaths = bd["deaths"]
+            break
+
+    mortality_rate = control_deaths / control_n
+    survival_rate = 1.0 - mortality_rate
+    duration_weeks = round(duration_days / 7, 1) if duration_days else None
+
+    flags: list[dict] = []
+    suppress_noael = False
+
+    # Step 2: Regulatory floor thresholds
+    if duration_days is not None:
+        weeks = duration_days / 7
+
+        # Carcinogenicity (>= 78 weeks / 18 months)
+        if weeks >= 78:
+            if survival_rate < 0.25:
+                flags.append({
+                    "severity": "critical",
+                    "code": "CTRL_MORT_CRITICAL",
+                    "message": (
+                        f"Control survival {survival_rate:.0%} is below 25% minimum "
+                        f"-- study uninterpretable per OECD TG 451/EPA 870.4200"
+                    ),
+                })
+                suppress_noael = True
+            elif survival_rate < 0.50:
+                flags.append({
+                    "severity": "warning",
+                    "code": "CTRL_MORT_ELEVATED",
+                    "message": (
+                        f"Control survival {survival_rate:.0%} is below EPA 50% threshold "
+                        f"at {duration_weeks}w -- negative findings may be unreliable"
+                    ),
+                })
+
+        # Subchronic (<= 26 weeks)
+        elif weeks <= 26:
+            if mortality_rate > 0.10:
+                flags.append({
+                    "severity": "critical",
+                    "code": "CTRL_MORT_CRITICAL",
+                    "message": (
+                        f"Control mortality {mortality_rate:.0%} exceeds 10% "
+                        f"in {duration_weeks}w study -- investigate study validity"
+                    ),
+                })
+                suppress_noael = True
+            elif mortality_rate > 0.05:
+                flags.append({
+                    "severity": "warning",
+                    "code": "CTRL_MORT_ELEVATED",
+                    "message": (
+                        f"Control mortality {mortality_rate:.0%} exceeds 5% "
+                        f"for subchronic ({duration_weeks}w) study"
+                    ),
+                })
+
+            # 13-week specific
+            if weeks <= 13 and mortality_rate > 0.02:
+                flags.append({
+                    "severity": "warning",
+                    "code": "CTRL_MORT_ALERT",
+                    "message": (
+                        f"Control mortality {mortality_rate:.0%} in "
+                        f"{duration_weeks}w study requires investigation"
+                    ),
+                })
+
+    return {
+        "control_mortality_rate": round(mortality_rate, 4),
+        "control_survival_rate": round(survival_rate, 4),
+        "control_n": control_n,
+        "control_deaths": control_deaths,
+        "duration_days": duration_days,
+        "duration_weeks": duration_weeks,
+        "qualification_flags": flags,
+        "suppress_noael": suppress_noael,
+    }
+
+
 def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dict]:
     """Parse DS domain and classify each subject's disposition."""
     if "ds" not in study.xpt_files:

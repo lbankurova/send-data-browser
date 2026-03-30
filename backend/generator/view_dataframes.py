@@ -382,6 +382,44 @@ def build_noael_summary(
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
     dose_unit_map = {dg["dose_level"]: dg.get("dose_unit") for dg in dose_groups}
 
+    # If control mortality qualification says suppress, NOAEL is indeterminate
+    ctrl_mort_suppress = (
+        mortality is not None
+        and mortality.get("qualification", {}).get("suppress_noael", False)
+    )
+    if ctrl_mort_suppress:
+        for sex_filter in ["M", "F", "Combined"]:
+            rows.append({
+                "sex": sex_filter,
+                "noael_dose_level": None,
+                "noael_label": "Not established",
+                "noael_dose_value": None,
+                "noael_dose_unit": None,
+                "loael_dose_level": None,
+                "loael_label": "N/A",
+                "n_adverse_at_loael": 0,
+                "adverse_domains_at_loael": [],
+                "noael_confidence": 0.0,
+                "noael_derivation": {
+                    "method": "control_mortality_critical",
+                    "classification_method": "n/a",
+                    "loael_dose_level": None,
+                    "loael_label": None,
+                    "adverse_findings_at_loael": [],
+                    "n_adverse_at_loael": 0,
+                    "confidence": 0.0,
+                    "confidence_penalties": ["control_mortality_critical"],
+                },
+                "mortality_cap_applied": False,
+                "mortality_cap_dose_value": None,
+                "scheduled_noael_dose_level": None,
+                "scheduled_noael_label": "Not established",
+                "scheduled_noael_dose_value": None,
+                "scheduled_loael_dose_level": None,
+                "scheduled_noael_differs": False,
+            })
+        return rows
+
     # If no concurrent control, NOAEL is indeterminate for all sexes
     if not has_concurrent_control:
         for sex_filter in ["M", "F", "Combined"]:
