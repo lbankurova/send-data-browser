@@ -11,7 +11,7 @@ export function useFindingContext(
     queryKey: ["finding-context", studyId, findingId, params],
     queryFn: () => fetchFindingContext(studyId!, findingId!, params || undefined),
     enabled: !!studyId && !!findingId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     // NOTE: keepPreviousData removed — it caused stale data from the previous
     // finding to render in the context panel (wrong statistics, duplicated group
     // labels) while the new finding's context loaded.

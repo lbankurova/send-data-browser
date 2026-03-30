@@ -8,7 +8,7 @@ export function useNoaelSummary(studyId: string | undefined) {
     queryKey: ["noael-summary", studyId, params],
     queryFn: () => fetchNoaelSummary(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

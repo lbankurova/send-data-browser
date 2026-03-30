@@ -8,7 +8,7 @@ export function useTargetOrganSummary(studyId: string | undefined) {
     queryKey: ["target-organ-summary", studyId, params],
     queryFn: () => fetchTargetOrganSummary(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

@@ -19,6 +19,6 @@ export function useFoodConsumptionSummary(studyId: string | undefined) {
       }
     },
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

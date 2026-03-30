@@ -12,7 +12,7 @@ export function useTimecourseGroup(
     queryKey: ["timecourse", studyId, domain, testCode, "group", sex, includeRecovery],
     queryFn: () => fetchTimecourseGroup(studyId!, domain!, testCode!, sex, includeRecovery),
     enabled: !!studyId && !!domain && !!testCode,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }
 
@@ -27,6 +27,6 @@ export function useTimecourseSubject(
     queryKey: ["timecourse", studyId, domain, testCode, "subject", sex, includeRecovery],
     queryFn: () => fetchTimecourseSubject(studyId!, domain!, testCode!, sex, includeRecovery),
     enabled: !!studyId && !!domain && !!testCode,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

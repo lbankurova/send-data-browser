@@ -83,7 +83,7 @@ export function useSyndromeCorrelations(
       return adapted;
     },
     enabled: !!studyId && !!syndromeId && sortedLabels.length >= 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 
   return query;

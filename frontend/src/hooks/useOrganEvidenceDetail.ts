@@ -8,7 +8,7 @@ export function useOrganEvidenceDetail(studyId: string | undefined) {
     queryKey: ["organ-evidence-detail", studyId, params],
     queryFn: () => fetchOrganEvidenceDetail(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

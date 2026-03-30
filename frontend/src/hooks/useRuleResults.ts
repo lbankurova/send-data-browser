@@ -8,7 +8,7 @@ export function useRuleResults(studyId: string | undefined) {
     queryKey: ["rule-results", studyId, params],
     queryFn: () => fetchRuleResults(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

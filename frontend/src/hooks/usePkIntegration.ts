@@ -7,6 +7,6 @@ export function usePkIntegration(studyId: string | undefined) {
     queryKey: ["pk-integration", studyId],
     queryFn: () => fetchPkIntegration(studyId!),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

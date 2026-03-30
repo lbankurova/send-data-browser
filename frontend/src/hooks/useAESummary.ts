@@ -8,7 +8,7 @@ export function useAESummary(studyId: string | undefined) {
     queryKey: ["ae-summary", studyId, params],
     queryFn: () => fetchAESummary(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

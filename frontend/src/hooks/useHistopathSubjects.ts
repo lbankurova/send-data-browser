@@ -9,6 +9,6 @@ export function useHistopathSubjects(
     queryKey: ["histopath-subjects", studyId, specimen],
     queryFn: () => fetchHistopathSubjects(studyId!, specimen!),
     enabled: !!studyId && !!specimen,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

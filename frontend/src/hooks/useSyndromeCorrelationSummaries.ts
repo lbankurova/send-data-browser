@@ -45,6 +45,6 @@ export function useSyndromeCorrelationSummaries(
       return new Map(Object.entries(summaries));
     },
     enabled: !!studyId && syndromes.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

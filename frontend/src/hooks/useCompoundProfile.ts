@@ -8,7 +8,7 @@ export function useCompoundProfile(studyId: string | undefined) {
     queryKey: ["compound-profile", studyId],
     queryFn: () => fetchCompoundProfile(studyId!),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }
 

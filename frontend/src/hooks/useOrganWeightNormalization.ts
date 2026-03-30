@@ -256,7 +256,7 @@ export function useOrganWeightNormalization(
     queryKey: ["findings", studyId, 1, 10000, ALL_FILTERS, params],
     queryFn: () => fetchFindings(studyId!, 1, 10000, ALL_FILTERS, params || undefined),
     enabled: fetchEnabled && !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
   const { data: meta } = useStudyMetadata(studyId ?? "");
   const { data: overrideData } = useAnnotations<NormalizationOverride>(

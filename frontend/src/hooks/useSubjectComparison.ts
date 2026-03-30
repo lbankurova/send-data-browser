@@ -10,6 +10,6 @@ export function useSubjectComparison(
     queryKey: ["subject-comparison", studyId, ...subjectIds.slice().sort()],
     queryFn: () => fetchSubjectComparison(studyId!, subjectIds),
     enabled: (options?.enabled ?? true) && !!studyId && subjectIds.length >= 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

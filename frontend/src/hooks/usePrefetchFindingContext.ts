@@ -20,7 +20,7 @@ export function usePrefetchFindingContext(studyId: string | undefined) {
       queryClient.prefetchQuery({
         queryKey: ["finding-context", studyId, findingId, params],
         queryFn: () => fetchFindingContext(studyId, findingId, params || undefined),
-        staleTime: 5 * 60 * 1000,
+        staleTime: 30 * 60 * 1000,
       });
     },
     [queryClient, studyId, params],

@@ -9,7 +9,7 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -87,6 +87,56 @@ def _resolve_study(study_id: str) -> StudyInfo:
     if study_id not in _studies:
         raise HTTPException(status_code=404, detail=f"Study '{study_id}' not found")
     return _studies[study_id]
+
+
+# ---------------------------------------------------------------------------
+# HTTP caching helpers
+# ---------------------------------------------------------------------------
+
+ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"
+
+# Views where user overrides affect the response (must include override
+# file mtimes in ETag to avoid serving stale data after annotation edits).
+_OVERRIDE_AFFECTED_VIEWS = {"unified-findings", "noael-summary"}
+
+_OVERRIDE_FILES = ("pattern_overrides.json", "tox_findings.json", "noael_overrides.json")
+
+
+def _compute_etag(study_id: str, file_name: str, view_name: str, cache_key: str | None = None) -> str | None:
+    """Build an ETag from file mtimes (generated data + overrides when applicable).
+
+    Returns a quoted ETag string like '"abc123"', or None if file not found.
+    """
+    if cache_key:
+        # Parameterized (non-default settings): ETag = settings hash + override mtimes
+        parts = [cache_key]
+    else:
+        # Default settings: ETag = generated file mtime
+        file_path = GENERATED_DIR / study_id / file_name
+        if not file_path.exists():
+            file_path = SCENARIOS_DIR / study_id / file_name
+        if not file_path.exists():
+            return None
+        parts = [str(file_path.stat().st_mtime_ns)]
+
+    # Include override file mtimes for views that apply overrides
+    if view_name in _OVERRIDE_AFFECTED_VIEWS:
+        ann_dir = ANNOTATIONS_DIR / study_id
+        for ovr_file in _OVERRIDE_FILES:
+            ovr_path = ann_dir / ovr_file
+            if ovr_path.exists():
+                parts.append(str(ovr_path.stat().st_mtime_ns))
+
+    import hashlib
+    raw = "|".join(parts)
+    return f'"{hashlib.md5(raw.encode()).hexdigest()[:16]}"'
+
+
+def _set_cache_headers(response: Response, etag: str | None, max_age: int = 300):
+    """Set Cache-Control and ETag on the response."""
+    response.headers["Cache-Control"] = f"public, max-age={max_age}"
+    if etag:
+        response.headers["ETag"] = etag
 
 
 def _load_mortality(study_id: str) -> dict | None:
@@ -320,6 +370,8 @@ async def get_static_chart(study_id: str, chart_name: str):
 def get_analysis_view(
     study_id: str,
     view_name: str,
+    request: Request,
+    response: Response,
     settings: AnalysisSettings = Depends(parse_settings_from_query),
 ):
     """Return analysis view JSON, parameterized by settings.
@@ -346,12 +398,23 @@ def get_analysis_view(
                 status_code=404,
                 detail=f"Analysis data not generated for {study_id}/{view_name}. Run the generator first.",
             )
+
+        # HTTP caching: default views are stable -- cache 5 min, ETag for 304
+        etag = _compute_etag(study_id, file_name, view_name)
+        if etag and request.headers.get("if-none-match") == etag:
+            return Response(status_code=304)
+        _set_cache_headers(response, etag, max_age=300)
+
         return _apply_overrides(data, study_id, view_name)
 
     # Non-default settings or scoring -> cache -> pipeline
     cache_key = settings.settings_hash(scoring=scoring)
     cached = read_cache(study_id, cache_key, view_name)
     if cached is not None:
+        etag = _compute_etag(study_id, file_name, view_name, cache_key=cache_key)
+        if etag and request.headers.get("if-none-match") == etag:
+            return Response(status_code=304)
+        _set_cache_headers(response, etag, max_age=300)
         return _apply_overrides(cached, study_id, view_name)
 
     # Cache miss -> file-based lock prevents thundering herd across workers.
@@ -388,14 +451,15 @@ def get_analysis_view(
         log.info("Waiting for pipeline %s/%s (hash=%s)...", study_id, view_name, cache_key)
         cached = wait_for_cache(study_id, cache_key, view_name)
         if cached is not None:
+            _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key), max_age=300)
             return _apply_overrides(cached, study_id, view_name)
         raise HTTPException(status_code=503, detail="Pipeline computation timed out")
 
     # Return the requested view from cache
-    view_key = view_name.replace("-", "_")
     cached = read_cache(study_id, cache_key, view_name)
     if cached is None:
         raise HTTPException(status_code=500, detail=f"Pipeline did not produce {view_name}")
+    _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key), max_age=300)
     return _apply_overrides(cached, study_id, view_name)
 
 

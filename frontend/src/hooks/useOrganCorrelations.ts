@@ -11,6 +11,6 @@ export function useOrganCorrelations(
     queryKey: ["organ-correlations", studyId, organKey, params],
     queryFn: () => fetchOrganCorrelations(studyId!, organKey!, params || undefined),
     enabled: !!studyId && !!organKey,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 }

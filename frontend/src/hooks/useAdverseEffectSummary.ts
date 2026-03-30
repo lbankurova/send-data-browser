@@ -8,7 +8,7 @@ export function useAdverseEffectSummary(studyId: string | undefined) {
     queryKey: ["adverse-effect-summary", studyId, params],
     queryFn: () => fetchAdverseEffectSummary(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

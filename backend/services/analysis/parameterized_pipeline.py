@@ -107,14 +107,23 @@ class ParameterizedAnalysisPipeline:
         correlations = compute_correlations(findings)
         summary = _build_summary(findings, dose_groups)
 
+        # Strip generator-internal fields before building the response.
+        # These are consumed by correlations/onset/syndromes during generation
+        # but never by the frontend. Reduces payload by ~12%.
+        _INTERNAL_FIELDS = {"raw_subject_values", "raw_values"}
+        stripped = [
+            {k: v for k, v in f.items() if k not in _INTERNAL_FIELDS}
+            for f in findings
+        ]
+
         unified = {
             "study_id": self.study.study_id,
             "dose_groups": dose_groups,
-            "findings": findings,
+            "findings": stripped,
             "correlations": correlations,
-            "total_findings": len(findings),
+            "total_findings": len(stripped),
             "page": 1,
-            "page_size": len(findings),
+            "page_size": len(stripped),
             "total_pages": 1,
             "summary": summary,
         }

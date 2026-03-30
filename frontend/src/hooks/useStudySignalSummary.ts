@@ -8,7 +8,7 @@ export function useStudySignalSummary(studyId: string | undefined) {
     queryKey: ["study-signal-summary", studyId, params],
     queryFn: () => fetchStudySignalSummary(studyId!, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }

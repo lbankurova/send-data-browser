@@ -14,7 +14,7 @@ export function useFindings(
     queryKey: ["findings", studyId, page, pageSize, filters, params],
     queryFn: () => fetchFindings(studyId!, page, pageSize, filters, params || undefined),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
