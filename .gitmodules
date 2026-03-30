@@ -1,0 +1,3 @@
+[submodule "docs/_internal"]
+	path = docs/_internal
+	url = https://github.com/lbankurova/pcc-internal-docs.git
