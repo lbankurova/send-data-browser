@@ -1554,39 +1554,37 @@ Suppressions (METH-12): R01 → suppress R07; R04 → suppress R01, R03.
 
 ## Scoring Formulas (METRIC)
 
-### METRIC-01 — Signal Score (4-Component Weighted)
+### METRIC-01 — Signal Score (3-Component Weighted)
 
-**Purpose:** Single 0–1 composite score combining statistical significance, trend significance, effect magnitude, and dose-response pattern quality.
+**Purpose:** Single 0-1 composite score combining effect magnitude, trend significance, and dose-response pattern quality. Feeds target organ evidence scoring (METRIC-02).
 
-**Implementation:** `_compute_signal_score(p_value, trend_p, effect_size, dose_response_pattern, data_type, params)` — backend `view_dataframes.py`. Frontend mirror: `computeSignalScoreBreakdown()` — `rule-definitions.ts:260`.
+**Implementation:** `_compute_signal_score(p_value, trend_p, effect_size, dose_response_pattern, data_type, params)` -- backend `view_dataframes.py:669`. Frontend mirror: `computeSignalScoreBreakdown()` -- `rule-definitions.ts:260`.
 
-**Configurable:** All weights and pattern scores are expert-configurable per-study via `ScoringParams` (loaded from `annotations/threshold-config`). Defaults below.
+**R1 alignment (2026-03-30):** P-value weight redistributed to effect size and trend, matching the frontend's elimination of -log10(p) from ranking. The backend retains a 0-1 normalized score (not the frontend's unbounded g_lower formula) because METRIC-01 feeds target organ evidence aggregation, not rail ranking.
 
 **Continuous data (defaults):**
 
 | Component | Weight | Input | Transform | Cap |
 |-----------|--------|-------|-----------|-----|
-| P-value | 0.35 | adjusted p-value | `-log10(p) / 4.0` | p = 0.0001 |
-| Trend | 0.20 | trend p-value | `-log10(p) / 4.0` | p = 0.0001 |
-| Effect size | 0.25 | \|Cohen's d\| | `\|d\| / 2.0` | \|d\| = 2.0 |
+| Effect size | 0.55 | \|Hedges' g\| | `sigmoid(\|g\|) / sigmoid(2)` | ~1.0 at \|g\| >> 2 |
+| Trend | 0.25 | trend p-value | `-log10(p) / 4.0` | p = 0.0001 |
 | Pattern | 0.20 | pattern label | lookup table | 1.0 |
 
 **Incidence data (defaults):**
 
 | Component | Weight | Input | Transform | Cap |
 |-----------|--------|-------|-----------|-----|
-| P-value | 0.45 | adjusted p-value | `-log10(p) / 4.0` | p = 0.0001 |
-| Trend | 0.30 | trend p-value | `-log10(p) / 4.0` | p = 0.0001 |
-| Pattern | 0.25 | pattern label | lookup table | 1.0 |
-| MI severity | 0.10 | avg_severity | `(grade - 1) / 4.0` | grade = 5 |
+| Trend | 0.40 | trend p-value | `-log10(p) / 4.0` | p = 0.0001 |
+| Pattern | 0.35 | pattern label | lookup table | 1.0 |
+| MI severity | 0.25 | avg_severity | `(grade - 1) / 4.0` | grade = 5 |
 
 Pattern scores: `{monotonic_increase: 1.0, monotonic_decrease: 1.0, threshold: 0.7, threshold_increase: 0.7, threshold_decrease: 0.7, non_monotonic: 0.3, flat: 0.0, insufficient_data: 0.0}`.
 
 Final score: `min(sum_of_components, 1.0)`.
 
-**Why these weights:** P-value (0.35) is the strongest single indicator of treatment effect. Effect size (0.25) captures biological magnitude — complements p-value, which is sample-size-dependent. Trend (0.20) confirms dose-response, a hallmark of causality. Pattern (0.20) reinforces monotonicity as the strongest causal signal.
+**Why these weights:** Effect size (0.55) is the primary statistical component -- sample-size-invariant, directly measures biological magnitude. The sigmoid transform provides diminishing returns at large |g| per EFSA guidance. Trend (0.25) confirms dose-response. Pattern (0.20) reinforces monotonicity. P-value eliminated: it was 75-94% correlated with effect size at typical preclinical sample sizes, making their combination redundant.
 
-**Alternatives considered:** Equal weights (ignores the fact that p-value is the most informative single measure). Principal component analysis (data-driven but unstable across studies). Unweighted maximum (loses the benefit of converging evidence).
+**Alternatives considered:** Retaining p-value (rejected: double-counts with effect size, structurally dominant at large N). Equal weights (doesn't reflect the primacy of effect magnitude).
 
 ---
 
@@ -1611,23 +1609,32 @@ Final score: `min(sum_of_components, 1.0)`.
 
 **Purpose:** Sort and group endpoints in the findings rail by signal strength, with domain-aware and syndrome-aware boosting.
 
-**Implementation:** `computeEndpointSignal(ep, boosts)` — frontend `findings-rail-engine.ts:54`.
+**Implementation:** `computeEndpointSignal(ep, boosts)` -- frontend `findings-rail-engine.ts:77`.
+
+**Formula (R1-R5 evidence scoring overhaul, 2026-03-30):**
+
+```
+statistical = sigmoid(gLower) * sigmoidScale
+baseConstants = severityWeight + trBoost
+evidence = statistical + patternWeight + syndromeBoost + coherenceBoost + sexConcordanceBoost
+score = max(baseConstants + evidence * clinicalMultiplier, clinicalFloor)
+```
 
 **Parameters:**
-- Base: `severityWeight + pValueWeight + effectWeight + trBoost + patternWeight`
-  - Severity: adverse = 3, other = 1
-  - P-value: `max(0, -log10(minPValue))` (unbounded, capped implicitly by p-value range)
-  - Effect: `min(|maxEffectSize|, 5)`
-  - Treatment-related: +2
-  - Pattern: base weight * confidence multiplier (HIGH=1.0, MOD=0.7, LOW=0.4)
-- Boosts: syndromeBoost (+3 if in syndrome), coherenceBoost (+2 for 3+ domains, +1 for 2), clinicalFloor (S4=15, S3=8, S2=4, S1=0)
-- Final: `max(base + boosts, clinicalFloor)`
+- `gLower`: Lower CI bound of |Hedges' g| via Guenther (1978) corrected non-central t approximation. Cross-study comparable. Per-sex worst-case: `max(gLower_F, gLower_M)`. Falls back to `|maxEffectSize|` when group stats unavailable.
+- `sigmoid(x) = x / (x + 1)`, scale 4.0 (configurable). Concentrates resolution in |g| = 0.3-1.5 per EFSA guidance.
+- Severity: adverse = 3, other = 1. Treatment-related: +2.
+- Pattern: base weight * confidence multiplier (HIGH=1.0, MOD=0.7, LOW=0.4). Weights: `{monotonic: 2, threshold: 1.5, non_monotonic: 0.5, flat: 0}`.
+- Syndrome: +6/+3/+1. Coherence: +2 per domain (cap 6). Sex concordance: organ-specific (0.3-2.0).
+- `clinicalMultiplier`: S4=3.0, S3=2.0, S2=1.4, S1=1.0 (configurable). Multiplies evidence only, not base constants -- prevents noise amplification on weak findings with clinical badges.
+- `clinicalFloor`: S4=15, S3=8, S2=4, S1=0 (safety net).
+- Incidence proxy: `sigmoid(maxIncidence * 3)` when gLower unavailable.
 
-Pattern base weights: `{monotonic_increase: 2, monotonic_decrease: 2, threshold: 1.5, non_monotonic: 0.5, flat: 0}`.
+**What was removed (R1):** P-value (-log10(p)) eliminated entirely. Effect size and p-value were 75-94% correlated at preclinical sample sizes; including both was redundant. Precision captured by CI width penalty in gLower.
 
-**Why this formula:** Unlike METRIC-01 (0–1 normalized), this score is unbounded, optimized for sorting. The clinical floor ensures lab clinical rules (CLASS-15) always rank at or above their severity level. The syndrome and coherence boosts promote findings that are part of a bigger mechanistic story.
+**Why this formula:** Addresses three issues identified by independent peer review: (1) p-value structural dominance contradicting ESTP/STP guidance (Arndt 2024, Ramaiah 2025), (2) correlated double-counting, (3) clinical significance overwhelmed by statistical power. See `research/evidence-scoring-alternatives.md`.
 
-**Alternatives considered:** METRIC-01 directly (too compressed for rail sorting — many findings cluster near 0.5). Manual priority tiers (loses continuous ranking within tiers).
+**Alternatives considered:** Rank aggregation (Copeland/RRA/Stuart) -- experimental, pending expert validation. Lexicographic clinical sort (rejected: cliff effects). Bayesian posterior (blocked by HCD availability).
 
 ---
 

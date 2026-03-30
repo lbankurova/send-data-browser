@@ -71,6 +71,18 @@ class ScoringParams:
     target_organ_evidence: float = 0.3
     target_organ_n_significant: int = 1
 
+    # R1: g_lower confidence level (one-sided, for non-central t CI)
+    effect_size_confidence_level: float = 0.80
+
+    # R2: sigmoid scale for effect size transform
+    effect_size_sigmoid_scale: float = 4.0
+
+    # R3: clinical significance multipliers (applied to evidence portion only)
+    clinical_multiplier_s4: float = 3.0
+    clinical_multiplier_s3: float = 2.0
+    clinical_multiplier_s2: float = 1.4
+    clinical_multiplier_s1: float = 1.0
+
     # NOAEL confidence penalties (positive values, subtracted from 1.0)
     penalty_single_endpoint: float = 0.20
     penalty_sex_inconsistency: float = 0.20
@@ -157,6 +169,33 @@ def load_scoring_params(study_id: str) -> ScoringParams:
                 setattr(params, attr, type(getattr(params, attr))(val))
             except (TypeError, ValueError):
                 log.warning("Bad threshold value %s=%r for %s, using default", json_key, val, study_id)
+
+    # R1-R3: Evidence scoring overhaul params
+    for json_key, attr in [
+        ("effectSizeConfidenceLevel", "effect_size_confidence_level"),
+        ("effectSizeSigmoidScale", "effect_size_sigmoid_scale"),
+    ]:
+        val = entry.get(json_key)
+        if val is not None:
+            try:
+                setattr(params, attr, float(val))
+            except (TypeError, ValueError):
+                log.warning("Bad scoring param %s=%r for %s, using default", json_key, val, study_id)
+
+    cm = entry.get("clinicalSignificanceMultipliers")
+    if isinstance(cm, dict):
+        for json_key, attr in [
+            ("S4", "clinical_multiplier_s4"),
+            ("S3", "clinical_multiplier_s3"),
+            ("S2", "clinical_multiplier_s2"),
+            ("S1", "clinical_multiplier_s1"),
+        ]:
+            val = cm.get(json_key)
+            if val is not None:
+                try:
+                    setattr(params, attr, float(val))
+                except (TypeError, ValueError):
+                    log.warning("Bad multiplier %s=%r for %s, using default", json_key, val, study_id)
 
     # NOAEL penalties (stored as positive; frontend displays as negative)
     np_ = entry.get("noaelPenalties")

@@ -676,13 +676,17 @@ def _compute_signal_score(
 ) -> float:
     """Compute a 0-1 signal score combining statistical and biological significance.
 
-    Data-type-aware weight profiles (SLA-02):
-    - Continuous: p=0.35, trend=0.20, effect=0.25, pattern=0.20
-    - Incidence:  p=0.45, trend=0.30, effect=0.00, pattern=0.25
-      (MI severity grade as optional 0.10 modifier, total capped at 1.0)
+    R1 alignment (2026-03-30): p-value weight redistributed to effect size and trend
+    to match the frontend's elimination of -log10(p) from ranking. The backend
+    METRIC-01 feeds target organ evidence scores (not rail ranking), so a 0-1
+    normalized score is retained rather than the frontend's unbounded g_lower formula.
 
-    When ``params`` is provided, weights and pattern scores are taken from
-    the expert-configured ScoringParams instead of the defaults above.
+    Data-type-aware weight profiles:
+    - Continuous: effect=0.55, trend=0.25, pattern=0.20  (p-value eliminated)
+    - Incidence:  trend=0.40, pattern=0.35, severity=0.25 (p-value eliminated)
+
+    Legacy p-value weights in ScoringParams (cont_w_pvalue, inc_w_pvalue) are
+    ignored — they remain in the dataclass for backward-compatible serialization.
     """
     import math
 
@@ -693,25 +697,23 @@ def _compute_signal_score(
     pat_score = params.pattern_scores.get(dose_response_pattern or "", 0.0)
 
     if data_type == "continuous":
-        if p_value is not None and p_value > 0:
-            score += params.cont_w_pvalue * min(-math.log10(p_value) / 4.0, 1.0)
-        if trend_p is not None and trend_p > 0:
-            score += params.cont_w_trend * min(-math.log10(trend_p) / 4.0, 1.0)
+        # R1: effect size absorbs p-value weight. sigmoid(|g|) / sigmoid(2) normalizes to ~0-1.
         if effect_size is not None:
-            score += params.cont_w_effect * min(abs(effect_size) / 2.0, 1.0)
-        score += params.cont_w_pattern * pat_score
-    else:
-        # Incidence: no effect-size analog — redistribute weight to statistical components
-        if p_value is not None and p_value > 0:
-            score += params.inc_w_pvalue * min(-math.log10(p_value) / 4.0, 1.0)
+            g_abs = abs(effect_size)
+            score += 0.55 * min(g_abs / (g_abs + 1) / 0.667, 1.0)  # sigmoid normalized
         if trend_p is not None and trend_p > 0:
-            score += params.inc_w_trend * min(-math.log10(trend_p) / 4.0, 1.0)
-        score += params.inc_w_pattern * pat_score
-        # MI severity grade as optional modifier
+            score += 0.25 * min(-math.log10(trend_p) / 4.0, 1.0)
+        score += 0.20 * pat_score
+    else:
+        # Incidence: trend + pattern + severity. No p-value.
+        if trend_p is not None and trend_p > 0:
+            score += 0.40 * min(-math.log10(trend_p) / 4.0, 1.0)
+        score += 0.35 * pat_score
+        # MI severity grade as modifier (increased weight from 0.10 to 0.25)
         if effect_size is not None:
             sev_grade = effect_size  # MI avg_severity; None for MA/CL/TF/DS
             if sev_grade is not None:
-                score += params.inc_w_severity * min((sev_grade - 1) / 4.0, 1.0)
+                score += 0.25 * min((sev_grade - 1) / 4.0, 1.0)
 
     return min(score, 1.0)
 

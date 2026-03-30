@@ -50,11 +50,25 @@ def incidence_exact_test(
             Available as an override for comparability with legacy analyses.
             [scipy.stats.fisher_exact]
     """
-    # Compute odds ratio from the table directly (property of the data, not the test)
+    # Compute odds ratio and OR_lower from the table directly
     a, b = table[0]
     c, d = table[1]
+    odds_ratio: float | None
+    or_lower: float | None = None
     if b > 0 and c > 0:
         odds_ratio = round(float((a * d) / (b * c)), 6)
+        # R10: lower confidence bound of OR via log-OR normal approximation
+        # SE(ln(OR)) = sqrt(1/a + 1/b + 1/c + 1/d) with Haldane correction for zero cells
+        import math
+        a_h = a + 0.5 if a == 0 else a
+        b_h = b + 0.5 if b == 0 else b
+        c_h = c + 0.5 if c == 0 else c
+        d_h = d + 0.5 if d == 0 else d
+        ln_or = math.log(max(odds_ratio, 1e-10))
+        se_ln_or = math.sqrt(1/a_h + 1/b_h + 1/c_h + 1/d_h)
+        # 80% one-sided = z=0.842
+        z_80 = 0.842
+        or_lower = round(float(math.exp(ln_or - z_80 * se_ln_or)), 6)
     elif a == 0 and c == 0:
         odds_ratio = None
     else:
@@ -71,11 +85,12 @@ def incidence_exact_test(
             p_val = 1.0
         return {
             "odds_ratio": odds_ratio,
+            "or_lower": or_lower,
             "p_value": float(p_val),
             "test_method": method,
         }
     except ValueError:
-        return {"odds_ratio": None, "p_value": None, "test_method": method}
+        return {"odds_ratio": None, "or_lower": None, "p_value": None, "test_method": method}
 
 
 def incidence_exact_both(table: list[list[int]]) -> dict:
