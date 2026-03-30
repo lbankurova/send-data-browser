@@ -22,7 +22,7 @@ class DomainMeta:
 def get_cached_csv_path(study_id: str, domain: str) -> Path:
     study_cache = CACHE_DIR / study_id
     study_cache.mkdir(parents=True, exist_ok=True)
-    return study_cache / f"{domain}.csv"
+    return study_cache / f"{domain}.csv.gz"
 
 
 def _zero_subnormals(df: pd.DataFrame) -> pd.DataFrame:
@@ -64,9 +64,9 @@ def ensure_cached(study: StudyInfo, domain: str) -> Path:
         if csv_mtime > xpt_mtime:
             return csv_path
 
-    # Read and cache
+    # Read and cache (gzip-compressed for ~75% disk reduction)
     df, _ = read_xpt(xpt_path)
-    df.to_csv(csv_path, index=False)
+    df.to_csv(csv_path, index=False, compression="gzip")
     return csv_path
 
 
@@ -154,7 +154,7 @@ def get_domain_data(study: StudyInfo, domain: str, page: int, page_size: int) ->
     meta = get_domain_metadata(study, domain)
     csv_path = ensure_cached(study, domain)
 
-    df = pd.read_csv(csv_path, keep_default_na=False, dtype=str)
+    df = pd.read_csv(csv_path, keep_default_na=False, dtype=str, low_memory=False)
     total_rows = len(df)
     total_pages = max(1, math.ceil(total_rows / page_size))
 

@@ -5,13 +5,10 @@ Usage:
 """
 
 import json
-import math
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
-import numpy as np
 
 # Add backend to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -37,29 +34,12 @@ from services.analysis.phase_filter import compute_last_dosing_day
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
 
 
-def _sanitize(obj):
-    """Replace NaN/Inf with None, convert numpy types to Python types."""
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.bool_,)):
-        return bool(obj)
-    if isinstance(obj, (float, np.floating)):
-        val = float(obj)
-        return None if (math.isnan(val) or math.isinf(val)) else val
-    if isinstance(obj, dict):
-        return {k: _sanitize(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_sanitize(v) for v in obj]
-    if isinstance(obj, set):
-        return sorted(_sanitize(v) for v in obj)
-    return obj
-
-
 def _write_json(path: Path, data):
     """Write sanitized JSON."""
+    from services.analysis.sanitize import sanitize
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
-        json.dump(_sanitize(data), f, separators=(",", ":"))
+        json.dump(sanitize(data), f, separators=(",", ":"))
     print(f"  wrote {path.name} ({_count(data)} items)")
 
 

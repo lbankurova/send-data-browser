@@ -428,10 +428,10 @@ class ValidationEngine:
         fix_counts = apply_all_fixes(domains)
 
         if fix_counts:
-            # Write fixed DataFrames to CSV cache
+            # Write fixed DataFrames to CSV cache (gzip-compressed)
             for domain_code, df in domains.items():
                 csv_path = get_cached_csv_path(study.study_id, domain_code.lower())
-                df.to_csv(csv_path, index=False)
+                df.to_csv(csv_path, index=False, compression="gzip")
 
             # Re-validate with fixed data
             logger.info(

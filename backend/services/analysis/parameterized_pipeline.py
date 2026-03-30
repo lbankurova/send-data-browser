@@ -21,7 +21,7 @@ from services.analysis.phase_filter import IN_LIFE_DOMAINS
 from services.analysis.corroboration import compute_corroboration, compute_chain_detection
 from services.analysis.confidence import compute_all_confidence
 from services.analysis.correlations import compute_correlations
-from services.analysis.unified_findings import _sanitize_floats
+from services.analysis.sanitize import sanitize as _sanitize_floats
 from generator.domain_stats import compute_all_findings
 from generator.view_dataframes import (
     build_study_signal_summary,

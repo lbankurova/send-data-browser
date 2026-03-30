@@ -43,7 +43,7 @@ def _read_domain_df(study: StudyInfo, domain: str) -> pd.DataFrame:
     if domain_lower not in study.xpt_files:
         raise HTTPException(status_code=404, detail=f"Domain '{domain}' not found in study")
     csv_path = ensure_cached(study, domain_lower)
-    df = pd.read_csv(csv_path, keep_default_na=False)
+    df = pd.read_csv(csv_path, keep_default_na=False, dtype={"USUBJID": str})
     df.columns = [c.upper() for c in df.columns]
     return df
 

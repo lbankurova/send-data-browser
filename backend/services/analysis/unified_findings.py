@@ -2,10 +2,7 @@
 
 import json
 import hashlib
-import math
 from pathlib import Path
-
-import numpy as np
 
 from config import CACHE_DIR
 from services.study_discovery import StudyInfo
@@ -29,20 +26,7 @@ from services.analysis.organ_thresholds import get_species
 from services.analysis.hcd import get_strain, get_study_duration_days, get_route, get_vehicle
 
 
-def _sanitize_floats(obj):
-    """Replace NaN/Inf float values with None, convert numpy scalars to Python types."""
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (float, np.floating)):
-        val = float(obj)
-        return None if (math.isnan(val) or math.isinf(val)) else val
-    if isinstance(obj, np.ndarray):
-        return _sanitize_floats(obj.tolist())
-    if isinstance(obj, dict):
-        return {k: _sanitize_floats(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_floats(v) for v in obj]
-    return obj
+from services.analysis.sanitize import sanitize as _sanitize_floats
 
 
 def _cache_path(study_id: str) -> Path:

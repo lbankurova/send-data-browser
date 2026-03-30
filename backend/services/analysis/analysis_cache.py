@@ -11,10 +11,17 @@ import json
 import logging
 import os
 import shutil
+import threading
 import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+# In-process event signaling for threads waiting on the same computation.
+# Keyed by (study_id, settings_hash). Threads that lose the lock race wait
+# on the event instead of polling the filesystem every 300ms.
+_compute_events: dict[tuple[str, str], threading.Event] = {}
+_events_lock = threading.Lock()
 
 GENERATED_DIR = Path(__file__).parent.parent.parent / "generated"
 
@@ -105,41 +112,61 @@ def acquire_compute_lock(study_id: str, settings_hash: str) -> bool:
     try:
         fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         os.close(fd)
+        # Create an in-process event so waiting threads don't need to poll
+        key = (study_id, settings_hash)
+        with _events_lock:
+            _compute_events[key] = threading.Event()
         return True
     except FileExistsError:
         return False
 
 
 def release_compute_lock(study_id: str, settings_hash: str):
-    """Release compute lock by removing the lock file."""
+    """Release compute lock by removing the lock file and signaling waiters."""
     try:
         os.unlink(str(_compute_lock_path(study_id, settings_hash)))
     except OSError:
         pass
+    # Signal any in-process threads waiting for this computation
+    key = (study_id, settings_hash)
+    with _events_lock:
+        event = _compute_events.pop(key, None)
+    if event is not None:
+        event.set()
 
 
 def wait_for_cache(
     study_id: str, settings_hash: str, view_name: str, timeout: float = 120
 ) -> dict | None:
-    """Poll cache until the requested view appears or timeout.
+    """Wait for cache to appear using in-process event signaling.
 
-    Used by threads/workers that lost the lock race — they wait for the
-    winner to finish computing and writing the cache.
+    Threads in the same process wait on a threading.Event (zero-poll).
+    Falls back to brief polling only if the event doesn't exist (cross-process).
     Returns None on timeout (caller should raise 503).
     """
+    key = (study_id, settings_hash)
+    with _events_lock:
+        event = _compute_events.get(key)
+
+    if event is not None:
+        # Same-process: wait on event (no polling)
+        event.wait(timeout=timeout)
+        cached = read_cache(study_id, settings_hash, view_name)
+        if cached is not None:
+            return cached
+        # Event was set but cache not found — compute may have failed
+        return None
+
+    # Cross-process fallback: poll with backoff (rare in single-worker uvicorn)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         cached = read_cache(study_id, settings_hash, view_name)
         if cached is not None:
             return cached
-        # Also check if the lock was released (compute finished but our
-        # specific view might not exist — e.g., a view not produced by pipeline)
         lock_path = _compute_lock_path(study_id, settings_hash)
         if not lock_path.exists():
-            # Lock released — one final cache check
             return read_cache(study_id, settings_hash, view_name)
         time.sleep(0.3)
-    # Timeout — clean up stale lock
     log.warning("Timed out waiting for compute lock %s/%s", study_id, settings_hash)
     release_compute_lock(study_id, settings_hash)
     return None
