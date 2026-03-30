@@ -137,6 +137,17 @@ def generate(study_id: str):
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
+    # Phase C: VC-UC supplementary comparison for dual-control studies
+    if dg_data.get("control_resolution") == "multi_control_path_c":
+        from generator.domain_stats import compute_control_comparison
+        try:
+            ctrl_cmp = compute_control_comparison(study, _subjects, dg_data)
+            if ctrl_cmp:
+                _write_json(out_dir / "control_comparison.json", ctrl_cmp)
+                print(f"  VC-UC comparison: {ctrl_cmp['n_significant']}/{ctrl_cmp['n_endpoints']} significant endpoints")
+        except Exception as e:
+            print(f"  WARNING: Control comparison failed: {e}")
+
     _tick("1b_end")
 
     # Phases 1c/1d/1e — independent computations, run in parallel

@@ -343,6 +343,186 @@ def compute_all_findings(
     return all_findings, dg_data
 
 
+# ---------------------------------------------------------------------------
+# Vehicle vs. Untreated Control comparison (Phase C)
+# ---------------------------------------------------------------------------
+
+_VC_UC_CONTINUOUS_DOMAINS = {"lb", "bw", "om", "bg", "eg", "re", "vs"}
+
+# Map domain -> (value column, test code column, day column, test name column)
+_DOMAIN_COLS = {
+    "lb": ("LBSTRESN", "LBTESTCD", "LBDY", "LBTEST"),
+    "bw": ("BWSTRESN", "BWTESTCD", "BWDY", "BWTEST"),
+    "om": ("OMSTRESN", "OMTESTCD", None, "OMTEST"),
+    "bg": ("BGSTRESN", "BGTESTCD", "BGDY", "BGTEST"),
+    "eg": ("EGSTRESN", "EGTESTCD", "EGDY", "EGTEST"),
+    "re": ("RESTRESN", "RETESTCD", "REDY", "RETEST"),
+    "vs": ("VSSTRESN", "VSTESTCD", "VSDY", "VSTEST"),
+}
+
+
+def compute_control_comparison(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    dg_data: dict,
+) -> dict | None:
+    """Compare vehicle control (dose_level 0) vs. secondary control (dose_level -3).
+
+    For dual-control studies (Path C), produces per-endpoint Welch's t-test
+    and Cohen's d between the two control groups. This characterizes vehicle
+    effects, which is the scientific purpose of having a negative control.
+
+    Returns None if not a multi-control study. Otherwise returns:
+      { vehicle_label, negative_label, endpoints: [...], summary }
+    """
+    if dg_data.get("control_resolution") != "multi_control_path_c":
+        return None
+
+    # Get subjects for both controls (main study only, no recovery/TK)
+    vc_subs = subjects[
+        (subjects["dose_level"] == 0)
+        & ~subjects["is_recovery"]
+        & ~subjects["is_satellite"]
+    ]["USUBJID"].values
+    nc_subs = subjects[
+        (subjects["dose_level"] == -3)
+        & ~subjects["is_recovery"]
+        & ~subjects["is_satellite"]
+    ]["USUBJID"].values
+
+    if len(vc_subs) == 0 or len(nc_subs) == 0:
+        return None
+
+    # Labels
+    dose_groups = dg_data["dose_groups"]
+    vc_label = next((dg["label"] for dg in dose_groups if dg["dose_level"] == 0), "Vehicle")
+    nc_label = next((dg["label"] for dg in dose_groups if dg["dose_level"] == -3), "Negative Control")
+
+    from services.xpt_processor import read_xpt
+
+    endpoints: list[dict] = []
+    vc_set = set(vc_subs)
+    nc_set = set(nc_subs)
+
+    for domain_key in sorted(_VC_UC_CONTINUOUS_DOMAINS):
+        if domain_key not in study.xpt_files:
+            continue
+
+        cols = _DOMAIN_COLS.get(domain_key)
+        if not cols:
+            continue
+        val_col, tc_col, day_col, name_col = cols
+
+        try:
+            df, _ = read_xpt(study.xpt_files[domain_key])
+            df.columns = [c.upper() for c in df.columns]
+        except Exception:
+            continue
+
+        if val_col not in df.columns:
+            continue
+
+        df["value"] = pd.to_numeric(df[val_col], errors="coerce")
+        df = df.dropna(subset=["value"])
+        if df.empty:
+            continue
+
+        # Add group column
+        df["_group"] = None
+        df.loc[df["USUBJID"].isin(vc_set), "_group"] = "vehicle"
+        df.loc[df["USUBJID"].isin(nc_set), "_group"] = "negative"
+        df = df[df["_group"].notna()]
+
+        # Add sex from subjects
+        sex_map = subjects.set_index("USUBJID")["SEX"].to_dict()
+        df["SEX"] = df["USUBJID"].map(sex_map)
+
+        has_tc = tc_col in df.columns
+        has_name = name_col in df.columns
+
+        # Group by test code + sex (skip day — use last timepoint or pool)
+        group_cols = []
+        if has_tc:
+            group_cols.append(tc_col)
+        group_cols.append("SEX")
+
+        for keys, grp in df.groupby(group_cols):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            testcd = keys[0] if has_tc else domain_key.upper()
+            sex = keys[-1]
+
+            vc_vals = grp[grp["_group"] == "vehicle"]["value"].values
+            nc_vals = grp[grp["_group"] == "negative"]["value"].values
+
+            if len(vc_vals) < 2 or len(nc_vals) < 2:
+                continue
+
+            # Welch's t-test
+            try:
+                t_stat, p_val = sp_stats.ttest_ind(vc_vals, nc_vals, equal_var=False)
+                p_val = _safe_float(p_val)
+            except Exception:
+                p_val = None
+
+            # Cohen's d
+            pooled_sd = np.sqrt(
+                ((len(vc_vals) - 1) * np.var(vc_vals, ddof=1)
+                 + (len(nc_vals) - 1) * np.var(nc_vals, ddof=1))
+                / (len(vc_vals) + len(nc_vals) - 2)
+            )
+            cohens_d = (
+                round(float((np.mean(vc_vals) - np.mean(nc_vals)) / pooled_sd), 4)
+                if pooled_sd > 0 else 0.0
+            )
+
+            test_name = str(grp[name_col].iloc[0]) if has_name and name_col in grp.columns else testcd
+
+            endpoints.append({
+                "domain": domain_key.upper(),
+                "test_code": str(testcd),
+                "endpoint_label": test_name,
+                "sex": str(sex),
+                "vehicle_mean": round(float(np.mean(vc_vals)), 4),
+                "vehicle_sd": round(float(np.std(vc_vals, ddof=1)), 4),
+                "vehicle_n": int(len(vc_vals)),
+                "negative_mean": round(float(np.mean(nc_vals)), 4),
+                "negative_sd": round(float(np.std(nc_vals, ddof=1)), 4),
+                "negative_n": int(len(nc_vals)),
+                "p_value": round(p_val, 6) if p_val is not None else None,
+                "cohens_d": cohens_d,
+                "significant": p_val is not None and p_val < 0.05,
+            })
+
+    # Summary
+    n_total = len(endpoints)
+    n_sig = sum(1 for e in endpoints if e["significant"])
+    if n_total == 0:
+        summary = "No overlapping endpoints between vehicle and negative control."
+    elif n_sig == 0:
+        summary = f"No significant vehicle effects detected across {n_total} endpoints."
+    else:
+        top = sorted(
+            [e for e in endpoints if e["significant"]],
+            key=lambda e: abs(e["cohens_d"]),
+            reverse=True,
+        )[:3]
+        top_labels = [f"{e['endpoint_label']} ({e['sex']}, d={e['cohens_d']})" for e in top]
+        summary = (
+            f"Vehicle effects detected in {n_sig}/{n_total} endpoints. "
+            f"Largest: {', '.join(top_labels)}."
+        )
+
+    return {
+        "vehicle_label": vc_label,
+        "negative_label": nc_label,
+        "n_endpoints": n_total,
+        "n_significant": n_sig,
+        "summary": summary,
+        "endpoints": endpoints,
+    }
+
+
 def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
     """Classify finding into an endpoint type category."""
     mapping = {
