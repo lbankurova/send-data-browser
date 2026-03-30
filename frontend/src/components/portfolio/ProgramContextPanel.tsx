@@ -9,9 +9,10 @@ import { noael } from "@/lib/study-accessors";
 interface Props {
   project: Project;
   studies: StudyMetadata[];
+  onViewStudies?: () => void;
 }
 
-export function ProgramContextPanel({ project, studies }: Props) {
+export function ProgramContextPanel({ project, studies, onViewStudies }: Props) {
   const navigate = useNavigate();
   const { data: prefs } = useStudyPreferences();
   const displayNames = prefs?.display_names ?? {};
@@ -116,6 +117,14 @@ export function ProgramContextPanel({ project, studies }: Props) {
               </button>
             );
           })}
+          {onViewStudies && (
+            <button
+              onClick={onViewStudies}
+              className="mt-1 block w-full text-left text-[11px] text-primary hover:underline px-2"
+            >
+              View all in studies table &#x2197;
+            </button>
+          )}
         </div>
       </CollapsiblePane>
     </div>

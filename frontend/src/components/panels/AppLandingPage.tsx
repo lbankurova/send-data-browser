@@ -808,6 +808,12 @@ export function AppLandingPage() {
                 selectStudy(null);
               }
             }}
+            onViewStudies={(id) => {
+              setProjectFilter(id);
+              setViewMode("studies");
+              selectProject(id);
+              selectStudy(null);
+            }}
           />
         ) : isLoading ? (
           <div className="space-y-2">
@@ -1072,6 +1078,64 @@ export function AppLandingPage() {
 }
 
 
+/* ── Program context menu ──────────────────────────────────────── */
+
+function ProgramContextMenu({
+  position,
+  onClose,
+  onViewStudies,
+  onOpenFirstStudy,
+  hasStudies,
+}: {
+  position: { x: number; y: number };
+  onClose: () => void;
+  onViewStudies: () => void;
+  onOpenFirstStudy: () => void;
+  hasStudies: boolean;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        className="fixed z-50 min-w-[200px] rounded-md border bg-popover py-1 shadow-lg"
+        style={{ left: position.x, top: position.y }}
+      >
+        <button
+          className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent"
+          onClick={onViewStudies}
+        >
+          View studies
+        </button>
+        <button
+          className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent"
+          onClick={onOpenFirstStudy}
+          disabled={!hasStudies}
+        >
+          Open first study
+        </button>
+        <div className="my-1 border-t" />
+        <button
+          className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent"
+          onClick={() => { onClose(); alert("CSV/Excel export coming soon."); }}
+          disabled
+        >
+          Export...
+        </button>
+      </div>
+    </>
+  );
+}
+
+function formatStage(stage: string): string {
+  switch (stage) {
+    case "submitted": return "Submitted";
+    case "pre_submission": return "Pre-submission";
+    case "ongoing": return "Ongoing";
+    case "planned": return "Planned";
+    default: return stage;
+  }
+}
+
 /* ── Program list (Portfolio mode) ────────────────────────────── */
 
 function ProgramList({
@@ -1079,12 +1143,22 @@ function ProgramList({
   projects,
   selectedProjectId,
   onProjectClick,
+  onViewStudies,
 }: {
   studies: StudyMetadata[];
   projects: Project[];
   selectedProjectId: string;
   onProjectClick: (id: string) => void;
+  onViewStudies: (projectId: string) => void;
 }) {
+  const navigate = useNavigate();
+  const [contextMenu, setContextMenu] = useState<{
+    programId: string;
+    firstStudyId: string | null;
+    x: number;
+    y: number;
+  } | null>(null);
+
   // Build program summaries from studies
   const programs = useMemo(() => {
     const byProject = new Map<string, StudyMetadata[]>();
@@ -1095,22 +1169,77 @@ function ProgramList({
       arr.push(s);
     }
     const projectMap = new Map(projects.map((p) => [p.id, p]));
-    const result: { id: string; name: string; compound: string; species: string[]; studyCount: number; phase: string }[] = [];
+    const result: {
+      id: string;
+      name: string;
+      compound: string;
+      therapeuticArea: string;
+      species: string[];
+      studyCount: number;
+      lowestNoael: { dose: number; unit: string } | null;
+      stageSummary: string;
+      firstStudyId: string | null;
+    }[] = [];
     for (const [pid, arr] of byProject) {
       const p = projectMap.get(pid);
       const species = [...new Set(arr.map((s) => s.species).filter(Boolean) as string[])].sort();
+
+      // Lowest NOAEL across program studies
+      let lowestNoael: { dose: number; unit: string } | null = null;
+      for (const s of arr) {
+        const n = noael(s);
+        if (n && (lowestNoael === null || n.dose < lowestNoael.dose)) {
+          lowestNoael = { dose: n.dose, unit: n.unit };
+        }
+      }
+
+      // Stage summary — count per stage, compact text
+      const stageCounts = new Map<string, number>();
+      for (const s of arr) {
+        stageCounts.set(s.pipeline_stage, (stageCounts.get(s.pipeline_stage) ?? 0) + 1);
+      }
+      const stageOrder = ["submitted", "pre_submission", "ongoing", "planned"];
+      const stageParts: string[] = [];
+      for (const stage of stageOrder) {
+        const count = stageCounts.get(stage);
+        if (count) stageParts.push(`${count} ${formatStage(stage).toLowerCase()}`);
+      }
+      for (const [stage, count] of stageCounts) {
+        if (!stageOrder.includes(stage)) stageParts.push(`${count} ${stage}`);
+      }
+
       result.push({
         id: pid,
         name: p?.name ?? pid,
         compound: p?.compound ?? "",
+        therapeuticArea: p?.therapeutic_area ?? "",
         species,
         studyCount: arr.length,
-        phase: p?.phase ?? "",
+        lowestNoael,
+        stageSummary: stageParts.join(", "),
+        firstStudyId: arr[0]?.id ?? null,
       });
     }
     result.sort((a, b) => a.name.localeCompare(b.name));
     return result;
   }, [studies, projects]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, prog: typeof programs[0]) => {
+    e.preventDefault();
+    onProjectClick(prog.id);
+    setContextMenu({ programId: prog.id, firstStudyId: prog.firstStudyId, x: e.clientX, y: e.clientY });
+  }, [onProjectClick]);
+
+  const handleActionsClick = useCallback((e: React.MouseEvent, prog: typeof programs[0]) => {
+    e.stopPropagation();
+    onProjectClick(prog.id);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenu({ programId: prog.id, firstStudyId: prog.firstStudyId, x: rect.left, y: rect.bottom + 4 });
+  }, [onProjectClick]);
+
+  const handleDoubleClick = useCallback((prog: typeof programs[0]) => {
+    onViewStudies(prog.id);
+  }, [onViewStudies]);
 
   if (programs.length === 0) {
     return (
@@ -1121,36 +1250,76 @@ function ProgramList({
   }
 
   return (
-    <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
-      <table className="w-full text-[11px]">
-        <thead className="sticky top-0 z-10 bg-background">
-          <tr className="border-b bg-muted/30">
-            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Program</th>
-            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Compound</th>
-            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
-            <th className="px-3 py-1.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Studies</th>
-            <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phase</th>
-          </tr>
-        </thead>
-        <tbody>
-          {programs.map((prog) => (
-            <tr
-              key={prog.id}
-              className={cn(
-                "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
-                selectedProjectId === prog.id && "bg-accent"
-              )}
-              onClick={() => onProjectClick(prog.id)}
-            >
-              <td className="px-3 py-2 font-medium text-primary">{prog.name}</td>
-              <td className="px-3 py-2 text-muted-foreground">{prog.compound}</td>
-              <td className="px-3 py-2 text-muted-foreground">{prog.species.join(", ") || "—"}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{prog.studyCount}</td>
-              <td className="px-3 py-2 text-muted-foreground">{prog.phase || "—"}</td>
+    <>
+      <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
+        <table className="w-full text-[11px]">
+          <thead className="sticky top-0 z-10 bg-background">
+            <tr className="border-b bg-muted/30">
+              <th className="w-8 px-1.5 py-1"></th>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Program</th>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Compound</th>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Area</th>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
+              <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Studies</th>
+              <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
+              <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {programs.map((prog) => (
+              <tr
+                key={prog.id}
+                className={cn(
+                  "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
+                  selectedProjectId === prog.id && "bg-accent"
+                )}
+                onClick={() => onProjectClick(prog.id)}
+                onDoubleClick={() => handleDoubleClick(prog)}
+                onContextMenu={(e) => handleContextMenu(e, prog)}
+              >
+                <td className="px-1.5 py-1 text-center">
+                  <button
+                    className="rounded p-0.5 hover:bg-accent"
+                    onClick={(e) => handleActionsClick(e, prog)}
+                    title="Actions"
+                  >
+                    <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </td>
+                <td className="px-1.5 py-1 font-medium text-primary">{prog.name}</td>
+                <td className="px-1.5 py-1 text-muted-foreground">{prog.compound || "—"}</td>
+                <td className="px-1.5 py-1 text-muted-foreground">{prog.therapeuticArea || "—"}</td>
+                <td className="px-1.5 py-1 text-muted-foreground">{prog.species.join(", ") || "—"}</td>
+                <td className="px-1.5 py-1 text-right tabular-nums">{prog.studyCount}</td>
+                <td className="px-1.5 py-1 text-right font-mono tabular-nums">
+                  {prog.lowestNoael
+                    ? <span style={{ color: "#8CD4A2" }} className="font-medium">{prog.lowestNoael.dose} {prog.lowestNoael.unit}</span>
+                    : <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className="px-1.5 py-1 text-muted-foreground">{prog.stageSummary || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {contextMenu && (
+        <ProgramContextMenu
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          onClose={() => setContextMenu(null)}
+          onViewStudies={() => {
+            const id = contextMenu.programId;
+            setContextMenu(null);
+            onViewStudies(id);
+          }}
+          onOpenFirstStudy={() => {
+            const studyId = contextMenu.firstStudyId;
+            setContextMenu(null);
+            if (studyId) navigate(`/studies/${encodeURIComponent(studyId)}`);
+          }}
+          hasStudies={!!contextMenu.firstStudyId}
+        />
+      )}
+    </>
   );
 }
