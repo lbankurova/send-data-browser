@@ -905,6 +905,35 @@ def build_dose_groups(study: StudyInfo) -> dict:
         for dg in dose_groups
     )
 
+    # ── Study configuration classification (Phase G) ────────────────
+    # Detect single-arm, active-comparator-only, and other non-standard
+    # configurations that need pipeline routing changes.
+    n_main_arms = len(main_armcds)
+    active_comparator_only = (
+        not has_concurrent_control
+        and any(
+            arm_control_types.get(a) == CTRL_ACTIVE_COMPARATOR
+            for a in main_armcds
+        )
+    )
+    single_arm = (n_main_arms == 1 and not has_concurrent_control)
+
+    if single_arm:
+        study_configuration = "single_arm"
+    elif active_comparator_only:
+        study_configuration = "active_comparator_only"
+    elif not has_concurrent_control:
+        study_configuration = "no_concurrent_control"
+    elif control_resolution == "multi_control_path_c":
+        study_configuration = "dual_control"
+    elif positive_control_arms:
+        study_configuration = "vehicle_plus_positive"
+    else:
+        study_configuration = "standard"
+
+    if study_configuration not in ("standard", "dual_control"):
+        logger.info("Study configuration: %s", study_configuration)
+
     # ── Multi-compound detection ────────────────────────────────────
     # Collect unique compound identities across treated (non-control) arms.
     # When > 1 compound detected, JT trend test across compounds is
@@ -933,6 +962,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "tk_setcds": tk_setcds,
         "tk_report": tk_report,
         "has_concurrent_control": has_concurrent_control,
+        "study_configuration": study_configuration,
         "control_resolution": control_resolution,
         "primary_control_arm": primary_control_arm,
         "secondary_control_arms": list(secondary_control_arms),

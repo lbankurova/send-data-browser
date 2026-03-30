@@ -100,11 +100,12 @@ def generate(study_id: str):
     mortality = None
     early_death_subjects = None
     try:
-        mortality = compute_study_mortality(study, _subjects, _dose_groups)
+        from services.analysis.hcd import get_study_duration_days, get_strain
+        _strain = get_strain(study)
+        mortality = compute_study_mortality(study, _subjects, _dose_groups, strain=_strain)
         early_death_subjects = mortality.get("early_death_subjects") or None
 
         # Phase B: Control mortality qualification (regulatory thresholds)
-        from services.analysis.hcd import get_study_duration_days
         duration_days = get_study_duration_days(study)
         qualification = qualify_control_mortality(mortality, _dose_groups, duration_days)
         mortality["qualification"] = qualification
@@ -147,6 +148,18 @@ def generate(study_id: str):
                 print(f"  VC-UC comparison: {ctrl_cmp['n_significant']}/{ctrl_cmp['n_endpoints']} significant endpoints")
         except Exception as e:
             print(f"  WARNING: Control comparison failed: {e}")
+
+    # Phase E: Positive control assay validation
+    if dg_data.get("positive_control_arms"):
+        from generator.domain_stats import compute_assay_validation
+        try:
+            assay_val = compute_assay_validation(study, _subjects, dg_data)
+            if assay_val:
+                _write_json(out_dir / "assay_validation.json", assay_val)
+                status = "CONCERN" if assay_val["validity_concern"] else "OK"
+                print(f"  Assay validation: {assay_val['n_adequate']}/{assay_val['n_endpoints']} adequate, validity={status}")
+        except Exception as e:
+            print(f"  WARNING: Assay validation failed: {e}")
 
     _tick("1b_end")
 

@@ -523,6 +523,160 @@ def compute_control_comparison(
     }
 
 
+# ---------------------------------------------------------------------------
+# Positive Control Assay Validation (Phase E)
+# ---------------------------------------------------------------------------
+
+def compute_assay_validation(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    dg_data: dict,
+) -> dict | None:
+    """Compare positive control (dose_level -2) vs. vehicle (dose_level 0).
+
+    For studies with positive control arms, produces per-endpoint statistics
+    validating that the PC produced the expected response. A failed PC
+    (no significant effect) raises a study-level validity concern.
+
+    Returns None if no positive control arms exist.
+    """
+    pc_arms = dg_data.get("positive_control_arms", [])
+    if not pc_arms:
+        return None
+
+    # Subjects
+    vc_subs = subjects[
+        (subjects["dose_level"] == 0)
+        & ~subjects["is_recovery"]
+        & ~subjects["is_satellite"]
+    ]["USUBJID"].values
+    pc_subs = subjects[
+        (subjects["dose_level"] == -2)
+        & ~subjects["is_recovery"]
+        & ~subjects["is_satellite"]
+    ]["USUBJID"].values
+
+    if len(vc_subs) == 0 or len(pc_subs) == 0:
+        return None
+
+    dose_groups = dg_data["dose_groups"]
+    vc_label = next((dg["label"] for dg in dose_groups if dg["dose_level"] == 0), "Vehicle")
+    pc_dg = next((dg for dg in dose_groups if dg["dose_level"] == -2), None)
+    pc_label = pc_dg["label"] if pc_dg else "Positive Control"
+    pc_compound = pc_dg.get("compound") if pc_dg else None
+
+    from services.xpt_processor import read_xpt
+
+    endpoints: list[dict] = []
+    vc_set = set(vc_subs)
+    pc_set = set(pc_subs)
+
+    for domain_key in sorted(_VC_UC_CONTINUOUS_DOMAINS):
+        if domain_key not in study.xpt_files:
+            continue
+
+        cols = _DOMAIN_COLS.get(domain_key)
+        if not cols:
+            continue
+        val_col, tc_col, _day_col, name_col = cols
+
+        try:
+            df, _ = read_xpt(study.xpt_files[domain_key])
+            df.columns = [c.upper() for c in df.columns]
+        except Exception:
+            continue
+
+        if val_col not in df.columns:
+            continue
+
+        df["value"] = pd.to_numeric(df[val_col], errors="coerce")
+        df = df.dropna(subset=["value"])
+        if df.empty:
+            continue
+
+        df["_group"] = None
+        df.loc[df["USUBJID"].isin(vc_set), "_group"] = "vehicle"
+        df.loc[df["USUBJID"].isin(pc_set), "_group"] = "pc"
+        df = df[df["_group"].notna()]
+
+        sex_map = subjects.set_index("USUBJID")["SEX"].to_dict()
+        df["SEX"] = df["USUBJID"].map(sex_map)
+
+        has_tc = tc_col in df.columns
+        has_name = name_col in df.columns
+
+        group_cols = []
+        if has_tc:
+            group_cols.append(tc_col)
+        group_cols.append("SEX")
+
+        for keys, grp in df.groupby(group_cols):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            testcd = keys[0] if has_tc else domain_key.upper()
+            sex = keys[-1]
+
+            vc_vals = grp[grp["_group"] == "vehicle"]["value"].values
+            pc_vals = grp[grp["_group"] == "pc"]["value"].values
+
+            if len(vc_vals) < 2 or len(pc_vals) < 2:
+                continue
+
+            try:
+                _t, p_val = sp_stats.ttest_ind(vc_vals, pc_vals, equal_var=False)
+                p_val = _safe_float(p_val)
+            except Exception:
+                p_val = None
+
+            pooled_sd = np.sqrt(
+                ((len(vc_vals) - 1) * np.var(vc_vals, ddof=1)
+                 + (len(pc_vals) - 1) * np.var(pc_vals, ddof=1))
+                / (len(vc_vals) + len(pc_vals) - 2)
+            )
+            cohens_d = (
+                round(float((np.mean(pc_vals) - np.mean(vc_vals)) / pooled_sd), 4)
+                if pooled_sd > 0 else 0.0
+            )
+
+            direction = "up" if np.mean(pc_vals) > np.mean(vc_vals) else "down"
+            significant = p_val is not None and p_val < 0.05
+
+            test_name = str(grp[name_col].iloc[0]) if has_name and name_col in grp.columns else testcd
+
+            endpoints.append({
+                "domain": domain_key.upper(),
+                "test_code": str(testcd),
+                "endpoint_label": test_name,
+                "sex": str(sex),
+                "vehicle_mean": round(float(np.mean(vc_vals)), 4),
+                "vehicle_n": int(len(vc_vals)),
+                "pc_mean": round(float(np.mean(pc_vals)), 4),
+                "pc_n": int(len(pc_vals)),
+                "p_value": round(p_val, 6) if p_val is not None else None,
+                "cohens_d": cohens_d,
+                "direction": direction,
+                "response_adequate": significant and abs(cohens_d) >= 0.5,
+            })
+
+    n_total = len(endpoints)
+    n_adequate = sum(1 for e in endpoints if e["response_adequate"])
+    n_significant = sum(1 for e in endpoints if e.get("p_value") is not None and e["p_value"] < 0.05)
+
+    # Validity: at least one endpoint shows adequate PC response
+    validity_concern = n_adequate == 0 and n_total > 0
+
+    return {
+        "pc_arm_label": pc_label,
+        "pc_compound": pc_compound,
+        "vehicle_label": vc_label,
+        "n_endpoints": n_total,
+        "n_significant": n_significant,
+        "n_adequate": n_adequate,
+        "validity_concern": validity_concern,
+        "endpoints": endpoints,
+    }
+
+
 def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
     """Classify finding into an endpoint type category."""
     mapping = {

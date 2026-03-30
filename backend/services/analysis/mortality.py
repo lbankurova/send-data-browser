@@ -16,6 +16,58 @@ SCHEDULED_DISPOSITIONS = {"TERMINAL SACRIFICE", "INTERIM SACRIFICE",
                           "SCHEDULED EUTHANASIA", "SCHEDULED SACRIFICE",
                           "TERMINAL KILL", "RECOVERY SACRIFICE"}
 
+# Phase F: Strain-specific background pathologies (mitigating factors for mortality)
+_STRAIN_PATHOLOGY: dict[str, list[str]] = {
+    # F344 (Fischer 344): MNCL and CPN are the dominant background causes
+    "FISCHER 344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
+                    "chronic progressive nephropathy"],
+    "F344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
+             "chronic progressive nephropathy"],
+    "F-344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
+              "chronic progressive nephropathy"],
+    # Sprague-Dawley: mammary tumors are the dominant background cause in females
+    "SPRAGUE-DAWLEY": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
+    "SPRAGUE DAWLEY": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
+    "SD": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
+    # Wistar Han: pituitary tumors
+    "WISTAR": ["pituitary"],
+    "WISTAR HAN": ["pituitary"],
+}
+
+# Intercurrent (non-treatment, non-strain) causes suggesting facility/GLP issues
+_INTERCURRENT_TERMS = [
+    "gavage", "dosing error", "gavage error", "mis-dose", "misdose",
+    "cage", "fight", "injury", "trauma", "husbandry",
+    "infection", "contamination", "environmental",
+]
+
+
+def _classify_cause_category(
+    cause: str | None,
+    strain: str | None,
+) -> str:
+    """Classify cause of death: strain_pathology, intercurrent, or undetermined."""
+    if not cause:
+        return "undetermined"
+    cause_lower = cause.lower()
+
+    # Check intercurrent causes first (facility/procedural issues)
+    for term in _INTERCURRENT_TERMS:
+        if term in cause_lower:
+            return "intercurrent"
+
+    # Check strain-specific pathologies (mitigating)
+    if strain:
+        strain_upper = strain.strip().upper()
+        for strain_key, terms in _STRAIN_PATHOLOGY.items():
+            if strain_key in strain_upper:
+                for term in terms:
+                    if term in cause_lower:
+                        return "strain_pathology"
+                break
+
+    return "undetermined"
+
 
 def get_early_death_subjects(
     study: StudyInfo,
@@ -54,6 +106,7 @@ def compute_study_mortality(
     study: StudyInfo,
     subjects: pd.DataFrame,
     dose_groups: list[dict],
+    strain: str | None = None,
 ) -> dict:
     """Build a study-level mortality summary from DS + DD domains.
 
@@ -120,10 +173,11 @@ def compute_study_mortality(
             })
             ds_death_subjects.add(subj)
 
-    # --- Enrich deaths with DD cause-of-death ---
+    # --- Enrich deaths with DD cause-of-death + strain pathology classification ---
     enriched_deaths = []
     for d in deaths:
         dd = dd_by_subj.get(d["USUBJID"])
+        cause = dd["cause"] if dd else None
         enriched_deaths.append({
             "USUBJID": d["USUBJID"],
             "sex": d["SEX"],
@@ -131,7 +185,8 @@ def compute_study_mortality(
             "is_recovery": d["is_recovery"],
             "is_satellite": d.get("is_satellite", False),
             "disposition": d.get("dsdecod", ""),
-            "cause": dd["cause"] if dd else None,
+            "cause": cause,
+            "cause_category": _classify_cause_category(cause, strain),
             "relatedness": dd["relatedness"] if dd else None,
             "study_day": dd["study_day"] if dd else None,
             "dose_label": dose_label_map.get(d["dose_level"], ""),
