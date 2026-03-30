@@ -87,7 +87,12 @@ def get_early_death_subjects(
     if "DSDECOD" not in ds_df.columns:
         return {}
 
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
+    # Only consider subjects in the dose-response analysis (dose_level >= 0).
+    # Secondary controls (-3) and positive controls (-2) are already excluded
+    # from all statistics — their deaths shouldn't drive the scheduled-only toggle.
+    main_subs = subjects[
+        ~subjects["is_recovery"] & ~subjects["is_satellite"] & (subjects["dose_level"] >= 0)
+    ].copy()
     ds_df = ds_df.merge(
         main_subs[["USUBJID", "SEX", "dose_level"]],
         on="USUBJID", how="inner",
@@ -208,9 +213,18 @@ def compute_study_mortality(
             "dose_label": dose_label_map.get(a["dose_level"], ""),
         })
 
-    # --- Filter to main-study only for mortality counts (exclude recovery + TK satellite) ---
-    main_deaths = [d for d in enriched_deaths if not d["is_recovery"] and not d.get("is_satellite")]
-    main_accidentals = [a for a in enriched_accidentals if not a["is_recovery"] and not a.get("is_satellite")]
+    # --- Filter to analysis-relevant subjects for mortality counts ---
+    # Exclude recovery, TK satellite, AND secondary/positive controls (dose_level < 0).
+    # Deaths at dose_level -3/-2 are shown in the full deaths array for transparency
+    # but don't participate in total_deaths, by_dose, or LOAEL determination.
+    main_deaths = [
+        d for d in enriched_deaths
+        if not d["is_recovery"] and not d.get("is_satellite") and d["dose_level"] >= 0
+    ]
+    main_accidentals = [
+        a for a in enriched_accidentals
+        if not a["is_recovery"] and not a.get("is_satellite") and a["dose_level"] >= 0
+    ]
 
     # --- Build by_dose summary ---
     all_levels = sorted(dose_value_map.keys())
@@ -276,7 +290,7 @@ def compute_study_mortality(
             })
 
     return {
-        "has_mortality": total_deaths > 0,
+        "has_mortality": len(enriched_deaths) > 0 or len(enriched_accidentals) > 0,
         "total_deaths": total_deaths,
         "total_accidental": total_accidental,
         "mortality_loael": mortality_loael,
