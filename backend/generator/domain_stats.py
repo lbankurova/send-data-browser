@@ -712,11 +712,166 @@ def compute_assay_validation(
     return {
         "pc_arm_label": pc_label,
         "pc_compound": pc_compound,
+        "pc_dose": pc_dg.get("dose_value") if pc_dg else None,
         "vehicle_label": vc_label,
         "n_endpoints": n_total,
         "n_significant": n_significant,
         "n_adequate": n_adequate,
         "validity_concern": validity_concern,
+        "endpoints": endpoints,
+    }
+
+
+def compute_active_comparator_comparison(
+    study: StudyInfo,
+    subjects: pd.DataFrame,
+    dg_data: dict,
+) -> dict | None:
+    """Pairwise comparison of test article dose groups vs. active comparator.
+
+    For active-comparator-only studies (no vehicle control), produces
+    per-endpoint t-tests between each treated group and the comparator arm.
+    This is the replacement analysis when NOAEL/Dunnett's are suppressed.
+
+    Returns None if no active comparator arms exist.
+    """
+    ac_arms = dg_data.get("active_comparator_arms", [])
+    if not ac_arms:
+        return None
+
+    from services.xpt_processor import read_xpt
+
+    dose_groups = dg_data["dose_groups"]
+
+    # Active comparator subjects (dose_level -2)
+    ac_subs = subjects[
+        (subjects["dose_level"] == -2)
+        & ~subjects["is_recovery"]
+        & ~subjects["is_satellite"]
+    ]["USUBJID"].values
+    if len(ac_subs) == 0:
+        return None
+
+    ac_set = set(ac_subs)
+    ac_dg = next((dg for dg in dose_groups if dg["dose_level"] == -2), None)
+    ac_label = ac_dg["label"] if ac_dg else "Active Comparator"
+
+    # Treated dose groups (dose_level > 0)
+    treated_dgs = [dg for dg in dose_groups if dg["dose_level"] > 0]
+    if not treated_dgs:
+        return None
+
+    # Build subject sets per treated dose level
+    treated_sets: dict[int, set] = {}
+    for dg in treated_dgs:
+        dl = dg["dose_level"]
+        subs = subjects[
+            (subjects["dose_level"] == dl)
+            & ~subjects["is_recovery"]
+            & ~subjects["is_satellite"]
+        ]["USUBJID"].values
+        if len(subs) >= 2:
+            treated_sets[dl] = set(subs)
+
+    if not treated_sets:
+        return None
+
+    dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
+    sex_map = subjects.set_index("USUBJID")["SEX"].to_dict()
+
+    endpoints: list[dict] = []
+
+    for domain_key in sorted(_VC_UC_CONTINUOUS_DOMAINS):
+        if domain_key not in study.xpt_files:
+            continue
+        cols = _DOMAIN_COLS.get(domain_key)
+        if not cols:
+            continue
+        val_col, tc_col, _day_col, name_col = cols
+
+        try:
+            df, _ = read_xpt(study.xpt_files[domain_key])
+            df.columns = [c.upper() for c in df.columns]
+        except Exception:
+            continue
+
+        if val_col not in df.columns:
+            continue
+
+        df["value"] = pd.to_numeric(df[val_col], errors="coerce")
+        df = df.dropna(subset=["value"])
+        if df.empty:
+            continue
+
+        df["SEX"] = df["USUBJID"].map(sex_map)
+        has_tc = tc_col in df.columns
+        has_name = name_col in df.columns
+
+        group_cols = []
+        if has_tc:
+            group_cols.append(tc_col)
+        group_cols.append("SEX")
+
+        for keys, grp in df.groupby(group_cols):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            testcd = keys[0] if has_tc else domain_key.upper()
+            sex = keys[-1]
+
+            ac_vals = grp[grp["USUBJID"].isin(ac_set)]["value"].values
+            if len(ac_vals) < 2:
+                continue
+
+            test_name = (
+                str(grp[name_col].iloc[0])
+                if has_name and name_col in grp.columns
+                else str(testcd)
+            )
+
+            for dl, t_set in treated_sets.items():
+                t_vals = grp[grp["USUBJID"].isin(t_set)]["value"].values
+                if len(t_vals) < 2:
+                    continue
+
+                try:
+                    _t, p_val = sp_stats.ttest_ind(ac_vals, t_vals, equal_var=False)
+                    p_val = _safe_float(p_val)
+                except Exception:
+                    p_val = None
+
+                pooled_sd = np.sqrt(
+                    ((len(ac_vals) - 1) * np.var(ac_vals, ddof=1)
+                     + (len(t_vals) - 1) * np.var(t_vals, ddof=1))
+                    / (len(ac_vals) + len(t_vals) - 2)
+                )
+                cohens_d = (
+                    round(float((np.mean(t_vals) - np.mean(ac_vals)) / pooled_sd), 4)
+                    if pooled_sd > 0 else 0.0
+                )
+
+                endpoints.append({
+                    "domain": domain_key.upper(),
+                    "test_code": str(testcd),
+                    "endpoint_label": test_name,
+                    "sex": str(sex),
+                    "dose_level": dl,
+                    "dose_label": dose_label_map.get(dl, ""),
+                    "comparator_mean": round(float(np.mean(ac_vals)), 4),
+                    "comparator_n": int(len(ac_vals)),
+                    "treated_mean": round(float(np.mean(t_vals)), 4),
+                    "treated_n": int(len(t_vals)),
+                    "p_value": round(p_val, 6) if p_val is not None else None,
+                    "cohens_d": cohens_d,
+                    "significant": p_val is not None and p_val < 0.05,
+                })
+
+    n_total = len(endpoints)
+    n_significant = sum(1 for e in endpoints if e["significant"])
+
+    return {
+        "comparator_label": ac_label,
+        "n_endpoints": n_total,
+        "n_significant": n_significant,
         "endpoints": endpoints,
     }
 

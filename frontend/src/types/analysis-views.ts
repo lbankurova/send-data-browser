@@ -16,7 +16,7 @@ export interface SignalSummaryRow {
   p_value: number | null;
   trend_p: number | null;
   effect_size: number | null;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   treatment_related: boolean;
   dose_response_pattern: string;
   statistical_flag: boolean;
@@ -163,7 +163,7 @@ export interface AdverseEffectSummaryRow {
   p_value: number | null;
   effect_size: number | null;
   direction: "up" | "down" | "none" | null;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   treatment_related: boolean;
   dose_response_pattern: string;
   /** SEND test code (e.g., LBTESTCD) — used for structured syndrome matching */
@@ -225,7 +225,7 @@ export interface OrganEvidenceRow {
   p_value: number | null;
   effect_size: number | null;
   direction: "up" | "down" | "none" | null;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   treatment_related: boolean;
 }
 
@@ -271,7 +271,7 @@ export interface LesionSeverityRow {
   incidence: number;
   avg_severity: number | null;
   severity_status: SeverityStatus;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   /** Dominant distribution qualifier from SUPP domain: focal, diffuse, mixed, etc. */
   dominant_distribution?: string | null;
   /** Dominant temporality qualifier: acute, subacute, chronic */

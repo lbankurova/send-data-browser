@@ -979,10 +979,14 @@ def build_dose_groups(study: StudyInfo) -> dict:
         tx_info = tx_map.get(armcd, {})
         arm_control_types[armcd] = _classify_control(tx_info)
 
-    # Separate positive controls (excluded from dose-response)
+    # Separate positive controls and active comparators (excluded from dose-response)
     positive_control_arms = {
         a for a, ct in arm_control_types.items()
         if ct in (CTRL_POSITIVE, CTRL_ACTIVE_COMPARATOR)
+    }
+    active_comparator_arms = {
+        a for a, ct in arm_control_types.items()
+        if ct == CTRL_ACTIVE_COMPARATOR
     }
 
     # Reference controls (vehicle, negative, untreated, procedural, air, unknown)
@@ -1212,6 +1216,7 @@ def build_dose_groups(study: StudyInfo) -> dict:
         "primary_control_arm": primary_control_arm,
         "secondary_control_arms": list(secondary_control_arms),
         "positive_control_arms": list(positive_control_arms),
+        "active_comparator_arms": list(active_comparator_arms),
         "is_multi_compound": is_multi_compound,
         "compounds": sorted(compounds) if compounds else [],
         "compound_partitions": compound_partitions,
@@ -1282,6 +1287,9 @@ _TCNTRL_TIER3 = {
 }
 
 
+_TCNTRL_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")
+
+
 def _classify_control(tx_info: dict) -> str | None:
     """Classify control type from TX metadata using 3-tier TCNTRL normalization.
 
@@ -1290,11 +1298,20 @@ def _classify_control(tx_info: dict) -> str | None:
     Normalization tiers (from control-groups-model-29mar2026.md §5):
       Tier 1: High-confidence direct match (40+ known TCNTRL values)
       Tier 2: Ambiguous values resolved via dose_value / label context
-      Tier 3: Data quality errors treated as missing
+      Tier 3: Data quality errors treated as missing (includes timestamps)
     """
     tcntrl = tx_info.get("tcntrl")
     tcntrl_str = str(tcntrl).strip() if tcntrl else ""
     tcntrl_lower = tcntrl_str.lower()
+
+    # Tier 3 pre-check: timestamp data entry errors (e.g. "2018-10-17T10:55:58")
+    if tcntrl_str and _TCNTRL_TIMESTAMP_RE.match(tcntrl_str):
+        logger.warning(
+            "TCNTRL contains timestamp instead of control type: '%s' -- "
+            "treating as missing (data quality error)",
+            tcntrl_str,
+        )
+        tcntrl_lower = ""
 
     # ── Cross-check: TCNTRL on a treated arm (dose > 0) ──
     # Some sponsors put TCNTRL on ALL arms to document the vehicle formulation

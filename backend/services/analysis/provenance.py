@@ -1,4 +1,4 @@
-"""Generate provenance messages (Prov-001 to Prov-010) from enrichment results.
+"""Generate provenance messages (Prov-001 to Prov-014) from enrichment results.
 
 Provenance messages are transparency annotations that tell the user how the
 enrichment layer interpreted the study data. They appear on the Study Summary

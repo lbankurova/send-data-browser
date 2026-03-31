@@ -40,11 +40,17 @@ def build_study_signal_summary(
     findings: list[dict],
     dose_groups: list[dict],
     params: ScoringParams | None = None,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Build the study signal summary: one row per endpoint x dose x sex.
 
     Each row contains signal score, p-values, flags, direction, effect size.
+    When has_concurrent_control is False, returns an empty list -- signal
+    scores without statistical comparison are scientifically meaningless.
     """
+    if not has_concurrent_control:
+        return []
+
     rows = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
@@ -117,12 +123,18 @@ def _convergence_group(domain: str) -> str:
 def build_target_organ_summary(
     findings: list[dict],
     params: ScoringParams | None = None,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Build target organ summary: one row per organ system.
 
     Aggregates evidence across endpoints. SLA-11 fix: deduplicates numerator
     by taking max signal per endpoint key. SLA-10 fix: convergence groups.
+
+    When has_concurrent_control is False, returns an empty list -- target
+    organ identification requires statistical comparison against control.
     """
+    if not has_concurrent_control:
+        return []
     from services.analysis.send_knowledge import get_effect_size
 
     organ_data: dict[str, dict] = defaultdict(lambda: {

@@ -139,6 +139,7 @@ def generate(study_id: str):
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
 
     # Phase C: VC-UC supplementary comparison for dual-control studies
+    ctrl_cmp = None
     if dg_data.get("control_resolution") == "multi_control_path_c":
         from generator.domain_stats import compute_control_comparison
         try:
@@ -150,6 +151,7 @@ def generate(study_id: str):
             print(f"  WARNING: Control comparison failed: {e}")
 
     # Phase E: Positive control assay validation
+    assay_val = None
     if dg_data.get("positive_control_arms"):
         from generator.domain_stats import compute_assay_validation
         try:
@@ -160,6 +162,17 @@ def generate(study_id: str):
                 print(f"  Assay validation: {assay_val['n_adequate']}/{assay_val['n_endpoints']} adequate, validity={status}")
         except Exception as e:
             print(f"  WARNING: Assay validation failed: {e}")
+
+    # Phase G: Active comparator pairwise comparison
+    if dg_data.get("active_comparator_arms"):
+        from generator.domain_stats import compute_active_comparator_comparison
+        try:
+            ac_cmp = compute_active_comparator_comparison(study, _subjects, dg_data)
+            if ac_cmp:
+                _write_json(out_dir / "active_comparator_comparison.json", ac_cmp)
+                print(f"  Active comparator: {ac_cmp['n_significant']}/{ac_cmp['n_endpoints']} significant vs {ac_cmp['comparator_label']}")
+        except Exception as e:
+            print(f"  WARNING: Active comparator comparison failed: {e}")
 
     _tick("1b_end")
 
@@ -253,12 +266,15 @@ def generate(study_id: str):
 
         ctx_df = context_result["subject_context"]
         _write_json(out_dir / "subject_context.json", ctx_df.to_dict(orient="records"))
-        _write_json(out_dir / "provenance_messages.json", provenance_msgs)
         auto_detected = compute_last_dosing_day(study)
         effective = last_dosing_day_override if last_dosing_day_override is not None else auto_detected
         context_result["study_metadata"]["last_dosing_day"] = effective
         context_result["study_metadata"]["auto_detected_last_dosing_day"] = auto_detected
         context_result["study_metadata"]["last_dosing_day_override"] = last_dosing_day_override
+        # Add study duration to metadata (Phase B data gap D1)
+        if duration_days is not None:
+            context_result["study_metadata"]["duration_days"] = duration_days
+            context_result["study_metadata"]["duration_weeks"] = round(duration_days / 7, 1)
         # A6: compound partitioning data for frontend consumption
         context_result["study_metadata"]["is_multi_compound"] = dg_data.get("is_multi_compound", False)
         context_result["study_metadata"]["compounds"] = dg_data.get("compounds", [])
@@ -272,6 +288,69 @@ def generate(study_id: str):
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
         print(f"  1c WARNING: Subject context failed: {e}")
+
+    # Control-group provenance (runs even if subject context failed)
+    if not dg_data.get("has_concurrent_control", True):
+        provenance_msgs.append({
+            "rule_id": "Prov-012",
+            "icon": "warning",
+            "message": (
+                "No concurrent control detected -- adversity determination "
+                "suppressed. Descriptive statistics only."
+            ),
+            "link_to_rule": None,
+        })
+    if mortality and mortality.get("qualification"):
+        qual = mortality["qualification"]
+        if qual.get("suppress_noael"):
+            rate_pct = round(qual["control_mortality_rate"] * 100, 1)
+            dur = qual.get("duration_weeks")
+            provenance_msgs.append({
+                "rule_id": "Prov-013",
+                "icon": "warning",
+                "message": (
+                    f"{rate_pct}% control mortality"
+                    + (f" in {dur}w study" if dur else "")
+                    + ". NOAEL determination suppressed due to critical "
+                    "control mortality."
+                ),
+                "link_to_rule": None,
+            })
+        elif qual.get("qualification_flags"):
+            rate_pct = round(qual["control_mortality_rate"] * 100, 1)
+            dur = qual.get("duration_weeks")
+            provenance_msgs.append({
+                "rule_id": "Prov-013",
+                "icon": "info",
+                "message": (
+                    f"{rate_pct}% control mortality"
+                    + (f" in {dur}w study" if dur else "")
+                    + ". "
+                    + qual["qualification_flags"][0]["message"]
+                ),
+                "link_to_rule": None,
+            })
+    if ctrl_cmp:
+        for pm in provenance_msgs:
+            if pm["rule_id"] == "Prov-009":
+                pm["message"] += " " + ctrl_cmp["summary"]
+                break
+    # Prov-014: Failed positive control — study validity concern
+    if assay_val and assay_val.get("validity_concern"):
+        provenance_msgs.append({
+            "rule_id": "Prov-014",
+            "icon": "warning",
+            "message": (
+                f"Positive control ({assay_val['pc_arm_label']}) showed no adequate "
+                f"response in {assay_val['n_endpoints']} endpoints -- assay sensitivity "
+                "not demonstrated. Study validity in question."
+            ),
+            "link_to_rule": None,
+        })
+    # Write provenance (after all conditional messages are appended)
+    _write_json(out_dir / "provenance_messages.json", provenance_msgs)
+    if ctx_df is None:
+        print(f"  wrote provenance_messages.json ({len(provenance_msgs)} items)")
 
     # Phase 1g: Per-subject syndrome matching
     _tick("1g_start")

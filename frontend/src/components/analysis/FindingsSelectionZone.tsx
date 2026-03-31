@@ -46,7 +46,7 @@ export function FindingsSelectionZone({ findings, selectedRow, isStrip, onStripR
     );
   }
 
-  const flagged = findings.filter((f) => f.severity !== "normal" || f.clinicalClass);
+  const flagged = findings.filter((f) => (f.severity !== "normal" && f.severity !== "not_assessed") || f.clinicalClass);
   const normalCount = findings.length - flagged.length;
   const shown = flagged.slice(0, 3);
 

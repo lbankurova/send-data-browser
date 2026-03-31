@@ -37,7 +37,7 @@ export interface QuadrantPoint {
   endpoint_label: string;
   organ_system: string;
   domain: string;
-  worstSeverity: "adverse" | "warning" | "normal";
+  worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
   treatmentRelated: boolean;
   x: number;  // effect percentile (0–1, Hazen plotting position)
   y: number;  // -log10(p)

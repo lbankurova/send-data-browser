@@ -172,6 +172,7 @@ export interface AssayValidationEndpoint {
 export interface AssayValidation {
   pc_arm_label: string;
   pc_compound: string | null;
+  pc_dose: number | null;
   vehicle_label: string;
   n_endpoints: number;
   n_significant: number;

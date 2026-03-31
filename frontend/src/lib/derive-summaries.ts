@@ -47,7 +47,7 @@ export interface SexEndpointSummary {
   maxFoldChange: number | null;
   minPValue: number | null;
   pattern: string;
-  worstSeverity: "adverse" | "warning" | "normal";
+  worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
   treatmentRelated: boolean;
   testCode?: string;
 }
@@ -56,7 +56,7 @@ export interface EndpointSummary {
   endpoint_label: string;
   organ_system: string;
   domain: string;
-  worstSeverity: "adverse" | "warning" | "normal";
+  worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
   treatmentRelated: boolean;
   maxEffectSize: number | null;
   minPValue: number | null;
@@ -169,7 +169,7 @@ function resolveOrganSystem(row: AdverseEffectSummaryRow): string {
 
 export function deriveOrganSummaries(data: AdverseEffectSummaryRow[]): OrganSummary[] {
   const map = new Map<string, {
-    endpoints: Map<string, { severity: "adverse" | "warning" | "normal"; tr: boolean }>;
+    endpoints: Map<string, { severity: "adverse" | "warning" | "normal" | "not_assessed"; tr: boolean }>;
     maxEffect: number;
     /** SLA-01: Max Cohen's d from continuous domains only */
     maxCohensD: number | null;
@@ -342,7 +342,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
   const map = new Map<string, {
     organ_system: string;
     domain: string;
-    worstSeverity: "adverse" | "warning" | "normal";
+    worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
     tr: boolean;
     maxEffect: number | null;
     minP: number | null;
@@ -372,7 +372,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     maxFoldChange: number | null;
     minP: number | null;
     pattern: string;
-    worstSeverity: "adverse" | "warning" | "normal";
+    worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
     tr: boolean;
     testCode?: string;
   }>>();
@@ -593,7 +593,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
 
   // Sort: adverse first, then TR, then by min p-value (SLA-08: not raw maxEffectSize)
   return summaries.sort((a, b) => {
-    const sevOrder = { adverse: 0, warning: 1, normal: 2 };
+    const sevOrder: Record<string, number> = { adverse: 0, warning: 1, normal: 2, not_assessed: 2 };
     const sevDiff = sevOrder[a.worstSeverity] - sevOrder[b.worstSeverity];
     if (sevDiff !== 0) return sevDiff;
     if (a.treatmentRelated !== b.treatmentRelated) return a.treatmentRelated ? -1 : 1;

@@ -1011,7 +1011,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       }
     }
     return [...unique.values()].sort((a, b) => {
-      const sevOrd = { adverse: 0, warning: 1, normal: 2 };
+      const sevOrd: Record<string, number> = { adverse: 0, warning: 1, normal: 2, not_assessed: 2 };
       return (sevOrd[a.severity] ?? 2) - (sevOrd[b.severity] ?? 2) || a.finding.localeCompare(b.finding);
     });
   }, [activeFindings, specimen]);
@@ -1789,7 +1789,7 @@ export function FindingsContextPanel() {
               {getPatternLabel(selectedFinding.dose_response_pattern)}
             </span>
           )}
-          {selectedFinding.severity && selectedFinding.severity !== "normal" && (
+          {selectedFinding.severity && selectedFinding.severity !== "normal" && selectedFinding.severity !== "not_assessed" && (
             <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200 capitalize">
               {selectedFinding.severity}
             </span>

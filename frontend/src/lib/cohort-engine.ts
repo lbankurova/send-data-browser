@@ -467,7 +467,7 @@ export function computeSharedFindings(
   const shared: SharedFinding[] = [];
 
   for (const f of findings) {
-    if (f.severity === "normal") continue; // Only share notable findings
+    if (f.severity === "normal" || f.severity === "not_assessed") continue; // Only share notable findings
 
     let isShared = false;
 

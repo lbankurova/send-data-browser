@@ -58,7 +58,7 @@ export interface CohortFindingRow {
   organName: string;
   sex: string;
   day: number | null;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   direction: "up" | "down" | "none" | null;
   /** Unified finding id — for linking to evidence pane. */
   findingId: string;
@@ -89,7 +89,7 @@ export interface SharedFinding {
   domain: string;
   finding: string;
   direction: "up" | "down" | "none" | null;
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
 }
 
 // ── Per-subject syndrome matching ───────────────────────────

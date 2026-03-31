@@ -45,7 +45,7 @@ export interface FindingSummary {
   maxIncidence: number;
   totalAffected: number;
   totalN: number;
-  severity: "adverse" | "warning" | "decreased" | "normal";
+  severity: "adverse" | "warning" | "decreased" | "normal" | "not_assessed";
 }
 
 export interface RelatedOrganInfo {

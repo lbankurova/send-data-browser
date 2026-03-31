@@ -356,6 +356,23 @@ def qualify_control_mortality(
     survival_rate = 1.0 - mortality_rate
     duration_weeks = round(duration_days / 7, 1) if duration_days else None
 
+    # Dual-rate computation: count strain-pathology deaths for adjusted rate.
+    # Raw rate drives regulatory threshold gates (EPA/OECD floors).
+    # Adjusted rate (excluding strain-expected deaths) drives HCD comparison
+    # and contextual annotation for the toxicologist.
+    strain_pathology_deaths = 0
+    for d in mortality.get("deaths", []):
+        if (d.get("dose_level") == 0
+                and not d.get("is_recovery")
+                and not d.get("is_satellite")
+                and d.get("cause_category") == "strain_pathology"):
+            strain_pathology_deaths += 1
+
+    adjusted_deaths = control_deaths - strain_pathology_deaths
+    mortality_rate_adjusted = (
+        round(adjusted_deaths / control_n, 4) if adjusted_deaths > 0 else 0.0
+    )
+
     flags: list[dict] = []
     suppress_noael = False
 
@@ -421,6 +438,8 @@ def qualify_control_mortality(
     return {
         "control_mortality_rate": round(mortality_rate, 4),
         "control_survival_rate": round(survival_rate, 4),
+        "control_mortality_rate_adjusted": mortality_rate_adjusted,
+        "strain_pathology_deaths": strain_pathology_deaths,
         "control_n": control_n,
         "control_deaths": control_deaths,
         "duration_days": duration_days,

@@ -43,7 +43,7 @@ export interface ToxSystemSuggestion {
 /** Derive a system suggestion from signal data fields. */
 export function deriveToxSuggestion(
   treatmentRelated: boolean,
-  severity: "adverse" | "warning" | "normal",
+  severity: "adverse" | "warning" | "normal" | "not_assessed",
 ): ToxSystemSuggestion {
   return {
     treatmentRelated: treatmentRelated ? "Yes" : "No",
@@ -158,6 +158,14 @@ export interface PathologyReview {
   revisedDiagnosis: string;
   pathologist: string;
   reviewDate: string;
+}
+
+/** User override of auto-detected study type classification. */
+export interface StudyTypeOverride {
+  /** Config ID the user selected (e.g., "REPEAT_DOSE", "ACUTE") */
+  study_type: string;
+  rationale: string;
+  timestamp: string;
 }
 
 /** Expert override of computed NOAEL determination. */

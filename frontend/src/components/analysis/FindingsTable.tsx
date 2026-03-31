@@ -750,7 +750,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const label = f.endpoint_label ?? f.finding;
           const signal = signalScores?.get(label) ?? 0;
           const tier = getSignalTier(signal);
-          const isNormal = severity === "normal";
+          const isNormal = severity === "normal" || severity === "not_assessed";
           const isPharmCandidate = f._confidence?._pharmacological_candidate === true;
 
           const borderClass = isNormal

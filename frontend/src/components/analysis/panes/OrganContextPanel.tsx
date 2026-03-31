@@ -953,7 +953,7 @@ function MemberEndpointRow({
   );
 }
 
-function SeverityDot({ severity }: { severity: "adverse" | "warning" | "normal" }) {
+function SeverityDot({ severity }: { severity: "adverse" | "warning" | "normal" | "not_assessed" }) {
   const color =
     severity === "adverse" ? "bg-red-500" :
     severity === "warning" ? "bg-amber-500" :

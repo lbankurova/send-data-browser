@@ -85,14 +85,23 @@ class ParameterizedAnalysisPipeline:
             has_concurrent_control = dg_data.get("has_concurrent_control", True)
 
         # 2. Apply settings transforms (post-processing)
-        findings = apply_settings_transforms(findings, settings)
+        findings = apply_settings_transforms(
+            findings, settings,
+            has_concurrent_control=has_concurrent_control,
+        )
 
         # 2b. Load expert scoring params from annotations (defaults if none saved)
         scoring = load_scoring_params(self.study.study_id)
 
         # 3. Build all view JSONs (order matters: rules need target_organs + noael)
-        signal_summary = build_study_signal_summary(findings, dose_groups, params=scoring)
-        target_organs = build_target_organ_summary(findings, params=scoring)
+        signal_summary = build_study_signal_summary(
+            findings, dose_groups, params=scoring,
+            has_concurrent_control=has_concurrent_control,
+        )
+        target_organs = build_target_organ_summary(
+            findings, params=scoring,
+            has_concurrent_control=has_concurrent_control,
+        )
         noael = build_noael_summary(
             findings, dose_groups, mortality=mortality, params=scoring,
             has_concurrent_control=has_concurrent_control,
@@ -208,6 +217,7 @@ def _build_summary(findings: list[dict], dose_groups: list[dict]) -> dict:
 def apply_settings_transforms(
     findings: list[dict],
     settings: AnalysisSettings,
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Apply all active settings transforms, then re-derive enrichment if needed.
 
@@ -260,6 +270,7 @@ def apply_settings_transforms(
     if changed or settings.adversity_threshold != "grade-ge-2-or-dose-dep":
         findings = rederive_enrichment(
             findings, threshold=settings.adversity_threshold,
+            has_concurrent_control=has_concurrent_control,
         )
 
     return findings
@@ -585,6 +596,7 @@ def apply_trend_williams(findings: list[dict]):
 def rederive_enrichment(
     findings: list[dict],
     threshold: str = "grade-ge-2-or-dose-dep",
+    has_concurrent_control: bool = True,
 ) -> list[dict]:
     """Re-run full enrichment pipeline after settings transforms.
 
@@ -598,7 +610,9 @@ def rederive_enrichment(
     # Cross-organ chain detection
     findings = compute_chain_detection(findings)
     # ECETOC per-finding adversity assessment
-    findings = _assess_all_findings(findings)
+    findings = _assess_all_findings(
+        findings, has_concurrent_control=has_concurrent_control,
+    )
     # GRADE-style confidence scoring
     findings = compute_all_confidence(findings)
     return findings

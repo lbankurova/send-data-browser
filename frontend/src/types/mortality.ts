@@ -26,6 +26,10 @@ export interface DoseGroupMortality {
 export interface MortalityQualification {
   control_mortality_rate: number | null;
   control_survival_rate: number | null;
+  /** Adjusted rate excluding strain-expected deaths (for HCD context) */
+  control_mortality_rate_adjusted: number | null;
+  /** Count of deaths classified as strain-expected pathology */
+  strain_pathology_deaths: number;
   control_n: number | null;
   control_deaths: number | null;
   duration_days: number | null;

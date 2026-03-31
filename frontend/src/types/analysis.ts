@@ -65,7 +65,7 @@ export interface UnifiedFinding {
   sex: string;
   unit: string | null;
   data_type: "continuous" | "incidence";
-  severity: "adverse" | "warning" | "normal";
+  severity: "adverse" | "warning" | "normal" | "not_assessed";
   direction: "up" | "down" | "none" | null;
   dose_response_pattern: string | null;
   /** Backend classifier's onset dose level (1-based, threshold patterns). */
@@ -121,7 +121,7 @@ export interface UnifiedFinding {
    *  "partially_corroborated" = cross-domain support found but with directional incoherence (SLA-16). */
   corroboration_status?: "corroborated" | "partially_corroborated" | "uncorroborated" | "not_applicable";
   /** ECETOC per-finding adversity class — set by backend pipeline. */
-  finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal";
+  finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal" | "not_assessed";
   /** Tier 2: OM two-gate assessment detail (organ weight findings only). */
   _assessment_detail?: {
     method: string;

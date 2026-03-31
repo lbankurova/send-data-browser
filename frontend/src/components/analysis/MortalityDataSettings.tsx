@@ -64,11 +64,19 @@ function MortalityQualification({ q }: { q: import("@/types/mortality").Mortalit
 
   const pct = (q.control_mortality_rate * 100).toFixed(1);
   const dur = q.duration_weeks != null ? `${q.duration_weeks}w` : "unknown duration";
+  const hasStrainAdj = q.strain_pathology_deaths > 0 && q.control_mortality_rate_adjusted != null;
+  const adjPct = hasStrainAdj ? (q.control_mortality_rate_adjusted! * 100).toFixed(1) : null;
 
   return (
     <div className="mb-2 space-y-1">
       <div className="mb-1 text-[11px] text-muted-foreground">
         Control mortality: {pct}% ({q.control_deaths}/{q.control_n}) in {dur} study
+        {hasStrainAdj && (
+          <span className="ml-1 text-muted-foreground/70">
+            ({adjPct}% adjusted, {q.strain_pathology_deaths} strain-expected
+            {q.strain_pathology_deaths === 1 ? " death" : " deaths"} excluded)
+          </span>
+        )}
       </div>
       {q.qualification_flags.map((flag, i) => (
         <div

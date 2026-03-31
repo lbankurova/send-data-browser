@@ -186,7 +186,7 @@ export function CohortEvidenceTable({
                     className={cn(
                       "cursor-pointer transition-colors",
                       hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
-                      row.severity === "normal" && "text-muted-foreground",
+                      (row.severity === "normal" || row.severity === "not_assessed") && "text-muted-foreground",
                     )}
                     style={{
                       borderLeft: row.severity === "adverse" ? "3px solid #dc2626"
@@ -273,7 +273,7 @@ export function CohortEvidenceTable({
                       className={cn(
                         "cursor-pointer transition-colors",
                         hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
-                        row.severity === "normal" && "text-muted-foreground",
+                        (row.severity === "normal" || row.severity === "not_assessed") && "text-muted-foreground",
                       )}
                       onMouseEnter={() => onRowHover(row.key)}
                       onMouseLeave={() => onRowHover(null)}
@@ -333,7 +333,7 @@ export function CohortEvidenceTable({
                         className={cn(
                           "cursor-pointer transition-colors group",
                           hoveredRow === row.key ? "bg-accent/40" : "hover:bg-accent/20",
-                          row.severity === "normal" && "text-muted-foreground",
+                          (row.severity === "normal" || row.severity === "not_assessed") && "text-muted-foreground",
                         )}
                         onMouseEnter={() => onRowHover(row.key)}
                         onMouseLeave={() => onRowHover(null)}

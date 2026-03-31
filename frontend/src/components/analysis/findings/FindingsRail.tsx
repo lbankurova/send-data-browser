@@ -1692,7 +1692,7 @@ const EndpointRow = forwardRef<HTMLButtonElement, {
   clinicalTier?: string;
 }>(function EndpointRow({ endpoint, isSelected, isExcluded, onClick, onHover, onRestore, clinicalTier }, ref) {
   const tier = getSignalTier(endpoint.signal);
-  const isNormal = endpoint.worstSeverity === "normal";
+  const isNormal = endpoint.worstSeverity === "normal" || endpoint.worstSeverity === "not_assessed";
   const pipeWeight = isNormal ? "border-l" : tier === 3 ? "border-l-4" : tier === 2 ? "border-l-2" : "border-l";
   const pipeColor = endpoint.worstSeverity === "adverse" ? "#dc2626" : endpoint.worstSeverity === "warning" ? "#facc15" : "transparent";
   const tierLabel = tier === 3 ? "strong" : tier === 2 ? "moderate" : "weak";

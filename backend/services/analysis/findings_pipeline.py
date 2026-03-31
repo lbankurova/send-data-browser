@@ -409,9 +409,9 @@ def _assess_all_findings(
     B-2 moderate-magnitude escalation).
 
     When has_concurrent_control=False, adversity classification is suppressed:
-    all findings get finding_class="not_treatment_related" with a
-    _no_control_suppressed flag. Pairwise stats are treatment-vs-treatment
-    comparisons without a reference group, so adversity calls are meaningless.
+    all findings get finding_class="not_assessed" and severity="not_assessed"
+    with a _no_control_suppressed flag. Without a concurrent control, adversity
+    calls are scientifically meaningless.
     (RC-7, control-groups-model-29mar2026.md §3)
 
     Tier 2: builds ConcurrentFindingIndex for cross-finding lookups and
@@ -421,12 +421,12 @@ def _assess_all_findings(
     """
     if not has_concurrent_control:
         for f in findings:
-            f["finding_class"] = "not_treatment_related"
+            f["finding_class"] = "not_assessed"
             f["_no_control_suppressed"] = True
-            f["severity"] = "normal"
+            f["severity"] = "not_assessed"
             f["treatment_related"] = False
         log.info(
-            "No concurrent control — adversity classification suppressed for %d findings. "
+            "No concurrent control -- adversity classification suppressed for %d findings. "
             "Descriptive statistics retained.",
             len(findings),
         )
