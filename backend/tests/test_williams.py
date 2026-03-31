@@ -1,14 +1,17 @@
 """Tests for Williams' step-down trend test and PAVA isotonic regression.
 
 Test cases from SPEC-WTC-AMD-003 §2.5, §8.1, and §8.2.
+Audit-fix tests added 2026-03-31 (MC PAVA scope, CV source tracing, table guard).
 """
 
 import numpy as np
 import pytest
 
 from services.analysis.williams import (
+    _WILLIAMS_CV_005,
     pava_increasing,
     pava_decreasing,
+    williams_critical_value,
     williams_from_dose_groups,
     williams_from_group_stats,
     williams_test,
@@ -196,3 +199,104 @@ class TestWilliamsFromGroupStats:
         ]
         result = williams_from_group_stats(group_stats)
         assert result is not None
+
+
+# ──────────────────────────────────────────────────────────────
+# Audit-fix tests (2026-03-31)
+# ──────────────────────────────────────────────────────────────
+
+class TestTableMonotonicity:
+    """Regression: table values must decrease monotonically with df."""
+
+    def test_cv_decreases_with_df(self):
+        """For each k, CV at lower df must be >= CV at higher df."""
+        by_k: dict[int, list[tuple[int, float]]] = {}
+        for (k, df), cv in _WILLIAMS_CV_005.items():
+            by_k.setdefault(k, []).append((df, cv))
+
+        for k, entries in by_k.items():
+            entries.sort()  # sort by df ascending
+            for i in range(len(entries) - 1):
+                df1, cv1 = entries[i]
+                df2, cv2 = entries[i + 1]
+                assert cv1 >= cv2, (
+                    f"Non-monotonic at k={k}: CV({df1})={cv1} < CV({df2})={cv2}"
+                )
+
+
+class TestCriticalValueSource:
+    """Fix 2: critical_value_source tracing."""
+
+    def test_balanced_table_path(self):
+        """Equal n with (k, df) in table -> source='table'."""
+        ns = np.array([10, 10, 10, 10])
+        cv, source = williams_critical_value(k=3, dose_index=3, df=20, ns=ns)
+        assert source == "table"
+        assert cv > 0
+
+    def test_unequal_n_mc_path(self):
+        """Unequal n -> source='mc'."""
+        ns = np.array([15, 8, 6])
+        cv, source = williams_critical_value(k=2, dose_index=2, df=20, ns=ns)
+        assert source == "mc"
+        assert cv > 0
+
+    def test_source_in_step_down_results(self):
+        """Williams test output includes cv_source on each step."""
+        dose_groups = [
+            {"label": "Control", "mean": 1.0, "sd": 0.10, "n": 10},
+            {"label": "Low", "mean": 1.5, "sd": 0.12, "n": 10},
+            {"label": "High", "mean": 2.5, "sd": 0.10, "n": 10},
+        ]
+        result = williams_from_dose_groups(dose_groups)
+        assert result is not None
+        for r in result.step_down_results:
+            assert r.critical_value_source in ("table", "mc")
+
+
+class TestAlphaGuard:
+    """Fix 3: alpha=0.01 must not use corrupted table values."""
+
+    def test_alpha_001_falls_through_to_mc(self):
+        """alpha=0.01 should not find table entries (they were removed)."""
+        ns = np.array([10, 10, 10])
+        cv, source = williams_critical_value(k=2, dose_index=2, df=10, ns=ns, alpha=0.01)
+        # Should fall through to MC since table only has 0.05
+        assert source == "mc"
+
+
+class TestMCPavaScope:
+    """Fix 1: MC simulation must restrict PAVA to groups 0..dose_index."""
+
+    def test_mc_cv_at_highest_dose_unchanged(self):
+        """MC for dose_index=k should be same as before (full PAVA is correct)."""
+        ns = np.array([10, 10, 10, 10])
+        # Force MC by using alpha that's not in table
+        cv_k, _ = williams_critical_value(k=3, dose_index=3, df=20, ns=ns, alpha=0.01)
+        # Should be roughly in the range of a Williams CV (> standard t ~2.09)
+        assert 1.5 < cv_k < 4.0
+
+    def test_mc_cv_intermediate_dose_not_underestimated(self):
+        """MC for dose_index < k must produce CV >= standard t one-sided CV.
+
+        Before the fix, MC at intermediate doses produced CVs far below
+        standard t (e.g., 1.27 instead of 1.78). The Williams CV at any
+        dose_index must be >= the standard t CV at the same alpha.
+        """
+        from scipy import stats as sp_stats
+
+        ns = np.array([10, 10, 10, 10, 10, 10, 10])  # k=6
+        df = 49
+        alpha = 0.05
+        t_cv = sp_stats.t.ppf(1 - alpha, df)  # standard t one-sided ~1.677
+
+        # Test intermediate dose (dose_index=3 with k=6)
+        cv_mid, source = williams_critical_value(
+            k=6, dose_index=3, df=df, ns=ns, alpha=alpha,
+        )
+        assert source == "mc"
+        # Williams CV must be >= standard t CV (it's a constrained comparison)
+        assert cv_mid >= t_cv * 0.95, (
+            f"MC CV at dose_index=3 ({cv_mid:.3f}) is below standard t "
+            f"({t_cv:.3f}) -- PAVA scope bug likely still present"
+        )

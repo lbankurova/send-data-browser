@@ -216,6 +216,7 @@ export interface WilliamsStepDownResult {
   dose_label: string;
   test_statistic: number;
   critical_value: number;
+  critical_value_source?: "table" | "mc";
   p_value: number;
   significant: boolean;
 }

@@ -105,61 +105,69 @@ def pava_decreasing(
 # Williams' Critical Value Tables + Simulation
 # ──────────────────────────────────────────────────────────────
 
-# Published critical values for equal group sizes (one-sided α).
+# Published critical values for equal group sizes (one-sided alpha).
 # Source: Williams (1971, 1972), Bretz (2006).
-# Key: (k, df) → {alpha: critical_value}
+# Key: (k, df) -> critical_value at alpha=0.05
 # k = number of dose groups (excluding control)
 # Values are for dose_index = k (highest dose); when group sizes are equal,
 # the same critical value applies to all step-down levels (Williams 1972, Thm 2).
-WILLIAMS_TABLE: dict[tuple[int, int], dict[float, float]] = {
+#
+# CAUTION (2026-03-31 audit): These values have known provenance issues.
+# Both alpha columns in the original table were corrupted (chimeric sourcing
+# confirmed by non-monotonicity at df=20). The alpha=0.01 column had errors
+# up to -0.48 and has been REMOVED. The alpha=0.05 column has systematic
+# upward bias (+0.01 to +0.12, conservative direction). Values should be
+# cross-validated against PMCMRplus before relying on for regulatory decisions.
+# See: docs/_internal/research/peer-reviews/williams-test-audit-review.md
+_WILLIAMS_CV_005: dict[tuple[int, int], float] = {
     # k=2 (2 dose groups + control = 3 groups total)
-    (2, 5):   {0.05: 2.13, 0.01: 3.02},
-    (2, 6):   {0.05: 2.07, 0.01: 2.87},
-    (2, 7):   {0.05: 2.03, 0.01: 2.76},
-    (2, 8):   {0.05: 1.99, 0.01: 2.68},
-    (2, 9):   {0.05: 1.97, 0.01: 2.62},
-    (2, 10):  {0.05: 1.95, 0.01: 2.57},
-    (2, 12):  {0.05: 1.92, 0.01: 2.50},
-    (2, 15):  {0.05: 1.89, 0.01: 2.44},
-    (2, 20):  {0.05: 1.87, 0.01: 2.46},
-    (2, 30):  {0.05: 1.83, 0.01: 2.39},
-    (2, 40):  {0.05: 1.81, 0.01: 2.35},
-    (2, 60):  {0.05: 1.79, 0.01: 2.32},
-    (2, 120): {0.05: 1.77, 0.01: 2.29},
+    (2, 5):   2.13,
+    (2, 6):   2.07,
+    (2, 7):   2.03,
+    (2, 8):   1.99,
+    (2, 9):   1.97,
+    (2, 10):  1.95,
+    (2, 12):  1.92,
+    (2, 15):  1.89,
+    (2, 20):  1.87,
+    (2, 30):  1.83,
+    (2, 40):  1.81,
+    (2, 60):  1.79,
+    (2, 120): 1.77,
     # k=3 (3 dose groups + control = 4 groups total)
-    (3, 5):   {0.05: 2.18, 0.01: 3.08},
-    (3, 6):   {0.05: 2.12, 0.01: 2.92},
-    (3, 7):   {0.05: 2.07, 0.01: 2.81},
-    (3, 8):   {0.05: 2.04, 0.01: 2.73},
-    (3, 9):   {0.05: 2.01, 0.01: 2.67},
-    (3, 10):  {0.05: 1.99, 0.01: 2.62},
-    (3, 12):  {0.05: 1.96, 0.01: 2.55},
-    (3, 15):  {0.05: 1.93, 0.01: 2.49},
-    (3, 20):  {0.05: 1.93, 0.01: 2.54},
-    (3, 30):  {0.05: 1.89, 0.01: 2.46},
-    (3, 40):  {0.05: 1.87, 0.01: 2.42},
-    (3, 60):  {0.05: 1.85, 0.01: 2.39},
-    (3, 120): {0.05: 1.83, 0.01: 2.36},
+    (3, 5):   2.18,
+    (3, 6):   2.12,
+    (3, 7):   2.07,
+    (3, 8):   2.04,
+    (3, 9):   2.01,
+    (3, 10):  1.99,
+    (3, 12):  1.96,
+    (3, 15):  1.93,
+    (3, 20):  1.93,
+    (3, 30):  1.89,
+    (3, 40):  1.87,
+    (3, 60):  1.85,
+    (3, 120): 1.83,
     # k=4 (4 dose groups + control = 5 groups total)
-    (4, 5):   {0.05: 2.22, 0.01: 3.13},
-    (4, 6):   {0.05: 2.15, 0.01: 2.97},
-    (4, 7):   {0.05: 2.10, 0.01: 2.86},
-    (4, 8):   {0.05: 2.07, 0.01: 2.77},
-    (4, 9):   {0.05: 2.04, 0.01: 2.71},
-    (4, 10):  {0.05: 2.02, 0.01: 2.66},
-    (4, 12):  {0.05: 1.99, 0.01: 2.59},
-    (4, 15):  {0.05: 1.96, 0.01: 2.53},
-    (4, 20):  {0.05: 1.96, 0.01: 2.57},
-    (4, 30):  {0.05: 1.92, 0.01: 2.50},
-    (4, 40):  {0.05: 1.90, 0.01: 2.46},
-    (4, 60):  {0.05: 1.88, 0.01: 2.43},
-    (4, 120): {0.05: 1.86, 0.01: 2.39},
+    (4, 5):   2.22,
+    (4, 6):   2.15,
+    (4, 7):   2.10,
+    (4, 8):   2.07,
+    (4, 9):   2.04,
+    (4, 10):  2.02,
+    (4, 12):  1.99,
+    (4, 15):  1.96,
+    (4, 20):  1.96,
+    (4, 30):  1.92,
+    (4, 40):  1.90,
+    (4, 60):  1.88,
+    (4, 120): 1.86,
     # k=5 (5 dose groups + control = 6 groups total)
-    (5, 20):  {0.05: 1.98, 0.01: 2.60},
-    (5, 30):  {0.05: 1.94, 0.01: 2.52},
-    (5, 40):  {0.05: 1.92, 0.01: 2.48},
-    (5, 60):  {0.05: 1.90, 0.01: 2.45},
-    (5, 120): {0.05: 1.88, 0.01: 2.41},
+    (5, 20):  1.98,
+    (5, 30):  1.94,
+    (5, 40):  1.92,
+    (5, 60):  1.90,
+    (5, 120): 1.88,
 }
 
 
@@ -172,11 +180,16 @@ def _lookup_williams_table(
     """Look up critical value from published tables.
 
     Returns None if not found (triggers Monte Carlo fallback).
+    Only alpha=0.05 is supported — alpha=0.01 values were removed due to
+    confirmed corruption (errors up to -0.48).
 
     For equal group sizes, published critical values for dose_index = k (highest)
     also apply to lower dose indices in step-down (Williams 1972, Thm 2).
     """
-    available_dfs = [d for (kk, d) in WILLIAMS_TABLE if kk == k]
+    if alpha != 0.05:
+        return None  # Only alpha=0.05 is validated
+
+    available_dfs = [d for (kk, d) in _WILLIAMS_CV_005 if kk == k]
     if not available_dfs:
         return None
 
@@ -186,11 +199,7 @@ def _lookup_williams_table(
         return None
     closest_df = max(candidates)
 
-    entry = WILLIAMS_TABLE.get((k, closest_df))
-    if entry is None:
-        return None
-
-    return entry.get(alpha)
+    return _WILLIAMS_CV_005.get((k, closest_df))
 
 
 def williams_critical_value(
@@ -200,7 +209,7 @@ def williams_critical_value(
     ns: np.ndarray,
     alpha: float = 0.05,
     n_sim: int = 100_000,
-) -> float:
+) -> tuple[float, str]:
     """Compute Williams' critical value.
 
     First checks published tables (for common equal-n designs). Falls back
@@ -215,17 +224,17 @@ def williams_critical_value(
         n_sim:      number of Monte Carlo iterations for fallback
 
     Returns:
-        critical value (one-sided)
+        (critical_value, source) where source is "table" or "mc"
     """
     # Try published table first for equal-n
     if np.all(ns == ns[0]):
         table_cv = _lookup_williams_table(k, dose_index, df, alpha)
         if table_cv is not None:
-            return table_cv
+            return table_cv, "table"
 
     # Monte Carlo simulation under H0
     rng = np.random.default_rng(42)
-    ns_float = ns.astype(float)
+    ns_sub = ns[:dose_index + 1].astype(float)
     max_stats = np.zeros(n_sim)
 
     for sim in range(n_sim):
@@ -233,22 +242,22 @@ def williams_critical_value(
         s2 = rng.chisquare(df) / df
         s = np.sqrt(s2)
 
-        # Group means under H0 (all equal = 0)
-        z = rng.standard_normal(k + 1)
-        x_bar = z / np.sqrt(ns_float)
+        # Group means under H0 (all equal = 0) — restricted to groups 0..dose_index
+        z = rng.standard_normal(dose_index + 1)
+        x_bar = z / np.sqrt(ns_sub)
 
-        # Isotonic regression
-        constrained = pava_increasing(x_bar, ns)
+        # Isotonic regression on groups 0..dose_index only
+        constrained = pava_increasing(x_bar, ns[:dose_index + 1])
 
         # Test statistic for dose_index
-        se = s * np.sqrt(1.0 / ns_float[0] + 1.0 / ns_float[dose_index])
+        se = s * np.sqrt(1.0 / ns_sub[0] + 1.0 / ns_sub[dose_index])
         if se > 0:
             t_stat = (constrained[dose_index] - x_bar[0]) / se
         else:
             t_stat = 0.0
         max_stats[sim] = t_stat
 
-    return float(np.quantile(max_stats, 1 - alpha))
+    return float(np.quantile(max_stats, 1 - alpha)), "mc"
 
 
 # ──────────────────────────────────────────────────────────────
@@ -264,6 +273,7 @@ class WilliamsResult:
     control_mean: float
     test_statistic: float
     critical_value: float
+    critical_value_source: str  # "table" or "mc"
     p_value: float
     significant: bool
     alpha: float
@@ -351,11 +361,13 @@ def williams_test(
         else:
             t_williams = float((means[0] - constrained[i]) / se)
 
-        cv = williams_critical_value(k, i, df_pooled, ns, alpha)
+        cv, cv_source = williams_critical_value(k, i, df_pooled, ns, alpha)
 
         sig = t_williams > cv
 
-        # Approximate p-value (conservative — uses t-distribution)
+        # Approximate p-value (uses standard t-distribution — conservative at
+        # lower doses but liberal at dose_index=k where Williams distribution
+        # is wider than standard t)
         p_approx = float(1.0 - sp_stats.t.cdf(t_williams, df_pooled))
 
         results.append(WilliamsResult(
@@ -365,6 +377,7 @@ def williams_test(
             control_mean=float(means[0]),
             test_statistic=round(t_williams, 4),
             critical_value=round(cv, 4),
+            critical_value_source=cv_source,
             p_value=round(max(p_approx, 0.0), 6),
             significant=sig,
             alpha=alpha,

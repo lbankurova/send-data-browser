@@ -294,6 +294,7 @@ def compute_om_findings(
                         "dose_label": r.dose_label,
                         "test_statistic": r.test_statistic,
                         "critical_value": r.critical_value,
+                        "critical_value_source": r.critical_value_source,
                         "p_value": r.p_value,
                         "significant": r.significant,
                     }
