@@ -394,7 +394,10 @@ def _compute_concentration_time(
     pc_merged["dose_level"] = pc_merged["dose_level"].astype(int)
 
     # Parse elapsed time from PCELTM (ISO 8601 duration, e.g., "PT0.5H")
-    if "PCELTM" in pc_merged.columns:
+    # PCELTM column can exist but be all-empty (e.g., PDS study) -- fall through to PCTPTNUM
+    has_pceltm = ("PCELTM" in pc_merged.columns
+                  and pc_merged["PCELTM"].astype(str).str.strip().replace("", pd.NA).notna().any())
+    if has_pceltm:
         pc_merged["elapsed_h"] = pc_merged["PCELTM"].apply(_parse_elapsed_time)
     elif "PCTPTNUM" in pc_merged.columns:
         pc_merged["elapsed_h"] = pd.to_numeric(pc_merged["PCTPTNUM"], errors="coerce")
