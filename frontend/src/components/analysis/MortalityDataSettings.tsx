@@ -46,11 +46,11 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
       : `${id}: Included (default). Control group death — background mortality, not treatment-related.`;
   }
 
-  // Early death (treated group) — default: excluded
+  // Unattributed death (treated group) — default: excluded from terminal stats
   if (isTr) {
     return isExcluded
-      ? `${id}: Excluded (default). Terminal data from moribund/found-dead animals skews group means.`
-      : `${id}: Included by reviewer override. Default: excluded — terminal data from moribund/found-dead animals skews group means.`;
+      ? `${id}: Excluded (default). Terminal data from unscheduled deaths skews group means. Treatment-relatedness requires pathologist review.`
+      : `${id}: Included by reviewer override. Default: excluded — terminal data from unscheduled deaths skews group means.`;
   }
 
   // Generic fallback
@@ -163,13 +163,14 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   };
 
   // Combine all deaths + accidentals, sorted by study_day.
-  // Attribution: control deaths (dose_level 0) are "Background" not "TR";
-  // accidentals are "Accidental"; treated deaths are "Early death".
+  // Attribution: control deaths are "Background" (not treatment-related by definition);
+  // treated deaths are "Unattributed" (cause unknown — TR requires pathologist judgment);
+  // accidentals are "Accidental" (procedural/facility).
   const allDeaths: (DeathRecord & { attribution: string })[] = mortality
     ? [
         ...mortality.deaths.map(d => ({
           ...d,
-          attribution: d.dose_level === 0 ? "Background" : "Early death",
+          attribution: d.dose_level === 0 ? "Background" : "Unattributed",
         })),
         ...mortality.accidentals.map(d => ({ ...d, attribution: "Accidental" as const })),
       ].sort((a, b) => (a.study_day ?? 999) - (b.study_day ?? 999))
@@ -231,7 +232,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                   <tr
                     className={cn(
                       "border-b border-dashed border-border/30",
-                      d.attribution === "Early death" && "bg-amber-50/50",
+                      d.attribution === "Unattributed" && "bg-amber-50/50",
                     )}
                   >
                     {/* Include: dot (override indicator) + checkbox */}
