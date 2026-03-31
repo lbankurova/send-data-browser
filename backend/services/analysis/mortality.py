@@ -206,7 +206,7 @@ def compute_study_mortality(
             "cause": cause,
             "cause_category": _classify_cause_category(cause, strain),
             "relatedness": dd["relatedness"] if dd else None,
-            "study_day": dd["study_day"] if dd else d.get("ds_study_day"),
+            "study_day": dd["study_day"] if dd and dd["study_day"] is not None else d.get("ds_study_day"),
             "dose_label": dose_label_map.get(d["dose_level"], ""),
         })
 
@@ -518,23 +518,21 @@ def _parse_ds_dispositions(study: StudyInfo, subjects: pd.DataFrame) -> list[dic
         how="inner",
     )
 
-    # Extract study day from DSDY or VISITDY (fallback for studies without DD domain)
-    ds_day_col = None
-    for col in ("DSDY", "VISITDY", "DSSTDY"):
-        if col in ds_df.columns:
-            ds_day_col = col
-            break
+    # Extract study day: try all day columns per row (not just first present column).
+    # VISITDY can be NaN for unscheduled events while DSSTDY has the real value.
+    _DS_DAY_COLS = [c for c in ("DSSTDY", "DSDY", "VISITDY") if c in ds_df.columns]
 
     records = []
     for _, row in ds_df.iterrows():
         dsdecod = str(row["DSDECOD"]).strip().upper()
         cat = classify_disposition(dsdecod)
         ds_day = None
-        if ds_day_col:
-            v = row.get(ds_day_col)
+        for _dc in _DS_DAY_COLS:
+            v = row.get(_dc)
             if pd.notna(v):
                 try:
                     ds_day = int(float(v))
+                    break
                 except (ValueError, TypeError):
                     pass
         records.append({
