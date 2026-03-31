@@ -69,6 +69,16 @@ export interface StudyTypeConfig {
   caveats: string[];
 }
 
+/** Result of routing a TS.STYPE value through the study type registry.
+ *  Indicates how the config was resolved: direct match, fallback, or user override. */
+export interface StudyTypeRouting {
+  config: StudyTypeConfig;
+  /** "direct" = SSTYP matched a config, "fallback" = unrecognized SSTYP defaulted to REPEAT_DOSE, "override" = user-set */
+  match: "direct" | "fallback" | "override";
+  /** The raw TS.SSTYP value from the XPT data (null if absent) */
+  rawSstyp: string | null;
+}
+
 // ─── SyndromeSummary ────────────────────────────────────────
 // Compact syndrome record for StudySummaryRecord (not the full
 // SyndromeInterpretation — just what cross-study logic needs).

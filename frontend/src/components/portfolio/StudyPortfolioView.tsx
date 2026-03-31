@@ -7,6 +7,7 @@ import { noael } from "@/lib/study-accessors";
 import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
 import { Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
+import { routeStudyType } from "@/lib/study-type-registry";
 
 export function StudyPortfolioView() {
   const { data: studies, isLoading: studiesLoading } = useStudyPortfolio();
@@ -168,11 +169,10 @@ function StudyRow({ study, selected, onClick }: StudyRowProps) {
   const stageColor = getPipelineStageColor(study.pipeline_stage);
   const resolvedNoael = noael(study);
 
-  // Abbreviate study type
-  const typeAbbrev = (study.study_type ?? "")
-    .replace("Repeat Dose", "")
-    .replace("Toxicity", "")
-    .trim() || "—";
+  // Resolve study type via registry
+  const typeAbbrev = study.study_type
+    ? routeStudyType(study.study_type).display_name
+    : "—";
 
   return (
     <tr

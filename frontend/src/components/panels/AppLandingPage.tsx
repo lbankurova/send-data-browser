@@ -19,6 +19,7 @@ import type { StudySummary } from "@/types";
 import { getPipelineStageColor } from "@/lib/severity-colors";
 import { noael } from "@/lib/study-accessors";
 import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
+import { routeStudyTypeWithQuality } from "@/lib/study-type-registry";
 
 const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = {
   Pass: { icon: <Check className="h-3.5 w-3.5" style={{ color: "#16a34a" }} />, tooltip: "SEND validation passed" },
@@ -939,7 +940,17 @@ export function AppLandingPage() {
                         {study.duration_weeks ? `${study.duration_weeks}w` : "—"}
                       </td>
                       <td className="px-1.5 py-px text-muted-foreground">
-                        {study.study_type ?? "—"}
+                        {study.study_type ? (() => {
+                          const r = routeStudyTypeWithQuality(study.study_type);
+                          return (
+                            <span title={r.match === "fallback" ? `Unrecognized SSTYP: "${study.study_type}"` : study.study_type ?? undefined}>
+                              {r.config.display_name}
+                              {r.match === "fallback" && (
+                                <span className="ml-1 rounded bg-amber-100 px-0.5 text-[9px] font-medium text-amber-700">fallback</span>
+                              )}
+                            </span>
+                          );
+                        })() : "—"}
                       </td>
                       <td className="px-1.5 py-px tabular-nums text-muted-foreground">
                         {study.start_date ?? "—"}
@@ -986,7 +997,9 @@ export function AppLandingPage() {
                             <Wrench className="mx-auto h-3.5 w-3.5 text-muted-foreground/60" />
                           </td>
                           <td className="px-1.5 py-px font-medium text-muted-foreground">{study.name}</td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">{study.study_type ?? "—"}</td>
+                          <td className="px-1.5 py-px text-muted-foreground/60">
+                            {study.study_type ? routeStudyTypeWithQuality(study.study_type).config.display_name : "—"}
+                          </td>
                           <td className="px-1.5 py-px text-muted-foreground/60">—</td>
                           <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground/60">
                             {study.subjects ?? "—"}

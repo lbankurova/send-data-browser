@@ -4,7 +4,10 @@
   "study_type": "SAFETY_PHARM_CARDIOVASCULAR",
   "display_name": "Safety Pharmacology — Cardiovascular",
   "description": "ICH S7A/S7B cardiovascular safety pharmacology. XS10 syndrome applies. EG domain is primary. Within-animal crossover study design is common.",
-  "ts_stype_values": ["SAFETY PHARMACOLOGY"],
+  "ts_stype_values": [
+    "CARDIOVASCULAR PHARMACOLOGY",
+    "SAFETY PHARMACOLOGY"
+  ],
   "available_domains": ["EG", "VS", "RE"],
   "required_domains": ["EG"],
   "time_course": false,

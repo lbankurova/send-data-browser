@@ -14,6 +14,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import type { ToxFinding, PathologyReview, ValidationRecordReview } from "@/types/annotations";
 import { Loader2, RefreshCw, Wrench } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StudyTypeLabel } from "@/components/ui/StudyTypeLabel";
 
 // Lazy-loaded context panel panes — only the active pane is loaded
 const FindingsContextPanel = lazy(() => import("@/components/analysis/panes/FindingsContextPanel").then(m => ({ default: m.FindingsContextPanel })));
@@ -165,7 +166,10 @@ function StudyInspector({ studyId }: { studyId: string }) {
       <CollapsiblePane title="Study details" defaultOpen variant="margin">
         <MetadataRow label="Species" value={meta.species} />
         <MetadataRow label="Strain" value={meta.strain} />
-        <MetadataRow label="Type" value={meta.study_type} />
+        <div className="flex gap-2 py-0.5 text-xs">
+          <span className="w-20 shrink-0 text-muted-foreground">Type</span>
+          <StudyTypeLabel studyId={meta.study_id} rawSstyp={meta.study_type} />
+        </div>
         <MetadataRow label="Design" value={meta.design} />
         <div className="my-1.5 border-t" />
         <MetadataRow

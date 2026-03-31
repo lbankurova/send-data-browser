@@ -7,6 +7,7 @@ import { mapPipelineStageToStudyStage } from "@/types/pipeline-contracts";
 import {
   getStudyTypeConfig,
   routeStudyType,
+  routeStudyTypeWithQuality,
   routeSafetyPharm,
   getAllStudyTypeConfigs,
   isSyndromeGroupEnabled,
@@ -16,14 +17,15 @@ import {
 } from "@/lib/study-type-registry";
 
 describe("Study Type Registry", () => {
-  test("all 4 study types are registered", () => {
+  test("all 5 study types are registered", () => {
     const all = getAllStudyTypeConfigs();
-    expect(all.length).toBe(4);
+    expect(all.length).toBe(5);
     expect(all.map((c) => c.study_type).sort()).toEqual([
       "ACUTE",
       "DOSE_RANGE_FINDER",
       "REPEAT_DOSE",
       "SAFETY_PHARM_CARDIOVASCULAR",
+      "SAFETY_PHARM_RESPIRATORY",
     ]);
   });
 
@@ -42,7 +44,17 @@ describe("Study Type Registry", () => {
     expect(cv!.statistical_mode).toBe("within_animal_crossover");
   });
 
-  test("routeStudyType maps TS.STYPE values correctly", () => {
+  test("routeStudyType maps standard CDISC CT SSTYP values", () => {
+    expect(routeStudyType("REPEAT DOSE TOXICITY").study_type).toBe("REPEAT_DOSE");
+    expect(routeStudyType("SINGLE DOSE TOXICITY").study_type).toBe("ACUTE");
+    expect(routeStudyType("CARDIOVASCULAR PHARMACOLOGY").study_type).toBe("SAFETY_PHARM_CARDIOVASCULAR");
+    expect(routeStudyType("RESPIRATORY PHARMACOLOGY").study_type).toBe("SAFETY_PHARM_RESPIRATORY");
+    expect(routeStudyType("IMMUNOTOXICITY").study_type).toBe("REPEAT_DOSE");
+    expect(routeStudyType("LOCAL TOLERANCE").study_type).toBe("REPEAT_DOSE");
+    expect(routeStudyType("DOSE RANGE FINDING").study_type).toBe("DOSE_RANGE_FINDER");
+  });
+
+  test("routeStudyType maps non-standard sponsor values (backward compat)", () => {
     expect(routeStudyType("SUBCHRONIC").study_type).toBe("REPEAT_DOSE");
     expect(routeStudyType("SUBACUTE").study_type).toBe("REPEAT_DOSE");
     expect(routeStudyType("CHRONIC").study_type).toBe("REPEAT_DOSE");
@@ -56,11 +68,52 @@ describe("Study Type Registry", () => {
     expect(routeStudyType("").study_type).toBe("REPEAT_DOSE");
   });
 
+  test("routeStudyTypeWithQuality reports direct match", () => {
+    const result = routeStudyTypeWithQuality("REPEAT DOSE TOXICITY");
+    expect(result.match).toBe("direct");
+    expect(result.config.study_type).toBe("REPEAT_DOSE");
+    expect(result.rawSstyp).toBe("REPEAT DOSE TOXICITY");
+  });
+
+  test("routeStudyTypeWithQuality reports direct match for respiratory pharm", () => {
+    const result = routeStudyTypeWithQuality("RESPIRATORY PHARMACOLOGY");
+    expect(result.match).toBe("direct");
+    expect(result.config.study_type).toBe("SAFETY_PHARM_RESPIRATORY");
+    expect(result.rawSstyp).toBe("RESPIRATORY PHARMACOLOGY");
+  });
+
+  test("routeStudyTypeWithQuality reports fallback for unrecognized SSTYP", () => {
+    const result = routeStudyTypeWithQuality("GENOTOXICITY IN VIVO");
+    expect(result.match).toBe("fallback");
+    expect(result.config.study_type).toBe("REPEAT_DOSE");
+    expect(result.rawSstyp).toBe("GENOTOXICITY IN VIVO");
+  });
+
+  test("routeStudyTypeWithQuality reports fallback for null", () => {
+    const result = routeStudyTypeWithQuality(null);
+    expect(result.match).toBe("fallback");
+    expect(result.rawSstyp).toBeNull();
+  });
+
+  test("routeStudyTypeWithQuality applies user override", () => {
+    const result = routeStudyTypeWithQuality("REPEAT DOSE TOXICITY", "ACUTE");
+    expect(result.match).toBe("override");
+    expect(result.config.study_type).toBe("ACUTE");
+    expect(result.rawSstyp).toBe("REPEAT DOSE TOXICITY");
+  });
+
+  test("routeStudyTypeWithQuality ignores invalid override, falls through to direct match", () => {
+    const result = routeStudyTypeWithQuality("REPEAT DOSE TOXICITY", "NONEXISTENT");
+    expect(result.match).toBe("direct");
+    expect(result.config.study_type).toBe("REPEAT_DOSE");
+  });
+
   test("routeSafetyPharm sub-types by domain presence", () => {
     expect(routeSafetyPharm(["EG"]).study_type).toBe("SAFETY_PHARM_CARDIOVASCULAR");
     expect(routeSafetyPharm(["EG", "VS"]).study_type).toBe("SAFETY_PHARM_CARDIOVASCULAR");
-    // No EG → fallback
-    expect(routeSafetyPharm(["RE"]).study_type).toBe("REPEAT_DOSE");
+    expect(routeSafetyPharm(["RE"]).study_type).toBe("SAFETY_PHARM_RESPIRATORY");
+    // No EG or RE → fallback
+    expect(routeSafetyPharm(["BW"]).study_type).toBe("REPEAT_DOSE");
   });
 
   test("syndrome group filtering: XS enabled for repeat-dose and acute", () => {

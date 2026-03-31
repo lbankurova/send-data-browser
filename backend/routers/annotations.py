@@ -23,6 +23,7 @@ VALID_SCHEMA_TYPES = {
     "recovery-overrides",
     "saved-cohorts",
     "compound-profile",
+    "study-type-override",
 }
 
 # Map URL slugs to file names

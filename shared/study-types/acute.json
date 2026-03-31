@@ -4,7 +4,10 @@
   "study_type": "ACUTE",
   "display_name": "Single-Dose / Acute Toxicity",
   "description": "Single-dose or short-duration acute studies. Evidence is a single terminal snapshot — no multi-timepoint trajectory. Small n (2-3/group) is common in MTD designs.",
-  "ts_stype_values": ["ACUTE"],
+  "ts_stype_values": [
+    "SINGLE DOSE TOXICITY",
+    "ACUTE"
+  ],
   "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "DS", "TF"],
   "required_domains": ["LB", "BW"],
   "time_course": false,

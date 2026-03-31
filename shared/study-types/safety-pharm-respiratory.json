@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/study-type-config.schema.json",
+  "version": "1.0.0",
+  "study_type": "SAFETY_PHARM_RESPIRATORY",
+  "display_name": "Safety Pharmacology — Respiratory",
+  "description": "ICH S7A core battery respiratory safety pharmacology. RE domain is primary. Parallel group design is typical (unlike CV crossover).",
+  "ts_stype_values": [
+    "RESPIRATORY PHARMACOLOGY"
+  ],
+  "available_domains": ["RE", "CL", "BW", "VS"],
+  "required_domains": ["RE"],
+  "time_course": false,
+  "statistical_unit": "individual",
+  "statistical_mode": "between_group",
+  "noael_type": "single",
+  "enabled_syndrome_groups": ["XS_RESPIRATORY"],
+  "ui_profile": "safety_pharm",
+  "caveats": []
+}

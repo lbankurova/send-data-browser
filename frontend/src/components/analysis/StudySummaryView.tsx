@@ -37,6 +37,7 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { RuleInspectorTab } from "./RuleInspectorTab";
 import type { SignalSummaryRow, ProvenanceMessage } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
+import { routeStudyType } from "@/lib/study-type-registry";
 import type { StudyMetadata } from "@/types";
 
 type Tab = "details" | "rules";
@@ -572,10 +573,12 @@ const DOMAIN_REQUIREMENTS: Record<string, DomainRequirementProfile> = {
 /** Classify study type from TS SSTYP value into a domain requirement profile key. */
 function classifyStudyType(studyType: string | null | undefined): string {
   if (!studyType) return "repeat-dose";
+  // Use registry routing to map SSTYP to config, then map config to profile key
+  const cfg = routeStudyType(studyType);
+  if (cfg.study_type.startsWith("SAFETY_PHARM")) return "safety-pharmacology";
+  // Carcinogenicity not yet in registry — check raw value
   const s = studyType.toUpperCase();
   if (s.includes("CARCINOGEN")) return "carcinogenicity";
-  if (s.includes("SAFETY PHARMACOL")) return "safety-pharmacology";
-  // repeat dose, sub-chronic, sub-acute, chronic toxicity — all repeat-dose profile
   return "repeat-dose";
 }
 
@@ -749,7 +752,9 @@ function DetailsTab({
     : meta.dosing_duration
       ? formatDuration(meta.dosing_duration).replace(" weeks", "wk").replace(" days", "d")
       : null;
-  const studyTypeLabel = meta.study_type?.toLowerCase().replace(/\btoxicity\b/, "").replace(/\brepeat dose\b/, "repeat-dose").trim() || null;
+  const studyTypeLabel = meta.study_type
+    ? routeStudyType(meta.study_type).display_name.toLowerCase()
+    : null;
   const recDur = studyCtx?.recoveryPeriodDays != null
     ? (studyCtx.recoveryPeriodDays >= 7
         ? `${Math.round(studyCtx.recoveryPeriodDays / 7)}wk rec`

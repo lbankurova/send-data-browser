@@ -4,7 +4,9 @@
   "study_type": "DOSE_RANGE_FINDER",
   "display_name": "Dose Range Finding Study",
   "description": "Non-GLP dose range finder, typically 2 weeks. Same pipeline as acute — collapsed timepoint, same syndrome logic. Confidence level flagged as non-GLP.",
-  "ts_stype_values": [],
+  "ts_stype_values": [
+    "DOSE RANGE FINDING"
+  ],
   "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "DS"],
   "required_domains": ["LB", "BW"],
   "time_course": false,

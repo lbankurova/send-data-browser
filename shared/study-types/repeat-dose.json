@@ -4,7 +4,12 @@
   "study_type": "REPEAT_DOSE",
   "display_name": "Repeat-Dose Toxicology",
   "description": "Subacute (≤28d), subchronic (≤90d), and chronic (>90d) repeat-dose studies with multi-timepoint evidence.",
-  "ts_stype_values": ["SUBACUTE", "SUBCHRONIC", "CHRONIC"],
+  "ts_stype_values": [
+    "REPEAT DOSE TOXICITY",
+    "IMMUNOTOXICITY",
+    "LOCAL TOLERANCE",
+    "SUBACUTE", "SUBCHRONIC", "CHRONIC"
+  ],
   "available_domains": ["LB", "MA", "BW", "MI", "EG", "OM", "CL", "VS", "FW", "BG", "DS", "TF"],
   "required_domains": ["LB", "BW"],
   "time_course": true,
