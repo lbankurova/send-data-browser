@@ -555,8 +555,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         }),
       ] : []),
       ...doseGroups.map((dg, idx) => {
-        // Short labels: control → "C", non-zero → numeric only
-        const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
+        // Prefer backend short_label, fall back to legacy logic
+        const shortLabel = dg.short_label
+          ?? (dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label)));
         const fullLabel = dg.dose_value != null && dg.dose_unit
           ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
         const headerTooltip = `${fullLabel}\nMean (continuous) \u00b7 Affected/N (incidence)`;
@@ -567,6 +568,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               level={dg.dose_level}
               label={shortLabel}
               tooltip={headerTooltip}
+              color={dg.display_color}
             />
           ),
           cell: (info) => {
@@ -892,8 +894,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         header: "Dose",
         cell: (info) => {
           const r = info.row.original;
-          const shortLabel = r.dose_level === 0 ? "C" : formatDoseShortLabel(r.dose_label);
-          return <DoseLabel level={r.dose_level} label={shortLabel} tooltip={r.dose_label} />;
+          const dg = doseGroups.find((d) => d.dose_level === r.dose_level);
+          const shortLabel = dg?.short_label ?? (r.dose_level === 0 ? "C" : formatDoseShortLabel(r.dose_label));
+          return <DoseLabel level={r.dose_level} label={shortLabel} tooltip={r.dose_label} color={dg?.display_color} />;
         },
       }),
       pivCol.accessor("n", {

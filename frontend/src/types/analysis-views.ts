@@ -184,6 +184,8 @@ export interface AdverseEffectSummaryRow {
   is_derived?: boolean;
   /** Pre-computed qualifier tag string for MI/MA (e.g. "acute, centrilobular"). */
   qualifier_tags?: string | null;
+  /** Compound identity for multi-compound studies. */
+  compound_id?: string;
 }
 
 // --- Dose-Response (View 2) ---

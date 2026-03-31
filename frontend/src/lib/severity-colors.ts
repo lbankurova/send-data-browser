@@ -183,10 +183,55 @@ export function getNeutralHeatColor(score: number): { bg: string; text: string }
   return { bg: "rgba(0,0,0,0.02)", text: "var(--muted-foreground)" };
 }
 
-/** Dose group color by level index. */
+// ─── Dose Group Positional Color Palette ─────────────────────────────────
+// Red is ALWAYS the highest dose. Colors map by position in the treatment
+// sequence (low→high), not by absolute dose_level index.
+// Controls always get gray regardless of count.
+
+const DOSE_CTRL_COLOR = "#6b7280";  // gray-500 — all controls
+const DOSE_PALETTE_STOPS = {
+  low:      "#3b82f6",  // blue-500
+  low_mid:  "#84cc16",  // lime-500
+  mid:      "#f59e0b",  // amber-500
+  mid_high: "#8b5cf6",  // violet-500 (purple)
+  high:     "#ef4444",  // red-400
+} as const;
+
+const PALETTE_BY_COUNT: Record<number, readonly string[]> = {
+  1: [DOSE_PALETTE_STOPS.low],
+  2: [DOSE_PALETTE_STOPS.low, DOSE_PALETTE_STOPS.high],
+  3: [DOSE_PALETTE_STOPS.low, DOSE_PALETTE_STOPS.mid, DOSE_PALETTE_STOPS.high],
+  4: [DOSE_PALETTE_STOPS.low, DOSE_PALETTE_STOPS.low_mid, DOSE_PALETTE_STOPS.mid, DOSE_PALETTE_STOPS.high],
+  5: [DOSE_PALETTE_STOPS.low, DOSE_PALETTE_STOPS.low_mid, DOSE_PALETTE_STOPS.mid, DOSE_PALETTE_STOPS.mid_high, DOSE_PALETTE_STOPS.high],
+};
+
+/**
+ * Dose group color by level index.
+ *
+ * Legacy API: works with the old 4-color absolute mapping for backward
+ * compatibility. Prefers `display_color` from DoseGroup metadata when available.
+ */
 export function getDoseGroupColor(level: number): string {
-  const colors = ["#6b7280", "#3b82f6", "#f59e0b", "#ef4444"];
-  return colors[level] ?? "#6b7280";
+  // Legacy fallback for call sites that don't pass metadata
+  if (level < 0) return DOSE_CTRL_COLOR;
+  if (level === 0) return DOSE_CTRL_COLOR;
+  const legacy = [DOSE_CTRL_COLOR, "#3b82f6", "#f59e0b", "#ef4444"];
+  return legacy[level] ?? DOSE_CTRL_COLOR;
+}
+
+/**
+ * Positional dose group color using treatment count.
+ * Red is always the highest dose group.
+ */
+export function getDoseGroupColorPositional(
+  position: number,
+  totalTreatments: number,
+  isControl: boolean,
+): string {
+  if (isControl) return DOSE_CTRL_COLOR;
+  const capped = Math.min(totalTreatments, 5);
+  const stops = PALETTE_BY_COUNT[capped] ?? PALETTE_BY_COUNT[5]!;
+  return stops[position] ?? DOSE_CTRL_COLOR;
 }
 
 /** Sex color. */
@@ -266,10 +311,21 @@ export function getDomainBadgeColor(domain: string): { text: string } {
 }
 
 /** Parse raw dose labels into short display labels.
+ *
+ *  When a DoseGroup array is provided, uses the pre-computed `short_label`
+ *  from backend metadata (handles all label formats correctly).
+ *  Falls back to regex parsing for backward compatibility.
+ *
  *  "Group 2,2 mg/kg PCDRUG" → "2 mg/kg"
  *  "Group 1, Control"        → "Control"
  */
-export function formatDoseShortLabel(rawLabel: string): string {
+export function formatDoseShortLabel(rawLabel: string, doseGroups?: readonly { label: string; short_label?: string }[]): string {
+  // Prefer pre-computed short_label from backend metadata
+  if (doseGroups) {
+    const dg = doseGroups.find((d) => d.label === rawLabel || rawLabel.includes(d.label) || d.label.includes(rawLabel));
+    if (dg?.short_label) return dg.short_label;
+  }
+  // Legacy regex fallback
   const parts = rawLabel.split(/,\s*/);
   if (parts.length < 2) return rawLabel;
   const detail = parts.slice(1).join(", ").trim();

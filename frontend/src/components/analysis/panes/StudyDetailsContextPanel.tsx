@@ -71,6 +71,75 @@ interface StudyNote {
 }
 
 
+type DoseGroupWithRecovery = import("@/types/analysis").DoseGroup & { recovery_n?: number };
+
+// ── Dose Groups Display ─────────────────────────────────────
+
+function DoseGroupsSection({ doseGroups }: { doseGroups: import("@/types/analysis").DoseGroup[] }) {
+  // Sort: controls first (by dose_level ascending), then treatments (by dose_level ascending)
+  const sorted = [...doseGroups].sort((a, b) => {
+    if (a.is_control && !b.is_control) return -1;
+    if (!a.is_control && b.is_control) return 1;
+    return a.dose_level - b.dose_level;
+  });
+  const sharedUnit = sorted[0]?.shared_unit;
+
+  return (
+    <div className="space-y-0.5">
+      {sharedUnit && (
+        <div className="pb-1 text-[10px] text-muted-foreground">
+          Unit: {sharedUnit}
+        </div>
+      )}
+      <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
+        <thead>
+          <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <th className="w-5 py-0.5" />
+            <th className="py-0.5 text-left" style={{ width: "45%" }}>Label</th>
+            <th className="py-0.5 text-right" style={{ width: "25%" }}>Dose</th>
+            <th className="py-0.5 text-right" style={{ width: "15%" }}>N</th>
+            <th className="py-0.5 text-right" style={{ width: "15%" }}>Rec</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((dg) => {
+            const doseDisplay = dg.dose_value != null && dg.dose_value > 0
+              ? `${dg.dose_value}${!sharedUnit && dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
+              : dg.is_control ? "\u2014" : "\u2014";
+            const recN = "recovery_n" in dg ? (dg as DoseGroupWithRecovery).recovery_n : undefined;
+            return (
+              <tr
+                key={dg.armcd}
+                className="border-t border-border-subtle hover:bg-hover-bg"
+                title={dg.label}
+              >
+                <td className="py-1">
+                  <span
+                    className="inline-block h-2 w-2 rounded-full"
+                    style={{ backgroundColor: dg.display_color ?? "#6b7280" }}
+                  />
+                </td>
+                <td className="truncate py-1 font-medium" title={dg.label}>
+                  {dg.short_label ?? dg.label}
+                </td>
+                <td className="py-1 text-right font-mono tabular-nums text-muted-foreground">
+                  {doseDisplay}
+                </td>
+                <td className="py-1 text-right font-mono tabular-nums">
+                  {dg.n_total}
+                </td>
+                <td className="py-1 text-right font-mono tabular-nums text-muted-foreground">
+                  {recN ? recN : "\u2014"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ── Vehicle Effect Comparison ────────────────────────────────
 
 function VehicleEffectSection({ data, expandAll, collapseAll }: { data: import("@/lib/analysis-view-api").ControlComparison; expandAll?: number; collapseAll?: number }) {
@@ -211,6 +280,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       </div>
 
       <div className="flex-1 overflow-auto">
+      {/* ── Dose groups ──────────────────────────────────── */}
+      {meta.dose_groups && meta.dose_groups.length > 0 && (
+        <CollapsiblePane title="Dose groups" defaultOpen={false} sessionKey="pcc.studySettings.doseGroups" expandAll={expandGen} collapseAll={collapseGen}>
+          <DoseGroupsSection doseGroups={meta.dose_groups} />
+        </CollapsiblePane>
+      )}
+
       {/* ── Compound profile ─────────────────────────────── */}
       <CollapsiblePane title="Compound profile" defaultOpen={false} sessionKey="pcc.studySettings.compoundProfile" expandAll={expandGen} collapseAll={collapseGen}>
         <CompoundProfileSection studyId={studyId} />

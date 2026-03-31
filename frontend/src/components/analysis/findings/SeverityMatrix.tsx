@@ -275,10 +275,10 @@ export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: Seve
                 Finding
               </th>
               {doseGroups.map(dg => {
-                const shortLabel = dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label));
+                const shortLabel = dg.short_label ?? (dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label)));
                 return (
                   <th key={dg.dose_level} className="px-1 py-1.5 text-center" style={{ width: 1, whiteSpace: "nowrap" }}>
-                    <DoseHeader level={dg.dose_level} label={shortLabel} />
+                    <DoseHeader level={dg.dose_level} label={shortLabel} color={dg.display_color} />
                   </th>
                 );
               })}

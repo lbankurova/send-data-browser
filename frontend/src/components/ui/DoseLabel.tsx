@@ -9,12 +9,14 @@ interface DoseLabelProps {
   tooltip?: string;
   /** Pipe position: "left" (default) or "right". Right-align is used for bar chart labels. */
   align?: "left" | "right";
+  /** Override color (e.g., from DoseGroup.display_color). Falls back to level-based lookup. */
+  color?: string;
   className?: string;
 }
 
 /** Renders a dose label with border color-coded by dose level and optional tooltip. */
-export function DoseLabel({ level, label, tooltip, align = "left", className }: DoseLabelProps) {
-  const color = getDoseGroupColor(level);
+export function DoseLabel({ level, label, tooltip, align = "left", color: colorOverride, className }: DoseLabelProps) {
+  const color = colorOverride ?? getDoseGroupColor(level);
   return (
     <span
       className={cn(
@@ -37,17 +39,20 @@ interface DoseHeaderProps {
   tooltip?: string;
   /** Small unit annotation rendered below the underline (e.g., "mg/kg") — only on first dose column */
   unitLabel?: string;
+  /** Override color (e.g., from DoseGroup.display_color). Falls back to level-based lookup. */
+  color?: string;
   className?: string;
 }
 
 /** Dose column header with colored underline indicator. */
-export function DoseHeader({ level, label, tooltip, unitLabel, className }: DoseHeaderProps) {
+export function DoseHeader({ level, label, tooltip, unitLabel, color: colorOverride, className }: DoseHeaderProps) {
+  const color = colorOverride ?? getDoseGroupColor(level);
   return (
     <div className={cn("flex flex-col items-center gap-0.5", className)} title={tooltip}>
       <span>{label}</span>
       <span
         className="h-0.5 w-full rounded-full"
-        style={{ backgroundColor: getDoseGroupColor(level) }}
+        style={{ backgroundColor: color }}
       />
       {unitLabel && (
         <span className="text-[10px] leading-none text-muted-foreground/50">{unitLabel}</span>

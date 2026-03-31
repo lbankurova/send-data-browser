@@ -20,6 +20,8 @@ interface DoseGroupInfo {
   dose_level: number;
   label: string;
   dose_value: number | null;
+  short_label?: string;
+  display_color?: string;
   armcd: string;
 }
 
@@ -120,8 +122,9 @@ export function NormalizationHeatmap({ contexts, doseGroups, overrides, autoMode
                   {info ? (
                     <DoseHeader
                       level={info.dose_level}
-                      label={info.dose_value != null ? String(info.dose_value) : info.label}
+                      label={info.short_label ?? (info.dose_value != null ? String(info.dose_value) : info.label)}
                       tooltip={info.label}
+                      color={info.display_color}
                     />
                   ) : dk}
                 </th>
