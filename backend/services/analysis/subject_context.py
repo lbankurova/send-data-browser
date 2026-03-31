@@ -408,6 +408,7 @@ def _enrich_compounds_from_ex(
             "TX-EX compound cross-validation mismatches (TX preferred): %s",
             cross_val_warnings,
         )
+        dg_data["_tx_ex_compound_mismatches"] = cross_val_warnings
 
     if not enriched_any:
         return
