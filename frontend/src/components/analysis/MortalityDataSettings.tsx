@@ -16,8 +16,7 @@ import type { StudyMortality, DeathRecord } from "@/types/mortality";
 function isOverride(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): boolean {
   if (d.is_recovery) return !isExcluded; // default: excluded
   if (d.attribution === "Accidental") return isExcluded; // default: included
-  if (d.attribution === "Background") return isExcluded; // default: included (control deaths don't skew treated stats)
-  if (isTr) return !isExcluded; // default: excluded
+  if (isTr) return !isExcluded; // default: excluded (in early_death_subjects)
   return false;
 }
 
@@ -39,18 +38,11 @@ function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: bo
       : `${id}: Included (default). Valid drug-exposure data through day ${d.study_day ?? "?"}; death not treatment-related.`;
   }
 
-  // Background (control group death) — default: included
-  if (d.attribution === "Background") {
-    return isExcluded
-      ? `${id}: Excluded by reviewer override. Default: included — control group death (background mortality).`
-      : `${id}: Included (default). Control group death — background mortality, not treatment-related.`;
-  }
-
-  // Unattributed death (treated group) — default: excluded from terminal stats
+  // Non-accidental death in early_death_subjects — default: excluded from terminal stats
   if (isTr) {
     return isExcluded
-      ? `${id}: Excluded (default). Terminal data from unscheduled deaths skews group means. Treatment-relatedness requires pathologist review.`
-      : `${id}: Included by reviewer override. Default: excluded — terminal data from unscheduled deaths skews group means.`;
+      ? `${id}: Excluded (default). Unscheduled death — terminal data excluded from group statistics.`
+      : `${id}: Included by reviewer override. Default: excluded — unscheduled death.`;
   }
 
   // Generic fallback
@@ -163,15 +155,12 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   };
 
   // Combine all deaths + accidentals, sorted by study_day.
-  // Attribution: control deaths are "Background" (not treatment-related by definition);
-  // treated deaths are "Unattributed" (cause unknown — TR requires pathologist judgment);
-  // accidentals are "Accidental" (procedural/facility).
+  // The only classification the engine can make is accidental vs non-accidental
+  // (from DS.DSDECOD or DD.DDRESCAT). Treatment-relatedness requires pathologist
+  // judgment informed by necropsy, dose-response pattern, and clinical observations.
   const allDeaths: (DeathRecord & { attribution: string })[] = mortality
     ? [
-        ...mortality.deaths.map(d => ({
-          ...d,
-          attribution: d.dose_level === 0 ? "Background" : "Unattributed",
-        })),
+        ...mortality.deaths.map(d => ({ ...d, attribution: "Death" as const })),
         ...mortality.accidentals.map(d => ({ ...d, attribution: "Accidental" as const })),
       ].sort((a, b) => (a.study_day ?? 999) - (b.study_day ?? 999))
     : [];
@@ -232,7 +221,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                   <tr
                     className={cn(
                       "border-b border-dashed border-border/30",
-                      d.attribution === "Unattributed" && "bg-amber-50/50",
+                      d.attribution === "Death" && excludedSubjects.has(d.USUBJID) && "bg-amber-50/50",
                     )}
                   >
                     {/* Include: dot (override indicator) + checkbox */}
