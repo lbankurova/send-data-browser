@@ -1030,6 +1030,17 @@ def build_dose_groups(study: StudyInfo) -> dict:
             positive_control_arms,
         )
 
+    # Warn on unknown control types (e.g. "Reference Item" with no dose context)
+    unknown_control_arms = {
+        a for a, ct in arm_control_types.items() if ct == CTRL_UNKNOWN
+    }
+    if unknown_control_arms:
+        logger.warning(
+            "Unknown control type for arm(s) %s -- TCNTRL ambiguous, "
+            "manual review recommended.",
+            unknown_control_arms,
+        )
+
     # Arms excluded from dose-response: positive controls + secondary controls
     excluded_arms = positive_control_arms | secondary_control_arms
 
@@ -1351,7 +1362,16 @@ def _classify_control(tx_info: dict) -> str | None:
         # Has dose > 0 → could be active comparator or positive control
         if dv is not None and dv > 0:
             return CTRL_ACTIVE_COMPARATOR
-        # No dose info → assume vehicle control (most common case)
+        # No dose info: "reference item" is highly ambiguous (150 occurrences
+        # in FDA repo, could be active comparator). Classify as unknown so
+        # provenance flags it for manual review. Other Tier 2 values default
+        # to vehicle (most common case).
+        if tcntrl_lower == "reference item":
+            logger.warning(
+                "TCNTRL='Reference Item' with no dose information -- "
+                "classified as unknown control. Manual review recommended."
+            )
+            return CTRL_UNKNOWN
         return CTRL_VEHICLE
 
     # ── No TCNTRL or unrecognized → fall back to heuristics ──

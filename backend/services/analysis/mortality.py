@@ -18,20 +18,33 @@ SCHEDULED_DISPOSITIONS = {"TERMINAL SACRIFICE", "INTERIM SACRIFICE",
 
 # Phase F: Strain-specific background pathologies (mitigating factors for mortality)
 _STRAIN_PATHOLOGY: dict[str, list[str]] = {
-    # F344 (Fischer 344): MNCL and CPN are the dominant background causes
+    # F344 (Fischer 344): MNCL, CPN, and pheochromocytoma (18-28% males, NTP data)
     "FISCHER 344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
-                    "chronic progressive nephropathy"],
+                    "chronic progressive nephropathy", "pheochromocytoma",
+                    "adrenal medulla"],
     "F344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
-             "chronic progressive nephropathy"],
+             "chronic progressive nephropathy", "pheochromocytoma",
+             "adrenal medulla"],
     "F-344": ["leukemia", "mononuclear cell", "mncl", "nephropathy", "cpn",
-              "chronic progressive nephropathy"],
+              "chronic progressive nephropathy", "pheochromocytoma",
+              "adrenal medulla"],
     # Sprague-Dawley: mammary tumors are the dominant background cause in females
     "SPRAGUE-DAWLEY": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
     "SPRAGUE DAWLEY": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
     "SD": ["mammary", "fibroadenoma", "adenocarcinoma, mammary"],
-    # Wistar Han: pituitary tumors
-    "WISTAR": ["pituitary"],
-    "WISTAR HAN": ["pituitary"],
+    # Wistar Han: pituitary tumors, mammary (lower than SD but still significant)
+    "WISTAR": ["pituitary", "mammary"],
+    "WISTAR HAN": ["pituitary", "mammary"],
+    # Long-Evans rat: pituitary, mammary
+    "LONG-EVANS": ["pituitary", "mammary"],
+    "LONG EVANS": ["pituitary", "mammary"],
+    # B6C3F1 mouse (NTP standard): hepatocellular tumors, lung tumors
+    "B6C3F1": ["hepatocellular", "liver tumor", "alveolar", "bronchiolar",
+               "lung tumor"],
+    # CD-1 / ICR mouse: lymphoma, lung tumors
+    "CD-1": ["lymphoma", "lymphosarcoma", "alveolar", "bronchiolar", "lung tumor"],
+    "CD1": ["lymphoma", "lymphosarcoma", "alveolar", "bronchiolar", "lung tumor"],
+    "ICR": ["lymphoma", "lymphosarcoma", "alveolar", "bronchiolar", "lung tumor"],
 }
 
 # Intercurrent (non-treatment, non-strain) causes suggesting facility/GLP issues
@@ -227,26 +240,41 @@ def compute_study_mortality(
     ]
 
     # --- Build by_dose summary ---
+    # Break down deaths by cause_category so LOAEL can exclude intercurrent/strain deaths.
     all_levels = sorted(dose_value_map.keys())
     by_dose = []
     for dl in all_levels:
         dose_deaths = [d for d in main_deaths if d["dose_level"] == dl]
         dose_accidentals = [a for a in main_accidentals if a["dose_level"] == dl]
+        n_undetermined = sum(
+            1 for d in dose_deaths if d.get("cause_category") == "undetermined"
+        )
+        n_intercurrent = sum(
+            1 for d in dose_deaths if d.get("cause_category") == "intercurrent"
+        )
+        n_strain_pathology = sum(
+            1 for d in dose_deaths if d.get("cause_category") == "strain_pathology"
+        )
         by_dose.append({
             "dose_level": dl,
             "dose_label": dose_label_map.get(dl, ""),
             "dose_value": dose_value_map.get(dl),
             "deaths": len(dose_deaths),
+            "deaths_undetermined": n_undetermined,
+            "deaths_intercurrent": n_intercurrent,
+            "deaths_strain_pathology": n_strain_pathology,
             "accidental": len(dose_accidentals),
             "subjects": [d["USUBJID"] for d in dose_deaths],
             "accidental_subjects": [a["USUBJID"] for a in dose_accidentals],
         })
 
-    # --- Determine mortality LOAEL (lowest dose with >=1 treatment-related death) ---
-    # Exclude dose level 0 (control deaths don't trigger LOAEL)
+    # --- Determine mortality LOAEL (lowest dose with >=1 potentially treatment-related death) ---
+    # Exclude dose level 0 (control deaths don't trigger LOAEL).
+    # Only undetermined deaths drive LOAEL -- intercurrent (gavage error, husbandry)
+    # and strain_pathology (MNCL, mammary) deaths are not evidence of test-article toxicity.
     mortality_loael = None
     for bd in by_dose:
-        if bd["dose_level"] > 0 and bd["deaths"] > 0:
+        if bd["dose_level"] > 0 and bd["deaths_undetermined"] > 0:
             mortality_loael = bd["dose_level"]
             break
 
@@ -402,8 +430,32 @@ def qualify_control_mortality(
                     ),
                 })
 
+        # Chronic (26-78 weeks) -- no explicit regulatory threshold; interpolated
+        # from subchronic/carcinogenicity gates. >10% is abnormal for all standard
+        # strains at these durations (39-week dog, 52-week rat).
+        elif weeks > 26:
+            if mortality_rate > 0.20:
+                flags.append({
+                    "severity": "critical",
+                    "code": "CTRL_MORT_CRITICAL",
+                    "message": (
+                        f"Control mortality {mortality_rate:.0%} exceeds 20% "
+                        f"in {duration_weeks}w chronic study -- investigate validity"
+                    ),
+                })
+                suppress_noael = True
+            elif mortality_rate > 0.10:
+                flags.append({
+                    "severity": "warning",
+                    "code": "CTRL_MORT_ELEVATED",
+                    "message": (
+                        f"Control mortality {mortality_rate:.0%} exceeds 10% "
+                        f"for chronic ({duration_weeks}w) study"
+                    ),
+                })
+
         # Subchronic (<= 26 weeks)
-        elif weeks <= 26:
+        else:
             if mortality_rate > 0.10:
                 flags.append({
                     "severity": "critical",

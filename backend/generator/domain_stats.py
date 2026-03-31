@@ -538,13 +538,31 @@ def compute_control_comparison(
                 "significant": p_val is not None and p_val < 0.05,
             })
 
+    # Benjamini-Hochberg FDR correction across all endpoint p-values.
+    # Without correction, ~5% of endpoints are expected to be false positives
+    # under the null, inflating the vehicle-effect summary.
+    raw_pvals = [e["p_value"] for e in endpoints]
+    if raw_pvals and any(p is not None for p in raw_pvals):
+        from statsmodels.stats.multitest import multipletests
+        # Replace None with 1.0 for the correction, then restore
+        pvals_for_bh = [p if p is not None else 1.0 for p in raw_pvals]
+        _, p_adjusted, _, _ = multipletests(pvals_for_bh, method="fdr_bh")
+        for i, ep in enumerate(endpoints):
+            adj = float(p_adjusted[i]) if raw_pvals[i] is not None else None
+            ep["p_adjusted"] = round(adj, 6) if adj is not None else None
+            ep["significant"] = adj is not None and adj < 0.05
+    else:
+        for ep in endpoints:
+            ep["p_adjusted"] = None
+            ep["significant"] = False
+
     # Summary
     n_total = len(endpoints)
     n_sig = sum(1 for e in endpoints if e["significant"])
     if n_total == 0:
         summary = "No overlapping endpoints between vehicle and negative control."
     elif n_sig == 0:
-        summary = f"No significant vehicle effects detected across {n_total} endpoints."
+        summary = f"No significant vehicle effects detected across {n_total} endpoints (BH-adjusted)."
     else:
         top = sorted(
             [e for e in endpoints if e["significant"]],
@@ -553,7 +571,7 @@ def compute_control_comparison(
         )[:3]
         top_labels = [f"{e['endpoint_label']} ({e['sex']}, d={e['cohens_d']})" for e in top]
         summary = (
-            f"Vehicle effects detected in {n_sig}/{n_total} endpoints. "
+            f"Vehicle effects detected in {n_sig}/{n_total} endpoints (BH-adjusted). "
             f"Largest: {', '.join(top_labels)}."
         )
 
