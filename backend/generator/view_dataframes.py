@@ -370,13 +370,48 @@ def build_noael_summary(
     mortality: dict | None = None,
     params: ScoringParams | None = None,
     has_concurrent_control: bool = True,
+    compound_partitions: dict | None = None,
 ) -> list[dict]:
-    """Build NOAEL summary: 3 rows (M, F, combined).
+    """Build NOAEL summary: 3 rows (M, F, combined) per compound.
+
+    When compound_partitions is provided (multi-compound study), produces
+    per-compound NOAEL rows. Each row carries compound_id. Single-compound
+    studies produce the standard 3 rows without compound_id.
 
     When has_concurrent_control is False (no vehicle/placebo group), NOAEL
-    cannot be determined — all rows report "Not established" with method
+    cannot be determined -- all rows report "Not established" with method
     "no_concurrent_control".
     """
+    if compound_partitions:
+        all_rows: list[dict] = []
+        for comp_id, partition in compound_partitions.items():
+            comp_findings = [f for f in findings if f.get("compound_id") == comp_id]
+            comp_dgs = partition.get("dose_groups", dose_groups)
+            comp_rows = _build_noael_for_groups(
+                comp_findings, comp_dgs, mortality=mortality,
+                params=params, has_concurrent_control=has_concurrent_control,
+                is_single_dose=partition.get("is_single_dose", False),
+            )
+            for r in comp_rows:
+                r["compound_id"] = comp_id
+            all_rows.extend(comp_rows)
+        return all_rows
+
+    return _build_noael_for_groups(
+        findings, dose_groups, mortality=mortality,
+        params=params, has_concurrent_control=has_concurrent_control,
+    )
+
+
+def _build_noael_for_groups(
+    findings: list[dict],
+    dose_groups: list[dict],
+    mortality: dict | None = None,
+    params: ScoringParams | None = None,
+    has_concurrent_control: bool = True,
+    is_single_dose: bool = False,
+) -> list[dict]:
+    """Internal: build NOAEL for a single compound's dose groups."""
     rows = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
@@ -516,9 +551,14 @@ def build_noael_summary(
         )
         classification_method = "finding_class" if has_finding_class else "legacy_severity"
 
+        # A3: Single-dose compound annotation
+        method = "highest_dose_no_adverse" if noael_level is not None else "not_established"
+        if is_single_dose:
+            method = (method + "_single_dose") if noael_level is not None else "single_dose_not_established"
+
         # Build NOAEL derivation trace (IMP-10)
         noael_derivation = {
-            "method": "highest_dose_no_adverse" if noael_level is not None else "not_established",
+            "method": method,
             "classification_method": classification_method,
             "loael_dose_level": loael_level,
             "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else None,

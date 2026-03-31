@@ -8,196 +8,325 @@
     {
       "key": "MI_kidney_basophilic_granules",
       "domain": "MI",
-      "organs": ["KIDNEY"],
-      "findings": ["BASOPHILIC GRANULES", "BASOPHILIC GRANULE"],
+      "organs": [
+        "KIDNEY"
+      ],
+      "findings": [
+        "BASOPHILIC GRANULES",
+        "BASOPHILIC GRANULE"
+      ],
       "direction": "up",
       "description": "Renal proximal tubular basophilic granules - oligonucleotide accumulation",
       "severity_threshold": "Grade 4, or any grade with concurrent tubular degeneration/necrosis, elevated BUN/creatinine, or proteinuria",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "OSWG consensus: basophilic granules alone reflect oligonucleotide accumulation via megalin-mediated endocytosis; no functional impairment."
     },
     {
       "key": "MI_liver_kupffer_hypertrophy",
       "domain": "MI",
-      "organs": ["LIVER"],
-      "findings": ["HYPERTROPHY", "KUPFFER CELL HYPERTROPHY"],
+      "organs": [
+        "LIVER"
+      ],
+      "findings": [
+        "HYPERTROPHY",
+        "KUPFFER CELL HYPERTROPHY"
+      ],
       "direction": "up",
       "description": "Kupffer cell / hepatic sinusoidal hypertrophy",
       "severity_threshold": "Grade 3, or any grade with concurrent hepatocellular degeneration/necrosis or ALT/AST >5x baseline",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Isolated Kupffer cell changes represent drug accumulation without hepatocellular toxicity."
     },
     {
       "key": "MI_spleen_hyperplasia",
       "domain": "MI",
-      "organs": ["SPLEEN"],
-      "findings": ["HYPERPLASIA", "LYMPHOID HYPERPLASIA", "EXTRAMEDULLARY HEMATOPOIESIS"],
+      "organs": [
+        "SPLEEN"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "LYMPHOID HYPERPLASIA",
+        "EXTRAMEDULLARY HEMATOPOIESIS"
+      ],
       "direction": "up",
       "description": "Splenic lymphoid hyperplasia / increased extramedullary hematopoiesis",
       "severity_threshold": "Grade 4, or spleen weight >2x control, or severe cytopenias",
-      "species_applicability": ["RAT", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MOUSE"
+      ],
       "species_note": "More pronounced in rodents due to CpG-TLR9 sensitivity. NHPs show milder changes.",
       "rationale": "Moderate lymphoid hyperplasia reflects immune stimulation - a known pharmacological consequence of PS backbone."
     },
     {
       "key": "MI_ln_histiocytosis",
       "domain": "MI",
-      "organs": ["LYMPH NODE"],
-      "findings": ["HYPERTROPHY", "HISTIOCYTOSIS"],
+      "organs": [
+        "LYMPH NODE"
+      ],
+      "findings": [
+        "HYPERTROPHY",
+        "HISTIOCYTOSIS"
+      ],
       "direction": "up",
       "description": "Lymph node macrophage hypertrophy / histiocytosis",
       "severity_threshold": "Grade 3, or any grade with tissue destruction",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Macrophage uptake of PS-ASOs is a normal clearance mechanism."
     },
     {
       "key": "MI_injection_site_inflammation",
       "domain": "MI",
-      "organs": ["SKIN", "INJECTION SITE"],
-      "findings": ["INFLAMMATION", "INFILTRATE"],
+      "organs": [
+        "SKIN",
+        "INJECTION SITE"
+      ],
+      "findings": [
+        "INFLAMMATION",
+        "INFILTRATE"
+      ],
       "direction": "up",
       "description": "Injection site inflammation",
       "severity_threshold": "Grade 3, or any grade with necrosis, extensive edema, or systemic inflammatory response",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Local innate immune response to PS-ASO via TLR9 and complement activation at injection site."
     },
     {
       "key": "MI_kidney_tubular_degeneration",
       "domain": "MI",
-      "organs": ["KIDNEY"],
-      "findings": ["DEGENERATION", "TUBULAR DEGENERATION", "REGENERATION"],
+      "organs": [
+        "KIDNEY"
+      ],
+      "findings": [
+        "DEGENERATION",
+        "TUBULAR DEGENERATION",
+        "REGENERATION"
+      ],
       "direction": "up",
       "description": "Renal tubular degeneration/regeneration (high-dose threshold finding)",
       "severity_threshold": "Grade 2 - ALWAYS ADVERSE when present. Represents transition from accumulation to nephrotoxicity.",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Even minimal tubular degeneration/necrosis represents functional impairment, unlike isolated basophilic granules."
     },
     {
       "key": "LB_PLAT_down",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "down",
       "description": "Thrombocytopenia",
       "typical_magnitude": "0.5-0.7x baseline (30-50% decrease first-gen; 10-25% second-gen)",
       "severity_threshold": "<100,000/uL (rat) or <75,000/uL (monkey) or >50% decrease from baseline",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE"
+      ],
       "species_note": "More pronounced with first-gen PS-ASOs. Monkey is the most sensitive species.",
       "rationale": "PS backbone binds platelet factor 4 and other heparin-binding proteins."
     },
     {
       "key": "LB_APTT_up",
       "domain": "LB",
-      "test_codes": ["APTT", "APTTIME"],
+      "test_codes": [
+        "APTT",
+        "APTTIME"
+      ],
       "direction": "up",
       "description": "Prolonged activated partial thromboplastin time",
       "typical_magnitude": "1.2-1.5x baseline (20-50% increase)",
       "severity_threshold": ">2x baseline aPTT or accompanied by clinical bleeding",
-      "species_applicability": ["MONKEY", "RAT"],
+      "species_applicability": [
+        "MONKEY",
+        "RAT"
+      ],
       "species_note": "Most pronounced in NHPs. Monkey aPTT is the most sensitive coagulation endpoint for PS-ASOs.",
       "rationale": "PS-ASOs bind intrinsic pathway coagulation factors via aptameric interactions. The PS backbone mimics heparin's polyanionic structure."
     },
     {
       "key": "LB_ALT_up",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT"
+      ],
       "direction": "up",
       "description": "ALT elevation (hepatic transaminase)",
       "typical_magnitude": "1.5-3x baseline (2nd-gen PS-ASO); up to 5-10x (LNA/cEt)",
       "severity_threshold": ">5x baseline (2nd-gen) or >3x baseline (LNA/cEt high-affinity) with histopathological correlates",
-      "species_applicability": ["RAT", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MOUSE"
+      ],
       "species_note": "Rodent-predominant at standard doses. NHP and human ALT elevations rare with 2-MOE gapmers.",
       "rationale": "Two mechanisms: CpG/non-CpG TLR stimulation (rodent-specific, mild) and RNase H1-dependent hepatotoxicity (LNA, sequence-dependent, potentially severe)."
     },
     {
       "key": "LB_AST_up",
       "domain": "LB",
-      "test_codes": ["AST", "ASAT"],
+      "test_codes": [
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "description": "AST elevation (hepatic transaminase)",
       "typical_magnitude": "1.5-3x baseline (mirrors ALT pattern)",
       "severity_threshold": ">5x baseline with histopathological correlates",
-      "species_applicability": ["RAT", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MOUSE"
+      ],
       "rationale": "Same mechanisms as ALT elevation. Parallels ALT pattern."
     },
     {
       "key": "LB_BUN_up",
       "domain": "LB",
-      "test_codes": ["BUN", "UREAN", "UREA"],
+      "test_codes": [
+        "BUN",
+        "UREAN",
+        "UREA"
+      ],
       "direction": "up",
       "description": "BUN elevation",
       "typical_magnitude": "1.0-1.3x baseline at pharmacological doses; >1.5x at nephrotoxic doses",
       "severity_threshold": ">1.5x baseline, or any elevation with concurrent tubular pathology",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Insensitive renal marker - tubular degeneration precedes functional biomarker changes."
     },
     {
       "key": "LB_UPROT_up",
       "domain": "LB",
-      "test_codes": ["UPROT"],
+      "test_codes": [
+        "UPROT"
+      ],
       "direction": "up",
       "description": "Proteinuria / urinalysis changes",
       "typical_magnitude": "2-5x baseline at pharmacological doses",
       "severity_threshold": "Adverse when accompanied by albuminuria (glomerular damage) or concurrent tubular degeneration",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "rationale": "PS-ASOs competitively inhibit megalin-mediated protein reabsorption in proximal tubules."
     },
     {
       "key": "LB_C3_down",
       "domain": "LB",
-      "test_codes": ["C3", "COMP3"],
+      "test_codes": [
+        "C3",
+        "COMP3"
+      ],
       "direction": "down",
       "description": "Complement activation (alternative pathway) - NHP-specific",
       "typical_magnitude": "0.3-0.7x baseline C3",
       "severity_threshold": "Adverse when accompanied by hemodynamic changes, bronchospasm, or anaphylactoid reactions",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "species_note": "NHP-SPECIFIC finding. Monkey complement is uniquely sensitive to PS-ASOs. Rats, mice, dogs do not show significant activation.",
       "rationale": "PS-ASOs bind Factor H, displacing it from C3b surfaces and causing uncontrolled alternative pathway amplification."
     },
     {
       "key": "LB_CYTOKIN_up",
       "domain": "LB",
-      "test_codes": ["CYTOKIN"],
+      "test_codes": [
+        "CYTOKIN"
+      ],
       "direction": "up",
       "description": "Proinflammatory cytokine elevation (rodent)",
       "typical_magnitude": "2-10x for TNFa, IL-6, MCP-1 at supratherapeutic doses",
       "severity_threshold": "Adverse when accompanied by clinical signs or hepatic/splenic pathology",
-      "species_applicability": ["RAT", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MOUSE"
+      ],
       "species_note": "Rodent-predominant. NHP and human responses are substantially muted.",
       "rationale": "TLR9-dependent (CpG motifs) and TLR9-independent activation of innate immune cells."
     },
     {
       "key": "OM_kidney_weight_up",
       "domain": "OM",
-      "organs": ["KIDNEY"],
+      "organs": [
+        "KIDNEY"
+      ],
       "direction": "up",
       "description": "Kidney weight increase",
       "typical_magnitude": "1.05-1.20x control (5-20% increase)",
       "severity_threshold": ">25% increase over concurrent controls, or accompanied by tubular degeneration or elevated BUN/creatinine",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE", "DOG"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE",
+        "DOG"
+      ],
       "rationale": "Mild bilateral kidney weight increase reflecting tubular epithelial hypertrophy from oligonucleotide accumulation."
     },
     {
       "key": "OM_liver_weight_up",
       "domain": "OM",
-      "organs": ["LIVER"],
+      "organs": [
+        "LIVER"
+      ],
       "direction": "up",
       "description": "Liver weight increase",
       "typical_magnitude": "1.05-1.15x control (5-15% increase)",
       "severity_threshold": ">20% increase over concurrent controls, or accompanied by hepatocellular changes or ALT >5x",
-      "species_applicability": ["RAT", "MONKEY", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY",
+        "MOUSE"
+      ],
       "rationale": "Drug accumulation in Kupffer cells, sinusoidal endothelial cells, and hepatocytes."
     },
     {
       "key": "OM_spleen_weight_up",
       "domain": "OM",
-      "organs": ["SPLEEN"],
+      "organs": [
+        "SPLEEN"
+      ],
       "direction": "up",
       "description": "Spleen weight increase",
       "typical_magnitude": "1.10-1.40x control (10-40% increase in rodents)",
       "severity_threshold": ">50% increase over concurrent controls, or accompanied by marked lymphoid hyperplasia (grade 4+)",
-      "species_applicability": ["RAT", "MOUSE"],
+      "species_applicability": [
+        "RAT",
+        "MOUSE"
+      ],
       "species_note": "Rodent-predominant; NHP shows milder changes.",
       "rationale": "Lymphoid hyperplasia from immune stimulation + macrophage hypertrophy from ASO accumulation in red pulp."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

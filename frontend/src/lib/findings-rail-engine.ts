@@ -10,7 +10,7 @@ import { EFFECT_SIZE_SIGMOID_SCALE } from "@/lib/lab-clinical-catalog";
 
 // ─── Types ─────────────────────────────────────────────────
 
-export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome" | "specimen";
+export type GroupingMode = "organ" | "domain" | "pattern" | "finding" | "syndrome" | "specimen" | "compound";
 export type SortMode = "signal" | "pvalue" | "effect" | "az";
 
 export interface EndpointWithSignal extends EndpointSummary {
@@ -214,6 +214,7 @@ function groupKey(ep: EndpointWithSignal, mode: GroupingMode): string {
     case "finding": return "_all";
     case "specimen": return ep.specimen ?? "";
     case "syndrome": return "_all"; // syndrome mode uses groupEndpointsBySyndrome()
+    case "compound": return ep.compound_id ?? "single";
   }
 }
 

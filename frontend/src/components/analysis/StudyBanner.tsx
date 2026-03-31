@@ -18,6 +18,9 @@ interface StudyBannerProps {
   tkSubjectCount?: number;
   mortality?: StudyMortality | null;
   crossAnimalFlags?: CrossAnimalFlags;
+  /** A5: multi-compound study indicator */
+  isMultiCompound?: boolean;
+  compounds?: string[];
 }
 
 /**
@@ -25,7 +28,7 @@ interface StudyBannerProps {
  * Shows species+strain, duration+route, dose group count, GLP status.
  * Matches MortalityBanner pattern: bg-muted/30, text-xs, border-b border-border/40.
  */
-export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags }: StudyBannerProps) {
+export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags, isMultiCompound, compounds }: StudyBannerProps) {
   const { species, strain, dosingDurationWeeks, recoveryPeriodDays, route, glpCompliant } = studyContext;
 
   // Format: "Sprague-Dawley rat" or just "Rat" if no strain
@@ -80,6 +83,12 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
       <span>{durationRoute}</span>
       <span className="text-muted-foreground/40">|</span>
       <span>{doseGroupCount} dose group{doseGroupCount !== 1 ? "s" : ""}</span>
+      {isMultiCompound && compounds && compounds.length > 1 && (
+        <>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="text-amber-600 font-medium">{compounds.length} test articles</span>
+        </>
+      )}
       {glpCompliant && (
         <>
           <span className="text-muted-foreground/40">|</span>

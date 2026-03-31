@@ -9,152 +9,291 @@
     {
       "key": "LB_ALT_up",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT", "AST", "ASAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT",
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "description": "ALT/AST elevation (ionizable lipid-mediated hepatocyte disruption)",
       "typical_magnitude": "2-5x at high IV doses; minimal for IM",
       "severity_threshold": "Self-limiting (<72h resolution, no necrosis) = non-adverse. Sustained >7 days or with hepatocyte necrosis = adverse.",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "component_attribution": "ionizable_lipid",
-      "route_applicability": ["IV"],
-      "time_course": {"onset_hours": 6, "peak_hours": 24, "expected_resolution_days": 3, "self_limiting": true},
+      "route_applicability": [
+        "IV"
+      ],
+      "time_course": {
+        "onset_hours": 6,
+        "peak_hours": 24,
+        "expected_resolution_days": 3,
+        "self_limiting": true
+      },
       "rationale": "ApoE/LDLR-mediated hepatocyte uptake of LNP; ionizable lipid disrupts endosomal membrane. Biodegradable lipids (SM-102, ALC-0315) show reduced hepatotoxicity vs non-biodegradable MC3."
     },
     {
       "key": "MI_hepatocyte_vacuolation",
       "domain": "MI",
-      "organs": ["LIVER"],
-      "findings": ["VACUOLATION", "HEPATOCYTE VACUOLATION"],
+      "organs": [
+        "LIVER"
+      ],
+      "findings": [
+        "VACUOLATION",
+        "HEPATOCYTE VACUOLATION"
+      ],
       "direction": "up",
       "description": "Hepatocyte vacuolation (portal zone — lipid accumulation, not necrosis)",
       "severity_threshold": "Minimal (Grade 1) = expected. Necrosis = adverse.",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "component_attribution": "ionizable_lipid",
-      "time_course": {"onset_hours": 24, "peak_hours": 72, "expected_resolution_days": 21, "self_limiting": true},
+      "time_course": {
+        "onset_hours": 24,
+        "peak_hours": 72,
+        "expected_resolution_days": 21,
+        "self_limiting": true
+      },
       "rationale": "Lipid accumulation from LNP hepatocyte uptake. Not necrosis — distinct from viral vector hepatotoxicity."
     },
     {
       "key": "MI_injection_site",
       "domain": "MI",
-      "organs": ["INJECTION SITE"],
-      "findings": ["INFLAMMATION", "INFILTRATE", "NEUTROPHILIC", "MACROPHAGE"],
+      "organs": [
+        "INJECTION SITE"
+      ],
+      "findings": [
+        "INFLAMMATION",
+        "INFILTRATE",
+        "NEUTROPHILIC",
+        "MACROPHAGE"
+      ],
       "direction": "up",
       "description": "Injection site mixed inflammation (IM only)",
       "severity_threshold": "Moderate with full resolution by 3 weeks = non-adverse. Failure to resolve or fibrosis/abscess = adverse.",
-      "species_applicability": ["RAT"],
-      "route_applicability": ["IM"],
-      "time_course": {"onset_hours": 2, "peak_hours": 48, "expected_resolution_days": 21, "self_limiting": true},
+      "species_applicability": [
+        "RAT"
+      ],
+      "route_applicability": [
+        "IM"
+      ],
+      "time_course": {
+        "onset_hours": 2,
+        "peak_hours": 48,
+        "expected_resolution_days": 21,
+        "self_limiting": true
+      },
       "rationale": "Local innate immune response to LNP + mRNA. Expected class effect at IM injection site."
     },
     {
       "key": "MA_injection_site",
       "domain": "MA",
-      "organs": ["INJECTION SITE"],
-      "findings": ["EDEMA", "DISCOLORATION", "SWELLING"],
+      "organs": [
+        "INJECTION SITE"
+      ],
+      "findings": [
+        "EDEMA",
+        "DISCOLORATION",
+        "SWELLING"
+      ],
       "direction": "up",
       "description": "Injection site edema/discoloration (IM only)",
-      "species_applicability": ["RAT"],
-      "route_applicability": ["IM"],
+      "species_applicability": [
+        "RAT"
+      ],
+      "route_applicability": [
+        "IM"
+      ],
       "severity_threshold": null,
       "rationale": "Vascular permeability and inflammation at IM injection site."
     },
     {
       "key": "LB_WBC_up",
       "domain": "LB",
-      "test_codes": ["WBC", "NEUT"],
+      "test_codes": [
+        "WBC",
+        "NEUT"
+      ],
       "direction": "up",
       "description": "WBC increase / neutrophilia (acute phase response)",
       "typical_magnitude": "1.5-3x",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "component_attribution": "mRNA_and_LNP",
-      "time_course": {"onset_hours": 6, "peak_hours": 24, "expected_resolution_days": 3, "self_limiting": true},
+      "time_course": {
+        "onset_hours": 6,
+        "peak_hours": 24,
+        "expected_resolution_days": 3,
+        "self_limiting": true
+      },
       "severity_threshold": null,
       "rationale": "Acute phase response and neutrophil demargination."
     },
     {
       "key": "LB_fibrinogen_up",
       "domain": "LB",
-      "test_codes": ["FIBRINO", "FIB"],
+      "test_codes": [
+        "FIBRINO",
+        "FIB"
+      ],
       "direction": "up",
       "description": "Fibrinogen increase (acute phase protein)",
       "typical_magnitude": "1.5-2x",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "component_attribution": "mRNA_and_LNP",
-      "time_course": {"onset_hours": 12, "peak_hours": 36, "expected_resolution_days": 7, "self_limiting": true},
+      "time_course": {
+        "onset_hours": 12,
+        "peak_hours": 36,
+        "expected_resolution_days": 7,
+        "self_limiting": true
+      },
       "severity_threshold": null,
       "rationale": "Hepatic acute phase protein response."
     },
     {
       "key": "LB_platelet_down",
       "domain": "LB",
-      "test_codes": ["PLAT", "PLT"],
+      "test_codes": [
+        "PLAT",
+        "PLT"
+      ],
       "direction": "down",
       "description": "Transient thrombocytopenia (platelet consumption during inflammation)",
       "typical_magnitude": "Mild",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "component_attribution": "LNP_platform",
-      "time_course": {"onset_hours": 6, "peak_hours": 24, "expected_resolution_days": 3, "self_limiting": true},
+      "time_course": {
+        "onset_hours": 6,
+        "peak_hours": 24,
+        "expected_resolution_days": 3,
+        "self_limiting": true
+      },
       "severity_threshold": "Sustained or severe thrombocytopenia = adverse",
       "rationale": "Platelet consumption/sequestration during acute inflammatory response."
     },
     {
       "key": "LB_acute_phase_up",
       "domain": "LB",
-      "test_codes": ["A2MACRO", "HAPTO"],
+      "test_codes": [
+        "A2MACRO",
+        "HAPTO"
+      ],
       "direction": "up",
       "description": "Acute phase proteins (alpha-2-macroglobulin, haptoglobin)",
       "typical_magnitude": "2-5x",
-      "species_applicability": ["RAT"],
-      "time_course": {"onset_hours": 12, "peak_hours": 36, "expected_resolution_days": 7, "self_limiting": true},
+      "species_applicability": [
+        "RAT"
+      ],
+      "time_course": {
+        "onset_hours": 12,
+        "peak_hours": 36,
+        "expected_resolution_days": 7,
+        "self_limiting": true
+      },
       "severity_threshold": null,
       "rationale": "Hepatic acute phase response to LNP/mRNA."
     },
     {
       "key": "LB_complement_up",
       "domain": "LB",
-      "test_codes": ["C3A", "SC5B9", "C3", "CH50"],
+      "test_codes": [
+        "C3A",
+        "SC5B9",
+        "C3",
+        "CH50"
+      ],
       "direction": "up",
       "description": "Complement activation (CARPA — PEG-mediated)",
       "typical_magnitude": "Mild-moderate; increases with repeat dosing",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "species_note": "NHP sensitivity to complement activation far exceeds rodent. Pig > NHP > human > rat for CARPA prediction.",
       "component_attribution": "PEG_lipid",
-      "time_course": {"onset_hours": 0.1, "peak_hours": 4, "expected_resolution_days": 1, "self_limiting": true},
+      "time_course": {
+        "onset_hours": 0.1,
+        "peak_hours": 4,
+        "expected_resolution_days": 1,
+        "self_limiting": true
+      },
       "severity_threshold": "Cardiovascular compromise (hypotension, pulmonary hypertension) = adverse",
       "rationale": "PEG-lipid-mediated alternative/classical pathway complement activation (CARPA). NHP >> rat sensitivity."
     },
     {
       "key": "MI_draining_LN_hyperplasia",
       "domain": "MI",
-      "organs": ["LYMPH NODE", "INGUINAL LYMPH NODE", "ILIAC LYMPH NODE"],
-      "findings": ["HYPERPLASIA", "GERMINAL CENTER HYPERPLASIA"],
+      "organs": [
+        "LYMPH NODE",
+        "INGUINAL LYMPH NODE",
+        "ILIAC LYMPH NODE"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "GERMINAL CENTER HYPERPLASIA"
+      ],
       "direction": "up",
       "description": "Draining lymph node germinal center hyperplasia (desired pharmacology)",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "component_attribution": "mRNA_antigen",
-      "time_course": {"onset_hours": 72, "peak_hours": 336, "expected_resolution_days": 28, "self_limiting": false},
+      "time_course": {
+        "onset_hours": 72,
+        "peak_hours": 336,
+        "expected_resolution_days": 28,
+        "self_limiting": false
+      },
       "severity_threshold": null,
       "rationale": "Antigen-driven immune activation — this is the desired pharmacological effect for vaccine and immunotherapy applications."
     },
     {
       "key": "MI_spleen_cellularity",
       "domain": "MI",
-      "organs": ["SPLEEN"],
-      "findings": ["HYPERPLASIA", "EXTRAMEDULLARY HEMATOPOIESIS", "CELLULARITY INCREASE"],
+      "organs": [
+        "SPLEEN"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "EXTRAMEDULLARY HEMATOPOIESIS",
+        "CELLULARITY INCREASE"
+      ],
       "direction": "up",
       "description": "Spleen weight increase / cellularity increase",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "severity_threshold": null,
       "rationale": "Immune stimulation and extramedullary hematopoiesis."
     },
     {
       "key": "MI_bone_marrow_hypercellularity",
       "domain": "MI",
-      "organs": ["BONE MARROW", "STERNUM", "FEMUR"],
-      "findings": ["HYPERCELLULARITY", "INCREASED CELLULARITY"],
+      "organs": [
+        "BONE MARROW",
+        "STERNUM",
+        "FEMUR"
+      ],
+      "findings": [
+        "HYPERCELLULARITY",
+        "INCREASED CELLULARITY"
+      ],
       "direction": "up",
       "description": "Bone marrow hypercellularity (reactive granulopoiesis)",
-      "species_applicability": ["RAT"],
+      "species_applicability": [
+        "RAT"
+      ],
       "component_attribution": "LNP_platform",
       "severity_threshold": null,
       "rationale": "Reactive granulopoiesis in response to acute inflammatory stimulus."
@@ -162,10 +301,16 @@
     {
       "key": "LB_anti_PEG",
       "domain": "LB",
-      "test_codes": ["PEGIGM", "PEGIGG"],
+      "test_codes": [
+        "PEGIGM",
+        "PEGIGG"
+      ],
       "direction": "up",
       "description": "Anti-PEG IgM/IgG formation",
-      "species_applicability": ["RAT", "MONKEY"],
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
       "component_attribution": "PEG_lipid",
       "severity_threshold": "Accelerated blood clearance sufficient to eliminate therapeutic efficacy on repeat dosing = adverse",
       "rationale": "PEG recognized as hapten by B cells. Time/dose-dependent. Enhanced on repeat dosing."
@@ -173,13 +318,26 @@
     {
       "key": "CL_temperature_up",
       "domain": "CL",
-      "findings": ["TEMPERATURE INCREASE", "PYREXIA", "FEVER"],
+      "findings": [
+        "TEMPERATURE INCREASE",
+        "PYREXIA",
+        "FEVER"
+      ],
       "direction": "up",
       "description": "Body temperature increase (transient fever)",
-      "species_applicability": ["RAT", "MONKEY"],
-      "time_course": {"onset_hours": 4, "peak_hours": 12, "expected_resolution_days": 2, "self_limiting": true},
+      "species_applicability": [
+        "RAT",
+        "MONKEY"
+      ],
+      "time_course": {
+        "onset_hours": 4,
+        "peak_hours": 12,
+        "expected_resolution_days": 2,
+        "self_limiting": true
+      },
       "severity_threshold": "Sustained fever >48h = adverse",
       "rationale": "Pyrogenic cytokine release from innate immune activation."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

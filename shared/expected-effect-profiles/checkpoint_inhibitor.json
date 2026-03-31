@@ -8,266 +8,421 @@
     {
       "key": "MI_multiorgan_infiltration",
       "domain": "MI",
-      "organs": ["HEART", "LARGE INTESTINE", "KIDNEY", "LIVER", "SALIVARY GLAND", "THYROID GLAND", "SKIN", "LUNG", "PANCREAS"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "INFLAMMATION"],
+      "organs": [
+        "HEART",
+        "LARGE INTESTINE",
+        "KIDNEY",
+        "LIVER",
+        "SALIVARY GLAND",
+        "THYROID GLAND",
+        "SKIN",
+        "LUNG",
+        "PANCREAS"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "description": "Multi-organ mononuclear cell infiltration",
       "severity_threshold": "Grade 3 - minimal-mild (grade 1-2) infiltration without tissue destruction is expected pharmacology. Adverse when accompanied by parenchymal degeneration/necrosis or functional organ impairment.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "This IS the intended mechanism of action (T-cell activation). FDA BLA 125554: 'consistent with the pharmacologic activity of the antibody'."
     },
     {
       "key": "MI_myocarditis",
       "domain": "MI",
-      "organs": ["HEART"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "DEGENERATION"],
+      "organs": [
+        "HEART"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "DEGENERATION"
+      ],
       "direction": "up",
       "description": "Myocarditis (immune-mediated)",
       "severity_threshold": "Grade 1 - ALWAYS ADVERSE when present. Myocarditis at any grade represents functional cardiac impairment. 50% mortality rate in affected humans.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "ICI-induced myocarditis in NHPs morphologically recapitulates the human disease. Most clinically significant ICI toxicity."
     },
     {
       "key": "MI_colitis",
       "domain": "MI",
-      "organs": ["LARGE INTESTINE", "COLON"],
-      "findings": ["INFLAMMATION", "INFILTRATE, MONONUCLEAR CELL", "CRYPTITIS"],
+      "organs": [
+        "LARGE INTESTINE",
+        "COLON"
+      ],
+      "findings": [
+        "INFLAMMATION",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "CRYPTITIS"
+      ],
       "direction": "up",
       "description": "Colitis / gastrointestinal inflammation",
       "severity_threshold": "Grade 2, or any grade with clinical signs (diarrhea, bloody stool) or crypt destruction",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "CTLA-4 is critical for gut immune tolerance. CTLA-4 knockout mice develop fatal enterocolitis."
     },
     {
       "key": "MI_thyroiditis",
       "domain": "MI",
-      "organs": ["THYROID GLAND", "PITUITARY GLAND", "ADRENAL GLAND", "PANCREAS"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "INFLAMMATION"],
+      "organs": [
+        "THYROID GLAND",
+        "PITUITARY GLAND",
+        "ADRENAL GLAND",
+        "PANCREAS"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "description": "Thyroiditis / endocrine gland inflammation",
       "severity_threshold": "Grade 2, or any grade with endocrine function changes (T4 decrease, TSH increase) or glandular destruction",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Thyroid is the most commonly affected endocrine organ in ICI therapy."
     },
     {
       "key": "MI_hepatitis",
       "domain": "MI",
-      "organs": ["LIVER"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "INFLAMMATION"],
+      "organs": [
+        "LIVER"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "description": "Hepatitis (immune-mediated)",
       "severity_threshold": "Grade 2, or any grade with ALT/AST >3x baseline or hepatocellular necrosis",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Immune-mediated hepatitis reflects loss of hepatic immune tolerance."
     },
     {
       "key": "MI_dermatitis",
       "domain": "MI",
-      "organs": ["SKIN"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "INFLAMMATION"],
+      "organs": [
+        "SKIN"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "description": "Dermatitis / skin inflammation",
       "severity_threshold": "Grade 3, or any grade with epidermal necrosis, ulceration, or severe pruritus with self-mutilation",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Skin irAEs are the most common but typically least severe checkpoint inhibitor toxicity."
     },
     {
       "key": "MI_nephritis",
       "domain": "MI",
-      "organs": ["KIDNEY"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL", "INFLAMMATION"],
+      "organs": [
+        "KIDNEY"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL",
+        "INFLAMMATION"
+      ],
       "direction": "up",
       "description": "Nephritis (immune-mediated tubulointerstitial)",
       "severity_threshold": "Grade 2, or any grade with BUN/creatinine elevation or tubular degeneration",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "T-cell-mediated tubulointerstitial nephritis."
     },
     {
       "key": "MI_sialadenitis",
       "domain": "MI",
-      "organs": ["SALIVARY GLAND"],
-      "findings": ["INFILTRATE", "INFILTRATE, MONONUCLEAR CELL"],
+      "organs": [
+        "SALIVARY GLAND"
+      ],
+      "findings": [
+        "INFILTRATE",
+        "INFILTRATE, MONONUCLEAR CELL"
+      ],
       "direction": "up",
       "description": "Salivary gland inflammation (sialadenitis)",
       "severity_threshold": "Grade 2, or any grade causing functional impairment",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Part of the multi-organ irAE pattern. Salivary glands are common autoimmune targets (Sjogren's syndrome)."
     },
     {
       "key": "MI_splenic_hypertrophy",
       "domain": "MI",
-      "organs": ["SPLEEN"],
-      "findings": ["HYPERTROPHY", "HYPERPLASIA"],
+      "organs": [
+        "SPLEEN"
+      ],
+      "findings": [
+        "HYPERTROPHY",
+        "HYPERPLASIA"
+      ],
       "direction": "up",
       "description": "Splenic follicular hypertrophy / marginal zone expansion",
       "severity_threshold": "Grade 3, or any grade with massive splenomegaly or hypersplenism",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Splenic immune activation is a direct pharmacological consequence of checkpoint blockade."
     },
     {
       "key": "MI_ln_changes",
       "domain": "MI",
-      "organs": ["LYMPH NODE"],
-      "findings": ["DECREASED CELLULARITY", "HYPERPLASIA"],
+      "organs": [
+        "LYMPH NODE"
+      ],
+      "findings": [
+        "DECREASED CELLULARITY",
+        "HYPERPLASIA"
+      ],
       "direction": "up",
       "description": "Lymph node changes (germinal center depletion or hyperplasia)",
       "severity_threshold": "Grade 3, or any grade with massive lymphadenopathy or lymphoproliferative disorder",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Lymph node changes reflect altered T-cell trafficking, not pathology per se."
     },
     {
       "key": "LB_LYMPH_up",
       "domain": "LB",
-      "test_codes": ["LYMPH"],
+      "test_codes": [
+        "LYMPH"
+      ],
       "direction": "up",
       "description": "Increased CD4+/CD8+ activated T cells in blood",
       "typical_magnitude": "1.2-2.0x baseline total lymphocytes; CD8+ effector memory 2-5x",
       "severity_threshold": null,
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "This IS the intended pharmacodynamic effect. Non-adverse as isolated finding."
     },
     {
       "key": "LB_GLOB_up",
       "domain": "LB",
-      "test_codes": ["GLOB", "GLOBUL"],
+      "test_codes": [
+        "GLOB",
+        "GLOBUL"
+      ],
       "direction": "up",
       "description": "Increased globulin / hypergammaglobulinemia",
       "typical_magnitude": "1.1-1.5x baseline",
       "severity_threshold": ">2x baseline or accompanied by autoantibody-mediated pathology",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Enhanced T-helper activity provides increased B-cell help, driving polyclonal immunoglobulin production."
     },
     {
       "key": "LB_ALB_down",
       "domain": "LB",
-      "test_codes": ["ALB", "ALBUM"],
+      "test_codes": [
+        "ALB",
+        "ALBUM"
+      ],
       "direction": "down",
       "description": "Decreased albumin",
       "typical_magnitude": "0.8-0.9x baseline (10-20% decrease)",
       "severity_threshold": "<50% baseline or accompanied by clinical edema/effusions",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Negative acute-phase protein response during immune activation. May also reflect GI protein loss from colitis."
     },
     {
       "key": "LB_TROPNI_up",
       "domain": "LB",
-      "test_codes": ["TROPNI", "CTNI", "TROP"],
+      "test_codes": [
+        "TROPNI",
+        "CTNI",
+        "TROP"
+      ],
       "direction": "up",
       "description": "Cardiac troponin-I elevation",
       "typical_magnitude": "2-50x baseline (highly variable)",
       "severity_threshold": "ALWAYS ADVERSE when confirmed elevated above assay reference range. Sentinel biomarker for ICI myocarditis.",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Any troponin elevation indicates cardiomyocyte damage."
     },
     {
       "key": "LB_BNP_up",
       "domain": "LB",
-      "test_codes": ["BNP", "NTBNP"],
+      "test_codes": [
+        "BNP",
+        "NTBNP"
+      ],
       "direction": "up",
       "description": "NT-pro-BNP elevation",
       "typical_magnitude": "2-10x baseline",
       "severity_threshold": ">3x baseline with concurrent troponin elevation",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Co-elevation of troponin-I and NT-pro-BNP is the diagnostic biomarker pattern for ICI myocarditis."
     },
     {
       "key": "LB_NEUT_up",
       "domain": "LB",
-      "test_codes": ["NEUT"],
+      "test_codes": [
+        "NEUT"
+      ],
       "direction": "up",
       "description": "Neutrophil count increase",
       "typical_magnitude": "1.5-3x baseline",
       "severity_threshold": ">5x baseline or accompanied by band forms (left shift)",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Neutrophilia is a secondary response to tissue inflammation, not a direct pharmacological effect."
     },
     {
       "key": "LB_EOS_up",
       "domain": "LB",
-      "test_codes": ["EOS"],
+      "test_codes": [
+        "EOS"
+      ],
       "direction": "up",
       "description": "Eosinophil count increase",
       "typical_magnitude": "1.5-4x baseline",
       "severity_threshold": "Extreme eosinophilia or accompanied by eosinophilic tissue infiltration",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Eosinophilia reflects Th2 component of dysregulated immune response."
     },
     {
       "key": "LB_T4_down",
       "domain": "LB",
-      "test_codes": ["T4"],
+      "test_codes": [
+        "T4"
+      ],
       "direction": "down",
       "description": "T4 (thyroxine) decrease",
       "typical_magnitude": "0.5-0.8x baseline (20-50% decrease)",
       "severity_threshold": "<50% baseline with concurrent TSH elevation",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Functional hypothyroidism from immune-mediated thyroid destruction."
     },
     {
       "key": "LB_TSH_up",
       "domain": "LB",
-      "test_codes": ["TSH"],
+      "test_codes": [
+        "TSH"
+      ],
       "direction": "up",
       "description": "TSH increase",
       "typical_magnitude": "2-10x baseline",
       "severity_threshold": ">3x baseline with concurrent T4 decrease",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Compensatory pituitary feedback response to decreased circulating thyroid hormones."
     },
     {
       "key": "LB_ALT_up",
       "domain": "LB",
-      "test_codes": ["ALT", "ALAT"],
+      "test_codes": [
+        "ALT",
+        "ALAT"
+      ],
       "direction": "up",
       "description": "ALT elevation (immune-mediated hepatitis)",
       "typical_magnitude": "1.5-10x baseline",
       "severity_threshold": ">3x baseline or accompanied by hepatocellular necrosis",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Unlike oligonucleotide ALT elevation, ICI ALT reflects direct immune-mediated hepatocyte destruction."
     },
     {
       "key": "LB_AST_up",
       "domain": "LB",
-      "test_codes": ["AST", "ASAT"],
+      "test_codes": [
+        "AST",
+        "ASAT"
+      ],
       "direction": "up",
       "description": "AST elevation (immune-mediated hepatitis)",
       "typical_magnitude": "1.5-10x baseline",
       "severity_threshold": ">3x baseline",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Parallels ALT pattern in immune-mediated hepatitis."
     },
     {
       "key": "LB_BUN_up",
       "domain": "LB",
-      "test_codes": ["BUN", "UREAN", "UREA"],
+      "test_codes": [
+        "BUN",
+        "UREAN",
+        "UREA"
+      ],
       "direction": "up",
       "description": "BUN elevation (nephritis-associated)",
       "typical_magnitude": "1.2-2x baseline",
       "severity_threshold": ">1.5x baseline with concurrent renal histopathology or creatinine elevation",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Reduced glomerular filtration from immune-mediated renal inflammation."
     },
     {
       "key": "LB_CREAT_up",
       "domain": "LB",
-      "test_codes": ["CREAT"],
+      "test_codes": [
+        "CREAT"
+      ],
       "direction": "up",
       "description": "Creatinine elevation (nephritis-associated)",
       "typical_magnitude": "1.2-2x baseline",
       "severity_threshold": ">1.5x baseline with concurrent renal histopathology",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Reduced GFR from immune-mediated tubulointerstitial inflammation."
     },
     {
       "key": "OM_spleen_weight_up",
       "domain": "OM",
-      "organs": ["SPLEEN"],
+      "organs": [
+        "SPLEEN"
+      ],
       "direction": "up",
       "description": "Spleen weight increase",
       "typical_magnitude": "1.15-1.50x control (15-50% increase)",
       "severity_threshold": ">50% increase or accompanied by hypersplenism",
-      "species_applicability": ["MONKEY"],
+      "species_applicability": [
+        "MONKEY"
+      ],
       "rationale": "Enhanced lymphocyte activation and proliferation from checkpoint blockade."
     }
-  ]
+  ],
+  "default_reversibility": "variable"
 }

@@ -151,6 +151,7 @@ def compute_all_findings(
 
     def _run_domain_passes(
         subs: pd.DataFrame, compound_id: str | None = None,
+        _compound_dose_count: int | None = None,
     ) -> tuple[list[dict], dict | None, dict | None]:
         """Run the 3-pass domain computation for a subject set."""
         main_only = get_terminal_subjects(subs) if has_recovery and subs["is_recovery"].any() else None
@@ -221,6 +222,7 @@ def compute_all_findings(
         if compound_id:
             for f in findings:
                 f["compound_id"] = compound_id
+                f["_compound_dose_count"] = _compound_dose_count
 
         return findings, sched, sep
 
@@ -234,7 +236,10 @@ def compute_all_findings(
         for comp_id, partition in compound_partitions.items():
             partition_armcds = set(partition["armcds"])
             partition_subs = analysis_subjects[analysis_subjects["ARMCD"].isin(partition_armcds)].copy()
-            comp_findings, comp_sched, comp_sep = _run_domain_passes(partition_subs, compound_id=comp_id)
+            comp_findings, comp_sched, comp_sep = _run_domain_passes(
+                partition_subs, compound_id=comp_id,
+                _compound_dose_count=partition["dose_count"],
+            )
             all_findings.extend(comp_findings)
             # Merge scheduled/separate maps across compounds
             if comp_sched:

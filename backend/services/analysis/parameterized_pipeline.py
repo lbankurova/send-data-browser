@@ -58,6 +58,7 @@ class ParameterizedAnalysisPipeline:
         precomputed_findings: list[dict] | None = None,
         precomputed_dose_groups: list[dict] | None = None,
         has_concurrent_control: bool = True,
+        compound_partitions: dict | None = None,
     ) -> dict[str, list | dict]:
         """Run pipeline and return all view JSONs.
 
@@ -95,6 +96,7 @@ class ParameterizedAnalysisPipeline:
         noael = build_noael_summary(
             findings, dose_groups, mortality=mortality, params=scoring,
             has_concurrent_control=has_concurrent_control,
+            compound_partitions=compound_partitions,
         )
         rules = evaluate_rules(findings, target_organs, noael, dose_groups)
 

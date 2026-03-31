@@ -8,38 +8,61 @@
     {
       "key": "LB_CRP_up",
       "domain": "LB",
-      "test_codes": ["CRP", "CRPTN"],
+      "test_codes": [
+        "CRP",
+        "CRPTN"
+      ],
       "direction": "up",
       "description": "C-reactive protein elevation (acute phase response)",
       "typical_magnitude": "9-66x baseline",
       "severity_threshold": null,
-      "species_applicability": ["RABBIT", "MONKEY", "DOG"],
+      "species_applicability": [
+        "RABBIT",
+        "MONKEY",
+        "DOG"
+      ],
       "species_note": "Not a sensitive marker in rodents (use alpha-1-acid glycoprotein)",
       "rationale": "Direct pharmacodynamic consequence of immune activation. STP consensus: 'of little significance if immune response is as expected'"
     },
     {
       "key": "LB_Fibrinogen_up",
       "domain": "LB",
-      "test_codes": ["FIBRINO", "FIB"],
+      "test_codes": [
+        "FIBRINO",
+        "FIB"
+      ],
       "direction": "up",
       "description": "Fibrinogen elevation (acute phase)",
       "typical_magnitude": "1.5-2x baseline",
       "severity_threshold": null,
-      "species_applicability": ["RABBIT", "MONKEY", "DOG"],
+      "species_applicability": [
+        "RABBIT",
+        "MONKEY",
+        "DOG"
+      ],
       "rationale": "Acute phase protein, secondary to immune activation"
     },
     {
       "key": "MI_injection_site",
       "domain": "MI",
-      "organs": ["INJECTION SITE", "SITE OF INJECTION"],
-      "findings": ["INFLAMMATION", "MONONUCLEAR CELL INFILTRATE", "NECROSIS"],
+      "organs": [
+        "INJECTION SITE",
+        "SITE OF INJECTION"
+      ],
+      "findings": [
+        "INFLAMMATION",
+        "MONONUCLEAR CELL INFILTRATE",
+        "NECROSIS"
+      ],
       "direction": "up",
       "description": "Injection site inflammation",
       "severity_threshold": {
         "type": "grade",
         "max_non_adverse": 4,
         "condition": "reversible AND no tissue destruction",
-        "never_reclassifiable": ["necrosis"]
+        "never_reclassifiable": [
+          "necrosis"
+        ]
       },
       "species_applicability": null,
       "rationale": "Expected local reaction. Non-adverse even at marked severity when reversible. STP: reversibility is key criterion"
@@ -47,8 +70,14 @@
     {
       "key": "MI_spleen_hyperplasia",
       "domain": "MI",
-      "organs": ["SPLEEN"],
-      "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY", "LYMPHOID HYPERPLASIA"],
+      "organs": [
+        "SPLEEN"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "GERMINAL CENTER CELLULARITY",
+        "LYMPHOID HYPERPLASIA"
+      ],
       "direction": "up",
       "description": "Splenic lymphoid hyperplasia",
       "severity_threshold": {
@@ -62,8 +91,15 @@
     {
       "key": "MI_ln_hyperplasia",
       "domain": "MI",
-      "organs": ["LYMPH NODE", "ILIAC LYMPH NODE", "INGUINAL LYMPH NODE"],
-      "findings": ["HYPERPLASIA", "GERMINAL CENTER CELLULARITY"],
+      "organs": [
+        "LYMPH NODE",
+        "ILIAC LYMPH NODE",
+        "INGUINAL LYMPH NODE"
+      ],
+      "findings": [
+        "HYPERPLASIA",
+        "GERMINAL CENTER CELLULARITY"
+      ],
       "direction": "up",
       "description": "Draining lymph node hyperplasia",
       "severity_threshold": null,
@@ -73,7 +109,11 @@
     {
       "key": "OM_ln_weight_up",
       "domain": "OM",
-      "organs": ["ILIAC LYMPH NODE", "INGUINAL LYMPH NODE", "AXILLARY LYMPH NODE"],
+      "organs": [
+        "ILIAC LYMPH NODE",
+        "INGUINAL LYMPH NODE",
+        "AXILLARY LYMPH NODE"
+      ],
       "direction": "up",
       "description": "Draining lymph node weight increase",
       "typical_magnitude": "5-10x",
@@ -84,7 +124,9 @@
     {
       "key": "BW_decrease_transient",
       "domain": "BW",
-      "test_codes": ["BW"],
+      "test_codes": [
+        "BW"
+      ],
       "direction": "down",
       "description": "Transient body weight decrease post-dose",
       "severity_threshold": null,
@@ -94,7 +136,10 @@
     {
       "key": "LB_Globulin_up",
       "domain": "LB",
-      "test_codes": ["GLOBUL", "GLOB"],
+      "test_codes": [
+        "GLOBUL",
+        "GLOB"
+      ],
       "direction": "up",
       "description": "Globulin increase (immunoglobulin production)",
       "severity_threshold": null,
@@ -104,12 +149,17 @@
     {
       "key": "LB_AG_ratio_down",
       "domain": "LB",
-      "test_codes": ["A/G", "AGRATIO", "ALGLOB"],
+      "test_codes": [
+        "A/G",
+        "AGRATIO",
+        "ALGLOB"
+      ],
       "direction": "down",
       "description": "A/G ratio decrease",
       "severity_threshold": null,
       "species_applicability": null,
       "rationale": "Secondary to globulin increase - not an independent finding"
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

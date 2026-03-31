@@ -190,6 +190,8 @@ export interface UnifiedFinding {
   comments?: { text: string; subject_id: string }[];
   /** Phase A: compound identity for multi-compound studies. */
   compound_id?: string;
+  /** Phase A: trend test was suppressed for unpartitioned multi-compound findings. */
+  _multi_compound_suppressed?: boolean;
 }
 
 export interface ConfidenceDimension {

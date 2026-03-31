@@ -84,5 +84,6 @@
       "editing_modality": "base_editor",
       "rationale": "APOBEC deaminase activity on single-stranded DNA. Base editor-specific."
     }
-  ]
+  ],
+  "default_reversibility": "expected_reversible"
 }

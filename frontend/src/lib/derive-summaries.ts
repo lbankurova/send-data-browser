@@ -91,6 +91,8 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** R1: Lower confidence bound of |Hedges' g| (non-central t CI). Cross-study comparable. */
   gLower?: number;
+  /** A5: Compound identity for multi-compound studies. */
+  compound_id?: string;
   /** Endpoint confidence integrity assessment (ECI) — SPEC-ECI-AMD-002 */
   endpointConfidence?: import("./endpoint-confidence").EndpointConfidenceResult;
   /** Per-sex ECI breakdown. Present when endpoint has data for multiple sexes. */
@@ -281,6 +283,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
         if (mp.dominant_distribution) tags.push(mp.dominant_distribution);
         return tags.length > 0 ? tags.join(", ") : null;
       })(),
+      compound_id: f.compound_id ?? undefined,
     };
   });
 }
@@ -359,6 +362,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     /** Sex that set the direction (used to align groupStats with direction) */
     directionSex?: string;
     qualifierTags: string | null;
+    compound_id?: string;
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -395,6 +399,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         maxFoldChange: null,
         hasEarlyDeathExclusion: false,
         isDerived: !!row.is_derived,
+        compound_id: "compound_id" in row ? (row as { compound_id?: string }).compound_id : undefined,
         domains: new Set<string>(),
         groupStats: null,
         qualifierTags: row.qualifier_tags ?? null,
@@ -534,6 +539,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       isDerived: entry.isDerived,
       qualifierTags: entry.qualifierTags,
       ...(allDomains.length > 1 ? { domains: allDomains.sort() } : {}),
+      ...(entry.compound_id ? { compound_id: entry.compound_id } : {}),
     };
 
     // REM-05: Derive control and worst-treated group stats (continuous endpoints only)

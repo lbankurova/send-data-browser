@@ -3,7 +3,9 @@
   "display_name": "AAV-delivered gene editing",
   "modality": "gene_editing",
   "vector_class": "non_integrating_viral",
-  "base_profiles": ["aav_gene_therapy"],
+  "base_profiles": [
+    "aav_gene_therapy"
+  ],
   "source": "EDIT-101 NHP data, FDA 2024 Gene Editing Guidance",
   "description": "Gene editing-specific expected effects when delivered by AAV. Inherits full AAV gene therapy profile (~31 entries) plus editing-specific additions. Key concern: prolonged Cas9 expression from persistent AAV episomes increases cumulative off-target editing risk.",
   "expected_findings": [
@@ -72,5 +74,6 @@
       "editing_modality": "nuclease",
       "rationale": "AAV episomes can integrate at DSB sites created by Cas9. Unique to AAV-delivered nuclease editing."
     }
-  ]
+  ],
+  "default_reversibility": "variable"
 }

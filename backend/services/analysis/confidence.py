@@ -683,9 +683,14 @@ def _score_d9_pharmacological(
                                 f"{observed:.2f} exceeds non-adverse ceiling "
                                 f"{non_adverse_ceiling} -- partially expected{xr_note}")
 
-            return _dim("D9", "Pharmacological expectation", -1,
+            d9_result = _dim("D9", "Pharmacological expectation", -1,
                          f"Matches expected {layer_text} '{ee_key}' "
                          f"from {compound_class} profile{xr_note}")
+            # C3: Attach translation gap when the matched entry has one
+            tg = ee_config.get("translation_gap") if isinstance(ee_config, dict) else None
+            if tg:
+                d9_result["translation_gap"] = tg
+            return d9_result
 
     return _dim("D9", "Pharmacological expectation", 0,
                  "No match against expected-effect profile")

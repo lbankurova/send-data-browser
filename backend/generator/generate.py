@@ -259,6 +259,15 @@ def generate(study_id: str):
         context_result["study_metadata"]["last_dosing_day"] = effective
         context_result["study_metadata"]["auto_detected_last_dosing_day"] = auto_detected
         context_result["study_metadata"]["last_dosing_day_override"] = last_dosing_day_override
+        # A6: compound partitioning data for frontend consumption
+        context_result["study_metadata"]["is_multi_compound"] = dg_data.get("is_multi_compound", False)
+        context_result["study_metadata"]["compounds"] = dg_data.get("compounds", [])
+        cp = dg_data.get("compound_partitions", {})
+        if cp:
+            context_result["study_metadata"]["compound_partitions"] = {
+                k: {"dose_count": v["dose_count"], "is_single_dose": v["is_single_dose"]}
+                for k, v in cp.items()
+            }
         _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
@@ -325,6 +334,7 @@ def generate(study_id: str):
         precomputed_findings=findings,
         precomputed_dose_groups=dose_groups,
         has_concurrent_control=dg_data.get("has_concurrent_control", True),
+        compound_partitions=dg_data.get("compound_partitions"),
     )
 
     # Extract views for downstream consumers

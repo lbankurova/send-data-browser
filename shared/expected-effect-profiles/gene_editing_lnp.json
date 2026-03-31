@@ -3,7 +3,9 @@
   "display_name": "LNP-delivered gene editing",
   "modality": "gene_editing",
   "vector_class": "non_viral_non_integrating",
-  "base_profiles": ["lnp_mrna"],
+  "base_profiles": [
+    "lnp_mrna"
+  ],
   "source": "NTLA-2001 MAGNITUDE trial, FDA 2024 Gene Editing Guidance",
   "description": "Gene editing-specific expected effects when delivered by LNP/mRNA. Inherits full LNP/mRNA profile (~14 entries) plus editing-specific additions. Key advantage: transient Cas9 expression from mRNA (hours to days, not months) limits cumulative off-target exposure vs AAV delivery.",
   "expected_findings": [
@@ -72,5 +74,6 @@
       "editing_modality": "base_editor",
       "rationale": "APOBEC deaminase activity on single-stranded DNA. Base editor-specific (not nuclease or prime editor)."
     }
-  ]
+  ],
+  "default_reversibility": "variable"
 }

@@ -1796,9 +1796,23 @@ export function FindingsContextPanel() {
           )}
           {/* Pharmacological candidate badge (D9 fired) */}
           {selectedFinding._confidence?._pharmacological_candidate && (
-            <PharmacologicalBadge
-              rationale={selectedFinding._confidence.dimensions?.find(d => d.dimension === "D9")?.rationale}
-            />
+            <>
+              <PharmacologicalBadge
+                rationale={selectedFinding._confidence.dimensions?.find(d => d.dimension === "D9")?.rationale}
+              />
+              {/* C3: Translation gap warning when D9 matched entry has known preclinical-to-clinical disconnect */}
+              {(() => {
+                const d9 = selectedFinding._confidence?.dimensions?.find(d => d.dimension === "D9");
+                const tg = (d9 as Record<string, unknown> | undefined)?.translation_gap;
+                if (!tg || typeof tg !== "string") return null;
+                return (
+                  <div className="mt-1 bg-amber-50 border-l-2 border-amber-400 px-2 py-1 text-[10px]">
+                    <span className="font-semibold text-amber-700">Translation gap: </span>
+                    <span className="text-amber-600">{tg}</span>
+                  </div>
+                );
+              })()}
+            </>
           )}
           {/* Clinical tier badge (S2+ only, matching rail) */}
           {(() => {
