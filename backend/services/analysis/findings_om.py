@@ -1,16 +1,17 @@
-"""OM (Organ Measurement) domain findings: per (OMSPEC, SEX) → absolute + relative weight stats.
+"""OM (Organ Measurement) domain findings: per (OMSPEC, SEX) -> absolute + relative weight stats.
 
 Normalization-aware pipeline: stats run on the biologically recommended metric
 per organ category (absolute, ratio-to-BW, ratio-to-brain), with alternatives
 computed for all available metrics. Williams' step-down test runs alongside
 JT and Dunnett's for trend concordance checking.
 
-Root fix: SPEC-NST-AMD-000 — previously all stats ran on absolute values
+Root fix: SPEC-NST-AMD-000 -- previously all stats ran on absolute values
 regardless of organ type.
 """
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
@@ -23,6 +24,7 @@ from services.analysis.normalization import (
 )
 from services.analysis.ancova import ancova_from_dose_groups
 from services.analysis.day_utils import mode_day
+from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
 
 
 def _compute_metric_stats(
@@ -38,7 +40,7 @@ def _compute_metric_stats(
 
     for i, (dl, vals) in enumerate(zip(dose_levels, dose_groups_values)):
         vals_clean = vals[~np.isnan(vals)] if len(vals) > 0 else vals
-        if dl == 0 or i == 0:  # first group is control
+        if dl == 0 or i == 0:
             control_values = vals_clean
 
         if len(vals_clean) == 0:
@@ -55,7 +57,6 @@ def _compute_metric_stats(
                 "median": round(float(np.median(vals_clean)), 4),
             })
 
-    # Pairwise tests
     pairwise = []
     if control_values is not None and len(control_values) >= 2:
         treated = [
@@ -70,7 +71,6 @@ def _compute_metric_stats(
             for pw in pairwise:
                 pw["p_value_welch"] = welch_map.get(pw["dose_level"], {}).get("p_value_welch")
 
-    # Trend test
     trend_result = (
         trend_test(dose_groups_values)
         if len(dose_groups_values) >= 2
@@ -85,33 +85,34 @@ def compute_om_findings(
     subjects: pd.DataFrame,
     excluded_subjects: set[str] | None = None,
 ) -> list[dict]:
-    """Compute findings from OM domain (organ weights).
-
-    Normalization-aware: selects recommended metric per organ category,
-    runs stats on recommended metric, and provides alternatives for display.
-    """
+    """Compute findings from OM domain (organ weights)."""
     if "om" not in study.xpt_files:
         return []
 
-    om_df, _ = read_xpt(study.xpt_files["om"])
-    om_df.columns = [c.upper() for c in om_df.columns]
-    om_df["OMDY"] = pd.to_numeric(om_df.get("OMDY", pd.Series(dtype=float)), errors="coerce")
+    om_pl = read_xpt_as_polars(study.xpt_files["om"])
+    subs = subjects_to_polars(subjects)
 
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
+    if "OMDY" in om_pl.columns:
+        om_pl = om_pl.with_columns(pl.col("OMDY").cast(pl.Float64, strict=False))
+
+    main_subs = subs.filter(~pl.col("is_recovery") & ~pl.col("is_satellite"))
     if excluded_subjects:
-        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
-    om_df = om_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+        main_subs = main_subs.filter(~pl.col("USUBJID").is_in(list(excluded_subjects)))
+    om_pl = om_pl.join(main_subs.select(["USUBJID", "SEX", "dose_level"]), on="USUBJID", how="inner")
 
-    if "OMSTRESN" in om_df.columns:
-        om_df["value"] = pd.to_numeric(om_df["OMSTRESN"], errors="coerce")
-    elif "OMORRES" in om_df.columns:
-        om_df["value"] = pd.to_numeric(om_df["OMORRES"], errors="coerce")
+    if "OMSTRESN" in om_pl.columns:
+        om_pl = om_pl.with_columns(pl.col("OMSTRESN").cast(pl.Float64, strict=False).alias("value"))
+    elif "OMORRES" in om_pl.columns:
+        om_pl = om_pl.with_columns(pl.col("OMORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
-    spec_col = "OMSPEC" if "OMSPEC" in om_df.columns else None
+    spec_col = "OMSPEC" if "OMSPEC" in om_pl.columns else None
     if spec_col is None:
         return []
+
+    # Convert to pandas for the complex normalization + Williams' + ANCOVA logic
+    om_df = om_pl.to_pandas()
 
     # ── Load terminal body weights ──
     terminal_bw: dict[str, float] = {}
@@ -129,7 +130,7 @@ def compute_om_findings(
             terminal = bw_df.sort_values("BWDY").groupby("USUBJID").last()
             terminal_bw = terminal["bw_val"].to_dict()
 
-    # ── Load brain weights (for brain-ratio computation) ──
+    # ── Load brain weights ──
     brain_weights: dict[str, float] = {}
     brain_om = om_df[om_df[spec_col].str.upper() == "BRAIN"]
     if not brain_om.empty:
@@ -141,7 +142,6 @@ def compute_om_findings(
 
     findings = []
 
-    # Group by specimen and sex
     group_cols = [spec_col, "SEX"]
     if test_col:
         group_cols.insert(1, test_col)
@@ -167,15 +167,12 @@ def compute_om_findings(
         grp["tbw"] = grp["USUBJID"].map(terminal_bw)
         grp["brain_wt"] = grp["USUBJID"].map(brain_weights)
 
-        # Absolute values (current behavior)
         grp["val_absolute"] = grp["value"]
-        # Ratio to BW: (organ / terminal_bw) × 100
         grp["val_ratio_bw"] = np.where(
             grp["tbw"] > 0,
             (grp["value"] / grp["tbw"]) * 100,
             np.nan,
         )
-        # Ratio to brain: organ / brain_wt
         grp["val_ratio_brain"] = np.where(
             grp["brain_wt"] > 0,
             grp["value"] / grp["brain_wt"],
@@ -223,13 +220,12 @@ def compute_om_findings(
                 })
 
         # ── Compute BW and brain Hedges' g for normalization decision ──
-        control_idx = 0  # first group is control
+        control_idx = 0
         bw_g = 0.0
         brain_g_val: float | None = None
         brain_affected = False
 
         if len(dose_levels) >= 2:
-            # Worst-case BW g across all treated groups
             for i, dl in enumerate(dose_levels):
                 if dl == 0:
                     continue
@@ -239,7 +235,6 @@ def compute_om_findings(
                 if g is not None and g > bw_g:
                     bw_g = g
 
-            # Worst-case brain g
             for i, dl in enumerate(dose_levels):
                 if dl == 0:
                     continue
@@ -250,24 +245,19 @@ def compute_om_findings(
                     if bg is not None and (brain_g_val is None or bg > brain_g_val):
                         brain_g_val = bg
 
-            # Species-calibrated brain affected threshold (default rodent: 1.0)
             if brain_g_val is not None and brain_g_val >= 1.0:
                 brain_affected = True
 
         # ── Decide recommended metric ──
         norm_decision = decide_metric(
-            specimen=str(specimen),
-            bw_g=bw_g,
-            brain_g=brain_g_val,
-            brain_affected=brain_affected,
+            specimen=str(specimen), bw_g=bw_g,
+            brain_g=brain_g_val, brain_affected=brain_affected,
         )
         recommended_metric = norm_decision["metric"]
 
-        # ── Select arrays for recommended metric ──
         if recommended_metric == "ratio_to_bw":
             primary_arrays = bw_arrays
         elif recommended_metric == "ratio_to_brain":
-            # Check if brain data is actually available
             has_brain = any(len(a) > 0 for a in brain_arrays)
             primary_arrays = brain_arrays if has_brain else abs_arrays
             if not has_brain:
@@ -281,9 +271,8 @@ def compute_om_findings(
             primary_arrays, [int(dl) for dl in dose_levels],
         )
 
-        # ── Williams' test on recommended metric ──
+        # ── Williams' test ──
         williams_dict = None
-        # Build group stats for Williams' from recommended metric
         williams_gs = []
         for i, dl in enumerate(dose_levels):
             vals = primary_arrays[i]
@@ -315,7 +304,7 @@ def compute_om_findings(
                 "pooled_df": williams_result.pooled_df,
             }
 
-        # ── ANCOVA (Phase 2): when tier >= 3 or brain affected ──
+        # ── ANCOVA ──
         ancova_dict = None
         if norm_decision["tier"] >= 3 or brain_affected:
             ancova_result = ancova_from_dose_groups(
@@ -325,17 +314,12 @@ def compute_om_findings(
             )
             if ancova_result is not None:
                 ancova_dict = ancova_result
-                # When ANCOVA succeeds at tier >= 4, it becomes the recommended metric
                 if norm_decision["tier"] >= 4:
                     norm_decision["metric"] = "ancova"
 
-        # ── Compute alternatives (stats on other metrics) ──
+        # ── Alternatives ──
         alternatives: dict = {}
-        metric_map = {
-            "absolute": abs_arrays,
-            "ratio_to_bw": bw_arrays,
-        }
-        # Brain-ratio is meaningless for brain itself (brain/brain = 1.0 always)
+        metric_map = {"absolute": abs_arrays, "ratio_to_bw": bw_arrays}
         is_brain = get_organ_category(str(specimen)) == "brain"
         has_brain_data = any(len(a) > 0 for a in brain_arrays)
         if has_brain_data and not is_brain:
@@ -343,11 +327,10 @@ def compute_om_findings(
 
         for metric_name, metric_arrays in metric_map.items():
             if metric_name == recommended_metric:
-                continue  # primary already computed — in top-level group_stats
+                continue
             alt_pw, alt_gs, alt_trend = _compute_metric_stats(
                 metric_arrays, [int(dl) for dl in dose_levels],
             )
-            # Enrich absolute alternative with mean_relative for backward compat
             if metric_name == "absolute":
                 for gs, gs_abs in zip(alt_gs, group_stats_absolute):
                     gs["mean_relative"] = gs_abs.get("mean_relative")
@@ -358,21 +341,11 @@ def compute_om_findings(
                 "trend_stat": alt_trend["statistic"],
             }
 
-        # Invariant: alternatives = computable metrics minus the primary.
-        # This guarantees apply_organ_weight_method can swap to any metric.
-        assert recommended_metric in metric_map, (
-            f"{specimen}/{sex}: active_metric '{recommended_metric}' not in metric_map"
-        )
-        assert recommended_metric not in alternatives, (
-            f"{specimen}/{sex}: active_metric '{recommended_metric}' leaked into alternatives"
-        )
-        assert set(alternatives.keys()) == set(metric_map.keys()) - {recommended_metric}, (
-            f"{specimen}/{sex}: alternatives mismatch — "
-            f"expected {set(metric_map.keys()) - {recommended_metric}}, "
-            f"got {set(alternatives.keys())}"
-        )
+        assert recommended_metric in metric_map
+        assert recommended_metric not in alternatives
+        assert set(alternatives.keys()) == set(metric_map.keys()) - {recommended_metric}
 
-        # ── Direction determination (from primary metric stats) ──
+        # ── Direction ──
         direction = None
         ctrl_arr = primary_arrays[control_idx] if len(primary_arrays) > 0 else np.array([])
         ctrl_clean = ctrl_arr[~np.isnan(ctrl_arr)] if len(ctrl_arr) > 0 else ctrl_arr
@@ -422,10 +395,9 @@ def compute_om_findings(
             "min_p_adj": min_p,
             "raw_values": abs_arrays,
             "raw_subject_values": dose_groups_subj,
-            # ── New: normalization + Williams' ──
             "normalization": {
                 "recommended_metric": norm_decision["metric"],
-                "active_metric": recommended_metric,  # pre-ANCOVA metric actually used for primary stats
+                "active_metric": recommended_metric,
                 "organ_category": norm_decision["category"],
                 "tier": norm_decision["tier"],
                 "confidence": norm_decision["confidence"],
