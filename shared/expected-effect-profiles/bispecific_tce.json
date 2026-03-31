@@ -6,6 +6,10 @@
     "general_mab"
   ],
   "cross_reactivity_required": true,
+  "crs_grading": true,
+  "crs_config": {
+    "extreme_cytokine_fold": 50
+  },
   "source": "Lee et al., 2019, ASTCT CRS grading; PMC11739781; Blinatumomab SmPC; PMC6853151 (Pfizer modeling)",
   "description": "Expected findings for bispecific T-cell engagers (CD3 x target format). CRS is the primary on-target expected toxicity — Grade 1-2 is expected pharmacology, Grade 3+ is adverse. Cynomolgus monkey used when molecule cross-reacts with NHP CD3 AND target antigen. Inherits Fc-mediated base findings from general_mab.",
   "expected_findings": [
@@ -17,6 +21,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "IL-6 elevation (CRS cytokine)",
       "typical_magnitude": "2-50x fold-change from baseline; peaks within 24h",
       "severity_threshold": "Grade 1-2 CRS is expected on-target pharmacology. Grade 3+ (>50x with clinical signs, vasopressors required, refractory fever) is adverse — do not reclassify.",
@@ -33,6 +38,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "IFN-gamma elevation (T-cell activation marker)",
       "typical_magnitude": "2-20x fold-change; peaks with first dose",
       "severity_threshold": "Correlates with CRS severity. HLH signature (IFN-gamma + extreme ferritin + cytopenias) = never reclassify.",
@@ -50,6 +56,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "downstream",
       "description": "CRP elevation (downstream of IL-6 in CRS)",
       "typical_magnitude": "5-50 mg/L rise",
       "severity_threshold": ">100 mg/L with Grade 3 CRS clinical features = adverse",
@@ -66,6 +73,7 @@
       ],
       "direction": "down",
       "layer": "target",
+      "crs_role": "pharmacological",
       "description": "Transient T-lymphocyte depletion (first-dose redistribution)",
       "typical_magnitude": "50-90% depletion within hours; recovers within 24-48h",
       "severity_threshold": "Transient (<48h recovery) on first dose = expected. Sustained depletion >72h or Grade 3 CRS with lymphopenia = adverse.",
@@ -83,6 +91,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "ALT elevation (hepatic involvement in CRS)",
       "typical_magnitude": "Grade 1-2 (1-5x ULN) in context of CRS",
       "severity_threshold": "Grade 3 (>5x ULN) = adverse. Grade 4 (>20x ULN) = never reclassify.",
@@ -100,6 +109,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "AST elevation (hepatic involvement in CRS)",
       "typical_magnitude": "Grade 1-2 (1-5x ULN)",
       "severity_threshold": "Grade 3 (>5x ULN) = adverse",
@@ -116,6 +126,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "downstream",
       "description": "IL-10 elevation (anti-inflammatory feedback in CRS)",
       "typical_magnitude": "2-30x fold-change",
       "severity_threshold": "Correlates with CRS severity. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
@@ -132,6 +143,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "TNF-alpha elevation (CRS cytokine)",
       "typical_magnitude": "2-10x fold-change",
       "severity_threshold": "Sustained elevation = adverse. Grade 1-2 CRS is expected; Grade 3+ is adverse.",
@@ -151,6 +163,7 @@
       ],
       "direction": "up",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "Fever / body temperature increase (CRS Grade 1-2)",
       "severity_threshold": "Grade 1 fever (<=38.3C) = expected. Grade 2 requiring antipyretics = monitor. Grade 3+ (refractory fever requiring ICU intervention) = adverse. Grade 4 life-threatening = never reclassify.",
       "species_applicability": [
@@ -167,12 +180,68 @@
       ],
       "direction": "down",
       "layer": "target",
+      "crs_role": "grade_adjusted",
       "description": "Hypotension (CRS-associated vasodilation)",
       "severity_threshold": "Grade 2 (not requiring vasopressors, transient) = expected. Grade 3 (requiring vasopressors) = adverse. Grade 4 (refractory) = never reclassify.",
       "species_applicability": [
         "MONKEY"
       ],
       "rationale": "Vasodilation from IL-6/TNF-alpha/NO pathway. (Lee et al., ASTCT 2019)"
+    },
+    {
+      "key": "CL_emesis",
+      "domain": "CL",
+      "findings": [
+        "EMESIS",
+        "VOMITING",
+        "VOMITUS",
+        "VOMIT"
+      ],
+      "direction": "up",
+      "layer": "target",
+      "crs_role": "grade_adjusted",
+      "description": "Emesis/vomiting (NHP CRS Tier 1 sign -- most frequent)",
+      "species_applicability": [
+        "MONKEY"
+      ],
+      "rationale": "Emesis is the most consistently reported NHP CRS clinical sign. FDA operational NHP CRS criteria (Saber 2017, 2020) list emesis as primary indicator."
+    },
+    {
+      "key": "CL_diarrhea",
+      "domain": "CL",
+      "findings": [
+        "DIARRHEA",
+        "LOOSE STOOL",
+        "LIQUID FECES",
+        "LOOSE FECES"
+      ],
+      "direction": "up",
+      "layer": "target",
+      "crs_role": "grade_adjusted",
+      "description": "Diarrhea/liquid feces (NHP CRS Tier 1 sign)",
+      "species_applicability": [
+        "MONKEY"
+      ],
+      "rationale": "Diarrhea is a primary NHP CRS clinical sign. FDA operational NHP CRS criteria include it alongside emesis and lethargy as minimal CRS indicators."
+    },
+    {
+      "key": "CL_hypoactivity",
+      "domain": "CL",
+      "findings": [
+        "HYPOACTIVITY",
+        "DECREASED ACTIVITY",
+        "LETHARGY",
+        "REDUCED ACTIVITY",
+        "INACTIVITY"
+      ],
+      "direction": "up",
+      "layer": "target",
+      "crs_role": "grade_adjusted",
+      "description": "Hypoactivity/lethargy (NHP CRS Tier 1 sign)",
+      "species_applicability": [
+        "MONKEY"
+      ],
+      "rationale": "Hypoactivity/lethargy is a primary NHP CRS clinical sign. Part of the minimal FDA operational NHP CRS definition (Saber 2017)."
     },
     {
       "key": "OM_spleen_weight_variable",

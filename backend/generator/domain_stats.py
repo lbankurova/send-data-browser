@@ -283,6 +283,7 @@ def compute_all_findings(
         "species": species,
         "strain": strain,
         "design": dg_data.get("study_design"),
+        "early_death_subjects": early_death_subjects,
     }
 
     # Shared enrichment pipeline (classification, fold change, labels, etc.)

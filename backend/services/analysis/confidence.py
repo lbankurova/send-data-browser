@@ -612,17 +612,177 @@ def _matches_expected_finding(f: dict, ee_key: str, ee_config: dict) -> bool:
 
         return True
 
+    # CL domain: match by findings text only (no organs or test_codes)
+    if "findings" in ee_config and "organs" not in ee_config:
+        ee_findings_set = {ft.upper() for ft in ee_config["findings"]}
+        return any(ef in finding_text for ef in ee_findings_set)
+
     return False
+
+
+
+# ---------------------------------------------------------------------------
+# CRS Grade Stratification (B3 — dual-track max rule)
+# ---------------------------------------------------------------------------
+
+# CRS component detection vocabularies (NHP CRS signs per Saber 2017/2020)
+_CRS_CYTOKINE_CODES = {"IL6", "IFNG", "TNFA"}
+_CRS_EMESIS_TERMS = {"EMESIS", "VOMITING", "VOMITUS", "VOMIT"}
+_CRS_DIARRHEA_TERMS = {"DIARRHEA", "LOOSE STOOL", "LIQUID FECES", "LOOSE FECES"}
+_CRS_HYPOACTIVITY_TERMS = {
+    "HYPOACTIVITY", "DECREASED ACTIVITY", "LETHARGY",
+    "REDUCED ACTIVITY", "INACTIVITY",
+}
+_CRS_FEVER_TERMS = {
+    "PYREXIA", "FEVER", "BODY TEMPERATURE INCREASED",
+    "TEMPERATURE INCREASE", "BODY TEMPERATURE INCREASE",
+}
+_CRS_HYPOTENSION_TERMS = {
+    "HYPOTENSION", "BLOOD PRESSURE DECREASED", "BLOOD PRESSURE DECREASE",
+}
+_CRS_DYSPNEA_TERMS = {
+    "DYSPNEA", "TACHYPNEA", "LABORED RESPIRATION", "RESPIRATORY DISTRESS",
+}
+_CRS_TREMOR_TERMS = {"TREMOR", "TREMBLING", "MUSCLE TREMOR"}
+
+_CRS_HEPATIC_CODES = {"ALT", "ALAT", "AST", "ASAT"}
+_CRS_RENAL_CODES = {"CREAT", "CREA"}
+
+# CRS grade -> D9 score ceiling for grade_adjusted findings
+_CRS_GRADE_D9: dict[int, float] = {1: -1, 2: -1, 3: -0.5, 4: 0}
+
+
+def _classify_crs_grade(findings: list[dict],
+                        extreme_cytokine_fold: float = 50.0,
+                        severe_hepatic_fold: float = 5.0,
+                        mild_hepatic_fold: float = 1.5,
+                        severe_renal_fold: float = 3.0,
+                        severe_lymph_fold: float = 0.1,
+                        has_moribund_euthanasia: bool = False) -> int | None:
+    """Classify CRS grade using dual-track max rule (ASTCT-adapted for NHP).
+
+    Gate: >=1 CRS cytokine (IL-6/IFN-gamma/TNF-alpha) must be elevated.
+    Track A: Clinical sign constellation (CL domain) + moribund euthanasia.
+    Track B: Laboratory severity (organ involvement + cytokine magnitude).
+    Combined grade = max(Track A, Track B).
+
+    All thresholds are provisional -- no published NHP CRS grading
+    calibration exists (Li 2019, Saber 2020).
+
+    Returns grade 1-4, or None if cytokine gate not passed.
+    """
+    has_cytokine = False
+    max_cytokine_fold = 0.0
+
+    # Track A: clinical sign flags (each counted at most once)
+    has_emesis = False
+    has_diarrhea = False
+    has_hypoactivity = False
+    has_fever = False
+    has_hypotension = False
+    has_dyspnea = False
+    has_tremor = False
+
+    # Track B: organ severity
+    max_hepatic_fold = 0.0
+    max_renal_fold = 0.0
+    min_lymph_fold = float("inf")
+
+    for f in findings:
+        domain = f.get("domain", "")
+        test_code = (f.get("test_code") or "").upper()
+        finding_text = (f.get("finding") or "").upper()
+        direction = f.get("direction", "")
+        fc = f.get("max_fold_change")
+
+        # Cytokine gate
+        if domain == "LB" and test_code in _CRS_CYTOKINE_CODES and direction == "up":
+            has_cytokine = True
+            if fc is not None:
+                max_cytokine_fold = max(max_cytokine_fold, fc)
+
+        # Track A: CL domain clinical signs
+        if domain == "CL":
+            if not has_emesis and any(t in finding_text for t in _CRS_EMESIS_TERMS):
+                has_emesis = True
+            if not has_diarrhea and any(t in finding_text for t in _CRS_DIARRHEA_TERMS):
+                has_diarrhea = True
+            if not has_hypoactivity and any(t in finding_text for t in _CRS_HYPOACTIVITY_TERMS):
+                has_hypoactivity = True
+            if not has_fever and any(t in finding_text for t in _CRS_FEVER_TERMS):
+                has_fever = True
+            if not has_hypotension and any(t in finding_text for t in _CRS_HYPOTENSION_TERMS):
+                has_hypotension = True
+            if not has_dyspnea and any(t in finding_text for t in _CRS_DYSPNEA_TERMS):
+                has_dyspnea = True
+            if not has_tremor and any(t in finding_text for t in _CRS_TREMOR_TERMS):
+                has_tremor = True
+
+        # Track B: organ involvement markers
+        if domain == "LB" and direction == "up" and fc is not None:
+            if test_code in _CRS_HEPATIC_CODES:
+                max_hepatic_fold = max(max_hepatic_fold, fc)
+            if test_code in _CRS_RENAL_CODES:
+                max_renal_fold = max(max_renal_fold, fc)
+        if domain == "LB" and test_code == "LYMPH" and direction == "down" and fc is not None:
+            min_lymph_fold = min(min_lymph_fold, fc)
+
+    # Gate
+    if not has_cytokine:
+        return None
+
+    # -- Track A grade (evaluate highest-first) --
+    tier1 = sum([has_emesis, has_diarrhea, has_hypoactivity])
+    tier2 = sum([has_fever])
+    tier3 = sum([has_hypotension, has_dyspnea, has_tremor])
+    total_signs = tier1 + tier2 + tier3
+
+    if has_moribund_euthanasia:
+        grade_a = 4
+    elif total_signs >= 3:
+        grade_a = 3
+    elif tier1 >= 2 or (tier1 >= 1 and (tier2 + tier3) >= 1):
+        grade_a = 2
+    elif tier1 >= 1:
+        grade_a = 1
+    else:
+        grade_a = 0
+
+    # -- Track B grade (evaluate highest-first) --
+    severe_organs = 0
+    if max_hepatic_fold >= severe_hepatic_fold:
+        severe_organs += 1
+    if max_renal_fold >= severe_renal_fold:
+        severe_organs += 1
+    if min_lymph_fold <= severe_lymph_fold:
+        severe_organs += 1
+
+    if severe_organs >= 2:
+        grade_b = 4
+    elif max_hepatic_fold >= severe_hepatic_fold or max_cytokine_fold > extreme_cytokine_fold:
+        grade_b = 3
+    elif max_hepatic_fold >= mild_hepatic_fold:
+        grade_b = 2
+    else:
+        grade_b = 1  # cytokine gate passed -> at least 1
+
+    # Combined: max rule
+    return max(grade_a, grade_b)
 
 
 def _score_d9_pharmacological(
     f: dict,
     expected_profile: dict | None,
+    crs_grade: int | None = None,
 ) -> dict:
     """Score pharmacological expectation.
 
     When a finding matches a confirmed expected-effect profile, D9 = -1.
     When D9 fires, D3/D4/D5/D7 should be suppressed (handled in compute_confidence).
+
+    CRS grade ceiling: when a CRS-capable profile has crs_grading=true and
+    the finding's matched profile entry has crs_role="grade_adjusted",
+    the D9 score is capped by the CRS constellation grade (one-way ceiling).
     """
     if not expected_profile or not expected_profile.get("confirmed_by_sme"):
         return _dim("D9", "Pharmacological expectation", None,
@@ -665,6 +825,8 @@ def _score_d9_pharmacological(
             # When the profile entry has severity_threshold, check observed
             # severity against expected range. Findings exceeding the
             # adverse_trigger are NOT pharmacologically expected at that magnitude.
+            base_score: int | float = -1
+            severity_note = ""
             if isinstance(ee_config, dict):
                 sev_thresh = ee_config.get("severity_threshold")
                 if isinstance(sev_thresh, dict):
@@ -673,23 +835,44 @@ def _score_d9_pharmacological(
                         adverse_trigger = sev_thresh.get("adverse_trigger")
                         non_adverse_ceiling = sev_thresh.get("non_adverse_ceiling")
                         if adverse_trigger is not None and observed > adverse_trigger:
-                            return _dim("D9", "Pharmacological expectation", 0,
-                                f"Matches '{ee_key}' but observed severity "
-                                f"{observed:.2f} exceeds adverse trigger "
-                                f"{adverse_trigger} -- not expected at this magnitude")
-                        if non_adverse_ceiling is not None and observed > non_adverse_ceiling:
-                            return _dim("D9", "Pharmacological expectation", -0.5,
-                                f"Matches '{ee_key}' but observed severity "
-                                f"{observed:.2f} exceeds non-adverse ceiling "
-                                f"{non_adverse_ceiling} -- partially expected{xr_note}")
+                            base_score = 0
+                            severity_note = (
+                                f" but observed severity {observed:.2f} exceeds "
+                                f"adverse trigger {adverse_trigger} "
+                                f"-- not expected at this magnitude")
+                        elif non_adverse_ceiling is not None and observed > non_adverse_ceiling:
+                            base_score = -0.5
+                            severity_note = (
+                                f" but observed severity {observed:.2f} exceeds "
+                                f"non-adverse ceiling {non_adverse_ceiling} "
+                                f"-- partially expected{xr_note}")
 
-            d9_result = _dim("D9", "Pharmacological expectation", -1,
-                         f"Matches expected {layer_text} '{ee_key}' "
-                         f"from {compound_class} profile{xr_note}")
+            # ── Phase B3: CRS grade constellation ceiling ──
+            # One-way ceiling: CRS grade can only make D9 less negative.
+            crs_note = ""
+            crs_role = ee_config.get("crs_role") if isinstance(ee_config, dict) else None
+            if (crs_grade is not None
+                    and crs_role == "grade_adjusted"
+                    and base_score < 0):
+                crs_d9 = _CRS_GRADE_D9.get(crs_grade, 0)
+                if crs_d9 > base_score:
+                    crs_note = (
+                        f" [CRS Grade {crs_grade} constellation "
+                        f"ceiling: D9 {base_score} -> {crs_d9}]")
+                    base_score = crs_d9
+
+            rationale = (
+                f"Matches expected {layer_text} '{ee_key}' "
+                f"from {compound_class} profile{xr_note}"
+                f"{severity_note}{crs_note}")
+            d9_result = _dim("D9", "Pharmacological expectation",
+                             base_score, rationale)
             # C3: Attach translation gap when the matched entry has one
             tg = ee_config.get("translation_gap") if isinstance(ee_config, dict) else None
             if tg:
                 d9_result["translation_gap"] = tg
+            if crs_grade is not None:
+                d9_result["_crs_grade"] = crs_grade
             return d9_result
 
     return _dim("D9", "Pharmacological expectation", 0,
@@ -780,6 +963,7 @@ def compute_confidence(
     sibling: dict | None,
     expected_profile: dict | None = None,
     study_meta: dict | None = None,
+    crs_grade: int | None = None,
 ) -> dict:
     """Compute GRADE-style confidence for a single finding.
 
@@ -788,6 +972,8 @@ def compute_confidence(
         sibling: Cross-sex sibling finding (same endpoint, opposite sex).
         expected_profile: Confirmed expected-effect profile (for D9).
         study_meta: Study-level metadata (for D8 reference N lookup).
+        crs_grade: CRS constellation grade (1-4) for this (sex, day) group,
+                   or None if CRS grading not active.
     """
     d1 = _score_d1_statistical(finding)
 
@@ -806,7 +992,7 @@ def compute_confidence(
     d6 = _score_d6_tier2_equivocal(finding)
     d7 = _score_d7_direction_concern(finding)
     d8 = _score_d8_sample_size(finding, d1["score"], study_meta)
-    d9 = _score_d9_pharmacological(finding, expected_profile)
+    d9 = _score_d9_pharmacological(finding, expected_profile, crs_grade=crs_grade)
 
     # D9 interaction (Option B): when D9 fires, suppress D3/D4/D5/D7
     if d9["score"] is not None and d9["score"] < 0:
@@ -842,6 +1028,7 @@ def compute_all_confidence(
     findings: list[dict],
     expected_profile: dict | None = None,
     study_meta: dict | None = None,
+    early_death_subjects: dict[str, str] | None = None,
 ) -> list[dict]:
     """Score confidence for all findings, building cross-sex index internally.
 
@@ -849,11 +1036,52 @@ def compute_all_confidence(
         findings: List of finding dicts.
         expected_profile: Confirmed expected-effect profile (for D9).
         study_meta: Study-level metadata (for D8 reference N, compound class).
+        early_death_subjects: {USUBJID: DSDECOD} from mortality module.
+            Used for CRS Track A Grade 4 (moribund euthanasia detection).
 
     Cross-sex sibling: same (endpoint_label, day) but opposite sex.
     Sex-specific organs (TESTES, OVARIES, UTERUS, PROSTATE, EPIDIDYMIS,
     SEMINAL VESICLE, MAMMARY GLAND) skip D5 — no biological sibling.
     """
+    # ── CRS Grade pre-pass ──
+    # When profile opts in (crs_grading=true), compute CRS grade per (sex, day)
+    # group via dual-track max rule. Used by D9 CRS ceiling.
+    crs_grades: dict[tuple, int | None] = {}
+    if expected_profile and expected_profile.get("crs_grading"):
+        crs_config = expected_profile.get("crs_config") or {}
+        extreme_fold = crs_config.get("extreme_cytokine_fold", 50.0)
+
+        # Resolve early_death_subjects from explicit param or study_meta
+        eds = early_death_subjects
+        if eds is None and study_meta:
+            eds = study_meta.get("early_death_subjects")
+
+        # Check for moribund euthanasia (Track A Grade 4)
+        _MORIBUND_TERMS = {"EUTHANIZED MORIBUND", "SACRIFICED MORIBUND",
+                           "MORIBUND SACRIFICE", "MORIBUND"}
+        has_moribund = False
+        if eds:
+            has_moribund = any(
+                dsdecod.strip().upper() in _MORIBUND_TERMS
+                for dsdecod in eds.values()
+            )
+
+        from collections import defaultdict
+        crs_groups: dict[tuple, list[dict]] = defaultdict(list)
+        for f in findings:
+            gk = (f.get("sex", ""), f.get("day"))
+            crs_groups[gk].append(f)
+        for gk, group_findings in crs_groups.items():
+            crs_grades[gk] = _classify_crs_grade(
+                group_findings,
+                extreme_cytokine_fold=extreme_fold,
+                severe_hepatic_fold=crs_config.get("severe_hepatic_fold", 5.0),
+                mild_hepatic_fold=crs_config.get("mild_hepatic_fold", 1.5),
+                severe_renal_fold=crs_config.get("severe_renal_fold", 3.0),
+                severe_lymph_fold=crs_config.get("severe_lymph_fold", 0.1),
+                has_moribund_euthanasia=has_moribund,
+            )
+
     # Build index: (endpoint_label, day, sex) → finding
     sex_index: dict[tuple, dict] = {}
     for f in findings:
@@ -877,10 +1105,12 @@ def compute_all_confidence(
             sib_key = (f.get("endpoint_label", ""), f.get("day"), opp_sex)
             sibling = sex_index.get(sib_key)
 
+        crs_key = (f.get("sex", ""), f.get("day"))
         f["_confidence"] = compute_confidence(
             f, sibling,
             expected_profile=expected_profile,
             study_meta=study_meta,
+            crs_grade=crs_grades.get(crs_key),
         )
 
     return findings
