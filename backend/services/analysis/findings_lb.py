@@ -1,15 +1,17 @@
-"""LB (Laboratory) domain findings: per (LBTESTCD, LBDY, SEX) → group stats."""
+"""LB (Laboratory) domain findings: per (LBTESTCD, LBDY, SEX) -> group stats."""
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -23,95 +25,110 @@ def compute_lb_findings(
     if "lb" not in study.xpt_files:
         return []
 
-    lb_df, _ = read_xpt(study.xpt_files["lb"])
-    lb_df.columns = [c.upper() for c in lb_df.columns]
+    lb_df = read_xpt_as_polars(study.xpt_files["lb"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    lb_df = lb_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    lb_df = lb_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # LB special case: only exclude early-death subjects from their terminal timepoint
-    # (max VISITDY per subject), not from earlier longitudinal visits
+    # (max LBDY per subject), not from earlier longitudinal visits
+    if "LBDY" in lb_df.columns:
+        lb_df = lb_df.with_columns(pl.col("LBDY").cast(pl.Float64, strict=False))
+    else:
+        lb_df = lb_df.with_columns(pl.lit(1.0).alias("LBDY"))
+
     if excluded_subjects:
-        lb_df["LBDY"] = pd.to_numeric(lb_df.get("LBDY", pd.Series(dtype=float)), errors="coerce")
-        max_day = lb_df.groupby("USUBJID")["LBDY"].transform("max")
-        terminal_mask = lb_df["LBDY"] == max_day
-        exclude_mask = terminal_mask & lb_df["USUBJID"].isin(excluded_subjects)
-        lb_df = lb_df[~exclude_mask]
+        lb_df = lb_df.with_columns(
+            pl.col("LBDY").max().over("USUBJID").alias("_max_day")
+        )
+        terminal_and_excluded = (
+            (pl.col("LBDY") == pl.col("_max_day"))
+            & pl.col("USUBJID").is_in(list(excluded_subjects))
+        )
+        lb_df = lb_df.filter(~terminal_and_excluded).drop("_max_day")
 
     # Filter recovery animals' records to treatment period only
-    if "LBDY" not in lb_df.columns:
-        lb_df["LBDY"] = pd.to_numeric(lb_df.get("LBDY", pd.Series(dtype=float)), errors="coerce")
-    lb_df = filter_treatment_period_records(lb_df, subjects, "LBDY", last_dosing_day)
+    lb_df = filter_treatment_period_records_pl(lb_df, subs, "LBDY", last_dosing_day)
 
-    # Parse numeric result, with SUPPLB LBCALCN fallback for BLQ/non-numeric values
+    # Parse numeric result
     if "LBSTRESN" in lb_df.columns:
-        lb_df["value"] = pd.to_numeric(lb_df["LBSTRESN"], errors="coerce")
+        lb_df = lb_df.with_columns(pl.col("LBSTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "LBORRES" in lb_df.columns:
-        lb_df["value"] = pd.to_numeric(lb_df["LBORRES"], errors="coerce")
+        lb_df = lb_df.with_columns(pl.col("LBORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
     # Apply SUPPLB LBCALCN imputation for missing numeric values
-    if lb_df["value"].isna().any() and "supplb" in study.xpt_files and "LBSEQ" in lb_df.columns:
+    if lb_df["value"].null_count() > 0 and "supplb" in study.xpt_files and "LBSEQ" in lb_df.columns:
         try:
-            from services.xpt_processor import read_xpt as _read_xpt
-            supp_df, _ = _read_xpt(study.xpt_files["supplb"])
+            supp_df, _ = read_xpt(study.xpt_files["supplb"])
             supp_df.columns = [c.upper() for c in supp_df.columns]
             calcn = supp_df[supp_df["QNAM"].astype(str).str.strip().str.upper() == "LBCALCN"]
             if len(calcn) > 0:
-                calcn_map = {
-                    (str(r["USUBJID"]).strip(), int(float(r["IDVARVAL"])))
-                    : pd.to_numeric(r["QVAL"], errors="coerce")
-                    for _, r in calcn.iterrows()
-                }
-                mask = lb_df["value"].isna()
-                lb_df.loc[mask, "value"] = lb_df.loc[mask].apply(
-                    lambda r: calcn_map.get((str(r["USUBJID"]).strip(), int(float(r["LBSEQ"]))), None),
-                    axis=1,
-                )
+                calcn_map: dict[tuple[str, int], float | None] = {}
+                for _, r in calcn.iterrows():
+                    key = (str(r["USUBJID"]).strip(), int(float(r["IDVARVAL"])))
+                    calcn_map[key] = pd.to_numeric(r["QVAL"], errors="coerce")
+                # Apply via Polars: build a small lookup DataFrame
+                if calcn_map:
+                    lookup_rows = [
+                        {"_lookup_subj": k[0], "_lookup_seq": k[1], "_imputed": v}
+                        for k, v in calcn_map.items() if v is not None and not np.isnan(v)
+                    ]
+                    if lookup_rows:
+                        lookup_df = pl.DataFrame(lookup_rows)
+                        lb_df = lb_df.with_columns(
+                            pl.col("LBSEQ").cast(pl.Float64, strict=False).cast(pl.Int64, strict=False).alias("_seq_int")
+                        )
+                        lb_df = lb_df.join(
+                            lookup_df,
+                            left_on=["USUBJID", "_seq_int"],
+                            right_on=["_lookup_subj", "_lookup_seq"],
+                            how="left",
+                        )
+                        lb_df = lb_df.with_columns(
+                            pl.when(pl.col("value").is_null())
+                            .then(pl.col("_imputed"))
+                            .otherwise(pl.col("value"))
+                            .alias("value")
+                        ).drop(["_seq_int", "_imputed"])
         except Exception:
-            pass  # SUPPLB parsing failed — proceed without imputation
+            pass  # SUPPLB parsing failed -- proceed without imputation
 
-    # Get timepoint column
-    day_col = "LBDY" if "LBDY" in lb_df.columns else None
-    if day_col is None:
-        lb_df["LBDY"] = 1
-        day_col = "LBDY"
-
-    lb_df["LBDY"] = pd.to_numeric(lb_df["LBDY"], errors="coerce")
-
-    # Get test code and unit
-    test_col = "LBTESTCD" if "LBTESTCD" in lb_df.columns else None
-    test_name_col = "LBTEST" if "LBTEST" in lb_df.columns else None
+    # Test code and unit
+    has_testcd = "LBTESTCD" in lb_df.columns
+    if not has_testcd:
+        return []
+    has_test_name = "LBTEST" in lb_df.columns
     unit_col = "LBSTRESU" if "LBSTRESU" in lb_df.columns else None
 
-    if test_col is None:
-        return []
-
     findings = []
-    grouped = lb_df.groupby([test_col, "LBDY", "SEX"])
 
-    for (testcd, day, sex), grp in grouped:
-        if grp["value"].isna().all():
+    for (testcd, day, sex), grp in lb_df.group_by(["LBTESTCD", "LBDY", "SEX"], maintain_order=True):
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
-        test_name = grp[test_name_col].iloc[0] if test_name_col and test_name_col in grp.columns else str(testcd)
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else ""
-        if unit == "nan":
+        day_val = int(day) if day is not None and not np.isnan(day) else None
+        test_name = str(grp["LBTEST"][0]) if has_test_name else str(testcd)
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else ""
+        if unit in ("None", "null", "nan"):
             unit = ""
 
-        # Group stats: per dose level
         group_stats = []
         control_values = None
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            subj_vals = dict(zip(dose_data["USUBJID"].to_list(), vals.astype(float)))
+
             if len(vals) == 0:
                 group_stats.append({
                     "dose_level": int(dose_level),
@@ -121,7 +138,7 @@ def compute_lb_findings(
                 dose_groups_subj.append({})
                 continue
 
-            # 4-decimal precision: LB values from analytical instruments (chemistry analyzers)
+            # 4-decimal precision: LB values from analytical instruments
             group_stats.append({
                 "dose_level": int(dose_level),
                 "n": int(len(vals)),
@@ -134,12 +151,14 @@ def compute_lb_findings(
             if dose_level == 0:
                 control_values = vals
 
-        # REM-28: Dunnett's test (each dose vs control, FWER-controlled)
+        # REM-28: Dunnett's test
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)
@@ -147,10 +166,8 @@ def compute_lb_findings(
             for pw in pairwise:
                 pw["p_value_welch"] = welch_map.get(pw["dose_level"], {}).get("p_value_welch")
 
-        # Trend test
         trend_result = trend_test(dose_groups_values) if len(dose_groups_values) >= 2 else {"statistic": None, "p_value": None}
 
-        # Direction: compare high dose mean to control mean
         direction = None
         if control_values is not None and len(control_values) > 0 and len(dose_groups_values) > 0:
             high_dose_vals = dose_groups_values[-1]
@@ -163,19 +180,15 @@ def compute_lb_findings(
                 else:
                     direction = "up" if high_mean > 0 else "down" if high_mean < 0 else "none"
 
-        # Max effect size across pairwise
         max_d = None
         for pw in pairwise:
             if pw["effect_size"] is not None:
                 if max_d is None or abs(pw["effect_size"]) > abs(max_d):
                     max_d = pw["effect_size"]
 
-        # Override direction with max_d sign — the strongest statistical signal
-        # is more reliable than comparing high dose to control (which can be noise)
         if max_d is not None and abs(max_d) > 0.01:
             direction = "up" if max_d > 0 else "down"
 
-        # Min adjusted p-value
         min_p = None
         for pw in pairwise:
             if pw["p_value_adj"] is not None:
