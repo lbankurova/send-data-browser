@@ -1,21 +1,22 @@
-"""BG (Body Weight Gain) domain findings: per (BGTESTCD, BGDY, BGENDY, SEX) → group stats + pairwise tests.
+"""BG (Body Weight Gain) domain findings: per (BGTESTCD, BGDY, BGENDY, SEX) -> group stats + pairwise tests.
 
-BG records are interval-based: each row covers a (BGDY → BGENDY) period.
-A single subject can have multiple records at the same BGDY (e.g., day 1→29
-and day 1→92 for cumulative gain).  Grouping must include BGENDY to avoid
+BG records are interval-based: each row covers a (BGDY -> BGENDY) period.
+A single subject can have multiple records at the same BGDY (e.g., day 1->29
+and day 1->92 for cumulative gain).  Grouping must include BGENDY to avoid
 inflating N by counting multiple intervals per subject as separate observations.
 """
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -28,91 +29,86 @@ def compute_bg_findings(
     if "bg" not in study.xpt_files:
         return []
 
-    bg_df, _ = read_xpt(study.xpt_files["bg"])
-    bg_df.columns = [c.upper() for c in bg_df.columns]
+    bg_df = read_xpt_as_polars(study.xpt_files["bg"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    bg_df = bg_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    bg_df = bg_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # Parse numeric result
     if "BGSTRESN" in bg_df.columns:
-        bg_df["value"] = pd.to_numeric(bg_df["BGSTRESN"], errors="coerce")
+        bg_df = bg_df.with_columns(pl.col("BGSTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "BGORRES" in bg_df.columns:
-        bg_df["value"] = pd.to_numeric(bg_df["BGORRES"], errors="coerce")
+        bg_df = bg_df.with_columns(pl.col("BGORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
-    # Day columns — BG is interval-based (BGDY → BGENDY)
+    # Day columns -- BG is interval-based (BGDY -> BGENDY)
     if "BGDY" in bg_df.columns:
-        bg_df["BGDY"] = pd.to_numeric(bg_df["BGDY"], errors="coerce")
+        bg_df = bg_df.with_columns(pl.col("BGDY").cast(pl.Float64, strict=False))
     else:
-        bg_df["BGDY"] = 1
+        bg_df = bg_df.with_columns(pl.lit(1.0).alias("BGDY"))
 
     has_endy = "BGENDY" in bg_df.columns
     if has_endy:
-        bg_df["BGENDY"] = pd.to_numeric(bg_df["BGENDY"], errors="coerce")
+        bg_df = bg_df.with_columns(pl.col("BGENDY").cast(pl.Float64, strict=False))
 
-    # Filter recovery animals' records to treatment period only.
-    # Use BGENDY (interval end) when available — a cumulative record ending
-    # after last_dosing_day spans into the recovery period.
+    # Filter recovery animals' records to treatment period only
     filter_col = "BGENDY" if has_endy else "BGDY"
-    bg_df = filter_treatment_period_records(bg_df, subjects, filter_col, last_dosing_day)
+    bg_df = filter_treatment_period_records_pl(bg_df, subs, filter_col, last_dosing_day)
 
-    # Drop cumulative intervals: when a subject has multiple records ending
-    # on the same day (e.g., 1→92 cumulative AND 85→92 period), keep only
-    # the adjacent-period record (latest BGDY for each BGENDY).
+    # Drop cumulative intervals: keep adjacent-period record (latest BGDY for each BGENDY)
     if has_endy:
-        bg_df = bg_df.sort_values("BGDY").drop_duplicates(
-            subset=["USUBJID", "BGTESTCD", "BGENDY"],
+        bg_df = bg_df.sort("BGDY").unique(
+            subset=["USUBJID", "BGTESTCD", "BGENDY"] if "BGTESTCD" in bg_df.columns else ["USUBJID", "BGENDY"],
             keep="last",
         )
 
     # Test code / test name
     has_testcd = "BGTESTCD" in bg_df.columns
     if not has_testcd:
-        bg_df["BGTESTCD"] = "BWGAIN"
+        bg_df = bg_df.with_columns(pl.lit("BWGAIN").alias("BGTESTCD"))
     has_test = "BGTEST" in bg_df.columns
 
     unit_col = "BGSTRESU" if "BGSTRESU" in bg_df.columns else (
         "BGORRESU" if "BGORRESU" in bg_df.columns else None
     )
 
-    # Group by interval (BGDY, BGENDY) to avoid inflating N when a subject
-    # has multiple intervals starting on the same day (e.g., day 1→29 and day 1→92).
-    findings = []
-    group_cols = ["BGTESTCD", "BGDY", "SEX"]
-    if has_endy:
-        group_cols = ["BGTESTCD", "BGDY", "BGENDY", "SEX"]
-    grouped = bg_df.groupby(group_cols)
+    # Group by interval
+    group_cols = ["BGTESTCD", "BGDY", "BGENDY", "SEX"] if has_endy else ["BGTESTCD", "BGDY", "SEX"]
 
-    for keys, grp in grouped:
+    findings = []
+
+    for keys, grp in bg_df.group_by(group_cols, maintain_order=True):
         if has_endy:
             testcd, start_day, end_day, sex = keys
         else:
             testcd, start_day, sex = keys
             end_day = start_day
 
-        if grp["value"].isna().all():
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        # Use end day as the finding timepoint (meaningful for interval data)
-        day_val = int(end_day) if not np.isnan(end_day) else None
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else "g"
-        if unit == "nan":
+        day_val = int(end_day) if end_day is not None and not np.isnan(end_day) else None
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else "g"
+        if unit in ("None", "null", "nan"):
             unit = "g"
 
-        test_name = str(grp["BGTEST"].iloc[0]) if has_test else "Body Weight Gain"
+        test_name = str(grp["BGTEST"][0]) if has_test else "Body Weight Gain"
 
         group_stats = []
         control_values = None
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            subj_vals = dict(zip(dose_data["USUBJID"].to_list(), vals.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -135,12 +131,14 @@ def compute_bg_findings(
             if dose_level == 0:
                 control_values = vals
 
-        # REM-28: Dunnett's test (each dose vs control, FWER-controlled)
+        # REM-28: Dunnett's test
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)

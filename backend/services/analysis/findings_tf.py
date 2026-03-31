@@ -1,4 +1,4 @@
-"""TF (Tumor Findings) domain: per (TFSPEC, TFSTRESC, SEX) → incidence.
+"""TF (Tumor Findings) domain: per (TFSPEC, TFSTRESC, SEX) -> incidence.
 
 Every TF row is a tumor (no "normal" filtering). TFRESCAT provides
 BENIGN / MALIGNANT classification. Cell type is extracted from morphology
@@ -9,14 +9,15 @@ parser may need to check MI for MIRESCAT as a fallback.
 """
 
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import incidence_exact_both, trend_test_incidence
 from services.analysis.day_utils import mode_day
+from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
 
 
-# Morphology term → cell type for combination analysis
+# Morphology term -> cell type for combination analysis
 CELL_TYPE_MAP: dict[str, str] = {
     "HEPATOCELLULAR": "hepatocellular",
     "HEPATOBLASTOMA": "hepatocellular",
@@ -49,11 +50,7 @@ CELL_TYPE_MAP: dict[str, str] = {
 
 
 def _extract_cell_type(morphology: str) -> str:
-    """Extract cell type from tumor morphology string.
-
-    Matches longest key first so "CARCINOMA HEPATOCELLULAR" → "hepatocellular",
-    "LEIOMYOMA" → "smooth_muscle".
-    """
+    """Extract cell type from tumor morphology string."""
     upper = morphology.upper().strip()
     for key, cell_type in CELL_TYPE_MAP.items():
         if key in upper:
@@ -66,52 +63,55 @@ def compute_tf_findings(
     subjects: pd.DataFrame,
     excluded_subjects: set[str] | None = None,
 ) -> list[dict]:
-    """Compute findings from TF domain (tumor findings).
-
-    Every TF row is a tumor — no "normal" filtering. Groups by
-    (TFSPEC, TFSTRESC, SEX) for incidence statistics.
-    """
+    """Compute findings from TF domain (tumor findings)."""
     if "tf" not in study.xpt_files:
         return []
 
-    tf_df, _ = read_xpt(study.xpt_files["tf"])
-    tf_df.columns = [c.upper() for c in tf_df.columns]
-    tf_df["TFDY"] = pd.to_numeric(tf_df.get("TFDY", pd.Series(dtype=float)), errors="coerce")
+    tf_df = read_xpt_as_polars(study.xpt_files["tf"])
+    subs = subjects_to_polars(subjects)
+
+    if "TFDY" in tf_df.columns:
+        tf_df = tf_df.with_columns(pl.col("TFDY").cast(pl.Float64, strict=False))
 
     # Identify specimens with recovery subjects BEFORE filtering to main-only
     specimens_with_recovery: set[str] = set()
-    recovery_subs = subjects[subjects["is_recovery"] & ~subjects["is_satellite"]]
-    if len(recovery_subs) > 0 and "TFSPEC" in tf_df.columns:
-        recovery_tf = tf_df.merge(recovery_subs[["USUBJID"]], on="USUBJID", how="inner")
-        if len(recovery_tf) > 0:
-            specimens_with_recovery = set(recovery_tf["TFSPEC"].astype(str).str.strip().str.upper())
+    recovery_subs = subs.filter(pl.col("is_recovery") & ~pl.col("is_satellite"))
+    if recovery_subs.height > 0 and "TFSPEC" in tf_df.columns:
+        recovery_tf = tf_df.join(recovery_subs.select(["USUBJID"]), on="USUBJID", how="inner")
+        if recovery_tf.height > 0:
+            specimens_with_recovery = set(
+                recovery_tf["TFSPEC"].cast(pl.Utf8).str.strip_chars().str.to_uppercase().to_list()
+            )
 
-    main_subs = subjects[~subjects["is_recovery"] & ~subjects["is_satellite"]].copy()
+    main_subs = subs.filter(~pl.col("is_recovery") & ~pl.col("is_satellite"))
     if excluded_subjects:
-        main_subs = main_subs[~main_subs["USUBJID"].isin(excluded_subjects)]
-    tf_df = tf_df.merge(main_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+        main_subs = main_subs.filter(~pl.col("USUBJID").is_in(list(excluded_subjects)))
+    tf_df = tf_df.join(main_subs.select(["USUBJID", "SEX", "dose_level"]), on="USUBJID", how="inner")
 
     spec_col = "TFSPEC" if "TFSPEC" in tf_df.columns else None
     finding_col = "TFSTRESC" if "TFSTRESC" in tf_df.columns else (
         "TFORRES" if "TFORRES" in tf_df.columns else None
     )
-
     if spec_col is None or finding_col is None:
         return []
 
-    # TFRESCAT = BENIGN / MALIGNANT / UNCERTAIN
     rescat_col = "TFRESCAT" if "TFRESCAT" in tf_df.columns else None
 
-    if len(tf_df) == 0:
+    if tf_df.height == 0:
         return []
 
-    n_per_group = main_subs.groupby(["dose_level", "SEX"]).size().to_dict()
-    all_dose_levels = sorted(main_subs["dose_level"].unique())
+    # Build n_per_group lookup
+    n_per_group: dict[tuple, int] = {}
+    for row in main_subs.group_by(["dose_level", "SEX"]).len().iter_rows(named=True):
+        n_per_group[(row["dose_level"], row["SEX"])] = row["len"]
+    all_dose_levels = sorted(main_subs["dose_level"].unique().to_list())
+
+    # Convert to pandas for grouped iteration (RELREC/behavior extraction is complex)
+    tf_pd = tf_df.to_pandas()
 
     findings = []
-    grouped = tf_df.groupby([spec_col, finding_col, "SEX"])
 
-    for (specimen, finding_str, sex), grp in grouped:
+    for (specimen, finding_str, sex), grp in tf_pd.groupby([spec_col, finding_col, "SEX"]):
         finding_str = str(finding_str).strip()
         if not finding_str:
             continue
@@ -136,7 +136,6 @@ def compute_tf_findings(
             dose_grp = grp[grp["dose_level"] == dose_level]
             affected = int(dose_grp["USUBJID"].nunique())
             total = int(n_per_group.get((dose_level, sex), 0))
-
             dose_counts[dose_level] = (affected, total)
 
             group_stats.append({
@@ -154,8 +153,7 @@ def compute_tf_findings(
         incidence_totals = [dose_counts[dl][1] for dl in all_dose_levels]
 
         pairwise = []
-        treated_levels = [dl for dl in all_dose_levels if dl > 0]
-        for dose_level in treated_levels:
+        for dose_level in [dl for dl in all_dose_levels if dl > 0]:
             treat_affected, treat_total = dose_counts[dose_level]
             if treat_total == 0 or control_total == 0:
                 continue

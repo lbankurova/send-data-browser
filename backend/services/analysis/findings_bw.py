@@ -1,15 +1,16 @@
-"""BW (Body Weight) domain findings: per (BWDY, SEX) → group stats + % change from baseline."""
+"""BW (Body Weight) domain findings: per (BWDY, SEX) -> group stats + % change from baseline."""
 
 import numpy as np
 import pandas as pd
+import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.xpt_processor import read_xpt
 from services.analysis.statistics import (
     dunnett_pairwise, welch_pairwise, compute_effect_size, trend_test,
 )
-from services.analysis.phase_filter import (
-    get_treatment_subjects, filter_treatment_period_records,
+from services.analysis.pl_utils import (
+    read_xpt_as_polars, subjects_to_polars,
+    get_treatment_subjects_pl, filter_treatment_period_records_pl,
 )
 
 
@@ -22,50 +23,57 @@ def compute_bw_findings(
     if "bw" not in study.xpt_files:
         return []
 
-    bw_df, _ = read_xpt(study.xpt_files["bw"])
-    bw_df.columns = [c.upper() for c in bw_df.columns]
+    bw_df = read_xpt_as_polars(study.xpt_files["bw"])
+    subs = subjects_to_polars(subjects)
 
     # Merge with treatment-period subjects (main + recovery, exclude TK satellites)
-    treatment_subs = get_treatment_subjects(subjects)
-    bw_df = bw_df.merge(treatment_subs[["USUBJID", "SEX", "dose_level"]], on="USUBJID", how="inner")
+    treatment_subs = get_treatment_subjects_pl(subs).select(["USUBJID", "SEX", "dose_level"])
+    bw_df = bw_df.join(treatment_subs, on="USUBJID", how="inner")
 
     # Parse numeric result
     if "BWSTRESN" in bw_df.columns:
-        bw_df["value"] = pd.to_numeric(bw_df["BWSTRESN"], errors="coerce")
+        bw_df = bw_df.with_columns(pl.col("BWSTRESN").cast(pl.Float64, strict=False).alias("value"))
     elif "BWORRES" in bw_df.columns:
-        bw_df["value"] = pd.to_numeric(bw_df["BWORRES"], errors="coerce")
+        bw_df = bw_df.with_columns(pl.col("BWORRES").cast(pl.Float64, strict=False).alias("value"))
     else:
         return []
 
-    day_col = "BWDY" if "BWDY" in bw_df.columns else None
-    if day_col is None:
-        bw_df["BWDY"] = 1
-    bw_df["BWDY"] = pd.to_numeric(bw_df["BWDY"], errors="coerce")
+    if "BWDY" in bw_df.columns:
+        bw_df = bw_df.with_columns(pl.col("BWDY").cast(pl.Float64, strict=False))
+    else:
+        bw_df = bw_df.with_columns(pl.lit(1.0).alias("BWDY"))
 
     # Filter recovery animals' records to treatment period only
-    bw_df = filter_treatment_period_records(bw_df, subjects, "BWDY", last_dosing_day)
+    bw_df = filter_treatment_period_records_pl(bw_df, subs, "BWDY", last_dosing_day)
 
     unit_col = "BWSTRESU" if "BWSTRESU" in bw_df.columns else None
 
     # Compute baseline per subject (first timepoint)
-    baseline = bw_df.sort_values("BWDY").groupby("USUBJID")["value"].first().to_dict()
-    bw_df["baseline"] = bw_df["USUBJID"].map(baseline)
-    bw_df["pct_change"] = np.where(
-        bw_df["baseline"] > 0,
-        ((bw_df["value"] - bw_df["baseline"]) / bw_df["baseline"]) * 100,
-        np.nan,
+    baseline_df = (
+        bw_df.filter(pl.col("value").is_not_null())
+        .sort("BWDY")
+        .group_by("USUBJID")
+        .first()
+        .select(["USUBJID", pl.col("value").alias("baseline")])
+    )
+    bw_df = bw_df.join(baseline_df, on="USUBJID", how="left")
+    bw_df = bw_df.with_columns(
+        pl.when(pl.col("baseline") > 0)
+        .then(((pl.col("value") - pl.col("baseline")) / pl.col("baseline")) * 100)
+        .otherwise(None)
+        .alias("pct_change")
     )
 
     findings = []
-    grouped = bw_df.groupby(["BWDY", "SEX"])
 
-    for (day, sex), grp in grouped:
-        if grp["value"].isna().all():
+    for (day, sex), grp in bw_df.group_by(["BWDY", "SEX"], maintain_order=True):
+        vals_series = grp["value"].drop_nulls()
+        if vals_series.len() == 0:
             continue
 
-        day_val = int(day) if not np.isnan(day) else None
-        unit = str(grp[unit_col].iloc[0]) if unit_col and unit_col in grp.columns else "g"
-        if unit == "nan":
+        day_val = int(day) if day is not None and not np.isnan(day) else None
+        unit = str(grp[unit_col][0]) if unit_col and unit_col in grp.columns else "g"
+        if unit in ("None", "null", "nan"):
             unit = "g"
 
         group_stats = []
@@ -73,11 +81,13 @@ def compute_bw_findings(
         dose_groups_values = []
         dose_groups_subj = []
 
-        for dose_level in sorted(grp["dose_level"].unique()):
-            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
-            vals = dose_data["value"].values
-            pct_vals = dose_data["pct_change"].dropna().values
-            subj_vals = dict(zip(dose_data["USUBJID"].values, dose_data["value"].values.astype(float)))
+        for dose_level in sorted(grp["dose_level"].unique().to_list()):
+            dose_data = grp.filter(
+                (pl.col("dose_level") == dose_level) & pl.col("value").is_not_null()
+            )
+            vals = dose_data["value"].to_numpy()
+            pct_vals = dose_data["pct_change"].drop_nulls().to_numpy()
+            subj_vals = dict(zip(dose_data["USUBJID"].to_list(), vals.astype(float)))
 
             if len(vals) == 0:
                 group_stats.append({
@@ -89,7 +99,6 @@ def compute_bw_findings(
                 dose_groups_subj.append({})
                 continue
 
-            # 2-decimal precision: BW from balance measurement (grams)
             group_stats.append({
                 "dose_level": int(dose_level),
                 "n": int(len(vals)),
@@ -107,8 +116,10 @@ def compute_bw_findings(
         pairwise = []
         if control_values is not None and len(control_values) >= 2:
             treated = [
-                (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
-                for dl in sorted(grp["dose_level"].unique()) if dl > 0
+                (int(dl), grp.filter(
+                    (pl.col("dose_level") == dl) & pl.col("value").is_not_null()
+                )["value"].to_numpy())
+                for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
             pairwise = dunnett_pairwise(control_values, treated)
             welch = welch_pairwise(control_values, treated)
@@ -134,7 +145,6 @@ def compute_bw_findings(
                 if max_d is None or abs(pw["effect_size"]) > abs(max_d):
                     max_d = pw["effect_size"]
 
-        # Override direction with max_d sign
         if max_d is not None and abs(max_d) > 0.01:
             direction = "up" if max_d > 0 else "down"
 
