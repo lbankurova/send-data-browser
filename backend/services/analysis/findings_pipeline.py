@@ -363,6 +363,26 @@ def process_findings(
                 len(enriched),
             )
 
+    # Single-dose compound annotation (RC-8 PS2c): when a compound has only
+    # one dose level, trend tests are not applicable. Annotate findings so the
+    # frontend can display "Single dose -- trend test not applicable".
+    single_dose_findings = [f for f in enriched if f.get("_compound_dose_count") == 1]
+    if single_dose_findings:
+        for f in single_dose_findings:
+            f["_single_dose_compound"] = True
+            # Trend tests should already be null (k<2 graceful degradation),
+            # but make suppression explicit with provenance
+            if f.get("trend_p") is not None:
+                f["_original_trend_p"] = f["trend_p"]
+                f["trend_p"] = None
+            if f.get("jt_p") is not None:
+                f["_original_jt_p"] = f["jt_p"]
+                f["jt_p"] = None
+        log.info(
+            "Single-dose compound: %d findings annotated, trend tests suppressed",
+            len(single_dose_findings),
+        )
+
     # Pattern overrides applied at endpoint level (analysis_views.py) so they
     # work for both static file serving and parameterized pipeline results
     # Cross-domain corroboration (requires all enriched findings present)

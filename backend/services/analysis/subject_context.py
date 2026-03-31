@@ -234,6 +234,232 @@ def _parse_ex(ex_df: pd.DataFrame | None) -> dict[str, dict]:
     return result
 
 
+# ── EX.EXTRT compound extraction (BP-1: RC-8 PS7.1) ──────────────────────
+
+# Regex to strip trailing dose/unit suffixes from EXTRT for compound normalization.
+# Matches patterns like "Compound A 10 mg/kg" -> "Compound A"
+_EXTRT_DOSE_STRIP = re.compile(
+    r"\s+\d+(?:\.\d+)?\s*(?:mg|µg|ug|g|mL|mcg|IU|U)/?\w*\s*$",
+    re.IGNORECASE,
+)
+
+# Vehicle synonyms for EXTRT filtering — union of generic TCNTRL terms and
+# common pharmaceutical formulation names that appear in EX.EXTRT.
+# Must be lowercase.
+_EXTRT_VEHICLE_KEYWORDS: set[str] = {
+    # TCNTRL_TIER1 vehicle controls (mirrors dose_groups.py — keep in sync)
+    "vehicle control", "vehicle", "saline control", "peg control",
+    "citrate buffer control", "formulation buffer", "excipient",
+    "excipient control", "control article (vehicle)", "control (vehicle)",
+    "capsule control", "solution vehicle control", "gel vehicle control",
+    # TCNTRL_TIER1 negative/procedural/untreated/air controls
+    "negative control", "placebo control", "placebo",
+    "sham control", "sham", "mock-infected control", "procedural control",
+    "untreated control", "untreated", "absolute control", "air control",
+    # TCNTRL_TIER2 ambiguous terms
+    "control", "control article", "control item", "reference item",
+    "reference control", "dosed control", "water control", "water",
+    # Additional EXTRT-specific terms (pharmaceutical formulation names)
+    "saline", "pbs", "buffer",
+    "0.9% sodium chloride", "normal saline", "sterile water",
+    "phosphate buffered saline", "citrate buffer", "acetate buffer",
+    "0 mg/kg", "0mg/kg",
+}
+
+
+def _extract_compounds_from_ex(
+    ex_df: pd.DataFrame | None,
+    dm_df: pd.DataFrame | None,
+) -> dict[str, str]:
+    """Extract compound identity per ARMCD from EX.EXTRT.
+
+    Uses DM->EX join on USUBJID to resolve ARMCD (which is in DM, not EX).
+    Filters out vehicle synonyms, normalizes EXTRT by stripping dose suffixes.
+
+    Returns: {armcd: compound_name} for non-vehicle arms with identifiable compounds.
+    """
+    if ex_df is None or dm_df is None:
+        return {}
+
+    # Build USUBJID -> ARMCD mapping from DM
+    if "ARMCD" not in dm_df.columns or "USUBJID" not in dm_df.columns:
+        return {}
+    sub_to_arm: dict[str, str] = {}
+    for _, row in dm_df[["USUBJID", "ARMCD"]].drop_duplicates().iterrows():
+        sub_to_arm[str(row["USUBJID"]).strip()] = str(row["ARMCD"]).strip()
+
+    # Collect EXTRT values per ARMCD
+    arm_treatments: dict[str, set[str]] = {}
+    if "EXTRT" not in ex_df.columns:
+        return {}
+
+    for _, row in ex_df[["USUBJID", "EXTRT"]].dropna(subset=["EXTRT"]).iterrows():
+        usubjid = str(row["USUBJID"]).strip()
+        armcd = sub_to_arm.get(usubjid)
+        if not armcd:
+            continue
+        extrt = str(row["EXTRT"]).strip()
+        if not extrt or extrt.lower() == "nan":
+            continue
+        arm_treatments.setdefault(armcd, set()).add(extrt)
+
+    # Normalize and filter per ARMCD
+    result: dict[str, str] = {}
+    for armcd, treatments in arm_treatments.items():
+        # Normalize: strip dose suffixes, deduplicate
+        normalized = set()
+        for trt in treatments:
+            stripped = _EXTRT_DOSE_STRIP.sub("", trt).strip()
+            if stripped:
+                normalized.add(stripped)
+
+        # Filter out vehicle synonyms
+        compounds = set()
+        for trt in normalized:
+            trt_lower = trt.lower()
+            if trt_lower in _EXTRT_VEHICLE_KEYWORDS:
+                continue
+            # Also check substring match for common vehicle keywords
+            if any(kw in trt_lower for kw in ("vehicle", "placebo", "saline control")):
+                continue
+            compounds.add(trt)
+
+        # If exactly one compound identified for this arm, record it
+        if len(compounds) == 1:
+            result[armcd] = compounds.pop()
+        elif len(compounds) > 1:
+            # Multiple distinct compounds in same arm — unusual, take first alphabetically
+            logger.warning(
+                "ARMCD %s has %d distinct EXTRT compounds: %s. Using first.",
+                armcd, len(compounds), sorted(compounds),
+            )
+            result[armcd] = sorted(compounds)[0]
+
+    if result:
+        logger.info(
+            "EX.EXTRT compound extraction: %d arms -> %s",
+            len(result), {k: v for k, v in sorted(result.items())},
+        )
+
+    return result
+
+
+def _enrich_compounds_from_ex(
+    dg_data: dict,
+    tx_map: dict[str, dict],
+    ex_compounds: dict[str, str],
+) -> None:
+    """Enrich compound detection using EX.EXTRT-derived data.
+
+    Mutates dg_data in place: updates compound field on dose_groups,
+    rebuilds is_multi_compound/compounds/compound_partitions if EX
+    reveals compounds that TX missed.
+
+    Strategy:
+    - Check TX compound sparsity: what fraction of non-control arms have
+      compound identity from TX?
+    - If TX is sparse (<50% of non-control arms), prefer EX-derived compounds
+      for arms where TX has no compound.
+    - Cross-validate: if both TX and EX provide compounds for the same arm
+      and they differ, log a warning but prefer TX (more structured).
+    """
+    dose_groups = dg_data["dose_groups"]
+    subjects = dg_data["subjects"]
+
+    # Count TX compound coverage on non-control arms
+    non_control_arms = [g for g in dose_groups if not g.get("is_control")]
+    if not non_control_arms:
+        return
+
+    tx_compound_count = sum(
+        1 for g in non_control_arms
+        if tx_map.get(g["armcd"], {}).get("compound")
+    )
+    tx_sparsity = tx_compound_count / len(non_control_arms) if non_control_arms else 1.0
+
+    enriched_any = False
+    cross_val_warnings = []
+
+    for g in dose_groups:
+        armcd = g["armcd"]
+        tx_compound = tx_map.get(armcd, {}).get("compound")
+        ex_compound = ex_compounds.get(armcd)
+
+        if not ex_compound:
+            continue
+
+        if tx_compound and ex_compound:
+            # Cross-validation: both sources provide a compound
+            if tx_compound.lower() != ex_compound.lower():
+                cross_val_warnings.append(
+                    f"ARMCD {armcd}: TX='{tx_compound}' vs EX='{ex_compound}'"
+                )
+            # TX preferred when populated (more structured)
+            continue
+
+        if not tx_compound:
+            # TX has no compound for this arm — use EX-derived
+            g["compound"] = ex_compound
+            tx_map.setdefault(armcd, {})["compound"] = ex_compound
+            enriched_any = True
+
+    if cross_val_warnings:
+        logger.warning(
+            "TX-EX compound cross-validation mismatches (TX preferred): %s",
+            cross_val_warnings,
+        )
+
+    if not enriched_any:
+        return
+
+    # Rebuild compound detection and partitions with enriched data
+    compounds = set()
+    for g in dose_groups:
+        compound = g.get("compound")
+        if compound and not g.get("is_control") and g.get("dose_level", -1) >= 0:
+            compounds.add(compound)
+
+    is_multi_compound = len(compounds) > 1
+    dg_data["is_multi_compound"] = is_multi_compound
+    dg_data["compounds"] = sorted(compounds) if compounds else []
+
+    if is_multi_compound:
+        # Rebuild compound_partitions
+        control_armcds = {g["armcd"] for g in dose_groups if g.get("is_control")}
+        compound_arms: dict[str, list[str]] = {}
+        for g in dose_groups:
+            if g.get("compound") and not g.get("is_control"):
+                compound_arms.setdefault(g["compound"], []).append(g["armcd"])
+
+        analysis_subs = subjects[~subjects["is_satellite"]]
+        compound_partitions: dict[str, dict] = {}
+        for comp_id, treated_armcds in sorted(compound_arms.items()):
+            partition_armcds = set(treated_armcds) | control_armcds
+            partition_groups = [g for g in dose_groups if g["armcd"] in partition_armcds]
+            partition_subjects = analysis_subs[analysis_subs["ARMCD"].isin(partition_armcds)]
+            dose_count = len(treated_armcds)
+            compound_partitions[comp_id] = {
+                "compound_id": comp_id,
+                "dose_groups": partition_groups,
+                "armcds": sorted(partition_armcds),
+                "dose_count": dose_count,
+                "is_single_dose": dose_count == 1,
+                "n_subjects": len(partition_subjects),
+            }
+        dg_data["compound_partitions"] = compound_partitions
+        logger.info(
+            "EX-enriched compound detection: %d compounds, %d partitions "
+            "(TX sparsity: %.0f%% of non-control arms had TX compound)",
+            len(compounds), len(compound_partitions), tx_sparsity * 100,
+        )
+    elif len(compounds) == 1:
+        # Single compound identified via EX — log but no partitioning needed
+        logger.info(
+            "EX compound enrichment: single compound '%s' identified "
+            "(TX sparsity: %.0f%%)", sorted(compounds)[0], tx_sparsity * 100,
+        )
+
+
 # ── ARM label parsing (Method 3 — last resort) ───────────────────────────
 
 _DOSE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(mg|µg|ug|g|mL)\/?(\w*)", re.IGNORECASE)
@@ -501,6 +727,13 @@ def build_subject_context(study: StudyInfo) -> dict:
 
     # Step 4: Parse EX domain
     ex_info = _parse_ex(ex_df)
+
+    # Step 4b: EX.EXTRT compound enrichment (BP-1, RC-8 PS7.1)
+    # TX compound detection may be sparse. Extract compound identity from
+    # EX.EXTRT as fallback, cross-validate against TX-derived compounds.
+    ex_compounds = _extract_compounds_from_ex(ex_df, dm_df)
+    if ex_compounds:
+        _enrich_compounds_from_ex(dg_data, tx_map, ex_compounds)
 
     # Step 5: Dose resolution cascade
     dose_method = "TX"  # default (what build_dose_groups already used)

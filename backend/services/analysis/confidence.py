@@ -529,27 +529,10 @@ def _is_never_reclassifiable(f: dict) -> tuple[bool, str]:
     return False, ""
 
 
-def _parse_severity_threshold(threshold: object) -> dict | None:
-    """Normalise severity_threshold to structured format.
-
-    Accepts:
-      - None / null  → None
-      - str (legacy)  → {"type": "grade", "max_non_adverse": <inferred>, "condition": None}
-      - dict (new)    → passed through
-    """
-    if threshold is None:
-        return None
-    if isinstance(threshold, str):
-        t_lower = threshold.lower().strip()
-        if t_lower == "severe":
-            return {"type": "grade", "max_non_adverse": 4, "condition": "reversible"}
-        if t_lower == "moderate":
-            return {"type": "grade", "max_non_adverse": 3, "condition": None}
-        # Other string thresholds (descriptive text) — return as-is dict
-        return {"type": "descriptive", "text": threshold, "max_non_adverse": None, "condition": None}
-    if isinstance(threshold, dict):
-        return threshold
-    return None
+    # NOTE: _parse_severity_threshold was deleted (BP-2, dead code M4).
+    # It was never called — its output schema (type/max_non_adverse/condition)
+    # didn't match the consumption schema (metric/adverse_trigger/non_adverse_ceiling).
+    # Severity thresholds are migrated directly in profile JSONs (Track A/B).
 
 
 def _matches_expected_finding(f: dict, ee_key: str, ee_config: dict) -> bool:
@@ -873,6 +856,10 @@ def _score_d9_pharmacological(
                 d9_result["translation_gap"] = tg
             if crs_grade is not None:
                 d9_result["_crs_grade"] = crs_grade
+            # BP-2: Attach severity rationale (original descriptive text) for display
+            sr = ee_config.get("severity_rationale") if isinstance(ee_config, dict) else None
+            if sr:
+                d9_result["severity_rationale"] = sr
             return d9_result
 
     return _dim("D9", "Pharmacological expectation", 0,

@@ -569,11 +569,15 @@ def _build_noael_for_groups(
             method = (method + "_single_dose") if noael_level is not None else "single_dose_not_established"
 
         # Build NOAEL derivation trace (IMP-10)
+        derivation_loael_label = dose_label_map.get(loael_level, "N/A") if loael_level is not None else None
+        if is_single_dose and loael_level is None and not adverse_dose_levels:
+            derivation_loael_label = "Not determined (single dose level)"
+
         noael_derivation = {
             "method": method,
             "classification_method": classification_method,
             "loael_dose_level": loael_level,
-            "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else None,
+            "loael_label": derivation_loael_label,
             "adverse_findings_at_loael": adverse_at_loael,
             "n_adverse_at_loael": n_adverse_at_loael,
             "confidence": round(confidence, 2),
@@ -619,6 +623,14 @@ def _build_noael_for_groups(
             and scheduled_noael_level != noael_level
         )
 
+        # Single-dose compound LOAEL annotation (RC-8 PS4.2):
+        # When a compound has only 1 dose level and adverse effects exist,
+        # LOAEL = that dose. When no adverse effects, LOAEL not determined.
+        # When adverse effects exist but LOAEL is None (shouldn't happen), fallback.
+        loael_label_val = dose_label_map.get(loael_level, "N/A") if loael_level is not None else "N/A"
+        if is_single_dose and loael_level is None and not adverse_dose_levels:
+            loael_label_val = "Not determined (single dose level)"
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noael_level,
@@ -626,7 +638,7 @@ def _build_noael_for_groups(
             "noael_dose_value": dose_value_map.get(noael_level),
             "noael_dose_unit": dose_unit_map.get(noael_level),
             "loael_dose_level": loael_level,
-            "loael_label": dose_label_map.get(loael_level, "N/A") if loael_level is not None else "N/A",
+            "loael_label": loael_label_val,
             "n_adverse_at_loael": n_adverse_at_loael,
             "adverse_domains_at_loael": sorted(adverse_domains),
             "noael_confidence": confidence,

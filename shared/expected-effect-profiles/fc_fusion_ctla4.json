@@ -4,6 +4,7 @@
   "modality": "fc_fusion",
   "base_profiles": ["general_mab"],
   "cross_reactivity_required": true,
+  "default_reversibility": "variable",
   "source": "ICH S6(R1), 2012; Abatacept prescribing information",
   "description": "Expected findings for CTLA4-Ig Fc-fusion proteins (abatacept). Blocks CD28-B7 co-stimulation, attenuating T-cell activation. For TNFR-Fc (etanercept), use anti_tnf_mab profile instead — pharmacologically equivalent to anti-TNF mAbs. Inherits Fc-mediated base findings from general_mab.",
   "expected_findings": [
