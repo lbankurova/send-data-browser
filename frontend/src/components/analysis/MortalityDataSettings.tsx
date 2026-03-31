@@ -13,42 +13,35 @@ import type { StudyMortality, DeathRecord } from "@/types/mortality";
 // ── Helpers ──────────────────────────────────────────────────
 
 /** Whether this subject is in an override state (not at default). */
-function isOverride(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): boolean {
+function isOverride(d: DeathRecord & { attribution: string }, isExcluded: boolean): boolean {
   if (d.is_recovery) return !isExcluded; // default: excluded
   if (d.attribution === "Accidental") return isExcluded; // default: included
-  if (isTr) return !isExcluded; // default: excluded (in early_death_subjects)
-  return false;
+  // All non-accidental deaths default to excluded (satellites, secondary controls, TR deaths)
+  return !isExcluded;
 }
 
 /** Tooltip explaining the subject's current inclusion state. */
-function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: boolean, isTr: boolean): string {
+function subjectTooltip(d: DeathRecord & { attribution: string }, isExcluded: boolean): string {
   const id = d.USUBJID;
 
   // Recovery — default: excluded (separate arm)
   if (d.is_recovery) {
     return isExcluded
       ? `${id}: Excluded (default). Recovery arm subjects analyzed separately from main study.`
-      : `${id}: Included by reviewer override. Default: excluded — recovery arm subjects analyzed separately.`;
+      : `${id}: Included by reviewer override. Default: excluded -- recovery arm subjects analyzed separately.`;
   }
 
   // Accidental death — default: included
   if (d.attribution === "Accidental") {
     return isExcluded
-      ? `${id}: Excluded by reviewer override. Default: included — valid drug-exposure data through day ${d.study_day ?? "?"}.`
+      ? `${id}: Excluded by reviewer override. Default: included -- valid drug-exposure data through day ${d.study_day ?? "?"}.`
       : `${id}: Included (default). Valid drug-exposure data through day ${d.study_day ?? "?"}; death not treatment-related.`;
   }
 
-  // Non-accidental death in early_death_subjects — default: excluded from terminal stats
-  if (isTr) {
-    return isExcluded
-      ? `${id}: Excluded (default). Unscheduled death — terminal data excluded from group statistics.`
-      : `${id}: Included by reviewer override. Default: excluded — unscheduled death.`;
-  }
-
-  // Generic fallback
+  // Non-accidental death — default: excluded from terminal stats
   return isExcluded
-    ? `${id}: Excluded from terminal statistics.`
-    : `${id}: Included in terminal statistics.`;
+    ? `${id}: Excluded (default). Unscheduled death -- terminal data excluded from group statistics.`
+    : `${id}: Included by reviewer override. Default: excluded -- unscheduled death.`;
 }
 
 // ── Qualification Section ────────────────────────────────────
@@ -106,7 +99,7 @@ function MortalityQualification({ q }: { q: import("@/types/mortality").Mortalit
 export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { mortality?: StudyMortality | null; expandAll?: number; collapseAll?: number }) {
   const { studyId } = useParams<{ studyId: string }>();
   const queryClient = useQueryClient();
-  const { excludedSubjects, toggleSubjectExclusion, trEarlyDeathIds } = useScheduledOnly();
+  const { excludedSubjects, toggleSubjectExclusion } = useScheduledOnly();
 
   // Mortality override comments — persisted via annotation API
   // Backend injects pathologist + reviewDate on every save
@@ -145,8 +138,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   const handleToggle = (d: DeathRecord & { attribution: string }) => {
     const id = d.USUBJID;
     const isExcluded = excludedSubjects.has(id);
-    const isTr = trEarlyDeathIds.has(id);
-    const currentlyOverridden = isOverride(d, isExcluded, isTr);
+    const currentlyOverridden = isOverride(d, isExcluded);
 
     if (currentlyOverridden && overrideComments[id]) {
       setPendingRevert(id);
@@ -216,12 +208,11 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
             <tbody>
               {allDeaths.map(d => {
                 const isExcluded = excludedSubjects.has(d.USUBJID);
-                const isTr = trEarlyDeathIds.has(d.USUBJID);
                 const dg = mortality.by_dose.find(b => b.dose_level === d.dose_level);
                 const baseDose = dg?.dose_value != null && unit ? `${dg.dose_value} ${unit}` : d.dose_label;
                 const cause = d.cause ?? d.disposition;
                 const truncCause = cause.length > 20 ? cause.slice(0, 19) + "\u2026" : cause;
-                const overridden = isOverride(d, isExcluded, isTr);
+                const overridden = isOverride(d, isExcluded);
                 const hasComment = !!overrideComments[d.USUBJID];
 
                 return (
@@ -254,7 +245,7 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
                           type="checkbox"
                           checked={!isExcluded}
                           onChange={() => handleToggle(d)}
-                          title={subjectTooltip(d, isExcluded, isTr)}
+                          title={subjectTooltip(d, isExcluded)}
                           className="h-3 w-3 rounded border-gray-300"
                         />
                       </div>
