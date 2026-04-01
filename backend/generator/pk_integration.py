@@ -66,11 +66,17 @@ def build_pk_integration(
     if pc_df.empty or pp_df.empty:
         return {"available": False}
 
+    # Read POOLDEF if available (for pooled PK data)
+    pooldef_df = _read_domain(study, "pooldef")
+
     # Detect TK satellite design — use authoritative tk_setcds from dose_groups
     tk_design = _detect_tk_design(dm_df, tk_setcds=tk_setcds)
 
     # Link TK subjects to dose levels
-    pp_merged = _link_tk_to_dose(pp_df, dm_df, dose_groups, tk_setcds=tk_setcds)
+    pp_merged = _link_tk_to_dose(
+        pp_df, dm_df, dose_groups, tk_setcds=tk_setcds,
+        pooldef_df=pooldef_df,
+    )
     if pp_merged.empty:
         return {"available": False}
 
@@ -89,6 +95,7 @@ def build_pk_integration(
     # Build per-dose-group stats
     by_dose_group = _build_dose_group_stats(
         pp_merged, pc_df, dm_df, dose_groups, tk_design, lloq,
+        tk_setcds=tk_setcds,
     )
 
     # Dose proportionality (needs ≥ 3 dose groups with AUC)
@@ -201,14 +208,33 @@ def _link_tk_to_dose(
     dm_df: pd.DataFrame,
     dose_groups: list[dict],
     tk_setcds: set[str] | None = None,
+    pooldef_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Merge PP with DM to get dose_level and sex per TK subject."""
+    """Merge PP with DM to get dose_level and sex per TK subject.
+
+    Handles two SEND patterns:
+    - Individual PK: PP rows have real USUBJID -> direct join to DM.
+    - Pooled PK: PP rows have empty USUBJID + POOLID -> resolve via
+      POOLDEF (POOLID -> USUBJID[]) then look up one representative
+      subject per pool in DM to get SETCD/SEX.
+    """
     if "USUBJID" not in pp_df.columns or "USUBJID" not in dm_df.columns:
         return pd.DataFrame()
 
-    # Build SETCD → dose_level mapping from dose_groups
-    # dose_groups have dose_level (0-based index) and group_label
-    # DM has SETCD (e.g., "2TK", "3TK") where numeric prefix matches group number
+    # Detect pooled PK: USUBJID is empty/missing but POOLID is populated
+    pp_has_poolid = "POOLID" in pp_df.columns
+    pp_usubj_empty = (
+        pp_df["USUBJID"].astype(str).str.strip().replace("", pd.NA).isna().all()
+    )
+    is_pooled = pp_has_poolid and pp_usubj_empty
+
+    if is_pooled:
+        return _link_pooled_tk_to_dose(
+            pp_df, dm_df, dose_groups, tk_setcds=tk_setcds,
+            pooldef_df=pooldef_df,
+        )
+
+    # --- Individual PK path (original logic) ---
     dm_cols = ["USUBJID", "SEX"]
     if "SETCD" in dm_df.columns:
         dm_cols.append("SETCD")
@@ -229,6 +255,73 @@ def _link_tk_to_dose(
         merged["dose_level"] = merged["dose_level"].astype(int)
     elif "ARMCD" in merged.columns:
         # Fallback: map ARMCD to dose_level
+        armcd_map = {}
+        for dg in dose_groups:
+            if "armcd" in dg:
+                armcd_map[dg["armcd"]] = dg["dose_level"]
+        merged["dose_level"] = merged["ARMCD"].map(armcd_map)
+        merged = merged.dropna(subset=["dose_level"])
+        merged["dose_level"] = merged["dose_level"].astype(int)
+    else:
+        return pd.DataFrame()
+
+    return merged
+
+
+def _link_pooled_tk_to_dose(
+    pp_df: pd.DataFrame,
+    dm_df: pd.DataFrame,
+    dose_groups: list[dict],
+    tk_setcds: set[str] | None = None,
+    pooldef_df: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Resolve pooled PP rows to dose groups via POOLDEF -> DM lookup.
+
+    Each pool maps to multiple subjects (POOLDEF). We pick one representative
+    subject per pool to get SETCD/SEX from DM, then attach dose_level.
+    The USUBJID column is set to the POOLID so downstream n_subjects counts
+    reflect the number of independent measurement units (pools).
+    """
+    if pooldef_df is None or pooldef_df.empty:
+        return pd.DataFrame()
+    if "POOLID" not in pooldef_df.columns or "USUBJID" not in pooldef_df.columns:
+        return pd.DataFrame()
+
+    # Build POOLID -> representative USUBJID (first subject in pool)
+    pool_rep = (
+        pooldef_df.groupby("POOLID")["USUBJID"]
+        .first()
+        .reset_index()
+        .rename(columns={"USUBJID": "_REP_USUBJID"})
+    )
+
+    # Join PP -> pool representative
+    merged = pp_df.merge(pool_rep, on="POOLID", how="inner")
+    if merged.empty:
+        return pd.DataFrame()
+
+    # Look up SETCD/SEX from DM via the representative USUBJID
+    dm_cols = ["USUBJID", "SEX"]
+    if "SETCD" in dm_df.columns:
+        dm_cols.append("SETCD")
+    if "ARMCD" in dm_df.columns:
+        dm_cols.append("ARMCD")
+    dm_sub = dm_df[[c for c in dm_cols if c in dm_df.columns]].copy()
+
+    merged = merged.merge(
+        dm_sub, left_on="_REP_USUBJID", right_on="USUBJID", how="inner",
+    )
+    # Use POOLID as USUBJID so downstream counts are per-pool
+    merged["USUBJID"] = merged["POOLID"]
+    merged = merged.drop(columns=["_REP_USUBJID"], errors="ignore")
+
+    # Map SETCD to dose_level
+    if "SETCD" in merged.columns:
+        setcd_dose_map = _build_setcd_dose_map(dm_df, dose_groups, tk_setcds=tk_setcds)
+        merged["dose_level"] = merged["SETCD"].map(setcd_dose_map)
+        merged = merged.dropna(subset=["dose_level"])
+        merged["dose_level"] = merged["dose_level"].astype(int)
+    elif "ARMCD" in merged.columns:
         armcd_map = {}
         for dg in dose_groups:
             if "armcd" in dg:
@@ -306,6 +399,7 @@ def _build_dose_group_stats(
     dose_groups: list[dict],
     tk_design: dict,
     lloq: float | None,
+    tk_setcds: set[str] | None = None,
 ) -> list[dict]:
     """Build per-dose-group PK parameter stats and concentration-time profiles."""
     results = []
@@ -320,7 +414,9 @@ def _build_dose_group_stats(
         }
 
     # Concentration-time data per dose
-    conc_time_by_dose = _compute_concentration_time(pc_df, dm_df, dose_groups, lloq)
+    conc_time_by_dose = _compute_concentration_time(
+        pc_df, dm_df, dose_groups, lloq, tk_setcds=tk_setcds,
+    )
 
     for dose_level in sorted(pp_merged["dose_level"].unique()):
         dose_data = pp_merged[pp_merged["dose_level"] == dose_level]
@@ -372,6 +468,7 @@ def _compute_concentration_time(
     dm_df: pd.DataFrame,
     dose_groups: list[dict],
     lloq: float | None,
+    tk_setcds: set[str] | None = None,
 ) -> dict[int, list[dict]]:
     """Compute mean concentration-time profiles per dose group."""
     if "USUBJID" not in pc_df.columns or "PCSTRESN" not in pc_df.columns:
@@ -388,7 +485,7 @@ def _compute_concentration_time(
     if "SETCD" not in pc_merged.columns:
         return {}
 
-    setcd_map = _build_setcd_dose_map(dm_df, dose_groups)
+    setcd_map = _build_setcd_dose_map(dm_df, dose_groups, tk_setcds=tk_setcds)
     pc_merged["dose_level"] = pc_merged["SETCD"].map(setcd_map)
     pc_merged = pc_merged.dropna(subset=["dose_level"])
     pc_merged["dose_level"] = pc_merged["dose_level"].astype(int)
@@ -465,7 +562,7 @@ def _compute_dose_proportionality(
     """
     # Prefer AUCLST over AUCTAU over AUCIFO
     param = None
-    for candidate in ["AUCLST", "AUCTAU"]:
+    for candidate in ["AUCLST", "AUCTAU", "AUCALL"]:
         has_param = all(
             candidate in g["parameters"]
             for g in by_dose_group
