@@ -806,11 +806,6 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
 
 
 def _classify_endpoint_type(domain: str) -> str:
-    """Classify finding into an endpoint type category."""
-    mapping = {
-        "EG": "electrocardiogram",
-        "VS": "vital_signs",
-        "CL": "clinical_observation",
-        "CV": "cardiovascular_telemetry",
-    }
-    return mapping.get(domain, "other")
+    """Thin wrapper — canonical mapping lives in domain_stats.classify_endpoint_type."""
+    from generator.domain_stats import classify_endpoint_type
+    return classify_endpoint_type(domain)

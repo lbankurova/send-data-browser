@@ -1,0 +1,47 @@
+[
+  {
+    "timestamp": "2026-03-29T15:35:43.435826+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "create",
+    "changes": {
+      "confirmed_by_sme": {
+        "old": null,
+        "new": true
+      },
+      "original_compound_class": {
+        "old": null,
+        "new": "small_molecule"
+      },
+      "compound_class": {
+        "old": null,
+        "new": "aav_gene_therapy"
+      },
+      "expected_findings": {
+        "old": null,
+        "new": {}
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T15:36:43.394055+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "compound_class": "aav_gene_therapy",
+          "original_compound_class": "small_molecule",
+          "confirmed_by_sme": true,
+          "expected_findings": {},
+          "reviewDate": "2026-03-29T15:35:43.434688+00:00",
+          "pathologist": "User"
+        },
+        "new": null
+      }
+    }
+  }
+]

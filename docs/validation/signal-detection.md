@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `2f79440` (2026-04-01)
-**Generated:** 2026-04-01T13:14:52.188Z
+**Engine:** commit `b87c28e` (2026-04-01)
+**Generated:** 2026-04-01T19:51:45.754Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -46,7 +46,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 5 | A/G ratio decrease | LB | any | tr_adverse | -3.00 | <0.001 | **DETECTED** | Day 3: M 0.78x (p<0.001), F 0.82x (p<0.001). (report p.11) |
 | 6 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased lymphoid cellularity of germinal centre. Correlated with higher spleen weights. (report p.9) |
 | 7 | Iliac LN hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased generalised lymphoid cellularity. Gross enlargement in 1F. Correlated with higher LN weights. (report p.9) |
-| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.010 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
+| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.009 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
 | 9 | Spleen weight increase | OM | any | tr_adverse | 1.43 | 0.037 | **DETECTED** | Slightly higher in both sexes. (report p.9) |
 | 10 | Injection site inflammation | MI | any | equivocal | -- | 0.070 | **DETECTED** | Inflammation, necrosis, hemorrhage in striated muscle/fascia. SEND specimen: 'SITE, APPLICATION'. Engine classifies as not_treatment_related — known gap (injection site findings lack dose-response in 2-group design). (report p.9) |
 
@@ -93,7 +93,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.078 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
 | 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
-| 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
+| 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.115 | **DETECTED** | Both vaccines. (report p.10) |
 | 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.049 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
 | 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
@@ -123,7 +123,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
-| 1 | QTc prolongation (150 mg/kg) | EG | any | treatment_related | 2.74 | 0.002 | **DETECTED** | (treatment_related, expected tr_adverse) Peak: 280.3 vs 236.9 msec at 5h (+18.3%, +43.4 msec). Statistically significant (p<0.05) at 2h and 3h. Persisted through 24h (+5.7%). (report Tables 10-11) |
+| 1 | QTc prolongation (150 mg/kg) | EG | any | treatment_related | 2.74 | 0.002 | **DETECTED** | (treatment_related, treatment_related_concerning, expected tr_adverse) Peak: 280.3 vs 236.9 msec at 5h (+18.3%, +43.4 msec). Statistically significant (p<0.05) at 2h and 3h. Persisted through 24h (+5.7%). (report Tables 10-11) |
 | 2 | QTc prolongation (50 mg/kg) | EG | any | treatment_related | 2.74 | 0.002 | **DETECTED** | Peak: 253.9 vs 236.9 msec at 5h (+7.2%, +17 msec). Not statistically significant (N=6). Resolved by 18h. (report Table 11) |
 | 3 | Blood pressure decrease (150 mg/kg) | CV | any | equivocal | -1.13 | 0.064 | **DETECTED** | SBP at 15h: 113.4 vs 127.1 mmHg (-10.8%). All 6 animals affected. Not statistically significant. 10-24h postdose. (report) |
 | 4 | Heart rate increase (all doses) | CV | any | -- | -- | -- | **MISSED** | All doses, 10-24h postdose, <30% above control. Not dose-dependent (may be baroreceptor reflex). Example 16h: vehicle 60.9, 20mg 73.9 (+21%), 50mg 70.8 (+16%), 150mg 78.2 (+28%). Engine classifies not_treatment_related — known gap (non-monotonic HR increase can't be statistically attributed). (report) |

@@ -1,0 +1,10 @@
+{
+  "study": {
+    "compound_class": "vaccine_adjuvanted",
+    "original_compound_class": "vaccine",
+    "confirmed_by_sme": true,
+    "expected_findings": {},
+    "reviewDate": "2026-03-29T15:58:35.427090+00:00",
+    "pathologist": "User"
+  }
+}

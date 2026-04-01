@@ -388,8 +388,8 @@ def compute_all_findings(
             finding["anova_p"] = None
             finding["jt_p"] = _safe_float(finding.get("trend_p"))
 
-        finding["endpoint_type"] = _classify_endpoint_type(
-            finding.get("domain", ""), finding.get("test_code"),
+        finding["endpoint_type"] = classify_endpoint_type(
+            finding.get("domain", ""),
         )
     dt_stats = time.perf_counter() - t_stats
     print(f"    stats enrichment: {dt_stats:.1f}s (Dunnett: {n_dunnett_reused} reused, {n_dunnett_computed} computed)")
@@ -904,8 +904,8 @@ def compute_active_comparator_comparison(
     }
 
 
-def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
-    """Classify finding into an endpoint type category."""
+def classify_endpoint_type(domain: str) -> str:
+    """Classify a SEND domain code into a human-readable endpoint type category."""
     mapping = {
         "BW": "body_weight",
         "FW": "food_water",
@@ -920,6 +920,7 @@ def _classify_endpoint_type(domain: str, test_code: str | None = None) -> str:
         "RE": "respiratory",
         "VS": "vital_signs",
         "BG": "body_weight_gain",
+        "CV": "cardiovascular_telemetry",
     }
     return mapping.get(domain, "other")
 

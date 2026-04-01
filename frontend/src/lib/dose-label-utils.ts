@@ -1,6 +1,27 @@
 import type { DoseGroup } from "@/types/analysis";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 
+/** Minimal fields needed for dose label resolution. */
+interface DoseLabelSource {
+  dose_level: number;
+  dose_value?: number | null;
+  dose_unit?: string | null;
+  label?: string;
+}
+
+/**
+ * Resolve a dose_level number to a human-readable label using DoseGroup metadata.
+ * Level 0 always returns "Control". Falls back to "Dose {level}" when metadata is missing.
+ */
+export function getDoseLabel(level: number, doseGroups?: DoseLabelSource[]): string {
+  if (level === 0) return "Control";
+  if (!doseGroups?.length) return `Dose ${level}`;
+  const dg = doseGroups.find((d) => d.dose_level === level);
+  if (dg?.dose_value != null && dg.dose_unit) return `${dg.dose_value} ${dg.dose_unit}`;
+  if (dg?.label) return dg.label;
+  return `Dose ${level}`;
+}
+
 /** Shorten a dose label using DoseGroup metadata when available.
  *
  *  Prefers `short_label` from backend-computed display config.

@@ -543,5 +543,135 @@
         "new": null
       }
     }
+  },
+  {
+    "timestamp": "2026-03-29T14:12:42.258659+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "create",
+    "changes": {
+      "confirmed_by_sme": {
+        "old": null,
+        "new": true
+      },
+      "compound_class": {
+        "old": null,
+        "new": "vaccine_adjuvanted"
+      },
+      "expected_findings": {
+        "old": null,
+        "new": {}
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T14:12:49.867773+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "compound_class": "vaccine_adjuvanted",
+          "confirmed_by_sme": true,
+          "expected_findings": {},
+          "pathologist": "User",
+          "reviewDate": "2026-03-29T14:12:42.257165+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T14:21:52.384013+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "create",
+    "changes": {
+      "expected_findings": {
+        "old": null,
+        "new": {}
+      },
+      "original_compound_class": {
+        "old": null,
+        "new": "small_molecule"
+      },
+      "compound_class": {
+        "old": null,
+        "new": "aav_gene_therapy"
+      },
+      "confirmed_by_sme": {
+        "old": null,
+        "new": true
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T14:22:07.380352+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "compound_class": "aav_gene_therapy",
+          "original_compound_class": "small_molecule",
+          "confirmed_by_sme": true,
+          "expected_findings": {},
+          "reviewDate": "2026-03-29T14:21:52.367695+00:00",
+          "pathologist": "User"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T14:28:54.007040+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "create",
+    "changes": {
+      "confirmed_by_sme": {
+        "old": null,
+        "new": true
+      },
+      "original_compound_class": {
+        "old": null,
+        "new": "small_molecule"
+      },
+      "compound_class": {
+        "old": null,
+        "new": "vaccine_adjuvanted"
+      },
+      "expected_findings": {
+        "old": null,
+        "new": {}
+      }
+    }
+  },
+  {
+    "timestamp": "2026-03-29T14:29:23.714870+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "compound_class": "aav_gene_therapy",
+          "original_compound_class": "small_molecule",
+          "confirmed_by_sme": true,
+          "expected_findings": {},
+          "reviewDate": "2026-03-29T14:29:09.523856+00:00",
+          "pathologist": "User"
+        },
+        "new": null
+      }
+    }
   }
 ]

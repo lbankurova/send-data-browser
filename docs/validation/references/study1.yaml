@@ -1,0 +1,33 @@
+# Study1 — Hepatitis B Vaccine T-Cell Dependent Antibody Response
+# Source: Covance study 8326556 nSDRG + report
+# Single-arm immunogenicity characterization — NOT a toxicity study
+
+study_id: CBER-POC-Pilot-Study1-Vaccine_xpt_only
+origin: synthetic
+source: "Covance study 8326556, nSDRG pp.3-5"
+
+design:
+  species: "Primate"
+  strain: "Cynomolgus"
+  route: "Intramuscular"
+  groups: 1
+  doses: [20]  # 20 ug/dose, single arm
+  dose_unit: "ug/dose"
+  duration: "immunogenicity characterization"
+  recovery: false
+  n_per_group: 4  # 4F only
+  has_concurrent_control: false
+  note: "Selected for: vaccine compound, immunology endpoints, standard clinical path/obs. Limitations: no control group, relies on sister study, no biodistribution/TK/respiratory/mortality endpoints."
+
+noael:
+  combined: { dose_level: null, label: "Not established", derivation: "no_concurrent_control" }
+
+target_organs: {}
+
+injected_signals: []
+
+assertions:
+  - type: "zero_adverse"
+    description: "No tr_adverse findings — single-arm, no control, not a tox study"
+  - type: "no_concurrent_control"
+    description: "has_concurrent_control = false"

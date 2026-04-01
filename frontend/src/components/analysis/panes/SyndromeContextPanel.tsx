@@ -19,6 +19,7 @@ import {
   formatEffectSize,
   getDoseGroupColor,
 } from "@/lib/severity-colors";
+import { getDoseLabel } from "@/lib/dose-label-utils";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { getSyndromeTermReport, getSyndromeDefinition } from "@/lib/cross-domain-syndromes";
 import type { TermReportEntry, CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
@@ -1239,15 +1240,6 @@ function HysLawFiltered({
 }) {
   const HYS_RULES = ["L03", "L07", "L08"] as const;
 
-  const doseLabelMap = new Map<number, string>();
-  if (doseGroups) {
-    for (const dg of doseGroups) {
-      if (dg.dose_value != null && dg.dose_unit) {
-        doseLabelMap.set(dg.dose_level, `${dg.dose_value} ${dg.dose_unit}`);
-      }
-    }
-  }
-
   function findSignificantDose(testCodes: string[]): string | null {
     if (!rawFindings) return null;
     const codes = testCodes.map((c) => c.toUpperCase());
@@ -1260,7 +1252,7 @@ function HysLawFiltered({
       for (const pw of sorted) {
         const p = pw.p_value_adj ?? pw.p_value;
         if (p != null && p < 0.05) {
-          return doseLabelMap.get(pw.dose_level) ?? `dose level ${pw.dose_level}`;
+          return getDoseLabel(pw.dose_level, doseGroups);
         }
       }
     }
@@ -1856,14 +1848,6 @@ function FoodConsumptionPane({
   const [showRaw, setShowRaw] = useState(false);
   const verdict = getVerdictConfig(context.bwFwAssessment);
 
-  const getDoseLabel = (level: number): string => {
-    if (level === 0) return "Control";
-    if (!doseGroups?.length) return `Dose ${level}`;
-    const dg = doseGroups.find((d) => d.dose_level === level);
-    if (!dg?.dose_value || !dg.dose_unit) return `Dose ${level}`;
-    return `${dg.dose_value} ${dg.dose_unit}`;
-  };
-
   // ── Key stats: extract highest-dose per-sex data ──
   const keyStats = useMemo(() => {
     if (!rawData?.periods?.length) return null;
@@ -1884,7 +1868,7 @@ function FoodConsumptionPane({
         bwPct: e.bw_pct_change as number | null,
         fcPct: e.fw_pct_change as number | null,
         fePct,
-        doseLabel: getDoseLabel(maxDose),
+        doseLabel: getDoseLabel(maxDose, doseGroups),
       };
     }).filter((s): s is NonNullable<typeof s> => s != null);
 
@@ -2095,7 +2079,7 @@ function FoodConsumptionPane({
                         className="border-l-2 pl-1.5 font-mono whitespace-nowrap"
                         style={{ borderLeftColor: getDoseGroupColor(dose) }}
                       >
-                        {getDoseLabel(dose)}
+                        {getDoseLabel(dose, doseGroups)}
                       </span>
                     </td>
                     {periodData.map((period, pi) => {
@@ -2138,9 +2122,9 @@ function FoodConsumptionPane({
         </button>
         {showRaw && rawMetrics && (
           <div className="mt-1.5 space-y-3">
-            <RawMetricsTable title="FE" data={rawMetrics.fe} getDoseLabel={getDoseLabel} />
-            <RawMetricsTable title="FC" data={rawMetrics.fc} getDoseLabel={getDoseLabel} />
-            <RawMetricsTable title="BW gain" data={rawMetrics.bw} getDoseLabel={getDoseLabel} />
+            <RawMetricsTable title="FE" data={rawMetrics.fe} getDoseLabel={(l) => getDoseLabel(l, doseGroups)} />
+            <RawMetricsTable title="FC" data={rawMetrics.fc} getDoseLabel={(l) => getDoseLabel(l, doseGroups)} />
+            <RawMetricsTable title="BW gain" data={rawMetrics.bw} getDoseLabel={(l) => getDoseLabel(l, doseGroups)} />
           </div>
         )}
       </div>
@@ -2291,14 +2275,6 @@ function OrganProportionalityPane({
   const sexesDiverge = checkSexDivergence(result.bySex);
   const sexes = Object.keys(result.bySex).sort();
 
-  const getDoseLabel = (level: number): string => {
-    if (level === 0) return "Control";
-    if (!doseGroups?.length) return `Dose ${level}`;
-    const dg = doseGroups.find((d) => d.dose_level === level);
-    if (!dg?.dose_value || !dg.dose_unit) return `Dose ${level}`;
-    return `${dg.dose_value} ${dg.dose_unit}`;
-  };
-
   const fmtDelta = (pct: number | null) => {
     if (pct == null) return "—";
     const sign = pct >= 0 ? "+" : "";
@@ -2403,7 +2379,7 @@ function OrganProportionalityPane({
         {isExpanded && (
           <tr>
             <td colSpan={8} className="pb-2 pt-0.5">
-              <OrganDetailExpanded row={row} getDoseLabel={getDoseLabel} />
+              <OrganDetailExpanded row={row} getDoseLabel={(l) => getDoseLabel(l, doseGroups)} />
             </td>
           </tr>
         )}
@@ -2540,7 +2516,7 @@ function OrganProportionalityPane({
               const peakDose = rows[0].byDose.length > 0
                 ? rows[0].byDose[rows[0].byDose.length - 1]
                 : null;
-              const doseText = peakDose ? ` at ${getDoseLabel(peakDose.doseLevel)}` : "";
+              const doseText = peakDose ? ` at ${getDoseLabel(peakDose.doseLevel, doseGroups)}` : "";
 
               if (bothSexes) {
                 // Both sexes flagged

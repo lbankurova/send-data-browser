@@ -1297,6 +1297,10 @@ _TCNTRL_TIER3 = {
     "not applicable", "not available", "none", "see protocol", "n/a",
 }
 
+# Public set of all control-indicating keywords (Tier 1 + Tier 2).
+# Import this instead of duplicating keyword lists in other modules.
+CONTROL_KEYWORDS: frozenset[str] = frozenset(_TCNTRL_TIER1.keys()) | frozenset(_TCNTRL_TIER2)
+
 
 _TCNTRL_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")
 

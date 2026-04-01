@@ -1,7 +1,7 @@
 # Validation Summary
 
-**Engine:** commit `2f79440` (2026-04-01)
-**Generated:** 2026-04-01T13:14:52.580Z
+**Engine:** commit `b87c28e` (2026-04-01)
+**Generated:** 2026-04-01T19:51:46.223Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
@@ -40,4 +40,4 @@
 
 | Study | Note |
 |-------|------|
-| CBER-POC-Pilot-Study5 | QTc prolongation (150 mg/kg): (treatment_related, expected tr_adverse) |
+| CBER-POC-Pilot-Study5 | QTc prolongation (150 mg/kg): (treatment_related, treatment_related_concerning, expected tr_adverse) |

@@ -1,0 +1,42 @@
+# TOXSCI 87497 — 1-Month Rat Compound B (6576, IDO1 Inhibitor)
+# Source: No study report. TOXSCI-24-0062 Cross Study Analysis.
+# Largest rat study in validation suite (n=160 with TK).
+
+study_id: "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt"
+origin: real
+source: "TOXSCI-24-0062 publication data. No study report."
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 25, 125, 1000]
+  dose_unit: "mg/kg/day"
+  duration: "4 weeks + 4-week recovery"
+  recovery: true
+  recovery_pairs: 2  # Control + Mid (not High — unusual)
+  n_per_group_control: 26  # 13M+13F
+  n_per_group_treated: 20  # 10M+10F
+  n_recovery_per_group: 10  # 5M+5F
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "1% Hydroxyethylcellulose, 0.25% Polysorbate 80, 0.05% Antifoam in purified water"
+  treatment: "6576"
+  pharmacologic_class: "IDO1 Inhibitor"
+  tk_satellites: true  # ~18 per treated group, 0 for control
+  note: "Recovery on Mid (not High) — unusual. Very wide dose range (25 to 1000 — 40x). TK in treated groups only. Paired with dog Compound B study (35449)."
+
+noael:
+  combined: { dose_level: 1, label: "Low (25 mg/kg/day)", loael_dose_level: 2, confidence: 0.8 }
+
+target_organs: {}
+
+injected_signals: []
+
+assertions:
+  - type: "design_groups"
+    description: "4 groups, unequal N (control 26, treated 20)"
+  - type: "tk_excluded"
+    description: "TK satellites (~18/treated group) excluded from analysis"
+  - type: "noael_above_control"
+    description: "NOAEL at Low dose (25 mg/kg/day), not at control"

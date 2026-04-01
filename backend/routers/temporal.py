@@ -19,6 +19,7 @@ from services.analysis.dose_groups import build_dose_groups
 from services.analysis.phase_filter import compute_last_dosing_day
 from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.incidence_recovery import compute_incidence_recovery
+from generator.subject_syndromes import SEVERITY_MAP
 
 router = APIRouter(prefix="/api", tags=["temporal"])
 
@@ -400,165 +401,145 @@ async def get_subject_profile(study_id: str, usubjid: str):
     # Collect domain data
     domains: dict = {}
 
-    # BW
-    if "bw" in study.xpt_files:
+    def _subject_domain(domain: str) -> pd.DataFrame | None:
+        """Read a domain and filter to this subject. Returns None if unavailable or empty."""
+        if domain.lower() not in study.xpt_files:
+            return None
         try:
-            bw_df = _read_domain_df(study, "BW")
-            bw_subj = bw_df[bw_df["USUBJID"] == usubjid]
-            if not bw_subj.empty:
-                val_col = "BWSTRESN"
-                day_col = "BWDY"
-                unit_col = "BWSTRESU"
-                bw_subj[val_col] = pd.to_numeric(bw_subj[val_col], errors="coerce")
-                bw_subj[day_col] = pd.to_numeric(bw_subj[day_col], errors="coerce")
-                bw_subj = bw_subj.dropna(subset=[val_col, day_col])
-                measurements = [
-                    {
-                        "day": int(r[day_col]),
-                        "test_code": "BW",
-                        "value": round(float(r[val_col]), 2),
-                        "unit": str(r[unit_col]) if unit_col in bw_subj.columns and r[unit_col] != "" else "g",
-                    }
-                    for _, r in bw_subj.sort_values(day_col).iterrows()
-                ]
-                if measurements:
-                    domains["BW"] = {"measurements": measurements}
+            df = _read_domain_df(study, domain)
+            subj = df[df["USUBJID"] == usubjid]
+            return subj if not subj.empty else None
         except Exception:
-            pass
+            return None
+
+    # BW
+    bw_subj = _subject_domain("BW")
+    if bw_subj is not None:
+        val_col = "BWSTRESN"
+        day_col = "BWDY"
+        unit_col = "BWSTRESU"
+        bw_subj[val_col] = pd.to_numeric(bw_subj[val_col], errors="coerce")
+        bw_subj[day_col] = pd.to_numeric(bw_subj[day_col], errors="coerce")
+        bw_subj = bw_subj.dropna(subset=[val_col, day_col])
+        measurements = [
+            {
+                "day": int(r[day_col]),
+                "test_code": "BW",
+                "value": round(float(r[val_col]), 2),
+                "unit": str(r[unit_col]) if unit_col in bw_subj.columns and r[unit_col] != "" else "g",
+            }
+            for _, r in bw_subj.sort_values(day_col).iterrows()
+        ]
+        if measurements:
+            domains["BW"] = {"measurements": measurements}
 
     # LB
-    if "lb" in study.xpt_files:
-        try:
-            lb_df = _read_domain_df(study, "LB")
-            lb_subj = lb_df[lb_df["USUBJID"] == usubjid]
-            if not lb_subj.empty:
-                val_col = "LBSTRESN"
-                day_col = "LBDY"
-                unit_col = "LBSTRESU"
-                testcd_col = "LBTESTCD"
-                lb_subj[val_col] = pd.to_numeric(lb_subj[val_col], errors="coerce")
-                lb_subj[day_col] = pd.to_numeric(lb_subj[day_col], errors="coerce")
-                lb_subj = lb_subj.dropna(subset=[val_col, day_col])
-                measurements = [
-                    {
-                        "day": int(r[day_col]),
-                        "test_code": str(r[testcd_col]) if testcd_col in lb_subj.columns else "",
-                        "value": round(float(r[val_col]), 4),
-                        "unit": str(r[unit_col]) if unit_col in lb_subj.columns and r[unit_col] != "" else "",
-                    }
-                    for _, r in lb_subj.sort_values([testcd_col, day_col]).iterrows()
-                ]
-                if measurements:
-                    domains["LB"] = {"measurements": measurements}
-        except Exception:
-            pass
+    lb_subj = _subject_domain("LB")
+    if lb_subj is not None:
+        val_col = "LBSTRESN"
+        day_col = "LBDY"
+        unit_col = "LBSTRESU"
+        testcd_col = "LBTESTCD"
+        lb_subj[val_col] = pd.to_numeric(lb_subj[val_col], errors="coerce")
+        lb_subj[day_col] = pd.to_numeric(lb_subj[day_col], errors="coerce")
+        lb_subj = lb_subj.dropna(subset=[val_col, day_col])
+        measurements = [
+            {
+                "day": int(r[day_col]),
+                "test_code": str(r[testcd_col]) if testcd_col in lb_subj.columns else "",
+                "value": round(float(r[val_col]), 4),
+                "unit": str(r[unit_col]) if unit_col in lb_subj.columns and r[unit_col] != "" else "",
+            }
+            for _, r in lb_subj.sort_values([testcd_col, day_col]).iterrows()
+        ]
+        if measurements:
+            domains["LB"] = {"measurements": measurements}
 
     # OM (Organ Measurements)
-    if "om" in study.xpt_files:
-        try:
-            om_df = _read_domain_df(study, "OM")
-            om_subj = om_df[om_df["USUBJID"] == usubjid]
-            if not om_subj.empty:
-                val_col = "OMSTRESN"
-                day_col = "OMDY"
-                unit_col = "OMSTRESU"
-                testcd_col = "OMTESTCD"
-                om_subj[val_col] = pd.to_numeric(om_subj[val_col], errors="coerce")
-                om_subj[day_col] = pd.to_numeric(om_subj[day_col], errors="coerce")
-                om_subj = om_subj.dropna(subset=[val_col])
-                measurements = [
-                    {
-                        "day": int(r[day_col]) if pd.notna(r.get(day_col)) else 0,
-                        "test_code": str(r[testcd_col]) if testcd_col in om_subj.columns else "",
-                        "value": round(float(r[val_col]), 4),
-                        "unit": str(r[unit_col]) if unit_col in om_subj.columns and r[unit_col] != "" else "",
-                    }
-                    for _, r in om_subj.sort_values(testcd_col).iterrows()
-                ]
-                if measurements:
-                    domains["OM"] = {"measurements": measurements}
-        except Exception:
-            pass
+    om_subj = _subject_domain("OM")
+    if om_subj is not None:
+        val_col = "OMSTRESN"
+        day_col = "OMDY"
+        unit_col = "OMSTRESU"
+        testcd_col = "OMTESTCD"
+        om_subj[val_col] = pd.to_numeric(om_subj[val_col], errors="coerce")
+        om_subj[day_col] = pd.to_numeric(om_subj[day_col], errors="coerce")
+        om_subj = om_subj.dropna(subset=[val_col])
+        measurements = [
+            {
+                "day": int(r[day_col]) if pd.notna(r.get(day_col)) else 0,
+                "test_code": str(r[testcd_col]) if testcd_col in om_subj.columns else "",
+                "value": round(float(r[val_col]), 4),
+                "unit": str(r[unit_col]) if unit_col in om_subj.columns and r[unit_col] != "" else "",
+            }
+            for _, r in om_subj.sort_values(testcd_col).iterrows()
+        ]
+        if measurements:
+            domains["OM"] = {"measurements": measurements}
 
     # CL (Clinical Observations)
-    if "cl" in study.xpt_files:
-        try:
-            cl_df = _read_domain_df(study, "CL")
-            cl_subj = cl_df[cl_df["USUBJID"] == usubjid]
-            if not cl_subj.empty:
-                finding_col = "CLSTRESC" if "CLSTRESC" in cl_subj.columns else "CLRESULT"
-                day_col = "CLDY" if "CLDY" in cl_subj.columns else "VISITDY"
-                cat_col = "CLCAT" if "CLCAT" in cl_subj.columns else None
+    cl_subj = _subject_domain("CL")
+    if cl_subj is not None:
+        finding_col = "CLSTRESC" if "CLSTRESC" in cl_subj.columns else "CLRESULT"
+        day_col = "CLDY" if "CLDY" in cl_subj.columns else "VISITDY"
+        cat_col = "CLCAT" if "CLCAT" in cl_subj.columns else None
 
-                if day_col in cl_subj.columns:
-                    cl_subj[day_col] = pd.to_numeric(cl_subj[day_col], errors="coerce")
+        if day_col in cl_subj.columns:
+            cl_subj[day_col] = pd.to_numeric(cl_subj[day_col], errors="coerce")
 
-                observations = [
-                    {
-                        "day": int(r[day_col]) if day_col in cl_subj.columns and pd.notna(r.get(day_col)) else 0,
-                        "finding": str(r[finding_col]) if finding_col in cl_subj.columns else "",
-                        "category": str(r[cat_col]) if cat_col and cat_col in cl_subj.columns and r.get(cat_col, "") != "" else "",
-                    }
-                    for _, r in cl_subj.sort_values(day_col if day_col in cl_subj.columns else "USUBJID").iterrows()
-                ]
-                if observations:
-                    domains["CL"] = {"observations": observations}
-        except Exception:
-            pass
+        observations = [
+            {
+                "day": int(r[day_col]) if day_col in cl_subj.columns and pd.notna(r.get(day_col)) else 0,
+                "finding": str(r[finding_col]) if finding_col in cl_subj.columns else "",
+                "category": str(r[cat_col]) if cat_col and cat_col in cl_subj.columns and r.get(cat_col, "") != "" else "",
+            }
+            for _, r in cl_subj.sort_values(day_col if day_col in cl_subj.columns else "USUBJID").iterrows()
+        ]
+        if observations:
+            domains["CL"] = {"observations": observations}
 
     # MI (Microscopic Findings)
-    if "mi" in study.xpt_files:
-        try:
-            mi_df = _read_domain_df(study, "MI")
-            mi_subj = mi_df[mi_df["USUBJID"] == usubjid]
-            if not mi_subj.empty:
-                spec_col = "MISPEC" if "MISPEC" in mi_subj.columns else "MIORRES"
-                finding_col = "MISTRESC" if "MISTRESC" in mi_subj.columns else "MIORRES"
-                sev_col = "MISEV" if "MISEV" in mi_subj.columns else None
+    mi_subj = _subject_domain("MI")
+    if mi_subj is not None:
+        spec_col = "MISPEC" if "MISPEC" in mi_subj.columns else "MIORRES"
+        finding_col = "MISTRESC" if "MISTRESC" in mi_subj.columns else "MIORRES"
+        sev_col = "MISEV" if "MISEV" in mi_subj.columns else None
+        rescat_col = "MIRESCAT" if "MIRESCAT" in mi_subj.columns else None
 
-                rescat_col = "MIRESCAT" if "MIRESCAT" in mi_subj.columns else None
+        def _safe_str(val):
+            """Return None for NaN/empty, stripped string otherwise."""
+            if pd.isna(val):
+                return None
+            s = str(val).strip()
+            return s if s else None
 
-                def _safe_str(val):
-                    """Return None for NaN/empty, stripped string otherwise."""
-                    if pd.isna(val):
-                        return None
-                    s = str(val).strip()
-                    return s if s else None
-
-                findings = [
-                    {
-                        "specimen": str(r.get(spec_col, "")).strip() if spec_col in mi_subj.columns else "",
-                        "finding": str(r.get(finding_col, "")).strip() if finding_col in mi_subj.columns else "",
-                        "severity": _safe_str(r[sev_col]) if sev_col and sev_col in mi_subj.columns else None,
-                        "result_category": _safe_str(r[rescat_col]) if rescat_col and rescat_col in mi_subj.columns else None,
-                    }
-                    for _, r in mi_subj.iterrows()
-                ]
-                if findings:
-                    domains["MI"] = {"findings": findings}
-        except Exception:
-            pass
+        findings = [
+            {
+                "specimen": str(r.get(spec_col, "")).strip() if spec_col in mi_subj.columns else "",
+                "finding": str(r.get(finding_col, "")).strip() if finding_col in mi_subj.columns else "",
+                "severity": _safe_str(r[sev_col]) if sev_col and sev_col in mi_subj.columns else None,
+                "result_category": _safe_str(r[rescat_col]) if rescat_col and rescat_col in mi_subj.columns else None,
+            }
+            for _, r in mi_subj.iterrows()
+        ]
+        if findings:
+            domains["MI"] = {"findings": findings}
 
     # MA (Macroscopic Findings)
-    if "ma" in study.xpt_files:
-        try:
-            ma_df = _read_domain_df(study, "MA")
-            ma_subj = ma_df[ma_df["USUBJID"] == usubjid]
-            if not ma_subj.empty:
-                spec_col = "MASPEC" if "MASPEC" in ma_subj.columns else "MAORRES"
-                finding_col = "MASTRESC" if "MASTRESC" in ma_subj.columns else "MAORRES"
+    ma_subj = _subject_domain("MA")
+    if ma_subj is not None:
+        spec_col = "MASPEC" if "MASPEC" in ma_subj.columns else "MAORRES"
+        finding_col = "MASTRESC" if "MASTRESC" in ma_subj.columns else "MAORRES"
 
-                findings = [
-                    {
-                        "specimen": str(r[spec_col]) if spec_col in ma_subj.columns else "",
-                        "finding": str(r[finding_col]) if finding_col in ma_subj.columns else "",
-                    }
-                    for _, r in ma_subj.iterrows()
-                ]
-                if findings:
-                    domains["MA"] = {"findings": findings}
-        except Exception:
-            pass
+        findings = [
+            {
+                "specimen": str(r[spec_col]) if spec_col in ma_subj.columns else "",
+                "finding": str(r[finding_col]) if finding_col in ma_subj.columns else "",
+            }
+            for _, r in ma_subj.iterrows()
+        ]
+        if findings:
+            domains["MA"] = {"findings": findings}
 
     # Control group lab stats (terminal timepoint, same sex as subject)
     control_stats: dict = {}
@@ -684,10 +665,8 @@ async def get_histopath_subjects(
     ma_findings = set(ma_specimen_df[ma_finding_col].dropna().unique().tolist()) if ma_specimen_df is not None else set()
     all_findings = sorted(mi_findings | ma_findings)
 
-    # Severity mapping
-    SEV_MAP = {
-        "MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5,
-    }
+    # Severity mapping (shared from subject_syndromes)
+    SEV_MAP = SEVERITY_MAP
 
     # Detect laterality columns
     mi_lat_col = "MILAT" if "MILAT" in mi_df.columns else None

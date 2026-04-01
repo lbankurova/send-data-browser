@@ -1,0 +1,27 @@
+[
+  {
+    "timestamp": "2026-03-29T15:58:30.933565+00:00",
+    "user": "User",
+    "schemaType": "compound-profile",
+    "entityKey": "study",
+    "action": "create",
+    "changes": {
+      "compound_class": {
+        "old": null,
+        "new": "vaccine_non_adjuvanted"
+      },
+      "original_compound_class": {
+        "old": null,
+        "new": "vaccine"
+      },
+      "expected_findings": {
+        "old": null,
+        "new": {}
+      },
+      "confirmed_by_sme": {
+        "old": null,
+        "new": true
+      }
+    }
+  }
+]

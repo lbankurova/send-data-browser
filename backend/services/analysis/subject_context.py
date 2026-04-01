@@ -16,7 +16,7 @@ import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
-from services.analysis.dose_groups import build_dose_groups
+from services.analysis.dose_groups import build_dose_groups, CONTROL_KEYWORDS
 
 logger = logging.getLogger(__name__)
 
@@ -243,28 +243,16 @@ _EXTRT_DOSE_STRIP = re.compile(
     re.IGNORECASE,
 )
 
-# Vehicle synonyms for EXTRT filtering — union of generic TCNTRL terms and
-# common pharmaceutical formulation names that appear in EX.EXTRT.
+# Vehicle synonyms for EXTRT filtering — CONTROL_KEYWORDS (from dose_groups.py)
+# plus common pharmaceutical formulation names that appear in EX.EXTRT.
 # Must be lowercase.
-_EXTRT_VEHICLE_KEYWORDS: set[str] = {
-    # TCNTRL_TIER1 vehicle controls (mirrors dose_groups.py — keep in sync)
-    "vehicle control", "vehicle", "saline control", "peg control",
-    "citrate buffer control", "formulation buffer", "excipient",
-    "excipient control", "control article (vehicle)", "control (vehicle)",
-    "capsule control", "solution vehicle control", "gel vehicle control",
-    # TCNTRL_TIER1 negative/procedural/untreated/air controls
-    "negative control", "placebo control", "placebo",
-    "sham control", "sham", "mock-infected control", "procedural control",
-    "untreated control", "untreated", "absolute control", "air control",
-    # TCNTRL_TIER2 ambiguous terms
-    "control", "control article", "control item", "reference item",
-    "reference control", "dosed control", "water control", "water",
+_EXTRT_VEHICLE_KEYWORDS: frozenset[str] = CONTROL_KEYWORDS | frozenset({
     # Additional EXTRT-specific terms (pharmaceutical formulation names)
     "saline", "pbs", "buffer",
     "0.9% sodium chloride", "normal saline", "sterile water",
     "phosphate buffered saline", "citrate buffer", "acetate buffer",
     "0 mg/kg", "0mg/kg",
-}
+})
 
 
 def _extract_compounds_from_ex(

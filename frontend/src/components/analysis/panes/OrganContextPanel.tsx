@@ -31,6 +31,7 @@ import { getTierSeverityLabel, getOrganCorrelationCategory } from "@/lib/organ-w
 import { NormalizationHeatmap } from "./NormalizationHeatmap";
 import { CorrelationMatrixPane } from "./CorrelationMatrixPane";
 import { useOrganCorrelations } from "@/hooks/useOrganCorrelations";
+import { getDoseLabel } from "@/lib/dose-label-utils";
 import type { FindingsFilters, UnifiedFinding, NormalizationOverride } from "@/types/analysis";
 
 // ─── Constants ─────────────────────────────────────────────
@@ -95,21 +96,7 @@ function computeOrganNoaelDisplay(
     list.push(f);
   }
 
-  // Build dose_level → human-readable dose label from dose groups
-  const doseLabelMap = new Map<number, string>();
-  if (doseGroups) {
-    for (const dg of doseGroups) {
-      if (dg.dose_value != null && dg.dose_unit) {
-        doseLabelMap.set(dg.dose_level, `${dg.dose_value} ${dg.dose_unit}`);
-      } else if (dg.label) {
-        doseLabelMap.set(dg.dose_level, dg.label);
-      }
-    }
-  }
-
-  function getDoseLabel(level: number): string {
-    return doseLabelMap.get(level) ?? `Level ${level}`;
-  }
+  const dl = (level: number) => getDoseLabel(level, doseGroups);
 
   const results: EndpointNoaelDisplay[] = [];
   let minNoaelLevel = Infinity;
@@ -175,15 +162,15 @@ function computeOrganNoaelDisplay(
       // No significant doses — NOAEL >= highest dose
       const highestLevel = sorted[sorted.length - 1]?.dose_level ?? 0;
       noaelLevel = highestLevel + 1000; // large sentinel for sorting
-      noaelLabel = `>= ${getDoseLabel(highestLevel)}`;
+      noaelLabel = `>= ${dl(highestLevel)}`;
     } else if (loaelIdx === 0) {
       // LOAEL at lowest dose → NOAEL below range
       noaelLevel = -1;
-      noaelLabel = `< ${getDoseLabel(sorted[0].dose_level)}`;
+      noaelLabel = `< ${dl(sorted[0].dose_level)}`;
     } else {
       // NOAEL = dose just below LOAEL
       noaelLevel = sorted[loaelIdx - 1].dose_level;
-      noaelLabel = getDoseLabel(noaelLevel);
+      noaelLabel = dl(noaelLevel);
     }
 
     if (noaelLevel < minNoaelLevel) {
