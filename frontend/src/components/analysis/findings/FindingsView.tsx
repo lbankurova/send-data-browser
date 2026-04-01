@@ -13,6 +13,7 @@ import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
 import { SeverityMatrix } from "./SeverityMatrix";
 import { GroupForestPlot } from "./GroupForestPlot";
+import { OrganToxicityRadar } from "./OrganToxicityRadar";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,6 +102,28 @@ export function FindingsView() {
   const [activeDomain, setActiveDomain] = useState<string | undefined>(undefined);
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [activeGrouping, setActiveGrouping] = useState<GroupingMode | null>(null);
+
+  // Forest plot + radar resizable split (55/45 default)
+  const [forestRadarSplit, setForestRadarSplit] = useState(55);
+  const forestRadarRef = useRef<HTMLDivElement>(null);
+  const onForestRadarResize = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    const container = forestRadarRef.current;
+    if (!container) return;
+    const startX = e.clientX;
+    const startPct = forestRadarSplit;
+    const rect = container.getBoundingClientRect();
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      setForestRadarSplit(Math.max(30, Math.min(80, startPct + (dx / rect.width) * 100)));
+    };
+    const onUp = () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  }, [forestRadarSplit]);
 
   // Tab labels — reflects current rail selection (endpoint, syndrome, organ, etc.)
   const mainTabLabel = activeEndpoint ?? scopeLabel ?? "Findings";
@@ -248,6 +271,15 @@ export function FindingsView() {
     if (!visibleLabels) return endpointSummaries;
     return endpointSummaries.filter((ep) => visibleLabels.has(ep.endpoint_label));
   }, [endpointSummaries, visibleLabels]);
+
+  // Forest plot: endpoints scoped to the active rail group
+  const scopedEndpoints = railFilteredEndpoints;
+
+  // Radar: highlight the organ systems represented in the active group
+  const radarHighlightOrgans = useMemo(() =>
+    new Set(railFilteredEndpoints.map(ep => ep.organ_system)),
+    [railFilteredEndpoints],
+  );
 
   const scatterEndpoints = useMemo(() => {
     if (excludedEndpoints.size === 0) return railFilteredEndpoints;
@@ -661,11 +693,24 @@ export function FindingsView() {
             onResizePointerDown={scatterSection.onPointerDown}
             contentRef={scatterSection.contentRef}
           >
-            <GroupForestPlot
-              endpoints={endpointSummaries.filter(ep =>
-                !visibleLabels || visibleLabels.has(ep.endpoint_label)
-              )}
-            />
+            <div ref={forestRadarRef} className="flex h-full">
+              {/* Left: forest plot */}
+              <div className="shrink-0 overflow-hidden" style={{ width: `${forestRadarSplit}%` }}>
+                <GroupForestPlot endpoints={scopedEndpoints} />
+              </div>
+              {/* Resize handle */}
+              <div
+                className="w-1 shrink-0 cursor-col-resize bg-border/30 hover:bg-primary/20 active:bg-primary/30"
+                onPointerDown={onForestRadarResize}
+              />
+              {/* Right: organ toxicity radar */}
+              <div className="flex-1 overflow-hidden">
+                <OrganToxicityRadar
+                  endpoints={endpointSummaries}
+                  highlightOrgans={radarHighlightOrgans}
+                />
+              </div>
+            </div>
           </ViewSection>
         ) : endpointSummaries.length > 0 ? (
           /* No scope (overview) → scatter plot */

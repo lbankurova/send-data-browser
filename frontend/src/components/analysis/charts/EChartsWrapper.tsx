@@ -1,6 +1,6 @@
 import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import * as echarts from "echarts/core";
-import { BarChart, LineChart, ScatterChart, HeatmapChart, PieChart, CustomChart } from "echarts/charts";
+import { BarChart, LineChart, ScatterChart, HeatmapChart, PieChart, CustomChart, RadarChart } from "echarts/charts";
 import {
   TitleComponent,
   TooltipComponent,
@@ -10,6 +10,7 @@ import {
   DataZoomComponent,
   MarkLineComponent,
   ToolboxComponent,
+  RadarComponent,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import type { EChartsOption } from "echarts";
@@ -21,6 +22,7 @@ echarts.use([
   HeatmapChart,
   PieChart,
   CustomChart,
+  RadarChart,
   TitleComponent,
   TooltipComponent,
   GridComponent,
@@ -29,6 +31,7 @@ echarts.use([
   DataZoomComponent,
   MarkLineComponent,
   ToolboxComponent,
+  RadarComponent,
   CanvasRenderer,
 ]);
 

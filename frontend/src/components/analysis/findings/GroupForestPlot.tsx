@@ -19,7 +19,7 @@ import { useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { getSexColor } from "@/lib/severity-colors";
-import { computeGLowerCI, computeGUpper } from "@/lib/g-lower";
+import { computeGLowerCI, computeGUpper, sigmoidTransform } from "@/lib/g-lower";
 
 interface Props {
   endpoints: EndpointSummary[];
@@ -39,25 +39,22 @@ function toX(v: number, axisMin: number, axisMax: number): number {
   return WHISKER_PAD + ((v - axisMin) / range) * (WHISKER_WIDTH - 2 * WHISKER_PAD);
 }
 
-/** Compute "nice" tick values for an axis range. */
-function niceAxisTicks(min: number, max: number): number[] {
-  const range = max - min;
-  // Pick step: 0.5, 1, or 2 depending on range
-  let step = 0.5;
-  if (range > 4) step = 1;
-  if (range > 8) step = 2;
-  const ticks: number[] = [];
-  const start = Math.ceil(min / step) * step;
-  for (let v = start; v <= max; v += step) {
-    ticks.push(Math.round(v * 100) / 100); // avoid float noise
+/** Fixed tick values for the sigmoid-transformed axis.
+ *  Show raw effect sizes at meaningful thresholds, positioned via sigmoid transform. */
+function sigmoidAxisTicks(): { raw: number; transformed: number }[] {
+  const rawTicks = [0, 0.5, 1, 2, 3];
+  const result: { raw: number; transformed: number }[] = [];
+  for (const r of rawTicks) {
+    result.push({ raw: r, transformed: sigmoidTransform(r) });
+    if (r > 0) result.push({ raw: -r, transformed: -sigmoidTransform(r) });
   }
-  return ticks;
+  return result.sort((a, b) => a.transformed - b.transformed);
 }
 
 // ── Axis header (renders above the whisker column) ───────────
 
 function AxisHeader({ axisMin, axisMax, label }: { axisMin: number; axisMax: number; label: string }) {
-  const ticks = niceAxisTicks(axisMin, axisMax);
+  const ticks = sigmoidAxisTicks();
   const zeroX = toX(0, axisMin, axisMax);
   return (
     <div className="relative" style={{ width: WHISKER_WIDTH, height: 28 }}>
@@ -67,18 +64,17 @@ function AxisHeader({ axisMin, axisMax, label }: { axisMin: number; axisMax: num
         {/* Zero line — dashed, prominent */}
         <line x1={zeroX} y1={4} x2={zeroX} y2={20} stroke="#9ca3af" strokeWidth={1} strokeDasharray="2,2" />
         <text x={zeroX} y={3} textAnchor="middle" className="fill-muted-foreground" fontSize={8} fontWeight={600}>0</text>
-        {/* Tick marks and labels */}
-        {ticks.filter(v => v !== 0).map((v) => {
-          const x = toX(v, axisMin, axisMax);
+        {/* Tick marks: show raw effect sizes at sigmoid-transformed positions */}
+        {ticks.filter(t => t.raw !== 0 && t.transformed >= axisMin && t.transformed <= axisMax).map((t) => {
+          const x = toX(t.transformed, axisMin, axisMax);
           return (
-            <g key={v}>
+            <g key={t.raw}>
               <line x1={x} y1={17} x2={x} y2={20} stroke="#d1d5db" strokeWidth={1} />
-              <text x={x} y={14} textAnchor="middle" className="fill-muted-foreground" fontSize={8}>{v}</text>
+              <text x={x} y={14} textAnchor="middle" className="fill-muted-foreground" fontSize={8}>{t.raw}</text>
             </g>
           );
         })}
       </svg>
-      {/* Axis label centered below */}
       <div className="absolute -bottom-0.5 left-0 w-full text-center text-[8px] text-muted-foreground/60">{label}</div>
     </div>
   );
@@ -187,32 +183,39 @@ function ForestLegend() {
   );
 }
 
-// ── Incidence detection ─────────────────────────────────────
+// ── Unified effect size ─────────────────────────────────────
 
-/** True if this endpoint has incidence data (affected/n) — determines panel placement.
- *  Uses riskDifference as the indicator: only computed when group_stats has affected/n.
- *  This correctly classifies MI as incidence (it has affected/n despite not being in
- *  the INCIDENCE_DOMAINS set, which excludes MI because MI's max_effect_size stores
- *  avg_severity rather than Hedges' g). */
+/** True if this endpoint has incidence data (affected/n).
+ *  MI has affected/n despite not being in INCIDENCE_DOMAINS. */
 function isIncidenceEndpoint(ep: EndpointSummary): boolean {
   return ep.riskDifference != null || ep.cohensH != null;
+}
+
+/** Raw (unsigned) effect size on the unified scale: |g| for continuous, |h| for incidence. */
+function rawEffectSize(ep: EndpointSummary): number {
+  if (isIncidenceEndpoint(ep)) return Math.abs(ep.cohensH ?? 0);
+  return Math.abs(ep.maxEffectSize ?? 0);
+}
+
+/** Signed sigmoid: preserves sign, compresses magnitude. */
+function signedSigmoid(x: number): number {
+  return x >= 0 ? sigmoidTransform(x) : -sigmoidTransform(-x);
 }
 
 // ── Sort helpers ─────────────────────────────────────────────
 
 function getSortValue(ep: EndpointSummary, mode: SortMode): number {
   switch (mode) {
-    case "gLower": {
-      if (isIncidenceEndpoint(ep)) return Math.abs(ep.riskDifference ?? 0);
+    case "gLower":
+      // Unified: use gLower for continuous, |h| for incidence (no gLower equivalent for h yet)
+      if (isIncidenceEndpoint(ep)) return Math.abs(ep.cohensH ?? 0);
       return ep.gLower ?? 0;
-    }
     case "effect":
-      if (isIncidenceEndpoint(ep)) return Math.abs(ep.riskDifference ?? 0);
-      return Math.abs(ep.maxEffectSize ?? 0);
+      return rawEffectSize(ep);
     case "pValue":
       return -(ep.minPValue ?? 1);
     case "domain":
-      return 0; // domain sort handled by sortFn
+      return 0;
   }
 }
 
@@ -221,24 +224,9 @@ function getSortValue(ep: EndpointSummary, mode: SortMode): number {
 export function GroupForestPlot({ endpoints }: Props) {
   const [sortMode, setSortMode] = useState<SortMode>("gLower");
 
-  // Split into continuous and incidence sections based on actual data, not domain set.
-  // MI has incidence data (affected/n) but is not in INCIDENCE_DOMAINS — use isIncidenceEndpoint().
-  const { continuous, incidence } = useMemo(() => {
-    const cont: EndpointSummary[] = [];
-    const inc: EndpointSummary[] = [];
-    for (const ep of endpoints) {
-      if (isIncidenceEndpoint(ep)) {
-        inc.push(ep);
-      } else {
-        cont.push(ep);
-      }
-    }
-    return { continuous: cont, incidence: inc };
-  }, [endpoints]);
-
-  // Sort each section
-  const sortedContinuous = useMemo(() => {
-    const sorted = [...continuous];
+  // Single sorted list — all endpoints on unified sigmoid-transformed scale
+  const sortedEndpoints = useMemo(() => {
+    const sorted = [...endpoints];
     if (sortMode === "domain") {
       sorted.sort((a, b) => {
         const d = a.domain.localeCompare(b.domain);
@@ -248,46 +236,15 @@ export function GroupForestPlot({ endpoints }: Props) {
       sorted.sort((a, b) => getSortValue(b, sortMode) - getSortValue(a, sortMode));
     }
     return sorted;
-  }, [continuous, sortMode]);
+  }, [endpoints, sortMode]);
 
-  const sortedIncidence = useMemo(() => {
-    const sorted = [...incidence];
-    if (sortMode === "domain") {
-      sorted.sort((a, b) => {
-        const d = a.domain.localeCompare(b.domain);
-        return d !== 0 ? d : getSortValue(b, "gLower") - getSortValue(a, "gLower");
-      });
-    } else {
-      sorted.sort((a, b) => getSortValue(b, sortMode) - getSortValue(a, sortMode));
-    }
-    return sorted;
-  }, [incidence, sortMode]);
-
-  // Compute axis ranges using 95% CIs (wider than the 80% stored on EndpointSummary)
-  const contAxis = useMemo(() => {
-    let absMax = 0.5;
-    for (const ep of sortedContinuous) {
-      const absG = Math.abs(ep.maxEffectSize ?? 0);
-      const n1 = ep.controlStats?.n ?? 0;
-      const n2 = ep.worstTreatedStats?.n ?? 0;
-      const gu95 = (n1 >= 2 && n2 >= 2 && absG > 0) ? computeGUpper(ep.maxEffectSize ?? 0, n1, n2, 0.975) : absG;
-      absMax = Math.max(absMax, gu95);
-    }
-    return { min: -absMax * 1.1, max: absMax * 1.1 };
-  }, [sortedContinuous]);
-
-  const incAxis = useMemo(() => {
-    let min = 0, max = 0;
-    for (const ep of sortedIncidence) {
-      const rd = ep.riskDifference ?? 0;
-      const rdl = ep.rdCiLower ?? rd;
-      const rdu = ep.rdCiUpper ?? rd;
-      min = Math.min(min, rdl);
-      max = Math.max(max, rdu);
-    }
-    const absMax = Math.max(Math.abs(min), Math.abs(max), 0.1);
-    return { min: -absMax * 1.1, max: absMax * 1.1 };
-  }, [sortedIncidence]);
+  // Unified axis: sigmoid-transformed effect size. Axis range is fixed at [-SIGMOID_SCALE, +SIGMOID_SCALE]
+  // since sigmoid asymptotes there. We use a slightly smaller range for visual padding.
+  const SIGMOID_SCALE = 4.0;
+  const axis = useMemo(() => ({
+    min: -SIGMOID_SCALE * 0.95,
+    max: SIGMOID_SCALE * 0.95,
+  }), []);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -310,73 +267,34 @@ export function GroupForestPlot({ endpoints }: Props) {
         ))}
       </div>
 
-      {/* Side-by-side: continuous (left) + incidence (right) */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: continuous endpoints */}
-        <div className={`flex flex-col overflow-hidden ${sortedIncidence.length > 0 ? "flex-1 border-r border-border/30" : "flex-1"}`}>
-          {sortedContinuous.length > 0 ? (
-            <>
-              <div className="shrink-0 border-b border-border/30 bg-muted/30">
-                <div className="flex items-end justify-between px-3 pt-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Continuous ({sortedContinuous.length})
-                  </span>
-                  <AxisHeader axisMin={contAxis.min} axisMax={contAxis.max} label="Hedges' g" />
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <table className="w-full text-[11px]">
-                  <tbody>
-                    {sortedContinuous.map((ep) => (
-                      <ForestRow
-                        key={`${ep.endpoint_label}\0${ep.domain}`}
-                        ep={ep}
-                        axisMin={contAxis.min}
-                        axisMax={contAxis.max}
-                        type="continuous"
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+      {/* Single unified panel — all endpoints on sigmoid-transformed scale */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-border/30 bg-muted/30">
+          <div className="flex items-end justify-between px-3 pt-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {sortedEndpoints.length} endpoints
+            </span>
+            <AxisHeader axisMin={axis.min} axisMax={axis.max} label="Effect size" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {sortedEndpoints.length > 0 ? (
+            <table className="w-full text-[11px]">
+              <tbody>
+                {sortedEndpoints.map((ep) => (
+                  <ForestRow
+                    key={`${ep.endpoint_label}\0${ep.domain}`}
+                    ep={ep}
+                    axisMin={axis.min}
+                    axisMax={axis.max}
+                  />
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">No continuous endpoints</div>
+            <div className="flex h-20 items-center justify-center text-xs text-muted-foreground">No endpoints in this group</div>
           )}
         </div>
-
-        {/* Right: incidence endpoints */}
-        {sortedIncidence.length > 0 && (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 border-b border-border/30 bg-muted/30">
-              <div className="flex items-end justify-between px-3 pt-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Incidence ({sortedIncidence.length})
-                </span>
-                <AxisHeader axisMin={incAxis.min} axisMax={incAxis.max} label="Risk difference" />
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-[11px]">
-                <tbody>
-                  {sortedIncidence.map((ep) => (
-                    <ForestRow
-                      key={`${ep.endpoint_label}\0${ep.domain}`}
-                      ep={ep}
-                      axisMin={incAxis.min}
-                      axisMax={incAxis.max}
-                      type="incidence"
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {sortedContinuous.length === 0 && sortedIncidence.length === 0 && (
-          <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">No endpoints in this group</div>
-        )}
       </div>
     </div>
   );
@@ -388,14 +306,13 @@ function ForestRow({
   ep,
   axisMin,
   axisMax,
-  type,
 }: {
   ep: EndpointSummary;
   axisMin: number;
   axisMax: number;
-  type: "continuous" | "incidence";
 }) {
   const isSig = ep.minPValue != null && ep.minPValue < 0.05;
+  const isInc = isIncidenceEndpoint(ep);
 
   // Which sex drives the displayed effect?
   let drivingSex = ep.sexes.length === 1 ? ep.sexes[0] : "";
@@ -407,71 +324,68 @@ function ForestRow({
     }
   }
 
-  // Marker encoding — matches scatter (FindingsQuadrantScatter):
-  //   Fill  → NOAEL weight: determining=rose, contributing=gray, supporting=transparent
-  //   Stroke → severity: adverse=dark, non-adverse=light/none
+  // Marker encoding — matches scatter (FindingsQuadrantScatter)
   const nw = ep.endpointConfidence?.noaelContribution.weight;
   const isAdverse = ep.worstSeverity === "adverse";
   let markerFill: string;
-  if (nw === 1.0) markerFill = "rgba(248,113,113,0.7)";       // NOAEL determining — rose
-  else if (nw === 0.7) markerFill = "#9CA3AF";                 // NOAEL contributing — gray
-  else if (nw === 0.3) markerFill = "transparent";             // NOAEL supporting — outline
-  else markerFill = "#9CA3AF";                                  // default — gray
+  if (nw === 1.0) markerFill = "rgba(248,113,113,0.7)";
+  else if (nw === 0.7) markerFill = "#9CA3AF";
+  else if (nw === 0.3) markerFill = "transparent";
+  else markerFill = "#9CA3AF";
   const marker: WhiskerMarkerStyle = {
     fill: markerFill,
     stroke: isAdverse ? "#374151" : (nw === 0.3 ? "#9CA3AF" : "transparent"),
     strokeWidth: isAdverse ? 1.5 : 1,
   };
 
-  const effectVal = type === "continuous"
-    ? ep.maxEffectSize
-    : ep.riskDifference;
+  // Unified effect size: g for continuous, h for incidence — both sigmoid-transformed
+  let rawCenter: number;
+  let rawLower: number;
+  let rawUpper: number;
+  let rawEffectLabel: string;
 
-  // 95% two-sided CIs for display (NOT the 80% one-sided used for ranking)
-  let lower: number | null = null;
-  let upper: number | null = null;
-  let center: number;
-
-  if (type === "continuous") {
+  if (isInc) {
+    // Incidence: use Cohen's h (comparable scale to g)
+    const h = ep.cohensH ?? 0;
+    rawCenter = h;
+    rawLower = ep.hCiLower ?? h;
+    rawUpper = ep.hCiUpper ?? h;
+    rawEffectLabel = `h = ${h.toFixed(3)}  95% CI [${rawLower.toFixed(2)}, ${rawUpper.toFixed(2)}]`;
+  } else {
+    // Continuous: use Hedges' g with 95% CI
     const absG = Math.abs(ep.maxEffectSize ?? 0);
     const n1 = ep.controlStats?.n ?? 0;
     const n2 = ep.worstTreatedStats?.n ?? 0;
-    // 97.5% one-sided = 95% two-sided
     const gl95 = (n1 >= 2 && n2 >= 2 && absG > 0) ? computeGLowerCI(ep.maxEffectSize ?? 0, n1, n2, 0.975) : 0;
     const gu95 = (n1 >= 2 && n2 >= 2 && absG > 0) ? computeGUpper(ep.maxEffectSize ?? 0, n1, n2, 0.975) : absG;
     if (ep.direction === "down") {
-      center = -absG;
-      lower = -gu95;
-      upper = -gl95;
+      rawCenter = -absG;
+      rawLower = -gu95;
+      rawUpper = -gl95;
     } else {
-      center = absG;
-      lower = gl95;
-      upper = gu95;
+      rawCenter = absG;
+      rawLower = gl95;
+      rawUpper = gu95;
     }
-  } else {
-    center = ep.riskDifference ?? 0;
-    lower = ep.rdCiLower ?? null;
-    upper = ep.rdCiUpper ?? null;
+    rawEffectLabel = `g = ${rawCenter.toFixed(3)}  95% CI [${rawLower.toFixed(2)}, ${rawUpper.toFixed(2)}]`;
   }
 
-  // Marker size: scales with effective sample size (harmonic mean of n1, n2).
-  // When all endpoints have equal n (common in balanced parallel designs),
-  // all markers are the same size — no false precision signal.
-  // When n varies (crossover, escalation, TK exclusions, recovery arms),
-  // markers communicate real precision differences.
+  // Sigmoid-transform for axis positioning (compresses extreme values)
+  const center = signedSigmoid(rawCenter);
+  const lower = signedSigmoid(rawLower);
+  const upper = signedSigmoid(rawUpper);
+
+  // Marker size: effective sample size
   const n1 = ep.controlStats?.n ?? 5;
   const n2 = ep.worstTreatedStats?.n ?? 5;
   const nHarmonic = (n1 > 0 && n2 > 0) ? 2 * n1 * n2 / (n1 + n2) : 5;
-  // Map sqrt(nHarmonic) to radius 3-7px. sqrt(3)=1.7, sqrt(5)=2.2, sqrt(15)=3.9, sqrt(50)=7.1
   const radius = Math.min(7, Math.max(3, Math.sqrt(nHarmonic) * 1.2));
 
-  // Tooltip
+  // Tooltip shows RAW (untransformed) values
   const tooltip = [
     ep.endpoint_label,
     `Organ: ${ep.organ_system}`,
-    type === "continuous"
-      ? `g = ${effectVal != null ? effectVal.toFixed(3) : "N/A"}  95% CI [${(lower ?? 0).toFixed(2)}, ${(upper ?? 0).toFixed(2)}]`
-      : `RD = ${effectVal != null ? effectVal.toFixed(3) : "N/A"}  95% CI [${(lower ?? 0).toFixed(2)}, ${(upper ?? 0).toFixed(2)}]`,
+    rawEffectLabel,
     ep.minPValue != null ? `Dunnett p = ${ep.minPValue < 0.001 ? "<0.001" : ep.minPValue.toFixed(4)}` : "",
     ep.controlStats ? `Control n=${ep.controlStats.n}` : "",
     ep.worstTreatedStats ? `Treated n=${ep.worstTreatedStats.n}` : "",
