@@ -51,7 +51,7 @@ const PLOT_RIGHT = 6;
 const DOT_RADIUS = 2.5;
 const DOT_RADIUS_HOVER = 3.5;
 const MEAN_TICK_HALF = 5;
-const BOX_THRESHOLD = 15;
+const BOX_THRESHOLD = 5;
 
 // ── Stats helpers ─────────────────────────────────────────
 
