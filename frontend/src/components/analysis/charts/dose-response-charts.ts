@@ -101,6 +101,7 @@ export function buildDoseResponseLineOption(
   sexLabels: Record<string, string>,
   noaelLabel?: string | null,
   nonMonoFlag?: NonMonotonicFlag | null,
+  concernThreshold?: number | null,
 ): EChartsOption {
   const categories = mergedPoints.map((p) => String(p.dose_label));
 
@@ -254,6 +255,43 @@ export function buildDoseResponseLineOption(
     }
   }
 
+  // Concern threshold reference line (safety pharmacology: QTc 10ms, BP 15/10mmHg, HR 10bpm)
+  if (concernThreshold != null && series.length > 0) {
+    const firstLine = series[0] as Record<string, unknown>;
+    const existingML = firstLine.markLine as Record<string, unknown> | undefined;
+    const existingData = (existingML?.data as unknown[] | undefined) ?? [];
+    firstLine.markLine = {
+      ...existingML,
+      silent: true,
+      symbol: "none",
+      data: [
+        ...existingData,
+        {
+          yAxis: concernThreshold,
+          lineStyle: { color: "#D97706", type: "dashed", width: 1.5 },
+          label: {
+            formatter: `Concern: ${concernThreshold}`,
+            position: "insideEndTop",
+            fontSize: REF_LINE_LABEL_SIZE,
+            color: "#D97706",
+            fontWeight: 500,
+          },
+        },
+        {
+          yAxis: -concernThreshold,
+          lineStyle: { color: "#D97706", type: "dashed", width: 1.5 },
+          label: {
+            formatter: `Concern: -${concernThreshold}`,
+            position: "insideEndBottom",
+            fontSize: REF_LINE_LABEL_SIZE,
+            color: "#D97706",
+            fontWeight: 500,
+          },
+        },
+      ],
+    };
+  }
+
   // Compute y-axis range from mean ± SD so error bars stay within the plot area.
   // Round to nice boundaries so tick labels stay clean (no excess decimals).
   let yMin = Infinity;
@@ -268,6 +306,11 @@ export function buildDoseResponseLineOption(
       if (lo < yMin) yMin = lo;
       if (hi > yMax) yMax = hi;
     }
+  }
+  // Extend range to include concern threshold lines
+  if (concernThreshold != null) {
+    if (concernThreshold > yMax) yMax = concernThreshold * 1.1;
+    if (-concernThreshold < yMin) yMin = -concernThreshold * 1.1;
   }
   let niceYMin: number | undefined;
   let niceYMax: number | undefined;

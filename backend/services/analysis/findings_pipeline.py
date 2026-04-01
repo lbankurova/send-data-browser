@@ -489,13 +489,20 @@ def _assess_all_findings(
 
     # NOEL framework for safety pharmacology (B5, Pugsley 2020, ICH S7A)
     if classification_framework == "noel":
-        from services.analysis.classification import assess_finding_safety_pharm
+        from services.analysis.classification import (
+            assess_finding_safety_pharm, _CONCERN_THRESHOLDS,
+        )
         for f in findings:
             try:
                 f["finding_class"] = assess_finding_safety_pharm(f)
             except Exception as e:
                 log.warning("assess_finding_safety_pharm failed for %s: %s", finding_key(f), e)
                 f["finding_class"] = "not_treatment_related"
+            # BP-C3: Attach concern threshold so frontend can render reference lines
+            tc = (f.get("test_code") or "").upper()
+            ct = _CONCERN_THRESHOLDS.get(tc)
+            if ct is not None:
+                f["_concern_threshold"] = ct
         log.info(
             "NOEL framework: %d findings classified (no adversity judgment)",
             len(findings),

@@ -723,6 +723,7 @@ def _is_equivocal_safety_pharm(finding: dict) -> bool:
 # gates -- they flag findings warranting attention in integrated assessment.
 _CONCERN_THRESHOLDS: dict[str, float] = {
     "QTCBAG": 10.0, "QTCFAG": 10.0, "QTCVAG": 10.0, "QTCAG": 10.0,
+    "QTCSAG": 10.0,
     "QTC": 10.0, "QTCB": 10.0, "QTCF": 10.0, "QTCVDW": 10.0,
     "MAP": 10.0, "SYSBP": 15.0, "DIABP": 10.0,
     "HR": 10.0,

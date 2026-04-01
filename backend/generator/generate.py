@@ -284,6 +284,24 @@ def generate(study_id: str):
                 k: {"dose_count": v["dose_count"], "is_single_dose": v["is_single_dose"]}
                 for k, v in cp.items()
             }
+        # BP-C1: Crossover design metadata + BP-C4: escalation caveat
+        design_type = adapter.get_design_type()
+        context_result["study_metadata"]["design_type"] = design_type
+        _DESIGN_LABELS = {
+            "parallel_between_group": "Parallel",
+            "within_animal_crossover": "Latin Square Crossover",
+            "within_animal_escalation": "Dose Escalation",
+        }
+        context_result["study_metadata"]["design_type_label"] = _DESIGN_LABELS.get(design_type, design_type)
+        context_result["study_metadata"]["is_crossover"] = design_type in (
+            "within_animal_crossover", "within_animal_escalation",
+        )
+        context_result["study_metadata"]["is_escalation"] = design_type == "within_animal_escalation"
+        if design_type == "within_animal_escalation":
+            context_result["study_metadata"]["design_caveat"] = (
+                "Dose escalation design -- period and dose effects are confounded. "
+                "Treatment effects may include cumulative or carryover components."
+            )
         _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:

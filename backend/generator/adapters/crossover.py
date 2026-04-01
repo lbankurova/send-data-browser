@@ -533,6 +533,21 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                     bin_label = f" [{time_bin}]" if time_bin != "overall" else ""
                     finding_test_name = f"{test_name}{bin_label}"
 
+                    # BP-C2: Assay sensitivity — LSD per endpoint
+                    # LSD = t_crit(alpha/2, df) * sd_diff / sqrt(n_pairs)
+                    # Uses pooled sd_diff across dose comparisons
+                    _lsd = None
+                    _sd_diffs = [pw.get("sd_diff") for pw in pairwise
+                                 if pw.get("sd_diff") is not None]
+                    _n_pairs_vals = [pw.get("n_pairs") for pw in pairwise
+                                    if pw.get("n_pairs") is not None and pw["n_pairs"] >= 2]
+                    if _sd_diffs and _n_pairs_vals:
+                        from scipy.stats import t as t_dist
+                        _pooled_sd = float(np.mean(_sd_diffs))
+                        _n = int(np.median(_n_pairs_vals))
+                        _t_crit = float(t_dist.ppf(0.975, _n - 1))
+                        _lsd = round(_t_crit * _pooled_sd / np.sqrt(_n), 4)
+
                     findings.append({
                         "domain": domain_code,
                         "test_code": str(testcd) if time_bin == "overall" else f"{testcd}_{time_bin}",
@@ -559,6 +574,7 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                             "n_periods": len(unique_doses),
                             "is_escalation": self._is_escalation,
                             "time_bin": time_bin,
+                            "lsd": _lsd,
                         },
                     })
 

@@ -122,8 +122,10 @@ export interface UnifiedFinding {
   /** Cross-domain corroboration status — set by backend pipeline.
    *  "partially_corroborated" = cross-domain support found but with directional incoherence (SLA-16). */
   corroboration_status?: "corroborated" | "partially_corroborated" | "uncorroborated" | "not_applicable";
-  /** ECETOC per-finding adversity class — set by backend pipeline. */
-  finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal" | "not_assessed";
+  /** Per-finding adversity/classification — ECETOC (5 categories) or NOEL (4 categories). */
+  finding_class?: "not_treatment_related" | "tr_non_adverse" | "tr_adaptive" | "tr_adverse" | "equivocal" | "not_assessed" | "treatment_related" | "treatment_related_concerning";
+  /** Safety pharmacology concern threshold for this endpoint (mmHg, ms, bpm). NOEL framework only. */
+  _concern_threshold?: number | null;
   /** Tier 2: OM two-gate assessment detail (organ weight findings only). */
   _assessment_detail?: {
     method: string;

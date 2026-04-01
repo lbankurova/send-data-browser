@@ -257,7 +257,7 @@ def compute_within_subject_pairwise(
             "p_value": tt["p_value"],
             "effect_size": dz,
             "g_lower": round(gl, 4) if gl is not None else None,
-            "se_diff": tt.get("sd_diff"),
+            "sd_diff": tt.get("sd_diff"),
             "n_pairs": tt["n_pairs"],
             "mean_diff": tt["mean_diff"],
         })

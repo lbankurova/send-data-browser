@@ -292,8 +292,13 @@ export function DoseResponseChartPanel({
     let rows = drRows.filter((r) => r.endpoint_label === endpointLabel);
     if (rows.length === 0) return null;
 
-    if (selectedDay == null) return null;
-    rows = rows.filter((r) => r.day === selectedDay);
+    // Crossover/safety-pharm findings have day=null (no single study day).
+    // Skip day filtering when all rows for this endpoint lack a day.
+    const hasDay = rows.some((r) => r.day != null);
+    if (hasDay) {
+      if (selectedDay == null) return null;
+      rows = rows.filter((r) => r.day === selectedDay);
+    }
     if (rows.length === 0) return null;
 
     // When endpoint spans multiple domains (e.g. MI + MA for KIDNEY — CYST),
@@ -433,6 +438,16 @@ export function DoseResponseChartPanel({
     });
   }, [chartData, findings, endpointLabel, selectedDay, trendTestName]);
 
+  // ── Concern threshold (safety pharmacology) ───────────────
+  const concernThreshold = useMemo(() => {
+    if (!chartData) return null;
+    // Find the first matching finding with a concern threshold
+    const f = findings.find(
+      (f) => (f.endpoint_label ?? f.finding) === endpointLabel && f.domain === chartData.domain && f._concern_threshold != null,
+    );
+    return f?._concern_threshold ?? null;
+  }, [chartData, findings, endpointLabel]);
+
   // ── Build compact chart options ───────────────────────────
   const drOption = useMemo(() => {
     if (!chartData) return null;
@@ -440,12 +455,12 @@ export function DoseResponseChartPanel({
     if (chartData.dataType === "continuous") {
       raw = drChartMode === "bar"
         ? buildDoseResponseBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, methodLabel, barVerdicts)
-        : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag);
+        : buildDoseResponseLineOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels, undefined, nonMonoFlag, concernThreshold);
     } else {
       raw = buildIncidenceBarOption(chartData.mergedPoints, chartData.sexes, sexColors, sexLabels);
     }
     return compactify(raw, chartData.mergedPoints);
-  }, [chartData, drChartMode, nonMonoFlag, methodLabel, barVerdicts]);
+  }, [chartData, drChartMode, nonMonoFlag, methodLabel, barVerdicts, concernThreshold]);
 
   const esOption = useMemo(() => {
     if (!chartData || !hasEffect) return null;
