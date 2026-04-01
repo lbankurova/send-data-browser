@@ -76,10 +76,28 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 
 15. **Science preservation gate.** Code cleanup, refactoring, or "simplification" that changes scientific or analytical behavior is not a cleanup — it's a functional change. Before simplifying domain logic: (a) identify what analytical output would change for any input data; (b) if any output changes, flag it as SCIENCE-FLAG — do not proceed without scientist review; (c) distinguish accidental complexity (bad code — simplify) from essential complexity (domain rules encoded in code — protect). Lint exemptions on domain-critical code (`# noqa: C901`, `// eslint-disable complexity`) must carry a comment explaining why the complexity is load-bearing. Bare exemptions are defects. Consult `docs/_internal/knowledge/code-quality-guardrails.md` before refactoring.
 
+## Agent Disciplines
+
+16. **Check after editing, before moving on.** After completing a batch of related edits, run `/ops:check` (build + imports + engine-change detection) before starting the next task. Don't wait for `/lattice:review`.
+
+17. **Impact analysis before touching shared code.** Before modifying files in `frontend/src/lib/`, `backend/services/analysis/`, or any export consumed by 3+ files, run `/ops:impact` on the target first. Know what breaks before you edit.
+
+18. **Verify claims against actual data.** When answering "does the engine produce X?" or "what value does Y have?", run `/ops:explore-data` against the generated JSON. Don't infer from code — read the output.
+
+19. **Frontend UI gate (mandatory for all frontend work).** Read `.claude/rules/frontend-ui-gate.md` before writing any UI code. Core principle: find the existing working pattern and copy it — never design from scratch when a reference exists. Every new chart, table, panel, or interaction must match an existing approved instance. Strip pass is mandatory after building.
+
 ## Commit & Review
 
 - **Before committing:** Run every item in `docs/_internal/checklists/COMMIT-CHECKLIST.md`.
 - **After implementing from `docs/_internal/incoming/` spec:** Run `docs/_internal/checklists/POST-IMPLEMENTATION-REVIEW.md` automatically before presenting work as done.
+- **Coverage trailer on commits.** When a commit advances a coverage axis, add a `Coverage:` trailer to the commit message body. Format: `Coverage: <axis>/<detail>` using the 10 canonical tags from `docs/_internal/help/wiki_sendex_coverage.md`. Multiple axes separated by comma. Optional `Layer:` trailer (data, research, plumbing, implementation, bug-fix). Example:
+  ```
+  feat: add dog ALP steroid-induced isoform interpretation
+
+  Coverage: species/dog, interpretation engine
+  Layer: implementation
+  ```
+  This makes coverage impact grep-able (`git log --grep="Coverage: species/dog"`). `/lattice:daily-update` auto-extracts the trailer for tagging. Not every commit needs a trailer — only those that meaningfully advance a coverage axis.
 
 ## Architecture Gotchas
 
