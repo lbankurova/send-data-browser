@@ -182,10 +182,20 @@ def _build_summary(findings: list[dict], dose_groups: list[dict]) -> dict:
                 target_organs.add(f["specimen"])
 
     # Suggested NOAEL: highest dose where no adverse findings
+    # Uses gLower/hLower > 0.3 as primary gate, p-value fallback for legacy data
     adverse_dose_levels = set()
     for f in findings:
         if f.get("severity") == "adverse":
             for pw in f.get("pairwise", []):
+                gl = pw.get("g_lower")
+                if gl is not None and gl > 0.3:
+                    adverse_dose_levels.add(pw["dose_level"])
+                    continue
+                hl = pw.get("h_lower")
+                if hl is not None and hl > 0.3:
+                    adverse_dose_levels.add(pw["dose_level"])
+                    continue
+                # Fallback: legacy data without g_lower/h_lower
                 if pw.get("p_value_adj") is not None and pw["p_value_adj"] < 0.05:
                     adverse_dose_levels.add(pw["dose_level"])
 
@@ -602,6 +612,7 @@ def rederive_enrichment(
     findings: list[dict],
     threshold: str = "grade-ge-2-or-dose-dep",
     has_concurrent_control: bool = True,
+    effect_relevance_threshold: float = 0.3,
 ) -> list[dict]:
     """Re-run full enrichment pipeline after settings transforms.
 
@@ -611,9 +622,9 @@ def rederive_enrichment(
     # Per-finding enrichment (classification, fold change, labels, organ system)
     findings = enrich_findings(findings, threshold=threshold)
     # Cross-domain corroboration
-    findings = compute_corroboration(findings)
+    findings = compute_corroboration(findings, effect_threshold=effect_relevance_threshold)
     # Cross-organ chain detection
-    findings = compute_chain_detection(findings)
+    findings = compute_chain_detection(findings, effect_threshold=effect_relevance_threshold)
     # ECETOC per-finding adversity assessment
     findings = _assess_all_findings(
         findings, has_concurrent_control=has_concurrent_control,

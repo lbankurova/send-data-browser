@@ -61,20 +61,30 @@ def _contains_word(text: str, term: str) -> bool:
     return bool(re.search(rf"(?:^|\s){escaped}(?:\s|$)", f" {text} "))
 
 
-def passes_corroboration_gate(finding: dict) -> bool:
+def passes_corroboration_gate(
+    finding: dict,
+    effect_threshold: float | None = None,
+) -> bool:
     """Can this finding serve as corroborating evidence for another finding?
 
-    Only treatment-related findings may corroborate. The finding BEING
-    corroborated does not need this gate — only the supporting evidence does.
+    Primary: treatment-related findings may corroborate.
+    Secondary (when effect_threshold provided): findings with large effect
+    sizes (max_effect_lower > threshold) may corroborate even if not yet
+    classified as treatment-related. This catches the d=2.0, N=3, p=0.15
+    scenario — a real biological effect at small sample size that fails
+    the p < 0.05 gate but has confident effect magnitude via gLower/hLower.
 
-    Currently treatment_related is the sole criterion. Under the current
-    classification rules this also guarantees severity >= "warning" (all
-    paths to treatment_related=True require statistical significance that
-    yields at least "warning"). Future iterations may add explicit severity
-    or statistical thresholds (e.g., minimum trend_p, minimum effect size)
-    based on deep research findings.
+    The finding BEING corroborated does not need this gate — only the
+    supporting evidence does.
     """
-    return finding.get("treatment_related", False) is True
+    if finding.get("treatment_related", False) is True:
+        return True
+    # Effect-size gate: large confident effect can corroborate without p < 0.05
+    if effect_threshold is not None:
+        mel = finding.get("max_effect_lower")
+        if mel is not None and mel > effect_threshold:
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +234,7 @@ def _check_direction_coherence(
 def compute_corroboration(
     findings: list[dict],
     relrec_links: dict[tuple[str, str, int], list[tuple[str, int]]] | None = None,
+    effect_threshold: float | None = None,
 ) -> list[dict]:
     """Add ``corroboration_status`` to each finding based on cross-domain evidence.
 
@@ -241,6 +252,8 @@ def compute_corroboration(
     Args:
         relrec_links: Optional map of (domain, seq) → [(linked_domain, linked_seq)].
             These are explicit record-level linkages from the RELREC domain.
+        effect_threshold: When provided, findings with max_effect_lower above this
+            value can serve as corroborating evidence even if not treatment_related.
 
     **No auto-downgrade**: ``severity`` is NOT modified. The frontend (and
     eventually the user) decides what to do with the flag.
@@ -284,7 +297,7 @@ def compute_corroboration(
             for other_f in sex_findings:
                 if other_f is f:
                     continue
-                if not passes_corroboration_gate(other_f):
+                if not passes_corroboration_gate(other_f, effect_threshold):
                     continue
                 for j, term in enumerate(syndrome["terms"]):
                     if j in my_term_indices:
@@ -433,7 +446,10 @@ def _step_matched(step: dict, findings: list[dict]) -> list[dict]:
     return matched
 
 
-def compute_chain_detection(findings: list[dict]) -> list[dict]:
+def compute_chain_detection(
+    findings: list[dict],
+    effect_threshold: float | None = None,
+) -> list[dict]:
     """Annotate findings with cross-organ chain matches.
 
     For each chain definition, groups findings by sex and checks how many
@@ -454,8 +470,8 @@ def compute_chain_detection(findings: list[dict]) -> list[dict]:
         total_steps = len(steps)
 
         for sex, sex_findings in by_sex.items():
-            # Only consider treatment-related findings for chain evidence
-            gated = [f for f in sex_findings if passes_corroboration_gate(f)]
+            # Only consider treatment-related or large-effect findings for chain evidence
+            gated = [f for f in sex_findings if passes_corroboration_gate(f, effect_threshold)]
 
             steps_matched = 0
             participating: list[dict] = []

@@ -121,6 +121,10 @@ export const EFFECT_SIZE_CONFIDENCE_LEVEL: number = _esConf?.default ?? 0.80;
 const _esScale = (scoringConfig as Record<string, unknown>).effect_size_sigmoid_scale as { default: number } | undefined;
 export const EFFECT_SIZE_SIGMOID_SCALE: number = _esScale?.default ?? 4.0;
 
+// Effect relevance threshold — matches backend ScoringParams.effect_relevance_threshold.
+// "80% confident the true effect is at least small-to-medium."
+export const EFFECT_RELEVANCE_THRESHOLD = 0.3;
+
 // ─── Synonym Lookup (from shared/rules/lab-clinical-rules.json) ────
 
 import labRulesConfig from "../../../shared/rules/lab-clinical-rules.json";

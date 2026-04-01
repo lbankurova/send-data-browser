@@ -176,11 +176,8 @@ function computeAnalyticsSync(
       }
     }
   }
-  const organCoherence = deriveOrganCoherence(endpoints);
-  const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
-  const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
-
   // R1: Attach g_lower and g_upper to each continuous endpoint
+  // (must run BEFORE syndrome detection so isEndpointSignificant can use gLower)
   for (const ep of endpoints) {
     if (ep.controlStats && ep.worstTreatedStats && ep.maxEffectSize !== null) {
       const n1 = ep.controlStats.n;
@@ -203,6 +200,10 @@ function computeAnalyticsSync(
       ep.gUpper = computeGUpper(ep.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
     }
   }
+
+  const organCoherence = deriveOrganCoherence(endpoints);
+  const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
+  const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
 
   // Phase 0A/0B: Attach risk difference, Cohen's h to incidence endpoints
   // Build finding lookup for group_stats access

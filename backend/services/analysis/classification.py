@@ -471,7 +471,7 @@ def determine_treatment_related(
 _HISTOPATH_DOMAINS = {"MI", "MA", "TF"}
 
 
-def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
+def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0, effect_threshold: float = 0.3) -> float:
     """A-factor scoring for treatment-relatedness (0-4 scale, may shift ±0.5 with A-3).
 
     A-1: Dose-response pattern (0-2 pts)
@@ -500,8 +500,10 @@ def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
         sev = finding.get("severity", "normal")
         p = finding.get("min_p_adj")
         tp = finding.get("trend_p")
+        mel = finding.get("max_effect_lower")
         has_signal = (
             sev != "normal"
+            or (mel is not None and mel > effect_threshold)
             or (p is not None and p < 0.10)
             or (tp is not None and tp < 0.10)
         )
@@ -511,10 +513,15 @@ def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
     # A-3: Historical control data (HCD)
     score += a3_score
 
-    # A-6: Statistical significance
+    # A-6: Statistical evidence — effect relevance OR p-value significance
+    # Primary: confident effect size (gLower/hLower > 0.3) — sample-size-invariant
+    # Fallback: p-value for endpoints without CI bounds
     min_p = finding.get("min_p_adj")
     trend_p = finding.get("trend_p")
-    if min_p is not None and min_p < 0.05:
+    a6_mel = finding.get("max_effect_lower")
+    if a6_mel is not None and a6_mel > effect_threshold:
+        score += 1.0
+    elif min_p is not None and min_p < 0.05:
         score += 1.0
     elif trend_p is not None and trend_p < 0.05:
         score += 0.5
@@ -522,7 +529,7 @@ def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0) -> float:
     return score
 
 
-def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
+def assess_finding(finding: dict, a3_score: float = 0.0, effect_threshold: float = 0.3) -> str:
     """ECETOC-style per-finding adversity assessment.
 
     Steps:
@@ -544,11 +551,11 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
         intrinsic = lookup_intrinsic_adversity(finding_text)
         if intrinsic == "always_adverse":
             # Any statistical signal → adverse; no signal → equivocal
-            tr_score = _score_treatment_relatedness(finding, a3_score)
+            tr_score = _score_treatment_relatedness(finding, a3_score, effect_threshold)
             return "tr_adverse" if tr_score >= 1.0 else "equivocal"
 
     # -- Step 1: Treatment-relatedness (A-factors) --
-    tr_score = _score_treatment_relatedness(finding, a3_score)
+    tr_score = _score_treatment_relatedness(finding, a3_score, effect_threshold)
     if tr_score < 1.0:
         return "not_treatment_related"
 
@@ -563,10 +570,16 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
             # MI fallback (when adaptive trees in _classify_histopath don't match):
             # Default to equivocal — adversity depends on finding type, not just grade.
             return "equivocal"
-        # CL/DS: Adversity from statistical significance + dose-response pattern
+        # CL/DS: Adversity from statistical evidence + dose-response pattern
+        # Uses max_effect_lower (gLower/hLower) as primary, p-value as fallback
         min_p_adj = finding.get("min_p_adj")
+        cl_mel = finding.get("max_effect_lower")
         pattern = finding.get("dose_response_pattern", "")
-        if tr_score >= 1.0 and min_p_adj is not None and min_p_adj < 0.05:
+        has_stat_evidence = (
+            (cl_mel is not None and cl_mel > effect_threshold)
+            or (min_p_adj is not None and min_p_adj < 0.05)
+        )
+        if tr_score >= 1.0 and has_stat_evidence:
             if pattern in ("monotonic_increase", "monotonic_decrease", "threshold",
                            "threshold_increase", "threshold_decrease"):
                 return "tr_adverse"

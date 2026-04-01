@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from services.analysis.corroboration import passes_corroboration_gate
+from services.analysis.classification import _score_treatment_relatedness
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -189,13 +190,42 @@ class TestCorroborationQuality:
     def test_gate_rejects_none(self):
         assert passes_corroboration_gate({"treatment_related": None}) is False
 
+    def test_gate_accepts_large_effect_with_threshold(self):
+        """Finding with large max_effect_lower passes gate when threshold provided."""
+        f = {"treatment_related": False, "max_effect_lower": 0.5}
+        assert passes_corroboration_gate(f, effect_threshold=0.3) is True
+
+    def test_gate_rejects_small_effect_with_threshold(self):
+        """Finding with small max_effect_lower fails gate even with threshold."""
+        f = {"treatment_related": False, "max_effect_lower": 0.2}
+        assert passes_corroboration_gate(f, effect_threshold=0.3) is False
+
+    def test_gate_ignores_effect_without_threshold(self):
+        """Without effect_threshold, large effect alone doesn't pass gate."""
+        f = {"treatment_related": False, "max_effect_lower": 2.0}
+        assert passes_corroboration_gate(f) is False
+
+    # -- A-6 scoring unit tests --
+
+    def test_a6_scores_large_effect(self):
+        """A-6: max_effect_lower > threshold gives +1.0 even without p < 0.05."""
+        f = {"max_effect_lower": 0.5, "dose_response_pattern": "flat"}
+        score = _score_treatment_relatedness(f, effect_threshold=0.3)
+        assert score >= 1.0  # A-6 contributes +1.0
+
+    def test_a6_rejects_small_effect(self):
+        """A-6: max_effect_lower below threshold gives 0 (no p-value either)."""
+        f = {"max_effect_lower": 0.2, "dose_response_pattern": "flat"}
+        score = _score_treatment_relatedness(f, effect_threshold=0.3)
+        assert score == 0.0  # No A-1 (flat), no A-2, no A-6
+
     # -- Integration tests on generated data --
 
-    def test_heart_weight_f_not_corroborated(self, findings: list[dict]):
-        """Heart weight (F) should NOT be corroborated.
+    def test_heart_weight_f_corroborated(self, findings: list[dict]):
+        """Heart weight (F) is corroborated (mel=0.97, treatment_related=True).
 
-        Its only cross-domain MI support (heart inflammation) has
-        treatment_related=False, so it fails the quality gate.
+        With gLower as decision criterion, cross-domain MI support with large
+        max_effect_lower (>0.3) passes the corroboration gate.
         """
         heart_wt_f = [
             f for f in findings
@@ -204,7 +234,7 @@ class TestCorroborationQuality:
             and f["sex"] == "F"
         ]
         assert len(heart_wt_f) == 1
-        assert heart_wt_f[0]["corroboration_status"] == "uncorroborated"
+        assert heart_wt_f[0]["corroboration_status"] == "corroborated"
 
     def test_heart_weight_m_still_corroborated(self, findings: list[dict]):
         """Heart weight (M) is partially corroborated.
@@ -248,18 +278,21 @@ class TestCorroborationQuality:
             )
 
     def test_corroborated_count(self, findings: list[dict]):
-        """Total corroborated + partially corroborated findings should be ~76.
+        """Total corroborated + partially corroborated findings should be ~110.
 
         SLA-05 fix: incidence domain adversity classification changed from
         B-factor Cohen's d gates to statistical+pattern-based gates.
         SLA-16 fix: direction coherence gate splits some corroborated into
-        partially_corroborated (61 full + 15 partial = 76 total).
+        partially_corroborated.
+        gLower as decision criterion: corroboration gate now accepts findings
+        with max_effect_lower > 0.3 even if not treatment_related, increasing
+        the corroborated count from ~76 to ~110.
         """
         full = sum(1 for f in findings if f["corroboration_status"] == "corroborated")
         partial = sum(1 for f in findings if f["corroboration_status"] == "partially_corroborated")
         total = full + partial
-        assert 73 <= total <= 79, (
-            f"Corroborated count = {full} full + {partial} partial = {total}, expected 73–79"
+        assert 105 <= total <= 115, (
+            f"Corroborated count = {full} full + {partial} partial = {total}, expected 105-115"
         )
 
     def test_edge_case_tr_true_severity_normal(self, findings: list[dict]):

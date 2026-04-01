@@ -5,6 +5,7 @@
 
 import type { AdverseEffectSummaryRow, DoseResponseRow } from "@/types/analysis-views";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import { EFFECT_RELEVANCE_THRESHOLD } from "@/lib/lab-clinical-catalog";
 
 // ─── Domain classification ─────────────────────────────────
 
@@ -769,7 +770,6 @@ function computeNoaelForFindings(
   let loaelLevel: number | null = null;
 
   // Effect-size-first LOAEL: use g_lower / h_lower when available, fall back to p-value
-  const EFFECT_RELEVANCE_THRESHOLD = 0.3;
   for (const f of findings) {
     for (const pw of f.pairwise) {
       if (pw.dose_level <= 0) continue;

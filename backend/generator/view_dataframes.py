@@ -77,6 +77,7 @@ def _effect_matches_trend_direction(finding: dict, pw: dict) -> bool:
 
 def _is_loael_driving_woe(
     finding: dict, dose_level: int, n_per_group: int,
+    effect_threshold: float = 0.3,
 ) -> bool:
     """Weight-of-evidence LOAEL gate (B4c, peer-reviewed).
 
@@ -91,8 +92,9 @@ def _is_loael_driving_woe(
     d = abs(pw.get("effect_size") or 0)
     fc = finding.get("finding_class")
 
-    # C1: Statistical significance (existing behavior)
-    if p is not None and p < 0.05 and fc == "tr_adverse":
+    # C1: Effect relevance — gLower/hLower > threshold (sample-size-invariant).
+    # Falls back to p < 0.05 for legacy data without g_lower/h_lower fields.
+    if _dose_exceeds_effect_threshold(pw, effect_threshold) and fc == "tr_adverse":
         return True
 
     # C2a: Trend + adverse classification
@@ -737,7 +739,7 @@ def _build_noael_for_groups(
                 continue
             if use_woe:
                 for pw in f.get("pairwise", []):
-                    if _is_loael_driving_woe(f, pw["dose_level"], _n_per_group):
+                    if _is_loael_driving_woe(f, pw["dose_level"], _n_per_group, params.effect_relevance_threshold):
                         adverse_dose_levels.add(pw["dose_level"])
             else:
                 if _is_loael_driving(f):

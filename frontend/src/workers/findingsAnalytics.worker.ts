@@ -84,12 +84,8 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
     }
   }
 
-  // 4. Cross-domain analysis
-  const organCoherence = deriveOrganCoherence(endpoints);
-  const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
-  const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
-
-  // 5. R1: Attach g_lower and g_upper to each continuous endpoint
+  // 4. R1: Attach g_lower and g_upper to each continuous endpoint
+  // (must run BEFORE syndrome detection so isEndpointSignificant can use gLower)
   for (const ep of endpoints) {
     if (ep.controlStats && ep.worstTreatedStats && ep.maxEffectSize !== null) {
       const n1 = ep.controlStats.n;
@@ -108,6 +104,11 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
       ep.gUpper = computeGUpper(ep.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
     }
   }
+
+  // 5. Cross-domain analysis
+  const organCoherence = deriveOrganCoherence(endpoints);
+  const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
+  const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
 
   // 5b. Phase 0A/0B: Attach risk difference, Cohen's h to incidence endpoints
   const findingByLabel = new Map<string, UnifiedFinding>();

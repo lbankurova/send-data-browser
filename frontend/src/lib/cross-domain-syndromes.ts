@@ -55,6 +55,29 @@ export {
   CHAIN_DEFINITIONS,
 } from "./cross-domain-syndrome-data";
 
+import { EFFECT_RELEVANCE_THRESHOLD } from "@/lib/lab-clinical-catalog";
+
+// ─── Effect relevance gate ────────────────────────────────
+
+/**
+ * Determine if an endpoint has significant evidence of a treatment effect.
+ * Uses gLower (80% CI lower bound of |Hedges' g|) as primary criterion for
+ * continuous endpoints, hCiLower for incidence endpoints. Falls back to
+ * p-value for endpoints without CI bounds (legacy data).
+ *
+ * Replaces the inline `minPValue < 0.05` checks that were the sole gate.
+ * gLower is sample-size-invariant: a d=2.0 effect at N=3 is caught without
+ * needing p < 0.05. See ROADMAP "gLower as Decision Criterion".
+ */
+function isEndpointSignificant(ep: EndpointSummary): boolean {
+  // Continuous: gLower (80% CI lower bound of |Hedges' g|)
+  if (ep.gLower != null && ep.gLower > EFFECT_RELEVANCE_THRESHOLD) return true;
+  // Incidence: hCiLower (CI lower bound of |Cohen's h|)
+  if (ep.hCiLower != null && ep.hCiLower > EFFECT_RELEVANCE_THRESHOLD) return true;
+  // Fallback: p-value for endpoints without CI bounds
+  return ep.minPValue != null && ep.minPValue < 0.05;
+}
+
 // ─── Normalization & parsing helpers ───────────────────────
 
 /** Normalize a label for comparison: lowercase, collapse separators & whitespace. */
@@ -86,13 +109,17 @@ function parseSpecimenFinding(label: string): { specimen: string; finding: strin
 
 // ─── Matching logic ────────────────────────────────────────
 
-/** Check if an endpoint matches a single term definition. */
-function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
+/**
+ * Check if an endpoint matches a single term definition.
+ * When `identityOnly` is true, skips the direction check — used for two-pass
+ * term evaluation (find the endpoint first, classify status second).
+ */
+function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch, identityOnly = false): boolean {
   // 1. Domain must match
   if (ep.domain.toUpperCase() !== term.domain) return false;
 
-  // 2. Direction must match (if specified)
-  if (term.direction !== "any") {
+  // 2. Direction must match (if specified and not identity-only)
+  if (!identityOnly && term.direction !== "any") {
     if (ep.direction !== term.direction) return false;
   }
 
@@ -130,67 +157,6 @@ function matchEndpoint(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
   }
 
   // 6. Match by organ weight specimen (OM domain)
-  if (term.organWeightTerms) {
-    let specimen = ep.specimen;
-    if (!specimen) {
-      const parsed = parseSpecimenFinding(ep.endpoint_label);
-      specimen = parsed?.specimen ?? ep.endpoint_label;
-    }
-    const normSpecimen = normalizeLabel(specimen);
-    if (term.organWeightTerms.specimen.length === 0 ||
-        term.organWeightTerms.specimen.some((s) => containsWord(normSpecimen, s))) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Identity-only matching: checks domain + test codes / canonical labels /
- * specimen+finding / organ weight — but skips the direction check.
- * Used for two-pass term evaluation (find the endpoint first, classify status second).
- */
-function matchEndpointIdentity(ep: EndpointSummary, term: SyndromeTermMatch): boolean {
-  // 1. Domain must match
-  if (ep.domain.toUpperCase() !== term.domain) return false;
-
-  // NO direction check — identity only
-
-  // 2. Match by test code (LB domain, highest priority)
-  if (term.testCodes) {
-    const epTestCode = ep.testCode?.toUpperCase();
-    if (epTestCode && term.testCodes.includes(epTestCode)) return true;
-  }
-
-  // 3. Match by canonical label (exact after normalization)
-  if (term.canonicalLabels) {
-    const normalized = normalizeLabel(ep.endpoint_label);
-    if (term.canonicalLabels.some((cl) => normalized === cl)) return true;
-  }
-
-  // 4. Match by specimen + finding (MI/MA domain)
-  if (term.specimenTerms) {
-    let specimen = ep.specimen;
-    let finding = ep.finding;
-    if (!specimen || !finding) {
-      const parsed = parseSpecimenFinding(ep.endpoint_label);
-      if (parsed) {
-        specimen = specimen ?? parsed.specimen;
-        finding = finding ?? parsed.finding;
-      }
-    }
-    if (specimen && finding) {
-      const normSpecimen = normalizeLabel(specimen);
-      const normFinding = normalizeLabel(finding);
-      const specimenMatch = term.specimenTerms.specimen.length === 0 ||
-        term.specimenTerms.specimen.some((s) => containsWord(normSpecimen, s));
-      const findingMatch = term.specimenTerms.finding.some((f) => containsWord(normFinding, f));
-      if (specimenMatch && findingMatch) return true;
-    }
-  }
-
-  // 5. Match by organ weight specimen (OM domain)
   if (term.organWeightTerms) {
     let specimen = ep.specimen;
     if (!specimen) {
@@ -502,10 +468,9 @@ function evaluateDirectionalGates(
 
     // Check if any endpoint matches the term identity but in the opposite direction
     for (const ep of endpoints) {
-      if (!matchEndpointIdentity(ep, termDef)) continue;
+      if (!matchEndpoint(ep, termDef, true)) continue;
 
-      const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
-      if (!isSignificant) continue;
+      if (!isEndpointSignificant(ep)) continue;
 
       // SE-7: Resolve effective direction — use ANCOVA directG for OM gates when available
       let effectiveDirection = ep.direction;
@@ -697,9 +662,8 @@ function detectFromEndpoints(
         if (alreadyMatched) continue;
 
         for (const ep of endpoints) {
-          if (matchEndpointIdentity(ep, term)) {
-            const isSignificant = ep.minPValue != null && ep.minPValue < 0.05;
-            if (isSignificant && term.direction !== "any" && ep.direction !== term.direction) {
+          if (matchEndpoint(ep, term, true)) {
+            if (isEndpointSignificant(ep) && term.direction !== "any" && ep.direction !== term.direction) {
               oppositeCount++;
             }
             break;
@@ -763,7 +727,7 @@ export function detectCrossDomainSyndromes(
     const requiredMatched = s.matchedEndpoints.filter((me) => me.role === "required");
     return requiredMatched.some((me) => {
       const ep = endpoints.find((e) => e.endpoint_label === me.endpoint_label);
-      return ep && ep.minPValue != null && ep.minPValue < 0.05;
+      return ep != null && isEndpointSignificant(ep);
     });
   });
 
@@ -935,10 +899,10 @@ function hasLeukocyteConcordance(
     const code = ep.testCode?.toUpperCase() ?? "";
     if (!PRIMARY_LEUKOCYTE_CODES.has(code)) continue;
     if (ep.direction === direction) {
-      const isSignificant = ep.minPValue != null && ep.minPValue <= 0.05;
-      const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
-        (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
-      if (isSignificant || hasMeaningfulEffect) return true;
+      if (isEndpointSignificant(ep)) return true;
+      // Also accept meaningful fold change even without statistical evidence
+      const hasMeaningfulFoldChange = ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05;
+      if (hasMeaningfulFoldChange) return true;
     }
   }
   return false;
@@ -1049,16 +1013,16 @@ export function getSyndromeTermReport(
         if (term.role === "supporting" && !passesSupportingGate(ep)) continue;
 
         // REM-25: Check statistical significance for "matched" vs "trend" classification
-        const isSignificant = ep.minPValue != null && ep.minPValue <= 0.05;
+        const significant = isEndpointSignificant(ep);
         const hasMeaningfulEffect = (ep.maxEffectSize != null && Math.abs(ep.maxEffectSize) >= 0.5) ||
           (ep.maxFoldChange != null && Math.abs(ep.maxFoldChange - 1.0) >= 0.05);
 
         // REM-27: Check magnitude floor
         const floorNote = checkMagnitudeFloor(ep, term.domain, endpoints, normalizationContexts);
 
-        if (isSignificant && !floorNote) {
+        if (significant && !floorNote) {
           entry.status = "matched";
-        } else if (isSignificant && floorNote) {
+        } else if (significant && floorNote) {
           entry.status = "not_significant";
           entry.magnitudeFloorNote = floorNote;
           entry.matchedEndpoint = ep.endpoint_label;
@@ -1099,7 +1063,7 @@ export function getSyndromeTermReport(
     if (!fullMatch) {
       let identityMatch: EndpointSummary | null = null;
       for (const ep of endpoints) {
-        if (matchEndpointIdentity(ep, term)) {
+        if (matchEndpoint(ep, term, true)) {
           identityMatch = ep;
           break;
         }
@@ -1108,8 +1072,7 @@ export function getSyndromeTermReport(
       if (!identityMatch) {
         entry.status = "not_measured";
       } else {
-        const isSignificant = identityMatch.minPValue != null && identityMatch.minPValue < 0.05;
-        if (!isSignificant) {
+        if (!isEndpointSignificant(identityMatch)) {
           entry.status = "not_significant";
         } else {
           entry.status = "opposite";

@@ -322,6 +322,7 @@ def process_findings(
     is_multi_compound: bool = False,
     expected_profile: dict | None = None,
     study_meta: dict | None = None,
+    effect_relevance_threshold: float = 0.3,
 ) -> list[dict]:
     """Shared enrichment pipeline: merge pass variants, then classify.
 
@@ -419,9 +420,10 @@ def process_findings(
     # Pattern overrides applied at endpoint level (analysis_views.py) so they
     # work for both static file serving and parameterized pipeline results
     # Cross-domain corroboration (requires all enriched findings present)
-    enriched = compute_corroboration(enriched, relrec_links=relrec_links)
+    # effect_threshold allows large-effect findings to corroborate without p < 0.05
+    enriched = compute_corroboration(enriched, relrec_links=relrec_links, effect_threshold=effect_relevance_threshold)
     # Cross-organ chain detection (requires all enriched findings present)
-    enriched = compute_chain_detection(enriched)
+    enriched = compute_chain_detection(enriched, effect_threshold=effect_relevance_threshold)
     # ECETOC per-finding adversity assessment (requires corroboration_status)
     enriched = _assess_all_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
