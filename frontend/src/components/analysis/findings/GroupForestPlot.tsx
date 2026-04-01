@@ -29,11 +29,11 @@ type SortMode = "gLower" | "effect" | "pValue" | "domain";
 
 // ── Shared axis helpers ──────────────────────────────────────
 
-const WHISKER_WIDTH = 200;
-const WHISKER_HEIGHT = 20;
-const WHISKER_PAD = 12;
+export const WHISKER_WIDTH = 200;
+export const WHISKER_HEIGHT = 20;
+export const WHISKER_PAD = 12;
 
-function toX(v: number, axisMin: number, axisMax: number): number {
+export function toX(v: number, axisMin: number, axisMax: number): number {
   const range = axisMax - axisMin;
   if (range === 0) return WHISKER_PAD;
   return WHISKER_PAD + ((v - axisMin) / range) * (WHISKER_WIDTH - 2 * WHISKER_PAD);
@@ -53,7 +53,7 @@ function sigmoidAxisTicks(): { raw: number; transformed: number }[] {
 
 // ── Axis header (renders above the whisker column) ───────────
 
-function AxisHeader({ axisMin, axisMax, label }: { axisMin: number; axisMax: number; label: string }) {
+export function AxisHeader({ axisMin, axisMax, label }: { axisMin: number; axisMax: number; label: string }) {
   const ticks = sigmoidAxisTicks();
   const zeroX = toX(0, axisMin, axisMax);
   return (
@@ -82,13 +82,13 @@ function AxisHeader({ axisMin, axisMax, label }: { axisMin: number; axisMax: num
 
 // ── CI Whisker SVG (inline, per row) ─────────────────────────
 
-interface WhiskerMarkerStyle {
+export interface WhiskerMarkerStyle {
   fill: string;
   stroke: string;
   strokeWidth: number;
 }
 
-function CIWhisker({
+export function CIWhisker({
   center,
   lower,
   upper,
@@ -198,7 +198,7 @@ function rawEffectSize(ep: EndpointSummary): number {
 }
 
 /** Signed sigmoid: preserves sign, compresses magnitude. */
-function signedSigmoid(x: number): number {
+export function signedSigmoid(x: number): number {
   return x >= 0 ? sigmoidTransform(x) : -sigmoidTransform(-x);
 }
 
@@ -207,8 +207,6 @@ function signedSigmoid(x: number): number {
 function getSortValue(ep: EndpointSummary, mode: SortMode): number {
   switch (mode) {
     case "gLower":
-      // Unified: use gLower for continuous, |h| for incidence (no gLower equivalent for h yet)
-      if (isIncidenceEndpoint(ep)) return Math.abs(ep.cohensH ?? 0);
       return ep.gLower ?? 0;
     case "effect":
       return rawEffectSize(ep);

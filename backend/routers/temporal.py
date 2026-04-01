@@ -455,24 +455,24 @@ async def get_subject_profile(study_id: str, usubjid: str):
         if measurements:
             domains["LB"] = {"measurements": measurements}
 
-    # OM (Organ Measurements)
+    # OM (Organ Measurements) — use OMSPEC as test_code (OMTESTCD is always "WEIGHT")
     om_subj = _subject_domain("OM")
     if om_subj is not None:
         val_col = "OMSTRESN"
         day_col = "OMDY"
         unit_col = "OMSTRESU"
-        testcd_col = "OMTESTCD"
+        spec_col = "OMSPEC" if "OMSPEC" in om_subj.columns else "OMTESTCD"
         om_subj[val_col] = pd.to_numeric(om_subj[val_col], errors="coerce")
         om_subj[day_col] = pd.to_numeric(om_subj[day_col], errors="coerce")
         om_subj = om_subj.dropna(subset=[val_col])
         measurements = [
             {
                 "day": int(r[day_col]) if pd.notna(r.get(day_col)) else 0,
-                "test_code": str(r[testcd_col]) if testcd_col in om_subj.columns else "",
+                "test_code": str(r[spec_col]).strip() if spec_col in om_subj.columns else "",
                 "value": round(float(r[val_col]), 4),
                 "unit": str(r[unit_col]) if unit_col in om_subj.columns and r[unit_col] != "" else "",
             }
-            for _, r in om_subj.sort_values(testcd_col).iterrows()
+            for _, r in om_subj.sort_values(spec_col).iterrows()
         ]
         if measurements:
             domains["OM"] = {"measurements": measurements}
@@ -574,6 +574,46 @@ async def get_subject_profile(study_id: str, usubjid: str):
                     control_stats["lab"] = lab_stats
         except Exception:
             pass
+
+    # Control group organ weight stats (same sex, terminal sacrifice only)
+    if "om" in study.xpt_files:
+        try:
+            all_control = subjects_df[subjects_df["dose_level"] == 0]
+            sex_control = all_control[all_control["SEX"] == subject_sex]
+            ctrl_ids = sex_control["USUBJID"].tolist()
+            if ctrl_ids:
+                om_all = _read_domain_df(study, "OM")
+                om_ctrl = om_all[om_all["USUBJID"].isin(ctrl_ids)]
+                om_val_col = "OMSTRESN"
+                om_day_col = "OMDY"
+                om_unit_col = "OMSTRESU"
+                om_spec_col = "OMSPEC" if "OMSPEC" in om_ctrl.columns else "OMTESTCD"
+                om_ctrl[om_val_col] = pd.to_numeric(om_ctrl[om_val_col], errors="coerce")
+                om_ctrl = om_ctrl.dropna(subset=[om_val_col])
+                # Filter to terminal: per-organ max day (matches LB per-test pattern)
+                if om_day_col in om_ctrl.columns:
+                    om_ctrl[om_day_col] = pd.to_numeric(om_ctrl[om_day_col], errors="coerce")
+                om_stats: dict = {}
+                for organ, ogrp in om_ctrl.groupby(om_spec_col):
+                    # Take latest measurement day for this organ (handles interim vs terminal)
+                    if om_day_col in ogrp.columns:
+                        organ_max_day = ogrp[om_day_col].max()
+                        if pd.notna(organ_max_day):
+                            ogrp = ogrp[ogrp[om_day_col] == organ_max_day]
+                    vals = ogrp[om_val_col].dropna()
+                    if len(vals) >= 1:
+                        unit = str(ogrp[om_unit_col].iloc[0]) if om_unit_col in ogrp.columns and ogrp[om_unit_col].iloc[0] != "" else ""
+                        om_stats[str(organ).strip()] = {
+                            "mean": round(float(vals.mean()), 4),
+                            "sd": round(float(vals.std(ddof=1)), 4) if len(vals) > 1 else 0.0,
+                            "unit": unit,
+                            "n": int(len(vals)),
+                        }
+                if om_stats:
+                    control_stats["om"] = om_stats
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("OM control stats failed for %s: %s", study_id, e)
 
     # Death cause and relatedness from pre-generated mortality data
     death_cause: str | None = None

@@ -91,6 +91,7 @@ export interface SubjectProfile {
   };
   control_stats?: {
     lab?: Record<string, { mean: number; sd: number; unit: string; n: number }>;
+    om?: Record<string, { mean: number; sd: number; unit: string; n: number }>;
   } | null;
 }
 

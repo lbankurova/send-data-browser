@@ -18,6 +18,19 @@ import { CollapsiblePane } from "./CollapsiblePane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { useCollapseAll } from "@/hooks/useCollapseAll";
 import type { SubjectProfile, SubjectMeasurement, SubjectObservation, SubjectFinding } from "@/types/timecourse";
+import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
+import { sigmoidTransform } from "@/lib/g-lower";
+import {
+  CIWhisker, AxisHeader, signedSigmoid,
+} from "@/components/analysis/findings/GroupForestPlot";
+import type { WhiskerMarkerStyle } from "@/components/analysis/findings/GroupForestPlot";
+import { useFindingsAnalyticsLocal } from "@/hooks/useFindingsAnalyticsLocal";
+import type { EndpointSummary } from "@/lib/derive-summaries";
+import {
+  computeSubjectConcordance,
+  organSystemOrder,
+} from "@/lib/subject-concordance";
+import type { OrganScatterPoint } from "@/lib/subject-concordance";
 
 // ─── Helpers (rendering-only) ────────────────────────────
 
@@ -27,6 +40,316 @@ function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
   if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
   if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
   return { bg: "#E5E7EB", text: "var(--foreground)" };
+}
+
+// ─── Organ Concordance (FP-2) ──────────────────────────
+// Radar (default) + Forest plot (detail) toggle.
+// Patterns reused from OrganToxicityRadar.tsx and GroupForestPlot.tsx.
+
+const RADAR_COLOR = "#78716c"; // stone-500 — neutral, no reserved colors
+const RADAR_ENVELOPE = "#78716c";
+
+/** Short spoke label for radar. Mirrors OrganToxicityRadar. */
+const ORGAN_SHORT: Record<string, string> = {
+  hepatic: "Hepatic", renal: "Renal", hematologic: "Hemato",
+  cardiovascular: "CV", respiratory: "Resp", endocrine: "Endo",
+  reproductive: "Repro", gastrointestinal: "GI", musculoskeletal: "MSK",
+  neurological: "Neuro", integumentary: "Dermal", ocular: "Ocular",
+  electrolyte: "Electro", metabolic: "Metab", general: "General",
+};
+
+/** Map a concordance point to a raw magnitude (unsigned).
+ *  Continuous: |log2(foldChange)|, Incidence: severity grade. */
+function rawMagnitude(p: OrganScatterPoint): number {
+  return p.type === "continuous" ? Math.abs(Math.log2(p.value)) : p.value;
+}
+
+// ─── Subject Radar ─────────────────────────────────────
+
+function SubjectRadar({ points }: { points: OrganScatterPoint[] }) {
+  const organData = useMemo(() => {
+    const byOrgan = new Map<string, OrganScatterPoint[]>();
+    for (const p of points) {
+      let arr = byOrgan.get(p.organSystem);
+      if (!arr) { arr = []; byOrgan.set(p.organSystem, arr); }
+      arr.push(p);
+    }
+    // Sort by canonical order, include only organs with data
+    return [...byOrgan.entries()]
+      .sort((a, b) => organSystemOrder(a[0]) - organSystemOrder(b[0]))
+      .map(([organ, pts]) => {
+        const maxRaw = Math.max(...pts.map(rawMagnitude));
+        return {
+          organ,
+          value: sigmoidTransform(maxRaw),
+          rawMax: maxRaw,
+          count: pts.length,
+          dots: pts.map((p) => ({
+            label: p.type === "continuous" ? p.label : `${p.label}: ${p.finding ?? ""}`,
+            raw: rawMagnitude(p),
+            sigmoid: sigmoidTransform(rawMagnitude(p)),
+            tooltip: p.type === "continuous"
+              ? `${p.label}: ${p.value.toFixed(2)}x ctrl`
+              : `${p.label}: ${p.finding ?? ""} (${p.severity ?? ""})`,
+          })),
+        };
+      });
+  }, [points]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const option = useMemo<any>(() => {
+    if (organData.length < 2) return {};
+    const SCALE = 4.0;
+
+    const indicators = organData.map((d) => ({
+      name: `${ORGAN_SHORT[d.organ] ?? d.organ} (${d.count})`,
+      max: SCALE,
+    }));
+
+    // Envelope polygon
+    const values = organData.map((d) => d.value);
+
+    // Individual dots along spokes
+    const dotEntries: { value: number[]; tooltip: string }[] = [];
+    for (let i = 0; i < organData.length; i++) {
+      for (const dot of organData[i].dots) {
+        const vals = new Array(organData.length).fill(0);
+        vals[i] = dot.sigmoid;
+        dotEntries.push({ value: vals, tooltip: dot.tooltip });
+      }
+    }
+
+    return {
+      radar: {
+        indicator: indicators,
+        shape: "polygon",
+        radius: "60%",
+        axisName: { fontSize: 9, color: "#9ca3af" },
+        splitNumber: 1,
+        splitArea: { show: false },
+        splitLine: { lineStyle: { color: "#e5e7eb" } },
+        axisLine: { lineStyle: { color: "#e5e7eb" } },
+      },
+      series: [
+        // Reference ring at medium effect (0.5)
+        {
+          type: "radar",
+          silent: true,
+          data: [{
+            value: new Array(organData.length).fill(sigmoidTransform(0.5)),
+            lineStyle: { color: "#d1d5db", width: 1, type: "dashed" },
+            areaStyle: { opacity: 0 },
+            itemStyle: { opacity: 0 },
+            symbol: "none",
+          }],
+        },
+        // Envelope: max effect per organ
+        {
+          type: "radar",
+          silent: true,
+          data: [{
+            value: values,
+            lineStyle: { color: RADAR_ENVELOPE, width: 2 },
+            areaStyle: { color: RADAR_ENVELOPE, opacity: 0.08 },
+            symbol: "none",
+          }],
+        },
+        // Dots: individual endpoints
+        {
+          type: "radar",
+          data: dotEntries.map((d) => ({
+            value: d.value,
+            name: d.tooltip,
+            lineStyle: { width: 0, opacity: 0 },
+            areaStyle: { opacity: 0 },
+            itemStyle: { color: RADAR_COLOR, opacity: 0.6 },
+            symbol: "circle",
+            symbolSize: 4,
+          })),
+        },
+      ],
+      tooltip: {
+        trigger: "item",
+        textStyle: { fontSize: 10 },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        formatter: (params: any) => {
+          if (params.seriesIndex !== 2) return "";
+          return params.name || "";
+        },
+      },
+    };
+  }, [organData]);
+
+  if (organData.length < 2) {
+    return (
+      <div className="py-3 text-center text-[10px] text-muted-foreground">
+        Single organ system -- use detail view
+      </div>
+    );
+  }
+
+  return <EChartsWrapper option={option} style={{ width: "100%", height: 200 }} />;
+}
+
+// ─── Subject Forest Plot (reuses GroupForestPlot components) ─
+
+/** Match a concordance point to its group-level EndpointSummary for marker encoding. */
+function matchEndpoint(p: OrganScatterPoint, endpoints: EndpointSummary[]): EndpointSummary | undefined {
+  if (p.domain === "LB" || p.domain === "OM") {
+    return endpoints.find((ep) => ep.domain === p.domain && ep.testCode === p.label);
+  }
+  // MI: match by specimen
+  return endpoints.find(
+    (ep) => ep.domain === "MI" && ep.specimen?.toUpperCase() === p.label.toUpperCase()
+  );
+}
+
+/** Derive marker style from an EndpointSummary (same logic as GroupForestPlot ForestRow). */
+function getMarkerStyle(ep: EndpointSummary | undefined): WhiskerMarkerStyle {
+  if (!ep) return { fill: "#9CA3AF", stroke: "transparent", strokeWidth: 0 };
+  const nw = ep.endpointConfidence?.noaelContribution.weight;
+  const isAdverse = ep.worstSeverity === "adverse";
+  let fill: string;
+  if (nw === 1.0) fill = "rgba(248,113,113,0.7)";
+  else if (nw === 0.7) fill = "#9CA3AF";
+  else if (nw === 0.3) fill = "transparent";
+  else fill = "#9CA3AF";
+  return {
+    fill,
+    stroke: isAdverse ? "#374151" : (nw === 0.3 ? "#9CA3AF" : "transparent"),
+    strokeWidth: isAdverse ? 1.5 : 1,
+  };
+}
+
+/** Marker legend only — whisker/significance entries omitted (no CI data for individual subjects). */
+function SubjectForestLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pb-1 text-[9px] text-muted-foreground">
+      <div className="flex items-center gap-1">
+        <svg width={8} height={8}><circle cx={4} cy={4} r={3} fill="rgba(248,113,113,0.7)" stroke="#374151" strokeWidth={1.5} /></svg>
+        <span>NOAEL determining</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <svg width={8} height={8}><circle cx={4} cy={4} r={3} fill="#9CA3AF" stroke="#374151" strokeWidth={1.5} /></svg>
+        <span>Adverse</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <svg width={8} height={8}><circle cx={4} cy={4} r={3} fill="#9CA3AF" stroke="transparent" strokeWidth={0} /></svg>
+        <span>Contributing</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <svg width={8} height={8}><circle cx={4} cy={4} r={3} fill="transparent" stroke="#9CA3AF" strokeWidth={1} /></svg>
+        <span>Supporting</span>
+      </div>
+    </div>
+  );
+}
+
+function SubjectForestPlot({ points, endpoints }: { points: OrganScatterPoint[]; endpoints: EndpointSummary[] }) {
+  // Map fold-change to signed effect for axis: log2(fc) for continuous, severity for incidence
+  const rows = useMemo(() => {
+    return [...points]
+      .map((p) => {
+        const raw = p.type === "continuous" ? Math.log2(p.value) : p.value;
+        const signed = p.type === "continuous"
+          ? (p.value > 1 ? raw : -Math.abs(raw))
+          : raw;
+        return { point: p, signed, sigmoid: signedSigmoid(signed), ep: matchEndpoint(p, endpoints) };
+      })
+      .sort((a, b) => Math.abs(b.sigmoid) - Math.abs(a.sigmoid));
+  }, [points, endpoints]);
+
+  const SIGMOID_SCALE = 4.0;
+  const axis = useMemo(() => ({
+    min: -SIGMOID_SCALE * 0.95,
+    max: SIGMOID_SCALE * 0.95,
+  }), []);
+
+  return (
+    <div className="flex flex-col overflow-hidden">
+      <SubjectForestLegend />
+      <div className="shrink-0 border-b border-border/30 bg-muted/30">
+        <div className="flex items-end justify-between px-1 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {rows.length} endpoints
+          </span>
+          <AxisHeader axisMin={axis.min} axisMax={axis.max} label="Effect size" />
+        </div>
+      </div>
+      <div className="overflow-y-auto" style={{ maxHeight: 250 }}>
+        <table className="w-full text-[11px]">
+          <tbody>
+            {rows.map(({ point: p, sigmoid, ep }, i) => {
+              const marker = getMarkerStyle(ep);
+              const tooltip = p.type === "continuous"
+                ? `${p.label}: ${p.rawValue.toFixed(2)} ${p.unit ?? ""} (${p.value.toFixed(2)}x ctrl)`
+                : `${p.label}: ${p.finding ?? ""} (${p.severity ?? ""})`;
+              return (
+                <tr key={`${p.domain}-${p.label}-${i}`} className="border-b border-border/20" title={tooltip}>
+                  <td className="w-[1px] whitespace-nowrap py-1 pl-2 pr-1 text-muted-foreground">
+                    {p.domain}
+                  </td>
+                  <td className="truncate py-1 pr-2 text-foreground">
+                    {p.label}
+                  </td>
+                  <td className="w-[1px] whitespace-nowrap py-0.5 pr-2">
+                    {/* lower/upper=null strips CI arms; significant=false always (no group p-value for individual subjects) */}
+                    <CIWhisker
+                      center={sigmoid}
+                      lower={null}
+                      upper={null}
+                      axisMin={axis.min}
+                      axisMax={axis.max}
+                      significant={false}
+                      radius={4}
+                      marker={marker}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Concordance Pane (toggle wrapper) ─────────────────
+
+type ConcordanceMode = "radar" | "forest";
+
+function ConcordancePane({ points, endpoints }: { points: OrganScatterPoint[]; endpoints: EndpointSummary[] }) {
+  const [mode, setMode] = useState<ConcordanceMode>("radar");
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-1">
+        {(["radar", "forest"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMode(m)}
+            className={cn(
+              "rounded px-2 py-0.5 text-[10px] font-medium transition-colors",
+              mode === m
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {m === "radar" ? "Radar" : "Detail"}
+          </button>
+        ))}
+        <span className="ml-auto text-[9px] text-muted-foreground">
+          {points.length} endpoints
+        </span>
+      </div>
+      {mode === "radar"
+        ? <SubjectRadar points={points} />
+        : <SubjectForestPlot points={points} endpoints={endpoints} />
+      }
+    </div>
+  );
 }
 
 // ─── BW Sparkline (§1) ──────────────────────────────────
@@ -712,6 +1035,16 @@ function SubjectProfileContent({
     ) ?? null;
   }, [crossAnimalFlags, profile.usubjid]);
 
+  // Organ concordance scatter data (FP-2)
+  const concordancePoints = useMemo(
+    () => computeSubjectConcordance(profile),
+    [profile]
+  );
+
+  // Group-level endpoint summaries for marker encoding (NOAEL weight, adversity)
+  const { analytics } = useFindingsAnalyticsLocal(studyId);
+  const endpointSummaries = analytics.endpoints;
+
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
 
   return (
@@ -810,6 +1143,19 @@ function SubjectProfileContent({
             {bw.length === 0 && lb.length === 0 && (
               <div className="text-xs text-muted-foreground">No measurement data available</div>
             )}
+          </CollapsiblePane>
+        )}
+
+        {/* Organ concordance scatter (FP-2) */}
+        {concordancePoints.length > 0 && (
+          <CollapsiblePane
+            title="Organ concordance"
+            defaultOpen
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+            summary={`${concordancePoints.length} deviating endpoints`}
+          >
+            <ConcordancePane points={concordancePoints} endpoints={endpointSummaries} />
           </CollapsiblePane>
         )}
 

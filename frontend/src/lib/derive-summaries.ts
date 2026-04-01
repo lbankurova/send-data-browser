@@ -141,7 +141,8 @@ export interface OrganCoherence {
 // This client-side remap catches any test codes that the backend maps incorrectly
 // (e.g., NEUT/PLAT/RETIC historically mapped to "general" instead of "hematologic").
 
-const ORGAN_SYSTEM_OVERRIDES: Record<string, string> = {
+/** LB test code → organ system mapping. Also used by subject-concordance.ts. */
+export const ORGAN_SYSTEM_OVERRIDES: Record<string, string> = {
   // Hematology — complete blood count + coagulation
   NEUT: "hematologic", ANC: "hematologic",
   PLAT: "hematologic", PLT: "hematologic",
