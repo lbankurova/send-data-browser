@@ -56,6 +56,7 @@ import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsB
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
+import { resolveOnsetDose, resolveEffectivePattern } from "@/lib/onset-dose";
 import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
@@ -352,7 +353,7 @@ function BiologicalPlausibilityContent({ eci, syndromes, finding, organCoherence
 function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: EndpointConfidenceResult; finding: UnifiedFinding; doseGroups?: DoseGroup[] }) {
   const [showAncova, setShowAncova] = useState(false);
   const { nonMonotonic } = eci;
-  const pattern = finding.dose_response_pattern ?? "";
+  const pattern = resolveEffectivePattern(finding) ?? "";
   const isThreshold = pattern.startsWith("threshold");
   const isFlat = pattern === "flat" || pattern === "no_pattern" || pattern === "insufficient_data";
   const hasAncova = finding.ancova != null
@@ -390,13 +391,10 @@ function DoseResponseQualityContent({ eci, finding, doseGroups }: { eci: Endpoin
       ) : isThreshold ? (
         <>
           <div>Threshold dose-response pattern</div>
-          {finding.pairwise && (() => {
-            const sigPw = finding.pairwise
-              .filter((p) => { const pv = p.p_value_adj ?? p.p_value; return pv != null && pv <= 0.05; })
-              .sort((a, b) => a.dose_level - b.dose_level);
-            const onset = sigPw[0];
+          {(() => {
+            const onset = resolveOnsetDose(finding);
             return onset ? (
-              <div>Effect onset at {doseLabel(onset.dose_level, doseGroups)}</div>
+              <div>Effect onset at {doseLabel(onset.doseLevel, doseGroups)}</div>
             ) : null;
           })()}
         </>
@@ -873,7 +871,7 @@ function LabFindingsInline({ findings }: { findings: UnifiedFinding[] }) {
             <td className="py-0.5 text-right font-mono text-muted-foreground">{f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "\u2014"}</td>
             <td className="py-0.5 text-right font-mono text-muted-foreground">{f.max_fold_change != null ? `\u00d7${f.max_fold_change.toFixed(2)}` : "\u2014"}</td>
             <td className="py-0.5 text-right font-mono text-muted-foreground">{f.min_p_adj != null ? (f.min_p_adj < 0.001 ? "<0.001" : f.min_p_adj.toFixed(3)) : "\u2014"}</td>
-            <td className="py-0.5 text-right text-muted-foreground">{f.dose_response_pattern?.replace(/_/g, " ") ?? "\u2014"}</td>
+            <td className="py-0.5 text-right text-muted-foreground">{(resolveEffectivePattern(f) ?? "\u2014").replace(/_/g, " ")}</td>
           </tr>
         ))}
       </tbody>
@@ -1089,7 +1087,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     const adaptiveCount = specimenFindings.filter(f => f.finding_class === "tr_adaptive").length;
 
     // Dose-response patterns
-    const withPattern = specimenFindings.filter(f => f.dose_response_pattern && f.dose_response_pattern !== "no_pattern" && f.dose_response_pattern !== "control_only");
+    const withPattern = specimenFindings.filter(f => { const p = resolveEffectivePattern(f); return p && p !== "no_pattern" && p !== "control_only"; });
     const doseDepCount = withPattern.length;
 
     // Significance

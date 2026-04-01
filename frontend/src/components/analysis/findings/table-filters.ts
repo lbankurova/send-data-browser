@@ -1,4 +1,5 @@
 import type { UnifiedFinding } from "@/types/analysis";
+import { resolveEffectivePattern } from "@/lib/onset-dose";
 
 // ─── Filter state type ────────────────────────────────────────
 export interface TableFilterState {
@@ -63,8 +64,8 @@ export function applyTableFilters(
   if (fs.pattern)
     result = result.filter(
       (f) =>
-        f.dose_response_pattern != null &&
-        fs.pattern!.includes(f.dose_response_pattern),
+        resolveEffectivePattern(f) != null &&
+        fs.pattern!.includes(resolveEffectivePattern(f)!),
     );
   if (fs.dataType)
     result = result.filter((f) => fs.dataType!.includes(f.data_type));

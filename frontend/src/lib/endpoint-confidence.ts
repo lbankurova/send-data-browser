@@ -19,6 +19,7 @@ import {
   getOrganCorrelationCategory,
   OrganCorrelationCategory,
 } from "./organ-weight-normalization";
+import { resolveEffectivePattern } from "./onset-dose";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -963,7 +964,7 @@ export function attachEndpointConfidence(
       return computeEndpointConfidence(
         finding.group_stats ?? [],
         finding.pairwise ?? [],
-        finding.dose_response_pattern ?? ep.pattern,
+        resolveEffectivePattern(finding) ?? ep.pattern,
         finding.trend_p,
         organ,
         hasEstrousData,

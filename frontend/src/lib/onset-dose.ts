@@ -46,6 +46,23 @@ export function resolveOnsetDose(finding: UnifiedFinding): OnsetResult | null {
 }
 
 /**
+ * Resolve the effective dose-response pattern, considering user overrides.
+ *
+ * - If override exists and pattern is not "no_change", use override pattern
+ * - If override is "no_change", map to "flat" (user says no treatment effect)
+ * - Otherwise, fall back to backend's dose_response_pattern
+ *
+ * Returns null when no pattern is available (caller decides fallback).
+ */
+export function resolveEffectivePattern(finding: UnifiedFinding): string | null {
+  const override = finding._pattern_override;
+  if (override) {
+    return override.pattern === "no_change" ? "flat" : override.pattern;
+  }
+  return finding.dose_response_pattern ?? null;
+}
+
+/**
  * Format an onset dose level into a display label using dose groups.
  */
 export function formatOnsetDose(

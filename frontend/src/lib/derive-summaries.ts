@@ -6,6 +6,7 @@
 import type { AdverseEffectSummaryRow, DoseResponseRow } from "@/types/analysis-views";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { EFFECT_RELEVANCE_THRESHOLD } from "@/lib/lab-clinical-catalog";
+import { resolveEffectivePattern } from "@/lib/onset-dose";
 
 // ─── Domain classification ─────────────────────────────────
 
@@ -286,7 +287,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       direction: f.direction,
       severity: f.severity,
       treatment_related: f.treatment_related,
-      dose_response_pattern: f.dose_response_pattern ?? "flat",
+      dose_response_pattern: resolveEffectivePattern(f) ?? "flat",
       test_code: f.test_code,
       specimen: f.specimen,
       finding: f.finding,
@@ -337,7 +338,7 @@ export function flattenFindingsToDRRows(
         effect_size: f.data_type === "continuous"
           ? (pw?.effect_size ?? null)
           : (pw?.odds_ratio ?? null),
-        dose_response_pattern: f.dose_response_pattern ?? "flat",
+        dose_response_pattern: resolveEffectivePattern(f) ?? "flat",
         trend_p: f.trend_p,
         // Runtime value is "incidence" (not "categorical") — matches backend JSON
         data_type: f.data_type as DoseResponseRow["data_type"],
