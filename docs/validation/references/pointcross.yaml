@@ -1,0 +1,108 @@
+# PointCross — 13-Week Repeat-Dose Toxicity (Ground Truth)
+# Source: nSDRG Section 6.2 — 13 explicitly engineered signals
+# PhUSE SEND pilot dataset (MIT license)
+
+study_id: PointCross
+origin: synthetic
+source: "nSDRG Section 6.2, 13 engineered signals"
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 2, 20, 200]
+  dose_unit: "mg/kg"
+  duration: "13 weeks"
+  recovery: true
+  n_per_group: 20  # 10M+10F main study
+  n_recovery_per_group: 10  # 5M+5F
+  control_type: "VEHICLE_CONTROL"
+
+noael:
+  combined: { dose_level: null, label: "Not established", note: "LOAEL at lowest active dose (2 mg/kg) -> NOAEL below tested range" }
+  loael: { dose_level: 1, label: "Group 2 (2 mg/kg)" }
+  mortality_loael: { dose_level: 3, label: "Group 4 (200 mg/kg)" }
+
+target_organs:
+  primary: ["hepatic"]
+  secondary: ["hematologic"]
+
+# Signals documented in nSDRG Section 6.2.
+# These were deliberately engineered into the synthetic dataset.
+injected_signals:
+  - name: "Body weight decreased"
+    groups: [3, 4]
+    domain: "BW"
+
+  - name: "Body weight gain decreased"
+    groups: [3, 4]
+    domain: "BG"
+
+  - name: "AST increased"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "aspartate aminotransferase|ast"
+
+  - name: "ALT increased"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "alanine aminotransferase|alt"
+
+  - name: "ALP increased"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "alkaline phosphatase|alp"
+
+  - name: "RBC decreased (M)"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "erythrocyte|rbc"
+    sex: "M"
+    expected_class: "tr_adverse"
+
+  - name: "RBC decreased (F)"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "erythrocyte|rbc"
+    sex: "F"
+    expected_class: "tr_adverse"
+    note: "Reduced confidence expected — sex-differential baseline sensitivity in rats. See classification-verdicts.md S1."
+
+  - name: "HGB decreased"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "hemoglobin|hgb"
+
+  - name: "HCT decreased"
+    groups: [4]
+    domain: "LB"
+    test_pattern: "hematocrit|hct"
+
+  - name: "Liver weights increased"
+    groups: [4]
+    domain: "OM"
+    specimen_pattern: "liver"
+
+  - name: "Liver macroscopic findings"
+    groups: [3, 4]
+    domain: "MA"
+    specimen_pattern: "liver"
+    note: "F: 5/10 (p=0.033). M: 4/10 (p=0.087, equivocal). See classification-verdicts.md S2."
+
+  - name: "Liver microscopic findings"
+    groups: [3, 4]
+    domain: "MI"
+    specimen_pattern: "liver"
+    note: "Hypertrophy, M+F"
+
+  - name: "Liver tumors"
+    groups: [4]
+    domain: "TF"
+    specimen_pattern: "liver|hepato"
+    expected_class: "tr_adverse"
+    note: "Adenoma + carcinoma"
+
+assertions:
+  - type: "mortality_loael"
+    description: "mortality_loael = 3 (Group 4) in study_mortality.json. 2 HCC moribund sacrifices (4003 M day 90, 4113 F day 100) + 1 accidental (gavage error, control)."

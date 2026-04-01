@@ -1,0 +1,92 @@
+# Study4 — Adjuvanted Influenza Vaccines (SENDVACC10, SENDVACC99) in NZW Rabbits
+# Source: rabbivi.pdf (study report, 752 pages), nSDRG
+# All findings considered NOT adverse — pharmacology-related
+
+study_id: CBER-POC-Pilot-Study4-Vaccine
+origin: synthetic
+source: "rabbivi.pdf pp.9-12, nSDRG"
+
+design:
+  species: "Rabbit"
+  strain: "New Zealand White"
+  route: "Intramuscular"
+  groups: 3  # Control + SENDVACC10 + SENDVACC99
+  doses: [0, 12.5, 12.5]  # NaCl 0.9%, SENDVACC10 (12.5mg/15 units), SENDVACC99 (12.5mg/45 units)
+  dose_unit: "mg/dose"
+  duration: "29 days (3 doses, q2w)"
+  recovery: true
+  recovery_duration: "28 days"
+  n_per_group: 20  # 10M+10F (5/sex main, 5/sex recovery)
+  control_type: "NEGATIVE_CONTROL"  # NaCl 0.9%
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    note: "LOAEL at lowest active dose -- NOAEL below tested range. Engine correct without D9 — vaccine findings are statistically tr_adverse. Report says all non-adverse (pharmacology). NOAEL shifts once D9 compound profile scoring is active."
+
+target_organs: {}
+
+# Signals documented in study report summary (rabbivi.pdf pp.10-12).
+# All pharmacology-related, non-adverse per investigators.
+injected_signals:
+  - name: "CRP elevation"
+    domain: "LB"
+    test_pattern: "c.reactive|crp"
+    direction: "up"
+    expected_class: "tr_adverse"
+    note: "Both vaccines induced increase. Considered non-adverse, reversible. (report p.10)"
+
+  - name: "Fibrinogen elevation"
+    domain: "LB"
+    test_pattern: "fibrinogen"
+    direction: "up"
+    expected_class: "tr_adverse"
+    note: "Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10)"
+
+  - name: "A/G ratio decrease"
+    domain: "LB"
+    test_pattern: "a/g|albumin.*globulin"
+    direction: "down"
+    note: "Both vaccines. (report p.10)"
+
+  - name: "Body weight loss (transient)"
+    domain: "BW"
+    note: "Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10)"
+
+  - name: "Food consumption decrease (transient)"
+    domain: "FW"
+    note: "Minimally lower, same periods as BW loss. (report p.10)"
+
+  - name: "Spleen weight increase"
+    domain: "OM"
+    specimen_pattern: "spleen"
+    note: "Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10)"
+
+  - name: "Spleen hyperplasia"
+    domain: "MI"
+    specimen_pattern: "spleen"
+    note: "Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10)"
+
+  - name: "Regional LN hyperplasia"
+    domain: "MI"
+    specimen_pattern: "lymph|iliac|inguinal|sacral|mesenteric|mandibular"
+    note: "Lymphoid hyperplasia and granulocyte infiltration. Both vaccines. Enlarged right inguinal LN in M (SENDVACC99). (report p.10)"
+
+  - name: "Injection site inflammation"
+    domain: "MI"
+    specimen_pattern: "injection|administration|muscle"
+    note: "Subacute inflammation. Both vaccines. Partial recovery by end of 4-week period. (report p.10)"
+
+  - name: "WBC/neutrophil/monocyte increases"
+    domain: "LB"
+    test_pattern: "white blood|neutrophil|monocyte|large unstained"
+    direction: "up"
+    note: "Minimally increased. SENDVACC10 F: WBC + monocytes. Both vaccines: large unstained cells. After 3rd admin. (report p.10)"
+
+  - name: "Abdominal adipose edema"
+    domain: "MI"
+    specimen_pattern: "adipose|abdominal"
+    note: "Gelatinous abdominal adipose tissue (F), correlating with edema at microscopy. Both vaccines. (report p.10)"
+
+assertions: []

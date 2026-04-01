@@ -1,0 +1,71 @@
+# CJ16050 — Compound A: Respiratory Safety Pharmacology in SD Rats
+# Source: nSDRG (data packaging only) + raw RE domain data
+# ICH S7A Core Battery — Respiratory
+
+study_id: CJ16050-xptonly
+origin: synthetic
+source: "nSDRG (data packaging only). Signal data extracted from RE domain records."
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 3  # parallel: vehicle, 100, 1000 mg/kg
+  doses: [0, 100, 1000]
+  dose_unit: "mg/kg"
+  duration: "single dose + 8h observation"
+  recovery: false
+  n_per_group: 6  # males only
+  sex: "M"
+  control_type: "VEHICLE_CONTROL"
+  glp: false
+  vehicle: "0.5 w/v% methylcellulose 400"
+  measurement_method: "Whole body plethysmography"
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    note: "LOAEL at lowest active dose -- NOAEL below tested range. Both treated doses produce effects (100 = stimulation, 1000 = depression)."
+
+target_organs: {}
+
+# No study report. Signals confirmed from raw RE domain data (270 records, 3 endpoints).
+# Biphasic dose-response: 100 mg/kg stimulates, 1000 mg/kg depresses.
+injected_signals:
+  - name: "Respiratory rate stimulation (100 mg/kg)"
+    domain: "RE"
+    test_pattern: "respiratory rate|resprate"
+    direction: "up"
+    note: "100 mg/kg: RR ~186 vs control ~95 bpm at 1h (~2x). Sustained through 8h. (from raw RE data)"
+
+  - name: "Tidal volume suppression (1000 mg/kg)"
+    domain: "RE"
+    test_pattern: "tidal volume|tidalvol"
+    direction: "down"
+    note: "1000 mg/kg: TV ~1.05 vs control ~1.45 mL at 1h (~-27%). Sustained through 8h. (from raw RE data)"
+
+  - name: "Minute volume suppression (1000 mg/kg)"
+    domain: "RE"
+    test_pattern: "minute volume|mv"
+    direction: "down"
+    note: "1000 mg/kg: MV ~106 vs control ~137 mL/min at 1h (~-23%). Drops to ~50% control by 4h. (from raw RE data)"
+
+  - name: "Minute volume stimulation (100 mg/kg)"
+    domain: "RE"
+    test_pattern: "minute volume|mv"
+    direction: "up"
+    note: "100 mg/kg: MV ~270 vs control ~137 mL/min at 1h (~2x). Driven by RR increase. (from raw RE data)"
+
+  - name: "Decreased activity (1000 mg/kg)"
+    domain: "CL"
+    note: "6/6 animals at 1000 mg/kg showed 'Decreased activity' post-dose. 0% at lower doses. Consistent with CNS/respiratory depression."
+
+  - name: "Non-monotonic dose-response"
+    note: "Biphasic: 100 mg/kg stimulates (RR/MV up), 1000 mg/kg depresses (RR/TV/MV down + clinical signs). Not a simple linear dose-response."
+
+assertions:
+  - type: "parallel_design"
+    description: "3 parallel groups correctly parsed"
+  - type: "non_monotonic_detected"
+    description: "Engine should detect non-monotonic dose-response pattern"

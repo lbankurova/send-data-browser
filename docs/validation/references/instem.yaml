@@ -25,9 +25,9 @@ design:
 
 noael:
   combined:
-    dose_level: 0
-    label: "0 mg/kg/day Vehicle Control"
-    note: "NOAEL at vehicle control = LOAEL at lowest treated dose (60 mg/kg/day). Synthetic data — no documented signals to validate against."
+    dose_level: null
+    label: "Not established"
+    note: "LOAEL at lowest active dose -- NOAEL below tested range. LOAEL at lowest treated dose (60 mg/kg/day). Synthetic data — no documented signals to validate against."
 
 target_organs: {}
 

@@ -1,0 +1,41 @@
+# FFU — Repeat-Dose IV Multi-Compound in Cynomolgus
+# Source: define.pdf only. No study report.
+# Real study (FDA contribution), not synthetic.
+
+study_id: FFU-Contribution-to-FDA
+origin: real
+source: "define.pdf only. No study report."
+
+design:
+  species: "Primate"
+  strain: "Cynomolgus"
+  route: "Intravenous"
+  groups: 5
+  doses: [0, 4, 6, 8, 12]
+  dose_unit: "mg/kg"
+  duration: "~7 weeks (last dosing day 47)"
+  recovery: false
+  n_per_group: 2  # 0M+2F — female only
+  sex: "F"
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "15 mM histidine buffer, pH 6.0"
+  is_multi_compound: true
+  n_compounds: 3  # Compound 1 (12 mg/kg), Compound 2 (4, 8 mg/kg), Compound 3 (6 mg/kg)
+  note: "Atypical: NHP, IV, female-only, multi-compound (3 test articles across groups), N=2/group."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    confidence: 0.8
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+
+target_organs: {}
+
+injected_signals: []  # Real study, no ground truth
+
+assertions:
+  - type: "multi_compound_detected"
+    description: "is_multi_compound = true, 3 compounds detected"
+  - type: "trend_suppressed"
+    description: "JT trend across compounds suppressed (meaningless across different test articles)"

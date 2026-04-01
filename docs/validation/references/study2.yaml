@@ -1,0 +1,93 @@
+# Study2 — 456a Vaccine in NZW Rabbits
+# Source: CBER-POC study report (CBER-POC.pdf pp.9-12), nSDRG
+# All findings considered NOT adverse by investigators — pharmacology-related
+
+study_id: CBER-POC-Pilot-Study2-Vaccine_xpt
+origin: synthetic
+source: "CBER-POC study report pp.9-12, nSDRG"
+
+design:
+  species: "Rabbit"
+  strain: "New Zealand White"
+  route: "Intramuscular"
+  groups: 2  # Control + 456a
+  doses: [0]  # treatment dose is null in XPT (biologic — no numeric dose value)
+  dose_unit: "vp/dose"
+  note_doses: "Treatment group is 1x10^11 VP but XPT encodes dose_value=None"
+  duration: "29 days (3 doses, q2w)"
+  recovery: true
+  recovery_duration: "21 days"
+  n_per_group: 20  # 10M+10F (5/sex main, 5/sex recovery)
+  control_type: "VEHICLE_CONTROL"  # none stated in report, but control group present
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    note: "LOAEL at lowest active dose -- NOAEL below tested range. Engine correct without D9 — vaccine findings are statistically tr_adverse. Report says treatment dose (all non-adverse, pharmacology-related). NOAEL shifts to treatment dose once D9 compound profile scoring is active."
+
+# Report does not identify target organs — all findings are pharmacology-related
+target_organs: {}
+
+# Signals documented in study report summary table (pp.11-12).
+# These are known pharmacological effects baked into the synthetic data.
+# Report explicitly states all are NOT adverse. Engine should detect but may over-classify.
+injected_signals:
+  - name: "CRP elevation"
+    domain: "LB"
+    test_pattern: "c.reactive|crp"
+    direction: "up"
+    expected_class: "tr_adverse"
+    note: "Day 2: M 65.5x, F 11.7x control. Day 30: M 33.5x, F 8.1x. Report: not adverse. (report p.12)"
+
+  - name: "Fibrinogen elevation"
+    domain: "LB"
+    test_pattern: "fibrinogen"
+    direction: "up"
+    expected_class: "tr_adverse"
+    note: "Day 3: M 1.97x (p<0.001), F 2.00x (p<0.001). Day 31: M 1.75x (p<0.01), F 1.65x (p<0.05). Report: not adverse. (report p.12)"
+
+  - name: "Monocyte elevation"
+    domain: "LB"
+    test_pattern: "monocyte"
+    direction: "up"
+    note: "Day 3: M 2.7x (p<0.05), F 3.0x (p<0.01). Day 31: F only 2.1x (p<0.001). M borderline. (report p.11)"
+
+  - name: "Globulin elevation"
+    domain: "LB"
+    test_pattern: "globulin"
+    direction: "up"
+    note: "Day 3: M 1.3x (p<0.001), F 1.2x (p<0.001). Day 31: similar. (report p.11)"
+
+  - name: "A/G ratio decrease"
+    domain: "LB"
+    test_pattern: "a/g|albumin.*globulin"
+    direction: "down"
+    note: "Day 3: M 0.78x (p<0.001), F 0.82x (p<0.001). (report p.11)"
+
+  - name: "Spleen hyperplasia"
+    domain: "MI"
+    specimen_pattern: "spleen"
+    note: "Increased lymphoid cellularity of germinal centre. Correlated with higher spleen weights. (report p.9)"
+
+  - name: "Iliac LN hyperplasia"
+    domain: "MI"
+    specimen_pattern: "iliac|lymph"
+    note: "Increased generalised lymphoid cellularity. Gross enlargement in 1F. Correlated with higher LN weights. (report p.9)"
+
+  - name: "Iliac LN weight increase"
+    domain: "OM"
+    specimen_pattern: "iliac|lymph"
+    note: "Correlated with lymphoid hyperplasia. (report p.9)"
+
+  - name: "Spleen weight increase"
+    domain: "OM"
+    specimen_pattern: "spleen"
+    note: "Slightly higher in both sexes. (report p.9)"
+
+  - name: "Injection site inflammation"
+    domain: "MI"
+    specimen_pattern: "site.*application|injection|administration|muscle.*skeletal"
+    note: "Inflammation, necrosis, hemorrhage in striated muscle/fascia. SEND specimen: 'SITE, APPLICATION'. Engine classifies as not_treatment_related — known gap (injection site findings lack dose-response in 2-group design). (report p.9)"
+
+assertions: []

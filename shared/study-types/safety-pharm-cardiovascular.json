@@ -8,7 +8,7 @@
     "CARDIOVASCULAR PHARMACOLOGY",
     "SAFETY PHARMACOLOGY"
   ],
-  "available_domains": ["EG", "VS", "RE"],
+  "available_domains": ["EG", "CV", "VS", "RE"],
   "required_domains": ["EG"],
   "time_course": false,
   "statistical_unit": "individual",

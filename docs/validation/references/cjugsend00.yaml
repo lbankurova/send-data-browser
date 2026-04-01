@@ -1,0 +1,54 @@
+# CJUGSEND00 — Compound A: CV Safety Pharmacology in Cynomolgus Monkeys
+# Source: nSDRG (no study report — nSDRG is data packaging guide only)
+# ICH S7A Core Battery — Cardiovascular
+
+study_id: CJUGSEND00
+origin: synthetic
+source: "nSDRG (data packaging only, no scientific conclusions)"
+
+design:
+  species: "Primate"
+  strain: "Cynomolgus"
+  route: "Oral gavage"
+  groups: 4  # 4 analytical dose levels (within-subject escalation, all animals receive all doses)
+  study_type: "Cardiovascular safety pharmacology"
+  design_type: "dose_escalation"  # within-subject, not parallel
+  doses: [0, 10, 30, 100]  # mg/kg, single dose each, 6-day washout
+  dose_unit: "mg/kg"
+  dose_schedule: "Day 1 = vehicle, Day 8 = 10, Day 15 = 30, Day 22 = 100"
+  duration: "22 days (single-dose per period)"
+  recovery: false
+  n_total: 4  # 4 males, each animal = own control
+  sex: "M"
+  has_concurrent_control: true  # within-subject vehicle period is concurrent control
+  glp: false
+  vehicle: "0.5 w/v% methylcellulose"
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+
+target_organs: {}
+
+# nSDRG has no scientific conclusions. Endpoints known from domain structure:
+# CV: SYSBP, DIABP, MAP, HR (768 records, telemetry)
+# EG: PR, QRS, QT, QTcB, RR intervals (960 records)
+# RE: Respiratory rate (192 records)
+# VS: Temperature (192 records)
+# CL: Mostly normal. One "Paralysis of hindleg (Right)", one vomiting episode.
+injected_signals:
+  - name: "CV endpoints (HR, BP)"
+    domain: "CV"
+    note: "SYSBP, DIABP, MAP, HR measured via telemetry. No report to confirm expected direction/magnitude. Data available in CV domain."
+
+  - name: "ECG endpoints (PR, QRS, QT, QTcB)"
+    domain: "EG"
+    note: "Aggregate intervals. No report to confirm expected findings. Data available in EG domain."
+
+assertions:
+  - type: "design_escalation"
+    description: "Dose escalation crossover correctly parsed — 4 dose levels, within-subject"
+  - type: "endpoint_count"
+    description: "CV (768 records) + EG (960 records) present"

@@ -1,0 +1,41 @@
+# TOXSCI 35449 — 1-Month Dog Compound B (6576, IDO1 Inhibitor)
+# Source: No study report. TOXSCI-24-0062 Cross Study Analysis.
+# Part of 2x2 cross-species panel: Compound A (5492) + Compound B (6576), Rat + Dog.
+
+study_id: "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt"
+origin: real
+source: "TOXSCI-24-0062 publication data. No study report."
+
+design:
+  species: "Dog"
+  strain: "Beagle"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 3, 18, 356]
+  dose_unit: "mg/kg/day"
+  duration: "4 weeks + 4-week recovery"
+  recovery: true
+  recovery_pairs: 2  # Control + High
+  n_per_group: 6  # 3M+3F
+  n_recovery_per_group: 4  # 2M+2F
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "Polymer (70% HPMC-AS-M) in ultra pure water"
+  treatment: "6576"
+  pharmacologic_class: "IDO1 Inhibitor"
+  note: "Very wide dose range (3 to 356 — 119x spread). Paired with rat Compound B study (87497)."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    loael_dose_level: 1
+    confidence: 0.8
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+
+target_organs: {}
+
+injected_signals: []  # Real study, no ground truth
+
+assertions:
+  - type: "design_groups"
+    description: "4 groups with vehicle control and 2 recovery pairs"

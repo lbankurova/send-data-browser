@@ -127,10 +127,12 @@ describe('Ground Truth Validation', () => {
       }
     })
 
-    it('NOAEL at control (dose_level 0)', () => {
+    it('NOAEL not established (LOAEL at lowest active dose)', () => {
       const combined = noael.find((n: any) => n.sex === 'Combined')
       expect(combined).toBeDefined()
-      expect(combined.noael_dose_level).toBe(0)
+      // LOAEL at dose_level 1 (lowest active dose) -> NOAEL "not established"
+      // because vehicle is not a testable dose (EPA IRIS, OECD, Kale 2022)
+      expect(combined.noael_dose_level).toBeNull()
     })
 
     it('LOAEL at first treatment group', () => {

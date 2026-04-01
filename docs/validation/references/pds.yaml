@@ -1,0 +1,45 @@
+# PDS — 1-Month Repeat-Dose Toxicity + Recovery (FDA-Validated SEND 3.0)
+# Source: PDS readme.md — no signal documentation, design only
+# "Anonymized SEND data set that has been successfully run through the FDA's validation process"
+
+study_id: PDS
+origin: synthetic
+source: "PDS readme.md, define.pdf. No study report — no signal documentation."
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 20, 200, 400]
+  dose_unit: "mg/kg"
+  duration: "1 month (30 days)"
+  recovery: true
+  recovery_pairs: 2  # Vehicle + High
+  n_per_group: 26  # 13M+13F main
+  n_recovery_per_group: 10  # 5M+5F
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "Methocell"
+  treatment: "PDS-FAKEDRUG-111"
+  note: "Inter-organizational SEND dataset — multiple LIMS sources (tox, clin path, pathology, PK)."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    loael_dose_level: 1
+    loael_label: "Low (20 mg/kg)"
+    confidence: 0.8
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+
+target_organs: {}  # No report to confirm
+
+injected_signals: []  # No signal documentation available
+
+assertions:
+  - type: "design_groups"
+    description: "4 groups correctly parsed with vehicle control"
+  - type: "recovery_detected"
+    description: "2 recovery pairs (Vehicle + High) detected"
+  - type: "sex_stratified_merge"
+    description: "Recovery arms merged into pooled N of 18M/18F for Vehicle and High"

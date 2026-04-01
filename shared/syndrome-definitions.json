@@ -1012,6 +1012,34 @@
           "domain": "LB",
           "direction": "up",
           "role": "supporting"
+        },
+        {
+          "testCodes": [
+            "SYSBP",
+            "DIABP",
+            "MAP"
+          ],
+          "canonicalLabels": [
+            "systolic blood pressure",
+            "diastolic blood pressure",
+            "mean arterial pressure"
+          ],
+          "domain": "CV",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "BP"
+        },
+        {
+          "testCodes": [
+            "HR"
+          ],
+          "canonicalLabels": [
+            "heart rate"
+          ],
+          "domain": "CV",
+          "direction": "any",
+          "role": "supporting",
+          "tag": "CV_HR"
         }
       ],
       "applies_to_study_types": [

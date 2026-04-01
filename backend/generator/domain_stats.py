@@ -24,6 +24,7 @@ from services.analysis.findings_ds import compute_ds_findings
 from services.analysis.findings_eg import compute_eg_findings
 from services.analysis.findings_re import compute_re_findings
 from services.analysis.findings_vs import compute_vs_findings
+from services.analysis.findings_cv import compute_cv_findings
 from services.analysis.findings_bg import compute_bg_findings
 from services.analysis.findings_is import compute_is_findings
 from generator.organ_map import get_organ_name
@@ -170,6 +171,8 @@ def compute_all_findings(
                 pool.submit(compute_vs_findings, study, subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_bg_findings, study, subs, last_dosing_day=last_dosing_day),
             ]
+            if "cv" in study.xpt_files:
+                p1.append(pool.submit(compute_cv_findings, study, subs, last_dosing_day=last_dosing_day))
             if "fw" in study.xpt_files:
                 p1.append(pool.submit(_compute_fw_findings, study, subs, last_dosing_day=last_dosing_day))
             if "is" in study.xpt_files:
@@ -197,6 +200,8 @@ def compute_all_findings(
                     pool.submit(compute_vs_findings, study, main_only, last_dosing_day=last_dosing_day),
                     pool.submit(compute_bg_findings, study, main_only, last_dosing_day=last_dosing_day),
                 ]
+                if "cv" in study.xpt_files:
+                    p3.append(pool.submit(compute_cv_findings, study, main_only, last_dosing_day=last_dosing_day))
                 if "fw" in study.xpt_files:
                     p3.append(pool.submit(_compute_fw_findings, study, main_only, last_dosing_day=last_dosing_day))
 

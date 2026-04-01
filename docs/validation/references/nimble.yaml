@@ -1,0 +1,34 @@
+# Nimble/Nimort-01 — 3-Week Repeat-Dose in Fischer 344 Rats
+# Source: define.pdf, reviewers-guide.pdf. No study report.
+
+study_id: Nimble
+origin: synthetic
+source: "define.pdf, reviewers-guide.pdf. No signal documentation."
+
+design:
+  species: "Rat"
+  strain: "Fischer 344"
+  route: "Oral"
+  groups: 2  # Control + single treatment
+  doses: [0, 10]
+  dose_unit: "mg/kg/day"
+  duration: "3 weeks"
+  recovery: false
+  n_per_group: 50  # ~18M+32F (unbalanced)
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "Saline"
+  treatment: "Example Compound Name"
+  note: "Only 2 dose groups — no dose-response curve possible. Unbalanced sex ratio (~1:2 M:F). Fischer 344 strain (unusual). Large N."
+
+noael:
+  combined: { dose_level: null, label: "Not established", loael_dose_level: 1, confidence: 0.0, note: "Control mortality 28% exceeds 10% subchronic threshold. NOAEL suppressed per EPA/OECD." }
+
+target_organs: {}
+
+injected_signals: []
+
+assertions:
+  - type: "design_groups"
+    description: "2 groups correctly parsed"
+  - type: "no_dose_response"
+    description: "Single treatment dose — no dose-response pattern possible"

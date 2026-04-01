@@ -1,0 +1,42 @@
+# TOXSCI 96298 — 1-Month Rat Compound A (5492, IDO1 Inhibitor)
+# Source: No study report. TOXSCI-24-0062 Cross Study Analysis.
+
+study_id: "TOXSCI-24-0062--96298 1 month rat- Compound A xpt"
+origin: real
+source: "TOXSCI-24-0062 publication data. No study report."
+
+design:
+  species: "Rat"
+  strain: "Sprague-Dawley"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 50, 125, 250]
+  dose_unit: "mg/kg"
+  duration: "1 month"
+  recovery: false  # no recovery (unlike its dog counterpart)
+  n_per_group_control: 30  # 15M+15F
+  n_per_group_low: 20  # 10M+10F
+  n_per_group_mid: 30  # 15M+15F
+  n_per_group_high: 30  # 15M+15F
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "Methocel (Methylcellulose)/Tween80/H2O"
+  treatment: "5492"
+  note: "No recovery period (unlike dog counterpart 43066). Unequal group sizes (Low=20, others=30). Paired with dog Compound A study (43066)."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    loael_dose_level: 1
+    confidence: 0.8
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+
+target_organs: {}
+
+injected_signals: []
+
+assertions:
+  - type: "design_groups"
+    description: "4 groups with unequal N (Low=20, others=30)"
+  - type: "no_recovery"
+    description: "No recovery period"

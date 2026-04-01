@@ -11,6 +11,16 @@ from services.analysis.analysis_settings import ScoringParams, DEFAULT_PATTERN_S
 from services.analysis.statistics import severity_trend
 
 
+def _prev_dose_level(dose_groups: list[dict], level: int) -> int | None:
+    """Highest dose_level in *dose_groups* that is below *level*.
+
+    Handles non-contiguous dose levels in multi-compound studies where
+    ``loael_level - 1`` would reference a dose from a different compound.
+    """
+    lower = sorted(dg["dose_level"] for dg in dose_groups if dg["dose_level"] < level)
+    return lower[-1] if lower else None
+
+
 def _is_loael_driving(finding: dict) -> bool:
     """Return True when a finding should drive LOAEL determination.
 
@@ -522,10 +532,20 @@ def _build_noael_for_groups(
 
         noael_level = None
         loael_level = None
+        noael_method = "highest_dose_no_adverse"
         if adverse_dose_levels:
             loael_level = min(adverse_dose_levels)
             if loael_level > 0:
-                noael_level = loael_level - 1
+                noael_level = _prev_dose_level(dose_groups, loael_level)
+                # If NOAEL resolved to vehicle/control, it means LOAEL is the
+                # lowest active dose -- NOAEL is "not established (below tested
+                # range)".  Vehicle is not a testable dose of the test article.
+                # Ref: EPA IRIS, OECD TG 407/408, Kale et al. 2022.
+                if noael_level is not None:
+                    noael_dg = next((dg for dg in dose_groups if dg["dose_level"] == noael_level), None)
+                    if noael_dg and noael_dg.get("is_control"):
+                        noael_level = None
+                        noael_method = "below_tested_range"
 
         # Count adverse findings at LOAEL and collect derivation evidence (IMP-10)
         n_adverse_at_loael = 0
@@ -554,7 +574,7 @@ def _build_noael_for_groups(
         # Compute NOAEL confidence score
         confidence = _compute_noael_confidence(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
-            params=params,
+            dose_groups=dose_groups, params=params,
         )
 
         # Determine classification method used
@@ -564,7 +584,12 @@ def _build_noael_for_groups(
         classification_method = "finding_class" if has_finding_class else "legacy_severity"
 
         # A3: Single-dose compound annotation
-        method = "highest_dose_no_adverse" if noael_level is not None else "not_established"
+        if noael_level is not None:
+            method = "highest_dose_no_adverse"
+        elif noael_method == "below_tested_range":
+            method = "below_tested_range"
+        else:
+            method = "not_established"
         if is_single_dose:
             method = (method + "_single_dose") if noael_level is not None else "single_dose_not_established"
 
@@ -594,8 +619,8 @@ def _build_noael_for_groups(
             mort_loael = mortality["mortality_loael"]
             if noael_level is not None and noael_level >= mort_loael:
                 # Cap NOAEL to one level below mortality LOAEL
-                capped_level = mort_loael - 1
-                if capped_level >= 0 and capped_level < noael_level:
+                capped_level = _prev_dose_level(dose_groups, mort_loael)
+                if capped_level is not None and capped_level < noael_level:
                     noael_level = capped_level
                     mortality_cap_applied = True
                     mortality_cap_dose_value = dose_value_map.get(capped_level)
@@ -615,7 +640,7 @@ def _build_noael_for_groups(
             if sched_adverse_levels:
                 scheduled_loael_level = min(sched_adverse_levels)
                 if scheduled_loael_level > 0:
-                    scheduled_noael_level = scheduled_loael_level - 1
+                    scheduled_noael_level = _prev_dose_level(dose_groups, scheduled_loael_level)
 
         # Flag when scheduled NOAEL differs from base NOAEL
         scheduled_noael_differs = (
@@ -661,6 +686,7 @@ def _compute_noael_confidence(
     all_findings: list[dict],
     noael_level: int | None,
     n_adverse_at_loael: int,
+    dose_groups: list[dict] | None = None,
     params: ScoringParams | None = None,
 ) -> float:
     """Compute NOAEL confidence score (0.0 to 1.0).
@@ -693,7 +719,9 @@ def _compute_noael_confidence(
                     if p is not None and p < 0.05:
                         opp_adverse_levels.add(pw["dose_level"])
         opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
-        opp_noael = (opp_loael - 1) if opp_loael is not None and opp_loael > 0 else None
+        opp_noael = _prev_dose_level(dose_groups, opp_loael) if dose_groups and opp_loael is not None and opp_loael > 0 else (
+            (opp_loael - 1) if opp_loael is not None and opp_loael > 0 else None
+        )
         if noael_level is not None and opp_noael is not None and noael_level != opp_noael:
             score -= params.penalty_sex_inconsistency
 

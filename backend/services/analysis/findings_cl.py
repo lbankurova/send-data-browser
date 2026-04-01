@@ -52,8 +52,14 @@ def compute_cl_findings(
     cl_df = read_xpt_as_polars(study.xpt_files["cl"])
     subs = subjects_to_polars(subjects)
 
-    if "CLDY" in cl_df.columns:
-        cl_df = cl_df.with_columns(pl.col("CLDY").cast(pl.Float64, strict=False))
+    # Resolve day column: CLDY preferred, VISITDY fallback
+    day_col = "CLDY" if "CLDY" in cl_df.columns else ("VISITDY" if "VISITDY" in cl_df.columns else None)
+
+    if day_col and day_col in cl_df.columns:
+        cl_df = cl_df.with_columns(pl.col(day_col).cast(pl.Float64, strict=False))
+        if day_col != "CLDY":
+            cl_df = cl_df.rename({day_col: "CLDY"})
+            day_col = "CLDY"
 
     # Check if recovery subjects have CL records BEFORE filtering
     has_any_recovery_cl = False

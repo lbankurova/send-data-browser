@@ -1,0 +1,43 @@
+# TOXSCI 43066 — 1-Month Dog Compound A (5492, IDO1 Inhibitor)
+# Source: No study report. TOXSCI-24-0062 Cross Study Analysis.
+
+study_id: "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt"
+origin: real
+source: "TOXSCI-24-0062 publication data. No study report."
+
+design:
+  species: "Dog"
+  strain: "Beagle"
+  route: "Oral gavage"
+  groups: 4
+  doses: [0, 25, 50, 100]
+  dose_unit: "mg/kg/day"
+  duration: "1 month + 2-week recovery"
+  recovery: true
+  recovery_pairs: 3  # Control + Mid + High
+  n_per_group: 6  # 3M+3F
+  n_recovery_per_group: 4  # 2M+2F
+  control_type: "VEHICLE_CONTROL"
+  vehicle: "0.5% Methocel A4M, 0.1% Tween 80, 99.4% water"
+  treatment: "5492"
+  pharmacologic_class: "IDO1 inhibitor (selective indoleamine-pyrrole 2,3-dioxygenase 1)"
+  note: "3 recovery pairs (unusual — most studies recover only Control + High). Sex-divergent NOAEL (M: 0, F: 25 mg/kg/day). Paired with rat Compound A study (96298)."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    loael_dose_level: 1
+    confidence: 0.8
+    note: "LOAEL at lowest active dose -- NOAEL below tested range"
+  female: { dose_level: 1, label: "Low (25 mg/kg/day)", loael_dose_level: 2, confidence: 0.6 }
+
+target_organs: {}
+
+injected_signals: []
+
+assertions:
+  - type: "design_groups"
+    description: "4 groups with 3 recovery pairs"
+  - type: "sex_divergent_noael"
+    description: "NOAEL differs by sex — M at control, F at 25 mg/kg/day"
