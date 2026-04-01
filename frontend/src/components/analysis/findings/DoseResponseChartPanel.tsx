@@ -438,6 +438,11 @@ export function DoseResponseChartPanel({
     });
   }, [chartData, findings, endpointLabel, selectedDay, trendTestName]);
 
+  // ── Crossover detection (within-subject design) ───────────
+  const isCrossoverStudy = useMemo(() => {
+    return findings.length > 0 && findings.every((f) => f.day == null);
+  }, [findings]);
+
   // ── Concern threshold (safety pharmacology) ───────────────
   const concernThreshold = useMemo(() => {
     if (!chartData) return null;
@@ -772,6 +777,11 @@ export function DoseResponseChartPanel({
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {isContinuous ? "Mean \u00b1 SD" : "Incidence"}
                   </span>
+                  {isCrossoverStudy && (
+                    <span className="text-[9px] text-muted-foreground/60" title="Within-subject design: same animals receive all treatments. Change from baseline (CFB).">
+                      within-subject CFB
+                    </span>
+                  )}
                   {isContinuous && (
                     <PanePillToggle
                       value={drChartMode}

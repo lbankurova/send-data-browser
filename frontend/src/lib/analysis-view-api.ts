@@ -341,6 +341,10 @@ export interface StudyMetadataEnriched {
   is_crossover?: boolean;
   /** BP-C4: Escalation caveat text (null for non-escalation studies). */
   design_caveat?: string | null;
+  /** Multi-compound study flag. */
+  is_multi_compound?: boolean;
+  /** Compound names (multi-compound studies). */
+  compounds?: string[];
 }
 
 export function fetchStudyMetadataEnriched(

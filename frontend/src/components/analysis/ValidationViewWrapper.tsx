@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { ValidationView } from "./ValidationView";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import type { ValidationViewSelection } from "@/contexts/ViewSelectionContext";
+import { StudyBannerConnected } from "./StudyBannerConnected";
 
 export function ValidationViewWrapper() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -18,10 +19,13 @@ export function ValidationViewWrapper() {
   const valSelection = viewSelection?._view === "validation" ? viewSelection : null;
 
   return (
-    <ValidationView
-      studyId={studyId}
-      onSelectionChange={handleSelectionChange}
-      viewSelection={valSelection}
-    />
+    <>
+      <StudyBannerConnected />
+      <ValidationView
+        studyId={studyId}
+        onSelectionChange={handleSelectionChange}
+        viewSelection={valSelection}
+      />
+    </>
   );
 }

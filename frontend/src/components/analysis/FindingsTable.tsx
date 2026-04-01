@@ -175,6 +175,13 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
   const [sorting, setSorting] = useSessionState<SortingState>("pcc.findings.sorting", []);
   const [columnSizing, setColumnSizing] = useSessionState<ColumnSizingState>("pcc.findings.columnSizing", {});
 
+  // Crossover detection: all findings have day=null → within-subject design
+  const isCrossover = useMemo(
+    () => findings.length > 0 && findings.every((f) => f.day == null),
+    [findings],
+  );
+  const doseColumnLabel = isCrossover ? "Treatments" : "Dose groups";
+
   // CL day-mode toggle state
   type ClDayMode = "mode" | "first_observed";
   const [clDayMode, setClDayMode] = useState<ClDayMode>("mode");
@@ -560,16 +567,22 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           ?? (dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label)));
         const fullLabel = dg.dose_value != null && dg.dose_unit
           ? `${dg.dose_value} ${dg.dose_unit}` : dg.label;
-        const headerTooltip = `${fullLabel}\nMean (continuous) \u00b7 Affected/N (incidence)`;
+        const headerTooltip = `${fullLabel}\nMean (continuous) \u00b7 Affected/N (incidence)`
+          + (isCrossover ? "\nWithin-subject: same animals across all treatments" : "");
         return col.display({
           id: `dose_${dg.dose_level}`,
           header: () => (
-            <DoseHeader
-              level={dg.dose_level}
-              label={shortLabel}
-              tooltip={headerTooltip}
-              color={dg.display_color}
-            />
+            <>
+              {idx === 0 && (
+                <span className="absolute -top-3 left-0 text-[8px] font-normal uppercase tracking-wider text-muted-foreground/60">{doseColumnLabel}</span>
+              )}
+              <DoseHeader
+                level={dg.dose_level}
+                label={shortLabel}
+                tooltip={headerTooltip}
+                color={dg.display_color}
+              />
+            </>
           ),
           cell: (info) => {
             const f = info.row.original;

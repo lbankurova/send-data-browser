@@ -1,5 +1,11 @@
 import { StudySummaryView } from "./StudySummaryView";
+import { StudyBannerConnected } from "./StudyBannerConnected";
 
 export function StudySummaryViewWrapper() {
-  return <StudySummaryView />;
+  return (
+    <>
+      <StudyBannerConnected />
+      <StudySummaryView />
+    </>
+  );
 }
