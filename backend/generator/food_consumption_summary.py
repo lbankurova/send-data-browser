@@ -155,17 +155,6 @@ def _assess_caloric_dilution(route: str | None) -> bool:
     return any(term in upper for term in ["DIETARY", "DIET", "FEED", "ADMIXTURE"])
 
 
-def _get_dose_info(study: StudyInfo) -> pd.DataFrame | None:
-    """Get per-subject dose_level + SEX from DM domain."""
-    from services.analysis.dose_groups import build_dose_groups
-    try:
-        dg_data = build_dose_groups(study)
-        subjects = dg_data["subjects"]
-        return subjects[["USUBJID", "SEX", "dose_level", "is_recovery", "is_satellite"]].copy()
-    except Exception:
-        return None
-
-
 def _compute_periods(fw_df: pd.DataFrame, bw_df: pd.DataFrame) -> list[dict]:
     """Compute food efficiency per measurement period.
 

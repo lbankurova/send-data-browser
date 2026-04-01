@@ -8,8 +8,7 @@ import {
 } from "lucide-react";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPreferences } from "@/hooks/useStudyPreferences";
-import { useDesignMode } from "@/contexts/DesignModeContext";
-import { useScenarios } from "@/hooks/useScenarios";
+
 import { useCategorizedDomains } from "@/hooks/useDomainsByStudy";
 import { getDomainDescription } from "@/lib/send-categories";
 import { ANALYSIS_VIEWS } from "@/lib/analysis-definitions";
@@ -256,9 +255,6 @@ export function BrowsingTree() {
 
   const isHomeActive = location.pathname === "/";
 
-  const { designMode } = useDesignMode();
-  const { data: scenarios } = useScenarios(designMode);
-
   // Build display-name lookup from study data + preferences
   const displayNames: Record<string, string> = useMemo(() => {
     const map: Record<string, string> = {};
@@ -276,10 +272,7 @@ export function BrowsingTree() {
 
   // Apply custom ordering to study IDs
   const allStudyIds = useMemo(() => {
-    const ids = [
-      ...(studies ?? []).map((s) => s.study_id),
-      ...(designMode ? (scenarios ?? []).map((s) => s.scenario_id) : []),
-    ];
+    const ids = (studies ?? []).map((s) => s.study_id);
     const order = prefs?.order;
     if (!order || order.length === 0) return ids;
     const orderIndex = new Map(order.map((id, i) => [id, i]));
@@ -288,7 +281,7 @@ export function BrowsingTree() {
       const bi = orderIndex.get(b) ?? Infinity;
       return ai - bi;
     });
-  }, [studies, scenarios, designMode, prefs?.order]);
+  }, [studies, prefs?.order]);
 
   // Register IDs so the landing page expand/collapse control can use them
   const idsKey = allStudyIds.join(",");

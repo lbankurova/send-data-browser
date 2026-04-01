@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, Check, X, TriangleAlert, ChevronRight, Upload, Loader2, Wrench, GripVertical, Pencil } from "lucide-react";
+import { FlaskConical, MoreVertical, ChevronRight, Upload, Loader2, GripVertical, Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
@@ -12,21 +12,13 @@ import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { importStudy, deleteStudy } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDesignMode } from "@/contexts/DesignModeContext";
-import { useScenarios } from "@/hooks/useScenarios";
-import type { ScenarioSummary } from "@/hooks/useScenarios";
+
 import type { StudySummary } from "@/types";
 import { getPipelineStageColor } from "@/lib/severity-colors";
 import { noael } from "@/lib/study-accessors";
 import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
 import { routeStudyTypeWithQuality } from "@/lib/study-type-registry";
 
-const VAL_DISPLAY: Record<string, { icon: React.ReactNode; tooltip: string }> = {
-  Pass: { icon: <Check className="h-3.5 w-3.5" style={{ color: "#16a34a" }} />, tooltip: "SEND validation passed" },
-  Warnings: { icon: <TriangleAlert className="h-3.5 w-3.5" style={{ color: "#d97706" }} />, tooltip: "Passed with warnings" },
-  Fail: { icon: <X className="h-3.5 w-3.5" style={{ color: "#dc2626" }} />, tooltip: "SEND validation failed" },
-  "Not Run": { icon: <span className="text-xs text-muted-foreground">—</span>, tooltip: "Not validated" },
-};
 
 type DisplayStudy = StudySummary & {
   validation: string;
@@ -469,8 +461,6 @@ export function AppLandingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { selectedStudyId, selectStudy, selectProject } = useSelection();
-  const { designMode, toggleDesignMode } = useDesignMode();
-  const { data: scenarios } = useScenarios(designMode);
   const [projectFilter, setProjectFilter] = useState<string>("");
   const [viewMode, setViewMode] = useState<"studies" | "portfolio">("studies");
 
@@ -543,61 +533,7 @@ export function AppLandingPage() {
     };
   });
 
-  // Add portfolio-only studies (auto-derived from TS domain) to the list
-  const portfolioDisplayStudies: DisplayStudy[] = (portfolioStudies ?? []).map((s) => {
-    const resolvedNoael = noael(s);
-    const noaelDisplay = resolvedNoael
-      ? `${resolvedNoael.dose} ${resolvedNoael.unit}`
-      : "—";
-    const noaelWithSuffix = resolvedNoael && s.noael_derived && !s.noael_reported
-      ? `${noaelDisplay} (d)`
-      : noaelDisplay;
-
-    return {
-      study_id: s.id,
-      name: s.title ?? s.id,
-      display_name: null,
-      domain_count: s.domains?.length ?? 0,
-      species: s.species ?? null,
-      study_type: s.study_type ?? null,
-      protocol: s.protocol ?? null,
-      standard: null,
-      subjects: s.subjects ?? null,
-      start_date: null,
-      end_date: null,
-      status: s.status,
-      validation: s.validation ? (s.validation.errors > 0 ? "Fail" : s.validation.warnings > 0 ? "Warnings" : "Pass") : "Not Run",
-      // Portfolio-specific fields
-      pipeline_stage: s.pipeline_stage,
-      duration_weeks: s.duration_weeks ?? undefined,
-      noael_value: noaelWithSuffix,
-      portfolio_metadata: s,
-    };
-  });
-
-  const scenarioStudies: DisplayStudy[] = designMode
-    ? (scenarios ?? []).map((s: ScenarioSummary) => ({
-        study_id: s.scenario_id,
-        name: s.name,
-        display_name: null,
-        domain_count: s.domain_count,
-        species: s.species,
-        study_type: s.study_type,
-        protocol: null,
-        standard: null,
-        subjects: s.subjects,
-        start_date: null,
-        end_date: null,
-        status: "Scenario",
-        validation: s.validation_status,
-      }))
-    : [];
-
-  // In design mode, add portfolio-only studies (those not already in real studies)
-  const realStudyIds = useMemo(() => new Set((studies ?? []).map((s) => s.study_id)), [studies]);
-  const allStudiesUnfiltered: DisplayStudy[] = designMode
-    ? [...realStudies, ...portfolioDisplayStudies.filter((s) => !realStudyIds.has(s.study_id))]
-    : [...realStudies];
+  const allStudiesUnfiltered: DisplayStudy[] = [...realStudies];
 
   // Filter by program if selected, then apply custom order
   const allStudies: DisplayStudy[] = useMemo(() => {
@@ -743,7 +679,7 @@ export function AppLandingPage() {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {viewMode === "studies" ? `Studies (${allStudies.length + scenarioStudies.length})` : `Programs (${(projects ?? []).length})`}
+              {viewMode === "studies" ? `Studies (${allStudies.length})` : `Programs (${(projects ?? []).length})`}
             </h2>
 
             {/* View mode toggle */}
@@ -821,7 +757,7 @@ export function AppLandingPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        ) : allStudies.length > 0 || scenarioStudies.length > 0 ? (
+        ) : allStudies.length > 0 ? (
           <div className="max-h-[60vh] overflow-auto rounded-md border bg-card">
             <table className="w-full text-[11px]">
               <thead className="sticky top-0 z-10 bg-background">
@@ -973,53 +909,6 @@ export function AppLandingPage() {
                     </tr>
                   );
                 })}
-                {scenarioStudies.length > 0 && (
-                  <>
-                    <tr>
-                      <td colSpan={13} className="px-3 py-0">
-                        <div className="border-t border-dashed" />
-                      </td>
-                    </tr>
-                    {scenarioStudies.map((study) => {
-                      const isSelected = selectedStudyId === study.study_id;
-                      return (
-                        <tr
-                          key={study.study_id}
-                          className={cn(
-                            "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
-                            isSelected && "bg-accent font-medium"
-                          )}
-                          onClick={() => handleClick(study)}
-                          onDoubleClick={() => handleDoubleClick(study)}
-                          onContextMenu={(e) => handleContextMenu(e, study)}
-                        >
-                          <td className="px-1.5 py-px text-center">
-                            <Wrench className="mx-auto h-3.5 w-3.5 text-muted-foreground/60" />
-                          </td>
-                          <td className="px-1.5 py-px font-medium text-muted-foreground">{study.name}</td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">
-                            {study.study_type ? routeStudyTypeWithQuality(study.study_type).config.display_name : "—"}
-                          </td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
-                          <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground/60">
-                            {study.subjects ?? "—"}
-                          </td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">—</td>
-                          <td className="px-1.5 py-px text-muted-foreground/60">Scenario</td>
-                          <td className="px-1.5 py-px">
-                            <div
-                              className="flex items-center justify-center"
-                              title={VAL_DISPLAY[study.validation]?.tooltip ?? study.validation}
-                            >
-                              {VAL_DISPLAY[study.validation]?.icon ?? <span className="text-xs text-muted-foreground">—</span>}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </>
-                )}
               </tbody>
             </table>
           </div>
@@ -1033,19 +922,6 @@ export function AppLandingPage() {
           </div>
         )}
 
-        {/* Design mode toggle */}
-        <div className="mt-3 flex items-center gap-2">
-          <Wrench className="h-3 w-3 text-muted-foreground/50" />
-          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={designMode}
-              onChange={toggleDesignMode}
-              className="h-3 w-3"
-            />
-            Design mode
-          </label>
-        </div>
       </div>
 
       {/* Context menu */}

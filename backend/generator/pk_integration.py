@@ -103,8 +103,9 @@ def build_pk_integration(
     tk_survivorship = _check_tk_survivorship(study, dm_df, tk_design)
     dose_prop = _compute_dose_proportionality(by_dose_group, tk_survivorship)
 
-    # Accumulation detection
-    accumulation = _compute_accumulation(visit_days)
+    # Accumulation: not available for single-visit studies
+    accumulation = {"available": False, "ratio": None, "assessment": "unknown",
+                    "reason": f"Single visit day ({visit_days[0]})" if visit_days else "No visit days"}
 
     # Species + HED/MRSD
     species = _get_species(study)
@@ -719,34 +720,6 @@ def _build_dp_interpretation(
         )
 
     return " ".join(parts)
-
-
-# ─── Accumulation ─────────────────────────────────────────────
-
-
-def _compute_accumulation(visit_days: list[int]) -> dict:
-    """Detect accumulation from multi-visit data."""
-    if len(visit_days) <= 1:
-        reason = (
-            f"Single visit day ({visit_days[0]}) — no Day 1 comparison available"
-            if visit_days
-            else "No visit days found"
-        )
-        return {
-            "available": False,
-            "ratio": None,
-            "assessment": "unknown",
-            "reason": reason,
-        }
-
-    # Multi-visit: would compare AUC at first vs last visit
-    # Placeholder for future multi-visit studies
-    return {
-        "available": False,
-        "ratio": None,
-        "assessment": "unknown",
-        "reason": f"Multi-visit accumulation analysis not yet implemented (days: {visit_days})",
-    }
 
 
 # ─── TK survivorship check ─────────────────────────────────────

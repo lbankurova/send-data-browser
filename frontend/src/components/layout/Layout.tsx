@@ -8,7 +8,7 @@ import { SelectionProvider } from "@/contexts/SelectionContext";
 import { FindingSelectionProvider } from "@/contexts/FindingSelectionContext";
 import { ViewSelectionProvider } from "@/contexts/ViewSelectionContext";
 import { TreeControlProvider } from "@/contexts/TreeControlContext";
-import { DesignModeProvider } from "@/contexts/DesignModeContext";
+
 import { StudySelectionProvider } from "@/contexts/StudySelectionContext";
 import { GlobalFilterProvider } from "@/contexts/GlobalFilterContext";
 import { RailModeProvider } from "@/contexts/RailModeContext";
@@ -41,7 +41,7 @@ export function Layout() {
   }, [location.pathname]);
 
   return (
-    <DesignModeProvider>
+    <>
     <SelectionProvider>
       <ViewSelectionProvider>
         <FindingSelectionProvider>
@@ -145,6 +145,6 @@ export function Layout() {
       </ViewSelectionProvider>
     </SelectionProvider>
     <GlobalTooltip />
-    </DesignModeProvider>
+    </>
   );
 }
