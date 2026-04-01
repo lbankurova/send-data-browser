@@ -1,0 +1,27 @@
+# Lattice — Python complexity rules for SENDEX
+# Run: cd backend && ruff check .
+
+[lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "C901",   # McCabe complexity
+    "PLR",    # pylint refactor rules
+]
+
+[lint.mccabe]
+max-complexity = 15
+
+[lint.pylint]
+max-args = 8
+max-returns = 6
+max-branches = 12
+
+[lint.per-file-ignores]
+"venv/*" = ["ALL"]
+".venv-core/*" = ["ALL"]
+"_core_engine/*" = ["ALL"]
+"__pycache__/*" = ["ALL"]
+"tests/*" = ["PLR0913"]  # Test functions often have many params (fixtures)
+# Domain-critical files may carry C901 exemptions with mandatory comments.
+# Bare `# noqa: C901` without justification is a finding in /lattice:architect audit.

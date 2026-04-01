@@ -19,5 +19,14 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Lattice complexity rules (advisory — warn, not error)
+      'complexity': ['warn', { max: 15 }],
+      'max-depth': ['warn', { max: 4 }],
+      'max-params': ['warn', { max: 5 }],
+      // max-lines-per-function excluded: many React components are legitimately large
+      // Domain-critical files (lib/cross-domain-syndromes.ts, lib/endpoint-confidence.ts, etc.)
+      // may carry eslint-disable with mandatory justification comment (CLAUDE.md rule 15)
+    },
   },
 ])

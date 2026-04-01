@@ -74,6 +74,8 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 
 14. **No unprompted deferrals.** Never defer a feature, capability, or design element to a "later phase" or "future work" unless (a) there is a real technical dependency that blocks it now, or (b) the user has explicitly decided to defer it. "It would be simpler to do later" or "this can be added in a follow-up" are not valid reasons. If an agent believes deferral is warranted, it must state the specific blocking dependency — not effort — and get user approval before deferring.
 
+15. **Science preservation gate.** Code cleanup, refactoring, or "simplification" that changes scientific or analytical behavior is not a cleanup — it's a functional change. Before simplifying domain logic: (a) identify what analytical output would change for any input data; (b) if any output changes, flag it as SCIENCE-FLAG — do not proceed without scientist review; (c) distinguish accidental complexity (bad code — simplify) from essential complexity (domain rules encoded in code — protect). Lint exemptions on domain-critical code (`# noqa: C901`, `// eslint-disable complexity`) must carry a comment explaining why the complexity is load-bearing. Bare exemptions are defects. Consult `docs/_internal/knowledge/code-quality-guardrails.md` before refactoring.
+
 ## Commit & Review
 
 - **Before committing:** Run every item in `docs/_internal/checklists/COMMIT-CHECKLIST.md`.
