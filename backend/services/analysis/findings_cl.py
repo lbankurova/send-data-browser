@@ -181,6 +181,7 @@ def compute_cl_findings(
                 "odds_ratio": result["odds_ratio"],
                 "risk_ratio": rr,
                 "p_value_fisher": result["p_value_fisher"],
+                "h_lower": result.get("h_lower"),
             })
 
         trend_result = trend_test_incidence(incidence_counts, incidence_totals)

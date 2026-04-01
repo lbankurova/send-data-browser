@@ -768,9 +768,21 @@ function computeNoaelForFindings(
 ): EndpointNoael {
   let loaelLevel: number | null = null;
 
+  // Effect-size-first LOAEL: use g_lower / h_lower when available, fall back to p-value
+  const EFFECT_RELEVANCE_THRESHOLD = 0.3;
   for (const f of findings) {
     for (const pw of f.pairwise) {
-      if (pw.p_value_adj != null && pw.p_value_adj < 0.05 && pw.dose_level > 0) {
+      if (pw.dose_level <= 0) continue;
+      let exceeds = false;
+      if (pw.g_lower != null) {
+        exceeds = pw.g_lower > EFFECT_RELEVANCE_THRESHOLD;
+      } else if (pw.h_lower != null) {
+        exceeds = pw.h_lower > EFFECT_RELEVANCE_THRESHOLD;
+      } else {
+        // Fallback for legacy data without g_lower/h_lower
+        exceeds = pw.p_value_adj != null && pw.p_value_adj < 0.05;
+      }
+      if (exceeds) {
         if (loaelLevel === null || pw.dose_level < loaelLevel) {
           loaelLevel = pw.dose_level;
         }

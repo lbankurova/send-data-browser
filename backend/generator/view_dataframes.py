@@ -21,6 +21,24 @@ def _prev_dose_level(dose_groups: list[dict], level: int) -> int | None:
     return lower[-1] if lower else None
 
 
+def _dose_exceeds_effect_threshold(pw: dict, threshold: float) -> bool:
+    """Check if a pairwise result exceeds the effect relevance threshold.
+
+    Uses g_lower for continuous endpoints, h_lower for incidence endpoints.
+    Falls back to p_value_adj < 0.05 when neither is available (backward
+    compatibility with legacy data that predates g_lower/h_lower fields).
+    """
+    gl = pw.get("g_lower")
+    if gl is not None:
+        return gl > threshold
+    hl = pw.get("h_lower")
+    if hl is not None:
+        return hl > threshold
+    # Fallback: legacy data without g_lower/h_lower
+    p = pw.get("p_value_adj", pw.get("p_value"))
+    return p is not None and p < 0.05
+
+
 def _is_loael_driving(finding: dict) -> bool:
     """Return True when a finding should drive LOAEL determination.
 
@@ -526,8 +544,7 @@ def _build_noael_for_groups(
                 continue
             if _is_loael_driving(f):
                 for pw in f.get("pairwise", []):
-                    p = pw.get("p_value_adj", pw.get("p_value"))
-                    if p is not None and p < 0.05:
+                    if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
                         adverse_dose_levels.add(pw["dose_level"])
 
         noael_level = None
@@ -558,15 +575,15 @@ def _build_noael_for_groups(
                 if _is_loael_driving(f):
                     for pw in f.get("pairwise", []):
                         if pw["dose_level"] == loael_level:
-                            p = pw.get("p_value_adj", pw.get("p_value"))
-                            if p is not None and p < 0.05:
+                            if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
+                                p = pw.get("p_value_adj", pw.get("p_value"))
                                 n_adverse_at_loael += 1
                                 adverse_domains.add(f.get("domain", ""))
                                 adverse_at_loael.append({
                                     "finding": f.get("finding", f.get("test_code", "unknown")),
                                     "specimen": f.get("specimen", f.get("organ_system", "")),
                                     "domain": f.get("domain", ""),
-                                    "p_value": round(p, 5),
+                                    "p_value": round(p, 5) if p is not None else None,
                                     "finding_class": f.get("finding_class"),
                                     "corroboration_status": f.get("corroboration_status"),
                                 })
@@ -634,8 +651,7 @@ def _build_noael_for_groups(
             for f in sex_findings:
                 if _is_loael_driving(f):
                     for pw in f.get("scheduled_pairwise", f.get("pairwise", [])):
-                        p = pw.get("p_value_adj", pw.get("p_value"))
-                        if p is not None and p < 0.05:
+                        if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
                             sched_adverse_levels.add(pw["dose_level"])
             if sched_adverse_levels:
                 scheduled_loael_level = min(sched_adverse_levels)
@@ -715,8 +731,7 @@ def _compute_noael_confidence(
         for f in opp_findings:
             if _is_loael_driving(f):
                 for pw in f.get("pairwise", []):
-                    p = pw.get("p_value_adj", pw.get("p_value"))
-                    if p is not None and p < 0.05:
+                    if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
                         opp_adverse_levels.add(pw["dose_level"])
         opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
         opp_noael = _prev_dose_level(dose_groups, opp_loael) if dose_groups and opp_loael is not None and opp_loael > 0 else (

@@ -48,6 +48,8 @@ export interface PairwiseResult {
   p_value_adj: number | null;
   statistic: number | null;
   effect_size: number | null;
+  g_lower?: number | null;
+  h_lower?: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
   p_value_welch?: number | null;

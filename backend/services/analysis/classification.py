@@ -412,21 +412,29 @@ def compute_max_fold_change(group_stats: list[dict], direction: str | None = Non
     return round(best_ratio, 2)
 
 
-def determine_treatment_related(finding: dict) -> bool:
+def determine_treatment_related(
+    finding: dict,
+    effect_relevance_threshold: float = 0.3,
+) -> bool:
     """Determine if a finding is treatment-related.
 
-    Criteria (pure function — conservative approach):
-    - Significant p-value (< 0.05) in pairwise comparison
+    Criteria (pure function -- conservative approach):
+    - Confident effect size (gLower/hLower > threshold) in pairwise comparison
     - AND significant trend (< 0.05)
     - OR: very strong effect (adverse severity + dose-response)
+
+    The pairwise gate uses max_effect_lower (the maximum gLower or |hLower|
+    across dose levels) instead of min_p_adj < 0.05. This is sample-size
+    invariant: a large effect at N=3 is caught without needing p < 0.05.
+    The trend gate stays p-based (different question: monotonic D-R).
     """
     severity = finding.get("severity", "normal")
-    min_p = finding.get("min_p_adj")
+    max_el = finding.get("max_effect_lower")
     trend_p = finding.get("trend_p")
     dose_response = finding.get("dose_response_pattern", "")
 
-    # Strong evidence: both pairwise and trend significant
-    if min_p is not None and min_p < 0.05 and trend_p is not None and trend_p < 0.05:
+    # Strong evidence: confident effect size + trend
+    if max_el is not None and max_el > effect_relevance_threshold and trend_p is not None and trend_p < 0.05:
         return True
 
     # Adverse with monotonic dose-response
@@ -436,6 +444,7 @@ def determine_treatment_related(finding: dict) -> bool:
     # Very significant pairwise only — with effect size floor for continuous
     # endpoints to prevent declaring trivially small effects treatment-related
     # purely on statistical power in well-powered studies (reviewer audit 2026-03).
+    min_p = finding.get("min_p_adj")
     if min_p is not None and min_p < 0.01:
         from services.analysis.send_knowledge import get_effect_size as _get_es
         max_d = _get_es(finding)

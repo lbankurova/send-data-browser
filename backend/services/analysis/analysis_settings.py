@@ -83,6 +83,12 @@ class ScoringParams:
     clinical_multiplier_s2: float = 1.4
     clinical_multiplier_s1: float = 1.0
 
+    # Effect-size-first decision gate threshold (gLower / |hLower|)
+    # Replaces p < 0.05 in NOAEL C1 and treatment-relatedness pairwise gate.
+    # 0.3 = "80% confident the true effect is at least small-to-medium."
+    # Comparable sensitivity to Dunnett's p < 0.05 at N=10.
+    effect_relevance_threshold: float = 0.3
+
     # NOAEL confidence penalties (positive values, subtracted from 1.0)
     penalty_single_endpoint: float = 0.20
     penalty_sex_inconsistency: float = 0.20

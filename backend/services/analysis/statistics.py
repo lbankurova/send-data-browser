@@ -74,6 +74,17 @@ def incidence_exact_test(
     else:
         odds_ratio = None  # inf not JSON-serializable; callers check incidence rates directly
 
+    # Cohen's h and its lower bound (80% one-sided) for effect-size-first decision gates
+    import math
+    n_treat = a + b
+    n_ctrl = c + d
+    cohens_h: float | None = None
+    if n_treat > 0 and n_ctrl > 0:
+        p1 = a / n_treat
+        p2 = c / n_ctrl
+        cohens_h = round(2 * math.asin(math.sqrt(p1)) - 2 * math.asin(math.sqrt(p2)), 6)
+    h_lower = compute_h_lower_abs(a, n_treat, c, n_ctrl)
+
     try:
         if method == "fisher":
             _, p_val = stats.fisher_exact(table)
@@ -88,9 +99,11 @@ def incidence_exact_test(
             "or_lower": or_lower,
             "p_value": float(p_val),
             "test_method": method,
+            "cohens_h": cohens_h,
+            "h_lower": round(h_lower, 4) if h_lower is not None else None,
         }
     except ValueError:
-        return {"odds_ratio": None, "or_lower": None, "p_value": None, "test_method": method}
+        return {"odds_ratio": None, "or_lower": None, "p_value": None, "test_method": method, "cohens_h": None, "h_lower": None}
 
 
 def incidence_exact_both(table: list[list[int]]) -> dict:
@@ -221,6 +234,124 @@ def compute_effect_size(group1: list | np.ndarray, group2: list | np.ndarray) ->
     return d * j
 
 
+def _nct_effect_lower(
+    abs_effect: float, df: int, scale: float, confidence_level: float,
+) -> float:
+    """Core bisection for lower CI bound on |effect size| via non-central t.
+
+    Shared by between-subject (Hedges' g) and within-subject (paired d_z).
+    The non-centrality parameter lambda = |effect| * scale, and the observed
+    t-statistic equals lambda by construction.
+
+    Returns lower bound of |effect|, floored at 0.
+    """
+    lam = abs_effect * scale
+
+    if lam < 0.01:
+        return 0.0
+
+    target = confidence_level
+    delta_lo = 0.0
+    delta_hi = lam * 2 + 5
+
+    for _ in range(100):
+        delta_mid = (delta_lo + delta_hi) / 2
+        cdf = float(stats.nct.cdf(lam, df, delta_mid))
+        if abs(cdf - target) < 1e-8:
+            return max(0.0, round(delta_mid / scale, 6))
+        if cdf > target:
+            delta_lo = delta_mid
+        else:
+            delta_hi = delta_mid
+        if delta_hi - delta_lo < 1e-8:
+            return max(0.0, round(delta_mid / scale, 6))
+
+    return max(0.0, round((delta_lo + delta_hi) / 2 / scale, 6))
+
+
+def compute_g_lower(
+    g: float, n1: int, n2: int, confidence_level: float = 0.80,
+) -> float | None:
+    """Lower confidence bound of |Hedges' g| via non-central t distribution.
+
+    For between-subject (independent group) designs.
+    df = n1 + n2 - 2, scale = sqrt(n1*n2/(n1+n2)).
+
+    Port of frontend g-lower.ts:computeGLower.
+    """
+    if g is None or n1 < 2 or n2 < 2:
+        return None
+    if confidence_level <= 0:
+        return abs(g)
+
+    df = n1 + n2 - 2
+    scale = np.sqrt(n1 * n2 / (n1 + n2))
+    return _nct_effect_lower(abs(g), df, scale, confidence_level)
+
+
+def compute_g_lower_paired(
+    d_z: float, n_pairs: int, confidence_level: float = 0.80,
+) -> float | None:
+    """Lower confidence bound of |paired d_z| via non-central t distribution.
+
+    For within-subject (crossover/paired) designs.
+    df = n_pairs - 1, scale = sqrt(n_pairs).
+    """
+    if d_z is None or n_pairs < 2:
+        return None
+    if confidence_level <= 0:
+        return abs(d_z)
+
+    df = n_pairs - 1
+    scale = np.sqrt(n_pairs)
+    return _nct_effect_lower(abs(d_z), df, scale, confidence_level)
+
+
+def compute_h_lower_abs(
+    affected_treated: int, n_treated: int,
+    affected_control: int, n_control: int,
+    confidence_level: float = 0.80,
+) -> float | None:
+    """Lower confidence bound of |Cohen's h| at one-sided confidence level.
+
+    Analogous to compute_g_lower for continuous endpoints. Uses Wilson score
+    CI on each proportion with alpha calibrated to the one-sided level, then
+    arcsine-transforms to get h bounds.
+
+    Parameters:
+        affected_treated: Number affected in treated group.
+        n_treated: Total in treated group.
+        affected_control: Number affected in control group.
+        n_control: Total in control group.
+        confidence_level: One-sided confidence (default 0.80).
+    Returns:
+        Lower bound of |h|, floored at 0. None if inputs are degenerate.
+    """
+    if n_treated == 0 or n_control == 0:
+        return None
+
+    # One-sided confidence -> two-sided alpha for Wilson CI
+    alpha = 2 * (1 - confidence_level)
+
+    result = compute_cohens_h(
+        affected_treated, n_treated,
+        affected_control, n_control,
+        alpha=alpha,
+    )
+    if result["cohens_h"] is None:
+        return None
+
+    h = result["cohens_h"]
+    h_lower = result["h_ci_lower"]
+    h_upper = result["h_ci_upper"]
+
+    # Lower bound of |h|: if CI doesn't cross zero, use closer-to-zero bound
+    if h >= 0:
+        return max(0.0, round(h_lower, 6))
+    else:
+        return max(0.0, round(-h_upper, 6))
+
+
 def spearman_correlation(x: list | np.ndarray, y: list | np.ndarray) -> dict:
     """Spearman rank correlation."""
     ax = np.array(x, dtype=float)
@@ -278,12 +409,14 @@ def dunnett_pairwise(
     valid_arrays = []
     valid_indices = []
     all_effect_sizes = []
+    all_treated_sizes = []
 
     for i, (dose_level, vals) in enumerate(treated_groups):
         arr = np.array(vals, dtype=float)
         arr = arr[~np.isnan(arr)]
         dose_levels.append(dose_level)
         all_effect_sizes.append(compute_effect_size(arr, ctrl))
+        all_treated_sizes.append(len(arr))
         if len(arr) >= 2:
             valid_arrays.append(arr)
             valid_indices.append(i)
@@ -304,9 +437,12 @@ def dunnett_pairwise(
                 dunnett_p[idx] = min(raw_p * n_valid, 1.0) if raw_p is not None else None
 
     pairwise = []
+    n1 = len(ctrl)
     for i, dose_level in enumerate(dose_levels):
         p = dunnett_p[i]
         d = all_effect_sizes[i]
+        n2 = all_treated_sizes[i]
+        gl = compute_g_lower(d, n1, n2) if d is not None else None
         pairwise.append({
             "dose_level": int(dose_level),
             "p_value": round(p, 6) if p is not None else None,
@@ -314,6 +450,7 @@ def dunnett_pairwise(
             "p_value_adj": round(p, 6) if p is not None else None,
             "statistic": None,  # Dunnett's doesn't provide per-comparison test statistics
             "effect_size": round(d, 4) if d is not None else None,
+            "g_lower": round(gl, 4) if gl is not None else None,
         })
     return pairwise
 

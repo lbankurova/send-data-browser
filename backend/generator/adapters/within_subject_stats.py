@@ -247,11 +247,16 @@ def compute_within_subject_pairwise(
         tt = paired_ttest(vehicle_vals, treated_vals)
         dz = cohens_dz(vehicle_vals, treated_vals)
 
+        # g_lower for paired design: df = n_pairs - 1, scale = sqrt(n_pairs)
+        from services.analysis.statistics import compute_g_lower_paired
+        gl = compute_g_lower_paired(dz, tt["n_pairs"]) if dz is not None else None
+
         raw_results.append({
             "dose_level": dose_idx,
             "dose_value": dose,
             "p_value": tt["p_value"],
             "effect_size": dz,
+            "g_lower": round(gl, 4) if gl is not None else None,
             "se_diff": tt.get("sd_diff"),
             "n_pairs": tt["n_pairs"],
             "mean_diff": tt["mean_diff"],

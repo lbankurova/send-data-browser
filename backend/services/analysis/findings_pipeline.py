@@ -105,12 +105,27 @@ def _with_defaults(f: dict) -> dict:
     return f
 
 
-def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
+def _enrich_finding(
+    f: dict,
+    threshold: str = "grade-ge-2-or-dose-dep",
+    effect_relevance_threshold: float = 0.3,
+) -> dict:
     """Core enrichment: classification, fold change, incidence, organ system, label.
 
     Pipeline-style: finding in -> enriched finding out.
     Shared between generator (domain_stats) and live API (unified_findings).
     """
+    # Compute max_effect_lower from pairwise g_lower / h_lower (before treatment_related)
+    _max_el = 0.0
+    for pw in f.get("pairwise", []):
+        gl = pw.get("g_lower")
+        if gl is not None and gl > _max_el:
+            _max_el = gl
+        hl = pw.get("h_lower")
+        if hl is not None and hl > _max_el:
+            _max_el = hl
+    f["max_effect_lower"] = round(_max_el, 4) if _max_el > 0 else None
+
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
     dr_result = classify_dose_response(
@@ -123,7 +138,7 @@ def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
     f["dose_response_pattern"] = dr_result["pattern"]
     f["pattern_confidence"] = dr_result.get("confidence")
     f["onset_dose_level"] = dr_result.get("onset_dose_level")
-    f["treatment_related"] = determine_treatment_related(f)
+    f["treatment_related"] = determine_treatment_related(f, effect_relevance_threshold=effect_relevance_threshold)
 
     # Fold change (continuous endpoints only) — direction-aligned
     if f.get("data_type") == "continuous":
@@ -186,6 +201,7 @@ def _enrich_finding(f: dict, threshold: str = "grade-ge-2-or-dose-dep") -> dict:
 def enrich_findings(
     findings: list[dict],
     threshold: str = "grade-ge-2-or-dose-dep",
+    effect_relevance_threshold: float = 0.3,
 ) -> list[dict]:
     """Enrich all findings with safe per-finding error handling.
 
@@ -198,7 +214,7 @@ def enrich_findings(
     for f in findings:
         f = _with_defaults(f)
         try:
-            f = _enrich_finding(f, threshold=threshold)
+            f = _enrich_finding(f, threshold=threshold, effect_relevance_threshold=effect_relevance_threshold)
         except Exception as e:
             f["_enrichment_error"] = str(e)
             log.warning("Enrichment failed for %s: %s", finding_key(f), e)
