@@ -7,13 +7,20 @@ links TK satellite subjects to dose groups, and computes HED/MRSD.
 Pattern follows tumor_summary.py (cross-domain generator module).
 """
 
+import json
+import logging
 import math
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
+
+log = logging.getLogger(__name__)
+
+ANNOTATIONS_DIR = Path(__file__).resolve().parent.parent / "annotations"
 
 
 # FDA body surface area scaling factors (Km-based)
@@ -121,6 +128,11 @@ def build_pk_integration(
     # HED/MRSD computation
     hed = _compute_hed(noael_dose_value, km_info, noael_dose_level)
 
+    # BP-17: Exposure-based safety margin (NOEL Cmax / clinical Cmax)
+    safety_margin = _compute_safety_margin(
+        study, noael_exposure, loael_exposure,
+    )
+
     return {
         "available": True,
         "species": species,
@@ -140,6 +152,71 @@ def build_pk_integration(
         "noael_exposure": noael_exposure,
         "loael_exposure": loael_exposure,
         "hed": hed,
+        "safety_margin": safety_margin,
+    }
+
+
+# ─── Safety margin ────────────────────────────────────────────
+
+
+def _compute_safety_margin(
+    study: StudyInfo,
+    noael_exposure: dict | None,
+    loael_exposure: dict | None,
+) -> dict:
+    """Compute exposure-based safety margin from NOAEL/LOAEL Cmax vs clinical Cmax.
+
+    Reads clinical_cmax from compound_profile.json annotation. Returns a dict
+    with margin values or reason for unavailability.
+    """
+    # Load clinical Cmax from compound profile annotation
+    clinical_cmax = None
+    clinical_cmax_unit = None
+    ann_path = ANNOTATIONS_DIR / study.study_id / "compound_profile.json"
+    if ann_path.exists():
+        try:
+            with open(ann_path) as f:
+                profile = json.load(f)
+            clinical_cmax = profile.get("clinical_cmax")
+            clinical_cmax_unit = profile.get("clinical_cmax_unit")
+        except Exception as e:
+            log.warning("Failed to read compound profile for %s: %s", study.study_id, e)
+
+    if clinical_cmax is None or not isinstance(clinical_cmax, (int, float)) or clinical_cmax <= 0:
+        return {
+            "available": False,
+            "reason": "No clinical Cmax in compound profile annotation",
+        }
+
+    # Prefer NOAEL exposure; fall back to LOAEL
+    ref_exposure = noael_exposure or loael_exposure
+    ref_label = "NOAEL" if noael_exposure else "LOAEL"
+    if ref_exposure is None:
+        return {
+            "available": False,
+            "reason": "No NOAEL/LOAEL exposure data (no PK at reference dose)",
+            "clinical_cmax": clinical_cmax,
+            "clinical_cmax_unit": clinical_cmax_unit,
+        }
+
+    animal_cmax = ref_exposure.get("cmax", {}).get("mean")
+    if animal_cmax is None or animal_cmax <= 0:
+        return {
+            "available": False,
+            "reason": f"No Cmax at {ref_label} dose",
+            "clinical_cmax": clinical_cmax,
+            "clinical_cmax_unit": clinical_cmax_unit,
+        }
+
+    margin = round(animal_cmax / clinical_cmax, 2)
+    return {
+        "available": True,
+        "margin": margin,
+        "reference_dose": ref_label,
+        "animal_cmax": animal_cmax,
+        "animal_cmax_unit": ref_exposure.get("cmax", {}).get("unit"),
+        "clinical_cmax": clinical_cmax,
+        "clinical_cmax_unit": clinical_cmax_unit,
     }
 
 

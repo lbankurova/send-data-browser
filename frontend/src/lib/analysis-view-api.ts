@@ -333,6 +333,14 @@ export interface StudyMetadataEnriched {
   last_dosing_day: number | null;
   auto_detected_last_dosing_day: number | null;
   last_dosing_day_override: number | null;
+  /** BP-C1: Design adapter type (parallel_between_group, within_animal_crossover, within_animal_escalation). */
+  design_type?: string | null;
+  /** BP-C1: Human-readable design label (Parallel, Latin Square Crossover, Dose Escalation). */
+  design_type_label?: string | null;
+  /** BP-C1: True for crossover/escalation studies. */
+  is_crossover?: boolean;
+  /** BP-C4: Escalation caveat text (null for non-escalation studies). */
+  design_caveat?: string | null;
 }
 
 export function fetchStudyMetadataEnriched(

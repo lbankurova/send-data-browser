@@ -462,6 +462,10 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                 if sex_data.empty:
                     continue
 
+                # BP-14: Collect per-subject per-dose peak CFB across time bins
+                # {dose_val: {subject_id: (max_abs_cfb, tmax_bin)}}
+                _peak_tracker: dict[float, dict[str, tuple[float, str]]] = {}
+
                 for time_bin in bin_iterations:
                     if time_bin == "overall":
                         bin_data = sex_data
@@ -495,6 +499,16 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                             "sd": round(float(np.std(vals, ddof=1)), 4) if n > 1 else None,
                             "median": round(float(np.median(vals)), 4) if n > 0 else None,
                         })
+
+                    # BP-14: Track per-subject peak effect across time bins
+                    if time_bin != "overall" and produce_bins:
+                        for dose_val, subj_vals in subject_cfb_by_dose.items():
+                            if dose_val not in _peak_tracker:
+                                _peak_tracker[dose_val] = {}
+                            for subj, cfb in subj_vals.items():
+                                prev = _peak_tracker[dose_val].get(subj)
+                                if prev is None or abs(cfb) > abs(prev[0]):
+                                    _peak_tracker[dose_val][subj] = (cfb, time_bin)
 
                     # Pairwise: each dose vs vehicle (within-subject)
                     pairwise = compute_within_subject_pairwise(
@@ -537,6 +551,7 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                     # LSD = t_crit(alpha/2, df) * sd_diff / sqrt(n_pairs)
                     # Uses pooled sd_diff across dose comparisons
                     _lsd = None
+                    _rmse = None
                     _sd_diffs = [pw.get("sd_diff") for pw in pairwise
                                  if pw.get("sd_diff") is not None]
                     _n_pairs_vals = [pw.get("n_pairs") for pw in pairwise
@@ -547,6 +562,8 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                         _n = int(np.median(_n_pairs_vals))
                         _t_crit = float(t_dist.ppf(0.975, _n - 1))
                         _lsd = round(_t_crit * _pooled_sd / np.sqrt(_n), 4)
+                        # RMSE = root mean square of within-subject SDs
+                        _rmse = round(float(np.sqrt(np.mean(np.array(_sd_diffs) ** 2))), 4)
 
                     findings.append({
                         "domain": domain_code,
@@ -575,8 +592,36 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                             "is_escalation": self._is_escalation,
                             "time_bin": time_bin,
                             "lsd": _lsd,
+                            "rmse": _rmse,
                         },
                     })
+
+                # BP-14: Attach peak-effect (Emax/Tmax) to the "overall" finding
+                if produce_bins and _peak_tracker and findings:
+                    overall_finding = findings[-1]  # last appended is "overall"
+                    if overall_finding.get("_design_meta", {}).get("time_bin") == "overall":
+                        peak_by_dose = []
+                        for dose_val in unique_doses:
+                            level = dose_to_level[dose_val]
+                            subj_peaks = _peak_tracker.get(dose_val, {})
+                            if not subj_peaks:
+                                peak_by_dose.append({
+                                    "dose_level": level,
+                                    "emax_mean": None, "emax_sd": None, "tmax_mode": None,
+                                })
+                                continue
+                            emax_vals = [v[0] for v in subj_peaks.values()]
+                            tmax_bins = [v[1] for v in subj_peaks.values()]
+                            from collections import Counter
+                            tmax_mode = Counter(tmax_bins).most_common(1)[0][0]
+                            peak_by_dose.append({
+                                "dose_level": level,
+                                "emax_mean": round(float(np.mean(emax_vals)), 4),
+                                "emax_sd": round(float(np.std(emax_vals, ddof=1)), 4) if len(emax_vals) > 1 else None,
+                                "tmax_mode": tmax_mode,
+                                "n_subjects": len(emax_vals),
+                            })
+                        overall_finding["_design_meta"]["peak_effect"] = peak_by_dose
 
         log.info(
             "%s domain: %d findings from crossover analysis",

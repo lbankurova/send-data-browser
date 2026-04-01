@@ -297,6 +297,11 @@ def generate(study_id: str):
             "within_animal_crossover", "within_animal_escalation",
         )
         context_result["study_metadata"]["is_escalation"] = design_type == "within_animal_escalation"
+        # physical_groups: 1 for crossover (all animals get all doses), else same as dose group count
+        context_result["study_metadata"]["physical_groups"] = (
+            1 if design_type in ("within_animal_crossover", "within_animal_escalation")
+            else len(dose_groups)
+        )
         if design_type == "within_animal_escalation":
             context_result["study_metadata"]["design_caveat"] = (
                 "Dose escalation design -- period and dose effects are confounded. "

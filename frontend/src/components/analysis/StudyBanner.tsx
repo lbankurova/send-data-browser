@@ -21,6 +21,10 @@ interface StudyBannerProps {
   /** A5: multi-compound study indicator */
   isMultiCompound?: boolean;
   compounds?: string[];
+  /** BP-C1: Human-readable design type label. */
+  designTypeLabel?: string | null;
+  /** BP-C4: Escalation caveat text. */
+  designCaveat?: string | null;
 }
 
 /**
@@ -28,7 +32,7 @@ interface StudyBannerProps {
  * Shows species+strain, duration+route, dose group count, GLP status.
  * Matches MortalityBanner pattern: bg-muted/30, text-xs, border-b border-border/40.
  */
-export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags, isMultiCompound, compounds }: StudyBannerProps) {
+export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjectCount, mortality, crossAnimalFlags, isMultiCompound, compounds, designTypeLabel, designCaveat }: StudyBannerProps) {
   const { species, strain, dosingDurationWeeks, recoveryPeriodDays, route, glpCompliant } = studyContext;
 
   // Format: "Sprague-Dawley rat" or just "Rat" if no strain
@@ -83,6 +87,12 @@ export function StudyBanner({ studyContext, doseGroupCount, tumorCount, tkSubjec
       <span>{durationRoute}</span>
       <span className="text-muted-foreground/40">|</span>
       <span>{doseGroupCount} dose group{doseGroupCount !== 1 ? "s" : ""}</span>
+      {designTypeLabel && designTypeLabel !== "Parallel" && (
+        <>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="bg-gray-100 text-gray-600 border border-gray-200 rounded px-1 py-0.5 text-[10px] font-medium" title={designCaveat ?? undefined}>{designTypeLabel}</span>
+        </>
+      )}
       {isMultiCompound && compounds && compounds.length > 1 && (
         <>
           <span className="text-muted-foreground/40">|</span>
