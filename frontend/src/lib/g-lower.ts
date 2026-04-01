@@ -259,6 +259,121 @@ export function computeGLower(
 }
 
 /**
+ * Compute the lower bound of a two-sided CI on Hedges' g.
+ * Unlike computeGLower (which floors at 0 for ranking), this returns
+ * the actual CI bound which can be negative — meaning the CI crosses
+ * zero and the effect is not statistically significant.
+ *
+ * Used for forest plot display where crossing zero is informative.
+ */
+export function computeGLowerCI(
+  g: number,
+  n1: number,
+  n2: number,
+  confidenceLevel: number = 0.975,
+): number {
+  if (n1 < 2 || n2 < 2) return 0;
+
+  const absG = Math.abs(g);
+  const df = n1 + n2 - 2;
+  const scaleFactor = Math.sqrt(n1 * n2 / (n1 + n2));
+  const lambda = absG * scaleFactor;
+
+  const targetCDF = confidenceLevel;
+
+  // Search range includes negative delta (CI can cross zero)
+  let deltaLo = -3 * scaleFactor; // allows g_lower down to about -3
+  let deltaHi = lambda * 2 + 5;
+
+  // Check if the solution is below our search range
+  if (nctCDF(lambda, df, deltaLo) < targetCDF) {
+    // Even at very negative delta, CDF is below target — lower bound is very negative
+    return deltaLo / scaleFactor;
+  }
+
+  for (let i = 0; i < 100; i++) {
+    const deltaMid = (deltaLo + deltaHi) / 2;
+    const cdf = nctCDF(lambda, df, deltaMid);
+    if (Math.abs(cdf - targetCDF) < 1e-8) {
+      return deltaMid / scaleFactor;
+    }
+    if (cdf > targetCDF) deltaLo = deltaMid;
+    else deltaHi = deltaMid;
+    if (deltaHi - deltaLo < 1e-8) {
+      return deltaMid / scaleFactor;
+    }
+  }
+
+  return ((deltaLo + deltaHi) / 2) / scaleFactor;
+}
+
+/**
+ * Compute the upper confidence bound of |Hedges' g| using the
+ * non-central t-distribution.
+ *
+ * NON-CENTRAL T CIs ARE ASYMMETRIC. Do NOT use the symmetric formula
+ * `g + (g - gLower)` — the error is 10-15% of CI width at g=2.0, n=5.
+ * Requires separate bisection targeting the upper tail.
+ *
+ * Reference: Steiger & Fouladi 1997; Goulet-Pelletier & Cousineau 2018,
+ * TQMP 14(4):242-265.
+ *
+ * @param g - Hedges' g (signed effect size)
+ * @param n1 - control group sample size
+ * @param n2 - treated group sample size
+ * @param confidenceLevel - one-sided confidence level (default 0.80)
+ * @returns upper bound of |g|
+ */
+export function computeGUpper(
+  g: number,
+  n1: number,
+  n2: number,
+  confidenceLevel: number = 0.80,
+): number {
+  if (confidenceLevel <= 0) return Math.abs(g);
+  if (n1 < 2 || n2 < 2) return Math.abs(g) * 3; // wide fallback
+
+  const absG = Math.abs(g);
+  const df = n1 + n2 - 2;
+  const lambda = absG * Math.sqrt(n1 * n2 / (n1 + n2));
+
+  // For the upper bound, we solve:
+  //   nctCDF(t_obs, df, delta_upper) = alpha
+  // where alpha = 1 - confidenceLevel.
+  // As delta_upper increases, nctCDF(t_obs, df, delta_upper) decreases.
+  // We want the delta_upper where the CDF = alpha (small value).
+
+  const alpha = 1 - confidenceLevel;
+
+  // Search range: delta_upper is ABOVE lambda (the point estimate)
+  let deltaLo = Math.max(0, lambda - 1);
+  let deltaHi = lambda * 3 + 10;
+
+  // Ensure our search range brackets the solution
+  // At deltaHi, CDF should be below alpha
+  for (let expand = 0; expand < 5; expand++) {
+    if (nctCDF(lambda, df, deltaHi) < alpha) break;
+    deltaHi *= 2;
+  }
+
+  for (let i = 0; i < 100; i++) {
+    const deltaMid = (deltaLo + deltaHi) / 2;
+    const cdf = nctCDF(lambda, df, deltaMid);
+    if (Math.abs(cdf - alpha) < 1e-8) {
+      return deltaMid / Math.sqrt(n1 * n2 / (n1 + n2));
+    }
+    // As delta increases, CDF(t_obs) decreases — so if CDF > alpha, delta is too low
+    if (cdf > alpha) deltaLo = deltaMid;
+    else deltaHi = deltaMid;
+    if (deltaHi - deltaLo < 1e-8) {
+      return deltaMid / Math.sqrt(n1 * n2 / (n1 + n2));
+    }
+  }
+
+  return ((deltaLo + deltaHi) / 2) / Math.sqrt(n1 * n2 / (n1 + n2));
+}
+
+/**
  * Sigmoid transform: maps [0, inf) to [0, scale) with diminishing returns.
  * Concentrates resolution in the |g| = 0.3-1.5 range per EFSA guidance.
  *

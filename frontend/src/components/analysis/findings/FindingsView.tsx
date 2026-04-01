@@ -12,6 +12,7 @@ import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
 import { SeverityMatrix } from "./SeverityMatrix";
+import { GroupForestPlot } from "./GroupForestPlot";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
 import { ViewSection } from "@/components/ui/ViewSection";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -650,8 +651,24 @@ export function FindingsView() {
               specimen={scopeLabel}
             />
           </ViewSection>
+        ) : scopeType && endpointSummaries.length > 0 ? (
+          /* Grouped scope (organ/specimen/syndrome/collection) → forest plot + sentinel table */
+          <ViewSection
+            title={sectionTitle}
+            headerRight={headerRight}
+            mode="fixed"
+            height={scatterSection.height}
+            onResizePointerDown={scatterSection.onPointerDown}
+            contentRef={scatterSection.contentRef}
+          >
+            <GroupForestPlot
+              endpoints={endpointSummaries.filter(ep =>
+                !visibleLabels || visibleLabels.has(ep.endpoint_label)
+              )}
+            />
+          </ViewSection>
         ) : endpointSummaries.length > 0 ? (
-          /* Group / overview → scatter plot */
+          /* No scope (overview) → scatter plot */
           <ViewSection
             title={sectionTitle}
             headerRight={headerRight}

@@ -352,3 +352,99 @@ def bonferroni_correct(p_values: list[float | None], n_tests: int | None = None)
     if n_tests == 0:
         return p_values
     return [min(p * n_tests, 1.0) if p is not None else None for p in p_values]
+
+
+# ── Effect size metrics for incidence endpoints ───────────────
+
+
+def _wilson_score_ci(x: int, n: int, alpha: float = 0.05) -> tuple[float, float]:
+    """Wilson score confidence interval for a single proportion.
+
+    Well-defined at p=0 and p=1 (does not collapse to a point).
+    Reference: Wilson EB (1927), JASA 22(158):209-212.
+    """
+    if n == 0:
+        return (0.0, 1.0)
+    p_hat = x / n
+    z = stats.norm.ppf(1 - alpha / 2)
+    z2 = z * z
+    denom = 1 + z2 / n
+    center = (p_hat + z2 / (2 * n)) / denom
+    half_width = (z / denom) * np.sqrt(p_hat * (1 - p_hat) / n + z2 / (4 * n * n))
+    return (max(0.0, center - half_width), min(1.0, center + half_width))
+
+
+def compute_risk_difference(
+    affected_treated: int, n_treated: int,
+    affected_control: int, n_control: int,
+    alpha: float = 0.05,
+) -> dict:
+    """Risk difference with Newcombe's Method 10 confidence interval.
+
+    RD = p_treated - p_control. CI via Wilson score intervals on each
+    proportion, combined per Newcombe (1998, Stat Med 17(8):873-890).
+    Recommended for small n by Fagerland, Lydersen & Laake (2015,
+    Stat Methods Med Res 24(2):224-254).
+    """
+    if n_treated == 0 or n_control == 0:
+        return {"risk_difference": None, "rd_ci_lower": None, "rd_ci_upper": None}
+
+    p1 = affected_treated / n_treated
+    p2 = affected_control / n_control
+    rd = round(p1 - p2, 6)
+
+    # Wilson score CIs for each proportion
+    l1, u1 = _wilson_score_ci(affected_treated, n_treated, alpha)
+    l2, u2 = _wilson_score_ci(affected_control, n_control, alpha)
+
+    # Newcombe Method 10: CI for difference
+    lower = rd - np.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)
+    upper = rd + np.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+
+    return {
+        "risk_difference": rd,
+        "rd_ci_lower": round(float(max(-1.0, lower)), 6),
+        "rd_ci_upper": round(float(min(1.0, upper)), 6),
+    }
+
+
+def compute_cohens_h(
+    affected_treated: int, n_treated: int,
+    affected_control: int, n_control: int,
+    alpha: float = 0.05,
+) -> dict:
+    """Cohen's h (arcsine effect size for incidence) with hybrid CI.
+
+    h = 2*arcsin(sqrt(p_treated)) - 2*arcsin(sqrt(p_control))
+
+    CI method: Wilson score CI on each proportion, then arcsine-transform
+    the CI bounds. NOT delta method (undefined at p=0 and p=1 -- the most
+    common scenario for treatment-related histopathology findings).
+    Delta method failure documented in Lin & Xu 2020 (PMC7384291).
+    Hybrid method is a pragmatic construction from Wilson (1927) + Cohen (1988).
+    """
+    import math
+
+    if n_treated == 0 or n_control == 0:
+        return {"cohens_h": None, "h_ci_lower": None, "h_ci_upper": None}
+
+    p1 = affected_treated / n_treated
+    p2 = affected_control / n_control
+
+    h = 2 * math.asin(math.sqrt(p1)) - 2 * math.asin(math.sqrt(p2))
+
+    # Wilson score CIs for each proportion
+    l1, u1 = _wilson_score_ci(affected_treated, n_treated, alpha)
+    l2, u2 = _wilson_score_ci(affected_control, n_control, alpha)
+
+    # Arcsine-transform the Wilson bounds
+    # Lower bound of h: smallest plausible p1 arcsine minus largest plausible p2 arcsine
+    h_lower = 2 * math.asin(math.sqrt(l1)) - 2 * math.asin(math.sqrt(u2))
+    # Upper bound of h: largest plausible p1 arcsine minus smallest plausible p2 arcsine
+    h_upper = 2 * math.asin(math.sqrt(u1)) - 2 * math.asin(math.sqrt(l2))
+
+    return {
+        "cohens_h": round(h, 6),
+        "h_ci_lower": round(h_lower, 6),
+        "h_ci_upper": round(h_upper, 6),
+    }

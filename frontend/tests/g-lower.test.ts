@@ -5,7 +5,7 @@
  * Acceptance criteria from evidence-scoring-overhaul-synthesis.md.
  */
 import { describe, test, expect } from "vitest";
-import { computeGLower, sigmoidTransform } from "@/lib/g-lower";
+import { computeGLower, computeGLowerCI, computeGUpper, sigmoidTransform } from "@/lib/g-lower";
 
 describe("computeGLower", () => {
   // ── Acceptance criterion 1: point estimate at confidence=0 ──
@@ -105,6 +105,153 @@ describe("computeGLower", () => {
     const gl = computeGLower(1.5, 5, 10, 0.80);
     expect(gl).toBeGreaterThan(0);
     expect(gl).toBeLessThan(1.5);
+  });
+});
+
+describe("computeGUpper", () => {
+  // ── Core property: gUpper > |g| (upper bound always exceeds point estimate) ──
+  test("gUpper > |g| for all positive effect sizes", () => {
+    for (const g of [0.5, 1.0, 2.0, 3.0]) {
+      for (const n of [5, 10, 20]) {
+        const gu = computeGUpper(g, n, n, 0.80);
+        expect(gu).toBeGreaterThan(Math.abs(g));
+      }
+    }
+  });
+
+  // ── Asymmetry: non-central t CIs are NOT symmetric ──
+  // gUpper - g should NOT equal g - gLower (the whole point of separate bisection)
+  test("CI is asymmetric (gUpper - g != g - gLower)", () => {
+    const g = 2.0;
+    const n = 10;
+    const gl = computeGLower(g, n, n, 0.80);
+    const gu = computeGUpper(g, n, n, 0.80);
+    const lowerDist = g - gl;
+    const upperDist = gu - g;
+    // Asymmetry: distances from point estimate differ
+    expect(Math.abs(upperDist - lowerDist)).toBeGreaterThan(0.01);
+  });
+
+  // At high confidence (95% two-sided = alpha/2 = 0.025), asymmetry is more pronounced
+  test("at 97.5% confidence, asymmetry is visible", () => {
+    const g = 1.0;
+    const n = 10;
+    const gl = computeGLower(g, n, n, 0.975);
+    const gu = computeGUpper(g, n, n, 0.975);
+    expect(gl).toBeLessThan(g);
+    expect(gu).toBeGreaterThan(g);
+    // CI should be wide at this confidence
+    expect(gu - gl).toBeGreaterThan(1.0);
+  });
+
+  // ── At 80% one-sided confidence: g=1.0, n=10 ──
+  // The CI is narrower than 95% two-sided; both bounds are closer to g
+  test("g=1.0, n1=n2=10, 80% confidence: gUpper in [1.2, 1.8]", () => {
+    const gu = computeGUpper(1.0, 10, 10, 0.80);
+    expect(gu).toBeGreaterThan(1.2);
+    expect(gu).toBeLessThan(1.8);
+  });
+
+  test("g=1.0, n1=n2=10, 80% confidence: gLower in [0.3, 0.8]", () => {
+    const gl = computeGLower(1.0, 10, 10, 0.80);
+    expect(gl).toBeGreaterThan(0.3);
+    expect(gl).toBeLessThan(0.8);
+  });
+
+  // ── Cross-study: larger n = tighter CI = gUpper closer to g ──
+  test("gUpper decreases (closer to g) as n increases", () => {
+    const g = 1.5;
+    const gu5 = computeGUpper(g, 5, 5, 0.80);
+    const gu10 = computeGUpper(g, 10, 10, 0.80);
+    const gu20 = computeGUpper(g, 20, 20, 0.80);
+    expect(gu5).toBeGreaterThan(gu10);
+    expect(gu10).toBeGreaterThan(gu20);
+    // All should be above g
+    expect(gu20).toBeGreaterThan(g);
+  });
+
+  // ── Monotonicity: higher |g| -> higher gUpper ──
+  test("higher |g| at same n produces higher gUpper", () => {
+    const gu1 = computeGUpper(1.0, 10, 10, 0.80);
+    const gu2 = computeGUpper(2.0, 10, 10, 0.80);
+    const gu3 = computeGUpper(3.0, 10, 10, 0.80);
+    expect(gu1).toBeLessThan(gu2);
+    expect(gu2).toBeLessThan(gu3);
+  });
+
+  // ── Edge cases ──
+  test("g=0 returns a positive upper bound (CI above zero)", () => {
+    const gu = computeGUpper(0, 10, 10, 0.80);
+    expect(gu).toBeGreaterThanOrEqual(0);
+  });
+
+  test("negative g returns same as positive g (uses |g|)", () => {
+    const pos = computeGUpper(1.5, 10, 10, 0.80);
+    const neg = computeGUpper(-1.5, 10, 10, 0.80);
+    expect(pos).toBeCloseTo(neg, 3);
+  });
+
+  test("n < 2 returns wide fallback", () => {
+    const gu = computeGUpper(2.0, 1, 10, 0.80);
+    expect(isFinite(gu)).toBe(true);
+    expect(gu).toBeGreaterThan(2.0);
+  });
+
+  test("very large g still produces finite result", () => {
+    const gu = computeGUpper(10.0, 5, 5, 0.80);
+    expect(isFinite(gu)).toBe(true);
+    expect(gu).toBeGreaterThan(10.0);
+  });
+
+  test("unequal group sizes: n1=5, n2=10", () => {
+    const gu = computeGUpper(1.5, 5, 10, 0.80);
+    expect(gu).toBeGreaterThan(1.5);
+    expect(isFinite(gu)).toBe(true);
+  });
+});
+
+describe("computeGLowerCI (negative-capable CI for forest plot)", () => {
+  // Core property: can return negative values (unlike computeGLower which floors at 0)
+  test("small g at small n: 95% CI crosses zero -> negative lower bound", () => {
+    // g=0.3, n=5: small effect, small sample -> 95% CI should include zero
+    const gl = computeGLowerCI(0.3, 5, 5, 0.975);
+    expect(gl).toBeLessThan(0);
+  });
+
+  test("large g: 95% CI does NOT cross zero -> positive lower bound", () => {
+    // g=2.0, n=10: large effect -> CI above zero
+    const gl = computeGLowerCI(2.0, 10, 10, 0.975);
+    expect(gl).toBeGreaterThan(0);
+  });
+
+  test("g=0: lower bound is negative", () => {
+    const gl = computeGLowerCI(0, 10, 10, 0.975);
+    expect(gl).toBeLessThanOrEqual(0);
+  });
+
+  test("result <= computeGUpper for same parameters", () => {
+    const lower = computeGLowerCI(1.0, 10, 10, 0.975);
+    const upper = computeGUpper(1.0, 10, 10, 0.975);
+    expect(lower).toBeLessThan(upper);
+  });
+
+  test("higher confidence -> wider CI (lower bound more negative)", () => {
+    const ci80 = computeGLowerCI(0.5, 10, 10, 0.80);
+    const ci975 = computeGLowerCI(0.5, 10, 10, 0.975);
+    expect(ci975).toBeLessThan(ci80);
+  });
+
+  test("n < 2 returns 0", () => {
+    expect(computeGLowerCI(1.0, 1, 10, 0.975)).toBe(0);
+  });
+
+  test("finite result for all parameter ranges", () => {
+    for (const g of [0, 0.3, 1.0, 3.0]) {
+      for (const n of [3, 5, 10, 20]) {
+        const gl = computeGLowerCI(g, n, n, 0.975);
+        expect(isFinite(gl)).toBe(true);
+      }
+    }
   });
 });
 

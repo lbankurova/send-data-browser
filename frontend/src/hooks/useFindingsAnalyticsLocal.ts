@@ -22,11 +22,11 @@ import type { FindingsFilters } from "@/types/analysis";
 import type { AnalyticsWorkerInput, AnalyticsWorkerOutput } from "@/workers/findingsAnalytics.worker";
 
 // Sync fallback imports — only used if worker fails
-import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
+import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap, computeRiskDifference, computeCohensH, benjaminiHochberg } from "@/lib/derive-summaries";
 import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
-import { computeGLower } from "@/lib/g-lower";
+import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
@@ -180,7 +180,7 @@ function computeAnalyticsSync(
   const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
   const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
 
-  // R1: Attach g_lower to each endpoint (per-sex worst-case when bySex available)
+  // R1: Attach g_lower and g_upper to each continuous endpoint
   for (const ep of endpoints) {
     if (ep.controlStats && ep.worstTreatedStats && ep.maxEffectSize !== null) {
       const n1 = ep.controlStats.n;
@@ -199,6 +199,55 @@ function computeAnalyticsSync(
         }
       }
       ep.gLower = gl;
+      // Phase 0C: gUpper via separate non-central t bisection (NOT symmetric formula)
+      ep.gUpper = computeGUpper(ep.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
+    }
+  }
+
+  // Phase 0A/0B: Attach risk difference, Cohen's h to incidence endpoints
+  // Build finding lookup for group_stats access
+  const findingByLabel = new Map<string, import("@/types/analysis").UnifiedFinding>();
+  for (const f of findings) {
+    const label = f.endpoint_label ?? f.finding;
+    if (label && !findingByLabel.has(label)) findingByLabel.set(label, f);
+  }
+  for (const ep of endpoints) {
+    const f = findingByLabel.get(ep.endpoint_label);
+    if (!f) continue;
+    // Use scheduled_group_stats if available (early-death excluded), else group_stats
+    const gs = f.scheduled_group_stats ?? f.group_stats;
+    if (!gs || gs.length === 0) continue;
+    const ctrl = gs.find(g => g.dose_level === 0 && g.affected != null && g.n > 0);
+    if (!ctrl || ctrl.affected == null) continue;
+    // Find the worst treated group (highest incidence)
+    const treated = gs.filter(g => g.dose_level > 0 && g.affected != null && g.n > 0);
+    if (treated.length === 0) continue;
+    const worst = treated.reduce((best, g) =>
+      (g.affected ?? 0) / g.n > (best.affected ?? 0) / best.n ? g : best
+    );
+    if (worst.affected == null) continue;
+    // Risk difference (Phase 0A)
+    const rdResult = computeRiskDifference(worst.affected, worst.n, ctrl.affected, ctrl.n);
+    if (rdResult) {
+      ep.riskDifference = rdResult.rd;
+      ep.rdCiLower = rdResult.rdLower;
+      ep.rdCiUpper = rdResult.rdUpper;
+    }
+    // Cohen's h (Phase 0B)
+    const hResult = computeCohensH(worst.affected, worst.n, ctrl.affected, ctrl.n);
+    if (hResult) {
+      ep.cohensH = hResult.h;
+      ep.hCiLower = hResult.hLower;
+      ep.hCiUpper = hResult.hUpper;
+    }
+  }
+
+  // Phase 0: BH-FDR q-values across all endpoints
+  {
+    const pValues = endpoints.map(ep => ep.minPValue ?? null);
+    const qValues = benjaminiHochberg(pValues);
+    for (let i = 0; i < endpoints.length; i++) {
+      endpoints[i].qValue = qValues[i];
     }
   }
 

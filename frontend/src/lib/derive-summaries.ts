@@ -91,6 +91,22 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** R1: Lower confidence bound of |Hedges' g| (non-central t CI). Cross-study comparable. */
   gLower?: number;
+  /** Phase 0C: Upper confidence bound of |Hedges' g| (non-central t CI, separate bisection). */
+  gUpper?: number;
+  /** Phase 0A: Risk difference (p_treated - p_control) for incidence endpoints. */
+  riskDifference?: number | null;
+  /** Phase 0A: Risk difference CI lower bound (Newcombe Method 10). */
+  rdCiLower?: number | null;
+  /** Phase 0A: Risk difference CI upper bound (Newcombe Method 10). */
+  rdCiUpper?: number | null;
+  /** Phase 0B: Cohen's h (arcsine effect size) for incidence endpoints. */
+  cohensH?: number | null;
+  /** Phase 0B: Cohen's h CI lower bound (Wilson score + arcsine hybrid). */
+  hCiLower?: number | null;
+  /** Phase 0B: Cohen's h CI upper bound (Wilson score + arcsine hybrid). */
+  hCiUpper?: number | null;
+  /** Phase 0: BH-FDR adjusted p-value (cross-endpoint multiplicity correction). */
+  qValue?: number | null;
   /** A5: Compound identity for multi-compound studies. */
   compound_id?: string;
   /** Endpoint confidence integrity assessment (ECI) — SPEC-ECI-AMD-002 */
@@ -602,6 +618,101 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     const bp = b.minPValue ?? 1;
     return ap - bp;
   });
+}
+
+// ─── Incidence effect sizes (Phase 0A/0B) ────────────────────
+
+/**
+ * Wilson score confidence interval for a single proportion.
+ * Well-defined at p=0 and p=1 (does not collapse to a point).
+ * Reference: Wilson EB (1927), JASA 22(158):209-212.
+ */
+function wilsonScoreCI(x: number, n: number): [number, number] {
+  if (n === 0) return [0, 1];
+  const pHat = x / n;
+  // z = 1.96 for alpha=0.05 (hardcoded; only used at 95% in this context)
+  const z = 1.959964;
+  const z2 = z * z;
+  const denom = 1 + z2 / n;
+  const center = (pHat + z2 / (2 * n)) / denom;
+  const halfWidth = (z / denom) * Math.sqrt(pHat * (1 - pHat) / n + z2 / (4 * n * n));
+  return [Math.max(0, center - halfWidth), Math.min(1, center + halfWidth)];
+}
+
+/** Risk difference with Newcombe Method 10 CI. */
+export function computeRiskDifference(
+  affectedTreated: number, nTreated: number,
+  affectedControl: number, nControl: number,
+): { rd: number; rdLower: number; rdUpper: number } | null {
+  if (nTreated === 0 || nControl === 0) return null;
+  const p1 = affectedTreated / nTreated;
+  const p2 = affectedControl / nControl;
+  const rd = p1 - p2;
+  const [l1, u1] = wilsonScoreCI(affectedTreated, nTreated);
+  const [l2, u2] = wilsonScoreCI(affectedControl, nControl);
+  const lower = rd - Math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2);
+  const upper = rd + Math.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2);
+  return { rd, rdLower: Math.max(-1, lower), rdUpper: Math.min(1, upper) };
+}
+
+/** Cohen's h (arcsine effect size) with Wilson+arcsine hybrid CI. */
+export function computeCohensH(
+  affectedTreated: number, nTreated: number,
+  affectedControl: number, nControl: number,
+): { h: number; hLower: number; hUpper: number } | null {
+  if (nTreated === 0 || nControl === 0) return null;
+  const p1 = affectedTreated / nTreated;
+  const p2 = affectedControl / nControl;
+  const h = 2 * Math.asin(Math.sqrt(p1)) - 2 * Math.asin(Math.sqrt(p2));
+  const [l1, u1] = wilsonScoreCI(affectedTreated, nTreated);
+  const [l2, u2] = wilsonScoreCI(affectedControl, nControl);
+  const hLower = 2 * Math.asin(Math.sqrt(l1)) - 2 * Math.asin(Math.sqrt(u2));
+  const hUpper = 2 * Math.asin(Math.sqrt(u1)) - 2 * Math.asin(Math.sqrt(l2));
+  return { h, hLower, hUpper };
+}
+
+// ─── BH-FDR correction (Phase 0, cross-endpoint) ────────────
+
+/**
+ * Benjamini-Hochberg FDR correction on a list of p-values.
+ *
+ * Returns q-values (FDR-adjusted p-values) in the same order as input.
+ * Null p-values pass through as null. Algorithm:
+ *   1. Rank non-null p-values ascending
+ *   2. q_i = p_i * m / rank_i (where m = number of non-null tests)
+ *   3. Enforce monotonicity: q_i = min(q_i, q_{i+1}) scanning from bottom
+ *   4. Cap at 1.0
+ *
+ * Reference: Benjamini & Hochberg (1995), JRSS-B 57(1):289-300.
+ */
+export function benjaminiHochberg(pValues: (number | null)[]): (number | null)[] {
+  const indexed: { i: number; p: number }[] = [];
+  for (let i = 0; i < pValues.length; i++) {
+    if (pValues[i] != null) indexed.push({ i, p: pValues[i]! });
+  }
+  if (indexed.length === 0) return pValues.map(() => null);
+
+  const m = indexed.length;
+  // Sort ascending by p-value
+  indexed.sort((a, b) => a.p - b.p);
+
+  // Compute raw q-values
+  const qRaw = indexed.map((item, rank) => ({
+    i: item.i,
+    q: Math.min(1.0, item.p * m / (rank + 1)),
+  }));
+
+  // Enforce monotonicity (step-up): scan from bottom, each q <= the one below it
+  for (let k = qRaw.length - 2; k >= 0; k--) {
+    qRaw[k].q = Math.min(qRaw[k].q, qRaw[k + 1].q);
+  }
+
+  // Map back to original order
+  const result: (number | null)[] = pValues.map(() => null);
+  for (const item of qRaw) {
+    result[item.i] = item.q;
+  }
+  return result;
 }
 
 // ─── Organ coherence ─────────────────────────────────────────

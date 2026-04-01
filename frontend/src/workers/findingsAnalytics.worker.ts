@@ -7,13 +7,13 @@
  * data + Maps, no functions/DOM).
  */
 
-import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap } from "@/lib/derive-summaries";
+import { mapFindingsToRows, deriveEndpointSummaries, deriveOrganCoherence, computeEndpointNoaelMap, computeRiskDifference, computeCohensH, benjaminiHochberg } from "@/lib/derive-summaries";
 import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
-import { computeGLower } from "@/lib/g-lower";
+import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
@@ -89,7 +89,7 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
   const syndromes = detectCrossDomainSyndromes(endpoints, normContexts);
   const labMatches = evaluateLabRules(endpoints, organCoherence, syndromes);
 
-  // 5. R1: Attach g_lower to each endpoint (per-sex worst-case when bySex available)
+  // 5. R1: Attach g_lower and g_upper to each continuous endpoint
   for (const ep of endpoints) {
     if (ep.controlStats && ep.worstTreatedStats && ep.maxEffectSize !== null) {
       const n1 = ep.controlStats.n;
@@ -104,6 +104,50 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
         }
       }
       ep.gLower = gl;
+      // Phase 0C: gUpper via separate non-central t bisection (NOT symmetric formula)
+      ep.gUpper = computeGUpper(ep.maxEffectSize, n1, n2, EFFECT_SIZE_CONFIDENCE_LEVEL);
+    }
+  }
+
+  // 5b. Phase 0A/0B: Attach risk difference, Cohen's h to incidence endpoints
+  const findingByLabel = new Map<string, UnifiedFinding>();
+  for (const f of findings) {
+    const label = f.endpoint_label ?? f.finding;
+    if (label && !findingByLabel.has(label)) findingByLabel.set(label, f);
+  }
+  for (const ep of endpoints) {
+    const f = findingByLabel.get(ep.endpoint_label);
+    if (!f) continue;
+    const gs = f.scheduled_group_stats ?? f.group_stats;
+    if (!gs || gs.length === 0) continue;
+    const ctrl = gs.find(g => g.dose_level === 0 && g.affected != null && g.n > 0);
+    if (!ctrl || ctrl.affected == null) continue;
+    const treated = gs.filter(g => g.dose_level > 0 && g.affected != null && g.n > 0);
+    if (treated.length === 0) continue;
+    const worst = treated.reduce((best, g) =>
+      (g.affected ?? 0) / g.n > (best.affected ?? 0) / best.n ? g : best
+    );
+    if (worst.affected == null) continue;
+    const rdResult = computeRiskDifference(worst.affected, worst.n, ctrl.affected, ctrl.n);
+    if (rdResult) {
+      ep.riskDifference = rdResult.rd;
+      ep.rdCiLower = rdResult.rdLower;
+      ep.rdCiUpper = rdResult.rdUpper;
+    }
+    const hResult = computeCohensH(worst.affected, worst.n, ctrl.affected, ctrl.n);
+    if (hResult) {
+      ep.cohensH = hResult.h;
+      ep.hCiLower = hResult.hLower;
+      ep.hCiUpper = hResult.hUpper;
+    }
+  }
+
+  // 5c. BH-FDR q-values across all endpoints
+  {
+    const pValues = endpoints.map(ep => ep.minPValue ?? null);
+    const qValues = benjaminiHochberg(pValues);
+    for (let i = 0; i < endpoints.length; i++) {
+      endpoints[i].qValue = qValues[i];
     }
   }
 
