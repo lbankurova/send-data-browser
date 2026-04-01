@@ -49,6 +49,7 @@ if [[ "$TEST_ONLY" == "false" ]]; then
 
     STUDIES=(
         "PointCross"
+        "instem"
         "CBER-POC-Pilot-Study1-Vaccine_xpt_only"
         "CBER-POC-Pilot-Study2-Vaccine_xpt"
         "CBER-POC-Pilot-Study3-Gene-Therapy"
@@ -56,6 +57,13 @@ if [[ "$TEST_ONLY" == "false" ]]; then
         "CBER-POC-Pilot-Study5"
         "CJUGSEND00"
         "CJ16050-xptonly"
+        "FFU-Contribution-to-FDA"
+        "Nimble"
+        "PDS"
+        "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt"
+        "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt"
+        "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt"
+        "TOXSCI-24-0062--96298 1 month rat- Compound A xpt"
     )
 
     echo "--- Step 1: Regenerating study data ---"
@@ -87,6 +95,12 @@ echo ""
 
 cd "$FRONTEND"
 npx vitest run tests/ground-truth-validation.test.ts
+
+echo ""
+echo "--- Step 3: Regenerating validation documents ---"
+echo ""
+
+npx vitest run tests/generate-validation-docs.test.ts
 
 echo ""
 echo "========================================"

@@ -39,6 +39,92 @@ def _dose_exceeds_effect_threshold(pw: dict, threshold: float) -> bool:
     return p is not None and p < 0.05
 
 
+# Histopathology findings always adverse regardless of statistics (ECETOC B-6)
+INTRINSICALLY_ADVERSE = frozenset({
+    "necrosis", "fibrosis", "neoplasm", "carcinoma", "adenoma", "sarcoma",
+    "lymphoma", "mesothelioma", "fibrosarcoma", "hemangiosarcoma",
+    "hepatocellular carcinoma", "hepatocellular adenoma",
+    "myocardial necrosis", "tubular necrosis", "cortical necrosis",
+})
+
+
+def _get_pairwise_at_dose(finding: dict, dose_level: int) -> dict | None:
+    """Get the pairwise result for a specific dose level."""
+    for pw in finding.get("pairwise", []):
+        if pw.get("dose_level") == dose_level:
+            return pw
+    return None
+
+
+def _get_group_stats_at_dose(finding: dict, dose_level: int) -> dict | None:
+    """Get group stats for a specific dose level."""
+    for gs in finding.get("group_stats", []):
+        if gs.get("dose_level") == dose_level:
+            return gs
+    return None
+
+
+def _effect_matches_trend_direction(finding: dict, pw: dict) -> bool:
+    """True if the pairwise effect direction matches the overall trend direction."""
+    d = pw.get("effect_size", 0)
+    direction = finding.get("direction")
+    if direction == "up" and d > 0:
+        return True
+    if direction == "down" and d < 0:
+        return True
+    return False
+
+
+def _is_loael_driving_woe(
+    finding: dict, dose_level: int, n_per_group: int,
+) -> bool:
+    """Weight-of-evidence LOAEL gate (B4c, peer-reviewed).
+
+    Returns True if *finding* should drive LOAEL at *dose_level* using
+    multi-criteria OR.  Combined alpha ~0.06-0.08 at N=3 with mitigations
+    (Haseman 1990/1996 NTP precedent: ~7-8%).
+    """
+    pw = _get_pairwise_at_dose(finding, dose_level)
+    if not pw:
+        return False
+    p = pw.get("p_value_adj") or pw.get("p_value")
+    d = abs(pw.get("effect_size") or 0)
+    fc = finding.get("finding_class")
+
+    # C1: Statistical significance (existing behavior)
+    if p is not None and p < 0.05 and fc == "tr_adverse":
+        return True
+
+    # C2a: Trend + adverse classification
+    if finding.get("trend_p") is not None and finding["trend_p"] < 0.05 and fc == "tr_adverse":
+        return True
+
+    # C2b: Large effect + trend (threshold adapts to N per peer review)
+    d_threshold = 1.5 if n_per_group <= 5 else 1.0
+    if d >= d_threshold and finding.get("trend_p") is not None and finding["trend_p"] < 0.10:
+        if _effect_matches_trend_direction(finding, pw):
+            return True
+
+    # C3: Corroborated adverse
+    if fc == "tr_adverse" and finding.get("corroboration_status") == "corroborated":
+        return True
+
+    # C4: Intrinsically adverse (always LOAEL-driving regardless of statistics)
+    finding_term = (finding.get("finding") or "").lower().strip()
+    if fc == "tr_adverse" and finding_term in INTRINSICALLY_ADVERSE:
+        return True
+
+    # C5: High incidence histopath (>=50% treated, 0% control)
+    if finding.get("data_type") == "incidence":
+        gs = _get_group_stats_at_dose(finding, dose_level)
+        ctrl = _get_group_stats_at_dose(finding, 0)
+        if gs and ctrl:
+            if gs.get("incidence", 0) >= 0.5 and ctrl.get("incidence", 0) == 0:
+                return True
+
+    return False
+
+
 def _is_loael_driving(finding: dict) -> bool:
     """Return True when a finding should drive LOAEL determination.
 
@@ -411,6 +497,7 @@ def build_noael_summary(
     params: ScoringParams | None = None,
     has_concurrent_control: bool = True,
     compound_partitions: dict | None = None,
+    classification_framework: str | None = None,
 ) -> list[dict]:
     """Build NOAEL summary: 3 rows (M, F, combined) per compound.
 
@@ -422,6 +509,12 @@ def build_noael_summary(
     cannot be determined -- all rows report "Not established" with method
     "no_concurrent_control".
     """
+    # NOEL framework: safety pharmacology studies compute NOEL (highest dose
+    # with no statistically significant effect) instead of NOAEL.
+    # Ref: Pugsley 2020, Baird 2019, ICH S7A.
+    if classification_framework == "noel":
+        return _build_noel_for_groups(findings, dose_groups)
+
     if compound_partitions:
         all_rows: list[dict] = []
         for comp_id, partition in compound_partitions.items():
@@ -441,6 +534,100 @@ def build_noael_summary(
         findings, dose_groups, mortality=mortality,
         params=params, has_concurrent_control=has_concurrent_control,
     )
+
+
+def _build_noel_for_groups(
+    findings: list[dict],
+    dose_groups: list[dict],
+) -> list[dict]:
+    """Build NOEL summary for safety pharmacology studies.
+
+    NOEL = highest dose where no endpoint shows a statistically significant
+    treatment effect (p < 0.05 pairwise, any endpoint).  No adversity
+    judgment -- all treatment-related effects count equally.
+
+    Uses the finding_class from assess_finding_safety_pharm() which
+    classifies as treatment_related / equivocal / not_treatment_related /
+    treatment_related_concerning. Equivocal findings do not drive NOEL.
+    """
+    dose_label_map = {dg["dose_level"]: dg.get("label", f"DL{dg['dose_level']}") for dg in dose_groups}
+    dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
+    dose_unit = next((dg.get("dose_unit") for dg in dose_groups if dg.get("dose_unit")), None)
+
+    rows = []
+    for sex_filter in ["M", "F", "Combined"]:
+        sex_findings = [
+            f for f in findings
+            if sex_filter == "Combined" or f.get("sex") == sex_filter
+        ]
+
+        # Find dose levels with ANY significant treatment effect
+        effect_dose_levels = set()
+        for f in sex_findings:
+            fc = f.get("finding_class", "")
+            if fc in ("treatment_related", "treatment_related_concerning"):
+                for pw in f.get("pairwise", []):
+                    p = pw.get("p_value_adj") or pw.get("p_value")
+                    if p is not None and p < 0.05:
+                        effect_dose_levels.add(pw["dose_level"])
+
+        # NOEL = highest dose below the lowest effect dose
+        noel_level = None
+        loel_level = None
+        if effect_dose_levels:
+            loel_level = min(effect_dose_levels)
+            noel_level = _prev_dose_level(dose_groups, loel_level)
+            # If NOEL resolved to control, report as "not established"
+            if noel_level is not None:
+                noel_dg = next((dg for dg in dose_groups if dg["dose_level"] == noel_level), None)
+                if noel_dg and noel_dg.get("is_control"):
+                    noel_level = None
+
+        # Count effects at LOEL
+        n_effects_at_loel = 0
+        effect_domains = set()
+        if loel_level is not None:
+            for f in sex_findings:
+                fc = f.get("finding_class", "")
+                if fc in ("treatment_related", "treatment_related_concerning"):
+                    for pw in f.get("pairwise", []):
+                        if pw.get("dose_level") == loel_level:
+                            p = pw.get("p_value_adj") or pw.get("p_value")
+                            if p is not None and p < 0.05:
+                                n_effects_at_loel += 1
+                                effect_domains.add(f.get("domain", ""))
+
+        rows.append({
+            "sex": sex_filter,
+            "noael_dose_level": noel_level,
+            "noael_label": dose_label_map.get(noel_level, "Not established") if noel_level is not None else "Not established",
+            "noael_dose_value": dose_value_map.get(noel_level) if noel_level is not None else None,
+            "noael_dose_unit": dose_unit if noel_level is not None else None,
+            "loael_dose_level": loel_level,
+            "loael_label": dose_label_map.get(loel_level, "N/A") if loel_level is not None else "N/A",
+            "n_adverse_at_loael": n_effects_at_loel,
+            "adverse_domains_at_loael": sorted(effect_domains),
+            "noael_confidence": None,
+            "noael_derivation": {
+                "method": "noel_framework",
+                "classification_method": "safety_pharmacology",
+                "loael_dose_level": loel_level,
+                "loael_label": dose_label_map.get(loel_level) if loel_level is not None else None,
+                "adverse_findings_at_loael": [],
+                "n_adverse_at_loael": n_effects_at_loel,
+                "confidence": None,
+                "confidence_penalties": [],
+            },
+            "mortality_cap_applied": False,
+            "mortality_cap_dose_value": None,
+            "scheduled_noael_dose_level": None,
+            "scheduled_noael_label": "Not established",
+            "scheduled_noael_dose_value": None,
+            "scheduled_loael_dose_level": None,
+            "scheduled_noael_differs": False,
+        })
+
+    return rows
 
 
 def _build_noael_for_groups(
@@ -539,13 +726,24 @@ def _build_noael_for_groups(
         # Derived endpoints (ratios/indices) are excluded — their NOAEL can be
         # artifactually lower than source components due to ratio mathematics.
         adverse_dose_levels = set()
+        use_woe = params.noael_gate == "woe"
+        # Estimate N per group for WoE gate threshold adaptation
+        _n_per_group = min(
+            (dg.get("n_total", 99) for dg in dose_groups if not dg.get("is_control")),
+            default=10,
+        )
         for f in sex_findings:
             if f.get("is_derived"):
                 continue
-            if _is_loael_driving(f):
+            if use_woe:
                 for pw in f.get("pairwise", []):
-                    if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
+                    if _is_loael_driving_woe(f, pw["dose_level"], _n_per_group):
                         adverse_dose_levels.add(pw["dose_level"])
+            else:
+                if _is_loael_driving(f):
+                    for pw in f.get("pairwise", []):
+                        if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
+                            adverse_dose_levels.add(pw["dose_level"])
 
         noael_level = None
         loael_level = None

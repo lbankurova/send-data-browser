@@ -102,10 +102,15 @@ class ParameterizedAnalysisPipeline:
             findings, params=scoring,
             has_concurrent_control=has_concurrent_control,
         )
+        # Determine classification framework for NOAEL vs NOEL routing
+        from generator.adapters import get_classification_framework
+        clf_framework = get_classification_framework(self.study)
+
         noael = build_noael_summary(
             findings, dose_groups, mortality=mortality, params=scoring,
             has_concurrent_control=has_concurrent_control,
             compound_partitions=compound_partitions,
+            classification_framework=clf_framework,
         )
         rules = evaluate_rules(findings, target_organs, noael, dose_groups)
 

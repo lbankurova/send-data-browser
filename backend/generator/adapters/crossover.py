@@ -233,12 +233,16 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
             "design": "crossover",
         }
 
+        from generator.adapters import get_classification_framework
+        clf_framework = get_classification_framework(study)
+
         enriched = process_findings(
             all_findings,
             species=species, strain=strain, duration_days=duration_days,
             route=route, vehicle=vehicle,
             relrec_links=relrec_links if relrec_links else None,
             expected_profile=expected_profile, study_meta=study_meta,
+            classification_framework=clf_framework,
         )
 
         # Generator-specific enrichment (organ_name, endpoint_type)
@@ -360,10 +364,52 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
         if cfb_df.empty:
             return []
 
-        # For each subject x period, compute mean CFB across postdose timepoints
-        # This gives one value per subject per dose level per endpoint
+        # ── Super-interval time binning (B2, Holzgrefe 2010) ──
+        # Assign each postdose record to a time bin based on elapsed time.
+        # Default bins: 0-6h, 6-14h, 14-22h. If no temporal data, all records
+        # get bin="overall" (whole-period average, existing behavior).
+        # No multiplicity correction (EMA 2017: "counterproductive for safety").
+        _SUPER_BINS = [(0, 6, "0-6h"), (6, 14, "6-14h"), (14, 24, "14-24h")]
+
+        def _assign_time_bin(row):
+            """Assign super-interval bin from _tptnum, _eltm, or _tpt."""
+            # Try TPTNUM first (Study5: 1=predose, 2=0h, 3=1h, ... 26=24h)
+            tptnum = row.get("_tptnum")
+            if tptnum is not None and not pd.isna(tptnum):
+                hours = float(tptnum) - 2  # TPTNUM 2 = 0h postdose
+                if hours < 0:
+                    return "predose"
+                for lo, hi, label in _SUPER_BINS:
+                    if lo <= hours < hi:
+                        return label
+                return _SUPER_BINS[-1][2]  # >=24h goes to last bin
+            # Try ELTM (ISO 8601 duration: "PT8H", "-PT1H")
+            eltm = row.get("_eltm")
+            if eltm and isinstance(eltm, str):
+                eltm = str(eltm).strip().upper()
+                if eltm.startswith("-"):
+                    return "predose"
+                import re
+                m = re.match(r"PT?(\d+)H", eltm)
+                if m:
+                    hours = int(m.group(1))
+                    for lo, hi, label in _SUPER_BINS:
+                        if lo <= hours < hi:
+                            return label
+                    return _SUPER_BINS[-1][2]
+            return "overall"
+
+        has_temporal = "_tptnum" in cfb_df.columns or "_eltm" in cfb_df.columns
+        if has_temporal:
+            cfb_df["_time_bin"] = cfb_df.apply(_assign_time_bin, axis=1)
+            cfb_df = cfb_df[cfb_df["_time_bin"] != "predose"]
+        else:
+            cfb_df["_time_bin"] = "overall"
+
+        # For each subject x period x bin, compute mean CFB
+        # This gives one value per subject per dose level per endpoint per bin
         subject_dose_cfb = cfb_df.groupby(
-            ["USUBJID", testcd_col, "period_dose"]
+            ["USUBJID", testcd_col, "period_dose", "_time_bin"]
         )["cfb"].mean().reset_index()
 
         # Build dose_value -> dose_level mapping
@@ -396,6 +442,17 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                     if u != "nan":
                         unit = u
 
+            # Determine time bins present for this endpoint
+            time_bins = sorted(tc_data["_time_bin"].unique())
+            # Always produce "overall" finding; also produce per-bin findings
+            # when temporal data exists (has_temporal and >1 bin)
+            produce_bins = has_temporal and len(time_bins) > 1
+            if produce_bins:
+                # Add "overall" bin that aggregates across all bins
+                bin_iterations = time_bins + ["overall"]
+            else:
+                bin_iterations = ["overall"]
+
             for sex in sorted(all_sexes):
                 sex_subjects = {s for s, sx in sex_map.items() if sx == sex and s in valid_subjects}
                 if not sex_subjects:
@@ -405,92 +462,105 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
                 if sex_data.empty:
                     continue
 
-                # Build per-dose-level statistics
-                subject_cfb_by_dose: dict[float, dict[str, float]] = {}
-                group_stats = []
-                raw_subject_values: list[dict] = []
+                for time_bin in bin_iterations:
+                    if time_bin == "overall":
+                        bin_data = sex_data
+                    else:
+                        bin_data = sex_data[sex_data["_time_bin"] == time_bin]
+                    if bin_data.empty:
+                        continue
 
-                for dose_val in unique_doses:
-                    level = dose_to_level[dose_val]
-                    dose_rows = sex_data[sex_data["period_dose"] == dose_val]
+                    # Build per-dose-level statistics
+                    subject_cfb_by_dose: dict[float, dict[str, float]] = {}
+                    group_stats = []
+                    raw_subject_values: list[dict] = []
 
-                    subj_vals: dict[str, float] = {}
-                    for _, row in dose_rows.iterrows():
-                        subj_vals[row["USUBJID"]] = float(row["cfb"])
+                    for dose_val in unique_doses:
+                        level = dose_to_level[dose_val]
+                        dose_rows = bin_data[bin_data["period_dose"] == dose_val]
 
-                    subject_cfb_by_dose[dose_val] = subj_vals
-                    raw_subject_values.append(subj_vals)
+                        subj_vals: dict[str, float] = {}
+                        for _, row in dose_rows.iterrows():
+                            subj_vals[row["USUBJID"]] = float(row["cfb"])
 
-                    vals = np.array(list(subj_vals.values())) if subj_vals else np.array([])
-                    n = len(vals)
-                    group_stats.append({
-                        "dose_level": level,
-                        "n": n,
-                        "mean": round(float(np.mean(vals)), 4) if n > 0 else None,
-                        "sd": round(float(np.std(vals, ddof=1)), 4) if n > 1 else None,
-                        "median": round(float(np.median(vals)), 4) if n > 0 else None,
+                        subject_cfb_by_dose[dose_val] = subj_vals
+                        raw_subject_values.append(subj_vals)
+
+                        vals = np.array(list(subj_vals.values())) if subj_vals else np.array([])
+                        n = len(vals)
+                        group_stats.append({
+                            "dose_level": level,
+                            "n": n,
+                            "mean": round(float(np.mean(vals)), 4) if n > 0 else None,
+                            "sd": round(float(np.std(vals, ddof=1)), 4) if n > 1 else None,
+                            "median": round(float(np.median(vals)), 4) if n > 0 else None,
+                        })
+
+                    # Pairwise: each dose vs vehicle (within-subject)
+                    pairwise = compute_within_subject_pairwise(
+                        subject_cfb_by_dose, unique_doses,
+                        control_dose=unique_doses[0],
+                    )
+
+                    # Omnibus test (Friedman repeated-measures)
+                    omnibus_result = repeated_measures_omnibus(
+                        subject_cfb_by_dose, unique_doses,
+                    )
+
+                    # Trend test
+                    trend_result = pages_trend_test(
+                        subject_cfb_by_dose, unique_doses,
+                    )
+
+                    # Direction and max effect size
+                    max_d = None
+                    for pw in pairwise:
+                        if pw.get("effect_size") is not None:
+                            if max_d is None or abs(pw["effect_size"]) > abs(max_d):
+                                max_d = pw["effect_size"]
+
+                    direction = None
+                    if max_d is not None and abs(max_d) > 0.01:
+                        direction = "up" if max_d > 0 else "down"
+
+                    min_p = None
+                    for pw in pairwise:
+                        if pw.get("p_value_adj") is not None:
+                            if min_p is None or pw["p_value_adj"] < min_p:
+                                min_p = pw["p_value_adj"]
+
+                    # Append time bin label to test_name for binned findings
+                    bin_label = f" [{time_bin}]" if time_bin != "overall" else ""
+                    finding_test_name = f"{test_name}{bin_label}"
+
+                    findings.append({
+                        "domain": domain_code,
+                        "test_code": str(testcd) if time_bin == "overall" else f"{testcd}_{time_bin}",
+                        "test_name": finding_test_name,
+                        "specimen": None,
+                        "finding": finding_test_name,
+                        "day": None,  # crossover: no single day
+                        "sex": sex,
+                        "unit": unit,
+                        "data_type": "continuous",
+                        "group_stats": group_stats,
+                        "pairwise": pairwise,
+                        "trend_p": trend_result.get("p_value"),
+                        "trend_stat": trend_result.get("statistic"),
+                        "direction": direction,
+                        "max_effect_size": _safe_float(max_d),
+                        "min_p_adj": _safe_float(min_p),
+                        "raw_subject_values": raw_subject_values,
+                        "_design_meta": {
+                            "analysis_type": "within_subject_cfb",
+                            "trend_method": trend_result.get("method"),
+                            "omnibus_p": omnibus_result.get("p_value"),
+                            "omnibus_method": omnibus_result.get("method"),
+                            "n_periods": len(unique_doses),
+                            "is_escalation": self._is_escalation,
+                            "time_bin": time_bin,
+                        },
                     })
-
-                # Pairwise: each dose vs vehicle (within-subject)
-                pairwise = compute_within_subject_pairwise(
-                    subject_cfb_by_dose, unique_doses,
-                    control_dose=unique_doses[0],
-                )
-
-                # Omnibus test (Friedman repeated-measures)
-                omnibus_result = repeated_measures_omnibus(
-                    subject_cfb_by_dose, unique_doses,
-                )
-
-                # Trend test
-                trend_result = pages_trend_test(
-                    subject_cfb_by_dose, unique_doses,
-                )
-
-                # Direction and max effect size
-                max_d = None
-                for pw in pairwise:
-                    if pw.get("effect_size") is not None:
-                        if max_d is None or abs(pw["effect_size"]) > abs(max_d):
-                            max_d = pw["effect_size"]
-
-                direction = None
-                if max_d is not None and abs(max_d) > 0.01:
-                    direction = "up" if max_d > 0 else "down"
-
-                min_p = None
-                for pw in pairwise:
-                    if pw.get("p_value_adj") is not None:
-                        if min_p is None or pw["p_value_adj"] < min_p:
-                            min_p = pw["p_value_adj"]
-
-                findings.append({
-                    "domain": domain_code,
-                    "test_code": str(testcd),
-                    "test_name": test_name,
-                    "specimen": None,
-                    "finding": test_name,
-                    "day": None,  # crossover: no single day
-                    "sex": sex,
-                    "unit": unit,
-                    "data_type": "continuous",
-                    "group_stats": group_stats,
-                    "pairwise": pairwise,
-                    "trend_p": trend_result.get("p_value"),
-                    "trend_stat": trend_result.get("statistic"),
-                    "direction": direction,
-                    "max_effect_size": _safe_float(max_d),
-                    "min_p_adj": _safe_float(min_p),
-                    "raw_subject_values": raw_subject_values,
-                    "_design_meta": {
-                        "analysis_type": "within_subject_cfb",
-                        "trend_method": trend_result.get("method"),
-                        "omnibus_p": omnibus_result.get("p_value"),
-                        "omnibus_method": omnibus_result.get("method"),
-                        "n_periods": len(unique_doses),
-                        "is_escalation": self._is_escalation,
-                    },
-                })
 
         log.info(
             "%s domain: %d findings from crossover analysis",

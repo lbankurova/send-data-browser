@@ -449,6 +449,8 @@ function checkSignal(signal: RefSignal, findings: Finding[]): DetectionResult {
       f.finding_class === "tr_non_adverse" ||
       f.finding_class === "tr_adaptive" ||
       f.finding_class === "equivocal" ||
+      f.finding_class === "treatment_related" ||
+      f.finding_class === "treatment_related_concerning" ||
       f.severity === "adverse" ||
       f.treatment_related === true
   );

@@ -725,7 +725,7 @@ export function FindingsRail({
               onRestoreEndpoint={onRestoreEndpoint}
               clinicalTierMap={clinicalTierMap}
               normalizationContexts={analytics.normalizationContexts}
-              syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.get(card.key) : undefined}
+              syndromeCovariation={grouping === "syndrome" ? syndromeCovariation?.[card.key] : undefined}
               syndromeConfidence={grouping === "syndrome" ? syndromes.find((s) => s.id === card.key)?.confidence : undefined}
               syndromes={grouping === "specimen" ? syndromes : undefined}
               isTargetOrgan={grouping === "organ" && targetOrganSet.has(card.key)}

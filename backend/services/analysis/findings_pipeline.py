@@ -160,6 +160,22 @@ def _enrich_finding(
             if gs.get("incidence") is not None
         ]
         f["max_incidence"] = round(max(incidences), 4) if incidences else None
+
+        # Bayesian posterior and detection limit for small-N incidence (M1)
+        ctrl_gs = next((gs for gs in f.get("group_stats", []) if gs.get("dose_level", -1) == 0), None)
+        high_gs = treated_gs[-1] if treated_gs else None
+        if ctrl_gs and high_gs and ctrl_gs.get("n", 0) > 0 and high_gs.get("n", 0) > 0:
+            from services.analysis.statistics import (
+                bayesian_incidence_posterior, incidence_detection_limited,
+            )
+            f["detection_limited"] = incidence_detection_limited(high_gs["n"], ctrl_gs["n"])
+            f["bayesian_posterior"] = bayesian_incidence_posterior(
+                high_gs.get("affected", 0), high_gs["n"],
+                ctrl_gs.get("affected", 0), ctrl_gs["n"],
+            )
+        else:
+            f["detection_limited"] = None
+            f["bayesian_posterior"] = None
     else:
         f["max_incidence"] = None
 
@@ -301,6 +317,7 @@ def process_findings(
     relrec_links: dict[tuple, list[tuple]] | None = None,
     route: str | None = None,
     vehicle: str | None = None,
+    classification_framework: str | None = None,
     has_concurrent_control: bool = True,
     is_multi_compound: bool = False,
     expected_profile: dict | None = None,
@@ -410,6 +427,7 @@ def process_findings(
         enriched, species=species, strain=strain, duration_days=duration_days,
         route=route, vehicle=vehicle,
         has_concurrent_control=has_concurrent_control,
+        classification_framework=classification_framework,
     )
     # Reconcile severity/treatment_related with finding_class.
     # finding_class is a higher-order judgment that uses biological context
@@ -437,6 +455,7 @@ def _assess_all_findings(
     route: str | None = None,
     vehicle: str | None = None,
     has_concurrent_control: bool = True,
+    classification_framework: str | None = None,
 ) -> list[dict]:
     """Run ECETOC per-finding adversity assessment on all findings.
 
@@ -464,6 +483,21 @@ def _assess_all_findings(
         log.info(
             "No concurrent control -- adversity classification suppressed for %d findings. "
             "Descriptive statistics retained.",
+            len(findings),
+        )
+        return findings
+
+    # NOEL framework for safety pharmacology (B5, Pugsley 2020, ICH S7A)
+    if classification_framework == "noel":
+        from services.analysis.classification import assess_finding_safety_pharm
+        for f in findings:
+            try:
+                f["finding_class"] = assess_finding_safety_pharm(f)
+            except Exception as e:
+                log.warning("assess_finding_safety_pharm failed for %s: %s", finding_key(f), e)
+                f["finding_class"] = "not_treatment_related"
+        log.info(
+            "NOEL framework: %d findings classified (no adversity judgment)",
             len(findings),
         )
         return findings

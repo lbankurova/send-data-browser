@@ -89,6 +89,9 @@ class ScoringParams:
     # Comparable sensitivity to Dunnett's p < 0.05 at N=10.
     effect_relevance_threshold: float = 0.3
 
+    # NOAEL gate mode: "statistical" (p<0.05 only) or "woe" (multi-criteria)
+    noael_gate: Literal["statistical", "woe"] = "statistical"
+
     # NOAEL confidence penalties (positive values, subtracted from 1.0)
     penalty_single_endpoint: float = 0.20
     penalty_sex_inconsistency: float = 0.20

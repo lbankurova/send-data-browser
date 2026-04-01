@@ -7,7 +7,7 @@ import { CONTINUOUS_DOMAINS } from "@/lib/domain-types";
 
 /**
  * Eagerly fetch co-variation summaries for all detected syndromes in one batch request.
- * Returns a Map<syndromeId, SyndromeCorrelationSummary> for inline display.
+ * Returns Record<syndromeId, SyndromeCorrelationSummary> for inline display.
  */
 export function useSyndromeCorrelationSummaries(
   studyId: string | undefined,
@@ -34,15 +34,9 @@ export function useSyndromeCorrelationSummaries(
     queryFn: async () => {
       // Only request syndromes with ≥2 correlatable endpoints
       const eligible = batchEntries.filter((e) => e.endpoint_labels.length >= 2);
-      if (eligible.length === 0) return new Map<string, SyndromeCorrelationSummary>();
+      if (eligible.length === 0) return {} as Record<string, SyndromeCorrelationSummary>;
 
-      const summaries = await fetchSyndromeCorrelationSummaries(
-        studyId!,
-        eligible,
-        params || undefined,
-      );
-
-      return new Map(Object.entries(summaries));
+      return fetchSyndromeCorrelationSummaries(studyId!, eligible, params || undefined);
     },
     enabled: !!studyId && syndromes.length > 0,
     staleTime: 30 * 60 * 1000,

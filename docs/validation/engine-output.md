@@ -1,0 +1,1168 @@
+# Engine Output
+
+**Engine:** commit `2f79440` (2026-04-01)
+**Generated:** 2026-04-01T13:14:51.682Z
+
+Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
+
+---
+
+## CBER-POC-Pilot-Study1-Vaccine_xpt_only
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | MONKEY / CYNOMOLGUS |
+| Route | INTRAMUSCULAR |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | Hepatitis B Vaccine |
+| Groups (main) | 1 |
+| Recovery groups | 0 |
+| Last dosing day | 29 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 20 ug/dose | 0/4 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 10 | 0 | 0 | 0 | 0 | 0 |
+| BW | 11 | 0 | 0 | 0 | 0 | 0 |
+| CL | 8 | 0 | 0 | 0 | 0 | 0 |
+| IS | 2 | 0 | 0 | 0 | 0 | 0 |
+| LB | 104 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **135** | **0** | **0** | **0** | **0** | **0** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+| F | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+| Combined | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-006 | Control group identified from ARM label (no explicit control flag in EX/TX). Verify assignment. |
+| Prov-008 | Compound classified as Non-adjuvanted vaccine (inferred). Expected-effect profile has 6 entries. D9 pharmacological scoring active — matching findings receive reduced adversity confidence. |
+| Prov-012 | No concurrent control detected -- adversity determination suppressed. Descriptive statistics only. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-001-LB | Warning | LB | 7 |
+| SD-003 | Warning | DM | 4 |
+| FDA-004-DS | Info | DS | 1 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 2 warnings, 2 info
+
+---
+
+## CBER-POC-Pilot-Study2-Vaccine_xpt
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 vp/dose | 5/5 | VEHICLE_CONTROL | 0 |
+| 1 | null vp/dose | 5/5 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BW | 32 | 0 | 1 | 0 | 14 | 17 |
+| CL | 17 | 0 | 0 | 0 | 1 | 16 |
+| FW | 15 | 0 | 0 | 0 | 3 | 12 |
+| LB | 281 | 29 | 19 | 0 | 87 | 146 |
+| MA | 18 | 0 | 0 | 0 | 2 | 16 |
+| MI | 41 | 1 | 0 | 0 | 16 | 24 |
+| OM | 70 | 9 | 0 | 0 | 43 | 18 |
+| VS | 16 | 2 | 0 | 0 | 8 | 6 |
+| **Total** | **490** | **41** | **20** | **0** | **174** | **255** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2 - 456a 1x10^11 VP | 20 | LB, MI, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 456a 1x10^11 VP | 14 | LB, OM, VS | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 - 456a 1x10^11 VP | 34 | LB, MI, OM, VS | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| hematologic | 0.839 | 54 | LB, MA, MI, OM | Yes |
+| metabolic | 0.713 | 6 | LB | Yes |
+| musculoskeletal | 0.672 | 2 | LB | Yes |
+| hepatic | 0.628 | 24 | LB, OM | Yes |
+| electrolyte | 0.567 | 8 | LB | Yes |
+| general | 0.492 | 63 | BW, CL, FW, LB, MA, MI, OM | Yes |
+| cardiovascular | 0.428 | 8 | OM, VS | Yes |
+| renal | 0.369 | 14 | LB, MI, OM | Yes |
+
+---
+
+## CBER-POC-Pilot-Study3-Gene-Therapy
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | null vg/kg | 3/0 | -- | 0 |
+| 1 | null vg/kg | 3/0 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BW | 33 | 0 | 0 | 0 | 0 | 0 |
+| CL | 9 | 0 | 0 | 0 | 0 | 0 |
+| IS | 1 | 0 | 0 | 0 | 0 | 0 |
+| LB | 528 | 0 | 0 | 0 | 0 | 0 |
+| MA | 6 | 0 | 0 | 0 | 0 | 0 |
+| MI | 16 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **593** | **0** | **0** | **0** | **0** | **0** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+| F | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+| Combined | Not established | N/A | 0 | -- | 0.00 | no_concurrent_control |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-012 | No concurrent control detected -- adversity determination suppressed. Descriptive statistics only. |
+
+---
+
+## CBER-POC-Pilot-Study4-Vaccine
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RABBIT / NEW ZEALAND |
+| Route | INTRAMUSCULAR |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | SENDVACC99 |
+| Vehicle | NONE |
+| Groups (main) | 3 |
+| Recovery groups | 0 |
+| Last dosing day | 45 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/dose | 5/5 | NEGATIVE_CONTROL | 0 |
+| 1 | 12.5 mg/dose | 5/5 | -- | 0 |
+| 2 | 12.5 mg/dose | 5/5 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 34 | 2 | 3 | 0 | 16 | 13 |
+| BW | 38 | 13 | 1 | 0 | 6 | 18 |
+| CL | 9 | 0 | 0 | 0 | 1 | 8 |
+| FW | 97 | 1 | 6 | 0 | 51 | 39 |
+| IS | 2 | 0 | 2 | 0 | 0 | 0 |
+| LB | 349 | 30 | 24 | 0 | 121 | 174 |
+| MA | 17 | 1 | 0 | 0 | 4 | 12 |
+| MI | 108 | 3 | 0 | 0 | 34 | 71 |
+| OM | 73 | 8 | 0 | 0 | 13 | 52 |
+| VS | 20 | 0 | 1 | 0 | 8 | 11 |
+| **Total** | **747** | **58** | **37** | **0** | **254** | **398** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2, SENDVACC10 | 30 | BG, BW, FW, LB, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2, SENDVACC10 | 13 | BG, LB, MA, MI, OM | 0.80 | below_tested_range |
+| Combined | Not established | Group 2, SENDVACC10 | 43 | BG, BW, FW, LB, MA, MI, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| general | 0.802 | 63 | BG, BW, CL, FW, IS, LB, MA, MI, OM | Yes |
+| hepatic | 0.764 | 27 | LB, MI, OM | Yes |
+| electrolyte | 0.697 | 8 | LB | Yes |
+| hematologic | 0.613 | 75 | LB, MA, MI, OM | Yes |
+| metabolic | 0.605 | 6 | LB | Yes |
+| cardiovascular | 0.516 | 10 | MI, OM, VS | Yes |
+| renal | 0.490 | 20 | LB, MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-004 | Recovery groups detected in 3 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-008 | Compound classified as Adjuvanted vaccine (inferred). Expected-effect profile has 9 entries. D9 pharmacological scoring active — matching findings receive reduced adversity confidence. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 0 warnings, 1 info
+
+---
+
+## CBER-POC-Pilot-Study5
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | DOG / BEAGLE |
+| Route | ORAL GAVAGE |
+| Study type | CARDIOVASCULAR PHARMACOLOGY |
+| Treatment | Drug-X |
+| Vehicle | 0.5% hydroxypropylmethylcellulose |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 36 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 6/0 | Yes | 0 |
+| 1 | 20 mg/kg | 6/0 | -- | 0 |
+| 2 | 50 mg/kg | 6/0 | -- | 0 |
+| 3 | 150 mg/kg | 6/0 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| CL | 12 | 0 | 0 | 0 | 3 | 9 |
+| CV | 16 | 0 | 0 | 0 | 10 | 6 |
+| EG | 20 | 0 | 0 | 0 | 0 | 8 |
+| VS | 4 | 0 | 0 | 0 | 0 | 3 |
+| **Total** | **52** | **0** | **0** | **0** | **13** | **26** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | 20 mg/kg | 2 | EG | ? | noel_framework |
+| F | Not established | N/A | 0 | -- | ? | noel_framework |
+| Combined | Not established | 20 mg/kg | 2 | EG | ? | noel_framework |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| cardiovascular | 0.692 | 28 | CV, EG, VS | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-005 | 6 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+| Prov-006 | 6 control groups detected: 0/20/50/150 mg Drug-X/kg, 150/50/20/0 mg Drug-X/kg, 0/50/20/150 mg Drug-X/kg, 150/20/50/0 mg Drug-X/kg, 20/0/150/50 mg Drug-X/kg, 50/150/0/20 mg Drug-X/kg. '0/20/50/150 mg Drug-X/kg' used as primary comparator for statistical tests. |
+| Prov-011 | Empty (0-byte) XPT file(s) skipped: LB. These domains were excluded from the analysis. Replace with valid XPT files and re-run the generator. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-003-PC | Warning | PC | 6 |
+| SD-005 | Warning | EX | 6 |
+| FDA-004-DS | Info | DS | 1 |
+| FDA-004-EG | Info | EG | 1 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 2 warnings, 3 info
+
+---
+
+## CJ16050-xptonly
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | RESPIRATORY PHARMACOLOGY |
+| Treatment | Compound A |
+| Vehicle | 0.5w/v% methylcellulose 400 solution |
+| Groups (main) | 3 |
+| Recovery groups | 0 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 6/0 | VEHICLE_CONTROL | 0 |
+| 1 | 100 mg/kg | 6/0 | -- | 0 |
+| 2 | 1000 mg/kg | 6/0 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| CL | 2 | 2 | 0 | 0 | 0 | 0 |
+| RE | 3 | 3 | 0 | 0 | 0 | 0 |
+| **Total** | **5** | **5** | **0** | **0** | **0** | **0** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Compound A 100 mg/kg | 2 | RE | 1.00 | below_tested_range |
+| F | Not established | N/A | 0 | -- | 0.80 | not_established |
+| Combined | Not established | Compound A 100 mg/kg | 2 | RE | 1.00 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| respiratory | 0.820 | 3 | RE | Yes |
+| general | 0.607 | 2 | CL | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 0 warnings, 1 info
+
+---
+
+## CJUGSEND00
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | MONKEY / CYNOMOLGUS |
+| Route | ORAL GAVAGE |
+| Study type | CARDIOVASCULAR PHARMACOLOGY |
+| Treatment | Compound A |
+| Vehicle | 0.5 w/v% methylcellulose solution |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 1 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 4/0 | Yes | 0 |
+| 1 | 10 mg/kg | 4/0 | -- | 0 |
+| 2 | 30 mg/kg | 4/0 | -- | 0 |
+| 3 | 100 mg/kg | 4/0 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| CL | 1 | 0 | 0 | 0 | 0 | 1 |
+| CV | 12 | 0 | 0 | 0 | 2 | 10 |
+| EG | 15 | 0 | 0 | 0 | 3 | 11 |
+| VS | 3 | 0 | 0 | 0 | 0 | 2 |
+| **Total** | **31** | **0** | **0** | **0** | **5** | **24** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | 10 mg/kg | 1 | EG | ? | noel_framework |
+| F | Not established | N/A | 0 | -- | ? | noel_framework |
+| Combined | Not established | 10 mg/kg | 1 | EG | ? | noel_framework |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| cardiovascular | 0.551 | 22 | CV, EG, VS | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-005 | 4 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| SD-005 | Warning | EX | 4 |
+| FDA-004-DS | Info | DS | 1 |
+| FDA-007-EG | Info | EG | 1 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 1 warnings, 3 info
+
+---
+
+## FFU-Contribution-to-FDA
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | MONKEY / CYNOMOLGUS |
+| Route | INTRAVENOUS |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | Compound |
+| Vehicle | 15 mM histidine buffer, pH 6.0 ± 0.05 |
+| Groups (main) | 5 |
+| Recovery groups | 0 |
+| Last dosing day | 47 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 0/2 | VEHICLE_CONTROL | 0 |
+| 1 | 4 mg/kg | 0/2 | -- | 0 |
+| 2 | 6 mg/kg | 0/2 | -- | 0 |
+| 3 | 8 mg/kg | 0/2 | -- | 0 |
+| 4 | 12 mg/kg | 0/2 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 27 | 3 | 7 | 0 | 5 | 12 |
+| BW | 33 | 13 | 7 | 0 | 5 | 8 |
+| CL | 34 | 0 | 0 | 0 | 28 | 6 |
+| LB | 616 | 101 | 61 | 0 | 215 | 239 |
+| MA | 3 | 0 | 0 | 0 | 2 | 1 |
+| MI | 38 | 2 | 0 | 0 | 25 | 11 |
+| OM | 60 | 0 | 0 | 0 | 31 | 29 |
+| **Total** | **811** | **119** | **75** | **0** | **311** | **306** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Not determined (single dose level) | 0 | -- | 0.80 | single_dose_not_established |
+| F | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.80 | single_dose_not_established |
+| Combined | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.80 | single_dose_not_established |
+| M | Not established | N/A | 0 | -- | 0.80 | not_established |
+| F | Not established | G3 - Compound 2: 4 mg/kg | 18 | LB | 0.80 | below_tested_range |
+| Combined | Not established | G3 - Compound 2: 4 mg/kg | 18 | LB | 0.80 | below_tested_range |
+| M | Not established | Not determined (single dose level) | 0 | -- | 0.80 | single_dose_not_established |
+| F | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.80 | single_dose_not_established |
+| Combined | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.80 | single_dose_not_established |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| hematologic | 0.982 | 23 | LB, MI, OM | Yes |
+| general | 0.809 | 24 | BG, BW, CL, LB, MI, OM | Yes |
+| hepatic | 0.793 | 14 | LB, MI, OM | Yes |
+| electrolyte | 0.708 | 4 | LB | Yes |
+| renal | 0.645 | 10 | LB, MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-006 | 4 control groups detected: Vehicle control:1, Dose:3, Dose:4, Dose:5. 'Vehicle control:1' used as primary comparator for statistical tests. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 0 warnings, 1 info
+
+---
+
+## Nimble
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / FISCHER 344 |
+| Route | ORAL |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | Example Compound Name |
+| Vehicle | SALINE |
+| Groups (main) | 2 |
+| Recovery groups | 0 |
+| Last dosing day | 21 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg/day | 18/32 | VEHICLE_CONTROL | 0 |
+| 1 | 10 mg/kg/day | 19/31 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 2 | 0 | 0 | 0 | 0 | 2 |
+| BW | 2 | 0 | 0 | 0 | 1 | 1 |
+| CL | 10 | 0 | 0 | 0 | 3 | 7 |
+| DS | 2 | 2 | 0 | 0 | 0 | 0 |
+| FW | 4 | 0 | 0 | 0 | 0 | 4 |
+| LB | 6 | 0 | 0 | 0 | 0 | 6 |
+| MA | 12 | 2 | 0 | 0 | 4 | 6 |
+| MI | 10 | 2 | 0 | 0 | 4 | 4 |
+| OM | 4 | 0 | 0 | 0 | 0 | 4 |
+| **Total** | **52** | **6** | **0** | **0** | **12** | **34** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | N/A | 0 | -- | 0.00 | control_mortality_critical |
+| F | Not established | N/A | 0 | -- | 0.00 | control_mortality_critical |
+| Combined | Not established | N/A | 0 | -- | 0.00 | control_mortality_critical |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| hematologic | 0.577 | 2 | MA | Yes |
+| general | 0.410 | 24 | BG, BW, CL, DS, FW, MI | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain for 67 subjects; derived from TX for 33 subjects. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-006 | 2 control groups detected: Treatment, Placebo. 'Treatment' used as primary comparator for statistical tests. |
+| Prov-013 | 28.0% control mortality in 3.0w study. NOAEL determination suppressed due to critical control mortality. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| SD-003 | Warning | DM | 8 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 1 warnings, 1 info
+
+---
+
+## PDS
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | PDS-FAKEDRUG-111 |
+| Vehicle | methocell |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 30 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 13/13 | VEHICLE_CONTROL | 0 |
+| 1 | 20 mg/kg | 13/13 | -- | 0 |
+| 2 | 200 mg/kg | 13/13 | -- | 0 |
+| 3 | 400 mg/kg | 13/13 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 78 | 11 | 5 | 0 | 23 | 39 |
+| BW | 66 | 57 | 1 | 0 | 2 | 6 |
+| CL | 12 | 1 | 0 | 0 | 3 | 8 |
+| DS | 1 | 0 | 0 | 0 | 0 | 1 |
+| FW | 18 | 11 | 0 | 0 | 1 | 6 |
+| LB | 345 | 52 | 5 | 0 | 73 | 215 |
+| MA | 29 | 1 | 0 | 0 | 2 | 26 |
+| MI | 82 | 6 | 0 | 0 | 33 | 43 |
+| OM | 58 | 9 | 0 | 0 | 16 | 33 |
+| **Total** | **689** | **148** | **11** | **0** | **153** | **377** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Low | 20 | BG, CL, FW, LB | 0.80 | below_tested_range |
+| F | Not established | Low | 47 | BG, BW, FW, LB, OM | 0.80 | below_tested_range |
+| Combined | Not established | Low | 67 | BG, BW, CL, FW, LB, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| hepatic | 0.749 | 35 | LB, MA, MI, OM | Yes |
+| electrolyte | 0.704 | 8 | LB | Yes |
+| hematologic | 0.672 | 57 | LB, MA, MI, OM | Yes |
+| general | 0.650 | 170 | BG, BW, CL, DS, FW, LB, MA, MI, OM | Yes |
+| neurological | 0.631 | 5 | MA, OM | Yes |
+| metabolic | 0.566 | 8 | LB | Yes |
+| renal | 0.502 | 36 | LB, MA, MI, OM | Yes |
+| cardiovascular | 0.488 | 8 | MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-003 | 24 subject(s) in 8 combined TK set(s) retained in analysis (same animals serve tox + PK). |
+| Prov-004 | Recovery groups detected in 2 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-010 | Sex-stratified arms detected: 10 sex-specific arms merged into 4 combined dose groups by dose value. Per-sex statistical comparisons preserved within each merged group. |
+| Prov-013 | 3.9% control mortality in 4.3w study. Control mortality 4% in 4.3w study requires investigation |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-005-DS | Error | DS | 1 |
+| FDA-001-LB | Warning | LB | 34 |
+| FDA-003-PC | Warning | PC | 20 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 1 errors, 2 warnings, 1 info
+
+---
+
+## PointCross
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | PCDRUG |
+| Vehicle | Saline |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 91 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 10/10 | VEHICLE_CONTROL | 0 |
+| 1 | 2 mg/kg | 10/10 | -- | 10 |
+| 2 | 20 mg/kg | 10/10 | -- | 10 |
+| 3 | 200 mg/kg | 10/10 | -- | 10 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 9 | 2 | 1 | 0 | 0 | 6 |
+| BW | 29 | 26 | 0 | 0 | 0 | 3 |
+| CL | 9 | 1 | 0 | 0 | 3 | 5 |
+| DS | 1 | 0 | 0 | 0 | 0 | 1 |
+| EG | 6 | 0 | 1 | 0 | 1 | 4 |
+| FW | 5 | 0 | 0 | 0 | 1 | 4 |
+| LB | 161 | 27 | 1 | 0 | 25 | 108 |
+| MA | 72 | 4 | 0 | 0 | 10 | 58 |
+| MI | 101 | 5 | 0 | 1 | 39 | 56 |
+| OM | 20 | 11 | 1 | 0 | 4 | 4 |
+| TF | 3 | 2 | 0 | 0 | 0 | 1 |
+| VS | 2 | 0 | 1 | 0 | 0 | 1 |
+| **Total** | **418** | **78** | **5** | **1** | **83** | **251** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2,2 mg/kg PCDRUG | 10 | BW, LB, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2,2 mg/kg PCDRUG | 6 | BW, LB, OM | 0.80 | below_tested_range |
+| Combined | Not established | Group 2,2 mg/kg PCDRUG | 16 | BW, LB, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| neurological | 0.833 | 2 | OM | Yes |
+| cardiovascular | 0.677 | 12 | EG, MI, OM, VS | Yes |
+| hematologic | 0.669 | 65 | LB, MA, MI, OM | Yes |
+| hepatic | 0.583 | 39 | LB, MA, MI, OM, TF | Yes |
+| metabolic | 0.547 | 8 | LB | Yes |
+| general | 0.516 | 61 | BG, BW, CL, DS, FW, MA, MI, OM | Yes |
+| renal | 0.473 | 32 | LB, MA, MI, OM | Yes |
+| electrolyte | 0.461 | 8 | LB | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-003 | 30 TK satellite subject(s) in 3 set(s) excluded from statistical analysis (detection: TKDESC). |
+| Prov-004 | Recovery groups detected in 4 arm(s). Recovery-phase data is analyzed separately. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-005-DS | Error | DS | 1 |
+| FDA-001-LB | Warning | LB | 1 |
+| FDA-003-PC | Warning | PC | 5 |
+| FDA-007-EG | Info | EG | 1 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 1 errors, 2 warnings, 2 info
+
+---
+
+## TOXSCI-24-0062--35449 1 month dog- Compound B-xpt
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | DOG / BEAGLE |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | 6576 |
+| Vehicle | Polymer without drug in ultra pure water. (polymer: 70% hydroxypropylmethylcellulose-acetate-succinate-(medium substitution grade) [HPMC-AS-M] (w/w)) |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 28 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg/day | 3/3 | VEHICLE_CONTROL | 0 |
+| 1 | 3 mg/kg/day | 3/3 | -- | 0 |
+| 2 | 18 mg/kg/day | 3/3 | -- | 0 |
+| 3 | 356 mg/kg/day | 3/3 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 12 | 2 | 0 | 0 | 5 | 5 |
+| BW | 17 | 0 | 2 | 0 | 5 | 10 |
+| CL | 98 | 22 | 0 | 0 | 30 | 46 |
+| EG | 30 | 3 | 2 | 0 | 6 | 19 |
+| FW | 71 | 6 | 2 | 0 | 26 | 37 |
+| LB | 524 | 34 | 98 | 0 | 91 | 301 |
+| MA | 20 | 1 | 0 | 0 | 12 | 7 |
+| MI | 20 | 0 | 0 | 0 | 11 | 9 |
+| OM | 61 | 6 | 0 | 0 | 33 | 22 |
+| VS | 9 | 2 | 1 | 0 | 2 | 4 |
+| **Total** | **862** | **76** | **105** | **0** | **221** | **460** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2 - 6576 3 mg/kg/day | 5 | BG, EG, FW, LB | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 6576 3 mg/kg/day | 8 | CL, EG, FW, LB | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 - 6576 3 mg/kg/day | 13 | BG, CL, EG, FW, LB | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| renal | 0.800 | 18 | LB, MA, OM | Yes |
+| electrolyte | 0.769 | 8 | LB | Yes |
+| hepatic | 0.750 | 27 | LB, MI, OM | Yes |
+| hematologic | 0.731 | 58 | LB, MA, MI, OM | Yes |
+| cardiovascular | 0.725 | 20 | EG, OM, VS | Yes |
+| metabolic | 0.724 | 6 | LB | Yes |
+| general | 0.681 | 125 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-003 | 6 set(s) had ambiguous TK classification (TK keyword present but subjects have tox data) — classified as combined, manual review recommended. 32 subject(s) in 6 combined TK set(s) retained in analysis (same animals serve tox + PK). |
+| Prov-004 | Recovery groups detected in 2 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-005 | 22 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-001-LB | Warning | LB | 2 |
+| FDA-002-EG | Warning | EG | 1 |
+| FDA-002-LB | Warning | LB | 1 |
+| FDA-003-PC | Warning | PC | 49 |
+| SD-005 | Warning | EX | 22 |
+| FDA-004-EG | Info | EG | 5 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 5 warnings, 2 info
+
+---
+
+## TOXSCI-24-0062--43066 1 month dog- Compound A-xpt
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | DOG / BEAGLE |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | 5492 |
+| Vehicle | 0.5% Methocel A4M, 0.1% Tween 80 and 99.4% water |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 28 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg/day | 3/3 | VEHICLE_CONTROL | 0 |
+| 1 | 25 mg/kg/day | 3/3 | -- | 0 |
+| 2 | 50 mg/kg/day | 3/3 | -- | 0 |
+| 3 | 100 mg/kg/day | 3/3 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BW | 21 | 0 | 5 | 0 | 13 | 3 |
+| CL | 30 | 7 | 0 | 0 | 3 | 20 |
+| LB | 273 | 13 | 8 | 0 | 53 | 199 |
+| MA | 3 | 0 | 0 | 0 | 2 | 1 |
+| MI | 42 | 1 | 0 | 0 | 30 | 11 |
+| OM | 55 | 9 | 0 | 0 | 22 | 24 |
+| VS | 12 | 1 | 0 | 0 | 2 | 9 |
+| **Total** | **436** | **31** | **13** | **0** | **125** | **267** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2 25 mg/kg/day | 13 | LB, OM, VS | 0.80 | below_tested_range |
+| F | Not established | Group 2 25 mg/kg/day | 2 | LB | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 25 mg/kg/day | 15 | LB, OM, VS | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| renal | 0.791 | 17 | LB, MA, OM | Yes |
+| hematologic | 0.703 | 47 | LB, MI, OM | Yes |
+| cardiovascular | 0.652 | 16 | MI, OM, VS | Yes |
+| hepatic | 0.584 | 30 | LB, MA, MI, OM | Yes |
+| general | 0.577 | 59 | BW, CL, LB, MA, MI, OM | Yes |
+| reproductive | 0.562 | 10 | MI, OM | Yes |
+| neurological | 0.487 | 9 | MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-004 | Recovery groups detected in 3 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-005 | 26 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-001-LB | Warning | LB | 1 |
+| FDA-003-PC | Warning | PC | 88 |
+| SD-005 | Warning | EX | 26 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 3 warnings, 1 info
+
+---
+
+## TOXSCI-24-0062--87497 1 month rat- Compound B-xpt
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | 6576 |
+| Vehicle | 1% Hydroxyethylcellulose, 0.25% Polysorbate 80, 0.05% Antifoam in purified water |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 28 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg/day | 13/13 | VEHICLE_CONTROL | 0 |
+| 1 | 25 mg/kg/day | 10/10 | -- | 18 |
+| 2 | 125 mg/kg/day | 10/10 | -- | 18 |
+| 3 | 1000 mg/kg/day | 10/10 | -- | 18 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 26 | 5 | 2 | 0 | 6 | 13 |
+| BW | 26 | 14 | 0 | 0 | 6 | 6 |
+| CL | 72 | 0 | 0 | 0 | 6 | 66 |
+| FW | 1 | 0 | 0 | 0 | 0 | 1 |
+| LB | 82 | 7 | 4 | 0 | 30 | 41 |
+| MA | 21 | 0 | 0 | 0 | 2 | 19 |
+| MI | 45 | 0 | 0 | 1 | 11 | 33 |
+| OM | 67 | 11 | 0 | 0 | 15 | 41 |
+| VS | 3 | 1 | 0 | 0 | 0 | 2 |
+| **Total** | **343** | **38** | **6** | **1** | **76** | **222** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | Group 2 - 6576  25 mg/kg/day | 4 | BG, BW, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 6576  25 mg/kg/day | 1 | LB | 0.60 | below_tested_range |
+| Combined | Not established | Group 2 - 6576  25 mg/kg/day | 5 | BG, BW, LB, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| neurological | 0.705 | 4 | OM | Yes |
+| cardiovascular | 0.704 | 7 | OM, VS | Yes |
+| reproductive | 0.700 | 9 | MI, OM | Yes |
+| hematologic | 0.527 | 54 | LB, MA, MI, OM | Yes |
+| hepatic | 0.504 | 34 | LB, MA, MI, OM | Yes |
+| general | 0.475 | 94 | BG, BW, CL, FW, MA, MI, OM | Yes |
+| metabolic | 0.448 | 6 | LB | Yes |
+| renal | 0.349 | 36 | LB, MA, MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-003 | 54 TK satellite subject(s) in 3 set(s) excluded from statistical analysis (detection: SET_label_candidate). |
+| Prov-004 | Recovery groups detected in 2 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-005 | 124 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-001-LB | Warning | LB | 1 |
+| FDA-003-PC | Warning | PC | 12 |
+| SD-005 | Warning | EX | 124 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 3 warnings, 1 info
+
+---
+
+## TOXSCI-24-0062--96298 1 month rat- Compound A xpt
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | 5492 |
+| Vehicle | Methocel (Methylcellulose)/Tween80/H2O |
+| Groups (main) | 4 |
+| Recovery groups | 0 |
+| Last dosing day | 30 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg | 15/15 | VEHICLE_CONTROL | 0 |
+| 1 | 50 mg/kg | 10/10 | -- | 0 |
+| 2 | 125 mg/kg | 15/15 | -- | 0 |
+| 3 | 250 mg/kg | 15/15 | -- | 0 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 18 | 1 | 1 | 0 | 3 | 13 |
+| BW | 20 | 0 | 2 | 0 | 7 | 11 |
+| CL | 31 | 1 | 0 | 0 | 4 | 26 |
+| DS | 1 | 0 | 0 | 0 | 0 | 1 |
+| FW | 14 | 4 | 0 | 0 | 3 | 7 |
+| LB | 264 | 17 | 11 | 0 | 101 | 135 |
+| MA | 12 | 0 | 0 | 0 | 2 | 10 |
+| MI | 70 | 2 | 0 | 2 | 25 | 41 |
+| OM | 61 | 4 | 0 | 0 | 10 | 47 |
+| **Total** | **491** | **29** | **14** | **2** | **155** | **291** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | 50 mg/kg | 3 | FW, LB, MI | 0.80 | below_tested_range |
+| F | Not established | 50 mg/kg | 3 | FW, OM | 0.80 | below_tested_range |
+| Combined | Not established | 50 mg/kg | 6 | FW, LB, MI, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| general | 0.834 | 109 | BG, BW, CL, DS, FW, LB, MA, MI, OM | Yes |
+| hematologic | 0.751 | 50 | LB, MA, MI, OM | Yes |
+| hepatic | 0.637 | 32 | LB, MA, MI, OM | Yes |
+| cardiovascular | 0.407 | 10 | MI, OM | Yes |
+| renal | 0.390 | 31 | LB, MA, MI, OM | Yes |
+| metabolic | 0.355 | 8 | LB | Yes |
+| electrolyte | 0.300 | 8 | LB | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-005 | 79 subject(s) have variable dosing across study. Maximum dose used for group assignment. Review EX domain for per-timepoint doses. |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-001-LB | Warning | LB | 1 |
+| FDA-003-PC | Warning | PC | 70 |
+| SD-005 | Warning | EX | 79 |
+| FDA-006-SE | Info | SE | 30 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 0 errors, 3 warnings, 2 info
+
+---
+
+## instem
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RAT / SPRAGUE-DAWLEY |
+| Route | ORAL GAVAGE |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | XYZ-12345 |
+| Vehicle | Saline |
+| Groups (main) | 5 |
+| Recovery groups | 0 |
+| Last dosing day | 30 |
+
+### Dose Groups
+
+| Level | Dose | N (M/F) | Control | TK |
+|-------|------|---------|---------|-----|
+| 0 | 0 mg/kg/day | 10/10 | VEHICLE_CONTROL | 18 |
+| -3 | 0 mg/kg/day | 10/10 | NEGATIVE_CONTROL | 18 |
+| 1 | 60 mg/kg/day | 10/10 | -- | 18 |
+| 2 | 200 mg/kg/day | 10/10 | -- | 19 |
+| 3 | 600 mg/kg/day | 10/10 | -- | 18 |
+
+### Finding Classification
+
+| Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
+|--------|-------| --- | --- | --- | --- | --- |
+| BG | 12 | 0 | 2 | 0 | 1 | 9 |
+| BW | 16 | 1 | 0 | 0 | 2 | 13 |
+| CL | 35 | 4 | 0 | 0 | 6 | 25 |
+| FW | 13 | 1 | 2 | 0 | 4 | 6 |
+| LB | 174 | 18 | 10 | 0 | 52 | 94 |
+| MA | 8 | 0 | 0 | 0 | 0 | 8 |
+| MI | 37 | 1 | 0 | 0 | 15 | 21 |
+| OM | 22 | 3 | 1 | 0 | 7 | 11 |
+| **Total** | **317** | **28** | **15** | **0** | **87** | **187** |
+
+### NOAEL / LOAEL
+
+| Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
+|-----|-------|-------|-----------|---------|------------|--------|
+| M | Not established | 60 mg/kg/day XYZ-12345 | 7 | CL, LB, MI | 0.80 | below_tested_range |
+| F | Not established | 60 mg/kg/day XYZ-12345 | 9 | CL, LB, OM | 0.80 | below_tested_range |
+| Combined | Not established | 60 mg/kg/day XYZ-12345 | 16 | CL, LB, MI, OM | 0.80 | below_tested_range |
+
+### Target Organs
+
+| Organ System | Score | N Endpoints | Domains | Flagged |
+|-------------|-------|-------------|---------|---------|
+| metabolic | 0.747 | 6 | LB | Yes |
+| hepatic | 0.689 | 22 | LB, MI, OM | Yes |
+| hematologic | 0.675 | 44 | LB, MA, MI, OM | Yes |
+| electrolyte | 0.652 | 8 | LB | Yes |
+| renal | 0.610 | 24 | LB, MA, MI, OM | Yes |
+| general | 0.540 | 64 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
+| neurological | 0.493 | 2 | OM | Yes |
+| cardiovascular | 0.329 | 6 | MI, OM | Yes |
+
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-003 | 91 TK satellite subject(s) in 5 set(s) excluded from statistical analysis (detection: SET_label_candidate). |
+| Prov-004 | Recovery groups detected in 5 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-006 | 2 control groups detected: Control Vehicle, Control Water. 'Control Vehicle' used as primary comparator for statistical tests. |
+| Prov-009 | 2 control groups detected. '0 mg/kg/day Vehicle Control' designated as primary reference for statistical tests. Secondary control(s): 0 mg/kg/day Negative Control. Vehicle effects detected in 6/94 endpoints (BH-adjusted). Largest: Monocytes (F, d=2.0317), Basophils (F, d=1.9437), Alanine Aminotransferase (M, d=1.8255). |
+
+### Validation Issues
+
+| Rule | Severity | Domain | Records |
+|------|----------|--------|---------|
+| FDA-005-DS | Error | DS | 4 |
+| FDA-003-PC | Warning | PC | 71 |
+| SD-004 | Info | TS | 1 |
+
+**Summary:** 1 errors, 1 warnings, 1 info
+
+---

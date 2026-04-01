@@ -611,6 +611,124 @@ def assess_finding(finding: dict, a3_score: float = 0.0) -> str:
     return "equivocal"
 
 
+def assess_finding_safety_pharm(finding: dict) -> str:
+    """NOEL-mode classification for safety pharmacology studies.
+
+    No adversity judgment -- safety pharmacology endpoints are continuous
+    pharmacological measurements that do not fit a toxic/non-toxic rubric
+    (Pugsley 2020, Baird 2019, ICH S7A).
+
+    Returns: not_treatment_related, equivocal, treatment_related,
+             treatment_related_concerning.
+    """
+    # Treatment-relatedness: any statistical evidence of effect
+    min_p = finding.get("min_p_adj")
+    trend_p = finding.get("trend_p")
+    has_sig_pairwise = min_p is not None and min_p < 0.05
+    has_sig_trend = trend_p is not None and trend_p < 0.05
+    # Bayesian posterior for small-N incidence (M1): P(p_treat > p_ctrl) >= 0.9
+    has_bayesian_signal = (finding.get("bayesian_posterior") or 0) >= 0.9
+
+    if has_sig_pairwise or has_sig_trend or has_bayesian_signal:
+        # Concern threshold check (QTc >= 10ms, MAP >= 10mmHg, HR >= 10bpm)
+        gs = finding.get("group_stats", [])
+        ctrl = next((g for g in gs if g.get("dose_level") == 0), None)
+        treated = [g for g in gs if g.get("dose_level", 0) > 0
+                   and g.get("mean") is not None]
+        if ctrl and ctrl.get("mean") is not None and treated:
+            max_abs_diff = max(abs(g["mean"] - ctrl["mean"]) for g in treated)
+            tc = (finding.get("test_code") or "").upper()
+            threshold = _CONCERN_THRESHOLDS.get(tc)
+            if threshold is not None and max_abs_diff >= threshold:
+                return "treatment_related_concerning"
+        return "treatment_related"
+
+    # Equivocal gate: suggestive but non-significant evidence
+    if _is_equivocal_safety_pharm(finding):
+        return "equivocal"
+
+    return "not_treatment_related"
+
+
+# Dose-response patterns considered suggestive evidence for equivocal gate
+_SUGGESTIVE_DR_PATTERNS = frozenset({
+    "monotonic_increase", "monotonic_decrease",
+    "threshold_increase", "threshold_decrease",
+})
+
+
+def _is_equivocal_safety_pharm(finding: dict) -> bool:
+    """Equivocal gate for safety pharmacology findings.
+
+    Returns True when a finding has suggestive but non-significant evidence
+    of a treatment effect. Five independently testable criteria (E1-E5),
+    any one sufficient.
+
+    Ref: docs/_internal/research/peer-review-noel-classification.md
+    """
+    min_p = finding.get("min_p_adj")
+    max_el = finding.get("max_effect_lower")
+    pattern = finding.get("dose_response_pattern", "")
+    data_type = finding.get("data_type", "continuous")
+    domain = finding.get("domain", "")
+
+    # E1: Sub-threshold statistics + confident effect size
+    # p_adj < 0.10 with g_lower > 0.3 = underpowered, not absent
+    if (min_p is not None and min_p < 0.10
+            and max_el is not None and max_el > 0.3):
+        return True
+
+    # E2: Dose-response pattern + meaningful observed effect size
+    # Monotonic/threshold D-R with |d| >= 0.5 (medium effect)
+    if pattern in _SUGGESTIVE_DR_PATTERNS:
+        from services.analysis.send_knowledge import get_effect_size
+        d = get_effect_size(finding)
+        if d is not None and abs(d) >= 0.5:
+            return True
+
+    # E3: Sub-threshold statistics + concern threshold exceeded
+    # Wider p window (0.15) justified by independent magnitude evidence
+    if min_p is not None and min_p < 0.15:
+        gs = finding.get("group_stats", [])
+        ctrl = next((g for g in gs if g.get("dose_level") == 0), None)
+        treated = [g for g in gs if g.get("dose_level", 0) > 0
+                   and g.get("mean") is not None]
+        if ctrl and ctrl.get("mean") is not None and treated:
+            tc = (finding.get("test_code") or "").upper()
+            threshold = _CONCERN_THRESHOLDS.get(tc)
+            if threshold is not None:
+                max_diff = max(abs(g["mean"] - ctrl["mean"]) for g in treated)
+                if max_diff >= threshold:
+                    return True
+
+    # E4: Incidence with suggestive dose-response (CL/DS domains)
+    # No statistical gate -- within-subject exact tests have zero power
+    # at N=4-8 for incidence endpoints (peer review section 6)
+    if (data_type == "incidence"
+            and domain in ("CL", "DS")
+            and pattern in _SUGGESTIVE_DR_PATTERNS):
+        return True
+
+    # E5: Bayesian posterior in detection-limited incidence
+    # 0.80 threshold (below 0.90 treatment_related gate)
+    if (finding.get("detection_limited") is True
+            and (finding.get("bayesian_posterior") or 0) >= 0.80):
+        return True
+
+    return False
+
+
+# Concern thresholds for safety pharmacology endpoints (ICH E14/S7B Q&A,
+# working consensus). These are signal detection thresholds, not adversity
+# gates -- they flag findings warranting attention in integrated assessment.
+_CONCERN_THRESHOLDS: dict[str, float] = {
+    "QTCBAG": 10.0, "QTCFAG": 10.0, "QTCVAG": 10.0, "QTCAG": 10.0,
+    "QTC": 10.0, "QTCB": 10.0, "QTCF": 10.0, "QTCVDW": 10.0,
+    "MAP": 10.0, "SYSBP": 15.0, "DIABP": 10.0,
+    "HR": 10.0,
+}
+
+
 # ---------------------------------------------------------------------------
 # Tier 2: Context-aware assessment (organ thresholds + adaptive trees)
 # ---------------------------------------------------------------------------

@@ -1,0 +1,87 @@
+# Study5 — Drug-X CV Safety Pharmacology in Beagle Dogs (Latin Square Crossover)
+# Source: participant 5 3-1-PILOT_CV_Redacted report.pdf, nSDRG
+# ICH S7B hERG/QTc study. Latin square — each dog receives all 4 doses.
+
+study_id: CBER-POC-Pilot-Study5
+origin: synthetic
+source: "3-1-PILOT_CV_Redacted report.pdf (Tables 10-11 for QTc), nSDRG"
+
+design:
+  species: "Dog"
+  strain: "Beagle"
+  route: "Oral gavage"
+  groups: 4  # Latin square crossover — 4 treatments, all 6 animals
+  design_type: "latin_square_crossover"
+  doses: [0, 20, 50, 150]
+  dose_unit: "mg/kg"
+  dose_concentrations: [0, 4, 10, 30]  # mg/mL
+  dose_volume: "5 mL/kg"
+  duration: "single dose per period, 10+ day washout"
+  recovery: false  # animals returned to stock colony, not sacrificed
+  n_total: 6  # males only, telemetry-instrumented
+  sex: "M"
+  control_type: "VEHICLE_CONTROL"  # within-subject vehicle period
+  vehicle: "0.5% HPMC (low viscosity), 0.1% Tween 80 in water, pH 8.2"
+  glp: true
+  monitoring: "Continuous telemetry: 2h predose + 24h postdose"
+  note: "No terminal sacrifice — no necropsy, organ weights, or histopathology. Animal 1006 ECG excluded at 20 mg/kg (N=5 for that dose). QTc method: Modified Spence/Miyazaki-Tagawa (QTCSAG)."
+
+noael:
+  combined:
+    dose_level: null
+    label: "Not established"
+    note: "Report: 'cardiovascular effects in dogs at all doses tested.' LOEL = 20 mg/kg (HR increase). No NOAEL — even lowest dose produced effects."
+
+target_organs: {}
+
+# All findings from report summary and Tables 10-11.
+injected_signals:
+  - name: "QTc prolongation (150 mg/kg)"
+    domain: "EG"
+    test_pattern: "qtc|qt.*corrected|qtcsag"
+    direction: "up"
+    expected_class: "tr_adverse"
+    note: "Peak: 280.3 vs 236.9 msec at 5h (+18.3%, +43.4 msec). Statistically significant (p<0.05) at 2h and 3h. Persisted through 24h (+5.7%). (report Tables 10-11)"
+
+  - name: "QTc prolongation (50 mg/kg)"
+    domain: "EG"
+    test_pattern: "qtc|qt.*corrected|qtcsag"
+    direction: "up"
+    note: "Peak: 253.9 vs 236.9 msec at 5h (+7.2%, +17 msec). Not statistically significant (N=6). Resolved by 18h. (report Table 11)"
+
+  - name: "Blood pressure decrease (150 mg/kg)"
+    domain: "CV"
+    test_pattern: "systolic|diastolic|map|sysbp|diabp"
+    direction: "down"
+    note: "SBP at 15h: 113.4 vs 127.1 mmHg (-10.8%). All 6 animals affected. Not statistically significant. 10-24h postdose. (report)"
+
+  - name: "Heart rate increase (all doses)"
+    domain: "CV"
+    test_pattern: "heart rate|hr"
+    direction: "up"
+    note: "All doses, 10-24h postdose, <30% above control. Not dose-dependent (may be baroreceptor reflex). Example 16h: vehicle 60.9, 20mg 73.9 (+21%), 50mg 70.8 (+16%), 150mg 78.2 (+28%). Engine classifies not_treatment_related — known gap (non-monotonic HR increase can't be statistically attributed). (report)"
+
+  - name: "QRS duration increase (150 mg/kg)"
+    domain: "EG"
+    test_pattern: "qrs"
+    direction: "up"
+    note: "2-24h postdose. Mean <5% above control. 3/6 animals; Animal 1002 up to 16%. Not statistically significant. (report)"
+
+  - name: "Emesis (150 mg/kg)"
+    domain: "CL"
+    note: "Vomitus in 2/6 animals at 150 mg/kg (end of 24h monitoring). Test item-related. (report)"
+
+  - name: "Body temperature increase (150 mg/kg)"
+    domain: "VS"
+    test_pattern: "temperature"
+    direction: "up"
+    note: "Slight (<0.5C) increase 3-16h postdose. 5/6 animals. Peak 38.57 vs 38.36C (+0.21C). Not statistically significant. (report)"
+
+# PK exposure (6h postdose mean):
+# 20 mg/kg: 31.2 ug/mL; 50 mg/kg: 113 ug/mL; 150 mg/kg: 392 ug/mL (dose-proportional)
+
+assertions:
+  - type: "crossover_design"
+    description: "Latin square crossover correctly parsed — 4 treatments, 6 animals, within-subject"
+  - type: "no_noael"
+    description: "NOAEL not established — CV effects at all doses tested (LOEL = 20 mg/kg)"

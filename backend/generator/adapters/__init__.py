@@ -71,7 +71,7 @@ def _get_statistical_mode_from_config(study: StudyInfo) -> str | None:
     try:
         ts_df, _ = read_xpt(study.xpt_files["ts"])
         ts_df.columns = [c.upper() for c in ts_df.columns]
-        stype_rows = ts_df[ts_df["TSPARMCD"].str.upper() == "STYPE"]
+        stype_rows = ts_df[ts_df["TSPARMCD"].str.upper().isin(("STYPE", "SSTYP"))]
         if stype_rows.empty:
             return None
         stype_val = str(stype_rows["TSVAL"].iloc[0]).strip().upper()
@@ -92,6 +92,37 @@ def _get_statistical_mode_from_config(study: StudyInfo) -> str | None:
         except Exception:
             continue
 
+    return None
+
+
+def get_classification_framework(study: StudyInfo) -> str | None:
+    """Return the classification_framework from the matching study type config.
+
+    Returns "noel" for safety pharmacology studies, None for standard tox
+    (which uses the default ECETOC/NOAEL framework).
+    """
+    if not _STUDY_TYPE_CONFIGS_DIR.is_dir():
+        return None
+    if "ts" not in study.xpt_files:
+        return None
+    try:
+        ts_df, _ = read_xpt(study.xpt_files["ts"])
+        ts_df.columns = [c.upper() for c in ts_df.columns]
+        stype_rows = ts_df[ts_df["TSPARMCD"].str.upper().isin(("STYPE", "SSTYP"))]
+        if stype_rows.empty:
+            return None
+        stype_val = str(stype_rows["TSVAL"].iloc[0]).strip().upper()
+    except Exception:
+        return None
+    for config_path in _STUDY_TYPE_CONFIGS_DIR.glob("*.json"):
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+            ts_values = [v.upper() for v in config.get("ts_stype_values", [])]
+            if stype_val in ts_values:
+                return config.get("classification_framework")
+        except Exception:
+            continue
     return None
 
 

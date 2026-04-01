@@ -1,60 +1,62 @@
 # SENDEX Validation Suite
 
-Automated validation of SENDEX signal detection against known ground truth and expert (SME) reference data from submission reports.
+Automated validation of SENDEX signal detection against known ground truth from synthetic datasets and study reports.
 
 ## Approach
 
-SENDEX is validated at three levels:
+Two layers, cleanly separated:
 
-1. **Ground truth** — PointCross (PC201708) is a synthetic 13-week rat toxicity study with 13 explicitly engineered signals documented in the nSDRG. We verify detection of every known signal.
-2. **Cross-study benchmark** — 16 additional studies spanning repeat-dose, single-dose, vaccine, gene therapy, safety pharmacology, and multi-compound designs across rat, dog, rabbit, and monkey species. Automated results are compared against conclusions from submission reports (nSDRGs, define.xml, study reports). 9 studies added 2026-03-28 are pending generator run.
-3. **Classification verdicts** — Expert evaluation of every partial match, gap, and over-classification to determine whether each is (a) correct behavior requiring human judgment, (b) a genuine algorithmic issue to fix, or (c) a valid additional signal.
+1. **Engine output** (`engine-output.md`) — per-study facts read directly from generated JSON. No verdicts, no human input. Shows what the engine produced: study design, dose groups, finding classification counts, NOAEL/LOAEL, target organs, provenance, validation issues.
+
+2. **Signal detection** (`signal-detection.md`) — compares engine output against reference cards encoding injected/documented signals. Verdicts are binary: DETECTED or MISSED. Design assertions use MATCH or MISMATCH. Dashboard in `summary.md`.
+
+Most studies are **synthetic datasets** with known, deliberately injected signals. The engine either found what was planted or it missed it.
+
+## Reference Cards
+
+Each study has a YAML file in `references/` encoding what is known about the dataset by construction. Every claim traces to a source document (nSDRG, study report, define.pdf). Cards are version-controlled facts, not opinions.
 
 ## Study Sources
 
-All datasets are from [PhUSE SEND pilot](https://github.com/phuse-org/phuse-scripts/tree/master/data/send) (MIT license).
+All datasets from [PhUSE SEND pilot](https://github.com/phuse-org/phuse-scripts/tree/master/data/send) (MIT license). Source documents in `C:/pg/pcc-studies2import/`.
 
-| Study | Type | Species | Design | Validation Role |
+| Study | Origin | Species | Signals Known | Source |
 |---|---|---|---|---|
-| PointCross (PC201708) | 13-week repeat-dose | SD Rat | 4 groups, M+F, recovery | **Ground truth** — 13 engineered signals |
-| Study2 (CBER-POC) | Repeat-dose vaccine | NZW Rabbit | Control + 1 treatment | Multi-domain detection, adversity classification |
-| Study4 (CBER-POC) | Repeat-dose vaccine | NZW Rabbit | Control + 2 treatments | Best non-PointCross study, target organ evaluation |
-| Study1 (CBER-POC) | Immunogenicity | Cynomolgus | Single-arm, no control | Edge case: no-control handling |
-| Study3 (CBER-POC) | Single-dose gene therapy | Cynomolgus | 2 treatments, no control | Edge case: no-control NOAEL |
-| Study5 (CBER-POC) | CV safety pharmacology | Beagle Dog | Latin square crossover | Unsupported design validation |
-| CJUGSEND00 | CV safety pharmacology | Cynomolgus | Dose escalation | Unsupported design validation |
-| CJ16050 | Respiratory safety pharm | SD Rat | Parallel, single dose | Non-monotonic dose-response |
-| CV01 (CDISC POC) | CV safety pharmacology | Beagle Dog | Latin square crossover, 4 doses | Proper crossover with CV+EG+VS |
-| FFU | Repeat-dose IV (multi-compound) | Cynomolgus | 5 groups, 3 compounds | Multi-compound handling, small N |
-| Nimort-01 (Nimble) | 3-week repeat-dose | F344 Rat | 3 groups, parallel | Non-SD rat strain, unbalanced sex |
-| PDS2014 | 1-month repeat-dose + recovery | SD Rat | 4 groups + TK subsets | Comprehensive PointCross-like |
-| 35449 (TOXSCI) | 1-month repeat-dose | Beagle Dog | 4 groups + recovery | First non-crossover dog, IDO1 inhibitor |
-| 43066 (TOXSCI) | 1-month repeat-dose | Beagle Dog | 4 groups + recovery | Cross-compound comparison |
-| 87497 (TOXSCI) | 1-month repeat-dose | SD Rat | 4 groups + recovery | Largest rat study (n=160), cross-species |
-| 96298 (TOXSCI) | 1-month repeat-dose | SD Rat | 4 groups + recovery | Death data, cross-species comparison |
-| GLP003 (instem) | 1-month repeat-dose + recovery | SD Rat | 5 groups (dual control) | Largest study (n=241), dual control |
+| PointCross | Synthetic | SD Rat | 13 engineered (nSDRG 6.2) | nSDRG |
+| Study1 (CBER-POC) | Synthetic | Cynomolgus | None (single-arm) | Covance report |
+| Study2 (CBER-POC) | Synthetic | NZW Rabbit | 10 vaccine pharmacology | Study report |
+| Study3 (CBER-POC) | Synthetic | Cynomolgus | None (no control) | VECTORSTUDYU1 report |
+| Study4 (CBER-POC) | Synthetic | NZW Rabbit | 11 vaccine pharmacology | rabbivi.pdf |
+| Study5 (CBER-POC) | Synthetic | Beagle Dog | 7 CV safety pharm | Study report |
+| CJUGSEND00 | Synthetic | Cynomolgus | 2 CV/EG (no report) | nSDRG |
+| CJ16050 | Synthetic | SD Rat | 6 respiratory biphasic | Raw RE data |
+| PDS | Synthetic | SD Rat | None documented | readme.md |
+| instem/GLP003 | Synthetic | SD Rat | None documented | readme.txt |
+| FFU | Real | Cynomolgus | None (no report) | define.pdf |
+| Nimble | Synthetic | F344 Rat | None documented | define.pdf |
+| TOXSCI (4 studies) | Real | SD Rat / Beagle | None (no reports) | TOXSCI publication |
 
-## Automated Regression
+## Regeneration
 
-The ground truth assertions are encoded as vitest tests in `frontend/tests/ground-truth-validation.test.ts`. These run on every commit via the pre-commit hook.
-
-To regenerate all study data and validate:
+All validation documents are auto-generated. Never edit them manually.
 
 ```bash
+# Full pipeline: regenerate study data + run tests + regenerate docs
 bash scripts/regenerate-validation.sh
+
+# Docs only (skip data regeneration):
+cd frontend && npx vitest run tests/generate-validation-docs.test.ts
 ```
+
+Or use the slash command: `/regen-validation`
 
 ## Documents
 
-- [pointcross-ground-truth.md](pointcross-ground-truth.md) — Signal-by-signal detection results for the synthetic benchmark study
-- [multi-study-benchmark.md](multi-study-benchmark.md) — Combined validation: trial design (dose groups, controls, recovery, TK, crossover), classification (findings, adversity, NOAEL), and systemic gap resolution
-- [classification-verdicts.md](classification-verdicts.md) — Expert evaluation of every discrepancy with literature references
+- [summary.md](summary.md) — dashboard with totals, missed signals, design mismatches
+- [engine-output.md](engine-output.md) — per-study engine facts (auto-generated)
+- [signal-detection.md](signal-detection.md) — actual vs planted signals (auto-generated)
+- [references/](references/) — per-study YAML reference cards with expert notes on discrepancies
 
-## Validation Version
+## Ground Truth Tests
 
-- **Engine version:** Commit `6aadd74` (2026-03-29)
-- **Last full validation:** 2026-03-29
-- **Frontend tests at validation time:** 1826 passing
-- **Studies generating:** 16 of 16
-- **Root causes resolved:** 9 of 9 (RC-1 through RC-9)
-- **Previous validation:** Commit `119dcdf` (2026-03-28) — 7 of 16 studies, pre root-cause fixes
+`frontend/tests/ground-truth-validation.test.ts` — 26 vitest assertions, CI gate. Runs on every commit. Separate from the docs (tests catch regressions, docs communicate results).

@@ -208,7 +208,7 @@ def compute_change_from_baseline(
                 if baseline is None or pd.isna(val):
                     continue
 
-                records.append({
+                rec = {
                     "USUBJID": subj_id,
                     testcd_col: testcd,
                     day_col: row[day_col],
@@ -217,7 +217,20 @@ def compute_change_from_baseline(
                     "baseline": baseline,
                     "period": period_idx,
                     "period_dose": dose_value,
-                })
+                }
+                if tpt and has_tpt:
+                    rec["_tpt"] = tpt
+                # Preserve TPTNUM for time-bin assignment
+                tptnum_col_name = testcd_col.replace("TESTCD", "TPTNUM")
+                if tptnum_col_name in row.index:
+                    rec["_tptnum"] = row[tptnum_col_name]
+                # Preserve ELTM for time-bin assignment
+                eltm_col_name = testcd_col.replace("TESTCD", "").replace("TEST", "") + "ELTM"
+                if not eltm_col_name.startswith(testcd_col[:2]):
+                    eltm_col_name = testcd_col[:2] + "ELTM"
+                if eltm_col_name in row.index:
+                    rec["_eltm"] = row[eltm_col_name]
+                records.append(rec)
 
     if not records:
         return pd.DataFrame()

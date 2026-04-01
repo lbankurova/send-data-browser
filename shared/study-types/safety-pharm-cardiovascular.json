@@ -13,6 +13,7 @@
   "time_course": false,
   "statistical_unit": "individual",
   "statistical_mode": "within_animal_crossover",
+  "classification_framework": "noel",
   "noael_type": "single",
   "enabled_syndrome_groups": ["XS_CARDIAC"],
   "ui_profile": "safety_pharm",

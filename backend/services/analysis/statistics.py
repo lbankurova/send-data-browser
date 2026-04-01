@@ -585,3 +585,45 @@ def compute_cohens_h(
         "h_ci_lower": round(h_lower, 6),
         "h_ci_upper": round(h_upper, 6),
     }
+
+
+def bayesian_incidence_posterior(
+    affected_treat: int, n_treat: int,
+    affected_ctrl: int, n_ctrl: int,
+) -> float:
+    """P(p_treat > p_ctrl | data) via Beta-Binomial conjugate with uniform prior.
+
+    Uses Beta(1,1) (uniform) prior on both groups. Posterior for each group
+    is Beta(affected + 1, n - affected + 1). The probability that the treated
+    rate exceeds control is computed via numerical integration of the joint
+    posterior.
+
+    At 2/3 vs 0/3 this returns 0.929 — exposing the signal that Fisher's
+    exact (p=0.40) cannot detect at N=3.
+    """
+    from scipy.stats import beta as beta_dist
+
+    # Posterior parameters (uniform prior: alpha=1, beta=1)
+    a_t, b_t = affected_treat + 1, n_treat - affected_treat + 1
+    a_c, b_c = affected_ctrl + 1, n_ctrl - affected_ctrl + 1
+
+    # P(p_t > p_c) via Monte Carlo (fast, accurate to ~0.001 at 100k samples)
+    rng = np.random.default_rng(42)
+    samples_t = beta_dist.rvs(a_t, b_t, size=100_000, random_state=rng)
+    samples_c = beta_dist.rvs(a_c, b_c, size=100_000, random_state=rng)
+    return round(float(np.mean(samples_t > samples_c)), 4)
+
+
+def incidence_detection_limited(n_treat: int, n_ctrl: int) -> bool:
+    """True when the most extreme 2x2 table cannot reach p < 0.05.
+
+    At N=3, Fisher's exact gives p=0.10 for 3/3 vs 0/3 (two-sided).
+    At N=4, Fisher's gives p=0.029 for 4/4 vs 0/4.
+    """
+    if n_treat < 1 or n_ctrl < 1:
+        return True
+    try:
+        _, p = stats.fisher_exact([[n_treat, 0], [0, n_ctrl]])
+        return float(p) > 0.05
+    except ValueError:
+        return True

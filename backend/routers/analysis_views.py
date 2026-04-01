@@ -385,7 +385,7 @@ def get_analysis_view(
     during the ~2-5s computation for non-default settings.
     """
     if view_name not in VALID_VIEW_NAMES:
-        raise HTTPException(status_code=404, detail=f"Unknown view: {view_name}")
+        raise HTTPException(status_code=404, detail=f"Unknown view: {view_name}. Has control-comparison: {'control-comparison' in VALID_VIEW_NAMES}. Last 3: {sorted(VALID_VIEW_NAMES)[-3:]}")
 
     file_name = _slug_to_file[view_name]
 

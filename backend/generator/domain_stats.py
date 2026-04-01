@@ -292,6 +292,9 @@ def compute_all_findings(
     }
 
     # Shared enrichment pipeline (classification, fold change, labels, etc.)
+    from generator.adapters import get_classification_framework
+    clf_framework = get_classification_framework(study)
+
     all_findings = process_findings(
         all_findings, scheduled_map, separate_map, n_excluded,
         species=species, strain=strain, duration_days=duration_days,
@@ -300,6 +303,7 @@ def compute_all_findings(
         has_concurrent_control=dg_data.get("has_concurrent_control", True),
         is_multi_compound=dg_data.get("is_multi_compound", False),
         expected_profile=expected_profile, study_meta=study_meta,
+        classification_framework=clf_framework,
     )
 
     # Attach CO comments to findings (display-only annotations with subject linkage).

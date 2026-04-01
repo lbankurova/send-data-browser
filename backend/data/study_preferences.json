@@ -6,7 +6,20 @@
   },
   "order": [
     "PointCross",
+    "PDS",
+    "instem",
+    "Nimble",
     "CBER-POC-Pilot-Study4-Vaccine",
-    "CBER-POC-Pilot-Study1-Vaccine_xpt_only"
+    "CBER-POC-Pilot-Study1-Vaccine_xpt_only",
+    "FFU-Contribution-to-FDA",
+    "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt",
+    "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt",
+    "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt",
+    "TOXSCI-24-0062--96298 1 month rat- Compound A xpt",
+    "CBER-POC-Pilot-Study2-Vaccine_xpt",
+    "CBER-POC-Pilot-Study3-Gene-Therapy",
+    "CJUGSEND00",
+    "CJ16050-xptonly",
+    "CBER-POC-Pilot-Study5"
   ]
 }

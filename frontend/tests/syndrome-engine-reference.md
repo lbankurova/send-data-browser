@@ -1,6 +1,6 @@
 # Syndrome Engine Reference
 
-**Generated:** 2026-03-28  
+**Generated:** 2026-04-01  
 **Source:** Live code extraction via `generate-engine-reference.test.ts`  
 **Syndromes:** 33  
 **Magnitude floor classes:** 14 + 3 organ weight subclasses  
@@ -273,6 +273,8 @@
 | S |  | OM | ↑ | OM:heart | Heart weight ↑ |
 | S |  | MI | ↕ | heart — cardiomyopathy|myocyte degeneration|necrosis|myocardial degeneration|fibrosis|vacuolation|myocardial necrosis|inflammation | Heart cardiomyopathy |
 | S |  | LB | ↑ | CTNI/CTNT/TNNI/TNNT | CTNI ↑ |
+| S | BP | CV | ↕ | SYSBP/DIABP/MAP | SYSBP |
+| S | CV_HR | CV | ↕ | HR | HR |
 
 **Discriminating evidence:**
 - Differential: functional (rate change) vs structural cardiovascular toxicity
