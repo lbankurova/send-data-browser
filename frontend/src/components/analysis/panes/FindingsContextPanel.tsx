@@ -1792,6 +1792,15 @@ export function FindingsContextPanel() {
               {selectedFinding.severity}
             </span>
           )}
+          {/* LOO fragility badge — shown when removing one animal substantially degrades the effect */}
+          {selectedFinding.loo_stability != null && selectedFinding.loo_stability < 0.8 && (
+            <span
+              className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
+              title={`LOO stability: ${(selectedFinding.loo_stability * 100).toFixed(0)}% — removing the most influential animal reduces the confident effect size to ${(selectedFinding.loo_stability * 100).toFixed(0)}% of its full value`}
+            >
+              fragile
+            </span>
+          )}
           {/* Pharmacological candidate badge (D9 fired) */}
           {selectedFinding._confidence?._pharmacological_candidate && (
             <>
