@@ -771,17 +771,20 @@ function computeNoaelForFindings(
 ): EndpointNoael {
   let loaelLevel: number | null = null;
 
-  // Effect-size-first LOAEL: use g_lower / h_lower when available, fall back to p-value
+  // Effect-size-first LOAEL: use g_lower / h_lower when available, fall back to p-value.
+  // Incidence endpoints: h_lower (Cohen's h CI) is excluded from decision gates because
+  // it is degenerate at preclinical N<=5 (hCiLower = 0 for all patterns). Incidence
+  // falls to p-value path. See research/cohens-h-commensurability-analysis.md.
   for (const f of findings) {
+    const isIncidence = f.data_type === "incidence";
     for (const pw of f.pairwise) {
       if (pw.dose_level <= 0) continue;
       let exceeds = false;
       if (pw.g_lower != null) {
         exceeds = pw.g_lower > EFFECT_RELEVANCE_THRESHOLD;
-      } else if (pw.h_lower != null) {
+      } else if (!isIncidence && pw.h_lower != null) {
         exceeds = pw.h_lower > EFFECT_RELEVANCE_THRESHOLD;
       } else {
-        // Fallback for legacy data without g_lower/h_lower
         exceeds = pw.p_value_adj != null && pw.p_value_adj < 0.05;
       }
       if (exceeds) {
