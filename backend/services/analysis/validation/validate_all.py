@@ -9,6 +9,7 @@ SCRIPTS = [
     "validate_trend_test.py",
     "validate_hedges_g.py",
     "validate_fixed_williams.py",
+    "validate_ancova.py",
 ]
 
 root = Path(__file__).parent

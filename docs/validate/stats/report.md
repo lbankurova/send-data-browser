@@ -8,6 +8,8 @@ Sources:
 
 * [williams.py](../../../backend/services/analysis/williams.py)
 
+* [ancova.py](../../../backend/services/analysis/ancova.py)
+
 Validation:
 
 * [validate_all.py](../../../backend/services/analysis/validation/validate_all.py)
@@ -81,3 +83,9 @@ Checked:
 * Implemented the fixed version - [williams_fixed.py](../../../backend/services/analysis/williams_fixed.py)
 
 * Validated against orignial papers - [validate_fixed_williams.py](../../../backend/services/analysis/validation/validate_fixed_williams.py) ✅
+
+### ✅ ANCOVA
+
+The `ancova.py` implementation is **mathematically correct**: all 17 components (OLS, adjusted means, SE, pairwise comparisons, slope homogeneity, effect decomposition, Hedges' g) match published formulas and reproduce SAS output to within 10⁻⁵.
+
+More [details](./ancova/ancova_verification_summary.md)
