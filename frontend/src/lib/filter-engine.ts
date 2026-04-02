@@ -13,7 +13,7 @@ import type {
   FilterGroup,
   FilterPredicate,
   SubjectSyndromeProfile,
-  RecoveryVerdictSubject,
+  RecoverySubjectProfile,
 } from "@/types/cohort";
 import type { UnifiedFinding } from "@/types/analysis";
 
@@ -38,7 +38,7 @@ export interface FilterContext {
   subjectOrganCounts: Map<string, number>;
   histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
   onsetDays: Record<string, Record<string, number>>;
-  recoveryVerdicts: Record<string, RecoveryVerdictSubject>;
+  recoveryVerdicts: Record<string, RecoverySubjectProfile>;
 }
 
 // ── Core evaluation ────────────────────────────────────────────
@@ -372,8 +372,8 @@ function evalRecoveryVerdict(
     if (findingLower !== "*" && entry.finding.toLowerCase() !== findingLower) return false;
     // Check specimen match (case-insensitive, or wildcard)
     if (specimenLower !== "*" && entry.specimen.toLowerCase() !== specimenLower) return false;
-    // Check verdict
-    return pred.verdict.includes(entry.verdict);
+    // Check verdict (null verdict = no verdict computed, skip)
+    return entry.verdict != null && pred.verdict.includes(entry.verdict);
   });
 }
 

@@ -197,9 +197,9 @@ export function CohortContextPanel() {
             </div>
           ))}
           <div className="flex items-center gap-2 pt-1 text-xs">
-            <span style={{ color: SEX_COLOR.M }} className="font-medium">M {maleCount}</span>
-            <span className="text-muted-foreground">/</span>
             <span style={{ color: SEX_COLOR.F }} className="font-medium">F {femaleCount}</span>
+            <span className="text-muted-foreground">/</span>
+            <span style={{ color: SEX_COLOR.M }} className="font-medium">M {maleCount}</span>
           </div>
         </div>
       </div>

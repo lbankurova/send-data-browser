@@ -22,6 +22,9 @@ import type {
   SharedFinding,
   FilterGroup,
   FilterPredicate,
+  CohortSortState,
+  SubjectSyndromeProfile,
+  RecoverySubjectProfile,
 } from "@/types/cohort";
 import { presetToFilter } from "@/lib/filter-engine";
 
@@ -587,4 +590,89 @@ export function computeSubjectOrganCounts(
     result.set(id, organs.size);
   }
   return result;
+}
+
+// ── Sorting ──────────────────────────────────────────────────
+
+/** Recovery verdict severity rank: higher = more severe. */
+const RECOVERY_SEVERITY_RANK: Record<string, number> = {
+  reversed: 0,
+  partially_reversed: 1,
+  progressing: 2,
+  persistent: 3,
+  anomaly: 2,
+};
+
+interface SortContext {
+  subjectOrganCounts: Map<string, number>;
+  syndromes: Record<string, SubjectSyndromeProfile>;
+  onsetDays: Record<string, Record<string, number>>;
+  recoveryVerdicts: Record<string, RecoverySubjectProfile>;
+  histopathMap: Map<string, Map<string, { severity_num: number; severity: string | null }>>;
+}
+
+/**
+ * Sort subjects by the given sort state. Returns a new sorted array.
+ * Pure function -- does not mutate the input.
+ */
+export function sortCohortSubjects(
+  subjects: CohortSubject[],
+  sort: CohortSortState,
+  ctx: SortContext,
+): CohortSubject[] {
+  const dir = sort.direction === "asc" ? 1 : -1;
+
+  const getValue = (s: CohortSubject): number => {
+    switch (sort.key) {
+      case "dose":
+        return s.doseGroupOrder;
+      case "usubjid":
+        return 0; // handled by string comparison below
+      case "sacrifice_day":
+        return s.sacrificeDay ?? Infinity;
+      case "mi_max_severity": {
+        const histoMap = ctx.histopathMap.get(s.usubjid);
+        if (!histoMap) return 0;
+        let maxSev = 0;
+        for (const entry of histoMap.values()) {
+          if (entry.severity_num > maxSev) maxSev = entry.severity_num;
+        }
+        return maxSev;
+      }
+      case "organ_count":
+        return ctx.subjectOrganCounts.get(s.usubjid) ?? 0;
+      case "syndrome_count":
+        return ctx.syndromes[s.usubjid]?.syndrome_count ?? 0;
+      case "bw_pct_change":
+        // Lower (more negative) = more weight loss. Sort asc puts biggest losers first.
+        return 0; // BW % change needs terminal BW data -- use onset days as proxy
+      case "onset_day": {
+        const days = ctx.onsetDays[s.usubjid];
+        if (!days) return Infinity;
+        const vals = Object.values(days);
+        return vals.length > 0 ? Math.min(...vals) : Infinity;
+      }
+      case "recovery_severity": {
+        const rv = ctx.recoveryVerdicts[s.usubjid];
+        if (!rv?.findings?.length) return -1;
+        let maxRank = -1;
+        for (const f of rv.findings) {
+          const rank = f.verdict != null ? (RECOVERY_SEVERITY_RANK[f.verdict] ?? -1) : -1;
+          if (rank > maxRank) maxRank = rank;
+        }
+        return maxRank;
+      }
+    }
+  };
+
+  return [...subjects].sort((a, b) => {
+    if (sort.key === "usubjid") {
+      return dir * a.usubjid.localeCompare(b.usubjid);
+    }
+    const va = getValue(a);
+    const vb = getValue(b);
+    if (va !== vb) return dir * (va - vb);
+    // Stable: break ties by USUBJID
+    return a.usubjid.localeCompare(b.usubjid);
+  });
 }

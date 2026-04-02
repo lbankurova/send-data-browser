@@ -17,7 +17,7 @@ import { useFindings } from "@/hooks/useFindings";
 import { useSubjectContext } from "@/hooks/useSubjectContext";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
-import { buildCohortSubjects, buildPresetFilterGroup, computeOrganSignals, buildCohortFindingRows, computeSharedFindings, computeSubjectOrganCounts } from "@/lib/cohort-engine";
+import { buildCohortSubjects, buildPresetFilterGroup, computeOrganSignals, buildCohortFindingRows, computeSharedFindings, computeSubjectOrganCounts, sortCohortSubjects } from "@/lib/cohort-engine";
 import { evaluateFilter } from "@/lib/filter-engine";
 import type { FilterContext } from "@/lib/filter-engine";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
@@ -26,7 +26,8 @@ import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import { useSavedCohortActions } from "@/hooks/useSavedCohortActions";
 import { computeDefaultReference, computeComparison, deserializeFilterState } from "@/lib/comparison-engine";
-import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate, ComparisonRow, SavedCohort, ReferenceGroup } from "@/types/cohort";
+import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate, ComparisonRow, SavedCohort, ReferenceGroup, CohortSortState, CohortSortKey } from "@/types/cohort";
+import { SORT_KEY_DEFAULTS } from "@/types/cohort";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 
 const EMPTY_FILTERS = { domain: null, severity: null, search: "", sex: null, organ_system: null, endpoint_label: null, dose_response_pattern: null };
@@ -84,6 +85,9 @@ export interface CohortContextValue {
   setFilterOperator: (op: FilterOperator) => void;
   addPredicate: (p: FilterPredicate) => void;
   removePredicate: (index: number) => void;
+  // Sorting
+  sortState: CohortSortState;
+  setSortKey: (key: CohortSortKey) => void;
   // Reference comparison
   referenceGroup: ReferenceGroup | null;
   effectiveReferenceIds: Set<string>;
@@ -143,6 +147,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const [sexFilter, setSexFilter] = useState<Set<string> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [sortState, setSortState] = useState<CohortSortState>({ key: "dose", direction: "desc" });
   const lastClickedIndex = useRef<number>(-1);
 
   // -- Reference comparison state -------------------------------------------
@@ -203,6 +208,16 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     }));
   }, []);
 
+  const setSortKey = useCallback((key: CohortSortKey) => {
+    setSortState((prev) => {
+      if (prev.key === key) {
+        // Toggle direction
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: SORT_KEY_DEFAULTS[key] };
+    });
+  }, []);
+
   // -- Sync state when URL params change after mount (e.g. "See subjects" nav) --
   const prevSubjectsParam = useRef(initialSubjects);
   useEffect(() => {
@@ -224,8 +239,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const { data: mortality } = useStudyMortality(studyId);
   const { data: crossAnimalFlags } = useCrossAnimalFlags(studyId);
   const { data: syndromesData } = useSubjectSyndromes(studyId);
-  const { data: _onsetDaysData } = useOnsetDays(studyId);
-  const { data: _recoveryVerdictsData } = useRecoveryVerdicts(studyId);
+  const { data: onsetDaysData } = useOnsetDays(studyId);
+  const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
 
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
@@ -298,9 +313,9 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     allFindings: findings,
     subjectOrganCounts,
     histopathMap,
-    onsetDays: {},
-    recoveryVerdicts: {},
-  }), [syndromesData, findings, subjectOrganCounts, histopathMap]);
+    onsetDays: onsetDaysData?.subjects ?? {},
+    recoveryVerdicts: recoveryVerdictsData?.per_subject ?? {},
+  }), [syndromesData, findings, subjectOrganCounts, histopathMap, onsetDaysData, recoveryVerdictsData]);
 
   const filteredSubjects = useMemo(() => {
     // Two-stage filtering:
@@ -318,8 +333,15 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
       const target = new Set(initialSubjects.split(","));
       subjects = subjects.filter((s) => target.has(s.usubjid));
     }
-    return subjects;
-  }, [allSubjects, presetFilter, convenienceFilter, filterCtx, initialSubjects]);
+    // Apply sorting
+    return sortCohortSubjects(subjects, sortState, {
+      subjectOrganCounts,
+      syndromes: syndromesData?.subjects ?? {},
+      onsetDays: onsetDaysData?.subjects ?? {},
+      recoveryVerdicts: recoveryVerdictsData?.per_subject ?? {},
+      histopathMap,
+    });
+  }, [allSubjects, presetFilter, convenienceFilter, filterCtx, initialSubjects, sortState, subjectOrganCounts, syndromesData, onsetDaysData, recoveryVerdictsData, histopathMap]);
 
   // Auto-select all filtered subjects when preset/filters change
   const prevFilterKey = useRef("");
@@ -556,6 +578,9 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     setSexFilter,
     setSearchQuery,
     setHoveredRow,
+    // Sorting
+    sortState,
+    setSortKey,
     // Reference comparison
     referenceGroup,
     effectiveReferenceIds,
@@ -580,8 +605,8 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
     subjectOrganCounts, allSubjects, filteredSubjects,
     activeSubjects, displaySubjects, preset, activePresets, filterGroup,
     selectedSubjects, selectedOrgan, includeTK, doseFilter, sexFilter, searchQuery,
-    hoveredRow, organSignals, findingRows, sharedFindings,
-    setPreset, togglePreset, setFilterGroup, setFilterOperator,
+    hoveredRow, sortState, organSignals, findingRows, sharedFindings,
+    setPreset, togglePreset, setFilterGroup, setFilterOperator, setSortKey,
     addPredicate, removePredicate, toggleSubject,
     referenceGroup, effectiveReferenceIds, comparisonMode, comparisonResults,
     setAsReference, setAsReferenceFromCohort, clearReference, referenceLabel,

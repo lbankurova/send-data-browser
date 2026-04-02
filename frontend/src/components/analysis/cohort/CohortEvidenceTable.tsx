@@ -4,7 +4,8 @@
  */
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getNeutralHeatColor, getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { getNeutralHeatColor, getDoseGroupColor } from "@/lib/severity-colors";
+import { shortDoseLabel } from "@/lib/dose-label-utils";
 import { FilterSelect } from "@/components/ui/FilterBar";
 import type { OrganSignal, CohortFindingRow, SharedFinding, CohortSubject, ComparisonRow } from "@/types/cohort";
 import type { DoseGroup } from "@/types/analysis";
@@ -151,7 +152,7 @@ export function CohortEvidenceTable({
 
       {/* Tables */}
       {findingRows.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+        <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
           {selectedOrgan
             ? `No findings recorded for ${selectedOrgan} in the selected subjects.`
             : "Select an organ to view findings"}
@@ -159,7 +160,7 @@ export function CohortEvidenceTable({
       ) : (
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Left: Group summary table */}
-          <div className="w-[280px] shrink-0 overflow-y-auto border-r">
+          <div className="w-[280px] shrink-0 overflow-auto border-r">
             <table className="w-full border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-background">
                 <tr>
@@ -174,7 +175,7 @@ export function CohortEvidenceTable({
                       )}
                       style={{ width: 1, whiteSpace: "nowrap" }}
                     >
-                      {dg.dose_level === 0 ? "Ctrl" : formatDoseShortLabel(dg.label)}
+                      {dg.dose_level === 0 ? "Ctrl" : shortDoseLabel(dg.label, doseGroups)}
                     </th>
                   ))}
                 </tr>
@@ -260,7 +261,7 @@ export function CohortEvidenceTable({
                         <div className="flex items-center justify-center gap-0.5 text-[9px]">
                           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: getDoseGroupColor(s.doseGroupOrder) }} />
                           <span style={{ color: SEX_COLOR[s.sex] }}>{s.sex}</span>
-                          <span className="text-muted-foreground">{formatDoseShortLabel(s.doseLabel)}</span>
+                          <span className="text-muted-foreground">{shortDoseLabel(s.doseLabel, doseGroups)}</span>
                         </div>
                       </th>
                     ))}

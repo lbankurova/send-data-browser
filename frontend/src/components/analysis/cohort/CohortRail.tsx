@@ -5,11 +5,12 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { X, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FilterMultiSelect, FilterSearch, FilterClearButton } from "@/components/ui/FilterBar";
+import { FilterMultiSelect, FilterSearch, FilterClearButton, FilterSelect } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useCohort } from "@/contexts/CohortContext";
 import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
-import type { CohortPreset, CohortSubject, FilterPredicate, SavedCohort } from "@/types/cohort";
+import type { CohortPreset, CohortSubject, FilterPredicate, SavedCohort, CohortSortKey } from "@/types/cohort";
+import { SORT_KEY_LABELS } from "@/types/cohort";
 
 const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
   { value: "all", label: "All" },
@@ -20,13 +21,7 @@ const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
 
-const BADGE_STYLES: Record<string, string> = {
-  trs: "bg-red-50 text-red-600 border-red-200",
-  adverse: "bg-red-50 text-red-600 border-red-200",
-  rec: "bg-green-50 text-green-600 border-green-200",
-  pattern: "bg-violet-50 text-violet-600 border-violet-200",
-  tk: "bg-gray-50 text-gray-500 border-gray-200",
-};
+const BADGE_STYLE = "bg-gray-100 text-gray-600 border-gray-200";
 
 // ── Predicate label formatting ────────────────────────────────
 
@@ -96,6 +91,8 @@ export function CohortRail() {
     // Reference
     referenceGroup, referenceLabel,
     setAsReference, setAsReferenceFromCohort, clearReference,
+    // Sorting
+    sortState, setSortKey,
     // Saved cohorts
     savedCohorts, activeSavedCohortId,
     saveCohort, loadSavedCohort, deleteSavedCohort,
@@ -244,8 +241,8 @@ export function CohortRail() {
           </div>
           <div className="text-muted-foreground mt-0.5">
             vs {selected.length} subjects &middot;{" "}
-            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span> /{" "}
-            <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
+            <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span> /{" "}
+            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
           </div>
           <button
             type="button"
@@ -262,9 +259,9 @@ export function CohortRail() {
             <span>&middot;</span>
             <span>{doseGroupCount} dose grp{doseGroupCount !== 1 ? "s" : ""}</span>
             <span>&middot;</span>
-            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
-            <span>/</span>
             <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span>
+            <span>/</span>
+            <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
           </div>
           <button
             type="button"
@@ -300,7 +297,7 @@ export function CohortRail() {
           onChange={(val) => setDoseFilter(val ? new Set([...val].map(Number)) : null)}
         />
         <FilterMultiSelect
-          options={[{ key: "M", label: "M" }, { key: "F", label: "F" }]}
+          options={[{ key: "F", label: "F" }, { key: "M", label: "M" }]}
           selected={sexFilter}
           onChange={(val) => setSexFilter(val ? new Set(val) as Set<string> : null)}
         />
@@ -318,6 +315,26 @@ export function CohortRail() {
           isOpen={showFilterPanel}
           onToggle={() => setShowFilterPanel((p) => !p)}
         />
+      </div>
+
+      {/* Sort control */}
+      <div className="flex items-center gap-1.5 border-b px-3 py-1">
+        <FilterSelect
+          value={sortState.key}
+          onChange={(e) => setSortKey(e.target.value as CohortSortKey)}
+        >
+          {(Object.keys(SORT_KEY_LABELS) as CohortSortKey[]).map((k) => (
+            <option key={k} value={k}>{SORT_KEY_LABELS[k]}</option>
+          ))}
+        </FilterSelect>
+        <button
+          type="button"
+          onClick={() => setSortKey(sortState.key)}
+          className="rounded px-1 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+          title={`Sort ${sortState.direction === "asc" ? "ascending" : "descending"} -- click to toggle`}
+        >
+          {sortState.direction === "asc" ? "\u2191 Asc" : "\u2193 Desc"}
+        </button>
       </div>
 
       {/* TK toggle (shown when "all" is active or no specific preset selected) */}
@@ -521,7 +538,7 @@ function SubjectRow({
 
       {/* Badge */}
       {s.badge && (
-        <span className={cn("rounded border px-1 text-[10px] font-semibold uppercase", BADGE_STYLES[s.badge])}>
+        <span className={cn("rounded border px-1 text-[10px] font-semibold uppercase", BADGE_STYLE)}>
           {s.badge.toUpperCase()}
         </span>
       )}

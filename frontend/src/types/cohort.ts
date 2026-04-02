@@ -34,6 +34,51 @@ export interface CohortSubject {
   histoReason: HistoReason | null;
 }
 
+// ── Sorting ──────────────────────────────────────────────────
+
+export type CohortSortKey =
+  | "dose"
+  | "usubjid"
+  | "sacrifice_day"
+  | "mi_max_severity"
+  | "organ_count"
+  | "syndrome_count"
+  | "bw_pct_change"
+  | "onset_day"
+  | "recovery_severity";
+
+export type CohortSortDirection = "asc" | "desc";
+
+export interface CohortSortState {
+  key: CohortSortKey;
+  direction: CohortSortDirection;
+}
+
+/** Default direction for each sort key (most useful first). */
+export const SORT_KEY_DEFAULTS: Record<CohortSortKey, CohortSortDirection> = {
+  dose: "desc",
+  usubjid: "asc",
+  sacrifice_day: "asc",
+  mi_max_severity: "desc",
+  organ_count: "desc",
+  syndrome_count: "desc",
+  bw_pct_change: "asc",
+  onset_day: "asc",
+  recovery_severity: "desc",
+};
+
+export const SORT_KEY_LABELS: Record<CohortSortKey, string> = {
+  dose: "Dose group",
+  usubjid: "Subject ID",
+  sacrifice_day: "Sacrifice day",
+  mi_max_severity: "MI severity",
+  organ_count: "Organ count",
+  syndrome_count: "Syndromes",
+  bw_pct_change: "BW % change",
+  onset_day: "Onset day",
+  recovery_severity: "Recovery severity",
+};
+
 // ── Organ evidence ───────────────────────────────────────────
 
 /** Domain priority for row ordering within an organ group. */
@@ -204,13 +249,6 @@ export interface RecoveryVerdictsResponse {
   meta: { generated: string; study_id: string };
   per_subject: Record<string, RecoverySubjectProfile>;
   per_finding: Record<string, RecoveryFindingVerdict>;
-}
-
-// ── Phase 3 stubs ────────────────────────────────────────────
-
-/** Per-subject recovery verdict data. Phase 3 placeholder. */
-export interface RecoveryVerdictSubject {
-  findings: Array<{ finding: string; specimen: string; verdict: string }>;
 }
 
 // ── Reference comparison ────────────────────────────────────
