@@ -212,16 +212,20 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
         adverse_dose_levels = set()
         for f in all_findings:
             if f.get("severity") == "adverse":
+                is_incidence = f.get("data_type") == "incidence"
                 for pw in f.get("pairwise", []):
-                    # gLower/hLower > 0.3 primary, p-value fallback for legacy data
+                    # gLower > 0.3 primary. Incidence: h_lower excluded (degenerate
+                    # at N<=5), falls to p-value. See cohens-h-commensurability-analysis.md.
                     gl = pw.get("g_lower")
                     if gl is not None and gl > 0.3:
                         adverse_dose_levels.add(pw["dose_level"])
                         continue
-                    hl = pw.get("h_lower")
-                    if hl is not None and hl > 0.3:
-                        adverse_dose_levels.add(pw["dose_level"])
-                        continue
+                    if not is_incidence:
+                        hl = pw.get("h_lower")
+                        if hl is not None and hl > 0.3:
+                            adverse_dose_levels.add(pw["dose_level"])
+                            continue
+                    # Fallback: p-value (primary for incidence; legacy for continuous)
                     if pw.get("p_value_adj") is not None and pw["p_value_adj"] < 0.05:
                         adverse_dose_levels.add(pw["dose_level"])
 

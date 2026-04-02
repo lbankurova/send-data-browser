@@ -115,15 +115,22 @@ def _enrich_finding(
     Pipeline-style: finding in -> enriched finding out.
     Shared between generator (domain_stats) and live API (unified_findings).
     """
-    # Compute max_effect_lower from pairwise g_lower / h_lower (before treatment_related)
+    # Compute max_effect_lower from pairwise g_lower (before treatment_related).
+    # Incidence endpoints: h_lower (Cohen's h CI) is excluded from decision gates
+    # because it is degenerate at preclinical N<=5 (hCiLower = 0 for all patterns).
+    # Incidence findings fall to p-value paths in all downstream consumers (TR gate,
+    # ECETOC A-6, CL/DS adversity, corroboration). h_lower is retained on pairwise
+    # records for display (forest plots). See research/cohens-h-commensurability-analysis.md.
     _max_el = 0.0
+    is_incidence = f.get("data_type") == "incidence"
     for pw in f.get("pairwise", []):
         gl = pw.get("g_lower")
         if gl is not None and gl > _max_el:
             _max_el = gl
-        hl = pw.get("h_lower")
-        if hl is not None and hl > _max_el:
-            _max_el = hl
+        if not is_incidence:
+            hl = pw.get("h_lower")
+            if hl is not None and hl > _max_el:
+                _max_el = hl
     f["max_effect_lower"] = round(_max_el, 4) if _max_el > 0 else None
 
     # Classification

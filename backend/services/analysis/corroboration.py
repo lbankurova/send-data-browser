@@ -71,10 +71,14 @@ def passes_corroboration_gate(
     Secondary (when effect_threshold provided): findings with large effect
     sizes (max_effect_lower > threshold) may corroborate even if not yet
     classified as treatment-related. This catches the d=2.0, N=3, p=0.15
-    scenario — a real biological effect at small sample size that fails
-    the p < 0.05 gate but has confident effect magnitude via gLower/hLower.
+    scenario -- a real biological effect at small sample size that fails
+    the p < 0.05 gate but has confident effect magnitude via gLower.
 
-    The finding BEING corroborated does not need this gate — only the
+    For incidence endpoints (max_effect_lower is None because Cohen's h CI
+    is degenerate at small N), the Boschloo/Fisher p-value provides the
+    corroboration gate instead. See research/cohens-h-commensurability-analysis.md.
+
+    The finding BEING corroborated does not need this gate -- only the
     supporting evidence does.
     """
     if finding.get("treatment_related", False) is True:
@@ -84,6 +88,12 @@ def passes_corroboration_gate(
         mel = finding.get("max_effect_lower")
         if mel is not None and mel > effect_threshold:
             return True
+        # Incidence fallback: Boschloo/Fisher p-value (already min_p_adj for
+        # incidence endpoints) when max_effect_lower is None
+        if mel is None and finding.get("data_type") == "incidence":
+            min_p = finding.get("min_p_adj")
+            if min_p is not None and min_p < 0.05:
+                return True
     return False
 
 

@@ -21,20 +21,22 @@ def _prev_dose_level(dose_groups: list[dict], level: int) -> int | None:
     return lower[-1] if lower else None
 
 
-def _dose_exceeds_effect_threshold(pw: dict, threshold: float) -> bool:
+def _dose_exceeds_effect_threshold(pw: dict, threshold: float, data_type: str = "continuous") -> bool:
     """Check if a pairwise result exceeds the effect relevance threshold.
 
-    Uses g_lower for continuous endpoints, h_lower for incidence endpoints.
-    Falls back to p_value_adj < 0.05 when neither is available (backward
-    compatibility with legacy data that predates g_lower/h_lower fields).
+    Uses g_lower for continuous endpoints. For incidence endpoints, h_lower is
+    excluded because Cohen's h CI is degenerate at preclinical N<=5 (hCiLower = 0
+    for all patterns). Incidence falls to p-value path instead.
+    See research/cohens-h-commensurability-analysis.md.
     """
     gl = pw.get("g_lower")
     if gl is not None:
         return gl > threshold
-    hl = pw.get("h_lower")
-    if hl is not None:
-        return hl > threshold
-    # Fallback: legacy data without g_lower/h_lower
+    if data_type != "incidence":
+        hl = pw.get("h_lower")
+        if hl is not None:
+            return hl > threshold
+    # Fallback: p-value (primary path for incidence; legacy fallback for continuous)
     p = pw.get("p_value_adj", pw.get("p_value"))
     return p is not None and p < 0.05
 
@@ -92,9 +94,9 @@ def _is_loael_driving_woe(
     d = abs(pw.get("effect_size") or 0)
     fc = finding.get("finding_class")
 
-    # C1: Effect relevance — gLower/hLower > threshold (sample-size-invariant).
-    # Falls back to p < 0.05 for legacy data without g_lower/h_lower fields.
-    if _dose_exceeds_effect_threshold(pw, effect_threshold) and fc == "tr_adverse":
+    # C1: Effect relevance — gLower > threshold (sample-size-invariant).
+    # Incidence: falls to p-value (h_lower excluded, degenerate at small N).
+    if _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous")) and fc == "tr_adverse":
         return True
 
     # C2a: Trend + adverse classification

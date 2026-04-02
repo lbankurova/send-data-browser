@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `b87c28e` (2026-04-01)
-**Generated:** 2026-04-01T19:51:45.015Z
+**Engine:** commit `9affaba0` (2026-04-02)
+**Generated:** 2026-04-02T20:14:38.302Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -703,13 +703,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | DS | 1 | 0 | 0 | 0 | 0 | 1 |
 | EG | 6 | 0 | 1 | 0 | 1 | 4 |
 | FW | 5 | 0 | 0 | 0 | 1 | 4 |
-| LB | 161 | 27 | 1 | 0 | 25 | 108 |
+| LB | 161 | 27 | 1 | 0 | 38 | 95 |
 | MA | 72 | 4 | 0 | 0 | 10 | 58 |
-| MI | 101 | 5 | 0 | 1 | 39 | 56 |
+| MI | 101 | 5 | 0 | 3 | 37 | 56 |
 | OM | 20 | 11 | 1 | 0 | 4 | 4 |
 | TF | 3 | 2 | 0 | 0 | 0 | 1 |
 | VS | 2 | 0 | 1 | 0 | 0 | 1 |
-| **Total** | **418** | **78** | **5** | **1** | **83** | **251** |
+| **Total** | **418** | **78** | **5** | **3** | **94** | **238** |
 
 ### NOAEL / LOAEL
 
