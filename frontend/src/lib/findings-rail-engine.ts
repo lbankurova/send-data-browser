@@ -76,11 +76,16 @@ const DEFAULT_SIGMOID_SCALE = EFFECT_SIZE_SIGMOID_SCALE;
 // R2: sigmoid transform bounds statistical component to 0-4
 // R3: multiplicative clinical boost on evidence components only
 export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts): number {
-  // ── Statistical component (R1 + R2) ──
+  // ── Statistical component (R1 + R2 + LOO discount) ──
   // Use g_lower (pre-computed, attached to ep) when available.
   // For incidence endpoints without g_lower, use maxIncidence as proxy.
+  // LOO discount: sigmoid(gLower * looFactor) where looFactor is clamped to [0, 1].
+  // Fragile findings (driven by a single animal) get a proportionally reduced
+  // statistical component. Incidence proxy is unaffected (no LOO on binary counts).
   const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
-  const gLower = ep.gLower ?? (isContinuous && ep.maxEffectSize !== null ? Math.abs(ep.maxEffectSize) : 0);
+  const rawGLower = ep.gLower ?? (isContinuous && ep.maxEffectSize !== null ? Math.abs(ep.maxEffectSize) : 0);
+  const looFactor = Math.max(0, Math.min(ep.looStability ?? 1.0, 1.0));
+  const gLower = rawGLower * looFactor;
   const statistical = isContinuous || gLower > 0
     ? sigmoid(gLower, DEFAULT_SIGMOID_SCALE)
     : (ep.maxIncidence != null ? sigmoid(ep.maxIncidence * 3, DEFAULT_SIGMOID_SCALE) : 0);

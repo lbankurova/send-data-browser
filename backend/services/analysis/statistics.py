@@ -269,6 +269,44 @@ def _nct_effect_lower(
     return max(0.0, round((delta_lo + delta_hi) / 2 / scale, 6))
 
 
+def compute_loo_stability(
+    control: np.ndarray, treated: np.ndarray,
+    g_lower_full: float, confidence_level: float = 0.80,
+) -> float | None:
+    """Leave-one-out stability: min(LOO-gLower) / gLower.
+
+    For each treated animal, remove it, recompute Hedges' g and gLower.
+    The ratio tells how much the worst single-animal removal shrinks gLower:
+      >= 1.0: stable (no single animal inflates the signal)
+      < 1.0: fragile (worst removal reduces gLower by this fraction)
+      0.0: extremely fragile (removing one animal kills the signal)
+
+    Treated-group LOO only. Control groups are typically larger, so per-animal
+    influence is smaller. Extend to control LOO in a future iteration if needed.
+    """
+    if g_lower_full is None or g_lower_full <= 0:
+        return None  # no signal to be fragile about
+    n2 = len(treated)
+    if n2 <= 2:
+        # N=2: removing one leaves N=1, can't compute effect size
+        return 0.0
+    n1 = len(control)
+    min_loo_gl = float("inf")
+    for i in range(n2):
+        loo_treated = np.delete(treated, i)
+        loo_g = compute_effect_size(loo_treated, control)
+        if loo_g is None:
+            return 0.0  # degenerate (zero variance after removal)
+        loo_gl = compute_g_lower(loo_g, n1, len(loo_treated), confidence_level)
+        if loo_gl is None or loo_gl <= 0:
+            return 0.0
+        if loo_gl < min_loo_gl:
+            min_loo_gl = loo_gl
+    if min_loo_gl == float("inf"):
+        return 1.0
+    return round(min_loo_gl / g_lower_full, 4)
+
+
 def compute_g_lower(
     g: float, n1: int, n2: int, confidence_level: float = 0.80,
 ) -> float | None:
@@ -410,6 +448,7 @@ def dunnett_pairwise(
     valid_indices = []
     all_effect_sizes = []
     all_treated_sizes = []
+    all_cleaned_arrays = []  # kept for LOO stability computation
 
     for i, (dose_level, vals) in enumerate(treated_groups):
         arr = np.array(vals, dtype=float)
@@ -417,6 +456,7 @@ def dunnett_pairwise(
         dose_levels.append(dose_level)
         all_effect_sizes.append(compute_effect_size(arr, ctrl))
         all_treated_sizes.append(len(arr))
+        all_cleaned_arrays.append(arr)
         if len(arr) >= 2:
             valid_arrays.append(arr)
             valid_indices.append(i)
@@ -443,6 +483,7 @@ def dunnett_pairwise(
         d = all_effect_sizes[i]
         n2 = all_treated_sizes[i]
         gl = compute_g_lower(d, n1, n2) if d is not None else None
+        loo = compute_loo_stability(ctrl, all_cleaned_arrays[i], gl) if gl is not None and gl > 0 else None
         pairwise.append({
             "dose_level": int(dose_level),
             "p_value": round(p, 6) if p is not None else None,
@@ -451,6 +492,7 @@ def dunnett_pairwise(
             "statistic": None,  # Dunnett's doesn't provide per-comparison test statistics
             "effect_size": round(d, 4) if d is not None else None,
             "g_lower": round(gl, 4) if gl is not None else None,
+            "loo_stability": loo,
         })
     return pairwise
 

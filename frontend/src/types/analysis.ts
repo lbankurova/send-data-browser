@@ -49,6 +49,7 @@ export interface PairwiseResult {
   statistic: number | null;
   effect_size: number | null;
   g_lower?: number | null;
+  loo_stability?: number | null;
   h_lower?: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
@@ -95,6 +96,8 @@ export interface UnifiedFinding {
   max_fold_change?: number | null;
   /** Max incidence across treated dose groups (incidence endpoints only). */
   max_incidence?: number | null;
+  /** LOO stability ratio: min(LOO-gLower)/gLower. 1.0 = stable, <1.0 = fragile. */
+  loo_stability?: number | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
   /** Scheduled-only stats (early-death subjects excluded from terminal domains). */

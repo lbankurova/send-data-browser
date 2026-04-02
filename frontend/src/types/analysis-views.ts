@@ -176,6 +176,8 @@ export interface AdverseEffectSummaryRow {
   max_incidence?: number | null;
   /** Maximum fold change vs control (always >= 1, continuous endpoints only) */
   max_fold_change?: number | null;
+  /** LOO stability ratio from driving pairwise. 1.0 = stable, <1.0 = fragile. */
+  loo_stability?: number | null;
   /** Number of early-death subjects excluded (terminal domains only) */
   n_excluded?: number;
   /** REM-05: Per-dose-group statistics (from scheduled sacrifice timepoint) */

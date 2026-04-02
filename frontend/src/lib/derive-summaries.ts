@@ -93,6 +93,8 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** R1: Lower confidence bound of |Hedges' g| (non-central t CI). Cross-study comparable. */
   gLower?: number;
+  /** LOO stability: min(LOO-gLower)/gLower from driving pairwise. 1.0 = stable, <1.0 = fragile. */
+  looStability?: number;
   /** Phase 0C: Upper confidence bound of |Hedges' g| (non-central t CI, separate bisection). */
   gUpper?: number;
   /** Phase 0A: Risk difference (p_treated - p_control) for incidence endpoints. */
@@ -294,6 +296,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       finding: f.finding,
       max_incidence: f.max_incidence ?? null,
       max_fold_change: f.max_fold_change ?? null,
+      loo_stability: f.loo_stability ?? null,
       qualifier_tags: (() => {
         const mp = f.modifier_profile;
         if (!mp) return null;
@@ -373,6 +376,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     finding?: string | null;
     maxIncidence: number | null;
     maxFoldChange: number | null;
+    looStability: number | null;
     hasEarlyDeathExclusion: boolean;
     isDerived: boolean;
     domains: Set<string>;
@@ -416,6 +420,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         finding: row.finding,
         maxIncidence: null,
         maxFoldChange: null,
+        looStability: null,
         hasEarlyDeathExclusion: false,
         isDerived: !!row.is_derived,
         compound_id: "compound_id" in row ? (row as { compound_id?: string }).compound_id : undefined,
@@ -495,10 +500,11 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
         if (row.dose_response_pattern !== "flat" && row.dose_response_pattern !== "insufficient_data") {
           entry.pattern = row.dose_response_pattern;
         }
-        // Fold change follows the same row that sets direction
+        // Fold change and LOO stability follow the same row that sets direction
         if (row.max_fold_change != null) {
           entry.maxFoldChange = row.max_fold_change;
         }
+        entry.looStability = row.loo_stability ?? null;
       }
     } else if (entry.direction === null && (row.direction === "up" || row.direction === "down")) {
       entry.direction = row.direction;
@@ -554,6 +560,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       finding: entry.finding,
       maxIncidence: entry.maxIncidence,
       maxFoldChange: entry.maxFoldChange,
+      looStability: entry.looStability ?? undefined,
       hasEarlyDeathExclusion: entry.hasEarlyDeathExclusion,
       isDerived: entry.isDerived,
       qualifierTags: entry.qualifierTags,

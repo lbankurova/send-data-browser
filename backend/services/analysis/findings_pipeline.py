@@ -122,16 +122,20 @@ def _enrich_finding(
     # ECETOC A-6, CL/DS adversity, corroboration). h_lower is retained on pairwise
     # records for display (forest plots). See research/cohens-h-commensurability-analysis.md.
     _max_el = 0.0
+    _max_el_loo = None  # LOO stability of the pairwise driving max_effect_lower
     is_incidence = f.get("data_type") == "incidence"
     for pw in f.get("pairwise", []):
         gl = pw.get("g_lower")
         if gl is not None and gl > _max_el:
             _max_el = gl
+            _max_el_loo = pw.get("loo_stability")
         if not is_incidence:
             hl = pw.get("h_lower")
             if hl is not None and hl > _max_el:
                 _max_el = hl
+                _max_el_loo = None  # h_lower pairwise has no LOO
     f["max_effect_lower"] = round(_max_el, 4) if _max_el > 0 else None
+    f["loo_stability"] = _max_el_loo
 
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
