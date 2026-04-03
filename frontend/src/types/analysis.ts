@@ -50,6 +50,9 @@ export interface PairwiseResult {
   effect_size: number | null;
   g_lower?: number | null;
   loo_stability?: number | null;
+  loo_treated?: number | null;
+  loo_control?: number | null;
+  loo_control_fragile?: boolean | null;
   h_lower?: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
@@ -98,6 +101,8 @@ export interface UnifiedFinding {
   max_incidence?: number | null;
   /** LOO stability ratio: min(LOO-gLower)/gLower. 1.0 = stable, <1.0 = fragile. */
   loo_stability?: number | null;
+  /** True when the driving pairwise LOO is control-side dominant. */
+  loo_control_fragile?: boolean | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
   /** Scheduled-only stats (early-death subjects excluded from terminal domains). */

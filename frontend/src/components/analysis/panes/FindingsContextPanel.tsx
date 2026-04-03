@@ -734,7 +734,7 @@ function SexComparisonPane({
   const isIncidence = finding.data_type === "incidence";
   const effectLabel = isIncidence ? "avg sev" : "|g|";
 
-  const rows: Array<{ label: string; values: [string, string] }> = [
+  const rows: Array<{ label: string; values: [string, string]; title?: string }> = [
     {
       label: effectLabel,
       values: [
@@ -768,6 +768,21 @@ function SexComparisonPane({
       ],
     });
   }
+  // LOO stability row: show when at least one sex is fragile (<0.8)
+  const loo0 = col0.looStability;
+  const loo1 = col1.looStability;
+  if ((loo0 != null && loo0 < 0.8) || (loo1 != null && loo1 < 0.8)) {
+    const fmtLoo = (v: number | null | undefined, ctrlFragile?: boolean | null) =>
+      v != null ? `${(v * 100).toFixed(0)}%${ctrlFragile ? " (ctrl)" : ""}` : "\u2014";
+    const anyCtrl = col0.looControlFragile || col1.looControlFragile;
+    rows.push({
+      label: "LOO stability",
+      values: [fmtLoo(loo0, col0.looControlFragile), fmtLoo(loo1, col1.looControlFragile)],
+      title: anyCtrl
+        ? "Leave-one-out stability: control-side dominant -- signal may be driven by an unusual control animal. Below 80% = fragile."
+        : "Leave-one-out stability: what fraction of the effect size survives removing the most influential animal. Below 80% = fragile.",
+    });
+  }
 
   // Onset dose row — always rendered as custom JSX cells with dropdown
   // (onset dose is always overridable, even without a pattern override)
@@ -796,7 +811,7 @@ function SexComparisonPane({
         <tbody>
           {rows.map((r) => (
             <tr key={r.label} className="border-b border-border/30">
-              <td className="py-0.5 text-muted-foreground">{r.label}</td>
+              <td className="py-0.5 text-muted-foreground" title={r.title}>{r.label}</td>
               <td className="py-0.5 text-right font-mono">{r.values[0]}</td>
               <td className="py-0.5 text-right font-mono">{r.values[1]}</td>
             </tr>
@@ -1793,14 +1808,39 @@ export function FindingsContextPanel() {
             </span>
           )}
           {/* LOO fragility badge — shown when removing one animal substantially degrades the effect */}
-          {selectedFinding.loo_stability != null && selectedFinding.loo_stability < 0.8 && (
-            <span
-              className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
-              title={`LOO stability: ${(selectedFinding.loo_stability * 100).toFixed(0)}% — removing the most influential animal reduces the confident effect size to ${(selectedFinding.loo_stability * 100).toFixed(0)}% of its full value`}
-            >
-              fragile
-            </span>
-          )}
+          {(() => {
+            const sibF = hasSibling && siblingContext
+              ? findingsData?.findings.find(f => f.id === siblingContext.finding_id)
+              : undefined;
+            const priLoo = selectedFinding.loo_stability;
+            const sibLoo = sibF?.loo_stability;
+            const priFrag = priLoo != null && priLoo < 0.8;
+            const sibFrag = sibLoo != null && sibLoo < 0.8;
+            if (!priFrag && !sibFrag) return null;
+            const priSex = selectedFinding.sex;
+            const sibSex = sibF?.sex;
+            const priCtrl = selectedFinding.loo_control_fragile === true;
+            const sibCtrl = sibF?.loo_control_fragile === true;
+            const anyCtrl = (priFrag && priCtrl) || (sibFrag && sibCtrl);
+            const sexLabel = priFrag && sibFrag
+              ? `${[priSex, sibSex].sort().join("+")}`
+              : priFrag ? priSex : sibSex;
+            const details = [
+              priFrag ? `${priSex} ${(priLoo! * 100).toFixed(0)}%` : null,
+              sibFrag ? `${sibSex} ${(sibLoo! * 100).toFixed(0)}%` : null,
+            ].filter(Boolean).join(", ");
+            return (
+              <span
+                className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"
+                title={`LOO stability: ${details}${anyCtrl
+                  ? " -- control-side dominant: signal may be driven by an unusual control animal rather than treatment effect."
+                  : " -- removing the most influential animal reduces the confident effect size to that fraction of its full value."
+                } Below 80% = fragile.`}
+              >
+                LOO: fragile{anyCtrl ? " (ctrl)" : ""} ({sexLabel})
+              </span>
+            );
+          })()}
           {/* Pharmacological candidate badge (D9 fired) */}
           {selectedFinding._confidence?._pharmacological_candidate && (
             <>

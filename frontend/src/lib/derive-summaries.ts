@@ -52,6 +52,10 @@ export interface SexEndpointSummary {
   worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
   treatmentRelated: boolean;
   testCode?: string;
+  /** LOO stability: min(LOO-gLower)/gLower from driving pairwise. 1.0 = stable, <1.0 = fragile. */
+  looStability?: number | null;
+  /** True when the driving pairwise LOO is control-side dominant. */
+  looControlFragile?: boolean | null;
 }
 
 export interface EndpointSummary {
@@ -398,6 +402,8 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
     tr: boolean;
     testCode?: string;
+    looStability: number | null;
+    looControlFragile: boolean | null;
   }>>();
 
   // Key by label+domain so MI and MA for the same lesion produce separate entries.
@@ -451,7 +457,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
           direction: null, maxEffect: null, maxFoldChange: null, minP: null,
           pattern: row.dose_response_pattern,
           worstSeverity: row.severity, tr: row.treatment_related,
-          testCode: row.test_code,
+          testCode: row.test_code, looStability: null, looControlFragile: null,
         };
         labelSexes.set(row.sex, sexEntry);
       }
@@ -468,6 +474,8 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
             sexEntry.pattern = row.dose_response_pattern;
           }
           if (row.max_fold_change != null) sexEntry.maxFoldChange = row.max_fold_change;
+          sexEntry.looStability = row.loo_stability ?? null;
+          sexEntry.looControlFragile = (row as { loo_control_fragile?: boolean | null }).loo_control_fragile ?? null;
         }
       } else if (sexEntry.direction === null && (row.direction === "up" || row.direction === "down")) {
         sexEntry.direction = row.direction;
@@ -609,6 +617,8 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
           worstSeverity: se.worstSeverity,
           treatmentRelated: se.tr,
           testCode: se.testCode,
+          looStability: se.looStability,
+          looControlFragile: se.looControlFragile,
         });
       }
       ep.bySex = bySex;

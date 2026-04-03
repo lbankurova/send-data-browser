@@ -93,6 +93,8 @@ interface PivotedRow {
   dose_response_pattern: string;
   fold_change: number | null;
   direction: string | null;
+  loo_stability: number | null;
+  loo_control_fragile?: boolean | null;
 }
 
 const pivCol = createColumnHelper<PivotedRow>();
@@ -453,6 +455,8 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
               ? (pw?.odds_ratio ?? null)
               : fold,
           direction: null,
+          loo_stability: pw?.loo_stability ?? null,
+          loo_control_fragile: pw?.loo_control_fragile ?? null,
         });
       }
     }
@@ -755,6 +759,20 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
         },
       }),
+      col.accessor("loo_stability", {
+        header: () => <span title="Leave-one-out stability: what fraction of the effect size survives removing the most influential animal. Below 80% = fragile.">LOO</span>,
+        cell: (info) => {
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const f = info.row.original;
+          const isCtrl = f.loo_control_fragile === true;
+          const pct = `${(v * 100).toFixed(0)}%`;
+          return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
+            ? "Control-side fragile: removing one control animal substantially changes the effect."
+            : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
+          }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
+        },
+      }),
       col.accessor("severity", {
         header: "Severity",
         cell: (info) => {
@@ -1008,6 +1026,21 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const v = info.getValue();
           const hex = getPValueHex(v);
           return <span className={`font-mono text-muted-foreground${hex ? " ev" : ""}`} style={hex ? { "--ev-color": hex } as React.CSSProperties : undefined}>{formatPValue(v)}</span>;
+        },
+      }),
+      pivCol.accessor("loo_stability", {
+        header: () => <span title="Leave-one-out stability for this dose group vs control. Below 80% = fragile.">LOO</span>,
+        cell: (info) => {
+          const r = info.row.original;
+          if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const v = info.getValue();
+          if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
+          const isCtrl = r.loo_control_fragile === true;
+          const pct = `${(v * 100).toFixed(0)}%`;
+          return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
+            ? "Control-side fragile: removing one control animal substantially changes the effect."
+            : "Leave-one-out stability for this dose group vs control."
+          }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
         },
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from

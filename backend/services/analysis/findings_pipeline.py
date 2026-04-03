@@ -123,19 +123,23 @@ def _enrich_finding(
     # records for display (forest plots). See research/cohens-h-commensurability-analysis.md.
     _max_el = 0.0
     _max_el_loo = None  # LOO stability of the pairwise driving max_effect_lower
+    _max_el_loo_ctrl_fragile = None  # control-fragile flag from the driving pairwise
     is_incidence = f.get("data_type") == "incidence"
     for pw in f.get("pairwise", []):
         gl = pw.get("g_lower")
         if gl is not None and gl > _max_el:
             _max_el = gl
             _max_el_loo = pw.get("loo_stability")
+            _max_el_loo_ctrl_fragile = pw.get("loo_control_fragile")
         if not is_incidence:
             hl = pw.get("h_lower")
             if hl is not None and hl > _max_el:
                 _max_el = hl
                 _max_el_loo = None  # h_lower pairwise has no LOO
+                _max_el_loo_ctrl_fragile = None
     f["max_effect_lower"] = round(_max_el, 4) if _max_el > 0 else None
     f["loo_stability"] = _max_el_loo
+    f["loo_control_fragile"] = _max_el_loo_ctrl_fragile
 
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
