@@ -1002,6 +1002,78 @@ function CorrelatingEvidenceInline({ evidence }: {
   );
 }
 
+// ─── WoE Strength Assessment ─────────────────────────────────────────────────
+// Hierarchical: core triad (TR + D-R + stats) determines base tier,
+// supporting evidence (HCD, recovery, syndrome, lab) upgrades by at most one tier.
+// Floor: any adverse+TR finding guarantees minimum "weak".
+// References: Lewis et al. 2002 Toxicol Pathol 30:66-74; Dorato & Engelhardt 2005.
+
+export interface WoeStrengthInput {
+  total: number;
+  trCount: number;
+  doseDepCount: number;
+  sigCount: number;
+  peerAboveRange: boolean;
+  recoveryPersistent: number;
+  hasSyndrome: boolean;
+  labStrongCount: number;
+  hasAdverseTr: boolean;
+  /** R2 Q3: syndrome-matched LB endpoint labels (uppercase) for dedup */
+  syndromeLbLabels: Set<string>;
+  /** R2 Q3: strong lab finding labels (uppercase) for dedup */
+  strongLabLabels: string[];
+}
+
+export interface WoeStrengthResult {
+  strength: "strong" | "moderate" | "weak" | "insufficient";
+  coreFactors: string[];
+  supportingFactors: string[];
+  wasUpgraded: boolean;
+}
+
+const STRENGTH_TIERS = ["insufficient", "weak", "moderate", "strong"] as const;
+
+export function computeWoeStrength(input: WoeStrengthInput): WoeStrengthResult {
+  // Core triad
+  const coreFactors: string[] = [];
+  if (input.trCount >= input.total * 0.6) coreFactors.push("majority treatment-related");
+  if (input.doseDepCount >= 2) coreFactors.push("dose-dependent in multiple findings");
+  if (input.sigCount >= 2) coreFactors.push("statistically significant");
+
+  const baseTier = Math.min(coreFactors.length, 3) as 0 | 1 | 2 | 3;
+  let strength = STRENGTH_TIERS[baseTier];
+
+  // Supporting evidence
+  const supportingFactors: string[] = [];
+  if (input.peerAboveRange) supportingFactors.push("exceeds historical controls");
+  if (input.recoveryPersistent > 0) supportingFactors.push("persistent findings");
+  if (input.hasSyndrome) supportingFactors.push("syndrome match");
+
+  // Lab correlation with syndrome dedup (R2 Q3)
+  if (input.labStrongCount > 0) {
+    let labConsumed = false;
+    if (input.syndromeLbLabels.size > 0 && input.strongLabLabels.length > 0) {
+      labConsumed = input.strongLabLabels.every(l => input.syndromeLbLabels.has(l));
+    }
+    if (!labConsumed) supportingFactors.push("correlated lab changes");
+  }
+
+  // Upgrade: 2+ supporting factors upgrades by one tier (max)
+  let wasUpgraded = false;
+  if (supportingFactors.length >= 2 && strength !== "strong") {
+    const idx = STRENGTH_TIERS.indexOf(strength);
+    strength = STRENGTH_TIERS[idx + 1];
+    wasUpgraded = true;
+  }
+
+  // Floor: any adverse+TR finding = minimum "weak"
+  if (input.hasAdverseTr && STRENGTH_TIERS.indexOf(strength) < 1) {
+    strength = "weak";
+  }
+
+  return { strength, coreFactors, supportingFactors, wasUpgraded };
+}
+
 // ─── Specimen Context Panel (Phase 5) ────────────────────────────────────────
 
 function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analytics, nav }: {
@@ -1093,52 +1165,7 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
     );
   }, [hasRecovery, subjData, specimenFindings, specimen]);
 
-  // Weight-of-evidence synthesis (aggregates across all specimen dimensions)
-  const woeSynthesis = useMemo(() => {
-    if (specimenFindings.length === 0) return null;
-    const total = specimenFindings.length;
-    const trCount = specimenFindings.filter(f => f.treatment_related).length;
-    const adverseCount = specimenFindings.filter(f => f.severity === "adverse").length;
-    const adaptiveCount = specimenFindings.filter(f => f.finding_class === "tr_adaptive").length;
-
-    // Dose-response patterns
-    const withPattern = specimenFindings.filter(f => { const p = resolveEffectivePattern(f); return p && p !== "no_pattern" && p !== "control_only"; });
-    const doseDepCount = withPattern.length;
-
-    // Significance
-    const sigCount = specimenFindings.filter(f => f.min_p_adj != null && f.min_p_adj < 0.05).length;
-    const trendSigCount = specimenFindings.filter(f => f.trend_p != null && f.trend_p < 0.05).length;
-
-    // Finding natures
-    const natures = specimenFindings.map(f => classifyFindingNature(f.finding, null, f.specimen ?? null));
-    const natureCounts = new Map<string, number>();
-    for (const n of natures) {
-      if (n.nature !== "unknown") natureCounts.set(n.nature, (natureCounts.get(n.nature) ?? 0) + 1);
-    }
-    const dominantNature = [...natureCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-
-    // Build conclusion line
-    const parts: string[] = [];
-    if (trCount > 0) parts.push(`${trCount}/${total} treatment-related`);
-    if (adverseCount > 0) parts.push(`${adverseCount} adverse`);
-    if (adaptiveCount > 0) parts.push(`${adaptiveCount} adaptive`);
-    if (doseDepCount > 0) parts.push(`dose-dependent in ${doseDepCount}/${total}`);
-    const conclusion = parts.join(", ");
-
-    // Strength assessment
-    const strength = trCount >= total * 0.6 && doseDepCount >= 2 && sigCount >= 2
-      ? "strong" : trCount >= 2 || (doseDepCount >= 1 && sigCount >= 1)
-      ? "moderate" : trCount >= 1 ? "weak" : "insufficient";
-
-    return {
-      total, trCount, adverseCount, adaptiveCount,
-      doseDepCount, sigCount, trendSigCount,
-      natureCounts, dominantNature,
-      conclusion, strength,
-    };
-  }, [specimenFindings]);
-
-  // Peer comparison (HCD) for all findings
+  // Peer comparison (HCD) for all findings — computed before woeSynthesis (strength needs it)
   const peerRows = useMemo(() => {
     return specimenFindings.map(f => {
       const controlGs = f.group_stats.find(gs => gs.dose_level === 0);
@@ -1149,6 +1176,121 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       return { finding: f.finding, controlIncidence: controlInc, hcd, status };
     }).filter(r => r.hcd != null);
   }, [specimenFindings, specimen]);
+
+  // Weight-of-evidence synthesis (aggregates across all specimen dimensions)
+  const woeSynthesis = useMemo(() => {
+    if (specimenFindings.length === 0) return null;
+    const total = specimenFindings.length;
+    const trCount = specimenFindings.filter(f => f.treatment_related).length;
+    const adverseCount = specimenFindings.filter(f => f.severity === "adverse").length;
+    const adaptiveCount = specimenFindings.filter(f => f.finding_class === "tr_adaptive").length;
+    const equivocalCount = specimenFindings.filter(f => f.finding_class === "equivocal").length;
+
+    // Dose-response patterns — collect types for distribution
+    const patternTypes = new Map<string, number>();
+    const withPattern = specimenFindings.filter(f => {
+      const p = resolveEffectivePattern(f);
+      if (p && p !== "no_pattern" && p !== "control_only") {
+        const key = p.toUpperCase();
+        patternTypes.set(key, (patternTypes.get(key) ?? 0) + 1);
+        return true;
+      }
+      return false;
+    });
+    const doseDepCount = withPattern.length;
+    const dominantPattern = [...patternTypes.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+    // D-R confidence from endpoint summaries (ECI integrated)
+    const specimenPrefix = specimen.toUpperCase() + " \u2014 ";
+    const specimenEndpoints = analytics.endpoints.filter(ep =>
+      ep.endpoint_label.toUpperCase().startsWith(specimenPrefix));
+    const highConfidenceCount = specimenEndpoints.filter(ep => {
+      const level = ep.endpointConfidence?.integrated.integrated;
+      return level === "high" || level === "moderate";
+    }).length;
+
+    // Significance
+    const sigCount = specimenFindings.filter(f => f.min_p_adj != null && f.min_p_adj < 0.05).length;
+    const trendSigCount = specimenFindings.filter(f => f.trend_p != null && f.trend_p < 0.05).length;
+
+    // Finding natures — full breakdown + TR-filtered reversibility
+    const natures = specimenFindings.map((f, i) => ({
+      info: classifyFindingNature(f.finding, null, f.specimen ?? null),
+      tr: f.treatment_related,
+      idx: i,
+    }));
+    const natureCounts = new Map<string, number>();
+    for (const n of natures) {
+      if (n.info.nature !== "unknown") natureCounts.set(n.info.nature, (natureCounts.get(n.info.nature) ?? 0) + 1);
+    }
+    const dominantNature = [...natureCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+    // Reversibility — TR findings only (R1 Finding 2.1)
+    const trNatures = natures.filter(n => n.tr);
+    const reversibleCount = trNatures.filter(n =>
+      n.info.expected_reversibility === "high" || n.info.expected_reversibility === "moderate").length;
+    const irreversibleCount = trNatures.filter(n =>
+      n.info.expected_reversibility === "none" || n.info.expected_reversibility === "low").length;
+    // Nature-qualified irreversibility breakdown (R1 Finding 2.3)
+    const irreversibleByNature = new Map<string, number>();
+    for (const n of trNatures) {
+      if (n.info.expected_reversibility === "none" || n.info.expected_reversibility === "low") {
+        irreversibleByNature.set(n.info.nature, (irreversibleByNature.get(n.info.nature) ?? 0) + 1);
+      }
+    }
+
+    // Lab signal count
+    const labStrongCount = relevantLabFindings.filter(f => Math.abs(f.max_fold_change ?? 0) >= 2.0).length;
+    const labTotalCount = relevantLabFindings.length;
+
+    // Syndrome domain breadth
+    const syndromeDomainCount = specimenSyndromes.length > 0
+      ? Math.max(...specimenSyndromes.map(s => s.domainsCovered?.length ?? 0))
+      : 0;
+
+    // Laterality summary
+    const bilateralRatio = lateralityData
+      ? lateralityData.subjectAgg.bilateral / lateralityData.subjectAgg.total
+      : null;
+
+    // Hierarchical strength assessment (core triad + supporting modulation + floor)
+    const { strength, coreFactors, supportingFactors, wasUpgraded } = computeWoeStrength({
+      total, trCount, doseDepCount, sigCount,
+      peerAboveRange: peerRows.some(r => r.status === "above_range"),
+      recoveryPersistent: recoveryAssessments.filter(r => r.overall === "persistent" || r.overall === "progressing").length,
+      hasSyndrome: specimenSyndromes.length > 0,
+      labStrongCount,
+      hasAdverseTr: specimenFindings.some(f => f.treatment_related && f.severity === "adverse"),
+      // R2 Q3: syndrome-lab dedup — match by testCode from EndpointSummary
+      syndromeLbLabels: (() => {
+        const codes = new Set<string>();
+        for (const s of specimenSyndromes) {
+          for (const m of s.matchedEndpoints) {
+            if (m.domain !== "LB") continue;
+            // Look up testCode from the EndpointSummary that this match came from
+            const ep = analytics.endpoints.find(e =>
+              e.endpoint_label === m.endpoint_label && e.domain === "LB");
+            if (ep?.testCode) codes.add(ep.testCode.toUpperCase());
+          }
+        }
+        return codes;
+      })(),
+      strongLabLabels: relevantLabFindings
+        .filter(f => Math.abs(f.max_fold_change ?? 0) >= 2.0)
+        .map(f => f.test_code.toUpperCase()),
+    });
+
+    return {
+      total, trCount, adverseCount, adaptiveCount, equivocalCount,
+      doseDepCount, sigCount, trendSigCount,
+      patternTypes, dominantPattern, highConfidenceCount,
+      natureCounts, dominantNature,
+      reversibleCount, irreversibleCount, irreversibleByNature,
+      labStrongCount, labTotalCount,
+      syndromeDomainCount, bilateralRatio,
+      strength, coreFactors, supportingFactors, wasUpgraded,
+    };
+  }, [specimenFindings, analytics.endpoints, specimen, relevantLabFindings,
+      specimenSyndromes, lateralityData, peerRows, recoveryAssessments]);
 
   return (
     <div>
@@ -1172,17 +1314,49 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
       {woeSynthesis && woeSynthesis.total > 0 && (
         <CollapsiblePane title="Specimen assessment" defaultOpen={false} sessionKey="pcc.specimen.assessment" expandAll={expandGen} collapseAll={collapseGen}>
           <div className="space-y-1.5">
-            {/* Conclusion line */}
+            {/* Strength conclusion + rationale */}
             <p className="text-xs">
               <span className={woeSynthesis.strength === "strong" ? "font-semibold text-foreground" : woeSynthesis.strength === "moderate" ? "font-medium text-foreground" : "text-muted-foreground"}>
                 {woeSynthesis.strength === "strong" ? "Strong" : woeSynthesis.strength === "moderate" ? "Moderate" : woeSynthesis.strength === "weak" ? "Weak" : "Insufficient"} evidence
               </span>
               {" \u2014 "}
-              <span className="text-muted-foreground">{woeSynthesis.conclusion}.</span>
+              <span className="text-muted-foreground">
+                {woeSynthesis.coreFactors.length > 0
+                  ? woeSynthesis.coreFactors.join(", ")
+                  : "0/3 core criteria"}
+                {woeSynthesis.wasUpgraded && woeSynthesis.supportingFactors.length > 0 && (
+                  `, supported by ${woeSynthesis.supportingFactors.join(" + ")}`
+                )}
+                .
+              </span>
             </p>
 
             {/* Dimension rows */}
             <div className="space-y-0.5 text-[11px]">
+              {/* Treatment relatedness */}
+              {woeSynthesis.trCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Treatment-related</span>
+                  <span className={woeSynthesis.adverseCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"}>
+                    {woeSynthesis.trCount}/{woeSynthesis.total}
+                    {woeSynthesis.adverseCount > 0 && `, ${woeSynthesis.adverseCount} adverse`}
+                    {woeSynthesis.adaptiveCount > 0 && `, ${woeSynthesis.adaptiveCount} adaptive`}
+                    {woeSynthesis.equivocalCount > 0 && `, ${woeSynthesis.equivocalCount} equivocal`}
+                  </span>
+                </div>
+              )}
+
+              {/* D-R consistency */}
+              {woeSynthesis.doseDepCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Dose-response</span>
+                  <span className="text-muted-foreground">
+                    {woeSynthesis.doseDepCount}/{woeSynthesis.total} dose-dependent
+                    {woeSynthesis.dominantPattern && ` (${woeSynthesis.dominantPattern.toLowerCase().replace(/_/g, " ")}${woeSynthesis.highConfidenceCount > 0 ? `, ${woeSynthesis.highConfidenceCount} moderate+ confidence` : ""})`}
+                  </span>
+                </div>
+              )}
+
               {/* HCD */}
               {peerRows.length > 0 && (() => {
                 const aboveCount = peerRows.filter(r => r.status === "above_range").length;
@@ -1214,26 +1388,31 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
                 ) : null;
               })()}
 
-              {/* Syndromes */}
+              {/* Syndromes — with domain coverage breadth */}
               {specimenSyndromes.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Syndrome support</span>
-                  <span className="text-muted-foreground">{specimenSyndromes.map(s => `${s.name} (${s.confidence.toLowerCase()})`).join(", ")}</span>
+                  <span className="text-muted-foreground">{specimenSyndromes.map(s =>
+                    `${s.name} (${s.confidence.toLowerCase()}${s.domainsCovered?.length ? `, ${s.domainsCovered.length} domains` : ""})`
+                  ).join(", ")}</span>
                 </div>
               )}
 
-              {/* Lab correlates — top 3 from unified findings + expandable full list */}
+              {/* Lab correlates — with signal count */}
               {relevantLabFindings.length > 0 && (() => {
                 const top3 = relevantLabFindings.slice(0, 3);
                 const arrow = (f: UnifiedFinding) => f.direction === "up" ? "\u2191" : f.direction === "down" ? "\u2193" : "";
                 const foldLabel = (f: UnifiedFinding) => f.max_fold_change != null
                   ? `${arrow(f)}${f.direction === "down" ? "" : "\u00d7"}${f.max_fold_change.toFixed(1)}`
                   : arrow(f);
+                const strongLabel = woeSynthesis.labStrongCount > 0
+                  ? `${woeSynthesis.labStrongCount} strong, ${woeSynthesis.labTotalCount} total`
+                  : `${woeSynthesis.labTotalCount} total`;
                 return (
                   <div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Lab correlates (top 3){" "}
+                        Lab correlates ({strongLabel}){" "}
                         {relevantLabFindings.length > 3 && (
                           <button className="text-primary hover:underline" onClick={() => setLabExpanded(p => !p)}>
                             {labExpanded ? "hide" : "show all"}
@@ -1253,15 +1432,28 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
                 );
               })()}
 
-              {/* Dominant nature */}
-              {woeSynthesis.dominantNature && (
+              {/* Finding nature — full breakdown + TR-filtered reversibility */}
+              {woeSynthesis.natureCounts.size > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Finding nature</span>
                   <span className="text-muted-foreground">
-                    {woeSynthesis.dominantNature[1] === woeSynthesis.total
-                      ? woeSynthesis.dominantNature[0]
-                      : `${woeSynthesis.dominantNature[0]} (${woeSynthesis.dominantNature[1]}/${woeSynthesis.total})`}
+                    {[...woeSynthesis.natureCounts.entries()]
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([nature, count]) => count === woeSynthesis.total ? nature : `${count} ${nature}`)
+                      .join(", ")}
+                    {/* Show reversibility only when no recovery data (R1 Finding 2.2) */}
+                    {recoveryAssessments.length === 0 && woeSynthesis.irreversibleCount > 0 && (
+                      ` (${[...woeSynthesis.irreversibleByNature.entries()].map(([n, c]) => `${c} irreversible ${n}`).join(", ")})`
+                    )}
                   </span>
+                </div>
+              )}
+
+              {/* Laterality summary */}
+              {woeSynthesis.bilateralRatio != null && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Laterality</span>
+                  <span className="text-muted-foreground">{Math.round(woeSynthesis.bilateralRatio * 100)}% bilateral</span>
                 </div>
               )}
 
