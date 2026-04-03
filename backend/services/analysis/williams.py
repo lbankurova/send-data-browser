@@ -105,69 +105,77 @@ def pava_decreasing(
 # Williams' Critical Value Tables + Simulation
 # ──────────────────────────────────────────────────────────────
 
-# Published critical values for equal group sizes (one-sided alpha).
-# Source: Williams (1971, 1972), Bretz (2006).
+# Verified critical values for equal group sizes (one-sided alpha=0.05).
+# Generated via Monte Carlo simulation (10M iterations, seed=42, n_per_group=10)
+# using the PAVA-constrained Williams' t-bar distribution (scale-equivariant:
+# CV is independent of n for equal group sizes). Cross-validated for
+# monotonicity in both k and df dimensions.
+# Generated: 2026-04-03, scripts/generate_williams_cv.py
+# Audit trail: scripts/williams_cv_audit.json
+# Previous values (pre-2026-04-03) had systematic upward bias (+0.01 to +0.12)
+# from corrupted chimeric sourcing. See: docs/_internal/research/peer-reviews/williams-test-audit-review.md
+#
 # Key: (k, df) -> critical_value at alpha=0.05
 # k = number of dose groups (excluding control)
 # Values are for dose_index = k (highest dose); when group sizes are equal,
 # the same critical value applies to all step-down levels (Williams 1972, Thm 2).
-#
-# CAUTION (2026-03-31 audit): These values have known provenance issues.
-# Both alpha columns in the original table were corrupted (chimeric sourcing
-# confirmed by non-monotonicity at df=20). The alpha=0.01 column had errors
-# up to -0.48 and has been REMOVED. The alpha=0.05 column has systematic
-# upward bias (+0.01 to +0.12, conservative direction). Values should be
-# cross-validated against PMCMRplus before relying on for regulatory decisions.
-# See: docs/_internal/research/peer-reviews/williams-test-audit-review.md
 _WILLIAMS_CV_005: dict[tuple[int, int], float] = {
     # k=2 (2 dose groups + control = 3 groups total)
-    (2, 5):   2.13,
-    (2, 6):   2.07,
-    (2, 7):   2.03,
-    (2, 8):   1.99,
-    (2, 9):   1.97,
-    (2, 10):  1.95,
-    (2, 12):  1.92,
-    (2, 15):  1.89,
-    (2, 20):  1.87,
-    (2, 30):  1.83,
-    (2, 40):  1.81,
-    (2, 60):  1.79,
-    (2, 120): 1.77,
+    (2,   5): 2.14,
+    (2,   6): 2.06,
+    (2,   7): 2.00,
+    (2,   8): 1.96,
+    (2,   9): 1.93,
+    (2,  10): 1.91,
+    (2,  12): 1.87,
+    (2,  15): 1.84,
+    (2,  20): 1.81,
+    (2,  30): 1.77,
+    (2,  40): 1.76,
+    (2,  60): 1.74,
+    (2, 120): 1.73,
     # k=3 (3 dose groups + control = 4 groups total)
-    (3, 5):   2.18,
-    (3, 6):   2.12,
-    (3, 7):   2.07,
-    (3, 8):   2.04,
-    (3, 9):   2.01,
-    (3, 10):  1.99,
-    (3, 12):  1.96,
-    (3, 15):  1.93,
-    (3, 20):  1.93,
-    (3, 30):  1.89,
-    (3, 40):  1.87,
-    (3, 60):  1.85,
-    (3, 120): 1.83,
+    (3,   5): 2.19,
+    (3,   6): 2.10,
+    (3,   7): 2.04,
+    (3,   8): 1.99,
+    (3,   9): 1.96,
+    (3,  10): 1.94,
+    (3,  12): 1.90,
+    (3,  15): 1.87,
+    (3,  20): 1.83,
+    (3,  30): 1.80,
+    (3,  40): 1.79,
+    (3,  60): 1.77,
+    (3, 120): 1.75,
     # k=4 (4 dose groups + control = 5 groups total)
-    (4, 5):   2.22,
-    (4, 6):   2.15,
-    (4, 7):   2.10,
-    (4, 8):   2.07,
-    (4, 9):   2.04,
-    (4, 10):  2.02,
-    (4, 12):  1.99,
-    (4, 15):  1.96,
-    (4, 20):  1.96,
-    (4, 30):  1.92,
-    (4, 40):  1.90,
-    (4, 60):  1.88,
-    (4, 120): 1.86,
+    (4,   5): 2.21,
+    (4,   6): 2.12,
+    (4,   7): 2.06,
+    (4,   8): 2.01,
+    (4,   9): 1.98,
+    (4,  10): 1.96,
+    (4,  12): 1.92,
+    (4,  15): 1.88,
+    (4,  20): 1.85,
+    (4,  30): 1.81,
+    (4,  40): 1.80,
+    (4,  60): 1.78,
+    (4, 120): 1.77,
     # k=5 (5 dose groups + control = 6 groups total)
-    (5, 20):  1.98,
-    (5, 30):  1.94,
-    (5, 40):  1.92,
-    (5, 60):  1.90,
-    (5, 120): 1.88,
+    (5,   5): 2.22,
+    (5,   6): 2.13,
+    (5,   7): 2.07,
+    (5,   8): 2.02,
+    (5,   9): 1.99,
+    (5,  10): 1.97,
+    (5,  12): 1.93,
+    (5,  15): 1.89,
+    (5,  20): 1.86,
+    (5,  30): 1.82,
+    (5,  40): 1.80,
+    (5,  60): 1.79,
+    (5, 120): 1.77,
 }
 
 

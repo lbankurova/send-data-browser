@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `df84c08c` (2026-04-03)
-**Generated:** 2026-04-03T00:19:09.125Z
+**Engine:** commit `9d972310` (2026-04-03)
+**Generated:** 2026-04-03T17:37:11.598Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -92,9 +92,9 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.078 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
-| 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
+| 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.025 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
 | 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
-| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.049 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
+| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.050 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
 | 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
 | 7 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10) |

@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `df84c08c` (2026-04-03)
-**Generated:** 2026-04-03T00:19:08.385Z
+**Engine:** commit `9d972310` (2026-04-03)
+**Generated:** 2026-04-03T17:37:11.366Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -614,7 +614,7 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
 | BG | 78 | 11 | 5 | 0 | 28 | 34 |
-| BW | 66 | 57 | 1 | 0 | 3 | 5 |
+| BW | 66 | 57 | 0 | 0 | 2 | 7 |
 | CL | 12 | 1 | 0 | 0 | 3 | 8 |
 | DS | 1 | 0 | 0 | 0 | 0 | 1 |
 | FW | 18 | 12 | 0 | 0 | 2 | 4 |
@@ -622,7 +622,7 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | MA | 29 | 1 | 0 | 0 | 2 | 26 |
 | MI | 82 | 6 | 0 | 0 | 33 | 43 |
 | OM | 58 | 9 | 0 | 0 | 16 | 33 |
-| **Total** | **689** | **150** | **11** | **0** | **191** | **337** |
+| **Total** | **689** | **150** | **10** | **0** | **190** | **339** |
 
 ### NOAEL / LOAEL
 
@@ -783,25 +783,25 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
-| BG | 12 | 2 | 0 | 0 | 5 | 5 |
+| BG | 12 | 3 | 0 | 0 | 6 | 3 |
 | BW | 17 | 0 | 2 | 0 | 5 | 10 |
 | CL | 98 | 22 | 0 | 0 | 30 | 46 |
-| EG | 30 | 3 | 2 | 0 | 6 | 19 |
-| FW | 71 | 6 | 2 | 0 | 26 | 37 |
-| LB | 524 | 34 | 98 | 0 | 91 | 301 |
+| EG | 30 | 5 | 2 | 0 | 15 | 8 |
+| FW | 71 | 10 | 2 | 0 | 36 | 23 |
+| LB | 524 | 52 | 98 | 0 | 108 | 266 |
 | MA | 20 | 1 | 0 | 0 | 12 | 7 |
 | MI | 20 | 0 | 0 | 0 | 11 | 9 |
 | OM | 61 | 6 | 0 | 0 | 33 | 22 |
-| VS | 9 | 2 | 1 | 0 | 2 | 4 |
-| **Total** | **862** | **76** | **105** | **0** | **221** | **460** |
+| VS | 9 | 3 | 1 | 0 | 3 | 2 |
+| **Total** | **862** | **102** | **105** | **0** | **259** | **396** |
 
 ### NOAEL / LOAEL
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2 - 6576 3 mg/kg/day | 5 | BG, EG, FW, LB | 0.80 | below_tested_range |
-| F | Not established | Group 2 - 6576 3 mg/kg/day | 8 | CL, EG, FW, LB | 0.80 | below_tested_range |
-| Combined | Not established | Group 2 - 6576 3 mg/kg/day | 13 | BG, CL, EG, FW, LB | 0.80 | below_tested_range |
+| M | Not established | Group 2 - 6576 3 mg/kg/day | 15 | BG, EG, FW, LB, VS | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 6576 3 mg/kg/day | 15 | CL, EG, FW, LB | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 - 6576 3 mg/kg/day | 30 | BG, CL, EG, FW, LB, VS | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -871,20 +871,20 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 |--------|-------| --- | --- | --- | --- | --- |
 | BW | 21 | 0 | 5 | 0 | 13 | 3 |
 | CL | 30 | 7 | 0 | 0 | 3 | 20 |
-| LB | 273 | 13 | 8 | 0 | 53 | 199 |
+| LB | 273 | 22 | 8 | 0 | 96 | 147 |
 | MA | 3 | 0 | 0 | 0 | 2 | 1 |
 | MI | 42 | 1 | 0 | 0 | 30 | 11 |
 | OM | 55 | 9 | 0 | 0 | 22 | 24 |
-| VS | 12 | 1 | 0 | 0 | 2 | 9 |
-| **Total** | **436** | **31** | **13** | **0** | **125** | **267** |
+| VS | 12 | 1 | 0 | 0 | 5 | 6 |
+| **Total** | **436** | **40** | **13** | **0** | **171** | **212** |
 
 ### NOAEL / LOAEL
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2 25 mg/kg/day | 13 | LB, OM, VS | 0.80 | below_tested_range |
-| F | Not established | Group 2 25 mg/kg/day | 2 | LB | 0.80 | below_tested_range |
-| Combined | Not established | Group 2 25 mg/kg/day | 15 | LB, OM, VS | 0.80 | below_tested_range |
+| M | Not established | Group 2 25 mg/kg/day | 14 | LB, OM, VS | 0.80 | below_tested_range |
+| F | Not established | Group 2 25 mg/kg/day | 7 | LB | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 25 mg/kg/day | 21 | LB, OM, VS | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -948,16 +948,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
-| BG | 26 | 5 | 2 | 0 | 6 | 13 |
+| BG | 26 | 5 | 2 | 0 | 9 | 10 |
 | BW | 26 | 14 | 0 | 0 | 6 | 6 |
 | CL | 72 | 0 | 0 | 0 | 6 | 66 |
 | FW | 1 | 0 | 0 | 0 | 0 | 1 |
-| LB | 82 | 7 | 4 | 0 | 30 | 41 |
+| LB | 82 | 8 | 4 | 0 | 39 | 31 |
 | MA | 21 | 0 | 0 | 0 | 2 | 19 |
 | MI | 45 | 0 | 0 | 1 | 11 | 33 |
 | OM | 67 | 11 | 0 | 0 | 15 | 41 |
-| VS | 3 | 1 | 0 | 0 | 0 | 2 |
-| **Total** | **343** | **38** | **6** | **1** | **76** | **222** |
+| VS | 3 | 1 | 0 | 0 | 1 | 1 |
+| **Total** | **343** | **39** | **6** | **1** | **89** | **208** |
 
 ### NOAEL / LOAEL
 
@@ -1031,16 +1031,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
-| BG | 18 | 1 | 1 | 0 | 3 | 13 |
-| BW | 20 | 0 | 2 | 0 | 7 | 11 |
+| BG | 18 | 1 | 1 | 0 | 5 | 11 |
+| BW | 20 | 1 | 2 | 0 | 6 | 11 |
 | CL | 31 | 1 | 0 | 0 | 4 | 26 |
 | DS | 1 | 0 | 0 | 0 | 0 | 1 |
 | FW | 14 | 4 | 0 | 0 | 3 | 7 |
-| LB | 264 | 17 | 11 | 0 | 101 | 135 |
+| LB | 264 | 18 | 11 | 0 | 112 | 123 |
 | MA | 12 | 0 | 0 | 0 | 2 | 10 |
-| MI | 70 | 2 | 0 | 2 | 25 | 41 |
+| MI | 70 | 2 | 0 | 0 | 27 | 41 |
 | OM | 61 | 4 | 0 | 0 | 10 | 47 |
-| **Total** | **491** | **29** | **14** | **2** | **155** | **291** |
+| **Total** | **491** | **31** | **14** | **0** | **169** | **277** |
 
 ### NOAEL / LOAEL
 
