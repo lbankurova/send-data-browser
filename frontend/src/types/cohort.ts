@@ -6,7 +6,7 @@
 
 // ── Preset modes ─────────────────────────────────────────────
 
-export type CohortPreset = "trs" | "histo" | "recovery" | "all";
+export type CohortPreset = "all" | "trs" | "histo" | "recovery" | "deaths" | "syndromes";
 
 /** Why a subject was included in the Histopath preset. */
 export type HistoReason = "adverse" | "cod" | "pattern";
@@ -249,6 +249,21 @@ export interface RecoveryVerdictsResponse {
   meta: { generated: string; study_id: string };
   per_subject: Record<string, RecoverySubjectProfile>;
   per_finding: Record<string, RecoveryFindingVerdict>;
+}
+
+// ── NOAEL overlay ──────────────────────────────────────────
+
+export interface NoaelSubjectOverlay {
+  noael_driving_count: number;
+  noael_role: "determining" | "contributing" | "none";
+  sex_noael_label: string | null;
+  findings: { domain: string; finding: string; specimen: string | null }[];
+  bw_terminal_pct: number | null;
+  lb_max_fold: number | null;
+}
+
+export interface NoaelOverlayResponse {
+  subjects: Record<string, NoaelSubjectOverlay>;
 }
 
 // ── Reference comparison ────────────────────────────────────

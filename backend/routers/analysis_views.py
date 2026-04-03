@@ -59,6 +59,7 @@ VALID_VIEW_NAMES = {
     "subject-syndromes",
     "subject-onset-days",
     "recovery-verdicts",
+    "subject-noael-overlay",
     "control-comparison",
     "assay-validation",
 }

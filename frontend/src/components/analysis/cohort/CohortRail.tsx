@@ -3,7 +3,7 @@
  * reference indicator, filter pills, and multi-select rows.
  */
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { X, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
+import { X, Pin, PinOff, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FilterMultiSelect, FilterSearch, FilterClearButton, FilterSelect } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
@@ -12,11 +12,10 @@ import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
 import type { CohortPreset, CohortSubject, FilterPredicate, SavedCohort, CohortSortKey } from "@/types/cohort";
 import { SORT_KEY_LABELS } from "@/types/cohort";
 
-const PRESET_OPTIONS: { value: CohortPreset; label: string }[] = [
+// Scope toggles — only "All" for now. Other modes (Groups, Histo, Organs,
+// Deaths, Syndromes, Recovery) added when their views are built.
+const SCOPE_TOGGLES: { value: CohortPreset; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "trs", label: "TRS" },
-  { value: "histo", label: "Histo" },
-  { value: "recovery", label: "Recovery" },
 ];
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
@@ -103,6 +102,7 @@ export function CohortRail() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [showMoreSaved, setShowMoreSaved] = useState(false);
+  const [allExpanded, setAllExpanded] = useState(true);
 
   // Summary counts
   const selected = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
@@ -124,6 +124,10 @@ export function CohortRail() {
   const isDirty = doseFilter !== null || sexFilter !== null || searchQuery !== "";
   const hasFilters = !activePresets.has("all") || activePresets.size > 1 || filterGroup.predicates.length > 0 || isDirty;
 
+  // NOTE: Dose group cards, syndrome cards, and other grouped modes will be
+  // added here when their respective toggles are built. For now, only All mode
+  // is active — flat subject list under a single "All" parent card.
+
   // Saved cohorts: pinned vs unpinned
   const pinnedCohorts = savedCohorts.filter((c) => c.pinned);
   const unpinnedCohorts = savedCohorts.filter((c) => !c.pinned);
@@ -138,30 +142,28 @@ export function CohortRail() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Zone 1: Preset checkboxes */}
-      <div className="flex items-center gap-3 border-b px-3 py-2">
-        {PRESET_OPTIONS.map((opt) => (
-          <label key={opt.value} className="flex items-center gap-1 text-xs cursor-pointer">
-            <input
-              type="checkbox"
-              checked={activePresets.has(opt.value)}
-              onChange={() => togglePreset(opt.value)}
-              className="h-3 w-3 rounded border-gray-300"
-            />
-            <span className={cn(
-              "font-medium",
-              activePresets.has(opt.value) ? "text-foreground" : "text-muted-foreground"
-            )}>
-              {opt.label}
-            </span>
-          </label>
+      {/* Zone 1: Scope toggle pills */}
+      <div className="flex items-center gap-1 border-b px-3 py-2">
+        {SCOPE_TOGGLES.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => togglePreset(opt.value)}
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors",
+              activePresets.has(opt.value)
+                ? "bg-foreground text-background"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            )}
+          >
+            {opt.label}
+          </button>
         ))}
-        {/* Save... link (visible when filters are active) */}
         {hasFilters && !showSaveInput && (
           <button
             type="button"
             onClick={() => setShowSaveInput(true)}
-            className="ml-auto text-xs text-primary hover:text-primary/80"
+            className="ml-auto text-[10px] text-primary hover:text-primary/80"
           >
             Save...
           </button>
@@ -355,22 +357,50 @@ export function CohortRail() {
         <FilterPanel onClose={() => setShowFilterPanel(false)} />
       )}
 
-      {/* Zone 4: Subject rows */}
+      {/* Zone 4: All mode — parent card + flat subject list */}
       <div className="flex-1 overflow-y-auto">
         {filteredSubjects.length === 0 ? (
           <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-            No subjects match the current preset and filters. Try a different preset or clear filters.
+            No subjects match the current filters.
           </div>
         ) : (
-          filteredSubjects.map((s) => (
-            <SubjectRow
-              key={s.usubjid}
-              subject={s}
-              isSelected={selectedSubjects.has(s.usubjid)}
-              onToggle={toggleSubject}
-              organCount={subjectOrganCounts.get(s.usubjid) ?? 0}
-            />
-          ))
+          <>
+            {/* "All" parent card */}
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-1.5 text-xs cursor-pointer transition-colors",
+                allExpanded ? "bg-accent/50" : "hover:bg-accent/30",
+              )}
+              onClick={() => setAllExpanded((p) => !p)}
+            >
+              {allExpanded ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+              <span className="font-semibold">All</span>
+              <span className="text-[10px] text-muted-foreground">
+                {filteredSubjects.length} subjects
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                <span style={{ color: SEX_COLOR.F }}>F{femaleCount}</span>
+                {" / "}
+                <span style={{ color: SEX_COLOR.M }}>M{maleCount}</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {doseGroupCount} dose grp{doseGroupCount !== 1 ? "s" : ""}
+              </span>
+            </button>
+
+            {/* Flat subject list */}
+            {allExpanded && filteredSubjects.map((s) => (
+              <SubjectRow
+                key={s.usubjid}
+                subject={s}
+                isSelected={selectedSubjects.has(s.usubjid)}
+                onToggle={toggleSubject}
+                organCount={subjectOrganCounts.get(s.usubjid) ?? 0}
+                nested
+              />
+            ))}
+          </>
         )}
       </div>
     </div>
@@ -504,11 +534,13 @@ function SubjectRow({
   isSelected,
   onToggle,
   organCount,
+  nested,
 }: {
   subject: CohortSubject;
   isSelected: boolean;
   onToggle: (id: string, shiftKey: boolean) => void;
   organCount: number;
+  nested?: boolean;
 }) {
   const pipeColor = getDoseGroupColor(s.doseGroupOrder);
   const isEarly = s.sacrificeDay != null && s.plannedDay != null && s.sacrificeDay < s.plannedDay;
@@ -517,10 +549,11 @@ function SubjectRow({
     <button
       type="button"
       className={cn(
-        "flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors",
+        "flex w-full items-center gap-1.5 py-1 text-left transition-colors",
+        nested ? "pl-6 pr-2" : "px-2",
         isSelected ? "bg-accent" : "hover:bg-accent/30",
       )}
-      style={{ borderLeft: `3px solid ${pipeColor}` }}
+      style={nested ? undefined : { borderLeft: `3px solid ${pipeColor}` }}
       onClick={(e) => onToggle(s.usubjid, e.shiftKey)}
     >
       {/* USUBJID */}

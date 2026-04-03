@@ -226,6 +226,11 @@ function evalSyndrome(
 
   const { syndromeId, matchType } = pred;
 
+  // Wildcard: any syndrome match (used by "syndromes" scope toggle)
+  if (syndromeId === "*") {
+    return profile.syndromes.length > 0 || profile.partial_syndromes.length > 0;
+  }
+
   // Check full matches
   const hasFullMatch = profile.syndromes.some((s) => s.syndrome_id === syndromeId);
   if (matchType === "full") return hasFullMatch;
@@ -413,6 +418,20 @@ export function presetToFilter(
 
     case "recovery":
       predicates.push({ type: "recovery", isRecovery: true });
+      break;
+
+    case "deaths":
+      // Same filter as "trs" today. Will diverge when Deaths mode gets its
+      // own view — "trs" includes early sacrifice (investigator-initiated),
+      // "deaths" will likely narrow to found_dead + moribund only.
+      predicates.push({
+        type: "disposition",
+        values: new Set(["found_dead", "moribund", "early_sacrifice"]),
+      });
+      break;
+
+    case "syndromes":
+      predicates.push({ type: "syndrome", syndromeId: "*", matchType: "any" });
       break;
 
     case "all":

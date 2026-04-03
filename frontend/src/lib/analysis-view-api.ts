@@ -14,7 +14,7 @@ import type {
   PkIntegration,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
-import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse } from "@/types/cohort";
+import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse, NoaelOverlayResponse } from "@/types/cohort";
 
 const API_BASE = "/api";
 
@@ -394,5 +394,15 @@ export function fetchRecoveryVerdicts(
 ): Promise<RecoveryVerdictsResponse> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/recovery-verdicts`,
+  );
+}
+
+// ── NOAEL overlay ──────────────────────────────────────────
+
+export function fetchNoaelOverlay(
+  studyId: string,
+): Promise<NoaelOverlayResponse> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-noael-overlay`,
   );
 }

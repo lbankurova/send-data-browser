@@ -645,7 +645,8 @@ export function sortCohortSubjects(
         return ctx.syndromes[s.usubjid]?.syndrome_count ?? 0;
       case "bw_pct_change":
         // Lower (more negative) = more weight loss. Sort asc puts biggest losers first.
-        return 0; // BW % change needs terminal BW data -- use onset days as proxy
+        // TODO: Wire when per-subject BW terminal delta is available in generated data
+        return 0;
       case "onset_day": {
         const days = ctx.onsetDays[s.usubjid];
         if (!days) return Infinity;

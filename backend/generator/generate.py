@@ -27,6 +27,7 @@ from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
 from generator.subject_syndromes import build_subject_syndromes
 from generator.onset_recovery import build_onset_days, build_recovery_verdicts
+from generator.noael_overlay import build_subject_noael_overlay
 from services.analysis.override_reader import get_last_dosing_day_override
 from services.analysis.phase_filter import compute_last_dosing_day
 
@@ -444,6 +445,22 @@ def generate(study_id: str):
     target_organs = views["target_organ_summary"]
     signal_summary = views["study_signal_summary"]
     rule_results = views["rule_results"]
+
+    # Per-subject NOAEL overlay + signal summary
+    # Use `findings` (original from adapter) which still has raw_subject_values.
+    # views["unified_findings"]["findings"] is already stripped by the pipeline.
+    if ctx_df is not None:
+        noael_overlay = build_subject_noael_overlay(
+            noael, ctx_df.to_dict(orient="records"), findings=findings,
+        )
+        _write_json(out_dir / "subject_noael_overlay.json", noael_overlay)
+        n_determining = sum(
+            1 for s in noael_overlay["subjects"].values()
+            if s["noael_role"] == "determining"
+        )
+        n_bw = sum(1 for s in noael_overlay["subjects"].values() if s.get("bw_terminal_pct") is not None)
+        n_lb = sum(1 for s in noael_overlay["subjects"].values() if s.get("lb_max_fold") is not None)
+        print(f"  NOAEL overlay: {n_determining} determining, {n_bw} BW, {n_lb} LB signals")
 
     _tick("2_end")
 
