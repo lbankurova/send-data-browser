@@ -282,22 +282,27 @@ def compute_loo_stability(
       < 1.0: fragile (worst removal reduces gLower by this fraction)
       0.0: extremely fragile (removing one animal kills the signal)
 
-    Returns dict with overall, treated, control stability and control_fragile flag.
+    Returns dict with overall, treated, control stability, control_fragile flag,
+    and influential animal indices (into the input arrays).
     Returns None when g_lower_full <= 0 (no signal to test).
     """
     if g_lower_full is None or g_lower_full <= 0:
         return None  # no signal to be fragile about
 
-    def _side_stability(base: np.ndarray, other: np.ndarray, remove_from_first: bool) -> float:
+    def _side_stability(base: np.ndarray, other: np.ndarray, remove_from_first: bool) -> tuple[float, int]:
         """Compute min LOO-gLower ratio for one side.
 
         remove_from_first=True: iterate over base (removing from group 1 in effect_size call)
         remove_from_first=False: iterate over base (removing from group 2)
+
+        Returns (stability_ratio, influential_index).
+        Tie-breaking: first-encountered wins (lowest array index).
         """
         n = len(base)
         if n <= 2:
-            return 0.0
+            return 0.0, 0
         min_ratio = float("inf")
+        min_idx = 0
         for i in range(n):
             loo_base = np.delete(base, i)
             if remove_from_first:
@@ -307,19 +312,20 @@ def compute_loo_stability(
                 loo_g = compute_effect_size(other, loo_base)
                 loo_gl = compute_g_lower(loo_g, len(loo_base), len(other), confidence_level) if loo_g is not None else None
             if loo_g is None:
-                return 0.0  # degenerate (zero variance after removal)
+                return 0.0, i  # degenerate (zero variance after removal)
             if loo_gl is None or loo_gl <= 0:
-                return 0.0
+                return 0.0, i
             if loo_gl < min_ratio:
                 min_ratio = loo_gl
+                min_idx = i
         if min_ratio == float("inf"):
-            return 1.0
-        return round(min_ratio / g_lower_full, 4)
+            return 1.0, 0
+        return round(min_ratio / g_lower_full, 4), min_idx
 
     # Treated-side: remove each treated animal, compute effect_size(loo_treated, control)
-    treated_stab = _side_stability(treated, control, remove_from_first=True)
+    treated_stab, treated_idx = _side_stability(treated, control, remove_from_first=True)
     # Control-side: remove each control animal, compute effect_size(treated, loo_control)
-    control_stab = _side_stability(control, treated, remove_from_first=False)
+    control_stab, control_idx = _side_stability(control, treated, remove_from_first=False)
 
     overall = min(treated_stab, control_stab)
     control_fragile = control_stab < treated_stab if not (control_stab == 0.0 and treated_stab == 0.0) else False
@@ -329,6 +335,8 @@ def compute_loo_stability(
         "treated": treated_stab,
         "control": control_stab,
         "control_fragile": control_fragile,
+        "influential_treated_idx": treated_idx,
+        "influential_control_idx": control_idx,
     }
 
 
@@ -449,6 +457,8 @@ def severity_trend(dose_levels: list, avg_severities: list) -> dict:
 def dunnett_pairwise(
     control: np.ndarray,
     treated_groups: list[tuple[int, np.ndarray]],
+    control_ids: list[str] | None = None,
+    treated_ids: dict[int, list[str]] | None = None,
 ) -> list[dict]:
     """Dunnett's test: each treated group vs control (FWER-controlled).
 
@@ -459,11 +469,18 @@ def dunnett_pairwise(
     Parameters:
         control: Control group values.
         treated_groups: List of (dose_level, values) tuples for treated groups.
+        control_ids: Optional USUBJIDs parallel to control array (pre-NaN-cleaned).
+        treated_ids: Optional {dose_level: [USUBJIDs]} parallel to treated arrays.
 
     Returns list of dicts with: dose_level, p_value, p_value_adj, statistic, effect_size.
     """
     ctrl = np.array(control, dtype=float)
-    ctrl = ctrl[~np.isnan(ctrl)]
+    # NaN-alignment contract: apply same mask to both values and IDs
+    nan_mask = ~np.isnan(ctrl)
+    ctrl = ctrl[nan_mask]
+    ctrl_ids_clean: list[str] | None = None
+    if control_ids is not None:
+        ctrl_ids_clean = [uid for uid, keep in zip(control_ids, nan_mask) if keep]
     if len(ctrl) < 2 or not treated_groups:
         return []
 
@@ -474,14 +491,22 @@ def dunnett_pairwise(
     all_effect_sizes = []
     all_treated_sizes = []
     all_cleaned_arrays = []  # kept for LOO stability computation
+    all_cleaned_ids: list[list[str] | None] = []  # parallel USUBJID lists
 
     for i, (dose_level, vals) in enumerate(treated_groups):
         arr = np.array(vals, dtype=float)
-        arr = arr[~np.isnan(arr)]
+        t_nan_mask = ~np.isnan(arr)
+        arr = arr[t_nan_mask]
+        # Clean treated IDs with same NaN mask
+        t_ids: list[str] | None = None
+        if treated_ids is not None and dose_level in treated_ids:
+            raw_ids = treated_ids[dose_level]
+            t_ids = [uid for uid, keep in zip(raw_ids, t_nan_mask) if keep]
         dose_levels.append(dose_level)
         all_effect_sizes.append(compute_effect_size(arr, ctrl))
         all_treated_sizes.append(len(arr))
         all_cleaned_arrays.append(arr)
+        all_cleaned_ids.append(t_ids)
         if len(arr) >= 2:
             valid_arrays.append(arr)
             valid_indices.append(i)
@@ -509,10 +534,24 @@ def dunnett_pairwise(
         n2 = all_treated_sizes[i]
         gl = compute_g_lower(d, n1, n2) if d is not None else None
         loo_result = compute_loo_stability(ctrl, all_cleaned_arrays[i], gl) if gl is not None and gl > 0 else None
+
+        # Map influential animal index to USUBJID
+        loo_subject: str | None = None
+        if loo_result is not None:
+            if loo_result["control_fragile"] and ctrl_ids_clean is not None:
+                idx = loo_result["influential_control_idx"]
+                if idx < len(ctrl_ids_clean):
+                    loo_subject = ctrl_ids_clean[idx]
+            elif not loo_result["control_fragile"] and all_cleaned_ids[i] is not None:
+                idx = loo_result["influential_treated_idx"]
+                t_ids_list = all_cleaned_ids[i]
+                if t_ids_list is not None and idx < len(t_ids_list):
+                    loo_subject = t_ids_list[idx]
+
         pairwise.append({
             "dose_level": int(dose_level),
             "p_value": round(p, 6) if p is not None else None,
-            # Dunnett's p-values are already FWER-controlled — p_value_adj = p_value
+            # Dunnett's p-values are already FWER-controlled -- p_value_adj = p_value
             "p_value_adj": round(p, 6) if p is not None else None,
             "statistic": None,  # Dunnett's doesn't provide per-comparison test statistics
             "effect_size": round(d, 4) if d is not None else None,
@@ -521,6 +560,7 @@ def dunnett_pairwise(
             "loo_treated": loo_result["treated"] if loo_result else None,
             "loo_control": loo_result["control"] if loo_result else None,
             "loo_control_fragile": loo_result["control_fragile"] if loo_result else None,
+            "loo_influential_subject": loo_subject,
         })
     return pairwise
 

@@ -16,7 +16,10 @@ import { useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { StripPlotChart } from "./StripPlotChart";
+import { StripPlotChart, LOO_INFLUENTIAL_COLOR } from "./StripPlotChart";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import { BivarScatterChart } from "./BivarScatterChart";
+import type { BivarSubjectValue } from "./BivarScatterChart";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
@@ -33,7 +36,7 @@ let _pendingScrollBack = false;
 
 // ── Types ─────────────────────────────────────────────────
 
-type DistMode = "terminal" | "peak" | "recovery";
+type DistMode = "terminal" | "peak" | "recovery" | "scatter_bw";
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -165,13 +168,20 @@ export function DistributionPane({
   );
   const hasPeak = finding.domain === "BW";
 
+  // OM domain: check if terminal_bw data is available for bivariate scatter
+  const hasBW = useMemo(
+    () => finding.domain === "OM" && (subjectData?.subjects.some((s) => s.terminal_bw != null) ?? false),
+    [finding.domain, subjectData],
+  );
+
   const [mode, setMode] = useState<DistMode>("terminal");
 
   // Reset mode when finding changes or mode becomes unavailable
   useEffect(() => {
     if (mode === "peak" && !hasPeak) setMode("terminal");
     if (mode === "recovery" && !hasRecoverySubjects) setMode("terminal");
-  }, [finding.test_code, hasPeak, hasRecoverySubjects, mode]);
+    if (mode === "scatter_bw" && !hasBW) setMode("terminal");
+  }, [finding.test_code, hasPeak, hasRecoverySubjects, hasBW, mode]);
 
   // Compute peak effect day (BW only, memoized)
   const peakDay = useMemo(() => {
@@ -258,6 +268,41 @@ export function DistributionPane({
     };
   }, [subjectData, mode, peakDay, terminalDay, shouldIncludeSubject]);
 
+  // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
+  const { data: analyticsData } = useFindingsAnalyticsResult();
+  const influentialSubjects = useMemo(() => {
+    if (!analyticsData?.findings) return undefined;
+    const set = new Set<string>();
+    const ep = finding.endpoint_label ?? finding.finding;
+    for (const f of analyticsData.findings) {
+      if ((f.endpoint_label ?? f.finding) === ep && f.domain === finding.domain && f.loo_influential_subject) {
+        set.add(f.loo_influential_subject);
+      }
+    }
+    return set.size > 0 ? set : undefined;
+  }, [analyticsData?.findings, finding.endpoint_label, finding.finding, finding.domain]);
+
+  // Bivariate scatter data (OM + BW): pair organ weight at terminal day with terminal_bw
+  const bivarSubjects = useMemo((): BivarSubjectValue[] => {
+    if (mode !== "scatter_bw" || !subjectData || !terminalDay) return [];
+    const result: BivarSubjectValue[] = [];
+    for (const s of subjectData.subjects) {
+      if (!shouldIncludeSubject(s)) continue;
+      if (s.terminal_bw == null) continue;
+      const match = s.values.find((v) => v.day === terminalDay);
+      if (match == null) continue;
+      result.push({
+        usubjid: s.usubjid,
+        sex: s.sex,
+        dose_level: s.dose_level,
+        dose_label: s.dose_label,
+        organ_weight: match.value,
+        body_weight: s.terminal_bw,
+      });
+    }
+    return result;
+  }, [mode, subjectData, terminalDay, shouldIncludeSubject]);
+
   // Navigate to subject profile, marking that we came from here
   const handleSubjectClick = useCallback((usubjid: string) => {
     _pendingScrollBack = true;
@@ -280,21 +325,25 @@ export function DistributionPane({
   const peakUseful = hasPeak && peakDay != null;
   // Recovery mode: study must have recovery arms AND recovery subjects in data
   const recoveryAvailable = hasRecovery && hasRecoverySubjects;
-  const showModeSelector = peakUseful || recoveryAvailable;
+  const showModeSelector = peakUseful || recoveryAvailable || hasBW;
 
   const subtitle =
-    mode === "peak" && peakDay
-      ? `Delta from control at peak effect (Day ${peakDay.day})`
-      : mode === "recovery"
-        ? "Individual values at recovery sacrifice"
-        : "Individual values at terminal sacrifice";
+    mode === "scatter_bw"
+      ? "Organ weight vs terminal body weight"
+      : mode === "peak" && peakDay
+        ? `Delta from control at peak effect (Day ${peakDay.day})`
+        : mode === "recovery"
+          ? "Individual values at recovery sacrifice"
+          : "Individual values at terminal sacrifice";
 
   const infoText =
-    mode === "peak"
-      ? `Each dot = subject BW minus concurrent control mean on Day ${peakDay?.day} (day of largest Hedges' g for high-dose vs control). Mean shown as tick mark.`
-      : mode === "recovery"
-        ? "Individual subject values at recovery sacrifice. Recovery cohort may have fewer dose groups. Mean shown as tick mark."
-        : "Individual subject values at terminal sacrifice. Mean shown as tick mark. Box/whisker overlay appears when group n\u00a0>\u00a015.";
+    mode === "scatter_bw"
+      ? "Each dot = one subject. X = terminal body weight, Y = organ weight. Lines = per-group linear regression. Reveals whether organ weight change is independent of body weight change (Kluxen 2019)."
+      : mode === "peak"
+        ? `Each dot = subject BW minus concurrent control mean on Day ${peakDay?.day} (day of largest Hedges' g for high-dose vs control). Mean shown as tick mark.`
+        : mode === "recovery"
+          ? "Individual subject values at recovery sacrifice. Recovery cohort may have fewer dose groups. Mean shown as tick mark."
+          : "Individual subject values at terminal sacrifice. Mean shown as tick mark. Box/whisker overlay appears when group n\u00a0>\u00a015.";
 
   return (
     <CollapsiblePane
@@ -305,7 +354,7 @@ export function DistributionPane({
     >
       {isLoading ? (
         <Skeleton className="h-40 w-full" />
-      ) : isError || subjects.length === 0 ? (
+      ) : mode !== "scatter_bw" && (isError || subjects.length === 0) ? (
         <div className="text-[11px] text-muted-foreground/60 py-2">
           {mode === "recovery" ? "No recovery data available" : "No individual data available"}
         </div>
@@ -319,6 +368,7 @@ export function DistributionPane({
                   value={mode}
                   options={[
                     { value: "terminal" as const, label: "Terminal" },
+                    ...(hasBW ? [{ value: "scatter_bw" as const, label: "vs BW" }] : []),
                     ...(peakUseful ? [{ value: "peak" as const, label: "Peak" }] : []),
                     ...(recoveryAvailable ? [{ value: "recovery" as const, label: "Recovery" }] : []),
                   ]}
@@ -328,16 +378,37 @@ export function DistributionPane({
               <span title={infoText}>
                 <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
               </span>
+              {influentialSubjects && influentialSubjects.size > 0 && (
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="3.5" fill={LOO_INFLUENTIAL_COLOR} /></svg>
+                  <span>LOO influential</span>
+                </div>
+              )}
             </div>
           </div>
-          <StripPlotChart
-            subjects={subjects}
-            unit={unit}
-            sexes={sexes}
-            doseGroups={doseGroupsForChart}
-            onSubjectClick={handleSubjectClick}
-            mode={mode}
-          />
+          {mode === "scatter_bw" ? (
+            <div style={{ height: 220 }}>
+              <BivarScatterChart
+                subjects={bivarSubjects}
+                organUnit={unit}
+                bwUnit="g"
+                sexes={sexes}
+                doseGroups={doseGroupsForChart}
+                onSubjectClick={handleSubjectClick}
+                influentialSubject={finding.loo_influential_subject ?? undefined}
+              />
+            </div>
+          ) : (
+            <StripPlotChart
+              subjects={subjects}
+              unit={unit}
+              sexes={sexes}
+              doseGroups={doseGroupsForChart}
+              onSubjectClick={handleSubjectClick}
+              mode={mode}
+              influentialSubjects={influentialSubjects}
+            />
+          )}
         </div>
       )}
     </CollapsiblePane>

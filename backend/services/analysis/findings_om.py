@@ -30,6 +30,7 @@ from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
 def _compute_metric_stats(
     dose_groups_values: list[np.ndarray],
     dose_levels: list[int],
+    dose_groups_subj: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict], dict]:
     """Run Dunnett's + Welch + JT + Hedges' g on a set of dose-group arrays.
 
@@ -65,7 +66,17 @@ def _compute_metric_stats(
         ]
         treated = [(dl, v) for dl, v in treated if len(v) >= 1]
         if treated:
-            pairwise = dunnett_pairwise(control_values, treated)
+            # LOO influential subject: pass USUBJID lists if available
+            ctrl_ids: list[str] | None = None
+            t_ids: dict[int, list[str]] | None = None
+            if dose_groups_subj:
+                ctrl_ids = list(dose_groups_subj[0].keys()) if dose_groups_subj[0] else None
+                t_ids_map: dict[int, list[str]] = {}
+                for j, dl in enumerate(dose_levels):
+                    if dl > 0 and j < len(dose_groups_subj) and dose_groups_subj[j]:
+                        t_ids_map[int(dl)] = list(dose_groups_subj[j].keys())
+                t_ids = t_ids_map or None
+            pairwise = dunnett_pairwise(control_values, treated, control_ids=ctrl_ids, treated_ids=t_ids)
             welch = welch_pairwise(control_values, treated)
             welch_map = {w["dose_level"]: w for w in welch}
             for pw in pairwise:
@@ -269,6 +280,7 @@ def compute_om_findings(
         # ── Run stats on recommended metric ──
         pairwise, primary_group_stats, trend_result = _compute_metric_stats(
             primary_arrays, [int(dl) for dl in dose_levels],
+            dose_groups_subj=dose_groups_subj,
         )
 
         # ── Williams' test ──

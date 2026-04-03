@@ -15,6 +15,7 @@
  */
 import { useMemo, useState, useRef, useCallback } from "react";
 import { getDoseGroupColor, getSexColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { computeNiceTicks, shortId } from "@/lib/chart-utils";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -39,6 +40,8 @@ export interface StripPlotChartProps {
   /** Interleaved sex layout: single SVG with F|M sub-lanes per dose column.
    *  Sex-colored dots, shared Y-axis, fills container height. */
   interleaved?: boolean;
+  /** USUBJIDs of LOO-influential animals — render in amber-brown (#92400e). */
+  influentialSubjects?: ReadonlySet<string>;
 }
 
 // ── Layout constants ──────────────────────────────────────
@@ -52,6 +55,7 @@ const DOT_RADIUS = 2.5;
 const DOT_RADIUS_HOVER = 3.5;
 const MEAN_TICK_HALF = 5;
 const BOX_THRESHOLD = 5;
+export const LOO_INFLUENTIAL_COLOR = "#92400e"; // amber-800 — amber-brown for LOO influential marker
 
 // ── Stats helpers ─────────────────────────────────────────
 
@@ -89,33 +93,11 @@ function jitterX(index: number, count: number, colWidth: number): number {
   return ((index / (count - 1)) - 0.5) * span;
 }
 
-// ── Y-axis tick computation ──────────────────────────────
-
-function computeNiceTicks(min: number, max: number, maxTicks = 5): number[] {
-  const range = max - min;
-  if (range === 0) return [min];
-  const rawStep = range / maxTicks;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const candidates = [1, 2, 5, 10];
-  const step = mag * (candidates.find((c) => c * mag >= rawStep) ?? 10);
-  const ticks: number[] = [];
-  const start = Math.ceil(min / step) * step;
-  for (let v = start; v <= max + step * 0.001; v += step) {
-    ticks.push(Math.round(v * 1e10) / 1e10);
-  }
-  return ticks;
-}
-
-// ── Short subject ID ─────────────────────────────────────
-
-function shortId(usubjid: string): string {
-  const parts = usubjid.split("-");
-  return parts[parts.length - 1];
-}
+// computeNiceTicks and shortId imported from @/lib/chart-utils
 
 // ── Component ────────────────────────────────────────────
 
-export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false }: StripPlotChartProps) {
+export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false, influentialSubjects }: StripPlotChartProps) {
   const [hoveredDot, setHoveredDot] = useState<SubjectValue | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,13 +160,14 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     setHoveredDot(sv);
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
+      const suffix = influentialSubjects?.has(sv.usubjid) ? " -- LOO influential" : "";
       setTooltip({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top - 10,
-        text: `${shortId(sv.usubjid)}  ${sv.value.toFixed(2)} ${unit}`,
+        text: `${shortId(sv.usubjid)}  ${sv.value.toFixed(2)} ${unit}${suffix}`,
       });
     }
-  }, [unit]);
+  }, [unit, influentialSubjects]);
 
   const handleDotLeave = useCallback(() => {
     setHoveredDot(null);
@@ -196,22 +179,27 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     onSubjectClick?.(usubjid);
   }, [onSubjectClick]);
 
+  // No legend here — rendered by parent component in toolbar area
+
   // ── Interleaved mode ─────────────────────────────────────
   if (interleaved) {
     return (
-      <div ref={containerRef} className="relative h-full">
-        <InterleavedPanel
-          grouped={grouped}
-          sexes={sexes}
-          doseGroups={doseGroups}
-          vMin={vMin}
-          vMax={vMax}
-          yTicks={yTicks}
-          hoveredDot={hoveredDot}
-          onDotEnter={handleDotEnter}
-          onDotLeave={handleDotLeave}
-          onDotClick={handleDotClick}
-        />
+      <div ref={containerRef} className="relative h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <InterleavedPanel
+            grouped={grouped}
+            sexes={sexes}
+            doseGroups={doseGroups}
+            vMin={vMin}
+            vMax={vMax}
+            yTicks={yTicks}
+            hoveredDot={hoveredDot}
+            onDotEnter={handleDotEnter}
+            onDotLeave={handleDotLeave}
+            onDotClick={handleDotClick}
+            influentialSubjects={influentialSubjects}
+          />
+        </div>
         {tooltip && (
           <div
             className="absolute pointer-events-none bg-popover text-popover-foreground border border-border rounded px-1.5 py-0.5 text-[10px] shadow-sm whitespace-nowrap z-10"
@@ -260,6 +248,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               onDotEnter={handleDotEnter}
               onDotLeave={handleDotLeave}
               onDotClick={handleDotClick}
+              influentialSubjects={influentialSubjects}
             />
             {/* Per-sex dose legend — aligned with SVG columns */}
             <div
@@ -337,6 +326,7 @@ function InterleavedPanel({
   onDotEnter,
   onDotLeave,
   onDotClick,
+  influentialSubjects,
 }: {
   grouped: Record<string, Record<number, SubjectValue[]>>;
   sexes: string[];
@@ -348,6 +338,7 @@ function InterleavedPanel({
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
+  influentialSubjects?: ReadonlySet<string>;
 }) {
   const [dims, setDims] = useState({ width: 400, height: 250 });
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -500,20 +491,38 @@ function InterleavedPanel({
                   {/* Individual dots (jittered horizontally, sex-colored) */}
                   {values.map((sv, i) => {
                     const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
+                    const isInfluential = !!influentialSubjects?.has(sv.usubjid);
+                    const dotX = sexCx + jitterX(i, values.length, subColWidth);
+                    const dotY = yScale(sv.value);
+                    const handlers = {
+                      onMouseEnter: (e: React.MouseEvent) => { e.stopPropagation(); onDotEnter(sv, e); },
+                      onMouseLeave: (e: React.MouseEvent) => { e.stopPropagation(); onDotLeave(); },
+                      onClick: (e: React.MouseEvent) => { e.stopPropagation(); onDotClick(sv.usubjid); },
+                    };
+                    if (isInfluential) {
+                      return (
+                        <circle
+                          key={sv.usubjid}
+                          cx={dotX} cy={dotY}
+                          r={DOT_RADIUS_HOVER}
+                          fill={LOO_INFLUENTIAL_COLOR}
+                          opacity={1}
+                          style={{ cursor: "pointer" }}
+                          {...handlers}
+                        />
+                      );
+                    }
                     return (
                       <circle
                         key={sv.usubjid}
-                        cx={sexCx + jitterX(i, values.length, subColWidth)}
-                        cy={yScale(sv.value)}
+                        cx={dotX} cy={dotY}
                         r={isDotHovered ? DOT_RADIUS_HOVER : DOT_RADIUS}
                         fill={sexColor}
                         opacity={isDotHovered ? 1 : 0.7}
                         stroke={isDotHovered ? "var(--foreground)" : "none"}
                         strokeWidth={isDotHovered ? 1 : 0}
                         style={{ transition: "opacity 0.15s, r 0.1s", cursor: "pointer" }}
-                        onMouseEnter={(e) => { e.stopPropagation(); onDotEnter(sv, e); }}
-                        onMouseLeave={(e) => { e.stopPropagation(); onDotLeave(); }}
-                        onClick={(e) => { e.stopPropagation(); onDotClick(sv.usubjid); }}
+                        {...handlers}
                       />
                     );
                   })}
@@ -557,6 +566,7 @@ function SexPanel({
   onDotEnter,
   onDotLeave,
   onDotClick,
+  influentialSubjects,
 }: {
   showYAxis: boolean;
   grouped: Record<number, SubjectValue[]>;
@@ -569,6 +579,7 @@ function SexPanel({
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
+  influentialSubjects?: ReadonlySet<string>;
 }) {
   const [width, setWidth] = useState(200);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -689,20 +700,38 @@ function SexPanel({
             {/* Individual dots (jittered horizontally) */}
             {values.map((sv, i) => {
               const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
+              const isInfluential = !!influentialSubjects?.has(sv.usubjid);
+              const dotX = cx + jitterX(i, values.length, colWidth);
+              const dotY = yScale(sv.value);
+              const handlers = {
+                onMouseEnter: (e: React.MouseEvent) => { e.stopPropagation(); onDotEnter(sv, e); },
+                onMouseLeave: (e: React.MouseEvent) => { e.stopPropagation(); onDotLeave(); },
+                onClick: (e: React.MouseEvent) => { e.stopPropagation(); onDotClick(sv.usubjid); },
+              };
+              if (isInfluential) {
+                return (
+                  <circle
+                    key={sv.usubjid}
+                    cx={dotX} cy={dotY}
+                    r={DOT_RADIUS_HOVER}
+                    fill={LOO_INFLUENTIAL_COLOR}
+                    opacity={1}
+                    style={{ cursor: "pointer" }}
+                    {...handlers}
+                  />
+                );
+              }
               return (
                 <circle
                   key={sv.usubjid}
-                  cx={cx + jitterX(i, values.length, colWidth)}
-                  cy={yScale(sv.value)}
+                  cx={dotX} cy={dotY}
                   r={isDotHovered ? DOT_RADIUS_HOVER : DOT_RADIUS}
                   fill={color}
                   opacity={isDotHovered ? 1 : 0.7}
                   stroke={isDotHovered ? "var(--foreground)" : "none"}
                   strokeWidth={isDotHovered ? 1 : 0}
                   style={{ transition: "opacity 0.15s, r 0.1s", cursor: "pointer" }}
-                  onMouseEnter={(e) => { e.stopPropagation(); onDotEnter(sv, e); }}
-                  onMouseLeave={(e) => { e.stopPropagation(); onDotLeave(); }}
-                  onClick={(e) => { e.stopPropagation(); onDotClick(sv.usubjid); }}
+                  {...handlers}
                 />
               );
             })}

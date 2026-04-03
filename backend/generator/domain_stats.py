@@ -1013,12 +1013,16 @@ def _compute_fw_findings(
         group_stats = []
         control_values = None
         dose_groups_values = []
+        dose_groups_subj: list[dict] = []
 
         for dose_level in sorted(grp["dose_level"].unique()):
-            vals = grp[grp["dose_level"] == dose_level]["value"].dropna().values
+            dose_data = grp[grp["dose_level"] == dose_level].dropna(subset=["value"])
+            vals = dose_data["value"].values
+            subj_vals = dict(zip(dose_data["USUBJID"].values, vals.astype(float)))
             if len(vals) == 0:
                 group_stats.append({"dose_level": int(dose_level), "n": 0, "mean": None, "sd": None, "median": None})
                 dose_groups_values.append(np.array([]))
+                dose_groups_subj.append({})
                 continue
             group_stats.append({
                 "dose_level": int(dose_level),
@@ -1028,6 +1032,7 @@ def _compute_fw_findings(
                 "median": round(float(np.median(vals)), 2),
             })
             dose_groups_values.append(vals)
+            dose_groups_subj.append(subj_vals)
             if dose_level == 0:
                 control_values = vals
 
@@ -1038,7 +1043,14 @@ def _compute_fw_findings(
                 (int(dl), grp[grp["dose_level"] == dl]["value"].dropna().values)
                 for dl in sorted(grp["dose_level"].unique()) if dl > 0
             ]
-            pairwise = dunnett_pairwise(control_values, treated)
+            # LOO influential subject: pass USUBJID lists for index-to-ID mapping
+            all_dls = sorted(grp["dose_level"].unique())
+            ctrl_ids = list(dose_groups_subj[0].keys()) if dose_groups_subj and dose_groups_subj[0] else None
+            t_ids: dict[int, list[str]] = {}
+            for j, dl in enumerate(all_dls):
+                if dl > 0 and j < len(dose_groups_subj) and dose_groups_subj[j]:
+                    t_ids[int(dl)] = list(dose_groups_subj[j].keys())
+            pairwise = dunnett_pairwise(control_values, treated, control_ids=ctrl_ids, treated_ids=t_ids or None)
 
         trend_result = trend_test(dose_groups_values) if len(dose_groups_values) >= 2 else {"statistic": None, "p_value": None}
 

@@ -53,6 +53,7 @@ export interface PairwiseResult {
   loo_treated?: number | null;
   loo_control?: number | null;
   loo_control_fragile?: boolean | null;
+  loo_influential_subject?: string | null;
   h_lower?: number | null;
   odds_ratio?: number | null;
   risk_ratio?: number | null;
@@ -105,6 +106,8 @@ export interface UnifiedFinding {
   loo_control_fragile?: boolean | null;
   /** Control-side LOO stability from the driving pairwise. */
   loo_control?: number | null;
+  /** USUBJID of the most influential animal in the driving pairwise LOO. */
+  loo_influential_subject?: string | null;
   group_stats: GroupStat[];
   pairwise: PairwiseResult[];
   /** Scheduled-only stats (early-death subjects excluded from terminal domains). */

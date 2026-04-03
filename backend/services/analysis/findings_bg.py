@@ -140,7 +140,14 @@ def compute_bg_findings(
                 )["value"].to_numpy())
                 for dl in sorted(grp["dose_level"].unique().to_list()) if dl > 0
             ]
-            pairwise = dunnett_pairwise(control_values, treated)
+            # LOO influential subject: pass USUBJID lists for index-to-ID mapping
+            all_dls = sorted(grp["dose_level"].unique().to_list())
+            ctrl_ids = list(dose_groups_subj[0].keys()) if dose_groups_subj and dose_groups_subj[0] else None
+            t_ids: dict[int, list[str]] = {}
+            for j, dl in enumerate(all_dls):
+                if dl > 0 and j < len(dose_groups_subj) and dose_groups_subj[j]:
+                    t_ids[int(dl)] = list(dose_groups_subj[j].keys())
+            pairwise = dunnett_pairwise(control_values, treated, control_ids=ctrl_ids, treated_ids=t_ids or None)
             welch = welch_pairwise(control_values, treated)
             welch_map = {w["dose_level"]: w for w in welch}
             for pw in pairwise:

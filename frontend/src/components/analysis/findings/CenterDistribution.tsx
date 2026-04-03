@@ -8,13 +8,17 @@
  * driven by the parent chart panel's stepper.  A Recovery checkbox
  * (Phase 3) will swap the displayed population to recovery-arm animals.
  */
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useTimecourseSubject } from "@/hooks/useTimecourse";
 import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { StripPlotChart } from "../panes/StripPlotChart";
+import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import { StripPlotChart, LOO_INFLUENTIAL_COLOR } from "../panes/StripPlotChart";
+import { BivarScatterChart } from "../panes/BivarScatterChart";
+import type { BivarSubjectValue } from "../panes/BivarScatterChart";
+import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { UnifiedFinding } from "@/types/analysis";
 import type { TimecourseSubject } from "@/types/timecourse";
@@ -121,6 +125,63 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     };
   }, [subjectData, selectedDay, shouldIncludeSubject]);
 
+  // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
+  const { data: analyticsData } = useFindingsAnalyticsResult();
+  const influentialSubjects = useMemo(() => {
+    if (!analyticsData?.findings) return undefined;
+    const set = new Set<string>();
+    const ep = finding.endpoint_label ?? finding.finding;
+    for (const f of analyticsData.findings) {
+      if ((f.endpoint_label ?? f.finding) === ep && f.domain === finding.domain && f.loo_influential_subject) {
+        set.add(f.loo_influential_subject);
+      }
+    }
+    return set.size > 0 ? set : undefined;
+  }, [analyticsData?.findings, finding.endpoint_label, finding.finding, finding.domain]);
+
+  // OM domain: check if terminal_bw data is available for bivariate scatter
+  const hasBW = useMemo(
+    () => finding.domain === "OM" && (subjectData?.subjects.some((s) => s.terminal_bw != null) ?? false),
+    [finding.domain, subjectData],
+  );
+
+  const [scatterMode, setScatterMode] = useState(false);
+  // Reset scatter mode when finding changes (prevents stale scatter on navigation back)
+  useEffect(() => {
+    setScatterMode(false);
+  }, [finding.test_code, finding.domain]);
+  const activeScatter = scatterMode && hasBW;
+
+  // Terminal sacrifice day for bivariate scatter
+  const terminalDay = subjectData?.terminal_sacrifice_day ?? null;
+
+  // Bivariate scatter data: pair organ weight at terminal day with terminal_bw
+  const bivarSubjects = useMemo((): BivarSubjectValue[] => {
+    if (!activeScatter || !subjectData || !terminalDay) return [];
+    const result: BivarSubjectValue[] = [];
+    for (const s of subjectData.subjects) {
+      if (!shouldIncludeSubject(s)) continue;
+      if (s.terminal_bw == null) continue;
+      const match = s.values.find((v) => v.day === terminalDay);
+      if (match == null) continue;
+      result.push({
+        usubjid: s.usubjid,
+        sex: s.sex,
+        dose_level: s.dose_level,
+        dose_label: s.dose_label,
+        organ_weight: match.value,
+        body_weight: s.terminal_bw,
+      });
+    }
+    return result;
+  }, [activeScatter, subjectData, terminalDay, shouldIncludeSubject]);
+
+  // Sexes for bivar chart (may differ from strip plot sexes due to day filtering)
+  const bivarSexes = useMemo(() => {
+    const set = new Set(bivarSubjects.map((s) => s.sex));
+    return [...set].sort();
+  }, [bivarSubjects]);
+
   const handleSubjectClick = useCallback(
     (usubjid: string) => setSelectedSubject(usubjid),
     [setSelectedSubject],
@@ -136,7 +197,8 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     );
   }
 
-  if (isError || subjects.length === 0) {
+  // In scatter mode, check bivar data instead of strip data
+  if (!activeScatter && (isError || subjects.length === 0)) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
         {showRecoveryAnimals
@@ -146,11 +208,23 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     );
   }
 
+  const hasInfluential = !!influentialSubjects && influentialSubjects.size > 0;
+
   return (
     <div className="flex h-full flex-col">
-      {/* Recovery checkbox — only when study has recovery arm */}
-      {hasRecovery && (
-        <div className="flex shrink-0 items-center gap-1.5 pb-1">
+      {/* Toolbar: mode toggle + recovery checkbox + LOO legend */}
+      <div className="flex shrink-0 items-center gap-3 pb-1">
+        {hasBW && (
+          <PanePillToggle
+            value={activeScatter ? "scatter" : "dist"}
+            options={[
+              { value: "dist" as const, label: "Distribution" },
+              { value: "scatter" as const, label: "vs BW" },
+            ]}
+            onChange={(v) => setScatterMode(v === "scatter")}
+          />
+        )}
+        {!activeScatter && hasRecovery && (
           <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground/70">
             <input
               type="checkbox"
@@ -160,18 +234,37 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             />
             Recovery animals
           </label>
-        </div>
-      )}
+        )}
+        {hasInfluential && (
+          <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+            <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="3.5" fill={LOO_INFLUENTIAL_COLOR} /></svg>
+            <span>LOO influential</span>
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-h-0">
-        <StripPlotChart
-          subjects={subjects}
-          unit={unit}
-          sexes={sexes}
-          doseGroups={doseGroupsForChart}
-          onSubjectClick={handleSubjectClick}
-          mode={showRecoveryAnimals ? "recovery" : "terminal"}
-          interleaved
-        />
+        {activeScatter ? (
+          <BivarScatterChart
+            subjects={bivarSubjects}
+            organUnit={unit}
+            bwUnit="g"
+            sexes={bivarSexes}
+            doseGroups={doseGroupsForChart}
+            onSubjectClick={handleSubjectClick}
+            influentialSubject={finding.loo_influential_subject ?? undefined}
+          />
+        ) : (
+          <StripPlotChart
+            subjects={subjects}
+            unit={unit}
+            sexes={sexes}
+            doseGroups={doseGroupsForChart}
+            onSubjectClick={handleSubjectClick}
+            mode={showRecoveryAnimals ? "recovery" : "terminal"}
+            interleaved
+            influentialSubjects={influentialSubjects}
+          />
+        )}
       </div>
     </div>
   );
