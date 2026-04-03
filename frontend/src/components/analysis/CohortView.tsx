@@ -117,6 +117,7 @@ export function CohortView() {
         subjects={cohort.displaySubjects}
         selectedOrgan={cohort.selectedOrgan}
         findings={cohort.findings}
+        selectedSubjectId={selectedSubjectId}
       />
     </div>
   );

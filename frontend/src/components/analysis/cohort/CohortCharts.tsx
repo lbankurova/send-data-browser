@@ -18,6 +18,7 @@ interface Props {
   subjects: CohortSubject[];
   selectedOrgan: string | null;
   findings: UnifiedFinding[];
+  selectedSubjectId: string | null;
 }
 
 // Distinct colors for individual subjects in charts
@@ -28,7 +29,7 @@ const SUBJECT_COLORS = [
   "#10b981", "#eab308", "#fb923c", "#e11d48", "#7c3aed",
 ];
 
-export function CohortCharts({ studyId, subjects, selectedOrgan, findings }: Props) {
+export function CohortCharts({ studyId, subjects, selectedOrgan, findings, selectedSubjectId }: Props) {
   const subjectIds = useMemo(() => subjects.map((s) => s.usubjid), [subjects]);
   const { data: comparison } = useSubjectComparison(studyId, subjectIds);
 
@@ -44,8 +45,33 @@ export function CohortCharts({ studyId, subjects, selectedOrgan, findings }: Pro
       controlBW: comparison.control_stats?.bw ?? null,
       mode: "baseline",
     };
-    return buildBWComparisonOption(input);
-  }, [comparison, subjects]);
+    const option = buildBWComparisonOption(input);
+
+    // Subject highlight: when a subject is selected, bold its line and fade others
+    if (selectedSubjectId && option.series && Array.isArray(option.series)) {
+      const selectedShortId = selectedSubjectId.split("-").pop() ?? selectedSubjectId;
+      for (const s of option.series) {
+        const ser = s as Record<string, unknown>;
+        const name = (ser.name as string) ?? "";
+        // Skip control band/mean lines (start with "_")
+        if (name.startsWith("_") || name.startsWith("Control")) continue;
+        const isSelected = name.includes(selectedShortId);
+        if (isSelected) {
+          ser.lineStyle = { ...(ser.lineStyle as object ?? {}), width: 3 };
+          ser.z = 10;
+          ser.symbolSize = 6;
+          ser.showSymbol = true;
+        } else {
+          ser.lineStyle = { ...(ser.lineStyle as object ?? {}), color: "#E5E7EB", width: 1, opacity: 0.3 };
+          ser.itemStyle = { color: "#E5E7EB", opacity: 0.3 };
+          ser.z = 0;
+          ser.showSymbol = false;
+        }
+      }
+    }
+
+    return option;
+  }, [comparison, subjects, selectedSubjectId]);
 
   // ── Organ-contextual chart ─────────────────────────────────
   const organChartOption = useMemo((): EChartsOption | null => {
