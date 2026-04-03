@@ -533,6 +533,110 @@ def assess_a3_lb(
 
 
 # ---------------------------------------------------------------------------
+# A-3 assessment for BW (body weight) domain
+# ---------------------------------------------------------------------------
+
+def assess_a3_bw(
+    treated_group_mean: float | None,
+    sex: str,
+    strain: str | None,
+    duration_days: int | None,
+    *,
+    control_group_mean: float | None = None,
+    species: str | None = None,
+) -> dict:
+    """Assess A-3 factor for BW findings: is the treated-group mean within HCD?
+
+    Looks up terminal body weight reference ranges from the BW HCD database
+    (populated by etl.hcd_bw_etl from NTP DTT IAD data — 117K records, 11 strains).
+
+    The BW HCD database is keyed by strain/sex/duration (no organ dimension —
+    BW is a whole-animal measurement). Query: query_bw() on the SQLite DB.
+
+    Returns dict with:
+      result: 'within_hcd' | 'outside_hcd' | 'no_hcd'
+      score: -0.5 | +0.5 | 0.0
+      detail: human-readable annotation
+      domain: 'BW'
+    Plus optional extended fields from SQLite:
+      percentile_rank, n, study_count, source
+    """
+    if treated_group_mean is None:
+        return {"result": "no_hcd", "score": 0.0, "detail": "No treated-group mean available",
+                "domain": "BW"}
+
+    dur_cat = _duration_to_category(duration_days)
+    if not dur_cat:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"Duration {duration_days}d outside HCD coverage",
+                "domain": "BW"}
+
+    sqlite_db = _load_sqlite_db()
+    if sqlite_db is None or not getattr(sqlite_db, 'bw_available', False):
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": "BW HCD database not available",
+                "domain": "BW"}
+
+    # Resolve strain via OM strain aliases (same NTP strains)
+    resolved_strain = sqlite_db.resolve_strain(strain)
+    if not resolved_strain:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"Strain '{strain}' not in HCD database",
+                "domain": "BW"}
+
+    hcd = sqlite_db.query_bw(resolved_strain, sex, dur_cat, species=species)
+    if not hcd:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"No BW HCD for {resolved_strain}/{sex}/{dur_cat}",
+                "domain": "BW"}
+
+    # Evaluate: is treated mean within [lower, upper]?
+    lower = hcd["lower"]
+    upper = hcd["upper"]
+    within = lower <= treated_group_mean <= upper
+
+    result_str = "within_hcd" if within else "outside_hcd"
+    score = -0.5 if within else 0.5
+
+    detail = (
+        f"Treated mean {treated_group_mean:.1f} vs BW HCD "
+        f"[{lower:.1f}, {upper:.1f}] "
+        f"(ref: {hcd['mean']:.1f}+/-{hcd['sd']:.1f}, n={hcd['n']}, "
+        f"{hcd['study_count']} studies, {hcd['source']})"
+    )
+
+    out: dict = {
+        "result": result_str,
+        "score": score,
+        "detail": detail,
+        "domain": "BW",
+        "n": hcd["n"],
+        "study_count": hcd["study_count"],
+        "source": hcd["source"],
+    }
+
+    # Percentile rank
+    pct = sqlite_db.bw_percentile_rank(treated_group_mean, resolved_strain, sex, dur_cat)
+    if pct is not None:
+        out["percentile_rank"] = pct
+
+    # Single-source flag (only one NTP study contributed — lower confidence)
+    if hcd.get("single_source"):
+        out["single_source"] = True
+
+    # Control vs HCD check
+    if control_group_mean is not None:
+        hcd_mean = hcd["mean"]
+        hcd_sd = hcd["sd"]
+        _check_control_vs_hcd(out, control_group_mean, lower, upper, hcd_mean, hcd_sd)
+    else:
+        out["control_outside_hcd"] = False
+        out["control_hcd_detail"] = "No control mean available"
+
+    return out
+
+
+# ---------------------------------------------------------------------------
 # TS domain extraction helpers
 # ---------------------------------------------------------------------------
 

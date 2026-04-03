@@ -966,6 +966,35 @@ def _compute_a3_for_lb(
     )
 
 
+def _compute_a3_for_bw(
+    finding: dict,
+    species: str | None,
+    strain: str | None,
+    duration_days: int | None,
+) -> dict:
+    """Compute A-3 (HCD) score for a BW (body weight) finding.
+
+    Compares the highest-dose group mean against the BW HCD reference range
+    for the matching strain/sex/duration.
+    """
+    from services.analysis.hcd import assess_a3_bw
+
+    gs = finding.get("group_stats", [])
+    treated_mean = None
+    control_mean = None
+    if gs:
+        treated_mean = gs[-1].get("mean")
+        control_mean = gs[0].get("mean")  # dose_level 0 = vehicle control
+
+    sex = finding.get("sex", "")
+
+    return assess_a3_bw(
+        treated_mean, sex, strain, duration_days,
+        control_group_mean=control_mean,
+        species=species,
+    )
+
+
 def _evaluate_b6_for_finding(
     finding: dict,
     index,
@@ -1021,7 +1050,7 @@ def assess_finding_with_context(
     findings. B-6 can escalate non-adverse findings to tr_adverse when they
     match a documented progression chain.
 
-    A-3 (HCD) is computed for OM findings and annotated on the finding.
+    A-3 (HCD) is computed for OM, LB, and BW findings and annotated on the finding.
 
     Args:
         finding: The finding dict to assess.
@@ -1050,6 +1079,15 @@ def assess_finding_with_context(
         if a3_result["result"] != "no_hcd":
             finding["_hcd_assessment"] = a3_result
 
+    # Compute A-3 for BW findings (body weight vs HCD reference ranges)
+    if domain == "BW":
+        a3_result = _compute_a3_for_bw(
+            finding, species, strain, duration_days,
+        )
+        if a3_result["result"] != "no_hcd":
+            a3_score = a3_result["score"]
+            finding["_hcd_assessment"] = a3_result
+
     # OM domain → two-gate organ-specific classification
     if domain == "OM":
         return _assess_om_two_gate(finding, species, a3_score)
@@ -1063,8 +1101,8 @@ def assess_finding_with_context(
         )
         return classification
 
-    # Everything else → base ECETOC assessment
-    return assess_finding(finding)
+    # Everything else → base ECETOC assessment (a3_score may be non-zero for BW)
+    return assess_finding(finding, a3_score)
 
 
 def _classify_histopath(finding: dict, index, species: str | None) -> str:
