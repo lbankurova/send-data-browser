@@ -16,7 +16,7 @@ import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_
 import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
-import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
+import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
@@ -34,6 +34,7 @@ export interface AnalyticsWorkerOutput {
   organCoherence: Map<string, OrganCoherence>;
   labMatches: LabClinicalMatch[];
   signalScores: Map<string, number>;
+  evidenceScores: Map<string, number>;
   endpointSexes: Map<string, string[]>;
   hasWelchPValues: boolean;
 }
@@ -48,6 +49,7 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
       organCoherence: new Map(),
       labMatches: [],
       signalScores: new Map(),
+      evidenceScores: new Map(),
       endpointSexes: new Map(),
       hasWelchPValues: false,
     };
@@ -181,7 +183,11 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
   }
   const scored = withSignalScores(endpoints, boostMap);
   const signalScores = new Map<string, number>();
-  for (const ep of scored) signalScores.set(ep.endpoint_label, ep.signal);
+  const evidenceScores = new Map<string, number>();
+  for (const ep of scored) {
+    signalScores.set(ep.endpoint_label, ep.signal);
+    evidenceScores.set(ep.endpoint_label, computeEndpointEvidence(ep, boostMap.get(ep.endpoint_label)));
+  }
 
   // 7. Endpoint sexes
   const endpointSexes = new Map<string, string[]>();
@@ -193,6 +199,7 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
     organCoherence,
     labMatches,
     signalScores,
+    evidenceScores,
     endpointSexes,
     hasWelchPValues: checkWelchPValues(findings),
   };

@@ -28,7 +28,7 @@ import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
 import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
-import { withSignalScores, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
+import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 
 const ALL_FILTERS: FindingsFilters = {
@@ -42,6 +42,7 @@ const EMPTY_ANALYTICS: FindingsAnalytics = {
   organCoherence: new Map(),
   labMatches: [],
   signalScores: new Map(),
+  evidenceScores: new Map(),
   endpointSexes: new Map(),
 };
 
@@ -114,6 +115,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
         organCoherence: workerResult.organCoherence,
         labMatches: workerResult.labMatches,
         signalScores: workerResult.signalScores,
+        evidenceScores: workerResult.evidenceScores,
         endpointSexes: workerResult.endpointSexes,
         activeEffectSizeMethod: statMethods.effectSize,
         activeMultiplicityMethod: statMethods.multiplicity,
@@ -280,7 +282,11 @@ function computeAnalyticsSync(
   }
   const scored = withSignalScores(endpoints, boostMap);
   const signalScores = new Map<string, number>();
-  for (const ep of scored) signalScores.set(ep.endpoint_label, ep.signal);
+  const evidenceScores = new Map<string, number>();
+  for (const ep of scored) {
+    signalScores.set(ep.endpoint_label, ep.signal);
+    evidenceScores.set(ep.endpoint_label, computeEndpointEvidence(ep, boostMap.get(ep.endpoint_label)));
+  }
 
   const endpointSexes = new Map<string, string[]>();
   for (const ep of endpoints) endpointSexes.set(ep.endpoint_label, ep.sexes);
@@ -291,6 +297,7 @@ function computeAnalyticsSync(
     organCoherence,
     labMatches,
     signalScores,
+    evidenceScores,
     endpointSexes,
     hasWelchPValues: checkWelchPValues(findings),
   };

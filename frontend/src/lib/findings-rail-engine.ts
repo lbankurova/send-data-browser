@@ -124,6 +124,38 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   return Math.max(baseConstants + evidence * clinMult, floor);
 }
 
+/** Evidence portion of the signal score — before clinical multiplier.
+ *  statistical + patternWeight + syndromeBoost + coherenceBoost + sexConcordance.
+ *  Independent of severity/TR classification and clinical tier. */
+export function computeEndpointEvidence(ep: EndpointSummary, boosts?: SignalBoosts): number {
+  const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
+  const rawGLower = ep.gLower ?? (isContinuous && ep.maxEffectSize !== null ? Math.abs(ep.maxEffectSize) : 0);
+  const looFactor = Math.max(0, Math.min(ep.looStability ?? 1.0, 1.0));
+  const gLower = rawGLower * looFactor;
+  const statistical = isContinuous || gLower > 0
+    ? sigmoid(gLower, DEFAULT_SIGMOID_SCALE)
+    : (ep.maxIncidence != null ? sigmoid(ep.maxIncidence * 3, DEFAULT_SIGMOID_SCALE) : 0);
+
+  let rawPatternWeight = PATTERN_WEIGHTS[ep.pattern] ?? 0;
+  if (ep.bySex && ep.bySex.size >= 2) {
+    const sexPatterns = [...ep.bySex.values()].map(s => s.pattern);
+    if (new Set(sexPatterns).size > 1) {
+      for (const s of ep.bySex.values()) {
+        const w = PATTERN_WEIGHTS[s.pattern] ?? 0;
+        if (w > rawPatternWeight) rawPatternWeight = w;
+      }
+    }
+  }
+  const confMult = boosts?.confidenceMultiplier ?? 1;
+  const patternMult = isContinuous ? 1.0 : INCIDENCE_PATTERN_BOOST;
+  const patternWeight = rawPatternWeight * confMult * patternMult;
+
+  const synBoost = boosts?.syndromeBoost ?? 0;
+  const cohBoost = boosts?.coherenceBoost ?? 0;
+  const sexConc = boosts?.sexConcordanceBoost ?? 0;
+  return statistical + patternWeight + synBoost + cohBoost + sexConc;
+}
+
 // ─── Endpoint confidence classification ──────────────────────
 
 export type EndpointConfidence = "HIGH" | "MODERATE" | "LOW";

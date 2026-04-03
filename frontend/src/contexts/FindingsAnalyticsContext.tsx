@@ -13,6 +13,8 @@ export interface FindingsAnalytics {
   organCoherence: Map<string, OrganCoherence>;
   labMatches: LabClinicalMatch[];
   signalScores: Map<string, number>;
+  /** Evidence portion of the signal score (before clinical multiplier). */
+  evidenceScores: Map<string, number>;
   /** Aggregate sexes per endpoint_label (e.g., ["M","F"] for endpoints with both). */
   endpointSexes: Map<string, string[]>;
   /** Active effect size method (for dynamic labels). */
@@ -44,6 +46,7 @@ const defaultAnalytics: FindingsAnalytics = {
   organCoherence: new Map(),
   labMatches: [],
   signalScores: new Map(),
+  evidenceScores: new Map(),
   endpointSexes: new Map(),
 };
 

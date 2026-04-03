@@ -184,7 +184,7 @@ export function FindingsView() {
   // Analytics from Layout-level provider — single derivation shared across view, rail, and context panel
   const { analytics, data, isLoading, isFetching, isPlaceholderData, error } = useFindingsAnalyticsResult();
   const { endpoints: endpointSummaries, syndromes, organCoherence, labMatches,
-          signalScores: signalScoreMap, endpointSexes } = analytics;
+          signalScores: signalScoreMap, evidenceScores: evidenceScoreMap, endpointSexes } = analytics;
 
   // Stable ref to data — avoids recreating handleEndpointSelect on every data change,
   // which would cascade into event bus re-registration and rail state re-push.
@@ -707,6 +707,8 @@ export function FindingsView() {
               <div className="flex-1 overflow-hidden">
                 <OrganToxicityRadar
                   endpoints={endpointSummaries}
+                  signalScores={signalScoreMap}
+                  evidenceScores={evidenceScoreMap}
                   highlightOrgans={radarHighlightOrgans}
                 />
               </div>
