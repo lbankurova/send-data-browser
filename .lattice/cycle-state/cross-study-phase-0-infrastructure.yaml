@@ -1,0 +1,47 @@
+topic: cross-study-phase-0-infrastructure
+title: "Cross-Study Phase 0: Infrastructure Corrections (Km Table + Terminology Normalization)"
+started: 2026-04-04T03:00:00Z
+phase: complete
+current_step: complete
+research_doc: docs/_internal/research/cross-study-analysis-deep-research.md
+research_status: validated-external  # research done under broader cross-study-analysis topic
+spec_doc: docs/_internal/incoming/cross-study-phase-0-infrastructure.md
+broader_synthesis: docs/_internal/incoming/cross-study-analysis-synthesis.md
+synthesis_doc: docs/_internal/incoming/cross-study-phase-0-infrastructure-synthesis.md
+synthesis_status: validated
+peer_reviews:
+  research_r1: docs/_internal/research/peer-reviews/cross-study-analysis-view-review.md
+  research_r2: docs/_internal/research/peer-reviews/cross-study-deep-research-review.md
+  architect: docs/_internal/research/peer-reviews/cross-study-phase-0-infrastructure-architect-review.md
+  plan_r1: docs/_internal/research/peer-reviews/cross-study-phase-0-infrastructure-synthesis-review.md
+  plan_r2: docs/_internal/research/peer-reviews/cross-study-phase-0-infrastructure-synthesis-review-r2.md
+checkpoints:
+  build.0:
+    completed: 2026-04-04T03:00:00Z
+    key_decisions:
+      - "No FAILED entries in decisions.log relevant to this topic (only 1 entry: histopath-sensitivity COMPLETED)"
+      - "No bug-patterns.md file exists yet"
+      - "Code quality guardrails: pk_integration.py listed as domain-critical (_compute_dose_proportionality); KM_TABLE not individually flagged"
+      - "Code quality guardrails P3: pk_integration.py _compute_accumulation() is speculative stub -- delete or implement"
+      - "km-factors.json has 9 species with correct values but pk_integration.py KM_TABLE is stale hardcoded copy with WRONG minipig Km=20 (should be 35)"
+      - "km-factors.json itself incomplete: missing ferret, marmoset, squirrel monkey, baboon, human child, micro-pig vs mini-pig distinction"
+      - "normalize_test_code() exists in send_knowledge.py but NOT wired into generation pipeline"
+      - "normalize_organ() exists in send_knowledge.py but NOT wired into generation pipeline"
+      - "classify_severity() exists in classification.py and IS wired (via _enrich_finding)"
+      - "organ_system field set to hardcoded 'general' in _with_defaults (findings_pipeline.py:102) -- should call normalize_organ()"
+      - "canonical_testcd field does NOT exist on finding records"
+      - "severity_grade_5pt field does NOT exist on finding records (avg_severity and severity_grade_counts exist in group_stats for MI)"
+      - "No prior cycle touches these files -- no cross-topic overlap"
+      - "histopath-sensitivity cycle modifies view_dataframes.py but different function (build_target_organ_summary), no conflict"
+    implementation_context:
+      km_table_location: "backend/generator/pk_integration.py lines 27-36 -- hardcoded dict, 9 species"
+      km_json_location: "shared/config/km-factors.json -- 9 species, correct minipig=27 (micro-pig), missing mini-pig=35"
+      km_discrepancy: "pk_integration.py has MINIPIG Km=20 (WRONG). km-factors.json has minipig Km=27 (correct for micro-pig). Neither has mini-pig Km=35."
+      km_approach: "Update km-factors.json to full 15-species FDA table. Have pk_integration.py load from JSON instead of hardcoding. Single source of truth."
+      normalize_testcd_location: "backend/services/analysis/send_knowledge.py:normalize_test_code() line 157-171"
+      normalize_organ_location: "backend/services/analysis/send_knowledge.py:normalize_organ() line 222-261"
+      enrichment_pipeline: "findings_pipeline.py:_enrich_finding() -> enrich_findings() -> process_findings()"
+      wire_point: "findings_pipeline.py:_with_defaults() line 88-105 -- add canonical_testcd, fix organ_system, add severity_grade_5pt"
+      severity_data_source: "MI findings have avg_severity and severity_grade_counts in group_stats; need to extract max severity as top-level field"
+      organ_system_map: "biomarker-catalog.json maps TESTCD -> organ_system for LB; organ-aliases.json maps specimen -> canonical organ for MI/MA/OM"
+    output: "state checkpoint -- implementation context captured"

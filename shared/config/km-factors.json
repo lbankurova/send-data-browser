@@ -1,18 +1,24 @@
 {
   "$schema": "../schemas/km-factors.schema.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "_source": "FDA Guidance for Industry: Estimating the Maximum Safe Starting Dose in Initial Clinical Trials for Therapeutics in Adult Healthy Volunteers (2005), Table 1",
-  "_note": "HED (mg/kg) = Animal NOAEL (mg/kg) × (Animal Km / Human Km)",
+  "_literature_source": "Reagan-Shaw et al. 2008 (FASEB J 22:659-661); Nair & Jacob 2016 (J Basic Clin Pharm 7:27-31)",
+  "_note": "HED (mg/kg) = Animal NOAEL (mg/kg) x (Animal Km / Human Km). conversion_factor = Human Km / Animal Km (FDA-published rounded values for FDA entries).",
   "human_km": 37,
   "species": {
-    "mouse": { "km": 3, "body_weight_kg": 0.02 },
-    "hamster": { "km": 5, "body_weight_kg": 0.08 },
-    "rat": { "km": 6, "body_weight_kg": 0.15 },
-    "ferret": { "km": 7, "body_weight_kg": 0.30 },
-    "guinea_pig": { "km": 8, "body_weight_kg": 0.40 },
-    "rabbit": { "km": 12, "body_weight_kg": 1.80 },
-    "monkey": { "km": 12, "body_weight_kg": 3.00 },
-    "dog": { "km": 20, "body_weight_kg": 10.0 },
-    "minipig": { "km": 27, "body_weight_kg": 20.0 }
+    "mouse":          { "km": 3,  "body_weight_kg": 0.02,  "conversion_factor": 12.3 },
+    "hamster":        { "km": 5,  "body_weight_kg": 0.08,  "conversion_factor": 7.4 },
+    "rat":            { "km": 6,  "body_weight_kg": 0.15,  "conversion_factor": 6.2 },
+    "ferret":         { "km": 7,  "body_weight_kg": 0.30,  "conversion_factor": 5.3 },
+    "guinea_pig":     { "km": 8,  "body_weight_kg": 0.40,  "conversion_factor": 4.6 },
+    "rabbit":         { "km": 12, "body_weight_kg": 1.80,  "conversion_factor": 3.1 },
+    "monkey":         { "km": 12, "body_weight_kg": 3.00,  "conversion_factor": 3.1 },
+    "dog":            { "km": 20, "body_weight_kg": 10.0,  "conversion_factor": 1.8 },
+    "minipig":        { "km": 27, "body_weight_kg": 40.0,  "conversion_factor": 1.4 },
+    "human":          { "km": 37, "body_weight_kg": 60.0,  "conversion_factor": 1.0, "_reference_only": true },
+    "human_child":    { "km": 25, "body_weight_kg": 20.0,  "conversion_factor": 1.5 },
+    "marmoset":       { "km": 6,  "body_weight_kg": 0.35,  "conversion_factor": 6.2, "_source": "literature" },
+    "squirrel_monkey": { "km": 7, "body_weight_kg": 0.60,  "conversion_factor": 5.3, "_source": "literature" },
+    "baboon":         { "km": 20, "body_weight_kg": 12.0,  "conversion_factor": 1.8, "_source": "literature" }
   }
 }

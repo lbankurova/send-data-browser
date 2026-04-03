@@ -21,19 +21,67 @@ from services.xpt_processor import read_xpt
 log = logging.getLogger(__name__)
 
 ANNOTATIONS_DIR = Path(__file__).resolve().parent.parent / "annotations"
+_KM_FACTORS_PATH = Path(__file__).resolve().parent.parent.parent / "shared" / "config" / "km-factors.json"
 
-
-# FDA body surface area scaling factors (Km-based)
-KM_TABLE = {
-    "MOUSE":      {"km": 3,  "conversion_factor": 12.3},
-    "HAMSTER":    {"km": 5,  "conversion_factor": 7.4},
-    "RAT":        {"km": 6,  "conversion_factor": 6.2},
-    "GUINEA PIG": {"km": 8,  "conversion_factor": 4.6},
-    "RABBIT":     {"km": 12, "conversion_factor": 3.1},
-    "MONKEY":     {"km": 12, "conversion_factor": 3.1},
-    "DOG":        {"km": 20, "conversion_factor": 1.8},
-    "MINIPIG":    {"km": 20, "conversion_factor": 1.8},
+# JSON key -> SEND DM SPECIES values (explicit mapping, not algorithmic)
+_JSON_KEY_TO_SEND = {
+    "mouse": "MOUSE", "hamster": "HAMSTER", "rat": "RAT",
+    "ferret": "FERRET", "guinea_pig": "GUINEA PIG",
+    "rabbit": "RABBIT", "monkey": "MONKEY", "dog": "DOG",
+    "minipig": "MINIPIG",
+    "marmoset": "MARMOSET", "squirrel_monkey": "SQUIRREL MONKEY",
+    "baboon": "BABOON", "human_child": "HUMAN CHILD",
 }
+
+# Additional SEND DM SPECIES aliases -> JSON key
+_SEND_ALIASES = {
+    "MINI PIG": "minipig",
+    "GOTTINGEN MINIPIG": "minipig",
+    "CYNOMOLGUS": "monkey",
+    "CYNOMOLGUS MONKEY": "monkey",
+}
+
+_KM_TABLE_CACHE: dict | None = None
+
+
+def _load_km_table() -> dict:
+    """Load Km factors from km-factors.json. Lazy-loaded, module-level cache.
+
+    Returns dict keyed by SEND SPECIES string (uppercase), values are
+    {"km": int, "conversion_factor": float, "body_weight_kg": float}.
+    Skips entries marked _reference_only (human).
+    """
+    global _KM_TABLE_CACHE
+    if _KM_TABLE_CACHE is not None:
+        return _KM_TABLE_CACHE
+
+    with open(_KM_FACTORS_PATH) as fh:
+        data = json.load(fh)
+
+    table: dict = {}
+    for json_key, entry in data["species"].items():
+        if entry.get("_reference_only"):
+            continue
+        send_key = _JSON_KEY_TO_SEND.get(json_key)
+        if send_key is None:
+            continue
+        table[send_key] = {
+            "km": entry["km"],
+            "conversion_factor": entry["conversion_factor"],
+            "body_weight_kg": entry.get("body_weight_kg"),
+        }
+
+    # Register SEND aliases (point to the same entry)
+    for alias, json_key in _SEND_ALIASES.items():
+        send_key = _JSON_KEY_TO_SEND.get(json_key)
+        if send_key and send_key in table:
+            table[alias] = table[send_key]
+
+    assert "RAT" in table and table["RAT"]["km"] == 6, "Km table smoke check failed"
+    _KM_TABLE_CACHE = table
+    return _KM_TABLE_CACHE
+
+
 
 # Primary PK parameters to extract (in priority order for display)
 PRIMARY_PARAMS = ["CMAX", "AUCLST", "AUCTAU", "TMAX", "TLST"]
@@ -116,7 +164,11 @@ def build_pk_integration(
 
     # Species + HED/MRSD
     species = _get_species(study)
-    km_info = KM_TABLE.get(species.upper(), None) if species else None
+    km_table = _load_km_table()
+    species_upper = species.upper().strip() if species else ""
+    km_info = km_table.get(species_upper)
+    if species and km_info is None:
+        log.warning("Species '%s' not found in Km table -- HED/MRSD unavailable", species)
 
     # Find NOAEL and LOAEL dose levels from noael summary
     noael_dose_level, loael_dose_level, noael_dose_value = _get_noael_loael_levels(noael)

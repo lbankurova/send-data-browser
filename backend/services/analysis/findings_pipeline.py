@@ -25,7 +25,7 @@ from services.analysis.corroboration import compute_corroboration, compute_chain
 from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
-from services.analysis.send_knowledge import BIOMARKER_MAP, get_direction_of_concern
+from services.analysis.send_knowledge import BIOMARKER_MAP, get_direction_of_concern, normalize_test_code
 
 log = logging.getLogger(__name__)
 
@@ -102,6 +102,8 @@ def _with_defaults(f: dict) -> dict:
     f.setdefault("organ_system", "general")
     f.setdefault("endpoint_label", f.get("test_name", f.get("test_code", "")))
     f.setdefault("is_derived", False)
+    f.setdefault("canonical_testcd", None)
+    f.setdefault("severity_grade_5pt", None)
     return f
 
 
@@ -126,6 +128,7 @@ def _enrich_finding(
     _max_el_loo_ctrl_fragile = None  # control-fragile flag from the driving pairwise
     _max_el_loo_control = None  # control-side LOO stability from the driving pairwise
     _max_el_loo_subject = None  # influential animal USUBJID from the driving pairwise
+    _max_el_loo_per_subject = None  # per-animal LOO ratios from the driving pairwise
     is_incidence = f.get("data_type") == "incidence"
     for pw in f.get("pairwise", []):
         gl = pw.get("g_lower")
@@ -135,6 +138,7 @@ def _enrich_finding(
             _max_el_loo_ctrl_fragile = pw.get("loo_control_fragile")
             _max_el_loo_control = pw.get("loo_control")
             _max_el_loo_subject = pw.get("loo_influential_subject")
+            _max_el_loo_per_subject = pw.get("loo_per_subject")
         if not is_incidence:
             hl = pw.get("h_lower")
             if hl is not None and hl > _max_el:
@@ -143,11 +147,16 @@ def _enrich_finding(
                 _max_el_loo_ctrl_fragile = None
                 _max_el_loo_control = None
                 _max_el_loo_subject = None
+                _max_el_loo_per_subject = None
     f["max_effect_lower"] = round(_max_el, 4) if _max_el > 0 else None
     f["loo_stability"] = _max_el_loo
     f["loo_control_fragile"] = _max_el_loo_ctrl_fragile
     f["loo_control"] = _max_el_loo_control
     f["loo_influential_subject"] = _max_el_loo_subject
+    # Per-subject LOO ratios: generation-time field (distinct from serve-time
+    # _pattern_override / _system_dose_level which are applied in _apply_overrides).
+    # Baked into generated JSON, consumed by frontend LooSensitivityPane.
+    f["loo_per_subject"] = _max_el_loo_per_subject
 
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
@@ -208,6 +217,31 @@ def _enrich_finding(
         f.get("test_code"),
         f.get("domain"),
     )
+
+    # Canonical test code for cross-study identity matching
+    # MI/MA/CL/OM/TF/DS: case-normalized only, not synonym-resolved (Phase 2+ for INHAND synonym mapping)
+    tc = f.get("test_code", "")
+    if f.get("domain") in ("LB", "BW", "FW", "EG", "VS", "BG"):
+        f["canonical_testcd"] = normalize_test_code(tc) if tc else None
+    else:
+        f["canonical_testcd"] = tc.upper().strip() if tc else None
+
+    # Severity grade (5-point scale) for incidence findings with grading
+    if f.get("data_type") == "incidence":
+        max_grade = 0
+        for gs in f.get("group_stats", []):
+            if gs.get("dose_level", 0) > 0:  # treated groups only
+                sgc = gs.get("severity_grade_counts", {})
+                for grade_str in sgc:
+                    try:
+                        g = int(grade_str)
+                    except (ValueError, TypeError):
+                        continue
+                    if g > max_grade:
+                        max_grade = g
+        f["severity_grade_5pt"] = max_grade if max_grade > 0 else None
+    else:
+        f["severity_grade_5pt"] = None
 
     # Derived endpoint flag — calculated ratios/indices create tautological
     # correlations with their source components.  Consumers (correlation engine,
