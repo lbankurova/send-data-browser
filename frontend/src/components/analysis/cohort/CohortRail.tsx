@@ -3,11 +3,13 @@
  * reference indicator, filter pills, and multi-select rows.
  */
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { X, Pin, PinOff, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { X, Pin, PinOff, Pencil, Trash2 } from "lucide-react";
+// ChevronDown/ChevronRight will be needed when grouped modes are added
 import { cn } from "@/lib/utils";
 import { FilterMultiSelect, FilterSearch, FilterClearButton, FilterSelect } from "@/components/ui/FilterBar";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { useCohort } from "@/contexts/CohortContext";
+import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { FilterPanel, FilterPanelToggle } from "./FilterPanel";
 import type { CohortPreset, CohortSubject, FilterPredicate, SavedCohort, CohortSortKey } from "@/types/cohort";
 import { SORT_KEY_LABELS } from "@/types/cohort";
@@ -81,7 +83,7 @@ export function CohortRail() {
   const {
     activePresets, togglePreset,
     filterGroup, removePredicate, setFilterOperator,
-    filteredSubjects, selectedSubjects, toggleSubject,
+    filteredSubjects,
     includeTK, setIncludeTK,
     doseFilter, setDoseFilter,
     sexFilter, setSexFilter,
@@ -98,17 +100,17 @@ export function CohortRail() {
     renameSavedCohort, togglePinSavedCohort,
   } = useCohort();
 
+  const { setSelectedSubject, selectedSubject } = useViewSelection();
+
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [showMoreSaved, setShowMoreSaved] = useState(false);
-  const [allExpanded, setAllExpanded] = useState(true);
 
-  // Summary counts
-  const selected = filteredSubjects.filter((s) => selectedSubjects.has(s.usubjid));
-  const doseGroupCount = new Set(selected.map((s) => s.doseGroupOrder)).size;
-  const maleCount = selected.filter((s) => s.sex === "M").length;
-  const femaleCount = selected.filter((s) => s.sex === "F").length;
+  // Summary counts (all filtered subjects — "All" card shows cohort totals)
+  const doseGroupCount = new Set(filteredSubjects.map((s) => s.doseGroupOrder)).size;
+  const maleCount = filteredSubjects.filter((s) => s.sex === "M").length;
+  const femaleCount = filteredSubjects.filter((s) => s.sex === "F").length;
 
   // Dose group options for filter
   const doseOptions = useMemo(() => {
@@ -242,7 +244,7 @@ export function CohortRail() {
             <button type="button" onClick={clearReference} className="ml-auto text-primary hover:text-primary/80">Clear</button>
           </div>
           <div className="text-muted-foreground mt-0.5">
-            vs {selected.length} subjects &middot;{" "}
+            vs {filteredSubjects.length} subjects &middot;{" "}
             <span style={{ color: SEX_COLOR.F }}>F {femaleCount}</span> /{" "}
             <span style={{ color: SEX_COLOR.M }}>M {maleCount}</span>
           </div>
@@ -257,7 +259,7 @@ export function CohortRail() {
       ) : (
         <div className="border-b px-3 py-1.5 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <span className="font-medium">{selected.length} subjects</span>
+            <span className="font-medium">{filteredSubjects.length} subjects</span>
             <span>&middot;</span>
             <span>{doseGroupCount} dose grp{doseGroupCount !== 1 ? "s" : ""}</span>
             <span>&middot;</span>
@@ -365,16 +367,15 @@ export function CohortRail() {
           </div>
         ) : (
           <>
-            {/* "All" parent card */}
+            {/* "All" parent card — click = cohort overview (clear subject selection) */}
             <button
               type="button"
               className={cn(
                 "flex w-full items-center gap-2 px-3 py-1.5 text-xs cursor-pointer transition-colors",
-                allExpanded ? "bg-accent/50" : "hover:bg-accent/30",
+                !selectedSubject ? "bg-accent/50 border-l-2 border-primary" : "hover:bg-accent/30",
               )}
-              onClick={() => setAllExpanded((p) => !p)}
+              onClick={() => setSelectedSubject(null)}
             >
-              {allExpanded ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
               <span className="font-semibold">All</span>
               <span className="text-[10px] text-muted-foreground">
                 {filteredSubjects.length} subjects
@@ -389,13 +390,13 @@ export function CohortRail() {
               </span>
             </button>
 
-            {/* Flat subject list */}
-            {allExpanded && filteredSubjects.map((s) => (
+            {/* Subject list — always visible */}
+            {filteredSubjects.map((s) => (
               <SubjectRow
                 key={s.usubjid}
                 subject={s}
-                isSelected={selectedSubjects.has(s.usubjid)}
-                onToggle={toggleSubject}
+                isSelected={selectedSubject === s.usubjid}
+                onToggle={(id) => setSelectedSubject(id)}
                 organCount={subjectOrganCounts.get(s.usubjid) ?? 0}
                 nested
               />
@@ -538,7 +539,7 @@ function SubjectRow({
 }: {
   subject: CohortSubject;
   isSelected: boolean;
-  onToggle: (id: string, shiftKey: boolean) => void;
+  onToggle: (id: string, shiftKey?: boolean) => void;
   organCount: number;
   nested?: boolean;
 }) {

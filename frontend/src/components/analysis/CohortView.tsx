@@ -77,6 +77,7 @@ export function CohortView() {
             onsetDays={onsetDaysData?.subjects ?? {}}
             recoveryVerdicts={recoveryVerdictsData?.per_subject ?? {}}
             noaelOverlay={noaelOverlay?.subjects ?? {}}
+            findings={cohort.findings}
             onSubjectClick={handleSubjectClick}
             selectedSubjectId={selectedSubjectId}
           />

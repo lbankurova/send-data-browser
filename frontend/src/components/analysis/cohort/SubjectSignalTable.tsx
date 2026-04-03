@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { getDoseGroupColor, getNeutralHeatColor } from "@/lib/severity-colors";
 import { shortDoseLabel } from "@/lib/dose-label-utils";
 import type { CohortSubject, SubjectSyndromeProfile, RecoverySubjectProfile, NoaelSubjectOverlay } from "@/types/cohort";
+import type { UnifiedFinding } from "@/types/analysis";
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
 
@@ -34,6 +35,7 @@ export interface SubjectSignalRow {
   recoveryWorstVerdict: string | null;
   noaelDrivingCount: number;
   noaelRole: string;
+  worstLoo: number | null;
 }
 
 interface Props {
@@ -44,8 +46,48 @@ interface Props {
   onsetDays: Record<string, Record<string, number>>;
   recoveryVerdicts: Record<string, RecoverySubjectProfile>;
   noaelOverlay: Record<string, NoaelSubjectOverlay>;
+  findings: UnifiedFinding[];
   onSubjectClick: (id: string) => void;
   selectedSubjectId: string | null;
+}
+
+/** Build per-subject worst LOO stability from findings.
+ *  LOO stability is on each continuous finding. For a subject at dose level D,
+ *  the relevant LOO is the one from findings where the max-effect pairwise
+ *  involves dose D. We approximate by taking the minimum loo_stability across
+ *  all findings that match the subject's sex and have data at their dose level.
+ */
+function computeSubjectWorstLoo(
+  subjects: CohortSubject[],
+  findings: UnifiedFinding[],
+): Map<string, number> {
+  // Build per-dose-level, per-sex minimum LOO from findings
+  const doseMinLoo = new Map<string, number>(); // key: `${doseLevel}:${sex}`
+  for (const f of findings) {
+    const loo = f.loo_stability;
+    if (loo == null) continue;
+    const sex = f.sex ?? "";
+    // loo_stability is the endpoint-level minimum across pairwise comparisons
+    // Associate it with every treated dose level that has pairwise data
+    for (const pw of f.pairwise ?? []) {
+      const dl = pw.dose_level;
+      if (dl == null || dl === 0) continue;
+      const pwLoo = pw.loo_stability;
+      if (pwLoo == null) continue;
+      const key = `${dl}:${sex}`;
+      const prev = doseMinLoo.get(key);
+      if (prev == null || pwLoo < prev) doseMinLoo.set(key, pwLoo);
+    }
+  }
+
+  const result = new Map<string, number>();
+  for (const s of subjects) {
+    if (s.isControl) continue;
+    const key = `${s.doseGroupOrder}:${s.sex}`;
+    const val = doseMinLoo.get(key);
+    if (val != null) result.set(s.usubjid, val);
+  }
+  return result;
 }
 
 /** Compute signal rows for each subject. */
@@ -57,7 +99,9 @@ function computeSignalRows(
   onsetDays: Record<string, Record<string, number>>,
   recoveryVerdicts: Record<string, RecoverySubjectProfile>,
   noaelOverlay: Record<string, NoaelSubjectOverlay>,
+  findings: UnifiedFinding[],
 ): SubjectSignalRow[] {
+  const subjectLoo = computeSubjectWorstLoo(subjects, findings);
   return subjects.map((s) => {
     // Syndrome count
     const sp = syndromes[s.usubjid];
@@ -113,6 +157,9 @@ function computeSignalRows(
     const noaelDrivingCount = noael?.noael_driving_count ?? 0;
     const noaelRole = noael?.noael_role ?? "none";
 
+    // LOO stability
+    const worstLoo = subjectLoo.get(s.usubjid) ?? null;
+
     return {
       subject: s,
       syndromeCount,
@@ -125,6 +172,7 @@ function computeSignalRows(
       recoveryWorstVerdict,
       noaelDrivingCount,
       noaelRole,
+      worstLoo,
     };
   });
 }
@@ -137,12 +185,13 @@ export function SubjectSignalTable({
   onsetDays,
   recoveryVerdicts,
   noaelOverlay,
+  findings,
   onSubjectClick,
   selectedSubjectId,
 }: Props) {
   const rows = useMemo(
-    () => computeSignalRows(subjects, syndromes, organCounts, histopathMap, onsetDays, recoveryVerdicts, noaelOverlay),
-    [subjects, syndromes, organCounts, histopathMap, onsetDays, recoveryVerdicts, noaelOverlay],
+    () => computeSignalRows(subjects, syndromes, organCounts, histopathMap, onsetDays, recoveryVerdicts, noaelOverlay, findings),
+    [subjects, syndromes, organCounts, histopathMap, onsetDays, recoveryVerdicts, noaelOverlay, findings],
   );
 
   if (rows.length === 0) {
@@ -169,7 +218,10 @@ export function SubjectSignalTable({
             <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>BW %</th>
             <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>Onset</th>
             <th className="whitespace-nowrap px-2 py-1" style={{ width: "1px" }}>Recovery</th>
-            <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>NOAEL</th>
+            <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>LOO</th>
+            <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>Det</th>
+            <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>Contr</th>
+            <th className="whitespace-nowrap px-2 py-1 text-right" style={{ width: "1px" }}>Supp</th>
             <th className="px-2 py-1">{/* absorber */}</th>
           </tr>
         </thead>
@@ -290,16 +342,47 @@ export function SubjectSignalTable({
                   )}
                 </td>
 
-                {/* NOAEL driving */}
+                {/* LOO stability (worst across findings at this subject's dose) */}
+                <td className="whitespace-nowrap px-2 py-1 text-right">
+                  {row.worstLoo != null ? (
+                    <span className={cn("font-mono", row.worstLoo < 0.5 ? "text-red-600" : row.worstLoo < 0.8 ? "text-amber-600" : "text-muted-foreground")}>
+                      {row.worstLoo.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </td>
+
+                {/* NOAEL: Determining */}
                 <td className="whitespace-nowrap px-2 py-1 text-right">
                   {row.noaelRole === "determining" ? (
-                    <span className="font-mono font-medium text-foreground" title="NOAEL-determining subject">
+                    <span className="font-mono font-medium text-foreground" title="At LOAEL dose -- findings drive NOAEL placement">
                       {row.noaelDrivingCount}
                     </span>
-                  ) : row.noaelRole === "contributing" ? (
-                    <span className="font-mono text-muted-foreground" title="Contributing (above LOAEL)">
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </td>
+
+                {/* NOAEL: Contributing */}
+                <td className="whitespace-nowrap px-2 py-1 text-right">
+                  {row.noaelRole === "contributing" ? (
+                    <span className="font-mono text-muted-foreground" title="Above LOAEL -- reinforces adverse findings">
                       {row.noaelDrivingCount}
                     </span>
+                  ) : (
+                    <span className="text-muted-foreground">--</span>
+                  )}
+                </td>
+
+                {/* NOAEL: Supporting */}
+                <td className="whitespace-nowrap px-2 py-1 text-right">
+                  {row.noaelRole === "none" && !s.isControl ? (
+                    <span className="font-mono text-green-600" title="At or below NOAEL -- no adverse findings">
+                      &#10003;
+                    </span>
+                  ) : s.isControl ? (
+                    <span className="text-muted-foreground">ctrl</span>
                   ) : (
                     <span className="text-muted-foreground">--</span>
                   )}
