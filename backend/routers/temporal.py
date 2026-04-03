@@ -186,11 +186,30 @@ async def get_timecourse(
         candidates = [d for d in actual_days if d >= last_dosing_day]
         terminal_sacrifice_day = int(candidates[0]) if candidates else (int(actual_days[-1]) if actual_days else None)
 
+    # OM domain: attach terminal body weight per subject for bivariate scatter
+    terminal_bw_map: dict[str, float] | None = None
+    if domain_upper == "OM" and mode == "subject":
+        terminal_bw_map = {}  # always present for OM; subjects not found get null
+    if domain_upper == "OM" and mode == "subject" and "bw" in study.xpt_files:
+        bw_df = _read_domain_df(study, "BW")
+        bw_val_col = (
+            "BWSTRESN" if "BWSTRESN" in bw_df.columns
+            else "BWORRES" if "BWORRES" in bw_df.columns
+            else None
+        )
+        if bw_val_col and "BWDY" in bw_df.columns:
+            bw_df[bw_val_col] = pd.to_numeric(bw_df[bw_val_col], errors="coerce")
+            bw_df["BWDY"] = pd.to_numeric(bw_df["BWDY"], errors="coerce")
+            bw_df = bw_df.dropna(subset=[bw_val_col, "BWDY"])
+            terminal = bw_df.sort_values("BWDY").groupby("USUBJID").last()
+            terminal_bw_map = terminal[bw_val_col].to_dict()
+
     if mode == "subject":
         return _build_subject_response(
             df, test_code, test_name, domain_upper, unit, value_col, day_col,
             include_recovery=include_recovery, last_dosing_day=last_dosing_day,
             terminal_sacrifice_day=terminal_sacrifice_day,
+            terminal_bw_map=terminal_bw_map,
         )
     else:
         return _build_group_response(
@@ -241,6 +260,7 @@ def _build_subject_response(
     value_col: str, day_col: str, *, include_recovery: bool = False,
     last_dosing_day: int | None = None,
     terminal_sacrifice_day: int | None = None,
+    terminal_bw_map: dict[str, float] | None = None,
 ) -> dict:
     """Build subject-level time-course response."""
     subjects = []
@@ -261,6 +281,9 @@ def _build_subject_response(
         }
         if include_recovery and "is_recovery" in row0.index:
             entry["is_recovery"] = bool(row0["is_recovery"])
+        if terminal_bw_map is not None:
+            bw = terminal_bw_map.get(usubjid)
+            entry["terminal_bw"] = round(float(bw), 4) if bw is not None and pd.notna(bw) else None
         subjects.append(entry)
 
     result: dict = {

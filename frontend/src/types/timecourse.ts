@@ -44,6 +44,8 @@ export interface TimecourseSubject {
   dose_label: string;
   arm_code: string;
   is_recovery?: boolean;
+  /** Only populated when domain is OM. Terminal body weight for bivariate scatter. */
+  terminal_bw?: number | null;
   values: { day: number; value: number }[];
 }
 

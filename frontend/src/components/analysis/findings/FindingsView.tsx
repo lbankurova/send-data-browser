@@ -710,6 +710,7 @@ export function FindingsView() {
                   signalScores={signalScoreMap}
                   evidenceScores={evidenceScoreMap}
                   highlightOrgans={radarHighlightOrgans}
+                  organCoherence={organCoherence}
                 />
               </div>
             </div>

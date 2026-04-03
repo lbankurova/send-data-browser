@@ -1,0 +1,12 @@
+topic: williams-phase2-table-replacement
+phase: complete
+current_step: complete
+spec_path: docs/_internal/incoming/williams-phase2-table-replacement-synthesis.md
+entry_mode: path-based
+started: 2026-04-03
+completed: 2026-04-03
+commit: fc5f664d
+notes: >
+  All 3 BPs shipped in prior session. 52 CV entries replaced with MC-verified values.
+  1 significance flip (HEART M dose 1 — rescued missed signal). Validation unchanged.
+  Generation script at scripts/generate_williams_cv.py, audit trail at scripts/williams_cv_audit.json.

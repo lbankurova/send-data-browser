@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `9d972310` (2026-04-03)
-**Generated:** 2026-04-03T17:37:11.366Z
+**Engine:** commit `1dc73405` (2026-04-03)
+**Generated:** 2026-04-03T21:15:23.207Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -339,13 +339,6 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | M | Not established | Compound A 100 mg/kg | 2 | RE | 1.00 | below_tested_range |
 | F | Not established | N/A | 0 | -- | 0.80 | not_established |
 | Combined | Not established | Compound A 100 mg/kg | 2 | RE | 1.00 | below_tested_range |
-
-### Target Organs
-
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| respiratory | 0.820 | 3 | RE | Yes |
-| general | 0.607 | 2 | CL | Yes |
 
 ### Provenance
 
@@ -723,14 +716,11 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | N Endpoints | Domains | Flagged |
 |-------------|-------|-------------|---------|---------|
-| neurological | 0.833 | 2 | OM | Yes |
 | cardiovascular | 0.677 | 12 | EG, MI, OM, VS | Yes |
 | hematologic | 0.669 | 65 | LB, MA, MI, OM | Yes |
 | hepatic | 0.583 | 39 | LB, MA, MI, OM, TF | Yes |
-| metabolic | 0.547 | 8 | LB | Yes |
 | general | 0.516 | 61 | BG, BW, CL, DS, FW, MA, MI, OM | Yes |
 | renal | 0.473 | 32 | LB, MA, MI, OM | Yes |
-| electrolyte | 0.461 | 8 | LB | Yes |
 
 ### Provenance
 
@@ -1135,14 +1125,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | N Endpoints | Domains | Flagged |
 |-------------|-------|-------------|---------|---------|
-| metabolic | 0.747 | 6 | LB | Yes |
-| hepatic | 0.689 | 22 | LB, MI, OM | Yes |
-| hematologic | 0.675 | 44 | LB, MA, MI, OM | Yes |
-| electrolyte | 0.652 | 8 | LB | Yes |
 | renal | 0.610 | 24 | LB, MA, MI, OM | Yes |
-| general | 0.540 | 64 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
-| neurological | 0.493 | 2 | OM | Yes |
-| cardiovascular | 0.329 | 6 | MI, OM | Yes |
+| general | 0.594 | 64 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
+| hepatic | 0.482 | 22 | LB, MI, OM | Yes |
+| hematologic | 0.473 | 44 | LB, MA, MI, OM | Yes |
 
 ### Provenance
 

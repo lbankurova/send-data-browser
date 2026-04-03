@@ -23,6 +23,7 @@ import type { ContinuousVerdictType } from "@/lib/recovery-verdict";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { useStatMethods } from "@/hooks/useStatMethods";
 import { getDoseGroupColor, getSexColor } from "@/lib/severity-colors";
+import { computeNiceTicks } from "@/lib/chart-utils";
 
 // ── Types ────────────────────────────────────────────────
 
@@ -135,22 +136,7 @@ function checkDoseConsistency(
   return notes;
 }
 
-// ── Helpers ──────────────────────────────────────────────
-
-function computeNiceTicks(min: number, max: number, maxTicks = 6): number[] {
-  const range = max - min;
-  if (range === 0) return [min];
-  const rawStep = range / maxTicks;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const candidates = [1, 2, 5, 10];
-  const step = mag * (candidates.find((c) => c * mag >= rawStep) ?? 10);
-  const ticks: number[] = [];
-  const start = Math.ceil(min / step) * step;
-  for (let v = start; v <= max + step * 0.001; v += step) {
-    ticks.push(Math.round(v * 1e10) / 1e10);
-  }
-  return ticks;
-}
+// computeNiceTicks imported from @/lib/chart-utils
 
 function formatPCompact(p: number): string {
   if (p < 0.001) return "<0.001";
@@ -319,7 +305,7 @@ export function RecoveryDumbbellChart({
     return [lo - pad, hi + pad];
   }, [chartRowsBySex, sexes]);
 
-  const yTicks = useMemo(() => computeNiceTicks(yMin, yMax), [yMin, yMax]);
+  const yTicks = useMemo(() => computeNiceTicks(yMin, yMax, 6), [yMin, yMax]);
 
   // Dose-response consistency notes (Option C, BUG-21)
   const doseConsistencyNotes = useMemo(

@@ -263,6 +263,7 @@ def build_target_organ_summary(
         "n_treatment_related": 0,
         "n_endpoints": 0,
         "max_severity": None,  # numeric 1-5 scale from MI/MA/CL group_stats
+        "max_ep_domain": "",  # domain of highest-scoring endpoint
     })
 
     for finding in findings:
@@ -284,7 +285,9 @@ def build_target_organ_summary(
         # SLA-11: keep max signal per endpoint key (dedup longitudinal duplicates)
         if ep_key not in data["ep_signals"] or sig > data["ep_signals"][ep_key]:
             data["ep_signals"][ep_key] = sig
-        data["max_signal"] = max(data["max_signal"], sig)
+        if sig > data["max_signal"]:
+            data["max_signal"] = sig
+            data["max_ep_domain"] = finding.get("domain", "")
 
         if finding.get("min_p_adj") is not None and finding["min_p_adj"] < 0.05:
             data["n_significant"] += 1
@@ -307,6 +310,12 @@ def build_target_organ_summary(
         convergence_count = len({_convergence_group(d) for d in data["domains"]})
         evidence_score = avg_signal * (1 + 0.2 * (convergence_count - 1))
 
+        # OM-without-MI corroboration discount (STP: organ weight without
+        # histopath is not sufficient for target organ identification)
+        has_mi = bool(data["domains"] & {"MI", "MA"})
+        if data["max_ep_domain"] == "OM" and not has_mi:
+            evidence_score *= 0.75
+
         max_sev = data["max_severity"]
         rows.append({
             "organ_system": organ,
@@ -318,7 +327,8 @@ def build_target_organ_summary(
             "n_significant": data["n_significant"],
             "n_treatment_related": data["n_treatment_related"],
             "target_organ_flag": (
-                evidence_score >= (params or ScoringParams()).target_organ_evidence
+                len(data["domains"]) >= 2
+                and evidence_score >= (params or ScoringParams()).target_organ_evidence
                 and data["n_significant"] >= (params or ScoringParams()).target_organ_n_significant
             ),
             "max_severity": round(max_sev, 2) if max_sev is not None else None,

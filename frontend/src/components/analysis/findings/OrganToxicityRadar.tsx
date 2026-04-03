@@ -12,7 +12,7 @@
 import { useMemo, useState } from "react";
 import { Info } from "lucide-react";
 import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
-import type { EndpointSummary } from "@/lib/derive-summaries";
+import type { EndpointSummary, OrganCoherence } from "@/lib/derive-summaries";
 
 type RadarMode = "evidence" | "signal";
 
@@ -21,6 +21,7 @@ interface Props {
   signalScores: Map<string, number>;
   evidenceScores: Map<string, number>;
   highlightOrgans?: Set<string>;
+  organCoherence?: Map<string, OrganCoherence>;
 }
 
 // Signal color — warm brown/ochre, not reserved for any other encoding
@@ -50,7 +51,7 @@ function organLabel(organ: string, count: number): string {
   return `${ORGAN_SHORT[organ] ?? organ} (${count})`;
 }
 
-export function OrganToxicityRadar({ endpoints, signalScores, evidenceScores, highlightOrgans }: Props) {
+export function OrganToxicityRadar({ endpoints, signalScores, evidenceScores, highlightOrgans, organCoherence }: Props) {
   const [showHelp, setShowHelp] = useState(false);
   const [mode, setMode] = useState<RadarMode>("evidence");
 
@@ -79,15 +80,26 @@ export function OrganToxicityRadar({ endpoints, signalScores, evidenceScores, hi
     return ordered.map((org) => {
       const eps = byOrgan.get(org)!;
       let maxVal = 0;
+      let maxEp: EndpointSummary | null = null;
       const dots: { label: string; value: number }[] = [];
       for (const ep of eps) {
         const v = Math.min(scoreMap.get(ep.endpoint_label) ?? 0, scale);
-        if (v > maxVal) maxVal = v;
+        if (v > maxVal) { maxVal = v; maxEp = ep; }
         dots.push({ label: ep.endpoint_label, value: v });
       }
-      return { organ: org, value: maxVal, count: eps.length, dots };
+
+      // OM-without-MI corroboration discount: organ weight findings without
+      // histopathological corroboration get reduced spoke value (STP guidance)
+      let adjustedMax = maxVal;
+      if (mode === "evidence" && maxEp?.domain === "OM" && organCoherence) {
+        const coh = organCoherence.get(org);
+        const hasMI = coh?.domains.includes("MI") || coh?.domains.includes("MA");
+        if (!hasMI) adjustedMax *= 0.75;
+      }
+
+      return { organ: org, value: Math.min(adjustedMax, scale), count: eps.length, dots };
     });
-  }, [endpoints, scoreMap, scale]);
+  }, [endpoints, scoreMap, scale, mode, organCoherence]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const option = useMemo<any>(() => {
@@ -214,7 +226,7 @@ export function OrganToxicityRadar({ endpoints, signalScores, evidenceScores, hi
               <p className="font-medium text-foreground">How to read this chart</p>
               <p className="mt-1">Each spoke = one organ system. Distance from center = highest-scoring endpoint in that organ. Scale: 0-{scale}.</p>
               {mode === "evidence" ? (
-                <p className="mt-1"><span className="font-medium">Evidence (0-10):</span> statistical effect size, LOO stability, dose-response pattern, syndrome membership, and confidence. Independent of severity/TR classification and clinical tier.</p>
+                <p className="mt-1"><span className="font-medium">Evidence (0-10):</span> statistical effect size, LOO stability, dose-response pattern, syndrome membership, and confidence. Independent of severity/TR classification and clinical tier. Organ weights without histopath corroboration are discounted.</p>
               ) : (
                 <p className="mt-1"><span className="font-medium">Signal (0-16):</span> full composite score including severity, treatment-relatedness, clinical tier, and all boosts. Same ranking as the findings rail.</p>
               )}

@@ -1,0 +1,24 @@
+topic: om-bw-scatter
+title: Bivariate organ-weight-vs-body-weight scatter mode for OM distribution chart
+phase: build-complete
+current_step: ship.0
+started: 2026-04-03
+completed: 2026-04-04
+research_doc: null  # Research embedded in GAP-139 (TODO.md:1329) + Kluxen 2019
+research_status: validated-external
+synthesis_doc: docs/_internal/incoming/om-bw-scatter-synthesis.md
+synthesis_status: validated
+peer_reviews:
+  architect: docs/_internal/research/peer-reviews/om-bw-scatter-architect-review.md
+  plan_r1: docs/_internal/research/peer-reviews/om-bw-scatter-synthesis-review.md
+  plan_r2: docs/_internal/research/peer-reviews/om-bw-scatter-synthesis-review-r2.md
+key_decisions:
+  - "New BivarScatterChart.tsx instead of extending StripPlotChart (different geometry, near budget)"
+  - "Backend: piggyback terminal_bw on existing timecourse endpoint, no new endpoint"
+  - "Data ellipses deferred (optional per GAP-139, significant complexity)"
+  - "ARCHITECT SIMPLIFY: extract computeNiceTicks/shortId to lib/chart-utils.ts (resolves 3-copy duplication)"
+  - "ARCHITECT SIMPLIFY: null-BW guard at toggle level (hasBW boolean gates pill option)"
+  - "R1 FIX: sex-stratified panels mandatory (Simpson's paradox from pooling sexes in dimorphic species)"
+  - "R1 FIX: n >= 4 minimum for regression lines (prevent false precision with tiny groups)"
+  - "R1 FIX: shared Y-axis, independent X-axis between sex panels"
+  - "R1 FIX: automated tests added (backend integration + vitest null-BW guard)"

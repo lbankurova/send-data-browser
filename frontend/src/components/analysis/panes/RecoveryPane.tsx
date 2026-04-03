@@ -36,6 +36,7 @@ import { classifyFindingNature } from "@/lib/finding-nature";
 import { classifyContinuousRecovery } from "@/lib/recovery-verdict";
 import { getVerdictLabel } from "@/lib/recovery-labels";
 import { cn } from "@/lib/utils";
+import { shortId } from "@/lib/chart-utils";
 import { Info } from "lucide-react";
 
 // ── Per-dose assessment block (ported from HistopathologyContextPanel) ──
@@ -57,10 +58,7 @@ function RecoveryDoseBlock({
     setExpanded(false);
   }, [subjectIds]);
 
-  const shortId = (id: string) => {
-    const parts = id.split("-");
-    return parts[parts.length - 1] || id.slice(-4);
-  };
+  // shortId imported from @/lib/chart-utils
 
   const periodLabel = recoveryDays != null
     ? recoveryDays >= 7

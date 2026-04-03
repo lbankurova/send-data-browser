@@ -1,0 +1,24 @@
+topic: loo-outlier-viz
+title: LOO Influential Animal Visualization in Distribution Charts
+phase: build-complete
+current_step: ship.2
+started: 2026-04-03
+completed: 2026-04-03
+research_doc: docs/_internal/research/control-side-loo-stability.md
+research_status: validated
+synthesis_doc: docs/_internal/incoming/loo-outlier-viz-synthesis.md
+synthesis_status: validated
+peer_reviews:
+  research_r1: docs/_internal/research/peer-reviews/control-side-loo-stability-review.md
+  research_r2_novel: docs/_internal/research/peer-reviews/control-side-loo-stability-review-novel.md
+  architect: docs/_internal/research/peer-reviews/loo-outlier-viz-architect-review.md
+  plan_r1: docs/_internal/research/peer-reviews/loo-outlier-viz-synthesis-review.md
+  plan_r2: docs/_internal/research/peer-reviews/loo-outlier-viz-synthesis-review-r2.md
+calibration: backend/simulations/loo_calibration_results.md
+key_decisions:
+  - "Lime color rejected (conflicts with DOSE_PALETTE_STOPS.low_mid) -> gray-700 ring stroke"
+  - "findings_is.py excluded (IS pairwise discards LOO fields today)"
+  - "NaN-alignment contract: apply mask inside dunnett_pairwise()"
+  - "h_lower null-out path must include loo_influential_subject"
+  - "Tie-breaking: first-encountered wins (lowest index)"
+  - "Early-return degenerate cases: set influential index before return"

@@ -673,5 +673,182 @@
         "new": null
       }
     }
+  },
+  {
+    "timestamp": "2026-04-03T02:22:49.536537+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:42:02.008611+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "31fb3ac5f864",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "flat"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:48:05.264080+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_decrease"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "onset_dose_level": {
+        "old": null,
+        "new": 3
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:48:05.368726+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "onset_dose_level": 3,
+          "original_pattern": "threshold_decrease",
+          "original_direction": "down",
+          "pathologist": "User",
+          "reviewDate": "2026-04-03T10:48:05.250690+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:49:20.777801+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "create",
+    "changes": {
+      "onset_dose_level": {
+        "old": null,
+        "new": 3
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_decrease"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:49:20.941487+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "onset_dose_level": 3,
+          "original_pattern": "threshold_decrease",
+          "original_direction": "down",
+          "pathologist": "User",
+          "reviewDate": "2026-04-03T10:49:20.768146+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:49:27.188349+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "create",
+    "changes": {
+      "onset_dose_level": {
+        "old": null,
+        "new": 3
+      },
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_decrease"
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-03T10:49:56.280087+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "61e594691aec",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "onset_dose_level": 3,
+          "original_pattern": "threshold_decrease",
+          "original_direction": "down",
+          "pathologist": "User",
+          "reviewDate": "2026-04-03T10:49:27.179094+00:00"
+        },
+        "new": null
+      }
+    }
   }
 ]

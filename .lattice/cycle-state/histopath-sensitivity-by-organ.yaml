@@ -1,0 +1,85 @@
+topic: histopath-sensitivity-by-organ
+started: 2026-04-03T21:30:00Z
+phase: build
+current_step: build.2
+completed:
+  research.1: 2026-04-03T21:30:00Z
+  research.2: 2026-04-03T22:00:00Z
+  research.3: 2026-04-04T00:00:00Z
+  research.4: 2026-04-03T23:30:00Z
+  research.5: 2026-04-04T00:15:00Z
+  research.6: 2026-04-04T00:15:00Z
+  research.7: 2026-04-04T00:15:00Z
+  build.0: 2026-04-04T01:00:00Z
+checkpoints:
+  research.1:
+    completed: 2026-04-03T21:30:00Z
+    key_decisions:
+      - "16 organs, 2 species (rat/dog), 21 primary sources"
+      - "Heart and thymus exempt (1.0)"
+      - "Liver/kidney/testes strong discount (0.5)"
+      - "Brain weak discount (0.85)"
+    output: "docs/_internal/research/histopath-sensitivity-by-organ.md"
+  research.2:
+    completed: 2026-04-03T22:00:00Z
+    key_decisions:
+      - "R1 novel: 1 FLAWED (A2 MI absence ambiguity), 6 CONDITIONAL"
+      - "8 novel sources (ToxScore, sendigR, Amato NHP, HeartJ, ESTP liver, PathologAI, Lazic causal)"
+    output: "docs/_internal/research/peer-reviews/histopath-sensitivity-by-organ-review-novel.md"
+  research.3:
+    completed: 2026-04-04T00:00:00Z
+    key_decisions:
+      - "A2 FLAWED fixed: three-state MI model (positive/examined-normal/not-examined)"
+      - "A1: two-factor decomposition (detection_sensitivity + isolation_plausibility)"
+      - "A4: direction-specific values for testes and heart"
+      - "FM3: organ-specific recovery exemption"
+    output: "docs/_internal/research/histopath-sensitivity-by-organ.md (updated)"
+  research.4:
+    completed: 2026-04-03T23:30:00Z
+    key_decisions:
+      - "R2: 0 FLAWED, 3 CONDITIONAL, 8 SOUND"
+      - "All R1 findings resolved"
+      - "3 new CONDITIONALs about sub-factor documentation"
+    output: "docs/_internal/research/peer-reviews/histopath-sensitivity-by-organ-review-r2.md"
+  research.5:
+    completed: 2026-04-04T00:15:00Z
+    key_decisions:
+      - "R2 CONDITIONALs incorporated: sub-factor semantics, dog entries, section numbering"
+      - "VALIDATED -- no FLAWED in R2"
+    output: "docs/_internal/research/histopath-sensitivity-by-organ.md (v1.1)"
+  research.6:
+    completed: 2026-04-04T00:15:00Z
+    key_decisions:
+      - "Distill audit: no contradictions"
+      - "Organ key mismatch REPRODUCTIVE vs granular needs mapping"
+      - "Gap 3 confirmed addressed"
+    output: "informational -- no file output"
+  research.7:
+    completed: 2026-04-04T00:15:00Z
+    key_decisions:
+      - "Probe: all SAFE/PROPAGATES"
+      - "S10 signal scoring, S15 organ analytics, S14 corroboration, S16 NOAEL affected"
+      - "No BREAKS, no SCIENCE-FLAG"
+    output: "informational -- no file output"
+  build.0:
+    completed: 2026-04-04T01:00:00Z
+    key_decisions:
+      - "No FAILED entries in decisions log relevant to this topic"
+      - "No bug-patterns file exists yet"
+      - "om-bw-scatter cycle (build.3) modifies view_dataframes.py _build_subject_response -- different function, no overlap with build_target_organ_summary"
+      - "loo-outlier-viz (ship.2) modified findings modules for LOO fields -- different scope"
+      - "Current implementation: flat 0.75 discount at view_dataframes.py:316-317 -- this is THE integration point"
+      - "No tissue list lookup exists -- three-state MI model requires new implementation"
+      - "Species available via get_species(study) in organ_thresholds.py"
+      - "Organ mapping via _SPECIMEN_TO_CONFIG_KEY in organ_thresholds.py"
+      - "Frontend findings-rail-engine.ts has NO OM/MI differentiation -- uses backend evidence_score"
+      - "view_dataframes.py is domain-critical module (code-quality-guardrails.md)"
+    implementation_context:
+      integration_point: "view_dataframes.py:build_target_organ_summary() lines 316-317 -- replace flat 0.75 with species+organ lookup"
+      tissue_list_gap: "Three-state MI model needs tissue list lookup. Options: TS domain tissue params, MA domain as proxy, or study protocol tissue list. No existing lookup."
+      organ_key_mapping: "_SPECIMEN_TO_CONFIG_KEY in organ_thresholds.py maps SEND specimen names to config keys (LIVER, KIDNEY, etc.)"
+      species_source: "get_species(study) in organ_thresholds.py reads TS domain SPECIES parameter"
+      config_pattern: "shared/config/ JSON files (like biomarker-catalog.json) -- follow existing pattern"
+      frontend_decision: "Frontend uses backend evidence_score directly. Research F1 proposes frontend signal scoring discount too (findings-rail-engine.ts). Need to decide scope."
+      cross_topic_overlap: "om-bw-scatter touches view_dataframes.py but different function. No conflict."
+    output: "state checkpoint -- implementation context captured"
