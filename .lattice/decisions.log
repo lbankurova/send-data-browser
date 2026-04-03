@@ -26,3 +26,8 @@ TIMESTAMP	SKILL	OUTCOME	CONTEXT	METRICS	NOTES
 2026-04-01T00:00:00	implement	FLAWED	cohort-rail/composite-scores	B-02	Hardcoded weighted formula for signal burden ranking. Arbitrary weights bias regulatory review. Sort by single explicit axes only.
 2026-04-01T00:00:00	implement	CONDITIONAL	cohort-rail/all-mode	B-01	"All" mode in cohort rail is flat list, not grouped. Grouping belongs in other toggles. Never nest grouping inside All.
 2026-03-30T00:00:00	implement	CONDITIONAL	recovery/verdict	B-25	Recovery sign-flip cases misclassified. Terminal g positive + recovery g negative -> "reversed" ignoring sub-threshold branch. Need sign-flip awareness + dose-response context.
+2026-04-03T12:11:20	research-cycle	AUTO-DEFER	hcd-population	step:1	In-life BW (5.4GB CSV) deferred -- terminal BW sufficient for LOO context use case
+2026-04-03T12:11:21	research-cycle	AUTO-DEFER	hcd-population	step:1	FW domain -- no public HCD data exists, document gap only
+2026-04-03T12:11:21	research-cycle	AUTO-DEFER	hcd-population	step:1	EG/VS domain -- no structured public data, cardiac safety uses within-subject delta not population HCD
+2026-04-03T12:11:21	research-cycle	AUTO-ACCEPT	hcd-population	step:1	Both Option A (backfill body_weight_g) and Option B (new hcd_bw table) for BW -- complementary use cases
+2026-04-03T12:11:21	research-cycle	AUTO-ACCEPT	hcd-population	step:1	Phase 1 MI/MA = seed migration from frontend mock; Phase 2 = full NTP ingestion
