@@ -178,6 +178,8 @@ export interface AdverseEffectSummaryRow {
   max_fold_change?: number | null;
   /** LOO stability ratio from driving pairwise. 1.0 = stable, <1.0 = fragile. */
   loo_stability?: number | null;
+  /** True when control-side LOO stability < treated-side (control drives fragility). */
+  loo_control_fragile?: boolean | null;
   /** Number of early-death subjects excluded (terminal domains only) */
   n_excluded?: number;
   /** REM-05: Per-dose-group statistics (from scheduled sacrifice timepoint) */

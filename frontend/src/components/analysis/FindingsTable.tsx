@@ -768,7 +768,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const isCtrl = f.loo_control_fragile === true;
           const pct = `${(v * 100).toFixed(0)}%`;
           return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
-            ? "Control-side fragile: removing one control animal substantially changes the effect."
+            ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
             : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
           }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
         },
@@ -1038,7 +1038,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const isCtrl = r.loo_control_fragile === true;
           const pct = `${(v * 100).toFixed(0)}%`;
           return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
-            ? "Control-side fragile: removing one control animal substantially changes the effect."
+            ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
             : "Leave-one-out stability for this dose group vs control."
           }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
         },

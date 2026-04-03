@@ -301,6 +301,7 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
       max_incidence: f.max_incidence ?? null,
       max_fold_change: f.max_fold_change ?? null,
       loo_stability: f.loo_stability ?? null,
+      loo_control_fragile: f.loo_control_fragile ?? null,
       qualifier_tags: (() => {
         const mp = f.modifier_profile;
         if (!mp) return null;
@@ -475,7 +476,7 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
           }
           if (row.max_fold_change != null) sexEntry.maxFoldChange = row.max_fold_change;
           sexEntry.looStability = row.loo_stability ?? null;
-          sexEntry.looControlFragile = (row as { loo_control_fragile?: boolean | null }).loo_control_fragile ?? null;
+          sexEntry.looControlFragile = row.loo_control_fragile ?? null;
         }
       } else if (sexEntry.direction === null && (row.direction === "up" || row.direction === "down")) {
         sexEntry.direction = row.direction;

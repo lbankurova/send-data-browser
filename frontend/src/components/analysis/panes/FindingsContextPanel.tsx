@@ -1837,7 +1837,7 @@ export function FindingsContextPanel() {
                   : " -- removing the most influential animal reduces the confident effect size to that fraction of its full value."
                 } Below 80% = fragile.`}
               >
-                LOO: fragile{anyCtrl ? " (ctrl)" : ""} ({sexLabel})
+                LOO: fragile ({anyCtrl ? `ctrl, ${sexLabel}` : sexLabel})
               </span>
             );
           })()}
