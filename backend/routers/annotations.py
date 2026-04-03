@@ -125,12 +125,17 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
         merged_pattern = incoming.get("pattern", existing_ann.get("pattern"))
         merged_onset = incoming.get("onset_dose_level", existing_ann.get("onset_dose_level"))
         original_pattern = incoming.get("original_pattern", existing_ann.get("original_pattern"))
-        # Reject no-op overrides (pattern matches original) — prevents stale entries
+        # Reject no-op overrides (pattern matches original AND onset unchanged)
+        # An onset_dose_level change is meaningful even when the pattern key
+        # matches the original — the user may be setting onset without changing
+        # the pattern shape.
         if merged_pattern and original_pattern:
             from services.analysis.override_reader import _pattern_to_override_key
             orig_key = _pattern_to_override_key(original_pattern)
-            if merged_pattern == orig_key:
-                log.info("Rejecting no-op pattern override %s for %s (pattern=%s matches original=%s)",
+            existing_onset = existing_ann.get("onset_dose_level")
+            onset_changed = merged_onset is not None and merged_onset != existing_onset
+            if merged_pattern == orig_key and not onset_changed:
+                log.info("Rejecting no-op pattern override %s for %s (pattern=%s matches original=%s, onset unchanged)",
                          entity_key, study_id, merged_pattern, original_pattern)
                 # Delete existing entry if present (cleanup)
                 if entity_key in data:

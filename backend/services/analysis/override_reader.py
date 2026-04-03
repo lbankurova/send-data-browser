@@ -149,8 +149,9 @@ def apply_pattern_overrides(findings: list[dict], study_id: str) -> list[dict]:
             continue
         override_pattern = ov["pattern"]
         # Detect no-op overrides: override key matches original pattern key
+        # AND no meaningful onset_dose_level change (onset-only overrides are valid)
         original_key = _pattern_to_override_key(f.get("dose_response_pattern"))
-        if override_pattern == original_key:
+        if override_pattern == original_key and ov.get("onset_dose_level") is None:
             stale_keys.append(fid)
             continue
         direction = f.get("direction", "down") or "down"

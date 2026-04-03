@@ -346,7 +346,14 @@ export function usePatternOverrideActions(studyId: string | undefined) {
 
   const selectOnset = useCallback((finding: UnifiedFinding, doseLevel: number) => {
     if (!studyId) return;
-    const override = finding._pattern_override;
+    // Look up the latest finding from the query cache — the onset menu captures
+    // a snapshot that can become stale after pattern-save refetch, losing
+    // _pattern_override.  Without it, patternKey falls back to the finding's
+    // dose_response_pattern (already overridden by the backend), which maps to
+    // the same key as original_pattern, causing the backend to reject as no-op.
+    const cached = queryClient.getQueryData<{ findings: UnifiedFinding[] }>(["findings", studyId]);
+    const fresh = cached?.findings?.find(f => f.id === finding.id);
+    const override = fresh?._pattern_override ?? finding._pattern_override;
     const patternKey = override?.pattern ?? patternToOverrideKey(finding.dose_response_pattern) ?? "no_change";
     const originalPattern = override?.original_pattern ?? finding.dose_response_pattern ?? "flat";
     const originalDirection = override?.original_direction ?? finding.direction ?? null;
@@ -388,8 +395,13 @@ export function usePatternOverrideActions(studyId: string | undefined) {
   }, [studyId, queryClient, saveMutation]);
 
   const resetOnset = useCallback((finding: UnifiedFinding) => {
-    if (!studyId || !finding._pattern_override) return;
-    const override = finding._pattern_override;
+    if (!studyId) return;
+    // Same cache-freshness pattern as selectOnset — the finding snapshot
+    // from the onset menu may be stale after a pattern-save refetch.
+    const cached = queryClient.getQueryData<{ findings: UnifiedFinding[] }>(["findings", studyId]);
+    const fresh = cached?.findings?.find(f => f.id === finding.id);
+    const override = fresh?._pattern_override ?? finding._pattern_override;
+    if (!override) return;
     queryClient.setQueriesData<{ findings: UnifiedFinding[] }>(
       { queryKey: ["findings", studyId] },
       (old) => {

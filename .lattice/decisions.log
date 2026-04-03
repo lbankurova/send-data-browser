@@ -1,4 +1,5 @@
 TIMESTAMP	SKILL	OUTCOME	CONTEXT	METRICS	NOTES
+2026-04-03T00:00:00	bug-stress	cascade-failure	OV:onset-noop-rejection	blast:8 same-pattern:2 tests-added:23	Backend no-op check ignored onset_dose_level; frontend sent stale _pattern_override snapshot. Both fixed. savePatternNote/saveOnsetNote have same stale-snapshot risk (low).
 2026-04-02T00:00:00	distill	SEED	corpus-extraction	patterns:28	Seeded from distill --audit of memory files, peer reviews, TODO.md, git history
 2026-03-15T00:00:00	research	FLAWED	cross-study/scoring	B-06	Composite scoring: -log10(p) dominates (0-20+ range) overwhelming clinical significance (+2-5 additive). Effect size and p-value correlated r>0.85 at small n — adding both double-counts. Cap -log10(p) or make clinical severity a primary sort dimension.
 2026-03-15T00:00:00	research	CONDITIONAL	cross-study/concordance	B-07	Sex concordance: fixed organ boosts (0.3-2.0) ignore age/duration. Thymus concordance LOW at 6-8 weeks, HIGH in mature. Heart divergence duration-dependent. Need confidence-weighted uncertainty.
