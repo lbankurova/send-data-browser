@@ -1,13 +1,13 @@
 # SENDEX — SEND Explorer
 
-> **Prototype** — SENDEX is a working prototype we are building to solicit feedback and contributions
-> from the preclinical toxicology community. The production version will be implemented as a
-> [Datagrok](https://datagrok.ai) plugin; the standalone app is intended to demonstrate the
-> analytical approach and collect real-world input.
-> Try the [hosted demo](https://send-data-browser.onrender.com) (first load may take ~1 minute)
-> or [open an issue](https://github.com/lbankurova/send-data-browser/issues) on GitHub.
+Analytical browser, and a decision support framework for preclinical toxicology studies in [CDISC SEND](https://www.cdisc.org/standards/foundational/send) (.xpt) format. Reads study folders, runs a statistical and classification pipeline, and surfaces findings through question-driven analysis views.
 
-Decision support framework for preclinical toxicology studies in [CDISC SEND](https://www.cdisc.org/standards/foundational/send) (.xpt) format. Reads study folders, runs a statistical and classification pipeline, and surfaces findings through question-driven analysis views.
+**Your feedback is important** — We are soliciting feedback and contributions from the preclinical toxicology community. 
+- Try the [hosted demo](https://send-data-browser.onrender.com) (first load may take ~1 minute)
+- or [open an issue](https://github.com/lbankurova/send-data-browser/issues) on GitHub.
+
+> The production version will also be integrated into [Datagrok](https://datagrok.ai) as a plugin to enable richer "free-world" exploration,
+> and enterprise features like connecting to proprietary databases, access control, etc.
 
 ## What it does
 
