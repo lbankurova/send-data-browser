@@ -35,6 +35,8 @@ export interface TimecourseSubjectResponse {
   subjects: TimecourseSubject[];
   last_dosing_day?: number;
   terminal_sacrifice_day?: number;
+  /** BW unit for bivariate scatter (OM domain only). Study-uniform, e.g. "g" or "kg". */
+  terminal_bw_unit?: string;
 }
 
 export interface TimecourseSubject {

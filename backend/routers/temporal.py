@@ -188,6 +188,7 @@ async def get_timecourse(
 
     # OM domain: attach terminal body weight per subject for bivariate scatter
     terminal_bw_map: dict[str, float] | None = None
+    terminal_bw_unit: str | None = None
     if domain_upper == "OM" and mode == "subject":
         terminal_bw_map = {}  # always present for OM; subjects not found get null
     if domain_upper == "OM" and mode == "subject" and "bw" in study.xpt_files:
@@ -203,6 +204,13 @@ async def get_timecourse(
             bw_df = bw_df.dropna(subset=[bw_val_col, "BWDY"])
             terminal = bw_df.sort_values("BWDY").groupby("USUBJID").last()
             terminal_bw_map = terminal[bw_val_col].to_dict()
+            # BW unit: uniform within a study, take first non-empty value
+            bw_unit_col = "BWSTRESU" if "BWSTRESU" in bw_df.columns else None
+            if bw_unit_col:
+                bw_units = bw_df[bw_unit_col].dropna().unique()
+                terminal_bw_unit = str(bw_units[0]) if len(bw_units) > 0 else "g"
+            else:
+                terminal_bw_unit = "g"
 
     if mode == "subject":
         return _build_subject_response(
@@ -210,6 +218,7 @@ async def get_timecourse(
             include_recovery=include_recovery, last_dosing_day=last_dosing_day,
             terminal_sacrifice_day=terminal_sacrifice_day,
             terminal_bw_map=terminal_bw_map,
+            terminal_bw_unit=terminal_bw_unit if terminal_bw_map is not None else None,
         )
     else:
         return _build_group_response(
@@ -261,6 +270,7 @@ def _build_subject_response(
     last_dosing_day: int | None = None,
     terminal_sacrifice_day: int | None = None,
     terminal_bw_map: dict[str, float] | None = None,
+    terminal_bw_unit: str | None = None,
 ) -> dict:
     """Build subject-level time-course response."""
     subjects = []
@@ -297,6 +307,8 @@ def _build_subject_response(
         result["last_dosing_day"] = last_dosing_day
     if terminal_sacrifice_day is not None:
         result["terminal_sacrifice_day"] = terminal_sacrifice_day
+    if terminal_bw_unit is not None:
+        result["terminal_bw_unit"] = terminal_bw_unit
     return result
 
 

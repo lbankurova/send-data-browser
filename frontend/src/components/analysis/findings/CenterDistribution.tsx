@@ -20,6 +20,9 @@ import { BivarScatterChart } from "../panes/BivarScatterChart";
 import type { BivarSubjectValue } from "../panes/BivarScatterChart";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDoseGroupColor } from "@/lib/severity-colors";
+import { shortDoseLabel } from "@/lib/dose-label-utils";
+import { Info } from "lucide-react";
 import type { UnifiedFinding } from "@/types/analysis";
 import type { TimecourseSubject } from "@/types/timecourse";
 
@@ -146,9 +149,11 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   );
 
   const [scatterMode, setScatterMode] = useState(false);
-  // Reset scatter mode when finding changes (prevents stale scatter on navigation back)
+  const [hiddenDoses, setHiddenDoses] = useState<Set<number>>(new Set());
+  // Reset scatter mode and dose filter when finding changes
   useEffect(() => {
     setScatterMode(false);
+    setHiddenDoses(new Set());
   }, [finding.test_code, finding.domain]);
   const activeScatter = scatterMode && hasBW;
 
@@ -181,6 +186,21 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     const set = new Set(bivarSubjects.map((s) => s.sex));
     return [...set].sort();
   }, [bivarSubjects]);
+
+  // Filter bivar subjects by hidden doses
+  const visibleBivarSubjects = useMemo(
+    () => hiddenDoses.size === 0 ? bivarSubjects : bivarSubjects.filter((s) => !hiddenDoses.has(s.dose_level)),
+    [bivarSubjects, hiddenDoses],
+  );
+
+  const toggleDose = useCallback((doseLevel: number) => {
+    setHiddenDoses((prev) => {
+      const next = new Set(prev);
+      if (next.has(doseLevel)) next.delete(doseLevel);
+      else next.add(doseLevel);
+      return next;
+    });
+  }, []);
 
   const handleSubjectClick = useCallback(
     (usubjid: string) => setSelectedSubject(usubjid),
@@ -215,14 +235,21 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
       {/* Toolbar: mode toggle + recovery checkbox + LOO legend */}
       <div className="flex shrink-0 items-center gap-3 pb-1">
         {hasBW && (
-          <PanePillToggle
-            value={activeScatter ? "scatter" : "dist"}
-            options={[
-              { value: "dist" as const, label: "Distribution" },
-              { value: "scatter" as const, label: "vs BW" },
-            ]}
-            onChange={(v) => setScatterMode(v === "scatter")}
-          />
+          <>
+            <PanePillToggle
+              value={activeScatter ? "scatter" : "dist"}
+              options={[
+                { value: "dist" as const, label: "Distribution" },
+                { value: "scatter" as const, label: "vs BW" },
+              ]}
+              onChange={(v) => setScatterMode(v === "scatter")}
+            />
+            {activeScatter && (
+              <span title={"Organ weight vs body weight scatter (Kluxen 2019).\n\nDots = individual subjects, colored by dose group.\nLines = linear regression per group (requires n \u2265 4).\n\nHow to read:\n\u2022 Lines shift up/down but stay parallel \u2192 direct organ effect\n\u2022 Dots follow the same line across groups \u2192 BW-mediated (ratio artifact)\n\u2022 Lines diverge (different slopes) \u2192 joint organ + BW effect\n\u2022 No clear pattern \u2192 organ weight independent of BW"}>
+                <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
+              </span>
+            )}
+          </>
         )}
         {!activeScatter && hasRecovery && (
           <label className="flex items-center gap-1 cursor-pointer text-[10px] text-muted-foreground hover:text-foreground/70">
@@ -241,15 +268,36 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             <span>LOO influential</span>
           </div>
         )}
+        {activeScatter && (
+          <div className="ml-auto flex flex-wrap gap-1">
+            {doseGroupsForChart.map((dg) => {
+              const visible = !hiddenDoses.has(dg.doseLevel);
+              return (
+                <button
+                  key={dg.doseLevel}
+                  type="button"
+                  className={`flex items-center gap-0.5 px-1 py-0.5 text-[9px] rounded transition-opacity ${visible ? "opacity-100" : "opacity-30"}`}
+                  onClick={() => toggleDose(dg.doseLevel)}
+                >
+                  <span
+                    className="inline-block rounded-full"
+                    style={{ width: 5, height: 5, backgroundColor: getDoseGroupColor(dg.doseLevel) }}
+                  />
+                  <span className="text-muted-foreground">{shortDoseLabel(dg.doseLabel, analyticsData?.dose_groups)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="flex-1 min-h-0">
         {activeScatter ? (
           <BivarScatterChart
-            subjects={bivarSubjects}
+            subjects={visibleBivarSubjects}
             organUnit={unit}
-            bwUnit="g"
+            bwUnit={subjectData?.terminal_bw_unit ?? "g"}
             sexes={bivarSexes}
-            doseGroups={doseGroupsForChart}
+            doseGroups={doseGroupsForChart.filter((dg) => !hiddenDoses.has(dg.doseLevel))}
             onSubjectClick={handleSubjectClick}
             influentialSubject={finding.loo_influential_subject ?? undefined}
           />
