@@ -203,8 +203,8 @@ def parse_iso8601_duration_to_days(duration_str: str) -> int | None:
 def _duration_to_category(days: int | None) -> str | None:
     """Map study duration in days to HCD duration category.
 
-    Categories: '28-day' (≤42 days), '90-day' (43-180 days), 'chronic' (>180 days)
-    Returns None if duration unknown.
+    Categories: '28-day' (<=42d), '90-day' (43-180d), 'chronic' (181-364d),
+    'carcinogenicity' (>364d). Returns None if duration unknown.
     """
     if days is None:
         return None
@@ -212,7 +212,9 @@ def _duration_to_category(days: int | None) -> str | None:
         return "28-day"
     if days <= 180:
         return "90-day"
-    return "chronic"
+    if days <= 364:
+        return "chronic"
+    return "carcinogenicity"
 
 
 # ---------------------------------------------------------------------------

@@ -251,7 +251,9 @@ def _days_to_category(days: int | float | None) -> str | None:
         return "28-day"
     if days <= 180:
         return "90-day"
-    return "chronic"
+    if days <= 364:
+        return "chronic"
+    return "carcinogenicity"
 
 
 def _parse_duration_value(val) -> int | None:

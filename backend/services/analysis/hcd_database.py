@@ -469,6 +469,270 @@ class HcdSqliteDB:
 
         return summary
 
+    # ------------------------------------------------------------------
+    # BW domain queries
+    # ------------------------------------------------------------------
+
+    @property
+    def bw_available(self) -> bool:
+        """True if the BW HCD tables exist and have data."""
+        conn = self._get_conn()
+        if conn is None:
+            return False
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_bw_aggregates" not in tables:
+            return False
+        count = conn.execute("SELECT COUNT(*) FROM hcd_bw_aggregates").fetchone()[0]
+        return count > 0
+
+    def query_bw(
+        self,
+        strain: str,
+        sex: str,
+        duration_category: str,
+        species: str | None = None,
+    ) -> dict | None:
+        """Look up BW HCD aggregate by strain/sex/duration.
+
+        If species is provided, uses (species, strain) as key.
+        Otherwise infers species from strain (NTP strains are implicitly rodent).
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_bw_aggregates" not in tables:
+            return None
+
+        sex_upper = sex.strip().upper()
+
+        if species:
+            row = conn.execute(
+                """SELECT * FROM hcd_bw_aggregates
+                   WHERE species = ? AND strain = ? AND sex = ?
+                   AND duration_category = ?""",
+                (species.upper(), strain, sex_upper, duration_category),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """SELECT * FROM hcd_bw_aggregates
+                   WHERE strain = ? AND sex = ? AND duration_category = ?""",
+                (strain, sex_upper, duration_category),
+            ).fetchone()
+
+        if row is None:
+            return None
+        return self._bw_row_to_dict(row)
+
+    def bw_percentile_rank(
+        self,
+        value: float,
+        strain: str,
+        sex: str,
+        duration_category: str,
+    ) -> float | None:
+        """Rank a BW value against the matched HCD distribution (0-100).
+
+        Returns None if no individual records exist (e.g., non-rodent
+        aggregate-only entries).
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_bw" not in tables:
+            return None
+
+        sex_upper = sex.strip().upper()
+        total = conn.execute(
+            """SELECT COUNT(*) FROM hcd_bw
+               WHERE strain = ? AND sex = ? AND duration_category = ?""",
+            (strain, sex_upper, duration_category),
+        ).fetchone()[0]
+
+        if total < 3:
+            return None
+
+        below = conn.execute(
+            """SELECT COUNT(*) FROM hcd_bw
+               WHERE strain = ? AND sex = ? AND duration_category = ?
+               AND body_weight_g < ?""",
+            (strain, sex_upper, duration_category, value),
+        ).fetchone()[0]
+
+        return round(100.0 * below / total, 1)
+
+    @staticmethod
+    def _bw_row_to_dict(row: sqlite3.Row) -> dict:
+        """Convert a sqlite3.Row from hcd_bw_aggregates to a dict."""
+        return {
+            "species": row["species"],
+            "strain": row["strain"],
+            "sex": row["sex"],
+            "duration_category": row["duration_category"],
+            "mean": row["mean"],
+            "sd": row["sd"],
+            "n": row["n"],
+            "lower": row["lower_2sd"],
+            "upper": row["upper_2sd"],
+            "source": f"sqlite:{row['strain']}",
+            "p5": row["p5"],
+            "p25": row["p25"],
+            "median": row["median"],
+            "p75": row["p75"],
+            "p95": row["p95"],
+            "study_count": row["study_count"],
+            "single_source": bool(row["single_source"]),
+        }
+
+    # ------------------------------------------------------------------
+    # MI/MA domain queries
+    # ------------------------------------------------------------------
+
+    @property
+    def mi_available(self) -> bool:
+        """True if the MI HCD incidence table exists and has data."""
+        conn = self._get_conn()
+        if conn is None:
+            return False
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_mi_incidence" not in tables:
+            return False
+        count = conn.execute("SELECT COUNT(*) FROM hcd_mi_incidence").fetchone()[0]
+        return count > 0
+
+    def query_mi_incidence(
+        self,
+        species: str,
+        strain: str,
+        sex: str,
+        organ: str,
+        finding: str,
+        *,
+        duration_category: str | None = None,
+    ) -> dict | None:
+        """Look up MI/MA HCD background incidence.
+
+        Tries progressively relaxed matching:
+        1. Exact match on all fields including duration_category
+        2. NULL duration_category entries (serve as fallback)
+        3. Drop strain specificity (species-only)
+
+        Returns dict with incidence stats or None.
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_mi_incidence" not in tables:
+            return None
+
+        sex_upper = sex.strip().upper()
+        organ_upper = organ.strip().upper()
+        finding_lower = finding.strip().lower()
+
+        # Tier 1: exact match with duration
+        if duration_category:
+            row = conn.execute(
+                """SELECT * FROM hcd_mi_incidence
+                   WHERE species = ? AND strain = ? AND sex = ?
+                   AND organ = ? AND LOWER(finding) = ?
+                   AND duration_category = ?
+                   ORDER BY confidence ASC LIMIT 1""",
+                (species.upper(), strain.upper(), sex_upper,
+                 organ_upper, finding_lower, duration_category),
+            ).fetchone()
+            if row:
+                return self._mi_row_to_dict(row)
+
+        # Tier 2: NULL duration (fallback entries)
+        row = conn.execute(
+            """SELECT * FROM hcd_mi_incidence
+               WHERE species = ? AND strain = ? AND sex = ?
+               AND organ = ? AND LOWER(finding) = ?
+               AND duration_category IS NULL
+               ORDER BY confidence ASC LIMIT 1""",
+            (species.upper(), strain.upper(), sex_upper,
+             organ_upper, finding_lower),
+        ).fetchone()
+        if row:
+            return self._mi_row_to_dict(row)
+
+        # Tier 3: any duration for this strain
+        row = conn.execute(
+            """SELECT * FROM hcd_mi_incidence
+               WHERE species = ? AND strain = ? AND sex = ?
+               AND organ = ? AND LOWER(finding) = ?
+               ORDER BY confidence ASC LIMIT 1""",
+            (species.upper(), strain.upper(), sex_upper,
+             organ_upper, finding_lower),
+        ).fetchone()
+        if row:
+            return self._mi_row_to_dict(row)
+
+        # Tier 4: substring match on finding (for partial terminology alignment)
+        rows = conn.execute(
+            """SELECT * FROM hcd_mi_incidence
+               WHERE species = ? AND strain = ? AND sex = ?
+               AND organ = ?
+               AND (LOWER(finding) LIKE ? OR ? LIKE '%' || LOWER(finding) || '%')
+               ORDER BY confidence ASC LIMIT 1""",
+            (species.upper(), strain.upper(), sex_upper,
+             organ_upper, f"%{finding_lower}%", finding_lower),
+        ).fetchone()
+        if rows:
+            return self._mi_row_to_dict(rows)
+
+        return None
+
+    @staticmethod
+    def _mi_row_to_dict(row: sqlite3.Row) -> dict:
+        """Convert a sqlite3.Row from hcd_mi_incidence to a dict."""
+        return {
+            "species": row["species"],
+            "strain": row["strain"],
+            "sex": row["sex"],
+            "organ": row["organ"],
+            "finding": row["finding"],
+            "severity": row["severity"],
+            "n_studies": row["n_studies"],
+            "n_animals": row["n_animals"],
+            "n_affected": row["n_affected"],
+            "mean_incidence_pct": row["mean_incidence_pct"],
+            "sd_incidence_pct": row["sd_incidence_pct"],
+            "min_incidence_pct": row["min_incidence_pct"],
+            "max_incidence_pct": row["max_incidence_pct"],
+            "duration_category": row["duration_category"],
+            "source": row["source"],
+            "confidence": row["confidence"],
+        }
+
+    # ------------------------------------------------------------------
+    # HCD domain gaps (documented, no stub methods — no Phase 1 caller)
+    # ------------------------------------------------------------------
+    # FW HCD: No public source available. NTP DTT IAD does not include
+    #   food/water consumption. CRO handbooks are proprietary.
+    # EG/VS HCD: No structured public data. Safety pharmacology CV
+    #   parameters (QT, HR, BP) are mostly proprietary CRO databases.
+    #   Within-subject delta analysis makes population HCD less useful
+    #   for EG/VS than for other domains.
+    # ------------------------------------------------------------------
+
     @staticmethod
     def _row_to_dict(row: sqlite3.Row) -> dict:
         """Convert a sqlite3.Row from hcd_aggregates to a dict."""

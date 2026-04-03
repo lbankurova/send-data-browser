@@ -1,0 +1,19 @@
+topic: hcd-population
+started: 2026-04-03T10:00:00Z
+current_step: complete
+completed:
+  1_research: docs/_internal/research/hcd-population.md
+  2_peer_review_r1: docs/_internal/research/peer-reviews/hcd-population-review.md
+  3_incorporate: all 19 R1 findings accepted
+  4_peer_review_r2: docs/_internal/research/peer-reviews/hcd-population-review-r2.md
+  5_evaluate: validated (all CONDITIONAL in R2)
+  6_distill: no contradictions, 3 knowledge updates needed
+  6.5_probe: SAFE(S24), PROPAGATES(S21,S01,S07), BREAKS(duration), SCIENCE-FLAG(S08)
+  7_synthesis: docs/_internal/incoming/hcd-population-synthesis.md
+  7.5_architect: SIMPLIFY -> PASS (3 simplifications applied)
+  7.8_probe: covered by 6.5 probe (build plan is subset)
+  8_plan_review_r1: docs/_internal/research/peer-reviews/hcd-population-synthesis-review.md
+  9_incorporate_plan: 14 findings addressed (2 FLAWED + 8 CONDITIONAL + 4 SOUND)
+  10_plan_review_r2: docs/_internal/research/peer-reviews/hcd-population-synthesis-review-r2.md
+decisions:
+  - all logged in .lattice/decisions.log
