@@ -102,7 +102,7 @@ ANNOTATIONS_DIR = Path(__file__).parent.parent / "annotations"
 # file mtimes in ETag to avoid serving stale data after annotation edits).
 _OVERRIDE_AFFECTED_VIEWS = {"unified-findings", "noael-summary"}
 
-_OVERRIDE_FILES = ("pattern_overrides.json", "tox_findings.json", "noael_overrides.json")
+_OVERRIDE_FILES = ("pattern_overrides.json", "tox_findings.json", "noael_overrides.json", "animal_exclusions.json")
 
 
 def _compute_etag(study_id: str, file_name: str, view_name: str, cache_key: str | None = None) -> str | None:

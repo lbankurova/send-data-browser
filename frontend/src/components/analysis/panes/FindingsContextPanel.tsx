@@ -11,6 +11,7 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { usePaneHistory } from "@/hooks/usePaneHistory";
 import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
+import { LooSensitivityPane } from "./LooSensitivityPane";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
 import { CorrelationsPane } from "./CorrelationsPane";
@@ -2402,6 +2403,33 @@ export function FindingsContextPanel() {
               <GradeConfidencePane confidence={selectedFinding._confidence} />
             </CollapsiblePane>
           )}
+
+          {/* LOO Sensitivity — collapsible info pane for LOO-fragile endpoints */}
+          {(() => {
+            const ep = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const allForEp = (findingsData?.findings ?? []).filter(
+              f => (f.endpoint_label ?? f.finding) === ep && f.domain === selectedFinding.domain,
+            );
+            const hasFragile = allForEp.some(f =>
+              f.loo_per_subject && Object.values(f.loo_per_subject).some(r => r.ratio < 0.8),
+            );
+            if (!hasFragile) return null;
+            return (
+              <CollapsiblePane
+                title="LOO sensitivity"
+                defaultOpen
+                sessionKey="pcc.ep.loo-sensitivity"
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+              >
+                <LooSensitivityPane
+                  finding={selectedFinding}
+                  allFindings={findingsData?.findings ?? []}
+                  doseGroups={findingsData?.dose_groups}
+                />
+              </CollapsiblePane>
+            );
+          })()}
 
         </>
       ) : (

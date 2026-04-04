@@ -360,6 +360,48 @@ def attach_separate_stats(
 
 
 # ---------------------------------------------------------------------------
+# Pre-exclusion statistics preservation
+# ---------------------------------------------------------------------------
+
+def _stash_pre_exclusion_stats(findings: list[dict]) -> list[dict]:
+    """Stash base-pass (pre-exclusion) driving metrics on findings with scheduled stats.
+
+    When animal exclusions are active, the base-pass pairwise represents the
+    pre-exclusion world. The scheduled_pairwise represents the post-exclusion
+    world. This function copies the base-pass driving metrics into
+    ``_pre_exclusion_*`` fields for regulatory audit trail.
+
+    Only fires on findings that have ``scheduled_pairwise`` data (i.e., findings
+    in SCHEDULED_DOMAINS where the dual-pass ran).
+    """
+    for f in findings:
+        sched_pw = f.get("scheduled_pairwise")
+        if not sched_pw:
+            continue
+        # Base-pass driving metrics are already on the finding via _enrich_finding():
+        #   max_effect_lower (from f["pairwise"]), and the raw pairwise values.
+        # Extract the pre-exclusion effect_size and p_value from the driving pairwise
+        # (the one that produced max_effect_lower).
+        base_pw = f.get("pairwise", [])
+        pre_g_lower = None
+        pre_effect_size = None
+        pre_p_value = None
+        best_gl = 0.0
+        for pw in base_pw:
+            gl = pw.get("g_lower")
+            if gl is not None and gl > best_gl:
+                best_gl = gl
+                pre_g_lower = gl
+                pre_effect_size = pw.get("effect_size")
+                pre_p_value = pw.get("p_value_adj")
+
+        f["_pre_exclusion_g_lower"] = pre_g_lower
+        f["_pre_exclusion_effect_size"] = pre_effect_size
+        f["_pre_exclusion_p_value"] = pre_p_value
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
 
@@ -413,6 +455,15 @@ def process_findings(
     if separate_map is not None:
         base_findings = attach_separate_stats(base_findings, separate_map)
     enriched = enrich_findings(base_findings)
+
+    # Pre-exclusion statistics preservation: when animal exclusions are active,
+    # the base-pass pairwise (f["pairwise"]) contains ALL animals (pre-exclusion)
+    # while scheduled_pairwise contains post-exclusion stats. Stash the base-pass
+    # driving metrics so the frontend can show "before vs after" for audit.
+    # _pre_exclusion_* fields are generation-time (baked into JSON when exclusions
+    # active), distinct from _pattern_override which is serve-time.
+    if n_excluded > 0:
+        enriched = _stash_pre_exclusion_stats(enriched)
 
     # No-control suppression (RC-7, control-groups-model §3): without a concurrent
     # control, Dunnett's pairwise and trend tests are scientifically meaningless.

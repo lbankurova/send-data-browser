@@ -114,6 +114,14 @@ describe("field-contract-sync", () => {
       // Scheduled/separate metadata
       "scheduled_min_p_adj", "scheduled_max_effect_size", "scheduled_trend_p",
       "separate_min_p_adj", "separate_max_effect_size", "separate_trend_p",
+      // Domain-specific metadata (MI/MA)
+      "has_recovery_subjects", "modifier_profile",
+      // Internal linkage fields (RELREC)
+      "_relrec_seq", "_relrec_subject_seqs",
+      // Bayesian/LOO computed fields (pending registry, see GAP-163)
+      "loo_per_subject", "detection_limited", "bayesian_posterior",
+      // Pre-exclusion stats: generation-time internal fields for regulatory audit
+      "_pre_exclusion_g_lower", "_pre_exclusion_effect_size", "_pre_exclusion_p_value",
     ]);
 
     // Parse the Source of Truth Registry table from field-contracts.md

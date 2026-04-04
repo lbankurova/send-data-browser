@@ -125,6 +125,7 @@ class CrossoverDesignAdapter(StudyDesignAdapter):
         dose_context: DoseContext,
         early_death_subjects: dict[str, str] | None = None,
         last_dosing_day_override: int | None = None,
+        animal_exclusions: dict[str, set[str]] | None = None,
     ) -> tuple[list[dict], dict]:
         dose_info = parse_dose_sequences(study)
         tp_data = build_treatment_periods(study)

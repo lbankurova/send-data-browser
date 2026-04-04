@@ -1,5 +1,5 @@
-"""Reads analysis-settings, pattern overrides, tox overrides, and NOAEL
-overrides from the annotations store.
+"""Reads analysis-settings, pattern overrides, tox overrides, NOAEL
+overrides, and animal exclusions from the annotations store.
 """
 
 import json
@@ -340,3 +340,43 @@ def apply_noael_overrides(noael_rows: list[dict], study_id: str) -> list[dict]:
     if applied:
         log.info("Applied %d NOAEL override(s) for %s", applied, study_id)
     return noael_rows
+
+
+# ---------------------------------------------------------------------------
+# Animal exclusions
+# ---------------------------------------------------------------------------
+
+def load_animal_exclusions(study_id: str) -> dict[str, set[str]]:
+    """Load animal exclusions for a study.
+
+    Returns {endpoint_label: {USUBJID, ...}} for endpoint-scoped entries,
+    and {"*": {USUBJID, ...}} for global entries.
+    Empty dict if no file or no excluded entries.
+
+    Entity keys in the annotation file are formatted as:
+      "{USUBJID}:{endpoint_label}" for endpoint-scoped
+      "{USUBJID}:*" for global
+    """
+    path = ANNOTATIONS_DIR / study_id / "animal_exclusions.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text())
+    except (json.JSONDecodeError, TypeError):
+        log.warning("Failed to read animal exclusions for %s", study_id)
+        return {}
+
+    result: dict[str, set[str]] = {}
+    for entity_key, entry in data.items():
+        if not isinstance(entry, dict) or not entry.get("excluded"):
+            continue
+        parts = entity_key.split(":", 1)
+        if len(parts) != 2:
+            continue
+        usubjid, endpoint = parts[0], parts[1]
+        result.setdefault(endpoint, set()).add(usubjid)
+    if result:
+        total = sum(len(s) for s in result.values())
+        log.info("Loaded %d animal exclusion(s) across %d endpoint(s) for %s",
+                 total, len(result), study_id)
+    return result

@@ -59,6 +59,7 @@ class StudyDesignAdapter(ABC):
         dose_context: DoseContext,
         early_death_subjects: dict[str, str] | None = None,
         last_dosing_day_override: int | None = None,
+        animal_exclusions: dict[str, set[str]] | None = None,
     ) -> tuple[list[dict], dict]:
         """Run domain-specific statistics and return normalized findings.
 

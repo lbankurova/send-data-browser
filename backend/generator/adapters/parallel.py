@@ -31,11 +31,13 @@ class ParallelDesignAdapter(StudyDesignAdapter):
         dose_context: DoseContext,
         early_death_subjects: dict[str, str] | None = None,
         last_dosing_day_override: int | None = None,
+        animal_exclusions: dict[str, set[str]] | None = None,
     ) -> tuple[list[dict], dict]:
         findings, dg_data = compute_all_findings(
             study,
             early_death_subjects=early_death_subjects,
             last_dosing_day_override=last_dosing_day_override,
+            animal_exclusions=animal_exclusions,
         )
         return findings, dg_data
 

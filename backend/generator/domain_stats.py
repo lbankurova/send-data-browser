@@ -108,10 +108,55 @@ def _kruskal_p(group_values: list[np.ndarray]) -> float | None:
 
 
 
+def _build_exclusion_set(
+    excluded: dict[str, set[str]] | set[str] | None,
+    endpoint_label: str | None = None,
+) -> set[str] | None:
+    """Build a flat USUBJID set for Polars filtering from the polymorphic excluded type.
+
+    When excluded is a dict (endpoint-scoped), merges the global ("*") set with
+    the endpoint-specific set. When it's already a plain set, returns it as-is.
+    Returns None when no subjects should be excluded.
+    """
+    if excluded is None:
+        return None
+    if isinstance(excluded, set):
+        return excluded
+    result = set(excluded.get("*", set()))
+    if endpoint_label:
+        result |= excluded.get(endpoint_label, set())
+    return result if result else None
+
+
+def _is_excluded(
+    excluded: dict[str, set[str]] | set[str] | None,
+    usubjid: str,
+    endpoint_label: str | None = None,
+) -> bool:
+    """Check if a subject is excluded, supporting both global and endpoint-scoped exclusions.
+
+    excluded can be:
+      - None: no exclusions
+      - set[str]: global exclusion (backward-compatible with early_death_subjects)
+      - dict[str, set[str]]: endpoint-scoped ("*" key = global, endpoint_label key = scoped)
+    """
+    if excluded is None:
+        return False
+    if isinstance(excluded, set):
+        return usubjid in excluded
+    # dict form: check global ("*") and endpoint-specific
+    if usubjid in excluded.get("*", set()):
+        return True
+    if endpoint_label and usubjid in excluded.get(endpoint_label, set()):
+        return True
+    return False
+
+
 def compute_all_findings(
     study: StudyInfo,
     early_death_subjects: dict[str, str] | None = None,
     last_dosing_day_override: int | None = None,
+    animal_exclusions: dict[str, set[str]] | None = None,
 ) -> tuple[list[dict], dict]:
     """Run all domain findings modules and enrich with additional tests.
 
@@ -137,6 +182,25 @@ def compute_all_findings(
     last_dosing_day = compute_last_dosing_day(study, override=last_dosing_day_override)
 
     excluded_set = set(early_death_subjects.keys()) if early_death_subjects else None
+
+    # Merge endpoint-scoped animal exclusions into scheduled-pass exclusion set.
+    # Since domain modules discover endpoints from data (not from parameters),
+    # we flatten all endpoint-scoped exclusions into a single set. This slightly
+    # over-excludes (an animal excluded from ALT will also be excluded from BW
+    # in the scheduled pass), but the scheduled pass is already a conservative
+    # "what if these subjects are removed" computation. Endpoint-precise filtering
+    # would require per-module per-endpoint calls -- tracked as future enhancement.
+    if animal_exclusions:
+        ep_excluded: set[str] = set()
+        for ep_key, ep_subjects in animal_exclusions.items():
+            if ep_key != "*":  # global already merged into early_death_subjects
+                ep_excluded |= ep_subjects
+        if ep_excluded:
+            if excluded_set is None:
+                excluded_set = ep_excluded
+            else:
+                excluded_set |= ep_excluded
+
     n_excluded = len(excluded_set) if excluded_set else 0
 
     # ── Run all domain computations ──
@@ -153,16 +217,20 @@ def compute_all_findings(
     def _run_domain_passes(
         subs: pd.DataFrame, compound_id: str | None = None,
         _compound_dose_count: int | None = None,
-    ) -> tuple[list[dict], dict | None, dict | None]:
-        """Run the 3-pass domain computation for a subject set."""
+    ) -> tuple[list[dict], dict | None, dict | None, set[str]]:
+        """Run the 3-pass domain computation for a subject set.
+
+        Returns (findings, scheduled_map, separate_map, mi_tissue_inventory).
+        """
         main_only = get_terminal_subjects(subs) if has_recovery and subs["is_recovery"].any() else None
         with ProcessPoolExecutor(max_workers=4) as pool:
+            # MI/MA return tuple[list, set] — extract into named futures
+            mi_fut = pool.submit(compute_mi_findings, study, subs)
+            ma_fut = pool.submit(compute_ma_findings, study, subs)
             p1 = [
                 pool.submit(compute_lb_findings, study, subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_bw_findings, study, subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_om_findings, study, subs),
-                pool.submit(compute_mi_findings, study, subs),
-                pool.submit(compute_ma_findings, study, subs),
                 pool.submit(compute_tf_findings, study, subs),
                 pool.submit(compute_cl_findings, study, subs, last_dosing_day=last_dosing_day),
                 pool.submit(compute_ds_findings, study, subs),
@@ -178,11 +246,14 @@ def compute_all_findings(
             if "is" in study.xpt_files:
                 p1.append(pool.submit(compute_is_findings, study, subs))
 
+            # MI/MA scheduled pass — also named futures (tuple return)
+            mi_sched_fut = None
+            ma_sched_fut = None
             p2 = []
             if excluded_set:
+                mi_sched_fut = pool.submit(compute_mi_findings, study, subs, excluded_subjects=excluded_set)
+                ma_sched_fut = pool.submit(compute_ma_findings, study, subs, excluded_subjects=excluded_set)
                 p2 = [
-                    pool.submit(compute_mi_findings, study, subs, excluded_subjects=excluded_set),
-                    pool.submit(compute_ma_findings, study, subs, excluded_subjects=excluded_set),
                     pool.submit(compute_om_findings, study, subs, excluded_subjects=excluded_set),
                     pool.submit(compute_tf_findings, study, subs, excluded_subjects=excluded_set),
                     pool.submit(compute_lb_findings, study, subs, excluded_subjects=excluded_set, last_dosing_day=last_dosing_day),
@@ -205,13 +276,26 @@ def compute_all_findings(
                 if "fw" in study.xpt_files:
                     p3.append(pool.submit(_compute_fw_findings, study, main_only, last_dosing_day=last_dosing_day))
 
+            # Unpack MI/MA tuples; collect tissue inventory for downstream discount
+            mi_findings_p1, mi_tissue = mi_fut.result()
+            ma_findings_p1, ma_tissue = ma_fut.result()
+            _mi_tissue_inv = mi_tissue | ma_tissue
+
             findings = []
+            findings.extend(mi_findings_p1)
+            findings.extend(ma_findings_p1)
             for fut in p1:
                 findings.extend(fut.result())
 
             sched = None
             if p2:
                 sf = []
+                if mi_sched_fut:
+                    mi_sched, _ = mi_sched_fut.result()
+                    sf.extend(mi_sched)
+                if ma_sched_fut:
+                    ma_sched, _ = ma_sched_fut.result()
+                    sf.extend(ma_sched)
                 for fut in p2:
                     sf.extend(fut.result())
                 sched = build_findings_map(sf, "scheduled")
@@ -229,10 +313,11 @@ def compute_all_findings(
                 f["compound_id"] = compound_id
                 f["_compound_dose_count"] = _compound_dose_count
 
-        return findings, sched, sep
+        return findings, sched, sep, _mi_tissue_inv
 
     t_domains = time.perf_counter()
 
+    mi_tissue_inventory: set[str] = set()
     if is_multi_compound and compound_partitions:
         # Per-compound: run domain passes for each partition independently
         all_findings = []
@@ -241,11 +326,12 @@ def compute_all_findings(
         for comp_id, partition in compound_partitions.items():
             partition_armcds = set(partition["armcds"])
             partition_subs = analysis_subjects[analysis_subjects["ARMCD"].isin(partition_armcds)].copy()
-            comp_findings, comp_sched, comp_sep = _run_domain_passes(
+            comp_findings, comp_sched, comp_sep, comp_tissue = _run_domain_passes(
                 partition_subs, compound_id=comp_id,
                 _compound_dose_count=partition["dose_count"],
             )
             all_findings.extend(comp_findings)
+            mi_tissue_inventory |= comp_tissue
             # Merge scheduled/separate maps across compounds
             if comp_sched:
                 if scheduled_map is None:
@@ -260,7 +346,7 @@ def compute_all_findings(
         print(f"    Per-compound domain stats: {len(compound_partitions)} compounds")
     else:
         # Single-compound: existing behavior
-        all_findings, scheduled_map, separate_map = _run_domain_passes(analysis_subjects)
+        all_findings, scheduled_map, separate_map, mi_tissue_inventory = _run_domain_passes(analysis_subjects)
 
     dt_domains = time.perf_counter() - t_domains
     print(f"    domain computations: {dt_domains:.1f}s")
@@ -394,6 +480,8 @@ def compute_all_findings(
     dt_stats = time.perf_counter() - t_stats
     print(f"    stats enrichment: {dt_stats:.1f}s (Dunnett: {n_dunnett_reused} reused, {n_dunnett_computed} computed)")
 
+    dg_data["mi_tissue_inventory"] = mi_tissue_inventory
+    dg_data["species"] = species
     return all_findings, dg_data
 
 

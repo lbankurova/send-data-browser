@@ -15,6 +15,8 @@ import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
+import { useDistributionSubjects } from "@/contexts/DistributionSubjectsContext";
 import { StripPlotChart, LOO_INFLUENTIAL_COLOR } from "../panes/StripPlotChart";
 import { BivarScatterChart } from "../panes/BivarScatterChart";
 import type { BivarSubjectValue } from "../panes/BivarScatterChart";
@@ -48,6 +50,16 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   // Canonical recovery-pooling and mortality exclusion (shared with other panes)
   const { hasRecovery, includeRecovery } = useRecoveryPooling();
   const { excludedSubjects } = useScheduledOnly();
+  const { toggleExclusion, pendingExclusions } = useAnimalExclusion();
+  const endpointLabel = finding.endpoint_label ?? finding.finding;
+  const excludedForEndpoint = useMemo(() => {
+    const set = pendingExclusions.get(endpointLabel);
+    return set && set.size > 0 ? set : undefined;
+  }, [pendingExclusions, endpointLabel]);
+  const handleToggleExclusion = useCallback(
+    (usubjid: string) => toggleExclusion(endpointLabel, usubjid),
+    [toggleExclusion, endpointLabel],
+  );
 
   // Auto-check recovery when parent enters recovery mode
   const showRecoveryAnimals = recoveryChecked || !!isRecoveryMode;
@@ -127,6 +139,15 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
       unit: subjectData.unit,
     };
   }, [subjectData, selectedDay, shouldIncludeSubject]);
+
+  // Publish subject values for LooSensitivityPane impact preview
+  const { setSubjectValues } = useDistributionSubjects();
+  useEffect(() => {
+    if (subjects.length === 0) return;
+    const ctrl = subjects.filter(s => s.dose_level === 0).map(s => ({ usubjid: s.usubjid, value: s.value, dose_level: s.dose_level }));
+    const treat = subjects.filter(s => s.dose_level > 0).map(s => ({ usubjid: s.usubjid, value: s.value, dose_level: s.dose_level }));
+    setSubjectValues(endpointLabel, ctrl, treat);
+  }, [subjects, endpointLabel, setSubjectValues]);
 
   // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
   const { data: analyticsData } = useFindingsAnalyticsResult();
@@ -311,6 +332,9 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             mode={showRecoveryAnimals ? "recovery" : "terminal"}
             interleaved
             influentialSubjects={influentialSubjects}
+            endpointLabel={endpointLabel}
+            excludedSubjects={excludedForEndpoint}
+            onToggleExclusion={handleToggleExclusion}
           />
         )}
       </div>

@@ -24,6 +24,7 @@ VALID_SCHEMA_TYPES = {
     "saved-cohorts",
     "compound-profile",
     "study-type-override",
+    "animal-exclusions",
 }
 
 # Map URL slugs to file names

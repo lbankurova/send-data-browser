@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import { useParams } from "react-router-dom";
 import { useTimecourseSubject } from "@/hooks/useTimecourse";
+import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
@@ -140,6 +141,19 @@ export function DistributionPane({
 }: DistributionPaneProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const { setSelectedSubject } = useViewSelection();
+  const { toggleExclusion, pendingExclusions } = useAnimalExclusion();
+  const endpointLabel = finding.endpoint_label ?? finding.finding;
+
+  // Collect excluded USUBJIDs for this endpoint (for chart rendering)
+  const excludedForEndpoint = useMemo(() => {
+    const set = pendingExclusions.get(endpointLabel);
+    return set && set.size > 0 ? set : undefined;
+  }, [pendingExclusions, endpointLabel]);
+
+  const handleToggleExclusion = useCallback(
+    (usubjid: string) => toggleExclusion(endpointLabel, usubjid),
+    [toggleExclusion, endpointLabel],
+  );
 
   const isVisible =
     finding.data_type === "continuous" && ALLOWED_DOMAINS.has(finding.domain);
@@ -384,6 +398,15 @@ export function DistributionPane({
                   <span>LOO influential</span>
                 </div>
               )}
+              {excludedForEndpoint && excludedForEndpoint.size > 0 && (
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <svg width="8" height="8" className="shrink-0">
+                    <line x1="1" y1="1" x2="7" y2="7" stroke="#9ca3af" strokeWidth={1.5} />
+                    <line x1="1" y1="7" x2="7" y2="1" stroke="#9ca3af" strokeWidth={1.5} />
+                  </svg>
+                  <span>Excluded (pending)</span>
+                </div>
+              )}
             </div>
           </div>
           {mode === "scatter_bw" ? (
@@ -407,6 +430,9 @@ export function DistributionPane({
               onSubjectClick={handleSubjectClick}
               mode={mode}
               influentialSubjects={influentialSubjects}
+              endpointLabel={endpointLabel}
+              excludedSubjects={excludedForEndpoint}
+              onToggleExclusion={handleToggleExclusion}
             />
           )}
         </div>

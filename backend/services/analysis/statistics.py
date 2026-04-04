@@ -289,20 +289,22 @@ def compute_loo_stability(
     if g_lower_full is None or g_lower_full <= 0:
         return None  # no signal to be fragile about
 
-    def _side_stability(base: np.ndarray, other: np.ndarray, remove_from_first: bool) -> tuple[float, int]:
+    def _side_stability(base: np.ndarray, other: np.ndarray, remove_from_first: bool) -> tuple[float, int, list[tuple[int, float]]]:
         """Compute min LOO-gLower ratio for one side.
 
         remove_from_first=True: iterate over base (removing from group 1 in effect_size call)
         remove_from_first=False: iterate over base (removing from group 2)
 
-        Returns (stability_ratio, influential_index).
+        Returns (stability_ratio, influential_index, per_animal_ratios).
+        per_animal_ratios: list of (index, ratio) for every animal in the loop.
         Tie-breaking: first-encountered wins (lowest array index).
         """
         n = len(base)
         if n <= 2:
-            return 0.0, 0
+            return 0.0, 0, [(i, 0.0) for i in range(n)]
         min_ratio = float("inf")
         min_idx = 0
+        per_animal: list[tuple[int, float]] = []
         for i in range(n):
             loo_base = np.delete(base, i)
             if remove_from_first:
@@ -312,20 +314,24 @@ def compute_loo_stability(
                 loo_g = compute_effect_size(other, loo_base)
                 loo_gl = compute_g_lower(loo_g, len(loo_base), len(other), confidence_level) if loo_g is not None else None
             if loo_g is None:
-                return 0.0, i  # degenerate (zero variance after removal)
+                per_animal.append((i, 0.0))
+                return 0.0, i, per_animal  # degenerate (zero variance after removal)
             if loo_gl is None or loo_gl <= 0:
-                return 0.0, i
+                per_animal.append((i, 0.0))
+                return 0.0, i, per_animal
+            ratio = round(loo_gl / g_lower_full, 4)
+            per_animal.append((i, ratio))
             if loo_gl < min_ratio:
                 min_ratio = loo_gl
                 min_idx = i
         if min_ratio == float("inf"):
-            return 1.0, 0
-        return round(min_ratio / g_lower_full, 4), min_idx
+            return 1.0, 0, per_animal
+        return round(min_ratio / g_lower_full, 4), min_idx, per_animal
 
     # Treated-side: remove each treated animal, compute effect_size(loo_treated, control)
-    treated_stab, treated_idx = _side_stability(treated, control, remove_from_first=True)
+    treated_stab, treated_idx, treated_per_animal = _side_stability(treated, control, remove_from_first=True)
     # Control-side: remove each control animal, compute effect_size(treated, loo_control)
-    control_stab, control_idx = _side_stability(control, treated, remove_from_first=False)
+    control_stab, control_idx, control_per_animal = _side_stability(control, treated, remove_from_first=False)
 
     overall = min(treated_stab, control_stab)
     control_fragile = control_stab < treated_stab if not (control_stab == 0.0 and treated_stab == 0.0) else False
@@ -337,6 +343,8 @@ def compute_loo_stability(
         "control_fragile": control_fragile,
         "influential_treated_idx": treated_idx,
         "influential_control_idx": control_idx,
+        "treated_per_animal": treated_per_animal,
+        "control_per_animal": control_per_animal,
     }
 
 
@@ -537,6 +545,7 @@ def dunnett_pairwise(
 
         # Map influential animal index to USUBJID
         loo_subject: str | None = None
+        loo_per_subject: dict[str, dict] | None = None
         if loo_result is not None:
             if loo_result["control_fragile"] and ctrl_ids_clean is not None:
                 idx = loo_result["influential_control_idx"]
@@ -547,6 +556,19 @@ def dunnett_pairwise(
                 t_ids_list = all_cleaned_ids[i]
                 if t_ids_list is not None and idx < len(t_ids_list):
                     loo_subject = t_ids_list[idx]
+
+            # Map per-animal LOO ratios to USUBJIDs (both sides)
+            # Each entry carries ratio + dose_level so the frontend can color-code
+            # by dose group without reverse-engineering group membership.
+            loo_per_subject = {}
+            t_ids = all_cleaned_ids[i]
+            for arr_idx, ratio in loo_result.get("treated_per_animal", []):
+                if t_ids is not None and arr_idx < len(t_ids):
+                    loo_per_subject[t_ids[arr_idx]] = {"ratio": ratio, "dose_level": int(dose_level)}
+            if ctrl_ids_clean is not None:
+                for arr_idx, ratio in loo_result.get("control_per_animal", []):
+                    if arr_idx < len(ctrl_ids_clean):
+                        loo_per_subject[ctrl_ids_clean[arr_idx]] = {"ratio": ratio, "dose_level": 0}
 
         pairwise.append({
             "dose_level": int(dose_level),
@@ -561,6 +583,7 @@ def dunnett_pairwise(
             "loo_control": loo_result["control"] if loo_result else None,
             "loo_control_fragile": loo_result["control_fragile"] if loo_result else None,
             "loo_influential_subject": loo_subject,
+            "loo_per_subject": loo_per_subject,
         })
     return pairwise
 

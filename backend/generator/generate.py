@@ -28,7 +28,7 @@ from generator.cross_animal_flags import build_cross_animal_flags
 from generator.subject_syndromes import build_subject_syndromes
 from generator.onset_recovery import build_onset_days, build_recovery_verdicts
 from generator.noael_overlay import build_subject_noael_overlay
-from services.analysis.override_reader import get_last_dosing_day_override
+from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
 
 
@@ -126,6 +126,19 @@ def generate(study_id: str):
     if last_dosing_day_override is not None:
         print(f"  Override: last_dosing_day = {last_dosing_day_override}")
 
+    # Read animal exclusions (if any) and merge global exclusions into early_death_subjects
+    animal_exclusions = load_animal_exclusions(study_id)
+    if animal_exclusions:
+        global_excluded = animal_exclusions.get("*", set())
+        if global_excluded:
+            if early_death_subjects is None:
+                early_death_subjects = {}
+            for subj in global_excluded:
+                early_death_subjects.setdefault(subj, "user_excluded")
+        n_global = len(global_excluded)
+        n_endpoint = sum(len(s) for ep, s in animal_exclusions.items() if ep != "*")
+        print(f"  Animal exclusions: {n_global} global, {n_endpoint} endpoint-scoped")
+
     _tick("1a_end")
 
     # Phase 1b: Compute all findings via adapter
@@ -135,6 +148,7 @@ def generate(study_id: str):
         study, dose_context,
         early_death_subjects=early_death_subjects,
         last_dosing_day_override=last_dosing_day_override,
+        animal_exclusions=animal_exclusions if animal_exclusions else None,
     )
     dose_groups = dg_data["dose_groups"]
     print(f"  {len(findings)} findings across {len(set(f['domain'] for f in findings))} domains")
@@ -438,6 +452,8 @@ def generate(study_id: str):
         precomputed_dose_groups=dose_groups,
         has_concurrent_control=dg_data.get("has_concurrent_control", True),
         compound_partitions=dg_data.get("compound_partitions"),
+        mi_tissue_inventory=dg_data.get("mi_tissue_inventory"),
+        species=dg_data.get("species"),
     )
 
     # Extract views for downstream consumers

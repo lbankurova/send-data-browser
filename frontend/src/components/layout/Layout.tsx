@@ -13,6 +13,8 @@ import { StudySelectionProvider } from "@/contexts/StudySelectionContext";
 import { GlobalFilterProvider } from "@/contexts/GlobalFilterContext";
 import { RailModeProvider } from "@/contexts/RailModeContext";
 import { ScheduledOnlyProvider } from "@/contexts/ScheduledOnlyContext";
+import { AnimalExclusionProvider } from "@/contexts/AnimalExclusionContext";
+import { DistributionSubjectsProvider } from "@/contexts/DistributionSubjectsContext";
 import { StudySettingsProvider } from "@/contexts/StudySettingsContext";
 import { FindingsAnalyticsLayer } from "@/contexts/FindingsAnalyticsLayer";
 import { CohortProvider } from "@/contexts/CohortContext";
@@ -48,6 +50,8 @@ export function Layout() {
         <StudySelectionProvider studyId={studyId}>
         <GlobalFilterProvider>
         <RailModeProvider studyId={studyId}>
+        <AnimalExclusionProvider studyId={studyId || undefined}>
+        <DistributionSubjectsProvider>
         <ScheduledOnlyProvider>
         <StudySettingsProvider>
         <FindingsAnalyticsLayer studyId={studyId || undefined}>
@@ -138,6 +142,8 @@ export function Layout() {
         </FindingsAnalyticsLayer>
         </StudySettingsProvider>
         </ScheduledOnlyProvider>
+        </DistributionSubjectsProvider>
+        </AnimalExclusionProvider>
         </RailModeProvider>
         </GlobalFilterProvider>
         </StudySelectionProvider>

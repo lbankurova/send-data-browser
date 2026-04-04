@@ -42,6 +42,12 @@ export interface StripPlotChartProps {
   interleaved?: boolean;
   /** USUBJIDs of LOO-influential animals — render in amber-brown (#92400e). */
   influentialSubjects?: ReadonlySet<string>;
+  /** Endpoint label for scoping animal exclusions. */
+  endpointLabel?: string;
+  /** USUBJIDs currently excluded (pending or committed). Rendered as cross marks. */
+  excludedSubjects?: ReadonlySet<string>;
+  /** Callback when user right-clicks a dot to toggle exclusion. */
+  onToggleExclusion?: (usubjid: string) => void;
 }
 
 // ── Layout constants ──────────────────────────────────────
@@ -97,9 +103,10 @@ function jitterX(index: number, count: number, colWidth: number): number {
 
 // ── Component ────────────────────────────────────────────
 
-export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false, influentialSubjects }: StripPlotChartProps) {
+export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false, influentialSubjects, excludedSubjects, onToggleExclusion }: StripPlotChartProps) {
   const [hoveredDot, setHoveredDot] = useState<SubjectValue | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sv: SubjectValue } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Per-sex stats per dose group (for the stats beneath each panel)
@@ -160,19 +167,39 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     setHoveredDot(sv);
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
-      const suffix = influentialSubjects?.has(sv.usubjid) ? " -- LOO influential" : "";
+      const isExcl = excludedSubjects?.has(sv.usubjid);
+      const isInfl = influentialSubjects?.has(sv.usubjid);
+      const suffix = isExcl ? " -- excluded" : isInfl ? " -- LOO influential" : "";
       setTooltip({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top - 10,
         text: `${shortId(sv.usubjid)}  ${sv.value.toFixed(2)} ${unit}${suffix}`,
       });
     }
-  }, [unit, influentialSubjects]);
+  }, [unit, influentialSubjects, excludedSubjects]);
 
   const handleDotLeave = useCallback(() => {
     setHoveredDot(null);
     setTooltip(null);
   }, []);
+
+  // Right-click context menu for animal exclusion
+  const handleDotContextMenu = useCallback((sv: SubjectValue, e: React.MouseEvent) => {
+    if (!onToggleExclusion) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setCtxMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, sv });
+    }
+  }, [onToggleExclusion]);
+
+  const handleCtxMenuAction = useCallback(() => {
+    if (ctxMenu && onToggleExclusion) {
+      onToggleExclusion(ctxMenu.sv.usubjid);
+    }
+    setCtxMenu(null);
+  }, [ctxMenu, onToggleExclusion]);
 
   // Dot click → subject profile
   const handleDotClick = useCallback((usubjid: string) => {
@@ -198,6 +225,9 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
             onDotLeave={handleDotLeave}
             onDotClick={handleDotClick}
             influentialSubjects={influentialSubjects}
+            excludedSubjects={excludedSubjects}
+            onToggleExclusion={onToggleExclusion}
+            handleDotContextMenu={handleDotContextMenu}
           />
         </div>
         {tooltip && (
@@ -206,6 +236,21 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
             style={{ left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -100%)" }}
           >
             {tooltip.text}
+          </div>
+        )}
+        {ctxMenu && (
+          <div
+            className="absolute bg-popover text-popover-foreground border border-border rounded shadow-md z-20 text-[11px]"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          >
+            <button
+              className="px-3 py-1.5 hover:bg-muted w-full text-left whitespace-nowrap"
+              onClick={handleCtxMenuAction}
+              onBlur={() => setCtxMenu(null)}
+              autoFocus
+            >
+              {excludedSubjects?.has(ctxMenu.sv.usubjid) ? "Include in stats" : "Exclude from stats"}
+            </button>
           </div>
         )}
       </div>
@@ -249,6 +294,9 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               onDotLeave={handleDotLeave}
               onDotClick={handleDotClick}
               influentialSubjects={influentialSubjects}
+              excludedSubjects={excludedSubjects}
+              onToggleExclusion={onToggleExclusion}
+              handleDotContextMenu={handleDotContextMenu}
             />
             {/* Per-sex dose legend — aligned with SVG columns */}
             <div
@@ -307,6 +355,21 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
           {tooltip.text}
         </div>
       )}
+      {ctxMenu && (
+        <div
+          className="absolute bg-popover text-popover-foreground border border-border rounded shadow-md z-20 text-[11px]"
+          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+        >
+          <button
+            className="px-3 py-1.5 hover:bg-muted w-full text-left whitespace-nowrap"
+            onClick={handleCtxMenuAction}
+            onBlur={() => setCtxMenu(null)}
+            autoFocus
+          >
+            {excludedSubjects?.has(ctxMenu.sv.usubjid) ? "Include in stats" : "Exclude from stats"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -327,6 +390,9 @@ function InterleavedPanel({
   onDotLeave,
   onDotClick,
   influentialSubjects,
+  excludedSubjects,
+  onToggleExclusion,
+  handleDotContextMenu,
 }: {
   grouped: Record<string, Record<number, SubjectValue[]>>;
   sexes: string[];
@@ -339,6 +405,9 @@ function InterleavedPanel({
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
   influentialSubjects?: ReadonlySet<string>;
+  excludedSubjects?: ReadonlySet<string>;
+  onToggleExclusion?: (usubjid: string) => void;
+  handleDotContextMenu: (sv: SubjectValue, e: React.MouseEvent) => void;
 }) {
   const [dims, setDims] = useState({ width: 400, height: 250 });
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -492,13 +561,24 @@ function InterleavedPanel({
                   {values.map((sv, i) => {
                     const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
                     const isInfluential = !!influentialSubjects?.has(sv.usubjid);
+                    const isExcluded = !!excludedSubjects?.has(sv.usubjid);
                     const dotX = sexCx + jitterX(i, values.length, subColWidth);
                     const dotY = yScale(sv.value);
                     const handlers = {
                       onMouseEnter: (e: React.MouseEvent) => { e.stopPropagation(); onDotEnter(sv, e); },
                       onMouseLeave: (e: React.MouseEvent) => { e.stopPropagation(); onDotLeave(); },
                       onClick: (e: React.MouseEvent) => { e.stopPropagation(); onDotClick(sv.usubjid); },
+                      onContextMenu: (e: React.MouseEvent) => handleDotContextMenu(sv, e),
                     };
+                    if (isExcluded) {
+                      const s = DOT_RADIUS;
+                      return (
+                        <g key={sv.usubjid} style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }} {...handlers}>
+                          <line x1={dotX - s} y1={dotY - s} x2={dotX + s} y2={dotY + s} stroke="#9ca3af" strokeWidth={1.5} />
+                          <line x1={dotX - s} y1={dotY + s} x2={dotX + s} y2={dotY - s} stroke="#9ca3af" strokeWidth={1.5} />
+                        </g>
+                      );
+                    }
                     if (isInfluential) {
                       return (
                         <circle
@@ -507,7 +587,7 @@ function InterleavedPanel({
                           r={DOT_RADIUS_HOVER}
                           fill={LOO_INFLUENTIAL_COLOR}
                           opacity={1}
-                          style={{ cursor: "pointer" }}
+                          style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                           {...handlers}
                         />
                       );
@@ -521,7 +601,7 @@ function InterleavedPanel({
                         opacity={isDotHovered ? 1 : 0.7}
                         stroke={isDotHovered ? "var(--foreground)" : "none"}
                         strokeWidth={isDotHovered ? 1 : 0}
-                        style={{ transition: "opacity 0.15s, r 0.1s", cursor: "pointer" }}
+                        style={{ transition: "opacity 0.15s, r 0.1s", cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                         {...handlers}
                       />
                     );
@@ -567,6 +647,9 @@ function SexPanel({
   onDotLeave,
   onDotClick,
   influentialSubjects,
+  excludedSubjects,
+  onToggleExclusion,
+  handleDotContextMenu,
 }: {
   showYAxis: boolean;
   grouped: Record<number, SubjectValue[]>;
@@ -580,6 +663,9 @@ function SexPanel({
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
   influentialSubjects?: ReadonlySet<string>;
+  excludedSubjects?: ReadonlySet<string>;
+  onToggleExclusion?: (usubjid: string) => void;
+  handleDotContextMenu: (sv: SubjectValue, e: React.MouseEvent) => void;
 }) {
   const [width, setWidth] = useState(200);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -701,13 +787,24 @@ function SexPanel({
             {values.map((sv, i) => {
               const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
               const isInfluential = !!influentialSubjects?.has(sv.usubjid);
+              const isExcluded = !!excludedSubjects?.has(sv.usubjid);
               const dotX = cx + jitterX(i, values.length, colWidth);
               const dotY = yScale(sv.value);
               const handlers = {
                 onMouseEnter: (e: React.MouseEvent) => { e.stopPropagation(); onDotEnter(sv, e); },
                 onMouseLeave: (e: React.MouseEvent) => { e.stopPropagation(); onDotLeave(); },
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onDotClick(sv.usubjid); },
+                onContextMenu: (e: React.MouseEvent) => handleDotContextMenu(sv, e),
               };
+              if (isExcluded) {
+                const s = DOT_RADIUS;
+                return (
+                  <g key={sv.usubjid} style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }} {...handlers}>
+                    <line x1={dotX - s} y1={dotY - s} x2={dotX + s} y2={dotY + s} stroke="#9ca3af" strokeWidth={1.5} />
+                    <line x1={dotX - s} y1={dotY + s} x2={dotX + s} y2={dotY - s} stroke="#9ca3af" strokeWidth={1.5} />
+                  </g>
+                );
+              }
               if (isInfluential) {
                 return (
                   <circle
@@ -716,7 +813,7 @@ function SexPanel({
                     r={DOT_RADIUS_HOVER}
                     fill={LOO_INFLUENTIAL_COLOR}
                     opacity={1}
-                    style={{ cursor: "pointer" }}
+                    style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                     {...handlers}
                   />
                 );
@@ -730,7 +827,7 @@ function SexPanel({
                   opacity={isDotHovered ? 1 : 0.7}
                   stroke={isDotHovered ? "var(--foreground)" : "none"}
                   strokeWidth={isDotHovered ? 1 : 0}
-                  style={{ transition: "opacity 0.15s, r 0.1s", cursor: "pointer" }}
+                  style={{ transition: "opacity 0.15s, r 0.1s", cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                   {...handlers}
                 />
               );
