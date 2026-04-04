@@ -12,6 +12,7 @@ import type {
   ProvenanceMessage,
   FindingDoseTrend,
   PkIntegration,
+  AnimalInfluenceData,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse, NoaelOverlayResponse } from "@/types/cohort";
@@ -404,5 +405,15 @@ export function fetchNoaelOverlay(
 ): Promise<NoaelOverlayResponse> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/subject-noael-overlay`,
+  );
+}
+
+// ── Animal influence ──────────────────────────────────────────
+
+export function fetchAnimalInfluence(
+  studyId: string,
+): Promise<AnimalInfluenceData> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/animal-influence`,
   );
 }

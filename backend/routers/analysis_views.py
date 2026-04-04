@@ -62,6 +62,7 @@ VALID_VIEW_NAMES = {
     "subject-noael-overlay",
     "control-comparison",
     "assay-validation",
+    "animal-influence",
 }
 
 # The 10 view names that the parameterized pipeline produces

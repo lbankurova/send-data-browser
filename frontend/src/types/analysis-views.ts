@@ -431,3 +431,48 @@ export interface PkIntegration {
     noael_status: "established" | "at_control";
   };
 }
+
+// ── Animal Influence Explorer ───────────────────────────────────
+
+export interface AnimalInfluenceData {
+  min_group_n: number;
+  loo_confidence: "adequate" | "low" | "insufficient";
+  thresholds: {
+    destabilising_pct: number;
+    bio_extremity_z: number;
+  };
+  animals: AnimalInfluenceSummary[];
+  endpoint_details: Record<string, AnimalEndpointDetail[]>;
+}
+
+export interface AnimalInfluenceSummary {
+  subject_id: string;
+  group_id: string;
+  dose_level: number;
+  sex: string;
+  terminal_bw: number | null;
+  is_control: boolean;
+  /** Null when loo_confidence === "insufficient" (N < 3). */
+  pct_destabilising: number | null;
+  mean_bio_z: number;
+  n_endpoints_total: number;
+  /** Null when loo_confidence === "insufficient". */
+  n_endpoints_with_loo: number | null;
+  /** Null when loo_confidence === "insufficient". */
+  n_destabilising: number | null;
+  is_alarm: boolean;
+}
+
+export interface AnimalEndpointDetail {
+  endpoint_id: string;
+  endpoint_name: string;
+  endpoint_type: "continuous" | "semiquant" | "incidence";
+  domain: string;
+  bio_z_raw: number | null;
+  bio_norm: number | null;
+  instability: number | null;
+  loo_ratio: number | null;
+  loo_dose_group: string | null;
+  is_control_side: boolean;
+  alarm_score: number;
+}

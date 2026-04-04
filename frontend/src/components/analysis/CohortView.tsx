@@ -5,16 +5,19 @@
  * center panel content: tabbed table (Subjects / Organ detail) + charts.
  */
 import { Loader2 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useCohort } from "@/contexts/CohortContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { CohortEvidenceTable } from "./cohort/CohortEvidenceTable";
 import { SubjectSignalTable } from "./cohort/SubjectSignalTable";
 import { CohortCharts } from "./cohort/CohortCharts";
+import { CohortInfluenceMap } from "./cohort/CohortInfluenceMap";
+import { AnimalInfluencePanel } from "./cohort/AnimalInfluencePanel";
 import { useNoaelOverlay } from "@/hooks/useNoaelOverlay";
 import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
+import { useAnimalInfluence } from "@/hooks/useAnimalInfluence";
 import { useCallback, useState } from "react";
 import { TabButton } from "@/components/ui/TabBar";
 
@@ -28,7 +31,16 @@ export function CohortView() {
   const { data: syndromesData } = useSubjectSyndromes(studyId);
   const { data: onsetDaysData } = useOnsetDays(studyId);
   const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
+  const { data: influenceData } = useAnimalInfluence(studyId);
   const [activeTab, setActiveTab] = useState<CohortTab>("subjects");
+  const [selectedInfluenceAnimal, setSelectedInfluenceAnimal] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleEndpointClick = useCallback(() => {
+    // Navigate to findings view — endpoint pre-selection requires FindingSelectionContext
+    // plumbing (context is inside FindingsView, not shared at app level)
+    navigate(`/studies/${encodeURIComponent(studyId!)}/findings`);
+  }, [navigate, studyId]);
 
   const handleSubjectClick = useCallback((usubjid: string) => {
     setSelectedSubject(usubjid);
@@ -56,6 +68,27 @@ export function CohortView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {/* Influence map — two-chart split */}
+      {influenceData && influenceData.animals.length > 0 && (
+        <div className="shrink-0 flex border-b" style={{ height: 280 }}>
+          <div className="flex-1 min-w-0 border-r">
+            <CohortInfluenceMap
+              data={influenceData}
+              doseGroups={cohort.doseGroups}
+              selectedAnimal={selectedInfluenceAnimal}
+              onAnimalSelect={setSelectedInfluenceAnimal}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <AnimalInfluencePanel
+              data={influenceData}
+              selectedAnimal={selectedInfluenceAnimal}
+              onEndpointClick={handleEndpointClick}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="flex items-center border-b bg-muted/30">
         <TabButton active={activeTab === "subjects"} onClick={() => setActiveTab("subjects")}>
