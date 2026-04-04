@@ -29,6 +29,7 @@ const defaultBoosts = defaultBand as BandBoosts;
 export type OrganBandKey =
   | "LIVER" | "KIDNEY" | "HEMATOPOIETIC" | "BONE_MARROW" | "THYMUS"
   | "SPLEEN" | "ADRENAL" | "THYROID" | "HEART" | "LUNG" | "BRAIN"
+  | "BRAIN_WEIGHT" | "BRAIN_ENZYME"
   | "REPRODUCTIVE" | "SKIN" | "BODY_WEIGHT" | "COAGULATION";
 
 // ─── Specimen routing (Priority 1) ────────────────────────
@@ -109,12 +110,12 @@ const ORGAN_SYSTEM_MAP: Record<string, string> = {
 export function resolveOrganBand(ep: EndpointSummary): string | null {
   // Priority 1: specimen
   const bySpecimen = routeBySpecimen(ep.specimen);
-  if (bySpecimen) return bySpecimen;
+  if (bySpecimen) return refineBrain(bySpecimen, ep.domain);
 
   // Priority 2: domain + testCode
   if (ep.domain === "LB") {
     const byTC = routeByTestCode(ep.testCode);
-    if (byTC) return byTC;
+    if (byTC) return refineBrain(byTC, ep.domain);
     // LB with no recognized test code → default to HEMATOPOIETIC
     return "HEMATOPOIETIC";
   }
@@ -122,7 +123,20 @@ export function resolveOrganBand(ep: EndpointSummary): string | null {
 
   // For MI/MA/OM without specimen match, fall through to organ_system
   // Priority 3: organ_system fallback
-  return ORGAN_SYSTEM_MAP[ep.organ_system] ?? null;
+  const byOS = ORGAN_SYSTEM_MAP[ep.organ_system] ?? null;
+  return byOS ? refineBrain(byOS, ep.domain) : null;
+}
+
+/**
+ * Refine BRAIN band into endpoint-type-aware sub-bands.
+ * Brain weight (OM) and brain enzyme (LB) have fundamentally different
+ * sex dimorphism profiles -- see research/brain-weight-sex-concordance-calibration.md.
+ */
+function refineBrain(band: string, domain: string | undefined): string {
+  if (band !== "BRAIN") return band;
+  if (domain === "OM") return "BRAIN_WEIGHT";
+  if (domain === "LB") return "BRAIN_ENZYME";
+  return "BRAIN"; // MI, CL, MA -> morphology/observation residual
 }
 
 /**

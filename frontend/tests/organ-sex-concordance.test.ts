@@ -73,8 +73,8 @@ describe("resolveOrganBand", () => {
       ["GLAND, THYROID", "THYROID"],
       ["HEART", "HEART"],
       ["LUNG", "LUNG"],
-      ["BRAIN", "BRAIN"],
-      ["SPINAL CORD", "BRAIN"],
+      ["BRAIN", "BRAIN"],       // MI domain → residual BRAIN
+      ["SPINAL CORD", "BRAIN"], // MI domain → residual BRAIN
       ["SKIN", "SKIN"],
       ["TESTIS", "REPRODUCTIVE"],
       ["TESTES", "REPRODUCTIVE"],
@@ -127,9 +127,9 @@ describe("resolveOrganBand", () => {
       ["TROPONIN", "HEART"],
       ["CK", "HEART"],
       ["LDH", "HEART"],
-      // Brain
-      ["ACHE", "BRAIN"],
-      ["BUCHE", "BRAIN"],
+      // Brain (LB domain routes through BRAIN → BRAIN_ENZYME refinement)
+      ["ACHE", "BRAIN_ENZYME"],
+      ["BUCHE", "BRAIN_ENZYME"],
       // Kidney
       ["BUN", "KIDNEY"],
       ["CREAT", "KIDNEY"],
@@ -204,6 +204,46 @@ describe("resolveOrganBand", () => {
 
     test("unknown organ_system → null", () => {
       expect(resolveOrganBand(ep({ domain: "MI", specimen: null, organ_system: "unknown_system" }))).toBeNull();
+    });
+  });
+
+  // ── Brain sub-band routing (domain-aware refinement) ──
+
+  describe("Brain sub-band routing", () => {
+    test("OM + brain specimen → BRAIN_WEIGHT", () => {
+      expect(resolveOrganBand(ep({ specimen: "BRAIN", domain: "OM" }))).toBe("BRAIN_WEIGHT");
+    });
+
+    test("OM + spinal cord specimen → BRAIN_WEIGHT", () => {
+      expect(resolveOrganBand(ep({ specimen: "SPINAL CORD", domain: "OM" }))).toBe("BRAIN_WEIGHT");
+    });
+
+    test("OM + organ_system neurologic (no specimen) → BRAIN_WEIGHT", () => {
+      expect(resolveOrganBand(ep({ domain: "OM", specimen: null, organ_system: "neurologic" }))).toBe("BRAIN_WEIGHT");
+    });
+
+    test("LB + ACHE → BRAIN_ENZYME", () => {
+      expect(resolveOrganBand(ep({ domain: "LB", testCode: "ACHE", specimen: null }))).toBe("BRAIN_ENZYME");
+    });
+
+    test("LB + BUCHE → BRAIN_ENZYME", () => {
+      expect(resolveOrganBand(ep({ domain: "LB", testCode: "BUCHE", specimen: null }))).toBe("BRAIN_ENZYME");
+    });
+
+    test("MI + brain specimen → BRAIN (residual)", () => {
+      expect(resolveOrganBand(ep({ specimen: "BRAIN", domain: "MI" }))).toBe("BRAIN");
+    });
+
+    test("CL + organ_system neurologic → BRAIN (residual)", () => {
+      expect(resolveOrganBand(ep({ domain: "CL", specimen: null, organ_system: "neurologic" }))).toBe("BRAIN");
+    });
+
+    test("MA + brain specimen → BRAIN (residual)", () => {
+      expect(resolveOrganBand(ep({ specimen: "BRAIN", domain: "MA" }))).toBe("BRAIN");
+    });
+
+    test("non-brain organs unaffected by refinement (OM LIVER → LIVER)", () => {
+      expect(resolveOrganBand(ep({ specimen: "LIVER", domain: "OM" }))).toBe("LIVER");
     });
   });
 
@@ -321,6 +361,46 @@ describe("getSexConcordanceBoost", () => {
       expect(getSexConcordanceBoost(ep({
         domain: "LB", testCode: "CREAT", specimen: null, bySex: withBySex("up", "down"),
       }))).toBe(0.3);
+    });
+  });
+
+  // ── Brain sub-band boost values ──
+
+  describe("brain sub-band boost values", () => {
+    test("BRAIN_WEIGHT concordance (OM brain) → 1.5", () => {
+      expect(getSexConcordanceBoost(ep({
+        specimen: "BRAIN", domain: "OM", bySex: withBySex("up", "up"),
+      }))).toBe(1.5);
+    });
+
+    test("BRAIN_WEIGHT divergence (OM brain) → 0.3", () => {
+      expect(getSexConcordanceBoost(ep({
+        specimen: "BRAIN", domain: "OM", bySex: withBySex("up", "down"),
+      }))).toBe(0.3);
+    });
+
+    test("BRAIN_ENZYME concordance (LB ACHE) → 1.8", () => {
+      expect(getSexConcordanceBoost(ep({
+        domain: "LB", testCode: "ACHE", specimen: null, bySex: withBySex("up", "up"),
+      }))).toBe(1.8);
+    });
+
+    test("BRAIN_ENZYME divergence (LB ACHE) → 0.5", () => {
+      expect(getSexConcordanceBoost(ep({
+        domain: "LB", testCode: "ACHE", specimen: null, bySex: withBySex("up", "down"),
+      }))).toBe(0.5);
+    });
+
+    test("BRAIN residual concordance (MI brain) → 1.2", () => {
+      expect(getSexConcordanceBoost(ep({
+        specimen: "BRAIN", domain: "MI", bySex: withBySex("up", "up"),
+      }))).toBe(1.2);
+    });
+
+    test("BRAIN residual divergence (MI brain) → 1.5", () => {
+      expect(getSexConcordanceBoost(ep({
+        specimen: "BRAIN", domain: "MI", bySex: withBySex("up", "down"),
+      }))).toBe(1.5);
     });
   });
 

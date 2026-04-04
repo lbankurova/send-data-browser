@@ -1,0 +1,126 @@
+topic: brain-weight-sex-concordance-calibration
+started: 2026-04-03T21:00:00
+phase: complete
+current_step: complete
+completed:
+  research.1:
+    completed: 2026-04-03T21:00:00
+    key_decisions:
+      - "Deep dive from GAP-179"
+      - "Brain weight divergence 1.2 is wrong -- least dimorphic organ"
+      - "Root cause: organ-level bands conflate weight and function endpoints"
+    output: "docs/_internal/research/brain-weight-sex-concordance-calibration.md"
+  research.2:
+    completed: 2026-04-03T21:30:00
+    key_decisions:
+      - "R1: 2 FLAWED (immediate fix unsafe, Gould exponent wrong), 3 CONDITIONAL, 3 SOUND"
+    output: "docs/_internal/research/peer-reviews/brain-weight-sex-concordance-calibration-review.md"
+  research.3:
+    completed: 2026-04-03T21:45:00
+    key_decisions:
+      - "Coupled immediate fix with endpoint-type split"
+      - "Replaced allometric model with empirical thresholds"
+      - "Narrowed Proposal 2 guard to organ-restricted set"
+      - "Raised concordance 1.3->1.5"
+    output: "docs/_internal/research/brain-weight-sex-concordance-calibration.md"
+  research.4:
+    completed: 2026-04-03T22:15:00
+    key_decisions:
+      - "R2: all R1 findings RESOLVED, 3 new minor issues"
+      - "N2 (Medium): MI/CL band values ambiguous -- clarify during build"
+      - "N3 (Low-Med): discount interaction -- design during build"
+    output: "docs/_internal/research/peer-reviews/brain-weight-sex-concordance-calibration-review-r2.md"
+  research.5:
+    completed: 2026-04-03T22:15:00
+    key_decisions:
+      - "All SOUND/CONDITIONAL -- VALIDATED"
+  research.6:
+    completed: 2026-04-03T22:30:00
+    key_decisions:
+      - "Corpus coherence: no scientific contradictions, calibration refinement only"
+      - "sex-concordance-scoring.md brain section needs update at build time"
+      - "organ-sex-concordance-bands.json needs BRAIN_WEIGHT + BRAIN_ENZYME keys"
+    output: "coherence audit complete"
+  research.7:
+    completed: 2026-04-03T22:30:00
+    key_decisions:
+      - "Probe: all SAFE/PROPAGATES, one SCIENCE-FLAG (intended)"
+      - "S10 signal scoring PROPAGATES -- new input values, same formula"
+      - "S16 NOAEL PROPAGATES -- indirect via signal changes"
+      - "No invariants at risk"
+      - "OM-MI discount and sex concordance are sequential, not multiplicative"
+    output: "probe complete"
+  build.0:
+    completed: 2026-04-04T10:00:00
+    key_decisions:
+      - "No FAILED entries in decisions log relevant to this topic"
+      - "No bug-patterns file exists"
+      - "histopath-sensitivity-by-organ shipped -- BRAIN OM-MI discount=0.85 in place, orthogonal"
+      - "Current BRAIN band: concordance=1.3, divergence=1.2 (single entry)"
+    output: "state checkpoint"
+  build.1:
+    completed: 2026-04-04T10:15:00
+    key_decisions:
+      - "Synthesis: 4 features, Proposal 1 only, R2 N2 resolved (BRAIN residual=1.2/1.5)"
+      - "~5 lines new code, 2 new JSON keys, 1 updated JSON key"
+    output: "docs/_internal/incoming/brain-weight-sex-concordance-calibration-synthesis.md"
+  build.2:
+    completed: 2026-04-04T10:30:00
+    key_decisions:
+      - "Architect: PASS with SCIENCE-FLAG on residual BRAIN 1.2/1.5"
+      - "SCIENCE-FLAG accepted by user: matches low-dimorphism organ pattern"
+      - "Add SPINAL_CORD+OM test case"
+    output: "docs/_internal/research/peer-reviews/brain-weight-sex-concordance-calibration-architect-review.md"
+  build.3:
+    completed: 2026-04-04T10:45:00
+    key_decisions:
+      - "Probe: 0 BREAKS, 2 SCIENCE-FLAGs (S10+S16, intended), 4 PROPAGATES"
+      - "Band keys fully encapsulated -- only numeric boost leaks out"
+    output: "probe complete"
+  build.4:
+    completed: 2026-04-04T11:00:00
+    key_decisions:
+      - "Plan R1: 1 FLAWED (MI/CL test coverage), 5 CONDITIONAL, 2 SOUND"
+      - "All accepted for incorporation"
+    output: "docs/_internal/research/peer-reviews/brain-weight-sex-concordance-calibration-synthesis-review.md"
+  build.5:
+    completed: 2026-04-04T11:15:00
+    key_decisions:
+      - "FLAWED: added 6 test cases (MI boost values, spinal cord, OM fallback, MA, regression guard)"
+      - "CONDITIONAL x5: rationalized values, specified doc scope, verified UI, added MA, added validation note"
+    output: "docs/_internal/incoming/brain-weight-sex-concordance-calibration-synthesis.md (updated)"
+  build.6:
+    completed: 2026-04-04T11:30:00
+    key_decisions:
+      - "R2: all R1 RESOLVED, 0 FLAWED, 2 CONDITIONAL, 3 SOUND"
+      - "Build plan VALIDATED"
+    output: "docs/_internal/research/peer-reviews/brain-weight-sex-concordance-calibration-synthesis-review-r2.md"
+  build.7:
+    completed: 2026-04-04T11:30:00
+    key_decisions:
+      - "Build cycle complete. Ready for ship-cycle."
+    output: "build-complete summary"
+  ship.1:
+    completed: 2026-04-04T23:00:00
+    key_decisions:
+      - "4 features implemented inline (no /lattice:implement -- minimal code change)"
+      - "JSON: 2 new keys (BRAIN_WEIGHT, BRAIN_ENZYME), 1 updated (BRAIN 1.3/1.2 -> 1.2/1.5)"
+      - "Code: refineBrain() post-processing, OrganBandKey type update"
+      - "Tests: 9 new routing + 6 new boost value tests, 2 updated expectations"
+      - "Doc: sex-concordance-scoring.md brain section rewritten (prose + JSON)"
+    output: "all 4 features shipped"
+  ship.2:
+    completed: 2026-04-04T23:00:00
+    key_decisions:
+      - "1949/1949 tests pass, build succeeds, validation 48/49 signals"
+      - "Commit checklist: all items PASS"
+      - "Spec archived to incoming/archive/"
+      - "ROADMAP.md updated (shipped), TODO.md GAP-201 dependency updated"
+    output: "review complete"
+  ship.3:
+    completed: 2026-04-04T23:00:00
+    key_decisions:
+      - "signal-scoring-sex-concordance-clinical-boost.md updated (old BRAIN values)"
+      - "No other downstream specs reference old BRAIN band values"
+    output: "1 spec refreshed"
+checkpoints: {}

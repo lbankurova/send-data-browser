@@ -1,3 +1,4 @@
+2026-04-04T23:00:00	ship-cycle	COMPLETED	brain-weight-sex-concordance-calibration	Split BRAIN band into BRAIN_WEIGHT(1.5/0.3), BRAIN_ENZYME(1.8/0.5), BRAIN residual(1.2/1.5). Domain-aware routing via refineBrain(). 129 tests pass. Spec archived.
 2026-04-04T22:00:00	ship-cycle	COMPLETED	woe-synthesis-pane	Spec already fully implemented. 4 features: enriched WoE computation (equivocal, D-R patterns, nature breakdown, lab signals, syndrome breadth, laterality), enhanced rendering, hierarchical strength (core triad + supporting + floor), D-R confidence. 15 unit tests pass. Spec + research archived.
 2026-04-04T18:45:00	implement	COMPLETED	om-bw-scatter	phases:4/4 deviations:0 deferred:1(ellipses,user-approved)	BivarScatterChart + terminal_bw backend + CenterDistribution wiring + chart-utils extraction + dose legend
 2026-04-04T18:45:00	review	PASS	a770a09b	files:5 deviations:0 deferred:0	Architect SIMPLIFY->PASS (bwUnit fix applied). Pre-existing test failure bypassed (--no-verify).
@@ -64,3 +65,29 @@
 2026-04-04T13:00:00	distill	CONTRADICTION-FIXED	brain-concordance-all	step:6	BRAIN_WEIGHT concordance 1.0->1.5 in parent Proposal 1 table (stale after R1 A6) + 3 sub-topics (species-bands, compound-class, bw-mediation). Parent Summary already had 1.5. Root cause: Proposal 1 table never updated when R1 raised concordance.
 2026-04-04T13:15:00	distill	COHERENT	brain-concordance-all	step:6	4/5 dimensions COHERENT. 1 CONTRADICTION found and fixed: BRAIN_WEIGHT concordance 1.0->1.5 (parent table stale after R1). Guard-endocrine override interaction undocumented but consistent.
 2026-04-04T13:15:00	probe	COMPLETE	brain-concordance-all	step:7	0 runtime BREAKS (2 compile-time caught by TS). 4 SCIENCE-FLAGs (all intended calibration changes). 1 new subsystem dep: S20->S10 via P3. Merge risk: P3+P4 share AnalyticsWorkerInput construction site -- implement sequentially. P5 bwMediationFactor always <=1.0, X2 invariant safe.
+2026-04-04T11:40:00	review	PASS	33e3866e	files:14 deviations:1(BUG-25) deferred:1(data-driven-confidence-P2)	LOO Tier 1 gaps: IS field retention, NOAEL fragility penalty, color-coded markers
+2026-04-05T02:00:00	research-cycle	AUTO-ACCEPT	etransafe-send-snomed-integration	step:2	R1: 2 FLAWED (misattributed statistics, unverifiable example), 8 CONDITIONAL, 2 SOUND. All accepted.
+2026-04-05T02:10:00	research-cycle	AUTO-INCORPORATE	etransafe-send-snomed-integration	step:3	All 12 R1 findings addressed. F1: 32% replaced with 25-35% qualified estimate. F2: unverifiable example removed. Coverage estimates labeled hypotheses. UMLS evaluation added. SapBERT evaluated.
+2026-04-05T02:20:00	research-cycle	AUTO-ACCEPT	etransafe-send-snomed-integration	step:5	R2 VALIDATED. All 12 R1 RESOLVED. 5 new MINOR. Verdict: SOUND.
+2026-04-05T02:00:00	research-cycle	AUTO-ACCEPT	vehicle-pk-interaction-bcs	step:2	R1: 1 FLAWED (BCS inference circularity), 9 CONDITIONAL. All accepted.
+2026-04-05T02:10:00	research-cycle	AUTO-INCORPORATE	vehicle-pk-interaction-bcs	step:3	All 10 R1 findings addressed. F5: BCS inference from vehicle downgraded to weak heuristic. Parenteral route expanded. AUC ranges calibrated. PBPK/IVIVC evaluated.
+2026-04-05T02:20:00	research-cycle	AUTO-ACCEPT	vehicle-pk-interaction-bcs	step:5	R2 VALIDATED. All 10 R1 RESOLVED. 1 CONDITIONAL (NF3 Frel<1 safety-critical), 4 MINOR. Verdict: ACCEPT.
+2026-04-05T02:00:00	research-cycle	AUTO-ACCEPT	mabel-framework	step:2	R1: 2 FLAWED (compound class false negatives, gap ratio color coding), 5 CONDITIONAL, 1 SOUND. All accepted.
+2026-04-05T02:10:00	research-cycle	AUTO-INCORPORATE	mabel-framework	step:3	All 8 R1 findings addressed. F2: MABEL classes expanded 4->13, gene therapy removed. F6: traffic-light replaced with neutral log-scale. TGN1412 narrative corrected. ED10/ED20 replaces Dunnett's.
+2026-04-05T02:20:00	research-cycle	AUTO-ACCEPT	mabel-framework	step:5	R2 VALIDATED. All 8 R1 RESOLVED. 3 new CONDITIONAL (ED10 small-N fragility, steepness thresholds, catch-all scope). Verdict: ACCEPT.
+2026-04-05T02:00:00	research-cycle	AUTO-ACCEPT	unrecognized-term-flagging	step:2	R1: 2 FLAWED (organ-scoping failure, CRO homonyms), 6 CONDITIONAL, 1 SOUND. All accepted.
+2026-04-05T02:10:00	research-cycle	AUTO-INCORPORATE	unrecognized-term-flagging	step:3	All 9 R1 findings addressed. F3: organ-scoping failure chain analyzed with 3 safeguards. F8: CRO homonym section added with 3 mitigations. Frequency thresholds corpus-calibrated.
+2026-04-05T02:20:00	research-cycle	AUTO-ACCEPT	unrecognized-term-flagging	step:5	R2 VALIDATED. All 9 R1 RESOLVED. 3 new MINOR. Verdict: ACCEPT.
+2026-04-05T02:30:00	research-cycle	DISTILL-COHERENT	etransafe-send-snomed-integration	step:6	1 stale claim found in deep-research (9.3x statistic). INHAND machine-readability nuanced. No contradictions.
+2026-04-05T02:30:00	research-cycle	PROBE-COMPLETE	etransafe-send-snomed-integration	step:7	0 BREAKS, 5 PROPAGATES (S01,S11,S12,S14,S15), 1 STALE (S22), 0 SCIENCE-FLAG.
+2026-04-05T02:30:00	research-cycle	COMPLETE	etransafe-send-snomed-integration	step:7	Research phase complete. Ready for build-cycle.
+2026-04-05T02:30:00	research-cycle	DISTILL-COHERENT	vehicle-pk-interaction-bcs	step:6	logP threshold corrected >2->3 (deep-research stale). Parenteral mechanisms added. No contradictions.
+2026-04-05T02:30:00	research-cycle	PROBE-COMPLETE	vehicle-pk-interaction-bcs	step:7	0 BREAKS, 3 PROPAGATES (S16,S20,S22), 1 SCIENCE-FLAG (OV: BCS annotation suppressing warnings needs cascade doc).
+2026-04-05T02:30:00	research-cycle	COMPLETE	vehicle-pk-interaction-bcs	step:7	Research phase complete. Ready for build-cycle.
+2026-04-05T02:30:00	research-cycle	DISTILL-COHERENT	mabel-framework	step:6	Gene therapy boundary clarified. Non-immunological triggers expand scope. No contradictions with deep-research or Phase 1 synthesis.
+2026-04-05T02:30:00	research-cycle	PROBE-COMPLETE	mabel-framework	step:7	0 BREAKS, 4 PROPAGATES (S20,OV,S16,S22), 1 STALE (S01), 0 SCIENCE-FLAG.
+2026-04-05T02:30:00	research-cycle	COMPLETE	mabel-framework	step:7	Research phase complete. Ready for build-cycle.
+2026-04-05T02:30:00	research-cycle	DISTILL-COHERENT	unrecognized-term-flagging	step:6	1 coherence gap: Phase 1 synthesis assumes canonical_testcd sufficiency without acknowledging synonym resolution dependency. Phases A/B are prerequisites for meaningful cross-CRO MI/MA matching.
+2026-04-05T02:30:00	research-cycle	PROBE-COMPLETE	unrecognized-term-flagging	step:7	0 BREAKS, 5 PROPAGATES (S01,S14,S08,S11,S22), 1 STALE (S12), 1 SCIENCE-FLAG (S03: homonym adversity risk).
+2026-04-05T02:30:00	research-cycle	COMPLETE	unrecognized-term-flagging	step:7	Research phase complete. Ready for build-cycle.
+2026-04-04T16:51:38	review	PASS	886a426e	files:11 deviations:0 deferred:0	Animal influence explorer -- scatter + dumbbell, 6 review fixes applied
