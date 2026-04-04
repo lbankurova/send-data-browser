@@ -179,6 +179,11 @@ export function ConfidencePopover({
     noael_label: string;
     noael_confidence: number;
     n_adverse_at_loael: number;
+    noael_derivation?: {
+      confidence_penalties?: string[];
+      loo_fragile?: boolean;
+      loo_min_stability?: number | null;
+    };
   };
   allNoael: Array<{
     sex: string;
@@ -222,6 +227,13 @@ export function ConfidencePopover({
             value={breakdown.largeEffectPenalty}
             detail={breakdown.largeEffectDetail}
           />
+          {breakdown.fragileNoaelPenalty !== 0 && (
+            <PenaltyRow
+              label="LOO fragile"
+              value={breakdown.fragileNoaelPenalty}
+              detail={breakdown.fragileNoaelDetail}
+            />
+          )}
           <div className="flex justify-between border-t pt-1.5 font-semibold">
             <span>Confidence</span>
             <span>

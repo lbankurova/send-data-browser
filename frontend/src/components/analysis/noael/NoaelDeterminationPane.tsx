@@ -134,6 +134,9 @@ export function NoaelDeterminationPane({ aeData, expandAll, collapseAll }: Props
               {confidenceBreakdown.largeEffectPenalty !== 0 && (
                 <PenaltyRow label="Large effect non-sig" value={confidenceBreakdown.largeEffectPenalty} detail={confidenceBreakdown.largeEffectDetail} />
               )}
+              {confidenceBreakdown.fragileNoaelPenalty !== 0 && (
+                <PenaltyRow label="LOO fragile" value={confidenceBreakdown.fragileNoaelPenalty} detail={confidenceBreakdown.fragileNoaelDetail} />
+              )}
               <div className="flex justify-between border-t pt-1 font-semibold">
                 <span>Confidence</span>
                 <span>{confidenceBreakdown.total.toFixed(2)} ({Math.round(confidenceBreakdown.total * 100)}%)</span>

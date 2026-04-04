@@ -838,6 +838,9 @@ def _build_noael_for_groups(
                                     "p_value": round(p, 5) if p is not None else None,
                                     "finding_class": f.get("finding_class"),
                                     "corroboration_status": f.get("corroboration_status"),
+                                    "loo_stability": pw.get("loo_stability"),
+                                    "loo_control_fragile": pw.get("loo_control_fragile"),
+                                    "loo_influential_subject": pw.get("loo_influential_subject"),
                                 })
 
         # Compute NOAEL confidence score
@@ -845,6 +848,19 @@ def _build_noael_for_groups(
             sex_filter, sex_findings, findings, noael_level, n_adverse_at_loael,
             dose_groups=dose_groups, params=params,
         )
+
+        # GAP-163: LOO fragility penalty on NOAEL confidence
+        # If ALL adverse findings at LOAEL have fragile LOO stability, the NOAEL
+        # determination depends on single-animal leverage -- penalize confidence.
+        loo_fragile_noael = False
+        loo_min_at_loael = None
+        if n_adverse_at_loael > 0:
+            loo_vals = [af["loo_stability"] for af in adverse_at_loael if af.get("loo_stability") is not None]
+            if loo_vals:
+                loo_min_at_loael = round(min(loo_vals), 4)
+                if all(v < params.loo_fragile_threshold for v in loo_vals):
+                    loo_fragile_noael = True
+                    confidence = max(confidence - params.penalty_fragile_noael, 0.0)
 
         # Determine classification method used
         has_finding_class = any(
@@ -876,9 +892,13 @@ def _build_noael_for_groups(
             "n_adverse_at_loael": n_adverse_at_loael,
             "confidence": round(confidence, 2),
             "confidence_penalties": [],
+            "loo_fragile": loo_fragile_noael,
+            "loo_min_stability": loo_min_at_loael,
         }
         if n_adverse_at_loael <= 1:
             noael_derivation["confidence_penalties"].append("single_endpoint")
+        if loo_fragile_noael:
+            noael_derivation["confidence_penalties"].append("fragile_noael")
         # Note: sex consistency penalty checked in _compute_noael_confidence
 
         # Mortality cap: if mortality LOAEL exists and NOAEL >= it, cap down

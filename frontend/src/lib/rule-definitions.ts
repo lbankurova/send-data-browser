@@ -362,6 +362,8 @@ export interface ConfidenceBreakdown {
   pathologyDetail: string;
   largeEffectPenalty: number;
   largeEffectDetail: string;
+  fragileNoaelPenalty: number;
+  fragileNoaelDetail: string;
   total: number;
 }
 
@@ -372,6 +374,11 @@ export function computeConfidenceBreakdown(
     noael_label: string;
     noael_confidence: number;
     n_adverse_at_loael: number;
+    noael_derivation?: {
+      confidence_penalties?: string[];
+      loo_fragile?: boolean;
+      loo_min_stability?: number | null;
+    };
   },
   allNoael: Array<{
     sex: string;
@@ -382,6 +389,7 @@ export function computeConfidenceBreakdown(
 ): ConfidenceBreakdown {
   // Infer which penalties applied based on the stored confidence
   const base = 1.0;
+  const derivation = row.noael_derivation;
   let remaining = base - row.noael_confidence;
 
   // Penalty 1: single endpoint
@@ -419,8 +427,18 @@ export function computeConfidenceBreakdown(
   // Penalty 3: pathology disagreement (always 0)
   const pathologyPenalty = 0;
 
-  // Penalty 4: large effect non-significant (whatever remains)
-  const largeEffectPenalty = remaining >= 0.19 ? -0.20 : 0;
+  // Penalty 4: large effect non-significant (whatever remains, minus fragile budget)
+  const isFragileNoael = derivation?.loo_fragile === true;
+  const fragileNoaelBudget = isFragileNoael ? 0.15 : 0;
+  const largeEffectPenalty = (remaining - fragileNoaelBudget) >= 0.19 ? -0.20 : 0;
+  if (largeEffectPenalty < 0) remaining = Math.max(remaining - 0.2, 0);
+
+  // Penalty 5: LOO fragile NOAEL (from derivation data)
+  const fragileNoaelPenalty = isFragileNoael ? -0.15 : 0;
+  const looMin = derivation?.loo_min_stability;
+  const fragileNoaelDetail = isFragileNoael && looMin != null
+    ? `LOO stability ${looMin.toFixed(2)} < 0.70`
+    : "Not triggered";
 
   return {
     base,
@@ -434,6 +452,8 @@ export function computeConfidenceBreakdown(
     pathologyDetail: "Reserved",
     largeEffectPenalty,
     largeEffectDetail: largeEffectPenalty < 0 ? "|d| \u2265 1.0, p \u2265 0.05 found" : "Not triggered",
+    fragileNoaelPenalty,
+    fragileNoaelDetail,
     total: row.noael_confidence,
   };
 }

@@ -40,8 +40,11 @@ export interface StripPlotChartProps {
   /** Interleaved sex layout: single SVG with F|M sub-lanes per dose column.
    *  Sex-colored dots, shared Y-axis, fills container height. */
   interleaved?: boolean;
-  /** USUBJIDs of LOO-influential animals — render in amber-brown (#92400e). */
-  influentialSubjects?: ReadonlySet<string>;
+  /** LOO-influential animals: USUBJID -> dose_level + control-side flag.
+   *  Control-side: gray fill + dose-colored stroke. Treated-side: amber fill. */
+  influentialSubjects?: ReadonlyMap<string, { doseLevel: number; isControlSide: boolean }>;
+  /** When true, only LOO-influential subjects are rendered (legend filter active). */
+  isolateInfluential?: boolean;
   /** Endpoint label for scoping animal exclusions. */
   endpointLabel?: string;
   /** USUBJIDs currently excluded (pending or committed). Rendered as cross marks. */
@@ -103,7 +106,7 @@ function jitterX(index: number, count: number, colWidth: number): number {
 
 // ── Component ────────────────────────────────────────────
 
-export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false, influentialSubjects, excludedSubjects, onToggleExclusion }: StripPlotChartProps) {
+export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectClick, mode = "terminal", interleaved = false, influentialSubjects, isolateInfluential, excludedSubjects, onToggleExclusion }: StripPlotChartProps) {
   const [hoveredDot, setHoveredDot] = useState<SubjectValue | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; sv: SubjectValue } | null>(null);
@@ -225,6 +228,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
             onDotLeave={handleDotLeave}
             onDotClick={handleDotClick}
             influentialSubjects={influentialSubjects}
+            isolateInfluential={isolateInfluential}
             excludedSubjects={excludedSubjects}
             onToggleExclusion={onToggleExclusion}
             handleDotContextMenu={handleDotContextMenu}
@@ -294,6 +298,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
               onDotLeave={handleDotLeave}
               onDotClick={handleDotClick}
               influentialSubjects={influentialSubjects}
+              isolateInfluential={isolateInfluential}
               excludedSubjects={excludedSubjects}
               onToggleExclusion={onToggleExclusion}
               handleDotContextMenu={handleDotContextMenu}
@@ -390,6 +395,7 @@ function InterleavedPanel({
   onDotLeave,
   onDotClick,
   influentialSubjects,
+  isolateInfluential,
   excludedSubjects,
   onToggleExclusion,
   handleDotContextMenu,
@@ -404,7 +410,8 @@ function InterleavedPanel({
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
-  influentialSubjects?: ReadonlySet<string>;
+  influentialSubjects?: ReadonlyMap<string, { doseLevel: number; isControlSide: boolean }>;
+  isolateInfluential?: boolean;
   excludedSubjects?: ReadonlySet<string>;
   onToggleExclusion?: (usubjid: string) => void;
   handleDotContextMenu: (sv: SubjectValue, e: React.MouseEvent) => void;
@@ -562,6 +569,7 @@ function InterleavedPanel({
                     const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
                     const isInfluential = !!influentialSubjects?.has(sv.usubjid);
                     const isExcluded = !!excludedSubjects?.has(sv.usubjid);
+                    if (isolateInfluential && !isInfluential) return null;
                     const dotX = sexCx + jitterX(i, values.length, subColWidth);
                     const dotY = yScale(sv.value);
                     const handlers = {
@@ -580,12 +588,16 @@ function InterleavedPanel({
                       );
                     }
                     if (isInfluential) {
+                      const inflInfo = influentialSubjects?.get(sv.usubjid);
+                      const isCtrl = inflInfo?.isControlSide;
                       return (
                         <circle
                           key={sv.usubjid}
                           cx={dotX} cy={dotY}
-                          r={DOT_RADIUS_HOVER}
-                          fill={LOO_INFLUENTIAL_COLOR}
+                          r={DOT_RADIUS}
+                          fill={isCtrl ? "#6b7280" : LOO_INFLUENTIAL_COLOR}
+                          stroke={isCtrl ? getDoseGroupColor(inflInfo!.doseLevel) : "none"}
+                          strokeWidth={isCtrl ? 1.5 : 0}
                           opacity={1}
                           style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                           {...handlers}
@@ -647,6 +659,7 @@ function SexPanel({
   onDotLeave,
   onDotClick,
   influentialSubjects,
+  isolateInfluential,
   excludedSubjects,
   onToggleExclusion,
   handleDotContextMenu,
@@ -662,7 +675,8 @@ function SexPanel({
   onDotEnter: (sv: SubjectValue, e: React.MouseEvent) => void;
   onDotLeave: () => void;
   onDotClick: (usubjid: string) => void;
-  influentialSubjects?: ReadonlySet<string>;
+  influentialSubjects?: ReadonlyMap<string, { doseLevel: number; isControlSide: boolean }>;
+  isolateInfluential?: boolean;
   excludedSubjects?: ReadonlySet<string>;
   onToggleExclusion?: (usubjid: string) => void;
   handleDotContextMenu: (sv: SubjectValue, e: React.MouseEvent) => void;
@@ -788,6 +802,7 @@ function SexPanel({
               const isDotHovered = hoveredDot?.usubjid === sv.usubjid;
               const isInfluential = !!influentialSubjects?.has(sv.usubjid);
               const isExcluded = !!excludedSubjects?.has(sv.usubjid);
+              if (isolateInfluential && !isInfluential) return null;
               const dotX = cx + jitterX(i, values.length, colWidth);
               const dotY = yScale(sv.value);
               const handlers = {
@@ -806,12 +821,16 @@ function SexPanel({
                 );
               }
               if (isInfluential) {
+                const inflInfo = influentialSubjects?.get(sv.usubjid);
+                const isCtrl = inflInfo?.isControlSide;
                 return (
                   <circle
                     key={sv.usubjid}
                     cx={dotX} cy={dotY}
-                    r={DOT_RADIUS_HOVER}
-                    fill={LOO_INFLUENTIAL_COLOR}
+                    r={DOT_RADIUS}
+                    fill={isCtrl ? "#6b7280" : LOO_INFLUENTIAL_COLOR}
+                    stroke={isCtrl ? getDoseGroupColor(inflInfo!.doseLevel) : "none"}
+                    strokeWidth={isCtrl ? 1.5 : 0}
                     opacity={1}
                     style={{ cursor: onToggleExclusion ? "context-menu" : "pointer" }}
                     {...handlers}

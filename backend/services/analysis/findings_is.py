@@ -11,7 +11,7 @@ import pandas as pd
 import polars as pl
 
 from services.study_discovery import StudyInfo
-from services.analysis.statistics import dunnett_pairwise, compute_effect_size, trend_test
+from services.analysis.statistics import dunnett_pairwise, trend_test
 from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
 
 
@@ -293,15 +293,20 @@ def _compute_peak_stats(
     main_df = peak_df[~peak_df["is_recovery"]]
     group_stats = []
     group_log_values: dict[int, np.ndarray] = {}
+    group_subject_ids: dict[int, list[str]] = {}
     for dl in dose_levels:
         grp = main_df[main_df["dose_level"] == dl]
         titers = grp["titer"].dropna()
         if len(titers) == 0 and len(grp) > 0:
             titers = pd.Series([blq_sub] * len(grp))
+            subj_ids = grp["USUBJID"].astype(str).str.strip().tolist()
+        else:
+            subj_ids = grp.loc[titers.index, "USUBJID"].astype(str).str.strip().tolist()
         n = int(len(grp))
         if len(titers) > 0:
             log_t = np.log10(titers.clip(lower=1e-10).values)
             group_log_values[dl] = log_t
+            group_subject_ids[dl] = subj_ids
             gmt = float(10 ** log_t.mean())
             geo_sd = float(10 ** log_t.std()) if len(log_t) >= 2 else None
             group_stats.append({
@@ -313,7 +318,8 @@ def _compute_peak_stats(
             group_stats.append({"dose_level": dl, "n": n, "mean": None, "sd": None, "median": None})
     control_dl = dose_levels[0] if dose_levels else 0
     control_vals = group_log_values.get(control_dl)
-    pairwise = []
+    ctrl_ids = group_subject_ids.get(control_dl)
+    pairwise: list[dict] = []
     if control_vals is not None and len(control_vals) >= 2:
         treated_groups = [
             (dl, group_log_values[dl])
@@ -321,17 +327,10 @@ def _compute_peak_stats(
             if dl != control_dl and dl in group_log_values and len(group_log_values[dl]) >= 2
         ]
         if treated_groups:
-            pw_results = dunnett_pairwise(control_vals, treated_groups)
-            for pw in pw_results:
-                dl = pw["dose_level"]
-                tv = group_log_values.get(dl)
-                es = compute_effect_size(control_vals, tv) if tv is not None else None
-                pairwise.append({
-                    "dose_level": dl, "p_value": pw.get("p_value"),
-                    "p_value_adj": pw.get("p_value_adj") or pw.get("p_value"),
-                    "statistic": pw.get("statistic"),
-                    "effect_size": round(es, 4) if es is not None else None,
-                })
+            t_ids = {dl: group_subject_ids[dl] for dl, _ in treated_groups if dl in group_subject_ids}
+            pairwise = dunnett_pairwise(
+                control_vals, treated_groups, control_ids=ctrl_ids, treated_ids=t_ids or None,
+            )
     return group_stats, pairwise
 
 

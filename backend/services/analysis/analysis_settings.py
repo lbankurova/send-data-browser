@@ -97,6 +97,11 @@ class ScoringParams:
     penalty_sex_inconsistency: float = 0.20
     penalty_pathology_disagreement: float = 0.0
     penalty_large_effect_non_sig: float = 0.20
+    penalty_fragile_noael: float = 0.15
+
+    # LOO fragility threshold for NOAEL qualifier (GAP-163)
+    # stability_ratio < threshold = fragile (removing one animal shrinks gLower >30%)
+    loo_fragile_threshold: float = 0.7
 
     def params_hash(self) -> str:
         """Deterministic hash for cache keying."""

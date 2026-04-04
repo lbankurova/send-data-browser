@@ -73,7 +73,12 @@ FOOD_ASSESSMENT_ENUM = {
     "compensated", "not_applicable", "indeterminate",
 }
 DOSE_PROP_ASSESSMENT_ENUM = {"linear", "supralinear", "sublinear", "insufficient_data"}
-NOAEL_METHOD_ENUM = {"highest_dose_no_adverse", "not_established"}
+NOAEL_METHOD_ENUM = {
+    "highest_dose_no_adverse", "not_established", "below_tested_range",
+    "control_mortality_critical", "no_concurrent_control",
+    "highest_dose_no_adverse_single_dose", "single_dose_not_established",
+    "noel_framework",
+}
 NOAEL_STATUS_ENUM = {"established", "at_control"}
 
 

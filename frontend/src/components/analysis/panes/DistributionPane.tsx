@@ -17,8 +17,8 @@ import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useRecoveryPooling } from "@/hooks/useRecoveryPooling";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { StripPlotChart, LOO_INFLUENTIAL_COLOR } from "./StripPlotChart";
-import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
+import { StripPlotChart } from "./StripPlotChart";
+import { useInfluentialSubjectsMap } from "@/hooks/useInfluentialSubjects";
 import { BivarScatterChart } from "./BivarScatterChart";
 import type { BivarSubjectValue } from "./BivarScatterChart";
 import { CollapsiblePane } from "./CollapsiblePane";
@@ -189,6 +189,7 @@ export function DistributionPane({
   );
 
   const [mode, setMode] = useState<DistMode>("terminal");
+  const [looIsolated, setLooIsolated] = useState(false);
 
   // Reset mode when finding changes or mode becomes unavailable
   useEffect(() => {
@@ -283,18 +284,7 @@ export function DistributionPane({
   }, [subjectData, mode, peakDay, terminalDay, shouldIncludeSubject]);
 
   // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
-  const { data: analyticsData } = useFindingsAnalyticsResult();
-  const influentialSubjects = useMemo(() => {
-    if (!analyticsData?.findings) return undefined;
-    const set = new Set<string>();
-    const ep = finding.endpoint_label ?? finding.finding;
-    for (const f of analyticsData.findings) {
-      if ((f.endpoint_label ?? f.finding) === ep && f.domain === finding.domain && f.loo_influential_subject) {
-        set.add(f.loo_influential_subject);
-      }
-    }
-    return set.size > 0 ? set : undefined;
-  }, [analyticsData?.findings, finding.endpoint_label, finding.finding, finding.domain]);
+  const influentialSubjects = useInfluentialSubjectsMap(finding);
 
   // Bivariate scatter data (OM + BW): pair organ weight at terminal day with terminal_bw
   const bivarSubjects = useMemo((): BivarSubjectValue[] => {
@@ -393,10 +383,14 @@ export function DistributionPane({
                 <Info className="w-3 h-3 shrink-0 text-muted-foreground/40 cursor-help" />
               </span>
               {influentialSubjects && influentialSubjects.size > 0 && (
-                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                  <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="3.5" fill={LOO_INFLUENTIAL_COLOR} /></svg>
+                <button
+                  type="button"
+                  className={`flex items-center gap-1 text-[9px] transition-opacity ${looIsolated ? "text-foreground font-medium opacity-100" : "text-muted-foreground opacity-100"}`}
+                  onClick={() => setLooIsolated((v) => !v)}
+                >
+                  <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="2.5" fill="#92400e" /></svg>
                   <span>LOO influential</span>
-                </div>
+                </button>
               )}
               {excludedForEndpoint && excludedForEndpoint.size > 0 && (
                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
@@ -430,6 +424,7 @@ export function DistributionPane({
               onSubjectClick={handleSubjectClick}
               mode={mode}
               influentialSubjects={influentialSubjects}
+              isolateInfluential={looIsolated}
               endpointLabel={endpointLabel}
               excludedSubjects={excludedForEndpoint}
               onToggleExclusion={handleToggleExclusion}

@@ -129,6 +129,29 @@ export type SignalViewSelection =
 
 // --- NOAEL Determination (View 5) ---
 
+export interface NoaelDerivation {
+  method: string;
+  classification_method: string;
+  loael_dose_level: number | null;
+  loael_label: string | null;
+  adverse_findings_at_loael: Array<{
+    finding: string;
+    specimen: string;
+    domain: string;
+    p_value: number | null;
+    finding_class: string | null;
+    corroboration_status: string | null;
+    loo_stability: number | null;
+    loo_control_fragile: boolean | null;
+    loo_influential_subject: string | null;
+  }>;
+  n_adverse_at_loael: number;
+  confidence: number;
+  confidence_penalties: string[];
+  loo_fragile: boolean;
+  loo_min_stability: number | null;
+}
+
 export interface NoaelSummaryRow {
   sex: string;
   noael_dose_level: number;
@@ -140,6 +163,7 @@ export interface NoaelSummaryRow {
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];
   noael_confidence: number;
+  noael_derivation?: NoaelDerivation;
   /** True when expert NOAEL override replaced the algorithmic value. */
   _overridden?: boolean;
   /** Algorithmic NOAEL dose level before expert override. */

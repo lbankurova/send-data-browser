@@ -17,7 +17,8 @@ import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext";
 import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useDistributionSubjects } from "@/contexts/DistributionSubjectsContext";
-import { StripPlotChart, LOO_INFLUENTIAL_COLOR } from "../panes/StripPlotChart";
+import { useInfluentialSubjectsMap } from "@/hooks/useInfluentialSubjects";
+import { StripPlotChart } from "../panes/StripPlotChart";
 import { BivarScatterChart } from "../panes/BivarScatterChart";
 import type { BivarSubjectValue } from "../panes/BivarScatterChart";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
@@ -150,18 +151,8 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   }, [subjects, endpointLabel, setSubjectValues]);
 
   // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
+  const influentialSubjects = useInfluentialSubjectsMap(finding);
   const { data: analyticsData } = useFindingsAnalyticsResult();
-  const influentialSubjects = useMemo(() => {
-    if (!analyticsData?.findings) return undefined;
-    const set = new Set<string>();
-    const ep = finding.endpoint_label ?? finding.finding;
-    for (const f of analyticsData.findings) {
-      if ((f.endpoint_label ?? f.finding) === ep && f.domain === finding.domain && f.loo_influential_subject) {
-        set.add(f.loo_influential_subject);
-      }
-    }
-    return set.size > 0 ? set : undefined;
-  }, [analyticsData?.findings, finding.endpoint_label, finding.finding, finding.domain]);
 
   // OM domain: check if terminal_bw data is available for bivariate scatter
   const hasBW = useMemo(
@@ -171,10 +162,12 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
 
   const [scatterMode, setScatterMode] = useState(false);
   const [hiddenDoses, setHiddenDoses] = useState<Set<number>>(new Set());
+  const [looIsolated, setLooIsolated] = useState(false);
   // Reset scatter mode and dose filter when finding changes
   useEffect(() => {
     setScatterMode(false);
     setHiddenDoses(new Set());
+    setLooIsolated(false);
   }, [finding.test_code, finding.domain]);
   const activeScatter = scatterMode && hasBW;
 
@@ -284,10 +277,14 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
           </label>
         )}
         {hasInfluential && (
-          <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-            <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="3.5" fill={LOO_INFLUENTIAL_COLOR} /></svg>
+          <button
+            type="button"
+            className={`flex items-center gap-1 text-[9px] transition-opacity ${looIsolated ? "text-foreground font-medium opacity-100" : "text-muted-foreground opacity-100"}`}
+            onClick={() => setLooIsolated((v) => !v)}
+          >
+            <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="2.5" fill="#92400e" /></svg>
             <span>LOO influential</span>
-          </div>
+          </button>
         )}
         {activeScatter && (
           <div className="ml-auto flex flex-wrap gap-1">
@@ -332,6 +329,7 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             mode={showRecoveryAnimals ? "recovery" : "terminal"}
             interleaved
             influentialSubjects={influentialSubjects}
+            isolateInfluential={looIsolated}
             endpointLabel={endpointLabel}
             excludedSubjects={excludedForEndpoint}
             onToggleExclusion={handleToggleExclusion}
