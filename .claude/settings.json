@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'LOCK_DIR=\".lattice/commit.lock\"; if [ -d \"$LOCK_DIR\" ]; then LOCK_META=\"\"; if [ -f \"$LOCK_DIR/meta\" ]; then LOCK_META=$(cat \"$LOCK_DIR/meta\"); fi; LOCK_AGE=0; if [ -f \"$LOCK_DIR/meta\" ]; then LOCK_TIME=$(stat -c %Y \"$LOCK_DIR/meta\" 2>/dev/null || stat -f %m \"$LOCK_DIR/meta\" 2>/dev/null || echo 0); NOW=$(date +%s); LOCK_AGE=$((NOW - LOCK_TIME)); fi; if [ \"$LOCK_AGE\" -gt 300 ]; then echo \"WARNING: Stale commit lock (${LOCK_AGE}s old). Forcing removal.\"; rm -rf \"$LOCK_DIR\"; else echo \"BLOCKED: Another agent is committing. Lock held by:\"; echo \"$LOCK_META\"; echo \"\"; echo \"Wait for the lock to be released, or run: bash scripts/acquire-lock.sh your-topic --poll\"; echo \"Lock age: ${LOCK_AGE}s (auto-expires at 300s)\"; exit 1; fi; fi'",
+            "_comment": "Commit lock. BLOCKS if another agent holds .lattice/commit.lock. Auto-expires stale locks >5min."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'staged=$(git diff --cached --name-only 2>/dev/null); changed=$(git diff --name-only 2>/dev/null); all=\"$staged $changed\"; HAS_RESEARCH=false; if echo \"$all\" | grep -qE \"(research/[^/]+\\.md|incoming/.*synthesis|peer-reviews/)\"; then HAS_RESEARCH=true; fi; if [ \"$HAS_RESEARCH\" = true ]; then HAS_GAPS=false; if echo \"$staged\" | grep -qE \"(REGISTRY\\.md|TODO\\.md)\"; then HAS_GAPS=true; fi; if [ \"$HAS_GAPS\" = false ]; then echo \"WARNING: Research/synthesis/review files changed but REGISTRY.md and TODO.md are not staged.\"; echo \"\"; echo \"Did you persist discovered gaps? Every skill that discovers gaps must write them to:\"; echo \"  - docs/_internal/research/REGISTRY.md (research gaps)\"; echo \"  - docs/_internal/TODO.md (data/implementation gaps)\"; echo \"\"; echo \"If no gaps were found, this is OK -- proceed with the commit.\"; fi; fi'",
+            "_comment": "Gap persistence reminder. WARNS (non-blocking) when research/synthesis files changed but gap files not staged."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'staged=$(git diff --cached --name-only 2>/dev/null); if echo \"$staged\" | grep -qE \"(classification|findings_|derive-summaries|cross-domain-syndromes|syndrome-interpretation|findings-rail-engine|recovery-classification|finding-nature|protective-signal|lab-clinical-catalog)\"; then if ! echo \"$staged\" | grep -qE \"\\.(test|spec)\\.\"; then echo \"PIPELINE MODULE CHANGED WITHOUT TESTS. Staged pipeline files:\"; echo \"$staged\" | grep -E \"(classification|findings_|derive-summaries|cross-domain-syndromes|syndrome-interpretation|findings-rail-engine|recovery-classification|finding-nature|protective-signal|lab-clinical-catalog)\"; echo \"\"; echo \"Commit checklist requires: write the failing test FIRST for these modules.\"; echo \"Stage a test file, or use git commit with --no-verify if you have a reason.\"; exit 1; fi; fi'",
+            "_comment": "Pipeline test-first. BLOCKS if pipeline modules staged without test files."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash C:/pg/pcc/scripts/context-meter.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT\" | grep -q \"Co-Authored-By\"; then echo \"BLOCKED: CLAUDE.md rule 5 -- never add Claude as co-author.\"; exit 1; fi'",
+            "_comment": "Co-author block. BLOCKS writes containing Co-Authored-By."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then bash C:/pg/pcc/scripts/complexity-check.sh \"$FILE\" 2>&1 || true; fi'",
+            "_comment": "Complexity spot-check. Advisory only."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"(classification\\.py|findings_pipeline\\.py|statistics\\.py|view_dataframes\\.py|domain_stats\\.py|scores_and_rules\\.py|findings-rail-engine\\.ts|derive-summaries\\.ts|cross-domain-syndromes\\.ts|endpoint-confidence\\.ts|finding-nature\\.ts|organ-weight-normalization\\.ts|syndrome-interpretation\\.ts|g-lower\\.ts)\"; then echo \"ENGINE FILE MODIFIED: $(basename $FILE)\"; echo \"Run /regen-validation after this change set to verify signal detection scores.\"; fi'",
+            "_comment": "Engine change detection. Advisory -- flags validation ratchet needed."
+          }
+        ]
+      }
+    ]
+  }
+}

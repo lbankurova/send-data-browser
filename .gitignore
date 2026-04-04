@@ -51,3 +51,4 @@ INTEGRATION_TEST_RESULTS.md
 
 # Windows artifacts
 nul
+.lattice/commit.lock/

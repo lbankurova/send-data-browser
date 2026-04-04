@@ -4,6 +4,8 @@
 
 SENDEX (SEND Explorer) — web app for exploring pre-clinical regulatory study data (SEND format). XPT files in `send/` → FastAPI REST API → React frontend.
 
+**Product thesis:** Every insight that can be auto-generated MUST be auto-generated. Primary audience is scientists doing daily analytical work. At small N (non-rodent, N=3-5), the system's value is honest uncertainty communication — surfacing fragile estimates, confidence qualifiers, and power limitations — not hiding them. A scientist who knows their NOAEL is fragile makes better decisions than one who doesn't.
+
 - **Docs (internal):** `docs/_internal/` — all specs, architecture, research, decisions, backlog
 - **Docs (public):** `docs/` root — methods, species/vehicle profiles, scientific logic
 - **Backlog:** `docs/_internal/TODO.md`
