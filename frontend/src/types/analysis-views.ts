@@ -37,6 +37,10 @@ export interface TargetOrganRow {
   target_organ_flag: boolean;
   /** Max numeric severity (1-5 scale) from MI/MA/CL findings, null if no histopath data. */
   max_severity: number | null;
+  /** MI corroboration status: positive, examined_normal, not_examined, lb_corroborated, or null (non-OM). */
+  mi_status?: string | null;
+  /** OM-MI discount factor applied (1.0 = no discount), null when discount logic N/A. */
+  om_mi_discount?: number | null;
 }
 
 export interface RuleParams {

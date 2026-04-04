@@ -59,6 +59,8 @@ class ParameterizedAnalysisPipeline:
         precomputed_dose_groups: list[dict] | None = None,
         has_concurrent_control: bool = True,
         compound_partitions: dict | None = None,
+        mi_tissue_inventory: set[str] | None = None,
+        species: str | None = None,
     ) -> dict[str, list | dict]:
         """Run pipeline and return all view JSONs.
 
@@ -71,6 +73,8 @@ class ParameterizedAnalysisPipeline:
 
         Returns dict mapping view_name (underscore form) to JSON data.
         """
+        mi_tissue_inv = mi_tissue_inventory
+        _species = species
         if precomputed_findings is not None:
             findings = precomputed_findings
             dose_groups = precomputed_dose_groups
@@ -83,6 +87,8 @@ class ParameterizedAnalysisPipeline:
             )
             dose_groups = dg_data["dose_groups"]
             has_concurrent_control = dg_data.get("has_concurrent_control", True)
+            mi_tissue_inv = dg_data.get("mi_tissue_inventory")
+            _species = dg_data.get("species")
 
         # 2. Apply settings transforms (post-processing)
         findings = apply_settings_transforms(
@@ -101,6 +107,8 @@ class ParameterizedAnalysisPipeline:
         target_organs = build_target_organ_summary(
             findings, params=scoring,
             has_concurrent_control=has_concurrent_control,
+            species=_species,
+            mi_tissue_inventory=mi_tissue_inv,
         )
         # Determine classification framework for NOAEL vs NOEL routing
         from generator.adapters import get_classification_framework

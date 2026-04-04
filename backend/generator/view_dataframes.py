@@ -242,11 +242,18 @@ def build_target_organ_summary(
     findings: list[dict],
     params: ScoringParams | None = None,
     has_concurrent_control: bool = True,
+    species: str | None = None,
+    mi_tissue_inventory: set[str] | None = None,
 ) -> list[dict]:
     """Build target organ summary: one row per organ system.
 
     Aggregates evidence across endpoints. SLA-11 fix: deduplicates numerator
     by taking max signal per endpoint key. SLA-10 fix: convergence groups.
+
+    Three-state OM-MI discount (replaces flat 0.75):
+    - State (a) MI positive: findings exist in MI/MA -> no discount
+    - State (b) Examined-normal: organ in tissue inventory, no MI -> no discount
+    - State (c) Not examined: organ not in tissue inventory -> organ-specific discount
 
     When has_concurrent_control is False, returns an empty list -- target
     organ identification requires statistical comparison against control.
@@ -254,6 +261,9 @@ def build_target_organ_summary(
     if not has_concurrent_control:
         return []
     from services.analysis.send_knowledge import get_effect_size
+    from services.analysis.organ_thresholds import (
+        _SPECIMEN_TO_CONFIG_KEY, get_om_mi_discount,
+    )
 
     organ_data: dict[str, dict] = defaultdict(lambda: {
         "ep_signals": {},     # SLA-11: max signal per endpoint key (deduped)
@@ -264,6 +274,7 @@ def build_target_organ_summary(
         "n_endpoints": 0,
         "max_severity": None,  # numeric 1-5 scale from MI/MA/CL group_stats
         "max_ep_domain": "",  # domain of highest-scoring endpoint
+        "om_specimen": "",    # specimen of highest-scoring OM finding (for discount lookup)
     })
 
     for finding in findings:
@@ -288,6 +299,10 @@ def build_target_organ_summary(
         if sig > data["max_signal"]:
             data["max_signal"] = sig
             data["max_ep_domain"] = finding.get("domain", "")
+            # Track specimen from highest-scoring OM finding for discount lookup
+            if finding.get("domain") == "OM":
+                specimen = (finding.get("specimen") or "").strip().upper()
+                data["om_specimen"] = _SPECIMEN_TO_CONFIG_KEY.get(specimen, specimen)
 
         if finding.get("min_p_adj") is not None and finding["min_p_adj"] < 0.05:
             data["n_significant"] += 1
@@ -301,6 +316,8 @@ def build_target_organ_summary(
                 if data["max_severity"] is None or sev > data["max_severity"]:
                     data["max_severity"] = sev
 
+    tissue_inv = mi_tissue_inventory or set()
+
     rows = []
     for organ, data in organ_data.items():
         ep_signals = data["ep_signals"]
@@ -310,11 +327,32 @@ def build_target_organ_summary(
         convergence_count = len({_convergence_group(d) for d in data["domains"]})
         evidence_score = avg_signal * (1 + 0.2 * (convergence_count - 1))
 
-        # OM-without-MI corroboration discount (STP: organ weight without
-        # histopath is not sufficient for target organ identification)
+        # Three-state OM-without-MI corroboration discount
+        mi_status = None
+        om_mi_discount = None
         has_mi = bool(data["domains"] & {"MI", "MA"})
-        if data["max_ep_domain"] == "OM" and not has_mi:
-            evidence_score *= 0.75
+        if data["max_ep_domain"] == "OM":
+            organ_key = data["om_specimen"]
+            if has_mi:
+                # State (a): MI/MA findings exist -> no discount
+                mi_status = "positive"
+                om_mi_discount = 1.0
+            elif organ_key and organ_key in tissue_inv:
+                # State (b): organ on tissue list, no findings -> examined-normal
+                mi_status = "examined_normal"
+                om_mi_discount = 1.0
+            else:
+                # State (c): organ NOT on tissue list
+                has_lb = "LB" in data["domains"]
+                if has_lb:
+                    # LB corroboration bypass (BP-5)
+                    mi_status = "lb_corroborated"
+                    om_mi_discount = 1.0
+                else:
+                    discount = get_om_mi_discount(organ_key, species) if organ_key else 0.75
+                    mi_status = "not_examined"
+                    om_mi_discount = discount
+                    evidence_score *= discount
 
         max_sev = data["max_severity"]
         rows.append({
@@ -332,6 +370,8 @@ def build_target_organ_summary(
                 and data["n_significant"] >= (params or ScoringParams()).target_organ_n_significant
             ),
             "max_severity": round(max_sev, 2) if max_sev is not None else None,
+            "mi_status": mi_status,
+            "om_mi_discount": om_mi_discount,
         })
 
     rows.sort(key=lambda r: r["evidence_score"], reverse=True)

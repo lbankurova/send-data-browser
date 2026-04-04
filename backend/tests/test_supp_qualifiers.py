@@ -139,7 +139,7 @@ try:
         dg_data = build_dose_groups(study)
         subjects = dg_data["subjects"]
 
-        mi_findings = compute_mi_findings(study, subjects)
+        mi_findings, _ = compute_mi_findings(study, subjects)
         has_profile = any(f.get("modifier_profile") for f in mi_findings)
         check("MI findings have modifier_profile", has_profile)
 

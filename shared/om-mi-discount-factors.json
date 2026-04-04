@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "date": "2026-04-03",
+    "description": "OM-without-MI corroboration discount factors. Applied to evidence score of OM-domain findings when organ was NOT microscopically examined (MI status c). 1.0 = no discount. 0.5 = strong discount.",
+    "calibration_note": "Expert consensus estimates derived from literature on organ-specific MI sensitivity. NOT empirically calibrated. Species-specific differences of 0.05 are qualitative assessments.",
+    "sub_factor_semantics": "The composite 'discount', 'detection_sensitivity', and 'isolation_plausibility' are THREE INDEPENDENT expert estimates. The composite is NOT derived from sub-factors by formula.",
+    "sources": [
+      "Sellers et al. 2007 (STP, Toxicol Pathol 35:751-755)",
+      "Michael et al. 2007 (STP, Toxicol Pathol 35:742-750)",
+      "Bolon et al. 2013 (STP, Toxicol Pathol 41:1028-1048)",
+      "Palazzi et al. 2022 (STP, Toxicol Pathol 50:432-465)",
+      "Lanning et al. 2002 (STP, Toxicol Pathol 30:524-533)",
+      "Elmore 2006 (Toxicol Pathol 34:656-665)",
+      "Everds et al. 2013 (Toxicol Pathol 41:805-816)",
+      "Hall et al. 2012 (3rd ESTP Workshop, Toxicol Pathol 40:971-994)",
+      "ICH S8 (2005)",
+      "RITA/NACAD trimming guides (2003-2004)"
+    ],
+    "application_rules": {
+      "applies_when": "OM-domain finding AND MI status is (c) organ NOT examined",
+      "does_not_apply": [
+        "MI status (a): positive MI findings exist for organ",
+        "MI status (b): organ on tissue list but no MI entries (examined-normal)",
+        "LB corroboration exists (e.g., liver OM + ALT elevation)"
+      ]
+    }
+  },
+  "rat": {
+    "LIVER":            {"discount": 0.50, "detection_sensitivity": 0.90, "isolation_plausibility": 0.60, "tier": "high"},
+    "KIDNEY":           {"discount": 0.50, "detection_sensitivity": 0.90, "isolation_plausibility": 0.30, "tier": "high"},
+    "TESTES":           {"discount": 0.50, "detection_sensitivity": 0.95, "isolation_plausibility": 0.20, "tier": "high"},
+    "THYROID":          {"discount": 0.60, "detection_sensitivity": 0.80, "isolation_plausibility": 0.40, "tier": "mod_high"},
+    "SPLEEN":           {"discount": 0.75, "detection_sensitivity": 0.75, "isolation_plausibility": 0.50, "tier": "mod_high"},
+    "ADRENAL":          {"discount": 0.75, "detection_sensitivity": 0.70, "isolation_plausibility": 0.60, "tier": "moderate"},
+    "THYMUS":           {"discount": 1.00, "detection_sensitivity": 0.65, "isolation_plausibility": 0.80, "tier": "exempt"},
+    "HEART":            {"discount": 1.00, "detection_sensitivity": 0.30, "isolation_plausibility": 0.90, "tier": "low"},
+    "BRAIN":            {"discount": 0.85, "detection_sensitivity": 0.25, "isolation_plausibility": 0.30, "tier": "low"},
+    "OVARIES":          {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.60, "tier": "moderate"},
+    "UTERUS":           {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.70, "tier": "moderate"},
+    "EPIDIDYMIDES":     {"discount": 0.65, "detection_sensitivity": 0.70, "isolation_plausibility": 0.40, "tier": "moderate"},
+    "PROSTATE":         {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.50, "tier": "moderate"},
+    "SEMINAL_VESICLES": {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.50, "tier": "moderate"},
+    "PITUITARY":        {"discount": 0.65, "detection_sensitivity": 0.75, "isolation_plausibility": 0.50, "tier": "mod_high"},
+    "LUNGS":            {"discount": 0.80, "detection_sensitivity": 0.60, "isolation_plausibility": 0.60, "tier": "moderate"}
+  },
+  "dog": {
+    "LIVER":            {"discount": 0.50, "detection_sensitivity": 0.90, "isolation_plausibility": 0.60, "tier": "high"},
+    "KIDNEY":           {"discount": 0.50, "detection_sensitivity": 0.90, "isolation_plausibility": 0.30, "tier": "high"},
+    "TESTES":           {"discount": 0.55, "detection_sensitivity": 0.90, "isolation_plausibility": 0.25, "tier": "high"},
+    "THYROID":          {"discount": 0.60, "detection_sensitivity": 0.80, "isolation_plausibility": 0.40, "tier": "mod_high"},
+    "SPLEEN":           {"discount": 0.65, "detection_sensitivity": 0.80, "isolation_plausibility": 0.45, "tier": "mod_high"},
+    "ADRENAL":          {"discount": 0.70, "detection_sensitivity": 0.70, "isolation_plausibility": 0.55, "tier": "moderate"},
+    "THYMUS":           {"discount": 1.00, "detection_sensitivity": 0.65, "isolation_plausibility": 0.80, "tier": "exempt"},
+    "HEART":            {"discount": 0.95, "detection_sensitivity": 0.35, "isolation_plausibility": 0.85, "tier": "low"},
+    "BRAIN":            {"discount": 0.80, "detection_sensitivity": 0.30, "isolation_plausibility": 0.30, "tier": "low"},
+    "OVARIES":          {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.55, "tier": "moderate"},
+    "UTERUS":           {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.65, "tier": "moderate"},
+    "EPIDIDYMIDES":     {"discount": 0.65, "detection_sensitivity": 0.70, "isolation_plausibility": 0.40, "tier": "moderate"},
+    "PROSTATE":         {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.50, "tier": "moderate"},
+    "SEMINAL_VESICLES": {"discount": 0.70, "detection_sensitivity": 0.65, "isolation_plausibility": 0.50, "tier": "moderate"},
+    "PITUITARY":        {"discount": 0.65, "detection_sensitivity": 0.75, "isolation_plausibility": 0.50, "tier": "mod_high"},
+    "LUNGS":            {"discount": 0.80, "detection_sensitivity": 0.60, "isolation_plausibility": 0.60, "tier": "moderate"}
+  },
+  "default": {"discount": 0.75, "tier": "moderate"}
+}

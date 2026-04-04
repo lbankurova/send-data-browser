@@ -1,5 +1,7 @@
 """MA (Macroscopic) domain findings: per (MASPEC, MASTRESC) where abnormal -> incidence."""
 
+import logging
+
 import pandas as pd
 import polars as pl
 
@@ -10,6 +12,9 @@ from services.analysis.supp_qualifiers import (
 )
 from services.analysis.day_utils import mode_day
 from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
+from services.analysis.organ_thresholds import _SPECIMEN_TO_CONFIG_KEY
+
+log = logging.getLogger(__name__)
 
 NORMAL_TERMS = {"NORMAL", "WITHIN NORMAL LIMITS", "WNL", "NO ABNORMALITIES", "UNREMARKABLE"}
 
@@ -18,16 +23,30 @@ def compute_ma_findings(
     study: StudyInfo,
     subjects: pd.DataFrame,
     excluded_subjects: set[str] | None = None,
-) -> list[dict]:
-    """Compute findings from MA domain (macroscopic/gross pathology)."""
+) -> tuple[list[dict], set[str]]:
+    """Compute findings from MA domain (macroscopic/gross pathology).
+
+    Returns (findings, tissue_inventory) where tissue_inventory is the set of
+    organ config keys for all specimens in the raw MA XPT (before any filter).
+    """
     if "ma" not in study.xpt_files:
-        return []
+        return ([], set())
 
     ma_df = read_xpt_as_polars(study.xpt_files["ma"])
     subs = subjects_to_polars(subjects)
 
     if "MADY" in ma_df.columns:
         ma_df = ma_df.with_columns(pl.col("MADY").cast(pl.Float64, strict=False))
+
+    # Collect tissue inventory from raw XPT BEFORE any filtering
+    ma_tissue_inventory: set[str] = set()
+    if "MASPEC" in ma_df.columns:
+        raw_specs = ma_df["MASPEC"].cast(pl.Utf8).str.strip_chars().str.to_uppercase().unique().to_list()
+        for s in raw_specs:
+            if s and s not in _SPECIMEN_TO_CONFIG_KEY:
+                log.warning(
+                    "Unmapped MASPEC specimen '%s' -- not in _SPECIMEN_TO_CONFIG_KEY", s)
+        ma_tissue_inventory = {_SPECIMEN_TO_CONFIG_KEY[s] for s in raw_specs if s and s in _SPECIMEN_TO_CONFIG_KEY}
 
     # Identify specimens with recovery subjects BEFORE filtering to main-only
     specimens_with_recovery: set[str] = set()
@@ -50,7 +69,7 @@ def compute_ma_findings(
     spec_col = "MASPEC" if "MASPEC" in ma_df.columns else None
     finding_col = "MASTRESC" if "MASTRESC" in ma_df.columns else None
     if spec_col is None or finding_col is None:
-        return []
+        return ([], ma_tissue_inventory)
 
     # Filter to abnormal findings
     ma_df = ma_df.with_columns(
@@ -61,7 +80,7 @@ def compute_ma_findings(
     )
 
     if ma_abnormal.height == 0:
-        return []
+        return ([], ma_tissue_inventory)
 
     # Build n_per_group lookup
     n_per_group: dict[tuple, int] = {}
@@ -205,4 +224,4 @@ def compute_ma_findings(
             "_relrec_subject_seqs": relrec_subject_seqs,
         })
 
-    return findings
+    return (findings, ma_tissue_inventory)

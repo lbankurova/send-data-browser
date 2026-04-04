@@ -46,6 +46,15 @@ _SPECIMEN_TO_CONFIG_KEY: dict[str, str] = {
     "EPIDIDYMIS": "EPIDIDYMIDES",
     "EPIDIDYMIDES": "EPIDIDYMIDES",
     "UTERUS": "UTERUS",
+    "PROSTATE": "PROSTATE",
+    "PROSTATE GLAND": "PROSTATE",
+    "GLAND, PROSTATE": "PROSTATE",
+    "SEMINAL VESICLE": "SEMINAL_VESICLES",
+    "SEMINAL VESICLES": "SEMINAL_VESICLES",
+    "GLAND, SEMINAL VESICLE": "SEMINAL_VESICLES",
+    "PITUITARY": "PITUITARY",
+    "PITUITARY GLAND": "PITUITARY",
+    "GLAND, PITUITARY": "PITUITARY",
     # Major organs
     "LIVER": "LIVER",
     "KIDNEY": "KIDNEY",
@@ -83,6 +92,8 @@ def _resolve_species_category(species: str | None) -> str:
         return "rat"
     if "MOUSE" in s or "MICE" in s:
         return "mouse"
+    if "DOG" in s or "BEAGLE" in s or "MONGREL" in s:
+        return "dog"
     return "other"
 
 
@@ -137,6 +148,45 @@ def get_organ_threshold(specimen: str, species: str | None = None) -> dict | Non
 def get_default_om_threshold() -> float:
     """Return default adverse_floor_pct for organs not in config."""
     return _DEFAULT_ADVERSE_FLOOR
+
+
+# ---------------------------------------------------------------------------
+# OM-MI corroboration discount factors (lazy-loaded)
+# ---------------------------------------------------------------------------
+
+_OM_MI_JSON_PATH = SHARED_DIR / "om-mi-discount-factors.json"
+_OM_MI_DATA: dict | None = None
+
+
+def _load_om_mi_discounts() -> dict:
+    global _OM_MI_DATA
+    if _OM_MI_DATA is not None:
+        return _OM_MI_DATA
+    try:
+        with open(_OM_MI_JSON_PATH) as f:
+            _OM_MI_DATA = json.load(f)
+    except Exception as e:
+        log.warning("Failed to load om-mi-discount-factors from %s: %s", _OM_MI_JSON_PATH, e)
+        _OM_MI_DATA = {}
+    return _OM_MI_DATA
+
+
+def get_om_mi_discount(organ_config_key: str, species: str | None) -> float:
+    """Look up the OM-without-MI corroboration discount for an organ + species.
+
+    Returns a multiplier (0.5-1.0). Falls back to 0.75 for unmapped organs.
+    """
+    data = _load_om_mi_discounts()
+    species_cat = _resolve_species_category(species)
+    species_table = data.get(species_cat, data.get("rat", {}))
+    if isinstance(species_table, dict) and "_meta" not in species_table:
+        entry = species_table.get(organ_config_key)
+    else:
+        entry = None
+    if entry and isinstance(entry, dict):
+        return float(entry.get("discount", 0.75))
+    default = data.get("default", {})
+    return float(default.get("discount", 0.75) if isinstance(default, dict) else 0.75)
 
 
 def get_species(study) -> str | None:

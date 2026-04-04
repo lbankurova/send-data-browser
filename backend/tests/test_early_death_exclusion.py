@@ -257,8 +257,8 @@ print("\nDirect module exclusion tests:")
 
 from services.analysis.findings_mi import compute_mi_findings
 
-mi_base = compute_mi_findings(study, subjects)
-mi_excl = compute_mi_findings(study, subjects, excluded_subjects=set(eds.keys()))
+mi_base, _ = compute_mi_findings(study, subjects)
+mi_excl, _ = compute_mi_findings(study, subjects, excluded_subjects=set(eds.keys()))
 
 check("MI base findings exist", len(mi_base) > 0, f"got {len(mi_base)}")
 check("MI excluded findings exist", len(mi_excl) > 0, f"got {len(mi_excl)}")

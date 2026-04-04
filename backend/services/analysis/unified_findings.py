@@ -125,8 +125,11 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     all_findings.extend(compute_lb_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_bw_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_om_findings(study, subjects))
-    all_findings.extend(compute_mi_findings(study, subjects))
-    all_findings.extend(compute_ma_findings(study, subjects))
+    mi_findings, mi_tissue = compute_mi_findings(study, subjects)
+    ma_findings, ma_tissue = compute_ma_findings(study, subjects)
+    all_findings.extend(mi_findings)
+    all_findings.extend(ma_findings)
+    mi_tissue_inventory = mi_tissue | ma_tissue
     all_findings.extend(compute_tf_findings(study, subjects))
     all_findings.extend(compute_cl_findings(study, subjects, last_dosing_day=last_dosing_day))
     all_findings.extend(compute_ds_findings(study, subjects))
@@ -135,8 +138,10 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     scheduled_map = None
     if excluded_set:
         sched_findings = []
-        sched_findings.extend(compute_mi_findings(study, subjects, excluded_subjects=excluded_set))
-        sched_findings.extend(compute_ma_findings(study, subjects, excluded_subjects=excluded_set))
+        mi_sched, _ = compute_mi_findings(study, subjects, excluded_subjects=excluded_set)
+        ma_sched, _ = compute_ma_findings(study, subjects, excluded_subjects=excluded_set)
+        sched_findings.extend(mi_sched)
+        sched_findings.extend(ma_sched)
         sched_findings.extend(compute_om_findings(study, subjects, excluded_subjects=excluded_set))
         sched_findings.extend(compute_tf_findings(study, subjects, excluded_subjects=excluded_set))
         sched_findings.extend(compute_lb_findings(study, subjects, excluded_subjects=excluded_set))

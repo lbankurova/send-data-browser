@@ -189,6 +189,28 @@ function OrganRailItem({
         {organ.domains.map((d) => (
           <DomainLabel key={d} domain={d} />
         ))}
+        {organ.mi_status && organ.mi_status !== "positive" && (
+          <span
+            className="text-[10px] text-muted-foreground"
+            title={
+              organ.mi_status === "examined_normal"
+                ? "Organ examined microscopically, no findings"
+                : organ.mi_status === "lb_corroborated"
+                  ? "OM corroborated by lab data (no MI)"
+                  : organ.mi_status === "not_examined"
+                    ? `Organ not microscopically examined (discount ${organ.om_mi_discount ?? "N/A"})`
+                    : ""
+            }
+          >
+            {organ.mi_status === "examined_normal"
+              ? "MI clean"
+              : organ.mi_status === "lb_corroborated"
+                ? "LB+"
+                : organ.mi_status === "not_examined"
+                  ? "OM-only"
+                  : null}
+          </span>
+        )}
       </div>
 
       {/* Row 5: max |d| and trend p from signal data */}

@@ -1,5 +1,6 @@
 """MI (Microscopic) domain findings: per (MISPEC, MISTRESC) where abnormal -> incidence + severity."""
 
+import logging
 import re
 
 import numpy as np
@@ -15,6 +16,9 @@ from services.analysis.supp_qualifiers import (
 )
 from services.analysis.day_utils import mode_day
 from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
+from services.analysis.organ_thresholds import _SPECIMEN_TO_CONFIG_KEY
+
+log = logging.getLogger(__name__)
 
 SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5}
 _N_OF_M = re.compile(r"^(\d+)\s+OF\s+(\d+)$", re.IGNORECASE)
@@ -43,16 +47,31 @@ def compute_mi_findings(
     study: StudyInfo,
     subjects: pd.DataFrame,
     excluded_subjects: set[str] | None = None,
-) -> list[dict]:
-    """Compute findings from MI domain (microscopic/histopathology)."""
+) -> tuple[list[dict], set[str]]:
+    """Compute findings from MI domain (microscopic/histopathology).
+
+    Returns (findings, tissue_inventory) where tissue_inventory is the set of
+    organ config keys for all specimens in the raw MI XPT (before any filter).
+    """
     if "mi" not in study.xpt_files:
-        return []
+        return ([], set())
 
     mi_df = read_xpt_as_polars(study.xpt_files["mi"])
     subs = subjects_to_polars(subjects)
 
     if "MIDY" in mi_df.columns:
         mi_df = mi_df.with_columns(pl.col("MIDY").cast(pl.Float64, strict=False))
+
+    # Collect tissue inventory from raw XPT BEFORE any filtering.
+    # All MISPEC values prove the organ was microscopically examined.
+    mi_tissue_inventory: set[str] = set()
+    if "MISPEC" in mi_df.columns:
+        raw_specs = mi_df["MISPEC"].cast(pl.Utf8).str.strip_chars().str.to_uppercase().unique().to_list()
+        for s in raw_specs:
+            if s and s not in _SPECIMEN_TO_CONFIG_KEY:
+                log.warning(
+                    "Unmapped MISPEC specimen '%s' -- not in _SPECIMEN_TO_CONFIG_KEY", s)
+        mi_tissue_inventory = {_SPECIMEN_TO_CONFIG_KEY[s] for s in raw_specs if s and s in _SPECIMEN_TO_CONFIG_KEY}
 
     # Identify specimens with recovery subjects BEFORE filtering to main-only
     specimens_with_recovery: set[str] = set()
@@ -77,7 +96,7 @@ def compute_mi_findings(
     severity_col = "MISEV" if "MISEV" in mi_df.columns else None
 
     if spec_col is None or finding_col is None:
-        return []
+        return ([], mi_tissue_inventory)
 
     # Filter to abnormal findings
     mi_df = mi_df.with_columns(
@@ -88,7 +107,7 @@ def compute_mi_findings(
     )
 
     if mi_abnormal.height == 0:
-        return []
+        return ([], mi_tissue_inventory)
 
     # Build n_per_group
     n_per_group: dict[tuple, int] = {}
@@ -256,4 +275,4 @@ def compute_mi_findings(
             "_relrec_subject_seqs": relrec_subject_seqs,
         })
 
-    return findings
+    return (findings, mi_tissue_inventory)
