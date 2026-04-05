@@ -29,6 +29,7 @@ from generator.subject_syndromes import build_subject_syndromes
 from generator.onset_recovery import build_onset_days, build_recovery_verdicts
 from generator.noael_overlay import build_subject_noael_overlay
 from generator.animal_influence import build_animal_influence
+from generator.subject_similarity import build_subject_similarity
 from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
 
@@ -494,6 +495,28 @@ def generate(study_id: str):
         n_bw = sum(1 for s in noael_overlay["subjects"].values() if s.get("bw_terminal_pct") is not None)
         n_lb = sum(1 for s in noael_overlay["subjects"].values() if s.get("lb_max_fold") is not None)
         print(f"  NOAEL overlay: {n_determining} determining, {n_bw} BW, {n_lb} LB signals")
+
+        # Phase 2x: Subject similarity (needs noael_overlay + raw_subject_values)
+        print("Phase 2x: Computing subject similarity...")
+        try:
+            similarity = build_subject_similarity(
+                findings, study, ctx_df.to_dict(orient="records"),
+                noael_overlay=noael_overlay,
+                early_death_subjects=early_death_subjects,
+            )
+            _write_json(out_dir / "subject_similarity.json", similarity)
+            meta = similarity.get("meta", {})
+            n_elig = meta.get("n_subjects_eligible", 0)
+            n_excl = meta.get("n_excluded", 0)
+            n_feats = meta.get("n_features", 0)
+            stress = meta.get("mds_stress")
+            supp = meta.get("similarity_suppressed", False)
+            if supp:
+                print(f"  Similarity: {n_elig} eligible, {n_excl} TK excluded, {n_feats} features (suppressed, N<{15})")
+            else:
+                print(f"  Similarity: {n_elig} eligible, {n_excl} TK excluded, {n_feats} features, stress={stress}")
+        except Exception as e:
+            print(f"  WARNING: Subject similarity failed: {e}")
 
     _tick("2_end")
 
