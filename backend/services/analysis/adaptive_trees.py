@@ -88,6 +88,39 @@ def _text_contains_any(text: str, substrings: list[str]) -> bool:
     return any(s.lower() in t for s in substrings)
 
 
+# Cross-organ concurrent adverse terms (Gopinath & Mowat 2019, Category 3):
+# Non-adverse findings become adverse when co-occurring with tissue damage.
+_CONCURRENT_ADVERSE_TERMS = [
+    "necrosis", "fibrosis", "degeneration", "inflammation", "ulcer",
+    "erosion", "apoptosis", "infarct", "hemorrhage",
+]
+
+
+def check_concurrent_adverse(
+    index, specimen: str, sex: str, *, exclude_finding_text: str = ""
+) -> str | None:
+    """Check for concurrent adverse MI findings in the same organ.
+
+    Returns the adverse finding text if found, None otherwise. Implements
+    Gopinath & Mowat 2019 Category 3 using the generic tissue-damage term
+    set. Note: the liver tree N1 uses its own wider organ-specific list
+    (_LIVER_ADVERSE_INDICATORS) which includes hepatotoxicity markers
+    (cholestasis, steatosis, lipidosis, oval cell) beyond the generic set.
+    """
+    mi_findings = index.get_histopath_findings(specimen, sex)
+    exclude_lower = exclude_finding_text.lower()
+    for f in mi_findings:
+        if not f.get("treatment_related", False):
+            continue
+        f_text = (f.get("finding") or "").lower()
+        # Don't match the finding against itself
+        if exclude_lower and f_text == exclude_lower:
+            continue
+        if _text_contains_any(f_text, _CONCURRENT_ADVERSE_TERMS):
+            return f_text
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Tree 1: Liver (Hall 2012)
 # ---------------------------------------------------------------------------
@@ -260,6 +293,22 @@ def _tree_thyroid(finding: dict, index, species: str | None) -> TreeResult | Non
         )
 
     path.append("N1:diffuse_change")
+
+    # N1b: Concurrent adverse findings in thyroid itself (Gopinath Category 3)
+    adverse_in_thyroid = check_concurrent_adverse(
+        index, specimen, sex, exclude_finding_text=text
+    )
+    if adverse_in_thyroid:
+        path.append(f"N1b:concurrent_adverse_in_thyroid={adverse_in_thyroid}")
+        return TreeResult(
+            classification="tr_adverse",
+            tree_id="thyroid",
+            node_path=path,
+            ecetoc_factors=["B-1: concurrent adverse histopath in thyroid"],
+            rationale=f"Thyroid hypertrophy/hyperplasia with concurrent adverse finding ({adverse_in_thyroid}) -- adverse in combination",
+        )
+
+    path.append("N1b:no_concurrent_adverse_in_thyroid")
 
     # Check for concurrent liver evidence (liver-thyroid axis)
     liver_om = index.get_om_finding("LIVER", sex)
@@ -440,6 +489,23 @@ def _tree_thymus(finding: dict, index, species: str | None, sex: str) -> TreeRes
     """Thymus atrophy sub-tree."""
     path = ["entry:MI_THYMUS_atrophy"]
 
+    # N0: Concurrent adverse findings in thymus (Gopinath Category 3)
+    text = (finding.get("finding") or "").lower()
+    adverse_in_thymus = check_concurrent_adverse(
+        index, "THYMUS", sex, exclude_finding_text=text
+    )
+    if adverse_in_thymus:
+        path.append(f"N0:concurrent_adverse={adverse_in_thymus}")
+        return TreeResult(
+            classification="tr_adverse",
+            tree_id="thymus_spleen",
+            node_path=path,
+            ecetoc_factors=["B-1: concurrent adverse histopath in thymus"],
+            rationale=f"Thymus atrophy with concurrent adverse finding ({adverse_in_thymus}) -- direct toxicity, not stress",
+        )
+
+    path.append("N0:no_concurrent_adverse")
+
     # Stress constellation: BW↓>10% + adrenal changes
     bw_pct = index.compute_bw_pct_change(sex)
     bw_decreased = bw_pct is not None and bw_pct < -10
@@ -474,8 +540,26 @@ def _tree_thymus(finding: dict, index, species: str | None, sex: str) -> TreeRes
 def _tree_spleen(finding: dict, index, species: str | None, sex: str, text: str) -> TreeResult | None:
     """Spleen sub-tree: EMH, white pulp depletion."""
     path = ["entry:MI_SPLEEN"]
+    specimen = (finding.get("specimen") or "").upper()
 
-    # EMH (extramedullary hematopoiesis) + anemia → compensatory
+    # N0: Concurrent adverse findings in spleen (Gopinath Category 3)
+    adverse_in_spleen = check_concurrent_adverse(
+        index, specimen if "SPLEEN" in specimen else "SPLEEN", sex,
+        exclude_finding_text=text
+    )
+    if adverse_in_spleen:
+        path.append(f"N0:concurrent_adverse={adverse_in_spleen}")
+        return TreeResult(
+            classification="tr_adverse",
+            tree_id="thymus_spleen",
+            node_path=path,
+            ecetoc_factors=["B-1: concurrent adverse histopath in spleen"],
+            rationale=f"Spleen finding with concurrent adverse finding ({adverse_in_spleen}) -- adverse in combination",
+        )
+
+    path.append("N0:no_concurrent_adverse")
+
+    # EMH (extramedullary hematopoiesis) + anemia -> compensatory
     if "hematopoiesis" in text or "emh" in text or "extramedullary" in text:
         path.append("N1:EMH")
         # Check for anemia evidence (RBC, HGB, HCT changes)
@@ -634,9 +718,10 @@ def _tree_gastric(finding: dict, index, species: str | None) -> TreeResult | Non
     if not _text_contains_any(text, ["hyperplasia", "erosion", "ulcer", "ulceration"]):
         return None
 
+    sex = finding.get("sex", "")
     path = ["entry:MI_STOMACH"]
 
-    # Erosion / ulceration → always adverse (tissue destruction)
+    # Erosion / ulceration -> always adverse (tissue destruction)
     if "erosion" in text or "ulcer" in text:
         path.append("N1:erosion_ulceration")
         return TreeResult(
@@ -649,9 +734,24 @@ def _tree_gastric(finding: dict, index, species: str | None) -> TreeResult | Non
 
     # Hyperplasia
     if "hyperplasia" in text:
+        # N1b: Concurrent adverse findings in stomach (Gopinath Category 3)
+        adverse_in_stomach = check_concurrent_adverse(
+            index, specimen if "STOMACH" in specimen else "STOMACH", sex,
+            exclude_finding_text=text
+        )
+        if adverse_in_stomach:
+            path.append(f"N1b:concurrent_adverse={adverse_in_stomach}")
+            return TreeResult(
+                classification="tr_adverse",
+                tree_id="gastric",
+                node_path=path,
+                ecetoc_factors=["B-1: concurrent adverse histopath in stomach"],
+                rationale=f"Gastric hyperplasia with concurrent adverse finding ({adverse_in_stomach}) -- adverse in combination",
+            )
+
         sev_grade = _max_severity_grade(finding)
 
-        # Forestomach hyperplasia ≤ mild → adaptive + not human relevant
+        # Forestomach hyperplasia <= mild -> adaptive + not human relevant
         if "forestomach" in text or "non-glandular" in text or "nonglandular" in text:
             path.append("N1:forestomach_hyperplasia")
             if sev_grade <= 2:

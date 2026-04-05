@@ -470,6 +470,68 @@ def determine_treatment_related(
 
 _HISTOPATH_DOMAINS = {"MI", "MA", "TF"}
 
+# Import the canonical Category 3 term list from adaptive_trees (single source of truth)
+from services.analysis.adaptive_trees import (  # noqa: E402 — domain-critical shared constant
+    _CONCURRENT_ADVERSE_TERMS,
+)
+
+
+def _get_max_avg_severity(finding: dict) -> float:
+    """Extract the maximum avg_severity across dose groups from a finding.
+
+    Returns 0.0 if severity data is not available. Used for severity-dependent
+    adversity gating per STP/ESTP framework (Gopinath & Mowat 2019).
+
+    NOTE on missing data: 0.0 means "no severity data available", NOT "grade 0".
+    The caller treats 0.0 the same as grade 1-2 (-> equivocal). This is a
+    conservative-in-safety choice: missing severity data produces equivocal
+    rather than tr_adverse, prompting pathologist review. The alternative
+    (assume moderate -> tr_adverse) would mask data quality issues. If this
+    fallback fires frequently for a study, the data quality should be flagged.
+    """
+    # Direct avg_severity field (set by findings_mi.py)
+    avg = finding.get("avg_severity")
+    if avg is not None and avg > 0:
+        return float(avg)
+    # Try group_stats max (more granular)
+    gs = finding.get("group_stats", [])
+    max_sev = 0.0
+    for g in gs:
+        s = g.get("avg_severity")
+        if s is not None and s > max_sev:
+            max_sev = s
+    return max_sev
+
+
+def _has_concurrent_adverse_in_organ(finding: dict, specimen: str) -> bool:
+    """Check if there are concurrent always_adverse findings in the same organ.
+
+    Implements Gopinath & Mowat 2019 Category 3: non-adverse findings become
+    adverse when co-occurring with necrosis/fibrosis/inflammation in same organ.
+
+    NOTE: The primary implementation of Category 3 combination detection is in
+    adaptive_trees.check_concurrent_adverse(), which has access to the full
+    ConcurrentFindingIndex. This function is a secondary path that checks the
+    finding's _histopath_context if populated by _classify_histopath().
+    Returns False when context data is unavailable — the adaptive trees path
+    handles the full combination check for context_dependent findings.
+    """
+    # Check _histopath_context populated by _classify_histopath
+    context = finding.get("_histopath_context", [])
+    if not context:
+        return False
+    specimen_upper = specimen.upper()
+    for cf in context:
+        cf_spec = (cf.get("specimen") or "").upper()
+        if cf_spec != specimen_upper:
+            continue
+        cf_text = (cf.get("finding") or "").lower()
+        if cf.get("treatment_related", False):
+            for term in _CONCURRENT_ADVERSE_TERMS:
+                if term in cf_text:
+                    return True
+    return False
+
 
 def _score_treatment_relatedness(finding: dict, a3_score: float = 0.0, effect_threshold: float = 0.3) -> float:
     """A-factor scoring for treatment-relatedness (0-4 scale, may shift ±0.5 with A-3).
@@ -588,15 +650,32 @@ def assess_finding(finding: dict, a3_score: float = 0.0, effect_threshold: float
             return "equivocal"
         return "tr_non_adverse"
 
-    # B-0: Dictionary override for likely_adverse
+    # B-0: Dictionary override for likely_adverse / context_dependent
     d = get_effect_size(finding)
     abs_d = abs(d) if d is not None else 0.0
 
     if domain in _HISTOPATH_DOMAINS and finding_text:
         intrinsic = lookup_intrinsic_adversity(finding_text)
         if intrinsic == "likely_adverse":
-            return "tr_adverse"
+            # STP/ESTP severity gate (Gopinath & Mowat 2019, Category 2/4):
+            # Low-grade degenerative changes (atrophy, degeneration, hemorrhage)
+            # at MISEV 1-2 may be non-adverse per "Test Substance-Related Lesions
+            # of Low Severity, With No Functional Disturbance." Require avg_severity
+            # >= 3 (moderate) for adverse classification; grade 1-2 -> equivocal.
+            avg_sev = _get_max_avg_severity(finding)
+            if avg_sev >= 3.0:
+                return "tr_adverse"
+            return "equivocal"
         if intrinsic == "context_dependent":
+            # Phospholipidosis-aware vacuolation escalation (Gopinath & Mowat
+            # 2019 pp.572-573; Kerlin 2016): vacuolation in liver/kidney/lung/
+            # choroid plexus with cationic amphiphilic compound -> irreversible.
+            # Check for co-occurring adverse MI findings in same organ as a
+            # proxy for combination-driven adversity (Gopinath Category 3).
+            if "vacuol" in finding_text.lower():
+                specimen = (finding.get("specimen") or "").upper()
+                if _has_concurrent_adverse_in_organ(finding, specimen):
+                    return "tr_adverse"
             # Context-dependent: large magnitude escalates, otherwise adaptive
             if abs_d >= 1.5:
                 return "tr_adverse"

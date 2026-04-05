@@ -9,15 +9,15 @@
     "perforation",
     "aplasia",
     "infarction",
-    "malignant"
+    "malignant",
+    "ulcer",
+    "demyelination",
+    "sclerosis"
   ],
   "likely_adverse": [
     "atrophy",
     "degeneration",
-    "ulcer",
-    "hemorrhage",
-    "demyelination",
-    "sclerosis"
+    "hemorrhage"
   ],
   "context_dependent": [
     "hypertrophy",

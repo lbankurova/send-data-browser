@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `f95de1c7` (2026-04-04)
-**Generated:** 2026-04-04T17:54:54.661Z
+**Engine:** commit `c0b2ee89` (2026-04-05)
+**Generated:** 2026-04-05T17:19:08.153Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 

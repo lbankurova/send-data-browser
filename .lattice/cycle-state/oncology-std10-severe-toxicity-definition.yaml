@@ -1,0 +1,39 @@
+topic: oncology-std10-severe-toxicity-definition
+started: 2026-04-05T10:00:00
+phase: research-complete
+current_step: research.complete
+completed:
+  research.1:
+    completed: 2026-04-05T10:00:00
+    output: "docs/_internal/research/oncology-std10-severe-toxicity-definition.md"
+  research.2:
+    completed: 2026-04-05T10:30:00
+    output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-review.md"
+  research.3:
+    completed: 2026-04-05T11:00:00
+    output: "docs/_internal/research/oncology-std10-severe-toxicity-definition.md (R1 incorporated)"
+  research.4:
+    completed: 2026-04-05T11:30:00
+    output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-review-r2.md"
+  research.5:
+    completed: 2026-04-05T11:45:00
+    key_decisions:
+      - "All R1 findings RESOLVED by R2. 1 new FLAWED (MASEV) fixed, 4 CONDITIONAL noted."
+  research.6:
+    completed: 2026-04-05T12:00:00
+    key_decisions:
+      - "Distill: 0 contradictions, 2 tensions documented (decisions.log terminology, cross-study Feature 1B scope)"
+  research.7:
+    completed: 2026-04-05T12:00:00
+    key_decisions:
+      - "Probe: 1 SCIENCE-FLAG (S03 organ-lesion dictionary requires pathologist expertise)"
+      - "Probe: 1 BREAKS (pk_integration.py needs tier-aware variant)"
+      - "Probe: 2 PROPAGATES (S01, mortality.py)"
+      - "Probe: 3 SAFE (S16, S20, OV)"
+  research.7b:
+    completed: 2026-04-05T12:00:00
+    key_decisions:
+      - "REGISTRY updated with probe findings and R1+R2 review refs"
+      - "GAP-197 already in TODO.md (updated to RESEARCHED status)"
+      - "All gaps persisted"
+checkpoints: {}

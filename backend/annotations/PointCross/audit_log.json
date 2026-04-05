@@ -850,5 +850,145 @@
         "new": null
       }
     }
+  },
+  {
+    "timestamp": "2026-04-04T23:46:57.167316+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "e1e953ec0e21",
+    "action": "create",
+    "changes": {
+      "onset_dose_level": {
+        "old": null,
+        "new": 1
+      },
+      "original_direction": {
+        "old": null,
+        "new": "down"
+      },
+      "pattern": {
+        "old": null,
+        "new": "monotonic"
+      },
+      "original_pattern": {
+        "old": null,
+        "new": "threshold_decrease"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-04T23:47:05.266219+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "e1e953ec0e21",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "monotonic",
+          "original_pattern": "threshold_decrease",
+          "original_direction": "down",
+          "onset_dose_level": 1,
+          "pathologist": "User",
+          "reviewDate": "2026-04-04T23:46:57.153628+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-04T23:47:08.772350+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "e1e953ec0e21",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "monotonic"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-05T12:41:04.461443+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "original_pattern": "flat",
+          "original_direction": "down",
+          "onset_dose_level": 1,
+          "pathologist": "User",
+          "reviewDate": "2026-03-08T23:50:47.116229+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-05T12:41:29.086405+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-05T12:41:36.683616+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "onset_dose_level": null,
+          "pathologist": "User",
+          "reviewDate": "2026-04-05T12:41:29.075328+00:00"
+        },
+        "new": null
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-05T12:41:43.141109+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "create",
+    "changes": {
+      "pattern": {
+        "old": null,
+        "new": "threshold"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-05T12:41:46.734651+00:00",
+    "user": "User",
+    "schemaType": "pattern-overrides",
+    "entityKey": "d7d1dae076f2",
+    "action": "delete",
+    "changes": {
+      "_deleted": {
+        "old": {
+          "pattern": "threshold",
+          "onset_dose_level": null,
+          "pathologist": "User",
+          "reviewDate": "2026-04-05T12:41:43.129195+00:00"
+        },
+        "new": null
+      }
+    }
   }
 ]
