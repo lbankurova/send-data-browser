@@ -392,6 +392,7 @@ def build_dose_response_metrics(findings: list[dict], dose_groups: list[dict]) -
                 "endpoint_label": finding.get("endpoint_label", ""),
                 "domain": finding.get("domain", ""),
                 "test_code": finding.get("test_code", ""),
+                "canonical_testcd": finding.get("canonical_testcd"),
                 "organ_system": finding.get("organ_system", ""),
                 "dose_level": dl,
                 "dose_label": dose_label_map.get(dl, f"Dose {dl}"),

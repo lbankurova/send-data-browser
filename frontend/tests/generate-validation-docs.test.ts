@@ -156,8 +156,13 @@ interface TargetOrgan {
   n_endpoints: number;
   n_domains: number;
   domains: string[];
+  max_signal_score: number;
+  n_significant: number;
+  n_treatment_related: number;
   target_organ_flag: boolean;
-  max_severity: string | null;
+  max_severity: number | null;
+  mi_status: string | null;
+  om_mi_discount: number | null;
 }
 
 interface ProvenanceMsg {
@@ -356,10 +361,12 @@ function generateEngineOutput(cards: ReferenceCard[]): string {
       if (flagged.length > 0) {
         lines.push("### Target Organs");
         lines.push("");
-        lines.push("| Organ System | Score | N Endpoints | Domains | Flagged |");
-        lines.push("|-------------|-------|-------------|---------|---------|");
+        lines.push("| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |");
+        lines.push("|-------------|-------|-----------|------|-------|---------|-----------|-------|");
         for (const t of flagged.sort((a, b) => b.evidence_score - a.evidence_score)) {
-          lines.push(`| ${t.organ_system} | ${t.evidence_score.toFixed(3)} | ${t.n_endpoints} | ${t.domains.join(", ")} | Yes |`);
+          const mi = t.mi_status ?? "--";
+          const disc = t.om_mi_discount != null ? t.om_mi_discount.toFixed(2) : "--";
+          lines.push(`| ${t.organ_system} | ${t.evidence_score.toFixed(3)} | ${t.max_signal_score.toFixed(3)} | ${t.n_endpoints} | ${t.n_significant} | ${t.domains.join(", ")} | ${mi} | ${disc} |`);
         }
         lines.push("");
       }

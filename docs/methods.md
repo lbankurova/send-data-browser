@@ -748,20 +748,38 @@ Per-sex aggregation runs in parallel (`bySex` map). Backfill for H4 gap: if firs
 
 ---
 
-### METH-18 — Organ Coherence Derivation
+### METH-18 -- Organ Coherence Derivation
 
-**Purpose:** Assess cross-domain convergence of evidence within each organ system.
+**Purpose:** Assess cross-domain convergence of evidence within each organ system, incorporating three quality factors: convergence, corroboration, and concordance.
 
-**Implementation:** `deriveOrganCoherence(endpoints)` — frontend `derive-summaries.ts:391`.
+**Implementation:**
+- Frontend convergence labels: `deriveOrganCoherence(endpoints)` -- `derive-summaries.ts:391`
+- Backend evidence score: `build_target_organ_summary()` -- `view_dataframes.py:320-378`
+- Backend OM-MI discount: `get_om_mi_discount()` -- `organ_thresholds.py:174`
+- Frontend signal scoring: `coherenceBoost` in `findings-rail-engine.ts:115-116`
 
-**Parameters:** Group endpoints by `organ_system`. Filter to adverse/warning severity. Count unique domains per organ. Convergence labels:
-- >= 3 domains → "3-domain convergence"
-- >= 2 domains → "2-domain convergence"
-- 1 domain → "single domain"
+**Three component factors:**
 
-**Why this method:** Multi-domain evidence for the same organ (e.g., liver: LB enzyme elevation + MI necrosis + OM weight increase) is far more compelling than single-domain findings. This simple domain count captures the concept without complex weighting.
+1. **Convergence** (domain count): Group endpoints by `organ_system`. Filter to adverse/warning severity. Count unique domains per organ. Frontend coherenceBoost: +2 for 3+ domains, +1 for 2 domains, 0 for 1 domain.
+   - Convergence labels: >= 3 domains -> "3-domain convergence", >= 2 -> "2-domain convergence", 1 -> "single domain"
 
-**Alternatives considered:** Weighted domain scores (e.g., MI + OM more compelling than LB + BW — adds complexity without clear benefit at screening level). Correlation-based methods (require paired subject-level data).
+2. **Corroboration** (OM-MI discount): For OM-dominant organs, assess microscopic pathology corroboration. Three states:
+   - `positive`: MI/MA findings exist for this organ -> no discount (1.0)
+   - `examined_normal`: organ on tissue inventory but no MI/MA findings -> no discount (1.0)
+   - `not_examined`: organ not on tissue inventory and no MI/MA findings -> organ-specific discount applied (e.g., liver=0.5, brain=0.8, default=0.75). LB corroboration bypass: if LB domain present, discount waived (1.0).
+   - Discount multiplied into `evidence_score`: `evidence_score *= om_mi_discount`
+
+3. **Concordance** (sex consistency): Per-organ sex concordance bands (`organ-sex-concordance-bands.json`). Each organ has a `concordance` multiplier (applied when both sexes show same-direction effect) and a `divergence` multiplier (applied when sexes show opposite-direction effects). Feeds into signal scoring via `getSexConcordanceBoost()`.
+
+**Evidence score formula:** `evidence_score = avg_signal * (1 + 0.2 * (convergence_count - 1)) * om_mi_discount`
+- `avg_signal` = average of per-endpoint signal scores within the organ
+- `convergence_count` = number of unique convergence groups (MI+MA+TF count as one group)
+
+**Target organ flag:** ALL of: `n_domains >= 2 AND evidence_score >= threshold AND n_significant >= threshold`. Single-domain organs are never target organs (X5 invariant).
+
+**Why this method:** Multi-domain evidence for the same organ (e.g., liver: LB enzyme elevation + MI necrosis + OM weight increase) is far more compelling than single-domain findings. OM without MI corroboration is a well-known source of false positive target organ calls (Sellers et al. 2007, STP Position Paper). Sex concordance reflects biological dimorphism -- organs with known sex differences (liver CYP enzymes, kidney alpha-2u) are expected to show different responses by sex.
+
+**Alternatives considered:** Weighted domain scores (adds complexity without clear benefit at screening level). Unified quality tier combining all three factors into a single multiplier (designed but not yet implemented).
 
 ---
 

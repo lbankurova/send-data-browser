@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `1dc73405` (2026-04-03)
-**Generated:** 2026-04-03T21:15:23.207Z
+**Engine:** commit `f95de1c7` (2026-04-04)
+**Generated:** 2026-04-04T17:54:54.661Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -102,16 +102,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| hematologic | 0.839 | 54 | LB, MA, MI, OM | Yes |
-| metabolic | 0.713 | 6 | LB | Yes |
-| musculoskeletal | 0.672 | 2 | LB | Yes |
-| hepatic | 0.628 | 24 | LB, OM | Yes |
-| electrolyte | 0.567 | 8 | LB | Yes |
-| general | 0.492 | 63 | BW, CL, FW, LB, MA, MI, OM | Yes |
-| cardiovascular | 0.428 | 8 | OM, VS | Yes |
-| renal | 0.369 | 14 | LB, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| hematologic | 0.839 | 0.988 | 54 | 34 | LB, MA, MI, OM | -- | -- |
+| metabolic | 0.713 | 0.869 | 6 | 4 | LB | -- | -- |
+| musculoskeletal | 0.672 | 0.770 | 2 | 1 | LB | -- | -- |
+| hepatic | 0.628 | 0.968 | 24 | 11 | LB, OM | -- | -- |
+| electrolyte | 0.567 | 0.881 | 8 | 3 | LB | -- | -- |
+| general | 0.492 | 0.988 | 63 | 15 | BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.428 | 0.880 | 8 | 6 | OM, VS | -- | -- |
+| renal | 0.369 | 0.882 | 14 | 2 | LB, MI, OM | -- | -- |
 
 ---
 
@@ -201,15 +201,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| general | 0.802 | 63 | BG, BW, CL, FW, IS, LB, MA, MI, OM | Yes |
-| hepatic | 0.764 | 27 | LB, MI, OM | Yes |
-| electrolyte | 0.697 | 8 | LB | Yes |
-| hematologic | 0.613 | 75 | LB, MA, MI, OM | Yes |
-| metabolic | 0.605 | 6 | LB | Yes |
-| cardiovascular | 0.516 | 10 | MI, OM, VS | Yes |
-| renal | 0.490 | 20 | LB, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| general | 0.802 | 0.980 | 63 | 38 | BG, BW, CL, FW, IS, LB, MA, MI, OM | -- | -- |
+| hepatic | 0.764 | 0.926 | 27 | 15 | LB, MI, OM | -- | -- |
+| hematologic | 0.613 | 1.000 | 75 | 27 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.516 | 0.788 | 10 | 4 | MI, OM, VS | -- | -- |
+| renal | 0.490 | 0.781 | 20 | 1 | LB, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -274,9 +272,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| cardiovascular | 0.692 | 28 | CV, EG, VS | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| cardiovascular | 0.692 | 1.000 | 28 | 5 | CV, EG, VS | -- | -- |
 
 ### Provenance
 
@@ -401,9 +399,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| cardiovascular | 0.551 | 22 | CV, EG, VS | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| cardiovascular | 0.551 | 0.765 | 22 | 2 | CV, EG, VS | -- | -- |
 
 ### Provenance
 
@@ -480,13 +478,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| hematologic | 0.982 | 23 | LB, MI, OM | Yes |
-| general | 0.809 | 24 | BG, BW, CL, LB, MI, OM | Yes |
-| hepatic | 0.793 | 14 | LB, MI, OM | Yes |
-| electrolyte | 0.708 | 4 | LB | Yes |
-| renal | 0.645 | 10 | LB, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| hematologic | 0.982 | 0.860 | 23 | 25 | LB, MI, OM | -- | -- |
+| general | 0.809 | 0.750 | 24 | 2 | BG, BW, CL, LB, MI, OM | -- | -- |
+| hepatic | 0.793 | 0.750 | 14 | 7 | LB, MI, OM | -- | -- |
+| electrolyte | 0.708 | 0.750 | 4 | 7 | LB | -- | -- |
+| renal | 0.645 | 0.834 | 10 | 3 | LB, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -553,10 +551,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| hematologic | 0.577 | 2 | MA | Yes |
-| general | 0.410 | 24 | BG, BW, CL, DS, FW, MI | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| hematologic | 0.577 | 0.587 | 2 | 2 | MA | -- | -- |
+| general | 0.410 | 0.587 | 24 | 5 | BG, BW, CL, DS, FW, MI | -- | -- |
 
 ### Provenance
 
@@ -627,16 +625,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| hepatic | 0.749 | 35 | LB, MA, MI, OM | Yes |
-| electrolyte | 0.704 | 8 | LB | Yes |
-| hematologic | 0.672 | 57 | LB, MA, MI, OM | Yes |
-| general | 0.650 | 170 | BG, BW, CL, DS, FW, LB, MA, MI, OM | Yes |
-| neurological | 0.631 | 5 | MA, OM | Yes |
-| metabolic | 0.566 | 8 | LB | Yes |
-| renal | 0.502 | 36 | LB, MA, MI, OM | Yes |
-| cardiovascular | 0.488 | 8 | MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| hepatic | 0.749 | 1.000 | 35 | 12 | LB, MA, MI, OM | -- | -- |
+| electrolyte | 0.704 | 0.877 | 8 | 6 | LB | -- | -- |
+| hematologic | 0.672 | 0.940 | 57 | 24 | LB, MA, MI, OM | -- | -- |
+| general | 0.650 | 1.000 | 170 | 115 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
+| neurological | 0.631 | 0.940 | 5 | 1 | MA, OM | -- | -- |
+| metabolic | 0.566 | 0.940 | 8 | 3 | LB | -- | -- |
+| renal | 0.502 | 0.940 | 36 | 12 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.488 | 0.792 | 8 | 4 | MI, OM | -- | -- |
 
 ### Provenance
 
@@ -714,13 +712,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| cardiovascular | 0.677 | 12 | EG, MI, OM, VS | Yes |
-| hematologic | 0.669 | 65 | LB, MA, MI, OM | Yes |
-| hepatic | 0.583 | 39 | LB, MA, MI, OM, TF | Yes |
-| general | 0.516 | 61 | BG, BW, CL, DS, FW, MA, MI, OM | Yes |
-| renal | 0.473 | 32 | LB, MA, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| cardiovascular | 0.677 | 0.940 | 12 | 3 | EG, MI, OM, VS | positive | 1.00 |
+| hematologic | 0.669 | 0.940 | 65 | 24 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.583 | 0.940 | 39 | 17 | LB, MA, MI, OM, TF | -- | -- |
+| general | 0.516 | 0.940 | 61 | 41 | BG, BW, CL, DS, FW, MA, MI, OM | -- | -- |
+| renal | 0.473 | 0.940 | 32 | 9 | LB, MA, MI, OM | positive | 1.00 |
 
 ### Provenance
 
@@ -795,15 +793,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| renal | 0.800 | 18 | LB, MA, OM | Yes |
-| electrolyte | 0.769 | 8 | LB | Yes |
-| hepatic | 0.750 | 27 | LB, MI, OM | Yes |
-| hematologic | 0.731 | 58 | LB, MA, MI, OM | Yes |
-| cardiovascular | 0.725 | 20 | EG, OM, VS | Yes |
-| metabolic | 0.724 | 6 | LB | Yes |
-| general | 0.681 | 125 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| renal | 0.800 | 0.847 | 18 | 4 | LB, MA, OM | -- | -- |
+| hepatic | 0.750 | 0.878 | 27 | 9 | LB, MI, OM | -- | -- |
+| hematologic | 0.731 | 0.878 | 58 | 14 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.725 | 0.793 | 20 | 6 | EG, OM, VS | -- | -- |
+| general | 0.681 | 0.860 | 125 | 47 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -878,15 +874,15 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| renal | 0.791 | 17 | LB, MA, OM | Yes |
-| hematologic | 0.703 | 47 | LB, MI, OM | Yes |
-| cardiovascular | 0.652 | 16 | MI, OM, VS | Yes |
-| hepatic | 0.584 | 30 | LB, MA, MI, OM | Yes |
-| general | 0.577 | 59 | BW, CL, LB, MA, MI, OM | Yes |
-| reproductive | 0.562 | 10 | MI, OM | Yes |
-| neurological | 0.487 | 9 | MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| renal | 0.791 | 0.803 | 17 | 2 | LB, MA, OM | -- | -- |
+| hematologic | 0.703 | 0.684 | 47 | 3 | LB, MI, OM | -- | -- |
+| cardiovascular | 0.652 | 0.803 | 16 | 2 | MI, OM, VS | -- | -- |
+| hepatic | 0.584 | 0.777 | 30 | 3 | LB, MA, MI, OM | -- | -- |
+| general | 0.577 | 0.787 | 59 | 14 | BW, CL, LB, MA, MI, OM | -- | -- |
+| reproductive | 0.562 | 0.813 | 10 | 1 | MI, OM | -- | -- |
+| neurological | 0.487 | 0.756 | 9 | 1 | MI, OM | -- | -- |
 
 ### Provenance
 
@@ -959,16 +955,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| neurological | 0.705 | 4 | OM | Yes |
-| cardiovascular | 0.704 | 7 | OM, VS | Yes |
-| reproductive | 0.700 | 9 | MI, OM | Yes |
-| hematologic | 0.527 | 54 | LB, MA, MI, OM | Yes |
-| hepatic | 0.504 | 34 | LB, MA, MI, OM | Yes |
-| general | 0.475 | 94 | BG, BW, CL, FW, MA, MI, OM | Yes |
-| metabolic | 0.448 | 6 | LB | Yes |
-| renal | 0.349 | 36 | LB, MA, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| neurological | 0.705 | 0.860 | 4 | 3 | OM | -- | -- |
+| cardiovascular | 0.704 | 0.798 | 7 | 1 | OM, VS | -- | -- |
+| reproductive | 0.700 | 0.908 | 9 | 6 | MI, OM | -- | -- |
+| hematologic | 0.527 | 0.874 | 54 | 7 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.504 | 0.925 | 34 | 4 | LB, MA, MI, OM | -- | -- |
+| general | 0.475 | 0.940 | 94 | 22 | BG, BW, CL, FW, MA, MI, OM | -- | -- |
+| metabolic | 0.448 | 0.682 | 6 | 1 | LB | -- | -- |
+| renal | 0.349 | 0.825 | 36 | 4 | LB, MA, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -1042,15 +1038,15 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| general | 0.834 | 109 | BG, BW, CL, DS, FW, LB, MA, MI, OM | Yes |
-| hematologic | 0.751 | 50 | LB, MA, MI, OM | Yes |
-| hepatic | 0.637 | 32 | LB, MA, MI, OM | Yes |
-| cardiovascular | 0.407 | 10 | MI, OM | Yes |
-| renal | 0.390 | 31 | LB, MA, MI, OM | Yes |
-| metabolic | 0.355 | 8 | LB | Yes |
-| electrolyte | 0.300 | 8 | LB | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| general | 0.834 | 0.941 | 109 | 26 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
+| hematologic | 0.751 | 0.883 | 50 | 20 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.637 | 0.940 | 32 | 10 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.407 | 0.620 | 10 | 3 | MI, OM | -- | -- |
+| renal | 0.390 | 0.645 | 31 | 1 | LB, MA, MI, OM | -- | -- |
+| metabolic | 0.355 | 0.940 | 8 | 2 | LB | -- | -- |
+| electrolyte | 0.300 | 0.601 | 8 | 1 | LB | -- | -- |
 
 ### Provenance
 
@@ -1123,12 +1119,12 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ### Target Organs
 
-| Organ System | Score | N Endpoints | Domains | Flagged |
-|-------------|-------|-------------|---------|---------|
-| renal | 0.610 | 24 | LB, MA, MI, OM | Yes |
-| general | 0.594 | 64 | BG, BW, CL, FW, LB, MA, MI, OM | Yes |
-| hepatic | 0.482 | 22 | LB, MI, OM | Yes |
-| hematologic | 0.473 | 44 | LB, MA, MI, OM | Yes |
+| Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
+|-------------|-------|-----------|------|-------|---------|-----------|-------|
+| renal | 0.610 | 1.000 | 24 | 5 | LB, MA, MI, OM | -- | -- |
+| general | 0.594 | 0.922 | 64 | 16 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| hepatic | 0.482 | 0.858 | 22 | 6 | LB, MI, OM | -- | -- |
+| hematologic | 0.473 | 0.753 | 44 | 5 | LB, MA, MI, OM | -- | -- |
 
 ### Provenance
 
