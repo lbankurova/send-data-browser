@@ -59,6 +59,7 @@ import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActi
 import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
 import { classifyFindingNature } from "@/lib/finding-nature";
 import { RecoveryOverrideDropdown } from "./panes/RecoveryOverrideDropdown";
+import { LOO_THRESHOLD, LOO_SMALL_N_THRESHOLD } from "./panes/LooSensitivityPane";
 
 const col = createColumnHelper<UnifiedFinding>();
 
@@ -760,17 +761,26 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       col.accessor("loo_stability", {
-        header: () => <span title="Leave-one-out stability: what fraction of the effect size survives removing the most influential animal. Below 80% = fragile.">LOO</span>,
+        header: () => <span title="Leave-one-out stability: what fraction of the effect size survives removing the most influential animal. Below 80% = fragile. At N<10, LOO has reduced detection power.">LOO</span>,
         cell: (info) => {
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           const f = info.row.original;
           const isCtrl = f.loo_control_fragile === true;
+          const treatedStats = f.group_stats.filter(g => g.dose_level > 0);
+          const minN = treatedStats.length > 0 ? Math.min(...treatedStats.map(g => g.n)) : null;
+          const smallN = minN != null && minN < LOO_SMALL_N_THRESHOLD;
           const pct = `${(v * 100).toFixed(0)}%`;
-          return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
-            ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
-            : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
-          }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
+          const qualifier = isCtrl ? "ctrl" : null;
+          const nTag = smallN ? `N=${minN}` : null;
+          const suffix = [qualifier, nTag].filter(Boolean).join(", ");
+          return <span className={`font-mono ${v < LOO_THRESHOLD ? "text-foreground font-medium" : "text-muted-foreground"}`} title={
+            smallN
+              ? `LOO stability ${pct}${isCtrl ? " (control-side dominant)" : ""} -- N=${minN}: LOO has low detection power at this sample size. Prefer HCD context for outlier assessment.`
+              : isCtrl
+                ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
+                : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
+          }>{pct}{suffix ? ` (${suffix})` : ""}</span>;
         },
       }),
       col.accessor("severity", {
@@ -1029,18 +1039,25 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
         },
       }),
       pivCol.accessor("loo_stability", {
-        header: () => <span title="Leave-one-out stability for this dose group vs control. Below 80% = fragile.">LOO</span>,
+        header: () => <span title="Leave-one-out stability for this dose group vs control. Below 80% = fragile. At N<10, LOO has reduced detection power.">LOO</span>,
         cell: (info) => {
           const r = info.row.original;
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           const isCtrl = r.loo_control_fragile === true;
+          const smallN = r.n < LOO_SMALL_N_THRESHOLD;
           const pct = `${(v * 100).toFixed(0)}%`;
-          return <span className={`font-mono ${v < 0.8 ? "text-foreground font-medium" : "text-muted-foreground"}`} title={isCtrl
-            ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
-            : "Leave-one-out stability for this dose group vs control."
-          }>{pct}{isCtrl ? " (ctrl)" : ""}</span>;
+          const qualifier = isCtrl ? "ctrl" : null;
+          const nTag = smallN ? `N=${r.n}` : null;
+          const suffix = [qualifier, nTag].filter(Boolean).join(", ");
+          return <span className={`font-mono ${v < LOO_THRESHOLD ? "text-foreground font-medium" : "text-muted-foreground"}`} title={
+            smallN
+              ? `LOO stability ${pct}${isCtrl ? " (control-side dominant)" : ""} -- N=${r.n}: LOO has low detection power at this sample size. Prefer HCD context for outlier assessment.`
+              : isCtrl
+                ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
+                : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
+          }>{pct}{suffix ? ` (${suffix})` : ""}</span>;
         },
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from

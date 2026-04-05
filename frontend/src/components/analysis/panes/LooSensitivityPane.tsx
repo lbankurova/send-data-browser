@@ -17,7 +17,9 @@ import { computeExclusionPreview } from "@/lib/exclusion-preview";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { shortId } from "@/lib/chart-utils";
 
-const LOO_THRESHOLD = 0.8;
+export const LOO_THRESHOLD = 0.8;
+/** LOO has low detection power below this group size (degrees-of-freedom collapse). */
+export const LOO_SMALL_N_THRESHOLD = 10;
 
 interface LooSensitivityPaneProps {
   finding: UnifiedFinding;
