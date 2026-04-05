@@ -13,15 +13,18 @@ import { SubjectSignalTable } from "./cohort/SubjectSignalTable";
 import { CohortCharts } from "./cohort/CohortCharts";
 import { CohortInfluenceMap } from "./cohort/CohortInfluenceMap";
 import { AnimalInfluencePanel } from "./cohort/AnimalInfluencePanel";
+import { SimilarityScatter } from "./cohort/SimilarityScatter";
 import { useNoaelOverlay } from "@/hooks/useNoaelOverlay";
 import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import { useAnimalInfluence } from "@/hooks/useAnimalInfluence";
+import { useSubjectSimilarity } from "@/hooks/useSubjectSimilarity";
 import { useCallback, useState } from "react";
 import { TabButton } from "@/components/ui/TabBar";
 
 type CohortTab = "subjects" | "organ-detail";
+type TopPanelMode = "influence" | "similarity";
 
 export function CohortView() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -32,7 +35,9 @@ export function CohortView() {
   const { data: onsetDaysData } = useOnsetDays(studyId);
   const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
   const { data: influenceData } = useAnimalInfluence(studyId);
+  const { data: similarityData } = useSubjectSimilarity(studyId);
   const [activeTab, setActiveTab] = useState<CohortTab>("subjects");
+  const [topMode, setTopMode] = useState<TopPanelMode>("similarity");
   const [selectedInfluenceAnimal, setSelectedInfluenceAnimal] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -65,26 +70,65 @@ export function CohortView() {
   }
 
   const selectedSubjectId = (selection as { usubjid?: string })?.usubjid ?? null;
+  const hasInfluence = !!(influenceData && influenceData.animals.length > 0);
+  const hasSimilarity = !!(similarityData && !similarityData.meta.similarity_suppressed);
+  // Effective mode: fall back to whichever data source is available
+  const effectiveTopMode = topMode === "similarity" && !hasSimilarity && hasInfluence
+    ? "influence"
+    : topMode === "influence" && !hasInfluence && hasSimilarity
+      ? "similarity"
+      : topMode;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Influence map — two-chart split */}
-      {influenceData && influenceData.animals.length > 0 && (
-        <div className="shrink-0 flex border-b" style={{ height: 280 }}>
-          <div className="flex-1 min-w-0 border-r">
-            <CohortInfluenceMap
-              data={influenceData}
-              doseGroups={cohort.doseGroups}
-              selectedAnimal={selectedInfluenceAnimal}
-              onAnimalSelect={setSelectedInfluenceAnimal}
-            />
+      {/* Top panel — tabbed: Similarity / Influence */}
+      {(hasInfluence || hasSimilarity) && (
+        <div className="shrink-0 border-b" style={{ height: 280 }}>
+          {/* Top panel tab bar */}
+          <div className="flex items-center border-b bg-muted/30 px-1">
+            {hasSimilarity && (
+              <TabButton active={effectiveTopMode === "similarity"} onClick={() => setTopMode("similarity")}>
+                Similarity
+              </TabButton>
+            )}
+            {hasInfluence && (
+              <TabButton active={effectiveTopMode === "influence"} onClick={() => setTopMode("influence")}>
+                Influence
+              </TabButton>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <AnimalInfluencePanel
-              data={influenceData}
-              selectedAnimal={selectedInfluenceAnimal}
-              onEndpointClick={handleEndpointClick}
-            />
+
+          {/* Top panel content */}
+          <div className="flex" style={{ height: 280 - 33 }}>
+            {effectiveTopMode === "similarity" && similarityData && (
+              <div className="flex-1 min-w-0">
+                <SimilarityScatter
+                  data={similarityData}
+                  doseGroups={cohort.doseGroups}
+                  selectedSubject={selectedSubjectId}
+                  onSubjectSelect={(id) => { if (id) handleSubjectClick(id); }}
+                />
+              </div>
+            )}
+            {effectiveTopMode === "influence" && influenceData && (
+              <>
+                <div className="flex-1 min-w-0 border-r">
+                  <CohortInfluenceMap
+                    data={influenceData}
+                    doseGroups={cohort.doseGroups}
+                    selectedAnimal={selectedInfluenceAnimal}
+                    onAnimalSelect={setSelectedInfluenceAnimal}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <AnimalInfluencePanel
+                    data={influenceData}
+                    selectedAnimal={selectedInfluenceAnimal}
+                    onEndpointClick={handleEndpointClick}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -476,3 +476,69 @@ export interface AnimalEndpointDetail {
   is_control_side: boolean;
   alarm_score: number;
 }
+
+// ── Subject Similarity ──────────────────────────────────────
+
+export interface SubjectSimilarityData {
+  meta: {
+    n_subjects_eligible: number;
+    n_excluded: number;
+    excluded_reasons: Record<string, number>;
+    n_features: number;
+    similarity_suppressed: boolean;
+    mds_stress: number | null;
+    method: {
+      distance: string;
+      range_normalization: string;
+      embedding: string;
+      clustering: string;
+    };
+  };
+  feature_definitions: SimilarityFeatureDef[];
+  subjects: Record<string, SimilaritySubject>;
+  interpretability: {
+    control_calibration: Record<string, { p90: number; mean: number; n_control_pairs: number }>;
+    boundary_subjects: BoundarySubjectDetail[];
+  };
+  validation: {
+    by_k: Record<string, { ari: number; ari_perm_p: number; n_boundary: number; boundary_perm_p: number }>;
+    silhouette_mean: number;
+    silhouette_label: string;
+    n_permutations: number;
+    n_low_overlap_subjects: number;
+  };
+}
+
+export interface SimilarityFeatureDef {
+  name: string;
+  type: "continuous" | "ordinal" | "binary";
+  organ_system: string;
+  domain: string;
+  description: string;
+  max_rank?: number;
+}
+
+export interface SimilaritySubject {
+  features: Record<string, number | null>;
+  mds_x: number | null;
+  mds_y: number | null;
+  cluster_ids: Record<string, number>;
+  is_boundary: Record<string, boolean>;
+  low_overlap: boolean;
+  feature_overlap_pct: number | null;
+  dose_group_order: number;
+  sex: string;
+  is_recovery: boolean;
+  is_early_death: boolean;
+}
+
+export interface BoundarySubjectDetail {
+  subject: string;
+  own_dose_group: number;
+  cluster_dominant_dose_group: number;
+  top_contributing_features: {
+    feature: string;
+    contribution: number;
+    exceeds_control_p90: boolean;
+  }[];
+}

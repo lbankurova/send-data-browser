@@ -13,6 +13,7 @@ import type {
   FindingDoseTrend,
   PkIntegration,
   AnimalInfluenceData,
+  SubjectSimilarityData,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse, NoaelOverlayResponse } from "@/types/cohort";
@@ -415,5 +416,13 @@ export function fetchAnimalInfluence(
 ): Promise<AnimalInfluenceData> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/animal-influence`,
+  );
+}
+
+export function fetchSubjectSimilarity(
+  studyId: string,
+): Promise<SubjectSimilarityData> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-similarity`,
   );
 }
