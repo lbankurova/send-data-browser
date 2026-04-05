@@ -80,8 +80,9 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   // Use g_lower (pre-computed, attached to ep) when available.
   // For incidence endpoints without g_lower, use maxIncidence as proxy.
   // LOO discount: sigmoid(gLower * looFactor) where looFactor is clamped to [0, 1].
-  // Fragile findings (driven by a single animal) get a proportionally reduced
-  // statistical component. Incidence proxy is unaffected (no LOO on binary counts).
+  // looFactor = median LOO ratio (typical single-animal removal impact on gLower).
+  // Fragile findings get a proportionally reduced statistical component.
+  // Incidence proxy is unaffected (no LOO on binary counts).
   const isContinuous = CONTINUOUS_DOMAINS.has(ep.domain);
   const rawGLower = ep.gLower ?? (isContinuous && ep.maxEffectSize !== null ? Math.abs(ep.maxEffectSize) : 0);
   const looFactor = Math.max(0, Math.min(ep.looStability ?? 1.0, 1.0));

@@ -1,0 +1,19 @@
+topic: loo-median-scoring
+gap: GAP-187
+phase: complete
+current_step: complete
+spec_path: null  # direct from TODO item, no spec
+started: 2026-04-05
+completed: 2026-04-05
+summary: >
+  LOO stability scoring changed from min to median of per-animal LOO ratios.
+  Min retained for per-animal diagnostics (influential_*_idx).
+  Field contracts, research docs, and TODO/ROADMAP updated.
+files_changed:
+  - backend/services/analysis/statistics.py
+  - frontend/src/lib/derive-summaries.ts
+  - frontend/src/lib/findings-rail-engine.ts
+  - docs/_internal/knowledge/field-contracts.md
+  - docs/_internal/research/control-side-loo-calibration-simulation.md
+  - docs/_internal/TODO.md
+  - docs/_internal/ROADMAP.md

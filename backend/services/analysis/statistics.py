@@ -273,14 +273,20 @@ def compute_loo_stability(
     control: np.ndarray, treated: np.ndarray,
     g_lower_full: float, confidence_level: float = 0.80,
 ) -> dict | None:
-    """Bidirectional leave-one-out stability: min(LOO-gLower) / gLower.
+    """Bidirectional leave-one-out stability: median(LOO-gLower / gLower).
 
     For each treated animal AND each control animal, remove it, recompute
-    Hedges' g and gLower. The ratio tells how much the worst single-animal
-    removal shrinks gLower:
-      >= 1.0: stable (no single animal inflates the signal)
-      < 1.0: fragile (worst removal reduces gLower by this fraction)
-      0.0: extremely fragile (removing one animal kills the signal)
+    Hedges' g and gLower. The median ratio tells how much a typical
+    single-animal removal shrinks gLower:
+      >= 1.0: stable (typical removal does not reduce the signal)
+      < 1.0: fragile (typical removal reduces gLower by this fraction)
+      0.0: extremely fragile (most removals kill the signal)
+
+    Uses median (not min) for scoring because the min is a non-smooth
+    functional where delete-1 jackknife theory breaks down (Shao & Tu
+    1995), producing a bimodal distribution ill-suited for the sigmoid
+    multiplier.  The min is retained via influential_*_idx for per-animal
+    diagnostics ("which animal is most influential?").
 
     Returns dict with overall, treated, control stability, control_fragile flag,
     and influential animal indices (into the input arrays).
@@ -290,19 +296,19 @@ def compute_loo_stability(
         return None  # no signal to be fragile about
 
     def _side_stability(base: np.ndarray, other: np.ndarray, remove_from_first: bool) -> tuple[float, int, list[tuple[int, float]]]:
-        """Compute min LOO-gLower ratio for one side.
+        """Compute median LOO-gLower ratio for scoring, min index for diagnostics.
 
         remove_from_first=True: iterate over base (removing from group 1 in effect_size call)
         remove_from_first=False: iterate over base (removing from group 2)
 
-        Returns (stability_ratio, influential_index, per_animal_ratios).
+        Returns (median_stability_ratio, most_influential_index, per_animal_ratios).
         per_animal_ratios: list of (index, ratio) for every animal in the loop.
-        Tie-breaking: first-encountered wins (lowest array index).
+        Most-influential index: animal whose removal causes the largest gLower drop (min ratio).
         """
         n = len(base)
         if n <= 2:
             return 0.0, 0, [(i, 0.0) for i in range(n)]
-        min_ratio = float("inf")
+        min_ratio_val = float("inf")
         min_idx = 0
         per_animal: list[tuple[int, float]] = []
         for i in range(n):
@@ -321,12 +327,14 @@ def compute_loo_stability(
                 return 0.0, i, per_animal
             ratio = round(loo_gl / g_lower_full, 4)
             per_animal.append((i, ratio))
-            if loo_gl < min_ratio:
-                min_ratio = loo_gl
+            if ratio < min_ratio_val:
+                min_ratio_val = ratio
                 min_idx = i
-        if min_ratio == float("inf"):
+        if not per_animal:
             return 1.0, 0, per_animal
-        return round(min_ratio / g_lower_full, 4), min_idx, per_animal
+        ratios = [r for _, r in per_animal]
+        median_ratio = float(np.median(ratios))
+        return round(median_ratio, 4), min_idx, per_animal
 
     # Treated-side: remove each treated animal, compute effect_size(loo_treated, control)
     treated_stab, treated_idx, treated_per_animal = _side_stability(treated, control, remove_from_first=True)

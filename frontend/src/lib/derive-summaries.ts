@@ -52,7 +52,7 @@ export interface SexEndpointSummary {
   worstSeverity: "adverse" | "warning" | "normal" | "not_assessed";
   treatmentRelated: boolean;
   testCode?: string;
-  /** LOO stability: min(LOO-gLower)/gLower from driving pairwise. 1.0 = stable, <1.0 = fragile. */
+  /** LOO stability: median(LOO-gLower/gLower) from driving pairwise. 1.0 = stable, <1.0 = fragile. */
   looStability?: number | null;
   /** True when the driving pairwise LOO is control-side dominant. */
   looControlFragile?: boolean | null;
@@ -97,7 +97,7 @@ export interface EndpointSummary {
   worstTreatedStats?: { n: number; mean: number; sd: number; doseLevel: number } | null;
   /** R1: Lower confidence bound of |Hedges' g| (non-central t CI). Cross-study comparable. */
   gLower?: number;
-  /** LOO stability: min(LOO-gLower)/gLower from driving pairwise. 1.0 = stable, <1.0 = fragile. */
+  /** LOO stability: median(LOO-gLower/gLower) from driving pairwise. 1.0 = stable, <1.0 = fragile. */
   looStability?: number;
   /** Phase 0C: Upper confidence bound of |Hedges' g| (non-central t CI, separate bisection). */
   gUpper?: number;

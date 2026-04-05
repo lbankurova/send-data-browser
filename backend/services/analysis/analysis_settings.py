@@ -100,7 +100,9 @@ class ScoringParams:
     penalty_fragile_noael: float = 0.15
 
     # LOO fragility threshold for NOAEL qualifier (GAP-163)
-    # stability_ratio < threshold = fragile (removing one animal shrinks gLower >30%)
+    # stability_ratio < threshold = fragile (median LOO removal shrinks gLower >30%)
+    # Calibrated against min-ratio data; may need re-tuning under median (GAP-187).
+    # Current value is conservative -- median >= min, so fewer false fragility flags.
     loo_fragile_threshold: float = 0.7
 
     def params_hash(self) -> str:
