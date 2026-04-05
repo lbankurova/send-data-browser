@@ -1,12 +1,4 @@
 {
-  "d7d1dae076f2": {
-    "pattern": "threshold",
-    "original_pattern": "flat",
-    "original_direction": "down",
-    "onset_dose_level": 1,
-    "pathologist": "User",
-    "reviewDate": "2026-03-08T23:50:47.116229+00:00"
-  },
   "31fb3ac5f864": {
     "pattern": "threshold",
     "original_pattern": "flat",
@@ -14,5 +6,13 @@
     "onset_dose_level": 1,
     "pathologist": "User",
     "reviewDate": "2026-04-03T10:50:03.108434+00:00"
+  },
+  "e1e953ec0e21": {
+    "pattern": "monotonic",
+    "original_pattern": "threshold_decrease",
+    "original_direction": "down",
+    "onset_dose_level": null,
+    "pathologist": "User",
+    "reviewDate": "2026-04-04T23:47:08.760693+00:00"
   }
 }

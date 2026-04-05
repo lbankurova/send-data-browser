@@ -140,7 +140,7 @@ export function derivePatternState(
     ? override.original_pattern
     : finding.dose_response_pattern;
   const originalKey = patternToOverrideKey(originalPattern);
-  const patternChanged = hasOverride && originalKey != null && override.pattern !== originalKey;
+  const patternChanged = hasOverride && (originalKey == null || override.pattern !== originalKey);
   const direction = finding.direction ?? null;
   const annotation = annotations?.[finding.id];
 
@@ -417,7 +417,12 @@ export function usePatternOverrideActions(studyId: string | undefined) {
       },
     );
     saveMutation.mutate(
-      { entityKey: finding.id, data: { pattern: override.pattern, onset_dose_level: null } },
+      { entityKey: finding.id, data: {
+        pattern: override.pattern,
+        onset_dose_level: null,
+        original_pattern: override.original_pattern,
+        original_direction: override.original_direction,
+      } },
       { onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["findings", studyId] }); } },
     );
   }, [studyId, queryClient, saveMutation]);
