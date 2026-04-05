@@ -27,8 +27,14 @@ VALID_SCHEMA_TYPES = {
     "animal-exclusions",
 }
 
+VALID_PROGRAM_SCHEMA_TYPES = {
+    "clinical-dose", "clinical-auc", "noael-override",
+    "species-relevance", "margin-config", "regulatory-context",
+}
+
 # Map URL slugs to file names
 _slug_to_file = {slug: slug.replace("-", "_") + ".json" for slug in VALID_SCHEMA_TYPES}
+_program_slug_to_file = {slug: slug.replace("-", "_") + ".json" for slug in VALID_PROGRAM_SCHEMA_TYPES}
 
 router = APIRouter(prefix="/api", tags=["annotations"])
 
@@ -219,3 +225,114 @@ async def get_audit_log(
     # Return most recent first, limited
     entries.reverse()
     return entries[:limit]
+
+
+# ─── Program-level annotations ──────────────────────────────
+
+
+PROGRAMS_DIR = ANNOTATIONS_DIR / "_programs"
+
+
+def _validate_program_key(program_key: str) -> None:
+    if "/" in program_key or "\\" in program_key or ".." in program_key:
+        raise HTTPException(status_code=400, detail="Invalid program key")
+
+
+def _get_program_file_path(program_key: str, schema_type: str) -> Path:
+    if schema_type not in VALID_PROGRAM_SCHEMA_TYPES:
+        raise HTTPException(status_code=400, detail=f"Invalid program schema type: {schema_type}")
+    _validate_program_key(program_key)
+    return PROGRAMS_DIR / program_key / _program_slug_to_file[schema_type]
+
+
+def _get_program_audit_log_path(program_key: str) -> Path:
+    _validate_program_key(program_key)
+    return PROGRAMS_DIR / program_key / "audit_log.json"
+
+
+def _append_program_audit_entry(program_key: str, schema_type: str, entity_key: str,
+                                action: str, user: str, changes: dict[str, dict]):
+    log_path = _get_program_audit_log_path(program_key)
+    entries: list = []
+    if log_path.exists():
+        with open(log_path, "r") as f:
+            entries = json.load(f)
+
+    entries.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "user": user,
+        "schemaType": schema_type,
+        "entityKey": entity_key,
+        "action": action,
+        "changes": changes,
+    })
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "w") as f:
+        json.dump(entries, f, indent=2)
+
+
+@router.get("/programs/{program_key}/annotations/{schema_type}")
+async def get_program_annotations(program_key: str, schema_type: str):
+    """Return all annotations for a program-level schema type."""
+    file_path = _get_program_file_path(program_key, schema_type)
+    if not file_path.exists():
+        return {}
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+
+@router.put("/programs/{program_key}/annotations/{schema_type}/{entity_key}")
+async def save_program_annotation(program_key: str, schema_type: str,
+                                  entity_key: str, payload: AnnotationPayload):
+    """Create or update a program-level annotation."""
+    file_path = _get_program_file_path(program_key, schema_type)
+
+    data: dict = {}
+    if file_path.exists():
+        with open(file_path, "r") as f:
+            data = json.load(f)
+
+    old_annotation = data.get(entity_key)
+
+    incoming = payload.model_dump()
+    incoming["user"] = "User"
+    incoming["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+    existing = data.get(entity_key, {})
+    existing.update(incoming)
+    annotation = existing
+    data[entity_key] = annotation
+
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    changes = _compute_changes(old_annotation, annotation)
+    if changes:
+        action = "update" if old_annotation else "create"
+        _append_program_audit_entry(program_key, schema_type, entity_key, action, "User", changes)
+
+    return annotation
+
+
+@router.delete("/programs/{program_key}/annotations/{schema_type}/{entity_key}")
+async def delete_program_annotation(program_key: str, schema_type: str, entity_key: str):
+    """Delete a single program-level annotation entry."""
+    file_path = _get_program_file_path(program_key, schema_type)
+    if not file_path.exists():
+        return {"deleted": False}
+
+    with open(file_path, "r") as f:
+        data = json.load(f)
+
+    old_annotation = data.pop(entity_key, None)
+    if old_annotation is None:
+        return {"deleted": False}
+
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+    _append_program_audit_entry(program_key, schema_type, entity_key, "delete", "User",
+                                {"_deleted": {"old": old_annotation, "new": None}})
+    return {"deleted": True}

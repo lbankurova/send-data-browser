@@ -91,3 +91,4 @@
 2026-04-05T02:30:00	research-cycle	PROBE-COMPLETE	unrecognized-term-flagging	step:7	0 BREAKS, 5 PROPAGATES (S01,S14,S08,S11,S22), 1 STALE (S12), 1 SCIENCE-FLAG (S03: homonym adversity risk).
 2026-04-05T02:30:00	research-cycle	COMPLETE	unrecognized-term-flagging	step:7	Research phase complete. Ready for build-cycle.
 2026-04-04T16:51:38	review	PASS	886a426e	files:11 deviations:0 deferred:0	Animal influence explorer -- scatter + dumbbell, 6 review fixes applied
+2026-04-05T10:00:00	research	deep	oncology-std10-severe-toxicity-definition	branches:0 gaps:7 proposals:5	Deep dive: STD10 definition expansion. ICH S9 underspecifies "severely toxic" (HNSTD = lethal/life-threatening/irreversible). Mortality-only is LD10 not STD10. Three-tier proposal with SEND domain mappings. MI reversibility dictionary prerequisite. No existing tool computes STD10 from SEND. Resolves GAP-197.

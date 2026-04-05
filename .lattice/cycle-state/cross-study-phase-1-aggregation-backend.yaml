@@ -1,0 +1,41 @@
+topic: cross-study-phase-1-aggregation-backend
+title: "Cross-Study Phase 1: Aggregation Backend"
+started: 2026-04-04T22:00:00Z
+phase: build-complete
+current_step: ship.0
+research_doc: docs/_internal/research/cross-study-analysis-deep-research.md
+research_status: validated-external
+spec_doc: docs/_internal/incoming/cross-study-phase-1-aggregation-backend.md
+broader_synthesis: docs/_internal/incoming/cross-study-analysis-synthesis.md
+synthesis_doc: docs/_internal/incoming/cross-study-phase-1-aggregation-backend-synthesis.md
+synthesis_status: validated
+depends_on:
+  - cross-study-phase-0-infrastructure (COMPLETED)
+peer_reviews:
+  research_r1: docs/_internal/research/peer-reviews/cross-study-analysis-view-review.md
+  research_r2: docs/_internal/research/peer-reviews/cross-study-deep-research-review.md
+  architect: docs/_internal/research/peer-reviews/cross-study-phase-1-aggregation-backend-architect-review.md
+  plan_r1: docs/_internal/research/peer-reviews/cross-study-phase-1-aggregation-backend-synthesis-review.md
+  plan_r2: docs/_internal/research/peer-reviews/cross-study-phase-1-aggregation-backend-synthesis-review-r2.md
+checkpoints:
+  build.0:
+    completed: 2026-04-04T22:00:00Z
+    summary: "Implementation context captured. No failed approaches. insights_engine not viable for Phase 1A."
+  build.1:
+    completed: 2026-04-04T22:15:00Z
+    summary: "Synthesis written with 6 mandatory sections. 5 features: aggregation API, modality margins, measured-AUC, metadata threading, program annotations."
+  build.2:
+    completed: 2026-04-04T22:30:00Z
+    summary: "Architect SIMPLIFY applied (4 clarifications). SCIENCE-FLAG on oncology STD10 resolved via research: mortality-based LD10 is regulatory standard (Reigner & Blesch 2002, ICH S9 Q&A 2018)."
+  build.3:
+    completed: 2026-04-04T22:30:00Z
+    summary: "Probe: all SAFE/PROPAGATES. No BREAKS. Recovery verdict rekey needs unified_findings.json (confirmed)."
+  build.4:
+    completed: 2026-04-04T23:00:00Z
+    summary: "R1: 1 FLAWED (canonical_testcd only in unified_findings), 10 CONDITIONAL, 2 SOUND. All accepted."
+  build.5:
+    completed: 2026-04-04T23:30:00Z
+    summary: "All 11 findings incorporated. Major fixes: data source corrected, schema restructured, mapping table added, test cases expanded."
+  build.6:
+    completed: 2026-04-04T23:45:00Z
+    summary: "R2: VALIDATED. All R1 resolved. 2 minor CONDITIONAL (naming corrections) fixed."

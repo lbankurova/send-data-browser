@@ -17,6 +17,7 @@ from routers.import_study import router as import_router
 
 from routers.study_portfolio import router as portfolio_router
 from routers.compound_profile import init_compound_profile, router as compound_profile_router
+from routers.cross_study import router as cross_study_router
 from services.study_discovery import discover_studies
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -151,6 +152,7 @@ app.include_router(temporal_router)
 app.include_router(import_router)
 app.include_router(portfolio_router)
 app.include_router(compound_profile_router)
+app.include_router(cross_study_router)
 
 @app.get("/api/debug/health")
 async def debug_health():
