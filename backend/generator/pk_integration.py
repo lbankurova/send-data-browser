@@ -182,7 +182,8 @@ def build_pk_integration(
 
     # Modality-aware safety margin (Feature 1B + 1C)
     from services.analysis.compound_class import infer_compound_class
-    ts_meta = _get_ts_meta(study)
+    from services.analysis.subject_context import get_ts_metadata
+    ts_meta = get_ts_metadata(study)
     compound_info = infer_compound_class(
         ts_meta,
         available_domains=set(study.xpt_files.keys()),
@@ -442,13 +443,6 @@ def _compute_auc_margin(noael_exposure: dict | None, clinical_auc: float | None,
     }
 
 
-def _compute_exposure_margin(noael_exposure: dict | None, clinical_auc: float | None,
-                             clinical_auc_unit: str | None) -> dict | None:
-    """Compute exposure-based margin for biologics (AUC ratio, Feature 1B)."""
-    # Same computation as AUC margin -- biologics use AUC ratio
-    return _compute_auc_margin(noael_exposure, clinical_auc, clinical_auc_unit)
-
-
 def _compute_adc_margins(by_dose_group: list[dict], noael_dose_level: int | None) -> list[dict]:
     """Compute multi-analyte margins for ADCs (Feature 1B).
 
@@ -538,7 +532,8 @@ def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
         level = dg["dose_level"]
         if level == 0:
             continue  # Skip control
-        deaths = dg.get("deaths", 0) + dg.get("deaths_undetermined", 0)
+        # deaths is the TOTAL count; deaths_undetermined is a SUBSET (not additive)
+        deaths = dg.get("deaths", 0)
         n = group_n.get(level, 0)
         rate = deaths / n if n > 0 else 0.0
         dose_value = dg.get("dose_value", 0.0)
@@ -741,27 +736,6 @@ def _compute_safety_margin_v2(
     }
 
 
-def _get_ts_meta(study: StudyInfo) -> dict:
-    """Extract TS domain metadata needed by infer_compound_class."""
-    if "ts" not in study.xpt_files:
-        return {}
-    try:
-        ts_df, _ = read_xpt(study.xpt_files["ts"])
-        ts_df.columns = [c.upper() for c in ts_df.columns]
-        meta: dict = {}
-        parm_map = {
-            "SPECIES": "species", "STRAIN": "strain", "ROUTE": "route",
-            "TRTV": "vehicle", "SDESIGN": "study_design",
-            "PCLAS": "pharmacologic_class", "INTTYPE": "intervention_type",
-            "TRT": "treatment", "SSPONSOR": "sponsor", "STITLE": "study_title",
-        }
-        for _, row in ts_df.iterrows():
-            parmcd = str(row.get("TSPARMCD", "")).upper()
-            if parmcd in parm_map:
-                meta[parm_map[parmcd]] = str(row.get("TSVAL", "")).strip()
-        return meta
-    except Exception:
-        return {}
 
 
 # ─── Domain reading ───────────────────────────────────────────

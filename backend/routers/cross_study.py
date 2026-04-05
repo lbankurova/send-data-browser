@@ -55,7 +55,8 @@ async def get_safety_margins(
 
     studies = load_multiple_studies(sids)
     if not studies:
-        raise HTTPException(status_code=404, detail="No studies found in generated data")
+        return {"studies": [], "rows": [], "clinical_dose": clinical_dose, "clinical_auc": clinical_auc,
+                "note": f"0 of {len(sids)} studies found in generated data"}
 
     return build_safety_margin_table(studies, clinical_dose=clinical_dose, clinical_auc=clinical_auc)
 
@@ -108,6 +109,7 @@ async def get_cross_study_dr(
 
     studies = load_multiple_studies(sids)
     if not studies:
-        raise HTTPException(status_code=404, detail="No studies found in generated data")
+        return {"canonical_id": canonical_id, "studies": [], "n_studies_present": 0,
+                "note": f"0 of {len(sids)} studies found in generated data"}
 
     return build_cross_study_dr(studies, canonical_id=canonical_id)
