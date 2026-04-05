@@ -758,9 +758,10 @@ def build_subject_context(study: StudyInfo) -> dict:
             dose_method = "MIXED"
     else:
         # Method 2: TX-derived (already in dg_data)
-        subjects_df["DOSE"] = subjects_df["ARMCD"].map(
+        # Use pd.to_numeric to handle None -> NaN (pandas 2.x rejects None in float64 columns)
+        subjects_df["DOSE"] = pd.to_numeric(subjects_df["ARMCD"].map(
             lambda a: tx_map.get(str(a).strip(), {}).get("dose_value")
-        )
+        ), errors="coerce")
         subjects_df["DOSE_UNIT"] = subjects_df["ARMCD"].map(
             lambda a: tx_map.get(str(a).strip(), {}).get("dose_unit")
         )
@@ -772,9 +773,10 @@ def build_subject_context(study: StudyInfo) -> dict:
     if tx_map:
         mask = subjects_df["DOSE"].isna()
         if mask.any():
-            subjects_df.loc[mask, "DOSE"] = subjects_df.loc[mask, "ARMCD"].map(
-                lambda a: tx_map.get(str(a).strip(), {}).get("dose_value")
-            )
+            subjects_df.loc[mask, "DOSE"] = pd.to_numeric(
+                subjects_df.loc[mask, "ARMCD"].map(
+                    lambda a: tx_map.get(str(a).strip(), {}).get("dose_value")
+                ), errors="coerce")
             subjects_df.loc[mask, "DOSE_UNIT"] = subjects_df.loc[mask, "ARMCD"].map(
                 lambda a: tx_map.get(str(a).strip(), {}).get("dose_unit")
             )
