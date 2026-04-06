@@ -258,6 +258,11 @@ describe("HCD Phase 2 — SQLite database structure", () => {
     expect(cnt).toBe(0);
   });
 
+  // Each iteration spawns a cold Python subprocess (~500-700ms warm-up).
+  // 9-10 spawns easily exceed vitest's default 5s per-test timeout under
+  // full-suite concurrent worker load. Bump the per-test budget to keep
+  // these from flaking on `npm test` while leaving the implementation
+  // unchanged.
   test.skipIf(!hasDb)("strain_aliases resolves all 9 canonical strains", () => {
     const canonicals = [
       "B6C3F1/N", "BALB/C", "C57BL/6N", "CD-1",
@@ -270,7 +275,7 @@ describe("HCD Phase 2 — SQLite database structure", () => {
       expect(rows.length, `canonical "${c}" should be in strain_aliases`).toBe(1);
       expect(rows[0].canonical).toBe(c);
     }
-  });
+  }, 30000);
 
   test.skipIf(!hasDb)("strain_aliases resolves common aliases", () => {
     const cases: [string, string][] = [
@@ -292,7 +297,7 @@ describe("HCD Phase 2 — SQLite database structure", () => {
       expect(rows.length, `alias "${alias}" should resolve`).toBe(1);
       expect(rows[0].canonical).toBe(expected);
     }
-  });
+  }, 30000);
 
   test.skipIf(!hasDb)("animal_organ_weights has >50K records", () => {
     const cnt = sqliteScalar("SELECT COUNT(*) as cnt FROM animal_organ_weights");
