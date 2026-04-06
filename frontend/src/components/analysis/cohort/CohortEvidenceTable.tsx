@@ -12,6 +12,21 @@ import type { DoseGroup } from "@/types/analysis";
 
 const SEX_COLOR: Record<string, string> = { M: "#0891b2", F: "#ec4899" };
 
+const EQ_GLYPH: Record<string, string> = { strong: "\u25CF", moderate: "\u25D0", weak: "\u25CB", insufficient: "\u25B3" };
+
+function eqTooltip(eq: NonNullable<OrganSignal["evidenceQuality"]>): string {
+  const lines = [`Evidence structure: ${eq.grade}`];
+  lines.push(`  Convergence: ${eq.convergence.groups} group${eq.convergence.groups !== 1 ? "s" : ""} (${eq.convergence.signal})`);
+  lines.push(`  Corroboration: ${eq.corroboration ? eq.corroboration.signal : "N/A"}`);
+  lines.push(`  Sex concordance: ${eq.sex_concordance
+    ? (eq.sex_concordance.fraction != null ? eq.sex_concordance.fraction.toFixed(2) + " " : "") + eq.sex_concordance.signal
+    : "not assessable"}`);
+  if (eq.limiting_factor && eq.limiting_factor !== "corroboration_not_applicable") {
+    lines.push(`  Limited by: ${eq.limiting_factor} -- see dimension breakdown for full picture.`);
+  }
+  return lines.join("\n");
+}
+
 const SEVERITY_PILL: Record<string, string> = {
   adverse: "text-red-600",
   warning: "text-amber-600",
@@ -96,6 +111,16 @@ export function CohortEvidenceTable({
                 onClick={() => onOrganChange(o.organName)}
               >
                 <span className={cn(SEVERITY_PILL[o.worstSeverity])}>{o.organName}</span>
+                {o.evidenceQuality && (
+                  <span
+                    className={cn(
+                      "ml-0.5 text-[9px]",
+                      o.evidenceQuality.grade === "strong" ? "font-semibold text-foreground" : "text-muted-foreground",
+                      (o.evidenceQuality.grade === "weak" || o.evidenceQuality.grade === "insufficient") && "italic",
+                    )}
+                    title={eqTooltip(o.evidenceQuality)}
+                  >{EQ_GLYPH[o.evidenceQuality.grade]}</span>
+                )}
               </button>
             ))}
           </div>

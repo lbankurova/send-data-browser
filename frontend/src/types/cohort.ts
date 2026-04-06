@@ -4,6 +4,8 @@
  * @see docs/_internal/incoming/cohort-view.md
  */
 
+import type { TargetOrganRow } from "@/types/analysis-views";
+
 // ── Preset modes ─────────────────────────────────────────────
 
 export type CohortPreset = "all" | "trs" | "histo" | "recovery" | "deaths" | "syndromes";
@@ -92,6 +94,8 @@ export interface OrganSignal {
   worstSeverity: "adverse" | "warning" | "normal";
   /** Total finding rows across all domains. */
   findingCount: number;
+  /** Evidence quality grade from target_organ_summary (study-level, not cohort-filtered). */
+  evidenceQuality?: TargetOrganRow["evidence_quality"];
 }
 
 export interface CohortFindingRow {

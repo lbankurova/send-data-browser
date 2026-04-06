@@ -25,6 +25,7 @@ import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import { useSavedCohortActions } from "@/hooks/useSavedCohortActions";
+import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { computeDefaultReference, computeComparison, deserializeFilterState } from "@/lib/comparison-engine";
 import type { CohortPreset, CohortSubject, OrganSignal, CohortFindingRow, SharedFinding, FilterGroup, FilterOperator, FilterPredicate, ComparisonRow, SavedCohort, ReferenceGroup, CohortSortState, CohortSortKey } from "@/types/cohort";
 import { SORT_KEY_DEFAULTS } from "@/types/cohort";
@@ -241,6 +242,7 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   const { data: syndromesData } = useSubjectSyndromes(studyId);
   const { data: onsetDaysData } = useOnsetDays(studyId);
   const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
+  const { data: targetOrgans } = useTargetOrganSummary(studyId);
 
   const findings: UnifiedFinding[] = findingsResp?.findings ?? [];
   const doseGroups: DoseGroup[] = findingsResp?.dose_groups ?? [];
@@ -376,10 +378,16 @@ export function CohortProvider({ studyId, children }: { studyId: string | undefi
   }, [activeSubjects]);
 
   // -- Derived: organ signals and finding rows ----------------------------
-  const organSignals = useMemo(
-    () => computeOrganSignals(findings, activeSubjects),
-    [findings, activeSubjects],
-  );
+  const organSignals = useMemo(() => {
+    const signals = computeOrganSignals(findings, activeSubjects);
+    if (!targetOrgans?.length) return signals;
+    const eqMap = new Map(targetOrgans.map((t) => [t.organ_system.toLowerCase(), t.evidence_quality]));
+    for (const s of signals) {
+      const eq = eqMap.get(s.organName.toLowerCase());
+      if (eq) s.evidenceQuality = eq;
+    }
+    return signals;
+  }, [findings, activeSubjects, targetOrgans]);
 
   // Auto-select highest-signal organ (skip if entry point specified one)
   const organAutoSelected = useRef(initialOrgan != null);

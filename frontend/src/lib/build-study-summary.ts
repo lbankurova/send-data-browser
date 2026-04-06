@@ -13,6 +13,7 @@ import type {
 import { mapPipelineStageToStudyStage } from "@/types/pipeline-contracts";
 import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndromes";
 import type { SyndromeInterpretation } from "@/lib/syndrome-interpretation";
+import type { TargetOrganRow } from "@/types/analysis-views";
 
 // ─── Input types (from existing API responses) ──────────────
 
@@ -45,19 +46,6 @@ interface NoaelSummaryRow {
   loael_dose_level?: number | null;
   noael_confidence?: number;
   noael_derivation?: string;
-}
-
-interface TargetOrganRow {
-  organ_system: string;
-  evidence_score: number;
-  n_endpoints?: number;
-  n_domains?: number;
-  domains?: string[];
-  max_signal_score?: number;
-  n_significant?: number;
-  n_treatment_related?: number;
-  target_organ_flag?: boolean;
-  max_severity?: string;
 }
 
 interface PkIntegrationInput {
@@ -162,7 +150,7 @@ export function buildStudySummaryRecord(params: {
       evidence_score: to.evidence_score,
       n_domains: to.n_domains ?? 0,
       domains: to.domains ?? [],
-      max_severity: to.max_severity ?? "normal",
+      max_severity: to.max_severity != null ? String(to.max_severity) : "normal",
       treatment_related: (to.n_treatment_related ?? 0) > 0,
     })),
     detected_syndromes: detectedSyndromes,

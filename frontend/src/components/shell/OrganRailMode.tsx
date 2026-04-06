@@ -66,6 +66,23 @@ function computeOrganRailStats(signals: SignalSummaryRow[]): OrganRailStats {
 type OrganSortMode = "evidence" | "adverse" | "effect" | "alpha";
 
 // ---------------------------------------------------------------------------
+// Evidence quality tooltip
+// ---------------------------------------------------------------------------
+
+function buildEvidenceQualityTooltip(eq: NonNullable<TargetOrganRow["evidence_quality"]>): string {
+  const lines = [`Evidence structure: ${eq.grade}`];
+  lines.push(`  Convergence: ${eq.convergence.groups} group${eq.convergence.groups !== 1 ? "s" : ""} (${eq.convergence.signal})`);
+  lines.push(`  Corroboration: ${eq.corroboration ? eq.corroboration.signal : "N/A"}`);
+  lines.push(`  Sex concordance: ${eq.sex_concordance
+    ? (eq.sex_concordance.fraction != null ? eq.sex_concordance.fraction.toFixed(2) + " " : "") + eq.sex_concordance.signal
+    : "not assessable"}`);
+  if (eq.limiting_factor && eq.limiting_factor !== "corroboration_not_applicable") {
+    lines.push(`  Limited by: ${eq.limiting_factor} -- see dimension breakdown for full picture.`);
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // OrganRailItem
 // ---------------------------------------------------------------------------
 
@@ -93,7 +110,7 @@ function OrganRailItem({
       )}
       onClick={onClick}
     >
-      {/* Row 1: organ name + direction + TARGET */}
+      {/* Row 1: organ name + direction + quality grade + TARGET */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold">
           {titleCase(organ.organ_system)}
@@ -101,6 +118,23 @@ function OrganRailItem({
         {signalStats?.dominantDirection && (
           <span className="text-[11px] text-muted-foreground/60">
             {signalStats.dominantDirection}
+          </span>
+        )}
+        {organ.evidence_quality && (
+          <span
+            className={cn(
+              "text-[10px]",
+              organ.evidence_quality.grade === "strong"
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground",
+              (organ.evidence_quality.grade === "weak" || organ.evidence_quality.grade === "insufficient") && "italic",
+            )}
+            title={buildEvidenceQualityTooltip(organ.evidence_quality)}
+          >
+            {organ.evidence_quality.grade === "strong" ? "\u25CF"
+              : organ.evidence_quality.grade === "moderate" ? "\u25D0"
+              : organ.evidence_quality.grade === "weak" ? "\u25CB"
+              : "\u25B3"}
           </span>
         )}
         {organ.target_organ_flag && (

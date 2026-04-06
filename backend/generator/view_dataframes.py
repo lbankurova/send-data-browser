@@ -228,6 +228,40 @@ def build_study_signal_summary(
     return rows
 
 
+_CORROBORATION_SIGNAL = {
+    "positive": "corroborated",
+    "examined_normal": "examined, no findings",
+    "lb_corroborated": "lab corroboration",
+    "not_examined": "not examined",
+}
+
+
+def _evidence_quality_grade(
+    convergence_count: int, mi_status: str | None,
+) -> tuple[str, str | None]:
+    """Worst-of-two grade derivation: convergence x corroboration.
+
+    Returns (grade, limiting_factor). Grade is one of:
+    strong, moderate, weak, insufficient.
+    """
+    if mi_status is None:
+        # Single-dimension: convergence only, capped at moderate
+        grade = "moderate" if convergence_count >= 2 else "weak"
+        return grade, "corroboration_not_applicable"
+    if mi_status == "positive":
+        if convergence_count >= 3:
+            return "strong", None
+        if convergence_count >= 2:
+            return "moderate", "convergence"
+        return "weak", "convergence"
+    if mi_status in ("examined_normal", "lb_corroborated"):
+        grade = "moderate" if convergence_count >= 3 else "weak"
+        return grade, "corroboration"
+    # not_examined
+    grade = "weak" if convergence_count >= 2 else "insufficient"
+    return grade, "corroboration"
+
+
 def _convergence_group(domain: str) -> str:
     """Maps domains to convergence groups for diversity scoring (SLA-10).
 
@@ -265,6 +299,9 @@ def build_target_organ_summary(
         _SPECIMEN_TO_CONFIG_KEY, get_om_mi_discount,
     )
 
+    # Study-level sex flag for concordance inclusive denominator (R1 PR-7: M/F only)
+    has_both_sexes = len({f.get("sex") for f in findings if f.get("sex") in ("M", "F")}) >= 2
+
     organ_data: dict[str, dict] = defaultdict(lambda: {
         "ep_signals": {},     # SLA-11: max signal per endpoint key (deduped)
         "domains": set(),
@@ -275,6 +312,7 @@ def build_target_organ_summary(
         "max_severity": None,  # numeric 1-5 scale from MI/MA/CL group_stats
         "max_ep_domain": "",  # domain of highest-scoring endpoint
         "om_specimen": "",    # specimen of highest-scoring OM finding (for discount lookup)
+        "cross_sex": defaultdict(dict),  # key: (domain, test_code) -> {sex: (direction, signal)}
     })
 
     for finding in findings:
@@ -316,6 +354,18 @@ def build_target_organ_summary(
                 if data["max_severity"] is None or sev > data["max_severity"]:
                     data["max_severity"] = sev
 
+        # Cross-sex direction accumulation for concordance (treatment-related only)
+        if finding.get("treatment_related"):
+            sex = finding.get("sex")
+            direction = finding.get("direction")
+            # Exclude direction == "none": no net direction = not concordance-evaluable
+            if sex in ("M", "F") and direction and direction != "none":
+                cs_key = (finding.get("domain", ""), finding.get("test_code", ""))
+                # Max-replace: keep strongest signal per (domain, test_code, sex)
+                existing = data["cross_sex"][cs_key].get(sex)
+                if existing is None or sig > existing[1]:
+                    data["cross_sex"][cs_key][sex] = (direction, sig)
+
     tissue_inv = mi_tissue_inventory or set()
 
     rows = []
@@ -354,6 +404,64 @@ def build_target_organ_summary(
                     om_mi_discount = discount
                     evidence_score *= discount
 
+        # --- Evidence quality grade (worst-of-two: convergence x corroboration) ---
+        eq_grade, eq_limiting = _evidence_quality_grade(convergence_count, mi_status)
+        dims_assessed = 2 if mi_status is not None else 1
+
+        # --- Sex concordance annotation ---
+        cross_sex = data.get("cross_sex", {})
+        conc_w_sum = 0.0
+        conc_w_total = 0.0
+        conc_n_eval = 0
+        for _cs_key, sex_map in cross_sex.items():
+            weight = max(s for _, s in sex_map.values())
+            if len(sex_map) >= 2:
+                conc_n_eval += 1
+                conc_w_total += weight
+                dirs = {d for d, _ in sex_map.values()}
+                if len(dirs) == 1:
+                    conc_w_sum += weight  # concordant
+            elif len(sex_map) == 1 and has_both_sexes:
+                # One-sex-only in a two-sex study = discordant (inclusive denominator)
+                conc_n_eval += 1
+                conc_w_total += weight
+        organ_concordance = conc_w_sum / conc_w_total if conc_w_total > 0 else None
+
+        # --- Signal labels ---
+        convergence_signal = ("well-confirmed" if convergence_count >= 3
+                              else "partially confirmed" if convergence_count >= 2
+                              else "single domain")
+
+        corroboration_obj = (
+            {"status": mi_status, "signal": _CORROBORATION_SIGNAL.get(mi_status, mi_status)}
+            if mi_status is not None else None
+        )
+
+        # Concordance label
+        if organ_concordance is None:
+            conc_signal = "not assessable"
+        elif organ_concordance >= 0.8:
+            conc_signal = "concordant"
+        elif organ_concordance >= 0.5:
+            conc_signal = "mixed"
+        else:
+            conc_signal = "sex-specific"
+        if conc_n_eval > 0 and conc_n_eval < 3:
+            conc_signal += " (limited data)"
+        concordance_obj = (
+            {"fraction": round(organ_concordance, 3), "n_evaluable": conc_n_eval, "signal": conc_signal}
+            if conc_n_eval > 0 else None
+        )
+
+        evidence_quality = {
+            "grade": eq_grade,
+            "dimensions_assessed": dims_assessed,
+            "convergence": {"groups": convergence_count, "signal": convergence_signal},
+            "corroboration": corroboration_obj,
+            "sex_concordance": concordance_obj,
+            "limiting_factor": eq_limiting,
+        }
+
         max_sev = data["max_severity"]
         rows.append({
             "organ_system": organ,
@@ -372,6 +480,7 @@ def build_target_organ_summary(
             "max_severity": round(max_sev, 2) if max_sev is not None else None,
             "mi_status": mi_status,
             "om_mi_discount": om_mi_discount,
+            "evidence_quality": evidence_quality,
         })
 
     rows.sort(key=lambda r: r["evidence_score"], reverse=True)
