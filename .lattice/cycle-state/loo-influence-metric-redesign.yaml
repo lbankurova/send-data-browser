@@ -1,0 +1,95 @@
+topic: loo-influence-metric-redesign
+started: 2026-04-05T15:00:00
+phase: building
+current_step: build.2
+completed:
+  research.1:
+    completed: 2026-04-05T15:00:00
+    key_decisions:
+      - "Replace pct_destabilising with mean_instability (average across pairwise first, then endpoints)"
+      - "GAP-207 new: multi-pairwise control inflation is the root cause of misleading scatter"
+      - "GAP-189 is prerequisite data structure (per-dose stability vector)"
+      - "Threshold recalibration: adaptive 90th-percentile with absolute floor 0.10"
+      - "Effect-size weighting deferred to Phase 2 (use g not gLower per R1 F7)"
+    constraints:
+      - "Must average across pairwise before aggregating across endpoints to fix counting bias"
+      - "Worst-ratio retained for per-animal diagnostics (min is correct for identity, not scoring)"
+      - "Per-dose data structure needed for both scatter metric and detail panel"
+      - "Control animals will have lower variance in mean_instability than treated (R1 F2 accepted trade-off)"
+    output: "docs/_internal/research/loo-influence-metric-redesign.md"
+  research.2:
+    completed: 2026-04-05T15:30:00
+    output: "docs/_internal/research/peer-reviews/loo-influence-metric-redesign-review.md"
+  research.3:
+    completed: 2026-04-05T15:45:00
+    key_decisions:
+      - "F2 FLAWED: reframed as strictly better trade-off; display K in tooltips"
+      - "F3: added Proposal 6 (max single-endpoint instability indicator)"
+      - "F4: threshold reframed as empirical heuristic with 90th-pct adaptive + floor"
+      - "F7: gLower->g point estimate for Phase 2 weighting"
+  research.4:
+    completed: 2026-04-05T16:00:00
+    output: "docs/_internal/research/peer-reviews/loo-influence-metric-redesign-review-r2.md"
+  research.5:
+    completed: 2026-04-05T16:00:00
+    key_decisions:
+      - "R2 ACCEPT: all 11 R1 RESOLVED, 4 new CONDITIONAL (N1-N4), 0 FLAWED"
+  research.6:
+    completed: 2026-04-05T16:15:00
+    key_decisions:
+      - "Corpus coherent: 0 contradictions across 4 comparison docs"
+  research.7:
+    completed: 2026-04-05T16:30:00
+    key_decisions:
+      - "S24 BREAKS intentional (field rename is the deliverable)"
+      - "S16 SCIENCE-FLAG FALSE ALARM"
+      - "Revised probe: 0 BREAKS (S24 expected), 0 SCIENCE-FLAGS, 3 PROPAGATES, 5 SAFE"
+  blueprint.0:
+    completed: 2026-04-05T20:00:00
+    key_decisions:
+      - "No failed approaches in decisions log relevant to this topic"
+      - "animal-influence-explorer (shipped 886a426e) is primary consumer"
+      - "Generator 500 LOC budget, SVG-in-React chart pattern"
+  blueprint.1:
+    completed: 2026-04-05T20:10:00
+    key_decisions:
+      - "5 features: mean_instability, per-dose vector, adaptive threshold, scatter updates, dumbbell per-dose"
+      - "~125 LOC net across 4 files, no new abstractions"
+    output: "docs/_internal/incoming/loo-influence-metric-redesign-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-05T20:25:00
+    key_decisions:
+      - "Architect SIMPLIFY->PASS: 3 fixes (numpy import, Panel scope, _aggregate_by_dose committed)"
+      - "2 doc fixes (n_fragile omission, null dot-size)"
+    output: "docs/_internal/research/peer-reviews/loo-influence-metric-redesign-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-05T20:35:00
+    key_decisions:
+      - "0 BREAKS outside synthesis scope, 0 SCIENCE-FLAGS"
+      - "All field renames confined to 5 planned files"
+  blueprint.4:
+    completed: 2026-04-05T20:50:00
+    key_decisions:
+      - "R1: 0 FLAWED, 8 CONDITIONAL, 2 SOUND"
+      - "F1: negative mean_instability possible (clamp to 0)"
+      - "F2: small-N p90 gate at N<15"
+      - "F5: n_doses_affected dropped (binary threshold)"
+    output: "docs/_internal/research/peer-reviews/loo-influence-metric-redesign-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-05T21:00:00
+    key_decisions:
+      - "All 8 CONDITIONAL incorporated"
+      - "Key changes: clamp, N<15 gate, dual coverage flag, drop n_doses_affected, continuous opacity, 3 new tests"
+  blueprint.6:
+    completed: 2026-04-05T21:10:00
+    key_decisions:
+      - "R2: all 10 R1 RESOLVED, 3 CONDITIONAL (minor), 1 SOUND. Verdict SOUND"
+      - "N1: acceptance criteria fixed, N2: n_pairwise_k clarified, N3: null guard defensive note"
+    output: "docs/_internal/research/peer-reviews/loo-influence-metric-redesign-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-05T21:15:00
+    key_decisions:
+      - "RG-1 through RG-5 persisted to REGISTRY (control-side-loo stream)"
+      - "DG-1 (GAP-205) already in TODO; DG-2 non-actionable, documented in synthesis"
+      - "Build plan validated"
+checkpoints: {}

@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `c0b2ee89` (2026-04-05)
-**Generated:** 2026-04-05T17:19:08.153Z
+**Engine:** commit `f669d515` (2026-04-06)
+**Generated:** 2026-04-06T18:04:31.810Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -71,6 +71,19 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 ## CBER-POC-Pilot-Study2-Vaccine_xpt
 
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | RABBIT / NEW ZEALAND |
+| Route | INTRAMUSCULAR |
+| Study type | REPEAT DOSE TOXICITY |
+| Treatment | 456a |
+| Vehicle | Saline |
+| Groups (main) | 2 |
+| Recovery groups | 0 |
+| Last dosing day | 31 |
+
 ### Dose Groups
 
 | Level | Dose | N (M/F) | Control | TK |
@@ -87,35 +100,55 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | FW | 15 | 0 | 0 | 0 | 3 | 12 |
 | LB | 281 | 29 | 19 | 0 | 87 | 146 |
 | MA | 18 | 0 | 0 | 0 | 2 | 16 |
-| MI | 41 | 1 | 0 | 0 | 16 | 24 |
+| MI | 41 | 2 | 0 | 0 | 15 | 24 |
 | OM | 70 | 9 | 0 | 0 | 43 | 18 |
 | VS | 16 | 2 | 0 | 0 | 8 | 6 |
-| **Total** | **490** | **41** | **20** | **0** | **174** | **255** |
+| **Total** | **490** | **42** | **20** | **0** | **173** | **255** |
 
 ### NOAEL / LOAEL
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
 | M | Not established | Group 2 - 456a 1x10^11 VP | 20 | LB, MI, OM | 0.80 | below_tested_range |
-| F | Not established | Group 2 - 456a 1x10^11 VP | 14 | LB, OM, VS | 0.80 | below_tested_range |
-| Combined | Not established | Group 2 - 456a 1x10^11 VP | 34 | LB, MI, OM, VS | 0.80 | below_tested_range |
+| F | Not established | Group 2 - 456a 1x10^11 VP | 15 | LB, MI, OM, VS | 0.80 | below_tested_range |
+| Combined | Not established | Group 2 - 456a 1x10^11 VP | 35 | LB, MI, OM, VS | 0.80 | below_tested_range |
 
 ### Target Organs
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | hematologic | 0.839 | 0.988 | 54 | 34 | LB, MA, MI, OM | -- | -- |
-| metabolic | 0.713 | 0.869 | 6 | 4 | LB | -- | -- |
-| musculoskeletal | 0.672 | 0.770 | 2 | 1 | LB | -- | -- |
 | hepatic | 0.628 | 0.968 | 24 | 11 | LB, OM | -- | -- |
-| electrolyte | 0.567 | 0.881 | 8 | 3 | LB | -- | -- |
 | general | 0.492 | 0.988 | 63 | 15 | BW, CL, FW, LB, MA, MI, OM | -- | -- |
 | cardiovascular | 0.428 | 0.880 | 8 | 6 | OM, VS | -- | -- |
 | renal | 0.369 | 0.882 | 14 | 2 | LB, MI, OM | -- | -- |
 
+### Provenance
+
+| Rule | Message |
+|------|---------|
+| Prov-001 | Dose values extracted from EX domain for 20 subjects; derived from TX for 20 subjects. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-004 | Recovery groups detected in 2 arm(s). Recovery-phase data is analyzed separately. |
+| Prov-006 | Control group identified from ARM label (no explicit control flag in EX/TX). Verify assignment. |
+| Prov-008 | Compound classified as Non-adjuvanted vaccine (inferred). Expected-effect profile has 6 entries. D9 pharmacological scoring active — matching findings receive reduced adversity confidence. |
+
 ---
 
 ## CBER-POC-Pilot-Study3-Gene-Therapy
+
+### Design
+
+| Dimension | Value |
+|-----------|-------|
+| Species / Strain | MONKEY / CYNOMOLGUS |
+| Route | INTRAVENOUS |
+| Study type | SINGLE DOSE TOXICITY |
+| Treatment | Vector A |
+| Vehicle | PBS + 0.001% Pluronic F-68 |
+| Groups (main) | 2 |
+| Recovery groups | 0 |
+| Last dosing day | 1 |
 
 ### Dose Groups
 
@@ -148,6 +181,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Rule | Message |
 |------|---------|
+| Prov-001 | Dose values extracted from EX domain for 5 subjects; derived from TX for 1 subjects. |
+| Prov-002 | Route of administration from EX domain. |
+| Prov-006 | Control group identified from ARM label (no explicit control flag in EX/TX). Verify assignment. |
 | Prov-012 | No concurrent control detected -- adversity determination suppressed. Descriptive statistics only. |
 
 ---
@@ -467,14 +503,14 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
 | M | Not established | Not determined (single dose level) | 0 | -- | 0.80 | single_dose_not_established |
-| F | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.80 | single_dose_not_established |
-| Combined | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.80 | single_dose_not_established |
+| F | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.65 | single_dose_not_established |
+| Combined | Not established | G2 - Compound 1: 12 mg/kg | 27 | BW, LB | 0.65 | single_dose_not_established |
 | M | Not established | N/A | 0 | -- | 0.80 | not_established |
-| F | Not established | G3 - Compound 2: 4 mg/kg | 22 | BG, LB | 0.80 | below_tested_range |
-| Combined | Not established | G3 - Compound 2: 4 mg/kg | 22 | BG, LB | 0.80 | below_tested_range |
+| F | Not established | G3 - Compound 2: 4 mg/kg | 22 | BG, LB | 0.65 | below_tested_range |
+| Combined | Not established | G3 - Compound 2: 4 mg/kg | 22 | BG, LB | 0.65 | below_tested_range |
 | M | Not established | Not determined (single dose level) | 0 | -- | 0.80 | single_dose_not_established |
-| F | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.80 | single_dose_not_established |
-| Combined | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.80 | single_dose_not_established |
+| F | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.65 | single_dose_not_established |
+| Combined | Not established | G5 - Compound 3: 6 mg/kg | 39 | BG, LB | 0.65 | single_dose_not_established |
 
 ### Target Organs
 
@@ -483,7 +519,6 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | hematologic | 0.982 | 0.860 | 23 | 25 | LB, MI, OM | -- | -- |
 | general | 0.809 | 0.750 | 24 | 2 | BG, BW, CL, LB, MI, OM | -- | -- |
 | hepatic | 0.793 | 0.750 | 14 | 7 | LB, MI, OM | -- | -- |
-| electrolyte | 0.708 | 0.750 | 4 | 7 | LB | -- | -- |
 | renal | 0.645 | 0.834 | 10 | 3 | LB, MI, OM | -- | -- |
 
 ### Provenance
@@ -553,7 +588,6 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| hematologic | 0.577 | 0.587 | 2 | 2 | MA | -- | -- |
 | general | 0.410 | 0.587 | 24 | 5 | BG, BW, CL, DS, FW, MI | -- | -- |
 
 ### Provenance
@@ -627,14 +661,12 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| hepatic | 0.749 | 1.000 | 35 | 12 | LB, MA, MI, OM | -- | -- |
-| electrolyte | 0.704 | 0.877 | 8 | 6 | LB | -- | -- |
+| hepatic | 0.749 | 1.000 | 35 | 12 | LB, MA, MI, OM | positive | 1.00 |
 | hematologic | 0.672 | 0.940 | 57 | 24 | LB, MA, MI, OM | -- | -- |
 | general | 0.650 | 1.000 | 170 | 115 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
-| neurological | 0.631 | 0.940 | 5 | 1 | MA, OM | -- | -- |
-| metabolic | 0.566 | 0.940 | 8 | 3 | LB | -- | -- |
-| renal | 0.502 | 0.940 | 36 | 12 | LB, MA, MI, OM | -- | -- |
-| cardiovascular | 0.488 | 0.792 | 8 | 4 | MI, OM | -- | -- |
+| neurological | 0.631 | 0.940 | 5 | 1 | MA, OM | positive | 1.00 |
+| renal | 0.502 | 0.940 | 36 | 12 | LB, MA, MI, OM | positive | 1.00 |
+| cardiovascular | 0.488 | 0.792 | 8 | 4 | MI, OM | positive | 1.00 |
 
 ### Provenance
 
@@ -796,7 +828,7 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | renal | 0.800 | 0.847 | 18 | 4 | LB, MA, OM | -- | -- |
-| hepatic | 0.750 | 0.878 | 27 | 9 | LB, MI, OM | -- | -- |
+| hepatic | 0.750 | 0.878 | 27 | 8 | LB, MI, OM | -- | -- |
 | hematologic | 0.731 | 0.878 | 58 | 14 | LB, MA, MI, OM | -- | -- |
 | cardiovascular | 0.725 | 0.793 | 20 | 6 | EG, OM, VS | -- | -- |
 | general | 0.681 | 0.860 | 125 | 47 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
@@ -876,13 +908,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| renal | 0.791 | 0.803 | 17 | 2 | LB, MA, OM | -- | -- |
+| renal | 0.791 | 0.803 | 17 | 2 | LB, MA, OM | positive | 1.00 |
 | hematologic | 0.703 | 0.684 | 47 | 3 | LB, MI, OM | -- | -- |
-| cardiovascular | 0.652 | 0.803 | 16 | 2 | MI, OM, VS | -- | -- |
+| cardiovascular | 0.652 | 0.803 | 16 | 2 | MI, OM, VS | positive | 1.00 |
 | hepatic | 0.584 | 0.777 | 30 | 3 | LB, MA, MI, OM | -- | -- |
 | general | 0.577 | 0.787 | 59 | 14 | BW, CL, LB, MA, MI, OM | -- | -- |
-| reproductive | 0.562 | 0.813 | 10 | 1 | MI, OM | -- | -- |
-| neurological | 0.487 | 0.756 | 9 | 1 | MI, OM | -- | -- |
+| reproductive | 0.562 | 0.813 | 10 | 1 | MI, OM | positive | 1.00 |
+| neurological | 0.487 | 0.756 | 9 | 1 | MI, OM | positive | 1.00 |
 
 ### Provenance
 
@@ -957,13 +989,11 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| neurological | 0.705 | 0.860 | 4 | 3 | OM | -- | -- |
 | cardiovascular | 0.704 | 0.798 | 7 | 1 | OM, VS | -- | -- |
-| reproductive | 0.700 | 0.908 | 9 | 6 | MI, OM | -- | -- |
+| reproductive | 0.700 | 0.908 | 9 | 6 | MI, OM | positive | 1.00 |
 | hematologic | 0.527 | 0.874 | 54 | 7 | LB, MA, MI, OM | -- | -- |
-| hepatic | 0.504 | 0.925 | 34 | 4 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.504 | 0.925 | 34 | 4 | LB, MA, MI, OM | positive | 1.00 |
 | general | 0.475 | 0.940 | 94 | 22 | BG, BW, CL, FW, MA, MI, OM | -- | -- |
-| metabolic | 0.448 | 0.682 | 6 | 1 | LB | -- | -- |
 | renal | 0.349 | 0.825 | 36 | 4 | LB, MA, MI, OM | -- | -- |
 
 ### Provenance
@@ -1024,9 +1054,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | FW | 14 | 4 | 0 | 0 | 3 | 7 |
 | LB | 264 | 18 | 11 | 0 | 112 | 123 |
 | MA | 12 | 0 | 0 | 0 | 2 | 10 |
-| MI | 70 | 2 | 0 | 0 | 27 | 41 |
+| MI | 70 | 2 | 0 | 0 | 29 | 39 |
 | OM | 61 | 4 | 0 | 0 | 10 | 47 |
-| **Total** | **491** | **31** | **14** | **0** | **169** | **277** |
+| **Total** | **491** | **31** | **14** | **0** | **171** | **275** |
 
 ### NOAEL / LOAEL
 
@@ -1042,11 +1072,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | general | 0.834 | 0.941 | 109 | 26 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
 | hematologic | 0.751 | 0.883 | 50 | 20 | LB, MA, MI, OM | -- | -- |
-| hepatic | 0.637 | 0.940 | 32 | 10 | LB, MA, MI, OM | -- | -- |
-| cardiovascular | 0.407 | 0.620 | 10 | 3 | MI, OM | -- | -- |
+| hepatic | 0.637 | 0.940 | 32 | 10 | LB, MA, MI, OM | positive | 1.00 |
+| cardiovascular | 0.407 | 0.620 | 10 | 3 | MI, OM | positive | 1.00 |
 | renal | 0.390 | 0.645 | 31 | 1 | LB, MA, MI, OM | -- | -- |
-| metabolic | 0.355 | 0.940 | 8 | 2 | LB | -- | -- |
-| electrolyte | 0.300 | 0.601 | 8 | 1 | LB | -- | -- |
 
 ### Provenance
 
@@ -1121,10 +1149,11 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
+| hepatic | 0.689 | 0.858 | 22 | 6 | LB, MI, OM | positive | 1.00 |
+| hematologic | 0.675 | 0.753 | 44 | 5 | LB, MA, MI, OM | -- | -- |
 | renal | 0.610 | 1.000 | 24 | 5 | LB, MA, MI, OM | -- | -- |
-| general | 0.594 | 0.922 | 64 | 16 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
-| hepatic | 0.482 | 0.858 | 22 | 6 | LB, MI, OM | -- | -- |
-| hematologic | 0.473 | 0.753 | 44 | 5 | LB, MA, MI, OM | -- | -- |
+| general | 0.540 | 0.922 | 64 | 16 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.329 | 0.588 | 6 | 1 | MI, OM | positive | 1.00 |
 
 ### Provenance
 

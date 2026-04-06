@@ -1,9 +1,9 @@
 """Per-animal influence analysis.
 
 Computes per-animal biological extremity (within-group |z|) and signal
-instability (% endpoints where LOO ratio < 0.8) from existing pipeline
-outputs.  Produces animal_influence.json consumed by the frontend
-CohortInfluenceMap scatter and AnimalInfluencePanel dumbbell.
+instability (mean instability across all pairwise LOO comparisons) from
+existing pipeline outputs.  Produces animal_influence.json consumed by
+the frontend CohortInfluenceMap scatter and AnimalInfluencePanel dumbbell.
 
 Data sources:
   - raw_subject_values on findings (per-subject values, pre-strip)
@@ -19,13 +19,14 @@ from typing import Any
 
 # ── Thresholds ───────────────────────────────────────────────────
 
-DESTABILISING_LOO_THRESHOLD = 0.80  # ratio below this = destabilising
-DESTABILISING_PCT_THRESHOLD = 30    # % endpoints -> alarm zone x-axis
+DESTABILISING_LOO_THRESHOLD = 0.80  # ratio below this = destabilising (endpoint detail filter)
 BIO_EXTREMITY_Z_THRESHOLD = 1.3    # mean |z| -> alarm zone y-axis
 ENDPOINT_DETAIL_Z_THRESHOLD = 0.8  # |z| filter for endpoint_details
 MAD_FLOOR = 0.5                    # semi-quant MAD floor (grade units)
 MIN_N_FOR_LOO = 3                  # below this, LOO is degenerate
 MIN_N_FOR_RELIABLE_LOO = 5         # below this, LOO has masking effects
+INSTABILITY_FLOOR = 0.10           # adaptive threshold never drops below this
+MIN_N_FOR_ADAPTIVE_THRESHOLD = 15  # need >= 15 animals for p90 to be distributional
 
 
 def build_animal_influence(
@@ -84,11 +85,11 @@ def build_animal_influence(
     else:
         loo_confidence = "adequate"
 
-    # ── Collect per-animal-per-endpoint metrics ──────────────────
+    # ── Collect per-animal-per-endpoint metrics ───────���──────────
     # z_scores[uid][(endpoint_id, endpoint_name, domain, etype)] = z_raw
-    # instability[uid][(endpoint_id, ...)] = (worst_ratio, loo_dose_group_label)
+    # instability[uid][(endpoint_id, ...)] = {dose_level: ratio}
     z_scores: dict[str, dict[tuple, float]] = {}
-    instability: dict[str, dict[tuple, tuple]] = {}
+    instability: dict[str, dict[tuple, dict[int, float]]] = {}
     endpoint_types: dict[tuple, str] = {}  # endpoint_key -> type
 
     for f in findings:
@@ -124,7 +125,7 @@ def build_animal_influence(
                 pairwise, subj_meta, endpoint_key, dg_map, instability,
             )
 
-    # ── Assemble per-animal summaries ────────────────────────────
+    # ── Assemble per-animal summaries ────��───────────────────────
     # Collect all |z| values for percentile rank computation
     all_z_by_type: dict[str, list[float]] = {"continuous": [], "semiquant": []}
     for uid, ep_zs in z_scores.items():
@@ -144,22 +145,58 @@ def build_animal_influence(
         abs_zs = [abs(z) for z in uid_zs.values()]
         mean_bio_z = round(sum(abs_zs) / len(abs_zs), 2) if abs_zs else 0.0
 
-        # Signal instability
+        # Signal instability (mean across pairwise, then across endpoints)
         if loo_confidence == "insufficient":
-            pct_destabilising = None
-            n_destabilising = None
+            mean_instability = None
+            max_endpoint_instability = None
             n_endpoints_with_loo = None
+            n_pairwise_k = 0
+            instability_by_dose: dict = {}
+            worst_dose_level = None
+            endpoint_coverage_flag = False
         else:
             n_endpoints_with_loo = len(uid_inst)
-            n_destabilising = sum(
-                1 for (ratio, _) in uid_inst.values()
-                if ratio < DESTABILISING_LOO_THRESHOLD
-            )
-            pct_destabilising = (
-                round(n_destabilising / n_endpoints_with_loo * 100, 1)
-                if n_endpoints_with_loo > 0
-                else None
-            )
+            # Number of distinct dose levels in comparisons
+            all_dose_levels: set[int] = set()
+            for ep_ratios in uid_inst.values():
+                all_dose_levels.update(ep_ratios.keys())
+            n_pairwise_k = len(all_dose_levels)
+
+            # Per-endpoint mean ratio (mean across pairwise dose comparisons)
+            mean_ratios_per_ep: dict[tuple, float] = {}
+            for ep_key, dose_ratios in uid_inst.items():
+                mean_ratios_per_ep[ep_key] = sum(dose_ratios.values()) / len(dose_ratios)
+
+            if mean_ratios_per_ep:
+                avg_mean_ratio = sum(mean_ratios_per_ep.values()) / len(mean_ratios_per_ep)
+                mean_instability = round(max(0.0, 1.0 - avg_mean_ratio), 4)
+                max_endpoint_instability = round(
+                    max(1.0 - r for r in mean_ratios_per_ep.values()), 4,
+                )
+            else:
+                mean_instability = None
+                max_endpoint_instability = None
+
+            # Per-dose stability vector
+            instability_by_dose = _aggregate_by_dose(uid_inst)
+
+            # Worst dose level (lowest mean_ratio)
+            if instability_by_dose:
+                worst_dose_level = min(
+                    instability_by_dose, key=lambda dl: instability_by_dose[dl]["mean_ratio"],
+                )
+            else:
+                worst_dose_level = None
+
+            # Endpoint coverage flag: dual gate (R1 F4)
+            if len(instability_by_dose) >= 2:
+                n_eps = [v["n_endpoints"] for v in instability_by_dose.values()]
+                max_n, min_n = max(n_eps), min(n_eps)
+                endpoint_coverage_flag = (
+                    (max_n - min_n >= 3) and (min_n > 0 and max_n / min_n > 1.3)
+                )
+            else:
+                endpoint_coverage_flag = False
 
         # All endpoints this animal participates in
         all_ep_keys = set(uid_zs.keys()) | set(uid_inst.keys())
@@ -167,13 +204,6 @@ def build_animal_influence(
 
         if n_endpoints_total == 0:
             continue  # no data for this animal
-
-        # is_alarm: quadrant membership
-        is_alarm = (
-            pct_destabilising is not None
-            and pct_destabilising > DESTABILISING_PCT_THRESHOLD
-            and mean_bio_z > BIO_EXTREMITY_Z_THRESHOLD
-        )
 
         # Terminal BW (from raw_subject_values of BW findings)
         terminal_bw = _get_terminal_bw(findings, uid)
@@ -185,27 +215,48 @@ def build_animal_influence(
             "sex": meta["sex"],
             "terminal_bw": terminal_bw,
             "is_control": meta["is_control"],
-            "pct_destabilising": pct_destabilising,
+            "mean_instability": mean_instability,
+            "max_endpoint_instability": max_endpoint_instability,
+            "n_pairwise_k": n_pairwise_k,
             "mean_bio_z": mean_bio_z,
             "n_endpoints_total": n_endpoints_total,
             "n_endpoints_with_loo": n_endpoints_with_loo,
-            "n_destabilising": n_destabilising,
-            "is_alarm": is_alarm,
+            "is_alarm": False,  # set after adaptive threshold computation
+            "instability_by_dose": instability_by_dose,
+            "worst_dose_level": worst_dose_level,
+            "endpoint_coverage_flag": endpoint_coverage_flag,
         }
         animals.append(animal_rec)
 
-        # ── Endpoint details (pre-filtered, pre-sorted) ─────────
+        # ── Endpoint details (pre-filtered, pre-sorted) ────���────
         details = _build_endpoint_details(
-            uid, uid_zs, uid_inst, all_z_by_type, meta["is_control"],
+            uid, uid_zs, uid_inst, all_z_by_type, meta["is_control"], dg_map,
         )
         if details:
             endpoint_details[uid] = details
 
-    # Sort animals by alarm status desc, then pct_destabilising desc
+    # ── Adaptive alarm threshold (Feature 3) ────────────────────
+    non_null = [a["mean_instability"] for a in animals if a["mean_instability"] is not None]
+    if len(non_null) >= MIN_N_FOR_ADAPTIVE_THRESHOLD:
+        import numpy as np
+        p90 = float(np.percentile(non_null, 90))
+        instability_threshold = round(max(p90, INSTABILITY_FLOOR), 4)
+    else:
+        instability_threshold = INSTABILITY_FLOOR
+
+    # Apply is_alarm with adaptive threshold
+    for a in animals:
+        a["is_alarm"] = (
+            a["mean_instability"] is not None
+            and a["mean_instability"] > instability_threshold
+            and a["mean_bio_z"] > BIO_EXTREMITY_Z_THRESHOLD
+        )
+
+    # Sort animals by alarm status desc, then mean_instability desc
     animals.sort(
         key=lambda a: (
             a["is_alarm"],
-            a["pct_destabilising"] if a["pct_destabilising"] is not None else -1,
+            a["mean_instability"] if a["mean_instability"] is not None else -1,
             a["mean_bio_z"],
         ),
         reverse=True,
@@ -215,7 +266,7 @@ def build_animal_influence(
         "min_group_n": min_group_n,
         "loo_confidence": loo_confidence,
         "thresholds": {
-            "destabilising_pct": DESTABILISING_PCT_THRESHOLD,
+            "instability": instability_threshold,
             "bio_extremity_z": BIO_EXTREMITY_Z_THRESHOLD,
         },
         "animals": animals,
@@ -367,15 +418,17 @@ def _collect_instability(
     subj_meta: dict[str, dict],
     endpoint_key: tuple,
     dg_map: dict[int, dict],
-    instability: dict[str, dict[tuple, tuple]],
+    instability: dict[str, dict[tuple, dict[int, float]]],
 ) -> None:
-    """Collect worst LOO ratio per animal from ALL pairwise comparisons."""
+    """Collect ALL pairwise LOO ratios per animal per endpoint per dose level."""
     for pw in pairwise:
         loo = pw.get("loo_per_subject")
         if not loo:
             continue
         pw_dl = pw.get("dose_level")
-        pw_label = dg_map.get(int(pw_dl), {}).get("label", f"Dose {pw_dl}") if pw_dl is not None else "?"
+        if pw_dl is None:
+            continue
+        pw_dl_int = int(pw_dl)
 
         for uid, loo_data in loo.items():
             if uid not in subj_meta:
@@ -384,17 +437,37 @@ def _collect_instability(
             if ratio is None:
                 continue
 
-            existing = instability.get(uid, {}).get(endpoint_key)
-            if existing is None or ratio < existing[0]:
-                instability.setdefault(uid, {})[endpoint_key] = (ratio, pw_label)
+            uid_data = instability.setdefault(uid, {})
+            ep_data = uid_data.setdefault(endpoint_key, {})
+            # Keep worst ratio per dose level for this endpoint
+            if pw_dl_int not in ep_data or ratio < ep_data[pw_dl_int]:
+                ep_data[pw_dl_int] = ratio
+
+
+def _aggregate_by_dose(
+    uid_inst: dict[tuple, dict[int, float]],
+) -> dict[int, dict]:
+    """Aggregate per-endpoint LOO ratios into per-dose stability summary."""
+    dose_ratios: dict[int, list[float]] = {}
+    for ep_ratios in uid_inst.values():
+        for dl, ratio in ep_ratios.items():
+            dose_ratios.setdefault(dl, []).append(ratio)
+    result: dict[int, dict] = {}
+    for dl, ratios in dose_ratios.items():
+        result[dl] = {
+            "mean_ratio": round(sum(ratios) / len(ratios), 4),
+            "n_endpoints": len(ratios),
+        }
+    return result
 
 
 def _build_endpoint_details(
     uid: str,
     uid_zs: dict[tuple, float],
-    uid_inst: dict[tuple, tuple],
+    uid_inst: dict[tuple, dict[int, float]],
     all_z_by_type: dict[str, list[float]],
     is_control: bool,
+    dg_map: dict[int, dict],
 ) -> list[dict]:
     """Build pre-filtered, pre-sorted endpoint details for one animal."""
     all_keys = set(uid_zs.keys()) | set(uid_inst.keys())
@@ -404,13 +477,24 @@ def _build_endpoint_details(
         endpoint_id, endpoint_name, domain, etype = ep_key
         z_raw = uid_zs.get(ep_key)
         abs_z = abs(z_raw) if z_raw is not None else None
-        inst_data = uid_inst.get(ep_key)
-        ratio = inst_data[0] if inst_data else None
-        loo_dose_group = inst_data[1] if inst_data else None
+        dose_ratios = uid_inst.get(ep_key)  # {dose_level: ratio} or None
 
-        # Pre-filter: |z| > 0.8 OR loo_ratio < 0.8
+        # Compute mean_ratio and worst_ratio from all pairwise ratios
+        if dose_ratios:
+            mean_ratio = sum(dose_ratios.values()) / len(dose_ratios)
+            worst_ratio = min(dose_ratios.values())
+            worst_dl = min(dose_ratios, key=dose_ratios.get)  # type: ignore[arg-type]
+            worst_dose_level = worst_dl
+            loo_dose_group = dg_map.get(worst_dl, {}).get("label", f"Dose {worst_dl}")
+        else:
+            mean_ratio = None
+            worst_ratio = None
+            worst_dose_level = None
+            loo_dose_group = None
+
+        # Pre-filter: |z| > 0.8 OR worst_ratio < 0.8
         z_pass = abs_z is not None and abs_z > ENDPOINT_DETAIL_Z_THRESHOLD
-        loo_pass = ratio is not None and ratio < DESTABILISING_LOO_THRESHOLD
+        loo_pass = worst_ratio is not None and worst_ratio < DESTABILISING_LOO_THRESHOLD
         if not z_pass and not loo_pass:
             continue
 
@@ -422,11 +506,10 @@ def _build_endpoint_details(
                 n_below = sum(1 for v in pool if v < abs_z)
                 bio_norm = round(n_below / len(pool) * 100, 0)
 
-        # instability: (1 - ratio) * 100
-        instability_pct = round((1.0 - ratio) * 100, 1) if ratio is not None else None
+        # instability: based on mean_ratio (consistent with mean_instability)
+        instability_pct = round((1.0 - mean_ratio) * 100, 1) if mean_ratio is not None else None
 
         # is_control_side: the LOO comparison involves the control group
-        # True when the animal is in the control group
         is_control_side = is_control
 
         # alarm_score: sorting heuristic
@@ -442,7 +525,10 @@ def _build_endpoint_details(
             "bio_z_raw": round(abs_z, 2) if abs_z is not None else None,
             "bio_norm": bio_norm,
             "instability": instability_pct,
-            "loo_ratio": round(ratio, 3) if ratio is not None else None,
+            "loo_ratios_by_dose": {dl: round(r, 4) for dl, r in dose_ratios.items()} if dose_ratios else {},
+            "mean_ratio": round(mean_ratio, 4) if mean_ratio is not None else None,
+            "worst_ratio": round(worst_ratio, 3) if worst_ratio is not None else None,
+            "worst_dose_level": worst_dose_level,
             "loo_dose_group": loo_dose_group,
             "is_control_side": is_control_side,
             "alarm_score": alarm_score,

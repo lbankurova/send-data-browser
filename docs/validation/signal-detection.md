@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `c0b2ee89` (2026-04-05)
-**Generated:** 2026-04-05T17:19:09.338Z
+**Engine:** commit `f669d515` (2026-04-06)
+**Generated:** 2026-04-06T18:04:32.962Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -46,7 +46,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 5 | A/G ratio decrease | LB | any | tr_adverse | -3.00 | <0.001 | **DETECTED** | Day 3: M 0.78x (p<0.001), F 0.82x (p<0.001). (report p.11) |
 | 6 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased lymphoid cellularity of germinal centre. Correlated with higher spleen weights. (report p.9) |
 | 7 | Iliac LN hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased generalised lymphoid cellularity. Gross enlargement in 1F. Correlated with higher LN weights. (report p.9) |
-| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.009 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
+| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.010 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
 | 9 | Spleen weight increase | OM | any | tr_adverse | 1.43 | 0.037 | **DETECTED** | Slightly higher in both sexes. (report p.9) |
 | 10 | Injection site inflammation | MI | any | equivocal | -- | 0.070 | **DETECTED** | Inflammation, necrosis, hemorrhage in striated muscle/fascia. SEND specimen: 'SITE, APPLICATION'. Engine classifies as not_treatment_related — known gap (injection site findings lack dose-response in 2-group design). (report p.9) |
 
@@ -54,6 +54,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Dimension | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
+| Species | Rabbit | RABBIT | **MATCH** |
 | Groups (main) | 2 | 2 | **MATCH** |
 | Doses | 0 vp/dose | 0 vp/dose | **MATCH** |
 | Recovery | Yes | Yes (2 groups) | **MATCH** |
@@ -69,6 +70,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | Dimension | Expected | Actual | Verdict |
 |-----------|----------|--------|---------|
+| Species | Primate | MONKEY | **MATCH** |
 | Groups (main) | 2 | 2 | **MATCH** |
 | Recovery | No | No | **MATCH** |
 | Concurrent control | No | No | **MATCH** |
@@ -91,11 +93,11 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
-| 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.078 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
+| 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.079 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
 | 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
 | 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
-| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.050 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
-| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.051 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
+| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.049 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
+| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
 | 7 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10) |
 | 8 | Regional LN hyperplasia | MI | any | equivocal | -- | 0.266 | **DETECTED** | Lymphoid hyperplasia and granulocyte infiltration. Both vaccines. Enlarged right inguinal LN in M (SENDVACC99). (report p.10) |
@@ -318,7 +320,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | Body weight decreased | BW | any | tr_adverse | -3.38 | <0.001 | **DETECTED** |  |
-| 2 | Body weight gain decreased | BG | any | tr_adverse | -2.66 | <0.001 | **DETECTED** |  |
+| 2 | Body weight gain decreased | BG | any | tr_non_adverse | -0.43 | 0.366 | **DETECTED** |  |
 | 3 | AST increased | LB | any | tr_adverse | 1.73 | <0.001 | **DETECTED** |  |
 | 4 | ALT increased | LB | any | tr_adverse | 1.09 | 0.007 | **DETECTED** |  |
 | 5 | ALP increased | LB | any | tr_adverse | 1.59 | 0.002 | **DETECTED** |  |

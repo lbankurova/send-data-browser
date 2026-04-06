@@ -1,13 +1,13 @@
 # Validation Summary
 
-**Engine:** commit `c0b2ee89` (2026-04-05)
-**Generated:** 2026-04-05T17:19:10.256Z
+**Engine:** commit `f669d515` (2026-04-06)
+**Generated:** 2026-04-06T18:04:34.197Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
 | CBER-POC-Pilot-Study1-Vaccine_xpt_only | synthetic | -- | 6/6 | 2/2 |  |
-| CBER-POC-Pilot-Study2-Vaccine_xpt | synthetic | 10/10 | 4/4 | -- |  |
-| CBER-POC-Pilot-Study3-Gene-Therapy | synthetic | -- | 4/4 | 2/2 |  |
+| CBER-POC-Pilot-Study2-Vaccine_xpt | synthetic | 10/10 | 5/5 | -- |  |
+| CBER-POC-Pilot-Study3-Gene-Therapy | synthetic | -- | 5/5 | 2/2 |  |
 | CBER-POC-Pilot-Study4-Vaccine | synthetic | 11/11 | 5/5 | -- |  |
 | CBER-POC-Pilot-Study5 | synthetic | 6/7 | 5/5 | 2/2 | 1 class note(s), MISSED |
 | CJ16050-xptonly | synthetic | 6/6 | 5/5 | 2/2 |  |
@@ -22,7 +22,7 @@
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 3/3 | MISMATCH |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 2/2 |  |
 
-**Totals:** 48/49 signals detected, 81/82 design matched, 29/29 assertions passed
+**Totals:** 48/49 signals detected, 83/84 design matched, 29/29 assertions passed
 
 ## Missed Signals
 
