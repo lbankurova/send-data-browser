@@ -135,7 +135,7 @@ export function OverrideCell({
     <div
       className={cn(
         "flex items-center gap-0.5",
-        needsAttention && "border-b border-red-500",
+        needsAttention && "border-b border-red-500/40",
       )}
       title={needsAttention ? attentionTooltip : undefined}
     >

@@ -675,7 +675,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const f = info.row.original;
           const os = deriveOnsetState(f, doseGroups, overrideActions.annotations);
           return (
-            <div className={cn("flex items-center gap-0.5", os.needsAttention && "border-b border-red-500")} title={os.needsAttention ? "Onset dose needs selection" : os.overrideTooltip ?? "Right-click to override"}>
+            <div className={cn("flex items-center gap-0.5", os.needsAttention && "border-b border-red-500/40")} title={os.needsAttention ? "Onset dose needs selection" : os.overrideTooltip ?? "Right-click to override"}>
               <span className={cn("font-mono", os.onset ? "text-muted-foreground" : "text-muted-foreground/40")}>
                 {os.displayLabel}
               </span>

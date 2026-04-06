@@ -26,6 +26,7 @@ export interface AnalyticsWorkerInput {
   doseGroups: DoseGroup[] | undefined;
   hasEstrousData: boolean;
   normContexts: NormalizationContext[] | undefined;
+  species: string;
 }
 
 export interface AnalyticsWorkerOutput {
@@ -40,7 +41,7 @@ export interface AnalyticsWorkerOutput {
 }
 
 function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
-  const { findings, doseGroups, hasEstrousData, normContexts } = input;
+  const { findings, doseGroups, hasEstrousData, normContexts, species } = input;
 
   if (!findings.length) {
     return {
@@ -174,7 +175,7 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
         clinMult = Math.max(clinMult, getClinicalMultiplier(match.severity));
       }
     }
-    const sexConc = getSexConcordanceBoost(ep);
+    const sexConc = getSexConcordanceBoost(ep, species);
     const conf = classifyEndpointConfidence(ep);
     const confMult = getConfidenceMultiplier(conf);
     if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1) {

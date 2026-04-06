@@ -188,13 +188,10 @@ export function deriveOnsetState(
     ?? patternToOverrideKey(finding.dose_response_pattern) ?? "no_change";
   const isDirectional = effectivePatternKey !== "no_change";
   const systemOnsetLevel = getSystemOnsetLevel(finding);
-  const treatmentGroups = doseGroups.filter(g => g.dose_level > 0);
-  const lowestDoseLevel = treatmentGroups.length > 0 ? treatmentGroups[0].dose_level : 1;
-
   const isOverridden = onset?.source === "override"
     && onset.doseLevel !== systemOnsetLevel;
   const needsAttention = isDirectional && override != null
-    && onsetNeedsAttention(override.pattern, override.onset_dose_level, lowestDoseLevel);
+    && onsetNeedsAttention(override.pattern, override.onset_dose_level);
 
   const displayLabel = onset
     ? formatOnsetDose(onset.doseLevel, doseGroups)

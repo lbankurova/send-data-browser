@@ -37,7 +37,7 @@ export function OnsetDoseDropdown({ finding, doseGroups }: Props) {
 
   return (
     <div
-      className={`relative flex items-center gap-0.5${state.needsAttention ? " border-b border-red-500" : ""}${state.isOverridden ? " cell-overridable" : ""}`}
+      className={`relative flex items-center gap-0.5${state.needsAttention ? " border-b border-red-500/40" : ""}${state.isOverridden ? " cell-overridable" : ""}`}
       title={state.needsAttention ? "Onset dose needs selection" : undefined}
       onContextMenu={(e) => { e.preventDefault(); setOpen(!open); }}
     >

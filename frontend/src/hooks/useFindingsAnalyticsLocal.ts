@@ -30,6 +30,7 @@ import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
+import { normalizeSpecies } from "@/lib/syndrome-translational";
 
 const ALL_FILTERS: FindingsFilters = {
   domain: null, sex: null, severity: null, search: "",
@@ -55,6 +56,7 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
 
   const activeFindings = useMemo(() => data?.findings ?? [], [data?.findings]);
   const normContexts = normalization.state?.contexts;
+  const species = useMemo(() => studyMeta?.species ? normalizeSpecies(studyMeta.species) : "", [studyMeta?.species]);
 
   // ── Worker lifecycle ──
   // Check support once during state init (avoids setState in effect body).
@@ -94,16 +96,17 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       doseGroups: data?.dose_groups,
       hasEstrousData: studyMeta?.has_estrous_data ?? false,
       normContexts,
+      species,
     };
     workerRef.current.postMessage(input);
-  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts]);
+  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts, species]);
 
   // ── Sync fallback (used when worker not available) ──
   const syncAnalytics = useMemo(() => {
     if (useWorker) return null; // worker handles it
     if (!activeFindings.length) return EMPTY_ANALYTICS;
-    return computeAnalyticsSync(activeFindings, data?.dose_groups, studyMeta?.has_estrous_data ?? false, normContexts);
-  }, [useWorker, activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts]);
+    return computeAnalyticsSync(activeFindings, data?.dose_groups, studyMeta?.has_estrous_data ?? false, normContexts, species);
+  }, [useWorker, activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts, species]);
 
   // ── Merge worker result into analytics shape ──
   const analytics = useMemo((): FindingsAnalytics => {
@@ -152,6 +155,7 @@ function computeAnalyticsSync(
   doseGroups: import("@/types/analysis").DoseGroup[] | undefined,
   hasEstrousData: boolean,
   normContexts: import("@/lib/organ-weight-normalization").NormalizationContext[] | undefined,
+  species: string,
 ): FindingsAnalytics {
   const rows = mapFindingsToRows(findings);
   const endpoints = deriveEndpointSummaries(rows);
@@ -273,7 +277,7 @@ function computeAnalyticsSync(
         clinMult = Math.max(clinMult, getClinicalMultiplier(match.severity));
       }
     }
-    const sexConc = getSexConcordanceBoost(ep);
+    const sexConc = getSexConcordanceBoost(ep, species);
     const conf = classifyEndpointConfidence(ep);
     const confMult = getConfidenceMultiplier(conf);
     if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1) {

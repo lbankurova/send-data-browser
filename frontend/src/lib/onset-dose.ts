@@ -89,19 +89,15 @@ export function defaultOnsetForPattern(pattern: string): number | null {
 }
 
 /**
- * Check if onset dose needs attention (red border hint).
+ * Check if onset dose needs attention (muted border hint).
  *
- * Returns true when:
- * - Directional pattern override with no onset set (pending)
- * - Monotonic pattern with onset not at lowest dose (consistency hint)
+ * Returns true when a directional pattern has no onset set yet (pending user selection).
  */
 export function onsetNeedsAttention(
   pattern: string,
   onsetDoseLevel: number | null,
-  lowestDoseLevel: number,
 ): boolean {
-  if (pattern === "no_change") return false;
+  if (pattern === "no_change" || pattern === "flat") return false;
   if (onsetDoseLevel == null) return true;
-  if (pattern === "monotonic" && onsetDoseLevel !== lowestDoseLevel) return true;
   return false;
 }

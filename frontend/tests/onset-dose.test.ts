@@ -184,24 +184,25 @@ describe("defaultOnsetForPattern", () => {
 
 describe("onsetNeedsAttention", () => {
   it("returns false for no_change", () => {
-    expect(onsetNeedsAttention("no_change", null, 1)).toBe(false);
+    expect(onsetNeedsAttention("no_change", null)).toBe(false);
   });
 
   it("returns true for directional with null onset", () => {
-    expect(onsetNeedsAttention("threshold", null, 1)).toBe(true);
-    expect(onsetNeedsAttention("monotonic", null, 1)).toBe(true);
-    expect(onsetNeedsAttention("non_monotonic", null, 1)).toBe(true);
+    expect(onsetNeedsAttention("threshold", null)).toBe(true);
+    expect(onsetNeedsAttention("monotonic", null)).toBe(true);
+    expect(onsetNeedsAttention("non_monotonic", null)).toBe(true);
   });
 
-  it("returns true for monotonic with non-lowest onset", () => {
-    expect(onsetNeedsAttention("monotonic", 2, 1)).toBe(true);
+  it("returns false for monotonic with any set onset (BUG-16: removed false-positive)", () => {
+    expect(onsetNeedsAttention("monotonic", 2)).toBe(false);
+    expect(onsetNeedsAttention("monotonic", 1)).toBe(false);
   });
 
-  it("returns false for monotonic with lowest onset", () => {
-    expect(onsetNeedsAttention("monotonic", 1, 1)).toBe(false);
+  it("returns false for flat pattern (BUG-16: treat flat same as no_change)", () => {
+    expect(onsetNeedsAttention("flat", null)).toBe(false);
   });
 
   it("returns false for threshold with set onset", () => {
-    expect(onsetNeedsAttention("threshold", 2, 1)).toBe(false);
+    expect(onsetNeedsAttention("threshold", 2)).toBe(false);
   });
 });
