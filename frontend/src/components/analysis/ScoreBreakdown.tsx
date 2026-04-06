@@ -175,7 +175,7 @@ export function ConfidencePopover({
 }: {
   row: {
     sex: string;
-    noael_dose_level: number;
+    noael_dose_level: number | null;
     noael_label: string;
     noael_confidence: number;
     n_adverse_at_loael: number;
@@ -187,7 +187,7 @@ export function ConfidencePopover({
   };
   allNoael: Array<{
     sex: string;
-    noael_dose_level: number;
+    noael_dose_level: number | null;
     noael_label: string;
     noael_confidence: number;
   }>;

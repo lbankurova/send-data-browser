@@ -138,8 +138,24 @@ export type SignalViewSelection =
 
 // --- NOAEL Determination (View 5) ---
 
+/**
+ * Closed vocabulary for `NoaelDerivation.method`. Backend source of truth:
+ * `backend/generator/view_dataframes.py::_build_noael_for_groups`. Adding a
+ * value backend-side requires extending this union so the discriminator
+ * comparisons in the frontend stay exhaustively type-checked.
+ */
+export type NoaelDerivationMethod =
+  | "highest_dose_no_adverse"
+  | "highest_dose_no_adverse_single_dose"
+  | "below_tested_range"
+  | "not_established"
+  | "single_dose_not_established"
+  | "control_mortality_critical"
+  | "no_concurrent_control"
+  | "noel_framework";
+
 export interface NoaelDerivation {
-  method: string;
+  method: NoaelDerivationMethod;
   classification_method: string;
   loael_dose_level: number | null;
   loael_label: string | null;
@@ -163,11 +179,15 @@ export interface NoaelDerivation {
 
 export interface NoaelSummaryRow {
   sex: string;
-  noael_dose_level: number;
+  /** null when NOAEL is not established (no findings, below tested range, or suppressed). */
+  noael_dose_level: number | null;
   noael_label: string;
-  noael_dose_value: number;
-  noael_dose_unit: string;
-  loael_dose_level: number;
+  /** null when NOAEL is not established. */
+  noael_dose_value: number | null;
+  /** null when NOAEL is not established. */
+  noael_dose_unit: string | null;
+  /** null when no LOAEL is identifiable (e.g. no adverse findings at all). */
+  loael_dose_level: number | null;
   loael_label: string;
   n_adverse_at_loael: number;
   adverse_domains_at_loael: string[];

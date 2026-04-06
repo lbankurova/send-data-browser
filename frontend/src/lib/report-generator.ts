@@ -5,6 +5,7 @@
 
 import { fetchStudyMetadata } from "@/lib/api";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { formatNoaelDisplay } from "@/lib/noael-narrative";
 import {
   fetchStudySignalSummary,
   fetchTargetOrganSummary,
@@ -181,7 +182,7 @@ function buildNoaelSection(noael: NoaelSummaryRow[]): string {
           (r) => `
         <div style="flex:1;min-width:200px;padding:12px;border:1px solid #e5e7eb;border-radius:6px">
           <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${escapeHtml(r.sex)}</div>
-          <div style="font-size:18px;font-weight:700;color:${BRAND}">${r.noael_dose_value} ${escapeHtml(r.noael_dose_unit)}</div>
+          <div style="font-size:18px;font-weight:700;color:${BRAND}">${escapeHtml(formatNoaelDisplay(r))}</div>
           <div style="font-size:11px;color:#6b7280">NOAEL: ${escapeHtml(r.noael_label)}</div>
           <div style="font-size:11px;color:#6b7280;margin-top:4px">LOAEL: ${escapeHtml(r.loael_label)} (${r.n_adverse_at_loael} adverse)</div>
         </div>

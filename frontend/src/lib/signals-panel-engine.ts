@@ -19,6 +19,8 @@ import type {
   TargetOrganRow,
   SignalSummaryRow,
 } from "@/types/analysis-views";
+import { formatNoaelDisplay } from "@/lib/noael-narrative";
+import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 // ---------------------------------------------------------------------------
 // Output types
@@ -184,17 +186,25 @@ function deriveNoaelRules(
       clickEndpoint: null,
       clickOrgan: null,
     });
-  } else if (combined.noael_dose_value === 0) {
+  } else if (combined.noael_dose_value == null) {
+    // NOAEL not established. Distinguish "below tested range" (vehicle not a
+    // testable dose -- LOAEL = lowest active dose) from a hard "not established"
+    // via the derivation method discriminator. LOAEL string formatting is
+    // routed through formatDoseShortLabel to stay in lockstep with the banner
+    // and determination pane (single source of truth for dose label rendering).
     const loaelStr =
       loaelDose != null
         ? `${loaelDose} ${unit}`
-        : combined.loael_label.replace(/^Group \d+,\s*/, "");
+        : formatDoseShortLabel(combined.loael_label);
     const driverStr = driving ? endpointFmt(driving.endpoint_label) : null;
+    const isBelowRange = combined.noael_derivation?.method === "below_tested_range";
     rules.push({
-      id: "noael.all.doses.adverse",
+      id: isBelowRange ? "noael.below.tested.range" : "noael.all.doses.adverse",
       priority: 990,
       icon: "fact",
-      text: `NOAEL is Control (${sexLabel(combined.sex)})${driverStr ? `, driven by ${driverStr}` : ""}. LOAEL is ${loaelStr}.`,
+      text: isBelowRange
+        ? `NOAEL is below the lowest tested dose (< ${loaelStr}) for ${sexLabel(combined.sex)}${driverStr ? `, driven by ${driverStr}` : ""}. LOAEL is ${loaelStr}.`
+        : `NOAEL not established for ${sexLabel(combined.sex)}${driverStr ? `, driven by ${driverStr}` : ""}. LOAEL is ${loaelStr}.`,
       organSystem: null,
       clickEndpoint: driving?.endpoint_label ?? null,
       clickOrgan: null,
@@ -206,7 +216,7 @@ function deriveNoaelRules(
       id: "noael.assignment",
       priority: 1000,
       icon: "fact",
-      text: `NOAEL is ${combined.noael_dose_value} ${unit} (${sexLabel(combined.sex)})${driverStr ? `, driven by ${driverStr}` : ""}. LOAEL is ${loaelStr}.`,
+      text: `NOAEL is ${formatNoaelDisplay(combined)} (${sexLabel(combined.sex)})${driverStr ? `, driven by ${driverStr}` : ""}. LOAEL is ${loaelStr}.`,
       organSystem: null,
       clickEndpoint: driving?.endpoint_label ?? null,
       clickOrgan: null,
@@ -223,7 +233,7 @@ function deriveNoaelRules(
       id: "noael.sex.difference",
       priority: 940,
       icon: "warning",
-      text: `NOAEL differs by sex: ${maleRow.noael_dose_value} ${unit} (M) vs. ${femaleRow.noael_dose_value} ${unit} (F). Combined NOAEL uses the lower value.`,
+      text: `NOAEL differs by sex: ${formatNoaelDisplay(maleRow)} (M) vs. ${formatNoaelDisplay(femaleRow)} (F). Combined NOAEL uses the lower value.`,
       organSystem: null,
       clickEndpoint: null,
       clickOrgan: null,
@@ -528,11 +538,7 @@ function buildMetrics(
   const nDR = signals.filter((s) => s.dose_response_flag).length;
   const nDomains = new Set(signals.map((s) => s.domain)).size;
 
-  let noaelStr: string;
-  if (!combined) noaelStr = "Not established";
-  else if (combined.noael_dose_value === 0) noaelStr = "Control";
-  else
-    noaelStr = `${combined.noael_dose_value} ${combined.noael_dose_unit || "mg/kg"}`;
+  const noaelStr = combined ? formatNoaelDisplay(combined) : "Not established";
 
   // LOAEL string
   const unit = combined?.noael_dose_unit || "mg/kg";

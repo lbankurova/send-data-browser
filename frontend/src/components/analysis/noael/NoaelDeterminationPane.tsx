@@ -10,7 +10,7 @@ import { CollapsiblePane } from "../panes/CollapsiblePane";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { computeConfidenceBreakdown } from "@/lib/rule-definitions";
-import { generateNoaelNarrative } from "@/lib/noael-narrative";
+import { generateNoaelNarrative, formatNoaelDisplay } from "@/lib/noael-narrative";
 import { useEffectiveNoael } from "@/hooks/useEffectiveNoael";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
@@ -175,14 +175,11 @@ function NoaelSexRow({
 
   const established = row.noael_dose_value != null;
   const sexLabel = row.sex === "Combined" ? "Combined" : row.sex === "M" ? "Males" : "Females";
-  const doseDisplay = override
-    ? override.override_dose_value
-    : row.noael_dose_value != null
-      ? `${row.noael_dose_value} ${row.noael_dose_unit}`
-      : "Not established";
+  const systemDisplay = formatNoaelDisplay(row);
+  const doseDisplay = override ? override.override_dose_value : systemDisplay;
 
   const handleOpen = useCallback(() => {
-    setOverrideDose(override?.override_dose_value ?? `${row.noael_dose_value} ${row.noael_dose_unit}`);
+    setOverrideDose(override?.override_dose_value ?? formatNoaelDisplay(row));
     setOverrideRationale(override?.rationale ?? "");
     setOpen(true);
   }, [override, row]);
@@ -191,11 +188,12 @@ function NoaelSexRow({
     if (!overrideRationale.trim()) return;
     const selectedOption = doseOptions.find((d) => d.label === overrideDose);
     const isNotEstablished = overrideDose === "Not established";
-    const currentDoseValue = `${row.noael_dose_value} ${row.noael_dose_unit}`;
+    const currentDoseValue = formatNoaelDisplay(row);
+    const currentLevel = row.noael_dose_level ?? -1;
     const overrideType: NoaelOverride["override_type"] =
       isNotEstablished ? "not_established"
       : overrideDose === currentDoseValue ? "agree"
-      : (selectedOption?.level ?? 0) > row.noael_dose_level ? "higher"
+      : (selectedOption?.level ?? 0) > currentLevel ? "higher"
       : "lower";
     onSave({
       sex: row.sex as NoaelOverride["sex"],

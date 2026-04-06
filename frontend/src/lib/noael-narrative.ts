@@ -15,8 +15,29 @@ export interface NoaelNarrative {
     effect_size: number | null;
     p_value: number | null;
   }[];
-  noael_basis: "adverse_findings" | "control_noael" | "not_established";
+  noael_basis: "adverse_findings" | "below_tested_range" | "not_established";
   mortality_context: string | null;
+}
+
+/**
+ * Canonical NOAEL display string. Distinguishes the three terminal states:
+ * - established → "<value> <unit>"
+ * - below_tested_range → "Not established (< <lowest tested dose>)"
+ *   (LOAEL = lowest active dose; NOAEL would be vehicle, which is not a
+ *   testable dose. Ref: EPA IRIS, OECD TG 407/408, Kale 2022.)
+ * - not_established → "Not established"
+ */
+export function formatNoaelDisplay(row: NoaelSummaryRow): string {
+  if (row.noael_dose_value != null) {
+    return `${row.noael_dose_value} ${row.noael_dose_unit ?? ""}`.trim();
+  }
+  if (row.noael_derivation?.method === "below_tested_range") {
+    const lowest = row.loael_label
+      ? formatDoseShortLabel(row.loael_label)
+      : "lowest tested dose";
+    return `Not established (< ${lowest})`;
+  }
+  return "Not established";
 }
 
 /**
@@ -69,14 +90,16 @@ export function generateNoaelNarrative(
   const noaelUnit = noaelRow.noael_dose_unit ?? "mg/kg/day";
   const loaelLabel = noaelRow.loael_label ? formatDoseShortLabel(noaelRow.loael_label) : `${loaelDoseLevel}`;
 
-  // Determine basis
+  // Determine basis. The backend distinguishes "below_tested_range" (LOAEL =
+  // lowest active dose, vehicle not a testable dose) from a hard
+  // "not_established" via noael_derivation.method.
   let basis: NoaelNarrative["noael_basis"];
-  if (noaelRow.noael_dose_level === 0) {
-    basis = "control_noael";
-  } else if (noaelRow.noael_dose_value == null) {
-    basis = "not_established";
-  } else {
+  if (noaelRow.noael_dose_value != null) {
     basis = "adverse_findings";
+  } else if (noaelRow.noael_derivation?.method === "below_tested_range") {
+    basis = "below_tested_range";
+  } else {
+    basis = "not_established";
   }
 
   // Total count before capping
@@ -109,11 +132,11 @@ export function generateNoaelNarrative(
         `These findings were adverse, treatment-related, and ${doseDepPhrase}. ` +
         `No adverse findings were observed at ${noaelDose} ${noaelUnit}.`;
       break;
-    case "control_noael":
+    case "below_tested_range":
       summary =
-        `The NOAEL could not be established above the control dose. ` +
+        `The NOAEL is below the lowest tested dose (${loaelLabel}). ` +
         `Adverse, treatment-related findings (${formatFindings(findingNames, totalFindingCount)}) ` +
-        `were observed at the lowest dose tested (${loaelLabel}).`;
+        `were observed at the lowest active dose; vehicle is not a testable dose of the test article.`;
       break;
     case "not_established":
       summary =

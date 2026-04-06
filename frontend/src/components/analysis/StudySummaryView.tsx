@@ -15,6 +15,7 @@ import { useDomains } from "@/hooks/useDomains";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import { generateStudyReport } from "@/lib/report-generator";
+import { formatNoaelDisplay } from "@/lib/noael-narrative";
 import { useValidationResults } from "@/hooks/useValidationResults";
 import { useAssayValidation } from "@/hooks/useAssayValidation";
 import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
@@ -777,11 +778,7 @@ function DetailsTab({
 
   // NOAEL / LOAEL from noaelData
   const combinedNoael = noaelData?.find(r => r.sex === "Combined");
-  const noaelLabel = combinedNoael
-    ? (combinedNoael.noael_dose_level === 0
-        ? "Control"
-        : `${combinedNoael.noael_dose_value} ${combinedNoael.noael_dose_unit}`)
-    : null;
+  const noaelLabel = combinedNoael ? formatNoaelDisplay(combinedNoael) : null;
   const noaelSexNote = (() => {
     if (!noaelData) return null;
     const mRow = noaelData.find(r => r.sex === "Male");

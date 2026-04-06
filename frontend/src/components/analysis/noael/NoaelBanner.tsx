@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 import { ConfidencePopover } from "../ScoreBreakdown";
-import { generateNoaelNarrative } from "@/lib/noael-narrative";
+import { generateNoaelNarrative, formatNoaelDisplay } from "@/lib/noael-narrative";
 import type { NoaelNarrative } from "@/lib/noael-narrative";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import type { NoaelOverride } from "@/types/annotations";
@@ -40,7 +40,7 @@ export function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: {
   const handleStartEdit = useCallback((sex: string, currentRow: NoaelSummaryRow) => {
     const existing = overrideAnnotations?.[`noael:${sex}`];
     setEditingSex(sex);
-    setOverrideDose(existing?.override_dose_value ?? `${currentRow.noael_dose_value} ${currentRow.noael_dose_unit}`);
+    setOverrideDose(existing?.override_dose_value ?? formatNoaelDisplay(currentRow));
     setOverrideRationale(existing?.rationale ?? "");
   }, [overrideAnnotations]);
 
@@ -48,11 +48,12 @@ export function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: {
     if (!overrideRationale.trim()) return;
     const selectedOption = doseOptions.find((d) => d.label === overrideDose);
     const isNotEstablished = overrideDose === "Not established";
-    const currentDoseValue = `${currentRow.noael_dose_value} ${currentRow.noael_dose_unit}`;
+    const currentDoseValue = formatNoaelDisplay(currentRow);
+    const currentLevel = currentRow.noael_dose_level ?? -1;
     const overrideType: NoaelOverride["override_type"] =
       isNotEstablished ? "not_established"
       : overrideDose === currentDoseValue ? "agree"
-      : (selectedOption?.level ?? 0) > currentRow.noael_dose_level ? "higher"
+      : (selectedOption?.level ?? 0) > currentLevel ? "higher"
       : "lower";
     saveMutation.mutate({
       entityKey: `noael:${sex}`,
@@ -137,11 +138,11 @@ export function NoaelBanner({ data, aeData, studyId, onFindingClick, pkData }: {
                       <>
                         {override.override_dose_value}
                         <span className="ml-1.5 text-[11px] text-muted-foreground line-through">
-                          {r.noael_dose_value} {r.noael_dose_unit}
+                          {formatNoaelDisplay(r)}
                         </span>
                       </>
                     ) : (
-                      <>{r.noael_dose_value} {r.noael_dose_unit}</>
+                      <>{formatNoaelDisplay(r)}</>
                     )}
                   </span>
                 </div>
