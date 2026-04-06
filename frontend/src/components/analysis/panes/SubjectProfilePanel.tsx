@@ -7,6 +7,9 @@ import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
 import { cn } from "@/lib/utils";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { useTimecourseGroup } from "@/hooks/useTimecourse";
+import type { TimecourseResponse } from "@/types/timecourse";
+import { ci95Half } from "@/lib/stats-utils";
 import {
   isNormalFinding,
   isUnscheduledDeath,
@@ -354,11 +357,58 @@ function ConcordancePane({ points, endpoints }: { points: OrganScatterPoint[]; e
 
 // ─── BW Sparkline (§1) ──────────────────────────────────
 
-function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
+interface GroupPoint { day: number; mean: number; sd: number; n: number; ciLower: number; ciUpper: number }
+interface GroupSeries { points: GroupPoint[]; label: string }
+
+function buildGroupSeries(data: TimecourseResponse, sex: string): Record<number, GroupSeries> {
+  const result: Record<number, GroupSeries> = {};
+  for (const tp of data.timepoints) {
+    for (const g of tp.groups) {
+      if (g.sex !== sex) continue;
+      const half = ci95Half(g.sd, g.n);
+      if (!result[g.dose_level]) result[g.dose_level] = { points: [], label: g.dose_label };
+      result[g.dose_level].points.push({
+        day: tp.day,
+        mean: g.mean,
+        sd: g.sd,
+        n: g.n,
+        ciLower: g.mean - half,
+        ciUpper: g.mean + half,
+      });
+    }
+  }
+  for (const key of Object.keys(result)) {
+    result[Number(key)].points.sort((a, b) => a.day - b.day);
+  }
+  return result;
+}
+
+function BWSparkline({ measurements, studyId, sex, doseLevel }: {
+  measurements: SubjectMeasurement[];
+  studyId: string;
+  sex: string;
+  doseLevel: number;
+}) {
   const sorted = useMemo(
     () => [...measurements].sort((a, b) => a.day - b.day),
     [measurements]
   );
+
+  const { data: groupData } = useTimecourseGroup(studyId, "BW", "BW", sex as "M" | "F", true);
+  const terminalDay = groupData?.terminal_sacrifice_day ?? null;
+
+  const groupSeries = useMemo(
+    () => groupData ? buildGroupSeries(groupData, sex) : null,
+    [groupData, sex]
+  );
+
+  // Legend filter state: which series are hidden
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggle = (key: string) => setHidden(prev => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
 
   if (sorted.length < 2) {
     return (
@@ -370,81 +420,176 @@ function BWSparkline({ measurements }: { measurements: SubjectMeasurement[] }) {
     );
   }
 
-  const values = sorted.map((m) => m.value);
-  const minV = Math.min(...values);
-  const maxV = Math.max(...values);
-  const range = maxV - minV || 1;
+  // Only show control (0) + subject's own dose group
+  const doseLevels = groupSeries
+    ? Object.keys(groupSeries).map(Number).filter(dl => dl === 0 || dl === doseLevel).sort((a, b) => a - b)
+    : [];
 
-  const W = 200;
-  const H = 50;
-  const PAD = 4;
-  const dayMin = sorted[0].day;
-  const dayMax = sorted[sorted.length - 1].day;
+  // Collect Y values from subject + visible group CI bounds (clipped to terminal sacrifice)
+  const subjectValues = sorted.map((m) => m.value);
+  let allYValues = [...subjectValues];
+  if (groupSeries) {
+    for (const dl of doseLevels) {
+      if (hidden.has(`group-${dl}`)) continue;
+      const gs = groupSeries[dl];
+      if (!gs) continue;
+      for (const p of gs.points) {
+        if (terminalDay != null && p.day > terminalDay) continue;
+        allYValues.push(p.ciUpper, p.ciLower);
+      }
+    }
+  }
+  const minV = Math.min(...allYValues);
+  const maxV = Math.max(...allYValues);
+  const yPad5 = (maxV - minV) * 0.05 || 1;
+  const yMin = minV - yPad5;
+  const yMax = maxV + yPad5;
+  const yRange = yMax - yMin;
+
+  // X-axis: subject days only (group lines connect at matching days)
+  const allDays = sorted.map((m) => m.day);
+  const dayMin = allDays[0];
+  const dayMax = allDays[allDays.length - 1];
   const dayRange = dayMax - dayMin || 1;
 
+  const W = 280;
+  const H = 100;
+  const PAD = 6;
+
+  const xScale = (d: number) => PAD + ((d - dayMin) / dayRange) * (W - 2 * PAD);
+  const yScale = (v: number) => H - PAD - ((v - yMin) / yRange) * (H - 2 * PAD);
+
+  const subjectColor = getDoseGroupColor(doseLevel);
   const coords = sorted.map((m) => ({
-    x: PAD + ((m.day - dayMin) / dayRange) * (W - 2 * PAD),
-    y: H - PAD - ((m.value - minV) / range) * (H - 2 * PAD),
+    x: xScale(m.day),
+    y: yScale(m.value),
     day: m.day,
     value: m.value,
     unit: m.unit,
   }));
-
   const polylinePoints = coords.map((c) => `${c.x},${c.y}`).join(" ");
-  const color = "var(--color-muted-foreground)";
+
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
 
-  // Peak detection: show label if peak > 10% above both first and last
-  const peakIdx = values.indexOf(maxV);
-  const showPeak =
-    peakIdx > 0 &&
-    peakIdx < sorted.length - 1 &&
-    maxV > first.value * 1.1 &&
-    maxV > last.value * 1.1;
+  // Detect whether subject extends into recovery
+  const hasRecovery = terminalDay != null && dayMax > terminalDay;
+
+  // Build legend entries: group lines only
+  const legendEntries: { key: string; label: string; color: string }[] = [];
+  for (const dl of doseLevels) {
+    const gs = groupSeries?.[dl];
+    if (!gs) continue;
+    legendEntries.push({
+      key: `group-${dl}`,
+      label: `${dl === 0 ? "Control" : gs.label} mean`,
+      color: getDoseGroupColor(dl),
+    });
+  }
 
   return (
     <div>
       <div className="mb-0.5 text-xs font-medium">Body weight</div>
+      {/* Legend with filter toggles */}
+      {legendEntries.length > 0 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mb-1">
+          {legendEntries.map(({ key, label, color }) => (
+            <button
+              key={key}
+              className="flex items-center gap-1 text-[10px] cursor-pointer"
+              style={{ color: hidden.has(key) ? "var(--color-muted-foreground)" : undefined, opacity: hidden.has(key) ? 0.4 : 1 }}
+              onClick={() => toggle(key)}
+            >
+              <span
+                className="inline-block w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: color, opacity: hidden.has(key) ? 0.3 : 1 }}
+              />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <span className="font-mono text-[11px] text-muted-foreground">
           {first.value}
         </span>
-        <svg width={W} height={H} className="shrink-0">
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W }} className="shrink-0">
+          {/* Terminal sacrifice reference line (when subject extends into recovery) */}
+          {hasRecovery && (
+            <line
+              x1={xScale(terminalDay!)} y1={PAD}
+              x2={xScale(terminalDay!)} y2={H - PAD}
+              stroke="var(--color-muted-foreground)"
+              strokeWidth={0.75}
+              strokeDasharray="3,2"
+              opacity={0.5}
+            />
+          )}
+          {/* Layer 1: CI bands (faintest) — clipped to terminal sacrifice */}
+          {groupSeries && doseLevels.map((dl) => {
+            if (hidden.has(`group-${dl}`)) return null;
+            const gs = groupSeries[dl];
+            if (!gs || gs.points.length < 2) return null;
+            const clipped = terminalDay != null ? gs.points.filter(p => p.day <= terminalDay) : gs.points;
+            const withCI = clipped.filter(p => p.ciLower !== p.ciUpper);
+            if (withCI.length < 2) return null;
+            const bandUp = withCI.map(p => `${xScale(p.day)},${yScale(p.ciUpper)}`).join(" L ");
+            const bandDn = [...withCI].reverse().map(p => `${xScale(p.day)},${yScale(p.ciLower)}`).join(" L ");
+            return (
+              <path
+                key={`ci-${dl}`}
+                d={`M ${bandUp} L ${bandDn} Z`}
+                fill={getDoseGroupColor(dl)}
+                opacity={0.10}
+              />
+            );
+          })}
+          {/* Layer 2: Group mean lines — clipped to terminal sacrifice */}
+          {groupSeries && doseLevels.map((dl) => {
+            if (hidden.has(`group-${dl}`)) return null;
+            const gs = groupSeries[dl];
+            if (!gs || gs.points.length < 2) return null;
+            const clipped = terminalDay != null ? gs.points.filter(p => p.day <= terminalDay) : gs.points;
+            if (clipped.length < 2) return null;
+            const points = clipped.map(p => `${xScale(p.day)},${yScale(p.mean)}`).join(" ");
+            return (
+              <polyline
+                key={`group-${dl}`}
+                points={points}
+                fill="none"
+                stroke={getDoseGroupColor(dl)}
+                strokeWidth={dl === doseLevel ? 1.0 : 0.75}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={0.85}
+              >
+                <title>{gs.label} mean</title>
+              </polyline>
+            );
+          })}
+          {/* Layer 3: Subject trace (strongest) */}
           <polyline
             points={polylinePoints}
             fill="none"
-            stroke={color}
-            strokeWidth={1.5}
+            stroke={subjectColor}
+            strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Point dots with hover tooltips */}
+          {/* Layer 4: Subject dots */}
           {coords.map((c, i) => (
             <circle
               key={i}
               cx={c.x}
               cy={c.y}
-              r={2}
-              fill="white"
-              stroke={color}
-              strokeWidth={1}
+              r={2.5}
+              fill={subjectColor}
+              stroke="white"
+              strokeWidth={1.5}
             >
-              <title>{`Day ${c.day} — ${c.value} ${c.unit}`}</title>
+              <title>{`Day ${c.day} -- ${c.value} ${c.unit}`}</title>
             </circle>
           ))}
-          {/* Peak label */}
-          {showPeak && (
-            <text
-              x={coords[peakIdx].x}
-              y={coords[peakIdx].y - 5}
-              textAnchor="middle"
-              className="fill-muted-foreground"
-              style={{ fontSize: 9, fontFamily: "monospace" }}
-            >
-              {sorted[peakIdx].value}
-            </text>
-          )}
         </svg>
         <span className="font-mono text-[11px] text-muted-foreground">
           {last.value} {last.unit}
@@ -1131,7 +1276,7 @@ function SubjectProfileContent({
           <CollapsiblePane title="Measurements" defaultOpen expandAll={expandGen} collapseAll={collapseGen}>
             {bw.length > 0 && (
               <div className="mb-3">
-                <BWSparkline measurements={bw} />
+                <BWSparkline measurements={bw} studyId={studyId!} sex={profile.sex} doseLevel={profile.dose_level} />
               </div>
             )}
             {lb.length > 0 && (

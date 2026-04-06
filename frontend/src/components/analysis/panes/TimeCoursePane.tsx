@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTimeCourseData } from "@/hooks/useTimeCourseData";
+import { ci95Half } from "@/lib/stats-utils";
 import type { TimeCourseSeriesData, RawGroupPoint } from "@/hooks/useTimeCourseData";
 import { useClinicalObservations } from "@/hooks/useClinicalObservations";
 import { useTimecourseSubject } from "@/hooks/useTimecourse";
@@ -52,26 +53,6 @@ const ALLOWED_DOMAINS = new Set(["BW", "LB", "FW", "BG", "EG", "VS"]);
 // ── Plot layout constants ─────────────────────────────────
 
 const PLOT_AREA = { left: 8, top: 4, width: 182, height: 122 } as const;
-
-// ── 95% CI helper ────────────────────────────────────────
-
-/** 95% CI half-width: t(0.025, n-1) × SD/√n.
- *  Uses t-approximation for small n; falls back to 1.96 for n≥30. */
-function ci95Half(sd: number, n: number): number {
-  if (n < 2 || sd <= 0) return 0;
-  // Approximate t-critical for common small n values in tox studies
-  const tCrit = n >= 30 ? 1.96
-    : n >= 20 ? 2.09
-    : n >= 15 ? 2.14
-    : n >= 10 ? 2.26
-    : n >= 8 ? 2.36
-    : n >= 6 ? 2.57
-    : n >= 5 ? 2.78
-    : n >= 4 ? 3.18
-    : n >= 3 ? 4.30
-    : 12.71; // n=2
-  return tCrit * sd / Math.sqrt(n);
-}
 
 // ── Transform series by Y-axis mode ──────────────────────
 
