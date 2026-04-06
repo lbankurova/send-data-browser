@@ -92,7 +92,7 @@ def _resolve_species_category(species: str | None) -> str:
         return "rat"
     if "MOUSE" in s or "MICE" in s:
         return "mouse"
-    if "DOG" in s or "BEAGLE" in s or "MONGREL" in s:
+    if "DOG" in s or "BEAGLE" in s or "MONGREL" in s or "CANINE" in s:
         return "dog"
     return "other"
 

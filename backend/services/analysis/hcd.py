@@ -231,6 +231,8 @@ def assess_a3(
     route: str | None = None,
     vehicle: str | None = None,
     control_group_mean: float | None = None,
+    species: str | None = None,
+    age_months: float | None = None,
 ) -> dict:
     """Assess A-3 factor: is the treated-group mean within HCD range?
 
@@ -254,11 +256,19 @@ def assess_a3(
     if treated_group_mean is None:
         return {"result": "no_hcd", "score": 0.0, "detail": "No treated-group mean available"}
 
+    organ_key = _resolve_specimen(specimen)
+
+    # Dog (non-rodent) path: age-based HCD lookup
+    if _is_dog_species(species):
+        return _assess_a3_dog(
+            treated_group_mean, organ_key, sex, strain,
+            duration_days, age_months,
+            control_group_mean=control_group_mean,
+        )
+
     dur_cat = _duration_to_category(duration_days)
     if not dur_cat:
         return {"result": "no_hcd", "score": 0.0, "detail": f"Duration {duration_days}d outside HCD coverage"}
-
-    organ_key = _resolve_specimen(specimen)
 
     # Try SQLite first (Phase 2)
     sqlite_db = _load_sqlite_db()
@@ -293,6 +303,112 @@ def assess_a3(
     )
     out = {"result": result, "score": score, "detail": detail}
     _check_control_vs_hcd(out, control_group_mean, hcd.lower, hcd.upper, hcd.mean, hcd.sd)
+    return out
+
+
+def _is_dog_species(species: str | None) -> bool:
+    """Check if the species string indicates dog/beagle.
+
+    Delegates to the canonical species resolver to avoid split-brain
+    recognition (CANINE vs MONGREL etc.).
+    """
+    from services.analysis.organ_thresholds import _resolve_species_category
+    return _resolve_species_category(species) == "dog"
+
+
+_DEFAULT_DOG_START_AGE_MONTHS = 6.0  # standard beagle subchronic start age
+
+
+def _estimate_dog_age_months(duration_days: int | None, age_months: float | None) -> float:
+    """Estimate terminal age in months for a dog study.
+
+    If age_months is provided, it is the terminal age (AGELO + duration,
+    pre-computed by the caller). Otherwise estimate from default start
+    age (6 months for beagle subchronic) + study duration.
+    """
+    if age_months is not None:
+        return age_months
+    duration_months = (duration_days / 30.0) if duration_days else 0.0
+    return _DEFAULT_DOG_START_AGE_MONTHS + duration_months
+
+
+def _assess_a3_dog(
+    treated_group_mean: float,
+    organ_key: str,
+    sex: str,
+    strain: str | None,
+    duration_days: int | None,
+    age_months: float | None,
+    *,
+    control_group_mean: float | None = None,
+) -> dict:
+    """A-3 assessment for dog studies using age-based HCD lookup."""
+    sqlite_db = _load_sqlite_db()
+    if sqlite_db is None:
+        return {"result": "no_hcd", "score": 0.0, "detail": "HCD database not available"}
+
+    resolved = sqlite_db.resolve_strain(strain) if strain else sqlite_db.resolve_strain("BEAGLE")
+    if not resolved:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"Dog strain '{strain}' not in HCD database"}
+
+    terminal_age = _estimate_dog_age_months(duration_days, age_months)
+
+    hcd = sqlite_db.query_by_age(resolved, sex, terminal_age, organ_key)
+    if not hcd:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"No dog HCD for {organ_key}/{sex} (age ~{terminal_age:.1f}mo)"}
+
+    # Use sd_inflated when study_count < 3 (single-source HCD)
+    sd = hcd["sd"]
+    study_count = hcd.get("study_count", 1)
+    if study_count < 3 and hcd.get("sd_inflated"):
+        sd = hcd["sd_inflated"]
+        hcd["lower"] = round(hcd["mean"] - 2 * sd, 6)
+        hcd["upper"] = round(hcd["mean"] + 2 * sd, 6)
+
+    within = hcd["lower"] <= treated_group_mean <= hcd["upper"]
+    result_str = "within_hcd" if within else "outside_hcd"
+    score = -0.5 if within else 0.5
+
+    age_matched = hcd.get("age_matched", terminal_age)
+    age_gap = hcd.get("age_gap", 0.0)
+    n = hcd.get("n", 0)
+    source = hcd.get("source", "CHOI2011")
+    confidence = hcd.get("confidence", "MODERATE")
+
+    detail = (
+        f"Treated mean {treated_group_mean:.3f} vs dog HCD "
+        f"[{hcd['lower']:.3f}, {hcd['upper']:.3f}] "
+        f"(ref: {hcd['mean']:.4f}+/-{sd:.4f}, n={n}, {source}, "
+        f"age-matched to {age_matched:.0f}mo"
+    )
+    if age_gap > 0:
+        detail += f", age gap: {age_gap:.1f}mo"
+    detail += ")"
+
+    # Age gap caveat
+    if age_gap > 3:
+        detail += " WARNING: age gap >3 months -- HCD match confidence reduced"
+        confidence = "LOW"
+
+    out: dict = {
+        "result": result_str,
+        "score": score,
+        "detail": detail,
+        "domain": "OM",
+        "n": n,
+        "study_count": study_count,
+        "source": source,
+        "confidence": confidence,
+        "age_matched": age_matched,
+        "age_gap": age_gap,
+    }
+
+    # Control vs HCD check
+    _check_control_vs_hcd(out, control_group_mean, hcd["lower"], hcd["upper"],
+                          hcd["mean"], sd)
+
     return out
 
 

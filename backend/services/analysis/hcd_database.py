@@ -231,6 +231,47 @@ class HcdSqliteDB:
             "study_count": study_count,
         }
 
+    def query_by_age(
+        self,
+        strain: str,
+        sex: str,
+        age_months: float,
+        organ: str,
+    ) -> dict | None:
+        """Look up HCD aggregate by nearest age stratum (for non-rodent species).
+
+        Returns dict compatible with query() output, plus:
+          age_matched: the age_months of the matched stratum
+          age_gap: absolute difference in months between requested and matched
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+
+        sex_upper = sex.strip().upper()
+        organ_upper = organ.strip().upper()
+
+        rows = conn.execute(
+            """SELECT * FROM hcd_aggregates
+               WHERE strain = ? AND sex = ? AND organ = ?
+               AND age_months IS NOT NULL
+               ORDER BY ABS(age_months - ?)
+               LIMIT 1""",
+            (strain, sex_upper, organ_upper, age_months),
+        ).fetchone()
+
+        if rows is None:
+            return None
+
+        result = self._row_to_dict(rows)
+        matched_age = rows["age_months"]
+        result["age_matched"] = matched_age
+        result["age_gap"] = round(abs(age_months - matched_age), 1)
+        result["source"] = rows["source"] if "source" in rows.keys() else f"sqlite:{strain}"
+        result["confidence"] = rows["confidence"] if "confidence" in rows.keys() else None
+        result["sd_inflated"] = rows["sd_inflated"] if "sd_inflated" in rows.keys() else None
+        return result
+
     def percentile_rank(
         self,
         value: float,

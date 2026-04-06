@@ -25,6 +25,45 @@ from services.analysis.normalization import (
 from services.analysis.ancova import ancova_from_dose_groups
 from services.analysis.day_utils import mode_day
 from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
+from services.analysis.organ_thresholds import get_species, _resolve_species_category
+
+
+# Dog organs with CV > 20% where percentage thresholds are unreliable (Choi 2011).
+# Maps organ -> approximate CV description for the alert message.
+_DOG_HIGH_CV_ORGANS_ALL: dict[str, str] = {
+    "PROSTATE": "CV > 60%",
+    "OVARIES": "CV > 60%",
+    "UTERUS": "CV > 60%",
+    "THYMUS": "CV > 25%",
+    "TESTES": "CV > 20%",
+}
+_DOG_HIGH_CV_ORGANS_FEMALE: dict[str, str] = {
+    "LIVER": "CV > 20%",
+    "KIDNEY": "CV > 20%",
+}
+
+
+def _get_threshold_reliability(
+    specimen: str, sex: str, species_cat: str | None,
+) -> dict | None:
+    """Return threshold_reliability alert for high-CV dog organs, or None."""
+    if species_cat != "dog":
+        return None
+    spec_upper = specimen.strip().upper()
+    is_female = sex.strip().upper() == "F"
+    if spec_upper in _DOG_HIGH_CV_ORGANS_ALL:
+        cv_desc = _DOG_HIGH_CV_ORGANS_ALL[spec_upper]
+        return {
+            "level": "low",
+            "message": f"{cv_desc} in beagle -- ANCOVA recommended over percentage thresholds",
+        }
+    if is_female and spec_upper in _DOG_HIGH_CV_ORGANS_FEMALE:
+        cv_desc = _DOG_HIGH_CV_ORGANS_FEMALE[spec_upper]
+        return {
+            "level": "low",
+            "message": f"{cv_desc} in female beagle -- ANCOVA recommended over percentage thresholds",
+        }
+    return None
 
 
 def _compute_metric_stats(
@@ -99,6 +138,10 @@ def compute_om_findings(
     """Compute findings from OM domain (organ weights)."""
     if "om" not in study.xpt_files:
         return []
+
+    # Extract species for threshold reliability alerts
+    raw_species = get_species(study)
+    species_cat = _resolve_species_category(raw_species)
 
     om_pl = read_xpt_as_polars(study.xpt_files["om"])
     subs = subjects_to_polars(subjects)
@@ -421,5 +464,10 @@ def compute_om_findings(
             "ancova": ancova_dict,
             "alternatives": alternatives if alternatives else None,
         })
+
+        # Add threshold reliability alert for high-CV dog organs
+        reliability = _get_threshold_reliability(str(specimen), str(sex), species_cat)
+        if reliability:
+            findings[-1]["threshold_reliability"] = reliability
 
     return findings

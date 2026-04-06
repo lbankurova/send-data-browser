@@ -1,3 +1,4 @@
+2026-04-06T15:30:00	implement	COMPLETED	dog-organ-weight-hcd	phases:4/4 deviations:5(all justified) deferred:3(AGELO,frontend-display,validation)	Dog organ weight thresholds (10 organs), Choi 2011 HCD (75 rows, schema migration), age-based lookup path, threshold reliability alerts
 2026-04-06T10:00:00	implement	COMPLETED	evidence-quality-tier-unification	phases:5/5 deviations:2(justified) deferred:0	Grade+concordance on target_organ_summary, type shadow fix, frontend indicator in OrganRailMode, field contracts
 2026-04-05T09:45:00	review	PASS	bc5aae5f	files:4 deviations:0 deferred:0	LOO small-N qualifier at N<10 (GAP-188). Architect SIMPLIFY items resolved (constants exported, tooltip unified).
 2026-04-04T23:00:00	ship-cycle	COMPLETED	brain-weight-sex-concordance-calibration	Split BRAIN band into BRAIN_WEIGHT(1.5/0.3), BRAIN_ENZYME(1.8/0.5), BRAIN residual(1.2/1.5). Domain-aware routing via refineBrain(). 129 tests pass. Spec archived.
@@ -160,3 +161,5 @@
 2026-04-06T00:00:00	review	PASS	5d5d30fc	files:4 deviations:3(justified) deferred:0	BW sparkline group context: mean lines + CI bands + legend + ci95Half extraction
 2026-04-06T12:00:00	implement	COMPLETED	outlier-sentinel-animal-identification	phases:6/6 deviations:3(justified) deferred:0	Qn+Hamada stats, subject_sentinel.py generator (4 layers), API route, TS types+hook, scatter+rail overlays, field contracts
 2026-04-06T10:15:00	implement	COMPLETED	loo-influence-metric-redesign-synthesis	phases:5/5 deviations:2(justified) deferred:0	mean_instability replaces pct_destabilising, per-dose vector, adaptive p90 threshold, scatter dot-size encoding, per-dose dumbbell
+2026-04-06T17:05:00	build-cycle	COMPLETED	loo-influence-metric-redesign	Committed 5c1404c8. mean_instability replaces pct_destabilising, per-dose vector (GAP-189), adaptive p90 threshold, dot-size encoding. Frontend in 701a5c7c. GAP-207+GAP-189 RESOLVED.
+2026-04-06T15:10:00	review	PASS	de73850d	files:7 deviations:3(justified) deferred:0	Sentinel review: shared helper extracted, dead param removed, 29 tests added, LOO backend committed, IMMUNOMOD correctness fix, guardrails hotspot documented

@@ -992,11 +992,13 @@ def _compute_a3_for_om(
     *,
     route: str | None = None,
     vehicle: str | None = None,
+    species: str | None = None,
 ) -> dict:
     """Compute A-3 (HCD) score for an OM finding.
 
     Compares the highest-dose group mean against the HCD reference range
-    for the matching strain/sex/duration/organ.
+    for the matching strain/sex/duration/organ. For dogs, uses age-based
+    lookup instead of duration-category.
     """
     from services.analysis.hcd import assess_a3
 
@@ -1012,7 +1014,8 @@ def _compute_a3_for_om(
     sex = finding.get("sex", "")
     return assess_a3(treated_mean, specimen, sex, strain, duration_days,
                      route=route, vehicle=vehicle,
-                     control_group_mean=control_mean)
+                     control_group_mean=control_mean,
+                     species=species)
 
 
 def _compute_a3_for_lb(
@@ -1146,7 +1149,8 @@ def assess_finding_with_context(
     a3_score = 0.0
     if domain == "OM":
         a3_result = _compute_a3_for_om(finding, strain, duration_days,
-                                        route=route, vehicle=vehicle)
+                                        route=route, vehicle=vehicle,
+                                        species=species)
         a3_score = a3_result["score"]
         finding["_hcd_assessment"] = a3_result
 
