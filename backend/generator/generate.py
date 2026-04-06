@@ -29,6 +29,7 @@ from generator.subject_syndromes import build_subject_syndromes
 from generator.onset_recovery import build_onset_days, build_recovery_verdicts
 from generator.noael_overlay import build_subject_noael_overlay
 from generator.animal_influence import build_animal_influence
+from generator.subject_sentinel import build_subject_sentinel
 from generator.subject_similarity import build_subject_similarity
 from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
@@ -425,6 +426,27 @@ def generate(study_id: str):
             print(f"  {n_animals} animals, {n_alarm} in alarm zone, LOO confidence: {animal_influence.get('loo_confidence')}")
         except Exception as e:
             print(f"  WARNING: Animal influence computation failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # Phase 1g3: Per-animal sentinel annotations (outlier + concordance)
+    if ctx_df is not None:
+        print("Phase 1g3: Computing per-animal sentinel annotations...")
+        try:
+            from services.analysis.compound_class import resolve_active_profile as _resolve_profile
+            _sentinel_profile = _resolve_profile(study_id)
+            sentinel = build_subject_sentinel(
+                findings, ctx_df, _dose_groups,
+                early_death_subjects=early_death_subjects,
+                compound_profile=_sentinel_profile,
+            )
+            _write_json(out_dir / "subject_sentinel.json", sentinel)
+            n_sent = len(sentinel.get("animals", []))
+            n_outlier = sum(1 for a in sentinel.get("animals", []) if a.get("n_outlier_flags", 0) > 0)
+            n_coc = sum(1 for a in sentinel.get("animals", []) if a.get("coc", 0) >= 2)
+            print(f"  {n_sent} animals, {n_outlier} with outlier flags, {n_coc} with COC>=2")
+        except Exception as e:
+            print(f"  WARNING: Subject sentinel computation failed: {e}")
             import traceback
             traceback.print_exc()
 

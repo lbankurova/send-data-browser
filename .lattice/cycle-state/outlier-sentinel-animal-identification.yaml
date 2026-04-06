@@ -1,0 +1,65 @@
+topic: outlier-sentinel-animal-identification
+title: "Outlier & Sentinel Animal Identification -- 4-Tier Method Stack"
+started: 2026-04-05
+phase: build-complete
+current_step: review
+synthesis_doc: docs/_internal/incoming/outlier-sentinel-animal-identification-synthesis.md
+synthesis_status: validated
+plan_review_r2:
+  verdict: CONDITIONAL (0 FLAWED)
+  all_r1_resolved: true
+  new_issues: 6 (2 should-fix incorporated, 2 one-liners incorporated, 2 informational)
+  doc: docs/_internal/research/peer-reviews/outlier-sentinel-animal-identification-synthesis-review-r2.md
+plan_review_r1:
+  verdict: CONDITIONAL
+  flawed: 0
+  conditional: 2
+  sound: 5
+  must_fix: 2
+  should_fix: 5
+  doc: docs/_internal/research/peer-reviews/outlier-sentinel-animal-identification-synthesis-review.md
+probe:
+  result: ALL_SAFE
+  breaks: 0
+  science_flags: 0
+  propagates: 4
+  safe: 6
+  note: Annotation-only constraint verified. No data path from sentinel to S10.
+architect_gate:
+  verdict: SIMPLIFY->APPLIED
+  science_flag: stress-heuristic revised to annotate instead of suppress (accepted, GAP-227 logged)
+  fixes: 3 (placement ref, shared helper extraction, POC threshold documentation)
+  doc: (inline in synthesis)
+research_doc: docs/_internal/research/outlier-sentinel-animal-identification.md
+research_status: validated (R1 + R2 peer review, R2 CONDITIONAL with 5 refinement conditions)
+peer_reviews:
+  research_r1: docs/_internal/research/peer-reviews/outlier-sentinel-animal-identification-review.md
+  research_r2_novel: docs/_internal/research/peer-reviews/outlier-sentinel-animal-identification-review-novel.md
+
+build:
+  status: complete
+  features_implemented:
+    - "F1: qn_scale() + hamada_studentized_residuals() in statistics.py"
+    - "F2: subject_sentinel.py generator module (626 LOC)"
+    - "F3: subject-sentinel added to VALID_VIEW_NAMES in analysis_views.py"
+    - "F4: SubjectSentinelData, SentinelAnimal, SentinelEndpointDetail types in analysis-views.ts"
+    - "F5: useSubjectSentinel hook + fetchSubjectSentinel API function"
+    - "F6: CohortInfluenceMap sentinel overlays + AnimalInfluencePanel SentinelSummary"
+    - "F7: BFIELD-111 through BFIELD-114 in field-contracts-index.md"
+  generator_verified: true
+  frontend_build: pass
+  tests: 1948/1949 pass (1 pre-existing HCD timeout)
+  architecture_doc: docs/_internal/architecture/subject-sentinel.md
+
+implementation_context:
+  already_implemented:
+    - "LOO stability: statistics.py:compute_loo_stability(), dunnett_pairwise(). Continuous multiplier on EndpointSummary.looStability."
+    - "Animal influence explorer: animal_influence.py. Per-animal mean_bio_z, pct_destabilising. CohortInfluenceMap scatter + dumbbell."
+    - "Subject similarity engine: subject_similarity.json. Gower distance, MDS, clustering."
+    - "LOO exclusion override: exclude animals, recompute pipeline."
+  design_constraints:
+    - "Sentinel = annotation-only at S01/S02 layer. MUST NOT modify S10 signal score."
+    - "LOO owns score modification for fragility. No double-penalization."
+    - "Generator modules: 500 LOC budget per module."
+    - "SVG-in-React for charts (not new chart libs). Follow BivarScatterChart pattern."
+    - "Local useState for state (not context extensions)."

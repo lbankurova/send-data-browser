@@ -768,3 +768,137 @@ def incidence_detection_limited(n_treat: int, n_ctrl: int) -> bool:
         return float(p) > 0.05
     except ValueError:
         return True
+
+
+# ─── Robust scale estimator ──────────────────────────────────────────────
+
+
+# Qn finite-sample correction factors d_n (Rousseeuw & Croux 1993, Table 1)
+_QN_DN: dict[int, float] = {
+    2: 0.3994, 3: 0.9939, 4: 0.5119, 5: 0.8440,
+    6: 0.6113, 7: 0.8574, 8: 0.6693, 9: 0.8728,
+}
+_QN_DN_ASYMPTOTIC = 2.2219
+
+
+def qn_scale(x: list[float]) -> float:
+    """Qn robust scale estimator (Rousseeuw & Croux 1993).
+
+    82% Gaussian efficiency vs MAD's 37%, same 50% breakdown point.
+    Returns scale estimate (analogous to SD). Returns 0.0 for N < 2.
+
+    Computes the k-th order statistic of all |x_i - x_j| pairwise
+    differences, where k = C(h, 2) and h = floor(N/2) + 1.
+    """
+    n = len(x)
+    if n < 2:
+        return 0.0
+
+    # All pairwise absolute differences
+    diffs = sorted(abs(x[i] - x[j]) for i in range(n) for j in range(i + 1, n))
+
+    h = n // 2 + 1
+    k = h * (h - 1) // 2  # C(h, 2)
+    # k is 1-indexed order statistic, diffs is 0-indexed
+    idx = min(k - 1, len(diffs) - 1)
+    raw = diffs[idx]
+
+    d_n = _QN_DN.get(n, _QN_DN_ASYMPTOTIC)
+    return raw * d_n
+
+
+# ─── Hamada dose-response studentized residuals ──────────────────────────
+
+
+def hamada_studentized_residuals(
+    groups: dict[int, list[float]],
+    dose_levels: list[int],
+) -> dict[tuple[int, int], float]:
+    """Dose-response studentized residuals per Hamada et al. 1998.
+
+    Fits linear regression across all dose groups pooled. Returns
+    per-animal externally studentized residuals (leave-one-out variance).
+
+    When Brown-Forsythe rejects variance homogeneity (p < 0.05) AND N >= 10,
+    falls back to within-group residuals. At N < 10, ALWAYS uses within-group
+    residuals (Brown-Forsythe has <25% power at N=5, Gastwirth 2009).
+
+    Returns dict mapping (dose_level, animal_index) -> studentized residual.
+    """
+    total_n = sum(len(v) for v in groups.values())
+
+    # At N < 10 per group, always use within-group residuals
+    use_within_group = any(len(v) < 10 for v in groups.values() if v)
+
+    if not use_within_group and total_n >= 10:
+        # Brown-Forsythe test for variance homogeneity
+        ordered_groups = [groups[dl] for dl in dose_levels if dl in groups and len(groups[dl]) >= 2]
+        if len(ordered_groups) >= 2:
+            try:
+                _, bf_p = stats.levene(*ordered_groups, center='median')
+                if bf_p < 0.05:
+                    use_within_group = True
+            except Exception:
+                use_within_group = True
+
+    result: dict[tuple[int, int], float] = {}
+
+    if use_within_group:
+        # Within-group studentized residuals
+        for dl in dose_levels:
+            vals = groups.get(dl, [])
+            if len(vals) < 3:
+                for i in range(len(vals)):
+                    result[(dl, i)] = 0.0
+                continue
+            arr = np.array(vals, dtype=float)
+            mean = np.mean(arr)
+            for i, v in enumerate(vals):
+                # Leave-one-out variance
+                loo = np.delete(arr, i)
+                loo_var = np.var(loo, ddof=1)
+                if loo_var > 0:
+                    result[(dl, i)] = float((v - mean) / np.sqrt(loo_var))
+                else:
+                    result[(dl, i)] = 0.0
+    else:
+        # Pooled regression: Y ~ dose_level (linear)
+        all_x = []
+        all_y = []
+        animal_map: list[tuple[int, int]] = []  # (dose_level, index)
+        for dl in dose_levels:
+            vals = groups.get(dl, [])
+            for i, v in enumerate(vals):
+                all_x.append(float(dl))
+                all_y.append(v)
+                animal_map.append((dl, i))
+
+        if len(all_x) < 3:
+            return {key: 0.0 for key in animal_map}
+
+        x_arr = np.array(all_x)
+        y_arr = np.array(all_y)
+        n = len(x_arr)
+
+        # OLS fit: y = a + b*x
+        x_mean = np.mean(x_arr)
+        y_mean = np.mean(y_arr)
+        ss_xx = np.sum((x_arr - x_mean) ** 2)
+        if ss_xx == 0:
+            return {key: 0.0 for key in animal_map}
+        b = np.sum((x_arr - x_mean) * (y_arr - y_mean)) / ss_xx
+        a = y_mean - b * x_mean
+
+        residuals = y_arr - (a + b * x_arr)
+        hat = 1.0 / n + (x_arr - x_mean) ** 2 / ss_xx
+        mse = np.sum(residuals ** 2) / (n - 2) if n > 2 else 1.0
+
+        for j, (dl, idx) in enumerate(animal_map):
+            # Externally studentized: leave-one-out variance
+            h_j = hat[j]
+            e_j = residuals[j]
+            loo_mse = ((n - 2) * mse - e_j ** 2 / (1 - h_j)) / (n - 3) if n > 3 and (1 - h_j) > 1e-10 else mse
+            denom = np.sqrt(max(loo_mse * (1 - h_j), 1e-10))
+            result[(dl, idx)] = float(e_j / denom)
+
+    return result

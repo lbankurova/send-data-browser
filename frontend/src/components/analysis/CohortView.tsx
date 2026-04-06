@@ -19,6 +19,7 @@ import { useSubjectSyndromes } from "@/hooks/useSubjectSyndromes";
 import { useOnsetDays } from "@/hooks/useOnsetDays";
 import { useRecoveryVerdicts } from "@/hooks/useRecoveryVerdicts";
 import { useAnimalInfluence } from "@/hooks/useAnimalInfluence";
+import { useSubjectSentinel } from "@/hooks/useSubjectSentinel";
 import { useSubjectSimilarity } from "@/hooks/useSubjectSimilarity";
 import { useCallback, useState } from "react";
 import { TabButton } from "@/components/ui/TabBar";
@@ -35,6 +36,7 @@ export function CohortView() {
   const { data: onsetDaysData } = useOnsetDays(studyId);
   const { data: recoveryVerdictsData } = useRecoveryVerdicts(studyId);
   const { data: influenceData } = useAnimalInfluence(studyId);
+  const { data: sentinelData } = useSubjectSentinel(studyId);
   const { data: similarityData } = useSubjectSimilarity(studyId);
   const [activeTab, setActiveTab] = useState<CohortTab>("subjects");
   const [topMode, setTopMode] = useState<TopPanelMode>("similarity");
@@ -118,13 +120,16 @@ export function CohortView() {
                     doseGroups={cohort.doseGroups}
                     selectedAnimal={selectedInfluenceAnimal}
                     onAnimalSelect={setSelectedInfluenceAnimal}
+                    sentinelData={sentinelData}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <AnimalInfluencePanel
                     data={influenceData}
+                    doseGroups={cohort.doseGroups}
                     selectedAnimal={selectedInfluenceAnimal}
                     onEndpointClick={handleEndpointClick}
+                    sentinelData={sentinelData}
                   />
                 </div>
               </>

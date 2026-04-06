@@ -10,8 +10,12 @@ import type {
   AnimalInfluenceData,
   AnimalInfluenceSummary,
   AnimalEndpointDetail,
+  SubjectSentinelData,
+  SentinelAnimal,
 } from "@/types/analysis-views";
+import type { DoseGroup } from "@/types/analysis";
 import { shortId } from "@/lib/chart-utils";
+import { getDoseLabel } from "@/lib/dose-label-utils";
 
 // ── Constants ─────────────────────────────────────────────────
 
@@ -29,14 +33,18 @@ type SortKey = "alarm" | "bio" | "instability" | "name";
 
 export interface AnimalInfluencePanelProps {
   data: AnimalInfluenceData;
+  doseGroups: DoseGroup[];
   selectedAnimal: string | null;
   onEndpointClick?: (endpointId: string, subjectId: string) => void;
+  sentinelData?: SubjectSentinelData;
 }
 
 export function AnimalInfluencePanel({
   data,
+  doseGroups,
   selectedAnimal,
   onEndpointClick,
+  sentinelData,
 }: AnimalInfluencePanelProps) {
   const [sortKey, setSortKey] = useState<SortKey>("alarm");
   const [showAll, setShowAll] = useState(false);
@@ -46,6 +54,11 @@ export function AnimalInfluencePanel({
   const animal: AnimalInfluenceSummary | undefined = useMemo(
     () => data.animals.find((a) => a.subject_id === selectedAnimal),
     [data.animals, selectedAnimal],
+  );
+
+  const sentinel: SentinelAnimal | undefined = useMemo(
+    () => sentinelData?.animals.find((a) => a.subject_id === selectedAnimal),
+    [sentinelData, selectedAnimal],
   );
 
   const details: AnimalEndpointDetail[] = useMemo(() => {
@@ -126,6 +139,17 @@ export function AnimalInfluencePanel({
       {/* Header */}
       <div className="shrink-0 px-3 pt-2 pb-1">
         <AnimalHeader animal={animal} />
+
+        {/* Per-dose stability breakdown */}
+        {Object.keys(animal.instability_by_dose).length > 0 && (
+          <PerDoseBreakdown animal={animal} doseGroups={doseGroups} />
+        )}
+
+        {/* Sentinel annotations */}
+        {sentinel && (sentinel.n_outlier_flags > 0 || sentinel.coc > 0 || sentinel.n_sole_findings > 0 || sentinel.disposition || sentinel.stress_flag) && (
+          <SentinelSummary sentinel={sentinel} />
+        )}
+
         <div className="mt-1 flex items-center gap-2">
           <span className="text-[10px] text-muted-foreground">
             {details.length} of {animal.n_endpoints_total} measured endpoints
@@ -246,7 +270,7 @@ function DumbbellRow({
   onDotEnter: (text: string, e: React.MouseEvent) => void;
   onDotLeave: () => void;
 }) {
-  const { bio_norm, instability, bio_z_raw, loo_ratio, loo_dose_group, is_control_side } = detail;
+  const { bio_norm, instability, bio_z_raw, worst_ratio, loo_dose_group, is_control_side } = detail;
 
   const bioX = bio_norm != null ? `${bio_norm}%` : null;
   const instX = instability != null ? `${instability}%` : null;
@@ -268,7 +292,7 @@ function DumbbellRow({
   const leverageOnly = bio_norm != null && bio_norm < 10 && instability != null && instability > 0;
 
   const bioTooltip = `Within-group |z|: ${bio_z_raw?.toFixed(2) ?? "N/A"} (normalised: ${bio_norm ?? "N/A"})`;
-  const instTooltip = `Signal instability: ${instability ?? "N/A"}% (LOO ratio ${loo_ratio?.toFixed(3) ?? "N/A"}, ${loo_dose_group ?? "?"} vs control)${is_control_side ? " (control-side)" : ""}`;
+  const instTooltip = `Signal instability: ${instability ?? "N/A"}% (worst ratio ${worst_ratio?.toFixed(3) ?? "N/A"}, ${loo_dose_group ?? "?"} vs control)${is_control_side ? " (control-side)" : ""}`;
 
   return (
     <div
@@ -353,6 +377,116 @@ function DumbbellRow({
           </>
         )}
       </svg>
+    </div>
+  );
+}
+
+/** Per-dose stability mini-visualization — one row per dose level. */
+function PerDoseBreakdown({
+  animal,
+  doseGroups,
+}: {
+  animal: AnimalInfluenceSummary;
+  doseGroups: DoseGroup[];
+}) {
+  const entries = useMemo(() => {
+    const ibd = animal.instability_by_dose;
+    return Object.entries(ibd)
+      .map(([dlStr, v]) => {
+        const dl = Number(dlStr);
+        return { dl, ...v, label: getDoseLabel(dl, doseGroups) };
+      })
+      .sort((a, b) => a.dl - b.dl);
+  }, [animal.instability_by_dose, doseGroups]);
+
+  if (entries.length === 0) return null;
+
+  const BAR_H = 14;
+  const BAR_GAP = 2;
+
+  return (
+    <div className="mt-1.5 mb-0.5">
+      <div className="text-[9px] text-muted-foreground font-medium mb-0.5">
+        Per-dose stability
+      </div>
+      {entries.map((e) => (
+        <div key={e.dl} className="flex items-center gap-1.5" style={{ height: BAR_H + BAR_GAP }}>
+          <span className="text-[9px] text-muted-foreground w-16 truncate text-right" title={e.label}>
+            {e.label}
+          </span>
+          <div className="flex-1 h-2.5 bg-muted/30 rounded-sm overflow-hidden relative">
+            <div
+              className="h-full rounded-sm"
+              style={{
+                width: `${Math.max(2, (1 - e.mean_ratio) * 100)}%`,
+                backgroundColor: `rgba(220, 38, 38, ${1 - e.mean_ratio})`,
+              }}
+            />
+          </div>
+          <span className="text-[8px] text-muted-foreground w-6 text-right">
+            {e.n_endpoints}
+          </span>
+        </div>
+      ))}
+      {animal.endpoint_coverage_flag && (
+        <div className="text-[8px] text-muted-foreground italic mt-0.5">
+          Endpoint coverage varies across dose levels
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Sentinel annotation summary for selected animal. */
+function SentinelSummary({ sentinel }: { sentinel: SentinelAnimal }) {
+  return (
+    <div className="mt-1.5 mb-0.5 space-y-0.5">
+      <div className="text-[9px] text-muted-foreground font-medium">
+        Sentinel annotations
+      </div>
+      {sentinel.n_outlier_flags > 0 && (
+        <div className="text-[9px]">
+          <span className="font-medium">{sentinel.n_outlier_flags}</span>
+          <span className="text-muted-foreground"> endpoints flagged (|z| &gt; 3.5)</span>
+          {sentinel.outlier_organs.length > 0 && (
+            <span className="text-muted-foreground"> -- {sentinel.outlier_organs.join(", ")}</span>
+          )}
+        </div>
+      )}
+      {Object.keys(sentinel.poc).length > 0 && (
+        <div className="text-[9px]">
+          <span className="text-muted-foreground">POC: </span>
+          {Object.entries(sentinel.poc).map(([organ, count], i) => (
+            <span key={organ}>
+              {i > 0 && ", "}
+              {organ}={count}
+            </span>
+          ))}
+          {sentinel.coc > 0 && (
+            <span className="text-muted-foreground"> | COC: {sentinel.coc} organ systems</span>
+          )}
+        </div>
+      )}
+      {sentinel.n_sole_findings > 0 && (
+        <div className="text-[9px]">
+          <span className="font-medium">{sentinel.n_sole_findings}</span>
+          <span className="text-muted-foreground"> sole incidence findings</span>
+        </div>
+      )}
+      {sentinel.disposition && (
+        <div className="text-[9px]">
+          <span className="inline-block rounded bg-gray-100 px-1 py-0.5 text-gray-600 border border-gray-200 text-[8px]">
+            {sentinel.disposition}
+          </span>
+        </div>
+      )}
+      {sentinel.stress_flag && (
+        <div className="text-[9px] text-muted-foreground italic">
+          {sentinel.stress_flag_pharmacological
+            ? "Everds triad detected -- pharmacologically expected for this compound class"
+            : "Everds triad detected -- consider stress confound"}
+        </div>
+      )}
     </div>
   );
 }

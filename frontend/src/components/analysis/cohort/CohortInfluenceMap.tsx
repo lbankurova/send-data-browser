@@ -1,14 +1,15 @@
 /**
  * CohortInfluenceMap — scatter plot of per-animal influence metrics.
  *
- * X axis: % endpoints destabilising (LOO ratio < 80%).
+ * X axis: mean instability (LOO) — 0-1 continuous scale.
  * Y axis: mean within-group |z| (biological extremity).
- * Dots: circles for treated, diamonds for control.
+ * Dots: circles for treated, diamonds for control. Size encodes max
+ *   single-endpoint instability (concentrated vs broad influence).
  * Color: dose group via buildDoseColorMap().
- * Quadrant lines at configurable thresholds; top-right = alarm zone.
+ * Quadrant lines at adaptive thresholds; top-right = alarm zone.
  */
 import { useMemo, useState, useRef, useCallback } from "react";
-import type { AnimalInfluenceSummary, AnimalInfluenceData } from "@/types/analysis-views";
+import type { AnimalInfluenceSummary, AnimalInfluenceData, SubjectSentinelData, SentinelAnimal } from "@/types/analysis-views";
 import type { DoseGroup } from "@/types/analysis";
 import { buildDoseColorMap, getDoseLabel } from "@/lib/dose-label-utils";
 import { computeNiceTicks, shortId } from "@/lib/chart-utils";
@@ -16,21 +17,22 @@ import { computeNiceTicks, shortId } from "@/lib/chart-utils";
 // ── Layout constants ──────────────────────────────────────────
 
 const MARGIN = { top: 28, right: 12, bottom: 36, left: 40 };
-const DOT_R = 5;
-const DOT_R_SMALL = 4;        // > 60 animals
-const CTRL_DOT_R = 6;
-const CTRL_DOT_R_SMALL = 5;
+const DOT_R_BASE = 4;           // base dot radius
+const DOT_R_MAX = 9;            // max dot radius (max_endpoint_instability = 1.0)
 const BELOW_OPACITY = 0.40;
 const NORMAL_OPACITY = 0.73;
 const ALARM_LABEL_SIZE = 11;
 const QUADRANT_LABEL_OPACITY = 0.32;
 const ALARM_LABEL_OPACITY = 0.45;
+const SENTINEL_COC_COLOR = "#f97316";  // orange-500
+const SENTINEL_DISP_COLOR = "#dc2626"; // red-600
 
 export interface CohortInfluenceMapProps {
   data: AnimalInfluenceData;
   doseGroups: DoseGroup[];
   selectedAnimal: string | null;
   onAnimalSelect: (subjectId: string | null) => void;
+  sentinelData?: SubjectSentinelData;
 }
 
 export function CohortInfluenceMap({
@@ -38,6 +40,7 @@ export function CohortInfluenceMap({
   doseGroups,
   selectedAnimal,
   onAnimalSelect,
+  sentinelData,
 }: CohortInfluenceMapProps) {
   const { animals, thresholds, loo_confidence } = data;
   const [hoveredAnimal, setHoveredAnimal] = useState<string | null>(null);
@@ -60,15 +63,30 @@ export function CohortInfluenceMap({
   );
 
   const isInsufficient = loo_confidence === "insufficient";
-  const isSmall = animals.length > 60;
-  const dotR = isSmall ? DOT_R_SMALL : DOT_R;
-  const ctrlR = isSmall ? CTRL_DOT_R_SMALL : CTRL_DOT_R;
+
+  // Sentinel annotation lookup by subject_id
+  const sentinelMap = useMemo(() => {
+    if (!sentinelData) return new Map<string, SentinelAnimal>();
+    const m = new Map<string, SentinelAnimal>();
+    for (const sa of sentinelData.animals) {
+      m.set(sa.subject_id, sa);
+    }
+    return m;
+  }, [sentinelData]);
+
+  /** Compute dot radius from max_endpoint_instability (0-1). */
+  const dotRadius = useCallback((a: AnimalInfluenceSummary) => {
+    const mei = a.max_endpoint_instability;
+    if (mei == null) return DOT_R_BASE;
+    return DOT_R_BASE + (DOT_R_MAX - DOT_R_BASE) * Math.min(1, Math.max(0, mei));
+  }, []);
 
   // ── Domains ────────────────────────────────────────────────
   const xMax = useMemo(() => {
-    if (isInsufficient) return 10;
-    const mx = Math.max(...visibleAnimals.map((a) => a.pct_destabilising ?? 0), 0);
-    return Math.min(100, mx + 5);
+    if (isInsufficient) return 0.1;
+    const mx = Math.max(...visibleAnimals.map((a) => a.mean_instability ?? 0), 0);
+    // Pad 5% and round up to nearest 0.05
+    return Math.min(1.0, Math.ceil((mx + 0.02) * 20) / 20);
   }, [visibleAnimals, isInsufficient]);
 
   const yMax = useMemo(() => {
@@ -114,11 +132,19 @@ export function CohortInfluenceMap({
       setHoveredAnimal(a.subject_id);
       const rect = containerRef.current?.getBoundingClientRect();
       if (rect) {
-        const pctStr = a.pct_destabilising != null ? `${a.pct_destabilising}% destabilising` : "N/A";
+        const instStr = a.mean_instability != null ? `instability ${a.mean_instability.toFixed(3)}` : "N/A";
+        const meiStr = a.max_endpoint_instability != null
+          ? `max endpoint ${a.max_endpoint_instability.toFixed(3)}`
+          : "";
+        const kStr = a.n_pairwise_k > 0 ? `K=${a.n_pairwise_k}` : "";
+        const hint = a.max_endpoint_instability != null && a.mean_instability != null
+          && a.max_endpoint_instability > a.mean_instability * 1.5
+          ? "\nConcentrated influence -- check dumbbell"
+          : "";
         setTooltip({
           x: e.clientX - rect.left,
           y: e.clientY - rect.top - 10,
-          text: `${shortId(a.subject_id)} - ${a.group_id} - ${a.sex}\n${pctStr} - mean |z| ${a.mean_bio_z.toFixed(2)}`,
+          text: `${shortId(a.subject_id)} - ${a.group_id} - ${a.sex}\n${instStr} - mean |z| ${a.mean_bio_z.toFixed(2)}${meiStr ? `\n${meiStr}` : ""}${kStr ? ` (${kStr})` : ""}${hint}`,
         });
       }
     },
@@ -147,11 +173,11 @@ export function CohortInfluenceMap({
   }, []);
 
   // ── Threshold positions ────────────────────────────────────
-  const threshX = xScale(thresholds.destabilising_pct);
+  const threshX = xScale(thresholds.instability);
   const threshY = yScale(thresholds.bio_extremity_z);
 
   const isBelowBoth = (a: AnimalInfluenceSummary) =>
-    (a.pct_destabilising ?? 0) <= thresholds.destabilising_pct &&
+    (a.mean_instability ?? 0) <= thresholds.instability &&
     a.mean_bio_z <= thresholds.bio_extremity_z;
 
   return (
@@ -286,7 +312,7 @@ export function CohortInfluenceMap({
               textAnchor="middle"
               className="text-[8px]" fill="var(--muted-foreground)"
             >
-              {t}
+              {t <= 1 ? t.toFixed(2) : t}
             </text>
           ))}
 
@@ -297,7 +323,7 @@ export function CohortInfluenceMap({
             textAnchor="middle"
             className="text-[9px]" fill="var(--muted-foreground)"
           >
-            % endpoints destabilising (LOO &lt; 80%)
+            Mean instability (LOO)
           </text>
           <text
             x={10}
@@ -311,16 +337,17 @@ export function CohortInfluenceMap({
 
           {/* Dots */}
           {visibleAnimals.map((a) => {
-            const cx = isInsufficient ? MARGIN.left + 4 : xScale(a.pct_destabilising ?? 0);
+            const cx = isInsufficient ? MARGIN.left + 4 : xScale(a.mean_instability ?? 0);
             const cy = yScale(a.mean_bio_z);
             const isHovered = hoveredAnimal === a.subject_id;
             const isSelected = selectedAnimal === a.subject_id;
             const opacity = isBelowBoth(a) ? BELOW_OPACITY : NORMAL_OPACITY;
             const color = colorFn(a.dose_level);
+            const baseR = dotRadius(a);
 
             if (a.is_control) {
               // Diamond (rotated rect)
-              const r = isHovered ? ctrlR + 1 : ctrlR;
+              const r = isHovered ? baseR + 1 : baseR;
               return (
                 <g key={a.subject_id}>
                   {isSelected && (
@@ -348,7 +375,7 @@ export function CohortInfluenceMap({
               );
             }
             // Circle (treated)
-            const r = isHovered ? dotR + 1 : dotR;
+            const r = isHovered ? baseR + 1 : baseR;
             return (
               <g key={a.subject_id}>
                 {isSelected && (
@@ -370,11 +397,58 @@ export function CohortInfluenceMap({
             );
           })}
 
+          {/* Sentinel overlays — rendered on top of dots */}
+          {sentinelData && visibleAnimals.map((a) => {
+            const sa = sentinelMap.get(a.subject_id);
+            if (!sa) return null;
+            const hasCoc = sa.coc >= 2;
+            const hasSole = sa.n_sole_findings > 0;
+            const hasDisp = !!sa.disposition;
+            if (!hasCoc && !hasSole && !hasDisp) return null;
+
+            const cx = isInsufficient ? MARGIN.left + 4 : xScale(a.mean_instability ?? 0);
+            const cy = yScale(a.mean_bio_z);
+            const r = dotRadius(a);
+
+            return (
+              <g key={`sentinel-${a.subject_id}`} className="pointer-events-none">
+                {/* COC ring — orange border behind other overlays */}
+                {hasCoc && (
+                  <circle
+                    cx={cx} cy={cy} r={r + 3}
+                    fill="none" stroke={SENTINEL_COC_COLOR}
+                    strokeWidth={1.5} opacity={0.85}
+                  />
+                )}
+                {/* Sole-finding triangle — top-right corner */}
+                {hasSole && (
+                  <polygon
+                    points={`${cx + r - 1},${cy - r - 1} ${cx + r + 4},${cy - r - 1} ${cx + r + 4},${cy - r + 4}`}
+                    fill={SENTINEL_COC_COLOR} opacity={0.9}
+                  />
+                )}
+                {/* Disposition cross — center, highest z-order */}
+                {hasDisp && (
+                  <>
+                    <line
+                      x1={cx - 3} y1={cy - 3} x2={cx + 3} y2={cy + 3}
+                      stroke={SENTINEL_DISP_COLOR} strokeWidth={1.5}
+                    />
+                    <line
+                      x1={cx + 3} y1={cy - 3} x2={cx - 3} y2={cy + 3}
+                      stroke={SENTINEL_DISP_COLOR} strokeWidth={1.5}
+                    />
+                  </>
+                )}
+              </g>
+            );
+          })}
+
           {/* Alarm animal labels */}
           {visibleAnimals
             .filter((a) => a.is_alarm)
             .map((a) => {
-              const cx = xScale(a.pct_destabilising ?? 0);
+              const cx = xScale(a.mean_instability ?? 0);
               const cy = yScale(a.mean_bio_z);
               return (
                 <text

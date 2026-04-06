@@ -41,6 +41,15 @@ export interface TargetOrganRow {
   mi_status?: string | null;
   /** OM-MI discount factor applied (1.0 = no discount), null when discount logic N/A. */
   om_mi_discount?: number | null;
+  /** Evidence quality assessment (read-only synthesis, not a score modifier). */
+  evidence_quality?: {
+    grade: 'strong' | 'moderate' | 'weak' | 'insufficient';
+    dimensions_assessed: number;
+    convergence: { groups: number; signal: string };
+    corroboration: { status: string | null; signal: string } | null;
+    sex_concordance: { fraction: number | null; n_evaluable: number; signal: string } | null;
+    limiting_factor: string | null;
+  } | null;
 }
 
 export interface RuleParams {
@@ -438,7 +447,7 @@ export interface AnimalInfluenceData {
   min_group_n: number;
   loo_confidence: "adequate" | "low" | "insufficient";
   thresholds: {
-    destabilising_pct: number;
+    instability: number;
     bio_extremity_z: number;
   };
   animals: AnimalInfluenceSummary[];
@@ -452,15 +461,20 @@ export interface AnimalInfluenceSummary {
   sex: string;
   terminal_bw: number | null;
   is_control: boolean;
-  /** Null when loo_confidence === "insufficient" (N < 3). */
-  pct_destabilising: number | null;
+  /** Mean instability across all pairwise LOO comparisons (0-1). Null when loo_confidence === "insufficient". */
+  mean_instability: number | null;
+  /** Max single-endpoint instability (0-1) for dot-size encoding. Null when loo_confidence === "insufficient". */
+  max_endpoint_instability: number | null;
+  /** Number of distinct dose-level comparisons this animal participates in. */
+  n_pairwise_k: number;
   mean_bio_z: number;
   n_endpoints_total: number;
   /** Null when loo_confidence === "insufficient". */
   n_endpoints_with_loo: number | null;
-  /** Null when loo_confidence === "insufficient". */
-  n_destabilising: number | null;
   is_alarm: boolean;
+  instability_by_dose: Record<number, { mean_ratio: number; n_endpoints: number }>;
+  worst_dose_level: number | null;
+  endpoint_coverage_flag: boolean;
 }
 
 export interface AnimalEndpointDetail {
@@ -471,10 +485,61 @@ export interface AnimalEndpointDetail {
   bio_z_raw: number | null;
   bio_norm: number | null;
   instability: number | null;
-  loo_ratio: number | null;
+  loo_ratios_by_dose: Record<number, number>;
+  mean_ratio: number | null;
+  worst_ratio: number | null;
+  worst_dose_level: number | null;
   loo_dose_group: string | null;
   is_control_side: boolean;
   alarm_score: number;
+}
+
+// ── Subject Sentinel ────────────────────────────────────────
+
+export interface SubjectSentinelData {
+  thresholds: {
+    outlier_z: number;
+    concordance_z: number;
+    poc_domains: number;
+    coc_organs: number;
+  };
+  stress_heuristic_mode: "flag" | "annotate";
+  animals: SentinelAnimal[];
+  endpoint_details: Record<string, SentinelEndpointDetail[]>;
+}
+
+export interface SentinelAnimal {
+  subject_id: string;
+  dose_level: number;
+  sex: string;
+  group_id: string;
+  n_outlier_flags: number;
+  max_z: number | null;
+  outlier_organs: string[];
+  poc: Record<string, number>;
+  coc: number;
+  stress_flag: boolean;
+  stress_flag_pharmacological: boolean;
+  stress_heuristic_mode: "flag" | "annotate" | null;
+  n_sole_findings: number;
+  sole_finding_organs: string[];
+  n_non_responder: number;
+  disposition: string | null;
+  is_control: boolean;
+}
+
+export interface SentinelEndpointDetail {
+  endpoint_id: string;
+  endpoint_name: string;
+  domain: string;
+  organ_system: string;
+  z_score: number | null;
+  hamada_residual: number | null;
+  is_outlier: boolean;
+  log_transformed: boolean;
+  is_sole_finding: boolean;
+  is_non_responder: boolean;
+  bw_confound_suppressed: boolean;
 }
 
 // ── Subject Similarity ──────────────────────────────────────

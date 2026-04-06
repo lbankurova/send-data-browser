@@ -13,6 +13,7 @@ import type {
   FindingDoseTrend,
   PkIntegration,
   AnimalInfluenceData,
+  SubjectSentinelData,
   SubjectSimilarityData,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
@@ -416,6 +417,16 @@ export function fetchAnimalInfluence(
 ): Promise<AnimalInfluenceData> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/animal-influence`,
+  );
+}
+
+// ── Subject sentinel ─────────────────────────────────────────
+
+export function fetchSubjectSentinel(
+  studyId: string,
+): Promise<SubjectSentinelData> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-sentinel`,
   );
 }
 
