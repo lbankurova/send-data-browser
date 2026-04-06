@@ -14,6 +14,8 @@ Validation:
 
 * [validate_all.py](../../../backend/services/analysis/validation/validate_all.py)
 
+* [validate_fisher_boschloo.py](../../../backend/services/analysis/validation/validate_fisher_boschloo.py)
+
 Updated & new files files:
 
 * [statistics_fixed.py](../../../backend/services/analysis/statistics_fixed.py)
@@ -89,3 +91,9 @@ Checked:
 The `ancova.py` implementation is **mathematically correct**: all 17 components (OLS, adjusted means, SE, pairwise comparisons, slope homogeneity, effect decomposition, Hedges' g) match published formulas and reproduce SAS output to within 10⁻⁵.
 
 More [details](./ancova/ancova_verification_summary.md)
+
+### ✅ Fisher's Exact Test & Boschloo's Exact Test
+
+Both `fisher_exact` and `boschloo_exact` from SciPy are safe to use in the SENDEX pipeline for 2×2 incidence table analysis.
+
+More [details](.//fisher-boschloo/fisher-boschloo-report.md)

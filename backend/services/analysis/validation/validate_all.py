@@ -10,6 +10,7 @@ SCRIPTS = [
     "validate_hedges_g.py",
     "validate_fixed_williams.py",
     "validate_ancova.py",
+    "validate_fisher_boschloo.py",
 ]
 
 root = Path(__file__).parent
