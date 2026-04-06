@@ -277,6 +277,30 @@ def build_animal_influence(
 # ── Helpers ──────────────────────────────────────────────────────
 
 
+def iter_subject_values(
+    rsv: list,
+    subj_meta: dict[str, dict],
+) -> dict[int, list[tuple[str, float]]]:
+    """Traverse raw_subject_values and collect per-dose-level (uid, value) pairs.
+
+    Shared between animal_influence and subject_sentinel.  Filters to
+    eligible subjects (those present in subj_meta) and skips None values.
+
+    Returns:
+        dict mapping dose_level -> [(uid, value), ...].
+    """
+    dl_values: dict[int, list[tuple[str, float]]] = {}
+    for dose_dict in rsv:
+        if not isinstance(dose_dict, dict):
+            continue
+        for uid, val in dose_dict.items():
+            if val is None or uid not in subj_meta:
+                continue
+            dl = subj_meta[uid]["dose_level"]
+            dl_values.setdefault(dl, []).append((uid, val))
+    return dl_values
+
+
 def _compute_min_group_n(
     eligible: "pandas.DataFrame",  # noqa: F821
     dose_groups: list[dict],
@@ -355,16 +379,10 @@ def _collect_z_scores(
             gs_map[int(dl)] = (mean, sd, n, median)
 
     # Build per-dose-level subject values for MAD computation
-    dl_values: dict[int, list[float]] = {}
-
-    for dose_idx, dose_dict in enumerate(rsv):
-        if not isinstance(dose_dict, dict):
-            continue
-        for uid, val in dose_dict.items():
-            if val is None or uid not in subj_meta:
-                continue
-            dl = subj_meta[uid]["dose_level"]
-            dl_values.setdefault(dl, []).append(val)
+    uid_dl_values = iter_subject_values(rsv, subj_meta)
+    dl_values: dict[int, list[float]] = {
+        dl: [v for _, v in pairs] for dl, pairs in uid_dl_values.items()
+    }
 
     # Compute MAD per group for semi-quant
     mad_map: dict[int, float] = {}
@@ -383,18 +401,12 @@ def _collect_z_scores(
             mad_map[dl] = max(mad, MAD_FLOOR)
 
     # Compute z-scores
-    for dose_dict in rsv:
-        if not isinstance(dose_dict, dict):
+    for dl, uid_vals in uid_dl_values.items():
+        stats = gs_map.get(dl)
+        if stats is None:
             continue
-        for uid, val in dose_dict.items():
-            if val is None or uid not in subj_meta:
-                continue
-            dl = subj_meta[uid]["dose_level"]
-            stats = gs_map.get(dl)
-            if stats is None:
-                continue
-
-            mean, sd, n, median = stats
+        mean, sd, n, median = stats
+        for uid, val in uid_vals:
 
             if etype == "semiquant":
                 # Use MAD-based z-score

@@ -21,6 +21,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from generator.animal_influence import iter_subject_values
 from generator.organ_map import get_organ_system
 from services.analysis.send_knowledge import BIOMARKER_MAP
 from services.analysis.statistics import qn_scale, hamada_studentized_residuals
@@ -46,8 +47,8 @@ IMMUNOMOD_PROFILE_IDS: frozenset[str] = frozenset({
     "checkpoint_inhibitor", "anti_cd20_mab", "anti_tnf_mab",
     "immunosuppressant", "corticosteroid", "cytotoxic_agent",
     # mAb subtypes with immune modulation
-    "anti_il17_mab", "anti_il1_mab", "anti_il6_mab",
-    "bispecific_tce", "fc_fusion_ctla4",
+    "anti_il17_mab", "anti_il1_mab", "anti_il4_il13_mab",
+    "anti_il6_mab", "bispecific_tce", "fc_fusion_ctla4",
 })
 
 # Non-scheduled dispositions that suppress stress flag
@@ -122,7 +123,6 @@ def build_subject_sentinel(
     # ── Collect per-endpoint z-scores and metadata ───────────────
     # z_data[uid][(endpoint_key)] = {z, organ_system, domain, ...}
     z_data: dict[str, dict[str, dict]] = {}
-    endpoint_details_all: dict[str, list[dict]] = {}
 
     # Collect dose_levels list for Hamada
     all_dose_levels = sorted(dg_map.keys())
@@ -166,13 +166,11 @@ def build_subject_sentinel(
             rsv, group_stats, subj_meta, endpoint_key, domain,
             test_code, specimen, organ_system, is_lognormal,
             all_dose_levels, bw_sig_dose, abs_om_sig,
-            z_data, endpoint_details_all,
+            z_data,
         )
 
     # ── Layer D: Incidence influence ─────────────────────────────
-    _process_incidence_findings(
-        findings, subj_meta, z_data, endpoint_details_all,
-    )
+    _process_incidence_findings(findings, subj_meta, z_data)
 
     # ── Assemble per-animal summaries ────────────────────────────
     # Determine immunomod status for stress heuristic
@@ -356,7 +354,6 @@ def _process_continuous_endpoint(
     bw_sig_dose: set[int],
     abs_om_sig: set[tuple[str, int]],
     z_data: dict[str, dict[str, dict]],
-    endpoint_details_all: dict[str, list[dict]],
 ) -> None:
     """Process a continuous endpoint: compute robust z-scores and Hamada residuals."""
     # Build group-level stats lookup
@@ -367,15 +364,7 @@ def _process_continuous_endpoint(
             gs_map[int(dl)] = (gs.get("mean"), gs.get("sd"), gs.get("n", 0), gs.get("median"))
 
     # Collect per-dose-level values for all eligible subjects
-    dl_values: dict[int, list[tuple[str, float]]] = {}  # dl -> [(uid, val)]
-    for dose_dict in rsv:
-        if not isinstance(dose_dict, dict):
-            continue
-        for uid, val in dose_dict.items():
-            if val is None or uid not in subj_meta:
-                continue
-            dl = subj_meta[uid]["dose_level"]
-            dl_values.setdefault(dl, []).append((uid, val))
+    dl_values = iter_subject_values(rsv, subj_meta)
 
     # Compute Qn/MAD scale per group
     scale_map: dict[int, float] = {}
@@ -400,7 +389,9 @@ def _process_continuous_endpoint(
             mad = deviations[m // 2] if m % 2 == 1 else (deviations[m // 2 - 1] + deviations[m // 2]) / 2
             scale_map[dl] = mad * 1.4826  # consistency factor for Gaussian
 
-    # Compute Hamada residuals (optional context, not used for flagging)
+    # Compute Hamada residuals -- pre-computed for endpoint detail tooltip display.
+    # NOT used in outlier/concordance flag decisions (spec §Feature 1b).
+    # Provides dose-response context: "this animal deviates from the D-R trend."
     hamada_groups: dict[int, list[float]] = {}
     hamada_uid_index: dict[int, list[str]] = {}  # dl -> [uids in order]
     for dl, uid_vals in dl_values.items():
@@ -461,7 +452,6 @@ def _process_incidence_findings(
     findings: list[dict],
     subj_meta: dict[str, dict],
     z_data: dict[str, dict[str, dict]],
-    endpoint_details_all: dict[str, list[dict]],
 ) -> None:
     """Layer D: Compute sole-finding and non-responder flags for incidence.
 

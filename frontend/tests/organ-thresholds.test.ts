@@ -129,9 +129,20 @@ describe("organ-weight-thresholds.json", () => {
     expect(adrenal.adverse_floor_pct.mouse).toBeGreaterThan(adrenal.adverse_floor_pct.rat);
   });
 
-  test.skipIf(!hasThresholds)("BRAIN has zero ceiling (any_significant policy)", () => {
-    expect(thresholds.BRAIN.variation_ceiling_pct).toBe(0);
-    expect(thresholds.BRAIN.adverse_floor_pct).toBe(0);
+  test.skipIf(!hasThresholds)("BRAIN has zero ceiling for rat/mouse (any_significant policy)", () => {
+    // BRAIN uses species-specific thresholds: zero for rat/mouse (any_significant),
+    // non-zero for dog (brain weight is less variable in large breeds)
+    const ceil = thresholds.BRAIN.variation_ceiling_pct;
+    const floor = thresholds.BRAIN.adverse_floor_pct;
+    if (typeof ceil === "number") {
+      expect(ceil).toBe(0);
+      expect(floor).toBe(0);
+    } else {
+      expect(ceil.rat).toBe(0);
+      expect(ceil.mouse).toBe(0);
+      expect(floor.rat).toBe(0);
+      expect(floor.mouse).toBe(0);
+    }
   });
 
   test.skipIf(!hasThresholds)("LIVER has adaptive_requires block with LB panel", () => {

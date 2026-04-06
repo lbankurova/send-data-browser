@@ -1,110 +1,164 @@
 {
-  "_comment": "Organ-specific weight change thresholds for regulatory toxicology assessment. Sources: FDA reviewer practice, Hood (2006), Hall (2012), Capen (1997), ECETOC TRA.",
+  "_comment": "Organ-specific weight change thresholds for regulatory toxicology assessment. Sources: FDA reviewer practice, Hood (2006), Hall (2012), Capen (1997), ECETOC TRA, Choi (2011), Houle (2014).",
   "_schema": {
     "variation_ceiling_pct": "Noise ceiling: below this % change, the effect is trivially small and indistinguishable from normal variation. Named 'ceiling' because it is the upper bound of the noise band. Example: liver ceiling=5% means <5% change is noise.",
     "adverse_floor_pct": "Adverse floor: at or above this % change, the effect is biologically meaningful. Named 'floor' because it is the lower bound of the adverse range. Example: liver floor=10% means >=10% change is adverse (if statistically significant).",
     "strong_adverse_pct": "At or above this, the finding is clearly adverse regardless of context",
     "adaptive_requires": "Optional block: conditions required to claim 'adaptive' for this organ",
     "special_flags": "Optional array: organ-specific caveats the engine should annotate",
-    "cross_organ_link": "Optional: mechanistic link to another organ's findings"
+    "cross_organ_link": "Optional: mechanistic link to another organ's findings",
+    "species_specific": "True when thresholds vary by species. _resolve_value() handles dict lookup.",
+    "cv_reference": "Documentation only -- published CVs justifying the threshold choices. Not consumed by code."
   },
 
   "LIVER": {
-    "variation_ceiling_pct": 5,
-    "adverse_floor_pct": 10,
-    "strong_adverse_pct": 25,
-    "notes": "Liver is the most studied organ for adaptive vs adverse distinction. Hall 2012 defined the LB panel gate.",
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
+    "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 25, "other": 10},
+    "strong_adverse_pct": {"rat": 25, "mouse": 25, "dog": 40, "other": 25},
+    "adaptive_ceiling_pct": {"dog": 25},
+    "notes": "Liver is the most studied organ for adaptive vs adverse distinction. Hall 2012 defined the LB panel gate. Dog thresholds wider due to higher CVs (Choi 2011: M=15%, F=21%).",
+    "dog_adaptive_notes": "ALP elevation without bilirubin elevation should not preclude adaptive classification in dogs (C-ALP confound). ALT is the primary liver injury discriminator.",
     "adaptive_requires": {
       "lb_panel": ["ALT", "AST", "ALP", "GGT", "BILI", "CHOL", "BILEAC", "TP", "ALB"],
       "min_clean": 5,
       "critical_clean": ["ALT", "AST"],
       "max_fold_for_clean": 5.0,
       "max_severity_for_adaptive": 2
+    },
+    "cv_reference": {
+      "rat_m": 8, "rat_f": 10,
+      "beagle_m": 15, "beagle_f": 21
     }
   },
 
   "KIDNEY": {
-    "variation_ceiling_pct": 5,
-    "adverse_floor_pct": 10,
-    "strong_adverse_pct": 25,
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
+    "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "other": 10},
+    "strong_adverse_pct": {"rat": 25, "mouse": 25, "dog": 22, "other": 25},
     "special_flags": [
       "alpha2u_globulin_male_rat",
       "CPN_F344_rat"
     ],
-    "notes": "Kidney weight changes ≥10% are concerning. Male rat α2u-globulin nephropathy is not human-relevant."
+    "notes": "Kidney weight changes >=10% are concerning. Male rat a2u-globulin nephropathy is not human-relevant. Dog uses single wider female-driven threshold (Choi 2011: M CV=12%, F CV=18%); 15% ceiling is conservative for males but defensible.",
+    "cv_reference": {
+      "rat_m": 8, "rat_f": 9,
+      "beagle_m": 12, "beagle_f": 18
+    }
   },
 
   "HEART": {
-    "variation_ceiling_pct": 3,
-    "adverse_floor_pct": 8,
-    "strong_adverse_pct": 15,
-    "notes": "Heart has low normal variation (CV ~5-8%). Even small changes are meaningful."
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 3, "mouse": 3, "dog": 12, "other": 3},
+    "adverse_floor_pct": {"rat": 8, "mouse": 8, "dog": 12, "other": 8},
+    "strong_adverse_pct": {"rat": 15, "mouse": 15, "dog": 15, "other": 15},
+    "notes": "Heart has low normal variation (CV ~5-8% rodent). Dog heart CV is higher (Choi 2011: M=10%, F=13%).",
+    "cv_reference": {
+      "rat_m": 6, "rat_f": 7,
+      "beagle_m": 10, "beagle_f": 13
+    }
   },
 
   "BRAIN": {
-    "variation_ceiling_pct": 0,
-    "adverse_floor_pct": 0,
-    "strong_adverse_pct": 5,
-    "notes": "Brain weight is tightly regulated. Any statistically significant change is biologically meaningful. Uses any_significant policy."
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 0, "mouse": 0, "dog": 5, "other": 0},
+    "adverse_floor_pct": {"rat": 0, "mouse": 0, "dog": 5, "other": 0},
+    "strong_adverse_pct": {"rat": 5, "mouse": 5, "dog": 5, "other": 5},
+    "notes": "Brain weight is tightly regulated. Rat/mouse: any statistically significant change is biologically meaningful (any_significant policy). Dog brain CV ~5% (Choi 2011), so dog uses 5% floor instead of any_significant.",
+    "cv_reference": {
+      "rat_m": 3, "rat_f": 3,
+      "beagle_m": 5, "beagle_f": 5
+    }
   },
 
   "ADRENAL": {
-    "variation_ceiling_pct": {"rat": 5, "mouse": 8, "other": 5},
-    "adverse_floor_pct": {"rat": 15, "mouse": 25, "other": 15},
-    "strong_adverse_pct": {"rat": 30, "mouse": 40, "other": 30},
-    "notes": "Adrenal weight is highly variable, especially in mice. Species-specific thresholds prevent false positives.",
-    "cross_organ_link": "stress_axis"
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 8, "dog": 20, "other": 5},
+    "adverse_floor_pct": {"rat": 15, "mouse": 25, "dog": 20, "other": 15},
+    "strong_adverse_pct": {"rat": 30, "mouse": 40, "dog": 30, "other": 30},
+    "notes": "Adrenal weight is highly variable, especially in mice and dogs. Species-specific thresholds prevent false positives. Dog adrenal CV ~20% (Choi 2011).",
+    "cross_organ_link": "stress_axis",
+    "cv_reference": {
+      "rat_m": 10, "rat_f": 12,
+      "beagle_m": 18, "beagle_f": 22
+    }
   },
 
   "THYROID": {
-    "variation_ceiling_pct": 5,
-    "adverse_floor_pct": 15,
-    "strong_adverse_pct": 30,
-    "notes": "Thyroid weight changes often secondary to liver enzyme induction (liver-thyroid axis). Capen 1997.",
-    "cross_organ_link": "liver_thyroid_axis"
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
+    "adverse_floor_pct": {"rat": 15, "mouse": 15, "dog": 15, "other": 15},
+    "strong_adverse_pct": {"rat": 30, "mouse": 30, "dog": 25, "other": 30},
+    "notes": "Thyroid weight changes often secondary to liver enzyme induction (liver-thyroid axis). Capen 1997. Dog thyroid CV ~15% (Choi 2011).",
+    "cross_organ_link": "liver_thyroid_axis",
+    "cv_reference": {
+      "rat_m": 10, "rat_f": 12,
+      "beagle_m": 15, "beagle_f": 16
+    }
   },
 
   "SPLEEN": {
-    "variation_ceiling_pct": 8,
-    "adverse_floor_pct": 20,
-    "strong_adverse_pct": 40,
-    "notes": "Spleen weight is naturally variable. Large changes may indicate immune response or stress."
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 8, "mouse": 8, "dog": 20, "other": 8},
+    "adverse_floor_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
+    "strong_adverse_pct": {"rat": 40, "mouse": 40, "dog": 30, "other": 40},
+    "notes": "Spleen weight is naturally variable. Large changes may indicate immune response or stress. Dog spleen CV ~20% (Choi 2011).",
+    "cv_reference": {
+      "rat_m": 15, "rat_f": 15,
+      "beagle_m": 18, "beagle_f": 22
+    }
   },
 
   "THYMUS": {
-    "variation_ceiling_pct": 8,
-    "adverse_floor_pct": 20,
-    "strong_adverse_pct": 40,
-    "notes": "Thymus weight is age-sensitive and stress-responsive. Involution is normal in older animals.",
-    "cross_organ_link": "stress_axis"
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 8, "mouse": 8, "dog": 20, "other": 8},
+    "adverse_floor_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
+    "strong_adverse_pct": {"rat": 40, "mouse": 40, "dog": 30, "other": 40},
+    "notes": "Thymus weight is age-sensitive and stress-responsive. Involution is normal in older animals. Dog thymus CV ~25% (Choi 2011).",
+    "cross_organ_link": "stress_axis",
+    "cv_reference": {
+      "rat_m": 18, "rat_f": 18,
+      "beagle_m": 22, "beagle_f": 28
+    }
   },
 
   "TESTES": {
-    "variation_ceiling_pct": 5,
-    "adverse_floor_pct": 10,
-    "strong_adverse_pct": 20,
-    "notes": "Testes weight is tightly regulated. Changes ≥10% are concerning for reproductive toxicity."
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
+    "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "other": 10},
+    "strong_adverse_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
+    "notes": "Testes weight is tightly regulated in rodents. Dog testes CV ~15% (Choi 2011). Changes >=15% are concerning for reproductive toxicity.",
+    "cv_reference": {
+      "rat_m": 7,
+      "beagle_m": 15
+    }
   },
 
   "EPIDIDYMIDES": {
-    "variation_ceiling_pct": 5,
-    "adverse_floor_pct": 10,
-    "strong_adverse_pct": 20,
-    "notes": "Epididymal weight changes often parallel testicular effects."
+    "species_specific": true,
+    "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
+    "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "other": 10},
+    "strong_adverse_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
+    "notes": "Epididymal weight changes often parallel testicular effects. Dog epididymis CV ~12% (Choi 2011).",
+    "cv_reference": {
+      "rat_m": 6,
+      "beagle_m": 12
+    }
   },
 
   "OVARIES": {
     "variation_ceiling_pct": 10,
     "adverse_floor_pct": 20,
     "strong_adverse_pct": 35,
-    "notes": "Ovarian weight is highly variable due to estrous cycle stage. Higher thresholds prevent false positives."
+    "notes": "Ovarian weight is highly variable due to estrous cycle stage. Higher thresholds prevent false positives. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
   },
 
   "UTERUS": {
     "variation_ceiling_pct": 15,
     "adverse_floor_pct": 25,
     "strong_adverse_pct": 40,
-    "notes": "Uterine weight is the most variable organ weight due to estrous cycle. Very high thresholds required."
+    "notes": "Uterine weight is the most variable organ weight due to estrous cycle. Very high thresholds required. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
   },
 
   "LUNGS": {
