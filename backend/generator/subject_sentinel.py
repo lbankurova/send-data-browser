@@ -43,7 +43,7 @@ LOGNORMAL_ENDPOINTS: frozenset[str] = frozenset({
 # Immunomodulatory compound class profile IDs -- stress heuristic annotates
 # rather than flags for these (pharmacologically expected HPA/immune changes).
 IMMUNOMOD_PROFILE_IDS: frozenset[str] = frozenset({
-    "checkpoint_inhibitor", "anti_tnf_mab",
+    "checkpoint_inhibitor", "anti_cd20_mab", "anti_tnf_mab",
     "immunosuppressant", "corticosteroid", "cytotoxic_agent",
     # mAb subtypes with immune modulation
     "anti_il17_mab", "anti_il1_mab", "anti_il6_mab",
@@ -129,9 +129,14 @@ def build_subject_sentinel(
 
     # Pass 1: Collect BW significance per dose level (for confounding gate)
     bw_sig_dose: set[int] = set()
+    # Also collect absolute OM significance per (specimen_root, dose_level)
+    # to gate BW confounding: only suppress relative OM if absolute is NOT significant
+    abs_om_sig: set[tuple[str, int]] = set()
     for f in findings:
         if f.get("domain") == "BW":
             _track_bw_significance(f, bw_sig_dose)
+        elif f.get("domain") == "OM":
+            _track_abs_om_significance(f, abs_om_sig)
 
     # Pass 2: Process all continuous endpoints
     for f in findings:
@@ -160,7 +165,8 @@ def build_subject_sentinel(
         _process_continuous_endpoint(
             rsv, group_stats, subj_meta, endpoint_key, domain,
             test_code, specimen, organ_system, is_lognormal,
-            all_dose_levels, bw_sig_dose, z_data, endpoint_details_all,
+            all_dose_levels, bw_sig_dose, abs_om_sig,
+            z_data, endpoint_details_all,
         )
 
     # ── Layer D: Incidence influence ─────────────────────────────
@@ -304,6 +310,29 @@ def _make_endpoint_key(domain: str, test_code: str, specimen: str, sex: str) -> 
     return ":".join(parts)
 
 
+def _track_abs_om_significance(finding: dict, abs_om_sig: set[tuple[str, int]]) -> None:
+    """Track absolute OM findings with significant pairwise results.
+
+    Only tracks absolute (non-relative) OM findings. Used by the BW
+    confounding gate: relative OM is only suppressed when the absolute
+    OM for the same organ is NOT significant.
+    """
+    tc = finding.get("test_code", "").upper()
+    if "REL" in tc or "RATIO" in tc or "%" in tc:
+        return  # relative OM -- skip
+    specimen = (finding.get("specimen") or "").upper().strip()
+    if not specimen:
+        return
+    organ_root = next((o for o in BW_CONFOUND_ORGANS if specimen.startswith(o)), None)
+    if organ_root is None:
+        return
+    for pw in finding.get("pairwise", []):
+        p = pw.get("p_value")
+        dl = pw.get("dose_level")
+        if p is not None and dl is not None and p < 0.05:
+            abs_om_sig.add((organ_root, int(dl)))
+
+
 def _track_bw_significance(finding: dict, bw_sig_dose: set[int]) -> None:
     """Check if BW finding has significant pairwise results at any dose."""
     for pw in finding.get("pairwise", []):
@@ -325,6 +354,7 @@ def _process_continuous_endpoint(
     is_lognormal: bool,
     all_dose_levels: list[int],
     bw_sig_dose: set[int],
+    abs_om_sig: set[tuple[str, int]],
     z_data: dict[str, dict[str, dict]],
     endpoint_details_all: dict[str, list[dict]],
 ) -> None:
@@ -395,7 +425,8 @@ def _process_continuous_endpoint(
             hamada_r = hamada_res.get((dl, i))
 
             # BW confounding gate: suppress relative OM concordance when
-            # BW is significantly decreased at this dose level
+            # BW is significantly decreased at this dose level AND
+            # absolute OM for this organ is NOT also significantly changed
             bw_suppressed = False
             if domain == "OM" and specimen and dl in bw_sig_dose:
                 spec_upper = specimen.upper().strip()
@@ -403,7 +434,10 @@ def _process_continuous_endpoint(
                 if is_confound_organ:
                     tc_upper = test_code.upper()
                     if "REL" in tc_upper or "RATIO" in tc_upper or "%" in tc_upper:
-                        bw_suppressed = True
+                        # Only suppress if absolute OM for same organ is NOT significant
+                        organ_root = next((o for o in BW_CONFOUND_ORGANS if spec_upper.startswith(o)), spec_upper)
+                        if (organ_root, dl) not in abs_om_sig:
+                            bw_suppressed = True
 
             ep_entry = {
                 "z": z,
@@ -544,10 +578,12 @@ def _detect_everds_triad(
             if any(term in ep_name for term in ("ATROPHY", "DECREASED", "INVOLUTION")):
                 has_thymic = True
 
-        # Component 2: Adrenal hypertrophy
+        # Component 2: Adrenal hypertrophy (absolute weight only, not relative)
         if "ADRENAL" in ek:
             if domain == "OM" and z is not None and z > 0:
-                has_adrenal = True
+                # Only count absolute OM (not relative/ratio)
+                if not ("REL" in ek or "RATIO" in ek or "%" in ek):
+                    has_adrenal = True
             elif domain == "MI":
                 if any(term in ep_name for term in ("HYPERTROPHY", "HYPERPLASIA", "INCREASED")):
                     has_adrenal = True
