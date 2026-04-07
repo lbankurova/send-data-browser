@@ -16,6 +16,22 @@ Validation:
 
 * [validate_fisher_boschloo.py](../../../backend/services/analysis/validation/validate_fisher_boschloo.py)
 
+* [validate_ancova.py](../../../backend/services/analysis/validation/validate_ancova.py)
+
+* [validate_dunnett.py](../../../backend/services/analysis/validation/validate_dunnett.py)
+
+* [validate_fixed_williams.py](../../../backend/services/analysis/validation/validate_fixed_williams.py)
+
+* [validate_hedges_g.py](../../../backend/services/analysis/validation/validate_hedges_g.py)
+
+* [validate_helpers.py](../../../backend/services/analysis/validation/validate_helpers.py)
+
+* [validate_trend_test.py](../../../backend/services/analysis/validation/validate_trend_test.py)
+
+* [validate_trend_test_incidence.py](../../../backend/services/analysis/validation/validate_trend_test_incidence.py)
+
+* [validate_trend_test_incidence_modified.py](../../../backend/services/analysis/validation/validate_trend_test_incidence_modified.py)
+
 Updated & new files files:
 
 * [statistics_fixed.py](../../../backend/services/analysis/statistics_fixed.py)
@@ -23,6 +39,8 @@ Updated & new files files:
 * [williams_fixed.py](../../../backend/services/analysis/williams_fixed.py)
 
 * [williams_tables.py](../../../backend/services/analysis/williams_fixed.py)
+
+* [trend_test_incidence_modified.py](../../../backend/services/analysis/trend_test_incidence_modified.py)
 
 ## Findings
 
@@ -96,4 +114,12 @@ More [details](./ancova/ancova_verification_summary.md)
 
 Both `fisher_exact` and `boschloo_exact` from SciPy are safe to use in the SENDEX pipeline for 2×2 incidence table analysis.
 
-More [details](.//fisher-boschloo/fisher-boschloo-report.md)
+More [details](./fisher-boschloo/fisher-boschloo-report.md)
+
+### ✅ Cochran-Armitage trend test for incidence
+
+Implemented the modified version [trend_test_incidence_modified.py](../../../backend/services/analysis/trend_test_incidence_modified.py). The modified function extends the original with additional parameters while preserving backward compatibility.
+
+Two versions of the implementation are verified: the original (baseline) version with fixed interface, and the modified version with extended functionality. Both are validated
+
+More [details](./Cochran-Armitage-trend-test-for-incidence/verification_report.md).

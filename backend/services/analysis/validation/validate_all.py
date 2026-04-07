@@ -11,6 +11,8 @@ SCRIPTS = [
     "validate_fixed_williams.py",
     "validate_ancova.py",
     "validate_fisher_boschloo.py",
+    "validate_trend_test_incidence.py",
+    "validate_trend_test_incidence_modified.py"
 ]
 
 root = Path(__file__).parent
