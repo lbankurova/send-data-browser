@@ -225,3 +225,75 @@ class TestPairedNullnessInvariant:
             f"Paired-nullness violated: canonical_testcd={ct!r}, "
             f"test_code_recognition_level={lvl!r}"
         )
+
+
+# ──────────────────────────────────────────────────────────────
+# GAP-244: None-safety for severity_grade_counts iteration
+# ──────────────────────────────────────────────────────────────
+
+def _mi_incidence_with_groups(sgc_by_dose: list) -> dict:
+    """Build a minimal MI-incidence finding with the given
+    severity_grade_counts values per treated dose group (dose levels 1..N)."""
+    f = _with_defaults(_base("MI", "HYPERPLASIA",
+                              specimen="BONE MARROW, FEMUR",
+                              data_type="incidence"))
+    group_stats = [{"dose_level": 0, "severity_grade_counts": None}]  # control
+    for i, sgc in enumerate(sgc_by_dose, start=1):
+        group_stats.append({"dose_level": i, "severity_grade_counts": sgc})
+    f["group_stats"] = group_stats
+    return f
+
+
+class TestSeverityGradeNoneSafety:
+    """GAP-244: findings_pipeline.py:268-270 must not crash when
+    severity_grade_counts is present-but-None (dict.get default only
+    triggers on missing key). Fix recovers 463 findings across 12 studies
+    that previously silently carried _enrichment_error."""
+
+    def test_severity_grade_counts_none(self):
+        """AC1.1 / AC1.3: all treated groups have None -> no crash,
+        severity_grade_5pt stays None (no grading data available)."""
+        f = _mi_incidence_with_groups([None, None, None])
+        f = _enrich_finding(f)
+        assert "_enrichment_error" not in f
+        assert f["severity_grade_5pt"] is None
+
+    def test_severity_grade_counts_empty_dict(self):
+        """Empty-dict preservation: all treated groups have {} -> no crash,
+        severity_grade_5pt stays None."""
+        f = _mi_incidence_with_groups([{}, {}, {}])
+        f = _enrich_finding(f)
+        assert "_enrichment_error" not in f
+        assert f["severity_grade_5pt"] is None
+
+    def test_severity_grade_counts_populated(self):
+        """AC1.2 science preservation: populated grading produces the correct
+        max grade. This path was already working; the test anchors behavior."""
+        f = _mi_incidence_with_groups([{"2": 3, "3": 1}])
+        f = _enrich_finding(f)
+        assert "_enrichment_error" not in f
+        assert f["severity_grade_5pt"] == 3
+
+    def test_severity_grade_counts_mixed_across_dose_groups(self):
+        """AC1.4: production regression (73/86 PointCross errored findings).
+        Pre-fix: the outer loop crashes on the first None and
+        severity_grade_5pt stays at the _with_defaults seed of None.
+        Post-fix: the loop continues past None groups and computes the
+        correct max grade from the populated group."""
+        f = _mi_incidence_with_groups([None, None, {"2": 1}])
+        f = _enrich_finding(f)
+        assert "_enrichment_error" not in f
+        assert f["severity_grade_5pt"] == 2
+
+    # Note: R1 F5 proposed an additional end-to-end test for a None entry
+    # inside the group_stats list itself. That test was dropped after
+    # implementation discovered that `classify_dose_response()` in
+    # classification.py:357 (a domain-critical module per
+    # code-quality-guardrails.md) iterates group_stats earlier in the same
+    # enrichment path without None-safety and would crash before the
+    # severity-grade block is reached. Extending the fix into a
+    # domain-critical file is scope creep per rule 15. R1 reviewer verified
+    # empirically that no live data has None entries in group_stats, so the
+    # defensive skip at findings_pipeline.py:268 is pure hardening kept for
+    # symmetry with the line 270 fix. The latent classification.py:357
+    # vulnerability is recorded as a GAP-245 addendum.

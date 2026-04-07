@@ -1,0 +1,53 @@
+topic: findings-enrichment-none-safety
+phase: blueprint-complete
+current_step: build.0
+entered_at: 2026-04-07T00:45:00Z
+
+origin:
+  type: bug-report
+  reporter: user
+  symptom: |
+    Clicking "VACUOLIZATION" in the Findings Rail shows a table with rows
+    for two distinct specimens (LIVER and GLAND, ADRENAL). Rail collapses
+    two physically distinct MI findings into a single entry.
+  research_phase: skipped
+  research_substitute: |
+    Direct code-and-data investigation verified the root cause against
+    backend/generated/PointCross/unified_findings.json. Evidence is
+    empirical and exhaustive for this bug class; no open research
+    questions remain before synthesis.
+
+implementation_context:
+  blast_radius:
+    - 86 of 418 PointCross findings (20.6%) have _enrichment_error="'NoneType' object is not iterable"
+    - All affected findings are MI domain (histopathology)
+    - Cross-organ collisions: INFLAMMATION across 12 specimens, HYPERPLASIA across 3, VACUOLIZATION across 2, DILATATION across 2, ATROPHY across 3
+    - Every affected finding is missing its specimen prefix in endpoint_label — rail collapses them
+  root_cause:
+    file: backend/services/analysis/findings_pipeline.py
+    line: 270
+    code: 'sgc = gs.get("severity_grade_counts", {})'
+    defect_class: |
+      dict.get(key, default) only substitutes default when key is MISSING.
+      When the key is present with value None, .get() returns None.
+      Iterating None at line 271 raises TypeError, which is silently
+      caught at findings_pipeline.py:327, leaving the finding with
+      default endpoint_label (test_name only, no specimen prefix).
+  latent_sites:
+    - Line 145 for pw in f.get("pairwise", [])
+    - Line 176, 190, 199, 209, 268 f.get("group_stats", [])
+    - Line 421 base_pw = f.get("pairwise", [])
+    - Surfaced here for awareness; will audit live data in this cycle to confirm whether same pattern fires elsewhere.
+  adjacent_cycles:
+    - unrecognized-term-flagging SHIPPED 2026-04-07 — touched _with_defaults at findings_pipeline.py:88 (recognition_level fields added). No conflict but same file.
+    - inter-pathologist-severity-uncertainty blueprinted 2026-04-07 — reads severity_grade_counts in concordance builders (cross_study_aggregation.py). Relevant context: severity_grade_counts schema was standardized on string keys + explicit denominators in R1 incorporation (F8). This bug would have corrupted that downstream too if not fixed.
+  guardrails:
+    - findings_pipeline.py is a tracked hotspot (633 LOC) but NOT on the domain-critical list. Defensive None-handling does not change scientific logic.
+    - Severity grade 5pt computation (lines 266-278) MUST produce identical values for findings where severity_grade_counts is populated. This is the science preservation gate for this cycle.
+    - Test Strategy rule: data transforms get unit test with boundary conditions (null handling). This bug's regression test goes here.
+  prior_bug_patterns:
+    - bug-patterns.md does not exist in this repo
+    - Decisions log scan: no prior occurrence of "NoneType is not iterable" or silent enrichment swallowing
+    - This is a novel defect at the project level
+
+auto_decisions: []

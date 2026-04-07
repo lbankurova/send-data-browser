@@ -1040,3 +1040,64 @@ class TestG_EnrichmentPipeline:
             f"G3: {len(violations)} target organ summary issues:\n"
             + "\n".join(violations)
         )
+
+    def test_G4_no_silent_enrichment_errors(self, study_name, findings):
+        """GAP-244: zero findings may carry a silently-swallowed
+        _enrichment_error tag. Catches the class of defects where
+        _enrich_finding raises mid-function and enrich_findings catches
+        the exception, leaving the finding with partial enrichment and
+        downstream identity corruption (e.g. missing specimen prefix in
+        endpoint_label)."""
+        violations = []
+        for i, f in enumerate(findings):
+            if "_enrichment_error" in f:
+                violations.append(
+                    f"  [{i}] {f.get('domain', '?')}/{f.get('specimen', '')}/"
+                    f"{f.get('test_name', f.get('test_code', '?'))}: "
+                    f"_enrichment_error={f['_enrichment_error']!r}"
+                )
+        assert not violations, (
+            f"G4 ({study_name}): {len(violations)} findings carry "
+            f"_enrichment_error (silently swallowed enrichment crashes):\n"
+            + "\n".join(violations[:20])
+            + (f"\n  ... ({len(violations) - 20} more)" if len(violations) > 20 else "")
+        )
+
+    def test_G5_mi_endpoint_label_has_specimen_prefix(self, study_name, findings):
+        """GAP-244: for every MI/MA/CL/OM/TF finding with a non-empty
+        specimen, endpoint_label must be specimen-prefixed ("SPECIMEN \u2014 TEST")
+        and must not equal the bare test_name. Guards against regressions
+        that leave identity collisions across organs (e.g. liver +
+        adrenal 'VACUOLIZATION' collapsing into one rail entry)."""
+        specimen_domains = {"MI", "MA", "CL", "OM", "TF"}
+        violations = []
+        for i, f in enumerate(findings):
+            if f.get("domain") not in specimen_domains:
+                continue
+            specimen = f.get("specimen") or ""
+            if not specimen:
+                continue
+            label = f.get("endpoint_label") or ""
+            test_name = f.get("test_name") or f.get("test_code") or ""
+            # (a) em-dash separator with surrounding spaces ("SPECIMEN — TEST")
+            # — matches the canonical prefix produced by findings_pipeline.py:303
+            if " \u2014 " not in label:
+                violations.append(
+                    f"  [{i}] {f.get('domain')}/{specimen}/{test_name}: "
+                    f"endpoint_label={label!r} (no ' \u2014 ' separator)"
+                )
+                continue
+            # (b) endpoint_label != test_name when specimen differs from test_name
+            # (defends against a disabled prefixing code path where specimen
+            # happens to contain an em-dash unrelated to the prefix convention)
+            if specimen != test_name and label == test_name:
+                violations.append(
+                    f"  [{i}] {f.get('domain')}/{specimen}/{test_name}: "
+                    f"endpoint_label equals test_name (prefix not applied)"
+                )
+        assert not violations, (
+            f"G5 ({study_name}): {len(violations)} MI/MA/CL/OM/TF findings "
+            f"with specimen lack a proper specimen prefix in endpoint_label:\n"
+            + "\n".join(violations[:20])
+            + (f"\n  ... ({len(violations) - 20} more)" if len(violations) > 20 else "")
+        )

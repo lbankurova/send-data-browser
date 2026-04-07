@@ -262,12 +262,19 @@ def _enrich_finding(
         f["organ_recognition_level"] = None
         f["organ_norm_tier"] = None
 
-    # Severity grade (5-point scale) for incidence findings with grading
+    # Severity grade (5-point scale) for incidence findings with grading.
+    # None-safety (GAP-244): both the outer gs entry and severity_grade_counts
+    # may be present-but-None (dict.get default only triggers on missing key).
+    # Prior to the guards below, this block crashed on 463 MI findings across
+    # 12 studies with TypeError: 'NoneType' object is not iterable, which was
+    # silently swallowed upstream and left endpoint_label unprefixed.
     if f.get("data_type") == "incidence":
         max_grade = 0
         for gs in f.get("group_stats", []):
+            if gs is None:
+                continue
             if gs.get("dose_level", 0) > 0:  # treated groups only
-                sgc = gs.get("severity_grade_counts", {})
+                sgc = gs.get("severity_grade_counts") or {}
                 for grade_str in sgc:
                     try:
                         g = int(grade_str)
