@@ -59,7 +59,7 @@ import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActi
 import { buildFindingVerdictMap } from "@/lib/recovery-table-verdicts";
 import { classifyFindingNature } from "@/lib/finding-nature";
 import { RecoveryOverrideDropdown } from "./panes/RecoveryOverrideDropdown";
-import { LOO_THRESHOLD, LOO_SMALL_N_THRESHOLD } from "./panes/LooSensitivityPane";
+import { LOO_THRESHOLD, LOO_SMALL_N_THRESHOLD } from "@/lib/loo-constants";
 
 const col = createColumnHelper<UnifiedFinding>();
 

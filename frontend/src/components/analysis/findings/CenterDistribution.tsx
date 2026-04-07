@@ -150,8 +150,15 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     setSubjectValues(endpointLabel, ctrl, treat);
   }, [subjects, endpointLabel, setSubjectValues]);
 
-  // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
-  const influentialSubjects = useInfluentialSubjectsMap(finding);
+  // Collect LOO influential subjects for this endpoint, scoped to the displayed time slice:
+  // - Main mode: day-scoped to selectedDay so brown dots match the day the strip plot shows
+  //   AND passed through the hook's fragility filter (ratio < LOO_THRESHOLD).
+  // - Recovery mode: endpoint-union (undefined) — the data model does not expose a canonical
+  //   recovery sacrifice day, and selectedDay is shared across tabs so it likely points to a
+  //   main-study day. Fragility filter still applies. See architecture/loo-display-scoping.md.
+  const influentialSubjects = useInfluentialSubjectsMap(finding, {
+    day: showRecoveryAnimals ? undefined : selectedDay,
+  });
   const { data: analyticsData } = useFindingsAnalyticsResult();
 
   // OM domain: check if terminal_bw data is available for bivariate scatter
