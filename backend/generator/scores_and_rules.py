@@ -79,19 +79,97 @@ RULES = [
      "condition": "mortality_signal",
      "template": "{count} deaths in {sex}, dose-dependent pattern."},
 
-    # Protective / inverse incidence rules
-    {"id": "R18", "scope": "endpoint", "severity": "info",
-     "condition": "histo_incidence_decrease",
-     "template": "Decreased incidence of {finding} in {specimen} with treatment ({sex}): "
-                 "{ctrl_pct}% in controls vs {high_pct}% at high dose. "
-                 "This finding is likely a background/spontaneous lesion reduced by compound exposure."},
-    {"id": "R19", "scope": "endpoint", "severity": "info",
-     "condition": "potential_protective_effect",
-     "template": "{finding} in {specimen}: high baseline incidence ({ctrl_pct}% control) with "
-                 "dose-dependent decrease suggests a potential protective or therapeutic effect. "
-                 "Consider relevance to drug repurposing — compound activity against this "
-                 "pathology may indicate utility in related disease contexts."},
+    # R18/R19 protective rules — removed. Now emitted as synthetic rule_results
+    # from protective_syndromes.py output via _emit_protective_rule_results().
+    # Placeholder entries retained for index stability (RULES[17], RULES[18]
+    # are never referenced after this change — all R18/R19 emission is synthetic).
 ]
+
+
+def _emit_protective_rule_results(
+    protective_syndromes: dict,
+) -> list[dict]:
+    """Convert protective syndrome matches to synthetic R18/R19 rule_results.
+
+    R18/R19 are emitted for backward compatibility with frontend consumers.
+    R20-R25 are stored in protective_syndromes[] only (no synthetic results
+    until frontend display definitions are added).
+    """
+    results = []
+    matches = protective_syndromes.get("protective_syndromes", [])
+
+    for match in matches:
+        sid = match.get("syndromeId", "")
+        # Only R18 and R19 get synthetic rule_results
+        if sid not in ("R18", "R19"):
+            continue
+
+        tier = match.get("evidence_tier", "inference")
+        endpoints = match.get("matched_endpoints", [])
+
+        # Build params dict matching the existing R18/R19 contract
+        # consumed by rule-synthesis.ts and rule-definitions.ts.
+        # Populate ctrl_pct/high_pct from the inference gate if available,
+        # otherwise leave as "" (no incidence data for continuous-only rules).
+        params = {
+            "ctrl_pct": "",
+            "high_pct": "",
+            "protective_excluded": False,
+            "evidence_tier": tier,
+            "source": "S11_protective",
+            "syndrome_name": match.get("name", ""),
+            "matched_domains": match.get("matched_domains", []),
+            "confidence_ceiling": match.get("confidence_ceiling", "MODERATE"),
+        }
+
+        if tier == "descriptive_only":
+            params["qualifier"] = match.get("qualifier", "")
+
+        # Gate result params (inference tier)
+        gate = (match.get("inference_gate") or [None])[0]
+        if gate and gate.get("passes"):
+            params["ctrl_pct"] = str(gate.get("ctrl_incidence_pct", ""))
+            params["high_pct"] = str(gate.get("treat_incidence_pct", ""))
+            params["boschloo_p"] = gate.get("boschloo_p")
+            params["bayesian_p_less"] = gate.get("bayesian_p_less")
+            params["spared_cases"] = gate.get("spared_cases")
+
+        sex = endpoints[0].get("sex", "") if endpoints else ""
+        finding_label = endpoints[0].get("endpoint_label", "") if endpoints else ""
+        specimen = endpoints[0].get("specimen", "") if endpoints else ""
+
+        severity = "info"
+        if sid == "R18":
+            condition = "histo_incidence_decrease"
+            template = (
+                f"Protective pattern: {match.get('name', '')} detected "
+                f"in {sex}. Evidence tier: {tier}."
+            )
+        else:
+            condition = "potential_protective_effect"
+            template = (
+                f"Protective pattern: {match.get('name', '')} detected "
+                f"in {sex}. Evidence tier: {tier}."
+            )
+
+        result = {
+            "rule_id": sid,
+            "scope": "endpoint",
+            "severity": severity,
+            "condition": condition,
+            "message": template,
+            "context_key": f"{finding_label}_{specimen}_{sex}",
+            "endpoint_label": finding_label,
+            "specimen": specimen,
+            "sex": sex,
+            "domain": endpoints[0].get("domain", "") if endpoints else "",
+            "params": params,
+            "evidence_tier": tier,
+            "source": "S11_protective",
+        }
+        results.append(result)
+
+    return results
 
 
 def evaluate_rules(
@@ -99,6 +177,7 @@ def evaluate_rules(
     target_organs: list[dict],
     noael_summary: list[dict],
     dose_groups: list[dict],
+    protective_syndromes: dict | None = None,
 ) -> list[dict]:
     """Evaluate all rules against findings and return structured results."""
     results = []
@@ -179,29 +258,8 @@ def evaluate_rules(
                 if finding.get("avg_severity") is not None:
                     results.append(_emit(RULES[12], ctx, finding))
 
-            # R18-R19: Histopathology — incidence decrease (protective)
-            # Require a real specimen — clinical observations (CL domain
-            # findings without specimen) are whole-animal signs, not tissue
-            # pathology, so they're excluded from protective/repurposing rules.
-            specimen = finding.get("specimen")
-            gs = finding.get("group_stats", [])
-            if specimen and finding.get("direction") == "down" and len(gs) >= 2:
-                ctrl_inc = gs[0].get("incidence", 0) * 100
-                high_inc = gs[-1].get("incidence", 0) * 100
-                if ctrl_inc > 0 and high_inc < ctrl_inc:
-                    dec_ctx = {**ctx, "ctrl_pct": f"{ctrl_inc:.0f}", "high_pct": f"{high_inc:.0f}"}
-                    prot_params = {"ctrl_pct": f"{ctrl_inc:.0f}", "high_pct": f"{high_inc:.0f}"}
-                    results.append(_emit(RULES[17], dec_ctx, finding, params=prot_params))
-                    # R19: Drug repurposing — when control incidence is high
-                    # and there's a clear decrease (monotonic, threshold, or
-                    # non-monotonic with large magnitude drop)
-                    pattern = finding.get("dose_response_pattern", "")
-                    large_drop = (ctrl_inc - high_inc) >= 40
-                    if ctrl_inc >= 50 and (
-                        pattern in ("monotonic_decrease", "threshold")
-                        or (pattern == "non_monotonic" and large_drop)
-                    ):
-                        results.append(_emit(RULES[18], dec_ctx, finding, params=prot_params))
+            # R18/R19 protective detection moved to protective_syndromes.py.
+            # Synthetic rule_results are emitted by _emit_protective_rule_results().
 
     # Target organ rules (R08, R09, R16)
     for organ in target_organs:
@@ -258,6 +316,10 @@ def evaluate_rules(
                     "sex": finding.get("sex", ""),
                     "count": count,
                 }, params={"count": count}))
+
+    # Emit synthetic R18/R19 rule_results from protective syndrome matches
+    if protective_syndromes:
+        results.extend(_emit_protective_rule_results(protective_syndromes))
 
     results = _apply_suppressions(results)
     results = apply_clinical_layer(results, findings)

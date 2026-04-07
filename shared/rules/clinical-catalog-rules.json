@@ -130,12 +130,35 @@
     "excluded_findings": ["CARCINOMA", "SARCOMA", "LYMPHOMA", "LEUKEMIA", "MALIGNANT", "ADENOMA", "FIBROMA", "BENIGN"],
     "rules": [
       {"id": "PEX01", "desc": "Reproductive organs", "check": "organ_system"},
-      {"id": "PEX02", "desc": "Neoplasia", "check": "neoplasia_finding"},
+      {"id": "PEX02", "desc": "Neoplasia", "check": "neoplasia_finding", "r20_carveout": true},
       {"id": "PEX03", "desc": "Low baseline (control < 10%)", "check": "low_control_incidence", "max_control_incidence": 0.10},
       {"id": "PEX04", "desc": "Sentinel/HighConcern finding", "check": "catalog_class"},
-      {"id": "PEX05", "desc": "Single-animal decrease", "check": "single_animal", "max_n_affected_treated": 1},
+      {"id": "PEX05a", "desc": "Single-animal decrease", "check": "single_animal", "max_n_affected_treated": 1},
       {"id": "PEX06", "desc": "Hematopoietic/immune organs", "check": "organ_system"},
-      {"id": "PEX07", "desc": "Non-monotonic without significance", "check": "non_monotonic"}
+      {"id": "PEX07", "desc": "Non-monotonic without significance", "check": "non_monotonic"},
+      {"id": "PEX08", "desc": "Survival bias", "check": "survival_bias", "scope": ["R20", "R21", "R22", "R24"],
+        "thresholds": {
+          "subchronic_mortality_pct": 0,
+          "chronic_mortality_pct": 10,
+          "chronic_cox_p": 0.05,
+          "carcinogenicity_peto_diff_pp": 5
+        },
+        "citation": "Peto et al. 1980; OECD TG 451 S52; ICH S1B(R1) S5.2"},
+      {"id": "PEX09", "desc": "Excessive toxicity confound (direct measurements)", "check": "excessive_toxicity", "scope": ["R20", "R21", "R22", "R24"],
+        "thresholds": {
+          "bw_loss_pct": 20,
+          "mortality_pct": 10,
+          "min_dose_groups_with_decedents": 2
+        },
+        "citation": "OECD TG 408 S50; Chamanza & Wright 2015"},
+      {"id": "PEX10", "desc": "Starvation/inanition gate", "check": "starvation", "scope": ["R23"],
+        "thresholds": {
+          "food_consumption_decrease_pct": 20,
+          "bw_decrease_pct": 10,
+          "combined_bw_pct": 5,
+          "combined_food_pct": 10
+        },
+        "citation": "Hubert et al. 2000; ICH M3(R2) S3.2; OECD TG 408"}
     ]
   }
 }

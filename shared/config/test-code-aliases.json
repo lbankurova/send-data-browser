@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Canonical test code registry. Maps test code aliases to canonical codes across heterogeneous SEND datasets. Multi-domain: LB, BW, FW, EG, VS, BG, OM, CV, DS, TF, IS, RE. Source: 16-study vocabulary analysis (cross-study-terminology-coverage research).",
   "_flat_structure_note": "This registry is domain-agnostic. The domain gate in assess_test_code_recognition() ensures codes are only looked up for domains in _TEST_CODE_DICTIONARY_DOMAINS. No two domains in the current corpus use the same code with conflicting semantics.",
   "_tf_note": "TF self-canonicals are composite organ_finding strings (organ + morphology + behavior) entered with commas because that is how the temporal module encodes them.",
@@ -65,6 +65,19 @@
     "DIABP_0-6H", "DIABP_6-14H", "DIABP_14-24H",
     "MAP_0-6H", "MAP_6-14H", "MAP_14-24H",
     "HR_0-6H", "HR_6-14H", "HR_14-24H",
-    "TEMP_0-6H", "TEMP_6-14H", "TEMP_14-24H"
+    "TEMP_0-6H", "TEMP_6-14H", "TEMP_14-24H",
+    "ALBCREAT", "AMORPHSD", "ANISO", "BASOCE", "BLAST", "BLSTNMCE",
+    "CASTS", "CASULPH", "CLCREAT", "CLEXR", "CRYSTALS",
+    "CSEPI", "CSFAT", "CSGRAN", "CSHYAL", "CSRBC", "CSWAX", "CSWBC",
+    "CYAMORPH", "CYBILI", "CYCACAR", "CYCAOXA", "CYCAPHOS", "CYCHOL",
+    "CYCYSTIN", "CYSTARCH", "CYTRPHOS", "CYTYRO", "CYURIAC",
+    "EOSCE", "EPIC", "EPISQCE", "EPITUCE",
+    "FATACFR", "FATDROP", "GLUCCRT", "HPOCROM", "HYPERCHR",
+    "KCREAT", "KEXR", "LGUNSCE", "LYMAT", "LYMCE",
+    "MACROCY", "METAMY", "METAMYCE", "MICROCY", "MONOCE",
+    "MYCY", "MYCYCE", "NACREAT", "NAGCREAT", "NEUTCE",
+    "PHOSCRT", "PHOSEXR", "PLATCLMP", "PLATLRG",
+    "PROMY", "PROMYCE", "PROTCRT", "SODMEXR",
+    "TUCR", "TUGL", "TUNAG", "TUPRO", "TURMA", "YEAST"
   ]
 }

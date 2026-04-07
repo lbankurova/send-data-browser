@@ -1,0 +1,185 @@
+topic: protective-syndrome-engine
+started: 2026-04-06T00:00:00Z
+phase: blueprint
+phase: blueprint-complete
+current_step: build.2
+checkpoints_blueprint_6:
+  r2_review_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-synthesis-review-r2.md
+  r2_findings: "0 FLAWED, 3 CONDITIONAL, 1 SOUND"
+  r1_resolved: "9/9 RESOLVED"
+  plan_validated: true
+checkpoints_blueprint_4_5:
+  r1_review_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-synthesis-review.md
+  r1_findings: "2 FLAWED, 7 CONDITIONAL, 3 SOUND"
+  r1_flawed_fixed:
+    - "F1+F2: detection moved to backend generator (protective_syndromes.py), D3 filter in frontend"
+  r1_conditional_fixed: 7
+  key_architectural_change: "hybrid backend detection + frontend D3 filter"
+checkpoints_blueprint_3:
+  probe_verdict: "AUTO-ACCEPT"
+  probe_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-probe.md
+  breaks: 6 (all resolved -- 2 PEX rename internal, 3 frontend R18/R19 synthetic-ID compat, 1 deprecated aliases)
+  science_flags: 4 (all bayesian prior, already in Feature 0)
+  propagates: 6
+  safe: 18
+  critical_finding: "Frontend actively consumes R18/R19 -- synthetic results must preserve IDs, R20-R25 as new protective_syndromes[] field"
+checkpoints_blueprint_2:
+  architect_verdict: "SIMPLIFY -> PASS (2 REQUIRED + 3 ADVISORY applied, re-gated PASS)"
+  review_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-architect-review.md
+  required_fixes: 2
+  advisory_fixes: 3
+  science_flags: 2 (resolved by required fixes)
+checkpoints_blueprint_1:
+  synthesis_path: docs/_internal/incoming/protective-syndrome-engine-synthesis.md
+  features: 9
+  mandatory_sections: 6/6
+  new_files: 5
+  modified_files: 6
+  net_loc_estimate: "+333 TS, -80 PY (net +253)"
+  key_decisions:
+    - "Feature 0 (Bayesian prior migration) is prerequisite — must ship first"
+    - "Feature 2 (detection engine) extends cross-domain-syndromes.ts, not new file"
+    - "R25 blocked on S20 — schema defined but engine skips"
+    - "Frontend display deferred — backend must stabilize first"
+    - "NTP TR-598 hand-encoded fixture for R18 positive control"
+    - "3-tier N routing: N<5 suppress, N=5-7 descriptive, N>=8 inference"
+status: in-progress
+checkpoints_blueprint_0:
+  decisions_log_entries: 242
+  failed_approaches: 0
+  relevant_patterns:
+    - "severity_grade_counts can be None-valued — use or {} defense (findings-enrichment-none-safety 2026-04-07)"
+    - "findings_pipeline.py ~680 LOC hotspot — delegate to helpers, don't bloat"
+    - "subject_sentinel.py 4-layer generator module pattern — structural template for protective_syndromes module"
+    - "recognition_level now on MI/MA/CL findings — protective histopath rules may reference"
+    - "severity_bands now on findings matrix rows — protective rules may reference severity consistency"
+    - "bayesian_incidence_posterior at statistics.py:~731 feeds classification.py:722,:807 — gate-bearing, CI-1 migration"
+  cross_topic_interactions:
+    - "etransafe-send-snomed-integration: recognition pipeline live, finding-synonyms dict available"
+    - "inter-pathologist-severity-uncertainty: severity_band classifier shipped"
+    - "outlier-sentinel-animal-identification: subject_sentinel.py generator pattern"
+    - "findings-enrichment-none-safety: None-safe sgc iteration pattern"
+    - "cross-study-phase-1-aggregation-backend: aggregation API ready for protective data"
+  bug_patterns_file: "does not exist"
+  guardrails_checked: true
+  domain_critical_modules_affected:
+    - "classification.py — bayesian_incidence_posterior migration (CI-1)"
+    - "statistics.py — Boschloo + Bayesian gate functions (new code)"
+    - "subject_syndromes.py — HISTOPATH_RULES coexistence with protective rules"
+checkpoints_6:
+  distill_verdict: NOTES
+  audit_doc: docs/_internal/research/distillations/protective-syndrome-engine-coherence-audit.md
+  build_cycle_inputs:
+    - "CI-1: bayesian_incidence_posterior at statistics.py:~731 uses Beta(1,1) not Beta(0.5,0.5); migrate to Jeffreys before protective rules ship"
+    - "CI-2: 'EFSA small-effect boundary' label is unsourced; corpus cleanup task (non-blocking)"
+    - "CI-3: 24 orphaned gaps must be persisted in step 7b before research declared complete"
+  doc_additions:
+    - "§7b Corpus Integration section added (after §7, before §8)"
+    - "G-14 added to §10 (adverse minimum-N asymmetry, not recommended for change)"
+completed_5b: 2026-04-07T05:10:00Z
+checkpoints_5b:
+  doc_growth: "1611 -> 1966 lines"
+  nf1_lines_fixed: [201, 1339, 1543]
+  nf2c_implementation:
+    - "§2.9 added (Minimum Group Size Requirement — Honest Limit at Small N)"
+    - "All R18-R25 require treat_n>=8 AND ctrl_n>=8 as first predicate"
+    - "§7 Protective-X3b invariant added (N>=8 pre-gate)"
+    - "S15 banner contract documented"
+    - "FM21 (small-N silent suppression — not a failure)"
+  nf3a_study_sourced: "NTP TR-598 PFOA — Hsd:SD rats, 2yr feed + 16wk interim, N=50/sex/dose + N=10/sex interim, PPARα MOA, dual-role R18 positive (interim) and exclusion test (2yr arm)"
+  nf3a_artifacts:
+    - "§6.6 added with study identification + Phase 1 fixture plan"
+    - "§6.5 reframed: negative + TR-598 positive + power simulation"
+    - "DATA-GAP-PROT-03 partially closed; PROT-04 still open for R20-R22, R24"
+  conditional_addressed: 7
+  fnr_table_added: "§2.3 power table 8 patterns × 5 N values via scipy"
+  new_simulation_artifact: "backend/simulations/protective_gate_fnr.py"
+user_decisions:
+  NF2: "c — keep AND-gate, require N>=8 minimum group size for any protective rule"
+  NF3: "a — source >=1 NTP TR positive control now"
+completed:
+  research.1: 2026-04-06T23:59:00Z
+  research.2: 2026-04-07T03:50:00Z
+  research.3: 2026-04-07T04:15:00Z
+  research.4: 2026-04-07T04:35:00Z
+checkpoints_r2:
+  r1_addressed: 11
+  r1_partial: 4
+  r1_pending: 1
+  new_flawed: 3
+  new_conditional: 7
+  flawed_classification: "Not bikeshedding (R2 verified empirically). Not same-as-R1 (all NF are new). Mix of mechanical (NF1) and substantive (NF2, NF3)."
+  user_decision_required:
+    NF1:
+      type: mechanical
+      action: "fix in place; lines 201, 1339, 1543 silently describe original OR/p<0.10/P>0.80 gate; make consistent with §2.3 AND/p<0.05/P>0.95"
+      blocking: false
+    NF2:
+      type: design
+      problem: "At N=5, AND-combination of Boschloo p<0.05 + Bayesian P>0.95 makes Bayesian redundant; layered architecture has no operational rationale"
+      options:
+        - "(a) Drop Bayesian; use Boschloo p<0.05 alone — simpler, defensible"
+        - "(b) Change combinator to OR — restores layered value but inflates type-I error"
+        - "(c) Accept N=5 limit: require N>=8 minimum group for protective gates"
+      blocking: true
+    NF3:
+      type: process
+      problem: "Phase 1 validation was reframed as negative-only, deferring positive-control sourcing as effort-based; violates CLAUDE.md rule 14 (no unprompted deferrals); R2 says NTP TR studies are public-domain ~1 day effort"
+      options:
+        - "(a) Source >=1 NTP TR positive control now"
+        - "(b) Reframe as 'Phase 1 = negative non-firing + 1 NTP positive sourced in parallel'"
+        - "(c) Document deferral with explicit user signoff"
+      blocking: true
+checkpoints_r3:
+  flawed_rewrites:
+    - "F1 Boschloo p-value table recomputed via scipy boschloo_exact, alternative='greater'"
+    - "F2 Bayesian Jeffreys posterior table recomputed via Beta(0.5,0.5) MC, threshold raised 0.80->0.95"
+    - "F3 Snyder/Burwell 2020 replaced with Carfagna et al 2021 (Chem Res Toxicol 34(2):483-494, FDA CDER ~1800 SEND studies); Bockenstedt 2025 + Travlos 2011 + Hard 2009 added as HCD anchors"
+    - "F4 PointCross reclassed as R18 negative control; §6 rewrite shows R18/R20/R21/R22/R24 all lack positive controls in 16-study corpus"
+  conditional_addressed: 11
+  new_subsections: ["§2.6 multiple-comparison", "§2.7 TR predicate", "§2.8 directional asymmetry"]
+  layered_gate_change: "Boschloo p<0.10 OR Bayesian P>0.80  →  Boschloo p<0.05 AND Bayesian P>0.95 AND >=2 spared cases"
+  doc_growth: "1336 -> 1611 lines"
+  peer_review_notes_section: "line 1557, 16 entries"
+checkpoints:
+  research.1:
+    completed: 2026-04-06T23:59:00Z
+    output: docs/_internal/research/protective-syndrome-engine.md
+    sections: 16
+    line_count: 1336
+    gate_already_known: pass
+    key_decisions:
+      - "R18-R25 schema spec'd at XS01-XS10 rigor with literature citations (Hall 2012, Maronpot 2010, Ennulat 2010, Frazier 2012, Hard 2009, Heusch 2021, ICH S1B(R1))"
+      - "Statistical gate (X3 analog): layered Boschloo p<0.10 OR Bayesian P(treat<ctrl)>0.80 under Jeffreys Beta(0.5,0.5); Cohen's h CI rejected"
+      - "Magnitude floor recommendation: raise default 15->20pp with per-rule overrides (R20:25, R21:30, R22:20, R24:25)"
+      - "PEX08 survival, PEX09 excessive toxicity, PEX10 starvation; resolved PEX05 collision via rename PEX05a"
+      - "D3 suppression schema: per-(adverse_syn x protective_syn x shared_term) adverse_compatible_with allowlist with citation; engine-level two-pass"
+      - "HCD gap is largest defect: histopath spontaneous incidence missing entirely; NTP HCD + Snyder 2020 BioCelerate scored top sources"
+      - "Validation: strong negative controls, sparse positive controls; R20-R22 need new NTP TR sourcing"
+      - "Two new invariants proposed: Protective-X3, Protective-X10"
+    constraints_respected:
+      - "D1 integrated rail (not relitigated)"
+      - "D2 fingerprint color encoding (not relitigated)"
+      - "D3 suppression default (designed schema within constraint, not alternatives)"
+    next_needs: "peer review needs doc path only — no rationale carried over"
+constraints:
+  - "OUT OF SCOPE D1: integrated syndrome rail UI (already decided)"
+  - "OUT OF SCOPE D2: fingerprint red/green direction encoding (already decided)"
+  - "OUT OF SCOPE D3: endpoint double-membership suppression with peer-reviewed citation-required escape hatch (already decided)"
+  - "Research must respect these constraints, not propose alternatives"
+deliverables:
+  - "(1) per-rule cross-domain detection logic with explicit endpoint sets, directional gates, magnitude thresholds, minimum convergence counts (XS01-XS10 rigor)"
+  - "(2) statistical gating method for decreased-incidence findings at non-rodent N=3-5 (Boschloo, Cohen's h CI, Wilson, Bayesian Jeffreys)"
+  - "(3) calibration source for magnitude_floor_pp and control_incidence_floor_pct (thresholds.json:51-59 currently uncited)"
+  - "(4) PEX rule design for survival bias and excessive-toxicity confound (PE-05/PE-06 + D3 adverse_compatible_with allowlist schema)"
+  - "(5) HCD coverage gap analysis — does hcd-reference-ranges.json have spontaneous incidence rates?"
+  - "(6) validation feasibility — which of 16 corpus studies serve as positive/negative controls"
+touches_subsystems: [S08, S11, S12, S14, S15, S20, S21]
+affects_streams:
+  - evidence-scoring-overhaul
+  - incidence-scoring-metrics
+  - cohort-view-overhaul
+registry_stream: protective-signals-rigor
+inputs:
+  - docs/_internal/knowledge/protective-syndromes-research-NOT-IN-SCOPE-YET.md
+  - docs/_internal/research/distillations/protective-signals-rigor-audit.md

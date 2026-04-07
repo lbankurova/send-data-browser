@@ -260,7 +260,7 @@ class TestDictionaryVersions:
         organ_aliases dict was bumped to 1.1.0 by Feature 7."""
         versions = get_dictionary_versions()
         assert versions == {
-            "test_code_aliases": "1.1.0",
+            "test_code_aliases": "1.2.0",
             "organ_aliases": "1.1.0",
             "finding_synonyms": "1.0.0",
         }
@@ -275,7 +275,7 @@ class TestDictionaryVersions:
         monkeypatch.setattr(sk, "_TEST_CODE_REVERSE_MAP", {"FAKE": "FAKE"})
         # Version must still be live
         versions = get_dictionary_versions()
-        assert versions["test_code_aliases"] == "1.1.0"
+        assert versions["test_code_aliases"] == "1.2.0"
         assert versions["organ_aliases"] == "1.1.0"
 
 

@@ -49,13 +49,31 @@
   },
 
   "protective_signal": {
-    "_comment": "Thresholds for protective signal classification",
-    "magnitude_floor_pp": 15,
+    "_comment": "Thresholds for protective signal classification (calibrated per research S3.3)",
+    "magnitude_floor_pp": 20,
     "control_incidence_floor_pct": 10,
+    "high_confidence_ctrl_inc_pct": 50,
+    "high_confidence_drop_pp": 40,
     "min_cross_domain_correlates": 2,
     "min_moderate_correlates": 1,
+    "_deprecated_min_cross_domain_correlates": true,
+    "_deprecated_min_moderate_correlates": true,
+    "_deprecated_note": "min_cross_domain_correlates and min_moderate_correlates retained as aliases until ProtectiveSignalsBar and protective-signal.ts are retired. Per-rule minDomains in protective-syndromes.json is the preferred expression.",
     "repurposing_ctrl_inc_pct": 50,
-    "repurposing_large_drop_pct": 40
+    "_deprecated_repurposing_ctrl_inc_pct": true,
+    "repurposing_large_drop_pct": 40,
+    "_deprecated_repurposing_large_drop_pct": true,
+    "magnitude_floor_pp_overrides": {
+      "R20": 25,
+      "R21": 30,
+      "R22": 20,
+      "R24": 25
+    },
+    "control_incidence_floor_pct_overrides": {
+      "R20": 20,
+      "R21": 30,
+      "R22": 15
+    }
   },
 
   "cross_animal_flags": {

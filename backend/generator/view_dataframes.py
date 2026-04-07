@@ -899,6 +899,9 @@ def _build_noael_for_groups(
         for f in sex_findings:
             if f.get("is_derived"):
                 continue
+            # Descriptive-only protective results do not feed NOAEL
+            if f.get("evidence_tier") == "descriptive_only":
+                continue
             if use_woe:
                 for pw in f.get("pairwise", []):
                     if _is_loael_driving_woe(f, pw["dose_level"], _n_per_group, params.effect_relevance_threshold):

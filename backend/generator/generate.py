@@ -31,6 +31,7 @@ from generator.noael_overlay import build_subject_noael_overlay
 from generator.animal_influence import build_animal_influence
 from generator.subject_sentinel import build_subject_sentinel
 from generator.subject_similarity import build_subject_similarity
+from generator.protective_syndromes import build_protective_syndromes
 from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
 from services.analysis.send_knowledge import (
@@ -458,6 +459,42 @@ def generate(study_id: str):
             import traceback
             traceback.print_exc()
 
+    # Phase 1g4: Protective syndrome detection
+    print("Phase 1g4: Detecting protective syndromes (R18-R25)...")
+    protective_syndromes = {"evidence_tier": "suppressed", "protective_syndromes": [], "status": "SKIPPED"}
+    try:
+        _prot_species = dg_data.get("species")
+        _prot_strain = None
+        try:
+            from services.analysis.hcd import get_strain as _get_strain_prot
+            _prot_strain = _get_strain_prot(study)
+        except Exception:
+            pass
+        _prot_design = adapter.get_design_type()
+        protective_syndromes = build_protective_syndromes(
+            findings, dose_groups,
+            species=_prot_species,
+            strain=_prot_strain,
+            study_type="subchronic",
+            mortality=mortality,
+            food_summary=food_summary,
+            design_type=_prot_design,
+        )
+        _write_json(out_dir / "protective_syndromes.json", protective_syndromes)
+        n_prot = len(protective_syndromes.get("protective_syndromes", []))
+        tier_label = protective_syndromes.get("evidence_tier", "unknown")
+        status = protective_syndromes.get("status", "")
+        if status == "PROT_SUPPRESSED_N_LT_5":
+            print(f"  N<5: protective syndromes suppressed")
+        elif status == "PROT_DESIGN_NOT_SUPPORTED":
+            print(f"  Design not supported: {_prot_design}")
+        else:
+            print(f"  {n_prot} protective syndrome(s) detected (tier: {tier_label})")
+    except Exception as e:
+        print(f"  WARNING: Protective syndrome detection failed: {e}")
+        import traceback
+        traceback.print_exc()
+
     # Phase 1h: Onset days and recovery verdicts
     _tick("1h_start")
     print("Phase 1h: Computing onset days and recovery verdicts...")
@@ -502,6 +539,7 @@ def generate(study_id: str):
         compound_partitions=dg_data.get("compound_partitions"),
         mi_tissue_inventory=dg_data.get("mi_tissue_inventory"),
         species=dg_data.get("species"),
+        protective_syndromes=protective_syndromes,
     )
 
     # Extract views for downstream consumers

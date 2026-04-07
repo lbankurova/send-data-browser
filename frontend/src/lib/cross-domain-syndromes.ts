@@ -1215,3 +1215,150 @@ function formatRequiredLogic(logic: RequiredLogic, allTags: string[]): string {
         .replace(/,\s*/g, ", ");
   }
 }
+
+// ─── D3 Suppression Filter (Protective Syndromes) ─────────
+
+/** A matched endpoint from the backend protective detection. */
+export interface ProtectiveEndpointMatch {
+  tag: string;
+  finding_id: string;
+  domain: string;
+  test_code: string | null;
+  specimen: string | null;
+  finding: string | null;
+  direction: string;
+  role: string;
+  endpoint_label: string;
+  sex: string;
+  suppressedBy?: string;
+  suppressionReason?: string;
+}
+
+/** A protective syndrome match from the backend. */
+export interface ProtectiveSyndromeMatch {
+  syndromeId: string;
+  name: string;
+  category: string;
+  evidence_tier: string;
+  confidence_ceiling: string;
+  matched_domains: string[];
+  matched_endpoints: ProtectiveEndpointMatch[];
+  pex_status: Array<{ finding_id: string; excluded: boolean; pex_id?: string }>;
+  d3_pending: boolean;
+  qualifier?: string;
+  inference_gate?: Array<{
+    finding_id: string;
+    passes: boolean;
+    boschloo_p: number;
+    bayesian_p_less: number;
+    spared_cases: number;
+  }>;
+  nearMissAdverseOverlap?: Array<{
+    endpoint_label: string;
+    adverse_syndrome_id: string;
+    gLower_gap: number;
+  }>;
+  suppressed?: boolean;
+  suppressionReason?: string;
+}
+
+/** Allowlist entry from the protective catalog. */
+interface D3AllowlistEntry {
+  adverse_syndrome_id: string;
+  shared_term: string;
+  citation: { author: string; year: number; rationale: string };
+}
+
+/**
+ * D3 suppression filter: suppress protective endpoints that also appear
+ * in adverse syndrome matches, unless an allowlist entry exists.
+ *
+ * This is a pure filter -- no syndrome detection logic. It checks each
+ * protective endpoint against the adverse syndrome results and either
+ * suppresses it or annotates a near-miss.
+ *
+ * Runs per-sex when sex-divergent endpoints exist.
+ */
+export function applyD3Filter(
+  protectiveSyndromes: ProtectiveSyndromeMatch[],
+  adverseSyndromes: CrossDomainSyndrome[],
+  allowlistByRule?: Record<string, D3AllowlistEntry[]>,
+): ProtectiveSyndromeMatch[] {
+  if (!protectiveSyndromes.length || !adverseSyndromes.length) {
+    return protectiveSyndromes.map((ps) => ({ ...ps, d3_pending: false }));
+  }
+
+  // Build adverse endpoint lookup: endpoint_label -> syndrome IDs
+  const adverseEndpoints = new Map<string, Set<string>>();
+  for (const as of adverseSyndromes) {
+    for (const ep of as.matchedEndpoints) {
+      const key = `${ep.endpoint_label}|${ep.sex ?? ""}`;
+      if (!adverseEndpoints.has(key)) {
+        adverseEndpoints.set(key, new Set());
+      }
+      adverseEndpoints.get(key)!.add(as.id);
+    }
+  }
+
+  return protectiveSyndromes.map((ps) => {
+    const result = { ...ps, d3_pending: false };
+    const allowlist = allowlistByRule?.[ps.syndromeId] ?? [];
+    const suppressedEndpoints: ProtectiveEndpointMatch[] = [];
+    const keptEndpoints: ProtectiveEndpointMatch[] = [];
+    const nearMisses: Array<{
+      endpoint_label: string;
+      adverse_syndrome_id: string;
+      gLower_gap: number;
+    }> = [];
+
+    for (const ep of ps.matched_endpoints) {
+      const key = `${ep.endpoint_label}|${ep.sex ?? ""}`;
+      const adverseOwners = adverseEndpoints.get(key);
+
+      if (!adverseOwners || adverseOwners.size === 0) {
+        keptEndpoints.push(ep);
+        continue;
+      }
+
+      // Check allowlist
+      let suppressed = false;
+      for (const advSynId of adverseOwners) {
+        const hasAllowlist = allowlist.some(
+          (a) =>
+            a.adverse_syndrome_id === advSynId &&
+            (a.shared_term === "ALL" ||
+              (ep.endpoint_label ?? "")
+                .toLowerCase()
+                .includes(a.shared_term.toLowerCase())),
+        );
+        if (!hasAllowlist) {
+          suppressedEndpoints.push({
+            ...ep,
+            suppressedBy: advSynId,
+            suppressionReason: "double_membership_default",
+          });
+          suppressed = true;
+          break;
+        }
+      }
+
+      if (!suppressed) {
+        keptEndpoints.push(ep);
+      }
+    }
+
+    result.matched_endpoints = keptEndpoints;
+    result.nearMissAdverseOverlap = nearMisses;
+
+    // Check if remaining endpoints still meet minDomains
+    const remainingDomains = new Set(keptEndpoints.map((ep) => ep.domain));
+    // We don't have minDomains here, so mark suppressed if 0 endpoints remain
+    if (keptEndpoints.length === 0 && suppressedEndpoints.length > 0) {
+      result.suppressed = true;
+      result.suppressionReason = "below_minDomains_after_d3";
+    }
+    result.matched_domains = [...remainingDomains].sort();
+
+    return result;
+  });
+}

@@ -61,6 +61,7 @@ class ParameterizedAnalysisPipeline:
         compound_partitions: dict | None = None,
         mi_tissue_inventory: set[str] | None = None,
         species: str | None = None,
+        protective_syndromes: dict | None = None,
     ) -> dict[str, list | dict]:
         """Run pipeline and return all view JSONs.
 
@@ -120,7 +121,8 @@ class ParameterizedAnalysisPipeline:
             compound_partitions=compound_partitions,
             classification_framework=clf_framework,
         )
-        rules = evaluate_rules(findings, target_organs, noael, dose_groups)
+        rules = evaluate_rules(findings, target_organs, noael, dose_groups,
+                               protective_syndromes=protective_syndromes)
 
         # 4. Build unified_findings response (IDs + correlations + summary)
         for f in findings:

@@ -1,0 +1,951 @@
+{
+  "version": "1.0.0",
+  "_source": "docs/_internal/research/protective-syndrome-engine.md (2095 lines, validated 2026-04-07)",
+  "_expression_syntax": "Expressions use any(TAG OR TAG) syntax (backend parser in protective_syndromes.py). NOT compatible with the ANY(a, b) comma-separator syntax used in cross-domain-syndrome-data.ts (frontend parser).",
+  "rules": [
+    {
+      "syndromeId": "R18",
+      "name": "Adaptive Hepatic Enzyme Induction Syndrome",
+      "category": "A",
+      "direction": "decreasing",
+      "minDomains": 2,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "(LIVER_WT AND HEPATIC_HYPERTROPHY) AND NOT XS01_REQUIRED AND NOT XS02_REQUIRED AND NOT ALT_2X AND NOT AST_2X"
+      },
+      "terms": [
+        {
+          "tag": "LIVER_WT",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": ["liver"] },
+          "direction": "up",
+          "role": "required",
+          "notes": "Hall 2012: 10% increase is the lower bound for biologically interpretable"
+        },
+        {
+          "tag": "HEPATIC_HYPERTROPHY",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["hypertrophy", "hepatocellular hypertrophy", "centrilobular hypertrophy"]
+          },
+          "direction": "up",
+          "role": "required",
+          "notes": "Maronpot 2010: graded <=2 (mild-moderate); higher grades may indicate toxicity"
+        },
+        {
+          "tag": "XS01_REQUIRED",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["necrosis", "degeneration", "single cell necrosis", "apoptosis", "inflammation"]
+          },
+          "direction": "any",
+          "role": "exclusion",
+          "notes": "XS01 supporting term inversion. Presence triggers directionalGate reject"
+        },
+        {
+          "tag": "XS02_REQUIRED",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["liver", "hepat", "bile duct", "gallbladder"],
+            "finding": ["cholestasis", "bile duct hyperplasia", "bile duct proliferation", "periportal fibrosis"]
+          },
+          "direction": "any",
+          "role": "exclusion",
+          "notes": "XS02 cholestatic term inversion"
+        },
+        {
+          "tag": "ALT_2X",
+          "domain": "LB",
+          "testCodes": ["ALT", "ALAT"],
+          "direction": "up",
+          "role": "exclusion",
+          "foldChangeThreshold": 2.0,
+          "notes": "Ennulat 2010 Table 3 + Hall 2012 S4.2: fold-change >= 2.0 rejects"
+        },
+        {
+          "tag": "AST_2X",
+          "domain": "LB",
+          "testCodes": ["AST", "ASAT"],
+          "direction": "up",
+          "role": "exclusion",
+          "foldChangeThreshold": 2.0,
+          "notes": "Same as ALT"
+        },
+        {
+          "tag": "ALP_MILD",
+          "domain": "LB",
+          "testCodes": ["ALP", "ALKP"],
+          "direction": "up",
+          "role": "supporting",
+          "notes": "Ennulat 2010 S3.3: mild ALP elevation expected with DME induction (fold >= 1.2 and < 2.0)"
+        },
+        {
+          "tag": "CHOL_DOWN",
+          "domain": "LB",
+          "testCodes": ["CHOL"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "PPARa signature (fibrate-class drugs); Maronpot 2010 S5"
+        },
+        {
+          "tag": "TRIG_DOWN",
+          "domain": "LB",
+          "testCodes": ["TRIG"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "PPARa signature"
+        },
+        {
+          "tag": "T4_DOWN",
+          "domain": "LB",
+          "testCodes": ["T4", "TT4", "FT4"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Secondary thyroid effect via UGT induction -- see R19 cross-link"
+        },
+        {
+          "tag": "TSH_UP",
+          "domain": "LB",
+          "testCodes": ["TSH"],
+          "direction": "up",
+          "role": "supporting",
+          "notes": "Same mechanism as T4 down"
+        }
+      ],
+      "magnitudeFloors": {
+        "liver_weight_gLower_up": 0.3,
+        "liver_weight_fold_change_min": 1.10,
+        "hypertrophy_min_fraction": 0.25,
+        "hypertrophy_min_n": 2,
+        "_notes": "gLower-up > 0.3 is binding statistical constraint; FC >= 1.10 per Hall 2012 S3; hypertrophy in >= 2/N or 25%, whichever greater"
+      },
+      "pexChecks": ["PEX04"],
+      "species_scope": ["RAT", "MOUSE"],
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "DOSE_RANGE_FINDER"],
+      "adverse_compatible_with": [
+        {
+          "adverse_syndrome_id": "XS01",
+          "shared_term": "hepatocellular hypertrophy",
+          "citation": {
+            "author": "Hall et al.",
+            "year": 2012,
+            "journal": "Toxicologic Pathology",
+            "volume": "40",
+            "pages": "971-994",
+            "doi": "10.1177/0192623312448935",
+            "pmid": "22585942",
+            "rationale": "Hall 2012 S3: hepatocellular hypertrophy without necrosis is non-adverse adaptive response, distinct from XS01 hepatocellular injury which requires necrosis/degeneration."
+          }
+        }
+      ],
+      "confidence_ceiling": "HIGH",
+      "citation": {
+        "author": "Hall et al.",
+        "year": 2012,
+        "journal": "Toxicologic Pathology",
+        "volume": "40",
+        "pages": "971-994",
+        "doi": "10.1177/0192623312448935",
+        "pmid": "22585942"
+      },
+      "additional_citations": [
+        {
+          "author": "Maronpot et al.",
+          "year": 2010,
+          "journal": "Toxicologic Pathology",
+          "volume": "38",
+          "pages": "776-795",
+          "pmid": "20585145"
+        },
+        {
+          "author": "Ennulat et al.",
+          "year": 2010,
+          "journal": "Toxicologic Pathology",
+          "volume": "38",
+          "pages": "810-828",
+          "pmid": "20585146"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R19",
+      "name": "Secondary Thyroid Effect (Hepatic UGT Induction)",
+      "category": "A",
+      "direction": "decreasing",
+      "minDomains": 3,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "THY_HYPERPLASIA AND T4_DOWN AND TSH_UP AND R18_FIRED"
+      },
+      "terms": [
+        {
+          "tag": "THY_HYPERPLASIA",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["thyroid"],
+            "finding": ["follicular cell hypertrophy", "follicular cell hyperplasia", "follicular hypertrophy", "follicular hyperplasia"]
+          },
+          "direction": "up",
+          "role": "required",
+          "notes": "Frazier 2012 INHAND criteria"
+        },
+        {
+          "tag": "T4_DOWN",
+          "domain": "LB",
+          "testCodes": ["T4", "TT4", "FT4"],
+          "direction": "down",
+          "role": "required",
+          "notes": "Frazier 2012 S3.1"
+        },
+        {
+          "tag": "TSH_UP",
+          "domain": "LB",
+          "testCodes": ["TSH"],
+          "direction": "up",
+          "role": "required",
+          "notes": "Frazier 2012 S3.1"
+        },
+        {
+          "tag": "HEPATIC_HYPERTROPHY",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["hypertrophy", "hepatocellular hypertrophy", "centrilobular hypertrophy"]
+          },
+          "direction": "up",
+          "role": "required",
+          "notes": "Cross-organ coupling to R18"
+        },
+        {
+          "tag": "THY_WEIGHT",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": ["thyroid"] },
+          "direction": "up",
+          "role": "supporting"
+        },
+        {
+          "tag": "LIVER_WT",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": ["liver"] },
+          "direction": "up",
+          "role": "supporting"
+        }
+      ],
+      "magnitudeFloors": {
+        "t4_gLower_down": 0.3,
+        "t4_fold_change_max": 0.80,
+        "tsh_gLower_up": 0.3,
+        "tsh_fold_change_min": 1.5,
+        "hypertrophy_max_grade": 2,
+        "_notes": "T4 fold <= 0.80 (Frazier 2012 S4); TSH fold >= 1.5 (Frazier 2012 S4); thyroid hypertrophy grade <= 2"
+      },
+      "pexChecks": ["PEX04"],
+      "r18_dependency": true,
+      "species_scope": ["RAT", "MOUSE"],
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "DOSE_RANGE_FINDER"],
+      "adverse_compatible_with": [
+        {
+          "adverse_syndrome_id": "XS03",
+          "shared_term": "thyroid follicular cell hypertrophy",
+          "citation": {
+            "author": "Frazier et al.",
+            "year": 2012,
+            "journal": "Toxicologic Pathology",
+            "volume": "40",
+            "pages": "893-934",
+            "pmid": "22585943",
+            "rationale": "Frazier 2012: thyroid follicular cell hypertrophy secondary to hepatic UGT induction (R18-coupled) is non-adverse; distinguishable from primary thyroid toxicity by the presence of concurrent R18 firing and T4/TSH cascade."
+          }
+        }
+      ],
+      "confidence_ceiling": "HIGH",
+      "citation": {
+        "author": "Frazier et al.",
+        "year": 2012,
+        "journal": "Toxicologic Pathology",
+        "volume": "40",
+        "pages": "893-934",
+        "pmid": "22585943"
+      },
+      "additional_citations": [
+        {
+          "author": "Capen",
+          "year": 1997,
+          "journal": "Toxicologic Pathology",
+          "volume": "25",
+          "pages": "39-48",
+          "pmid": "9061849"
+        },
+        {
+          "author": "Hood",
+          "year": 2006,
+          "journal": "Critical Reviews in Toxicology",
+          "volume": "36",
+          "pages": "287-310",
+          "pmid": "16686424"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R20",
+      "name": "Reduced Spontaneous Tumor Incidence",
+      "category": "B",
+      "direction": "decreasing",
+      "minDomains": 1,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "any(TF_NEOPLASTIC_DOWN)"
+      },
+      "terms": [
+        {
+          "tag": "TF_NEOPLASTIC_DOWN",
+          "domain": "TF",
+          "specimenTerms": {
+            "finding": ["carcinoma", "sarcoma", "lymphoma", "leukemia", "adenoma", "fibroma", "benign", "malignant"]
+          },
+          "clinicalClass": "Neoplastic",
+          "direction": "down",
+          "role": "required",
+          "notes": "Any TF entry with clinical_class Neoplastic or seed-doc tumor allowlist"
+        },
+        {
+          "tag": "PRENEOPLASTIC_DOWN",
+          "domain": "MI",
+          "specimenTerms": {
+            "finding": ["hyperplasia", "foci", "altered hepatocellular foci", "basophilic foci"]
+          },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Pre-neoplastic / hyperplastic finding corresponding to tumor type"
+        },
+        {
+          "tag": "TARGET_OM",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": [] },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Target organ weight reduction if proxies for tumor mass loss"
+        }
+      ],
+      "magnitudeFloors": {
+        "control_incidence_floor_pct": 20,
+        "treated_max_relative_to_ctrl": 0.50,
+        "dose_response": "monotonic_decrease OR threshold with reproducible high-dose drop",
+        "_notes": "ctrl >= 20%, treated <= 50% of ctrl (halving); Boschloo + Bayesian AND-gate from S2.3"
+      },
+      "pexChecks": ["PEX02_INVERTED", "PEX04", "PEX08", "PEX09"],
+      "species_scope": null,
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "CARCINOGENICITY", "DOSE_RANGE_FINDER"],
+      "adverse_compatible_with": [],
+      "confidence_ceiling": "MODERATE",
+      "confidence_upgrade": {
+        "conditions": [">=2 domains converge", "S20 compound class has chemopreventive activity", "PEX08 survival clean"],
+        "upgraded_to": "HIGH"
+      },
+      "citation": {
+        "author": "Lubet et al.",
+        "year": 1997,
+        "journal": "NCI CADRG systematic screen",
+        "notes": "Cross-reference: Rothwell et al. 2010/2012 Lancet (aspirin); ICH S1B(R1) 2022"
+      },
+      "additional_citations": [
+        {
+          "author": "Jacoby et al.",
+          "year": 2000,
+          "journal": "Cancer Research",
+          "volume": "60",
+          "pages": "5040-5044",
+          "pmid": "11016626"
+        },
+        {
+          "author": "Anisimov et al.",
+          "year": 2005,
+          "journal": "Experimental Gerontology",
+          "volume": "40",
+          "pages": "685-693",
+          "pmid": "16125352"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R21",
+      "name": "Renoprotective Signal",
+      "category": "B",
+      "direction": "decreasing",
+      "minDomains": 2,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "(BASOPHILIC_TUBULES OR TUBULAR_DEGEN) AND (PROT_CASTS OR REGEN OR GLOMERULOSCLEROSIS)"
+      },
+      "terms": [
+        {
+          "tag": "BASOPHILIC_TUBULES",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["basophilic tubules", "tubular basophilia"]
+          },
+          "direction": "down",
+          "role": "required",
+          "notes": "Hard 2009 INHAND criteria for CPN"
+        },
+        {
+          "tag": "TUBULAR_DEGEN",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["tubular degeneration"]
+          },
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "PROT_CASTS",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["protein casts", "hyaline casts"]
+          },
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "REGEN",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["tubular regeneration"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "GLOMERULOSCLEROSIS",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["glomerulosclerosis"]
+          },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Late-stage CPN"
+        },
+        {
+          "tag": "INTERSTITIAL_FIBROSIS",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["interstitial fibrosis"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "MINERALIZATION",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["kidney"],
+            "finding": ["mineralization"]
+          },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "F SD background"
+        },
+        {
+          "tag": "BUN_CREAT",
+          "domain": "LB",
+          "testCodes": ["BUN", "CREAT"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Improved renal function"
+        },
+        {
+          "tag": "UPROT",
+          "domain": "LB",
+          "testCodes": ["UPROT"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Reduced proteinuria"
+        },
+        {
+          "tag": "KIDNEY_WT",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": ["kidney"] },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Reduced pathologic enlargement"
+        }
+      ],
+      "magnitudeFloors": {
+        "incidence_drop_pp": 30,
+        "severity_sum_reduction_grade": 1,
+        "saturation_threshold_pct": 80,
+        "saturation_gLower_down": 0.3,
+        "relative_50pct_drop": true,
+        "lb_gLower_down": 0.3,
+        "_notes": "Standard: >= 30pp OR >= 50% relative drop. Saturation (ctrl > 80%): severity-grade gLower > 0.3 instead"
+      },
+      "pexChecks": ["PEX08", "PEX09"],
+      "species_scope": ["RAT"],
+      "strain_scope": ["SD M", "F344 M", "Wistar M", "SD F"],
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "CARCINOGENICITY"],
+      "adverse_compatible_with": [],
+      "confidence_ceiling": "MODERATE",
+      "confidence_upgrade": {
+        "conditions": ["S20 compound class in SGLT2i/ACEi/ARB/RAAS_modulator"],
+        "upgraded_to": "HIGH"
+      },
+      "citation": {
+        "author": "Hard et al.",
+        "year": 2009,
+        "journal": "Toxicologic Pathology",
+        "volume": "37",
+        "pages": "548-561",
+        "pmid": "19451405"
+      },
+      "additional_citations": [
+        {
+          "author": "Heerspink et al.",
+          "year": 2016,
+          "journal": "Lancet Diabetes & Endocrinology"
+        },
+        {
+          "author": "Hard & Khan",
+          "year": 2004,
+          "journal": "Toxicologic Pathology",
+          "volume": "32",
+          "pages": "171-180",
+          "pmid": "15200155"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R22",
+      "name": "Cardioprotective Signal",
+      "category": "B",
+      "direction": "decreasing",
+      "minDomains": 2,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "CARDIOMYOPATHY AND (FIBROSIS OR DEGEN OR INFLAM_INFIL)"
+      },
+      "terms": [
+        {
+          "tag": "CARDIOMYOPATHY",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["heart"],
+            "finding": ["cardiomyopathy"]
+          },
+          "direction": "down",
+          "role": "required",
+          "notes": "Maronpot 2009 INHAND"
+        },
+        {
+          "tag": "FIBROSIS",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["heart"],
+            "finding": ["myocardial fibrosis", "fibrosis"]
+          },
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "DEGEN",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["heart"],
+            "finding": ["myocardial degeneration", "degeneration"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "INFLAM_INFIL",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["heart"],
+            "finding": ["inflammatory cell infiltrate", "inflammation"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "HEART_WT",
+          "domain": "OM",
+          "organWeightTerms": { "specimen": ["heart"] },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Pathologic hypertrophy reduction"
+        },
+        {
+          "tag": "TROPONIN",
+          "domain": "LB",
+          "testCodes": ["CTNI", "CTNT", "TNNI", "TNNT"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Cardiac injury marker (Mikaelian 2013 Toxicol Sci)"
+        },
+        {
+          "tag": "CKMB",
+          "domain": "LB",
+          "testCodes": ["CKMB", "CK"],
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "LDH",
+          "domain": "LB",
+          "testCodes": ["LDH"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Less specific"
+        }
+      ],
+      "magnitudeFloors": {
+        "incidence_drop_pp": 25,
+        "severity_sum_reduction_grade": 1,
+        "lb_gLower_down": 0.3,
+        "_notes": "MI severity sum-reduction >= 1 grade OR incidence >= 25pp; LB continuous: gLower > 0.3"
+      },
+      "pexChecks": ["PEX08", "PEX09"],
+      "species_scope": ["RAT"],
+      "strain_scope": ["SD M"],
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "CARCINOGENICITY"],
+      "adverse_compatible_with": [],
+      "confidence_ceiling": "MODERATE",
+      "confidence_upgrade": {
+        "conditions": ["S20 compound class in SGLT2i/beta_blocker/ACEi/ARB"],
+        "upgraded_to": "HIGH"
+      },
+      "citation": {
+        "author": "Maronpot et al.",
+        "year": 2009,
+        "journal": "Toxicologic Pathology",
+        "volume": "37",
+        "pages": "166-176",
+        "pmid": "19171930"
+      },
+      "additional_citations": [
+        {
+          "author": "Heusch",
+          "year": 2021,
+          "journal": "Journal of Molecular and Cellular Cardiology",
+          "volume": "158",
+          "pages": "97-105"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R23",
+      "name": "Metabolic Improvement Pattern",
+      "category": "B",
+      "direction": "decreasing",
+      "minDomains": 1,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "any(CHOL OR TRIG)"
+      },
+      "terms": [
+        {
+          "tag": "CHOL",
+          "domain": "LB",
+          "testCodes": ["CHOL"],
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "TRIG",
+          "domain": "LB",
+          "testCodes": ["TRIG"],
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "LDL",
+          "domain": "LB",
+          "testCodes": ["LDL"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Rare in standard SEND"
+        },
+        {
+          "tag": "HDL",
+          "domain": "LB",
+          "testCodes": ["HDL"],
+          "direction": "up",
+          "role": "supporting",
+          "notes": "Inverted direction"
+        },
+        {
+          "tag": "GLUC",
+          "domain": "LB",
+          "testCodes": ["GLUC"],
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "HBA1C",
+          "domain": "LB",
+          "testCodes": ["HBA1C"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Rare; only in specific compound profiles"
+        },
+        {
+          "tag": "INSULIN",
+          "domain": "LB",
+          "testCodes": ["INSULIN"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Rare"
+        },
+        {
+          "tag": "BW_DOWN",
+          "domain": "BW",
+          "testCodes": ["BW"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Weight loss as metabolic improvement, NOT pathological wasting -- see PEX10"
+        },
+        {
+          "tag": "STEATOSIS_DOWN",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["liver", "hepat"],
+            "finding": ["steatosis", "fatty change", "lipidosis", "vacuolation"]
+          },
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Reduced NASH-like findings"
+        }
+      ],
+      "magnitudeFloors": {
+        "gLower_down": 0.3,
+        "fold_change_max": 0.75,
+        "cv_multiplier": 1.5,
+        "dose_response_trend": "Jonckheere-Terpstra one-sided p<0.10",
+        "_notes": "gLower > 0.3 AND fold-change <= 0.75 (1.5x baseline CV). CV-anchored: SD M CHOL baseline CV ~15-25%, 1.5x = 22-38%, operational floor 25% reduction"
+      },
+      "pexChecks": ["PEX09", "PEX10"],
+      "species_scope": null,
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "DOSE_RANGE_FINDER"],
+      "adverse_compatible_with": [
+        {
+          "adverse_syndrome_id": "R18",
+          "shared_term": "ALL",
+          "citation": {
+            "author": "Maronpot et al.",
+            "year": 2010,
+            "journal": "Toxicologic Pathology",
+            "volume": "40",
+            "pages": "776-795",
+            "pmid": "20585145",
+            "rationale": "PPARa drugs fire both R18 (hepatic adaptive) and R23 (metabolic). Biology dictates both -- not a conflict."
+          }
+        }
+      ],
+      "confidence_ceiling": "HIGH",
+      "citation": {
+        "author": "Friedrichs et al.",
+        "year": 2012,
+        "journal": "Veterinary Clinical Pathology",
+        "notes": "ASVCP reference interval guidelines; 1.5x CV multiplier for biological-significance gate"
+      },
+      "additional_citations": [
+        {
+          "author": "Maronpot et al.",
+          "year": 2010,
+          "journal": "Toxicologic Pathology",
+          "volume": "38",
+          "pages": "776-795",
+          "pmid": "20585145",
+          "notes": "PPARa MOA"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R24",
+      "name": "Anti-Inflammatory / Immunomodulatory Pattern",
+      "category": "B",
+      "direction": "decreasing",
+      "minDomains": 2,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "INFLAM_INFIL_2_ORGANS AND CHRONIC_INFLAM_DOWN AND (CRP_DOWN OR FIBRINOGEN_DOWN)"
+      },
+      "terms": [
+        {
+          "tag": "INFLAM_INFIL_2_ORGANS",
+          "domain": "MI",
+          "specimenTerms": {
+            "finding": ["inflammatory cell infiltrate", "chronic inflammation", "inflammation"]
+          },
+          "direction": "down",
+          "role": "required",
+          "multiOrgan": true,
+          "minOrgans": 2,
+          "notes": "At least 2 different organ systems"
+        },
+        {
+          "tag": "CHRONIC_INFLAM_DOWN",
+          "domain": "MI",
+          "specimenTerms": {
+            "finding": ["chronic inflammation", "spontaneous chronic inflammation"]
+          },
+          "direction": "down",
+          "role": "required"
+        },
+        {
+          "tag": "JOINT_INFLAM",
+          "domain": "MI",
+          "specimenTerms": {
+            "specimen": ["joint", "synovium"],
+            "finding": ["inflammation", "arthritis"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        },
+        {
+          "tag": "FIBRINOGEN_DOWN",
+          "domain": "LB",
+          "testCodes": ["FIBRINO", "FIB"],
+          "direction": "down",
+          "role": "required",
+          "notes": "Acute phase reactant; at least one of CRP/fibrinogen required per F12"
+        },
+        {
+          "tag": "CRP_DOWN",
+          "domain": "LB",
+          "testCodes": ["CRP"],
+          "direction": "down",
+          "role": "required",
+          "notes": "At least one of CRP/fibrinogen required"
+        },
+        {
+          "tag": "WBC_DOWN",
+          "domain": "LB",
+          "testCodes": ["WBC", "NEUT"],
+          "direction": "down",
+          "role": "supporting",
+          "notes": "Neutrophilia decrease"
+        },
+        {
+          "tag": "AG_RATIO_UP",
+          "domain": "LB",
+          "testCodes": ["A/G", "AGRATIO"],
+          "direction": "up",
+          "role": "supporting",
+          "notes": "Reduced gamma globulins"
+        },
+        {
+          "tag": "CLINICAL_INFLAM",
+          "domain": "CL",
+          "specimenTerms": {
+            "finding": ["swelling", "edema", "redness"]
+          },
+          "direction": "down",
+          "role": "supporting"
+        }
+      ],
+      "magnitudeFloors": {
+        "incidence_drop_pp_per_organ": 25,
+        "severity_sum_reduction_grade": 1,
+        "min_organs": 2,
+        "lb_gLower_down": 0.3,
+        "_notes": "Each affected organ needs >= 25pp OR >= 1 grade severity sum-reduction; cross-organ >= 2 organ systems"
+      },
+      "pexChecks": ["PEX08", "PEX09"],
+      "immunosuppression_exclusion_stack": [
+        {"check": "lymphoid_atrophy", "specimens": ["thymus", "spleen", "lymph node"], "finding_terms": ["lymphoid depletion", "lymphocyte depletion", "thymic atrophy", "splenic atrophy", "lymphoid atrophy"], "action": "hard_reject"},
+        {"check": "XS04_myelosuppression", "action": "hard_reject"},
+        {"check": "selective_lymphocyte_decrease", "testCodes": ["LYMPH", "LYMPHOCYTES"], "threshold_pct": 25, "action": "hard_reject"},
+        {"check": "thymus_weight_decrease", "specimen": "thymus", "gLower_threshold": 0.3, "action": "hard_reject"},
+        {"check": "compound_class_immunosuppressant", "classes": ["immunosuppressant", "calcineurin_inhibitor", "mTOR_inhibitor", "alkylating_agent", "antimetabolite"], "action": "hard_reject"}
+      ],
+      "species_scope": null,
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*"],
+      "adverse_compatible_with": [],
+      "confidence_ceiling": "MODERATE",
+      "citation": {
+        "author": "Hall et al.",
+        "year": 2012,
+        "journal": "Toxicologic Pathology",
+        "volume": "40",
+        "pages": "971-994",
+        "pmid": "22585942"
+      },
+      "additional_citations": [
+        {
+          "author": "Linker et al.",
+          "year": 2011,
+          "journal": "Brain",
+          "volume": "134",
+          "pages": "678-692",
+          "pmid": "21354971"
+        }
+      ]
+    },
+    {
+      "syndromeId": "R25",
+      "name": "On-Mechanism Beneficial Pharmacology Confirmation",
+      "category": "C",
+      "direction": "mixed",
+      "minDomains": 2,
+      "requiredLogic": {
+        "type": "compound",
+        "expression": "S20_COMPOUND_CLASS AND EXPECTED_ENDPOINTS_MATCH"
+      },
+      "terms": [],
+      "magnitudeFloors": {
+        "_notes": "Per-class magnitude floors inherit from the matched category rule"
+      },
+      "pexChecks": ["S20_CONFIDENCE_MODERATE"],
+      "species_scope": null,
+      "strain_scope": null,
+      "appliesToStudyTypes": ["REPEAT_DOSE_*", "DOSE_RANGE_FINDER"],
+      "adverse_compatible_with": [],
+      "confidence_ceiling": "MODERATE",
+      "blocked_on": "S20_compound_profiles",
+      "citation": {
+        "author": "Pushpakom et al.",
+        "year": 2019,
+        "journal": "Nature Reviews Drug Discovery",
+        "notes": "Drug repurposing review; ICH M3(R2) compound class profiling"
+      },
+      "compound_class_templates": {
+        "anti_hypertensive": {"expected_signals": ["systolic_BP_down", "heart_weight_down", "renal_vascular_down"], "domains": ["VS", "OM", "MI"]},
+        "anti_diabetic": {"expected_signals": ["glucose_down", "hba1c_down"], "domains": ["LB"]},
+        "anti_inflammatory": {"expected_signals": ["inflammatory_findings_down", "joint_histopath_down"], "domains": ["MI"]},
+        "lipid_lowering": {"expected_signals": ["chol_down", "trig_down", "steatosis_down"], "domains": ["LB", "MI"]},
+        "anti_fibrotic": {"expected_signals": ["fibrosis_down"], "domains": ["MI"]},
+        "anti_proliferative": {"expected_signals": ["proliferative_lesions_down", "hyperplasia_down"], "domains": ["MI", "TF"]},
+        "erythropoietic": {"expected_signals": ["rbc_up", "hgb_up"], "domains": ["LB"]},
+        "bone_osteoporosis": {"expected_signals": ["osteoporotic_lesions_down"], "domains": ["MI"]}
+      }
+    }
+  ],
+  "evidence_tiers": {
+    "suppressed": {"min_n": 0, "max_n": 4, "gates": [], "feeds_noael": false, "banner": "Protective syndrome detection requires N>=5 per group."},
+    "descriptive_only": {"min_n": 5, "max_n": 7, "gates": ["gLower", "term_match", "magnitude_floor", "directional_concordance", "PEX"], "feeds_noael": false, "qualifier": "Descriptive observation -- no statistical test at N={n}"},
+    "inference": {"min_n": 8, "max_n": null, "gates": ["gLower", "term_match", "magnitude_floor", "directional_concordance", "PEX", "boschloo", "bayesian", "spared_cases"], "feeds_noael": true}
+  },
+  "statistical_gate": {
+    "boschloo_p_threshold": 0.05,
+    "boschloo_alternative": "greater",
+    "bayesian_posterior_threshold": 0.95,
+    "bayesian_prior": "Jeffreys Beta(0.5,0.5)",
+    "spared_cases_min": 2,
+    "spared_cases_min_large_n": 3,
+    "spared_cases_large_n_threshold": 10,
+    "_notes": "AND-combination: Boschloo p<0.05 AND Bayesian P(treat<ctrl)>0.95 AND spared_cases >= 2 (or >= 3 at N>=10)"
+  }
+}

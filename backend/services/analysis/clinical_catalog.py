@@ -141,22 +141,37 @@ def compute_clinical_confidence(
 # Protective exclusion check
 # ---------------------------------------------------------------------------
 
-def _check_protective_exclusion(result: dict, catalog_match: dict | None) -> tuple[bool, str | None]:
-    """Check if a protective (R18/R19) result should be excluded.
+def _check_protective_exclusion(
+    result: dict,
+    catalog_match: dict | None,
+    rule_id: str | None = None,
+    study_context: dict | None = None,
+) -> tuple[bool, str | None]:
+    """Check if a protective result should be excluded.
+
+    Args:
+        result: The rule result dict with params, organ_system, etc.
+        catalog_match: Clinical catalog match for the finding (if any).
+        rule_id: The protective rule ID (R18-R25) for rule-aware gating.
+        study_context: Study-level data for PEX08/09/10 checks. Keys:
+            mortality_pct, bw_loss_pct, food_decrease_pct, study_type,
+            dose_groups_with_decedents, lb_lipid_down.
 
     Returns (excluded: bool, exclusion_id: str | None).
     """
     params = result.get("params", {})
     organ_system = result.get("organ_system", "").lower()
     finding = (params.get("finding") or "").upper()
+    ctx = study_context or {}
 
     # PEX01 + PEX06: Excluded organ systems
     if organ_system in _EXCLUDED_ORGAN_SYSTEMS:
         return True, "PEX01" if organ_system == "reproductive" else "PEX06"
 
-    # PEX02: Neoplasia
+    # PEX02: Neoplasia — R20 carve-out (R20 requires neoplastic class)
     if any(term in finding for term in _EXCLUDED_PROTECTIVE_FINDINGS):
-        return True, "PEX02"
+        if rule_id != "R20":
+            return True, "PEX02"
 
     # PEX03: Low control incidence (< 10%)
     ctrl_pct_str = params.get("ctrl_pct", "")
@@ -172,10 +187,10 @@ def _check_protective_exclusion(result: dict, catalog_match: dict | None) -> tup
     if catalog_match and catalog_match.get("clinical_class") in ("Sentinel", "HighConcern"):
         return True, "PEX04"
 
-    # PEX05: Single-animal decrease
+    # PEX05a: Single-animal decrease
     n_affected = params.get("n_affected", 0)
     if n_affected <= 1:
-        return True, "PEX05"
+        return True, "PEX05a"
 
     # PEX07: Non-monotonic without significance
     pattern = params.get("dose_response_pattern", "")
@@ -184,6 +199,39 @@ def _check_protective_exclusion(result: dict, catalog_match: dict | None) -> tup
         treatment_related = params.get("treatment_related", False)
         if not treatment_related and (p_value is None or p_value >= 0.05):
             return True, "PEX07"
+
+    # PEX08: Survival bias (R20, R21, R22, R24 only)
+    _PEX08_SCOPE = {"R20", "R21", "R22", "R24"}
+    if rule_id in _PEX08_SCOPE:
+        mortality_pct = ctx.get("mortality_pct", 0)
+        study_type = ctx.get("study_type", "subchronic")
+        if study_type == "subchronic" and mortality_pct > 0:
+            return True, "PEX08"
+        elif study_type == "chronic" and mortality_pct > 10:
+            return True, "PEX08"
+        # Carcinogenicity Peto-adjusted check deferred (DATA-GAP-PROT-04)
+
+    # PEX09: Excessive toxicity confound (direct measurements, R20/R21/R22/R24)
+    _PEX09_SCOPE = {"R20", "R21", "R22", "R24"}
+    if rule_id in _PEX09_SCOPE:
+        bw_loss = ctx.get("bw_loss_pct", 0)
+        mort = ctx.get("mortality_pct", 0)
+        n_dg_decedents = ctx.get("dose_groups_with_decedents", 0)
+        if bw_loss > 20 or mort > 10 or n_dg_decedents >= 2:
+            return True, "PEX09"
+
+    # PEX10: Starvation/inanition gate (R23 only)
+    if rule_id == "R23":
+        food_dec = ctx.get("food_decrease_pct", 0)
+        bw_dec = ctx.get("bw_loss_pct", 0)
+        lb_lipid_down = ctx.get("lb_lipid_down", False)
+        if food_dec > 20:
+            return True, "PEX10"
+        if bw_dec > 10:
+            return True, "PEX10"
+        # Combined criterion: BW>5% AND food>10% AND LB lipid down
+        if bw_dec > 5 and food_dec > 10 and lb_lipid_down:
+            return True, "PEX10"
 
     return False, None
 
@@ -219,6 +267,12 @@ def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict
         catalog_match = match_catalog(params)
 
         # --- R18/R19: Check protective exclusions ---
+        # NOTE: This call omits rule_id and study_context intentionally.
+        # Synthetic R18/R19 from _emit_protective_rule_results() have empty
+        # specimen/finding params, so catalog_match is always None and PEX
+        # checks beyond PEX01-07 are never reached. If synthetic results
+        # are enriched with specimen/finding params in future, pass rule_id
+        # here to enable PEX08-10 gating.
         if rule_id in ("R18", "R19"):
             excluded, exclusion_id = _check_protective_exclusion(result, catalog_match)
             if excluded:
