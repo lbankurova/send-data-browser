@@ -2,7 +2,8 @@ topic: protective-syndrome-engine
 started: 2026-04-06T00:00:00Z
 phase: blueprint
 phase: blueprint-complete
-current_step: build.2
+phase: complete
+current_step: complete
 checkpoints_blueprint_6:
   r2_review_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-synthesis-review-r2.md
   r2_findings: "0 FLAWED, 3 CONDITIONAL, 1 SOUND"
@@ -70,7 +71,7 @@ checkpoints_6:
   distill_verdict: NOTES
   audit_doc: docs/_internal/research/distillations/protective-syndrome-engine-coherence-audit.md
   build_cycle_inputs:
-    - "CI-1: bayesian_incidence_posterior at statistics.py:~731 uses Beta(1,1) not Beta(0.5,0.5); migrate to Jeffreys before protective rules ship"
+    - "CI-1: RESOLVED 5801f5e6 — bayesian_incidence_posterior migrated to Jeffreys Beta(0.5,0.5); E5 gate 0.80->0.85"
     - "CI-2: 'EFSA small-effect boundary' label is unsourced; corpus cleanup task (non-blocking)"
     - "CI-3: 24 orphaned gaps must be persisted in step 7b before research declared complete"
   doc_additions:

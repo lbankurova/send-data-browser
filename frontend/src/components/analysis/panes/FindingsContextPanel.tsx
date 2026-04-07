@@ -52,7 +52,6 @@ import { useRuleResults } from "@/hooks/useRuleResults";
 import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { NoaelDeterminationPane } from "@/components/analysis/noael/NoaelDeterminationPane";
-import { ProtectiveSignalsBar } from "@/components/analysis/noael/ProtectiveSignalsBar";
 import { SafetyMarginCalculator } from "@/components/analysis/noael/SafetyMarginCalculator";
 import { StudyStatementsBar } from "@/components/analysis/noael/StudyStatementsBar";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
@@ -2661,7 +2660,6 @@ function NoaelStudyLevelPanel({
   nav: { canGoBack: boolean; canGoForward: boolean; onBack: () => void; onForward: () => void };
 }) {
   const navigate = useNavigate();
-  const { data: ruleResults } = useRuleResults(studyId);
   const { data: signalData } = useStudySignalSummary(studyId);
   const { data: targetOrgans } = useTargetOrganSummary(studyId);
   const { data: pkData } = usePkIntegration(studyId);
@@ -2700,13 +2698,6 @@ function NoaelStudyLevelPanel({
             modifiers={panelData.modifiers}
             caveats={panelData.caveats}
           />
-        </CollapsiblePane>
-      )}
-
-      {/* Protective signals (R18/R19) */}
-      {studyId && ruleResults && (
-        <CollapsiblePane title="Protective signals" defaultOpen={false} sessionKey="pcc.ep.protective-signals" expandAll={expandGen} collapseAll={collapseGen}>
-          <ProtectiveSignalsBar rules={ruleResults} studyId={studyId} signalData={signalData} />
         </CollapsiblePane>
       )}
 

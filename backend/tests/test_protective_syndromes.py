@@ -280,13 +280,13 @@ class TestThresholdCalibration:
         assert ps["high_confidence_ctrl_inc_pct"] == 50
         assert ps["high_confidence_drop_pp"] == 40
 
-    def test_deprecated_keys_retained(self):
-        """AC-5.5"""
+    def test_deprecated_keys_removed(self):
+        """AC-5.5: deprecated keys removed after ProtectiveSignalsBar retirement."""
         ps = self._load()
-        assert "min_cross_domain_correlates" in ps
-        assert "min_moderate_correlates" in ps
-        assert ps["_deprecated_min_cross_domain_correlates"] is True
-        assert ps["_deprecated_min_moderate_correlates"] is True
+        assert "min_cross_domain_correlates" not in ps
+        assert "min_moderate_correlates" not in ps
+        assert "repurposing_ctrl_inc_pct" not in ps
+        assert "repurposing_large_drop_pct" not in ps
 
 
 # ---------------------------------------------------------------------------
