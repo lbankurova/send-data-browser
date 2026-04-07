@@ -33,6 +33,10 @@ from generator.subject_sentinel import build_subject_sentinel
 from generator.subject_similarity import build_subject_similarity
 from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
+from services.analysis.send_knowledge import (
+    build_unrecognized_terms_report,
+    get_dictionary_versions,
+)
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "generated"
@@ -325,6 +329,10 @@ def generate(study_id: str):
                 "Dose escalation design -- period and dose effects are confounded. "
                 "Treatment effects may include cumulative or carryover components."
             )
+        # Phase A (unrecognized-term-flagging): record the dictionary versions
+        # that were loaded for THIS regeneration. Canonical source for the
+        # unrecognized_terms.json dictionary_versions_snapshot (F14 sync).
+        context_result["study_metadata"]["dictionary_versions"] = get_dictionary_versions()
         _write_json(out_dir / "study_metadata_enriched.json", context_result["study_metadata"])
         print(f"  1c: {len(ctx_df)} subjects, {len(provenance_msgs)} provenance messages")
     except Exception as e:
@@ -590,6 +598,34 @@ def generate(study_id: str):
 
     n_unified = len(views["unified_findings"]["findings"])
     print(f"  5: {n_unified} findings pre-generated")
+
+    # Recognition summary (Phase A unrecognized-term-flagging).
+    # Wrapped in try/except so a helper failure does NOT lose the regenerated
+    # unified_findings.json and all other artifacts. The exception list is
+    # narrowed (R2 N2): KeyError / ValueError / TypeError / AttributeError
+    # cover builder bugs on malformed finding dicts. OSError is deliberately
+    # NOT caught -- disk-full / permission failures should propagate so the
+    # operator sees them; the report file would be unwritable anyway. There
+    # is NO surrounding try/except at this site today (R1 F6), so this is
+    # new error containment, not a broadening of existing handling.
+    try:
+        report = build_unrecognized_terms_report(
+            views["unified_findings"]["findings"],
+            study_id,
+            get_dictionary_versions(),
+        )
+        _write_json(out_dir / "unrecognized_terms.json", report)
+        n_unrec_tc = len(report["unrecognized_test_codes"])
+        n_unrec_org = len(report["unrecognized_organs"])
+        rate_tc = report["summary"]["recognition_rate_test_code"]
+        rate_str = f"{rate_tc:.1%}" if rate_tc is not None else "n/a"
+        print(
+            f"  5: term recognition: rate {rate_str} test codes, "
+            f"{n_unrec_tc} unrecognized test codes (mostly MI/MA -- expected in Phase A), "
+            f"{n_unrec_org} unrecognized organs -- see unrecognized_terms.json"
+        )
+    except (KeyError, ValueError, TypeError, AttributeError) as e:
+        print(f"  5 WARNING: Recognition report failed: {e}")
 
     _tick("2b34_end")
 

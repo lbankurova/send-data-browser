@@ -25,7 +25,12 @@ from services.analysis.corroboration import compute_corroboration, compute_chain
 from services.analysis.confidence import compute_all_confidence
 from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
-from services.analysis.send_knowledge import BIOMARKER_MAP, get_direction_of_concern, normalize_test_code
+from services.analysis.send_knowledge import (
+    BIOMARKER_MAP,
+    assess_organ_recognition,
+    assess_test_code_recognition,
+    get_direction_of_concern,
+)
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +108,13 @@ def _with_defaults(f: dict) -> dict:
     f.setdefault("endpoint_label", f.get("test_name", f.get("test_code", "")))
     f.setdefault("is_derived", False)
     f.setdefault("canonical_testcd", None)
+    # Phase A term recognition (unrecognized-term-flagging). Seeded to None
+    # before enrichment so that if _enrich_finding raises mid-call, downstream
+    # consumers still see the keys (R1 F10 ordering).
+    f.setdefault("test_code_recognition_level", None)
+    f.setdefault("test_code_recognition_reason", None)
+    f.setdefault("organ_recognition_level", None)
+    f.setdefault("organ_norm_tier", None)
     f.setdefault("severity_grade_5pt", None)
     return f
 
@@ -218,13 +230,37 @@ def _enrich_finding(
         f.get("domain"),
     )
 
-    # Canonical test code for cross-study identity matching
-    # MI/MA/CL/OM/TF/DS: case-normalized only, not synonym-resolved (Phase 2+ for INHAND synonym mapping)
+    # Canonical test code + recognition tier (Phase A: terms are level 6 for
+    # MI/MA/CL/OM/TF/DS until Phases B-D add base-concept extraction and
+    # synonym dictionaries -- this is dictionary incompleteness, not a data
+    # defect). Canonical parity with the pre-Phase-A behavior is preserved:
+    # assess_test_code_recognition returns the same canonical_testcd string
+    # that normalize_test_code produced for LB/BW/FW/EG/VS/BG, and the
+    # uppercase-stripped raw for other domains.
     tc = f.get("test_code", "")
-    if f.get("domain") in ("LB", "BW", "FW", "EG", "VS", "BG"):
-        f["canonical_testcd"] = normalize_test_code(tc) if tc else None
+    if tc:
+        canonical, tc_level, tc_reason = assess_test_code_recognition(
+            f.get("domain", ""), tc
+        )
+        f["canonical_testcd"] = canonical
+        f["test_code_recognition_level"] = tc_level
+        f["test_code_recognition_reason"] = tc_reason
     else:
-        f["canonical_testcd"] = tc.upper().strip() if tc else None
+        f["canonical_testcd"] = None
+        f["test_code_recognition_level"] = None
+        f["test_code_recognition_reason"] = None
+
+    # Organ recognition tier and normalization tier label (feeds Phase C scope
+    # confidence gate). organ_norm_tier is populated ONLY for level 6 per
+    # R1 F9 -- level 1/2 would just mirror "exact"/"alias" with no extra info.
+    specimen = f.get("specimen", "")
+    if specimen:
+        _canonical_organ, organ_level, organ_tier = assess_organ_recognition(specimen)
+        f["organ_recognition_level"] = organ_level
+        f["organ_norm_tier"] = organ_tier if organ_level == 6 else None
+    else:
+        f["organ_recognition_level"] = None
+        f["organ_norm_tier"] = None
 
     # Severity grade (5-point scale) for incidence findings with grading
     if f.get("data_type") == "incidence":

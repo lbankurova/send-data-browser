@@ -1,0 +1,130 @@
+topic: unrecognized-term-flagging
+title: "Unrecognized Term Flagging"
+started: 2026-04-05T01:20:00Z
+phase: build
+current_step: build.3
+parent: cross-study-phase-1-aggregation-backend
+priority: P2
+checkpoints:
+  research.1:
+    completed: 2026-04-05T01:40:00Z
+    key_decisions:
+      - "6-level recognition hierarchy with precedence rules"
+      - "Pipeline-time flagging, query-time aggregation"
+      - "Curated-dictionary-first approach (eTRANSAFE 95% vs lexical 22%)"
+      - "5 phases: A (metadata) -> B (base concept) -> C (dictionary) -> D (suggestions) -> E (collision detection)"
+    output: "docs/_internal/research/unrecognized-term-flagging.md"
+  research.2:
+    completed: 2026-04-05T02:00:00Z
+    key_decisions:
+      - "R1: 2 FLAWED (organ-scoping failure, CRO homonyms), 6 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/unrecognized-term-flagging-review.md"
+  research.3:
+    completed: 2026-04-05T02:10:00Z
+    key_decisions:
+      - "Organ-scope confidence gate added (3 failure modes analyzed)"
+      - "CRO homonym section added with 3 mitigations"
+      - "Frequency thresholds corpus-calibrated"
+      - "Embedding approaches separated: auto-resolution vs candidate generation"
+  research.4:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions:
+      - "R2: All 9 R1 RESOLVED, 3 MINOR"
+    output: "docs/_internal/research/peer-reviews/unrecognized-term-flagging-review-r2.md"
+  research.5:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions: ["VALIDATED -- ACCEPT"]
+  research.7:
+    completed: 2026-04-05T02:30:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 5 PROPAGATES, 1 STALE, 1 SCIENCE-FLAG (S03 homonym adversity)"
+      - "Coherence gap: Phase 1 synthesis assumes canonical_testcd sufficiency"
+  blueprint.7:
+    completed: 2026-04-07T00:45:00Z
+    key_decisions:
+      - "Build plan VALIDATED -- ready for /lattice:build-cycle unrecognized-term-flagging"
+      - "Synthesis: docs/_internal/incoming/unrecognized-term-flagging-synthesis.md"
+      - "6 features: assess helpers, _enrich wiring, unrecognized_terms.json report, dictionary_versions metadata, terminal summary, doc updates"
+      - "5 research gaps persisted to REGISTRY.md (RG-1..RG-5) under unrecognized-term-flagging stream"
+      - "2 data gaps persisted to TODO.md: GAP-240 (LB registry expansion), GAP-241 (organ canonical expansion)"
+      - "Auto-decisions logged: blueprint.0 (context), blueprint.1 (synth), blueprint.2 (architect PASS), blueprint.3 (probe), blueprint.4 (R1 accept), blueprint.5 (R1 incorporate), blueprint.6 (R2 accept+incorporate), blueprint.7 (complete)"
+    output: "blueprint phase complete"
+  blueprint.6:
+    completed: 2026-04-07T00:35:00Z
+    key_decisions:
+      - "R2: 15/15 R1 RESOLVED, 0 PARTIAL, 0 UNRESOLVED"
+      - "0 new FLAWED, 0 same-FLAWED-both-rounds, 3 new MINOR/CONDITIONAL (N1, N2, N3)"
+      - "VALIDATED WITH NOTES -- all 3 new findings auto-incorporated"
+      - "N1: Section 2 Reuse Inventory updated (function name, key count, field name, new files)"
+      - "N2: Feature 5 exception narrowed to (KeyError, ValueError, TypeError, AttributeError) -- OSError propagates so operators see disk failures"
+      - "N3: Feature 3 schema note 7 added documenting null-rate-on-empty-denominator semantics; propagates to field-contracts-index.md via Feature 6"
+      - "Build plan VALIDATED -- ready for build cycle"
+    output: "docs/_internal/research/peer-reviews/unrecognized-term-flagging-synthesis-review-r2.md"
+  blueprint.5:
+    completed: 2026-04-07T00:15:00Z
+    key_decisions:
+      - "All 15 R1 findings incorporated (2 FLAWED + 13 CONDITIONAL)"
+      - "F1: AC-7 corrected (LUNG/BRONCHUS is alias level 2). Real slash-compound (BRAIN/SPINAL CORD) and real prefix (BONE MARROW EXTRACT, LYMPH NODE NOVEL) examples added"
+      - "F2: Added test_code_recognition_reason field with enum {exact,alias,no_dictionary,unmatched,empty} -- gives Phase B/C clean reclassification hook"
+      - "F4: Level 1 redefined as 'raw equals canonical OR in self_canonical' (handles BUN-style)"
+      - "F5: Added empty/whitespace/lowercase/no-None edge case ACs"
+      - "F6: Added explicit try/except wrap in Feature 5 (no existing handler at line 591)"
+      - "F7: Refactored to cache full data dicts (_TEST_CODE_DATA, _ORGAN_DATA), added _reset_dictionary_caches_for_tests"
+      - "F8: All level keys are strings, levels_present array, explicit denominators, null-rate handling"
+      - "F9: Renamed recognition_level -> test_code_recognition_level. organ_norm_tier null for level 1/2"
+      - "F10: Added _with_defaults ordering tests + fault injection"
+      - "F11: AC-6 split into contract test + skip-able E2E corpus test"
+      - "F12: phase_a_caveat is now a module constant, identity assertion"
+      - "F13: Cap raised to 1000, truncation sentinel field added"
+      - "F14: Canonical dictionary_versions in study_metadata_enriched.json + sync invariant test"
+      - "F15: Added Feature 6 (field-contracts-index, system-manifest, new architecture stub)"
+      - "LOC envelope grew from 190 to 588 -- justified by edge case coverage, refactor, error containment, mandatory docs"
+      - "All 6 mandatory sections + Section 7 still present"
+    output: "docs/_internal/incoming/unrecognized-term-flagging-synthesis.md"
+  blueprint.3:
+    completed: 2026-04-06T23:45:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 2 PROPAGATES (S01, cross_study_aggregation), 16 SAFE, 0 STALE"
+      - "Verified by grep: zero existing references to recognition_level/organ_recognition_level/organ_norm_tier anywhere in codebase -- pure addition"
+      - "All 10 cross-cutting invariants (X1-X10) SAFE -- recognition is read-only metadata, not in any scoring/cascade path"
+      - "All 5 interaction seams SAFE -- no shared-state writers touched"
+      - "S03 SCIENCE-FLAG correctly parked: Phase A does not auto-resolve, so homonym risk structurally absent"
+      - "study_metadata_enriched.json consumers (analysis_views.py, studies.py, cohort-engine.ts) all use specific field names; new dictionary_versions key passes through silently"
+      - "No persistence required -- no BREAKS/SCIENCE-FLAG/STALE"
+    output: "inline probe report (decisions.log)"
+  blueprint.2:
+    completed: 2026-04-06T23:35:00Z
+    key_decisions:
+      - "Architect: PASS (with 5 SIMPLIFY/NOTE items, all auto-applied)"
+      - "Fix 1: get_dictionary_versions caches version strings inside lazy loaders (no extra disk I/O)"
+      - "Fix 2: sum(1 for ...) -> len(...) in Feature 5"
+      - "Fix 3: test_generator_outputs.py marked NEW FILE explicitly"
+      - "Fix 4: assess_organ_recognition() carries comment explaining mirror of normalize_organ() tier-detection -- prevents future simplification regression"
+      - "Fix 5: function name corrected: _ensure_finding_defaults -> _with_defaults at findings_pipeline.py:88"
+      - "All reuse claims verified by architect (12/12 utilities)"
+      - "Domain-critical module check: clean -- nothing critical touched"
+      - "Science preservation: PASS -- canonical_testcd parity confirmed for all domains, new fields are read-only metadata"
+      - "S03 SCIENCE-FLAG correctly parked (Phase A does not auto-resolve), R2 N3 caveat verified, R2 N2 collision verified"
+    output: "docs/_internal/research/peer-reviews/unrecognized-term-flagging-architect-review.md"
+  blueprint.1:
+    completed: 2026-04-06T23:25:00Z
+    key_decisions:
+      - "Synthesis written: docs/_internal/incoming/unrecognized-term-flagging-synthesis.md"
+      - "Scope: Phase A only (5 features). Phases B-E explicitly out of scope with rule-14 dependency rationale."
+      - "Features: (F1) assess_test_code_recognition + assess_organ_recognition helpers in send_knowledge.py, (F2) wire into _enrich_finding adding 3 fields, (F3) per-study unrecognized_terms.json report, (F4) dictionary_versions in study_metadata_enriched.json, (F5) terminal summary line."
+      - "All 6 mandatory sections present + Section 7 Out of Scope explicit."
+      - "~190 LOC added, no new files, no new dependencies."
+      - "R2 N3 (Phase A low-rate caveat) addressed via phase_a_caveat field in report schema."
+      - "R2 N2 (organ-tier numbering collision) addressed via organ_norm_tier text labels (exact/alias/prefix/slash_compound/unmatched), not numeric tiers."
+      - "S03 SCIENCE-FLAG (homonym adversity) parked: not actionable in Phase A because Phase A does not auto-resolve anything."
+    output: "docs/_internal/incoming/unrecognized-term-flagging-synthesis.md"
+  blueprint.0:
+    completed: 2026-04-06T23:10:00Z
+    key_decisions:
+      - "Parent cross-study Phase 1 SHIPPED (commit 3b99558d) -- aggregation reads canonical_testcd from unified_findings.json. Sets the seam: any recognition_level field added to findings will be readable by cross_study_aggregation immediately."
+      - "No prior failed approaches on terminology normalization in decisions log."
+      - "send_knowledge.py is 300 LOC (well under 500), findings_pipeline.py is 633 LOC (over budget but tracked hotspot for OTHER reasons; recognition wiring adds ~30 LOC, acceptable)."
+      - "Code quality guardrails: send_knowledge.py and findings_pipeline.py NOT in domain-critical list. classification.py is critical and recognition logic must NOT touch it."
+      - "S03 SCIENCE-FLAG (homonym adversity risk) and N3 R2 finding (Phase A initial low recognition rate UI) carry from research."
+      - "Scope decision for blueprint: Phase A only (recognition infrastructure + per-study report). Phases B/C/D/E remain research-validated but each becomes its own future blueprint cycle."
+    output: ".lattice/cycle-state/unrecognized-term-flagging.yaml#blueprint.0"
