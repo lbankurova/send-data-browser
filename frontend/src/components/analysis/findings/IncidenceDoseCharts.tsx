@@ -1,26 +1,23 @@
 /**
  * IncidenceDoseCharts — center panel layout for incidence endpoints (MI, MA, CL).
  *
- * Completely replaces the continuous D-R framework for incidence findings.
- * Two chart variants:
- *   MI (has severity): incidence left + severity right, both with recovery below
- *   CL/MA (no severity): main incidence left + recovery incidence right
+ * Single stacked-by-grade vertical bar chart per endpoint. Doses on X, sex-grouped
+ * bars at each dose, severity grade stacks within each affected portion. Recovery
+ * cluster (when present) sits to the right of a dashed divider in the same chart.
  *
- * Uses the existing ECharts builders from histopathology-charts.ts.
+ * For CL/MA (no severity), bars render as solid neutral fills and the verdict
+ * summary line is preserved below the chart.
+ *
+ * Component contract: see StackedSeverityIncidenceChart.tsx and the
+ * findings-stacked-severity-chart spec.
  */
 import { useMemo } from "react";
-import { EChartsWrapper } from "@/components/analysis/charts/EChartsWrapper";
-import {
-  buildDoseIncidenceBarOption,
-  buildDoseSeverityBarOption,
-} from "@/components/analysis/charts/histopathology-charts";
+import { StackedSeverityIncidenceChart } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
 import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import {
-  buildMainIncidenceGroups,
-  buildMainSeverityGroups,
-  buildRecoveryIncidenceGroups,
-  buildRecoverySeverityGroups,
+  buildClusterData,
+  buildRecoveryClusterData,
   extractVerdicts,
 } from "./incidence-chart-data";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
@@ -56,66 +53,47 @@ export function IncidenceDoseCharts({
   );
 
   // ── Main arm data ─────────────────────────────────────────
-  const { groups: mainIncGroups, sexKeys } = useMemo(
-    () => buildMainIncidenceGroups(epFindings, doseGroups, selectedDay),
+  const mainCluster = useMemo(
+    () => buildClusterData(epFindings, doseGroups, selectedDay),
     [epFindings, doseGroups, selectedDay],
   );
 
-  const mainSevGroups = useMemo(
-    () => hasSeverity ? buildMainSeverityGroups(epFindings, doseGroups, selectedDay) : [],
-    [hasSeverity, epFindings, doseGroups, selectedDay],
+  // ── Recovery arm data ─────────────────────────────────────
+  const incidenceRows = useMemo(
+    () => recoveryData?.incidence_rows ?? [],
+    [recoveryData],
   );
 
-  // ── Recovery arm data ─────────────────────────────────────
-  const incidenceRows = recoveryData?.incidence_rows ?? [];
-
-  const recoveryIncGroups = useMemo(
-    () => hasRecovery ? buildRecoveryIncidenceGroups(incidenceRows, findingName, domain, doseGroups) : undefined,
+  const recoveryCluster = useMemo(
+    () => hasRecovery
+      ? buildRecoveryClusterData(incidenceRows, findingName, domain, doseGroups)
+      : undefined,
     [hasRecovery, incidenceRows, findingName, domain, doseGroups],
   );
 
-  const recoverySevGroups = useMemo(
-    () => (hasRecovery && hasSeverity)
-      ? buildRecoverySeverityGroups(incidenceRows, findingName, domain, doseGroups)
-      : undefined,
-    [hasRecovery, hasSeverity, incidenceRows, findingName, domain, doseGroups],
-  );
-
-  const hasRecoveryData = (recoveryIncGroups?.length ?? 0) > 0;
-
-  // ── Chart options ─────────────────────────────────────────
-  const incidenceOption = useMemo(() => {
-    if (mainIncGroups.length === 0) return null;
-    // MI: include recovery in this chart. CL/MA: main arm only (recovery goes to right panel)
-    const recGroups = hasSeverity ? recoveryIncGroups : undefined;
-    return buildDoseIncidenceBarOption(mainIncGroups, sexKeys, "scaled", recGroups);
-  }, [mainIncGroups, sexKeys, "scaled", hasSeverity, recoveryIncGroups]);
-
-  const rightChartOption = useMemo(() => {
-    if (hasSeverity) {
-      // MI: severity chart with recovery below
-      if (mainSevGroups.length === 0) return null;
-      return buildDoseSeverityBarOption(mainSevGroups, sexKeys, "scaled", recoverySevGroups);
-    } else {
-      // CL/MA: recovery incidence chart
-      if (!recoveryIncGroups || recoveryIncGroups.length === 0) return null;
-      return buildDoseIncidenceBarOption(recoveryIncGroups, sexKeys, "scaled");
-    }
-  }, [hasSeverity, mainSevGroups, sexKeys, "scaled", recoverySevGroups, recoveryIncGroups]);
+  // Pass recovery only when it actually has groups (caller-side gate per
+  // buildRecoveryClusterData contract: empty groups[] = "no recovery").
+  const recoveryForChart = recoveryCluster && recoveryCluster.groups.length > 0
+    ? recoveryCluster
+    : undefined;
 
   // ── Verdict summary (CL/MA only) ─────────────────────────
   const verdicts = useMemo(
-    () => (!hasSeverity && hasRecoveryData) ? extractVerdicts(incidenceRows, findingName, domain) : [],
-    [hasSeverity, hasRecoveryData, incidenceRows, findingName, domain],
+    () => (!hasSeverity && recoveryForChart) ? extractVerdicts(incidenceRows, findingName, domain, doseGroups) : [],
+    [hasSeverity, recoveryForChart, incidenceRows, findingName, domain, doseGroups],
   );
 
-  // ── Labels ────────────────────────────────────────────────
-  const rightLabel = hasSeverity ? "Severity" : "Recovery";
-  const rightEmptyMsg = hasSeverity
-    ? "No severity data."
-    : (hasRecovery ? "No recovery data for this endpoint." : "No recovery arm in this study.");
+  // Shared dose unit (e.g. "mg/kg") rendered once on the X axis. Prefer the
+  // backend-computed `shared_unit` (null if mixed); fall back to the first
+  // treated group's `dose_unit`.
+  const xAxisUnit = useMemo(() => {
+    const shared = doseGroups.find((dg) => dg.shared_unit)?.shared_unit;
+    if (shared) return shared;
+    const firstWithUnit = doseGroups.find((dg) => dg.dose_value != null && dg.dose_unit);
+    return firstWithUnit?.dose_unit ?? undefined;
+  }, [doseGroups]);
 
-  if (mainIncGroups.length === 0) {
+  if (mainCluster.groups.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
         No incidence data for this endpoint.
@@ -124,34 +102,14 @@ export function IncidenceDoseCharts({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Charts row — 50/50 split */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left: Incidence chart */}
-        <div className="relative flex-1 border-r border-border/30">
-          <div className="absolute left-2 top-1 z-10">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Incidence
-            </span>
-          </div>
-          <EChartsWrapper option={incidenceOption!} style={{ width: "100%", height: "100%" }} />
-        </div>
-
-        {/* Right: Severity (MI) or Recovery incidence (CL/MA) */}
-        <div className="relative flex-1">
-          <div className="absolute left-2 top-1 z-10">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {rightLabel}
-            </span>
-          </div>
-          {rightChartOption ? (
-            <EChartsWrapper option={rightChartOption} style={{ width: "100%", height: "100%" }} />
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-              {rightEmptyMsg}
-            </div>
-          )}
-        </div>
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        <StackedSeverityIncidenceChart
+          main={mainCluster}
+          recovery={recoveryForChart}
+          hasSeverity={hasSeverity}
+          xAxisUnit={xAxisUnit ?? undefined}
+        />
       </div>
 
       {/* Verdict summary line (CL/MA only) */}

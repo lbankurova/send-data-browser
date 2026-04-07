@@ -1,0 +1,23 @@
+topic: findings-stacked-severity-chart
+phase: build
+current_step: build.3
+entry_mode: path-based
+spec_path: docs/_internal/incoming/archive/findings-stacked-severity-chart.md
+started_at: 2026-04-07T00:12:05Z
+implement_completed_at: 2026-04-07T00:24:00Z
+review_round1_at: 2026-04-07T00:50:00Z
+ux_polish_at: 2026-04-07T01:11:00Z
+phases_completed: 5
+gaps_persisted:
+  - GAP-242 (TODO.md) -- MI severity_grade_counts vs affected over/under-count anomaly
+notes: |
+  Implementation + UX polish complete.
+  Round 1 review caught architect SIMPLIFY (canonical shortDoseLabel) and
+  decision-audit SILENT-DROP (findings.md bullet ordering) -- both fixed.
+  User then identified 7 UX issues from screenshots; all 7 fixed in same
+  cycle (rule 14 -- no deferrals): legend wrap/visibility, horizontal
+  overflow, missing dose unit caption, % mode summary labels (raw counts
+  in both modes), verdict line clean labels, NE marker visibility, cluster
+  header prominence.
+  Visual smoke test verified MI/MI+recovery/CL/% modes all render correctly
+  with the fixes.

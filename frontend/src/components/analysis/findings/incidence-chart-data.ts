@@ -1,127 +1,84 @@
 /**
- * Data converters: UnifiedFinding → histopathology chart builder input types.
+ * Data converters: UnifiedFinding → StackedSeverityIncidenceChart input.
  *
- * Bridges the findings view's data model (UnifiedFinding with group_stats)
- * to the ECharts builders in histopathology-charts.ts (DoseIncidenceGroup,
- * DoseSeverityGroup).
+ * Bridges the findings view's data model (UnifiedFinding with group_stats,
+ * RecoveryComparisonResponse incidence_rows) to the ClusterData shape consumed
+ * by StackedSeverityIncidenceChart.
  */
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
-import type { DoseIncidenceGroup, DoseSeverityGroup } from "@/components/analysis/charts/histopathology-charts";
+import type { ClusterData, DoseGroupData, SexBarData } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { shortDoseLabel } from "@/lib/dose-label-utils";
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
 
 // ── Main arm: from UnifiedFinding.group_stats ──────────────
 
 /**
- * Build DoseIncidenceGroup[] from findings for one endpoint.
+ * Build ClusterData from findings for one endpoint (main arm).
+ *
  * Findings arrive pre-filtered to the endpoint. Multiple findings per sex
  * (one UnifiedFinding per sex per day) — we pick the one matching selectedDay.
+ *
+ * Emits all dose levels even when empty to preserve spatial anchoring (A-11).
+ * `severityCounts` passes through verbatim from `group_stats[].severity_grade_counts`;
+ * the chart computes `ungraded = max(0, affected - sum(severityCounts))` itself.
  */
-export function buildMainIncidenceGroups(
+export function buildClusterData(
   findings: UnifiedFinding[],
   doseGroups: DoseGroup[],
   selectedDay: number | null,
-): { groups: DoseIncidenceGroup[]; sexKeys: string[] } {
+): ClusterData {
   // Collect per-sex findings for this endpoint+day
   const bySex = new Map<string, UnifiedFinding>();
   for (const f of findings) {
     if (f.data_type !== "incidence") continue;
     if (selectedDay != null && f.day !== selectedDay) continue;
-    // Keep first match per sex (findings are already unique per sex+day+endpoint)
     if (!bySex.has(f.sex)) bySex.set(f.sex, f);
   }
 
-  const sexKeys = [...bySex.keys()].sort(); // F before M
-  if (sexKeys.length === 0) return { groups: [], sexKeys: [] };
+  const sexes = [...bySex.keys()].sort(); // F before M
+  if (sexes.length === 0) return { groups: [], sexes: [] };
 
-  // Build groups for ALL dose levels (even when no data — keeps charts aligned)
-  const groups: DoseIncidenceGroup[] = [];
-  for (const dg of doseGroups) {
-    const bySexData: Record<string, { affected: number; n: number }> = {};
-    for (const sex of sexKeys) {
+  // Build groups for ALL dose levels (even when no data — A-11 spatial anchoring)
+  const groups: DoseGroupData[] = doseGroups.map((dg) => {
+    const bySexData: Record<string, SexBarData> = {};
+    for (const sex of sexes) {
       const f = bySex.get(sex);
       const gs = f?.group_stats.find((g) => g.dose_level === dg.dose_level);
-      bySexData[sex] = { affected: gs?.affected ?? 0, n: gs?.n ?? 0 };
+      bySexData[sex] = {
+        affected: gs?.affected ?? 0,
+        n: gs?.n ?? 0,
+        severityCounts: gs?.severity_grade_counts ?? null,
+      };
     }
-    groups.push({
+    return {
       doseLevel: dg.dose_level,
-      doseLabel: formatDoseShortLabel(dg.label),
+      doseLabel: shortDoseLabel(dg.label, doseGroups),
       bySex: bySexData,
-    });
-  }
+    };
+  });
 
-  return { groups, sexKeys };
-}
-
-/**
- * Build DoseSeverityGroup[] from findings for one endpoint (MI only).
- * Uses severity_grade_counts from group_stats to compute totalSeverity and count.
- */
-export function buildMainSeverityGroups(
-  findings: UnifiedFinding[],
-  doseGroups: DoseGroup[],
-  selectedDay: number | null,
-): DoseSeverityGroup[] {
-  const bySex = new Map<string, UnifiedFinding>();
-  for (const f of findings) {
-    if (f.data_type !== "incidence") continue;
-    if (selectedDay != null && f.day !== selectedDay) continue;
-    if (!bySex.has(f.sex)) bySex.set(f.sex, f);
-  }
-
-  const sexKeys = [...bySex.keys()].sort();
-  if (sexKeys.length === 0) return [];
-
-  const groups: DoseSeverityGroup[] = [];
-  for (const dg of doseGroups) {
-    const bySexData: Record<string, { totalSeverity: number; count: number }> = {};
-    for (const sex of sexKeys) {
-      const f = bySex.get(sex);
-      const gs = f?.group_stats.find((g) => g.dose_level === dg.dose_level);
-      if (gs?.severity_grade_counts) {
-        let total = 0;
-        let count = 0;
-        for (const [grade, n] of Object.entries(gs.severity_grade_counts)) {
-          const g = Number(grade);
-          if (g > 0 && n > 0) {
-            total += g * n;
-            count += n;
-          }
-        }
-        if (count > 0) bySexData[sex] = { totalSeverity: total, count };
-      } else if (gs?.avg_severity != null && gs.affected != null && gs.affected > 0) {
-        bySexData[sex] = { totalSeverity: gs.avg_severity * gs.affected, count: gs.affected };
-      }
-    }
-    // Always push — even with empty bySex — to preserve spatial anchoring
-    // across paired charts (A-11). An empty group renders as a zero-height bar.
-    groups.push({
-      doseLevel: dg.dose_level,
-      doseLabel: formatDoseShortLabel(dg.label),
-      bySex: bySexData,
-    });
-  }
-
-  return groups;
+  return { groups, sexes };
 }
 
 // ── Recovery arm: from incidence_rows API ──────────────────
 
 /**
- * Build DoseIncidenceGroup[] from recovery-comparison incidence_rows.
- * Filters to the specified finding+domain, uses recovery arm counts.
+ * Build ClusterData for the recovery arm of one endpoint.
  *
- * When referenceDoseGroups is provided, all dose levels are included
- * even if recovery data is absent — preserving spatial anchoring (A-11).
+ * Filters `incidence_rows` to the specified finding+domain, uses the
+ * `recovery_*` columns. Emits all reference dose levels even when no
+ * recovery data exists (A-11). Returns an empty cluster (no groups) when
+ * no treated dose has any recovery subjects, signalling the caller to omit
+ * the recovery cluster entirely.
  */
-export function buildRecoveryIncidenceGroups(
+export function buildRecoveryClusterData(
   rows: IncidenceRow[],
   finding: string,
   domain: string,
-  referenceDoseGroups?: DoseGroup[],
-): DoseIncidenceGroup[] {
+  referenceDoseGroups: DoseGroup[],
+): ClusterData {
   const findingUpper = finding.toUpperCase();
   const matched = rows.filter(
     (r) => r.finding === findingUpper && r.domain === domain,
@@ -129,101 +86,57 @@ export function buildRecoveryIncidenceGroups(
 
   // No meaningful recovery if no treated dose has recovery subjects
   const hasTreatedRecovery = matched.some((r) => r.dose_level > 0 && r.recovery_n > 0);
-  if (!hasTreatedRecovery) return [];
+  if (!hasTreatedRecovery) return { groups: [], sexes: [] };
 
-  // Group by dose_level
-  const byDose = new Map<number, Map<string, { affected: number; n: number }>>();
-  const doseLabels = new Map<number, string>();
+  // Index rows: dose_level -> sex -> SexBarData
+  const byDose = new Map<number, Map<string, SexBarData>>();
+  const sexSet = new Set<string>();
+  const doseLabelsFromRows = new Map<number, string>();
   for (const r of matched) {
     if (!byDose.has(r.dose_level)) byDose.set(r.dose_level, new Map());
     byDose.get(r.dose_level)!.set(r.sex, {
       affected: r.recovery_affected,
       n: r.recovery_n,
+      severityCounts: r.recovery_severity_counts ?? null,
     });
-    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
-  }
-
-  // When reference dose groups are provided, ensure all levels are represented (A-11)
-  if (referenceDoseGroups) {
-    return referenceDoseGroups.map((dg) => ({
-      doseLevel: dg.dose_level,
-      doseLabel: doseLabels.get(dg.dose_level) ?? formatDoseShortLabel(dg.label),
-      bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
-    }));
-  }
-
-  return [...byDose.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([doseLevel, sexMap]) => ({
-      doseLevel,
-      doseLabel: doseLabels.get(doseLevel) ?? `Dose ${doseLevel}`,
-      bySex: Object.fromEntries(sexMap),
-    }));
-}
-
-/**
- * Build DoseSeverityGroup[] from recovery-comparison incidence_rows (MI only).
- * Uses recovery_severity_counts to compute totalSeverity and count.
- *
- * When referenceDoseGroups is provided, all dose levels are included
- * even if recovery severity data is absent — preserving spatial anchoring (A-11).
- */
-export function buildRecoverySeverityGroups(
-  rows: IncidenceRow[],
-  finding: string,
-  domain: string,
-  referenceDoseGroups?: DoseGroup[],
-): DoseSeverityGroup[] {
-  const findingUpper = finding.toUpperCase();
-  const allForFinding = rows.filter((r) => r.finding === findingUpper && r.domain === domain);
-  if (!allForFinding.some((r) => r.dose_level > 0 && r.recovery_n > 0)) return [];
-
-  const matched = allForFinding.filter((r) => r.recovery_severity_counts);
-
-  const byDose = new Map<number, Map<string, { totalSeverity: number; count: number }>>();
-  const doseLabels = new Map<number, string>();
-  for (const r of matched) {
-    if (!r.recovery_severity_counts) continue;
-    let total = 0;
-    let count = 0;
-    for (const [grade, n] of Object.entries(r.recovery_severity_counts)) {
-      const g = Number(grade);
-      if (g > 0 && n > 0) { total += g * n; count += n; }
+    sexSet.add(r.sex);
+    if (!doseLabelsFromRows.has(r.dose_level)) {
+      doseLabelsFromRows.set(r.dose_level, shortDoseLabel(r.dose_label, referenceDoseGroups));
     }
-    if (count === 0) continue;
-    if (!byDose.has(r.dose_level)) byDose.set(r.dose_level, new Map());
-    byDose.get(r.dose_level)!.set(r.sex, { totalSeverity: total, count });
-    if (!doseLabels.has(r.dose_level)) doseLabels.set(r.dose_level, formatDoseShortLabel(r.dose_label));
   }
 
-  // When reference dose groups are provided, ensure all levels are represented (A-11)
-  if (referenceDoseGroups) {
-    return referenceDoseGroups.map((dg) => ({
+  const sexes = [...sexSet].sort();
+
+  // Walk all reference dose levels (A-11). Missing dose levels render as empty bars
+  // (n=0 envelope-less NE markers per the chart's not-examined branch).
+  const groups: DoseGroupData[] = referenceDoseGroups.map((dg) => {
+    const sexMap = byDose.get(dg.dose_level);
+    const bySexData: Record<string, SexBarData> = {};
+    for (const sex of sexes) {
+      bySexData[sex] = sexMap?.get(sex) ?? { affected: 0, n: 0, severityCounts: null };
+    }
+    return {
       doseLevel: dg.dose_level,
-      doseLabel: doseLabels.get(dg.dose_level) ?? formatDoseShortLabel(dg.label),
-      bySex: Object.fromEntries(byDose.get(dg.dose_level) ?? new Map()),
-    }));
-  }
+      doseLabel: doseLabelsFromRows.get(dg.dose_level) ?? shortDoseLabel(dg.label, referenceDoseGroups),
+      bySex: bySexData,
+    };
+  });
 
-  // No reference groups — return only what we have (backward compat for other callers)
-  if (byDose.size === 0) return [];
-  return [...byDose.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([doseLevel, sexMap]) => ({
-      doseLevel,
-      doseLabel: doseLabels.get(doseLevel) ?? `Dose ${doseLevel}`,
-      bySex: Object.fromEntries(sexMap),
-    }));
+  return { groups, sexes };
 }
 
 /**
  * Extract verdicts from incidence_rows for verdict summary line (CL/MA).
  * Returns one verdict per dose (or per dose+sex if they differ).
+ *
+ * Labels prefer the canonical `shortDoseLabel(label, doseGroups)` (e.g. "20 mg/kg")
+ * over the verbose raw `r.dose_label` ("Group 3,20 mg/kg PCDRUG").
  */
 export function extractVerdicts(
   rows: IncidenceRow[],
   finding: string,
   domain: string,
+  doseGroups?: DoseGroup[],
 ): { label: string; verdict: string }[] {
   const findingUpper = finding.toUpperCase();
   const matched = rows.filter(
@@ -236,8 +149,13 @@ export function extractVerdicts(
   for (const r of matched) {
     if (!r.verdict) continue;
     if (!byDose.has(r.dose_level)) {
-      const m = r.dose_label.match(/\(([^)]+)\)/);
-      byDose.set(r.dose_level, { label: m ? m[1] : r.dose_label, verdicts: new Map() });
+      // Prefer the shared canonical short label keyed off dose_level so verdict
+      // labels match the X-axis labels in the chart above.
+      const dgMatch = doseGroups?.find((dg) => dg.dose_level === r.dose_level);
+      const cleanLabel = dgMatch
+        ? shortDoseLabel(dgMatch.label, doseGroups)
+        : (r.dose_label.match(/\(([^)]+)\)/)?.[1] ?? r.dose_label);
+      byDose.set(r.dose_level, { label: cleanLabel, verdicts: new Map() });
     }
     byDose.get(r.dose_level)!.verdicts.set(r.sex, r.verdict);
   }
