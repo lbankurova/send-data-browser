@@ -1,0 +1,168 @@
+{
+  "_comment": "AC-4.1 / AC-5.8 post-Feature-4 baseline. Captured after regenerating all 16 studies post-Phase-C wiring. Hard gate (AC-4.1-gate): post-regen MI/MA/CL rates must be >= these values - 0.02.",
+  "measured_on_phase": "post-Feature-4",
+  "measured_at": "2026-04-07T14:32:19.395622Z",
+  "ac_reference": "AC-4.1-baseline + AC-4.1-gate + AC-5.8 + AC-4.6",
+  "studies": {
+    "CBER-POC-Pilot-Study1-Vaccine_xpt_only": {
+      "overall_rate_test_code": 0.5481,
+      "overall_rate_organ": 0.0,
+      "MI_rate": null,
+      "MA_rate": null,
+      "CL_rate": 0.0,
+      "MI_total": 0,
+      "MA_total": 0,
+      "CL_total": 8
+    },
+    "CBER-POC-Pilot-Study2-Vaccine_xpt": {
+      "overall_rate_test_code": 0.6265,
+      "overall_rate_organ": 0.9147,
+      "MI_rate": 0.8049,
+      "MA_rate": 0.8889,
+      "CL_rate": 0.0,
+      "MI_total": 41,
+      "MA_total": 18,
+      "CL_total": 17
+    },
+    "CBER-POC-Pilot-Study3-Gene-Therapy": {
+      "overall_rate_test_code": 0.7808,
+      "overall_rate_organ": 0.9565,
+      "MI_rate": 0.9375,
+      "MA_rate": 1.0,
+      "CL_rate": 0.4444,
+      "MI_total": 16,
+      "MA_total": 6,
+      "CL_total": 9
+    },
+    "CBER-POC-Pilot-Study4-Vaccine": {
+      "overall_rate_test_code": 0.5756,
+      "overall_rate_organ": 0.86,
+      "MI_rate": 0.9259,
+      "MA_rate": 0.8235,
+      "CL_rate": 0.1111,
+      "MI_total": 108,
+      "MA_total": 17,
+      "CL_total": 9
+    },
+    "CBER-POC-Pilot-Study5": {
+      "overall_rate_test_code": 0.1538,
+      "overall_rate_organ": null,
+      "MI_rate": null,
+      "MA_rate": null,
+      "CL_rate": 0.6667,
+      "MI_total": 0,
+      "MA_total": 0,
+      "CL_total": 12
+    },
+    "CJ16050-xptonly": {
+      "overall_rate_test_code": 0.2,
+      "overall_rate_organ": null,
+      "MI_rate": null,
+      "MA_rate": null,
+      "CL_rate": 0.5,
+      "MI_total": 0,
+      "MA_total": 0,
+      "CL_total": 2
+    },
+    "CJUGSEND00": {
+      "overall_rate_test_code": 0.0645,
+      "overall_rate_organ": null,
+      "MI_rate": null,
+      "MA_rate": null,
+      "CL_rate": 1.0,
+      "MI_total": 0,
+      "MA_total": 0,
+      "CL_total": 1
+    },
+    "FFU-Contribution-to-FDA": {
+      "overall_rate_test_code": 0.7287,
+      "overall_rate_organ": 0.9901,
+      "MI_rate": 0.6842,
+      "MA_rate": 1.0,
+      "CL_rate": 0.2059,
+      "MI_total": 38,
+      "MA_total": 3,
+      "CL_total": 34
+    },
+    "Nimble": {
+      "overall_rate_test_code": 0.6154,
+      "overall_rate_organ": 0.6154,
+      "MI_rate": 1.0,
+      "MA_rate": 0.6667,
+      "CL_rate": 0.8,
+      "MI_total": 10,
+      "MA_total": 12,
+      "CL_total": 10
+    },
+    "PDS": {
+      "overall_rate_test_code": 0.3469,
+      "overall_rate_organ": 0.858,
+      "MI_rate": 0.8902,
+      "MA_rate": 0.4828,
+      "CL_rate": 0.1667,
+      "MI_total": 82,
+      "MA_total": 29,
+      "CL_total": 12
+    },
+    "PointCross": {
+      "overall_rate_test_code": 0.7201,
+      "overall_rate_organ": 0.8622,
+      "MI_rate": 0.9604,
+      "MA_rate": 0.7361,
+      "CL_rate": 0.4444,
+      "MI_total": 101,
+      "MA_total": 72,
+      "CL_total": 9
+    },
+    "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt": {
+      "overall_rate_test_code": 0.6125,
+      "overall_rate_organ": 0.9406,
+      "MI_rate": 0.75,
+      "MA_rate": 0.8,
+      "CL_rate": 0.2959,
+      "MI_total": 20,
+      "MA_total": 20,
+      "CL_total": 98
+    },
+    "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt": {
+      "overall_rate_test_code": 0.6491,
+      "overall_rate_organ": 0.96,
+      "MI_rate": 0.8095,
+      "MA_rate": 1.0,
+      "CL_rate": 0.6,
+      "MI_total": 42,
+      "MA_total": 3,
+      "CL_total": 30
+    },
+    "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt": {
+      "overall_rate_test_code": 0.3848,
+      "overall_rate_organ": 0.9398,
+      "MI_rate": 0.8222,
+      "MA_rate": 0.8095,
+      "CL_rate": 0.0556,
+      "MI_total": 45,
+      "MA_total": 21,
+      "CL_total": 72
+    },
+    "TOXSCI-24-0062--96298 1 month rat- Compound A xpt": {
+      "overall_rate_test_code": 0.4847,
+      "overall_rate_organ": 0.9371,
+      "MI_rate": 0.9,
+      "MA_rate": 1.0,
+      "CL_rate": 0.5806,
+      "MI_total": 70,
+      "MA_total": 12,
+      "CL_total": 31
+    },
+    "instem": {
+      "overall_rate_test_code": 0.6814,
+      "overall_rate_organ": 0.8955,
+      "MI_rate": 0.973,
+      "MA_rate": 0.75,
+      "CL_rate": 0.6857,
+      "MI_total": 37,
+      "MA_total": 8,
+      "CL_total": 35
+    }
+  }
+}

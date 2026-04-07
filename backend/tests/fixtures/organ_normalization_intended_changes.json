@@ -1,0 +1,44 @@
+[
+  {
+    "specimen_raw": "LARGE INTESTINE, APPENDIX",
+    "canonical_before": "LARGE INTESTINE, APPENDIX",
+    "canonical_after": "LARGE INTESTINE",
+    "reason": "Feature 7 organ expansion (etransafe-send-snomed-integration cycle): LARGE INTESTINE was added as a canonical group with sub-region aliases, mirroring the BONE MARROW pattern. APPENDIX is a large-intestine sub-region; canonicalizing to LARGE INTESTINE matches the parent organ group convention used by BONE MARROW, FEMUR -> BONE MARROW. Confirmed scientifically appropriate by toxicology convention (sub-regions roll up to parent organ for cross-study aggregation)."
+  },
+  {
+    "specimen_raw": "LARGE INTESTINE, CECUM",
+    "canonical_before": "LARGE INTESTINE, CECUM",
+    "canonical_after": "LARGE INTESTINE",
+    "reason": "Feature 7 organ expansion: CECUM is a large-intestine sub-region. Same parent-organ-group convention as APPENDIX entry."
+  },
+  {
+    "specimen_raw": "LARGE INTESTINE, COLON",
+    "canonical_before": "LARGE INTESTINE, COLON",
+    "canonical_after": "LARGE INTESTINE",
+    "reason": "Feature 7 organ expansion: COLON is a large-intestine sub-region. Same parent-organ-group convention."
+  },
+  {
+    "specimen_raw": "LARGE INTESTINE, RECTUM",
+    "canonical_before": "LARGE INTESTINE, RECTUM",
+    "canonical_after": "LARGE INTESTINE",
+    "reason": "Feature 7 organ expansion: RECTUM is a large-intestine sub-region. Same parent-organ-group convention."
+  },
+  {
+    "specimen_raw": "SMALL INTESTINE, DUODENUM",
+    "canonical_before": "SMALL INTESTINE, DUODENUM",
+    "canonical_after": "SMALL INTESTINE",
+    "reason": "Feature 7 organ expansion: DUODENUM is a small-intestine sub-region. Same parent-organ-group convention."
+  },
+  {
+    "specimen_raw": "SMALL INTESTINE, ILEUM",
+    "canonical_before": "SMALL INTESTINE, ILEUM",
+    "canonical_after": "SMALL INTESTINE",
+    "reason": "Feature 7 organ expansion: ILEUM is a small-intestine sub-region. Same parent-organ-group convention."
+  },
+  {
+    "specimen_raw": "SMALL INTESTINE, JEJUNUM",
+    "canonical_before": "SMALL INTESTINE, JEJUNUM",
+    "canonical_after": "SMALL INTESTINE",
+    "reason": "Feature 7 organ expansion: JEJUNUM is a small-intestine sub-region. Same parent-organ-group convention."
+  }
+]

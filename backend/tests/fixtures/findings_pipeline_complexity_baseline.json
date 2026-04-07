@@ -1,0 +1,8 @@
+{
+  "measured_on": "3fdbbe602a59f112e62c2e453e91d84c66c1a2d8",
+  "_enrich_finding_cc": 35,
+  "_enrich_finding_logical_loc": 144,
+  "method": "AST-based decision point count (If/For/While/Try/ExceptHandler/With/Assert/BoolOp/IfExp), logical LOC = non-blank non-comment lines from def to end_lineno",
+  "captured_at_phase": "pre-Feature-4-wiring",
+  "ac_reference": "AC-4.5"
+}

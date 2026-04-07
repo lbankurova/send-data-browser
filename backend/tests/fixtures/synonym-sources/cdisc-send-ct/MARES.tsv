@@ -1,0 +1,4 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78606	C77524	Yes	Macroscopic Examination Result	MARES	MARES	Macroscopic examination result (test fixture)	Macroscopic Finding
+C50373	C77524	Yes	Macroscopic Examination Result	DISCOLORATION	DISCOLORED	Discoloration	Discoloration
+C25379	C77524	Yes	Macroscopic Examination Result	ENLARGED	ENLARGEMENT	Enlarged	Enlarged

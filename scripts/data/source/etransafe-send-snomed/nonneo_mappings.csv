@@ -1,0 +1,21 @@
+subject_id,subject_label,predicate_id,object_id,object_label,mapping_group,snomed_id
+SEND:NECROSIS,NECROSIS,skos:exactMatch,SCT:6574001,Necrosis (morphologic abnormality),NONNEO,6574001
+SEND:NECROSIS_SC,NECROSIS SINGLE CELL,skos:exactMatch,SCT:6574001,Necrosis (morphologic abnormality),NONNEO,6574001
+SEND:INFLAMMATION,INFLAMMATION,skos:exactMatch,SCT:23583003,Inflammation (morphologic abnormality),NONNEO,23583003
+SEND:INFLAMMATION_AC,INFLAMMATION ACUTE,skos:exactMatch,SCT:23583003,Inflammation (morphologic abnormality),NONNEO,23583003
+SEND:HYPERPLASIA,HYPERPLASIA,skos:exactMatch,SCT:76197007,Hyperplasia (morphologic abnormality),NONNEO,76197007
+SEND:HYPERTROPHY,HYPERTROPHY,skos:exactMatch,SCT:56246009,Hypertrophy (morphologic abnormality),NONNEO,56246009
+SEND:FIBROSIS,FIBROSIS,skos:exactMatch,SCT:51717001,Fibrosis (morphologic abnormality),NONNEO,51717001
+SEND:ATROPHY,ATROPHY,skos:exactMatch,SCT:103284004,Atrophy (morphologic abnormality),NONNEO,103284004
+SEND:EDEMA,EDEMA,skos:exactMatch,SCT:79654002,Edema (morphologic abnormality),NONNEO,79654002
+SEND:METAPLASIA,METAPLASIA,skos:exactMatch,SCT:50667009,Metaplasia (morphologic abnormality),NONNEO,50667009
+SEND:RETINAL_FOLD,RETINAL FOLD,skos:exactMatch,SCT:247155006,Fold of retina (disorder),NONNEO,247155006
+SEND:RETINAL_FOLDS,RETINAL FOLDS,skos:exactMatch,SCT:247155006,Fold of retina (disorder),NONNEO,247155006
+SEND:CYST,CYST,skos:exactMatch,SCT:367643001,Cyst (morphologic abnormality),NONNEO,367643001
+SEND:VACUOLATION,VACUOLATION,skos:exactMatch,SCT:14302001,Vacuolation (morphologic abnormality),NONNEO,14302001
+SEND:CONGESTION,CONGESTION,skos:exactMatch,SCT:11058002,Congestion (morphologic abnormality),NONNEO,11058002
+SEND:HEMORRHAGE,HEMORRHAGE,skos:exactMatch,SCT:50960005,Hemorrhage (morphologic abnormality),NONNEO,50960005
+SEND:DISCOLORATION,DISCOLORATION,skos:exactMatch,SCT:301803007,Discoloration (morphologic abnormality),MARES,301803007
+SEND:ENLARGED,ENLARGED,skos:exactMatch,SCT:260376009,Enlarged (qualifier value),MARES,260376009
+SEND:ALOPECIA,ALOPECIA,skos:exactMatch,SCT:56317004,Alopecia (disorder),CLOBS,56317004
+SEND:EMESIS,EMESIS,skos:exactMatch,SCT:422400008,Vomiting (disorder),CLOBS,422400008

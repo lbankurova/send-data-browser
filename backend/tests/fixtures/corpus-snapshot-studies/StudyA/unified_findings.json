@@ -1,0 +1,9 @@
+{
+  "study_id": "StudyA",
+  "findings": [
+    {"domain": "MI", "test_name": "HYPERTROPHY", "test_code": "LIVER_HYPERTROPHY"},
+    {"domain": "MI", "test_name": "RETINAL FOLD(S)", "test_code": "EYE_RETINAL FOLD(S)"},
+    {"domain": "MA", "test_name": "DISCOLORATION", "test_code": "LIVER_DISCOLORATION"},
+    {"domain": "CL", "test_name": "ALOPECIA", "test_code": "ALOPECIA"}
+  ]
+}

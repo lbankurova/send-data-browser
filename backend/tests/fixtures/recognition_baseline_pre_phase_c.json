@@ -1,0 +1,49 @@
+{
+  "_comment": "AC-4.1-baseline / AC-4.1-sanity / AC-5.8 — pre-Feature-4 recognition rate snapshot. Captured by reading existing unrecognized_terms.json files BEFORE any Feature 4 wiring. The post-Feature-4 fixture (recognition_baseline_post_feature_4.json) is written after the regeneration backstop in AC-4.6.",
+  "measured_on_commit": "3fdbbe602a59f112e62c2e453e91d84c66c1a2d8",
+  "measured_on_phase": "pre-Feature-4",
+  "ac_reference": "AC-4.1-baseline + AC-4.1-sanity + AC-5.8",
+  "invariant": "Every MI/MA/CL rate is 0.0 (or null) at this baseline; post-Feature-4 must be strictly greater than 0.0",
+  "studies": {
+    "PointCross": {
+      "overall_recognition_rate_test_code": 0.3517,
+      "overall_recognition_rate_organ": 0.4643,
+      "MI_rate": 0.0,
+      "MA_rate": 0.0,
+      "CL_rate": 0.0,
+      "MI_total": 101,
+      "MA_total": 72,
+      "CL_total": 9
+    },
+    "PDS": {
+      "overall_recognition_rate_test_code": 0.2177,
+      "overall_recognition_rate_organ": 0.5148,
+      "MI_rate": 0.0,
+      "MA_rate": 0.0,
+      "CL_rate": 0.0,
+      "MI_total": 82,
+      "MA_total": 29,
+      "CL_total": 12
+    },
+    "instem": {
+      "overall_recognition_rate_test_code": 0.4732,
+      "overall_recognition_rate_organ": 0.5224,
+      "MI_rate": 0.0,
+      "MA_rate": 0.0,
+      "CL_rate": 0.0,
+      "MI_total": 37,
+      "MA_total": 8,
+      "CL_total": 35
+    },
+    "Nimble": {
+      "overall_recognition_rate_test_code": 0.1154,
+      "overall_recognition_rate_organ": 0.2308,
+      "MI_rate": 0.0,
+      "MA_rate": 0.0,
+      "CL_rate": 0.0,
+      "MI_total": 10,
+      "MA_total": 12,
+      "CL_total": 10
+    }
+  }
+}

@@ -619,10 +619,22 @@ def generate(study_id: str):
         n_unrec_org = len(report["unrecognized_organs"])
         rate_tc = report["summary"]["recognition_rate_test_code"]
         rate_str = f"{rate_tc:.1%}" if rate_tc is not None else "n/a"
+        # Phase B/C terminal summary: report MI/MA/CL rates alongside the
+        # overall rate so the operator can see Phase C dictionary coverage
+        # for the new domains. Per R2 N3, level 4 is NOT mentioned -- this
+        # cycle emits levels 1/2/3/6 only.
+        by_dom = report.get("by_domain", {}) or {}
+        per_dom_strs = []
+        for d in ("MI", "MA", "CL"):
+            d_rate = (by_dom.get(d) or {}).get("rate")
+            if d_rate is not None:
+                per_dom_strs.append(f"{d} {d_rate:.1%}")
+        per_dom_part = ", ".join(per_dom_strs) if per_dom_strs else ""
         print(
-            f"  5: term recognition: rate {rate_str} test codes, "
-            f"{n_unrec_tc} unrecognized test codes (mostly MI/MA -- expected in Phase A), "
-            f"{n_unrec_org} unrecognized organs -- see unrecognized_terms.json"
+            f"  5: term recognition: rate {rate_str} test codes overall"
+            + (f"; {per_dom_part}" if per_dom_part else "")
+            + f", {n_unrec_tc} unrecognized test codes, "
+            + f"{n_unrec_org} unrecognized organs -- see unrecognized_terms.json"
         )
     except (KeyError, ValueError, TypeError, AttributeError) as e:
         print(f"  5 WARNING: Recognition report failed: {e}")

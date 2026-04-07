@@ -1,0 +1,6 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78605	C77523	Yes	Neoplastic Finding Type Response	NEOPLASM	NEOPLASM	Neoplastic finding type response codelist (SEND CT bootstrap subset)	Neoplasm
+C2856	C77523	Yes	Neoplastic Finding Type Response	ADENOMA	ADENOMA;ADENOMA, BENIGN;ADENOMA, HEPATOCELLULAR;HEPATOCELLULAR ADENOMA	A benign epithelial tumor of glandular origin	Adenoma
+C3171	C77523	Yes	Neoplastic Finding Type Response	HEPATOCELLULAR CARCINOMA	HEPATOCELLULAR CARCINOMA;HCC	A primary liver cancer arising from hepatocytes	Hepatocellular Carcinoma
+C3194	C77523	Yes	Neoplastic Finding Type Response	LEIOMYOMA	LEIOMYOMA	A benign smooth muscle tumor	Leiomyoma
+C3208	C77523	Yes	Neoplastic Finding Type Response	LYMPHOMA	LYMPHOMA	A malignant neoplasm of lymphoid tissue	Lymphoma

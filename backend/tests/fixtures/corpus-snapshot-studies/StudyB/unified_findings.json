@@ -1,0 +1,9 @@
+{
+  "study_id": "StudyB",
+  "findings": [
+    {"domain": "MI", "test_name": "NECROSIS", "test_code": "KIDNEY_NECROSIS"},
+    {"domain": "MI", "test_name": "RETINAL FOLD", "test_code": "EYE_RETINAL FOLD"},
+    {"domain": "MA", "test_name": "ENLARGED", "test_code": "SPLEEN_ENLARGED"},
+    {"domain": "CL", "test_name": "EMESIS", "test_code": "EMESIS"}
+  ]
+}

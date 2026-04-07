@@ -1,0 +1,148 @@
+topic: etransafe-send-snomed-integration
+title: "eTRANSAFE SEND-SNOMED Integration"
+started: 2026-04-05T01:20:00Z
+phase: build
+current_step: build.2
+parent: cross-study-phase-1-aggregation-backend
+priority: P2
+checkpoints:
+  research.1:
+    completed: 2026-04-05T01:40:00Z
+    key_decisions:
+      - "Three-source synonym dictionary: CDISC CT + sendigR + eTRANSAFE mappings"
+      - "Do NOT deploy Rosetta Stone app -- static CSV only"
+      - "Coverage estimates: MI 70-80%, MA 50-60%, CL 60-70% (hypotheses)"
+      - "No licensing barriers for US use"
+    output: "docs/_internal/research/etransafe-send-snomed-integration.md"
+  research.2:
+    completed: 2026-04-05T02:00:00Z
+    key_decisions:
+      - "R1: 2 FLAWED (misattributed statistics, unverifiable example), 8 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-review.md"
+  research.3:
+    completed: 2026-04-05T02:10:00Z
+    key_decisions:
+      - "32% replaced with 25-35% qualified estimate"
+      - "Unverifiable 9.3x example removed"
+      - "UMLS evaluated as complement"
+      - "Coverage estimates labeled hypotheses"
+  research.4:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions:
+      - "R2: All 12 R1 RESOLVED, 5 MINOR"
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-review-r2.md"
+  research.5:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions: ["VALIDATED -- SOUND"]
+  research.7:
+    completed: 2026-04-05T02:30:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 5 PROPAGATES, 1 STALE, 0 SCIENCE-FLAG"
+      - "1 stale claim in deep-research (9.3x statistic)"
+  blueprint.0:
+    completed: 2026-04-07T02:00:00Z
+    key_decisions:
+      - "Scope confirmed as UTF Phase B + Phase C per decisions.log #212 (user-locked)"
+      - "Proposal 1 (3-source synonym dict) maps to term-recognition level 4 (Phase C)"
+      - "Proposal 2 (qualifier parser) maps to term-recognition level 3 (Phase B)"
+      - "Proposal 3 (CL pattern matcher) P2 -- include if budget permits, otherwise defer to follow-up"
+      - "Proposal 5 (SNOMED clinical translation) deferred to Phase 3+ (research constraint)"
+      - "Proposal 6 (do NOT deploy Rosetta Stone) locked in as architectural constraint"
+      - "UMLS Metathesaurus deferred (optional accelerator; 30GB overhead not justified)"
+      - "SapBERT/embedding matching deferred to Phase D (research RG-3)"
+      - "goRENI NOT a source (unclear licensing) -- rely on NONNEO codelist which is INHAND-harmonized"
+      - "snomed_id field stripped from distributed JSON (SNOMED CT IP); ncit_code used as stable ID"
+      - "Dictionary growth is monotonic across CDISC CT versions (research Section 6.5)"
+      - "Integration reuses Phase A pattern: send_knowledge.py helpers, build_unrecognized_terms_report extension"
+      - "Findings hotspot (findings_pipeline.py 676 LOC) must not balloon -- delegate recognition to helpers"
+      - "GAP-248 (RETINAL FOLD collision) is the canonical user-visible exemplar and must be a test case"
+      - "findings_pipeline.py line 233-264 is the wire-in point -- immediately after assess_test_code_recognition"
+    implementation_context:
+      failed_approaches_relevant: "none"
+      bug_patterns_relevant: "none (no bug-patterns.md)"
+      domain_critical_modules_in_scope: "none (classification.py/confidence.py/view_dataframes.py untouched; additive metadata only)"
+      tracked_hotspots_touched: "findings_pipeline.py (676 LOC) -- delegate to helpers to avoid balloon"
+      related_shipped_work:
+        - "unrecognized-term-flagging Phase A (661e65a3) -- recognition infrastructure in place"
+        - "cross-study-phase-1-aggregation-backend (3b99558d) -- consumer reads canonical_testcd + recognition_level"
+        - "findings-enrichment-none-safety (3fdbbe60) -- GAP-244 None-safe severity_grade_counts iteration"
+      gaps_in_scope: "GAP-174, GAP-175, GAP-176, GAP-248 (and optionally GAP-241 organ alias expansion)"
+      open_research_gaps_to_address: "RG-1 (Phase B base-concept source), RG-2 (Phase C dict sources)"
+  blueprint.1:
+    completed: 2026-04-07T02:15:00Z
+    key_decisions:
+      - "Synthesis written at docs/_internal/incoming/etransafe-send-snomed-integration-synthesis.md"
+      - "7 features -- Proposal 1 dict (level 4), Proposal 2 base-concept extractor (level 3), dispatcher, _enrich_finding wiring, report extension, field contracts, GAP-241 organ expansion"
+      - "6 rule-14 deferrals each with technical blocker"
+      - "6 mandatory sections verified (Build Plan, Reuse Inventory, Simplicity Rationale, Test Strategy, Research Gaps, Data Gaps)"
+    output: "docs/_internal/incoming/etransafe-send-snomed-integration-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-07T02:25:00Z
+    verdict: "PASS-WITH-NOTES"
+    advisories_applied: 4
+    key_decisions:
+      - "ADVISORY-1 (critical bug fix): recognition rate membership check updated from (1,2) to (1,2,3,4) for both tc_level and org_level. AC-5.7 + AC-5.8 added as regression guardrails."
+      - "ADVISORY-2: dispatcher extended to 5-tuple (canonical, level, reason, base_concept, qualifier) -- eliminates double-call to extract_base_concept in _enrich_finding"
+      - "ADVISORY-3: UMLS deferral rationale re-led with merit (zero marginal coverage on CRO long-tail) instead of cost"
+      - "ADVISORY-4: regression snapshot pruned from full unified_findings.json (1-3 MB) to ~30-50 finding slice (10-30 KB)"
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-07T02:45:00Z
+    verdict: "AUTO-PROBE-ACCEPT"
+    summary: "0 BREAKS, 1 SCIENCE-FLAG (low, empirically zero impact), 3 PROPAGATES, 22 SAFE, 10/10 invariants PASS, 0 STALE"
+    science_flag:
+      subsystem: "S07 confidence -- D9 expected-effect matching"
+      concern: "Feature 7 organ registry expansion may cause normalize_organ() to newly succeed for variant specimens (e.g., 'LIVER, LEFT LOBE' -> 'LIVER') via Tier 2 prefix, affecting confidence.py:_find_matching_expected_effect D9 match rate"
+      empirical_severity: "zero (corpus scan of 12 studies found no variant specimens)"
+      mitigation: "AC-7.5 regression assertion + AC-7.6 docs + GAP-C-1 TODO watch item"
+      accepted: true
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-probe.md"
+  blueprint.4:
+    completed: 2026-04-07T03:00:00Z
+    verdict: "AUTO-ACCEPT-R1"
+    summary: "CONDITIONAL, 15 findings (4 FLAWED, 9 CONDITIONAL, 2 SOUND), 10 dimensions covered, all accepted for incorporation"
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-07T03:30:00Z
+    key_decisions:
+      - "F1+F8 taxonomy collapse: levels 2 and 4 merged into single level 2; new BFIELD-149 test_code_recognition_source carries provenance telemetry"
+      - "BFIELD-134 enum = {1,2,3,6}; level 4 reserved for Phase D future cycle"
+      - "AC-6.1 split into 6 sub-criteria (a-f) across 3 contract files"
+      - "AC-7.5/7.6/7.7/7.8 proactive normalization-diff guard + corpus watcher + corpus-version-tagged docs"
+      - "AC-1.8/1.9/1.10/1.11 input-schema validation + volume check + corpus regression + build script failure tests"
+      - "AC-4.1 + AC-4.5 + AC-7.2 hard-threshold rewrites with captured baselines"
+      - "Regression fixture expanded from 30-50 to 200+ stratified-random findings"
+      - "Four new edge-case ACs (AC-2.9-2.12) for qualifier parser"
+      - "LOC + cyclomatic complexity dual budget (AC-4.5)"
+      - "org_level membership stays (1,2) -- F12 narrowed scope"
+      - "--allow-removal=path/to/allowlist.txt per-term-reason escape hatch for dictionary rebuilds"
+      - "AC-6.6 contract test for all six recognition fields"
+  blueprint.6:
+    completed: 2026-04-07T03:50:00Z
+    verdict: "VALIDATED-WITH-NOTES"
+    r1_resolution: "12 RESOLVED, 1 PARTIAL (F6), 0 NOT RESOLVED, 2 N/A"
+    fresh_findings: "0 FLAWED, 9 CONDITIONAL, 2 SOUND-with-note"
+    key_decisions:
+      - "Build plan VALIDATED -- no same-FLAWED-both-rounds, no bikeshedding, all CONDITIONAL items addressed"
+      - "N1 term-recognition.md verbatim text pins for level 4 row and Phase C row"
+      - "N3 vestigial level 4 reference stricken from Feature 5"
+      - "N4 corpus snapshot schema + generation script + freshness check + AC-1.10a fixture test"
+      - "N7 AC-4.1 restructured into baseline-capture + gate-assertion + sanity phases"
+      - "N8 AC-4.5 restructured with explicit baseline capture to findings_pipeline_complexity_baseline.json"
+      - "N2 AC-7.5 allowlist schema + AC-7.5a/7.5b schema test + empty-on-ship assertion"
+      - "N6 seed pinned to 20260407 + stratum allocation rule + force-include exemplars"
+      - "N9 snapshot fields annotated as scientific (byte-identity) vs structural (informational diff)"
+      - "N11 AC-5.9 regression test pinning org_level asymmetry"
+    output: "docs/_internal/research/peer-reviews/etransafe-send-snomed-integration-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-07T04:00:00Z
+    gaps_persisted:
+      registry_entries:
+        - "cross-study-terminology stream status updated to blueprint-complete with full build plan detail, probe result, R1/R2 outcomes, and post-ship RG-C-1..5 open questions"
+        - "unrecognized-term-flagging stream updated to note Phases B+C subsumed by this cycle; RG-1 and RG-2 marked RESOLVED"
+      todo_entries:
+        - "GAP-C-1 (already persisted at probe step): Feature 7 D9 expected-effect matching SCIENCE-FLAG watch item"
+        - "GAP-C-2: dictionary maintenance cadence"
+        - "GAP-C-3: OM/TF/DS synonym dictionary gap"
+        - "GAP-C-4: dictionary version diff tooling"
+        - "GAP-C-5: finding-term-map.ts frontend/backend consolidation"

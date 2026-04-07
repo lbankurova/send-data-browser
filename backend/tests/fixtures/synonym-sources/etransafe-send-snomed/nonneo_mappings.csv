@@ -1,0 +1,4 @@
+subject_id,subject_label,predicate_id,object_id,object_label,mapping_group,snomed_id
+SEND:RETINAL_FOLD,RETINAL FOLD,skos:exactMatch,SCT:247155006,Fold of retina,NONNEO,247155006
+SEND:RETINAL_FOLDS,RETINAL FOLDS,skos:exactMatch,SCT:247155006,Fold of retina,NONNEO,247155006
+SEND:HYPERTROPHY,HYPERTROPHY,skos:exactMatch,SCT:56246009,Hypertrophy,NONNEO,56246009

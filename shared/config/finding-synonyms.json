@@ -1,0 +1,1108 @@
+{
+  "version": "1.0.0",
+  "schema_version": "1.0.0",
+  "generated_at": "2026-04-07T15:26:07Z",
+  "sources": {
+    "cdisc_send_ct_version": "2026-03-27-bootstrap",
+    "sendigr_commit": "bootstrap",
+    "etransafe_commit": "bootstrap"
+  },
+  "scope": {
+    "domains_in_scope": [
+      "MI",
+      "MA",
+      "CL"
+    ],
+    "domains_out_of_scope": [
+      "OM",
+      "TF",
+      "DS"
+    ],
+    "note": "OM/TF/DS test_codes remain at level 6 'no_dictionary' until a future cycle. Phase B/C ships MI/MA/CL only."
+  },
+  "external_identifier_strip_notice": "External-identifier fields from upstream sources (e.g., the snomed identifier carried by eTRANSAFE) are deliberately stripped from this artifact (research R1 F4). NCIt codes are the stable public-domain cross-reference. See scripts/build_synonym_dictionary.py for the strip logic.",
+  "qualifiers": [
+    "ACUTE",
+    "ALVEOLAR",
+    "BRONCHIOLAR",
+    "CENTRILOBULAR",
+    "CHRONIC",
+    "DIFFUSE",
+    "DUCTULAR",
+    "ENDOTHELIAL",
+    "EPITHELIAL",
+    "FOCAL",
+    "FOLLICULAR",
+    "FOLLICULAR CELL",
+    "GLANDULAR",
+    "GLOMERULAR",
+    "GRANULOCYTIC",
+    "HEPATOCELLULAR",
+    "HETEROPHILIC",
+    "INTERSTITIAL",
+    "MARKED",
+    "MIDZONAL",
+    "MILD",
+    "MIXED CELL",
+    "MODERATE",
+    "MONONUCLEAR CELL",
+    "MUCOSAL",
+    "MULTIFOCAL",
+    "NEUTROPHILIC",
+    "PERIACINAR",
+    "PERIPORTAL",
+    "TUBULAR"
+  ],
+  "severity_modifiers": [
+    "MARKED",
+    "MILD",
+    "MINIMAL",
+    "MODERATE",
+    "SEVERE",
+    "SLIGHT"
+  ],
+  "domains": {
+    "CL": {
+      "entries": {
+        "ABNORMAL FECES": {
+          "canonical": "ABNORMAL FECES",
+          "ncit_code": "C156474",
+          "aliases": [
+            "FECES DISCOLORED",
+            "FECES MUCOID",
+            "FECES SOFT",
+            "FECES, BLACK",
+            "FECES, BLOOD",
+            "FECES, DISCOLORED, BLACK",
+            "FECES, GREEN",
+            "FECES, LIQUID",
+            "FECES, MUCOUS",
+            "FECES, NONFORMED",
+            "FECES, PALE",
+            "FECES, RED",
+            "FECES, SCANT",
+            "FECES, SOFT",
+            "FECES, UNFORMED",
+            "FECES, WHITE",
+            "FECES, YELLOW",
+            "FIRM FECES"
+          ],
+          "base_concept": "ABNORMAL FECES",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "ABNORMAL GAIT": {
+          "canonical": "ABNORMAL GAIT",
+          "ncit_code": "C156460",
+          "aliases": [
+            "DIFFICULTY WALKING",
+            "UNCOORDINATED"
+          ],
+          "base_concept": "ABNORMAL GAIT",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "ALOPECIA": {
+          "canonical": "ALOPECIA",
+          "ncit_code": "C156458",
+          "aliases": [
+            "HAIR LOSS"
+          ],
+          "base_concept": "ALOPECIA",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "DECREASED ACTIVITY": {
+          "canonical": "DECREASED ACTIVITY",
+          "ncit_code": "C156461",
+          "aliases": [
+            "ACTIVITY DECREASED",
+            "ACTIVITY, DECREASED"
+          ],
+          "base_concept": "DECREASED ACTIVITY",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "DEHYDRATION": {
+          "canonical": "DEHYDRATION",
+          "ncit_code": "C156469",
+          "aliases": [
+            "DEHYDRATED SUSPECTED"
+          ],
+          "base_concept": "DEHYDRATION",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "EMESIS": {
+          "canonical": "EMESIS",
+          "ncit_code": "C156465",
+          "aliases": [
+            "RETCHING (NON-ROD)",
+            "VOMITTING",
+            "VOMITUS"
+          ],
+          "base_concept": "EMESIS",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "HAIRCOAT ABNORMAL": {
+          "canonical": "HAIRCOAT ABNORMAL",
+          "ncit_code": "C156472",
+          "aliases": [
+            "FUR, THIN COVER",
+            "HAIRCOAT, ABNORMAL",
+            "HAIRCOAT, ROUGH",
+            "HAIRCOAT, THIN",
+            "ROUGH FUR"
+          ],
+          "base_concept": "HAIRCOAT ABNORMAL",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "HUNCHED POSTURE": {
+          "canonical": "HUNCHED POSTURE",
+          "ncit_code": "C156462",
+          "aliases": [],
+          "base_concept": "HUNCHED POSTURE",
+          "qualifier": null,
+          "source": [
+            "CLOBS"
+          ]
+        },
+        "LACRIMATION": {
+          "canonical": "LACRIMATION",
+          "ncit_code": "C156463",
+          "aliases": [
+            "CHROMODACRYORRHEA"
+          ],
+          "base_concept": "LACRIMATION",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "MORIBUND": {
+          "canonical": "MORIBUND",
+          "ncit_code": "C156467",
+          "aliases": [
+            "MOURIBUND"
+          ],
+          "base_concept": "MORIBUND",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "OCULAR DISCHARGE": {
+          "canonical": "OCULAR DISCHARGE",
+          "ncit_code": "C156470",
+          "aliases": [
+            "CHROMORHINORRHEA",
+            "DISCHARGE"
+          ],
+          "base_concept": "OCULAR DISCHARGE",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "PALLOR": {
+          "canonical": "PALLOR",
+          "ncit_code": "C156468",
+          "aliases": [
+            "PALE"
+          ],
+          "base_concept": "PALLOR",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "REDUCED APPETITE": {
+          "canonical": "REDUCED APPETITE",
+          "ncit_code": "C156473",
+          "aliases": [
+            "FOOD CONSUMPTION, MINIMAL",
+            "FOOD CONSUMPTION, REDUCED",
+            "INAPPETENCE"
+          ],
+          "base_concept": "REDUCED APPETITE",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "SALIVATION": {
+          "canonical": "SALIVATION",
+          "ncit_code": "C156464",
+          "aliases": [],
+          "base_concept": "SALIVATION",
+          "qualifier": null,
+          "source": [
+            "CLOBS"
+          ]
+        },
+        "SCAB": {
+          "canonical": "SCAB",
+          "ncit_code": "C99272",
+          "aliases": [
+            "CRUST",
+            "SCAB(S)",
+            "SCAB, FOCAL",
+            "SCAB, MULTIFOCAL",
+            "SCABBED AREA",
+            "SCABS"
+          ],
+          "base_concept": "SCAB",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "SOILING": {
+          "canonical": "SOILING",
+          "ncit_code": "C156471",
+          "aliases": [
+            "SOILING, PERIGENITAL"
+          ],
+          "base_concept": "SOILING",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        },
+        "TREMORS": {
+          "canonical": "TREMORS",
+          "ncit_code": "C156466",
+          "aliases": [
+            "TREMOR HEAD",
+            "TREMOR LIMBS"
+          ],
+          "base_concept": "TREMORS",
+          "qualifier": null,
+          "source": [
+            "CLOBS",
+            "sendigR"
+          ]
+        }
+      }
+    },
+    "MA": {
+      "entries": {
+        "ABNORMAL CONTENT": {
+          "canonical": "ABNORMAL CONTENT",
+          "ncit_code": "C156410",
+          "aliases": [
+            "ABNORMAL CONSISTENCY",
+            "ABNORMAL CONSISTENCY/TEXTURE",
+            "CONTENTS, DARK RED",
+            "CONTENTS: WATERY",
+            "WATERY CONTENTS"
+          ],
+          "base_concept": "ABNORMAL CONTENT",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "ABNORMAL SHAPE": {
+          "canonical": "ABNORMAL SHAPE",
+          "ncit_code": "C156405",
+          "aliases": [
+            "MISSHAPEN"
+          ],
+          "base_concept": "ABNORMAL SHAPE",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "ADHESION": {
+          "canonical": "ADHESION",
+          "ncit_code": "C50500",
+          "aliases": [
+            "ADHESIONS"
+          ],
+          "base_concept": "ADHESION",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "ALOPECIA": {
+          "canonical": "ALOPECIA",
+          "ncit_code": "C156458",
+          "aliases": [
+            "HAIR LOSS"
+          ],
+          "base_concept": "ALOPECIA",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "CYST": {
+          "canonical": "CYST",
+          "ncit_code": "C7075",
+          "aliases": [
+            "CLEAR FLUID",
+            "CYST WATERY",
+            "CYSTS WATERY"
+          ],
+          "base_concept": "CYST",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "DEPRESSED AREA": {
+          "canonical": "DEPRESSED AREA",
+          "ncit_code": "C156453",
+          "aliases": [],
+          "base_concept": "DEPRESSED AREA",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "DISCOLORATION": {
+          "canonical": "DISCOLORATION",
+          "ncit_code": "C50373",
+          "aliases": [
+            "DISCOLORATION DARK, MUCOSA",
+            "DISCOLORATION: PALE",
+            "DISCOLORED",
+            "DISCOLORED AREA",
+            "DISCOLORED, DARK RED",
+            "DISCOLORED, RED",
+            "PALE",
+            "RED DISCOLORATION",
+            "WHITE DISCOLORATION"
+          ],
+          "base_concept": "DISCOLORATION",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "DIVERTICULUM": {
+          "canonical": "DIVERTICULUM",
+          "ncit_code": "C156455",
+          "aliases": [],
+          "base_concept": "DIVERTICULUM",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "ENLARGED": {
+          "canonical": "ENLARGED",
+          "ncit_code": "C25379",
+          "aliases": [
+            "ENLARGEMENT",
+            "SIZE INCREASED"
+          ],
+          "base_concept": "ENLARGED",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "FOCUS": {
+          "canonical": "FOCUS",
+          "ncit_code": "C156460",
+          "aliases": [
+            "FOCI",
+            "FOCI DARK, MUCOSA",
+            "FOCI/AREAS DEPRESSED",
+            "FOCUS/AREA DISCOLORED"
+          ],
+          "base_concept": "FOCUS",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "HEMORRHAGE": {
+          "canonical": "HEMORRHAGE",
+          "ncit_code": "C3088",
+          "aliases": [],
+          "base_concept": "HEMORRHAGE",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "MASS": {
+          "canonical": "MASS",
+          "ncit_code": "C156478",
+          "aliases": [
+            "NODULE"
+          ],
+          "base_concept": "MASS",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "PERFORATION": {
+          "canonical": "PERFORATION",
+          "ncit_code": "C156456",
+          "aliases": [],
+          "base_concept": "PERFORATION",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "REDUCED IN SIZE": {
+          "canonical": "REDUCED IN SIZE",
+          "ncit_code": "C49502",
+          "aliases": [
+            "SIZE DECREASED",
+            "SMALL"
+          ],
+          "base_concept": "REDUCED IN SIZE",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "SCAB": {
+          "canonical": "SCAB",
+          "ncit_code": "C99272",
+          "aliases": [
+            "CRUST",
+            "SCAB/CRUST"
+          ],
+          "base_concept": "SCAB",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        },
+        "SWELLING": {
+          "canonical": "SWELLING",
+          "ncit_code": "C25596",
+          "aliases": [
+            "DISTENDED",
+            "SWOLLEN",
+            "SWOLLEN FIRM",
+            "SWOLLEN SOFT",
+            "SWOLLEN, MUZZLE"
+          ],
+          "base_concept": "SWELLING",
+          "qualifier": null,
+          "source": [
+            "MARES",
+            "sendigR"
+          ]
+        }
+      }
+    },
+    "MI": {
+      "entries": {
+        "ABSCESS": {
+          "canonical": "ABSCESS",
+          "ncit_code": "C2945",
+          "aliases": [
+            "ABSCESSES"
+          ],
+          "base_concept": "ABSCESS",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "ADENOMA": {
+          "canonical": "ADENOMA",
+          "ncit_code": "C2856",
+          "aliases": [
+            "ADENOMA, BENIGN",
+            "ADENOMA, HEPATOCELLULAR",
+            "HEPATOCELLULAR ADENOMA"
+          ],
+          "base_concept": "ADENOMA",
+          "qualifier": null,
+          "source": [
+            "NEOPLASM"
+          ]
+        },
+        "ALANINE AMINOTRANSFERASE": {
+          "canonical": "ALANINE AMINOTRANSFERASE",
+          "ncit_code": null,
+          "aliases": [
+            "ALAT"
+          ],
+          "base_concept": "ALANINE AMINOTRANSFERASE",
+          "qualifier": null,
+          "source": [
+            "sendigR"
+          ]
+        },
+        "AMYLOIDOSIS": {
+          "canonical": "AMYLOIDOSIS",
+          "ncit_code": "C26693",
+          "aliases": [],
+          "base_concept": "AMYLOIDOSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "ATROPHY": {
+          "canonical": "ATROPHY",
+          "ncit_code": "C25478",
+          "aliases": [
+            "ATROPHY FAT"
+          ],
+          "base_concept": "ATROPHY",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "BASOPHILIA": {
+          "canonical": "BASOPHILIA",
+          "ncit_code": "C28055",
+          "aliases": [
+            "BASOPHILIA TUBULE(S)",
+            "BASOPHILIC TUBULE",
+            "BASOPHILIC TUBULES"
+          ],
+          "base_concept": "BASOPHILIA",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "CALCULUS": {
+          "canonical": "CALCULUS",
+          "ncit_code": "C2894",
+          "aliases": [
+            "CALCULI",
+            "CALCULUS(I)"
+          ],
+          "base_concept": "CALCULUS",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "CAST": {
+          "canonical": "CAST",
+          "ncit_code": "C99155",
+          "aliases": [
+            "CAST(S) HYALINE",
+            "CASTS",
+            "HYALINE CAST"
+          ],
+          "base_concept": "CAST",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "CONGESTION": {
+          "canonical": "CONGESTION",
+          "ncit_code": "C50473",
+          "aliases": [],
+          "base_concept": "CONGESTION",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "CYST": {
+          "canonical": "CYST",
+          "ncit_code": "C7075",
+          "aliases": [
+            "CYST(S)",
+            "CYSTS"
+          ],
+          "base_concept": "CYST",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "DEGENERATION": {
+          "canonical": "DEGENERATION",
+          "ncit_code": "C2880",
+          "aliases": [
+            "DEGENERATION, TUBULAR EPITHELIAL CELL",
+            "DEGENERATION/REGENERATION EPITHELIAL"
+          ],
+          "base_concept": "DEGENERATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "DILATATION": {
+          "canonical": "DILATATION",
+          "ncit_code": "C18209",
+          "aliases": [
+            "DILATATION ACINUS(I)",
+            "DILATATION GLAND(S)"
+          ],
+          "base_concept": "DILATATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "ECTOPIC TISSUE": {
+          "canonical": "ECTOPIC TISSUE",
+          "ncit_code": "C156476",
+          "aliases": [
+            "ACCESSORY TISSUE",
+            "ECTOPIC LYMPHOID TISSUE"
+          ],
+          "base_concept": "ECTOPIC TISSUE",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "EDEMA": {
+          "canonical": "EDEMA",
+          "ncit_code": "C3002",
+          "aliases": [
+            "FLUID ACCUMULATION"
+          ],
+          "base_concept": "EDEMA",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "EROSION": {
+          "canonical": "EROSION",
+          "ncit_code": "C3014",
+          "aliases": [
+            "EROSION/ULCER"
+          ],
+          "base_concept": "EROSION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "FIBROSIS": {
+          "canonical": "FIBROSIS",
+          "ncit_code": "C3044",
+          "aliases": [
+            "FIBROPLASIA"
+          ],
+          "base_concept": "FIBROSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "HEMATOPOIESIS": {
+          "canonical": "HEMATOPOIESIS",
+          "ncit_code": "C3083",
+          "aliases": [
+            "EXTRAMEDULLARY HEMATOPOIESIS",
+            "INCREASED EXTRAMEDULLARY HEMATOPOIESIS"
+          ],
+          "base_concept": "HEMATOPOIESIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "HEMORRHAGE": {
+          "canonical": "HEMORRHAGE",
+          "ncit_code": "C3088",
+          "aliases": [],
+          "base_concept": "HEMORRHAGE",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "HEPATOCELLULAR CARCINOMA": {
+          "canonical": "HEPATOCELLULAR CARCINOMA",
+          "ncit_code": "C3171",
+          "aliases": [
+            "HCC"
+          ],
+          "base_concept": "HEPATOCELLULAR CARCINOMA",
+          "qualifier": null,
+          "source": [
+            "NEOPLASM"
+          ]
+        },
+        "HISTIOCYTOSIS": {
+          "canonical": "HISTIOCYTOSIS",
+          "ncit_code": "C3098",
+          "aliases": [
+            "MACROPHAGE AGGREGATION"
+          ],
+          "base_concept": "HISTIOCYTOSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "HYALINE DROPLETS": {
+          "canonical": "HYALINE DROPLETS",
+          "ncit_code": "C156330",
+          "aliases": [],
+          "base_concept": "HYALINE DROPLETS",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "HYPERKERATOSIS": {
+          "canonical": "HYPERKERATOSIS",
+          "ncit_code": "C3128",
+          "aliases": [
+            "ACANTHOSIS/HYPERKERATOSIS"
+          ],
+          "base_concept": "HYPERKERATOSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "HYPERPLASIA": {
+          "canonical": "HYPERPLASIA",
+          "ncit_code": "C3079",
+          "aliases": [
+            "HYPERPLASIA DIFFUSE",
+            "HYPERTROPHY/HYPERPLASIA"
+          ],
+          "base_concept": "HYPERPLASIA",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "HYPERTROPHY": {
+          "canonical": "HYPERTROPHY",
+          "ncit_code": "C120525",
+          "aliases": [
+            "HYPERTROPHY FOLLICULAR CELL(S)",
+            "HYPERTROPHY HEPATOCELLULAR"
+          ],
+          "base_concept": "HYPERTROPHY",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "HYPOPLASIA": {
+          "canonical": "HYPOPLASIA",
+          "ncit_code": "C3074",
+          "aliases": [],
+          "base_concept": "HYPOPLASIA",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "INFARCT": {
+          "canonical": "INFARCT",
+          "ncit_code": "C3142",
+          "aliases": [
+            "INFARCTION"
+          ],
+          "base_concept": "INFARCT",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "INFILTRATION": {
+          "canonical": "INFILTRATION",
+          "ncit_code": "C3133",
+          "aliases": [
+            "INFILTRATE",
+            "INFILTRATE, MIXED CELL",
+            "INFILTRATE, MONONUCLEAR CELL",
+            "INFILTRATION GRANULOCYTIC",
+            "INFILTRATION MONONUCLEAR CELL",
+            "INFILTRATION, HETEROPHILIC",
+            "INFILTRATION, MIXED CELL",
+            "INFILTRATION, MONONUCLEAR CELL",
+            "INFILTRATION, NEUTROPHILIC"
+          ],
+          "base_concept": "INFILTRATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "INFLAMMATION": {
+          "canonical": "INFLAMMATION",
+          "ncit_code": "C3137",
+          "aliases": [
+            "INFLAMMATION ACUTE",
+            "INFLAMMATION CHRONIC",
+            "INFLAMMATION, ACUTE",
+            "INFLAMMATION-SKIN"
+          ],
+          "base_concept": "INFLAMMATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "LEIOMYOMA": {
+          "canonical": "LEIOMYOMA",
+          "ncit_code": "C3194",
+          "aliases": [],
+          "base_concept": "LEIOMYOMA",
+          "qualifier": null,
+          "source": [
+            "NEOPLASM"
+          ]
+        },
+        "LYMPHOMA": {
+          "canonical": "LYMPHOMA",
+          "ncit_code": "C3208",
+          "aliases": [],
+          "base_concept": "LYMPHOMA",
+          "qualifier": null,
+          "source": [
+            "NEOPLASM"
+          ]
+        },
+        "MACROPHAGE": {
+          "canonical": "MACROPHAGE",
+          "ncit_code": "C156470",
+          "aliases": [
+            "ALVEOLAR MACROPHAGES INCREASED",
+            "MACROPHAGES INTRA-ALVEOLAR",
+            "PIGMENTED MACROPHAGE"
+          ],
+          "base_concept": "MACROPHAGE",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "METAPLASIA": {
+          "canonical": "METAPLASIA",
+          "ncit_code": "C20473",
+          "aliases": [],
+          "base_concept": "METAPLASIA",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "MINERALIZATION": {
+          "canonical": "MINERALIZATION",
+          "ncit_code": "C123305",
+          "aliases": [
+            "MINERALIZATION, CORTICOMEDULLARY JUNCTION"
+          ],
+          "base_concept": "MINERALIZATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "NECROSIS": {
+          "canonical": "NECROSIS",
+          "ncit_code": "C28499",
+          "aliases": [
+            "DEGENERATION/NECROSIS",
+            "NECROSIS SINGLE CELL",
+            "NECROSIS, SINGLE CELL",
+            "NECROSIS/DEGENERATION"
+          ],
+          "base_concept": "NECROSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "NEPHROPATHY": {
+          "canonical": "NEPHROPATHY",
+          "ncit_code": "C26887",
+          "aliases": [
+            "CHRONIC PROGRESSIVE NEPHROPATHY"
+          ],
+          "base_concept": "NEPHROPATHY",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "PIGMENTATION": {
+          "canonical": "PIGMENTATION",
+          "ncit_code": "C156540",
+          "aliases": [
+            "PIGMENT",
+            "PIGMENTED MACROPHAGE"
+          ],
+          "base_concept": "PIGMENTATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "REGENERATION": {
+          "canonical": "REGENERATION",
+          "ncit_code": "C3196",
+          "aliases": [
+            "DEGENERATION/REGENERATION",
+            "DEGENERATION/REGENERATION EPITHELIAL"
+          ],
+          "base_concept": "REGENERATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        },
+        "RETINAL FOLD": {
+          "canonical": "RETINAL FOLD",
+          "ncit_code": "C156482",
+          "aliases": [
+            "RETINAL FOLD(S)",
+            "RETINAL FOLDS"
+          ],
+          "base_concept": "RETINAL FOLD",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "SCAB": {
+          "canonical": "SCAB",
+          "ncit_code": "C99272",
+          "aliases": [
+            "CRUST",
+            "SCAB(S)",
+            "SCABS"
+          ],
+          "base_concept": "SCAB",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "ULCER": {
+          "canonical": "ULCER",
+          "ncit_code": "C3119",
+          "aliases": [
+            "ULCERATION"
+          ],
+          "base_concept": "ULCER",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "VACUOLATION": {
+          "canonical": "VACUOLATION",
+          "ncit_code": "C26797",
+          "aliases": [
+            "FAT VACUOLES",
+            "VACUOL",
+            "VACUOLATION, HEPATOCYTE",
+            "VACUOLIZATION",
+            "VACUOLIZATION HEPATOCELLULAR"
+          ],
+          "base_concept": "VACUOLATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        }
+      }
+    }
+  },
+  "_corpus_breakdown": {
+    "MI": {
+      "resolved": 90,
+      "unresolved": 52,
+      "total": 142,
+      "fraction": 0.6338028169014085
+    },
+    "MA": {
+      "resolved": 44,
+      "unresolved": 29,
+      "total": 73,
+      "fraction": 0.6027397260273972
+    },
+    "CL": {
+      "resolved": 62,
+      "unresolved": 175,
+      "total": 237,
+      "fraction": 0.2616033755274262
+    }
+  }
+}

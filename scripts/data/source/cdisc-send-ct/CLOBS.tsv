@@ -1,0 +1,19 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78607	C77525	Yes	Clinical Observation Result	CLOBS	CLOBS	Clinical observation result codelist (SEND CT bootstrap subset)	Clinical Observation
+C156458	C77525	Yes	Clinical Observation Result	ALOPECIA	ALOPECIA;HAIR LOSS	Loss of hair	Alopecia
+C156460	C77525	Yes	Clinical Observation Result	ABNORMAL GAIT	ABNORMAL GAIT;DIFFICULTY WALKING;UNCOORDINATED	Abnormal manner of walking	Abnormal Gait
+C156461	C77525	Yes	Clinical Observation Result	DECREASED ACTIVITY	DECREASED ACTIVITY;ACTIVITY DECREASED;ACTIVITY, DECREASED	Reduced level of activity	Decreased Activity
+C156462	C77525	Yes	Clinical Observation Result	HUNCHED POSTURE	HUNCHED POSTURE	Abnormal stooped posture	Hunched Posture
+C156463	C77525	Yes	Clinical Observation Result	LACRIMATION	LACRIMATION;CHROMODACRYORRHEA	Excessive tear production	Lacrimation
+C156464	C77525	Yes	Clinical Observation Result	SALIVATION	SALIVATION	Excessive salivation	Salivation
+C156465	C77525	Yes	Clinical Observation Result	EMESIS	EMESIS;VOMITTING;VOMITUS;RETCHING (NON-ROD)	Vomiting	Emesis
+C156466	C77525	Yes	Clinical Observation Result	TREMORS	TREMORS;TREMOR HEAD;TREMOR LIMBS	Involuntary trembling movements	Tremors
+C156467	C77525	Yes	Clinical Observation Result	MORIBUND	MORIBUND;MOURIBUND	Near death	Moribund
+C156468	C77525	Yes	Clinical Observation Result	PALLOR	PALLOR;PALE	Pale appearance	Pallor
+C156469	C77525	Yes	Clinical Observation Result	DEHYDRATION	DEHYDRATED SUSPECTED;DEHYDRATION	Loss of body water	Dehydration
+C156470	C77525	Yes	Clinical Observation Result	OCULAR DISCHARGE	OCULAR DISCHARGE;DISCHARGE;CHROMORHINORRHEA	Abnormal discharge from the eye	Ocular Discharge
+C99272	C77525	Yes	Clinical Observation Result	SCAB	SCAB;SCAB(S);SCABS;SCAB, FOCAL;SCAB, MULTIFOCAL;SCABBED AREA;CRUST	A dried protective covering over a wound	Scab
+C156471	C77525	Yes	Clinical Observation Result	SOILING	SOILING;SOILING, PERIGENITAL	Soiling of the body or fur	Soiling
+C156472	C77525	Yes	Clinical Observation Result	HAIRCOAT ABNORMAL	HAIRCOAT ABNORMAL;HAIRCOAT, ABNORMAL;HAIRCOAT, ROUGH;HAIRCOAT, THIN;ROUGH FUR;FUR, THIN COVER	Abnormal appearance of the haircoat	Abnormal Haircoat
+C156473	C77525	Yes	Clinical Observation Result	REDUCED APPETITE	REDUCED APPETITE;INAPPETENCE;FOOD CONSUMPTION, MINIMAL;FOOD CONSUMPTION, REDUCED	Reduced food intake	Reduced Appetite
+C156474	C77525	Yes	Clinical Observation Result	ABNORMAL FECES	FECES SOFT;FECES, SOFT;FECES, NONFORMED;FECES, UNFORMED;FECES, LIQUID;FECES, SCANT;FECES, MUCOUS;FECES MUCOID;FECES DISCOLORED;FECES, BLACK;FECES, BLOOD;FECES, RED;FECES, GREEN;FECES, YELLOW;FECES, WHITE;FECES, PALE;FIRM FECES;FECES, DISCOLORED, BLACK	Abnormal fecal characteristics	Abnormal Feces

@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `f669d515` (2026-04-06)
-**Generated:** 2026-04-06T18:04:31.810Z
+**Engine:** commit `48b3f141` (2026-04-07)
+**Generated:** 2026-04-07T15:06:34.240Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -804,16 +804,16 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
 | BG | 12 | 3 | 0 | 0 | 6 | 3 |
-| BW | 17 | 0 | 2 | 0 | 5 | 10 |
+| BW | 17 | 0 | 3 | 0 | 6 | 8 |
 | CL | 98 | 22 | 0 | 0 | 30 | 46 |
 | EG | 30 | 5 | 2 | 0 | 15 | 8 |
 | FW | 71 | 10 | 2 | 0 | 36 | 23 |
 | LB | 524 | 52 | 98 | 0 | 108 | 266 |
 | MA | 20 | 1 | 0 | 0 | 12 | 7 |
 | MI | 20 | 0 | 0 | 0 | 11 | 9 |
-| OM | 61 | 6 | 0 | 0 | 33 | 22 |
+| OM | 61 | 6 | 0 | 0 | 28 | 27 |
 | VS | 9 | 3 | 1 | 0 | 3 | 2 |
-| **Total** | **862** | **102** | **105** | **0** | **259** | **396** |
+| **Total** | **862** | **102** | **106** | **0** | **255** | **399** |
 
 ### NOAEL / LOAEL
 
@@ -887,14 +887,14 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
-| BW | 21 | 0 | 5 | 0 | 13 | 3 |
+| BW | 21 | 0 | 5 | 0 | 15 | 1 |
 | CL | 30 | 7 | 0 | 0 | 3 | 20 |
 | LB | 273 | 22 | 8 | 0 | 96 | 147 |
 | MA | 3 | 0 | 0 | 0 | 2 | 1 |
 | MI | 42 | 1 | 0 | 0 | 30 | 11 |
-| OM | 55 | 9 | 0 | 0 | 22 | 24 |
+| OM | 55 | 9 | 0 | 0 | 18 | 28 |
 | VS | 12 | 1 | 0 | 0 | 5 | 6 |
-| **Total** | **436** | **40** | **13** | **0** | **171** | **212** |
+| **Total** | **436** | **40** | **13** | **0** | **169** | **214** |
 
 ### NOAEL / LOAEL
 

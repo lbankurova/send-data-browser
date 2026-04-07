@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `f669d515` (2026-04-06)
-**Generated:** 2026-04-06T18:04:32.962Z
+**Engine:** commit `48b3f141` (2026-04-07)
+**Generated:** 2026-04-07T15:06:35.868Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -46,7 +46,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 5 | A/G ratio decrease | LB | any | tr_adverse | -3.00 | <0.001 | **DETECTED** | Day 3: M 0.78x (p<0.001), F 0.82x (p<0.001). (report p.11) |
 | 6 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased lymphoid cellularity of germinal centre. Correlated with higher spleen weights. (report p.9) |
 | 7 | Iliac LN hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Increased generalised lymphoid cellularity. Gross enlargement in 1F. Correlated with higher LN weights. (report p.9) |
-| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.010 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
+| 8 | Iliac LN weight increase | OM | any | tr_adverse | 1.94 | 0.009 | **DETECTED** | Correlated with lymphoid hyperplasia. (report p.9) |
 | 9 | Spleen weight increase | OM | any | tr_adverse | 1.43 | 0.037 | **DETECTED** | Slightly higher in both sexes. (report p.9) |
 | 10 | Injection site inflammation | MI | any | equivocal | -- | 0.070 | **DETECTED** | Inflammation, necrosis, hemorrhage in striated muscle/fascia. SEND specimen: 'SITE, APPLICATION'. Engine classifies as not_treatment_related — known gap (injection site findings lack dose-response in 2-group design). (report p.9) |
 
@@ -320,7 +320,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | Body weight decreased | BW | any | tr_adverse | -3.38 | <0.001 | **DETECTED** |  |
-| 2 | Body weight gain decreased | BG | any | tr_non_adverse | -0.43 | 0.366 | **DETECTED** |  |
+| 2 | Body weight gain decreased | BG | any | tr_adverse | -3.40 | <0.001 | **DETECTED** |  |
 | 3 | AST increased | LB | any | tr_adverse | 1.73 | <0.001 | **DETECTED** |  |
 | 4 | ALT increased | LB | any | tr_adverse | 1.09 | 0.007 | **DETECTED** |  |
 | 5 | ALP increased | LB | any | tr_adverse | 1.59 | 0.002 | **DETECTED** |  |

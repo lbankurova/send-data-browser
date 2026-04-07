@@ -1,0 +1,7 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78604	C77522	Yes	Non-Neoplastic Finding Type Response	NONNEO	NONNEO	Non-neoplastic finding type response codelist (test fixture)	Non-Neoplastic Finding Type
+C28499	C77522	Yes	Non-Neoplastic Finding Type Response	NECROSIS	NECROSIS	Cell death	Necrosis
+C3079	C77522	Yes	Non-Neoplastic Finding Type Response	HYPERPLASIA	HYPERPLASIA	Increased cell number	Hyperplasia
+C120525	C77522	Yes	Non-Neoplastic Finding Type Response	HYPERTROPHY	HYPERTROPHY;HYPERTROPHY HEPATOCELLULAR	Increased cell size	Hypertrophy
+C156482	C77522	Yes	Non-Neoplastic Finding Type Response	RETINAL FOLD	RETINAL FOLD(S);RETINAL FOLDS	A fold in the retina	Retinal Fold
+C26797	C77522	Yes	Non-Neoplastic Finding Type Response	VACUOLATION	VACUOL	Cellular vacuolation	Vacuolation

@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "schema_version": "1.0.0",
+  "generated_at": "FROZEN-FOR-TEST",
+  "sources": {
+    "cdisc_send_ct_version": "test",
+    "sendigr_commit": "test",
+    "etransafe_commit": "test"
+  },
+  "scope": {
+    "domains_in_scope": [
+      "MI",
+      "MA",
+      "CL"
+    ],
+    "domains_out_of_scope": [
+      "OM",
+      "TF",
+      "DS"
+    ],
+    "note": "OM/TF/DS test_codes remain at level 6 'no_dictionary' until a future cycle. Phase B/C ships MI/MA/CL only."
+  },
+  "external_identifier_strip_notice": "External-identifier fields from upstream sources (e.g., the snomed identifier carried by eTRANSAFE) are deliberately stripped from this artifact (research R1 F4). NCIt codes are the stable public-domain cross-reference. See scripts/build_synonym_dictionary.py for the strip logic.",
+  "qualifiers": [
+    "ACUTE",
+    "ALVEOLAR",
+    "BRONCHIOLAR",
+    "CENTRILOBULAR",
+    "CHRONIC",
+    "DIFFUSE",
+    "DUCTULAR",
+    "ENDOTHELIAL",
+    "EPITHELIAL",
+    "FOCAL",
+    "FOLLICULAR",
+    "FOLLICULAR CELL",
+    "GLANDULAR",
+    "GLOMERULAR",
+    "GRANULOCYTIC",
+    "HEPATOCELLULAR",
+    "HETEROPHILIC",
+    "INTERSTITIAL",
+    "MARKED",
+    "MIDZONAL",
+    "MILD",
+    "MIXED CELL",
+    "MODERATE",
+    "MONONUCLEAR CELL",
+    "MUCOSAL",
+    "MULTIFOCAL",
+    "NEUTROPHILIC",
+    "PERIACINAR",
+    "PERIPORTAL",
+    "TUBULAR"
+  ],
+  "severity_modifiers": [
+    "MARKED",
+    "MILD",
+    "MINIMAL",
+    "MODERATE",
+    "SEVERE",
+    "SLIGHT"
+  ],
+  "domains": {
+    "CL": {
+      "entries": {
+        "ALOPECIA": {
+          "canonical": "ALOPECIA",
+          "ncit_code": "C156458",
+          "aliases": [
+            "HAIR LOSS"
+          ],
+          "base_concept": "ALOPECIA",
+          "qualifier": null,
+          "source": [
+            "CLOBS"
+          ]
+        }
+      }
+    },
+    "MA": {
+      "entries": {
+        "DISCOLORATION": {
+          "canonical": "DISCOLORATION",
+          "ncit_code": "C50373",
+          "aliases": [
+            "DISCOLORED"
+          ],
+          "base_concept": "DISCOLORATION",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        },
+        "ENLARGED": {
+          "canonical": "ENLARGED",
+          "ncit_code": "C25379",
+          "aliases": [
+            "ENLARGEMENT"
+          ],
+          "base_concept": "ENLARGED",
+          "qualifier": null,
+          "source": [
+            "MARES"
+          ]
+        }
+      }
+    },
+    "MI": {
+      "entries": {
+        "HYPERPLASIA": {
+          "canonical": "HYPERPLASIA",
+          "ncit_code": "C3079",
+          "aliases": [],
+          "base_concept": "HYPERPLASIA",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "HYPERTROPHY": {
+          "canonical": "HYPERTROPHY",
+          "ncit_code": "C120525",
+          "aliases": [
+            "HYPERTROPHY HEPATOCELLULAR"
+          ],
+          "base_concept": "HYPERTROPHY",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE"
+          ]
+        },
+        "NECROSIS": {
+          "canonical": "NECROSIS",
+          "ncit_code": "C28499",
+          "aliases": [],
+          "base_concept": "NECROSIS",
+          "qualifier": null,
+          "source": [
+            "NONNEO"
+          ]
+        },
+        "RETINAL FOLD": {
+          "canonical": "RETINAL FOLD",
+          "ncit_code": "C156482",
+          "aliases": [
+            "RETINAL FOLD(S)",
+            "RETINAL FOLDS"
+          ],
+          "base_concept": "RETINAL FOLD",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "eTRANSAFE",
+            "sendigR"
+          ]
+        },
+        "VACUOLATION": {
+          "canonical": "VACUOLATION",
+          "ncit_code": "C26797",
+          "aliases": [
+            "VACUOL"
+          ],
+          "base_concept": "VACUOLATION",
+          "qualifier": null,
+          "source": [
+            "NONNEO",
+            "sendigR"
+          ]
+        }
+      }
+    }
+  }
+}

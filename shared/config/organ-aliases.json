@@ -1,8 +1,40 @@
 {
-  "version": "1.0.0",
-  "description": "Organ name hierarchy for SEND data normalization. Maps variant organ/specimen names to canonical forms. Source: 6-study vocabulary analysis (send-test-code-matching.md Sections 1.4, 1.5, 4).",
+  "version": "1.1.0",
+  "description": "Organ name hierarchy for SEND data normalization. Maps variant organ/specimen names to canonical forms. Source: 6-study vocabulary analysis (send-test-code-matching.md Sections 1.4, 1.5, 4) plus GAP-241 expansion (etransafe-send-snomed-integration cycle Feature 7).",
 
   "organ_groups": {
+    "LIVER": [],
+    "BRAIN": [],
+    "HEART": [],
+    "STOMACH": [],
+    "PANCREAS": [],
+    "ESOPHAGUS": [],
+    "TRACHEA": [],
+    "GALLBLADDER": [],
+    "SPLEEN": [],
+    "THYMUS": [],
+    "URINARY BLADDER": [
+      "BLADDER"
+    ],
+    "URETER": [],
+    "URETHRA": [],
+    "SMALL INTESTINE": [
+      "SMALL INTESTINE, DUODENUM",
+      "SMALL INTESTINE, JEJUNUM",
+      "SMALL INTESTINE, ILEUM"
+    ],
+    "LARGE INTESTINE": [
+      "LARGE INTESTINE, CECUM",
+      "LARGE INTESTINE, COLON",
+      "LARGE INTESTINE, RECTUM",
+      "LARGE INTESTINE, APPENDIX"
+    ],
+    "DUODENUM": [],
+    "JEJUNUM": [],
+    "ILEUM": [],
+    "CECUM": [],
+    "COLON": [],
+    "RECTUM": [],
     "BONE MARROW": [
       "BONE MARROW, FEMUR",
       "BONE MARROW, STERNUM",

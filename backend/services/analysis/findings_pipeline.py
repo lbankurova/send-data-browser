@@ -27,6 +27,7 @@ from generator.organ_map import get_organ_system
 from services.analysis.phase_filter import IN_LIFE_DOMAINS
 from services.analysis.send_knowledge import (
     BIOMARKER_MAP,
+    assess_finding_recognition,
     assess_organ_recognition,
     assess_test_code_recognition,
     get_direction_of_concern,
@@ -115,6 +116,14 @@ def _with_defaults(f: dict) -> dict:
     f.setdefault("test_code_recognition_reason", None)
     f.setdefault("organ_recognition_level", None)
     f.setdefault("organ_norm_tier", None)
+    # Phase B/C term recognition (etransafe-send-snomed-integration cycle).
+    # canonical_base_finding + canonical_qualifier are populated only when the
+    # MI/MA dispatcher resolves a finding at level 3 (base-concept extraction).
+    # test_code_recognition_source carries the BFIELD-149 provenance list of
+    # source tags (subset of NONNEO/NEOPLASM/MARES/CLOBS/sendigR/eTRANSAFE).
+    f.setdefault("canonical_base_finding", None)
+    f.setdefault("canonical_qualifier", None)
+    f.setdefault("test_code_recognition_source", None)
     f.setdefault("severity_grade_5pt", None)
     return f
 
@@ -230,18 +239,38 @@ def _enrich_finding(
         f.get("domain"),
     )
 
-    # Canonical test code + recognition tier (Phase A: terms are level 6 for
-    # MI/MA/CL/OM/TF/DS until Phases B-D add base-concept extraction and
-    # synonym dictionaries -- this is dictionary incompleteness, not a data
-    # defect). Canonical parity with the pre-Phase-A behavior is preserved:
-    # assess_test_code_recognition returns the same canonical_testcd string
-    # that normalize_test_code produced for LB/BW/FW/EG/VS/BG, and the
-    # uppercase-stripped raw for other domains.
+    # Canonical test code + recognition tier. Phase A LB/BW/FW/EG/VS/BG path
+    # unchanged; Phase B/C MI/MA/CL path dispatches to assess_finding_recognition
+    # which ALSO returns (base_concept, qualifier, source) so _enrich_finding
+    # does not need to call extract_base_concept separately (architect ADVISORY-2)
+    # and does not need a second pass for per-source telemetry (R1 F8).
+    #
+    # CRITICAL: For MI/MA findings, the actual finding name lives in the
+    # `test_name` field. The `test_code` for MI/MA is the composite
+    # "{specimen}_{test_name}" produced by the generator. Dispatching on
+    # test_code directly would never resolve aliases like RETINAL FOLD(S).
+    # CL findings have test_name == test_code (no specimen), so either
+    # works for CL.
     tc = f.get("test_code", "")
+    domain = f.get("domain", "")
     if tc:
-        canonical, tc_level, tc_reason = assess_test_code_recognition(
-            f.get("domain", ""), tc
-        )
+        if domain in ("MI", "MA", "CL"):
+            # Use test_name for MI/MA/CL — the actual finding name without
+            # the specimen prefix. Dispatcher resolves at levels 1/2/3/6 and
+            # returns base_concept/qualifier/source telemetry.
+            finding_term = f.get("test_name") or tc
+            (canonical, tc_level, tc_reason,
+             base_concept, qualifier, source_list) = (
+                assess_finding_recognition(domain, finding_term)
+            )
+            f["canonical_base_finding"] = base_concept
+            f["canonical_qualifier"] = qualifier
+            f["test_code_recognition_source"] = source_list
+        else:
+            canonical, tc_level, tc_reason = assess_test_code_recognition(domain, tc)
+            f["canonical_base_finding"] = None
+            f["canonical_qualifier"] = None
+            f["test_code_recognition_source"] = None
         f["canonical_testcd"] = canonical
         f["test_code_recognition_level"] = tc_level
         f["test_code_recognition_reason"] = tc_reason
@@ -249,6 +278,9 @@ def _enrich_finding(
         f["canonical_testcd"] = None
         f["test_code_recognition_level"] = None
         f["test_code_recognition_reason"] = None
+        f["canonical_base_finding"] = None
+        f["canonical_qualifier"] = None
+        f["test_code_recognition_source"] = None
 
     # Organ recognition tier and normalization tier label (feeds Phase C scope
     # confidence gate). organ_norm_tier is populated ONLY for level 6 per

@@ -1,0 +1,38 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78604	C77522	Yes	Non-Neoplastic Finding Type Response	NONNEO	NONNEO	Non-neoplastic finding type response codelist (SEND CT bootstrap subset for SENDEX corpus baseline)	Non-Neoplastic Finding Type
+C28499	C77522	Yes	Non-Neoplastic Finding Type Response	NECROSIS	NECROSIS;NECROSIS, SINGLE CELL;NECROSIS/DEGENERATION;DEGENERATION/NECROSIS	Cell death or tissue destruction with characteristic morphological features	Necrosis
+C3137	C77522	Yes	Non-Neoplastic Finding Type Response	INFLAMMATION	INFLAMMATION;INFLAMMATION ACUTE;INFLAMMATION CHRONIC;INFLAMMATION, ACUTE;INFLAMMATION-SKIN	A response of body tissue to injury or irritation characterized by pain, swelling, redness, and heat	Inflammation
+C3079	C77522	Yes	Non-Neoplastic Finding Type Response	HYPERPLASIA	HYPERPLASIA;HYPERPLASIA DIFFUSE;HYPERTROPHY/HYPERPLASIA	An increase in the number of cells in a tissue or organ	Hyperplasia
+C120525	C77522	Yes	Non-Neoplastic Finding Type Response	HYPERTROPHY	HYPERTROPHY;HYPERTROPHY HEPATOCELLULAR;HYPERTROPHY FOLLICULAR CELL(S)	An increase in the size of cells without an increase in their number	Hypertrophy
+C3044	C77522	Yes	Non-Neoplastic Finding Type Response	FIBROSIS	FIBROSIS;FIBROPLASIA	Formation of fibrous tissue as a reparative or reactive process	Fibrosis
+C25478	C77522	Yes	Non-Neoplastic Finding Type Response	ATROPHY	ATROPHY;ATROPHY FAT	A wasting away or decrease in size of an organ or tissue	Atrophy
+C3002	C77522	Yes	Non-Neoplastic Finding Type Response	EDEMA	EDEMA;FLUID ACCUMULATION	Excessive accumulation of fluid in the intercellular spaces of tissues	Edema
+C20473	C77522	Yes	Non-Neoplastic Finding Type Response	METAPLASIA	METAPLASIA	Reversible replacement of one differentiated cell type with another	Metaplasia
+C123305	C77522	Yes	Non-Neoplastic Finding Type Response	MINERALIZATION	MINERALIZATION;MINERALIZATION, CORTICOMEDULLARY JUNCTION	Deposition of mineral salts in tissue	Mineralization
+C50473	C77522	Yes	Non-Neoplastic Finding Type Response	CONGESTION	CONGESTION	An abnormal accumulation of blood in a tissue or organ	Congestion
+C3088	C77522	Yes	Non-Neoplastic Finding Type Response	HEMORRHAGE	HEMORRHAGE	The escape of blood from blood vessels	Hemorrhage
+C156482	C77522	Yes	Non-Neoplastic Finding Type Response	RETINAL FOLD	RETINAL FOLD;RETINAL FOLD(S);RETINAL FOLDS	A fold or wrinkle in the retina; commonly observed in juvenile or developing eyes	Retinal Fold
+C7075	C77522	Yes	Non-Neoplastic Finding Type Response	CYST	CYST;CYST(S);CYSTS	A closed sac with a distinct membrane	Cyst
+C2945	C77522	Yes	Non-Neoplastic Finding Type Response	ABSCESS	ABSCESS	A localized collection of pus in tissue	Abscess
+C3196	C77522	Yes	Non-Neoplastic Finding Type Response	REGENERATION	REGENERATION;DEGENERATION/REGENERATION	Replacement of damaged cells or tissue with new cells of the same type	Regeneration
+C3074	C77522	Yes	Non-Neoplastic Finding Type Response	HYPOPLASIA	HYPOPLASIA	Underdevelopment or incomplete development of a tissue or organ	Hypoplasia
+C3133	C77522	Yes	Non-Neoplastic Finding Type Response	INFILTRATION	INFILTRATION;INFILTRATE;INFILTRATION GRANULOCYTIC;INFILTRATION MONONUCLEAR CELL;INFILTRATION, MONONUCLEAR CELL;INFILTRATION, MIXED CELL;INFILTRATION, NEUTROPHILIC;INFILTRATION, HETEROPHILIC;INFILTRATE, MIXED CELL;INFILTRATE, MONONUCLEAR CELL	The diffusion or accumulation in tissue of substances or cells not normal to it	Infiltration
+C2880	C77522	Yes	Non-Neoplastic Finding Type Response	DEGENERATION	DEGENERATION;DEGENERATION, TUBULAR EPITHELIAL CELL;DEGENERATION/REGENERATION EPITHELIAL	Decline or deterioration of cell or tissue function	Degeneration
+C18209	C77522	Yes	Non-Neoplastic Finding Type Response	DILATATION	DILATATION;DILATATION ACINUS(I);DILATATION GLAND(S)	The condition of being expanded or stretched	Dilatation
+C3014	C77522	Yes	Non-Neoplastic Finding Type Response	EROSION	EROSION;EROSION/ULCER	A superficial loss of tissue	Erosion
+C3119	C77522	Yes	Non-Neoplastic Finding Type Response	ULCER	ULCER;ULCERATION	A break in skin or mucous membrane with loss of surface tissue	Ulcer
+C3142	C77522	Yes	Non-Neoplastic Finding Type Response	INFARCT	INFARCT;INFARCTION	An area of tissue that has died from an inadequate blood supply	Infarct
+C3128	C77522	Yes	Non-Neoplastic Finding Type Response	HYPERKERATOSIS	HYPERKERATOSIS;ACANTHOSIS/HYPERKERATOSIS	Hypertrophy of the cornified layer of the epidermis	Hyperkeratosis
+C156330	C77522	Yes	Non-Neoplastic Finding Type Response	HYALINE DROPLETS	HYALINE DROPLETS	Eosinophilic protein droplets in renal tubular cells	Hyaline Droplets
+C3083	C77522	Yes	Non-Neoplastic Finding Type Response	HEMATOPOIESIS	HEMATOPOIESIS;EXTRAMEDULLARY HEMATOPOIESIS;INCREASED EXTRAMEDULLARY HEMATOPOIESIS	The formation of blood cellular components	Hematopoiesis
+C28055	C77522	Yes	Non-Neoplastic Finding Type Response	BASOPHILIA	BASOPHILIA;BASOPHILIC TUBULE;BASOPHILIC TUBULES;BASOPHILIA TUBULE(S)	An increase in basophilic staining	Basophilia
+C3098	C77522	Yes	Non-Neoplastic Finding Type Response	HISTIOCYTOSIS	HISTIOCYTOSIS;MACROPHAGE AGGREGATION	Abnormal proliferation of histiocytes	Histiocytosis
+C26887	C77522	Yes	Non-Neoplastic Finding Type Response	NEPHROPATHY	NEPHROPATHY;CHRONIC PROGRESSIVE NEPHROPATHY	Disease or damage of the kidney	Nephropathy
+C156540	C77522	Yes	Non-Neoplastic Finding Type Response	PIGMENTATION	PIGMENTATION;PIGMENT;PIGMENTED MACROPHAGE	The presence or accumulation of pigment in tissue	Pigmentation
+C26797	C77522	Yes	Non-Neoplastic Finding Type Response	VACUOLATION	VACUOLATION;VACUOLIZATION;VACUOLATION, HEPATOCYTE;VACUOLIZATION HEPATOCELLULAR;VACUOL;FAT VACUOLES	The presence of vacuoles in cells	Vacuolation
+C2894	C77522	Yes	Non-Neoplastic Finding Type Response	CALCULUS	CALCULUS;CALCULUS(I);CALCULI	A pathological concretion in a hollow organ	Calculus
+C99155	C77522	Yes	Non-Neoplastic Finding Type Response	CAST	CAST;CAST(S) HYALINE;HYALINE CAST	A cast formed in a renal tubule or duct	Cast
+C156476	C77522	Yes	Non-Neoplastic Finding Type Response	ECTOPIC TISSUE	ECTOPIC TISSUE;ECTOPIC LYMPHOID TISSUE;ACCESSORY TISSUE	Tissue present in an abnormal location	Ectopic Tissue
+C156470	C77522	Yes	Non-Neoplastic Finding Type Response	MACROPHAGE	MACROPHAGES INTRA-ALVEOLAR;ALVEOLAR MACROPHAGES INCREASED;PIGMENTED MACROPHAGE	A large mononuclear phagocytic cell	Macrophage
+C26693	C77522	Yes	Non-Neoplastic Finding Type Response	AMYLOIDOSIS	AMYLOIDOSIS	Deposition of amyloid in tissues	Amyloidosis
+C99272	C77522	Yes	Non-Neoplastic Finding Type Response	SCAB	SCAB;SCAB(S);SCABS;CRUST	A dried protective covering over a wound	Scab

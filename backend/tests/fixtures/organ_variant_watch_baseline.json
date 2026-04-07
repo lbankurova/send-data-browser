@@ -1,0 +1,15 @@
+{
+  "_comment": "AC-7.6 corpus regression watcher baseline. Lists every specimen in the current 12-study corpus that matches the Feature 7 affected prefix pattern. The test scans backend/generated/*/unified_findings.json and asserts the matching set is identical to this baseline. If a future study introduces a variant specimen, this test fires immediately so the scientist can review whether normalize_organ() output changed unexpectedly.",
+  "captured_on_commit": "3fdbbe602a59f112e62c2e453e91d84c66c1a2d8",
+  "ac_reference": "AC-7.6",
+  "pattern": "^(LIVER|BRAIN|HEART|PANCREAS|STOMACH|SMALL INTESTINE|LARGE INTESTINE|DUODENUM|JEJUNUM|ILEUM|COLON|ESOPHAGUS|TRACHEA|GALLBLADDER|SPLEEN|THYMUS|URINARY BLADDER|BLADDER|URETER|URETHRA|CECUM|RECTUM)[, ]",
+  "variants": [
+    "LARGE INTESTINE, APPENDIX",
+    "LARGE INTESTINE, CECUM",
+    "LARGE INTESTINE, COLON",
+    "LARGE INTESTINE, RECTUM",
+    "SMALL INTESTINE, DUODENUM",
+    "SMALL INTESTINE, ILEUM",
+    "SMALL INTESTINE, JEJUNUM"
+  ]
+}

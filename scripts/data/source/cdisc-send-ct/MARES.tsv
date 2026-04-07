@@ -1,0 +1,18 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C78606	C77524	Yes	Macroscopic Examination Result	MARES	MARES	Macroscopic examination result codelist (SEND CT bootstrap subset)	Macroscopic Finding
+C50373	C77524	Yes	Macroscopic Examination Result	DISCOLORATION	DISCOLORATION;DISCOLORED;DISCOLORED, RED;DISCOLORED, DARK RED;DISCOLORED AREA;DISCOLORATION DARK, MUCOSA;RED DISCOLORATION;WHITE DISCOLORATION;PALE	An abnormal change in color of an organ or tissue	Discoloration
+C25379	C77524	Yes	Macroscopic Examination Result	ENLARGED	ENLARGED;ENLARGEMENT;SIZE INCREASED	Increased in size beyond normal	Enlarged
+C49502	C77524	Yes	Macroscopic Examination Result	REDUCED IN SIZE	REDUCED IN SIZE;SIZE DECREASED;SMALL	Decreased in size below normal	Reduced in Size
+C156478	C77524	Yes	Macroscopic Examination Result	MASS	MASS;NODULE	A circumscribed swelling or growth	Mass
+C156460	C77524	Yes	Macroscopic Examination Result	FOCUS	FOCUS;FOCI;FOCI/AREAS DEPRESSED;FOCI DARK, MUCOSA;FOCUS/AREA DISCOLORED	A small area distinguishable from the surrounding tissue	Focus
+C3088	C77524	Yes	Macroscopic Examination Result	HEMORRHAGE	HEMORRHAGE	The escape of blood from blood vessels	Hemorrhage
+C50500	C77524	Yes	Macroscopic Examination Result	ADHESION	ADHESION;ADHESIONS	Abnormal attachment of two surfaces	Adhesion
+C156410	C77524	Yes	Macroscopic Examination Result	ABNORMAL CONTENT	ABNORMAL CONTENT;ABNORMAL CONSISTENCY;ABNORMAL CONSISTENCY/TEXTURE	Abnormal content or consistency of an organ	Abnormal Content
+C7075	C77524	Yes	Macroscopic Examination Result	CYST	CYST;CYST WATERY;CYSTS WATERY;CLEAR FLUID	A closed sac with a distinct membrane	Cyst
+C25596	C77524	Yes	Macroscopic Examination Result	SWELLING	SWELLING;SWOLLEN;SWOLLEN FIRM;SWOLLEN SOFT;DISTENDED;SWOLLEN, MUZZLE	An abnormal increase in volume	Swelling
+C156405	C77524	Yes	Macroscopic Examination Result	ABNORMAL SHAPE	ABNORMAL SHAPE;MISSHAPEN	Abnormally shaped	Abnormal Shape
+C156453	C77524	Yes	Macroscopic Examination Result	DEPRESSED AREA	DEPRESSED AREA	A sunken area on the surface	Depressed Area
+C156455	C77524	Yes	Macroscopic Examination Result	DIVERTICULUM	DIVERTICULUM	A pouch or sac branching out from a hollow organ	Diverticulum
+C156456	C77524	Yes	Macroscopic Examination Result	PERFORATION	PERFORATION	An abnormal opening through tissue	Perforation
+C99272	C77524	Yes	Macroscopic Examination Result	SCAB	SCAB;SCAB/CRUST;CRUST	A dried protective covering over a wound	Scab
+C156458	C77524	Yes	Macroscopic Examination Result	ALOPECIA	ALOPECIA;HAIR LOSS	Loss of hair	Alopecia

@@ -288,10 +288,13 @@ class TestUnrecognizedOrgans:
 # ──────────────────────────────────────────────────────────────
 
 class TestPerDomain:
-    def test_mi_100_percent_level_6(self):
+    def test_mi_zero_resolved_carries_phase_c_caveat(self):
+        """Phase C: when a domain has a loaded dictionary but zero findings
+        resolved at level 1/2/3, the per-domain note explains the coverage gap.
+        Pre-Phase-C this case showed the Phase A 'no synonym dictionary' note."""
         findings = [
-            _finding("MI", "HYPERTROPHY", "LIVER", 6, "no_dictionary", 6, "unmatched"),
-            _finding("MI", "NECROSIS", "KIDNEY", 6, "no_dictionary", 1, None),
+            _finding("MI", "ZZUNKNOWNFINDING1", "LIVER", 6, "unmatched", 6, "unmatched"),
+            _finding("MI", "ZZUNKNOWNFINDING2", "KIDNEY", 6, "unmatched", 1, None),
         ]
         r = build_unrecognized_terms_report(findings, "S", _versions())
         mi = r["by_domain"]["MI"]
@@ -299,7 +302,11 @@ class TestPerDomain:
         assert mi["by_test_code_level"] == {"6": 2}
         assert mi["rate"] == 0.0
         assert mi["note"] is not None
-        assert "no MI synonym dictionary" in mi["note"]
+        # Note says either "loaded but no findings resolved" OR
+        # "no dictionary loaded yet" depending on whether the runtime dict
+        # has MI entries. With the corpus dictionary built, the former applies.
+        assert ("loaded but no findings resolved" in mi["note"]
+                or "no MI synonym dictionary loaded" in mi["note"])
 
     def test_lb_high_rate_no_note(self):
         findings = [
@@ -325,6 +332,94 @@ class TestPerDomain:
 # ──────────────────────────────────────────────────────────────
 # Top-level schema shape
 # ──────────────────────────────────────────────────────────────
+
+# ──────────────────────────────────────────────────────────────
+# Phase B/C membership-check fix (AC-5.7 / AC-5.8 / AC-5.9)
+# ──────────────────────────────────────────────────────────────
+
+
+class TestPhaseCMembershipFix:
+    """AC-5.7: tc_level membership predicate is (1, 2, 3) -- a level 3
+    base-concept finding counts toward tc_recognized.
+    AC-5.9: org_level membership predicate is deliberately (1, 2) -- a
+    synthetic level 3 organ finding does NOT count toward org_recognized.
+    """
+
+    def test_level_3_counts_toward_tc_recognized(self):
+        """AC-5.7: without the (1,2,3) fix, this test would assert
+        recognition_rate_test_code == 0.0. The (1,2,3) fix makes the level 3
+        finding count, so the rate is > 0."""
+        findings = [
+            _finding("MI", "RAW1", "LIVER", 3, "base_concept", 1, None),
+            _finding("MI", "RAW2", "KIDNEY", 6, "unmatched", 1, None),
+        ]
+        r = build_unrecognized_terms_report(findings, "S", _versions())
+        # 1 of 2 resolved at level 3 -> rate 0.5
+        assert r["summary"]["recognition_rate_test_code"] == 0.5
+        assert r["by_domain"]["MI"]["rate"] == 0.5
+
+    def test_level_3_excluded_from_unrecognized_array(self):
+        """AC-5.6: unrecognized_test_codes[] only contains level 6 entries.
+        Level 3 base-concept findings are recognized; do not appear in the
+        unrecognized array."""
+        findings = [
+            _finding("MI", "FOO", "LIVER", 3, "base_concept", 1, None),
+            _finding("MI", "BAR", "LIVER", 6, "unmatched", 1, None),
+        ]
+        r = build_unrecognized_terms_report(findings, "S", _versions())
+        raws = {e["raw_code"] for e in r["unrecognized_test_codes"]}
+        assert "FOO" not in raws
+        assert "BAR" in raws
+
+    def test_org_level_3_does_NOT_count_toward_org_recognized(self):
+        """AC-5.9: regression guardrail for the deliberate asymmetry between
+        tc_level (now (1,2,3)) and org_level (still (1,2) -- no organ-side
+        Phase C dictionary in this cycle, R1 F12).
+
+        This test FORCES org_level=3 in the input (production code never
+        emits this) and asserts the report does not count it. If a future
+        implementer 'tidies' the asymmetry to (1,2,3) without realizing the
+        intent, this test fires."""
+        findings = [
+            # Forced synthetic org_level=3 — production code never emits this
+            # in this cycle. The test pins the asymmetry.
+            _finding("MI", "RAW", "ORG_X", 1, "exact", 3, "alias"),
+        ]
+        r = build_unrecognized_terms_report(findings, "S", _versions())
+        # tc resolved -> rate 1.0
+        assert r["summary"]["recognition_rate_test_code"] == 1.0
+        # org rate: 0 of 1 resolved (level 3 ignored) -> rate 0.0
+        assert r["summary"]["recognition_rate_organ"] == 0.0
+
+
+# ──────────────────────────────────────────────────────────────
+# Phase C per-domain caveat reflects new dictionary state
+# ──────────────────────────────────────────────────────────────
+
+
+class TestPhaseCPerDomainCaveat:
+    def test_om_still_no_dictionary_caveat(self):
+        """OM stays at the no-dictionary note (out of Phase C scope)."""
+        findings = [
+            _finding("OM", "WEIGHT", "LIVER", 6, "no_dictionary", 1, None),
+        ]
+        r = build_unrecognized_terms_report(findings, "S", _versions())
+        om = r["by_domain"]["OM"]
+        assert om["note"] is not None
+        assert "no OM synonym dictionary" in om["note"]
+
+    def test_mi_resolved_findings_drop_caveat(self):
+        """When at least one MI finding resolves at level 1/2/3, the per-domain
+        caveat is suppressed (Phase C behavior)."""
+        findings = [
+            _finding("MI", "HYPERTROPHY", "LIVER", 1, "exact", 1, None),
+            _finding("MI", "ZZ", "KIDNEY", 6, "unmatched", 1, None),
+        ]
+        r = build_unrecognized_terms_report(findings, "S", _versions())
+        mi = r["by_domain"]["MI"]
+        assert mi["note"] is None  # caveat suppressed
+
+
 
 class TestSchemaShape:
     def test_all_top_level_keys_present(self):
