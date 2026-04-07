@@ -398,15 +398,14 @@ class TestPhaseCMembershipFix:
 
 
 class TestPhaseCPerDomainCaveat:
-    def test_om_still_no_dictionary_caveat(self):
-        """OM stays at the no-dictionary note (out of Phase C scope)."""
+    def test_om_no_special_caveat(self):
+        """OM now covered by test-code-aliases.json -- no special note."""
         findings = [
-            _finding("OM", "WEIGHT", "LIVER", 6, "no_dictionary", 1, None),
+            _finding("OM", "WEIGHT", "LIVER", 1, "exact", 1, None),
         ]
         r = build_unrecognized_terms_report(findings, "S", _versions())
         om = r["by_domain"]["OM"]
-        assert om["note"] is not None
-        assert "no OM synonym dictionary" in om["note"]
+        assert om["note"] is None
 
     def test_mi_resolved_findings_drop_caveat(self):
         """When at least one MI finding resolves at level 1/2/3, the per-domain

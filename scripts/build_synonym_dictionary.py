@@ -717,10 +717,11 @@ def build(
         },
         "scope": {
             "domains_in_scope": ["MI", "MA", "CL"],
-            "domains_out_of_scope": ["OM", "TF", "DS"],
+            "domains_out_of_scope": [],
             "note": (
-                "OM/TF/DS test_codes remain at level 6 'no_dictionary' until "
-                "a future cycle. Phase B/C ships MI/MA/CL only."
+                "All domains now have recognition coverage. MI/MA/CL via "
+                "finding-synonyms.json; all other domains via "
+                "test-code-aliases.json."
             ),
         },
         "external_identifier_strip_notice": (

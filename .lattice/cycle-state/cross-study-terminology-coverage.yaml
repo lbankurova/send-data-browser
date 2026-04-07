@@ -1,0 +1,137 @@
+topic: cross-study-terminology-coverage
+title: "Cross-Study Terminology Coverage: Gap Analysis and Improvement Strategy"
+started: 2026-04-07T18:00:00Z
+phase: building
+current_step: build.2
+parent: cross-study-phase-1-aggregation-backend
+priority: P2
+checkpoints:
+  research.1:
+    completed: 2026-04-07T18:30:00Z
+    key_decisions:
+      - "Empirical measurement: overall 59.4% recognition across 16 studies (6,472 findings)"
+      - "5 gap categories: A(controlled domains 0%, trivial fix), B(LB aliases), C(EG/CV/VS suffix), D(MI/MA dict), E(CL long tail)"
+      - "Category A fix alone raises overall from 59.4% to 82%"
+      - "Full dict+pattern expansion achievable rate: 93-94%"
+      - "6 proposals prioritized by ROI"
+    output: "docs/_internal/research/cross-study-terminology-coverage.md"
+  research.2:
+    completed: 2026-04-07T19:00:00Z
+    key_decisions:
+      - "R1: 1 FLAWED (Cat B estimates inaccurate), 7 CONDITIONAL, 5 SOUND"
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-review.md"
+  research.3:
+    completed: 2026-04-07T19:15:00Z
+    key_decisions:
+      - "Cat B rewritten with measured counts: B1=312, B2=86, B3=258, B4=33"
+      - "All R1 findings accepted and incorporated"
+  research.4:
+    completed: 2026-04-07T19:30:00Z
+    key_decisions:
+      - "R2: All 13 R1 RESOLVED. 5 new CONDITIONAL (all minor, auto-incorporated)"
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-review-r2.md"
+  research.5:
+    completed: 2026-04-07T19:30:00Z
+    key_decisions:
+      - "VALIDATED -- all R1 RESOLVED, 0 FLAWED"
+  research.7:
+    completed: 2026-04-07T19:45:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 2 SCIENCE-FLAGs (P2 suffix, P3 time-window)"
+      - "10/10 invariants SAFE"
+  research.7_distill:
+    completed: 2026-04-07T20:00:00Z
+    key_decisions:
+      - "SF1 RESOLVED: LE-suffixed codes are distinct endpoints (% vs 10^9/L). Suffix stripping REJECTED -> self-canonicals"
+      - "SF2 RESOLVED: time-windowed codes coexist with aggregates as distinct measurements. Collapsing REJECTED -> self-canonicals"
+      - "P2+P3 simplified to dictionary-only (no code changes). RG-4 resolved. GAP-TCV-1/2 resolved"
+      - "Quick wins phase now P1+P2+P3+P6 = ~94 dictionary entries, single commit, 59.4% -> 90%"
+  research.7b:
+    completed: 2026-04-07T20:00:00Z
+    gaps_persisted:
+      registry: "cross-study-terminology-coverage stream with full detail + SF resolution"
+      todo: "GAP-TCV-1/2 RESOLVED, GAP-TCV-3 (CL pattern census) open"
+  blueprint.0:
+    completed: 2026-04-07T20:30:00Z
+    key_decisions:
+      - "No failed approaches on terminology normalization in decisions log"
+      - "Phase B/C shipped (9a2b83e6) -- 3-source synonym dict, base-concept extractor wired"
+      - "Phase A shipped (3fdbbe60) -- recognition fields + per-study report infrastructure in place"
+      - "CRITICAL: research claims 'no code changes' for P1/P3 but _TEST_CODE_DICTIONARY_DOMAINS only has {LB,BW,FW,EG,VS,BG}. OM/CV/DS/TF/IS/RE return 'no_dictionary' before checking registry. Need 1-line code fix."
+      - "test-code-aliases.json currently LB-only (25 alias groups, 35 self-canonicals). Expanding to multi-domain."
+      - "send_knowledge.py ~300 LOC (under budget). findings_pipeline.py ~680 LOC (tracked hotspot, avoid ballooning)."
+      - "GAP-C-3 (OM/TF/DS synonym gap from eTRANSAFE) directly overlaps with Proposal 1 -- will be resolved"
+      - "No bug-patterns.md exists. No prior failures relevant."
+      - "Cross-topic: phases-b-e paused (D+E only), eTRANSAFE complete, protective-syndrome-engine blueprint complete -- no conflicts"
+    implementation_context:
+      failed_approaches: "none"
+      bug_patterns: "none (no bug-patterns.md)"
+      domain_critical: "classification.py, confidence.py untouched. Recognition is pure additive metadata."
+      hotspots: "findings_pipeline.py 680 LOC -- P6 dedup should go in send_knowledge.py, not pipeline"
+      cross_topic:
+        - "GAP-C-3 from eTRANSAFE resolved by Proposal 1"
+        - "GAP-TCV-3 (CL pattern census) stays open -- blocks P5"
+        - "phases-b-e cycle can resume after this ships (D+E only)"
+  blueprint.1:
+    completed: 2026-04-07T20:45:00Z
+    key_decisions:
+      - "Scope: P1+P2(B1+B2)+P3+P6 = quick wins phase. ~96 self-canonical entries + dedup helper."
+      - "CRITICAL CORRECTION: research claimed 'no code changes' but _TEST_CODE_DICTIONARY_DOMAINS must expand (Feature 1)"
+      - "All SF1/SF2 entries as self-canonicals (no suffix stripping, no alias mapping for B2/C)"
+      - "Dedup in assess_finding_recognition, not _enrich_finding (hotspot discipline)"
+      - "P4/P5/B3/B4/confidence-labels all deferred with rule-14 blocking dependencies"
+      - "Projected outcome: 59.4% -> 89.4% overall, 10 domains to 100%"
+      - "6 mandatory sections verified present"
+    output: "docs/_internal/incoming/cross-study-terminology-coverage-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-07T21:00:00Z
+    verdict: "SIMPLIFY -> PASS (auto-applied)"
+    key_decisions:
+      - "REQUIRED: AC-1.5 added -- OM/TF/DS note branch must be updated (stale 'level 6 expected' after fix)"
+      - "ADVISORY: AC-4.3 added -- PHASE_A_RECOGNITION_CAVEAT body rewrite for OM/TF/DS"
+      - "NOTE: LOC table corrected (send_knowledge.py is 1056 LOC, not 400)"
+      - "Reuse verified 5/5. No domain-critical modules touched. Science CLEAN."
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-07T21:15:00Z
+    verdict: "PROPAGATES-ONLY"
+    key_decisions:
+      - "0 BREAKS, 0 SCIENCE-FLAGS, 12 consumers all SAFE/PROPAGATES"
+      - "canonical_testcd byte-identical before/after (self-canonicals produce same upper value)"
+      - "2 test assertions need updating: test_om_no_dictionary, test_om_caveat"
+      - "10/10 cross-cutting invariants CLEAR"
+      - "Zero frontend impact"
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-probe.md"
+  blueprint.4:
+    completed: 2026-04-07T21:30:00Z
+    key_decisions:
+      - "R1: 1 FLAWED (F3 build script regen hazard), 9 CONDITIONAL, 3 SOUND. 6 dimensions."
+      - "All 13 findings accepted for incorporation."
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-07T21:45:00Z
+    key_decisions:
+      - "F3 FLAWED: AC-4.4+4.5 added (builder script + golden fixture)"
+      - "F1: GAP-LYMLE added to data gaps (LYMLE->LYM may violate SF1 principle)"
+      - "F9: AC-5.7 pre-impl verification step (extract L6 codes, diff against additions)"
+      - "F13: AC-4.3 expanded with 4 text requirements for PHASE_A_RECOGNITION_CAVEAT"
+      - "F4/F5/F6/F7/F10: all CONDITIONAL items addressed with new ACs and test strategy additions"
+      - "LOC envelope corrected. Section 9 Plan Review Notes added."
+    output: "docs/_internal/incoming/cross-study-terminology-coverage-synthesis.md"
+  blueprint.6:
+    completed: 2026-04-07T22:00:00Z
+    verdict: "VALIDATED"
+    key_decisions:
+      - "13/13 R1 RESOLVED, 0 PARTIAL, 0 NOT RESOLVED"
+      - "0 new FLAWED, 2 SOUND (N1, N2), 1 CONDITIONAL (N3 -- auto-incorporated)"
+      - "N3: AC-4.2 clarified -- domains_out_of_scope set to [] not removed"
+      - "Build plan VALIDATED -- ready for build cycle"
+    output: "docs/_internal/research/peer-reviews/cross-study-terminology-coverage-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-07T22:15:00Z
+    key_decisions:
+      - "Gap persistence verified: REGISTRY updated to blueprint-complete, RG-4 RESOLVED"
+      - "3 new data gaps added to TODO.md: GAP-TCV-B3, GAP-TCV-B4, GAP-TCV-LYMLE"
+      - "GAP-C-3 will be resolved by this cycle's Feature 1+2"
+      - "Build plan VALIDATED -- ready for /lattice:build-cycle"
+    output: "blueprint phase complete"

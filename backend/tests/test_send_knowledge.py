@@ -15,6 +15,7 @@ import pytest
 from services.analysis import send_knowledge as sk
 from services.analysis.send_knowledge import (
     PHASE_A_RECOGNITION_CAVEAT,
+    _dedup_finding_text,
     _reset_dictionary_caches_for_tests,
     assess_finding_recognition,
     assess_organ_recognition,
@@ -84,8 +85,27 @@ class TestAssessTestCodeNoDictionary:
     def test_cl_no_dictionary(self):
         assert assess_test_code_recognition("CL", "ALOPECIA") == ("ALOPECIA", 6, "no_dictionary")
 
-    def test_om_no_dictionary(self):
-        assert assess_test_code_recognition("OM", "WEIGHT") == ("WEIGHT", 6, "no_dictionary")
+    def test_om_now_in_dictionary(self):
+        assert assess_test_code_recognition("OM", "WEIGHT") == ("WEIGHT", 1, "exact")
+
+    def test_cv_now_in_dictionary(self):
+        assert assess_test_code_recognition("CV", "SYSBP") == ("SYSBP", 1, "exact")
+
+    def test_ds_now_in_dictionary(self):
+        assert assess_test_code_recognition("DS", "MORTALITY") == ("MORTALITY", 1, "exact")
+
+    def test_tf_composite_string(self):
+        assert assess_test_code_recognition("TF", "LIVER_ADENOMA, HEPATOCELLULAR, BENIGN") == (
+            "LIVER_ADENOMA, HEPATOCELLULAR, BENIGN", 1, "exact")
+
+    def test_is_now_in_dictionary(self):
+        assert assess_test_code_recognition("IS", "ADA_NAB") == ("ADA_NAB", 1, "exact")
+
+    def test_re_now_in_dictionary(self):
+        assert assess_test_code_recognition("RE", "TIDALVOL") == ("TIDALVOL", 1, "exact")
+
+    def test_eg_time_windowed(self):
+        assert assess_test_code_recognition("EG", "PRAG_0-6h") == ("PRAG_0-6H", 1, "exact")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -240,7 +260,7 @@ class TestDictionaryVersions:
         organ_aliases dict was bumped to 1.1.0 by Feature 7."""
         versions = get_dictionary_versions()
         assert versions == {
-            "test_code_aliases": "1.0.0",
+            "test_code_aliases": "1.1.0",
             "organ_aliases": "1.1.0",
             "finding_synonyms": "1.0.0",
         }
@@ -255,7 +275,7 @@ class TestDictionaryVersions:
         monkeypatch.setattr(sk, "_TEST_CODE_REVERSE_MAP", {"FAKE": "FAKE"})
         # Version must still be live
         versions = get_dictionary_versions()
-        assert versions["test_code_aliases"] == "1.0.0"
+        assert versions["test_code_aliases"] == "1.1.0"
         assert versions["organ_aliases"] == "1.1.0"
 
 
@@ -508,3 +528,72 @@ class TestAssessFindingRecognition:
         # Verify provenance preservation — at least the three source sources
         # the build script merges should be present when applicable.
         assert "NONNEO" in source or "sendigR" in source or "eTRANSAFE" in source
+
+
+# ──────────────────────────────────────────────────────────────
+# _dedup_finding_text — edge cases (AC-3.1..AC-3.7)
+# ──────────────────────────────────────────────────────────────
+
+class TestDedupFindingText:
+    def test_exact_bifurcation(self):
+        """AC-3.1: exact 2x duplication is collapsed."""
+        assert _dedup_finding_text(
+            "INCREASED NUMBER, FIBROBLASTS, INCREASED NUMBER, FIBROBLASTS"
+        ) == "INCREASED NUMBER, FIBROBLASTS"
+
+    def test_no_op_single_token(self):
+        """AC-3.2: non-duplicated text is unchanged."""
+        assert _dedup_finding_text("HYPERTROPHY") == "HYPERTROPHY"
+
+    def test_odd_parts_unchanged(self):
+        """AC-3.3: odd-count parts are not affected."""
+        assert _dedup_finding_text("A, B, C") == "A, B, C"
+
+    def test_empty_string(self):
+        """AC-3.4: empty string returns empty string."""
+        assert _dedup_finding_text("") == ""
+
+    def test_triple_dup_not_collapsed(self):
+        """AC-3.7: triple-duplication is intentionally NOT collapsed."""
+        assert _dedup_finding_text("A, B, A, B, A, B") == "A, B, A, B, A, B"
+
+    def test_single_token_pair(self):
+        """Two identical single tokens: 'X, X' -> 'X'."""
+        assert _dedup_finding_text("FIBROSIS, FIBROSIS") == "FIBROSIS"
+
+
+# ──────────────────────────────────────────────────────────────
+# test-code-aliases.json — dictionary integrity assertions
+# ──────────────────────────────────────────────────────────────
+
+class TestDictionaryIntegrity:
+    @pytest.fixture(autouse=True)
+    def _reset(self):
+        _reset_dictionary_caches_for_tests()
+        yield
+        _reset_dictionary_caches_for_tests()
+
+    def test_no_duplicate_self_canonicals(self):
+        """AC-2.6: no duplicate entries in self_canonical list."""
+        data = sk._load_test_code_data()
+        sc = [c.upper() for c in data["self_canonical"]]
+        assert len(set(sc)) == len(sc), f"Duplicates: {[c for c in sc if sc.count(c) > 1]}"
+
+    def test_no_alias_shadowing(self):
+        """AC-2.8: no self-canonical shadows an alias-group alias."""
+        data = sk._load_test_code_data()
+        all_aliases = set()
+        for group in data["alias_groups"].values():
+            for a in group["aliases"]:
+                all_aliases.add(a.upper())
+        sc_set = {c.upper() for c in data["self_canonical"]}
+        shadows = sc_set & all_aliases
+        assert not shadows, f"Self-canonicals shadowing aliases: {shadows}"
+
+    def test_alias_group_priority(self):
+        """R1 F10: code in both self_canonical and alias_group.aliases resolves
+        to group canonical, not self. Tests _load_test_code_reverse_map guard."""
+        # LYMLE is in LYM_GROUP aliases AND is not in self_canonical.
+        # Verify the alias path takes priority.
+        result = assess_test_code_recognition("LB", "LYMLE")
+        assert result == ("LYM", 2, "alias")

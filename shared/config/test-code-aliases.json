@@ -1,6 +1,8 @@
 {
-  "version": "1.0.0",
-  "description": "Canonical test code registry. Maps LBTESTCD aliases to canonical codes across heterogeneous SEND datasets. Source: 6-study vocabulary analysis (send-test-code-matching.md).",
+  "version": "1.1.0",
+  "description": "Canonical test code registry. Maps test code aliases to canonical codes across heterogeneous SEND datasets. Multi-domain: LB, BW, FW, EG, VS, BG, OM, CV, DS, TF, IS, RE. Source: 16-study vocabulary analysis (cross-study-terminology-coverage research).",
+  "_flat_structure_note": "This registry is domain-agnostic. The domain gate in assess_test_code_recognition() ensures codes are only looked up for domains in _TEST_CODE_DICTIONARY_DOMAINS. No two domains in the current corpus use the same code with conflicting semantics.",
+  "_tf_note": "TF self-canonicals are composite organ_finding strings (organ + morphology + behavior) entered with commas because that is how the temporal module encodes them.",
 
   "alias_groups": {
     "BUN_GROUP": { "canonical": "BUN", "aliases": ["UREAN", "UREA"], "analyte": "Blood urea nitrogen" },
@@ -34,6 +36,35 @@
     "ALB", "ALP", "ALT", "AST", "BASO", "BILI", "CA", "CHOL", "CL", "CREAT",
     "EOS", "FIBRINO", "GGT", "GLOB", "GLUC", "HCT", "HGB", "K", "LYM",
     "MCH", "MCHC", "MCV", "MONO", "NEUT", "PHOS", "PLAT", "PROT", "PT",
-    "RBC", "RDW", "SODIUM", "TRIG", "WBC", "RETIRBC"
+    "RBC", "RDW", "SODIUM", "TRIG", "WBC", "RETIRBC",
+    "APTT", "BACT", "BICARB", "CK", "KETONES", "LDH", "MPV", "NAG",
+    "OCCBLD", "PH", "SPERM", "TROPONI", "UROBIL", "VOLUME",
+    "BASOLE", "BLASTLE", "EOSLE", "LGLUCLE", "LYMATLE", "MONOLE",
+    "NEUTLE", "NEUTSG", "RBCNUCLE",
+    "OWBR", "OWBW", "WEIGHT",
+    "BW",
+    "BWGAIN", "BWGAINA", "BWGAINP",
+    "FC", "FCRELBW", "FCRELD", "FDEFF", "WC",
+    "HR", "OXYSAT", "RESP", "TEMP",
+    "MORTALITY",
+    "MV", "RESPRATE", "TIDALVOL",
+    "ADA_NAB", "H1IGGAT", "IGGHBA", "IGMHBA",
+    "LIVER_ADENOMA, HEPATOCELLULAR, BENIGN",
+    "LIVER_CARCINOMA, HEPATOCELLULAR, MALIGNANT",
+    "UTERUS_LEIOMYOMA, BENIGN",
+    "PRAG", "PRSB", "QRSAG", "QRSSB", "QTAG", "QTCSAG", "QTCVSB", "QTSB",
+    "RRAG", "RRSM",
+    "PRAG_0-6H", "PRAG_6-14H", "PRAG_14-24H",
+    "QRSAG_0-6H", "QRSAG_6-14H", "QRSAG_14-24H",
+    "QTAG_0-6H", "QTAG_6-14H", "QTAG_14-24H",
+    "QTCBAG_0-6H", "QTCBAG_6-14H",
+    "QTCSAG_0-6H", "QTCSAG_6-14H", "QTCSAG_14-24H",
+    "RRAG_0-6H", "RRAG_6-14H", "RRAG_14-24H",
+    "SYSBP", "DIABP", "MAP",
+    "SYSBP_0-6H", "SYSBP_6-14H", "SYSBP_14-24H",
+    "DIABP_0-6H", "DIABP_6-14H", "DIABP_14-24H",
+    "MAP_0-6H", "MAP_6-14H", "MAP_14-24H",
+    "HR_0-6H", "HR_6-14H", "HR_14-24H",
+    "TEMP_0-6H", "TEMP_6-14H", "TEMP_14-24H"
   ]
 }

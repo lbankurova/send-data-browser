@@ -382,10 +382,11 @@ def get_organ_group(organ: str) -> str | None:
 # and Phase B-E roadmap.
 
 # Domains that HAVE a test-code synonym dictionary in Phase A. Domains outside
-# this set are recorded as level 6 with reason "no_dictionary" until Phases B-D
-# introduce MI/MA/CL/OM/TF/DS dictionaries.
+# Domains gated into the test-code-aliases.json registry. Codes in domains
+# NOT in this set are recorded as level 6 "no_dictionary" (MI/MA/CL use
+# finding-synonyms.json via assess_finding_recognition instead).
 _TEST_CODE_DICTIONARY_DOMAINS: frozenset[str] = frozenset({
-    "LB", "BW", "FW", "EG", "VS", "BG",
+    "LB", "BW", "FW", "EG", "VS", "BG", "OM", "CV", "DS", "TF", "IS", "RE",
 })
 
 # Human-readable caveat emitted into the per-study recognition report. Exposed
@@ -398,15 +399,14 @@ _TEST_CODE_DICTIONARY_DOMAINS: frozenset[str] = frozenset({
 # constant name and the JSON field name are stable.
 PHASE_A_RECOGNITION_CAVEAT = (
     "Recognition rate reflects dictionary completeness, not term validity. "
-    "Phase B/C dictionaries are now active for MI/MA/CL: level 1 = exact "
-    "canonical match, level 2 = registered alias (sources tracked in "
-    "test_code_recognition_source), level 3 = base-concept extraction "
-    "decomposed a compound finding (e.g., 'HEPATOCELLULAR HYPERTROPHY' -> "
-    "'HYPERTROPHY' + 'HEPATOCELLULAR'). Level 4 is reserved for Phase D "
-    "admin-curated synonyms. OM/TF/DS findings remain at level 6 "
-    "'no_dictionary' until a future cycle introduces dictionaries for those "
-    "domains. Phase A history (LB/BW/FW/EG/VS/BG): unchanged from prior "
-    "shipped behavior."
+    "LB/BW/FW/EG/VS/BG/OM/CV/DS/TF/IS/RE domains are covered by "
+    "test-code-aliases.json: level 1 = exact canonical match, level 2 = "
+    "registered alias. MI/MA/CL domains are covered by finding-synonyms.json: "
+    "level 1 = exact canonical, level 2 = registered alias, level 3 = "
+    "base-concept extraction decomposed a compound finding "
+    "(e.g., 'HEPATOCELLULAR HYPERTROPHY' -> 'HYPERTROPHY' + "
+    "'HEPATOCELLULAR'). Level 4 is reserved for Phase D admin-curated "
+    "synonyms."
 )
 
 
@@ -423,8 +423,8 @@ def assess_test_code_recognition(
                                alias_group)
         2, "alias"          -- raw matched a registered alias of a different
                                canonical
-        6, "no_dictionary"  -- domain has no synonym dictionary in Phase A
-                               (MI/MA/CL/OM/TF/DS, or empty/unknown domain)
+        6, "no_dictionary"  -- domain not in _TEST_CODE_DICTIONARY_DOMAINS
+                               (MI/MA/CL use finding-synonyms.json instead)
         6, "unmatched"      -- domain HAS a dictionary, raw was checked and did
                                not match
         6, "empty"          -- raw was empty/whitespace after strip
@@ -564,8 +564,8 @@ def get_dictionary_versions() -> dict[str, str]:
 #   _FINDING_QUALIFIERS          — uppercase set of qualifier tokens
 #   _FINDING_SEVERITY_MODIFIERS  — uppercase set of severity-modifier tokens
 #
-# Domains in scope: MI, MA, CL. Domains outside scope (OM, TF, DS) fall through
-# to level 6 "no_dictionary" — same semantics as Phase A.
+# Domains routed to the finding-synonyms.json dictionary: MI, MA, CL only.
+# All other domains use test-code-aliases.json via assess_test_code_recognition.
 
 _FINDING_DICTIONARY_DOMAINS: frozenset[str] = frozenset({"MI", "MA", "CL"})
 
@@ -730,6 +730,23 @@ def extract_base_concept(
     return (None, None, "none")
 
 
+def _dedup_finding_text(text: str) -> str:
+    """Collapse obvious copy-paste duplication: 'X, X' -> 'X'.
+
+    Only handles exact bifurcation (even number of comma-separated parts where
+    the first half equals the second half).  Triple-duplication like
+    'A, B, A, B, A, B' is NOT collapsed -- intentional known limitation; the
+    function only handles the 2x pattern observed in the corpus.
+    """
+    parts = text.split(", ")
+    n = len(parts)
+    if n >= 2 and n % 2 == 0:
+        half = n // 2
+        if parts[:half] == parts[half:]:
+            return ", ".join(parts[:half])
+    return text
+
+
 def assess_finding_recognition(
     domain: str, raw_term: str
 ) -> tuple[str, int, str, str | None, str | None, list[str] | None]:
@@ -747,7 +764,8 @@ def assess_finding_recognition(
         3, "base_concept" -- extract_base_concept decomposed raw; canonical
                              form preserves the qualifier in-string for
                              cross-study key stability
-        6, "no_dictionary" -- domain has no dict (OM/TF/DS) or dict missing
+        6, "no_dictionary" -- domain not in _FINDING_DICTIONARY_DOMAINS
+                               (only MI/MA/CL are routed here)
         6, "unmatched"     -- domain HAS dict, raw not found
         6, "empty"         -- empty/whitespace input
 
@@ -759,7 +777,7 @@ def assess_finding_recognition(
     if not raw_term or not raw_term.strip():
         return ("", 6, "empty", None, None, None)
 
-    upper = raw_term.upper().strip()
+    upper = _dedup_finding_text(raw_term.upper().strip())
 
     # Domains without a finding-synonyms dictionary: level 6 "no_dictionary".
     if domain not in _FINDING_DICTIONARY_DOMAINS:
@@ -992,20 +1010,14 @@ def build_unrecognized_terms_report(
         unrec_org_list = unrec_org_list[:_RECOGNITION_REPORT_CAP]
 
     # Finalize per-domain summary (rate uses with_test_code denominator).
-    # Phase C arrival: drop the "no_dictionary" caveat for MI/MA/CL when the
-    # finding-synonyms dictionary has loaded entries for that domain. Retain
-    # the caveat for OM/TF/DS (still no dictionary in this cycle).
+    # OM/TF/DS/CV/IS/RE now covered by test-code-aliases.json (no special note).
+    # MI/MA/CL covered by finding-synonyms.json (note if no entries loaded).
     finding_rmaps = _load_finding_reverse_maps() if _FINDING_DICTIONARY_DOMAINS else {}
     per_domain_out: dict[str, dict] = {}
     for domain, bucket in sorted(per_domain.items()):
         rate = _recognition_rate(bucket["tc_recognized"], bucket["with_test_code"])
         note: str | None = None
-        if domain in ("OM", "TF", "DS"):
-            note = (
-                f"Phase A: no {domain} synonym dictionary yet -- "
-                f"100% level 6 is expected"
-            )
-        elif domain in ("MI", "MA", "CL"):
+        if domain in ("MI", "MA", "CL"):
             # Suppress the caveat only if the dictionary has entries for this
             # domain AND at least one finding resolved at level 1/2/3.
             has_dict = bool(finding_rmaps.get(domain))
