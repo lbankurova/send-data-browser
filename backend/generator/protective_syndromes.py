@@ -550,15 +550,22 @@ def build_protective_syndromes(
             fid = mf.get("finding_id")
             f = next((x for x in findings if x.get("id") == fid), None)
             if f:
+                # ctrl_pct only meaningful for incidence findings (MI/MA/CL/TF)
+                gs_list = f.get("group_stats", [])
+                ctrl_inc = gs_list[0].get("incidence") if gs_list else None
+                ctrl_pct_str = str(round((ctrl_inc or 0) * 100)) if ctrl_inc is not None else ""
+                # Continuous findings (OM/LB/BW) have no "affected" count;
+                # all animals contribute to the mean, so use group N.
+                if gs_list and "affected" in gs_list[0]:
+                    n_affected = sum(g.get("affected", 0) for g in gs_list[1:])
+                else:
+                    n_affected = sum(g.get("n", 0) for g in gs_list[1:])
                 result_proxy = {
                     "params": {
                         "finding": f.get("finding", ""),
-                        "n_affected": sum(
-                            g.get("affected", 0) for g in f.get("group_stats", [])[1:]
-                        ),
-                        "ctrl_pct": str(round(
-                            (f.get("group_stats", [{}])[0].get("incidence", 0) or 0) * 100
-                        )),
+                        "n_affected": n_affected,
+                        "ctrl_pct": ctrl_pct_str,
+                        "direction": f.get("direction", "none"),
                         "dose_response_pattern": f.get("dose_response_pattern", ""),
                         "p_value": f.get("min_p_adj"),
                         "treatment_related": f.get("treatment_related", False),
@@ -592,7 +599,10 @@ def build_protective_syndromes(
                     continue
 
                 # Only apply incidence gate to MI/MA/CL/TF with incidence data
-                if f.get("domain") in ("MI", "MA", "CL", "TF"):
+                # Skip "up" direction findings: the Boschloo gate tests
+                # treated < control (protective decrease). R18/R19 adaptive
+                # terms have direction "up" -- their stats are in min_p_adj.
+                if f.get("domain") in ("MI", "MA", "CL", "TF") and f.get("direction") != "up":
                     gs = f.get("group_stats", [])
                     if gs and gs[0].get("incidence") is not None:
                         has_incidence_finding = True

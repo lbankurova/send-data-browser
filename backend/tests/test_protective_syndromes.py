@@ -1,10 +1,8 @@
 """Tests for the protective syndrome detection engine (R18-R25).
 
 Covers: catalog validation, N-tier routing, PEX gates, inference gate,
-negative-control suite across corpus studies.
-
-NTP TR-598 fixture-driven positive-control tests are deferred until the
-hand-encoded fixture is complete (DATA-GAP-PROT-06).
+negative-control suite across corpus studies, and NTP TR-598 positive-
+control fixture tests (DATA-GAP-PROT-06).
 """
 
 import json
@@ -371,3 +369,157 @@ class TestNegativeControlCorpus:
             f"Unexpected inference-tier protective firings:\n"
             + "\n".join(failures)
         )
+
+
+# ---------------------------------------------------------------------------
+# NTP TR-598 PFOA positive-control fixture (DATA-GAP-PROT-06)
+# ---------------------------------------------------------------------------
+
+FIXTURE_PATH = Path(__file__).parent / "fixtures" / "ntp_tr598_pfoa.json"
+
+
+def _load_fixture():
+    with open(FIXTURE_PATH) as f:
+        return json.load(f)
+
+
+class TestNTPTR598Fixture:
+    """Positive-control tests using NTP TR-598 PFOA hand-encoded fixture.
+
+    Validates that R18 (Adaptive Hepatic Enzyme Induction Syndrome) fires
+    on the 16-week interim arm and is correctly blocked on the 2-year arm.
+    """
+
+    def test_fixture_loads_and_parses(self):
+        """AC-7.1: Fixture loads, has both arms, and findings parse."""
+        data = _load_fixture()
+        assert "interim_16wk" in data
+        assert "chronic_2yr" in data
+
+        interim = data["interim_16wk"]
+        assert len(interim["dose_groups"]) == 4
+        assert len(interim["findings"]) >= 2  # at least liver wt + hypertrophy
+
+        chronic = data["chronic_2yr"]
+        assert len(chronic["dose_groups"]) == 4
+        assert len(chronic["findings"]) >= 3  # includes necrosis
+
+        # Every finding has required fields
+        for arm_key in ("interim_16wk", "chronic_2yr"):
+            for f in data[arm_key]["findings"]:
+                assert "id" in f, f"Missing id in {arm_key}"
+                assert "domain" in f, f"Missing domain in {f['id']}"
+                assert "direction" in f, f"Missing direction in {f['id']}"
+
+    def test_r18_fires_on_16wk_interim(self):
+        """AC-7.2: R18 fires on 16-week interim male high-dose.
+
+        The 16-week arm has liver weight increase + hepatocellular
+        hypertrophy + clean ALT/AST -- the R18 pattern. N=10 puts
+        this in inference tier.
+        """
+        data = _load_fixture()
+        arm = data["interim_16wk"]
+        result = build_protective_syndromes(
+            findings=arm["findings"],
+            dose_groups=arm["dose_groups"],
+            species=arm["species"],
+            strain=arm["strain"],
+            study_type=arm["study_type"],
+        )
+
+        assert result["evidence_tier"] == "inference"
+        assert result["status"] == "OK"
+
+        r18_matches = [
+            m for m in result["protective_syndromes"]
+            if m["syndromeId"] == "R18"
+        ]
+        assert len(r18_matches) == 1, (
+            f"Expected exactly 1 R18 match, got {len(r18_matches)}. "
+            f"All matches: {[m['syndromeId'] for m in result['protective_syndromes']]}"
+        )
+
+        r18 = r18_matches[0]
+        assert r18["evidence_tier"] == "inference"
+        assert "OM" in r18["matched_domains"]
+        assert "MI" in r18["matched_domains"]
+        assert len(r18["matched_domains"]) >= 2
+
+    def test_r18_blocked_on_2yr_chronic(self):
+        """AC-7.3: R18 does NOT fire on 2-year data.
+
+        The 2-year arm has the same liver weight + hypertrophy pattern,
+        but also has liver necrosis -- matching XS01_REQUIRED in the
+        required logic expression, which negates R18.
+        """
+        data = _load_fixture()
+        arm = data["chronic_2yr"]
+        result = build_protective_syndromes(
+            findings=arm["findings"],
+            dose_groups=arm["dose_groups"],
+            species=arm["species"],
+            strain=arm["strain"],
+            study_type=arm["study_type"],
+        )
+
+        assert result["evidence_tier"] == "inference"
+        assert result["status"] == "OK"
+
+        r18_matches = [
+            m for m in result["protective_syndromes"]
+            if m["syndromeId"] == "R18"
+        ]
+        assert len(r18_matches) == 0, (
+            f"R18 should NOT fire on 2-year arm (liver necrosis triggers "
+            f"XS01_REQUIRED exclusion), but got {len(r18_matches)} match(es)"
+        )
+
+    def test_r18_rule_result_shape(self):
+        """AC-6.6: R18 match has correct output shape and fields.
+
+        Validates the rule_result dict structure when R18 fires.
+        """
+        data = _load_fixture()
+        arm = data["interim_16wk"]
+        result = build_protective_syndromes(
+            findings=arm["findings"],
+            dose_groups=arm["dose_groups"],
+            species=arm["species"],
+            strain=arm["strain"],
+            study_type=arm["study_type"],
+        )
+
+        r18 = next(
+            m for m in result["protective_syndromes"]
+            if m["syndromeId"] == "R18"
+        )
+
+        # Required top-level fields
+        assert r18["syndromeId"] == "R18"
+        assert r18["name"] == "Adaptive Hepatic Enzyme Induction Syndrome"
+        assert r18["category"] == "A"
+        assert r18["evidence_tier"] == "inference"
+        assert r18["confidence_ceiling"] == "HIGH"
+        assert r18["d3_pending"] is True
+
+        # Matched endpoints structure
+        assert isinstance(r18["matched_endpoints"], list)
+        assert len(r18["matched_endpoints"]) >= 2
+        for ep in r18["matched_endpoints"]:
+            assert "tag" in ep
+            assert "finding_id" in ep
+            assert "domain" in ep
+            assert "role" in ep
+
+        # Must have both required tags
+        tags = {ep["tag"] for ep in r18["matched_endpoints"]}
+        assert "LIVER_WT" in tags, f"Missing LIVER_WT tag, got {tags}"
+        assert "HEPATIC_HYPERTROPHY" in tags, f"Missing HEPATIC_HYPERTROPHY tag, got {tags}"
+
+        # PEX status (no exclusions)
+        assert isinstance(r18["pex_status"], list)
+        for ps in r18["pex_status"]:
+            assert ps["excluded"] is False, (
+                f"Finding {ps['finding_id']} unexpectedly excluded by {ps.get('pex_id')}"
+            )

@@ -174,8 +174,12 @@ def _check_protective_exclusion(
             return True, "PEX02"
 
     # PEX03: Low control incidence (< 10%)
+    # Only applies to protective-decrease findings (direction "down").
+    # For adaptive-increase findings (R18/R19, direction "up"), low control
+    # incidence is expected -- the treatment CAUSES the finding.
+    direction = params.get("direction", "none")
     ctrl_pct_str = params.get("ctrl_pct", "")
-    if ctrl_pct_str:
+    if ctrl_pct_str and direction != "up":
         try:
             ctrl_pct = float(ctrl_pct_str)
             if ctrl_pct < 10:
