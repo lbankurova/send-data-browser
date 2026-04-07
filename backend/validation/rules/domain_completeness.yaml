@@ -1,0 +1,19 @@
+# Domain completeness validation rules (DC-001+)
+# These rules check for missing Expected variables within domain records.
+# All use the domain_completeness check handler with internal dispatch.
+
+rules:
+  - id: "DC-001"
+    name: "MI finding without severity grade"
+    description: "Detects MI domain records where a positive finding is present (MISTRESC populated, not NORMAL) but MISEV is missing. Per SENDIG 3.1, MISEV is Expected for MI findings. Missing severity impairs quantitative analysis of dose-response relationships."
+    severity: "Warning"
+    category: "Data completeness"
+    applicable_domains: ["MI"]
+    check_type: "domain_completeness"
+    parameters:
+      dc_rule: "DC-001"
+    fix_guidance: "Populate MISEV with the appropriate severity grade (e.g., MINIMAL, MILD, MODERATE, MARKED, SEVERE). For neoplastic findings, severity grading may not apply — use MIRESCAT (BENIGN/MALIGNANT) instead."
+    auto_fixable: false
+    default_fix_tier: 2
+    evidence_type: "missing-value"
+    cdisc_reference: "SENDIG 3.1, Section 6.3 (MI domain)"

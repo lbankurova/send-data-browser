@@ -22,6 +22,7 @@ from validation.models import (
 )
 from validation.checks.study_design import check_study_design
 from validation.checks.fda_data_quality import check_fda_data_quality
+from validation.checks.domain_completeness import check_domain_completeness
 from validation.scripts.registry import get_scripts
 from validation.core_runner import (
     is_core_available,
@@ -38,6 +39,8 @@ CHECK_DISPATCH: dict[str, callable] = {
     "study_design": check_study_design,
     # FDA data quality rules (FDA-001 through FDA-007)
     "fda_data_quality": check_fda_data_quality,
+    # Domain completeness rules (DC-001+)
+    "domain_completeness": check_domain_completeness,
 }
 
 BASE_DIR = Path(__file__).parent

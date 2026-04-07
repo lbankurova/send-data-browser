@@ -18,7 +18,8 @@
  * there is more than one sex.
  */
 import { useId, useMemo, useState } from "react";
-import { getNeutralHeatColor } from "@/lib/severity-colors";
+import { getNeutralHeatColor, getSexColor } from "@/lib/severity-colors";
+import { PanePillToggle } from "@/components/ui/PanePillToggle";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -32,6 +33,10 @@ export interface SexBarData {
 export interface DoseGroupData {
   doseLevel: number;
   doseLabel: string;
+  /** Ultra-short label for tight spaces (e.g. "C", "5", "200"). */
+  doseAbbrev: string;
+  /** Positional hex color for this dose group (from DoseGroup.display_color). */
+  doseColor?: string;
   bySex: Record<string, SexBarData>;
 }
 
@@ -41,6 +46,15 @@ export interface ClusterData {
 }
 
 export type DisplayMode = "counts" | "percent";
+
+/**
+ * Sex differentiation style for multi-sex bar charts.
+ * - "dashed": dashed stroke on full envelope (current)
+ * - "solid": solid thin stroke on full envelope
+ * - "tint": subtle background wash inside envelope
+ * - "edge": thick colored bottom edge
+ */
+export type SexDiffStyle = "dashed" | "solid" | "tint" | "edge";
 
 interface Props {
   main: ClusterData;
@@ -59,8 +73,11 @@ interface Props {
   title?: string;
   /** Hide the counts/percent toggle (when caller manages it elsewhere). */
   hideToggle?: boolean;
-  /** Shared dose unit (e.g. "mg/kg") rendered once below the X-axis labels. */
-  xAxisUnit?: string;
+  /** Sex differentiation style. Default "dashed". */
+  sexDiffStyle?: SexDiffStyle;
+  /** When true, bars are grouped by sex (all F doses, then all M doses)
+   *  instead of the default dose-grouped layout (F+M paired at each dose). */
+  sexGrouped?: boolean;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────
@@ -83,16 +100,17 @@ const SOLID_BAR_COLOR = "#9CA3AF"; // gray-400 — matches IncidenceRecoveryChar
 
 // Layout constants
 const BAR_W = 18;
-const SEX_GAP = 2;
+const SEX_GAP = 4;
 const DOSE_GAP = 16;
+const SEX_GROUP_GAP = 24; // gap between F group and M group in sexGrouped layout
+const DOSE_INNER_GAP = 3; // gap between dose bars within a sex group
 const CLUSTER_GAP = 28;
-const PADDING_TOP = 14;
-const PADDING_BOTTOM = 44;
-const PADDING_LEFT = 36;
-const PADDING_RIGHT = 12;
+const PADDING_TOP = 20;
+const PADDING_BOTTOM = 28;
+const PADDING_LEFT = 30;
+const PADDING_RIGHT = 8;
 const Y_AXIS_TICK_COUNT = 4;
 const ENVELOPE_STROKE = "#D1D5DB"; // gray-300
-const ENVELOPE_DASH = "2 2";
 const NE_COLOR = "#9CA3AF";
 const DIVIDER_COLOR = "#E5E7EB";
 
@@ -119,7 +137,11 @@ function niceCeil(v: number): number {
   return Math.ceil(v / 10) * 10;
 }
 
-function clusterWidth(numDoses: number, sexes: string[]): number {
+function clusterWidth(numDoses: number, sexes: string[], sexGrouped: boolean): number {
+  if (sexGrouped) {
+    const sexGroupW = numDoses * BAR_W + Math.max(0, numDoses - 1) * DOSE_INNER_GAP;
+    return sexes.length * sexGroupW + Math.max(0, sexes.length - 1) * SEX_GROUP_GAP;
+  }
   const groupW = sexes.length * BAR_W + Math.max(0, sexes.length - 1) * SEX_GAP;
   return numDoses * groupW + Math.max(0, numDoses - 1) * DOSE_GAP;
 }
@@ -137,7 +159,8 @@ export function StackedSeverityIncidenceChart({
   facetedFallbackThreshold = 6,
   title,
   hideToggle = false,
-  xAxisUnit,
+  sexDiffStyle = "dashed",
+  sexGrouped = false,
 }: Props) {
   const [internalMode, setInternalMode] = useState<DisplayMode>(defaultMode);
   const mode = controlledMode ?? internalMode;
@@ -167,20 +190,21 @@ export function StackedSeverityIncidenceChart({
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      {/* Header: title + toggle */}
-      {(title || !hideToggle) && (
-        <div className="flex shrink-0 items-center justify-between px-2 pt-1">
-          {title ? (
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {title}
-            </span>
-          ) : <span />}
-          {!hideToggle && <ModeToggle mode={mode} onChange={setMode} />}
+      {/* Header: legend (left) + title (center) + toggle (right) */}
+      <div className="flex shrink-0 items-center gap-2 px-2 pt-1 pb-0.5">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+          {hasSeverity ? <SeverityLegend multiSex={multiSex} /> : <SolidLegend multiSex={multiSex} />}
         </div>
-      )}
+        {title && (
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {title}
+          </span>
+        )}
+        {!hideToggle && <ModeToggle mode={mode} onChange={setMode} />}
+      </div>
 
       {/* Chart body */}
-      <div className="flex min-h-0 min-w-0 flex-1 px-2">
+      <div className="flex min-h-0 min-w-0 flex-1">
         {useFaceted ? (
           <FacetedChart
             main={main}
@@ -189,7 +213,8 @@ export function StackedSeverityIncidenceChart({
             mode={mode}
             yMaxCounts={yMaxCounts}
             height={height}
-            xAxisUnit={xAxisUnit}
+            sexDiffStyle={sexDiffStyle}
+            sexGrouped={sexGrouped}
           />
         ) : (
           <SingleChart
@@ -199,14 +224,10 @@ export function StackedSeverityIncidenceChart({
             mode={mode}
             yMaxCounts={yMaxCounts}
             height={height}
-            xAxisUnit={xAxisUnit}
+            sexDiffStyle={sexDiffStyle}
+            sexGrouped={sexGrouped}
           />
         )}
-      </div>
-
-      {/* Legend */}
-      <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-2 py-1">
-        {hasSeverity ? <SeverityLegend /> : <SolidLegend />}
       </div>
     </div>
   );
@@ -221,24 +242,33 @@ interface ChartCoreProps {
   mode: DisplayMode;
   yMaxCounts: number;
   height: number;
-  xAxisUnit?: string;
+  sexDiffStyle: SexDiffStyle;
+  sexGrouped: boolean;
 }
 
-function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, xAxisUnit }: ChartCoreProps) {
+function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, sexDiffStyle, sexGrouped }: ChartCoreProps) {
   const sexes = main.sexes;
-  const mainW = clusterWidth(main.groups.length, sexes);
-  const recW = recovery ? clusterWidth(recovery.groups.length, sexes) : 0;
+  const mainW = clusterWidth(main.groups.length, sexes, sexGrouped);
+  const recW = recovery ? clusterWidth(recovery.groups.length, sexes, sexGrouped) : 0;
   const totalInnerW = mainW + (recovery ? CLUSTER_GAP + recW : 0);
-  const svgW = PADDING_LEFT + totalInnerW + PADDING_RIGHT;
+  const naturalW = PADDING_LEFT + totalInnerW + PADDING_RIGHT;
+  // Fixed minimum viewBox width: always assume dual-sex + recovery so all
+  // endpoints scale identically regardless of sex count or recovery presence.
+  const dualSexRecW = PADDING_LEFT
+    + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
+    + CLUSTER_GAP
+    + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
+    + PADDING_RIGHT;
+  const svgW = Math.max(naturalW, dualSexRecW);
   const innerH = height - PADDING_TOP - PADDING_BOTTOM;
 
   return (
     <svg
       width="100%"
-      height="100%"
+      height={height}
       viewBox={`0 0 ${svgW} ${height}`}
-      preserveAspectRatio="xMidYMid meet"
-      style={{ minWidth: 0, display: "block" }}
+      preserveAspectRatio="xMinYMin slice"
+      style={{ minWidth: 0, display: "block", overflow: "hidden" }}
     >
       <defs>
         {/* Ungraded segment fill — diagonal stripes on white */}
@@ -261,6 +291,8 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, xA
         yMaxCounts={yMaxCounts}
         isRecovery={false}
         clusterLabel={recovery ? "Main" : undefined}
+        sexDiffStyle={sexDiffStyle}
+        sexGrouped={sexGrouped}
       />
       {recovery && (
         <>
@@ -277,21 +309,10 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, xA
             yMaxCounts={yMaxCounts}
             isRecovery={true}
             clusterLabel="Recovery"
+            sexDiffStyle={sexDiffStyle}
+            sexGrouped={sexGrouped}
           />
         </>
-      )}
-      {/* Unit caption (canonical pattern: shown once, mirrors DoseHeader's unitLabel) */}
-      {xAxisUnit && (
-        <text
-          x={PADDING_LEFT}
-          y={PADDING_TOP + innerH + 38}
-          fontSize={9}
-          fill="#9CA3AF"
-          fontStyle="italic"
-          textAnchor="start"
-        >
-          ({xAxisUnit})
-        </text>
       )}
     </svg>
   );
@@ -299,10 +320,10 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, xA
 
 // ─── Faceted (two charts: F left, M right) ───────────────────────────
 
-function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, xAxisUnit }: ChartCoreProps) {
+function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, sexDiffStyle, sexGrouped }: ChartCoreProps) {
   return (
     <div className="flex h-full min-w-0 gap-3">
-      {main.sexes.map((sex, sexIdx) => {
+      {main.sexes.map((sex) => {
         const facetMain: ClusterData = {
           groups: main.groups.map((g) => ({
             ...g,
@@ -331,7 +352,8 @@ function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, x
               mode={mode}
               yMaxCounts={yMaxCounts}
               height={height - 14}
-              xAxisUnit={sexIdx === 0 ? xAxisUnit : undefined}
+              sexDiffStyle={sexDiffStyle}
+              sexGrouped={sexGrouped}
             />
           </div>
         );
@@ -408,6 +430,8 @@ interface ClusterProps {
   yMaxCounts: number;
   isRecovery: boolean;
   clusterLabel?: string;
+  sexDiffStyle: SexDiffStyle;
+  sexGrouped: boolean;
 }
 
 function Cluster({
@@ -419,72 +443,139 @@ function Cluster({
   yMaxCounts,
   isRecovery,
   clusterLabel,
+  sexDiffStyle,
+  sexGrouped,
 }: ClusterProps) {
-  const sexes = cluster.sexes;
-  const groupW = sexes.length * BAR_W + Math.max(0, sexes.length - 1) * SEX_GAP;
-  const totalW = clusterWidth(cluster.groups.length, sexes);
-
   return (
     <g>
       {clusterLabel && (
         <text
-          x={xOffset + totalW / 2}
-          y={PADDING_TOP - 3}
-          fontSize={10}
-          fill="#6B7280"
-          textAnchor="middle"
-          fontWeight={600}
-          style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+          x={xOffset}
+          y={10}
+          fontSize={9}
+          fill="#9CA3AF"
+          textAnchor="start"
+          fontWeight={500}
+          style={{ textTransform: "uppercase", letterSpacing: "0.06em" }}
         >
           {clusterLabel}
         </text>
       )}
+      {sexGrouped ? (
+        // Sex-grouped layout: [F: all doses] [M: all doses]
+        <SexGroupedBars
+          cluster={cluster}
+          xOffset={xOffset}
+          innerH={innerH}
+          hasSeverity={hasSeverity}
+          mode={mode}
+          yMaxCounts={yMaxCounts}
+          isRecovery={isRecovery}
+          sexDiffStyle={sexDiffStyle}
+        />
+      ) : (
+        // Default: dose-grouped layout: [F M] [F M] [F M]
+        <DoseGroupedBars
+          cluster={cluster}
+          xOffset={xOffset}
+          innerH={innerH}
+          hasSeverity={hasSeverity}
+          mode={mode}
+          yMaxCounts={yMaxCounts}
+          isRecovery={isRecovery}
+          sexDiffStyle={sexDiffStyle}
+        />
+      )}
+    </g>
+  );
+}
+
+/** Default dose-grouped: [F M] at each dose */
+function DoseGroupedBars({ cluster, xOffset, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sexDiffStyle }: Omit<ClusterProps, "clusterLabel" | "sexGrouped">) {
+  const sexes = cluster.sexes;
+  const groupW = sexes.length * BAR_W + Math.max(0, sexes.length - 1) * SEX_GAP;
+  return (
+    <g>
       {cluster.groups.map((g, i) => {
         const groupX = xOffset + i * (groupW + DOSE_GAP);
         return (
           <g key={`${g.doseLevel}-${i}`}>
             {sexes.map((sex, sexIdx) => {
               const barX = groupX + sexIdx * (BAR_W + SEX_GAP);
-              const data = g.bySex[sex];
               return (
                 <Bar
                   key={sex}
                   x={barX}
-                  data={data}
+                  data={g.bySex[sex]}
                   innerH={innerH}
                   hasSeverity={hasSeverity}
                   mode={mode}
                   yMaxCounts={yMaxCounts}
                   isRecovery={isRecovery}
                   sex={sex}
+                  sexDiffStyle={sexDiffStyle}
                 />
               );
             })}
-            {/* Dose label below */}
             <text
               x={groupX + groupW / 2}
               y={PADDING_TOP + innerH + 14}
               fontSize={9}
-              fill="#374151"
+              fill={g.doseColor ?? "#374151"}
+              fontWeight={500}
               textAnchor="middle"
             >
               {g.doseLabel}
             </text>
-            {/* Sex letters under each bar (multi-sex only) */}
-            {sexes.length > 1 && sexes.map((sex, sexIdx) => {
-              const barX = groupX + sexIdx * (BAR_W + SEX_GAP);
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+/** Sex-grouped: [all F doses] gap [all M doses]
+ *  Two-tier bottom border: sex-colored edge (top), dose-colored edge (bottom), then dose label. */
+function SexGroupedBars({ cluster, xOffset, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sexDiffStyle }: Omit<ClusterProps, "clusterLabel" | "sexGrouped">) {
+  const sexes = cluster.sexes;
+  const numDoses = cluster.groups.length;
+  const sexGroupW = numDoses * BAR_W + Math.max(0, numDoses - 1) * DOSE_INNER_GAP;
+  const baseY = PADDING_TOP + innerH;
+
+  return (
+    <g>
+      {sexes.map((sex, sexIdx) => {
+        const groupX = xOffset + sexIdx * (sexGroupW + SEX_GROUP_GAP);
+        return (
+          <g key={sex}>
+            {cluster.groups.map((g, doseIdx) => {
+              const barX = groupX + doseIdx * (BAR_W + DOSE_INNER_GAP);
               return (
-                <text
-                  key={`sex-${sex}`}
-                  x={barX + BAR_W / 2}
-                  y={PADDING_TOP + innerH + 25}
-                  fontSize={8}
-                  fill={sex === "F" ? "#C62828" : "#1565C0"}
-                  textAnchor="middle"
-                  fontWeight={500}
-                >
-                  {sex}
-                </text>
+                <g key={`${g.doseLevel}-${doseIdx}`}>
+                  <Bar
+                    x={barX}
+                    data={g.bySex[sex]}
+                    innerH={innerH}
+                    hasSeverity={hasSeverity}
+                    mode={mode}
+                    yMaxCounts={yMaxCounts}
+                    isRecovery={isRecovery}
+                    sex={sex}
+                    sexDiffStyle={sexDiffStyle}
+                  />
+                  {/* Dose abbreviation label */}
+                  <text
+                    x={barX + BAR_W / 2}
+                    y={baseY + 14}
+                    fontSize={8}
+                    fill={g.doseColor ?? "#6b7280"}
+                    fontWeight={500}
+                    textAnchor="middle"
+                    fontFamily="ui-monospace, monospace"
+                  >
+                    {g.doseAbbrev}
+                  </text>
+                </g>
               );
             })}
           </g>
@@ -505,6 +596,7 @@ interface BarProps {
   yMaxCounts: number;
   isRecovery: boolean;
   sex: string;
+  sexDiffStyle: SexDiffStyle;
 }
 
 interface Segment {
@@ -522,33 +614,17 @@ interface Segment {
   textColor: string;
 }
 
-function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex }: BarProps) {
+function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, sexDiffStyle }: BarProps) {
   const baseY = PADDING_TOP + innerH;
   const titleId = useId();
 
-  // Not examined: render distinct NE marker.
-  // Visually distinct from "examined, 0 affected" (which shows a dashed envelope outline):
-  //   - NE: faded tinted slot + "NE" italic text, no envelope, no baseline tick
-  //   - 0 affected: full dashed envelope outline, no fill
+  // Not examined: no bar, just "NE" label + group N + sex edge.
   if (!data || data.n === 0) {
-    const slotH = innerH * 0.35;
-    const slotY = baseY - slotH;
     return (
       <g>
-        <rect
-          x={x}
-          y={slotY}
-          width={BAR_W}
-          height={slotH}
-          fill="#F3F4F6"
-          stroke="#E5E7EB"
-          strokeWidth={0.5}
-          strokeDasharray="2 3"
-          rx={2}
-        />
         <text
           x={x + BAR_W / 2}
-          y={slotY + slotH / 2 + 3}
+          y={baseY - 10}
           fontSize={9}
           fill={NE_COLOR}
           textAnchor="middle"
@@ -557,6 +633,14 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex }
         >
           NE
         </text>
+        {/* Sex edge */}
+        {sexDiffStyle === "edge" && (
+          <line
+            x1={x} x2={x + BAR_W} y1={baseY} y2={baseY}
+            stroke={getSexColor(sex)} strokeWidth={2.5}
+            style={{ pointerEvents: "none" }}
+          />
+        )}
       </g>
     );
   }
@@ -648,10 +732,9 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex }
         y={baseY - envelopeH}
         width={BAR_W}
         height={envelopeH}
-        fill="rgba(0,0,0,0.015)"
+        fill={affected > 0 ? "rgba(0,0,0,0.015)" : "#FFFFFF"}
         stroke={ENVELOPE_STROKE}
-        strokeWidth={1}
-        strokeDasharray={ENVELOPE_DASH}
+        strokeWidth={0.5}
         rx={2}
       />
 
@@ -725,22 +808,47 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex }
         )
       )}
 
-      {/* Summary label above the envelope: always raw counts.
-       * In % mode the bar HEIGHT encodes the percentage, so the label adds the
-       * raw n that the percentage is computed against (avoids redundancy with
-       * height + adds the missing denominator context). */}
-      {(affected > 0 || !hasSeverity) && (
-        <text
-          x={x + BAR_W / 2}
-          y={baseY - envelopeH - 2}
-          fontSize={8}
-          fill="#6B7280"
-          textAnchor="middle"
-          fontFamily="ui-monospace, monospace"
-        >
-          {`${affected}/${n}`}
-        </text>
+      {/* Sex differentiation overlay — covers the FULL envelope */}
+      {envelopeH > 0 && sexDiffStyle === "dashed" && (
+        <rect
+          x={x + 0.5} y={baseY - envelopeH} width={BAR_W - 1} height={envelopeH}
+          fill="none" stroke={getSexColor(sex)} strokeWidth={1} strokeDasharray="3 2" rx={2}
+          style={{ pointerEvents: "none" }}
+        />
       )}
+      {envelopeH > 0 && sexDiffStyle === "solid" && (
+        <rect
+          x={x + 0.5} y={baseY - envelopeH} width={BAR_W - 1} height={envelopeH}
+          fill="none" stroke={getSexColor(sex)} strokeWidth={1.5} rx={2}
+          style={{ pointerEvents: "none" }}
+        />
+      )}
+      {envelopeH > 0 && sexDiffStyle === "tint" && (
+        <rect
+          x={x + 0.5} y={baseY - envelopeH} width={BAR_W - 1} height={envelopeH}
+          fill={getSexColor(sex)} fillOpacity={0.08} stroke="none" rx={2}
+          style={{ pointerEvents: "none" }}
+        />
+      )}
+      {envelopeH > 0 && sexDiffStyle === "edge" && (
+        <line
+          x1={x} x2={x + BAR_W} y1={baseY} y2={baseY}
+          stroke={getSexColor(sex)} strokeWidth={2.5}
+          style={{ pointerEvents: "none" }}
+        />
+      )}
+
+      {/* Summary label above the envelope — always shown when animals exist */}
+      <text
+        x={x + BAR_W / 2}
+        y={baseY - envelopeH - 2}
+        fontSize={8}
+        fill="#6B7280"
+        textAnchor="middle"
+        fontFamily="ui-monospace, monospace"
+      >
+        {`${affected}/${n}`}
+      </text>
     </g>
   );
 }
@@ -763,40 +871,29 @@ function ClusterDivider({ x, innerH }: { x: number; innerH: number }) {
 
 // ─── Toggle ──────────────────────────────────────────────────────────
 
+const MODE_OPTIONS = [
+  { value: "counts" as const, label: "N" },
+  { value: "percent" as const, label: "%" },
+];
+
 function ModeToggle({ mode, onChange }: { mode: DisplayMode; onChange: (m: DisplayMode) => void }) {
-  return (
-    <div className="inline-flex items-center rounded-full bg-muted/50 p-0.5 text-[10px]">
-      <button
-        type="button"
-        onClick={() => onChange("counts")}
-        className={
-          mode === "counts"
-            ? "rounded-full bg-background px-2 py-0.5 font-medium text-foreground shadow-sm"
-            : "rounded-full px-2 py-0.5 text-muted-foreground hover:text-foreground"
-        }
-      >
-        Counts
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("percent")}
-        className={
-          mode === "percent"
-            ? "rounded-full bg-background px-2 py-0.5 font-medium text-foreground shadow-sm"
-            : "rounded-full px-2 py-0.5 text-muted-foreground hover:text-foreground"
-        }
-      >
-        %
-      </button>
-    </div>
-  );
+  return <PanePillToggle value={mode} options={MODE_OPTIONS} onChange={onChange} />;
 }
 
 // ─── Legends ─────────────────────────────────────────────────────────
 
-function SeverityLegend() {
+function SexLegendEntries() {
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+    <>
+      <span className="whitespace-nowrap font-medium" style={{ color: getSexColor("F") }}>F</span>
+      <span className="whitespace-nowrap font-medium" style={{ color: getSexColor("M") }}>M</span>
+    </>
+  );
+}
+
+function SeverityLegend({ multiSex }: { multiSex: boolean }) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
       {SEV_GRADE_LABELS.map((label, i) => (
         <span key={label} className="flex items-center gap-0.5 whitespace-nowrap">
           <span
@@ -817,13 +914,14 @@ function SeverityLegend() {
         <span className="font-mono italic" style={{ color: NE_COLOR }}>NE</span>
         <span>not examined</span>
       </span>
+      {multiSex && <SexLegendEntries />}
     </div>
   );
 }
 
-function SolidLegend() {
+function SolidLegend({ multiSex }: { multiSex: boolean }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
       <span className="flex items-center gap-0.5 whitespace-nowrap">
         <span
           className="inline-block h-2 w-2 rounded-sm"
@@ -838,6 +936,7 @@ function SolidLegend() {
         />
         Group N
       </span>
+      {multiSex && <SexLegendEntries />}
     </div>
   );
 }

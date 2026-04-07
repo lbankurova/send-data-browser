@@ -8,7 +8,15 @@
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { ClusterData, DoseGroupData, SexBarData } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
-import { shortDoseLabel } from "@/lib/dose-label-utils";
+import { shortDoseLabel, getDoseDisplayColor } from "@/lib/dose-label-utils";
+
+/** Ultra-short dose label: "C" for control, numeric value for treated. */
+function doseAbbrev(dg: DoseGroup): string {
+  if (dg.is_control) return "C";
+  if (dg.abbreviation) return dg.abbreviation;
+  if (dg.dose_value != null) return String(dg.dose_value);
+  return shortDoseLabel(dg.label, [dg]);
+}
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
 
@@ -55,6 +63,8 @@ export function buildClusterData(
     return {
       doseLevel: dg.dose_level,
       doseLabel: shortDoseLabel(dg.label, doseGroups),
+      doseAbbrev: doseAbbrev(dg),
+      doseColor: getDoseDisplayColor(dg),
       bySex: bySexData,
     };
   });
@@ -118,6 +128,8 @@ export function buildRecoveryClusterData(
     return {
       doseLevel: dg.dose_level,
       doseLabel: doseLabelsFromRows.get(dg.dose_level) ?? shortDoseLabel(dg.label, referenceDoseGroups),
+      doseAbbrev: doseAbbrev(dg),
+      doseColor: getDoseDisplayColor(dg),
       bySex: bySexData,
     };
   });

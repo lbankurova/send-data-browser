@@ -83,16 +83,6 @@ export function IncidenceDoseCharts({
     [hasSeverity, recoveryForChart, incidenceRows, findingName, domain, doseGroups],
   );
 
-  // Shared dose unit (e.g. "mg/kg") rendered once on the X axis. Prefer the
-  // backend-computed `shared_unit` (null if mixed); fall back to the first
-  // treated group's `dose_unit`.
-  const xAxisUnit = useMemo(() => {
-    const shared = doseGroups.find((dg) => dg.shared_unit)?.shared_unit;
-    if (shared) return shared;
-    const firstWithUnit = doseGroups.find((dg) => dg.dose_value != null && dg.dose_unit);
-    return firstWithUnit?.dose_unit ?? undefined;
-  }, [doseGroups]);
-
   if (mainCluster.groups.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
@@ -108,7 +98,8 @@ export function IncidenceDoseCharts({
           main={mainCluster}
           recovery={recoveryForChart}
           hasSeverity={hasSeverity}
-          xAxisUnit={xAxisUnit ?? undefined}
+          sexDiffStyle="edge"
+          sexGrouped
         />
       </div>
 
