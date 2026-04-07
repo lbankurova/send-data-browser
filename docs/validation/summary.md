@@ -1,7 +1,7 @@
 # Validation Summary
 
-**Engine:** commit `48b3f141` (2026-04-07)
-**Generated:** 2026-04-07T15:06:37.474Z
+**Engine:** commit `595be500` (2026-04-07)
+**Generated:** 2026-04-07T18:50:51.888Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|

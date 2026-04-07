@@ -802,9 +802,10 @@ def _is_equivocal_safety_pharm(finding: dict) -> bool:
         return True
 
     # E5: Bayesian posterior in detection-limited incidence
-    # 0.80 threshold (below 0.90 treatment_related gate)
+    # 0.85 threshold (below 0.90 treatment_related gate); raised from 0.80
+    # after Jeffreys prior migration to exclude N=2 single-animal noise
     if (finding.get("detection_limited") is True
-            and (finding.get("bayesian_posterior") or 0) >= 0.80):
+            and (finding.get("bayesian_posterior") or 0) >= 0.85):
         return True
 
     return False

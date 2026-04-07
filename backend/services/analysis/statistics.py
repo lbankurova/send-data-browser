@@ -732,21 +732,26 @@ def bayesian_incidence_posterior(
     affected_treat: int, n_treat: int,
     affected_ctrl: int, n_ctrl: int,
 ) -> float:
-    """P(p_treat > p_ctrl | data) via Beta-Binomial conjugate with uniform prior.
+    """P(p_treat > p_ctrl | data) via Beta-Binomial conjugate with Jeffreys prior.
 
-    Uses Beta(1,1) (uniform) prior on both groups. Posterior for each group
-    is Beta(affected + 1, n - affected + 1). The probability that the treated
-    rate exceeds control is computed via numerical integration of the joint
+    Uses Beta(0.5, 0.5) (Jeffreys) prior on both groups -- the engine-wide
+    convention for incidence posteriors. Posterior for each group is
+    Beta(affected + 0.5, n - affected + 0.5). The probability that the treated
+    rate exceeds control is computed via Monte Carlo sampling of the joint
     posterior.
 
-    At 2/3 vs 0/3 this returns 0.929 — exposing the signal that Fisher's
+    At 2/3 vs 0/3 this returns ~0.961 -- exposing the signal that Fisher's
     exact (p=0.40) cannot detect at N=3.
+
+    Jeffreys is the engine-wide convention for incidence posteriors.
+    Do not introduce a parallel helper with a different prior without
+    scientist sign-off.
     """
     from scipy.stats import beta as beta_dist
 
-    # Posterior parameters (uniform prior: alpha=1, beta=1)
-    a_t, b_t = affected_treat + 1, n_treat - affected_treat + 1
-    a_c, b_c = affected_ctrl + 1, n_ctrl - affected_ctrl + 1
+    # Posterior parameters (Jeffreys prior: alpha=0.5, beta=0.5)
+    a_t, b_t = affected_treat + 0.5, n_treat - affected_treat + 0.5
+    a_c, b_c = affected_ctrl + 0.5, n_ctrl - affected_ctrl + 0.5
 
     # P(p_t > p_c) via Monte Carlo (fast, accurate to ~0.001 at 100k samples)
     rng = np.random.default_rng(42)
