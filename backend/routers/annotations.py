@@ -25,6 +25,7 @@ VALID_SCHEMA_TYPES = {
     "compound-profile",
     "study-type-override",
     "animal-exclusions",
+    "pathologist-source",
 }
 
 VALID_PROGRAM_SCHEMA_TYPES = {
