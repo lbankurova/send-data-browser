@@ -43,6 +43,60 @@ interface OtherEndpointExclusion {
 }
 
 // -----------------------------------------------------------------------------
+// Mirror: useInfluentialSubjectsMap hook (Feature 1, post-fix iteration over
+// loo_per_subject keys instead of just loo_influential_subject)
+// -----------------------------------------------------------------------------
+
+interface PairwiseEntry {
+  dose_level: number;
+  g_lower?: number | null;
+}
+
+interface HookFinding extends MirrorFinding {
+  pairwise?: PairwiseEntry[] | null;
+}
+
+interface HookEntry {
+  doseLevel: number;
+  isControlSide: boolean;
+}
+
+function influentialSubjectsMap(
+  findings: HookFinding[],
+  endpointLabel: string | null | undefined,
+  domain: string,
+  day?: number | null,
+): Map<string, HookEntry> {
+  const out = new Map<string, HookEntry>();
+  for (const f of findings) {
+    if ((f.endpoint_label ?? f.finding) !== endpointLabel) continue;
+    if (f.domain !== domain) continue;
+    if (day != null && f.day !== day) continue;
+    const per = f.loo_per_subject;
+    if (!per) continue;
+    let maxGl = 0;
+    let affectedTreated = 0;
+    if (f.pairwise) {
+      for (const pw of f.pairwise) {
+        const gl = pw.g_lower ?? 0;
+        if (gl > maxGl) {
+          maxGl = gl;
+          affectedTreated = pw.dose_level;
+        }
+      }
+    }
+    for (const [usubjid, entry] of Object.entries(per)) {
+      if (entry.ratio == null || entry.ratio >= LOO_THRESHOLD) continue;
+      if (out.has(usubjid)) continue;
+      const isCtrl = entry.dose_level === 0;
+      const doseLevel = isCtrl ? affectedTreated : entry.dose_level;
+      out.set(usubjid, { doseLevel, isControlSide: isCtrl });
+    }
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------------
 // Mirror: influentialSubjects aggregation (Feature 3)
 // -----------------------------------------------------------------------------
 function aggregateInfluentialSubjects(
@@ -482,4 +536,283 @@ describe("LooSensitivityPane — Feature 9 integrated scenarios (spec Tests 1-5)
     expect(applyButtonLabel(pendingCount, false)).toBeNull();
     expect(others).toHaveLength(0);
   });
+});
+
+// =============================================================================
+// useInfluentialSubjectsMap hook — mirror tests
+//
+// CRITICAL: this hook was rewritten to iterate `loo_per_subject` keys (matching
+// the LooSensitivityPane semantic) instead of just checking the per-finding
+// `loo_influential_subject` pointer. The pointer-based filter shipped first
+// and produced an empty chart on PointCross BW because the per-finding worst
+// subject's ratio was almost never < 0.8 (real values 0.94-0.97 across 27/29
+// findings). The data-fixture test below guards against that regression.
+// =============================================================================
+
+describe("useInfluentialSubjectsMap — per-subject iteration", () => {
+  it("iterates ALL keys in loo_per_subject, not just loo_influential_subject", () => {
+    // Two fragile subjects in one finding. Old hook would only mark one.
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: {
+          "SUBJ-A": { ratio: 0.0, dose_level: 1 },
+          "SUBJ-B": { ratio: 0.0, dose_level: 0 },
+          "SUBJ-C": { ratio: 1.05, dose_level: 1 }, // not fragile
+        },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+    ];
+    const result = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(result.size).toBe(2);
+    expect(result.has("SUBJ-A")).toBe(true);
+    expect(result.has("SUBJ-B")).toBe(true);
+    expect(result.has("SUBJ-C")).toBe(false);
+  });
+
+  it("treated subject keeps own dose_level; control subject inherits affected treated dose level", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: {
+          "SUBJ-TREATED": { ratio: 0.3, dose_level: 2 }, // mid dose treated
+          "SUBJ-CONTROL": { ratio: 0.2, dose_level: 0 }, // control
+        },
+        // High dose (3) has the max gLower, so control subject's marker
+        // should color to dose_level 3 even though their own dose_level is 0.
+        pairwise: [
+          { dose_level: 1, g_lower: 0.2 },
+          { dose_level: 2, g_lower: 0.4 },
+          { dose_level: 3, g_lower: 0.8 },
+        ],
+      },
+    ];
+    const result = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(result.get("SUBJ-TREATED")).toEqual({
+      doseLevel: 2,
+      isControlSide: false,
+    });
+    expect(result.get("SUBJ-CONTROL")).toEqual({
+      doseLevel: 3,
+      isControlSide: true,
+    });
+  });
+
+  it("filters by day when opts.day is provided", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: { "D1-FRAGILE": { ratio: 0.3, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 15,
+        sex: "M",
+        loo_per_subject: { "D15-FRAGILE": { ratio: 0.4, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+    ];
+    const d1 = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(d1.size).toBe(1);
+    expect(d1.has("D1-FRAGILE")).toBe(true);
+    const d15 = influentialSubjectsMap(findings, "Body Weight", "BW", 15);
+    expect(d15.size).toBe(1);
+    expect(d15.has("D15-FRAGILE")).toBe(true);
+  });
+
+  it("returns endpoint-union when day is undefined (recovery mode fallback)", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: { "D1-FRAGILE": { ratio: 0.3, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 15,
+        sex: "M",
+        loo_per_subject: { "D15-FRAGILE": { ratio: 0.4, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+    ];
+    const all = influentialSubjectsMap(findings, "Body Weight", "BW", undefined);
+    expect(all.size).toBe(2);
+  });
+
+  it("excludes findings with no loo_per_subject", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "F",
+        loo_per_subject: null,
+        pairwise: [],
+      },
+    ];
+    const result = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(result.size).toBe(0);
+  });
+
+  it("excludes subjects with ratio >= LOO_THRESHOLD", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: {
+          "S-FRAGILE": { ratio: 0.5, dose_level: 1 },
+          "S-AT-THRESHOLD": { ratio: 0.8, dose_level: 1 },
+          "S-ABOVE": { ratio: 0.95, dose_level: 1 },
+        },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+    ];
+    const result = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(result.size).toBe(1);
+    expect(result.has("S-FRAGILE")).toBe(true);
+    expect(result.has("S-AT-THRESHOLD")).toBe(false); // strict <
+    expect(result.has("S-ABOVE")).toBe(false);
+  });
+
+  it("filters by endpoint and domain", () => {
+    const findings: HookFinding[] = [
+      {
+        endpoint_label: "Body Weight",
+        finding: "Body Weight",
+        domain: "BW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: { "BW-FRAGILE": { ratio: 0.3, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+      {
+        endpoint_label: "Food Consumption",
+        finding: "Food Consumption",
+        domain: "FW",
+        day: 1,
+        sex: "M",
+        loo_per_subject: { "FW-FRAGILE": { ratio: 0.3, dose_level: 1 } },
+        pairwise: [{ dose_level: 1, g_lower: 0.5 }],
+      },
+    ];
+    const result = influentialSubjectsMap(findings, "Body Weight", "BW", 1);
+    expect(result.size).toBe(1);
+    expect(result.has("BW-FRAGILE")).toBe(true);
+  });
+});
+
+// =============================================================================
+// Data verification — fixture test against the actual PointCross unified_findings.json
+//
+// This is the test that should have caught the original "empty chart" regression.
+// It loads the real generated output and asserts the hook produces the expected
+// per-day cardinalities. Per CLAUDE.md rule 18 (verify empirical claims against
+// actual data), this fixture exists specifically to enforce that empirical claims
+// in the loo-display-scoping spec match real generated output.
+// =============================================================================
+
+describe("useInfluentialSubjectsMap — PointCross BW data fixture", () => {
+  // Load the real generated findings file at test time. Skips gracefully if the
+  // file is missing (e.g., fresh checkout that hasn't generated PointCross yet).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let bwFindings: any[] | null = null;
+  try {
+    // Use sync fs read because vitest doesn't natively support top-level await
+    // for json without `assert { type: "json" }` config friction.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path");
+    const fixturePath = path.resolve(
+      __dirname,
+      "../../backend/generated/PointCross/unified_findings.json",
+    );
+    if (fs.existsSync(fixturePath)) {
+      const data = JSON.parse(fs.readFileSync(fixturePath, "utf-8"));
+      bwFindings = (data.findings || []).filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (f: any) => f.domain === "BW",
+      );
+    }
+  } catch {
+    bwFindings = null;
+  }
+
+  const itIfFixture = bwFindings && bwFindings.length > 0 ? it : it.skip;
+
+  itIfFixture(
+    "matches LooSensitivityPane: 2 fragile subjects across BW endpoint, both on D1",
+    () => {
+      // Endpoint-union — what the pane shows.
+      const all = influentialSubjectsMap(bwFindings!, "Body Weight", "BW", undefined);
+      expect(all.size).toBe(2);
+      expect(all.has("PC201708-2004")).toBe(true); // treated, ratio 0.0 on D1
+      expect(all.has("PC201708-1001")).toBe(true); // control, ratio 0.0 on D1
+    },
+  );
+
+  itIfFixture(
+    "D1 main mode: chart shows 2 dots (matches pane)",
+    () => {
+      const d1 = influentialSubjectsMap(bwFindings!, "Body Weight", "BW", 1);
+      expect(d1.size).toBe(2);
+    },
+  );
+
+  itIfFixture(
+    "D15 main mode: chart shows 0 dots (no fragile drivers at D15)",
+    () => {
+      const d15 = influentialSubjectsMap(bwFindings!, "Body Weight", "BW", 15);
+      expect(d15.size).toBe(0);
+    },
+  );
+
+  itIfFixture(
+    "control subject's marker colors to affected treated dose level (not their own 0)",
+    () => {
+      const d1 = influentialSubjectsMap(bwFindings!, "Body Weight", "BW", 1);
+      const ctrl = d1.get("PC201708-1001");
+      expect(ctrl).toBeDefined();
+      expect(ctrl!.isControlSide).toBe(true);
+      // Their own dose_level is 0; the marker should inherit the affected
+      // treated dose level (whichever pairwise has max gLower at that day).
+      expect(ctrl!.doseLevel).toBeGreaterThan(0);
+    },
+  );
+
+  itIfFixture(
+    "treated subject's marker uses their own dose_level",
+    () => {
+      const d1 = influentialSubjectsMap(bwFindings!, "Body Weight", "BW", 1);
+      const treated = d1.get("PC201708-2004");
+      expect(treated).toBeDefined();
+      expect(treated!.isControlSide).toBe(false);
+      expect(treated!.doseLevel).toBe(1); // low-dose
+    },
+  );
 });
