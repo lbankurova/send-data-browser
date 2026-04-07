@@ -1,0 +1,32 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C120534		Yes	SEND Respiratory Test Code	SRETSTCD	SEND Respiratory Test Code	Terminology related to the non-clinical respiratory test code codelist.	CDISC SEND Respiratory Test Code Terminology
+C120927	C120534		SEND Respiratory Test Code	AIRRES	Airway Resistance	A measurement of respiratory tract resistance to airflow during inspiration and expiration.	Airway Resistance
+C158354	C120534		SEND Respiratory Test Code	AT	Apnea Time	A measurement of the apnea duration, determined by total sleep time minus the sum of inspiration time and expiration time.	Apnea Time
+C120928	C120534		SEND Respiratory Test Code	DEPTHRES	Depth of Respiration	An assessment of the amount of air that is being inspired and expired.	Depth of Respiration
+C158353	C120534		SEND Respiratory Test Code	EF50	Expiratory Flow 50%	The rate of gas flow during exhalation, beginning at the point at which tidal volume is decreased by 50%.	Expiratory Flow 50%
+C158355	C120534		SEND Respiratory Test Code	ELTMBB	Elapsed Time Between Breaths	The amount of time between one breath to the next breath calculated by inspiration time plus expiration time, per single respiratory cycle.	Elapsed Time Between Breaths
+C120929	C120534		SEND Respiratory Test Code	ENDEXPPR	End Expiratory Pause	The brief period at the end of exhalation when respiration ceases to adjust for oxygen consumption. The length of the pause varies with oxygen demand.	End Expiratory Pause
+C120930	C120534		SEND Respiratory Test Code	ENDINSPR	End Inspiratory Pause	The brief period at the end of inhalation when respiration ceases to adjust for oxygen consumption. The length of the pause varies with oxygen demand.	End Inspiratory Pause
+C120931	C120534		SEND Respiratory Test Code	EXPRELTM	Expiration Relaxation Time	The time required to exhale 63.2% of the total expiratory volume, as measured from the start of exhalation.	Expiration Relaxation Time
+C120932	C120534		SEND Respiratory Test Code	EXPTIME	Expiration Time	The amount of time it takes for exhalation of air to occur.	Expiratory Time
+C120933	C120534		SEND Respiratory Test Code	FEV	Forced Expiratory Volume	Volume of air that a subject with fully inflated lungs can breathe out per unit time.	Forced Expiratory Volume
+C120934	C120534		SEND Respiratory Test Code	INSTIME	Inspiration Time	The amount of time it takes for inhalation of air to occur.	Inspiratory Time
+C120935	C120534		SEND Respiratory Test Code	MPAP	Mean Pulmonary Arterial Pressure	The mean pressure of the blood within the pulmonary circulation. The pulmonary pressure may be directly measured by insertion of an intra-arterial catheter connected to a transducer.	Mean Pulmonary Arterial Pressure
+C120936	C120534		SEND Respiratory Test Code	MV	Minute Ventilation; Minute Volume; VE	The amount of gas inspired or expired in one minute.	Minute Volume
+C163739	C120534		SEND Respiratory Test Code	MVCR	Minute Volume Adjusted; Minute Volume, Corrected; Mvadj	A measurement of the minute volume, which has been calculated using the corrected tidal volume.	Corrected Minute Volume
+C186263	C120534		SEND Respiratory Test Code	MVKG	Minute Volume per Kilogram	The amount of gas inspired or expired in one minute divided by body weight of the subject in kilograms.	Minute Volume per Kilogram
+C41372	C120534		SEND Respiratory Test Code	PEF	Peak Expiratory Flow	The maximum rate of exhalation.	Peak Expiratory Flow
+C186264	C120534		SEND Respiratory Test Code	PEFKG	Peak Expiratory Flow per Kilogram	Maximum flow rate generated during expiration divided by body weight of the subject in kilograms.	Peak Expiratory Flow per Kilogram
+C120937	C120534		SEND Respiratory Test Code	PENH	Enhanced Pause	A unitless index of airway hyperreactivity used to evaluate changes in the shape of the airflow pattern of a subject using a whole-body flow plethysmograph.	Enhanced Pause
+C186265	C120534		SEND Respiratory Test Code	PIFKG	Peak Inspiratory Flow per Kilogram	Maximum flow rate generated during inspiration divided by body weight of the subject in kilograms.	Peak Inspiratory Flow per Kilogram
+C120938	C120534		SEND Respiratory Test Code	PKEXPPR	Peak Expiratory Pressure	The peak pressure in the lungs during expiration.	Peak Expiratory Pressure
+C120939	C120534		SEND Respiratory Test Code	PKINSFL	Peak Inspiratory Flow	The maximum rate of inhalation.	Peak Inspiratory Flow Rate
+C120940	C120534		SEND Respiratory Test Code	PKINSPR	Peak Inspiratory Pressure	The maximum pressure of inhaled air.	Peak Inspiratory Pressure
+C120941	C120534		SEND Respiratory Test Code	PULDIABP	Pulmonary Diastolic Pressure	The blood pressure in the pulmonary artery after the contraction of the heart while the chambers of the heart refill with blood.	Pulmonary Artery Diastolic Pressure
+C120942	C120534		SEND Respiratory Test Code	PULMCOMP	Pulmonary Compliance	The elasticity of the pulmonary walls.	Pulmonary Compliance
+C120943	C120534		SEND Respiratory Test Code	PULSYSBP	Pulmonary Systolic Pressure	The blood pressure in the pulmonary artery during the contraction of the left ventricle of the heart.	Pulmonary Artery Systolic Pressure
+C49678	C120534		SEND Respiratory Test Code	RESPRATE	Respiratory Rate	The rate of breathing (inhalation and exhalation) measured within in a unit time, usually expressed as breaths per minute. (NCI)	Respiratory Rate
+C186266	C120534		SEND Respiratory Test Code	TDVOLKG	Tidal Volume per Kilogram	The volume of air moved into and out of the lungs during breathing at rest divided by body weight of the subject in kilograms.	Tidal Volume per Kilogram
+C111324	C120534		SEND Respiratory Test Code	TIDALVOL	Tidal Volume	The volume of air moved into and out of the lungs during breathing at rest.	Tidal Volume
+C111325	C120534		SEND Respiratory Test Code	TLUNGCAP	Total Lung Capacity	The total volume of air in the lungs after maximum inhalation.	Total Lung Capacity
+C163740	C120534		SEND Respiratory Test Code	TVCR	Tidal Volume, Adjusted; Tidal Volume, Corrected; Tvadj	A measurement of the tidal volume, corrected using an adjustment factor that takes into account temperature, pressure, and humidity.	Corrected Tidal Volume

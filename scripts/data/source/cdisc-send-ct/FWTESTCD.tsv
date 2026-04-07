@@ -1,0 +1,10 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C89970		Yes	Food and Water Consumption Test Code	FWTESTCD	Food and Water Consumption Test Code	Terminology for the test codes concerned with the subject's consumption of food and/or water.	CDISC SEND Food and Water Consumption Test Code Terminology
+C90384	C89970		Food and Water Consumption Test Code	FC	Food Consumption	A measurement or assessment of a subject's nutritional intake.	Food Consumption
+C129003	C89970		Food and Water Consumption Test Code	FCQUAL	Food Consumption, Qualitative	A qualitative or semi-quantitative measurement of a subject's nutritional intake.	Qualitative Food Consumption
+C225771	C89970		Food and Water Consumption Test Code	FCQUANT	Food Consumption, Quantitative	A quantitative measurement of a subject's nutritional intake.	Quantitative Food Consumption
+C90385	C89970		Food and Water Consumption Test Code	FCRELBW	Food Consumption Relative to Body Wt	The ratio or percentage of nutritional intake to body weight. (NCI)	Food Consumption Relative to Body Weight
+C90484	C89970		Food and Water Consumption Test Code	WC	Water Consumption	A measurement or assessment of a subject's water intake.	Water Consumption
+C198402	C89970		Food and Water Consumption Test Code	WCQUAL	Water Consumption, Qualitative	A qualitative or semi-quantitative measurement of a subject's water intake.	Qualitative Water Consumption
+C225772	C89970		Food and Water Consumption Test Code	WCQUANT	Water Consumption, Quantitative	A quantitative measurement of a subject's water intake.	Quantitative Water Consumption
+C90485	C89970		Food and Water Consumption Test Code	WCRELBW	Water Consumption Relative to Body Wt	The ratio or percentage of water intake to body weight. (NCI)	Water Consumption Relative to Body Weight

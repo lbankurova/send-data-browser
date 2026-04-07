@@ -1,0 +1,542 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C77529		Yes	Specimen	SPEC	Specimen	Terminology related to any material sample taken from a biological entity.	CDISC SEND Biospecimens Terminology
+C77608	C77529		Specimen	ABDOMINAL WALL		The tissue that surrounds the organs present in the abdominal cavity.	Abdominal Wall
+C98702	C77529		Specimen	ABOMASUM		The glandular stomach of ruminants.	Abomasum
+C12472	C77529		Specimen	ADIPOSE TISSUE	Body Fat; Fat Tissue	Connective tissue consisting primarily of adipocytes (fat cells) and supporting structural matrix.	Adipose Tissue
+C32235	C77529		Specimen	ADIPOSE TISSUE, BROWN	BAT; Brown Fat	Brown-colored adipose tissue that contains numerous small droplets of lipids and high numbers of mitochondria.	Brown Adipose Tissue
+C33889	C77529		Specimen	ADIPOSE TISSUE, WHITE	White Fat	White-colored adipose tissue that is predominantly composed of cells with a large single vacuole containing lipid.	White Adipose Tissue
+C120926	C77529		Specimen	AIR SAC		A part of the respiratory system in multiple species (predominantly avian) which are variably connected with the lung.	Air Sac
+C150891	C77529		Specimen	ALVEOLAR AIR		The gas from the alveoli of the lungs.	Alveolar Air
+C78729	C77529		Specimen	ARTERIAL BLOOD		Oxygenated blood which is transported with nutrients to body tissues through the arterial system. The exception is blood within the pulmonary artery which carries deoxygenated blood to the lungs. (NCI)	Arterial Blood
+C12372	C77529		Specimen	ARTERY	Artery	A blood vessel that carries blood away from the heart. (NCI)	Artery
+C12669	C77529		Specimen	ARTERY, AORTA		The major artery of the body; it arises from the left ventricle of the heart and terminally bifurcates into the common iliac arteries.	Aorta
+C52849	C77529		Specimen	ARTERY, AURICULAR		One of the arteries of the pinna; in general it arises from the internal carotid artery or the superficial temporal artery.	Auricular Artery
+C12681	C77529		Specimen	ARTERY, BRACHIAL		An artery of the forelimb; in general it arises from the axillary artery and branches to form the radial and ulnar arteries.	Brachial Artery
+C32814	C77529		Specimen	ARTERY, BRACHIOCEPHALIC	Innominate Artery	An artery of the mediastinum; in general it arises from the aortic arch and branches to form the right subclavian artery and one or both common carotid arteries.	Innominate Artery
+C12687	C77529		Specimen	ARTERY, CAROTID	Common Carotid Artery	An artery of the mediastinum and neck; in general it arises as a primary or secondary branch of the aortic arch and branches into the internal and external carotid arteries.	Common Carotid Artery
+C12843	C77529		Specimen	ARTERY, CORONARY		One of the arteries of the heart; in general it arises from the aortic root and supplies the myocardium.	Coronary Artery
+C12715	C77529		Specimen	ARTERY, FEMORAL		An artery of the thigh; in general it arises from the external iliac artery distal to the inguinal ligment and continues as the popliteal artery.	Femoral Artery
+C12733	C77529		Specimen	ARTERY, ILIAC		An artery of the pelvic region and legs/hindlimbs; in general it arises from the bifurcation of the aorta and branches into the external and internal iliac arteries.	Iliac Artery
+C52941	C77529		Specimen	ARTERY, INTERNAL THORACIC		An artery of the thoracic wall; in general it arises from the subclavian artery and branches into the musculophrenic and superior epigastric arteries.	Internal Mammary Artery
+C52975	C77529		Specimen	ARTERY, MESENTERIC		One of the arteries of the abdomen; in general it arises from the abdominal aorta and supplies blood mainly to the intestines.	Mesenteric Artery
+C12774	C77529		Specimen	ARTERY, PULMONARY		One of the arteries of the thorax; in general it arises from the pulmonary trunk and branches into the lungs.	Pulmonary Artery
+C12778	C77529		Specimen	ARTERY, RENAL		One of the arteries of the abdomen; in general it arises from the abdominal aorta and supplies blood to the kidney.	Renal Artery
+C33587	C77529		Specimen	ARTERY, SPINAL		One of the arteries of the spine; in general it arises from the vertebral artery and supplies blood to the spinal cord.	Spinal Artery
+C33643	C77529		Specimen	ARTERY, SUBCLAVIAN		One of the arteries of the thorax; in general it arises from the brachiocephalic artery or the aortic arch and branches into several arteries to supply blood to the head, neck, and arm/forelimb.	Subclavian Artery
+C13347	C77529		Specimen	ASPIRATE		Fluid withdrawn from a body cavity, cyst, or tumor. (NCI)	Aspirate
+C13192	C77529		Specimen	BILE		Fluid composed of waste products, bile acids, salts, cholesterol, and electrolytes. It is produced by the liver and may be stored in the gallbladder (if present).	Bile
+C70699	C77529		Specimen	BIOSPECIMEN	Biological Sample; Biological Specimen; Biospecimen; Sample	Any material collected from a biological entity for testing, diagnostic, propagation, treatment, or research purposes.	Biospecimen
+C25444	C77529		Specimen	BODY CAVITY		A natural hollow or sinus within the body. (NCI)	Body Cavity
+C12664	C77529		Specimen	BODY CAVITY, ABDOMINAL	Abdomen	The body cavity between the thoracic and pelvic cavities in mammals.	Abdomen
+C77638	C77529		Specimen	BODY CAVITY, CRANIAL	Intracranial Cavity	The space that is formed by the bones of the skull, and contains the brain.	Cranial Cavity
+C92208	C77529		Specimen	BODY CAVITY, EXTRAPERITONEAL	Extraperitoneal Area; Extraperitoneal Space	The space of the abdominal and pelvic cavities outside the peritoneum. (NCI)	Extraperitoneal Space
+C12424	C77529		Specimen	BODY CAVITY, NASAL		The upper respiratory tract extending from the nares to the pharynx.	Nasal Cavity
+C12421	C77529		Specimen	BODY CAVITY, ORAL	Buccal cavity; Mouth	The cavity of the mouth.	Oral Cavity
+C12347	C77529		Specimen	BODY CAVITY, ORBITAL	Eye Socket; Ocular Orbit; Orbit	The bony cavity that contains the eye and its associated structures.	Orbit
+C12767	C77529		Specimen	BODY CAVITY, PELVIC	Pelvic Region; Pelvis	The bony, basin-shaped structure formed by the bones of the pelvis.	Pelvis
+C38662	C77529		Specimen	BODY CAVITY, PERICARDIAL		The body space between the epicardium and the pericardium.	Pericardial Cavity
+C12769	C77529		Specimen	BODY CAVITY, PERITONEAL		A part of the abdominal cavity that lies between the visceral and parietal peritoneum.	Peritoneal Cavity
+C12840	C77529		Specimen	BODY CAVITY, PLEURAL		A part of the thoracic cavity that lies between the visceral and parietal pleura.	Pleural Cavity
+C12905	C77529		Specimen	BODY CAVITY, THORACIC		The cavity enclosed by the ribs between the diaphragm and the neck.	Thoracic Cavity
+C12431	C77529		Specimen	BONE MARROW		The tissue occupying the spaces of some bones. It consists of blood vessel sinuses and a network of hematopoietic cells.	Bone Marrow
+C77686	C77529		Specimen	BONE MARROW, FEMUR	Bone Marrow, Femoral	Bone marrow in the femoral bone. (NCI)	Bone Marrow, Femur
+C77687	C77529		Specimen	BONE MARROW, HUMERUS		Bone marrow in the humerus bone. (NCI)	Bone Marrow, Humerus
+C77688	C77529		Specimen	BONE MARROW, RIB		Bone marrow in the rib. (NCI)	Bone Marrow, Rib
+C77689	C77529		Specimen	BONE MARROW, SCAPULA		Bone marrow in the scapula. (NCI)	Bone Marrow, Scapula
+C77690	C77529		Specimen	BONE MARROW, STERNUM	Bone Marrow, Sternal	Bone marrow in the sternum. (NCI)	Bone Marrow, Sternum
+C77691	C77529		Specimen	BONE MARROW, TIBIA		Bone marrow in the tibia bone. (NCI)	Bone Marrow, Tibia
+C77692	C77529		Specimen	BONE MARROW, VERTEBRUM	Bone Marrow, Vertebral	Bone marrow in a vertebral bone. (NCI)	Bone Marrow, Vertebral
+C12366	C77529		Specimen	BONE		Calcified connective tissue that forms the skeletal components of the body. (NCI)	Bone
+C32164	C77529		Specimen	BONE, AUDITORY OSSICLES	Ossicles of the Ear	Any of the small bones in the middle ear that transmit acoustic vibrations from the eardrum to the inner ear.	Auditory Ossicle
+C81188	C77529		Specimen	BONE, CALVARIUM		The roof or dome of the skull. (NCI)	Skullcap
+C12688	C77529		Specimen	BONE, CARPAL		Any of the bones of the joint located between the radius and ulna and metacarpus.	Carpal Bone
+C12695	C77529		Specimen	BONE, CLAVICLE		The paired bone that is situated between the sternum and the shoulder.	Clavicle
+C83002	C77529		Specimen	BONE, CONDYLE		A rounded bony projection at the end of the bone. (NCI)	Condyle
+C12717	C77529		Specimen	BONE, FEMUR	Bone, Femoral	The bone positioned between the pelvis and the femorotibial joint.	Femur
+C135523	C77529		Specimen	BONE, FEMUR/JOINT, FEMOROTIBIAL		A tissue sample that contains the femur and femorotibial joint. (NCI)	Femur/Femorotibial Joint
+C12718	C77529		Specimen	BONE, FIBULA		The long bone that is lateral to the tibia.	Fibula
+C12731	C77529		Specimen	BONE, HUMERUS	Bone, Humeral	The bone between the scapulohumeral and humeroulnar joints.	Humerus
+C32765	C77529		Specimen	BONE, ILIUM	Ilium	The broad, dorsal, upper, and widest of the three principal bones composing either half of the pelvis. (NCI)	Ilium
+C12290	C77529		Specimen	BONE, MANDIBLE	Bone, Mandibular; Inferior Maxillary Bone; Lower Jaw; Mandible	The lower jaw bone holding the lower teeth. (NCI)	Mandible
+C26470	C77529		Specimen	BONE, MAXILLA		The upper jaw bone holding the upper teeth.	Maxilla
+C12751	C77529		Specimen	BONE, METACARPAL		Any of the bones between the carpus and the phalanges.	Metacarpal Bone
+C12752	C77529		Specimen	BONE, METATARSAL	Metatarsal Bone	Any of the bones between the tarsus and the phalanges.	Metatarsal Bone
+C33282	C77529		Specimen	BONE, PATELLA		A small bone in front of the femorotibial joint that articulates with the femur.	Patella
+C33287	C77529		Specimen	BONE, PELVIS	Pelvic Bone	The bony structure composed of the ilium, ishium, pubis and sacrum, which are typically fused during maturation.	Pelvic Bone
+C33317	C77529		Specimen	BONE, PHALANGE	Phalanx	Any of the bones that make up the digits of the hand/forepaw, foot/hindpaw, or hoof.	Phalanx
+C12777	C77529		Specimen	BONE, RADIUS		The long bone that lies between the radiohumeral joint and the carpus and is adjacent to the ulna.	Radius Bone
+C12782	C77529		Specimen	BONE, RIB		Any one of the paired bones, extending from the thoracic vertebrae toward the median line on the ventral aspect of the trunk.	Rib
+C12783	C77529		Specimen	BONE, SCAPULA	Shoulder Blade	A bone that articulates with the humerus and is part of the scapulohumeral joint.	Scapula
+C12789	C77529		Specimen	BONE, SKULL	Bone, Skull; Cranium; Skull Bone	The bones that form the head, made up of the bones of the braincase and face. (NCI)	Skull
+C12793	C77529		Specimen	BONE, STERNUM	Sterna	The long, flat bone or sternebrae connecting with the cartilage of some ribs.	Sternum
+C12796	C77529		Specimen	BONE, TARSUS	Bone, Tarsal	Any of the short bones between the tibiotarsal joint and the tarsometatarsal joint.	Tarsal Bone
+C12800	C77529		Specimen	BONE, TIBIA		The long bone that is medial to the fibula.	Tibia
+C12809	C77529		Specimen	BONE, ULNA		The bone that contains the olecranon process, lies between the radiohumeral joint and the carpus, and is adjacent to the radius.	Ulna
+C33868	C77529		Specimen	BONE, VERTEBRA	Vertebra; Vertebral Bone	Any of the small bones that comprise the vertebral column.	Vertebral Bone
+C12439	C77529		Specimen	BRAIN	Nervous System, Brain	An organ composed of gray and white matter that is the center for intelligence and reasoning. It is protected by the bony cranium.	Brain
+C12440	C77529		Specimen	BRAIN, AMYGDALOID BODY	Amygdala; Amygdaloid Body; Amygdaloid Nucleus	A group of nuclei adjacent to the lateral ventricle of the brain within the temporal lobe, and is part of the limbic system.	Amygdala
+C12447	C77529		Specimen	BRAIN, BASAL GANGLIA		Clusters of neurons comprising the globus pallidus, putamen, caudate, nucleus accumbens, substantia nigra and subthalamic nucleus.	Basal Ganglia
+C12441	C77529		Specimen	BRAIN, BRAIN STEM	Brain Stem	The part of the brain that connects the cerebral hemispheres with the spinal cord. It consists of the mesencephalon, pons, and medulla oblongata. (NCI)	Brain Stem
+C12445	C77529		Specimen	BRAIN, CEREBELLUM		The portion of the brain that extends from the brainstem through the cerebellar folia.	Cerebellum
+C12351	C77529		Specimen	BRAIN, CEREBRUM		The portion of the brain comprising the frontal, parietal, temporal, and occipital lobes and extending through the thalamus.	Cerebral Hemisphere
+C12694	C77529		Specimen	BRAIN, CHOROID PLEXUS		Blood vessels and ependyma forming villous structures in the ventricles of the brain.	Choroid Plexus
+C12837	C77529		Specimen	BRAIN, COCHLEAR NUCLEI		A collection of nuclei in the brainstem at which the auditory nerves terminate.	Cochlear Nucleus
+C12446	C77529		Specimen	BRAIN, CORPUS CALLOSUM		A white matter structure within the brain that connects the left and right cerebral hemispheres.	Corpus Callosum
+C40185	C77529		Specimen	BRAIN, FOREBRAIN		The largest part of the brain composed of the cerebral hemispheres, thalamus, hypothalamus, and the limbic system. (NCI)	Forebrain
+C12444	C77529		Specimen	BRAIN, HIPPOCAMPUS		A curved gray matter structure of the cerebrum that is part of the limbic system.	Hippocampus
+C12458	C77529		Specimen	BRAIN, HYPOTHALAMUS		A small region of the brain composed of multiple nuclei and located underneath the thalamus.	Hypothalamus
+C12442	C77529		Specimen	BRAIN, MEDULLA OBLONGATA		The portion of the brainstem between the pons and cervical spinal cord.	Medulla Oblongata
+C12510	C77529		Specimen	BRAIN, MIDBRAIN	Mesencephalon	The portion of the brainstem between the pons and diencephalon.	Mesencephalon
+C92592	C77529		Specimen	BRAIN, OBEX		The region of the medulla oblongata at which the fourth ventricle transitions into the central canal of the spinal cord.	Obex Region
+C28401	C77529		Specimen	BRAIN, OLFACTORY BULB		The portion of the vertebrate forebrain that lies behind the ethmoid bones; it begins the rhinencephalon.	Olfactory Bulb
+C12511	C77529		Specimen	BRAIN, PONS	Pons; Pons Varolii	The portion of the brainstem between the midbrain and medulla oblongata.	Pons Varolii
+C12453	C77529		Specimen	BRAIN, SUBSTANTIA NIGRA		The portion of the midbrain composed of two parts, the pars compacta and pars reticulata.	Substantia Nigra
+C12459	C77529		Specimen	BRAIN, THALAMUS		The portion of the diencephalon forming most of each lateral wall of the third ventricle.	Thalamus
+C97340	C77529		Specimen	BRAIN, VISUAL CORTEX		A brain region in the occipital cortex that receives visual stimuli from the retina. (NCI)	Primary Visual Cortex
+C12683	C77529		Specimen	BRONCHUS	Bronchi	Tubular structure in continuation with the trachea, serving as an air passage.	Bronchus
+C32234	C77529		Specimen	BRONCHUS-ASSOCIATED LYMPHOID TISSUE	BALT	Lymphoid tissue located in the mucosa of the bronchi.	Bronchus-Associated Lymphoid Tissue
+C84507	C77529		Specimen	BUFFY COAT		The middle fraction of an anticoagulated blood specimen following separation by centrifugation. It contains most of the white blood cells and platelets.	Buffy Coat
+C111141	C77529		Specimen	BURSA OF FABRICIUS		A region of the cloaca in avian species responsible for B-cell maturation.	Bursa of Fabricius
+C25264	C77529		Specimen	CARINA	Carina, Tracheal	A ridge at the bifurcation of the trachea where the primary bronchi meet.	Carina
+C66852	C77529		Specimen	CAROTID BODY		A cluster of cells that function as chemo-receptors, located near the bifurcation of the carotid artery.	Carotid Body
+C32268	C77529		Specimen	CARTILAGE	Cartilaginous	A type of connective tissue composed of chondrocytes and an extracellular matrix. There are three types of cartilage; namely elastic, hyaline, and fibrocartilage.	Cartilaginous Tissue
+C16403	C77529		Specimen	CELL LINE		A defined cell population established from serial passage of cells in culture.	Cell Line
+C12311	C77529		Specimen	CERVIX	Cervix Uteri; Uterine Cervix	The portion of the uterus (or uterine horns) that empties into the vagina.	Cervix Uteri
+C111156	C77529		Specimen	CHEEK POUCH		An invagination of the oral mucosa within the cheek of some mammals that forms a pocket.	Cheek Pouch
+C13070	C77529		Specimen	CHEEK		The soft tissue on the lateral aspects of the face, generally bounded by the eyes, nose, ear, and jaw line.	Cheek
+C12308	C77529		Specimen	CLITORIS		The erectile tissue in the vulva. It is composed of the corpora cavernosa and the glans clitoris.	Clitoris
+C34127	C77529		Specimen	CLOACA		The singular posterior opening of the intestinal and urinary tracts of birds, reptiles, amphibians, marsupials and monotremes. (NCI)	Cloaca
+C12341	C77529		Specimen	CONJUNCTIVA		A thin tissue divided into the palpebral conjunctiva (covering the inner side of the eye lid) and the bulbar conjunctiva (covering the eyeball). (NCI)	Conjunctiva
+C12902	C77529		Specimen	CONJUNCTIVA, BULBAR		The part of the conjunctiva that covers the eyeball.	Bulbar Conjunctiva
+C12901	C77529		Specimen	CONJUNCTIVA, PALPEBRAL		The part of the conjunctiva that covers the inner surface of the eyelid.	Palpebral Conjunctiva
+C12374	C77529		Specimen	CONNECTIVE TISSUE		The supporting or framework tissue of the body, formed of fibrous and ground substance with a variety of cell types. The varieties of connective tissue are: areolar or loose; adipose; dense, regular or irregular, white fibrous; elastic; mucous; lymphoid tissue; cartilage; bone.	Connective Tissue
+C12316	C77529		Specimen	CORPUS UTERI	Uterine Body; Uterus, Corpus	The body of the uterus.	Corpus Uteri
+C32392	C77529		Specimen	COSTOCHONDRAL JUNCTION	Costochondral Joint; Costochondral Junction, Rib	A synchondrosis between the rib and the costal cartilage.	Costochondral Joint
+C111162	C77529		Specimen	CROP	Ingluvies	A saccular expansion of the esophagus in most avian species that can be used for food storage.	Crop
+C12948	C77529		Specimen	DUCT		A tube that carries various secretions from one part of the body to another. (NCI)	Duct
+C12376	C77529		Specimen	DUCT, BILE		Any of the ducts conveying bile between the liver and the intestine, including hepatic, cystic, and common bile duct.	Bile Duct
+C12698	C77529		Specimen	DUCT, COMMON BILE	Common Duct	A duct that conveys bile from the convergence of the cystic and hepatic duct to the duodenum.	Common Bile Duct
+C32356	C77529		Specimen	DUCT, COMMON HEPATIC	Common Hepatic Duct	A duct that conveys bile from the convergence of the left and right hepatic ducts to the common bile duct.	Common Hepatic Duct
+C32421	C77529		Specimen	DUCT, CYSTIC		A duct that conveys bile from the gallbladder to the common bile duct.	Cystic Duct
+C32492	C77529		Specimen	DUCT, EFFERENT		A duct or ducts that convey spermatozoa from the rete testis to the head of the epididymis.	Efferent Duct
+C33161	C77529		Specimen	DUCT, NASOLACRIMAL		A duct that conveys tears from the eye to the nasal cavity.	Nasolacrimal Duct
+C154699	C77529		Specimen	DUCT, PANCREATIC		Any of the ducts that conveys pancreatic secretions from the pancreas to the duodenum.	Main Pancreatic and Accessory Ducts
+C12498	C77529		Specimen	EAR CANAL	Auditory Canal; Ear Canal; External Acoustic Meatus; External Auditory Canal; External Auditory Meatus	A tubular structure that runs from the outer ear to the tympanic membrane.	External Acoustic Meatus
+C12394	C77529		Specimen	EAR		A sensory organ that contains auditory and vestibular apparatuses.	Ear
+C12395	C77529		Specimen	EAR, COCHLEA		The snail shell-shaped auditory component of the inner ear.	Cochlea
+C200023	C77529		Specimen	EGG		The reproductive body consisting of an ovum together with its nutritive and protective envelopes and other specialized support structures.	Egg
+C12328	C77529		Specimen	EPIDIDYMIS		A crescent-like structure located adjacent to the testis. It consists of a single highly coiled duct and is divided into 3 regions: caput (head), corpus (body) and cauda (tail).	Epididymis
+C33732	C77529		Specimen	EPIDIDYMIS, CAUDA		The region of the epididymis that connects to the vas deferens.	Tail of the Epididymis
+C32529	C77529		Specimen	EPIPHYSIS		The end of long bones that lies adjacent to the metaphysis.	Epiphysis of the Bone
+C12389	C77529		Specimen	ESOPHAGUS		The portion of the digestive tract between the pharynx and stomach.	Esophagus
+C12500	C77529		Specimen	EUSTACHIAN TUBE	Auditory Tube; Pharyngotympanic Tube; Tuba Auditoria	A tubular structure that extends from the middle ear to the nasopharynx.	Eustachian Tube
+C12401	C77529		Specimen	EYE	Eyeball	The sensory organ of vision.	Eye
+C12667	C77529		Specimen	EYE, ANTERIOR CHAMBER		The space in the eye filled with aqueous humor and bounded by the cornea, a small portion of the sclera, a small portion of the ciliary body, the iris and lens. (Cline et al., Dictionary of Visual Science, 4th ed, p109)	Anterior Chamber of the Eye
+C13190	C77529		Specimen	EYE, AQUEOUS HUMOR	Aqueous Humour	The watery fluid which is present in the anterior and posterior chambers of the eye. (NCI)	Aqueous Humor
+C12344	C77529		Specimen	EYE, CHOROID		A blood vessel-containing membrane of the eye that lies between the retina and the sclera. (NCI)	Choroid
+C12345	C77529		Specimen	EYE, CILIARY BODY		Circumferential tissue located behind the iris and composed of muscle and epithelium.	Ciliary Body
+C12342	C77529		Specimen	EYE, CORNEA		The transparent, avascular tissue covering the front of the eye and is continuous with the sclera.	Cornea
+C12737	C77529		Specimen	EYE, IRIS		The tissue in the eye that separates the anterior chamber from the posterior chamber.	Iris
+C12743	C77529		Specimen	EYE, LENS	Crystalline Lens; Ocular Lens	The structure of the eye through which light is focused onto the retina.	Lens
+C12900	C77529		Specimen	EYE, POSTERIOR CHAMBER	Eye, Posterior Compartment	A space within the eye located between the iris and the lens. It is filled with aqueous humor. (NCI)	Posterior Chamber of the Eye
+C49328	C77529		Specimen	EYE, RETINA		The sensory tissue in the posterior portion of the eye that contains photoreceptors.	Retina Layer
+C12784	C77529		Specimen	EYE, SCLERA		The fibrous, outer tunic of the eyeball that is continuous with the cornea.	Sclera
+C12811	C77529		Specimen	EYE, UVEA	Uvea	The pigmented layer of the eyeball between the tough, white outer coat of the eye and the retina. (NCI)	Uvea
+C33884	C77529		Specimen	EYE, VITREOUS		The clear gelatinous material that occupies the space between the lens and the retina.	Vitreous Body
+C12713	C77529		Specimen	EYELID	Palpebra	The section of skin, containing muscle and conjunctiva, that covers and protects the eye.	Eyelid
+C13071	C77529		Specimen	FACE		The portion of the head that contains the structures such as the eyes, nose, mouth, and jaws.	Face
+C13234	C77529		Specimen	FECES	Feces	The material discharged from the bowel during defecation. It consists of undigested food, intestinal mucus, epithelial cells, and bacteria. (NCI)	Feces
+C17730	C77529		Specimen	FETUS		Any prenatal tissue that has developed past the embryonic stage.	Fetal Tissue
+C13236	C77529		Specimen	FLUID		Liquid substances produced by the body.	Body Fluid or Substance
+C77611	C77529		Specimen	FLUID, ABDOMINAL		The fluid within the abdomen, which may contain peritoneal or other fluids.	Abdominal Fluid
+C13188	C77529		Specimen	FLUID, AMNIOTIC	Aqua Amnii	The fluid within the amniotic cavity which surrounds and protects the developing embryo. (NCI)	Amniotic Fluid
+C13195	C77529		Specimen	FLUID, BRONCHOALVEOLAR LAVAGE	Bronchial Lavage Fluid; Fluid, Bronchial Lavage	Fluid introduced into, and collected from, the lungs by a bronchoalveolar lavage procedure. (NCI)	Bronchoalveolar Lavage Fluid
+C12692	C77529		Specimen	FLUID, CEREBROSPINAL	CSF	The fluid that is contained within the brain ventricles, the subarachnoid space and the central canal of the spinal cord. (NCI)	Cerebrospinal Fluid
+C3319	C77529		Specimen	FLUID, PERICARDIAL		The fluid within the pericardial cavity.	Pericardial Effusion
+C77612	C77529		Specimen	FLUID, PERITONEAL		The fluid within the peritoneal cavity.	Peritoneal Fluid
+C77613	C77529		Specimen	FLUID, PLEURAL		The fluid within the pleural cavity.	Pleural Fluid
+C33718	C77529		Specimen	FLUID, SYNOVIAL	Synovia	The fluid within a joint capsule.	Synovial Fluid
+C125897	C77529		Specimen	FLUID, THORAX		Fluid that is present in the thoracic cavity.	Thoracic Fluid
+C32622	C77529		Specimen	FOOT		The entire structure distal to the ankle joint/tarsus, which includes the metatarsus and digit(s).	Foot
+C92654	C77529		Specimen	FOOTPAD		A thick, spongy layer of tissue located under the metacarpal and metatarsal joints of the foot. It consists of a pad of adipose tissue covered by a thick epidermis containing dermal sweat glands.	Footpad
+C176321	C77529		Specimen	FORELIMB		The anterior, front or upper limb of an animal.	Fore Limb
+C12377	C77529		Specimen	GALLBLADDER		A sac-like organ located adjacent to the liver that stores and concentrates bile produced by the liver.	Gallbladder
+C12719	C77529		Specimen	GANGLION	Ganglia; Ganglion; Neural Ganglion	A cluster of nervous tissue principally composed of neuronal cell bodies external to the central nervous system (CNS). (NCI)	Ganglion
+C98713	C77529		Specimen	GANGLION, CERVICAL		Any of the sympathetic ganglia of the cervical vertebrae.	Cervical Ganglia
+C92211	C77529		Specimen	GANGLION, CERVICOTHORACIC		A sympathetic ganglion located near the junction of the cervical region and thorax.	Inferior Cervical Ganglion
+C214763	C77529		Specimen	GANGLION, CILIARY		A peripheral parasympathetic ganglion located posterior to the eyeball.	Ciliary Ganglion
+C12462	C77529		Specimen	GANGLION, DORSAL ROOT	Spinal Ganglion	Sensory ganglia located on the dorsal spinal roots within the vertebral column. (MeSH)	Dorsal Root Ganglion
+C198407	C77529		Specimen	GANGLION, LUMBAR		Any of the sympathetic ganglion of the lumbar vertebrae.	Lumbar Ganglion
+C202464	C77529		Specimen	GANGLION, MESENTERIC		Any of the sympathetic ganglia associated with the mesenteric plexus.	Mesenteric Ganglion
+C179825	C77529		Specimen	GANGLION, SPIRAL	Cochlear Ganglion	The sensory ganglion within the modiolus of the cochlea.	Spiral Ganglion
+C52829	C77529		Specimen	GANGLION, THORACIC		Any of the sympathetic ganglion of the thoracic vertebrae.	Thoracic Ganglion
+C62642	C77529		Specimen	GANGLION, TRIGEMINAL	Gasserian Ganglion	Large sensory ganglion of the trigeminal nerve.	Trigeminal Ganglion
+C92214	C77529		Specimen	GANGLION, TRIGEMINAL/NERVE, TRIGEMINAL		A specimen that contains the trigeminal ganglion and the trigeminal nerve.	Trigeminal Ganglion/Trigeminal Nerve
+C77614	C77529		Specimen	GASTRIC CONTENTS	Stomach Contents	The contents of the stomach that may include undigested food mixed with juices secreted by the gastric mucosal glands. (NCI)	Gastric Content
+C92593	C77529		Specimen	GILLS		A respiratory organ found in aquatic animals that allows for the exchange of dissolved oxygen from water into the blood stream. (NCI)	Gill
+C32677	C77529		Specimen	GINGIVA	Gum	The soft tissue surrounding the neck of individual teeth as well as covering the alveolar bone. The tissue is fibrous and continuous with the periodontal ligament and mucosal covering. (NCI)	Gingiva
+C77616	C77529		Specimen	GLAND OF THE THIRD EYELID	Nictitans Gland	A gland producing tears in a third eyelid.	Gland of the Third Eyelid
+C12666	C77529		Specimen	GLAND, ADRENAL		The endocrine glands adjacent to the kidneys that consist of the outer adrenal cortex and the inner adrenal medulla in mammals.	Adrenal Gland
+C77955	C77529		Specimen	GLAND, AMPULLARY		The exocrine glands of the male reproductive system located at the terminal portion of the ductus deferens.	Ampullary Gland
+C125895	C77529		Specimen	GLAND, ANAL SAC		Apocrine gland located in the wall of the anal sac.	Experimental Organism Anal Sac Gland
+C13010	C77529		Specimen	GLAND, BRUNNER'S		A compound tubular gland located in the submucosa of the proximal part of the duodenum.	Brunner's Gland
+C32395	C77529		Specimen	GLAND, BULBOURETHRAL	Cowper's Gland	The exocrine glands of the male reproductive system located at the base of the penis.	Cowper Gland
+C77610	C77529		Specimen	GLAND, CIRCUMANAL		Superficial sebaceous glands located around the anus and contain fat. (Textbook of Small Animal Surgery - Volume 1. Slatter D (Ed.) (2003) Elsevier Health Sciences, Philadelpha PA)	Circumanal Gland
+C77617	C77529		Specimen	GLAND, CLITORAL		Exocrine gland of the female reproductive system located under the skin adjacent to the vulva.	Clitoral Gland
+C77618	C77529		Specimen	GLAND, COAGULATING		The portion of the prostate, which when present, is adjacent to the seminal vesicles.	Coagulating Gland
+C33842	C77529		Specimen	GLAND, ENDOMETRIAL		The glands present in the endometrium or inner layer of the uterus.	Uterine Gland
+C77619	C77529		Specimen	GLAND, HARDERIAN		The accessory sebaceous glands of the orbit.	Harderian Gland
+C12346	C77529		Specimen	GLAND, LACRIMAL		The exocrine glands that produce the watery serous component of tears.	Lacrimal Gland
+C12367	C77529		Specimen	GLAND, MAMMARY		The exocrine glands of the mammae that produce milk in females, and are composed of lobules, alveolar ducts and alveoli.	Mammary Gland
+C33075	C77529		Specimen	GLAND, MEIBOMIAN		A sebaceous gland in the eyelid that produces meibum.	Meibomian Gland
+C12765	C77529		Specimen	GLAND, PARATHYROID		Endocrine gland, usually in close proximity to the thyroid gland, that produces parathyroid hormone.	Parathyroid Gland
+C77620	C77529		Specimen	GLAND, PERIANAL		Deep sebaceous glands located around the anus and contain no fat. (Textbook of Small Animal Surgery - Volume 1. Slatter D (Ed.) (2003) Elsevier Health Sciences, Philadelpha PA)	Perianal Gland
+C12398	C77529		Specimen	GLAND, PINEAL	Pineal Body	A small endocrine gland that arises from the central posterior aspect of the diencephalon.	Pineal Gland
+C12399	C77529		Specimen	GLAND, PITUITARY	Hypophysis; Hypophysis Cerebri	A small endocrine gland extending from the hypothalamus at the base of the brain.	Pituitary Gland
+C79432	C77529		Specimen	GLAND, PREPUTIAL		Exocrine glands of the male reproductive system located adjacent to the prepuce.	Preputial Gland
+C117978	C77529		Specimen	GLAND, PREPUTIAL/GLAND, CLITORAL		A specimen that contains either the preputial or clitoral glands.	Preputial Gland/Clitoral Gland
+C77622	C77529		Specimen	GLAND, PROSTATE DORSOLATERAL		A lobe of the prostate gland located on the dorsolateral aspect of the proximal urethra.	Dorsolateral Prostate Gland
+C77623	C77529		Specimen	GLAND, PROSTATE VENTRAL		A lobe of the prostate gland located on the ventral aspect of the proximal urethra.	Ventral Prostate Gland
+C12410	C77529		Specimen	GLAND, PROSTATE		The male reproductive accessory gland that produces prostatic fluid and is located adjacent to or around the urethra distal to the urinary bladder in mammals.	Prostate Gland
+C77670	C77529		Specimen	GLAND, PROSTATE/GLAND, SEMINAL VESICLE		A specimen that contains the prostate and seminal vesicles.	Prostate/Seminal Vesicles
+C12426	C77529		Specimen	GLAND, SALIVARY		Any number of exocrine glands that secrete saliva into the oral cavity.	Salivary Gland
+C33141	C77529		Specimen	GLAND, SALIVARY, MUCOUS		Salivary glands that produce and secrete a saliva made up exclusively of mucous. (NCI)	Mucous Salivary Gland
+C12427	C77529		Specimen	GLAND, SALIVARY, PAROTID		The salivary gland located adjacent to the ear.	Parotid Gland
+C33539	C77529		Specimen	GLAND, SALIVARY, SEROUS		Salivary glands that produce and secrete a saliva made up exclusively of a pale-yellow transparent fluid containing amylase. (NCI)	Serous Salivary Gland
+C12234	C77529		Specimen	GLAND, SALIVARY, SUBLINGUAL		The salivary gland located under the tongue in the floor of the oral cavity or adjacent to the submandibular salivary gland.	Sublingual Salivary Gland
+C12233	C77529		Specimen	GLAND, SALIVARY, SUBMANDIBULAR	Gland, Salivary, Mandibular; Submaxillary Gland	The salivary gland located adjacent to the mandible.	Submandibular Salivary Gland
+C92215	C77529		Specimen	GLAND, SALIVARY, SUBMANDIBULAR/GLAND, SALIVARY, SUBLINGUAL		A specimen that contains the submandibular and sublingual salivary glands.	Submandibular Gland/Sublingual Gland
+C77624	C77529		Specimen	GLAND, SALIVARY, ZYGOMATIC		The salivary gland located adjacent to the zygomatic arch.	Zygomatic Gland
+C33519	C77529		Specimen	GLAND, SEBACEOUS		Small glands located within the skin that are usually associated with the hair follicle.	Sebaceous Gland
+C12787	C77529		Specimen	GLAND, SEMINAL VESICLE	Seminal Sacs	A mammalian male reproductive accessory gland located adjacent to the urinary bladder and proximal to the prostate.	Seminal Vesicle
+C92216	C77529		Specimen	GLAND, SEMINAL VESICLE/GLAND, COAGULATING		A specimen that contains a seminal vesicle and coagulating gland.	Seminal Vesicle/Coagulating Gland
+C12400	C77529		Specimen	GLAND, THYROID		Endocrine gland(s) adjacent to the trachea in mammals that produce thyroxine and other hormones.	Thyroid Gland
+C77667	C77529		Specimen	GLAND, THYROID/GLAND, PARATHYROID		A specimen that contains the thyroid and parathyroid glands.	Thyroid/Parathyroid
+C33521	C77529		Specimen	GLAND, ZEIS		A sebaceous gland in the eyelid that produces an oily substance that lubricates the eyelashes.	Sebaceous Gland of the Eyelash
+C77954	C77529		Specimen	GLAND, ZYMBAL		A sebaceous gland located at the base of the rodent external ear.	Zymbal Gland
+C12725	C77529		Specimen	GONAD		A reproductive organ that produces gametes.	Gonad
+C77639	C77529		Specimen	GRAVID UTERUS		The uterus during pregnancy. (NCI)	Gravid Uterus
+C3824	C77529		Specimen	GROSS LESION		A localized pathological or traumatic structural change, damage, deformity, or discontinuity of tissue, organ, or body part. (NCI)	Lesion
+C12936	C77529		Specimen	GUT-ASSOCIATED LYMPHOID TISSUE	GALT	Lymphoid tissue located in the mucosa of the digestive tract.	Gut-Associated Lymphoid Tissue
+C32705	C77529		Specimen	HAIR	Hair	The filamentous outgrowth of the epidermis. (NCI)	Hair
+C32712	C77529		Specimen	HAND	Hand	The distal portion of the upper extremity. It consists of the carpus, metacarpus, and digits. (NCI)	Hand
+C12419	C77529		Specimen	HEAD		The portion of the body containing the mouth, the brain and multiple sensory organs.	Head
+C12727	C77529		Specimen	HEART		A hollow muscular organ which receives the blood from the veins and pumps it into the arteries.	Heart
+C41168	C77529		Specimen	HEMOLYMPHORETICULAR TISSUE	Hematopoietic And Lymphoid Tissue	Any of the tissues that contain hematopoietic cells and/or lymphocytes and immune system cells.	Hematopoietic and Lymphoid Tissue
+C77625	C77529		Specimen	HINDLIMB		The posterior, rear or lower limb of an animal.	Hind Limb
+C65859	C77529		Specimen	HONEY		A sweet and viscous fluid produced by honey bees from flower nectar and other plant fluids.	Honey
+C77626	C77529		Specimen	HOOF WALL		The keratinized, outer portion of the foot of a ungulate mammal.	Hoof Wall
+C178001	C77529		Specimen	ILEOCECAL JUNCTION	Ileocecal Region	The segment of the gastrointestinal tract where the terminal ileum transitions to the cecum, and where the ileocecal sphincter regulates the movement of chyme from the small intestine into the large intestine. (NCI)	Ileocecal Junction
+C179826	C77529		Specimen	ILEOCECOCOLIC REGION	Ileocecocolic Junction; Ileocolocaecal Area	Transitional area involving the terminal ileum, cecum and beginning of the colon.	Ileocecocolic Region
+C12499	C77529		Specimen	INNER EAR	Internal Ear; Labyrinth	The innermost portion of the ear that contains the vestibule, cochlea and semicircular canals.	Inner Ear
+C32874	C77529		Specimen	INTERVENTRICULAR SEPTUM	Heart, Ventricular Septum; Interventricular Septal Wall; Ventricular Septum	The wall that separates the left and right ventricles of the heart. (NCI)	Interventricular Septum
+C49571	C77529		Specimen	INTERVERTEBRAL DISC		Spongy discs located between the vertebrae of the spinal column; composed of the outer annulus fibrosus and inner nucleus pulposus. (NCI)	Intervertebral Disc
+C189653	C77529		Specimen	INTESTINAL CONTENTS		The contents of the lumen of the small and/or large intestines.	Intestinal Content
+C12736	C77529		Specimen	INTESTINE		The portion of the gastrointestinal tract that includes the small and large intestines.	Intestine
+C13044	C77529		Specimen	JOINT	Articulation; Joint	The connection point between two bones or skeletal elements. The joint may be fixed or movable. (NCI)	Joint
+C32264	C77529		Specimen	JOINT, CARPUS		A joint formed between carpal bones. (NCI)	Carpal Joint
+C32497	C77529		Specimen	JOINT, ELBOW	Elbow; Elbow Joint	A joint involving the humerus, radius and ulna bones.	Elbow Joint
+C32898	C77529		Specimen	JOINT, FEMOROTIBIAL	Femorotibial Joint; Joint, Stifle; Knee; Tibiofemoral Joint	The joint connecting the lower part of the femur with the upper part of the tibia.	Knee Joint
+C32742	C77529		Specimen	JOINT, HIP	Coxofemoral Joint; Hip Joint	A ball-and-socket joint between the head of the femur and the acetabulum. (NCI)	Hip Joint
+C111308	C77529		Specimen	JOINT, SCAPULOHUMERAL		The joint connecting the scapula and the proximal portion of the humerus.	Scapulohumeral Joint
+C33735	C77529		Specimen	JOINT, TARSUS		A joint formed by the union of tarsal bones.	Tarsal Joint
+C12415	C77529		Specimen	KIDNEY		The organs of the urinary tract located in the retroperitoneal cavity adjacent to the spine and composed of the renal cortex and the renal medulla.	Kidney
+C12227	C77529		Specimen	LABIAL JUNCTION		The junction of the upper and lower lips at the corner of the mouth. (NCI)	Commissure of the Lip
+C12306	C77529		Specimen	LABIUM MAJUS		One of the two longitudinal folds of skin that form the lateral boundary of the vulva.	Labium Majus
+C12307	C77529		Specimen	LABIUM MINUS		One of the two longitudinal folds of skin located between the labia majora.	Labium Minus
+C92439	C77529		Specimen	LARGE COLON		The ascending colon of the horse. (NCI)	Large Colon
+C12379	C77529		Specimen	LARGE INTESTINE	Large Bowel	The avillous section of the intestine composed of crypts and extending from the terminal small intestine to the external orifice.	Large Intestine
+C43362	C77529		Specimen	LARGE INTESTINE, ANUS		The distal orifice of the digestive tract located between the rectum and the external surface of the body, comprising glandular, transitional, and squamous epithelium.	Anus
+C12380	C77529		Specimen	LARGE INTESTINE, APPENDIX		A pouch-like tissue attached to the cecum, which may exist as a diverticulum.	Appendix
+C12381	C77529		Specimen	LARGE INTESTINE, CECUM		The pouch-like portion of the proximal large intestine opening into the colon.	Cecum
+C12382	C77529		Specimen	LARGE INTESTINE, COLON		The portion of the large intestine which extends from the cecum (or small intestine in animals that don't have a cecum) to the rectum.	Colon
+C12390	C77529		Specimen	LARGE INTESTINE, RECTUM		The terminal portion of the large intestine extending from the terminus of the colon to the anus or anal canal.	Rectum
+C92217	C77529		Specimen	LARGE INTESTINE, RECTUM/LARGE INTESTINE, ANUS		A specimen that contains the rectum and anus.	Rectum/Anus
+C122233	C77529		Specimen	LARYNGEAL POUCH		An accessory mucosal membranous diverticulum of the laryngeal region, found in certain nonhuman primates.	Laryngeal Pouch
+C12420	C77529		Specimen	LARYNX		The cartilaginous structure of the respiratory tract between the pharynx and the trachea.	Larynx
+C13046	C77529		Specimen	LIGAMENT	Ligament	Band of fibrous tissue connecting bone to bone or cartilage to bone thereby supporting or strengthening a joint. (NCI)	Ligament
+C12429	C77529		Specimen	LIMB	Extremity	A jointed extremity of the upper/thoracic or lower/pelvic regions.	Limb
+C12220	C77529		Specimen	LIP	Lip; Vermillion of the Lip	Fleshy fold which surrounds the opening of the mouth. (NCI)	Lip
+C12392	C77529		Specimen	LIVER		An abdominal organ that has variable lobation which are composed mainly of hepatic lobules.	Liver
+C77669	C77529		Specimen	LIVER/GALLBLADDER		A specimen that contains the liver and gallbladder.	Liver/Gallbladder
+C12468	C77529		Specimen	LUNG		A thoracic organ that has variable lobation and is the primary respiratory organ of mammals.	Lung
+C92218	C77529		Specimen	LUNG/BRONCHUS		A specimen that contains lung and bronchial tissues.	Lung/Bronchus
+C129005	C77529		Specimen	LUNG/BRONCHUS/TRACHEA/LARYNX		A tissue sample that contains the lung, bronchus, trachea, and larynx.	Lung/Bronchus/Trachea/Larynx
+C12745	C77529		Specimen	LYMPH NODE	Lymphatic Gland	Secondary lymphoid organ associated with lymphatic vessels and consisting of an outer cortex, inner medulla and sinuses.	Lymph Node
+C12904	C77529		Specimen	LYMPH NODE, AXILLARY		Lymph node(s) in the axillary region.	Axillary Lymph Node
+C92221	C77529		Specimen	LYMPH NODE, BRACHIAL		Lymph node(s) adjacent to the brachial vein.	Brachial Lymph Node
+C32232	C77529		Specimen	LYMPH NODE, BRONCHIAL		Lymph node(s) adjacent to the bronchi.	Bronchial Lymph Node
+C32298	C77529		Specimen	LYMPH NODE, CERVICAL		Lymph node(s) in the cervical region, or neck.	Cervical Lymph Node
+C33659	C77529		Specimen	LYMPH NODE, CERVICAL, SUPERFICIAL		Lymph node(s) in the side of the neck, cranial to the scapula and lateral to the deep cervical lymph node.	Superficial Cervical Lymph Node
+C150905	C77529		Specimen	LYMPH NODE, DRAINING		The lymph node or group of lymph nodes that drain a particular anatomic site or organ.	Draining Lymph Node
+C92222	C77529		Specimen	LYMPH NODE, GASTRIC		Lymph node(s) adjacent to the stomach.	Gastric Lymph Node
+C77640	C77529		Specimen	LYMPH NODE, HEPATIC		Lymph node(s) adjacent to the liver.	Hepatic Lymph Node
+C77653	C77529		Specimen	LYMPH NODE, ILEOCECOCOLIC		Lymph node(s) adjacent to the ileocecocolic junction.	Ileocecocolic Lymph Node
+C32761	C77529		Specimen	LYMPH NODE, ILIAC		Lymph node(s) adjacent to the iliac vessels in the iliosacral region and cranial to the iliofemoral lymph node.	Iliac Lymph Node
+C32801	C77529		Specimen	LYMPH NODE, INGUINAL		Lymph node(s) in the inguinal region.	Inguinal Lymph Node
+C77652	C77529		Specimen	LYMPH NODE, INTERCOSTAL		Lymph node(s) in the intercostal space.	Intercostal Lymph Node
+C77643	C77529		Specimen	LYMPH NODE, LUMBAR	Lymph Node, Para-Aortic	Lymph node(s) adjacent to the lumbar vertebral column.	Paraaortic Lymph Node
+C32853	C77529		Specimen	LYMPH NODE, MAMMARY GLAND		Lymph node(s) in or adjacent to the mammary gland.	Internal Mammary Lymph Node
+C77650	C77529		Specimen	LYMPH NODE, MANDIBULAR	Lymph Node, Submandibular	Lymph node(s) adjacent to the mandible.	Submandibular Lymph Node
+C33073	C77529		Specimen	LYMPH NODE, MEDIASTINAL		Lymph node(s) in the mediastinal region.	Mediastinal Lymph Node
+C77641	C77529		Specimen	LYMPH NODE, MESENTERIC		Lymph node(s) in or adjacent to the mesentery.	Mesenteric Lymph Node
+C77642	C77529		Specimen	LYMPH NODE, PANCREATIC		Lymph node(s) in or adjacent to the pancreas.	Pancreatic Lymph Node
+C189654	C77529		Specimen	LYMPH NODE, PARATHYMIC		Lymph node(s) in the thymic region.	Parathymic Lymph Node
+C33278	C77529		Specimen	LYMPH NODE, PAROTID	Parotid Gland Lymph Node	Lymph node(s) in or adjacent to the parotid gland.	Parotid Gland Lymph Node
+C53146	C77529		Specimen	LYMPH NODE, POPLITEAL		Lymph node(s) adjacent to the femorotibial joint.	Popliteal Lymph Node
+C77645	C77529		Specimen	LYMPH NODE, PORTAL	Periportal Lymph Node	Lymph node(s) adjacent to the portal vein.	Portal Lymph Node
+C49018	C77529		Specimen	LYMPH NODE, REGIONAL		Lymph node(s) that drains the lymph from a region of interest.	Regional Lymph Node
+C77646	C77529		Specimen	LYMPH NODE, RENAL		Lymph node(s) adjacent to the hilar region of the kidney.	Renal Lymph Node
+C77649	C77529		Specimen	LYMPH NODE, RETROPHARYNGEAL	Suprapharyngeal Lymph Node	Lymph node(s) in the retropharyngeal space.	Retropharyngeal Lymph Node
+C77647	C77529		Specimen	LYMPH NODE, SACRAL		Lymph node(s) in the sacral region.	Sacral Lymph Node
+C92594	C77529		Specimen	LYMPH NODE, SUBILIAC		Lymph node(s) in the inguinofemoral region.	Subiliac Lymph Node
+C92434	C77529		Specimen	LYMPH NODE, SUBLINGUAL		Lymph node(s) adjacent to the tongue in the floor of the oral cavity.	Sublingual Lymph Node
+C77651	C77529		Specimen	LYMPH NODE, TRACHEOBRONCHIAL		Lymph node(s) adjacent to the bifurcation of the trachea.	Tracheobronchial Lymph Node
+C34808	C77529		Specimen	MASS		A benign or malignant pathologic structure in any part of the body resulting from cystic changes or accumulation of inflammatory or neoplastic cells.	Mass
+C12748	C77529		Specimen	MEDIASTINUM		The central region of the thoracic cavity of mammals containing a group of organs surrounded by loose connective tissue, which separates the two pleural sacs.	Mediastinum
+C77657	C77529		Specimen	MEMBRANE, NICTITATING		A translucent membrane present in the eye of some animals, also called the third eyelid.	Nictitating Membrane
+C12348	C77529		Specimen	MENINGES		Any one of three membranes that surround the brain and spinal cord. (NCI)	Meninges
+C33096	C77529		Specimen	MENISCUS		Cartilaginous material that serves as a cushion between the tuberosities of the femur and the tibia.	Meniscus
+C33097	C77529		Specimen	MENISCUS, LATERAL		A meniscus located towards the outer aspect of the femorotibial joint.	Meniscus Lateralis
+C33098	C77529		Specimen	MENISCUS, MEDIAL		A meniscus located towards the inner aspect of the knee/stifle joint.	Meniscus Medialis
+C33103	C77529		Specimen	MESENTERY		A double layer of peritoneum that attaches to the wall of the abdominal cavity and supports the small intestines.	Mesentery
+C92435	C77529		Specimen	MESENTERY/PERITONEUM		A specimen that contains mesentery and peritoneum.	Mesentery/Peritoneum
+C92440	C77529		Specimen	MESOVARIAN LIGAMENTS		The peritoneal fold that covers and attaches the ovary to the broad ligament. (NCI)	Mesovarium
+C12274	C77529		Specimen	MIDDLE EAR		The part of the ear including the eardrum and ossicles.	Middle Ear
+C77658	C77529		Specimen	MILK SERUM		The fluid that remains after removing the fat and casein from the milk. (NCI)	Milk Serum
+C13257	C77529		Specimen	MILK		A liquid produced by the mammary gland.	Mammary Gland Milk
+C12505	C77529		Specimen	MUCOSA, BUCCAL		The mucosal membranes located on the inside of the cheek, in the buccal cavity. (NCI)	Buccal Mucosa
+C187999	C77529		Specimen	MUCOSA, NASAL		The mucosal membranes that line the nasal cavity.	Nasal Mucosa
+C77637	C77529		Specimen	MUCOSA, ORAL		The mucosal membranes that line the oral cavity.	Oral Mucosa
+C13259	C77529		Specimen	MUCUS		The thick fluid secreted by the mucus glands in the aerodigestive tract and the vagina. (NCI)	Mucus
+C32040	C77529		Specimen	MUSCLE, ABDOMINAL		Any muscle of the abdominal wall.	Abdominal Muscle
+C53039	C77529		Specimen	MUSCLE, ADDUCTOR		A group of muscles generally extending from the pubis to the femur; primary function is adduction of the thigh.	Adductor Group of the Leg
+C32200	C77529		Specimen	MUSCLE, BICEPS BRACHII		A muscle of the proximal arm/forelimb, in general extending from the scapula to the radius and adjacent fascia; primary function is flexion of the elbow joint and, in some species, also functions in supination of the antebrachium.	Biceps Brachii
+C53147	C77529		Specimen	MUSCLE, BICEPS FEMORIS		A muscle in the thigh, in general extending from the ischial tuberosity and posterior femur to the fibula; primary function is to extend the femorotibial joint.	Biceps Femoris
+C112234	C77529		Specimen	MUSCLE, BULBOSPONGIOSUS	Bulbocavernosus	Paired superficial muscles on the midline of the perineum, covering the bulb of the penis in males and the vestibular bulb in females.	Bulbospongiosus
+C32446	C77529		Specimen	MUSCLE, DELTOID		The muscle that creates the rounded contour of the shoulder which originates from the lateral third of the clavicle, the superior surface of the acromion process, and the posterior border of the spine of the scapula and inserts on the lateral side of the shaft of the humerus. (NCI)	Deltoid
+C12702	C77529		Specimen	MUSCLE, DIAPHRAGM		A musculotendinous sheet separating the thoracic cavity from the abdominal cavity.	Diaphragm
+C33688	C77529		Specimen	MUSCLE, DORSAL OBLIQUE	Superior Oblique Muscle	A muscle of the eye, in general extending from the annulus of Zinn to the upper, medial side of the orbit; primary function is abduction, depression and internal rotation of the eye.	Superior Oblique Muscle
+C33694	C77529		Specimen	MUSCLE, DORSAL RECTUS	Superior Rectus Muscle	A muscle of the eye, in general extending from the annulus of Zinn to the dorsal aspect of the eye at the annulus tendineus; primary function is depression of the eyeball.	Superior Rectus Muscle
+C52902	C77529		Specimen	MUSCLE, ERECTOR SPINAE	Erector Spinae; Extensor Spinae; Sacrospinalis Muscle	A group of three paired epaxial muscle bundles (iliocostalis, longissimus, and spinalis) and transversospinales muscles (semispinalis, multifidus, and rotatores) extending along and lateral to the spinous processes of the cervical, thoracic, and lumbar vertebrae; primary function is extension and rotation of the spine.	Erector Spinae
+C52918	C77529		Specimen	MUSCLE, EXTENSOR DIGITORUM LONGUS	Long Digital Extensor Muscle	A muscle extending from the lateral surface of the tibia to the digits; primary function is the extension of the digits and flexion of the tarsal joint.	Extensor Digitorum Longus
+C33199	C77529		Specimen	MUSCLE, EXTRAOCULAR	Oculomotor Muscle	A group of muscles in the orbit extending from the posterior orbit to the eye and upper eyelid; primary function is the movement of the eye and retraction of the upper eyelid.	Extraocular Muscle
+C52921	C77529		Specimen	MUSCLE, FLEXOR DIGITORUM LONGUS		A muscle in the leg/hindlimb and foot/hindpaw, in general extending from the tibia to the phalanges; primary function is to flex the digits.	Flexor Digitorum Longus
+C32666	C77529		Specimen	MUSCLE, GASTROCNEMIUS		A bipennate muscle extending from the femoral condyles to the calcaneus; primary function is the extension of the tarsal joint and flexion of the femorotibial joint.	Gastrocnemius Muscle
+C78205	C77529		Specimen	MUSCLE, GLUTEUS		A group of three muscles (gluteus maximus, gluteus medius, gluteus minimus) extending from the ilium and sacrum to the femur; primary function is extension and abduction of the hip joint.	Gluteal Muscle
+C52935	C77529		Specimen	MUSCLE, GRACILIS		A muscle in the thigh, in general extending from the lower half of the symphysis pubis and the upper half of the pubic arch to the upper part of the medial surface of the tibia; primary function is to adduct the thigh, rotate the leg/hindlimb medially and flex the knee.	Gracilis
+C32824	C77529		Specimen	MUSCLE, INTERCOSTAL		A group of muscles extending from one rib to the adjacent rib; primary function is movement of the thoracic wall during inspiration and expiration.	Intercostal Muscle
+C32945	C77529		Specimen	MUSCLE, LATERAL RECTUS		A muscle of the eye, in general extending from the annulus of Zinn to the lateral aspect of the anterior portion of the eye at the annulus tendineus; primary function is abduction of the eye.	Lateral Rectus Muscle
+C33150	C77529		Specimen	MUSCLE, LATISSIMUS	Musculus Latissimus Dorsi	A muscle of the back, in general extending from the thoracolumbar vertebrae and scapula to the proximal humerus; primary function is adduction, extension, and medial rotation of the shoulder joint.	Musculus Latissimus Dorsi
+C32984	C77529		Specimen	MUSCLE, LEVATOR ANI		A group of muscles, in general extending from the inner surfaces of the ischium and pubis to the coccyx/coccygeal vertebrae; primary function is downward and lateral movement of the tail in tailed species, and to support the pelvic cavity.	Levator Ani
+C112430	C77529		Specimen	MUSCLE, LEVATOR ANI/BULBOSPONGIOSUS		A specimen that contains the bulbospongiosus and levator ani muscles.	Levator Ani/Bulbospongiosus
+C13074	C77529		Specimen	MUSCLE, MASSETER		A muscle extending from the zygomatic arch to the lateral surface of mandibular ramus; primary function is elevation of the mandible (closing of the mouth).	Masseter Muscle
+C33068	C77529		Specimen	MUSCLE, MEDIAL RECTUS		A muscle of the eye, in general extending from the annulus of Zinn to the medial aspect of the anterior portion of the eye at the annulus tendineus; primary function is adduction of the eye.	Medial Rectus Muscle
+C33259	C77529		Specimen	MUSCLE, PAPILLARY	Papillary Muscle	Any one of the group of small muscles in the heart ventricles, in general extending from the ventricular wall to the free edge of the atrioventricular valves; primary function is to keep the valves closed during ventricular systole.	Papillary Muscle
+C33286	C77529		Specimen	MUSCLE, PECTORALIS		A group of muscles on the exterior of the thorax, in general extending from the sternum to the humerus; primary function is movement of the upper forelimb.	Pectoralis Muscle
+C117979	C77529		Specimen	MUSCLE, PLANTARIS		A superficial muscle in primates between the soleus and the gastrocnemius; primary function is flexion of the tarsus and femorotibial joint.	Plantaris Muscle
+C33420	C77529		Specimen	MUSCLE, PSOAS MAJOR		A muscle located in the iliac region posterior to the psoas minor muscle that originates from the ventral surfaces of the lumbar vertebral bodies, fuses with the Iliacus muscle to form m. ileopsoas and attaches to the femur; primary function is flexion of the hip joint.	Psoas Major Muscle
+C33421	C77529		Specimen	MUSCLE, PSOAS MINOR		A muscle located in the iliac region anterior to the psoas major muscle that originates from the last thoracic vertebra and ventral surfaces of the lumbar vertebrae bodies, and attaching caudally to the ileum; the primary function is flexion of the vertebral column.	Psoas Minor Muscle
+C33422	C77529		Specimen	MUSCLE, PSOAS		A group of muscles on the abdominal spine, in general extending from the lumbar vertebrae to the femur; the primary function is flexion of the hip joint.	Psoas Muscle
+C33441	C77529		Specimen	MUSCLE, QUADRICEPS FEMORIS		A group of muscles in the thigh, in general extending from the pelvis to the patella and tibia; primary function is extension of the femorotibial joint.	Quadriceps Muscle of the Thigh
+C53175	C77529		Specimen	MUSCLE, RECTUS FEMORIS		A muscle in the quadriceps femoris muscle group between the vastus lateralis and vastus medialis and lying on the vastus intermedius; primary function is extension of the femorotibilal joint.	Rectus Femoris
+C52987	C77529		Specimen	MUSCLE, SEMIMEMBRANOSUS		A muscle located in the posterior compartment of the thigh, in general extending from the ischial tuberosity to the medial tibial condyle; primary function is to extend the leg/hindlimb at the hip and to flex the leg/hindlimb at the knee.	Semimembranosus Muscle
+C53176	C77529		Specimen	MUSCLE, SEMITENDINOSUS		A muscle of the thigh, in general extends from the ishium to the medial tibia; primary function is the extension of the hip.	Semitendinosus
+C13050	C77529		Specimen	MUSCLE, SKELETAL		Voluntary, striated muscle tissue predominantly associated with the skeleton.	Skeletal Muscle Tissue
+C12437	C77529		Specimen	MUSCLE, SMOOTH		Primarily involuntary, non-striated muscle tissue of the internal organs and blood vessels.	Smooth Muscle Tissue
+C53075	C77529		Specimen	MUSCLE, SOLEUS		A muscle in the crus, in general extending from the tibia and fibula to the calcaneous; primary function is plantarflexion of the foot.	Soleus
+C117980	C77529		Specimen	MUSCLE, STERNOCEPHALICUS		A muscle of the neck extending from the manubrium sterni to the head; primary function is lateral movement of the head and neck.	Sternocephalicus Muscle
+C117874	C77529		Specimen	MUSCLE, TIBIALIS ANTERIOR		A muscle that originates from the lateral condyle of tibia, spans the upper two-thirds of the lateral surface of the tibia, and is attached to the first cuneiform and metatarsal bones of the foot. It is a dorsiflexor of the ankle and invertor of the foot.	Tibialis Anterior Muscle
+C53079	C77529		Specimen	MUSCLE, TIBIALIS CRANIALIS		A muscle of the crus, in general extending from the tibia to the first metatarsal; primary function is rotation of the foot.	Tibialis Cranialis
+C53179	C77529		Specimen	MUSCLE, TRANSVERSUS ABDOMINIS		A muscle in the abdomen, in general extending from the thoracolumbar fascia, iliac crest, inguinal ligament, and the costal cartilages of the lower ribs, and which continues anteriorly as the transverse abdominis aponeurosis, which inserts into the linea alba, the pubic crest, and the pectineal line; primary function is positioning of abdominal contents, lower back support, and ipsilateral trunk rotation.	Transversus Abdominis Muscle
+C90604	C77529		Specimen	MUSCLE, TRICEPS BRACHII		A muscle of the proximal arm/forelimb, in general extending from the scapula and humerus to the olecranon of the ulna; primary function is extension of humeroulnar joint.	Triceps Brachii
+C117876	C77529		Specimen	MUSCLE, VASTUS INTERMEDIUS		A muscle in the quadriceps femoris muscle group between the vastus lateralis and vastus medialis deep to the rectus femoris; primary function is the extension of the femorotibial joint.	Vastus Intermedius Muscle
+C53073	C77529		Specimen	MUSCLE, VASTUS LATERALIS		A muscle in the quadriceps femoris muscle group lateral to the vastus intermedius; primary function is the extension of the femorotibial joint.	Vastus Lateralis
+C117736	C77529		Specimen	MUSCLE, VASTUS MEDIALIS		A muscle in the quadriceps femoris muscle group medial to the vastus intermedius; primary function is the extension of the femorotibial joint.	Vastus Medialis Muscle
+C32783	C77529		Specimen	MUSCLE, VENTRAL OBLIQUE	Inferior Oblique Muscle	A muscle of the eye, in general extending from the maxillary bone to the inferior lateral aspect of the posterior part of the eye; primary function is lateral rotation of the eye.	Inferior Oblique Muscle
+C32790	C77529		Specimen	MUSCLE, VENTRAL RECTUS	Inferior Rectus Muscle	A muscle of the eye, in general extending from the annulus of Zinn to the ventral aspect of the eye at the annulus tendineus; primary function is depression of the eyeball.	Inferior Rectus Muscle
+C179827	C77529		Specimen	MUSCLE, ZYGOMATICUS		A muscle extending from the zygomatic bone to the corners of the mouth/upper lip; primary function is to draw the lip superiorly, posteriorly and laterally.	Zygomaticus Muscle
+C49594	C77529		Specimen	NASAL TURBINATE	Nasal Concha; Nasoturbinate	The bone that protrudes into the nasal cavity from the skull, variably covered by respiratory, transitional or olfactory epithelium.	Nasal Turbinate
+C139163	C77529		Specimen	NASAL TURBINATE, DORSAL CONCHA		The nasal turbinate originating from the ethmoidal crest on the inner wall of the nasal bone and extending to the maxilla.	Dorsal Nasal Turbinate
+C139162	C77529		Specimen	NASAL TURBINATE, ETHMOIDAL CONCHA	Ethmoturbinate	The nasal turbinates extending from the ethmoidal crest into the nasal cavity.	Ethmoidal Nasal Turbinate
+C139164	C77529		Specimen	NASAL TURBINATE, MIDDLE CONCHA	Media Nasal Concha; Nasal Middle Turbinate	The largest of the ethmoidal nasal turbinates in some species, extending from the ethmoidal crest into the middle of the nasal cavity.	Medial Nasal Turbinate
+C139165	C77529		Specimen	NASAL TURBINATE, VENTRAL CONCHA	Maxilloturbinate	The nasal turbinate originating from the conchal crest on the medial wall of the maxilla and extending into the nasal cavity.	Ventral Nasal Turbinate
+C77659	C77529		Specimen	NASAL-ASSOCIATED LYMPHOID TISSUE	NALT	The lymphocytic cell population present in the mucosa of the nasopharyngeal duct.	Nasal-Associated Lymphoid Tissue
+C12423	C77529		Specimen	NASOPHARYNX		The part of the pharynx above the soft palate, which is continuous with the nasal cavity and extends to the oropharynx.	Nasopharynx
+C54024	C77529		Specimen	NERVE ROOT		The initial segment of a nerve after it has branched off from the central nervous system.	Nerve Root
+C12466	C77529		Specimen	NERVE		A bundle of neuronal fibers that transmits electrochemical impulses encoding sensory and motor information from one body part to another.	Nerve
+C12682	C77529		Specimen	NERVE, BRACHIAL PLEXUS	Brachial Plexus	A nerve network originating from spinal nerves in the cervical and thoracic vertebrae and giving rise to multiple nerves that innervate the arm/forelimb.	Brachial Plexus
+C174385	C77529		Specimen	NERVE, CAUDAL PLEXUS		A nerve network originating from the spinal nerves in the sacral and caudal vertebrae and giving rise to multiple nerves that innervate the tail. (NCI)	Caudal Plexus Nerve
+C12697	C77529		Specimen	NERVE, COCHLEAR	Acoustic Nerve; Auditory Nerve	The cochlear portion of the vestibulocochlear nerve, which transmits auditory sensory impulses to the cochlear nucleus in the brainstem.	Cochlear Nerve
+C12700	C77529		Specimen	NERVE, CRANIAL		Any of the 12 paired nerves that originate in the brain stem. (NCI)	Cranial Nerve
+C12714	C77529		Specimen	NERVE, FACIAL	Seventh Cranial Nerve	A cranial nerve extending from the brain stem between the pons and medulla, which innervates the facial muscles, glands and the tongue.	Facial Nerve
+C52816	C77529		Specimen	NERVE, FEMORAL		A nerve that originates from the lumbar nerves and innervates the anterior region of the thigh.	Femoral Nerve
+C33015	C77529		Specimen	NERVE, LUMBAR		Any of the spinal nerves originating from the lumbar region.	Lumbar Nerve
+C52815	C77529		Specimen	NERVE, MEDIAN		A nerve extending from the brachial plexus traveling the length of the arm/thoracic limb, which innervates some flexor muscles of the arm/forelimb and the skin on the palmar aspect of the carpus, metacarpus and digits.	Median Nerve
+C12758	C77529		Specimen	NERVE, OCULOMOTOR	Third Cranial Nerve	A cranial nerve extending from the oculomotor nucleus and accessory parasympathetic nucleus, which innervates the pupil, lens, upper eyelid, and eye muscles.	Oculomotor Nerve
+C12761	C77529		Specimen	NERVE, OPTIC	Second Cranial Nerve	A cranial nerve extending between the retina and optic chiasma, which innervates the eye.	Optic Nerve
+C12768	C77529		Specimen	NERVE, PERIPHERAL		Any nerve outside the brain or spinal cord that connects with peripheral receptors or effectors. (NCI)	Peripheral Nerve
+C52814	C77529		Specimen	NERVE, PERONEAL	Nerve, Fibular	A branch of the sciatic nerve that includes the common, deep, and/or superficial peroneal nerves, which innervates multiple muscles in the distal region of the leg/hindlimb.	Peroneal Nerve
+C92601	C77529		Specimen	NERVE, PERONEAL, COMMON		The portion of the peroneal nerve that extends from the sciatic nerve to the bifurcation of the deep and superficial peroneal nerves.	Common Peroneal Nerve
+C92602	C77529		Specimen	NERVE, PERONEAL, DEEP		A branch of the common peroneal nerve that runs deep to the superficial peroneal nerve and which predominantly innervates the muscles of the crus and foot/hindfoot.	Deep Peroneal Nerve
+C92603	C77529		Specimen	NERVE, PERONEAL, SUPERFICIAL		A branch of the common peroneal nerve that runs superficial to the deep peroneal nerve and which predominantly innervates the skin of the crus and foot/hindfoot.	Superficial Peroneal Nerve
+C77674	C77529		Specimen	NERVE, PLANTAR		A nerve arising from the tibial nerve and dividing into the medial and lateral plantar nerves, which innervates the skin and muscles of the plantar region of the foot/hindfoot.	Plantar Nerve
+C52812	C77529		Specimen	NERVE, RADIAL		A nerve extending from the brachial plexus traveling the length of the arm/forelimb, which innervates the extensor muscles of the elbow, carpus and phalanges, as well as the skin on the dorsal aspect of the carpus, metacarpus and digits.	Radial Nerve
+C147511	C77529		Specimen	NERVE, SAPHENOUS		A branch of the femoral nerve traveling the length of the leg/hindlimb, which innervates the sartorius and the skin of the medial aspect of the leg/hindlimb from the knee/stifle joint to the metatarsus.	Saphenous Nerve
+C52810	C77529		Specimen	NERVE, SCIATIC		A nerve arising from the merge of the lumbar and sacral rami in the pelvis and dividing into the common peroneal and tibial nerves, and which innervates the muscles of the thigh.	Sciatic Nerve
+C12792	C77529		Specimen	NERVE, SPINAL	Spinal Roots	A nerve arising from the spinal cord where the dorsal and ventral roots converge and exit through the intervertebral foramen.	Spinal Nerve
+C77675	C77529		Specimen	NERVE, SURAL		A minor branch of the sciatic nerve that includes the lateral and caudal sural nerves, which innervates the skin of the crus, tarsus and metatarsus.	Sural Nerve
+C198408	C77529		Specimen	NERVE, THORACIC		Any of the spinal nerves originating from the thoracic region.	Thoracic Nerve
+C52809	C77529		Specimen	NERVE, TIBIAL		A branch of the sciatic nerve that divides into the medial and lateral plantar nerves, and which innervates the muscles of the crus and the skin of the tarsus.	Tibial Nerve
+C12806	C77529		Specimen	NERVE, TRIGEMINAL	Fifth Cranial Nerve	A cranial nerve extending from the pons, which innervates the skin, mucous membranes, and masticatory muscles of the head.	Trigeminal Nerve
+C52807	C77529		Specimen	NERVE, ULNAR		A nerve arising from spinal nerves C8, T1 and T2, which innervates the flexor muscles of the arm/forelimb and skin of the arm/forelimb and lateral manus.	Ulnar Nerve
+C12812	C77529		Specimen	NERVE, VAGUS	Tenth Cranial Nerve	A cranial nerve arising from the medulla oblongata, which provides efferent parasympathetic innervation to tissues and viscera in the neck, thorax and abdomen; it also includes somatic and visceral afferent nerve fibers.	Vagus Nerve
+C12996	C77529		Specimen	NERVE, VESTIBULOCOCHLEAR	Eighth Cranial Nerve	A cranial nerve extending from the inner ear and entering the cranial cavity through the internal auditory foramen where it joins the brainstem.	Vestibulocochlear Nerve
+C12299	C77529		Specimen	NIPPLE		The protuberance in the skin where the ducts of the mammary gland open.	Nipple
+C12756	C77529		Specimen	NOSE	Nose	A structure of special sense serving as an organ of the sense of smell and as an entrance to the respiratory tract. (NCI)	Nose
+C13197	C77529		Specimen	NUCLEUS	Cell Nucleus	A body within the cell, surrounded by a membrane, within which lie the chromosomes, one or more nucleoli, combined with proteins, and exhibits mitosis. (NCI)	Nucleus
+C98765	C77529		Specimen	OLFACTORY REGION		The area of mucosa in the nose lined by olfactory epithelium and containing olfactory glands. (NCI)	Olfactory Region
+C98766	C77529		Specimen	OMASUM		The third compartment of the forestomach of ruminants with many long folds of mucosa (resembling a book). (NCI)	Omasum
+C33209	C77529		Specimen	OMENTUM		A double layer of peritoneum covering abdominal organs.	Omentum
+C12760	C77529		Specimen	OPTIC DISC	Optic Nerve Head	The portion of the retina at which the axons of the ganglion cells exit the eyeball to form the optic nerve.	Optic Disc
+C12762	C77529		Specimen	OROPHARYNX		The part of the pharynx between the soft palate and the upper portion of the epiglottis. (NCI)	Oropharynx
+C12404	C77529		Specimen	OVARY		The female gonad.	Ovary
+C92595	C77529		Specimen	OVARY/OVIDUCT		A specimen that contains the ovary and oviduct.	Ovary/Oviduct
+C12403	C77529		Specimen	OVIDUCT	Fallopian Tube	The tube through which eggs pass from an ovary.	Fallopian Tube
+C12229	C77529		Specimen	PALATE		The roof of the oral cavity. It separates the oral cavity from the nasal cavity.	Palate
+C12230	C77529		Specimen	PALATE, HARD		The part of the roof of the mouth supported by bone.	Hard Palate
+C12231	C77529		Specimen	PALATE, SOFT		The part of the roof of the mouth not supported by bone.	Soft Palate
+C209711	C77529		Specimen	PAMPINIFORM PLEXUS		A network of veins that drains blood from the testes or ovaries and surrounds the testicular or ovarian artery.	Pampiniform Plexus
+C12393	C77529		Specimen	PANCREAS		A digestive organ in the abdomen that has both endocrine and exocrine functions.	Pancreas
+C12608	C77529		Specimen	PANCREAS, ENDOCRINE	Endocrine Pancreas	The pancreatic tissue that contains the islets of Langerhans. It is responsible for the production and secretions of the pancreatic hormones. (NCI)	Islet of Langerhans
+C119578	C77529		Specimen	PAPILLA, DUODENAL		An opening on the duodenal mucosa where the bile and pancreatic ducts enter the duodenum.	Duodenal Papilla
+C12763	C77529		Specimen	PARANASAL SINUS		The air-filled cavities adjacent to the nasal cavity lined by a mucous membrane and located in the bones of the skull.	Paranasal Sinus
+C77660	C77529		Specimen	PAW		The entire structure distal to the ankle joint/tarsus or wrist joint/carpus in quadruped animals.	Paw
+C12409	C77529		Specimen	PENIS		The male organ of urination and copulation. (NCI)	Penis
+C13005	C77529		Specimen	PERICARDIUM		The membrane surrounding the heart and roots of the vessels at the base of the heart.	Pericardium
+C33301	C77529		Specimen	PERINEUM	Perineum	The area located between the anus and vulva in females, and anus and scrotum in males. (NCI)	Perineum
+C12954	C77529		Specimen	PERIPHERAL BLOOD MONONUCLEAR CELL	PBMC	A peripheral blood cell with a single nucleus, for example lymphocytes and monocytes.	Peripheral Blood Mononuclear Cell
+C12770	C77529		Specimen	PERITONEUM		The membrane that lines the abdominal and pelvic cavities.	Peritoneum
+C12771	C77529		Specimen	PEYER'S PATCH		An organized aggregate of gut-associated lymphoid tissue located in the mucosa of the small intestine.	Peyer Patch
+C12425	C77529		Specimen	PHARYNX		A passageway in the head and neck that includes the nasopharynx, oropharynx and laryngopharynx.	Pharynx
+C12292	C77529		Specimen	PINNA	Auricle; External Ear; Pinna	The external part of the ear. (NCI)	External Ear
+C13272	C77529		Specimen	PLACENTA		An organ present in true mammals during embryonic developmen that provides the fetus with nutrients and oxygen, facilitates gas and waste exchange between the fetus and mother.	Placenta
+C13356	C77529		Specimen	PLASMA		The fluid (acellular) portion of the circulating blood with retained clotting components.	Plasma
+C12469	C77529		Specimen	PLEURA		The serous membrane that lines the wall of the thoracic cavity and the surface of the lungs.	Pleura
+C12323	C77529		Specimen	PREPUCE	Preputium Penis	A fold of skin covering the end of the penis.	Prepuce
+C111301	C77529		Specimen	PROVENTRICULUS		The portion of the stomach of some non-mammalian species located between the thoracic esophagus and the ventriculus.	Proventriculus
+C12887	C77529		Specimen	RENAL PELVIS		The funnel-shaped proximal portion of the ureter located within the kidney into which urine is secreted, from the collecting duct system of the kidney. (NCI)	Renal Pelvis
+C176412	C77529		Specimen	REPRODUCTIVE TISSUE		Tissue from any of the organs involved in reproduction.	Reproductive Tissue
+C33467	C77529		Specimen	RETE TESTIS		A network of tubules that convey sperm from the seminiferous tubules within the testicles to the efferent ducts. (NCI)	Rete Testis
+C98777	C77529		Specimen	RETICULUM		Smallest forestomach of ruminants with complex honeycomb folding of mucosa. (NCI)	Reticulum
+C12298	C77529		Specimen	RETROPERITONEUM		The region of the abdomen outside the peritoneum, where the kidneys lie and the great blood vessels run.	Retroperitoneum
+C179828	C77529		Specimen	ROUND WINDOW NICHE		A bony pouch in the tympanic cavity that is enclosed by the secondary tympanic membrane.	Round Window Niche
+C98778	C77529		Specimen	RUMEN	Paunch	Largest forestomach of ruminants where bacterial fermentation occurs. (NCI)	Rumen
+C125896	C77529		Specimen	SAC, ANAL		One of two pouches located on either side of the anus of most carnivores that contain the secretions of the anal sac glands.	Anal Sac
+C14128	C77529		Specimen	SAC, YOLK		Membranous sac on the ventral aspect of the developing embryo that acts as a primitive circulatory system as well as providing nourishment. (NCI)	Yolk Sac
+C13275	C77529		Specimen	SALIVA		A clear liquid secreted by the salivary glands.	Saliva
+C12785	C77529		Specimen	SCROTUM		The pouch that encloses the testicles.	Scrotum
+C179829	C77529		Specimen	SECONDARY TYMPANIC MEMBRANE	Round Window Membrane	A membrane that encloses the round window niche of the middle ear.	Secondary Tympanic Membrane
+C13277	C77529		Specimen	SEMEN		The fluid containing the spermatozoa, secreted by the testes and accessory reproductive glands of the male.	Semen
+C13325	C77529		Specimen	SERUM	Sera	The clear portion of the blood that remains after the removal of the blood cells and the clotting proteins. (NCI)	Serum
+C33556	C77529		Specimen	SINUS	Sinus	A recess, cavity, or channel. (NCI)	Sinus
+C77676	C77529		Specimen	SITE, APPLICATION	Site, Exposure	The anatomic site at which medical intervention is administered. (NCI)	Application Site
+C77677	C77529		Specimen	SITE, BIOPSY		The anatomic site targeted for a biopsy procedure. (NCI)	Biopsy Site
+C92596	C77529		Specimen	SITE, CATHETER		The anatomic site through which fluid is transferred into or out of the body using a catheter. (NCI)	Catheter Site
+C77685	C77529		Specimen	SITE, EXTERIORIZATION		The site of the surgical exposure of an internal organ or tissue. (NCI)	Exteriorization Site
+C77678	C77529		Specimen	SITE, IMPLANTATION		The anatomic site at which a material such as a tissue, graft, device or radioactive material is inserted with some intended degree of permanence. This term may also refer to the site of the uterus at which the early embryo is attached.	Implantation Site
+C77679	C77529		Specimen	SITE, INFUSION		The anatomic site through which fluid is introduced into the body. (NCI)	Infusion Site
+C77680	C77529		Specimen	SITE, INJECTION		The anatomic site at which a medication or a vaccine is injected. (NCI)	Injection Site
+C77681	C77529		Specimen	SITE, INJURY		The anatomic site at which damage or harm was suffered. (NCI)	Injury Site
+C77682	C77529		Specimen	SITE, MICROCHIP		The anatomic site at which a microchip is implanted. (NCI)	Microchip Site
+C147512	C77529		Specimen	SITE, SUBCUTANEOUS PORT		The anatomic site at which a subcutaneous port is implanted.	Subcutaneous Port Site
+C77683	C77529		Specimen	SITE, SURGICAL	Incision Site	The anatomic site of a cut made during surgery. The term may also refer to the resultant scar from the surgical procedure. (NCI)	Incision Site
+C77684	C77529		Specimen	SITE, TATTOO		The anatomic site at which a tattoo is present. (NCI)	Tattoo Site
+C48322	C77529		Specimen	SITE, UNCERTAIN PRIMARY		Referring to the fact that the original site of growth of a metastatic cancer is unknown or uncertain. (NCI)	Primary Site Unknown
+C12470	C77529		Specimen	SKIN	Integument; Skin	An organ that constitutes the external surface of the body. It consists of the epidermis, dermis, and skin appendages. (NCI)	Skin
+C92441	C77529		Specimen	SKIN/SUBCUTIS		A specimen that contains the epidermis, dermis, and subcutaneous adipose tissue.	Skin/Subcutaneous Tissue
+C92437	C77529		Specimen	SMALL COLON		The terminal part of the colon of the horse with a reduced diameter. (NCI)	Small Colon
+C12386	C77529		Specimen	SMALL INTESTINE		The villous section of the intestine extending from the pylorus to the proximal large intestine.	Small Intestine
+C12263	C77529		Specimen	SMALL INTESTINE, DUODENUM		The portion of the small intestine between the stomach and jejunum.	Duodenum
+C12387	C77529		Specimen	SMALL INTESTINE, ILEUM		The portion of the small intestine between the jejunum and large intestine.	Ileum
+C179830	C77529		Specimen	SMALL INTESTINE, JEJUNOILEUM		A region of the small intestine of some animals, between the duodenum and colon, wherein the jejunum and ileum are co-located but not spatially distinct from each other.	Experimental Organism Jejunoileum
+C12388	C77529		Specimen	SMALL INTESTINE, JEJUNUM		The portion of the small intestine between the duodenum and ileum.	Jejunum
+C88024	C77529		Specimen	SMALL INTESTINE, SACCULUS ROTUNDUS		An anatomic structure exclusive to rabbits that is located at the terminal part of the ileum. It is rich in lymphoid tissue.	Sacculus Rotundus
+C12998	C77529		Specimen	SPINAL COLUMN	Vertebral Column	The series of vertebrae and other tissues extending from the skull to the last tailbone.	Vertebral Column
+C12464	C77529		Specimen	SPINAL CORD	Medulla Spinalis	The portion of the central nervous system that lies within the vertebral canal and from which the spinal nerves emerge.	Spinal Cord
+C12892	C77529		Specimen	SPINAL CORD, CERVICAL		The segment of the spinal cord between the end of the brain stem and the thoracic spinal cord.	Cervical Spinal Cord
+C12895	C77529		Specimen	SPINAL CORD, LUMBAR		The segment of the spinal cord between the thoracic spinal cord and the sacral spinal cord.	Lumbar Spinal Cord
+C12896	C77529		Specimen	SPINAL CORD, SACRAL		The segment of the spinal cord between the lumbar spinal cord and the caudal spinal cord.	Sacral Spinal Cord
+C12894	C77529		Specimen	SPINAL CORD, THORACIC		The segment of the spinal cord between the cervical spinal cord and the lumbar spinal cord.	Thoracic Spinal Cord
+C92438	C77529		Specimen	SPIRAL COLON		The ascending colon of the ruminants and pigs. (NCI)	Spiral Colon
+C12432	C77529		Specimen	SPLEEN		An abdominal organ that is part of the hematopoietic and immune systems. It is composed of the white pulp and the red pulp and is surrounded by a capsule.	Spleen
+C12391	C77529		Specimen	STOMACH		The portion of the gastrointestinal tract located between the esophagus and the proximal duodenum.	Stomach
+C12256	C77529		Specimen	STOMACH, CARDIA		The region of the stomach adjacent to the esophogastric junction.	Gastric Cardia
+C12257	C77529		Specimen	STOMACH, FUNDUS		The blind sac region of the glandular stomach.	Fundus of the Stomach
+C77661	C77529		Specimen	STOMACH, GLANDULAR		The portion of the stomach that contains glandular mucosa.	Glandular Stomach
+C77662	C77529		Specimen	STOMACH, NONGLANDULAR	Forestomach	The portion of the stomach that contains stratified squamous mucosa.	Nonglandular Stomach
+C12260	C77529		Specimen	STOMACH, PYLORUS		The region of the stomach that connects to the duodenum.	Pylorus
+C33645	C77529		Specimen	SUBCUTIS	Subcutaneous Tissue	Adipose and connective tissue located deep to the dermis.	Subcutis
+C13280	C77529		Specimen	SWEAT	Sweat	The liquid secreted by the sweat glands. (NCI)	Sweat
+C12473	C77529		Specimen	SYNOVIAL MEMBRANE	Synovial Membrane; Synovial Stratum	The connective tissue and synoviocytes that line the inner surface of the joint capsule.	Synovial Membrane
+C111323	C77529		Specimen	SYRINX		The vocal organ of a bird located near the tracheal bifurcation.	Syrinx
+C77663	C77529		Specimen	TAIL		A flexible appendage caudal to the sacrum.	Tail
+C33739	C77529		Specimen	TEAR		The fluid secreted by the lacrimal apparatus.	Tear
+C77664	C77529		Specimen	TEAT		A specialized type of nipple distinguished by its large cistern (lactiferous sinus) that connects to the exterior through the teat canal.	Teat
+C96299	C77529		Specimen	TENDON SHEATH		A membranous sheet that envelops a tendon.	Tendon Sheath
+C13045	C77529		Specimen	TENDON		A band of fibrous connective tissue that joins bone to muscle. (NCI)	Tendon
+C32043	C77529		Specimen	TENDON, CALCANEAL		The tendon that, in general, attaches the gastrocnemius muscle to the calcaneous bone in the tarsus.	Achilles Tendon
+C12412	C77529		Specimen	TESTIS	Testicle	The male gonad.	Testis
+C77668	C77529		Specimen	TESTIS/EPIDIDYMIS		A specimen that contains the testis and epididymis.	Testis/Epididymis
+C62484	C77529		Specimen	THORACIC WALL	Chest Wall	The total system of structures outside the lungs that move as a part of breathing; it includes all structures from the skin to the parietal pleura. (NCI)	Chest Wall
+C12433	C77529		Specimen	THYMUS	Thymus Gland	A primary lymphoid organ generally located in the mediastinum near the thoracic inlet and/or along lateral aspects of the neck.	Thymus Gland
+C132256	C77529		Specimen	TISSUE, UNSPECIFIED		A tissue specimen for which the identity or anatomic origin is not known or specified.	Unspecified Tissue
+C12422	C77529		Specimen	TONGUE		The muscular organ in the mouth used in taste perception and food ingestion.	Tongue
+C12802	C77529		Specimen	TONSIL		A secondary lymphoid tissue in the mucosa of the pharynx.	Tonsil
+C32988	C77529		Specimen	TONSIL, LINGUAL		A tonsil in the mucosa at the root of the tongue.	Lingual Tonsil
+C33250	C77529		Specimen	TONSIL, PALATINE		A tonsil in the mucosa of the glossopalatine arch of the oropharynx.	Palatine Tonsil
+C33318	C77529		Specimen	TONSIL, PHARYNGEAL	Adenoid	A tonsil in the mucosa of the nasopharynx.	Pharyngeal Tonsil
+C12506	C77529		Specimen	TOOTH		A hard calcified structure in the jaw; primarily used for eating.	Tooth
+C32258	C77529		Specimen	TOOTH, CANINE	Canine Tooth	A single-cusped (pointed) and usually single-rooted tooth located between the incisors and premolars. (NCI)	Canine Tooth
+C32769	C77529		Specimen	TOOTH, INCISOR		A tooth between the canines in either jaw.	Incisor
+C33136	C77529		Specimen	TOOTH, MOLAR		A tooth behind the premolars.	Molar Tooth
+C32201	C77529		Specimen	TOOTH, PREMOLAR		A tooth between the canine and molar.	Bicuspid Tooth
+C12428	C77529		Specimen	TRACHEA	Windpipe	The fibrocartilaginous tube extending from the larynx to the bronchi.	Trachea
+C33822	C77529		Specimen	TUNICA VAGINALIS		The visceral and parietal serous membranes lining the testicular pouch.	Tunica Vaginalis
+C112425	C77529		Specimen	TYMPANIC BULLA		The bony structure containing an inner lumen within the middle ear.	Tympanic Bulla
+C12502	C77529		Specimen	TYMPANIC MEMBRANE	Tympanic Membrane	A thin membrane that separates the external auditory canal from the middle ear.	Tympanic Membrane
+C12416	C77529		Specimen	URETER		The tube that extends from each kidney to the urinary bladder.	Ureter
+C12417	C77529		Specimen	URETHRA		The tube that extends from the urinary bladder to the urethral opening.	Urethra
+C12414	C77529		Specimen	URINARY BLADDER	Urinary Bladder	The distensible sac-like organ that functions as a reservoir of urine, collecting from the kidneys and eliminating via the urethra. (NCI)	Bladder
+C13283	C77529		Specimen	URINE		The fluid produced by the kidneys.	Urine
+C161570	C77529		Specimen	UTERINE HORN		The portion of the uterus that connects the oviduct to the corpus uteri.	Uterine Horn
+C12405	C77529		Specimen	UTERUS	Womb	A hollow muscular organ within which the fertilized egg implants and the embryo/fetus develops during pregnancy.	Uterus
+C92436	C77529		Specimen	UTERUS/CERVIX		A specimen that contains the uterus and cervix.	Uterus/Cervix
+C77672	C77529		Specimen	UTERUS/OVARY		A specimen that contains the uterus and ovaries.	Uterus/Ovaries
+C12407	C77529		Specimen	VAGINA	Vagina	The female genital canal, extending from the uterus to the vulva. (NCI)	Vagina
+C12670	C77529		Specimen	VALVE, AORTIC		A cardiac valve located between the left ventricle and the aorta.	Aortic Valve
+C12729	C77529		Specimen	VALVE, CARDIAC		A valve located in the heart.	Cardiac Valve
+C12753	C77529		Specimen	VALVE, LEFT ATRIOVENTRICULAR	Left Atrioventricular Valve; Mitral Valve	A cardiac valve located between the left atrium and ventricle.	Mitral Valve
+C12775	C77529		Specimen	VALVE, PULMONARY		A cardiac valve located between the right ventricle and the pulmonary artery.	Pulmonary Valve
+C12805	C77529		Specimen	VALVE, RIGHT ATRIOVENTRICULAR	Right Atrioventricular Valve; Tricuspid Valve	A cardiac valve located between the right atrium and ventricle.	Tricuspid Valve
+C12813	C77529		Specimen	VAS DEFERENS	Ductus Deferens	A duct carrying spermatozoa from the epididymides to the urethra.	Vas Deferens
+C12814	C77529		Specimen	VEIN	Vein	A blood vessel that carries blood towards the heart.	Vein
+C77673	C77529		Specimen	VEIN, AURICULAR		One of the veins of the pinna; in general these veins anastmose with each other or drain into the internal maxillary or superficial temporal vein.	Auricular Vein
+C12883	C77529		Specimen	VEIN, BRACHIAL		A vein of the arm/forelimb; in general it arises from the union of the radial and ulnar veins and drains into the axillary vein.	Brachial Vein
+C92598	C77529		Specimen	VEIN, CAUDAL	Tail Vein	A vein in the tail of some species.	Caudal Vein
+C32286	C77529		Specimen	VEIN, CEPHALIC	Vena Cephalica	A vein of the arm/forelimb; in general it arises from the dorsal venous network of the hand/forefoot and drains into the axillary vein.	Cephalic Vein
+C12716	C77529		Specimen	VEIN, FEMORAL		A vein of the thigh; in general it arises from the popliteal vein and drains into the external iliac vein.	Femoral Vein
+C12738	C77529		Specimen	VEIN, JUGULAR	Vena Jugularis	One of the veins of the neck; in general it arises from the junction of the maxillary and linguofacial veins and drains into the brachiocephalic or the cranial caval vein.	Jugular Vein
+C53055	C77529		Specimen	VEIN, MESENTERIC		A vein of the abdomen; in general it arises from the intestines and pancreas, combines with the splenic vein, and drains into the portal vein.	Mesenteric Vein
+C33343	C77529		Specimen	VEIN, PORTAL	Hepatic Portal Vein	A vein lying in the lower part of the abdomen; in general it arises from the junction of the mesenteric and splenic veins and draining into the liver.	Portal Vein
+C12776	C77529		Specimen	VEIN, PULMONARY		Any of the veins that carry oxygenated blood from the lungs to the heart.	Pulmonary Vein
+C33462	C77529		Specimen	VEIN, RENAL		A vein arising from the kidney; in general it drains into the caudal vena cava vein.	Renal Vein
+C33511	C77529		Specimen	VEIN, SAPHENA	Saphenous Vein	A vein of the leg/hindlimb; in general it arises from the venous network of the leg/hindfoot and drains into the femoral vein.	Saphenous Vein
+C12817	C77529		Specimen	VEIN, VENA CAVA		The two major veins (caudal or cranial) that carry deoxygenated blood from the body and drain into the right atrium of the heart.	Vena Cava
+C114236	C77529		Specimen	VENTRICULUS		The portion of the stomach of some non-mammalian species located between the proventriculus and the small intestine.	Ventriculus
+C12679	C77529		Specimen	VESSEL, BLOOD		A tubular structure through which the blood circulates in the body. Blood vessels constitute a network composed of arteries, arterioles, capillaries, venules, and veins. (NCI)	Blood Vessel
+C33038	C77529		Specimen	VESSEL, LYMPHATIC		A thin-walled tubular structure through which the lymph circulates in the body.	Lymphatic Vessel
+C77666	C77529		Specimen	VOMITUS	Emesis; Vomitus	Partially digested gastric contents that are returned to the mouth or beyond via the vomit reflex present in some species.	Vomitus
+C12408	C77529		Specimen	VULVA		The external, visible part of the female genitalia surrounding the urethral and vaginal opening(s).	Vulva
+C77665	C77529		Specimen	WHOLE ANIMAL		Referring to the entire body of an animal. (NCI)	Whole Animal
+C41067	C77529		Specimen	WHOLE BLOOD		Blood that has not been separated into its various components; blood that has not been modified except for the addition of an anticoagulant. (NCI)	Whole Blood

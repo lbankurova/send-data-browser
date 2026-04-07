@@ -1,0 +1,30 @@
+{
+  "source": "NCI Enterprise Vocabulary Services (NCI-EVS)",
+  "standard": "CDISC SEND Controlled Terminology",
+  "version": "2026-03-27",
+  "download_url": "https://evs.nci.nih.gov/ftp1/CDISC/SEND/SEND%20Terminology.txt",
+  "download_date": "2026-04-07",
+  "full_file": "SEND_Terminology_full.txt",
+  "full_file_rows": 17611,
+  "release_cadence": "quarterly (March, June, September, December)",
+  "next_expected_release": "2026-06-26",
+  "license": "Public domain (NCI/NIH)",
+  "update_command": "python scripts/update-cdisc-send-ct.py",
+  "extracted_codelists": {
+    "NONNEO.tsv": {"codelist": "Non-Neoplastic Finding Type", "entries": 341},
+    "NEOPLASM.tsv": {"codelist": "Neoplasm Type", "entries": 311},
+    "MI_MODIFIER.tsv": {"codelist": "Microscopic Findings Result Modifier", "entries": 384},
+    "LBTESTCD.tsv": {"codelist": "Laboratory Test Code", "entries": 2506},
+    "EGTESTCD.tsv": {"codelist": "ECG Test Code", "entries": 116},
+    "VSTESTCD.tsv": {"codelist": "Vital Signs Test Code", "entries": 77},
+    "OMTESTCD.tsv": {"codelist": "Organ Measurement Test Code", "entries": 10},
+    "BWTESTCD.tsv": {"codelist": "Body Weight Test Code", "entries": 4},
+    "FWTESTCD.tsv": {"codelist": "Food and Water Consumption Test Code", "entries": 9},
+    "BGTESTCD.tsv": {"codelist": "Body Weight Gain Test Code", "entries": 5},
+    "CVTESTCD.tsv": {"codelist": "SEND Cardiovascular Test Code", "entries": 19},
+    "RETESTCD.tsv": {"codelist": "SEND Respiratory Test Code", "entries": 31},
+    "SPECIMEN.tsv": {"codelist": "Specimen", "entries": 541},
+    "FETAL_PATH.tsv": {"codelist": "Fetal Pathology Findings Result", "entries": 200},
+    "TFTESTCD.tsv": {"codelist": "Tumor Findings Test Code", "entries": 2}
+  }
+}

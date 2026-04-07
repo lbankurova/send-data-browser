@@ -1,0 +1,3 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C90006		Yes	Tumor Findings Test Code	TFTESTCD	Tumor Findings Test Code	Terminology for the test codes concerned with the assessment or evaluation of a neoplastic mass.	CDISC SEND Tumor Findings Test Code Terminology
+C90479	C90006		Tumor Findings Test Code	TUMEX	Tumor Examination	An assessment or evaluation of a neoplastic mass. (NCI)	Tumor Examination

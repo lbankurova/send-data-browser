@@ -1,0 +1,11 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C89977		Yes	Organ Measurement Test Code	OMTESTCD	Organ Measurement Test Code	Terminology for the test codes concerned with the measurement of organs.	CDISC SEND Organ Measurement Test Code Terminology
+C64265	C89977		Organ Measurement Test Code	CIRC	Circumference	The length of the closed curve of a circle; the size of something as given by the distance around it. (NCI)	Circumference
+C25334	C89977		Organ Measurement Test Code	LENGTH	Length	The linear extent in space from one end of something to the other end, or the extent of something from beginning to end. (NCI)	Length
+C90427	C89977		Organ Measurement Test Code	OWBR	Organ to Brain Weight Ratio	A numeric comparison of the weight of an organ to the weight of the brain.	Organ to Brain Weight Ratio
+C90426	C89977		Organ Measurement Test Code	OWBW	Organ to Body Weight Ratio	A numeric comparison of the weight of an organ to body weight.	Organ to Body Weight Ratio
+C90428	C89977		Organ Measurement Test Code	OWHT	Organ to Heart Weight Ratio	A numeric comparison of the weight of an organ to the weight of the heart.	Organ to Heart Weight Ratio
+C41145	C89977		Organ Measurement Test Code	THCKN	Thickness	The dimension between two surfaces of an object, usually the smallest dimension as opposed to the width or the length.	Thickness
+C120721	C89977		Organ Measurement Test Code	THCKNMN	Thickness, Mean	The mean number in a group of values that represent the thickness of an object.	Mean Thickness
+C74720	C89977		Organ Measurement Test Code	VOLUME	Volume	A measurement of the amount of three dimensional space occupied by an object or the capacity of a space or container.	Volume Measurement
+C25208	C89977		Organ Measurement Test Code	WEIGHT	Weight	The vertical force exerted by a mass as a result of gravity. (NCI)	Weight

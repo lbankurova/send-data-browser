@@ -1,0 +1,385 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C225362		Yes	Microscopic Findings Result Modifier	MIRESMOD	Microscopic Findings Result Modifier	Terminology relevant to modifiers used to further characterize or describe microscopic findings.	CDISC SEND Microscopic Findings Result Modifier Terminology
+C225801	C225362		Microscopic Findings Result Modifier	ABNORMAL MATERIAL		A physical substance that is atypical.	Abnormal Material
+C225802	C225362		Microscopic Findings Result Modifier	ABNORMAL SHAPE		A shape that is atypical.	Abnormal Shape
+C25401	C225362		Microscopic Findings Result Modifier	ABNORMAL	Aberrant	Deviating in any way from the state, position, structure, condition, behavior, or rule which is considered a norm. (NCI)	Abnormal
+C225803	C225362		Microscopic Findings Result Modifier	ACELLULAR		Of, or pertaining to, a lack of cells	Acellular Finding
+C225804	C225362		Microscopic Findings Result Modifier	ACINAR		Of, or pertaining to, an acinus.	Acinar
+C225805	C225362		Microscopic Findings Result Modifier	ACYCLIC		The lack of a cycle; not cyclic.	Acyclic
+C225806	C225362		Microscopic Findings Result Modifier	ADENOLIPOMATOUS		Of, or pertaining to, an adenolipoma.	Adenolipomatous Finding
+C225807	C225362		Microscopic Findings Result Modifier	ADENOMATOUS		Of, or pertaining to a finding that shares some qualities of an adenoma.	Adenomatous Finding
+C2140	C225362		Microscopic Findings Result Modifier	ADJUVANT	Adjuvant	An agent that enhances the activity or therapeutic effect of another substance, but which is not itself therapeutically active.	Adjuvant
+C225808	C225362		Microscopic Findings Result Modifier	ADNEXAL		Of, or pertaining to, the adnexa.	Adnexal
+C225809	C225362		Microscopic Findings Result Modifier	ADRENAL		Of, or pertaining to, the adrenal gland.	Adrenal
+C94318	C225362		Microscopic Findings Result Modifier	ADRENOCORTICAL	Adrenal Cortical	Of, or pertaining to, the cortex of the adrenal gland.	Adrenocortical
+C225810	C225362		Microscopic Findings Result Modifier	AGE-RELATED		An indication that the finding is related to the age of the test subject.	Age-Related
+C225811	C225362		Microscopic Findings Result Modifier	AGONAL		Of, or pertaining to, the time immediately prior to death.	Agonal
+C14155	C225362		Microscopic Findings Result Modifier	ALVEOLAR		Of, or pertaining to, the alveoli of the lung.	Alveolar
+C225812	C225362		Microscopic Findings Result Modifier	AMELANOTIC		Of, or pertaining to an absence or paucity of melanin pigment.	Amelanotic Finding
+C225813	C225362		Microscopic Findings Result Modifier	AMORPHOUS BASOPHILIC MATERIAL		A physical substance lacking a defined shape or structure with a basophilic tint.	Amorphous Basophilic Material
+C225445	C225362		Microscopic Findings Result Modifier	AMORPHOUS MATERIAL		A physical substance lacking a defined shape or structure.	Amorphous Material
+C225814	C225362		Microscopic Findings Result Modifier	AMPHOPHILIC		A tissue or cell that stains with both acidic and basic dyes, such as eosin and hematoxylin.	Amphophilic
+C14144	C225362		Microscopic Findings Result Modifier	ANAPLASTIC		Of, or pertaining to malignant cells that are pleomorphic and/or poorly differentiated.	Anaplastic
+C225815	C225362		Microscopic Findings Result Modifier	ANGIOMATOUS		Of, or pertaining to, blood vessels.	Angiomatous Finding
+C25231	C225362		Microscopic Findings Result Modifier	ANTERIOR		Denoting the front portion of the body or a structure.	Anterior
+C25423	C225362		Microscopic Findings Result Modifier	APICAL		Of, or pertaining to, an apex.	Apical
+C28273	C225362		Microscopic Findings Result Modifier	AQUEOUS		Of, pertaining to, or containing water.	Aqueous
+C225816	C225362		Microscopic Findings Result Modifier	ARTERIAL		Of, or pertaining to, an artery.	Arterial
+C225817	C225362		Microscopic Findings Result Modifier	ARTERIOLAR		Of, or pertaining to, the arterioles.	Arteriolar
+C225818	C225362		Microscopic Findings Result Modifier	ARTICULAR		Of, or pertaining to, the joint surface.	Articular
+C225819	C225362		Microscopic Findings Result Modifier	ATRETIC		Of, or pertaining to congenital anatomic or follicular atresia.	Atretic Finding
+C37914	C225362		Microscopic Findings Result Modifier	ATRIAL		Of, or pertaining to, a cavity or chamber in the body, especially one of the upper chambers of the heart.	Atrial
+C225820	C225362		Microscopic Findings Result Modifier	ATRIOCAVAL		Of, or pertaining to, the area between the atrium of the heart and the inferior vena cava.	Atriocaval
+C96901	C225362		Microscopic Findings Result Modifier	AURICULAR		Of, or pertaining to, the ear.	Auricular
+C225821	C225362		Microscopic Findings Result Modifier	AVILLOUS		Without villi.	Avillous
+C225822	C225362		Microscopic Findings Result Modifier	AXILLARY REGION		The area in proximity to the axilla.	Axillary Region
+C225823	C225362		Microscopic Findings Result Modifier	AXONAL		Of, or pertaining to, an axon.	Axonal
+C225825	C225362		Microscopic Findings Result Modifier	BASOPHILIC MATERIAL		A physical substance with a basophilic tint upon staining with hematoxylin and eosin.	Basophilic Material
+C225824	C225362		Microscopic Findings Result Modifier	BASOPHILIC		Of, or pertaining to a basophil; or a tissue or cell that stains readily with basic dyes, such as hematoxylin.	Basophilic Finding
+C225826	C225362		Microscopic Findings Result Modifier	BASOSQUAMOUS		Of, or pertaining to, basilar squamous cells.	Basosquamous Finding
+C13332	C225362		Microscopic Findings Result Modifier	BILATERAL		Affecting both sides of the body, or a pair of organs.	Bilateral
+C28011	C225362		Microscopic Findings Result Modifier	BILIARY		Of, or pertaining to, bile and/or bile duct(s).	Biliary
+C25435	C225362		Microscopic Findings Result Modifier	BIPHASIC		Of, or pertaining to, two cell morphologies of the same cell type.	Biphasic
+C48323	C225362		Microscopic Findings Result Modifier	BLACK		Of darkest color; producing or reflecting comparatively little light and having no predominant hue; being the color of coal or carbon.	Black
+C48333	C225362		Microscopic Findings Result Modifier	BLUE		The hue of that portion of the visible spectrum lying between green and indigo, evoked in the human observer by radiant energy with wavelengths of approximately 420 to 490 nanometers; any of a group of colors that may vary in lightness and saturation, whose hue is that of a clear daytime sky.	Blue
+C25222	C225362		Microscopic Findings Result Modifier	BRONCHIAL		Of, or pertaining to, the bronchus.	Bronchial
+C225827	C225362		Microscopic Findings Result Modifier	BRONCHIOLAR		Of, or pertaining to, the bronchioles.	Bronchiolar
+C225828	C225362		Microscopic Findings Result Modifier	BRONCHIOLOALVEOLAR	Bronchiolo-Alveolar	Of, or pertaining to, the bronchioles and adjacent alveoli.	Bronchioloalveolar
+C225829	C225362		Microscopic Findings Result Modifier	BRONCHOALVEOLAR	Bronchio-Alveolar; Bronchioalveolar; Broncho-Alveolar	Of, or pertaining to, the main stem bronchi and adjacent alveoli.	Bronchoalveolar
+C225830	C225362		Microscopic Findings Result Modifier	BURSAL		Of, or pertaining to, a bursal sac.	Bursal
+C225831	C225362		Microscopic Findings Result Modifier	CAPSULAR		Of, or pertaining to a capsule.	Capsular
+C225832	C225362		Microscopic Findings Result Modifier	CARTILAGINOUS	Chondroid; Chondrous	Of, or pertaining to, a finding that shares some qualities of cartilage.	Cartilaginous Finding
+C225833	C225362		Microscopic Findings Result Modifier	CAVERNOUS		Of, or pertaining to a structure or cavity that is large in size or depth.	Cavernous
+C225834	C225362		Microscopic Findings Result Modifier	CELLULAR		Of, or pertaining to, a cell.	Cellular
+C225836	C225362		Microscopic Findings Result Modifier	CENTRILOBULAR REGION		The area surrounding the central vein of the liver.	Centrilobular Region
+C225835	C225362		Microscopic Findings Result Modifier	CENTRILOBULAR		Of, or pertaining to the centrilobular region of the liver.	Centrilobular
+C225837	C225362		Microscopic Findings Result Modifier	CERVICAL REGION		The area in proximity to the neck.	Cervical Region
+C12844	C225362		Microscopic Findings Result Modifier	CERVICAL		Of, or pertaining to, the neck or cervix.	Cervical
+C225839	C225362		Microscopic Findings Result Modifier	CHONDRO-OSSEOUS		Of, or pertaining to, a finding that shares some qualities of cartilage and bone.	Chondro-Osseous Finding
+C225838	C225362		Microscopic Findings Result Modifier	CHONDROMUCINOUS		Of, or pertaining to, a finding that shares some qualities of cartilage and mucin.	Chondromucinous Finding
+C225840	C225362		Microscopic Findings Result Modifier	CHORIORETINAL		Of, or pertaining to, the choroid and/or retina.	Chorioretinal
+C47881	C225362		Microscopic Findings Result Modifier	COMPLEX		Being involved or complicated, elaborate, or having many parts.	Complex
+C99210	C225362		Microscopic Findings Result Modifier	CONGENITAL		Of, or pertaining to, a condition or trait that is present at birth.	Congenital
+C225841	C225362		Microscopic Findings Result Modifier	CORNEAL		Of, or pertaining to, the cornea.	Corneal
+C225842	C225362		Microscopic Findings Result Modifier	CORTICAL		Of, or pertaining to, a cortex.	Cortical
+C225843	C225362		Microscopic Findings Result Modifier	CORTICOMEDULLARY	Cortico-medullary	Of, or pertaining to, the junction of the renal cortex and renal medulla.	Corticomedullary
+C225844	C225362		Microscopic Findings Result Modifier	CRANIOPHARYNGEAL		Of, or pertaining to, the cranium and pharynx.	Craniopharyngeal
+C225845	C225362		Microscopic Findings Result Modifier	CRESCENTIC		Of, or pertaining to, a crescent shape.	Crescentic
+C225847	C225362		Microscopic Findings Result Modifier	CYSTIC ENDOMETRIAL		Of, or pertaining to, a cystic condition of the endometrium.	Cystic Endometrial
+C225846	C225362		Microscopic Findings Result Modifier	CYSTIC		Of, or pertaining to, a cyst, urinary bladder, or gallbladder.	Cystic
+C225848	C225362		Microscopic Findings Result Modifier	CYTOPLASMIC	Intracytoplasmic	Within the cytoplasm.	Cytoplasmic
+C41136	C225362		Microscopic Findings Result Modifier	DENTAL		Of, or pertaining to, the tooth.	Dental
+C25478	C225362		Microscopic Findings Result Modifier	DERMAL	Cutaneous; Dermal	Of or relating to or located in the dermis. When used in the context of clinical observations, dermal may also include findings related to other components of the skin.	Dermal
+C225849	C225362		Microscopic Findings Result Modifier	DEVELOPMENTAL		Of, or pertaining to, the process of physical development.	Developmental
+C25237	C225362		Microscopic Findings Result Modifier	DISTAL		Situated farthest from a point of reference.	Distal
+C45874	C225362		Microscopic Findings Result Modifier	DORSAL		Pertaining to the back or upper surface of the body.	Dorsal
+C25732	C225362		Microscopic Findings Result Modifier	DUCTAL		Of, or pertaining to, a duct.	Ductal
+C225850	C225362		Microscopic Findings Result Modifier	DUCTULAR		Of, or pertaining to a ductule.	Ductular
+C225851	C225362		Microscopic Findings Result Modifier	DYSTROPHIC		Of, or pertaining to, a dystrophy.	Dystrophic
+C34100	C225362		Microscopic Findings Result Modifier	EMBRYONIC		Of, or pertaining to, an embryo.	Embryonic
+C225852	C225362		Microscopic Findings Result Modifier	ENDOCARDIAL		Of, or pertaining to, the endocardium.	Endocardial
+C28223	C225362		Microscopic Findings Result Modifier	ENDOGENOUS		Of, or pertaining to, formation within the body.	Endogenous
+C225853	C225362		Microscopic Findings Result Modifier	ENDOMETRIAL STROMAL		Of, or pertaining to, the stroma of the endometrium.	Endometrial Stromal
+C13322	C225362		Microscopic Findings Result Modifier	ENDOMETRIAL		Of, or pertaining to, the endometrium.	Endometrial
+C225854	C225362		Microscopic Findings Result Modifier	ENDONEURIAL		Of, or pertaining to, the endoneurium.	Endoneurial
+C225855	C225362		Microscopic Findings Result Modifier	ENDOPHYTIC		Of, or pertaining to, an inward growth from the surface into underlying and/or surrounding tissue.	Endophytic Finding
+C225856	C225362		Microscopic Findings Result Modifier	ENDOSTEAL		Of, or pertaining to, the endosteum.	Endosteal
+C225857	C225362		Microscopic Findings Result Modifier	ENDOTHELIAL		Of, or pertaining to, the endothelium.	Endothelial
+C225858	C225362		Microscopic Findings Result Modifier	ENLARGED		Of, or pertaining to, an increase in size, volume, quantity or scope in comparison to normal or previous state.	Enlarged
+C225860	C225362		Microscopic Findings Result Modifier	EOSINOPHILIC MATERIAL		A physical substance with an eosinophilic tint upon staining with hematoxylin and eosin.	Eosinophilic Material
+C225859	C225362		Microscopic Findings Result Modifier	EOSINOPHILIC		Of, or pertaining to an eosinophil; or a tissue or cell that stains readily with the acidic dye eosin.	Eosinophilic Finding
+C225861	C225362		Microscopic Findings Result Modifier	EPICARDIAL		Of, or pertaining to, the epicardium.	Epicardial
+C225862	C225362		Microscopic Findings Result Modifier	EPIDERMAL		Of, or pertaining to, the epidermis.	Epidermal
+C225863	C225362		Microscopic Findings Result Modifier	EPINEURIAL		Of, or pertaining to, the epineurium.	Epineurial
+C225864	C225362		Microscopic Findings Result Modifier	EPIPHYSEAL		Of, or pertaining to, an epiphysis.	Epiphyseal
+C225865	C225362		Microscopic Findings Result Modifier	EPIRETINAL		Of, or pertaining to, the area around the retina.	Epiretinal
+C13315	C225362		Microscopic Findings Result Modifier	EPITHELIAL		Of, or pertaining to, the epithelium.	Epithelial
+C53638	C225362		Microscopic Findings Result Modifier	EPITHELIOID	Epitheloid	Of, or pertaining to, mesenchymal or round cells resembling epithelial cells with abundant cytoplasm and/or round or oval nuclei.	Epithelioid Component Present
+C225866	C225362		Microscopic Findings Result Modifier	ERYTHROBLASTIC		Of, or pertaining to, an erythroblast.	Erythroblastic
+C225867	C225362		Microscopic Findings Result Modifier	ERYTHROID	Erythrocytic	Of, or pertaining to, erythrocytes and/or precursors.	Erythrocytic
+C225868	C225362		Microscopic Findings Result Modifier	ERYTHROPOIETIC		Of, or pertaining to, the process of erythropoiesis.	Erythropoietic
+C37950	C225362		Microscopic Findings Result Modifier	ESOPHAGEAL		Of, or pertaining to, the esophagus.	Esophageal
+C225869	C225362		Microscopic Findings Result Modifier	EXOGENOUS		Of, or pertaining to, formation outside the body.	Exogenous
+C74938	C225362		Microscopic Findings Result Modifier	EXOPHYTIC		Of, or pertaining to, an outward growth from the surface.	Exophytic
+C25502	C225362		Microscopic Findings Result Modifier	EXTRACAPSULAR		Of, or pertaining to the region in close proximity and external to the capsule.	Extracapsular
+C225870	C225362		Microscopic Findings Result Modifier	EXTRACELLULAR		Of, or pertaining to, the area outside of a cell.	Extracellular
+C25503	C225362		Microscopic Findings Result Modifier	EXTRAMEDULLARY		Of, or pertaining to, the area outside of a medulla.	Extramedullary
+C71580	C225362		Microscopic Findings Result Modifier	FATAL		Of, or pertaining to, death.	Fatal
+C225871	C225362		Microscopic Findings Result Modifier	FATTY		Of, or pertaining to, fat or adipose tissue.	Fatty
+C225872	C225362		Microscopic Findings Result Modifier	FIBRINOHEMORRHAGIC		Of, or pertaining to, the presence of fibrin and blood.	Fibrinohemorrhagic
+C225873	C225362		Microscopic Findings Result Modifier	FIBRINOUS		Of, or pertaining to, a finding that shares some qualities of fibrin.	Fibrinous
+C225877	C225362		Microscopic Findings Result Modifier	FIBRO-OSSEOUS		Of, or pertaining to, a finding that shares some qualities of fibrous tissue and bone.	Fibro-Osseous Finding
+C225874	C225362		Microscopic Findings Result Modifier	FIBROBLASTIC		Of, or pertaining to, a fibroblast.	Fibroblastic
+C225875	C225362		Microscopic Findings Result Modifier	FIBROMATOUS		Of, or pertaining to, a finding that shares some qualities of a fibroma.	Fibromatous Finding
+C225876	C225362		Microscopic Findings Result Modifier	FIBROMUSCULAR		Having fibrous and muscular components.	Fibromuscular Finding
+C225878	C225362		Microscopic Findings Result Modifier	FIBROUS		Of, or pertaining to, a finding that shares some qualities of fibrous tissue.	Fibrous Finding
+C225879	C225362		Microscopic Findings Result Modifier	FIBROVASCULAR		Having fibrous and vascular components.	Fibrovascular Finding
+C225880	C225362		Microscopic Findings Result Modifier	FOAMY		Of, or pertaining to, a foamy appearance.	Foamy
+C225881	C225362		Microscopic Findings Result Modifier	FOLLICULAR		Of, or pertaining to a follicle.	Follicular
+C34620	C225362		Microscopic Findings Result Modifier	FOREIGN MATERIAL	Foreign Body	Any physical substance originating inside or outside the body is not in it's physiological or intended location.	Foreign Body
+C225882	C225362		Microscopic Findings Result Modifier	FOVEOLAR		Of, or pertaining to a fovea or foveola.	Foveolar
+C225883	C225362		Microscopic Findings Result Modifier	GANGLIONEUROMA TYPE		Of, or pertaining to, a ganglioneuroma.	Ganglioneuromatous Finding
+C225884	C225362		Microscopic Findings Result Modifier	GEMISTOCYTIC		Of, or pertaining to, swollen, reactive astrocytes.	Gemistocytic Finding
+C226254	C225362		Microscopic Findings Result Modifier	GINGIVAL		Of, or pertaining to, the gingiva.	Gingival
+C225886	C225362		Microscopic Findings Result Modifier	GLANDULAR		Of, or pertaining to a gland.	Glandular
+C225887	C225362		Microscopic Findings Result Modifier	GLOMERULAR		Of, or pertaining to a glomerulus.	Glomerular
+C225889	C225362		Microscopic Findings Result Modifier	GRANULAR MATERIAL		A physical substance with a granular appearance.	Granular Material
+C225888	C225362		Microscopic Findings Result Modifier	GRANULAR		Of, or pertaining to a granule or having a granule-like appearance.	Granular
+C225890	C225362		Microscopic Findings Result Modifier	GRANULOCYTIC		Of, or pertaining to, white blood cells containing cytoplasmic granules (i.e., eosinophils, neutrophils, basophils, and heterophils) .	Granulocytic
+C225891	C225362		Microscopic Findings Result Modifier	GRANULOMATOUS		Of, or pertaining to, a finding that shares some qualities of a granuloma.	Granulomatous Finding
+C225892	C225362		Microscopic Findings Result Modifier	GRANULOPOETIC		Of, or pertaining to, myeloid granulocytic precursor cells.	Granulopoetic
+C48324	C225362		Microscopic Findings Result Modifier	GRAY	Grey	An achromatic color of any lightness between the extremes of black and white.	Gray
+C225893	C225362		Microscopic Findings Result Modifier	HEMANGIOENDOTHELIAL		Of, or pertaining to, the endothelium of the blood vessel(s).	Hemangioendothelial
+C13324	C225362		Microscopic Findings Result Modifier	HEMATOPOETIC		Of, or pertaining to, blood cell precursors.	Hematopoietic
+C225894	C225362		Microscopic Findings Result Modifier	HEMORRHAGIC		Of, or pertaining to, hemorrhage.	Hemorrhagic
+C13308	C225362		Microscopic Findings Result Modifier	HEPATIC		Of, or pertaining to, the liver.	Hepatic
+C79753	C225362		Microscopic Findings Result Modifier	HEPATOCELLULAR		Of, or pertaining to, hepatocytes.	Hepatocellular
+C225895	C225362		Microscopic Findings Result Modifier	HEPATOCHOLANGIOCELLULAR		Of, or pertaining to, hepatocytes and cholangiocytes.	Hepatocholangiocellular
+C225896	C225362		Microscopic Findings Result Modifier	HETEROLOGOUS		Of, or pertaining to, a different structure, position, or relationship.	Heterologous
+C225897	C225362		Microscopic Findings Result Modifier	HETEROPHILIC		Of, or pertaining to a heterophil.	Heterophilic
+C225898	C225362		Microscopic Findings Result Modifier	HISTIOCYTIC		Of, or pertaining to, macrophages.	Histiocytic
+C79968	C225362		Microscopic Findings Result Modifier	HOMOLOGOUS		Of, or pertaining to, the same structure, position, or relationship.	Homology
+C176405	C225362		Microscopic Findings Result Modifier	HYALINE MATERIAL		Any physical substance with hyaline (glassy or translucent) characteristics.	Hyaline Material
+C225899	C225362		Microscopic Findings Result Modifier	HYALINE		Having a glassy appearance that is typically pink on H&E staining.	Hyaline Pattern
+C49118	C225362		Microscopic Findings Result Modifier	HYDROPIC		Having cytoplasmic vacuolation and/or ballooning.	Hydropic Change
+C225900	C225362		Microscopic Findings Result Modifier	HYPOPHYSEAL		Of, or pertaining to, the hypophysis.	Hypophyseal
+C28242	C225362		Microscopic Findings Result Modifier	IDIOPATHIC		Arising from an unknown or unidentified cause.	Idiopathic
+C225901	C225362		Microscopic Findings Result Modifier	INCIDENTAL		Of, or pertaining to, a finding that was not related to the reason that prompted the analysis.	Incidental
+C225902	C225362		Microscopic Findings Result Modifier	INERT MATERIAL		Any physical substance that is inactive and does not result in any reaction from the surrounding environment.	Inert Material
+C25535	C225362		Microscopic Findings Result Modifier	INFLAMMATORY		Of, or pertaining to, inflammation.	Inflammatory
+C12726	C225362		Microscopic Findings Result Modifier	INGUINAL REGION	Groin	The lower region of the anterior abdominal wall located laterally to the pubic region. (NCI)	Inguinal Region
+C225903	C225362		Microscopic Findings Result Modifier	INGUINAL		Of, or pertaining to, the inguinal region.	Inguinal
+C35916	C225362		Microscopic Findings Result Modifier	INSULAR		Of, or pertaining to an insula or island of cells.	Insular Pattern
+C225904	C225362		Microscopic Findings Result Modifier	INTERACINAR		Of, or pertaining to, the area between acini.	Interacinar
+C225905	C225362		Microscopic Findings Result Modifier	INTERCELLULAR		Of, or pertaining to, the area between cells.	Intercellular
+C225906	C225362		Microscopic Findings Result Modifier	INTERFOLLICULAR REGION		The area between follicles.	Interfollicular Region
+C225907	C225362		Microscopic Findings Result Modifier	INTERLOBULAR		Of, or pertaining to, the area between lobules.	Interlobular
+C225908	C225362		Microscopic Findings Result Modifier	INTERSTITIAL		Of, or pertaining to, the interstitium.	Interstitial
+C25266	C225362		Microscopic Findings Result Modifier	INTESTINAL		Of, or pertaining to, the intestine.	Intestinal
+C225909	C225362		Microscopic Findings Result Modifier	INTIMAL		Of, or pertaining to, the intima.	Intimal
+C225910	C225362		Microscopic Findings Result Modifier	INTRAALVEOLAR		Within an alveolus.	Intraalveolar
+C28217	C225362		Microscopic Findings Result Modifier	INTRACELLULAR		Within a cell.	Intracellular
+C225911	C225362		Microscopic Findings Result Modifier	INTRADUCTAL		Within a duct.	Intraductal
+C225912	C225362		Microscopic Findings Result Modifier	INTRAEPIDERMAL		Within the epidermis.	Intraepidermal
+C225913	C225362		Microscopic Findings Result Modifier	INTRAFOLLICULAR		Within a follicle.	Intrafollicular
+C13808	C225362		Microscopic Findings Result Modifier	INTRAHEPATIC		Within the liver.	Intrahepatic
+C225914	C225362		Microscopic Findings Result Modifier	INTRALUMINAL		Within a lumen.	Intraluminal
+C225915	C225362		Microscopic Findings Result Modifier	INTRAMURAL		Within the wall of a structure.	Intramural
+C225916	C225362		Microscopic Findings Result Modifier	INTRAMYELINIC		Within the myelin sheath.	Intramyelinic
+C96904	C225362		Microscopic Findings Result Modifier	INTRAOCULAR		Within the eye.	Intraocular
+C225917	C225362		Microscopic Findings Result Modifier	INTRASINUSOIDAL		Of, or pertaining to, the inside of a sinusoid.	Intrasinusoidal
+C225918	C225362		Microscopic Findings Result Modifier	INTRATUBULAR		Within a tubule.	Intratubular
+C225919	C225362		Microscopic Findings Result Modifier	INTRAVASCULAR		Within a vessel.	Intravascular
+C225920	C225362		Microscopic Findings Result Modifier	INTRAVITREAL		Within the vitreous of the eye.	Intravitreal
+C225921	C225362		Microscopic Findings Result Modifier	JUXTAGLOMERULAR		Of, or pertaining to the area next to a glomerulus.	Juxtaglomerular
+C225922	C225362		Microscopic Findings Result Modifier	LACTEAL		Of, or pertaining to, a lymphatic vessel.	Lacteal
+C225923	C225362		Microscopic Findings Result Modifier	LAMINAR		Of, or pertaining to the laminae or having a lamina-like appearance.	Laminar
+C225924	C225362		Microscopic Findings Result Modifier	LARGE GRANULAR LYMPHOCYTIC		Of, or pertaining to, large granular lymphocytes.	Large Granular Lymphocytic Finding
+C25230	C225362		Microscopic Findings Result Modifier	LATERAL		Situated at or extending to the side.	Lateral
+C225925	C225362		Microscopic Findings Result Modifier	LENTICULAR		Of, or pertaining to a lens.	Lenticular
+C225926	C225362		Microscopic Findings Result Modifier	LINEAR		Of, or pertaining to a line or having a line-like appearance.	Linear
+C225927	C225362		Microscopic Findings Result Modifier	LIPOGRANULOMATOUS		Of, or pertaining to, a finding that shares some qualities of adipose tissue and a granuloma.	Lipogranulomatous Finding
+C225928	C225362		Microscopic Findings Result Modifier	LIPOMATOUS		Of, or pertaining to, a finding that shares some qualities of adipose tissue.	Lipomatous Finding
+C25556	C225362		Microscopic Findings Result Modifier	LOBAR		Of, or pertaining to a lobe.	Lobar
+C25557	C225362		Microscopic Findings Result Modifier	LOBULAR		Of, or pertaining to a lobule or having a lobule-like appearance.	Lobular
+C225929	C225362		Microscopic Findings Result Modifier	LOBULOALVEOLAR	Lobuloalveoli	Of, or pertaining to a lobule and adjacent alveoli.	Lobuloalveolar
+C225930	C225362		Microscopic Findings Result Modifier	LUMBAR		Of, or pertaining to the lumbar region.	Lumbar
+C225931	C225362		Microscopic Findings Result Modifier	LUMENAL	Luminal	Of, or pertaining to, a lumen.	Lumenal
+C225932	C225362		Microscopic Findings Result Modifier	LUTEAL		Of, or pertaining to, a corpus luteum.	Luteal
+C25267	C225362		Microscopic Findings Result Modifier	LYMPHATIC		Of, or pertaining to, components of the lymphoid system.	Lymphatic
+C225933	C225362		Microscopic Findings Result Modifier	LYMPHOBLASTIC		Of, or pertaining to, a lymphoblast.	Lymphoblastic
+C13350	C225362		Microscopic Findings Result Modifier	LYMPHOCYTIC		Of, or pertaining to, lymphocytes and/or precursors.	Lymphocytic
+C225934	C225362		Microscopic Findings Result Modifier	LYMPHOHISTIOCYTIC		Of, or pertaining to, lymphocytes and macrophages.	Lymphohistiocytic
+C225935	C225362		Microscopic Findings Result Modifier	LYMPHOPLASMACYTIC		Of, or pertaining to, lymphocytes and plasmacytes.	Lymphoplasmacytic
+C27963	C225362		Microscopic Findings Result Modifier	LYTIC		Of, or pertaining to, lysis.	Lytic
+C225936	C225362		Microscopic Findings Result Modifier	MACROVESICULAR		Of, pertaining to, or having the appearance of a large vesicle.	Macrovesicular Pattern
+C204859	C225362		Microscopic Findings Result Modifier	MAMMARY REGION		The area in proximity to the mammary gland.	Mammary Region
+C43595	C225362		Microscopic Findings Result Modifier	MAMMARY		Of, or pertaining to, the mammary gland and/or its accessory parts.	Mammary
+C225937	C225362		Microscopic Findings Result Modifier	MANDIBULAR		Of, or pertaining to the mandible.	Mandibular
+C48187	C225362		Microscopic Findings Result Modifier	MATERIAL		A physical substance.	Material
+C25232	C225362		Microscopic Findings Result Modifier	MEDIAL		Toward the middle or in a limb toward the median plane.	Medial
+C25310	C225362		Microscopic Findings Result Modifier	MEDIASTINAL		Of, or pertaining to, the mediastinum.	Mediastinal
+C225938	C225362		Microscopic Findings Result Modifier	MEDULLARY		Of, or pertaining to, the inner region of a tissue, organ, or structure (e.g., the medulla).	Medullary
+C225939	C225362		Microscopic Findings Result Modifier	MEGAKARYOCYTIC		Of, or pertaining to, megakaryocytes.	Megakaryocytic
+C12931	C225362		Microscopic Findings Result Modifier	MENINGEAL		Of, or pertaining to, the meninges.	Meningeal
+C225940	C225362		Microscopic Findings Result Modifier	MENSTRUAL		Of, or pertaining to, the menstrual cycle.	Menstrual
+C225941	C225362		Microscopic Findings Result Modifier	MESANGIAL		Of, or pertaining to, the mesangium.	Mesangial
+C25721	C225362		Microscopic Findings Result Modifier	MESENCHYMAL		Of, or pertaining to, the mesenchyma.	Mesenchymal
+C25226	C225362		Microscopic Findings Result Modifier	MESENTERIC		Of, or pertaining to, the mesentery.	Mesenteric
+C225942	C225362		Microscopic Findings Result Modifier	MESOTHELIAL		Of, or pertaining to, the mesothelium.	Mesothelial
+C225943	C225362		Microscopic Findings Result Modifier	MESOVARIAL		Of, or pertaining to, the mesovarium.	Mesovarial
+C225944	C225362		Microscopic Findings Result Modifier	MICROVESICULAR		Of, pertaining to, or having the appearance of a small vesicle.	Microvesicular Pattern
+C225946	C225362		Microscopic Findings Result Modifier	MIDZONAL REGION		The area between the centrilobular region and periportal region of the liver.	Hepatic Midzonal Region
+C225945	C225362		Microscopic Findings Result Modifier	MIDZONAL		Of, or pertaining to the midzonal region of the liver.	Hepatic Midzonal
+C25259	C225362		Microscopic Findings Result Modifier	MIXED		Involving or composed of different kinds.	Mixed
+C36131	C225362		Microscopic Findings Result Modifier	MODERATELY DIFFERENTIATED		Of, or pertaining to, a lesion or cells that have some but not all characteristics of the normal origin tissue.	Moderately Differentiated Lesion
+C225947	C225362		Microscopic Findings Result Modifier	MOLAR		Of, or pertaining to, a molar tooth.	Molar
+C225948	C225362		Microscopic Findings Result Modifier	MONOCYTIC		Of, or pertaining to, monocytes.	Monocytic
+C225949	C225362		Microscopic Findings Result Modifier	MUCINOUS MATERIAL		A physical substance composed of mucin or having the appearance of mucin.	Mucinous Material
+C14163	C225362		Microscopic Findings Result Modifier	MUCINOUS		Of, or pertaining to, a finding that shares some qualities of mucin.	Mucinous
+C225950	C225362		Microscopic Findings Result Modifier	MUCOSAL		Of, or pertaining to, the mucosa.	Mucosal
+C225951	C225362		Microscopic Findings Result Modifier	MULTILOBULAR	Multi-Lobular	Of, or pertaining to more than one lobule within an organ.	Multilobular
+C225952	C225362		Microscopic Findings Result Modifier	MULTILOCULAR		Of, pertaining to, or of the appearance of having multiple spaces or compartments.	Multilocular
+C225953	C225362		Microscopic Findings Result Modifier	MURAL		Of, or pertaining to, an anatomic wall.	Mural
+C225954	C225362		Microscopic Findings Result Modifier	MYELOPOIETIC		Of, or pertaining to, myelopoiesis.	Myelopoietic
+C25578	C225362		Microscopic Findings Result Modifier	MYOCARDIAL		Of, or pertaining to, the myocardium.	Myocardial
+C25579	C225362		Microscopic Findings Result Modifier	MYOMETRIAL		Of, or pertaining to, the myometrium.	Myometrial
+C225955	C225362		Microscopic Findings Result Modifier	MYXOMATOUS		Of, or pertaining to amorphous extracellular matrix material.	Myxomatous Pattern
+C45315	C225362		Microscopic Findings Result Modifier	NEOPLASTIC		Of, or pertaining to, a neoplasm or neoplasia.	Neoplastic
+C225956	C225362		Microscopic Findings Result Modifier	NEURONAL		Of, or pertaining to, a neuron.	Neuronal
+C225957	C225362		Microscopic Findings Result Modifier	NEUTROPHILIC		Of, or pertaining to a neutrophil.	Neutrophilic
+C35899	C225362		Microscopic Findings Result Modifier	NODULAR		Of, pertaining to, or of the appearance of having nodules.	Nodular Pattern
+C225958	C225362		Microscopic Findings Result Modifier	NONGLANDULAR	Non-Glandular	Of, or pertaining to the non-glandular region of the stomach.	Gastric Nonglandular
+C13361	C225362		Microscopic Findings Result Modifier	NUCLEAR	Intranuclear	Within the nucleus.	Nuclear
+C87163	C225362		Microscopic Findings Result Modifier	OCULAR		Of, or pertaining to the eye.	Ocular
+C98765	C225362		Microscopic Findings Result Modifier	OLFACTORY REGION		The area of mucosa in the nose lined by olfactory epithelium and containing olfactory glands. (NCI)	Olfactory Region
+C225959	C225362		Microscopic Findings Result Modifier	OLFACTORY		Of, or pertaining to, components of the olfactory system.	Olfactory
+C225960	C225362		Microscopic Findings Result Modifier	ORTHOKERATOTIC		Of, or pertaining to hyperkeratosis characterized by a paucity of nuclei within the keratinocytes in the stratum corneum.	Orthokeratotic Finding
+C225961	C225362		Microscopic Findings Result Modifier	OSSEOUS		Of, or pertaining to, a finding that shares some qualities of bone.	Osseous Finding
+C25726	C225362		Microscopic Findings Result Modifier	PANCREATIC		Of, or pertaining to, the pancreas.	Pancreatic
+C225962	C225362		Microscopic Findings Result Modifier	PANLOBULAR	Pan-Lobular	Of, or pertaining to all of the lobules within an organ or the entirety of a single lobule within an organ.	Panlobular
+C225963	C225362		Microscopic Findings Result Modifier	PANOCULAR	Pan-Ocular	Of, or pertaining to the entirety of a single eye.	Panocular
+C14166	C225362		Microscopic Findings Result Modifier	PAPILLARY		Of, or pertaining to, a papilla or a papilla-shaped structure.	Papillary
+C225964	C225362		Microscopic Findings Result Modifier	PARACORTICAL		Of, or pertaining to, the area adjacent to a cortex.	Paracortical
+C225965	C225362		Microscopic Findings Result Modifier	PARAFOLLICULAR		Of, or pertaining to, the area adjacent to a follicle.	Parafollicular
+C225966	C225362		Microscopic Findings Result Modifier	PARAKERATOTIC		Of, or pertaining to hyperkeratosis characterized by the presence of nucleated keratinocytes in the stratum corneum.	Parakeratotic Finding
+C225967	C225362		Microscopic Findings Result Modifier	PARANASAL		Of, or pertaining to, the area adjacent to a nasal cavity.	Paranasal
+C225968	C225362		Microscopic Findings Result Modifier	PARAOVARIAN		Of, or pertaining to, the area adjacent to an ovary.	Paraovarian
+C225969	C225362		Microscopic Findings Result Modifier	PARASITIC		Of, or pertaining to, a parasite.	Parasitic
+C225970	C225362		Microscopic Findings Result Modifier	PARATHYROID		Of, or pertaining to, the area adjacent to the thyroid gland.	Parathyroid
+C225971	C225362		Microscopic Findings Result Modifier	PARENCHYMAL		Of, or pertaining to, the parenchyma.	Parenchymal
+C73945	C225362		Microscopic Findings Result Modifier	PATCHY		Irregular or uneven in quality, texture, or distribution.	Patchy
+C226255	C225362		Microscopic Findings Result Modifier	PELVIC		Of, or pertaining to, the pelvis.	Pelvic
+C225993	C225362		Microscopic Findings Result Modifier	PERI-ISLET	Peri-Insular	Around an islet.	Peri-Islet
+C225973	C225362		Microscopic Findings Result Modifier	PERIADNEXAL		Around the adnexa.	Periadnexal
+C225974	C225362		Microscopic Findings Result Modifier	PERIANAL		Around the anus.	Perianal
+C225975	C225362		Microscopic Findings Result Modifier	PERIAORTIC		Around the aorta.	Periaortic
+C225976	C225362		Microscopic Findings Result Modifier	PERIARTERIAL		Around an artery.	Periarterial
+C225977	C225362		Microscopic Findings Result Modifier	PERIARTERIOLAR REGION		The area surrounding arterioles.	Periarteriolar Region
+C225978	C225362		Microscopic Findings Result Modifier	PERIARTICULAR		Around a joint.	Periarticular
+C225979	C225362		Microscopic Findings Result Modifier	PERIBILIARY		Around a bile duct.	Peribiliary
+C225980	C225362		Microscopic Findings Result Modifier	PERIBRONCHIAL		Around the bronchus.	Peribronchial
+C225981	C225362		Microscopic Findings Result Modifier	PERIBRONCHIOLAR		Around a bronchiole.	Peribronchiolar
+C225982	C225362		Microscopic Findings Result Modifier	PERIBULBAR		Around the globe of the eye.	Peribulbar
+C225983	C225362		Microscopic Findings Result Modifier	PERICANALICULAR		Around a canaliculus.	Pericanalicular
+C38001	C225362		Microscopic Findings Result Modifier	PERICARDIAL		Around the heart.	Pericardial
+C225984	C225362		Microscopic Findings Result Modifier	PERIDUCTAL		Around a duct.	Periductal
+C225985	C225362		Microscopic Findings Result Modifier	PERIDUCTULAR		Around a ductule.	Periductular
+C225986	C225362		Microscopic Findings Result Modifier	PERIESOPHAGEAL		Around the esophagus.	Periesophageal
+C225987	C225362		Microscopic Findings Result Modifier	PERIFOLLICULAR		Around a follicle.	Perifollicular
+C225988	C225362		Microscopic Findings Result Modifier	PERIGANGLIA		Around several ganglion.	Periganglia
+C225989	C225362		Microscopic Findings Result Modifier	PERIGANGLION		Around a ganglion.	Periganglion
+C225990	C225362		Microscopic Findings Result Modifier	PERIGLANDULAR		Around a gland.	Periglandular
+C225991	C225362		Microscopic Findings Result Modifier	PERIGLOMERULAR		Around a glomerulus.	Periglomerular
+C225992	C225362		Microscopic Findings Result Modifier	PERIHEPATIC REGION		The area surrounding the liver.	Perihepatic Region
+C225994	C225362		Microscopic Findings Result Modifier	PERINEURIAL	Perineural	Of, or pertaining to, the perineurium.	Perineurial
+C225995	C225362		Microscopic Findings Result Modifier	PERINEURONAL		Around a neuron.	Perineuronal
+C225996	C225362		Microscopic Findings Result Modifier	PERINODAL		Around a lymph node.	Perinodal
+C225997	C225362		Microscopic Findings Result Modifier	PERIODONTAL		Of, or pertaining to, the periodontium.	Periodontal
+C98190	C225362		Microscopic Findings Result Modifier	PERIORBITAL		Around the orbit of the eye.	Periorbital
+C225998	C225362		Microscopic Findings Result Modifier	PERIOSTEAL		Of, or pertaining to, the periosteum.	Periosteal
+C25233	C225362		Microscopic Findings Result Modifier	PERIPHERAL		On or near an edge or constituting an outer boundary; the outer area. (NCI)	Peripheral
+C226000	C225362		Microscopic Findings Result Modifier	PERIPORTAL REGION		The area surrounding the portal area of the liver.	Periportal Region
+C225999	C225362		Microscopic Findings Result Modifier	PERIPORTAL		Of, or pertaining to the periportal region.	Periportal
+C226001	C225362		Microscopic Findings Result Modifier	PERISPLENIC REGION		The area surrounding the spleen.	Perisplenic Region
+C226002	C225362		Microscopic Findings Result Modifier	PERISTERNAL		Around the sternum.	Peristernal
+C226003	C225362		Microscopic Findings Result Modifier	PERITENDINOUS		Of, or pertaining to, the area surrounding a tendon.	Peritendinous
+C25313	C225362		Microscopic Findings Result Modifier	PERITONEAL		Of, or pertaining to, the peritoneum.	Peritoneal
+C226004	C225362		Microscopic Findings Result Modifier	PERITRACHEAL		Around the trachea.	Peritracheal
+C226005	C225362		Microscopic Findings Result Modifier	PERITUBULAR		Around a tubule.	Peritubular
+C226006	C225362		Microscopic Findings Result Modifier	PERIVASCULAR		Around a vessel.	Perivascular
+C226007	C225362		Microscopic Findings Result Modifier	PERIVENOUS		Of, or pertaining to, the area surrounding a vein.	Perivenous
+C43623	C225362		Microscopic Findings Result Modifier	PERSISTENT		Retained; never-ceasing.	Persistent
+C17650	C225362		Microscopic Findings Result Modifier	PHYSIOLOGIC		Of, or pertaining to, the functions of the body.	Physiologic
+C226008	C225362		Microscopic Findings Result Modifier	PIGMENTED		Of, or pertaining to, pigment.	Pigmented
+C226009	C225362		Microscopic Findings Result Modifier	PLASMACYTIC		Of, or pertaining to, plasma cells.	Plasmacytic
+C28109	C225362		Microscopic Findings Result Modifier	PLEOMORPHIC		Having variation in the size and shape of cells or nuclei.	Pleomorphic
+C25223	C225362		Microscopic Findings Result Modifier	PLEURAL		Of, or pertaining to, the pleura.	Pleural
+C96279	C225362		Microscopic Findings Result Modifier	POLYPOID		Of, or pertaining to, a polyp.	Polypoid
+C36132	C225362		Microscopic Findings Result Modifier	POORLY DIFFERENTIATED		Of, or pertaining to, a lesion or cells that have little to no characteristics of the normal origin tissue.	Poorly Differentiated Lesion
+C226010	C225362		Microscopic Findings Result Modifier	PORTAL REGION		The area in proximity to the portal vein, hepatic artery, and bile duct of the liver.	Portal Region
+C38007	C225362		Microscopic Findings Result Modifier	PORTAL		Of, or pertaining to, a liver portal.	Portal
+C226011	C225362		Microscopic Findings Result Modifier	POSTTRAUMATIC		Following a traumatic event.	Posttraumatic
+C226012	C225362		Microscopic Findings Result Modifier	PREDOMINANTLY	Predominately	Of, or pertaining to, the most common component.	Predominantly
+C226013	C225362		Microscopic Findings Result Modifier	PREMOLAR		Of, or pertaining to, a premolar tooth.	Premolar
+C226014	C225362		Microscopic Findings Result Modifier	PREPUTIAL		Of, or pertaining to, the preputium.	Preputial
+C226015	C225362		Microscopic Findings Result Modifier	PRESCAPULAR		In front of the scapula.	Prescapular
+C25251	C225362		Microscopic Findings Result Modifier	PRIMARY		Occurring first in place, order, degree, value, or rank.	Primary
+C226016	C225362		Microscopic Findings Result Modifier	PRIMORDIAL		Of, or pertaining to, the earliest stage of development.	Primordial
+C25254	C225362		Microscopic Findings Result Modifier	PROGRESSIVE		Advancing in extent or severity.	Progressive
+C226018	C225362		Microscopic Findings Result Modifier	PROTEINACEOUS MATERIAL		A physical substance composed of protein or having the appearance of protein.	Proteinaceous Material
+C226017	C225362		Microscopic Findings Result Modifier	PROTEINACEOUS		Of, or pertaining to, a substance containing protein.	Proteinaceous
+C28028	C225362		Microscopic Findings Result Modifier	PROTOZOAL		Of, or pertaining to, a protozoan.	Protozoal
+C25236	C225362		Microscopic Findings Result Modifier	PROXIMAL		Situated nearest to a point of reference.	Proximal
+C13304	C225362		Microscopic Findings Result Modifier	PULMONARY		Of, or pertaining to, the lungs.	Pulmonary
+C226020	C225362		Microscopic Findings Result Modifier	PYLORIC REGION		The area in proximity to the pylorus of the stomach.	Pyloric Region
+C226019	C225362		Microscopic Findings Result Modifier	PYLORIC		Of, or pertaining to, the pylorus.	Pyloric
+C226021	C225362		Microscopic Findings Result Modifier	PYOGRANULOMATOUS		Of, or pertaining to, a finding that shares some qualities of a granuloma with pus.	Pyogranulomatous Finding
+C48326	C225362		Microscopic Findings Result Modifier	RED		The hue of the long-wave end of the visible spectrum, evoked in the human observer by radiant energy with wavelengths of approximately 630 to 750 nanometers; any of a group of colors that may vary in lightness and saturation and whose hue resembles that of blood.	Red
+C25225	C225362		Microscopic Findings Result Modifier	RENAL		Of, or pertaining to, a kidney.	Renal
+C226022	C225362		Microscopic Findings Result Modifier	RESOLVING		Decreasing in extent or severity.	Resolving
+C25656	C225362		Microscopic Findings Result Modifier	RESPIRATORY		Of, or pertaining to, components of the respiratory system.	Respiratory
+C87176	C225362		Microscopic Findings Result Modifier	RETINAL		Of, or pertaining to, the retina.	Retinal
+C226023	C225362		Microscopic Findings Result Modifier	RETROLENTICULAR		Behind the lens.	Retrolenticular
+C226024	C225362		Microscopic Findings Result Modifier	RETROPHARYNGEAL		Behind the pharynx.	Retropharyngeal
+C226025	C225362		Microscopic Findings Result Modifier	RETRORETINAL		Behind the retina.	Retroretinal
+C38017	C225362		Microscopic Findings Result Modifier	SALIVARY		Of, or pertaining to, the salivary glands and/or saliva.	Salivary
+C226026	C225362		Microscopic Findings Result Modifier	SCIATIC		Of, or pertaining to, the sciatic nerve.	Sciatic
+C226027	C225362		Microscopic Findings Result Modifier	SEBACEOUS		Of, or pertaining to, sebocytes or sebum.	Sebaceous Finding
+C25667	C225362		Microscopic Findings Result Modifier	SECONDARY		Occurring second in place, order, degree, value, or rank.	Secondary
+C226028	C225362		Microscopic Findings Result Modifier	SECRETORY		Of, or pertaining to, a gland or other structure producing a secretion.	Secretory
+C186021	C225362		Microscopic Findings Result Modifier	SEPTAL		Of, or related to, or in the direction of, an anatomical septum.	Septal
+C226029	C225362		Microscopic Findings Result Modifier	SEROCELLULAR		Of, or related to serum and blood cells.	Serocellular
+C14168	C225362		Microscopic Findings Result Modifier	SEROUS		Of, or pertaining to, a finding that shares some qualities of serum.	Serous
+C226030	C225362		Microscopic Findings Result Modifier	SIDEROFIBROTIC		Of, or pertaining to, fibrosis characterized by iron deposits.	Siderofibrotic Finding
+C226031	C225362		Microscopic Findings Result Modifier	SINUSOIDAL		Of, or pertaining to, a sinusoid.	Sinusoidal
+C226032	C225362		Microscopic Findings Result Modifier	SMALL LYMPHOCYTIC		Of, or pertaining to, small lymphocytes.	Small Lymphocytic
+C226033	C225362		Microscopic Findings Result Modifier	SPLENIC		Of, or pertaining to, the spleen.	Splenic
+C226034	C225362		Microscopic Findings Result Modifier	SPORADIC		Occurring occasionally or at irregular intervals.	Sporadic
+C226035	C225362		Microscopic Findings Result Modifier	SQUAMOUS		Of, or pertaining to a finding or structure containing squamous cells or tissue.	Squamous Finding
+C226036	C225362		Microscopic Findings Result Modifier	STROMAL		Of, or pertaining to, the stroma.	Stromal
+C226038	C225362		Microscopic Findings Result Modifier	SUBCAPSULAR REGION		The area beneath a capsule.	Subcapsular Region
+C226037	C225362		Microscopic Findings Result Modifier	SUBCAPSULAR		Beneath a capsule.	Subcapsular
+C226039	C225362		Microscopic Findings Result Modifier	SUBCHONDRAL		Beneath the articular cartilage.	Subchondral
+C226040	C225362		Microscopic Findings Result Modifier	SUBCORNEAL		Beneath the cornea.	Subcorneal
+C165870	C225362		Microscopic Findings Result Modifier	SUBCORTICAL		Denoting the area below a cortex.	Subcortical
+C13353	C225362		Microscopic Findings Result Modifier	SUBCUTANEOUS		Of, or pertaining to, the subcutis.	Subcutaneous
+C226041	C225362		Microscopic Findings Result Modifier	SUBENDOCARDIAL		Beneath the endocardium.	Subendocardial
+C226042	C225362		Microscopic Findings Result Modifier	SUBEPITHELIAL		Beneath the epithelium.	Subepithelial
+C129462	C225362		Microscopic Findings Result Modifier	SUBMANDIBULAR		Beneath the mandible.	Submandibular
+C96296	C225362		Microscopic Findings Result Modifier	SUBMUCOSAL		Beneath the mucosa.	Submucosal
+C226043	C225362		Microscopic Findings Result Modifier	SUBPLEURAL		Beneath the pleura.	Subpleural
+C189892	C225362		Microscopic Findings Result Modifier	SUBRETINAL		Beneath the retina.	Subretinal
+C226044	C225362		Microscopic Findings Result Modifier	SUBSCAPULAR		Beneath the scapula.	Subscapular
+C25239	C225362		Microscopic Findings Result Modifier	SUPERFICIAL		Of or pertaining to the exterior surface. (NCI)	Superficial
+C226045	C225362		Microscopic Findings Result Modifier	SUPRACHOROIDAL		Of, or pertaining to, the space between the sclera and choroid.	Suprachoroidal
+C226046	C225362		Microscopic Findings Result Modifier	SUTURAL		Of, or pertaining to, a suture.	Sutural
+C50365	C225362		Microscopic Findings Result Modifier	SUTURE MATERIAL		A physical substance used to close a surgical or accidental wound.	Suture Device
+C226047	C225362		Microscopic Findings Result Modifier	SYNOVIAL		Of, or pertaining to, the synovium.	Synovial
+C71903	C225362		Microscopic Findings Result Modifier	TERTIARY		Occurring third in place, order, degree, value, or rank.	Tertiary
+C13360	C225362		Microscopic Findings Result Modifier	THORACIC		Of, or pertaining to, the anatomic region of the thorax.	Thoracic
+C226048	C225362		Microscopic Findings Result Modifier	THROMBIC	Thrombotic	Of, or pertaining to, a thrombus.	Thrombic
+C226049	C225362		Microscopic Findings Result Modifier	THYMIC		Of, or pertaining to, the thymus and its components.	Thymic
+C226050	C225362		Microscopic Findings Result Modifier	TRABECULAR		Of, or pertaining to a trabecula.	Trabecular
+C86929	C225362		Microscopic Findings Result Modifier	TRANSMURAL		Across an anatomic wall.	Transmural
+C14169	C225362		Microscopic Findings Result Modifier	TUBULAR		Of, or pertaining to a tubule.	Tubular
+C226051	C225362		Microscopic Findings Result Modifier	TUBULOINTERSTITIAL		Of, or pertaining to, tubules and interstitium.	Tubulointerstitial
+C226052	C225362		Microscopic Findings Result Modifier	TUBULOSTROMAL		Of, or pertaining to, tubules and stroma.	Tubulostromal
+C68598	C225362		Microscopic Findings Result Modifier	UNILATERAL		Affecting one side of the body or one of a pair of organs.	Unilateral
+C226053	C225362		Microscopic Findings Result Modifier	UROTHELIAL		Of, or pertaining to, the urothelium.	Urothelial
+C226054	C225362		Microscopic Findings Result Modifier	UVEAL		Of, or pertaining to, the uvea.	Uveal
+C226055	C225362		Microscopic Findings Result Modifier	VACUOLAR		Of, or pertaining to a vacuole.	Vacuolar
+C226056	C225362		Microscopic Findings Result Modifier	VALVULAR		Of, or pertaining to a valve.	Valvular
+C13311	C225362		Microscopic Findings Result Modifier	VASCULAR		Of, or pertaining to a vessel.	Vascular
+C226057	C225362		Microscopic Findings Result Modifier	VASCULAR/PERIVASCULAR		Of, or pertaining to a vessel and/or the area around the vessel.	Vascular and/or Perivascular
+C25291	C225362		Microscopic Findings Result Modifier	VENOUS		Of, or pertaining to, a vein.	Venous
+C45875	C225362		Microscopic Findings Result Modifier	VENTRAL		Pertaining to the front or lower surface of the body.	Ventral
+C38055	C225362		Microscopic Findings Result Modifier	VENTRICULAR		Of, or pertaining to a ventricle.	Ventricular
+C226058	C225362		Microscopic Findings Result Modifier	VESICULAR		Of, or pertaining to a vesicle.	Vesicular
+C14170	C225362		Microscopic Findings Result Modifier	VILLOUS		Of, pertaining to, or containing villi.	Villous
+C27985	C225362		Microscopic Findings Result Modifier	VIRAL		Of, or pertaining to, a virus.	Viral
+C226059	C225362		Microscopic Findings Result Modifier	VITREORETINAL		Of, or pertaining to, the vitreous and retina.	Vitreoretinal
+C36133	C225362		Microscopic Findings Result Modifier	WELL DIFFERENTIATED		Of, or pertaining to, a lesion or cells that have most characteristics of the normal origin tissue.	Well Differentiated Lesion
+C48325	C225362		Microscopic Findings Result Modifier	WHITE		The achromatic color of maximum lightness; the color of objects that reflect nearly all light of all visible wavelengths; the complement or antagonist of black, the other extreme of the neutral gray series.	White
+C48330	C225362		Microscopic Findings Result Modifier	YELLOW		The hue of that portion of the visible spectrum lying between orange and green, evoked in the human observer by radiant energy with wavelengths of approximately 570 to 590 nanometers; any of a group of colors that may vary in lightness and saturation and whose hue resembles that of ripe lemons.	Yellow
+C226060	C225362		Microscopic Findings Result Modifier	ZONAL		Of, or pertaining to a zone.	Zonal

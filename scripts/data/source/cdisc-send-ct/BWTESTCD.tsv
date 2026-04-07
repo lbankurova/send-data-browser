@@ -1,0 +1,5 @@
+Code	Codelist Code	Codelist Extensible (Yes/No)	Codelist Name	CDISC Submission Value	CDISC Synonym(s)	CDISC Definition	NCI Preferred Term
+C89962		Yes	Body Weight Test Code	BWTESTCD	Body Weight Test Code	Terminology for the test codes concerned with the measurement of body mass.	CDISC SEND Body Weight Test Code Terminology
+C81328	C89962		Body Weight Test Code	BW	Body Weight	The weight of a subject. (NCI)	Body Weight
+C124477	C89962		Body Weight Test Code	BWADJGU	Gravid Uterus Adjusted Body Weight	The maternal body weight adjusted for the weight of the gravid uterus. This is derived by subtracting the gravid uterus weight from the total maternal body weight.	Gravid Uterus Adjusted Maternal Body Weight
+C90464	C89962		Body Weight Test Code	TERMBW	Terminal Body Weight	The weight of a subject at a specified end point. (NCI)	Terminal Body Weight
