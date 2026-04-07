@@ -114,8 +114,15 @@ def _compute_etag(study_id: str, file_name: str, view_name: str, cache_key: str 
     Returns a quoted ETag string like '"abc123"', or None if file not found.
     """
     if cache_key:
-        # Parameterized (non-default settings): ETag = settings hash + override mtimes
+        # Parameterized (non-default settings): ETag = settings hash + cached file mtime + override mtimes.
+        # The cached file mtime ensures the ETag changes when the pipeline recomputes
+        # (e.g. after an enrichment bugfix), so browsers refetch the body instead of
+        # getting a stale 304.  Without this, the ETag was content-independent and
+        # clients could pin a buggy response indefinitely (GAP-249/GAP-250).
         parts = [cache_key]
+        cached_path = GENERATED_DIR / study_id / ".settings_cache" / cache_key / file_name
+        if cached_path.exists():
+            parts.append(str(cached_path.stat().st_mtime_ns))
     else:
         # Default settings: ETag = generated file mtime
         file_path = GENERATED_DIR / study_id / file_name
@@ -138,9 +145,15 @@ def _compute_etag(study_id: str, file_name: str, view_name: str, cache_key: str 
     return f'"{hashlib.md5(raw.encode()).hexdigest()[:16]}"'
 
 
-def _set_cache_headers(response: Response, etag: str | None, max_age: int = 300):
-    """Set Cache-Control and ETag on the response."""
-    response.headers["Cache-Control"] = f"public, max-age={max_age}"
+def _set_cache_headers(response: Response, etag: str | None):
+    """Set Cache-Control and ETag on the response.
+
+    Always ``max-age=0, must-revalidate`` so browsers revalidate every
+    request (ETag-based 304 for efficiency).  The previous ``max-age=300``
+    caused stale responses to pin in browser disk cache indefinitely
+    after enrichment-class regressions (GAP-249/GAP-250).
+    """
+    response.headers["Cache-Control"] = "public, max-age=0, must-revalidate"
     if etag:
         response.headers["ETag"] = etag
 
@@ -405,11 +418,11 @@ def get_analysis_view(
                 detail=f"Analysis data not generated for {study_id}/{view_name}. Run the generator first.",
             )
 
-        # HTTP caching: default views are stable -- cache 5 min, ETag for 304
+        # HTTP caching: default views are stable -- ETag for 304, must-revalidate
         etag = _compute_etag(study_id, file_name, view_name)
         if etag and request.headers.get("if-none-match") == etag:
             return Response(status_code=304)
-        _set_cache_headers(response, etag, max_age=300)
+        _set_cache_headers(response, etag)
 
         return _apply_overrides(data, study_id, view_name)
 
@@ -420,7 +433,7 @@ def get_analysis_view(
         etag = _compute_etag(study_id, file_name, view_name, cache_key=cache_key)
         if etag and request.headers.get("if-none-match") == etag:
             return Response(status_code=304)
-        _set_cache_headers(response, etag, max_age=300)
+        _set_cache_headers(response, etag)
         return _apply_overrides(cached, study_id, view_name)
 
     # Cache miss -> file-based lock prevents thundering herd across workers.
@@ -457,7 +470,7 @@ def get_analysis_view(
         log.info("Waiting for pipeline %s/%s (hash=%s)...", study_id, view_name, cache_key)
         cached = wait_for_cache(study_id, cache_key, view_name)
         if cached is not None:
-            _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key), max_age=300)
+            _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key))
             return _apply_overrides(cached, study_id, view_name)
         raise HTTPException(status_code=503, detail="Pipeline computation timed out")
 
@@ -465,7 +478,7 @@ def get_analysis_view(
     cached = read_cache(study_id, cache_key, view_name)
     if cached is None:
         raise HTTPException(status_code=500, detail=f"Pipeline did not produce {view_name}")
-    _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key), max_age=300)
+    _set_cache_headers(response, _compute_etag(study_id, file_name, view_name, cache_key=cache_key))
     return _apply_overrides(cached, study_id, view_name)
 
 
