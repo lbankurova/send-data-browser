@@ -49,6 +49,11 @@
             "type": "command",
             "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"(classification\\.py|findings_pipeline\\.py|statistics\\.py|view_dataframes\\.py|domain_stats\\.py|scores_and_rules\\.py|findings-rail-engine\\.ts|derive-summaries\\.ts|cross-domain-syndromes\\.ts|endpoint-confidence\\.ts|finding-nature\\.ts|organ-weight-normalization\\.ts|syndrome-interpretation\\.ts|g-lower\\.ts)\"; then echo \"ENGINE FILE MODIFIED: $(basename $FILE)\"; echo \"Run /regen-validation after this change set to verify signal detection scores.\"; fi'",
             "_comment": "Engine change detection. Advisory -- flags validation ratchet needed."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"\\.tsx$\"; then cd C:/pg/pcc/frontend && npm run build 2>&1 | tail -20; fi'",
+            "_comment": "TSX build check. Advisory -- runs npm run build after .tsx file edits to catch TypeScript errors early."
           }
         ]
       }

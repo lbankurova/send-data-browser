@@ -264,6 +264,27 @@ export const layout = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Composite recipes — pre-assembled token combinations for common assemblies
+// Adoption is incremental: use recipe.ctxPane instead of assembling tokens.
+// ---------------------------------------------------------------------------
+
+export const recipe = {
+  /** Context panel pane: section header + pane padding + evidence bg */
+  ctxPane: `${ty.sectionHeader} ${sp.ctxPane} bg-muted/5`,
+  /** Analysis table cell: compact padding + cell text + row divider */
+  analysisTable: `${sp.cellCompact} ${ty.cell} ${tbl.rowDivider}`,
+  /** Spacious table cell: spacious padding + cell text + row divider */
+  spaciousTable: `${sp.cellSpacious} text-xs ${tbl.rowDivider}`,
+  /** Chart center panel: standard padding, flex column layout.
+   *  Layout classes (flex, gap) are structural Tailwind — no design token exists for these.
+   *  p-4 is standard chart container padding per visual design guide §3. */
+  chartCenter: "flex flex-col gap-4 p-4",
+  /** Active tab: canonical tab bar active state (CLAUDE.md K-05 pattern).
+   *  These are the exact K-05 checklist values — no dedicated token exists. */
+  activeTab: "text-xs font-medium text-foreground",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Signal cell — severity/classification indicator in findings tables (signal)
 // ---------------------------------------------------------------------------
 
