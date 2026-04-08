@@ -7,7 +7,7 @@
  */
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getDoseGroupColor, getNeutralHeatColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getNeutralHeatColor, getSeverityGradeColor } from "@/lib/severity-colors";
 import { shortDoseLabel } from "@/lib/dose-label-utils";
 import type { CohortSubject, SubjectSyndromeProfile, RecoverySubjectProfile, NoaelSubjectOverlay } from "@/types/cohort";
 import type { UnifiedFinding } from "@/types/analysis";
@@ -290,7 +290,7 @@ export function SubjectSignalTable({
                 {/* Max MI severity */}
                 <td className="whitespace-nowrap px-2 py-1 text-right">
                   {row.maxMiSeverity > 0 ? (
-                    <span className="font-mono" style={{ color: getNeutralHeatColor(row.maxMiSeverity / 5).text, backgroundColor: getNeutralHeatColor(row.maxMiSeverity / 5).bg, padding: "0 3px", borderRadius: "2px" }}>
+                    <span className="font-mono" style={{ color: getSeverityGradeColor(row.maxMiSeverity).text, backgroundColor: getSeverityGradeColor(row.maxMiSeverity).bg, padding: "0 3px", borderRadius: "2px" }}>
                       {row.maxMiSeverity}
                     </span>
                   ) : (

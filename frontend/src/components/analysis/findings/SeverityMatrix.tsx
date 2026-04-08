@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
+import { getSeverityGradeColor, BINARY_AFFECTED_FILL } from "@/lib/severity-colors";
 import { DoseHeader } from "@/components/ui/DoseLabel";
 import { doseAbbrev } from "@/lib/dose-label-utils";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
@@ -178,21 +178,21 @@ function buildRecoveryCells(
 // ─── Legend (standalone mode only) ────────────────────────
 
 const LEGEND_ITEMS = [
-  { label: "1 Minimal", score: 0.1 },
-  { label: "2 Mild", score: 0.3 },
-  { label: "3 Moderate", score: 0.5 },
-  { label: "4 Marked", score: 0.7 },
-  { label: "5 Severe", score: 0.9 },
+  { label: "1 Minimal", grade: 1 },
+  { label: "2 Mild", grade: 2 },
+  { label: "3 Moderate", grade: 3 },
+  { label: "4 Marked", grade: 4 },
+  { label: "5 Severe", grade: 5 },
 ];
 
 function Legend() {
   return (
     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
       <span className="font-medium">Severity:</span>
-      {LEGEND_ITEMS.map(({ label, score }) => {
-        const { bg } = getNeutralHeatColor(score);
+      {LEGEND_ITEMS.map(({ label, grade }) => {
+        const { bg } = getSeverityGradeColor(grade);
         return (
-          <span key={score} className="flex items-center gap-1">
+          <span key={grade} className="flex items-center gap-1">
             <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: bg }} />
             {label}
           </span>
@@ -215,7 +215,7 @@ function Legend() {
 }
 
 // Separator between treatment and recovery columns — pronounced 2px solid line
-const RECOVERY_SEPARATOR = "w-0.5 bg-border";
+const RECOVERY_SEPARATOR = "w-px bg-gray-300";
 
 // ─── Component ──────────────────────────────────────────────
 
@@ -328,6 +328,7 @@ export function SeverityMatrix({
                   <th
                     colSpan={recoveryDoseLevels.length}
                     className={`pb-0 text-center ${periodText} font-semibold uppercase tracking-wider text-muted-foreground`}
+                    style={{ backgroundColor: "#f7f8fa" }}
                   >
                     Recovery
                   </th>
@@ -367,7 +368,7 @@ export function SeverityMatrix({
                   {recoveryDoseLevels.map(dl => {
                     const dg = doseGroups.find(d => d.dose_level === dl);
                     return (
-                      <th key={`rec_${dl}`} className={`${thPx} ${thPy} text-center`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                      <th key={`rec_${dl}`} className={`${thPx} ${thPy} text-center`} style={{ width: 1, whiteSpace: "nowrap", backgroundColor: "#f7f8fa" }}>
                         <span
                           className="text-[9px] font-mono font-medium"
                           style={{ color: dg?.display_color ?? "#6b7280" }}
@@ -417,9 +418,11 @@ export function SeverityMatrix({
                         <div className={`mx-auto h-full ${RECOVERY_SEPARATOR}`} />
                       </td>
                       {recoveryDoseLevels.map(dl => {
-                        const cell = recCells?.get(dl);
+                        let cell = recCells?.get(dl) ?? undefined;
+                        // MA/CL/TF rows are never graded — override subject-level isGraded
+                        if (cell && !row.isGraded) cell = { ...cell, isGraded: false };
                         return (
-                          <td key={`rec_${dl}`} className={`${thPx} py-px`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                          <td key={`rec_${dl}`} className={`${thPx} py-px`} style={{ width: 1, whiteSpace: "nowrap", backgroundColor: "#f7f8fa" }}>
                             <CellRenderer cell={cell} cellW={cellW} cellH={cellH} cellText={cellText} displayMode={displayMode} />
                           </td>
                         );
@@ -454,19 +457,19 @@ function CellRenderer({ cell, cellW = "w-16", cellH = "h-6", cellText = "text-[1
 }) {
   const base = `flex ${cellH} ${cellW} items-center justify-center rounded-sm`;
 
-  // Not examined -- italic "NE" matching stacked bar chart encoding
+  // Not examined -- faint dash, no text prominence. Explicit white bg to resist recovery tint.
   if (!cell) {
     return (
-      <div className={`${base}`} title="Not examined">
-        <span className={`${cellText} font-mono italic text-muted-foreground/40`}>NE</span>
+      <div className={`${base} bg-white`} title="Not examined">
+        <span className={`${cellText} italic text-muted-foreground/25`}>&mdash;</span>
       </div>
     );
   }
 
-  // Examined, finding absent -- dashed envelope matching stacked bar chart
+  // Examined, finding absent -- dashed envelope. Explicit white bg to resist recovery tint.
   if (cell.affected === 0) {
     return (
-      <div className={`${base} border border-dashed border-gray-300`}>
+      <div className={`${base} border border-dashed border-gray-300 bg-white`}>
         <span className={`${cellText} font-mono text-muted-foreground/50`}>{formatCellLabel(0, cell.n, displayMode)}</span>
       </div>
     );
@@ -477,16 +480,16 @@ function CellRenderer({ cell, cellW = "w-16", cellH = "h-6", cellText = "text-[1
     return (
       <div
         className={`${base}`}
-        style={{ backgroundColor: "#9CA3AF" }}
+        style={{ backgroundColor: BINARY_AFFECTED_FILL }}
         title={`${cell.affected}/${cell.n} present (ungraded)`}
       >
-        <span className={`${cellText} font-mono font-medium text-white`}>{formatCellLabel(cell.affected, cell.n, displayMode)}</span>
+        <span className={`${cellText} font-mono font-medium`} style={{ color: "var(--foreground)" }}>{formatCellLabel(cell.affected, cell.n, displayMode)}</span>
       </div>
     );
   }
 
-  // Graded -- heat color by mean severity
-  const heat = getNeutralHeatColor(cell.avgSeverity ?? 0);
+  // Graded -- warm severity palette by mean severity
+  const heat = getSeverityGradeColor(cell.avgSeverity ?? 0);
   const isOutlier = cell.maxSeverity >= 3 && cell.avgSeverity != null && (cell.maxSeverity - cell.avgSeverity) >= 2;
   return (
     <div

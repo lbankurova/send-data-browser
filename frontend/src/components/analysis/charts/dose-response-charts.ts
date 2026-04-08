@@ -8,7 +8,7 @@ import type { EChartsOption } from "echarts";
 import type { CustomSeriesRenderItemAPI, CustomSeriesRenderItemParams } from "echarts";
 import type { NonMonotonicFlag } from "@/lib/endpoint-confidence";
 import { CONTINUOUS_DOMAINS } from "@/lib/derive-summaries";
-import { formatDoseShortLabel, getDoseGroupColor, getNeutralHeatColor } from "@/lib/severity-colors";
+import { formatDoseShortLabel, getDoseGroupColor, getSeverityGradeColor } from "@/lib/severity-colors";
 
 // ─── Shared constants ────────────────────────────────────────
 
@@ -1339,9 +1339,8 @@ export function buildDoseResponseBarOption(
 // ─── 8. Stacked Severity Bar Chart ──────────────────────────
 
 const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
-// 5-step neutral grayscale ramp via shared getNeutralHeatColor()
-const GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9];
-const GRADE_COLORS = GRADE_SCORES.map((s) => getNeutralHeatColor(s).bg);
+// 5-step warm severity palette via getSeverityGradeColor()
+const GRADE_COLORS = [1, 2, 3, 4, 5].map((g) => getSeverityGradeColor(g).bg);
 
 /**
  * Vertical stacked bar chart showing severity grade distribution

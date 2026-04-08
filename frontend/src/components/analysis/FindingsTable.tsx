@@ -20,7 +20,8 @@ import {
   formatEffectSize,
   formatDoseShortLabel,
   getPValueHex,
-  getNeutralHeatColor,
+  getSeverityGradeColor,
+  BINARY_AFFECTED_FILL,
   isExactTestSuppressed,
   EXACT_TEST_SUPPRESSED_TITLE,
 } from "@/lib/severity-colors";
@@ -606,11 +607,14 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
                 </span>
               );
             }
-            // MI/MA: heat-color incidence cells by severity or incidence score
-            const isMiMa = f.domain === "MI" || f.domain === "MA";
+            // MI/MA/TF: heat-color incidence cells — severity for MI, binary fill for MA/TF/CL
+            const isMiMa = f.domain === "MI" || f.domain === "MA" || f.domain === "TF";
             const incidence = gs.incidence ?? 0;
+            const isBinary = f.domain !== "MI";
             const heat = isMiMa && dg.dose_level > 0 && incidence > 0
-              ? getNeutralHeatColor(gs.avg_severity != null ? Math.min(gs.avg_severity / 4, 1) : incidence)
+              ? isBinary
+                ? { bg: BINARY_AFFECTED_FILL, text: "var(--foreground)" }
+                : getSeverityGradeColor(gs.avg_severity ?? 1)
               : null;
             return (
               <span
@@ -952,12 +956,15 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           if (r.data_type === "continuous") {
             return <span className="font-mono">{r.mean != null ? r.mean.toFixed(2) : "\u2014"}</span>;
           }
-          // MI/MA: heat-color incidence cells by per-dose avg severity or incidence
-          const isMiMa = r.domain === "MI" || r.domain === "MA";
+          // MI/MA/TF: heat-color incidence cells — severity for MI, binary fill for MA/TF/CL
+          const isMiMa = r.domain === "MI" || r.domain === "MA" || r.domain === "TF";
           const inc = r.incidence ?? 0;
-          const doseAvgSev = r.domain === "MI" ? r.fold_change : null; // fold_change = avg_severity for MI
+          const isBinary = r.domain !== "MI";
+          const doseAvgSev = r.domain === "MI" ? r.fold_change : null;
           const heat = isMiMa && r.dose_level > 0 && inc > 0
-            ? getNeutralHeatColor(doseAvgSev != null ? Math.min(doseAvgSev / 4, 1) : inc)
+            ? isBinary
+              ? { bg: BINARY_AFFECTED_FILL, text: "var(--foreground)" }
+              : getSeverityGradeColor(doseAvgSev ?? 1)
             : null;
           return (
             <span

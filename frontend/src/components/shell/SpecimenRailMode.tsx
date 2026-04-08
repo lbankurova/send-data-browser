@@ -9,7 +9,8 @@ import { useGlobalFilters } from "@/contexts/GlobalFilterContext";
 import { DomainLabel } from "@/components/ui/DomainLabel";
 import { FilterSelect, FilterShowingLine } from "@/components/ui/FilterBar";
 import {
-  getNeutralHeatColor as getNeutralHeatColor01,
+  getNeutralHeatColor,
+  getSeverityGradeColor,
   titleCase,
 } from "@/lib/severity-colors";
 import { formatPatternLabel } from "@/lib/pattern-classification";
@@ -20,7 +21,6 @@ import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import { useStudyContext } from "@/hooks/useStudyContext";
 import type { LesionSeverityRow } from "@/types/analysis-views";
 import {
-  getNeutralHeatColor,
   deriveSpecimenSummaries,
   deriveSpecimenReviewStatus,
   specimenToOrganSystem,
@@ -52,8 +52,8 @@ function SpecimenRailItem({
   reviewTooltip?: string;
   sortBy?: string;
 }) {
-  const sevColors = getNeutralHeatColor(summary.maxSeverity);
-  const incColors = getNeutralHeatColor01(summary.maxIncidence);
+  const sevColors = getSeverityGradeColor(summary.maxSeverity);
+  const incColors = getNeutralHeatColor(summary.maxIncidence);
   const incPct = Math.round(summary.maxIncidence * 100);
   const bd = summary.signalScoreBreakdown;
   const scoreTooltip = sortBy === "signal"

@@ -12,13 +12,12 @@
  * (useHistopathSubjects) — single source of truth for NE/zero encoding.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
-import { getNeutralHeatColor, getSexColor } from "@/lib/severity-colors";
+import { getSeverityGradeColor, getSexColor, BINARY_AFFECTED_FILL } from "@/lib/severity-colors";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 import { SeverityMatrix } from "./SeverityMatrix";
 import {
   StackedSeverityIncidenceChart,
   SEV_GRADE_LABELS,
-  SEV_GRADE_SCORES,
 } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import type { DisplayMode } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import {
@@ -42,11 +41,12 @@ interface Props {
 
 function SharedLegend({ hasSeverity }: { hasSeverity: boolean }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+    <div className="flex min-w-0 items-center gap-x-2 text-[9px] text-muted-foreground">
       {hasSeverity ? (
         <>
+          <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Severity</span>
           {SEV_GRADE_LABELS.map((label, i) => {
-            const { bg } = getNeutralHeatColor(SEV_GRADE_SCORES[i]);
+            const { bg } = getSeverityGradeColor(i + 1);
             return (
               <span key={label} className="flex items-center gap-0.5 whitespace-nowrap">
                 <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: bg }} />
@@ -59,25 +59,18 @@ function SharedLegend({ hasSeverity }: { hasSeverity: boolean }) {
             Ungraded
           </span>
           <span className="flex items-center gap-0.5 whitespace-nowrap">
-            <span className="font-mono italic" style={{ color: "#9CA3AF" }}>NE</span>
-            <span>not examined</span>
+            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: BINARY_AFFECTED_FILL }} />
+            Affected
           </span>
         </>
       ) : (
         <>
           <span className="flex items-center gap-0.5 whitespace-nowrap">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: "#9CA3AF" }} />
-            Present
-          </span>
-          <span className="flex items-center gap-0.5 whitespace-nowrap">
-            <span className="font-mono italic" style={{ color: "#9CA3AF" }}>NE</span>
-            <span>not examined</span>
+            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: BINARY_AFFECTED_FILL }} />
+            Affected
           </span>
         </>
       )}
-      <span className="whitespace-nowrap text-[9px] italic text-muted-foreground/60">
-        (matrix: mean severity)
-      </span>
     </div>
   );
 }
@@ -210,7 +203,10 @@ export function SpecimenIncidencePanel({
         <div className="flex min-w-0 flex-1">
           <SharedLegend hasSeverity={anyHasSeverity} />
         </div>
-        <PanePillToggle value={mode} options={MODE_OPTIONS} onChange={setMode} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Incidence</span>
+          <PanePillToggle value={mode} options={MODE_OPTIONS} onChange={setMode} />
+        </div>
       </div>
 
       {/* Split panels */}

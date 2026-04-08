@@ -16,7 +16,7 @@ import {
 import type { MergedPoint, BarVerdictInfo } from "@/components/analysis/charts/dose-response-charts";
 import { flattenFindingsToDRRows } from "@/lib/derive-summaries";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
-import { getSexColor, getDoseGroupColor, formatDoseShortLabel, getNeutralHeatColor } from "@/lib/severity-colors";
+import { getSexColor, getDoseGroupColor, formatDoseShortLabel, getSeverityGradeColor } from "@/lib/severity-colors";
 import { getEffectSizeLabel, getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { PAIRWISE_TEST_LABELS, MULTIPLICITY_LABELS, TREND_TEST_LABELS, INCIDENCE_TREND_LABELS } from "@/lib/build-settings-params";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
@@ -61,17 +61,17 @@ const COMPACT_AXIS_FONT = 8;
 
 /** Severity grade labels — canonical across all severity displays. */
 const SEV_GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"] as const;
-const SEV_GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
 
 /** Shared severity legend for stacked severity charts. */
 function SeverityLegend() {
   return (
-    <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+    <div className="flex items-center gap-x-2 text-[9px] text-muted-foreground">
+      <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Severity</span>
       {SEV_GRADE_LABELS.map((label, i) => (
         <span key={label} className="flex items-center gap-0.5">
           <span
             className="inline-block h-2 w-2 rounded-sm"
-            style={{ backgroundColor: getNeutralHeatColor(SEV_GRADE_SCORES[i]).bg }}
+            style={{ backgroundColor: getSeverityGradeColor(i + 1).bg }}
           />
           {label}
         </span>

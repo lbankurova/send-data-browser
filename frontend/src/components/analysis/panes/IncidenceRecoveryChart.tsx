@@ -9,7 +9,7 @@
  * Data source: incidence_rows from /recovery-comparison API.
  */
 import { useMemo } from "react";
-import { getDoseGroupColor, getSexColor, getNeutralHeatColor } from "@/lib/severity-colors";
+import { getDoseGroupColor, getSexColor, getSeverityGradeColor, BINARY_AFFECTED_FILL } from "@/lib/severity-colors";
 import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 
@@ -27,8 +27,7 @@ interface IncidenceRecoveryChartProps {
 
 // ── Severity grade palette ──────────────────────────────
 
-const GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9];
-const GRADE_COLORS = GRADE_SCORES.map((s) => getNeutralHeatColor(s).bg);
+const GRADE_COLORS = [1, 2, 3, 4, 5].map((g) => getSeverityGradeColor(g).bg);
 const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
 
 // ── Layout constants ────────────────────────────────────
@@ -283,7 +282,7 @@ function IncidenceBar({
             // Solid bar (CL/MA — no severity)
             <div
               className="absolute top-0 left-0 rounded-sm"
-              style={{ width: barW, height: barH, backgroundColor: "#9CA3AF" }}
+              style={{ width: barW, height: barH, backgroundColor: BINARY_AFFECTED_FILL }}
             />
           )
         )}

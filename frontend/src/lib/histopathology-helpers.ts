@@ -81,15 +81,11 @@ export interface HeatmapData {
   totalFindings: number;
 }
 
-// ─── Neutral heat color (§6.1 evidence tier) ─────────────
-
-export function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
-  if (avgSev >= 5) return { bg: "#4B5563", text: "white" };
-  if (avgSev >= 4) return { bg: "#6B7280", text: "white" };
-  if (avgSev >= 3) return { bg: "#9CA3AF", text: "var(--foreground)" };
-  if (avgSev >= 2) return { bg: "#D1D5DB", text: "var(--foreground)" };
-  return { bg: "transparent", text: "var(--muted-foreground)" };
-}
+// ─── Severity grade color ─────────────────────────────────
+// Callers that need severity grade colors (integer 1-5) should import
+// getSeverityGradeColor directly from "@/lib/severity-colors".
+// The old getNeutralHeatColor re-export was removed to avoid name collision
+// with the distinct 0-1 signal-score function in severity-colors.ts.
 
 // ─── Helpers ───────────────────────────────────────────────
 

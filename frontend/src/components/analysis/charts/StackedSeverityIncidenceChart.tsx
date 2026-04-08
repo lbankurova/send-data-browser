@@ -18,7 +18,7 @@
  * there is more than one sex.
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { getNeutralHeatColor, getSexColor } from "@/lib/severity-colors";
+import { getSeverityGradeColor, getSexColor, BINARY_AFFECTED_FILL } from "@/lib/severity-colors";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -94,17 +94,16 @@ interface Props {
  *  In the stacked bar, index 0 (Minimal) ALWAYS sits at the bottom of the stack,
  *  index 4 (Severe) at the top, and (when present) "Ungraded" sits above Severe. */
 export const SEV_GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"] as const;
-export const SEV_GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
-const SEV_COLORS = SEV_GRADE_SCORES.map((s) => getNeutralHeatColor(s).bg);
-const SEV_TEXT_COLORS = SEV_GRADE_SCORES.map((s) => getNeutralHeatColor(s).text);
+const SEV_COLORS = [1, 2, 3, 4, 5].map((g) => getSeverityGradeColor(g).bg);
+const SEV_TEXT_COLORS = [1, 2, 3, 4, 5].map((g) => getSeverityGradeColor(g).text);
 
 /** Pattern fill ID for "Ungraded" — animals with the finding present but no MISEV. */
 const UNGRADED_PATTERN_ID = "stacked-sev-ungraded-pattern";
 const UNGRADED_LABEL = "Ungraded";
 
 
-// Solid bar color for CL/MA (no severity)
-const SOLID_BAR_COLOR = "#9CA3AF"; // gray-400 — matches IncidenceRecoveryChart precedent
+// Solid bar color for CL/MA (no severity) — cool neutral from severity palette
+const SOLID_BAR_COLOR = BINARY_AFFECTED_FILL;
 
 // Layout constants
 const BAR_W = 18;
@@ -120,7 +119,7 @@ const PADDING_RIGHT = 16;
 const Y_AXIS_TICK_COUNT = 4;
 const ENVELOPE_STROKE = "#D1D5DB"; // gray-300
 const NE_COLOR = "#9CA3AF";
-const DIVIDER_COLOR = "#E5E7EB";
+const RECOVERY_TINT = "#f7f8fa";
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -353,6 +352,14 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, co
       />
       {recovery && (
         <>
+          {/* Cool grey tint behind recovery cluster — matches severity matrix */}
+          <rect
+            x={PADDING_LEFT + mainW + CLUSTER_GAP / 2 + 1}
+            y={PADDING_TOP}
+            width={recW + CLUSTER_GAP / 2 + PADDING_RIGHT}
+            height={innerH}
+            fill={RECOVERY_TINT}
+          />
           <ClusterDivider
             x={PADDING_LEFT + mainW + CLUSTER_GAP / 2}
             innerH={innerH}
@@ -573,6 +580,7 @@ function DoseGroupedBars({ cluster, xOffset, innerH, hasSeverity, mode, yMaxCoun
                   isRecovery={isRecovery}
                   sex={sex}
                   sexDiffStyle={sexDiffStyle}
+                  doseLabel={g.doseLabel}
                 />
               );
             })}
@@ -621,6 +629,7 @@ function SexGroupedBars({ cluster, xOffset, innerH, hasSeverity, mode, yMaxCount
                     isRecovery={isRecovery}
                     sex={sex}
                     sexDiffStyle={sexDiffStyle}
+                    doseLabel={g.doseLabel}
                   />
                   {/* Dose abbreviation label */}
                   <text
@@ -656,6 +665,7 @@ interface BarProps {
   isRecovery: boolean;
   sex: string;
   sexDiffStyle: SexDiffStyle;
+  doseLabel: string;
 }
 
 interface Segment {
@@ -673,7 +683,7 @@ interface Segment {
   textColor: string;
 }
 
-function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, sexDiffStyle }: BarProps) {
+function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, sexDiffStyle, doseLabel }: BarProps) {
   const baseY = PADDING_TOP + innerH;
   const titleId = useId();
 
@@ -719,7 +729,24 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
   }
 
   const incPct = n > 0 ? Math.round((affected / n) * 100) : 0;
-  const summaryTooltip = `${sex}: ${affected}/${n} affected (${incPct}%)${isRecovery ? " — recovery" : ""}`;
+  // Rich tooltip: dose label, severity breakdown, total
+  const period = isRecovery ? "Recovery" : "Treatment";
+  const summaryLines: string[] = [`${doseLabel} \u2014 ${period}`, ""];
+  if (hasSeverity && severityCounts && affected > 0) {
+    let gradedSum = 0;
+    for (let g = 1; g <= 5; g++) {
+      const cnt = severityCounts[String(g)] ?? 0;
+      if (cnt > 0) {
+        summaryLines.push(`${SEV_GRADE_LABELS[g - 1].padEnd(10)} ${cnt}/${n}`);
+        gradedSum += cnt;
+      }
+    }
+    const ung = affected - gradedSum;
+    if (ung > 0) summaryLines.push(`${"Ungraded".padEnd(10)} ${ung}/${n}`);
+    summaryLines.push("");
+  }
+  summaryLines.push(`Total affected ${affected}/${n} (${incPct}%)`);
+  const summaryTooltip = summaryLines.join("\n");
 
   // Build stack segments — invariant order from bottom to top:
   //   grade 1 (Minimal) → grade 2 → grade 3 → grade 4 → grade 5 (Severe) → Ungraded (top)
@@ -775,11 +802,6 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
     // Show integer pct for >= 10, else 1dp (e.g. "5%" or "2.5%")
     return pct >= 10 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`;
   };
-  // Per-segment tooltip
-  const segTooltip = (seg: Segment): string => {
-    const pct = n > 0 ? Math.round((seg.count / n) * 100) : 0;
-    return `${sex} ${seg.label}: ${seg.count}/${n} (${pct}%)${isRecovery ? " — recovery" : ""}`;
-  };
 
   return (
     <g aria-labelledby={titleId}>
@@ -791,10 +813,9 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
         y={baseY - envelopeH}
         width={BAR_W}
         height={envelopeH}
-        fill={affected > 0 ? "rgba(0,0,0,0.015)" : "#FFFFFF"}
+        fill="#FFFFFF"
         stroke={ENVELOPE_STROKE}
         strokeWidth={0.5}
-        rx={2}
       />
 
       {/* Affected fill */}
@@ -810,7 +831,6 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
                 const showLabel = seg.h >= 9;
                 return (
                   <g key={seg.key}>
-                    <title>{segTooltip(seg)}</title>
                     <rect
                       x={x + 0.5}
                       y={segY}
@@ -843,7 +863,6 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
         ) : (
           // Solid fill (CL/MA, no severity)
           <g>
-            <title>{summaryTooltip}</title>
             <rect
               x={x + 0.5}
               y={baseY - affectedH}
@@ -857,7 +876,7 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
                 x={x + BAR_W / 2}
                 y={baseY - affectedH / 2 + 3}
                 fontSize={8}
-                fill="#FFFFFF"
+                fill="var(--foreground)"
                 textAnchor="middle"
                 fontFamily="ui-monospace, monospace"
                 style={{ pointerEvents: "none" }}
@@ -923,9 +942,8 @@ function ClusterDivider({ x, innerH }: { x: number; innerH: number }) {
       x2={x}
       y1={PADDING_TOP}
       y2={PADDING_TOP + innerH}
-      stroke={DIVIDER_COLOR}
-      strokeWidth={0.5}
-      strokeDasharray="4 3"
+      stroke="#D1D5DB"
+      strokeWidth={1}
     />
   );
 }
@@ -938,7 +956,12 @@ const MODE_OPTIONS = [
 ];
 
 function ModeToggle({ mode, onChange }: { mode: DisplayMode; onChange: (m: DisplayMode) => void }) {
-  return <PanePillToggle value={mode} options={MODE_OPTIONS} onChange={onChange} />;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Incidence</span>
+      <PanePillToggle value={mode} options={MODE_OPTIONS} onChange={onChange} />
+    </div>
+  );
 }
 
 // ─── Legends ─────────────────────────────────────────────────────────
@@ -954,7 +977,8 @@ function SexLegendEntries() {
 
 function SeverityLegend({ multiSex }: { multiSex: boolean }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground">
+    <div className="flex min-w-0 items-center gap-x-2 text-[9px] text-muted-foreground">
+      <span className="whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70">Severity</span>
       {SEV_GRADE_LABELS.map((label, i) => (
         <span key={label} className="flex items-center gap-0.5 whitespace-nowrap">
           <span
@@ -969,8 +993,8 @@ function SeverityLegend({ multiSex }: { multiSex: boolean }) {
         {UNGRADED_LABEL}
       </span>
       <span className="flex items-center gap-0.5 whitespace-nowrap">
-        <span className="font-mono italic" style={{ color: NE_COLOR }}>NE</span>
-        <span>not examined</span>
+        <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: SOLID_BAR_COLOR }} />
+        Affected
       </span>
       {multiSex && <SexLegendEntries />}
     </div>

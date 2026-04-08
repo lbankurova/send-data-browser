@@ -4,7 +4,7 @@
  */
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getNeutralHeatColor, getDoseGroupColor } from "@/lib/severity-colors";
+import { getSeverityGradeColor, getDoseGroupColor } from "@/lib/severity-colors";
 import { shortDoseLabel } from "@/lib/dose-label-utils";
 import { FilterSelect } from "@/components/ui/FilterBar";
 import type { OrganSignal, CohortFindingRow, SharedFinding, CohortSubject, ComparisonRow } from "@/types/cohort";
@@ -432,8 +432,7 @@ function SubjectCell({ value, domain }: { value: number | string | null | undefi
   if (domain === "MI") {
     const sev = typeof value === "number" ? value : parseInt(String(value), 10);
     if (isNaN(sev)) return <span className="text-muted-foreground">&mdash;</span>;
-    // getNeutralHeatColor expects 0-1 score; severity 1-5 → normalize
-    const heat = getNeutralHeatColor(sev / 5);
+    const heat = getSeverityGradeColor(sev);
     return (
       <span
         className="inline-flex h-5 w-6 items-center justify-center rounded text-[11px] font-semibold"

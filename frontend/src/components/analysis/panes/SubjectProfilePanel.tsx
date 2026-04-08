@@ -6,7 +6,7 @@ import { useCrossAnimalFlags } from "@/hooks/useCrossAnimalFlags";
 import type { CrossAnimalFlags } from "@/lib/analysis-view-api";
 import { cn } from "@/lib/utils";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
-import { getDoseGroupColor, formatDoseShortLabel } from "@/lib/severity-colors";
+import { getDoseGroupColor, formatDoseShortLabel, getSeverityGradeColor } from "@/lib/severity-colors";
 import { useTimecourseGroup } from "@/hooks/useTimecourse";
 import type { TimecourseResponse } from "@/types/timecourse";
 import { ci95Half } from "@/lib/stats-utils";
@@ -34,16 +34,6 @@ import {
   organSystemOrder,
 } from "@/lib/subject-concordance";
 import type { OrganScatterPoint } from "@/lib/subject-concordance";
-
-// ─── Helpers (rendering-only) ────────────────────────────
-
-function getNeutralHeatColor(avgSev: number): { bg: string; text: string } {
-  if (avgSev >= 4) return { bg: "#4B5563", text: "white" };
-  if (avgSev >= 3) return { bg: "#6B7280", text: "white" };
-  if (avgSev >= 2) return { bg: "#9CA3AF", text: "var(--foreground)" };
-  if (avgSev >= 1) return { bg: "#D1D5DB", text: "var(--foreground)" };
-  return { bg: "#E5E7EB", text: "var(--foreground)" };
-}
 
 // ─── Organ Concordance (FP-2) ──────────────────────────
 // Radar (default) + Forest plot (detail) toggle.
@@ -874,7 +864,7 @@ function HistopathFindings({
           <tbody>
             {classified.map((f, i) => {
               const sn = severityNum(f.severity);
-              const colors = sn > 0 ? getNeutralHeatColor(sn) : null;
+              const colors = sn > 0 ? getSeverityGradeColor(sn) : null;
               const isCODRow = f.isCOD || f.isPresumptiveCOD;
 
               return (

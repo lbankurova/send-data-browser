@@ -144,13 +144,26 @@ export function getDirectionColor(_direction: string | null): string {
   return "text-muted-foreground";
 }
 
-/** Severity heat color scale: pale yellow → deep red per spec §12.3 */
-export function getSeverityHeatColor(avgSev: number): string {
-  if (avgSev >= 4) return "#E57373"; // severe
-  if (avgSev >= 3) return "#FF8A65"; // marked
-  if (avgSev >= 2) return "#FFB74D"; // moderate
-  if (avgSev >= 1) return "#FFE0B2"; // mild
-  return "#FFF9C4"; // minimal
+// ─── Severity Grade Palette (cool-to-hot) ────────────────────────────────
+// Cool-to-hot diverging scale: steel blue → tan → burnt orange → red → maroon.
+// Minimal harmonizes with the app's cool chrome; severity escalates into warm/hot.
+// Use for severity-specific contexts: stacked bars, severity matrix, legends.
+// Signal-score / correlation heatmaps should use getNeutralHeatColor() instead.
+
+/** Binary-domain findings (MA/TF/CL) — affected/present, no severity concept.
+ *  Steel blue: distinct from severity ramp, harmonizes with app chrome. */
+export const BINARY_AFFECTED_FILL = "#B8C8D8";
+
+/** Severity grade to { bg, text } — integer grades 1-5.
+ *  Use for severity matrix cells, stacked incidence bars, severity legends.
+ *  Grade 0 / absent returns transparent bg. */
+export function getSeverityGradeColor(grade: number): { bg: string; text: string } {
+  if (grade >= 5) return { bg: "#701010", text: "white" };
+  if (grade >= 4) return { bg: "#A82818", text: "white" };
+  if (grade >= 3) return { bg: "#C07040", text: "white" };
+  if (grade >= 2) return { bg: "#C8A878", text: "var(--foreground)" };
+  if (grade >= 1) return { bg: "#D8D5D0", text: "var(--foreground)" };
+  return { bg: "transparent", text: "var(--muted-foreground)" };
 }
 
 /** Signal score to CSS background color (hex) — spec §12.3 thresholds. */
