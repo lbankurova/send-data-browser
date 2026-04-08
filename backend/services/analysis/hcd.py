@@ -631,6 +631,23 @@ def assess_a3_lb(
         "test_code": test_code,
     }
 
+    # Empirical percentile rank (requires NTP DTT IAD individual animal data)
+    if getattr(sqlite_db, 'lb_iad_available', False):
+        # Try NTP strain resolution (IAD data uses NTP naming)
+        ntp_strain = sqlite_db.resolve_strain(strain) if strain else None
+        pct = None
+        if ntp_strain:
+            pct = sqlite_db.percentile_rank_lb(
+                treated_group_mean, ntp_strain, sex, matched_code, dur_cat,
+            )
+        if pct is None and canonical_strain:
+            # Fallback: try the LB-resolved strain
+            pct = sqlite_db.percentile_rank_lb(
+                treated_group_mean, canonical_strain, sex, matched_code, dur_cat,
+            )
+        if pct is not None:
+            out["percentile_rank"] = pct
+
     # Warn if this is a flagged parameter
     notes = hcd.get("notes", "")
     if notes and "CAUTION" in notes:

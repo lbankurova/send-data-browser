@@ -30,6 +30,7 @@ class HcdSqliteDB:
         self._db_path = db_path or HCD_DB_PATH
         self._conn: sqlite3.Connection | None = None
         self._available: bool | None = None
+        self._lb_iad_available: bool | None = None
 
     def _get_conn(self) -> sqlite3.Connection | None:
         if self._conn is not None:
@@ -327,6 +328,72 @@ class HcdSqliteDB:
             return False
         count = conn.execute("SELECT COUNT(*) FROM hcd_lb_aggregates").fetchone()[0]
         return count > 0
+
+    @property
+    def lb_iad_available(self) -> bool:
+        """True if individual animal lab values exist (NTP DTT IAD data)."""
+        if self._lb_iad_available is not None:
+            return self._lb_iad_available
+        conn = self._get_conn()
+        if conn is None:
+            self._lb_iad_available = False
+            return False
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "animal_lab_values" not in tables:
+            self._lb_iad_available = False
+            return False
+        count = conn.execute("SELECT COUNT(*) FROM animal_lab_values").fetchone()[0]
+        self._lb_iad_available = count > 0
+        return self._lb_iad_available
+
+    def percentile_rank_lb(
+        self,
+        value: float,
+        strain: str,
+        sex: str,
+        test_code: str,
+        duration_category: str,
+    ) -> float | None:
+        """Rank a lab value against the matched HCD distribution (0-100).
+
+        Uses individual animal records from NTP DTT IAD (animal_lab_values).
+        Returns the percentage of historical control values below the given value,
+        or None if fewer than 10 matching records exist.
+
+        Minimum n=10: at n<10 the empirical percentile has only a few
+        discriminating levels (e.g. n=3 gives 0/33/67/100) which is too
+        coarse to be informative for continuous lab values. n=10 gives
+        10% granularity minimum. Caller guards on lb_iad_available.
+        """
+        conn = self._get_conn()
+        if conn is None:
+            return None
+
+        sex_upper = sex.strip().upper()
+        tc_upper = test_code.strip().upper()
+
+        total = conn.execute(
+            """SELECT COUNT(*) FROM animal_lab_values
+               WHERE strain = ? AND sex = ? AND test_code = ?
+               AND duration_category = ?""",
+            (strain, sex_upper, tc_upper, duration_category),
+        ).fetchone()[0]
+
+        if total < 10:
+            return None
+
+        below = conn.execute(
+            """SELECT COUNT(*) FROM animal_lab_values
+               WHERE strain = ? AND sex = ? AND test_code = ?
+               AND duration_category = ?
+               AND value < ?""",
+            (strain, sex_upper, tc_upper, duration_category, value),
+        ).fetchone()[0]
+
+        return round(100.0 * below / total, 1)
 
     def resolve_species(self, species_raw: str | None) -> str | None:
         """Map raw TS SPECIES value to canonical species key for LB lookups."""
