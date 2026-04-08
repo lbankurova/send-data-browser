@@ -180,6 +180,8 @@ def compute_bg_findings(
                 if min_p is None or pw["p_value_adj"] < min_p:
                     min_p = pw["p_value_adj"]
 
+        start_day_val = int(start_day) if start_day is not None and not np.isnan(start_day) else None
+
         findings.append({
             "domain": "BG",
             "test_code": str(testcd),
@@ -187,6 +189,7 @@ def compute_bg_findings(
             "specimen": None,
             "finding": test_name,
             "day": day_val,
+            "day_start": start_day_val,
             "sex": str(sex),
             "unit": unit,
             "data_type": "continuous",

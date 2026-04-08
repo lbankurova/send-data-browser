@@ -39,6 +39,147 @@ from services.analysis.findings_pipeline import (
 from services.analysis.organ_thresholds import get_species
 from services.analysis.hcd import get_strain, get_study_duration_days, get_route, get_vehicle
 
+import logging
+_log = logging.getLogger(__name__)
+
+
+def _strip_behavior_suffix(text: str) -> str:
+    """Strip trailing behavior qualifiers from TF finding strings.
+
+    TF: 'CARCINOMA, HEPATOCELLULAR, MALIGNANT' -> 'CARCINOMA, HEPATOCELLULAR'
+    TF: 'LEIOMYOMA, BENIGN' -> 'LEIOMYOMA'
+    """
+    upper = text.upper().strip()
+    for suffix in (", BENIGN", ", MALIGNANT", ", UNDETERMINED"):
+        if upper.endswith(suffix):
+            return text[:len(text) - len(suffix)].strip()
+    return text
+
+
+def _morphology_overlaps(mi_finding: str, tf_finding_base: str) -> bool:
+    """Check if MI and TF morphology strings refer to the same neoplasm.
+
+    MI uses e.g. 'HEPATOCELLULAR CARCINOMA', TF uses 'CARCINOMA, HEPATOCELLULAR'.
+    Normalize both to word sets and check significant overlap.
+    """
+    mi_words = set(mi_finding.upper().replace(",", " ").split())
+    tf_words = set(tf_finding_base.upper().replace(",", " ").split())
+    # Remove common filler words
+    filler = {"AND", "THE", "OF", "WITH", "IN", "A"}
+    mi_words -= filler
+    tf_words -= filler
+    if not mi_words or not tf_words:
+        return False
+    # Overlap: all significant words from either side present in the other
+    return mi_words == tf_words or mi_words <= tf_words or tf_words <= mi_words
+
+
+def _suppress_tf_duplicates(
+    all_findings: list[dict],
+    study: "StudyInfo",
+) -> list[dict]:
+    """Suppress TF findings that duplicate enriched MI neoplastic findings.
+
+    After MI enrichment (Feature 0), MI neoplastic findings carry behavior/
+    isNeoplastic/cell_type. TF findings that match the same (specimen, sex) +
+    morphology are suppressed. TFDTHREL and TFDETECT from the TF XPT are
+    merged into the matched MI finding.
+
+    Returns the filtered findings list.
+    """
+    tf_findings = [f for f in all_findings if f.get("domain") == "TF"]
+    if not tf_findings:
+        return all_findings
+
+    # Build MI neoplastic index: (specimen_upper, sex) -> [finding_dict]
+    mi_neo_index: dict[tuple[str, str], list[dict]] = {}
+    for f in all_findings:
+        if f.get("domain") == "MI" and f.get("isNeoplastic"):
+            key = (f["specimen"].strip().upper(), f["sex"])
+            mi_neo_index.setdefault(key, []).append(f)
+
+    # Read TF XPT for TFDTHREL/TFDETECT per (specimen, finding)
+    tf_meta: dict[tuple[str, str], dict] = {}
+    if "tf" in study.xpt_files:
+        try:
+            from services.analysis.pl_utils import read_xpt_as_polars
+            tf_xpt = read_xpt_as_polars(study.xpt_files["tf"]).to_pandas()
+            tf_xpt.columns = [c.upper() for c in tf_xpt.columns]
+            for _, row in tf_xpt.iterrows():
+                spec = str(row.get("TFSPEC", "")).strip().upper()
+                finding = str(row.get("TFSTRESC", "")).strip().upper()
+                subj = str(row.get("USUBJID", "")).strip()
+                # Read DM for sex if needed -- but we'll key by spec+finding only
+                dthrel = str(row.get("TFDTHREL", "")).strip() or None
+                detect = row.get("TFDETECT")
+                if pd.notna(detect):
+                    detect = float(detect) if isinstance(detect, (int, float)) else str(detect).strip() or None
+                else:
+                    detect = None
+                key = (spec, finding)
+                if key not in tf_meta:
+                    tf_meta[key] = {"tfdthrel": dthrel, "tfdetect": detect}
+                else:
+                    # Merge: prefer "Y" for dthrel
+                    if dthrel == "Y":
+                        tf_meta[key]["tfdthrel"] = "Y"
+        except Exception as e:
+            _log.warning("Could not read TF XPT for metadata merge: %s", e)
+
+    suppressed_count = 0
+    kept_findings = []
+
+    for f in all_findings:
+        if f.get("domain") != "TF":
+            kept_findings.append(f)
+            continue
+
+        specimen_key = (f["specimen"].strip().upper(), f["sex"])
+        tf_base = _strip_behavior_suffix(f.get("finding", ""))
+        matched_mi = None
+
+        # Primary match: organ-localized
+        mi_candidates = mi_neo_index.get(specimen_key, [])
+        for mi_f in mi_candidates:
+            if _morphology_overlaps(mi_f.get("finding", ""), tf_base):
+                matched_mi = mi_f
+                break
+
+        # Systemic neoplasm match: TF specimen contains "SYSTEMIC"
+        # Merge tfdthrel/tfdetect into ALL matching MI organ-level findings
+        matched_mi_list: list[dict] = []
+        if matched_mi is None and "SYSTEMIC" in f["specimen"].upper():
+            for (_, _), mi_list in mi_neo_index.items():
+                for mi_f in mi_list:
+                    if tf_base.upper() in mi_f.get("finding", "").upper() or \
+                       mi_f.get("finding", "").upper() in tf_base.upper():
+                        matched_mi_list.append(mi_f)
+            if matched_mi_list:
+                matched_mi = matched_mi_list[0]  # for suppression decision
+
+        if matched_mi is not None:
+            # Merge TFDTHREL/TFDETECT from raw TF XPT
+            tf_key = (f["specimen"].strip().upper(), f.get("finding", "").strip().upper())
+            meta = tf_meta.get(tf_key, {})
+            # For systemic matches, merge into all matched MI findings
+            targets = matched_mi_list if matched_mi_list else [matched_mi]
+            for target in targets:
+                target["tfdthrel"] = meta.get("tfdthrel")
+                target["tfdetect"] = meta.get("tfdetect")
+            suppressed_count += 1
+        else:
+            # Unmatched TF: keep with warning
+            _log.warning(
+                "TF finding without MI match kept: %s / %s / %s",
+                f.get("specimen"), f.get("finding"), f.get("sex"),
+            )
+            kept_findings.append(f)
+
+    if suppressed_count > 0:
+        print(f"    TF suppression: {suppressed_count} TF findings merged into MI neoplastic")
+
+    return kept_findings
+
 
 def _safe_float(v) -> float | None:
     if v is None:
@@ -350,6 +491,9 @@ def compute_all_findings(
 
     dt_domains = time.perf_counter() - t_domains
     print(f"    domain computations: {dt_domains:.1f}s")
+
+    # Suppress TF findings that duplicate enriched MI neoplastic findings
+    all_findings = _suppress_tf_duplicates(all_findings, study)
 
     # Resolve study metadata for organ-specific thresholds and HCD
     species = get_species(study)
@@ -1094,6 +1238,7 @@ def _compute_fw_findings(
 
         # Use end day as the finding timepoint (meaningful for interval data)
         day_val = int(end_day) if not np.isnan(end_day) else None
+        start_day_val = int(start_day) if not np.isnan(start_day) else None
         unit = str(grp[unit_col].iloc[0]) if unit_col else "g"
         if unit == "nan":
             unit = "g"
@@ -1175,6 +1320,7 @@ def _compute_fw_findings(
             "specimen": None,
             "finding": f"Food/Water ({testcd})" if testcd != "FW" else "Food/Water Consumption",
             "day": day_val,
+            "day_start": start_day_val,
             "sex": str(sex),
             "unit": unit,
             "data_type": "continuous",

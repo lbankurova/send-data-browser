@@ -49,10 +49,16 @@ def finding_key(f: dict) -> tuple:
 
     Terminal domains (MI, MA, OM, TF, DS) include specimen because they
     share test_code across organs (e.g. all OM endpoints have test_code="WEIGHT").
+    Interval domains (BG, FW) include day_start to disambiguate intervals
+    sharing the same end day. Multi-compound studies include compound_id.
     """
     base = (f["domain"], f.get("test_code"), f["sex"], f.get("day"))
     if f["domain"] in TERMINAL_DOMAINS:
-        return base + (f.get("specimen"),)
+        base = base + (f.get("specimen"),)
+    if f.get("day_start") is not None:
+        base = base + (f.get("day_start"),)
+    if f.get("compound_id"):
+        base = base + (f.get("compound_id"),)
     return base
 
 
@@ -85,6 +91,33 @@ def build_findings_map(
             collisions[0],
         )
     return result
+
+
+# ---------------------------------------------------------------------------
+# Trend-test suppression helper
+# ---------------------------------------------------------------------------
+
+def _suppress_trend_fields(f: dict, *, save_originals: bool = False) -> None:
+    """Nullify trend_p, trend_stat, and jt_p on a finding.
+
+    Called from all suppression paths (no-control RC-7, multi-compound RC-8,
+    single-dose RC-8 PS2c). Keeping this in one place enforces the C6
+    invariant: trend_p and trend_stat must both be present or both absent.
+
+    When save_originals=True, stashes current values as _original_* fields
+    for audit provenance before nullifying.
+    """
+    if save_originals:
+        if f.get("trend_p") is not None:
+            f["_original_trend_p"] = f["trend_p"]
+        if f.get("trend_stat") is not None:
+            f["_original_trend_stat"] = f["trend_stat"]
+        if f.get("jt_p") is not None:
+            f["_original_jt_p"] = f["jt_p"]
+    f["trend_p"] = None
+    f["trend_stat"] = None
+    if f.get("jt_p") is not None or save_originals:
+        f["jt_p"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -424,6 +457,7 @@ def attach_separate_stats(
             f["separate_min_p_adj"] = sep.get("min_p_adj")
             f["separate_max_effect_size"] = sep.get("max_effect_size")
             f["separate_trend_p"] = sep.get("trend_p")
+            f["separate_trend_stat"] = sep.get("trend_stat")
         else:
             f["separate_group_stats"] = []
             f["separate_pairwise"] = []
@@ -431,6 +465,7 @@ def attach_separate_stats(
             f["separate_min_p_adj"] = None
             f["separate_max_effect_size"] = None
             f["separate_trend_p"] = None
+            f["separate_trend_stat"] = None
     return findings
 
 
@@ -546,11 +581,9 @@ def process_findings(
     if not has_concurrent_control:
         for f in enriched:
             f["pairwise"] = []
-            f["trend_p"] = None
             f["min_p_adj"] = None
             f["max_effect_size"] = None
-            if f.get("jt_p") is not None:
-                f["jt_p"] = None
+            _suppress_trend_fields(f)
         log.info(
             "No concurrent control: pairwise/trend stripped from %d findings.",
             len(enriched),
@@ -563,12 +596,7 @@ def process_findings(
         unpartitioned = [f for f in enriched if not f.get("compound_id")]
         if unpartitioned:
             for f in unpartitioned:
-                if f.get("trend_p") is not None:
-                    f["_original_trend_p"] = f["trend_p"]
-                    f["trend_p"] = None
-                if f.get("jt_p") is not None:
-                    f["_original_jt_p"] = f["jt_p"]
-                    f["jt_p"] = None
+                _suppress_trend_fields(f, save_originals=True)
                 f["_multi_compound_suppressed"] = True
             log.info(
                 "Multi-compound: trend tests suppressed for %d unpartitioned findings",
@@ -589,12 +617,7 @@ def process_findings(
             f["_single_dose_compound"] = True
             # Trend tests should already be null (k<2 graceful degradation),
             # but make suppression explicit with provenance
-            if f.get("trend_p") is not None:
-                f["_original_trend_p"] = f["trend_p"]
-                f["trend_p"] = None
-            if f.get("jt_p") is not None:
-                f["_original_jt_p"] = f["jt_p"]
-                f["jt_p"] = None
+            _suppress_trend_fields(f, save_originals=True)
         log.info(
             "Single-dose compound: %d findings annotated, trend tests suppressed",
             len(single_dose_findings),
