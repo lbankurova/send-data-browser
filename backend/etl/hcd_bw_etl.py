@@ -314,7 +314,10 @@ def _backfill_om_body_weights(conn: sqlite3.Connection) -> int:
         print("  Skipping BW backfill: animal_organ_weights table not found")
         return 0
 
-    # Reset any previous backfill so this is idempotent
+    # Reset any previous backfill so this is idempotent.
+    # Note: the OM IAD Excel has no body weight column, so body_weight_g is
+    # always NULL after the OM ETL. If a future OM source includes co-measured
+    # BW, this reset should be changed to WHERE-NULL incremental update.
     conn.execute("UPDATE animal_organ_weights SET body_weight_g = NULL")
 
     # Build lookup index for fast joins
@@ -336,7 +339,7 @@ def _backfill_om_body_weights(conn: sqlite3.Connection) -> int:
         GROUP BY animal_id, study_id, duration_category
     """)
     conn.execute("""
-        CREATE INDEX _tmp_bw_t1_idx
+        CREATE INDEX IF NOT EXISTS _tmp_bw_t1_idx
         ON _tmp_bw_t1(animal_id, study_id, duration_category)
     """)
     conn.execute("""
@@ -363,15 +366,32 @@ def _backfill_om_body_weights(conn: sqlite3.Connection) -> int:
     conn.execute("DROP TABLE IF EXISTS _tmp_bw_t2")
     conn.execute("""
         CREATE TEMP TABLE _tmp_bw_t2 AS
+        SELECT b.animal_id, b.study_id, b.body_weight_g AS bw
+        FROM hcd_bw b
+        INNER JOIN (
+            SELECT animal_id, study_id, MAX(duration_days) AS max_dur
+            FROM hcd_bw
+            WHERE animal_id IS NOT NULL AND study_id IS NOT NULL
+              AND duration_days IS NOT NULL
+            GROUP BY animal_id, study_id
+        ) best ON best.animal_id = b.animal_id
+              AND best.study_id  = b.study_id
+              AND b.duration_days = best.max_dur
+        GROUP BY b.animal_id, b.study_id
+        UNION ALL
         SELECT animal_id, study_id, body_weight_g AS bw
         FROM hcd_bw
         WHERE animal_id IS NOT NULL AND study_id IS NOT NULL
+          AND duration_days IS NULL
+          AND (animal_id, study_id) NOT IN (
+              SELECT animal_id, study_id FROM hcd_bw
+              WHERE duration_days IS NOT NULL
+          )
         GROUP BY animal_id, study_id
-        HAVING duration_days = MAX(duration_days)
-           OR duration_days IS NULL
     """)
     conn.execute("""
-        CREATE INDEX _tmp_bw_t2_idx ON _tmp_bw_t2(animal_id, study_id)
+        CREATE INDEX IF NOT EXISTS _tmp_bw_t2_idx
+        ON _tmp_bw_t2(animal_id, study_id)
     """)
     conn.execute("""
         UPDATE animal_organ_weights
@@ -619,9 +639,7 @@ def build_bw(xlsx_path: Path, db_path: Path | None = None) -> Path:
     )
 
     # Backfill body_weight_g into animal_organ_weights from hcd_bw
-    n_filled = _backfill_om_body_weights(conn)
-    if n_filled > 0:
-        conn.commit()
+    _backfill_om_body_weights(conn)
 
     conn.commit()
     conn.close()
