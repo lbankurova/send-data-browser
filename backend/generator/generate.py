@@ -610,13 +610,16 @@ def generate(study_id: str):
         # Pipeline already built unified_findings with IDs, correlations,
         # summary, and pagination — single code path for all settings.
         #
-        # Strip raw_subject_values and raw_values from unified_findings
-        # before writing — these are consumed during generation (correlations,
-        # onset_recovery, subject_syndromes) but never by the frontend.
-        # Reduces unified_findings.json by ~12%.
+        # Strip raw_values from unified_findings before writing.
+        # raw_subject_values is KEPT — needed by the exclusion-preview
+        # endpoint (POST /api/{study_id}/exclusion-preview) which
+        # recomputes Hedges' g after removing subjects. The serve layer
+        # (_strip_fields in analysis_views.py) removes raw_subject_values
+        # before sending to the frontend, so the client never sees it.
+        # raw_values (numeric arrays without USUBJID keys) is still stripped.
         uf = views.get("unified_findings")
         if uf and isinstance(uf.get("findings"), list):
-            _INTERNAL_FIELDS = {"raw_subject_values", "raw_values"}
+            _INTERNAL_FIELDS = {"raw_values"}
             uf["findings"] = [
                 {k: v for k, v in f.items() if k not in _INTERNAL_FIELDS}
                 for f in uf["findings"]

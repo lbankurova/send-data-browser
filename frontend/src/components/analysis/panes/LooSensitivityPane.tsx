@@ -13,11 +13,9 @@
 import { useMemo, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Info } from "lucide-react";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
-import { useDistributionSubjects } from "@/contexts/DistributionSubjectsContext";
-import { computeExclusionPreview } from "@/lib/exclusion-preview";
+import { useExclusionPreview } from "@/hooks/useExclusionPreview";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { shortId } from "@/lib/chart-utils";
 import { LOO_THRESHOLD } from "@/lib/loo-constants";
@@ -54,7 +52,6 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
     applyExclusions,
     isApplying,
   } = useAnimalExclusion();
-  const { controlValues, treatedValues, endpointLabel: distEndpoint } = useDistributionSubjects();
 
   const endpointLabel = finding.endpoint_label ?? finding.finding;
 
@@ -124,58 +121,17 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
     queryClient.invalidateQueries({ queryKey: ["findings", studyId] });
   }, [studyId, applyExclusions, queryClient]);
 
-  // Determine which sexes have influential subjects — scope metrics to those sexes
-  const affectedSexes = useMemo(() => {
-    const sexes = new Set<string>();
-    for (const s of influentialSubjects) sexes.add(s.sex);
-    return sexes;
-  }, [influentialSubjects]);
-
-  // "Before" metrics scoped to the affected sex(es)
-  const { beforeG, beforeGLower, beforeLoo, beforeLooCtrl, metricsSex } = useMemo(() => {
-    let maxG = 0;
-    let maxGL = 0;
-    let loo: number | null = null;
-    let looCtrl = false;
-    let sex = "";
-    for (const f of allFindings) {
-      const ep = f.endpoint_label ?? f.finding;
-      if (ep !== endpointLabel || f.domain !== finding.domain) continue;
-      if (!affectedSexes.has(f.sex ?? "")) continue;
-      for (const pw of f.pairwise ?? []) {
-        if (pw.effect_size != null && Math.abs(pw.effect_size) > maxG) maxG = Math.abs(pw.effect_size);
-        if (pw.g_lower != null && pw.g_lower > maxGL) maxGL = pw.g_lower;
-      }
-      if (f.loo_stability != null) {
-        loo = f.loo_stability;
-        looCtrl = f.loo_control_fragile ?? false;
-        sex = f.sex ?? "";
-      }
-    }
-    return {
-      beforeG: maxG > 0 ? maxG : null,
-      beforeGLower: maxGL > 0 ? maxGL : null,
-      beforeLoo: loo,
-      beforeLooCtrl: looCtrl,
-      metricsSex: sex,
-    };
-  }, [allFindings, endpointLabel, finding.domain, affectedSexes]);
-
-  // Impact preview: compute "after" values using distribution subjects context
-  const hasDistData = distEndpoint === endpointLabel && controlValues.length > 0;
-  const preview = useMemo(() => {
-    if (excludedIds.size === 0 || !hasDistData) return null;
-    return computeExclusionPreview(treatedValues, controlValues, excludedIds);
-  }, [treatedValues, controlValues, excludedIds, hasDistData]);
+  // Impact preview: backend-computed across all timepoints
+  const { data: preview } = useExclusionPreview(studyId, endpointLabel, finding.domain, excludedIds);
 
   // Anti-conservative control exclusion warning
   const hasAntiConservativeWarning = useMemo(() => {
-    if (!preview || !beforeG) return false;
+    if (!preview?.before || !preview?.after) return false;
     const anyControlExcluded = influentialSubjects.some(
       s => s.doseLevel === 0 && excludedIds.has(s.usubjid),
     );
-    return anyControlExcluded && preview.g != null && preview.g > beforeG;
-  }, [preview, beforeG, influentialSubjects, excludedIds]);
+    return anyControlExcluded && preview.after.g != null && preview.after.g > preview.before.g;
+  }, [preview, influentialSubjects, excludedIds]);
 
   // Excessive exclusion check
   const excessiveWarning = useMemo(() => {
@@ -246,20 +202,14 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
 
   return (
     <div>
-      <div className="flex items-center gap-1 mb-1.5">
-        <span title="LOO stability measures what fraction of the effect size survives removing each animal. Below 80% = the finding depends on this individual. Note: an influential animal may show heightened treatment sensitivity rather than data quality issues -- consider the biological context before excluding.">
-          <Info className="w-3 h-3 text-muted-foreground/40 cursor-help" />
-        </span>
-        <span className="text-[9px] text-muted-foreground">Subjects whose removal changes effect size by &gt;20%</span>
-      </div>
-
       {/* Section A: Influential Subjects Table */}
       <table className="w-full text-[11px]">
         <thead>
           <tr className="border-b text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Subject</th>
-            <th className="py-0.5 text-left font-medium">Days</th>
-            <th className="py-0.5 text-right font-medium">Worst</th>
+            <th className="py-0.5 text-left font-medium">Type</th>
+            <th className="py-0.5 text-left font-medium cursor-help" title="Timepoints where this subject is influential. If only early days appear, the effect is stable at later timepoints.">Days</th>
+            <th className="py-0.5 text-right font-medium cursor-help" title="Lowest % of effect size (|g|) retained after removing this subject, across all timepoints">Retained effect</th>
             <th className="py-0.5 text-center font-medium w-8">Excl</th>
           </tr>
         </thead>
@@ -281,6 +231,14 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
                     <span className="font-mono text-[10px]">{shortId(s.usubjid)}</span>
                     <span className="text-muted-foreground text-[9px]">{s.sex}</span>
                   </div>
+                </td>
+                <td className="py-0.5 text-left">
+                  <span
+                    className="text-[10px] text-muted-foreground cursor-help"
+                    title="Subjects whose removal changes effect size by >20%"
+                  >
+                    LOO sig.
+                  </span>
                 </td>
                 <td className="py-0.5 text-left">
                   <span className="text-[10px] text-muted-foreground" title={daysTitle}>
@@ -316,7 +274,7 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
       {excludedIds.size > 0 && (
         <div className="mt-3">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            Impact preview
+            Impact preview{preview?.day != null ? ` on D${preview.day}` : ""}
           </div>
           <table className="w-full text-[11px]">
             <thead>
@@ -328,31 +286,31 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
               </tr>
             </thead>
             <tbody>
-              {preview ? (
+              {preview?.before && preview.after ? (
                 <>
                   <tr className="border-b border-border/30">
                     <td className="py-0.5 text-muted-foreground">|g|</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(beforeG)}</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.g)}</td>
-                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(beforeG, preview.g)}</td>
+                    <td className="py-0.5 text-right font-mono">{fmt(preview.before.g)}</td>
+                    <td className="py-0.5 text-right font-mono">{fmt(preview.after.g)}</td>
+                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(preview.before.g, preview.after.g)}</td>
                   </tr>
                   <tr className="border-b border-border/30">
                     <td className="py-0.5 text-muted-foreground">gLower</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(beforeGLower)}</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.gLower)}</td>
-                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(beforeGLower, preview.gLower)}</td>
+                    <td className="py-0.5 text-right font-mono">{fmt(preview.before.g_lower)}</td>
+                    <td className="py-0.5 text-right font-mono">{fmt(preview.after.g_lower)}</td>
+                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(preview.before.g_lower, preview.after.g_lower)}</td>
                   </tr>
                   <tr className="border-b border-border/30">
                     <td className="py-0.5 text-muted-foreground">N (ctrl / treated)</td>
-                    <td className="py-0.5 text-right font-mono">{controlValues.length}/{treatedValues.length}</td>
-                    <td className="py-0.5 text-right font-mono">{preview.nCtrl}/{preview.nTreated}</td>
+                    <td className="py-0.5 text-right font-mono">{preview.before.n_ctrl}/{preview.before.n_treated}</td>
+                    <td className="py-0.5 text-right font-mono">{preview.after.n_ctrl}/{preview.after.n_treated}</td>
                     <td className="py-0.5"></td>
                   </tr>
                 </>
               ) : (
                 <tr className="border-b border-border/30">
                   <td className="py-0.5 text-muted-foreground/40 italic" colSpan={4}>
-                    Switch to Distribution tab to see impact preview
+                    Computing...
                   </td>
                 </tr>
               )}
@@ -383,15 +341,6 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
         </div>
       )}
 
-      {/* Current metrics when no exclusions pending — scoped to affected sex */}
-      {excludedIds.size === 0 && beforeG != null && (
-        <div className="mt-2 text-[10px] text-muted-foreground">
-          Current ({metricsSex}): |g| = {Math.abs(beforeG).toFixed(2)},
-          gLower = {beforeGLower != null ? beforeGLower.toFixed(2) : "--"},
-          LOO = {beforeLoo != null ? `${(beforeLoo * 100).toFixed(0)}%` : "--"}
-          {beforeLooCtrl ? " (ctrl)" : ""}
-        </div>
-      )}
 
       {/* Section C: Apply Button + read-only cross-endpoint disclosure */}
       {pendingCount > 0 && (

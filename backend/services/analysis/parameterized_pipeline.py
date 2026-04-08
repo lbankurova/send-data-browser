@@ -133,10 +133,11 @@ class ParameterizedAnalysisPipeline:
         correlations = compute_correlations(findings)
         summary = _build_summary(findings, dose_groups)
 
-        # Strip generator-internal fields before building the response.
-        # These are consumed by correlations/onset/syndromes during generation
-        # but never by the frontend. Reduces payload by ~12%.
-        _INTERNAL_FIELDS = {"raw_subject_values", "raw_values"}
+        # Strip raw_values but keep raw_subject_values (needed by
+        # exclusion-preview endpoint). The serve layer (_strip_fields in
+        # analysis_views.py) removes raw_subject_values before sending
+        # to the frontend.
+        _INTERNAL_FIELDS = {"raw_values"}
         stripped = [
             {k: v for k, v in f.items() if k not in _INTERNAL_FIELDS}
             for f in findings

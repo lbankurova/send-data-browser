@@ -13,6 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+import numpy as np
+
 from services.study_discovery import StudyInfo
 from services.analysis.analysis_settings import AnalysisSettings, parse_settings_from_query, load_scoring_params
 from services.analysis.analysis_cache import (
@@ -554,3 +556,115 @@ async def pattern_override_preview(study_id: str, body: PatternOverridePreviewRe
             "changed": original_confidence.get("grade") != sim["_confidence"]["grade"],
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Exclusion impact preview
+# ---------------------------------------------------------------------------
+
+class ExclusionPreviewRequest(BaseModel):
+    endpoint_label: str
+    domain: str
+    excluded_subjects: list[str]
+
+
+@router.post("/studies/{study_id}/exclusion-preview")
+async def exclusion_preview(study_id: str, body: ExclusionPreviewRequest):
+    """Compute before/after Hedges' g across all timepoints for an exclusion set.
+
+    Picks the worst-case day (largest |g| delta or gLower drop) and returns
+    before/after metrics. Only considers findings where at least one excluded
+    subject actually appears in the raw data (sex scoping). Runs server-side
+    so all timepoints are available.
+    """
+    from routers.analyses import _load_unified_findings
+    from services.analysis.statistics import compute_effect_size, compute_g_lower
+
+    data = _load_unified_findings(study_id)
+    findings = data.get("findings", [])
+    excluded_set = set(body.excluded_subjects)
+
+    # Collect all findings matching endpoint/domain (one per day x sex x dose)
+    matching = [
+        f for f in findings
+        if (f.get("endpoint_label") or f.get("finding")) == body.endpoint_label
+        and f.get("domain") == body.domain
+        and f.get("raw_subject_values") is not None
+    ]
+
+    if not matching:
+        raise HTTPException(status_code=404, detail="No findings with subject data for this endpoint")
+
+    best_impact = 0.0
+    best_result = None
+
+    for f in matching:
+        rsv = f.get("raw_subject_values")
+        if not rsv or len(rsv) < 2:
+            continue
+
+        # Sex scoping: skip findings where none of the excluded subjects
+        # appear in any dose group. This prevents selecting a day/sex
+        # where the exclusion has zero effect (subjects are in the other sex).
+        all_uids = set()
+        for dose_dict in rsv:
+            all_uids.update(dose_dict.keys())
+        if not excluded_set & all_uids:
+            continue
+
+        day = f.get("day")
+
+        # rsv[0] = control dict {usubjid: value}, rsv[1:] = treated groups
+        ctrl_dict = rsv[0]
+        for treated_dict in rsv[1:]:
+            # Before: all subjects
+            ctrl_vals = np.array(list(ctrl_dict.values()), dtype=float)
+            treat_vals = np.array(list(treated_dict.values()), dtype=float)
+            before_g = compute_effect_size(ctrl_vals, treat_vals)
+            if before_g is None:
+                continue
+
+            # After: exclude specified subjects from both groups
+            ctrl_filtered = np.array(
+                [v for uid, v in ctrl_dict.items() if uid not in excluded_set],
+                dtype=float,
+            )
+            treat_filtered = np.array(
+                [v for uid, v in treated_dict.items() if uid not in excluded_set],
+                dtype=float,
+            )
+            after_g = compute_effect_size(ctrl_filtered, treat_filtered)
+
+            before_gl = compute_g_lower(before_g, len(ctrl_vals), len(treat_vals))
+            after_gl = (
+                compute_g_lower(after_g, len(ctrl_filtered), len(treat_filtered))
+                if after_g is not None else None
+            )
+
+            # Select worst-case day: largest |g| delta or largest gLower drop
+            g_delta = abs(abs(before_g) - (abs(after_g) if after_g is not None else 0.0))
+            gl_drop = (before_gl or 0.0) - (after_gl or 0.0)
+            impact = max(g_delta, gl_drop)
+
+            if impact > best_impact:
+                best_impact = impact
+                best_result = {
+                    "day": day,
+                    "before": {
+                        "g": round(abs(before_g), 4),
+                        "g_lower": round(before_gl, 4) if before_gl is not None else None,
+                        "n_ctrl": int(len(ctrl_vals)),
+                        "n_treated": int(len(treat_vals)),
+                    },
+                    "after": {
+                        "g": round(abs(after_g), 4) if after_g is not None else None,
+                        "g_lower": round(after_gl, 4) if after_gl is not None else None,
+                        "n_ctrl": int(len(ctrl_filtered)),
+                        "n_treated": int(len(treat_filtered)),
+                    },
+                }
+
+    if best_result is None:
+        return {"day": None, "before": None, "after": None}
+
+    return best_result
