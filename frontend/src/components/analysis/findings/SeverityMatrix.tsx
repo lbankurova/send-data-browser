@@ -3,22 +3,38 @@
  *
  * Renders when rail is in specimen grouping mode and a specimen card is selected.
  * Rows = MI/MA findings for the specimen, columns = dose groups (terminal | recovery).
- * Dual encoding: cell color = avg severity (grayscale heat), cell label = affected/n.
+ * Dual encoding: cell color = mean severity (grayscale heat), cell label = affected/n or %.
+ *
+ * In compact mode (split-panel), the legend is suppressed (caller renders a shared
+ * header), dose labels use color-coded abbreviations, and recovery columns get a
+ * golden-brown tint for visual separation.
  */
 
 import { useMemo, useState } from "react";
 import { getNeutralHeatColor } from "@/lib/histopathology-helpers";
 import { DoseHeader } from "@/components/ui/DoseLabel";
-import { formatDoseShortLabel } from "@/lib/severity-colors";
+import { doseAbbrev } from "@/lib/dose-label-utils";
 import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
-import type { SubjectHistopathEntry } from "@/types/timecourse";
+import type { SubjectHistopathEntry, SubjectHistopathResponse } from "@/types/timecourse";
 
-interface SeverityMatrixProps {
+export interface SeverityMatrixProps {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
   studyId?: string;
   specimen?: string | null;
+  /** Compact mode: tighter cells, smaller fonts, no legend header. For split-panel use. */
+  compact?: boolean;
+  /** Currently selected finding name (highlighted row). */
+  selectedFinding?: string | null;
+  /** Callback when a row is clicked. Emits finding name + domain. */
+  onRowClick?: (finding: string, domain: string) => void;
+  /** Display mode: counts ("3/5") or percent ("60%"). Default "counts". */
+  displayMode?: "counts" | "percent";
+  /** Signal scores keyed by endpoint_label — when provided, rows are sorted by descending score. */
+  signalScores?: Map<string, number>;
+  /** Pre-fetched subject-level data. When provided, skips internal useHistopathSubjects call. */
+  subjData?: SubjectHistopathResponse;
 }
 
 interface MatrixCell {
@@ -44,6 +60,7 @@ function buildMatrix(findings: UnifiedFinding[]) {
   const rows: {
     key: string;
     label: string;
+    endpointLabel: string;
     domain: string;
     finding: string;
     isGraded: boolean;
@@ -54,6 +71,7 @@ function buildMatrix(findings: UnifiedFinding[]) {
   for (const [key, fGroup] of grouped) {
     const first = fGroup[0];
     const label = first.finding;
+    const endpointLabel = first.endpoint_label ?? first.finding;
     const domain = first.domain;
     const finding = first.finding;
 
@@ -93,15 +111,10 @@ function buildMatrix(findings: UnifiedFinding[]) {
       }
     }
 
-    rows.push({ key, label, domain, finding, isGraded, maxSev, cells });
+    rows.push({ key, label, endpointLabel, domain, finding, isGraded, maxSev, cells });
   }
 
-  rows.sort((a, b) => {
-    if (a.isGraded && !b.isGraded) return -1;
-    if (!a.isGraded && b.isGraded) return 1;
-    if (a.isGraded && b.isGraded) return b.maxSev - a.maxSev || a.label.localeCompare(b.label);
-    return a.label.localeCompare(b.label);
-  });
+  // No custom sort — preserve input order (matches findings rail ranking)
 
   return rows;
 }
@@ -129,7 +142,7 @@ function buildRecoveryCells(
         Object.keys(s.findings).length > 0 || s.ma_examined === true,
       );
 
-      // No subjects examined at this dose → not examined
+      // No subjects examined at this dose -> not examined
       if (examined.length === 0) {
         cells.set(dl, null);
         continue;
@@ -162,24 +175,24 @@ function buildRecoveryCells(
   return result;
 }
 
-// ─── Legend ─────────────────────────────────────────────────
+// ─── Legend (standalone mode only) ────────────────────────
 
 const LEGEND_ITEMS = [
-  { label: "1 Minimal", sev: 1 },
-  { label: "2 Mild", sev: 2 },
-  { label: "3 Moderate", sev: 3 },
-  { label: "4 Marked", sev: 4 },
-  { label: "5 Severe", sev: 5 },
+  { label: "1 Minimal", score: 0.1 },
+  { label: "2 Mild", score: 0.3 },
+  { label: "3 Moderate", score: 0.5 },
+  { label: "4 Marked", score: 0.7 },
+  { label: "5 Severe", score: 0.9 },
 ];
 
 function Legend() {
   return (
     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
       <span className="font-medium">Severity:</span>
-      {LEGEND_ITEMS.map(({ label, sev }) => {
-        const { bg } = getNeutralHeatColor(sev);
+      {LEGEND_ITEMS.map(({ label, score }) => {
+        const { bg } = getNeutralHeatColor(score);
         return (
-          <span key={sev} className="flex items-center gap-1">
+          <span key={score} className="flex items-center gap-1">
             <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: bg }} />
             {label}
           </span>
@@ -201,19 +214,37 @@ function Legend() {
   );
 }
 
+// Separator between treatment and recovery columns — pronounced 2px solid line
+const RECOVERY_SEPARATOR = "w-0.5 bg-border";
+
 // ─── Component ──────────────────────────────────────────────
 
-export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: SeverityMatrixProps) {
+export function SeverityMatrix({
+  findings, doseGroups, studyId, specimen, compact,
+  selectedFinding, onRowClick, displayMode = "counts", signalScores, subjData: subjDataProp,
+}: SeverityMatrixProps) {
   const [gradedOnly, setGradedOnly] = useState(false);
 
-  const rows = useMemo(() => buildMatrix(findings), [findings]);
+  const unsortedRows = useMemo(() => buildMatrix(findings), [findings]);
+  const rows = useMemo(() => {
+    if (!signalScores || signalScores.size === 0) return unsortedRows;
+    return [...unsortedRows].sort((a, b) => {
+      const sa = signalScores.get(a.endpointLabel) ?? 0;
+      const sb = signalScores.get(b.endpointLabel) ?? 0;
+      return sb - sa; // descending — highest signal first
+    });
+  }, [unsortedRows, signalScores]);
   const visibleRows = useMemo(
     () => gradedOnly ? rows.filter(r => r.isGraded) : rows,
     [rows, gradedOnly],
   );
 
-  // Recovery data from subject-level endpoint
-  const { data: subjData } = useHistopathSubjects(studyId, specimen ?? null);
+  // Recovery data from subject-level endpoint (skip hook when caller provides data)
+  const { data: subjDataHook } = useHistopathSubjects(
+    subjDataProp ? undefined : studyId,
+    subjDataProp ? null : (specimen ?? null),
+  );
+  const subjData = subjDataProp ?? subjDataHook;
   const hasRecovery = useMemo(
     () => subjData?.subjects?.some(s => s.is_recovery) ?? false,
     [subjData],
@@ -240,110 +271,156 @@ export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: Seve
     );
   }
 
+  // Sizing tokens
+  const cellW = compact ? "w-9" : "w-16";
+  const cellH = compact ? "h-5" : "h-6";
+  const cellText = compact ? "text-[9px]" : "text-[10px]";
+  const headerText = compact ? "text-[9px]" : "text-[11px]";
+  const rowText = compact ? "text-[11px]" : "text-xs";
+  const domainText = compact ? "text-[9px]" : "text-[10px]";
+  const px = compact ? "px-1" : "px-2";
+  const thPx = compact ? "px-0.5" : "px-1";
+  const thPy = compact ? "py-0.5" : "py-1.5";
+  const periodText = compact ? "text-[9px]" : "text-[10px]";
+
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header bar */}
-      <div className="flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-        <div className="flex items-center gap-4">
+      {/* Header bar — full legend in standalone, suppressed in compact (shared header above) */}
+      {!compact && (
+        <div className="flex shrink-0 items-center justify-between border-b px-3 py-1.5">
           <Legend />
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={gradedOnly}
+              onChange={(e) => setGradedOnly(e.target.checked)}
+              className="h-3 w-3 rounded border-gray-300"
+            />
+            Severity graded only
+            {gradedOnly && rows.length !== visibleRows.length && (
+              <span className="text-muted-foreground/60">
+                ({visibleRows.length}/{rows.length})
+              </span>
+            )}
+          </label>
         </div>
-        <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={gradedOnly}
-            onChange={(e) => setGradedOnly(e.target.checked)}
-            className="h-3 w-3 rounded border-gray-300"
-          />
-          Severity graded only
-          {gradedOnly && rows.length !== visibleRows.length && (
-            <span className="text-muted-foreground/60">
-              ({visibleRows.length}/{rows.length})
-            </span>
-          )}
-        </label>
-      </div>
+      )}
 
       {/* Matrix */}
       <div className="flex-1 overflow-auto">
         <table className="w-full border-collapse text-xs">
           <thead className="sticky top-0 z-10 bg-background">
+            {/* Period titles row — always show "Treatment"; show "Recovery" when data exists */}
             <tr>
-              <th className="px-2 py-1.5 text-left text-[11px] font-medium text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
-                Domain
+              <th colSpan={compact ? 1 : 2} />
+              <th
+                colSpan={doseGroups.length}
+                className={`pb-0 text-center ${periodText} font-semibold uppercase tracking-wider text-muted-foreground`}
+              >
+                Treatment
               </th>
-              <th className="px-2 py-1.5 text-left text-[11px] font-medium text-muted-foreground" style={{ width: "100%" }}>
-                Finding
-              </th>
-              {doseGroups.map(dg => {
-                const shortLabel = dg.short_label ?? (dg.dose_level === 0 ? "C" : String(dg.dose_value ?? formatDoseShortLabel(dg.label)));
-                return (
-                  <th key={dg.dose_level} className="px-1 py-1.5 text-center" style={{ width: 1, whiteSpace: "nowrap" }}>
-                    <DoseHeader level={dg.dose_level} label={shortLabel} color={dg.display_color} />
-                  </th>
-                );
-              })}
-              {/* Recovery columns */}
               {hasRecovery && (
                 <>
-                  <th className="px-0.5 py-1.5" style={{ width: 1 }}>
-                    <div className="mx-0.5 h-4 w-px bg-border" />
+                  <th className="px-0" style={{ width: 1 }}>
+                    <div className={`mx-auto h-full ${RECOVERY_SEPARATOR}`} />
+                  </th>
+                  <th
+                    colSpan={recoveryDoseLevels.length}
+                    className={`pb-0 text-center ${periodText} font-semibold uppercase tracking-wider text-muted-foreground`}
+                  >
+                    Recovery
+                  </th>
+                </>
+              )}
+            </tr>
+            {/* Dose labels row */}
+            <tr>
+              {!compact && (
+                <th className={`${px} ${thPy} text-left ${headerText} font-medium text-muted-foreground`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                  Domain
+                </th>
+              )}
+              <th className={`${px} ${thPy} text-left ${headerText} font-medium text-muted-foreground`} style={{ width: "100%" }}>
+                Finding
+              </th>
+              {doseGroups.map(dg => (
+                <th key={dg.dose_level} className={`${thPx} ${thPy} text-center`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                  {compact ? (
+                    <span
+                      className="text-[9px] font-mono font-medium"
+                      style={{ color: dg.display_color ?? "#6b7280" }}
+                    >
+                      {doseAbbrev(dg)}
+                    </span>
+                  ) : (
+                    <DoseHeader level={dg.dose_level} label={dg.short_label ?? doseAbbrev(dg)} color={dg.display_color} />
+                  )}
+                </th>
+              ))}
+              {/* Recovery dose labels */}
+              {hasRecovery && (
+                <>
+                  <th className="px-0" style={{ width: 1 }}>
+                    <div className={`mx-auto h-full ${RECOVERY_SEPARATOR}`} />
                   </th>
                   {recoveryDoseLevels.map(dl => {
                     const dg = doseGroups.find(d => d.dose_level === dl);
-                    const shortLabel = dl === 0 ? "C" : String(dg?.dose_value ?? dl);
                     return (
-                      <th key={`rec_${dl}`} className="px-1 py-1.5 text-center" style={{ width: 1, whiteSpace: "nowrap" }}>
-                        <span className="text-[10px] font-medium text-muted-foreground">{shortLabel}</span>
+                      <th key={`rec_${dl}`} className={`${thPx} ${thPy} text-center`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                        <span
+                          className="text-[9px] font-mono font-medium"
+                          style={{ color: dg?.display_color ?? "#6b7280" }}
+                        >
+                          {dl === 0 ? "C" : String(dg?.dose_value ?? dl)}
+                        </span>
                       </th>
                     );
                   })}
                 </>
               )}
             </tr>
-            {/* Recovery header label */}
-            {hasRecovery && (
-              <tr>
-                <th colSpan={2 + doseGroups.length} />
-                <th className="px-0.5" style={{ width: 1 }} />
-                <th colSpan={recoveryDoseLevels.length} className="pb-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Recovery
-                </th>
-              </tr>
-            )}
           </thead>
           <tbody>
             {visibleRows.map(row => {
               const recCells = recoveryCells.get(row.finding);
+              const isSelected = selectedFinding != null && row.finding === selectedFinding;
               return (
                 <tr
                   key={row.key}
-                  className="hover:bg-accent/30"
+                  className={`${onRowClick ? "cursor-pointer" : ""} ${isSelected ? "bg-accent/50" : "hover:bg-accent/30"}`}
+                  onClick={onRowClick ? () => onRowClick(row.finding, row.domain) : undefined}
                 >
-                  <td className="px-2 py-px text-[10px] font-semibold text-muted-foreground" style={{ width: 1, whiteSpace: "nowrap" }}>
-                    {row.domain}
-                  </td>
-                  <td className="px-2 py-px" style={{ width: "100%" }}>
-                    <span className="text-xs">{row.label}</span>
+                  {!compact && (
+                    <td className={`${px} py-px ${domainText} font-semibold text-muted-foreground`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                      {row.domain}
+                    </td>
+                  )}
+                  <td className={`${px} py-px`} style={{ width: "100%" }}>
+                    <span className={`${rowText} ${isSelected ? "font-medium" : ""}`}>{row.label}</span>
+                    {compact && (
+                      <span className="ml-1 text-[9px] text-muted-foreground/60">{row.domain}</span>
+                    )}
                   </td>
                   {doseGroups.map(dg => {
                     const cell = row.cells.get(dg.dose_level);
                     return (
-                      <td key={dg.dose_level} className="px-1 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
-                        <CellRenderer cell={cell} />
+                      <td key={dg.dose_level} className={`${thPx} py-px`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                        <CellRenderer cell={cell} cellW={cellW} cellH={cellH} cellText={cellText} displayMode={displayMode} />
                       </td>
                     );
                   })}
                   {/* Recovery cells */}
                   {hasRecovery && (
                     <>
-                      <td className="px-0.5" style={{ width: 1 }}>
-                        <div className="mx-0.5 h-full w-px bg-border" />
+                      <td className="px-0" style={{ width: 1 }}>
+                        <div className={`mx-auto h-full ${RECOVERY_SEPARATOR}`} />
                       </td>
                       {recoveryDoseLevels.map(dl => {
                         const cell = recCells?.get(dl);
                         return (
-                          <td key={`rec_${dl}`} className="px-1 py-px" style={{ width: 1, whiteSpace: "nowrap" }}>
-                            <CellRenderer cell={cell} />
+                          <td key={`rec_${dl}`} className={`${thPx} py-px`} style={{ width: 1, whiteSpace: "nowrap" }}>
+                            <CellRenderer cell={cell} cellW={cellW} cellH={cellH} cellText={cellText} displayMode={displayMode} />
                           </td>
                         );
                       })}
@@ -361,44 +438,63 @@ export function SeverityMatrix({ findings, doseGroups, studyId, specimen }: Seve
 
 // ─── Cell renderer ──────────────────────────────────────────
 
-function CellRenderer({ cell }: { cell: MatrixCell | null | undefined }) {
-  // Not examined — no data at all
+/** Format cell label: "3/5" in counts mode, "60%" in percent mode. */
+function formatCellLabel(affected: number, n: number, mode: "counts" | "percent"): string {
+  if (mode === "counts") return `${affected}/${n}`;
+  const pct = n > 0 ? Math.round((affected / n) * 100) : 0;
+  return `${pct}%`;
+}
+
+function CellRenderer({ cell, cellW = "w-16", cellH = "h-6", cellText = "text-[10px]", displayMode = "counts" }: {
+  cell: MatrixCell | null | undefined;
+  cellW?: string;
+  cellH?: string;
+  cellText?: string;
+  displayMode?: "counts" | "percent";
+}) {
+  const base = `flex ${cellH} ${cellW} items-center justify-center rounded-sm`;
+
+  // Not examined -- italic "NE" matching stacked bar chart encoding
   if (!cell) {
     return (
-      <div className="flex h-6 w-16 items-center justify-center rounded-sm bg-striped" title="Not examined">
-        <span className="text-[10px] font-mono text-muted-foreground/40">NE</span>
+      <div className={`${base}`} title="Not examined">
+        <span className={`${cellText} font-mono italic text-muted-foreground/40`}>NE</span>
       </div>
     );
   }
 
-  // Examined but finding absent
+  // Examined, finding absent -- dashed envelope matching stacked bar chart
   if (cell.affected === 0) {
     return (
-      <div className="flex h-6 w-16 items-center justify-center rounded-sm border border-dashed border-gray-200">
-        <span className="text-[10px] font-mono text-muted-foreground/50">0/{cell.n}</span>
+      <div className={`${base} border border-dashed border-gray-300`}>
+        <span className={`${cellText} font-mono text-muted-foreground/50`}>{formatCellLabel(0, cell.n, displayMode)}</span>
       </div>
     );
   }
 
-  // Present but not graded (binary finding)
+  // Present but not graded (binary finding -- CL/MA)
   if (!cell.isGraded) {
     return (
-      <div className="flex h-6 w-16 items-center justify-center rounded-sm border border-gray-400">
-        <span className="text-[10px] font-mono font-medium">{cell.affected}/{cell.n}</span>
+      <div
+        className={`${base}`}
+        style={{ backgroundColor: "#9CA3AF" }}
+        title={`${cell.affected}/${cell.n} present (ungraded)`}
+      >
+        <span className={`${cellText} font-mono font-medium text-white`}>{formatCellLabel(cell.affected, cell.n, displayMode)}</span>
       </div>
     );
   }
 
-  // Graded — heat color by avg severity
+  // Graded -- heat color by mean severity
   const heat = getNeutralHeatColor(cell.avgSeverity ?? 0);
   const isOutlier = cell.maxSeverity >= 3 && cell.avgSeverity != null && (cell.maxSeverity - cell.avgSeverity) >= 2;
   return (
     <div
-      className="flex h-6 w-16 items-center justify-center rounded-sm"
+      className={base}
       style={{ backgroundColor: heat.bg, color: heat.text }}
-      title={cell.avgSeverity != null ? `avg severity: ${cell.avgSeverity.toFixed(1)}${isOutlier ? `, max: ${cell.maxSeverity}` : ""}` : undefined}
+      title={cell.avgSeverity != null ? `mean severity: ${cell.avgSeverity.toFixed(1)}${isOutlier ? `, max: ${cell.maxSeverity}` : ""}` : undefined}
     >
-      <span className="text-[10px] font-mono font-medium">{cell.affected}/{cell.n}{isOutlier ? "*" : ""}</span>
+      <span className={`${cellText} font-mono font-medium`}>{formatCellLabel(cell.affected, cell.n, displayMode)}{isOutlier ? "*" : ""}</span>
     </div>
   );
 }

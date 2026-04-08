@@ -17,7 +17,7 @@
  * the dose count exceeds facetedFallbackThreshold (default 6) AND
  * there is more than one sex.
  */
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { getNeutralHeatColor, getSexColor } from "@/lib/severity-colors";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
 
@@ -73,6 +73,14 @@ interface Props {
   title?: string;
   /** Hide the counts/percent toggle (when caller manages it elsewhere). */
   hideToggle?: boolean;
+  /** Hide the entire header (legend + toggle). Use when caller renders a shared header. */
+  hideHeader?: boolean;
+  /** Hide only the legend row (when legend is shared by parent). Title row still shows. */
+  hideLegend?: boolean;
+  /** Use natural width instead of inflated dual-sex+recovery viewBox. For split panels. */
+  compactWidth?: boolean;
+  /** Override the cluster label text. Default: "Main" / "Recovery". */
+  clusterLabels?: { main?: string; recovery?: string };
   /** Sex differentiation style. Default "dashed". */
   sexDiffStyle?: SexDiffStyle;
   /** When true, bars are grouped by sex (all F doses, then all M doses)
@@ -85,15 +93,15 @@ interface Props {
 /** Severity grades. Order is invariant: Minimal at index 0 → Severe at index 4.
  *  In the stacked bar, index 0 (Minimal) ALWAYS sits at the bottom of the stack,
  *  index 4 (Severe) at the top, and (when present) "Ungraded" sits above Severe. */
-const SEV_GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"] as const;
-const SEV_GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
+export const SEV_GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"] as const;
+export const SEV_GRADE_SCORES = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
 const SEV_COLORS = SEV_GRADE_SCORES.map((s) => getNeutralHeatColor(s).bg);
 const SEV_TEXT_COLORS = SEV_GRADE_SCORES.map((s) => getNeutralHeatColor(s).text);
 
 /** Pattern fill ID for "Ungraded" — animals with the finding present but no MISEV. */
 const UNGRADED_PATTERN_ID = "stacked-sev-ungraded-pattern";
 const UNGRADED_LABEL = "Ungraded";
-const UNGRADED_TEXT_COLOR = "#374151";
+
 
 // Solid bar color for CL/MA (no severity)
 const SOLID_BAR_COLOR = "#9CA3AF"; // gray-400 — matches IncidenceRecoveryChart precedent
@@ -104,11 +112,11 @@ const SEX_GAP = 4;
 const DOSE_GAP = 16;
 const SEX_GROUP_GAP = 24; // gap between F group and M group in sexGrouped layout
 const DOSE_INNER_GAP = 3; // gap between dose bars within a sex group
-const CLUSTER_GAP = 28;
-const PADDING_TOP = 20;
+const CLUSTER_GAP = 16;
+const PADDING_TOP = 28;
 const PADDING_BOTTOM = 28;
 const PADDING_LEFT = 30;
-const PADDING_RIGHT = 8;
+const PADDING_RIGHT = 16;
 const Y_AXIS_TICK_COUNT = 4;
 const ENVELOPE_STROKE = "#D1D5DB"; // gray-300
 const NE_COLOR = "#9CA3AF";
@@ -159,6 +167,10 @@ export function StackedSeverityIncidenceChart({
   facetedFallbackThreshold = 6,
   title,
   hideToggle = false,
+  hideHeader = false,
+  hideLegend = false,
+  compactWidth = false,
+  clusterLabels,
   sexDiffStyle = "dashed",
   sexGrouped = false,
 }: Props) {
@@ -190,45 +202,82 @@ export function StackedSeverityIncidenceChart({
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      {/* Header: legend (left) + title (center) + toggle (right) */}
-      <div className="flex shrink-0 items-center gap-2 px-2 pt-1 pb-0.5">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
-          {hasSeverity ? <SeverityLegend multiSex={multiSex} /> : <SolidLegend multiSex={multiSex} />}
+      {/* Header: title present → row 1 title+toggle, row 2 legend. No title → single row legend+toggle */}
+      {!hideHeader && (
+        <div className="shrink-0 px-2 pt-0.5">
+          {title ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                  {title}
+                </span>
+                {!hideToggle && <ModeToggle mode={mode} onChange={setMode} />}
+              </div>
+              {!hideLegend && (
+                <div className="pb-0.5">
+                  {hasSeverity ? <SeverityLegend multiSex={multiSex} /> : <SolidLegend multiSex={multiSex} />}
+                </div>
+              )}
+            </>
+          ) : (
+            /* No title: legend LEFT + toggle RIGHT on one line */
+            <div className="flex items-center justify-between pb-0.5">
+              {!hideLegend && (
+                <div className="min-w-0 flex-1">
+                  {hasSeverity ? <SeverityLegend multiSex={multiSex} /> : <SolidLegend multiSex={multiSex} />}
+                </div>
+              )}
+              {!hideToggle && <div className="shrink-0 ml-2"><ModeToggle mode={mode} onChange={setMode} /></div>}
+            </div>
+          )}
         </div>
-        {title && (
-          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {title}
-          </span>
-        )}
-        {!hideToggle && <ModeToggle mode={mode} onChange={setMode} />}
-      </div>
+      )}
 
-      {/* Chart body */}
-      <div className="flex min-h-0 min-w-0 flex-1">
-        {useFaceted ? (
-          <FacetedChart
-            main={main}
-            recovery={recovery}
-            hasSeverity={hasSeverity}
-            mode={mode}
-            yMaxCounts={yMaxCounts}
-            height={height}
-            sexDiffStyle={sexDiffStyle}
-            sexGrouped={sexGrouped}
-          />
-        ) : (
-          <SingleChart
-            main={main}
-            recovery={recovery}
-            hasSeverity={hasSeverity}
-            mode={mode}
-            yMaxCounts={yMaxCounts}
-            height={height}
-            sexDiffStyle={sexDiffStyle}
-            sexGrouped={sexGrouped}
-          />
-        )}
-      </div>
+      {/* Chart body — fills remaining space */}
+      <ChartBody
+        main={main}
+        recovery={recovery}
+        hasSeverity={hasSeverity}
+        mode={mode}
+        yMaxCounts={yMaxCounts}
+        fallbackHeight={height}
+        compactWidth={compactWidth}
+        clusterLabels={clusterLabels}
+        sexDiffStyle={sexDiffStyle}
+        sexGrouped={sexGrouped}
+        useFaceted={useFaceted}
+      />
+    </div>
+  );
+}
+
+// ─── Chart body — measures container height, passes to SVG ───────────
+
+function ChartBody({ main, recovery, hasSeverity, mode, yMaxCounts, fallbackHeight, compactWidth, clusterLabels, sexDiffStyle, sexGrouped, useFaceted }: Omit<ChartCoreProps, "height"> & { fallbackHeight: number; useFaceted: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState(0);
+
+  // Measure on mount + resize via ResizeObserver
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const obs = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h && h > 0) setMeasured(Math.round(h));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const height = measured > 50 ? measured : fallbackHeight;
+
+  return (
+    <div ref={ref} className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+      {useFaceted ? (
+        <FacetedChart main={main} recovery={recovery} hasSeverity={hasSeverity} mode={mode} yMaxCounts={yMaxCounts} height={height} compactWidth={compactWidth} clusterLabels={clusterLabels} sexDiffStyle={sexDiffStyle} sexGrouped={sexGrouped} />
+      ) : (
+        <SingleChart main={main} recovery={recovery} hasSeverity={hasSeverity} mode={mode} yMaxCounts={yMaxCounts} height={height} compactWidth={compactWidth} clusterLabels={clusterLabels} sexDiffStyle={sexDiffStyle} sexGrouped={sexGrouped} />
+      )}
     </div>
   );
 }
@@ -241,25 +290,33 @@ interface ChartCoreProps {
   hasSeverity: boolean;
   mode: DisplayMode;
   yMaxCounts: number;
+  compactWidth: boolean;
+  clusterLabels?: { main?: string; recovery?: string };
   height: number;
   sexDiffStyle: SexDiffStyle;
   sexGrouped: boolean;
 }
 
-function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, sexDiffStyle, sexGrouped }: ChartCoreProps) {
+function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, compactWidth, clusterLabels, sexDiffStyle, sexGrouped }: ChartCoreProps) {
   const sexes = main.sexes;
   const mainW = clusterWidth(main.groups.length, sexes, sexGrouped);
   const recW = recovery ? clusterWidth(recovery.groups.length, sexes, sexGrouped) : 0;
   const totalInnerW = mainW + (recovery ? CLUSTER_GAP + recW : 0);
   const naturalW = PADDING_LEFT + totalInnerW + PADDING_RIGHT;
-  // Fixed minimum viewBox width: always assume dual-sex + recovery so all
-  // endpoints scale identically regardless of sex count or recovery presence.
-  const dualSexRecW = PADDING_LEFT
-    + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
-    + CLUSTER_GAP
-    + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
-    + PADDING_RIGHT;
-  const svgW = Math.max(naturalW, dualSexRecW);
+  let svgW: number;
+  if (compactWidth) {
+    // Use natural width — for split panels where space is tight
+    svgW = naturalW;
+  } else {
+    // Fixed minimum viewBox width: always assume dual-sex + recovery so all
+    // endpoints scale identically regardless of sex count or recovery presence.
+    const dualSexRecW = PADDING_LEFT
+      + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
+      + CLUSTER_GAP
+      + clusterWidth(main.groups.length, ["F", "M"], sexGrouped)
+      + PADDING_RIGHT;
+    svgW = Math.max(naturalW, dualSexRecW);
+  }
   const innerH = height - PADDING_TOP - PADDING_BOTTOM;
 
   return (
@@ -267,17 +324,17 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, se
       width="100%"
       height={height}
       viewBox={`0 0 ${svgW} ${height}`}
-      preserveAspectRatio="xMinYMin slice"
+      preserveAspectRatio={compactWidth ? "xMinYMin meet" : "xMinYMin slice"}
       style={{ minWidth: 0, display: "block", overflow: "hidden" }}
     >
       <defs>
         {/* Ungraded segment fill — diagonal stripes on white */}
         <pattern id={UNGRADED_PATTERN_ID} patternUnits="userSpaceOnUse" width="6" height="6">
-          <rect width="6" height="6" fill="#FFFFFF" />
+          <rect width="6" height="6" fill="#F3F4F6" />
           <path
             d="M-1,1 l2,-2 M0,6 l6,-6 M5,7 l2,-2"
-            stroke="#9CA3AF"
-            strokeWidth="0.8"
+            stroke="#6B7280"
+            strokeWidth="1"
           />
         </pattern>
       </defs>
@@ -290,7 +347,7 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, se
         mode={mode}
         yMaxCounts={yMaxCounts}
         isRecovery={false}
-        clusterLabel={recovery ? "Main" : undefined}
+        clusterLabel={recovery ? (clusterLabels?.main ?? "Treatment") : undefined}
         sexDiffStyle={sexDiffStyle}
         sexGrouped={sexGrouped}
       />
@@ -308,7 +365,7 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, se
             mode={mode}
             yMaxCounts={yMaxCounts}
             isRecovery={true}
-            clusterLabel="Recovery"
+            clusterLabel={clusterLabels?.recovery ?? "Recovery"}
             sexDiffStyle={sexDiffStyle}
             sexGrouped={sexGrouped}
           />
@@ -320,7 +377,7 @@ function SingleChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, se
 
 // ─── Faceted (two charts: F left, M right) ───────────────────────────
 
-function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, sexDiffStyle, sexGrouped }: ChartCoreProps) {
+function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, compactWidth, clusterLabels, sexDiffStyle, sexGrouped }: ChartCoreProps) {
   return (
     <div className="flex h-full min-w-0 gap-3">
       {main.sexes.map((sex) => {
@@ -352,6 +409,8 @@ function FacetedChart({ main, recovery, hasSeverity, mode, yMaxCounts, height, s
               mode={mode}
               yMaxCounts={yMaxCounts}
               height={height - 14}
+              compactWidth={compactWidth}
+              clusterLabels={clusterLabels}
               sexDiffStyle={sexDiffStyle}
               sexGrouped={sexGrouped}
             />
@@ -691,8 +750,8 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
         label: UNGRADED_LABEL,
         count: ungraded,
         h: 0,
-        fill: `url(#${UNGRADED_PATTERN_ID})`,
-        textColor: UNGRADED_TEXT_COLOR,
+        fill: "#FFFFFF",
+        textColor: "#6B7280",
       });
     }
     // Compute heights (proportional to affectedH) and reconcile floating-point drift
@@ -758,8 +817,8 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
                       width={BAR_W - 1}
                       height={seg.h}
                       fill={seg.fill}
-                      stroke={seg.key === "1" ? "rgba(0,0,0,0.06)" : "none"}
-                      strokeWidth={0.5}
+                      stroke={seg.key === "U" ? "#9CA3AF" : seg.key === "1" ? "rgba(0,0,0,0.06)" : "none"}
+                      strokeWidth={seg.key === "U" ? 1 : 0.5}
                     />
                     {showLabel && (
                       <text
@@ -769,6 +828,8 @@ function Bar({ x, data, innerH, hasSeverity, mode, yMaxCounts, isRecovery, sex, 
                         fill={seg.textColor}
                         textAnchor="middle"
                         fontFamily="ui-monospace, monospace"
+                        stroke="none"
+                        strokeWidth={0}
                         style={{ pointerEvents: "none" }}
                       >
                         {segLabel(seg)}
@@ -860,11 +921,11 @@ function ClusterDivider({ x, innerH }: { x: number; innerH: number }) {
     <line
       x1={x}
       x2={x}
-      y1={PADDING_TOP - 2}
-      y2={PADDING_TOP + innerH + 4}
+      y1={PADDING_TOP}
+      y2={PADDING_TOP + innerH}
       stroke={DIVIDER_COLOR}
-      strokeWidth={1}
-      strokeDasharray="3 2"
+      strokeWidth={0.5}
+      strokeDasharray="4 3"
     />
   );
 }
@@ -904,10 +965,7 @@ function SeverityLegend({ multiSex }: { multiSex: boolean }) {
         </span>
       ))}
       <span className="flex items-center gap-0.5 whitespace-nowrap">
-        <svg width="8" height="8" className="inline-block">
-          <rect width="8" height="8" fill="#FFFFFF" stroke="#D1D5DB" strokeWidth="0.5" />
-          <path d="M-1,1 l2,-2 M0,8 l8,-8 M7,9 l2,-2" stroke="#9CA3AF" strokeWidth="0.8" />
-        </svg>
+        <span className="inline-block h-2 w-2 rounded-sm border border-gray-400 bg-white" />
         {UNGRADED_LABEL}
       </span>
       <span className="flex items-center gap-0.5 whitespace-nowrap">

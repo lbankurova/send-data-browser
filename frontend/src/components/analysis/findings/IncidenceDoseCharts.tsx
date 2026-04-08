@@ -3,7 +3,8 @@
  *
  * Single stacked-by-grade vertical bar chart per endpoint. Doses on X, sex-grouped
  * bars at each dose, severity grade stacks within each affected portion. Recovery
- * cluster (when present) sits to the right of a dashed divider in the same chart.
+ * cluster (when present) derives from subject-level histopath data — same source
+ * as SeverityMatrix, ensuring consistent NE/zero encoding.
  *
  * For CL/MA (no severity), bars render as solid neutral fills and the verdict
  * summary line is preserved below the chart.
@@ -12,12 +13,14 @@
  * findings-stacked-severity-chart spec.
  */
 import { useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { StackedSeverityIncidenceChart } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import { useFindingSelection } from "@/contexts/FindingSelectionContext";
+import { useHistopathSubjects } from "@/hooks/useHistopathSubjects";
 import { getVerdictLabel, RECOVERY_VERDICT_CLASS } from "@/lib/recovery-labels";
 import {
   buildClusterData,
-  buildRecoveryClusterData,
+  buildRecoveryClusterFromSubjects,
   extractVerdicts,
 } from "./incidence-chart-data";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
@@ -40,11 +43,13 @@ export function IncidenceDoseCharts({
   hasRecovery,
   recoveryData,
 }: Props) {
+  const { studyId } = useParams<{ studyId: string }>();
   const { selectedFinding } = useFindingSelection();
 
   const domain = selectedFinding?.domain ?? "";
   const findingName = selectedFinding?.finding ?? "";
   const hasSeverity = domain === "MI";
+  const specimen = selectedFinding?.specimen ?? null;
 
   // Filter findings to this endpoint
   const epFindings = useMemo(
@@ -58,26 +63,24 @@ export function IncidenceDoseCharts({
     [epFindings, doseGroups, selectedDay],
   );
 
-  // ── Recovery arm data ─────────────────────────────────────
-  const incidenceRows = useMemo(
-    () => recoveryData?.incidence_rows ?? [],
-    [recoveryData],
-  );
+  // ── Recovery arm data (subject-level — single source of truth) ──
+  const { data: subjData } = useHistopathSubjects(studyId, specimen);
 
-  const recoveryCluster = useMemo(
-    () => hasRecovery
-      ? buildRecoveryClusterData(incidenceRows, findingName, domain, doseGroups)
-      : undefined,
-    [hasRecovery, incidenceRows, findingName, domain, doseGroups],
-  );
+  const recoveryCluster = useMemo(() => {
+    if (!hasRecovery || !subjData?.subjects) return undefined;
+    return buildRecoveryClusterFromSubjects(subjData.subjects, findingName, doseGroups);
+  }, [hasRecovery, subjData, findingName, doseGroups]);
 
-  // Pass recovery only when it actually has groups (caller-side gate per
-  // buildRecoveryClusterData contract: empty groups[] = "no recovery").
   const recoveryForChart = recoveryCluster && recoveryCluster.groups.length > 0
     ? recoveryCluster
     : undefined;
 
   // ── Verdict summary (CL/MA only) ─────────────────────────
+  const incidenceRows = useMemo(
+    () => recoveryData?.incidence_rows ?? [],
+    [recoveryData],
+  );
+
   const verdicts = useMemo(
     () => (!hasSeverity && recoveryForChart) ? extractVerdicts(incidenceRows, findingName, domain, doseGroups) : [],
     [hasSeverity, recoveryForChart, incidenceRows, findingName, domain, doseGroups],

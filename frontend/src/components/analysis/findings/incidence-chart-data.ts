@@ -8,15 +8,8 @@
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { ClusterData, DoseGroupData, SexBarData } from "@/components/analysis/charts/StackedSeverityIncidenceChart";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
-import { shortDoseLabel, getDoseDisplayColor } from "@/lib/dose-label-utils";
-
-/** Ultra-short dose label: "C" for control, numeric value for treated. */
-function doseAbbrev(dg: DoseGroup): string {
-  if (dg.is_control) return "C";
-  if (dg.abbreviation) return dg.abbreviation;
-  if (dg.dose_value != null) return String(dg.dose_value);
-  return shortDoseLabel(dg.label, [dg]);
-}
+import type { SubjectHistopathEntry } from "@/types/timecourse";
+import { getDoseLabel as getDoseLabelFull, shortDoseLabel, getDoseDisplayColor, doseAbbrev } from "@/lib/dose-label-utils";
 
 type IncidenceRow = NonNullable<RecoveryComparisonResponse["incidence_rows"]>[number];
 
@@ -36,6 +29,8 @@ export function buildClusterData(
   findings: UnifiedFinding[],
   doseGroups: DoseGroup[],
   selectedDay: number | null,
+  /** When provided, these sexes are always included even if no findings exist. */
+  forceSexes?: string[],
 ): ClusterData {
   // Collect per-sex findings for this endpoint+day
   const bySex = new Map<string, UnifiedFinding>();
@@ -45,7 +40,8 @@ export function buildClusterData(
     if (!bySex.has(f.sex)) bySex.set(f.sex, f);
   }
 
-  const sexes = [...bySex.keys()].sort(); // F before M
+  const sexSet = new Set([...bySex.keys(), ...(forceSexes ?? [])]);
+  const sexes = [...sexSet].sort(); // F before M
   if (sexes.length === 0) return { groups: [], sexes: [] };
 
   // Build groups for ALL dose levels (even when no data — A-11 spatial anchoring)
@@ -62,7 +58,7 @@ export function buildClusterData(
     }
     return {
       doseLevel: dg.dose_level,
-      doseLabel: shortDoseLabel(dg.label, doseGroups),
+      doseLabel: getDoseLabelFull(dg.dose_level, doseGroups),
       doseAbbrev: doseAbbrev(dg),
       doseColor: getDoseDisplayColor(dg),
       bySex: bySexData,
@@ -72,67 +68,91 @@ export function buildClusterData(
   return { groups, sexes };
 }
 
-// ── Recovery arm: from incidence_rows API ──────────────────
+// ── Recovery arm: from subject-level histopath data ──────────
 
 /**
- * Build ClusterData for the recovery arm of one endpoint.
+ * Build ClusterData for the recovery arm from subject-level histopath data.
  *
- * Filters `incidence_rows` to the specified finding+domain, uses the
- * `recovery_*` columns. Emits all reference dose levels even when no
- * recovery data exists (A-11). Returns an empty cluster (no groups) when
- * no treated dose has any recovery subjects, signalling the caller to omit
- * the recovery cluster entirely.
+ * Single source of truth: uses the same SubjectHistopathEntry[] that SeverityMatrix
+ * uses for its recovery cells. This ensures NE/zero encoding is consistent across
+ * the matrix and the stacked bar chart.
+ *
+ * A subject is considered "examined" if their findings dict is non-empty or
+ * ma_examined is true. "Affected" means the specific finding exists with
+ * severity_num > 0.
  */
-export function buildRecoveryClusterData(
-  rows: IncidenceRow[],
+export function buildRecoveryClusterFromSubjects(
+  subjects: SubjectHistopathEntry[],
   finding: string,
-  domain: string,
-  referenceDoseGroups: DoseGroup[],
+  doseGroups: DoseGroup[],
+  /** When provided, these sexes are always included even if no recovery subjects exist for them. */
+  forceSexes?: string[],
 ): ClusterData {
-  const findingUpper = finding.toUpperCase();
-  const matched = rows.filter(
-    (r) => r.finding === findingUpper && r.domain === domain,
-  );
+  const recSubjects = subjects.filter(s => s.is_recovery);
+  if (recSubjects.length === 0) return { groups: [], sexes: [] };
 
-  // No meaningful recovery if no treated dose has recovery subjects
-  const hasTreatedRecovery = matched.some((r) => r.dose_level > 0 && r.recovery_n > 0);
+  // Check if any treated dose has recovery subjects
+  const hasTreatedRecovery = recSubjects.some(s => s.dose_level > 0);
   if (!hasTreatedRecovery) return { groups: [], sexes: [] };
 
-  // Index rows: dose_level -> sex -> SexBarData
-  const byDose = new Map<number, Map<string, SexBarData>>();
-  const sexSet = new Set<string>();
-  const doseLabelsFromRows = new Map<number, string>();
-  for (const r of matched) {
-    if (!byDose.has(r.dose_level)) byDose.set(r.dose_level, new Map());
-    byDose.get(r.dose_level)!.set(r.sex, {
-      affected: r.recovery_affected,
-      n: r.recovery_n,
-      severityCounts: r.recovery_severity_counts ?? null,
-    });
-    sexSet.add(r.sex);
-    if (!doseLabelsFromRows.has(r.dose_level)) {
-      doseLabelsFromRows.set(r.dose_level, shortDoseLabel(r.dose_label, referenceDoseGroups));
-    }
-  }
-
+  // Collect all sexes present in recovery + forced sexes
+  const sexSet = new Set<string>(forceSexes ?? []);
+  for (const s of recSubjects) sexSet.add(s.sex);
   const sexes = [...sexSet].sort();
 
-  // Walk all reference dose levels (A-11). Missing dose levels render as empty bars
-  // (n=0 envelope-less NE markers per the chart's not-examined branch).
-  const groups: DoseGroupData[] = referenceDoseGroups.map((dg) => {
-    const sexMap = byDose.get(dg.dose_level);
-    const bySexData: Record<string, SexBarData> = {};
-    for (const sex of sexes) {
-      bySexData[sex] = sexMap?.get(sex) ?? { affected: 0, n: 0, severityCounts: null };
-    }
-    return {
-      doseLevel: dg.dose_level,
-      doseLabel: doseLabelsFromRows.get(dg.dose_level) ?? shortDoseLabel(dg.label, referenceDoseGroups),
-      doseAbbrev: doseAbbrev(dg),
-      doseColor: getDoseDisplayColor(dg),
-      bySex: bySexData,
-    };
-  });
+  // Collect recovery dose levels
+  const recoveryDoseLevels = new Set<number>();
+  for (const s of recSubjects) recoveryDoseLevels.add(s.dose_level);
+
+  // Only emit groups for dose levels that have recovery subjects
+  const groups: DoseGroupData[] = doseGroups
+    .filter(dg => recoveryDoseLevels.has(dg.dose_level))
+    .map(dg => {
+      const bySexData: Record<string, SexBarData> = {};
+
+      for (const sex of sexes) {
+        const doseSubjects = recSubjects.filter(
+          s => s.dose_level === dg.dose_level && s.sex === sex,
+        );
+
+        // Examined = has findings recorded or MA confirms examination
+        const examined = doseSubjects.filter(s =>
+          Object.keys(s.findings).length > 0 || s.ma_examined === true,
+        );
+
+        if (examined.length === 0) {
+          // No examined subjects at this dose+sex → NE
+          bySexData[sex] = { affected: 0, n: 0, severityCounts: null };
+          continue;
+        }
+
+        // Count affected + build severity grade counts
+        let affected = 0;
+        const severityCounts: Record<string, number> = {};
+        for (const s of examined) {
+          const fd = s.findings[finding];
+          if (fd && fd.severity_num > 0) {
+            affected++;
+            const grade = String(Math.min(fd.severity_num, 5));
+            severityCounts[grade] = (severityCounts[grade] ?? 0) + 1;
+          }
+        }
+
+        bySexData[sex] = {
+          affected,
+          n: examined.length,
+          severityCounts: Object.keys(severityCounts).length > 0 ? severityCounts : null,
+        };
+      }
+
+      return {
+        doseLevel: dg.dose_level,
+        doseLabel: getDoseLabelFull(dg.dose_level, doseGroups),
+        doseAbbrev: doseAbbrev(dg),
+        doseColor: getDoseDisplayColor(dg),
+        bySex: bySexData,
+      };
+    });
 
   return { groups, sexes };
 }

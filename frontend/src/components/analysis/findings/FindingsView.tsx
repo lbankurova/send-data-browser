@@ -11,7 +11,7 @@ import { FindingsQuadrantScatter } from "./FindingsQuadrantScatter";
 import { DoseResponseChartPanel } from "./DoseResponseChartPanel";
 import { IsImmunogenicityPanel } from "./IsImmunogenicityPanel";
 import { DayStepper } from "./DayStepper";
-import { SeverityMatrix } from "./SeverityMatrix";
+import { SpecimenIncidencePanel } from "./SpecimenIncidencePanel";
 import { GroupForestPlot } from "./GroupForestPlot";
 import { OrganToxicityRadar } from "./OrganToxicityRadar";
 import type { ScatterSelectedPoint } from "./FindingsQuadrantScatter";
@@ -676,11 +676,13 @@ export function FindingsView() {
             onResizePointerDown={scatterSection.onPointerDown}
             contentRef={scatterSection.contentRef}
           >
-            <SeverityMatrix
+            <SpecimenIncidencePanel
               findings={tableFindings}
               doseGroups={data.dose_groups}
               studyId={studyId}
               specimen={scopeLabel}
+              hasRecovery={studyHasRecovery}
+              signalScores={signalScoreMap}
             />
           </ViewSection>
         ) : scopeType && endpointSummaries.length > 0 ? (
