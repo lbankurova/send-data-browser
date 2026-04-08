@@ -327,6 +327,25 @@ class TestTargetOrganThresholds:
         liver = next(r for r in result if r["organ_system"] == "liver")
         assert liver["target_organ_flag"] is True
 
+    def test_longitudinal_dedup_n_treatment_related(self):
+        """GAP-246: longitudinal duplicates (same ep_key, different days)
+        must not inflate n_treatment_related or n_significant."""
+        base = self._make_finding("liver", 0.01, 1.5)
+        # Two findings for same endpoint at different days
+        day15 = {**base, "day": 15}
+        day29 = {**base, "day": 29}
+        result = build_target_organ_summary([day15, day29])
+        liver = next(r for r in result if r["organ_system"] == "liver")
+        assert liver["n_endpoints"] == 1, "ep_key dedup -> 1 endpoint"
+        assert liver["n_treatment_related"] <= liver["n_endpoints"], (
+            f"n_treatment_related={liver['n_treatment_related']} > "
+            f"n_endpoints={liver['n_endpoints']}"
+        )
+        assert liver["n_significant"] <= liver["n_endpoints"], (
+            f"n_significant={liver['n_significant']} > "
+            f"n_endpoints={liver['n_endpoints']}"
+        )
+
 
 # ──────────────────────────────────────────────────────────────
 # Cache hash integration
