@@ -43,13 +43,37 @@ _DOG_HIGH_CV_ORGANS_FEMALE: dict[str, str] = {
 }
 
 
+_NHP_TIER_C_ORGANS = {"SPLEEN", "THYMUS", "LUNGS", "LUNG", "PANCREAS"}
+
+
 def _get_threshold_reliability(
     specimen: str, sex: str, species_cat: str | None,
 ) -> dict | None:
-    """Return threshold_reliability alert for high-CV dog organs, or None."""
+    """Return threshold_reliability alert for high-CV dog/NHP organs, or None."""
+    spec_upper = specimen.strip().upper()
+
+    # NHP: all organs get a reliability annotation
+    if species_cat == "nhp":
+        if spec_upper in _NHP_TIER_C_ORGANS:
+            return {
+                "level": "qualitative_only",
+                "message": (
+                    "Qualitative assessment only -- organ weight variability too high "
+                    "for quantitative screening in NHP. Assess via histopathology "
+                    "concordance and dose-response pattern"
+                ),
+            }
+        # Tier A/B: provisional thresholds based on estimated within-study CVs
+        return {
+            "level": "provisional",
+            "message": (
+                "Provisional NHP thresholds based on estimated within-study CVs "
+                "(Amato 2022 colony data). Recalibrate when GLP-setting CVs available"
+            ),
+        }
+
     if species_cat != "dog":
         return None
-    spec_upper = specimen.strip().upper()
     is_female = sex.strip().upper() == "F"
     if spec_upper in _DOG_HIGH_CV_ORGANS_ALL:
         cv_desc = _DOG_HIGH_CV_ORGANS_ALL[spec_upper]

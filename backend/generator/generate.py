@@ -330,6 +330,17 @@ def generate(study_id: str):
                 "Dose escalation design -- period and dose effects are confounded. "
                 "Treatment effects may include cumulative or carryover components."
             )
+        # NHP standing caveat: Amato 2022 colony reference may not match
+        # Mauritius-origin study populations (per cynomolgus-organ-weight-hcd spec BP-4)
+        _study_species = context_result["study_metadata"].get("species", "")
+        if _study_species and any(
+            t in _study_species.upper() for t in ("MONKEY", "MACAQUE", "CYNOMOLGUS", "NHP")
+        ):
+            context_result["study_metadata"]["nhp_hcd_caveat"] = (
+                "Reference data from research colony (Amato 2022); "
+                "may not match Mauritius-origin study populations"
+            )
+
         # Phase A (unrecognized-term-flagging): record the dictionary versions
         # that were loaded for THIS regeneration. Canonical source for the
         # unrecognized_terms.json dictionary_versions_snapshot (F14 sync).

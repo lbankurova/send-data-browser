@@ -65,6 +65,8 @@ _SPECIMEN_TO_CONFIG_KEY: dict[str, str] = {
     "THYMUS": "THYMUS",
     "LUNG": "LUNGS",
     "LUNGS": "LUNGS",
+    # Pancreas
+    "PANCREAS": "PANCREAS",
     # Stomach (for adaptive trees, not OM thresholds)
     "STOMACH": "STOMACH",
 }
@@ -94,6 +96,8 @@ def _resolve_species_category(species: str | None) -> str:
         return "mouse"
     if "DOG" in s or "BEAGLE" in s or "MONGREL" in s or "CANINE" in s:
         return "dog"
+    if "MONKEY" in s or "MACAQUE" in s or "CYNOMOLGUS" in s or "NHP" in s:
+        return "nhp"
     return "other"
 
 
@@ -141,6 +145,8 @@ def get_organ_threshold(specimen: str, species: str | None = None) -> dict | Non
         result["special_flags"] = organ_cfg["special_flags"]
     if "cross_organ_link" in organ_cfg:
         result["cross_organ_link"] = organ_cfg["cross_organ_link"]
+    if "nhp_tier" in organ_cfg:
+        result["nhp_tier"] = organ_cfg["nhp_tier"]
 
     return result
 

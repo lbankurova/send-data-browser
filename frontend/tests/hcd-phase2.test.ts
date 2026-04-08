@@ -223,17 +223,18 @@ describe("HCD Phase 2 — SQLite database structure", () => {
     );
   });
 
-  test.skipIf(!hasDb)("hcd_aggregates covers 16 organs", () => {
+  test.skipIf(!hasDb)("hcd_aggregates covers 17 organs", () => {
     const organs = sqliteQuery(
       "SELECT DISTINCT organ FROM hcd_aggregates ORDER BY organ"
     ).map((r) => r.organ);
-    expect(organs.length).toBe(16);
+    expect(organs.length).toBe(17);
     expect(organs).toContain("BRAIN");
     expect(organs).toContain("LIVER");
     expect(organs).toContain("KIDNEY");
     expect(organs).toContain("HEART");
     expect(organs).toContain("TESTES");
     expect(organs).toContain("OVARIES");
+    expect(organs).toContain("PANCREAS");
   });
 
   test.skipIf(!hasDb)("hcd_aggregates has duration categories including 28-day", () => {

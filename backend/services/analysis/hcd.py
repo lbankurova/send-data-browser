@@ -162,6 +162,7 @@ _SPECIMEN_TO_HCD_ORGAN: dict[str, str] = {
     "THYMUS": "THYMUS",
     "LUNG": "LUNGS",
     "LUNGS": "LUNGS",
+    "PANCREAS": "PANCREAS",
     "GLAND, PITUITARY": "PITUITARY",
     "PITUITARY GLAND": "PITUITARY",
     "PITUITARY": "PITUITARY",
@@ -261,6 +262,14 @@ def assess_a3(
     # Dog (non-rodent) path: age-based HCD lookup
     if _is_dog_species(species):
         return _assess_a3_dog(
+            treated_group_mean, organ_key, sex, strain,
+            duration_days, age_months,
+            control_group_mean=control_group_mean,
+        )
+
+    # NHP path: bracket-based age matching
+    if _is_nhp_species(species):
+        return _assess_a3_nhp(
             treated_group_mean, organ_key, sex, strain,
             duration_days, age_months,
             control_group_mean=control_group_mean,
@@ -403,6 +412,155 @@ def _assess_a3_dog(
         "confidence": confidence,
         "age_matched": age_matched,
         "age_gap": age_gap,
+    }
+
+    # Control vs HCD check
+    _check_control_vs_hcd(out, control_group_mean, hcd["lower"], hcd["upper"],
+                          hcd["mean"], sd)
+
+    return out
+
+
+# ---------------------------------------------------------------------------
+# NHP (cynomolgus monkey) age-based HCD
+# ---------------------------------------------------------------------------
+
+def _is_nhp_species(species: str | None) -> bool:
+    """Check if the species string indicates NHP/monkey."""
+    from services.analysis.organ_thresholds import _resolve_species_category
+    return _resolve_species_category(species) == "nhp"
+
+
+_DEFAULT_NHP_START_AGE_MONTHS = 36.0  # midpoint of typical 2.5-4y GLP NHP range
+
+# Age brackets for Amato 2022 data. Each: (lo_months, hi_months, midpoint, label).
+# Bracket matching: lo <= age < hi.
+# Future NHP HCD data sources must extend this list.
+_NHP_AGE_BRACKETS = [
+    (30.0, 48.0, 42.0, "peripubertal"),    # >2.5-4y (not yet in DB)
+    (48.0, 114.0, 81.0, "young_adult"),     # >4-9.5y
+    (114.0, 240.0, 177.0, "adult"),         # >9.5-20y
+]
+
+
+def _estimate_nhp_age_months(
+    duration_days: int | None, age_months: float | None,
+) -> tuple[float, bool]:
+    """Estimate terminal age in months for an NHP study.
+
+    Returns (age_months, is_estimated). When age_months is provided
+    (from TS AGELO), uses it directly. Otherwise estimates from default
+    start age + study duration.
+    """
+    if age_months is not None:
+        return age_months, False
+    duration_months = (duration_days / 30.0) if duration_days else 0.0
+    return _DEFAULT_NHP_START_AGE_MONTHS + duration_months, True
+
+
+def _assess_a3_nhp(
+    treated_group_mean: float,
+    organ_key: str,
+    sex: str,
+    strain: str | None,
+    duration_days: int | None,
+    age_months: float | None,
+    *,
+    control_group_mean: float | None = None,
+) -> dict:
+    """A-3 assessment for NHP studies using bracket-based age matching.
+
+    Bracket matching determines which Amato age stratum to compare against,
+    then delegates to query_by_age() for the actual DB lookup. Midpoints are
+    passed directly because the Amato data is stored at these exact age_months
+    values in hcd_aggregates.
+    """
+    sqlite_db = _load_sqlite_db()
+    if sqlite_db is None:
+        return {"result": "no_hcd", "score": 0.0, "detail": "HCD database not available"}
+
+    resolved = sqlite_db.resolve_strain(strain) if strain else sqlite_db.resolve_strain("CYNOMOLGUS")
+    if not resolved:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"NHP strain '{strain}' not in HCD database"}
+
+    terminal_age, is_estimated = _estimate_nhp_age_months(duration_days, age_months)
+
+    # Bracket matching: find which Amato bracket the terminal age falls in
+    matched_bracket = None
+    for lo, hi, midpoint, label in _NHP_AGE_BRACKETS:
+        if lo <= terminal_age < hi:
+            matched_bracket = (midpoint, label)
+            break
+
+    if matched_bracket is None:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"Study animal age ({terminal_age:.1f}mo) outside NHP HCD "
+                          f"reference range (2.5-20y)"}
+
+    bracket_midpoint, bracket_name = matched_bracket
+
+    hcd = sqlite_db.query_by_age(resolved, sex, bracket_midpoint, organ_key)
+    if not hcd:
+        return {"result": "no_hcd", "score": 0.0,
+                "detail": f"No NHP HCD for {organ_key}/{sex} "
+                          f"(bracket: {bracket_name}, age ~{terminal_age:.1f}mo)"}
+
+    # Detect stratum mismatch: bracket matched one stratum but query_by_age
+    # returned data from a different stratum (e.g., peripubertal bracket matched
+    # but only young_adult data exists). Adjust label to reflect actual data source.
+    stratum_mismatch = False
+    actual_age = hcd.get("age_matched", bracket_midpoint)
+    if abs(actual_age - bracket_midpoint) > 1.0:
+        stratum_mismatch = True
+        # Find the label for the actual stratum
+        actual_label = bracket_name
+        for lo, hi, mid, label in _NHP_AGE_BRACKETS:
+            if abs(actual_age - mid) < 1.0:
+                actual_label = label
+                break
+        bracket_name = actual_label
+
+    # NO sd_inflated for Amato colony data
+    within = hcd["lower"] <= treated_group_mean <= hcd["upper"]
+    result_str = "within_hcd" if within else "outside_hcd"
+    score = -0.5 if within else 0.5
+
+    n = hcd.get("n", 0)
+    source = hcd.get("source", "AMATO2022")
+    confidence = "LOW" if stratum_mismatch else hcd.get("confidence", "MODERATE")
+    sd = hcd["sd"]
+
+    detail = (
+        f"Treated mean {treated_group_mean:.3f} vs NHP HCD "
+        f"[{hcd['lower']:.3f}, {hcd['upper']:.3f}] "
+        f"(ref: {hcd['mean']:.4f}+/-{sd:.4f}, n={n}, {source}, {bracket_name})"
+    )
+
+    if is_estimated:
+        detail += (
+            " -- terminal age estimated from default start age; "
+            "AGELO not in study metadata. Bracket assignment may be incorrect"
+        )
+
+    # Low-power caveat: always present for NHP OM (N=3-5/sex typical)
+    low_power_msg = (
+        f"Low statistical power (N={n}/sex); "
+        "organ weight assessment relies on histopathology concordance "
+        "and dose-response pattern"
+    )
+
+    out: dict = {
+        "result": result_str,
+        "score": score,
+        "detail": detail,
+        "domain": "OM",
+        "n": n,
+        "source": source,
+        "confidence": confidence,
+        "bracket": bracket_name,
+        "hcd_source_caveat": "colony_reference",
+        "low_power_caveat": low_power_msg,
     }
 
     # Control vs HCD check

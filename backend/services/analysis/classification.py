@@ -888,6 +888,15 @@ def _assess_om_two_gate(
         ceiling = threshold["variation_ceiling_pct"]
         floor = threshold["adverse_floor_pct"]
         strong = threshold["strong_adverse_pct"]
+        # NHP Tier C: all thresholds null -> qualitative only, use base ECETOC path
+        # noqa: C901 -- domain-critical: Tier C organs are assessed by dose-response
+        # trend statistics + histopath concordance, not magnitude thresholds
+        if ceiling is None and floor is None and strong is None:
+            finding["_assessment_detail"] = {
+                "method": f"nhp_tier_c_qualitative:{threshold['config_key']}",
+                "nhp_tier": threshold.get("nhp_tier", "C_qualitative"),
+            }
+            return assess_finding(finding, a3_score)
         method = f"organ_specific:{threshold['config_key']}"
     else:
         # Fallback to default
