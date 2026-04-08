@@ -123,3 +123,9 @@ Implemented the modified version [trend_test_incidence_modified.py](../../../bac
 Two versions of the implementation are verified: the original (baseline) version with fixed interface, and the modified version with extended functionality. Both are validated
 
 More [details](./Cochran-Armitage-trend-test-for-incidence/verification_report.md).
+
+### ✅ Rest
+
+`welch_t_test`, `mann_whitney_u`, `spearman_correlation`,`severity_trend`,`welch_pairwise`, and `bonferroni_correct`are validated against published numerical examples from peer-reviewed publications and reference software (R, SPSS, StatsDirect), complemented by cross-validation against direct `scipy.stats` calls and hand-calculated values.
+
+More [details](./rest/statistics_verification_report.md).
