@@ -293,6 +293,121 @@ def _insert_nonrodent_seeds(conn: sqlite3.Connection) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Backfill: join terminal BW into animal_organ_weights
+# ---------------------------------------------------------------------------
+
+def _backfill_om_body_weights(conn: sqlite3.Connection) -> int:
+    """Populate animal_organ_weights.body_weight_g from hcd_bw.
+
+    Two-tier join:
+      Tier 1: (animal_id, study_id, duration_category) -- exact timepoint match
+      Tier 2: (animal_id, study_id) with max duration_days -- terminal fallback
+
+    Uses temp tables for performance (correlated subqueries on 78K rows are slow).
+    Returns total number of OM rows updated.
+    """
+    # Check that animal_organ_weights exists
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    )}
+    if "animal_organ_weights" not in tables:
+        print("  Skipping BW backfill: animal_organ_weights table not found")
+        return 0
+
+    # Reset any previous backfill so this is idempotent
+    conn.execute("UPDATE animal_organ_weights SET body_weight_g = NULL")
+
+    # Build lookup index for fast joins
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_bw_aid_sid_dcat
+        ON hcd_bw(animal_id, study_id, duration_category)
+    """)
+
+    # Tier 1: pre-aggregate BW by (animal_id, study_id, duration_category)
+    # AVG handles the rare same-duration duplicates (13 cases)
+    conn.execute("DROP TABLE IF EXISTS _tmp_bw_t1")
+    conn.execute("""
+        CREATE TEMP TABLE _tmp_bw_t1 AS
+        SELECT animal_id, study_id, duration_category,
+               AVG(body_weight_g) AS bw
+        FROM hcd_bw
+        WHERE animal_id IS NOT NULL AND study_id IS NOT NULL
+          AND duration_category IS NOT NULL
+        GROUP BY animal_id, study_id, duration_category
+    """)
+    conn.execute("""
+        CREATE INDEX _tmp_bw_t1_idx
+        ON _tmp_bw_t1(animal_id, study_id, duration_category)
+    """)
+    conn.execute("""
+        UPDATE animal_organ_weights
+        SET body_weight_g = (
+            SELECT t.bw FROM _tmp_bw_t1 t
+            WHERE t.animal_id = animal_organ_weights.animal_id
+              AND t.study_id = animal_organ_weights.study_id
+              AND t.duration_category = animal_organ_weights.duration_category
+        )
+        WHERE duration_category IS NOT NULL
+          AND animal_id IS NOT NULL AND study_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM _tmp_bw_t1 t
+            WHERE t.animal_id = animal_organ_weights.animal_id
+              AND t.study_id = animal_organ_weights.study_id
+              AND t.duration_category = animal_organ_weights.duration_category
+          )
+    """)
+    tier1 = conn.execute("SELECT changes()").fetchone()[0]
+
+    # Tier 2: for still-NULL rows, fall back to (animal_id, study_id)
+    # picking the BW record with the largest duration_days (most terminal)
+    conn.execute("DROP TABLE IF EXISTS _tmp_bw_t2")
+    conn.execute("""
+        CREATE TEMP TABLE _tmp_bw_t2 AS
+        SELECT animal_id, study_id, body_weight_g AS bw
+        FROM hcd_bw
+        WHERE animal_id IS NOT NULL AND study_id IS NOT NULL
+        GROUP BY animal_id, study_id
+        HAVING duration_days = MAX(duration_days)
+           OR duration_days IS NULL
+    """)
+    conn.execute("""
+        CREATE INDEX _tmp_bw_t2_idx ON _tmp_bw_t2(animal_id, study_id)
+    """)
+    conn.execute("""
+        UPDATE animal_organ_weights
+        SET body_weight_g = (
+            SELECT t.bw FROM _tmp_bw_t2 t
+            WHERE t.animal_id = animal_organ_weights.animal_id
+              AND t.study_id = animal_organ_weights.study_id
+            LIMIT 1
+        )
+        WHERE body_weight_g IS NULL
+          AND animal_id IS NOT NULL AND study_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM _tmp_bw_t2 t
+            WHERE t.animal_id = animal_organ_weights.animal_id
+              AND t.study_id = animal_organ_weights.study_id
+          )
+    """)
+    tier2 = conn.execute("SELECT changes()").fetchone()[0]
+
+    # Cleanup temp tables
+    conn.execute("DROP TABLE IF EXISTS _tmp_bw_t1")
+    conn.execute("DROP TABLE IF EXISTS _tmp_bw_t2")
+
+    total = conn.execute(
+        "SELECT COUNT(*) FROM animal_organ_weights WHERE body_weight_g IS NOT NULL"
+    ).fetchone()[0]
+    still_null = conn.execute(
+        "SELECT COUNT(*) FROM animal_organ_weights WHERE body_weight_g IS NULL"
+    ).fetchone()[0]
+
+    print(f"  BW backfill: tier1={tier1:,}, tier2={tier2:,}, "
+          f"total filled={total:,}, still NULL={still_null:,}")
+    return tier1 + tier2
+
+
+# ---------------------------------------------------------------------------
 # ETL core
 # ---------------------------------------------------------------------------
 
@@ -502,6 +617,11 @@ def build_bw(xlsx_path: Path, db_path: Path | None = None) -> Path:
         "INSERT OR REPLACE INTO etl_metadata (key, value) VALUES (?, ?)",
         ("bw_n_aggregates", str(n_agg + n_seed)),
     )
+
+    # Backfill body_weight_g into animal_organ_weights from hcd_bw
+    n_filled = _backfill_om_body_weights(conn)
+    if n_filled > 0:
+        conn.commit()
 
     conn.commit()
     conn.close()
