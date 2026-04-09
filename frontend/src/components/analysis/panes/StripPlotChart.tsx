@@ -629,7 +629,6 @@ function InterleavedPanel({
         // Interleaved mode density: combined if F/M similar (<20% mean diff), side-by-side if different
         const refs = hcdBySex ? Object.values(hcdBySex).filter(Boolean) as HcdReference[] : [];
         if (refs.length === 0) return null;
-        const densityX = LEFT_MARGIN;
         const maxW = HCD_DENSITY_WIDTH - 2;
 
         // Check if F and M differ substantially (>20% mean difference)
@@ -638,24 +637,27 @@ function InterleavedPanel({
         const useSideBySide = refs.length === 2 && meanF != null && meanM != null && meanF > 0 && meanM > 0
           && Math.abs(meanF - meanM) / Math.max(meanF, meanM) > 0.2;
 
+        // Density grows leftward: right edge anchored at effectiveLeftMargin, peak extends left
+        const anchorX = effectiveLeftMargin;
+
         if (useSideBySide) {
-          // Two half-width densities side by side
+          // Two half-width densities side by side (stacked left from anchor)
           const halfW = maxW / 2;
           return (
             <g>
               {refs.map((ref, ri) => {
                 const { points: density, zerosExcluded } = computeHcdDensity(ref);
                 if (density.length === 0) return null;
-                const offsetX = densityX + ri * halfW;
+                const baseX = anchorX - ri * halfW;
                 return (
                   <g key={ref.sex}>
                     <path
-                      d={density.map((p, i) => `${i === 0 ? "M" : "L"}${offsetX + p.density * halfW},${yScale(p.y)}`).join(" ")
-                        + density.map((_, i) => `L${offsetX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
+                      d={density.map((p, i) => `${i === 0 ? "M" : "L"}${baseX - p.density * halfW},${yScale(p.y)}`).join(" ")
+                        + density.map((_, i) => `L${baseX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
                       fill={getSexColor(ref.sex)} fillOpacity={0.2} stroke="none"
                     />
                     {zerosExcluded > 0 && (
-                      <text x={offsetX + 1} y={PLOT_TOP + 6 + ri * 8} className="text-[6px]" fill="var(--muted-foreground)" opacity={0.4}>
+                      <text x={anchorX - maxW} y={PLOT_TOP + 6 + ri * 8} className="text-[6px]" fill="var(--muted-foreground)" opacity={0.4}>
                         ({zerosExcluded} zeros excl.)
                       </text>
                     )}
@@ -673,12 +675,12 @@ function InterleavedPanel({
         return (
           <g>
             <path
-              d={density.map((p, i) => `${i === 0 ? "M" : "L"}${densityX + p.density * maxW},${yScale(p.y)}`).join(" ")
-                + density.map((_, i) => `L${densityX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
+              d={density.map((p, i) => `${i === 0 ? "M" : "L"}${anchorX - p.density * maxW},${yScale(p.y)}`).join(" ")
+                + density.map((_, i) => `L${anchorX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
               fill="rgba(0,0,0,0.15)" stroke="none"
             />
             {zerosExcluded > 0 && (
-              <text x={densityX + 2} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
+              <text x={anchorX - maxW} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
                 ({zerosExcluded} zeros excl.)
               </text>
             )}
@@ -1031,28 +1033,28 @@ function SexPanel({
         </text>
       ))}
 
-      {/* HCD marginal density — in left margin area (first panel only) */}
+      {/* HCD marginal density — in left margin area (first panel only), peak faces left */}
       {hasHcd && showYAxis && (() => {
         const { points: density, zerosExcluded } = computeHcdDensity(hcdRef);
         if (density.length === 0) return null;
-        const densityX = baseLeft;
+        const anchorX = leftMargin; // right edge anchored at plot boundary
         const maxW = HCD_DENSITY_WIDTH - 2;
         return (
           <g>
             <path
               d={density.map((p, i) => {
-                const x = densityX + p.density * maxW;
+                const x = anchorX - p.density * maxW;
                 const y = yScale(p.y);
                 return `${i === 0 ? "M" : "L"}${x},${y}`;
               }).join(" ") + density.map((_, i) => {
                 const p = density[density.length - 1 - i];
-                return `L${densityX},${yScale(p.y)}`;
+                return `L${anchorX},${yScale(p.y)}`;
               }).join(" ") + "Z"}
               fill="rgba(0,0,0,0.15)"
               stroke="none"
             />
             {zerosExcluded > 0 && (
-              <text x={densityX + 2} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
+              <text x={anchorX - maxW} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
                 ({zerosExcluded} zeros excl.)
               </text>
             )}
