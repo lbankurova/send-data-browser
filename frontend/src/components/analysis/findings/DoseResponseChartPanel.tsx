@@ -193,12 +193,13 @@ function compactifyEffectSize(opt: EChartsOption, points: MergedPoint[]): EChart
   if (o.xAxis && !Array.isArray(o.xAxis)) {
     o.xAxis = { ...o.xAxis, data: treatedLabels };
   }
+  const hasControl = points.some((p) => (p.dose_level as number) === 0);
   if (Array.isArray(o.series)) {
     o.series = (o.series as Record<string, unknown>[]).map((s) => {
       const newS: Record<string, unknown> = { ...s, barMaxWidth: 16 };
-      // Trim data to skip control (first entry)
-      if (Array.isArray(s.data) && s.data.length === points.length) {
-        newS.data = s.data.slice(1); // control is always first (dose_level 0)
+      // Trim data to skip control (first entry) — only when control is present
+      if (hasControl && Array.isArray(s.data) && s.data.length === points.length) {
+        newS.data = s.data.slice(1);
       }
       // Strip yAxis = ±0.5 from markLine, hide labels on ±0.8
       if (s.markLine) {
