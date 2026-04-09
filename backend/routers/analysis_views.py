@@ -691,3 +691,15 @@ def exclusion_preview(study_id: str, body: ExclusionPreviewRequest):
         groups.append(best["result"])
 
     return {"groups": groups}
+
+
+# ---------------------------------------------------------------------------
+# HCD references — user-uploaded + system, merged with priority chain
+# ---------------------------------------------------------------------------
+
+@router.get("/studies/{study_id}/hcd-references")
+async def get_hcd_references(study_id: str):
+    """Return merged HCD references for a study (user-uploaded priority, system fallback)."""
+    study = _resolve_study(study_id)
+    from services.analysis.hcd import get_hcd_references as _get_hcd_refs
+    return _get_hcd_refs(study, study_id)

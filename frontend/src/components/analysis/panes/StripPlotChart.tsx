@@ -652,7 +652,7 @@ function InterleavedPanel({
                     <path
                       d={density.map((p, i) => `${i === 0 ? "M" : "L"}${offsetX + p.density * halfW},${yScale(p.y)}`).join(" ")
                         + density.map((_, i) => `L${offsetX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
-                      fill={getSexColor(ref.sex)} fillOpacity={0.08} stroke="none"
+                      fill={getSexColor(ref.sex)} fillOpacity={0.2} stroke="none"
                     />
                     {zerosExcluded > 0 && (
                       <text x={offsetX + 1} y={PLOT_TOP + 6 + ri * 8} className="text-[6px]" fill="var(--muted-foreground)" opacity={0.4}>
@@ -675,7 +675,7 @@ function InterleavedPanel({
             <path
               d={density.map((p, i) => `${i === 0 ? "M" : "L"}${densityX + p.density * maxW},${yScale(p.y)}`).join(" ")
                 + density.map((_, i) => `L${densityX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
-              fill="rgba(0,0,0,0.06)" stroke="none"
+              fill="rgba(0,0,0,0.15)" stroke="none"
             />
             {zerosExcluded > 0 && (
               <text x={densityX + 2} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
@@ -1048,7 +1048,7 @@ function SexPanel({
                 const p = density[density.length - 1 - i];
                 return `L${densityX},${yScale(p.y)}`;
               }).join(" ") + "Z"}
-              fill="rgba(0,0,0,0.06)"
+              fill="rgba(0,0,0,0.15)"
               stroke="none"
             />
             {zerosExcluded > 0 && (

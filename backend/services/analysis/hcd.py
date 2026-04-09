@@ -1006,3 +1006,96 @@ def get_study_duration_days(study) -> int | None:
     except Exception:
         pass
     return None
+
+
+# ---------------------------------------------------------------------------
+# User HCD reference lookup (display-only, priority chain)
+# ---------------------------------------------------------------------------
+
+_ANNOTATIONS_DIR = Path(__file__).parent.parent.parent / "annotations"
+
+
+def get_hcd_references(study, study_id: str) -> dict:
+    """Build merged HCD reference dict: user-uploaded (priority 1) + system (priority 2).
+
+    Returns {
+        species, strain, duration_category, duration_status,
+        references: { "TEST_CODE:SEX": { ... HcdReference fields ... }, ... }
+    }
+
+    This is the coordination facade. It reads user annotations and delegates
+    system HCD lookup to hcd_database.query_lb(). Does NOT modify scoring.
+    """
+    from services.analysis.subject_context import get_ts_metadata
+    from generator.subject_sentinel import LOGNORMAL_ENDPOINTS
+
+    meta = get_ts_metadata(study)
+    species = (meta.get("species") or "").strip()
+    strain_raw = meta.get("strain") or ""
+
+    duration_days = get_study_duration_days(study)
+    dur_cat = _duration_to_category(duration_days)
+    duration_status = "known" if dur_cat else "unknown"
+
+    references: dict[str, dict] = {}
+
+    # Priority 1: user-uploaded HCD
+    user_path = _ANNOTATIONS_DIR / study_id / "hcd_user.json"
+    if user_path.exists():
+        try:
+            with open(user_path) as f:
+                user_data = json.load(f)
+            for key, ref in user_data.get("references", {}).items():
+                references[key] = ref
+        except Exception as e:
+            log.warning("Failed to read user HCD for %s: %s", study_id, e)
+
+    # Priority 2: system HCD from hcd.db (only if duration is known)
+    if dur_cat:
+        sqlite_db = _load_sqlite_db()
+        if sqlite_db is not None:
+            # Resolve strain for LB
+            resolved_strain, resolved_species = sqlite_db.resolve_lb_strain(strain_raw)
+            lookup_species = resolved_species or species
+
+            # Get all available LB test codes from system HCD
+            lb_test_codes = sqlite_db.get_lb_test_codes(lookup_species, dur_cat)
+
+            for tc in lb_test_codes:
+                for sex in ("F", "M"):
+                    key = f"{tc}:{sex}"
+                    if key in references:
+                        continue  # user upload takes priority
+                    result = sqlite_db.query_lb(
+                        lookup_species, sex, tc, dur_cat,
+                        strain=resolved_strain,
+                    )
+                    if result is None:
+                        continue
+                    is_lognormal = tc in LOGNORMAL_ENDPOINTS
+                    references[key] = {
+                        "test_code": tc,
+                        "sex": sex,
+                        "mean": result.get("mean"),
+                        "sd": result.get("sd"),
+                        "geom_mean": result.get("geom_mean"),
+                        "n": result.get("n"),
+                        "lower": result.get("lower"),
+                        "upper": result.get("upper"),
+                        "unit": result.get("unit"),
+                        "confidence": result.get("confidence"),
+                        "source": result.get("source", "system"),
+                        "source_type": "system",
+                        "isLognormal": is_lognormal,
+                        "values": None,
+                    }
+
+    return {
+        "species": species,
+        "strain": strain_raw,
+        "duration_category": dur_cat,
+        "duration_status": duration_status,
+        "references": references,
+    }
+
+

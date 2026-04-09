@@ -1,0 +1,62 @@
+topic: user-hcd-upload-spec
+title: "User HCD Upload and Graceful Degradation"
+started: 2026-04-09
+phase: blueprint
+current_step: build.2
+phase: implementing
+
+plan_review_r2:
+  verdict: CONDITIONAL (0 FLAWED)
+  all_r1_resolved: true (10/10 RESOLVED)
+  new_issues: 6 (4 CONDITIONAL incorporated/noted, 2 SOUND)
+  doc: docs/_internal/research/peer-reviews/user-hcd-upload-spec-synthesis-review-r2.md
+
+plan_review_r1:
+  verdict: CONDITIONAL (2 FLAWED + 7 CONDITIONAL + 1 SOUND)
+  flawed: 2 (F1 lognormal null mean/sd, F4 symmetric band wrong)
+  conditional: 7 (F2 conversion formula, F3 naming, F5 duplicates, F6 normalization, F7 interleaved, F8 duration, F10 zeros)
+  sound: 1 (F9 LEFT_MARGIN)
+  all_incorporated: true
+  doc: docs/_internal/research/peer-reviews/user-hcd-upload-spec-synthesis-review.md
+
+probe:
+  result: ALL_SAFE
+  breaks: 0
+  science_flags: 0
+  propagates: 2 (S21 new display read path, OV new annotation schema)
+  safe: 23
+  invariants: X1-X10 all SAFE
+  doc: docs/_internal/research/peer-reviews/user-hcd-upload-spec-probe.md
+synthesis_doc: docs/_internal/incoming/user-hcd-upload-spec-synthesis.md
+
+architect_gate:
+  verdict: SIMPLIFY->PASS
+  fixes: 3 (hcd.py module placement, LEFT_MARGIN all-paths, OM raw values deferred)
+  science_flags: 0
+  doc: docs/_internal/research/peer-reviews/user-hcd-upload-spec-architect-review.md
+research_doc: null  # user-authored spec, no separate research cycle
+research_status: "user-authored spec with existing HCD research backing (5 files in docs/_internal/research/)"
+spec_doc: docs/_internal/incoming/user-hcd-upload-spec.md
+
+implementation_context:
+  prior_cycles:
+    - "hcd-population: COMPLETE. Research validated. Synthesis at incoming/hcd-population-synthesis.md. Architect SIMPLIFY->PASS."
+    - "dog-organ-weight-hcd: COMPLETE+BUILT. Choi 2011 ETL, age-based lookup, threshold reliability. commit d151c842."
+    - "cynomolgus-organ-weight-hcd: COMPLETE+BUILT. Amato 2022 ETL, tiered thresholds, bracket-based routing. commit 66215844."
+    - "outlier-detection-metadata: COMPLETE+BUILT. Detection window params in sentinel JSON. commit ec043a9c."
+    - "outliers-pane-unified: BLUEPRINT-COMPLETE, awaiting build. Unified bio+LOO+incidence outliers table."
+    - "outlier-sentinel-animal-identification: COMPLETE+BUILT. subject_sentinel.py (650 LOC), qn_scale, LOGNORMAL_ENDPOINTS."
+  design_constraints:
+    - "HCD is display-only. MUST NOT affect S10 scoring, confidence dimensions, or pipeline computation."
+    - "User HCD does not require regeneration. Frontend display layer only."
+    - "annotations.py: VALID_SCHEMA_TYPES set (line 16). Slug-to-file mapping. Routes: GET/PUT/DELETE per entity_key. Upload needs new specialized POST bulk endpoint."
+    - "hcd_database.py: query_lb() at line 442 searches hcd_lb_aggregates. animal_organ_weights has ~78K OM raw records."
+    - "StripPlotChart.tsx: LEFT_MARGIN=30, PLOT_TOP=4, PLOT_BOTTOM=26, PLOT_HEIGHT=165. Marginal density goes in left margin."
+    - "useSubjectSentinel.ts: simple React Query hook pattern. HCD hook will follow same pattern."
+    - "Two input modes: aggregate (mean+sd) and individual-animal (values array). Both coexist in same upload."
+  cross_topic_interactions:
+    - "outliers-pane-unified: adds HCD context section to OutliersPane. Must coordinate with unified pane redesign."
+    - "outlier-detection-metadata: detection window bands already in strip plot. HCD reference lines/density share same visual space."
+  no_failed_approaches: true
+  no_bug_patterns: true
+  loc_impact: "Backend: ~80-120 LOC (annotations schema + hcd lookup + API endpoint). Frontend: ~150-250 LOC (hook + strip plot HCD layers + outliers pane section + settings panel section)."

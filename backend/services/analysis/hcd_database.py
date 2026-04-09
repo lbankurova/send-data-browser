@@ -523,6 +523,23 @@ class HcdSqliteDB:
             "notes": row["notes"],
         }
 
+    def get_lb_test_codes(self, species: str, duration_category: str) -> list[str]:
+        """Get distinct LB test codes available for a species+duration."""
+        conn = self._get_conn()
+        if conn is None:
+            return []
+        tables = {
+            r[0] for r in
+            conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        if "hcd_lb_aggregates" not in tables:
+            return []
+        rows = conn.execute(
+            "SELECT DISTINCT test_code FROM hcd_lb_aggregates WHERE species = ? AND duration_category = ?",
+            (species, duration_category),
+        ).fetchall()
+        return [r[0] for r in rows]
+
     def coverage_summary(self) -> dict:
         """Return a summary of what's in the database."""
         conn = self._get_conn()

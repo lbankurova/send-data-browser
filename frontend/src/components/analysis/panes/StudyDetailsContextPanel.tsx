@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { AlertTriangle, Upload, Trash2 } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from "@/lib/organ-weight-normalization";
@@ -8,6 +8,9 @@ import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useControlComparison } from "@/hooks/useControlComparison";
 import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useQueryClient } from "@tanstack/react-query";
+import { useHcdReferences } from "@/hooks/useHcdReferences";
+import { uploadHcdUser, deleteHcdUser } from "@/lib/analysis-view-api";
 import { useStudySettings } from "@/contexts/StudySettingsContext";
 import { MortalityInfoPane } from "@/components/analysis/MortalityDataSettings";
 import { CompoundProfileSection } from "@/components/analysis/CompoundProfileSection";
@@ -238,6 +241,48 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const overrides = useNormalizationOverrides(studyId);
   const [showNormTable, setShowNormTable] = useState(false);
   const { expandGen, collapseGen, expandAll, collapseAll } = useCollapseAll();
+
+  // HCD upload state
+  const queryClient = useQueryClient();
+  const { data: hcdData } = useHcdReferences(studyId);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [hcdUploading, setHcdUploading] = useState(false);
+  const [hcdError, setHcdError] = useState<string | null>(null);
+
+  const userHcdCount = useMemo(() => {
+    if (!hcdData?.references) return 0;
+    return Object.values(hcdData.references).filter((r) => r.source_type === "user").length;
+  }, [hcdData]);
+
+  const handleHcdUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHcdError(null);
+    setHcdUploading(true);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const entries = Array.isArray(parsed) ? parsed : parsed.entries;
+      if (!Array.isArray(entries)) throw new Error("JSON must be an array or { entries: [...] }");
+      await uploadHcdUser(studyId, entries);
+      queryClient.invalidateQueries({ queryKey: ["hcd-references", studyId] });
+    } catch (err) {
+      setHcdError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setHcdUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }, [studyId, queryClient]);
+
+  const handleHcdClear = useCallback(async () => {
+    setHcdError(null);
+    try {
+      await deleteHcdUser(studyId);
+      queryClient.invalidateQueries({ queryKey: ["hcd-references", studyId] });
+    } catch (err) {
+      setHcdError(err instanceof Error ? err.message : String(err));
+    }
+  }, [studyId, queryClient]);
 
   // Auto-selected mode per organ (for "auto" label in dropdown)
   const autoModes = useMemo(() => {
@@ -552,6 +597,63 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
 
       {/* ── Mortality ────────────────────────────────────── */}
       <MortalityInfoPane mortality={mortalityData} expandAll={expandGen} collapseAll={collapseGen} />
+
+      {/* ── Historical control data ───────────────────── */}
+      <CollapsiblePane
+        title="Historical control data"
+        headerRight={userHcdCount > 0 ? `${userHcdCount} user refs` : undefined}
+        defaultOpen={false}
+        sessionKey="pcc.studySettings.hcd"
+        expandAll={expandGen}
+        collapseAll={collapseGen}
+      >
+        <div className="space-y-2">
+          {hcdData?.duration_status === "unknown" && (
+            <p className="text-[10px] text-amber-600">
+              Study duration unknown -- system HCD lookup is disabled. Upload user HCD to provide references.
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1.5 text-[11px] text-primary cursor-pointer hover:underline">
+              <Upload className="w-3 h-3" />
+              Upload JSON
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleHcdUpload}
+                disabled={hcdUploading}
+              />
+            </label>
+            {userHcdCount > 0 && (
+              <button
+                className="flex items-center gap-1 text-[11px] text-destructive hover:underline"
+                onClick={handleHcdClear}
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear user HCD
+              </button>
+            )}
+          </div>
+          {hcdUploading && <p className="text-[10px] text-muted-foreground">Uploading...</p>}
+          {hcdError && <p className="text-[10px] text-destructive">{hcdError}</p>}
+          {hcdData && (
+            <div className="text-[10px] text-muted-foreground space-y-0.5">
+              <div>
+                Species: <span className="font-mono">{hcdData.species || "unknown"}</span>
+                {hcdData.duration_category && (
+                  <span className="ml-2">Duration: <span className="font-mono">{hcdData.duration_category}</span></span>
+                )}
+              </div>
+              <div>
+                {Object.keys(hcdData.references).length} reference{Object.keys(hcdData.references).length !== 1 ? "s" : ""} available
+                {userHcdCount > 0 && <span className="ml-1">({userHcdCount} user-uploaded)</span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsiblePane>
 
       {/* ── Study notes ─────────────────────────────────── */}
       <CollapsiblePane

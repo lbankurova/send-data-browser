@@ -15,6 +15,7 @@ import type {
   AnimalInfluenceData,
   SubjectSentinelData,
   SubjectSimilarityData,
+  HcdReferencesData,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse, NoaelOverlayResponse } from "@/types/cohort";
@@ -436,4 +437,38 @@ export function fetchSubjectSimilarity(
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/subject-similarity`,
   );
+}
+
+// ── HCD references ──────────────────────────────────────────
+
+export function fetchHcdReferences(
+  studyId: string,
+): Promise<HcdReferencesData> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/hcd-references`,
+  );
+}
+
+export async function uploadHcdUser(
+  studyId: string,
+  entries: Array<{ test_code: string; sex: string; mean?: number; sd?: number; values?: number[]; unit?: string }>,
+): Promise<{ uploaded: number; entries: string[] }> {
+  const resp = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/annotations/hcd-user/upload`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entries }) },
+  );
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+    throw new Error(typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail));
+  }
+  return resp.json();
+}
+
+export async function deleteHcdUser(studyId: string): Promise<{ deleted: boolean }> {
+  const resp = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/annotations/hcd-user`,
+    { method: "DELETE" },
+  );
+  if (!resp.ok) throw new Error(resp.statusText);
+  return resp.json();
 }

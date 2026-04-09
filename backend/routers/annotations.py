@@ -26,6 +26,7 @@ VALID_SCHEMA_TYPES = {
     "study-type-override",
     "animal-exclusions",
     "pathologist-source",
+    "hcd-user",
 }
 
 VALID_PROGRAM_SCHEMA_TYPES = {
@@ -226,6 +227,184 @@ async def get_audit_log(
     # Return most recent first, limited
     entries.reverse()
     return entries[:limit]
+
+
+# ─── HCD user upload ──────────────────────────────────────────
+
+
+class HcdUploadEntry(BaseModel):
+    """A single HCD reference entry in a bulk upload."""
+    test_code: str
+    sex: str
+    mean: float | None = None
+    sd: float | None = None
+    values: list[float] | None = None
+    unit: str | None = None
+
+
+class HcdUploadPayload(BaseModel):
+    """Bulk upload of user HCD reference data."""
+    entries: list[HcdUploadEntry]
+
+
+@router.post("/studies/{study_id}/annotations/hcd-user/upload")
+async def upload_hcd_user(study_id: str, payload: HcdUploadPayload):
+    """Bulk upload user-provided HCD reference data with validation."""
+    import math
+    import numpy as np
+    from services.analysis.send_knowledge import normalize_test_code
+    from generator.subject_sentinel import LOGNORMAL_ENDPOINTS
+
+    if "/" in study_id or "\\" in study_id or ".." in study_id:
+        raise HTTPException(status_code=400, detail="Invalid study ID")
+
+    errors: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    validated: dict[str, dict] = {}
+
+    for i, entry in enumerate(payload.entries):
+        sex = entry.sex.strip().upper()
+        if sex not in ("F", "M"):
+            errors.append(f"Entry {i}: sex must be 'F' or 'M', got '{entry.sex}'")
+            continue
+
+        raw_tc = entry.test_code.strip().upper()
+        tc = normalize_test_code(raw_tc)
+
+        # Duplicate check
+        key = (tc, sex)
+        if key in seen:
+            errors.append(f"Entry {i}: duplicate test_code+sex pair ({tc}, {sex})")
+            continue
+        seen.add(key)
+
+        has_agg = entry.mean is not None and entry.sd is not None
+        has_vals = entry.values is not None and len(entry.values) > 0
+
+        if not has_agg and not has_vals:
+            errors.append(f"Entry {i}: must provide either (mean + sd) or non-empty values array")
+            continue
+
+        if has_agg:
+            if entry.mean <= 0:  # type: ignore[operator]
+                errors.append(f"Entry {i}: mean must be > 0")
+                continue
+            if entry.sd <= 0:  # type: ignore[operator]
+                errors.append(f"Entry {i}: sd must be > 0")
+                continue
+
+        # Compute derived stats from values if provided
+        if has_vals:
+            vals = [v for v in entry.values if v is not None]  # type: ignore[union-attr]
+            if len(vals) == 0:
+                errors.append(f"Entry {i}: values array is empty after filtering nulls")
+                continue
+            arr = np.array(vals, dtype=float)
+            computed_mean = float(np.mean(arr))
+            computed_sd = float(np.std(arr, ddof=1)) if len(arr) > 1 else 0.0
+            computed_n = len(arr)
+        else:
+            computed_mean = entry.mean  # type: ignore[assignment]
+            computed_sd = entry.sd  # type: ignore[assignment]
+            computed_n = None
+
+        is_lognormal = tc in LOGNORMAL_ENDPOINTS
+
+        # Compute bounds
+        if has_vals:
+            arr_vals = np.array([v for v in entry.values if v is not None], dtype=float)  # type: ignore[union-attr]
+            if is_lognormal:
+                # Filter zeros for lognormal
+                pos_vals = arr_vals[arr_vals > 0]
+                if len(pos_vals) >= 2:
+                    lower_bound = float(np.percentile(pos_vals, 2.5))
+                    upper_bound = float(np.percentile(pos_vals, 97.5))
+                else:
+                    lower_bound = float(computed_mean - 2 * computed_sd)
+                    upper_bound = float(computed_mean + 2 * computed_sd)
+            else:
+                lower_bound = float(np.percentile(arr_vals, 2.5))
+                upper_bound = float(np.percentile(arr_vals, 97.5))
+        elif is_lognormal and computed_mean > 0 and computed_sd > 0:
+            # Aggregate mode, lognormal
+            cv = computed_sd / computed_mean
+            sigma_log_sq = math.log(1 + cv ** 2)
+            mu_log = math.log(computed_mean) - sigma_log_sq / 2
+            sigma_log = math.sqrt(sigma_log_sq)
+            lower_bound = math.exp(mu_log - 1.96 * sigma_log)
+            upper_bound = math.exp(mu_log + 1.96 * sigma_log)
+        else:
+            # Normal
+            lower_bound = computed_mean - 2 * computed_sd
+            upper_bound = computed_mean + 2 * computed_sd
+
+        ref_entry: dict = {
+            "test_code": tc,
+            "original_test_code": raw_tc if raw_tc != tc else None,
+            "sex": sex,
+            "mean": computed_mean,
+            "sd": computed_sd,
+            "n": computed_n,
+            "lower": round(lower_bound, 6),
+            "upper": round(upper_bound, 6),
+            "isLognormal": is_lognormal,
+            "source": "user",
+            "source_type": "user",
+            "unit": entry.unit,
+            "confidence": None,
+        }
+        if has_vals:
+            ref_entry["values"] = [float(v) for v in entry.values]  # type: ignore[union-attr]
+        if is_lognormal and has_agg and computed_mean > 0:
+            # Store geom_mean for lognormal user uploads
+            cv = computed_sd / computed_mean
+            sigma_log_sq = math.log(1 + cv ** 2)
+            ref_entry["geom_mean"] = round(math.exp(math.log(computed_mean) - sigma_log_sq / 2), 6)
+        else:
+            ref_entry["geom_mean"] = None
+
+        entity_key = f"{tc}:{sex}"
+        validated[entity_key] = ref_entry
+
+    if errors:
+        raise HTTPException(status_code=400, detail={"errors": errors})
+
+    # Store with _meta envelope
+    result = {
+        "_meta": {
+            "uploaded_by": "User",
+            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "entry_count": len(validated),
+        },
+        "references": validated,
+    }
+
+    file_path = ANNOTATIONS_DIR / study_id / "hcd_user.json"
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(file_path, "w") as f:
+        json.dump(result, f, indent=2)
+
+    # Audit trail
+    _append_audit_entry(study_id, "hcd-user", "_bulk", "upload", "User",
+                        {"entry_count": {"old": None, "new": len(validated)}})
+
+    return {"uploaded": len(validated), "entries": list(validated.keys())}
+
+
+@router.delete("/studies/{study_id}/annotations/hcd-user")
+async def delete_hcd_user(study_id: str):
+    """Delete all user-uploaded HCD data for a study."""
+    if "/" in study_id or "\\" in study_id or ".." in study_id:
+        raise HTTPException(status_code=400, detail="Invalid study ID")
+    file_path = ANNOTATIONS_DIR / study_id / "hcd_user.json"
+    if not file_path.exists():
+        return {"deleted": False}
+    with open(file_path, "r") as f:
+        old_data = json.load(f)
+    file_path.unlink()
+    _append_audit_entry(study_id, "hcd-user", "_bulk", "delete", "User",
+                        {"_deleted": {"old": old_data, "new": None}})
+    return {"deleted": True}
 
 
 # ─── Program-level annotations ──────────────────────────────
