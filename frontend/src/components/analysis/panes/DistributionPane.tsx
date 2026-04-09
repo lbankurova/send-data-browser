@@ -19,8 +19,11 @@ import { useScheduledOnly } from "@/contexts/ScheduledOnlyContext";
 import { useViewSelection } from "@/contexts/ViewSelectionContext";
 import { StripPlotChart } from "./StripPlotChart";
 import { useInfluentialSubjectsMap } from "@/hooks/useInfluentialSubjects";
+import { useSubjectSentinel } from "@/hooks/useSubjectSentinel";
+import { useHcdBySex } from "@/hooks/useHcdReferences";
 import { BivarScatterChart } from "./BivarScatterChart";
 import type { BivarSubjectValue } from "./BivarScatterChart";
+import type { DetectionWindow } from "./StripPlotChart";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
@@ -286,6 +289,30 @@ export function DistributionPane({
   // Collect LOO influential subjects from ALL findings for this endpoint (both sexes)
   const influentialSubjects = useInfluentialSubjectsMap(finding);
 
+  // Detection window bands from subject sentinel metadata (React Query cache — no extra fetch)
+  const { data: sentinelData } = useSubjectSentinel(studyId);
+  const detectionWindows = useMemo((): DetectionWindow[] | undefined => {
+    const dm = sentinelData?.detection_metadata;
+    if (!dm) return undefined;
+    const windows: DetectionWindow[] = [];
+    // Build endpoint keys for each sex present in data
+    for (const sex of sexes) {
+      const keyParts = [finding.domain, finding.test_code, ...(finding.specimen ? [finding.specimen] : []), sex]
+        .filter(Boolean)
+        .map((s) => s.toLowerCase());
+      const key = keyParts.join(":");
+      const meta = dm[key];
+      if (!meta) continue;
+      for (const g of meta.groups) {
+        windows.push({ doseLevel: g.dose_level, sex, windowLo: g.window_lo, windowHi: g.window_hi });
+      }
+    }
+    return windows.length > 0 ? windows : undefined;
+  }, [sentinelData, finding.domain, finding.test_code, finding.specimen, sexes]);
+
+  // HCD references — keyed by sex for the current test_code
+  const hcdBySex = useHcdBySex(studyId, finding.test_code, sexes);
+
   // Bivariate scatter data (OM + BW): pair organ weight at terminal day with terminal_bw
   const bivarSubjects = useMemo((): BivarSubjectValue[] => {
     if (mode !== "scatter_bw" || !subjectData || !terminalDay) return [];
@@ -401,6 +428,18 @@ export function DistributionPane({
                   <span>Excluded (pending)</span>
                 </div>
               )}
+              {detectionWindows && mode === "terminal" && (
+                <div
+                  className="flex items-center gap-1 text-[9px] text-muted-foreground cursor-help"
+                  title="Outlier detection window: the range where individual values are indistinguishable from normal group variation (|z| < 3.5). Wider band = lower detection power. Based on robust dispersion (Qn/MAD)."
+                >
+                  <svg width="14" height="8" className="shrink-0">
+                    <rect x="0" y="1" width="6" height="6" fill="#ec4899" opacity={0.15} rx={1} />
+                    <rect x="7" y="1" width="6" height="6" fill="#0891b2" opacity={0.15} rx={1} />
+                  </svg>
+                  <span>Detection window</span>
+                </div>
+              )}
             </div>
           </div>
           {mode === "scatter_bw" ? (
@@ -428,6 +467,8 @@ export function DistributionPane({
               endpointLabel={endpointLabel}
               excludedSubjects={excludedForEndpoint}
               onToggleExclusion={handleToggleExclusion}
+              detectionWindows={mode === "terminal" ? detectionWindows : undefined}
+              hcdBySex={hcdBySex}
             />
           )}
         </div>

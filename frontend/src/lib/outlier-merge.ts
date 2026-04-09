@@ -122,49 +122,94 @@ export function mergeOutlierSubjects(
   }
 
   // ── Step 2: Bio outlier subjects ─────────────────────────────────────
-  if (finding.data_type === "continuous" && influenceData) {
-    // Continuous: use influence data (100% endpoint_name match)
-    for (const [subjectId, details] of Object.entries(
-      influenceData.endpoint_details,
-    )) {
-      for (const d of details) {
-        if (d.endpoint_name !== endpointLabel || d.domain !== finding.domain)
-          continue;
-        if (d.bio_z_raw === null || Math.abs(d.bio_z_raw) <= outlierZ) continue;
+  if (finding.data_type === "continuous") {
+    // Step 2a: influence data (100% endpoint_name match)
+    if (influenceData) {
+      for (const [subjectId, details] of Object.entries(
+        influenceData.endpoint_details,
+      )) {
+        for (const d of details) {
+          if (d.endpoint_name !== endpointLabel || d.domain !== finding.domain)
+            continue;
+          if (d.bio_z_raw === null || Math.abs(d.bio_z_raw) <= outlierZ) continue;
 
-        // Sex filter (AC-14)
-        const subjectSex =
-          influenceSexBySubject.get(subjectId) ??
-          sentinelBySubject.get(subjectId)?.sex;
-        if (subjectSex && finding.sex && subjectSex !== finding.sex) continue;
+          const subjectSex =
+            influenceSexBySubject.get(subjectId) ??
+            sentinelBySubject.get(subjectId)?.sex;
 
-        const existing = merged.get(subjectId);
-        if (existing) {
-          existing.isBio = true;
-          existing.bioType = "outlier";
-          existing.zScore = d.bio_z_raw;
-          existing.instability = existing.instability ?? d.instability;
-          existing.alarmScore = d.alarm_score ?? existing.alarmScore;
-        } else {
-          merged.set(subjectId, {
-            usubjid: subjectId,
-            doseLevel:
-              influenceData.animals.find((a) => a.subject_id === subjectId)
-                ?.dose_level ?? 0,
-            sex: subjectSex ?? finding.sex ?? "",
-            isLoo: false,
-            isBio: true,
-            bioType: "outlier",
-            zScore: d.bio_z_raw,
-            instability: d.instability,
-            poc: null,
-            days: [],
-            worstRatio: null,
-            alarmScore: d.alarm_score,
-            looTautological: false,
-          });
+          const existing = merged.get(subjectId);
+          if (existing) {
+            existing.isBio = true;
+            existing.bioType = "outlier";
+            existing.zScore = d.bio_z_raw;
+            existing.instability = existing.instability ?? d.instability;
+            existing.alarmScore = d.alarm_score ?? existing.alarmScore;
+          } else {
+            merged.set(subjectId, {
+              usubjid: subjectId,
+              doseLevel:
+                influenceData.animals.find((a) => a.subject_id === subjectId)
+                  ?.dose_level ?? 0,
+              sex: subjectSex ?? finding.sex ?? "",
+              isLoo: false,
+              isBio: true,
+              bioType: "outlier",
+              zScore: d.bio_z_raw,
+              instability: d.instability,
+              poc: null,
+              days: [],
+              worstRatio: null,
+              alarmScore: d.alarm_score,
+              looTautological: false,
+            });
+          }
+          break; // one match per subject
         }
-        break; // one match per subject
+      }
+    }
+
+    // Step 2b: sentinel outliers not already caught by influence
+    // Sentinel uses robust z-scores (Qn/MAD) which may flag outliers that
+    // influence's Hamada-based z misses. endpoint_name is the short test code
+    // (AST, ALT, etc.) — match via sentinel endpoint_id or endpoint_name.
+    if (sentinelData) {
+      for (const [subjectId, details] of Object.entries(
+        sentinelData.endpoint_details,
+      )) {
+        if (merged.has(subjectId) && merged.get(subjectId)!.isBio) continue;
+        for (const d of details) {
+          if (d.domain !== finding.domain) continue;
+          if (!d.is_outlier) continue;
+          // Match by test_code: sentinel endpoint_name is the short code (AST),
+          // finding.test_code is also the short code
+          if (d.endpoint_name.toUpperCase() !== finding.test_code.toUpperCase()) continue;
+
+          const subjectSex = sentinelBySubject.get(subjectId)?.sex;
+
+          const existing = merged.get(subjectId);
+          if (existing) {
+            existing.isBio = true;
+            existing.bioType = "outlier";
+            existing.zScore = d.z_score;
+          } else {
+            merged.set(subjectId, {
+              usubjid: subjectId,
+              doseLevel: sentinelBySubject.get(subjectId)?.dose_level ?? 0,
+              sex: subjectSex ?? finding.sex ?? "",
+              isLoo: false,
+              isBio: true,
+              bioType: "outlier",
+              zScore: d.z_score,
+              instability: null,
+              poc: null,
+              days: [],
+              worstRatio: null,
+              alarmScore: null,
+              looTautological: false,
+            });
+          }
+          break;
+        }
       }
     }
   } else if (finding.data_type === "incidence" && sentinelData) {
@@ -177,9 +222,7 @@ export function mergeOutlierSubjects(
           continue;
         if (!d.is_sole_finding && !d.is_non_responder) continue;
 
-        // Sex filter (AC-14)
         const subjectSex = sentinelBySubject.get(subjectId)?.sex;
-        if (subjectSex && finding.sex && subjectSex !== finding.sex) continue;
 
         const bioType: "sole" | "non-resp" = d.is_sole_finding
           ? "sole"

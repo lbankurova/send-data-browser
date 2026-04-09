@@ -524,9 +524,12 @@ describe("mergeOutlierSubjects", () => {
       influence,
     );
 
-    // Only F subject should appear (sex filter)
-    expect(result).toHaveLength(1);
-    expect(result[0].usubjid).toBe("F_SUBJECT");
-    expect(result[0].sex).toBe("F");
+    // Both sexes should appear (outliers pane shows all subjects for the endpoint)
+    expect(result).toHaveLength(2);
+    // Sorted by alarm_score desc: M_SUBJECT (7.0) before F_SUBJECT (6.0)
+    expect(result[0].usubjid).toBe("M_SUBJECT");
+    expect(result[0].sex).toBe("M");
+    expect(result[1].usubjid).toBe("F_SUBJECT");
+    expect(result[1].sex).toBe("F");
   });
 });

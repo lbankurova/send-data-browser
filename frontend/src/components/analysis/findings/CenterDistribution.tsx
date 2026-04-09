@@ -18,7 +18,10 @@ import { useFindingsAnalyticsResult } from "@/contexts/FindingsAnalyticsContext"
 import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useDistributionSubjects } from "@/contexts/DistributionSubjectsContext";
 import { useInfluentialSubjectsMap } from "@/hooks/useInfluentialSubjects";
+import { useSubjectSentinel } from "@/hooks/useSubjectSentinel";
+import { useHcdBySex } from "@/hooks/useHcdReferences";
 import { StripPlotChart } from "../panes/StripPlotChart";
+import type { DetectionWindow } from "../panes/StripPlotChart";
 import { BivarScatterChart } from "../panes/BivarScatterChart";
 import type { BivarSubjectValue } from "../panes/BivarScatterChart";
 import { PanePillToggle } from "@/components/ui/PanePillToggle";
@@ -178,6 +181,29 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   }, [finding.test_code, finding.domain]);
   const activeScatter = scatterMode && hasBW;
 
+  // Detection window bands from subject sentinel metadata (React Query cache — no extra fetch)
+  const { data: sentinelData } = useSubjectSentinel(studyId);
+  const detectionWindows = useMemo((): DetectionWindow[] | undefined => {
+    const dm = sentinelData?.detection_metadata;
+    if (!dm) return undefined;
+    const windows: DetectionWindow[] = [];
+    for (const sex of sexes) {
+      const keyParts = [finding.domain, finding.test_code, ...(finding.specimen ? [finding.specimen] : []), sex]
+        .filter(Boolean)
+        .map((s) => s.toLowerCase());
+      const key = keyParts.join(":");
+      const meta = dm[key];
+      if (!meta) continue;
+      for (const g of meta.groups) {
+        windows.push({ doseLevel: g.dose_level, sex, windowLo: g.window_lo, windowHi: g.window_hi });
+      }
+    }
+    return windows.length > 0 ? windows : undefined;
+  }, [sentinelData, finding.domain, finding.test_code, finding.specimen, sexes]);
+
+  // HCD references for strip plot
+  const hcdBySex = useHcdBySex(studyId, finding.test_code, sexes);
+
   // Terminal sacrifice day for bivariate scatter
   const terminalDay = subjectData?.terminal_sacrifice_day ?? null;
 
@@ -293,6 +319,18 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             <span>LOO influential</span>
           </button>
         )}
+        {!activeScatter && detectionWindows && selectedDay === terminalDay && (
+          <div
+            className="flex items-center gap-1 text-[9px] text-muted-foreground cursor-help"
+            title="Outlier detection window: the range where individual values are indistinguishable from normal group variation (|z| < 3.5). Wider band = lower detection power. Based on robust dispersion (Qn/MAD)."
+          >
+            <svg width="14" height="8" className="shrink-0">
+              <rect x="0" y="1" width="6" height="6" fill="#ec4899" opacity={0.15} rx={1} />
+              <rect x="7" y="1" width="6" height="6" fill="#0891b2" opacity={0.15} rx={1} />
+            </svg>
+            <span>Detection window</span>
+          </div>
+        )}
         {activeScatter && (
           <div className="ml-auto flex flex-wrap gap-1">
             {doseGroupsForChart.map((dg) => {
@@ -340,6 +378,8 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             endpointLabel={endpointLabel}
             excludedSubjects={excludedForEndpoint}
             onToggleExclusion={handleToggleExclusion}
+            detectionWindows={selectedDay === terminalDay ? detectionWindows : undefined}
+            hcdBySex={hcdBySex}
           />
         )}
       </div>

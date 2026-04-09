@@ -514,6 +514,29 @@ export interface AnimalEndpointDetail {
   alarm_score: number;
 }
 
+// ── Detection Metadata ──────────────────────────────────────
+
+export interface DetectionGroupMeta {
+  dose_level: number;
+  n: number;
+  median: number;
+  /** Robust dispersion (Qn or MAD*1.4826). In log-space when parent log_transformed is true. */
+  scale: number;
+  cv_pct: number | null;
+  window_lo: number;
+  window_hi: number;
+  window_lo_concordance: number;
+  window_hi_concordance: number;
+}
+
+export interface DetectionEndpointMeta {
+  endpoint_name: string;
+  domain: string;
+  sex: string;
+  log_transformed: boolean;
+  groups: DetectionGroupMeta[];
+}
+
 // ── Subject Sentinel ────────────────────────────────────────
 
 export interface SubjectSentinelData {
@@ -526,6 +549,7 @@ export interface SubjectSentinelData {
   stress_heuristic_mode: "flag" | "annotate";
   animals: SentinelAnimal[];
   endpoint_details: Record<string, SentinelEndpointDetail[]>;
+  detection_metadata?: Record<string, DetectionEndpointMeta>;
 }
 
 export interface SentinelAnimal {
@@ -626,4 +650,31 @@ export interface BoundarySubjectDetail {
     contribution: number;
     exceeds_control_p90: boolean;
   }[];
+}
+
+// ── HCD References ──────────────────────────────────────────
+
+export interface HcdReference {
+  test_code: string;
+  sex: string;
+  source: string;
+  source_type: "user" | "system";
+  n: number | null;
+  isLognormal: boolean;
+  lower: number;
+  upper: number;
+  unit: string | null;
+  confidence: string | null;
+  mean: number | null;
+  sd: number | null;
+  geom_mean: number | null;
+  values: number[] | null;
+}
+
+export interface HcdReferencesData {
+  species: string;
+  strain: string;
+  duration_category: string | null;
+  duration_status: "known" | "unknown";
+  references: Record<string, HcdReference>;
 }

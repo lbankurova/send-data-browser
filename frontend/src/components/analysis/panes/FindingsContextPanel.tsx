@@ -12,7 +12,7 @@ import { usePaneHistory } from "@/hooks/usePaneHistory";
 import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
 import { OutliersPane } from "./OutliersPane";
-import { LOO_THRESHOLD, LOO_SMALL_N_THRESHOLD } from "@/lib/loo-constants";
+import { LOO_THRESHOLD } from "@/lib/loo-constants";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
 import { CorrelationsPane } from "./CorrelationsPane";
@@ -2004,7 +2004,7 @@ export function FindingsContextPanel() {
               {selectedFinding.severity}
             </span>
           )}
-          {/* LOO fragility / small-N badge — shown when LOO is fragile OR when group size is too small for LOO to be reliable */}
+          {/* LOO fragility badge — shown when LOO is fragile */}
           {(() => {
             const sibF = hasSibling && siblingContext
               ? findingsData?.findings.find(f => f.id === siblingContext.finding_id)
@@ -2013,26 +2013,12 @@ export function FindingsContextPanel() {
             const sibLoo = sibF?.loo_stability;
             const priFrag = priLoo != null && priLoo < LOO_THRESHOLD;
             const sibFrag = sibLoo != null && sibLoo < LOO_THRESHOLD;
-            // Compute min treated-group N for small-N qualifier
-            const priTreated = selectedFinding.group_stats.filter(g => g.dose_level > 0);
-            const priMinN = priTreated.length > 0 ? Math.min(...priTreated.map(g => g.n)) : null;
-            const sibTreated = sibF?.group_stats.filter(g => g.dose_level > 0);
-            const sibMinN = sibTreated && sibTreated.length > 0 ? Math.min(...sibTreated.map(g => g.n)) : null;
-            const priSmallN = priMinN != null && priMinN < LOO_SMALL_N_THRESHOLD;
-            const sibSmallN = sibMinN != null && sibMinN < LOO_SMALL_N_THRESHOLD;
-            const anySmallN = priSmallN || sibSmallN;
-            const smallestN = [priMinN, sibMinN].filter((n): n is number => n != null && n < LOO_SMALL_N_THRESHOLD);
-            const minN = smallestN.length > 0 ? Math.min(...smallestN) : null;
-            // Show badge if fragile OR if LOO exists but N is too small for reliability
-            const hasLoo = priLoo != null || sibLoo != null;
-            if (!priFrag && !sibFrag && !anySmallN) return null;
-            if (!hasLoo) return null;
+            if (!priFrag && !sibFrag) return null;
             const priSex = selectedFinding.sex;
             const sibSex = sibF?.sex;
             const priCtrl = selectedFinding.loo_control_fragile === true;
             const sibCtrl = sibF?.loo_control_fragile === true;
             const anyCtrl = (priFrag && priCtrl) || (sibFrag && sibCtrl);
-            const anyFrag = priFrag || sibFrag;
             const sexLabel = priFrag && sibFrag
               ? `${[priSex, sibSex].sort().join("+")}`
               : priFrag ? priSex : sibSex;
@@ -2040,29 +2026,11 @@ export function FindingsContextPanel() {
               priFrag ? `${priSex} ${(priLoo! * 100).toFixed(0)}%` : null,
               sibFrag ? `${sibSex} ${(sibLoo! * 100).toFixed(0)}%` : null,
             ].filter(Boolean).join(", ");
-            // Build badge label
-            let badgeLabel: string;
-            if (anyFrag && anySmallN) {
-              badgeLabel = `LOO: fragile, N=${minN} (${anyCtrl ? `ctrl, ${sexLabel}` : sexLabel})`;
-            } else if (anyFrag) {
-              badgeLabel = `LOO: fragile (${anyCtrl ? `ctrl, ${sexLabel}` : sexLabel})`;
-            } else {
-              // LOO >= 0.8 but N < 10 — stability value is unreliable
-              badgeLabel = `LOO: N=${minN} (low power)`;
-            }
-            // Build tooltip
-            let badgeTitle: string;
-            if (anyFrag) {
-              badgeTitle = `LOO stability: ${details}${anyCtrl
-                ? " -- control-side dominant: signal may be driven by an unusual control animal rather than treatment effect."
-                : " -- removing the most influential animal reduces the confident effect size to that fraction of its full value."
-              } Below 80% = fragile.`;
-            } else {
-              badgeTitle = "LOO stability appears adequate, but ";
-            }
-            if (anySmallN) {
-              badgeTitle += ` N=${minN}: at this sample size, LOO has low detection power for outliers. A high LOO value may reflect masking (degrees-of-freedom collapse), not genuine stability. Prefer HCD context.`;
-            }
+            const badgeLabel = `LOO: fragile (${anyCtrl ? `ctrl, ${sexLabel}` : sexLabel})`;
+            const badgeTitle = `LOO stability: ${details}${anyCtrl
+              ? " -- control-side dominant: signal may be driven by an unusual control animal rather than treatment effect."
+              : " -- removing the most influential animal reduces the confident effect size to that fraction of its full value."
+            } Below 80% = fragile.`;
             return (
               <span
                 className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 border border-gray-200"

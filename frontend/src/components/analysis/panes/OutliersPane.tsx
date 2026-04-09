@@ -16,11 +16,13 @@ import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useExclusionPreview } from "@/hooks/useExclusionPreview";
 import type { ExclusionGroupResult } from "@/hooks/useExclusionPreview";
 import { useSubjectSentinel } from "@/hooks/useSubjectSentinel";
+import { useHcdReferences } from "@/hooks/useHcdReferences";
 import { useAnimalInfluence } from "@/hooks/useAnimalInfluence";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { getDoseLabel } from "@/lib/dose-label-utils";
 import { shortId } from "@/lib/chart-utils";
 import { mergeOutlierSubjects } from "@/lib/outlier-merge";
+import { LOO_SMALL_N_THRESHOLD } from "@/lib/loo-constants";
 import type { MergedOutlierSubject } from "@/lib/outlier-merge";
 
 interface OutliersPaneProps {
@@ -157,6 +159,7 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
 
   // ── Data hooks ─────────────────────────────────────────────────
   const { data: sentinelData } = useSubjectSentinel(studyId);
+  const { data: hcdData } = useHcdReferences(studyId);
   const { data: influenceData } = useAnimalInfluence(studyId);
 
   // ── Merged subject list ────────────────────────────────────────
@@ -165,6 +168,16 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
       mergeOutlierSubjects(finding, allFindings, sentinelData, influenceData),
     [finding, allFindings, sentinelData, influenceData],
   );
+
+  // ── HCD reference for this endpoint ────────────────────────────
+  const hcdRef = useMemo(() => {
+    if (!hcdData?.references) return null;
+    const tc = finding.test_code?.toUpperCase();
+    if (!tc) return null;
+    const sex = finding.sex?.toUpperCase();
+    if (!sex) return null;
+    return hcdData.references[`${tc}:${sex}`] ?? null;
+  }, [hcdData, finding.test_code, finding.sex]);
 
   // ── Truncation state ───────────────────────────────────────────
   const [showAll, setShowAll] = useState(false);
@@ -255,11 +268,91 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
   const hasSmallN = doseGroups?.some((dg) => dg.n_total > 0 && dg.n_total <= 5) ?? false;
   const isIncidence = finding.data_type === "incidence";
 
-  // ── Empty state ────────────────────────────────────────────────
+  // LOO low-power indicator for column header (separate from hasSmallN which uses n<=5)
+  const treatedGroups = (doseGroups ?? []).filter((dg) => dg.dose_level > 0 && dg.n_total > 0);
+  const minLooN = treatedGroups.length > 0 ? Math.min(...treatedGroups.map((dg) => dg.n_total)) : null;
+  const looSmallN = minLooN != null && minLooN < LOO_SMALL_N_THRESHOLD;
+
+  // ── Empty state with detection sensitivity context ──────────────
   if (mergedSubjects.length === 0) {
+    const dm = sentinelData?.detection_metadata;
+    // Build keys for both sexes to show full picture
+    const sexEntries: { sex: string; meta: NonNullable<NonNullable<typeof sentinelData>["detection_metadata"]>[string] }[] = [];
+    if (dm) {
+      for (const sex of ["F", "M"]) {
+        const keyParts = [finding.domain, finding.test_code, ...(finding.specimen ? [finding.specimen] : []), sex]
+          .filter(Boolean)
+          .map((s) => s.toLowerCase());
+        const key = keyParts.join(":");
+        const meta = dm[key];
+        if (meta && meta.groups.length > 0) sexEntries.push({ sex, meta });
+      }
+    }
+
+    if (sexEntries.length === 0) {
+      return (
+        <div className="text-xs text-muted-foreground text-center py-3">
+          No notable subjects for this endpoint.
+        </div>
+      );
+    }
+
+    // Compute widest window ratio across all sexes for explanatory text trigger
+    const allGroups = sexEntries.flatMap((e) => e.meta.groups);
+    const maxRatio = Math.max(...allGroups.map((g) => g.window_lo > 0 ? g.window_hi / g.window_lo : 0));
+    const widestGroup = allGroups.reduce((best, g) => {
+      const ratio = g.window_lo > 0 ? g.window_hi / g.window_lo : 0;
+      return ratio > (best.window_lo > 0 ? best.window_hi / best.window_lo : 0) ? g : best;
+    });
+
     return (
-      <div className="text-xs text-muted-foreground text-center py-3">
-        No biological outliers or LOO-influential subjects for this endpoint.
+      <div className="py-2 space-y-2">
+        <div className="text-xs text-muted-foreground text-center">
+          No notable subjects for this endpoint.
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            Detection sensitivity
+          </div>
+          {sexEntries.map(({ sex, meta }) => (
+            <div key={sex} className="mb-1.5 last:mb-0">
+              {sexEntries.length > 1 && (
+                <div className="text-[9px] font-medium text-muted-foreground/60 mb-0.5">{sex}</div>
+              )}
+              <div className="space-y-0.5">
+                {meta.groups.map((g) => {
+                  const isWidest = g === widestGroup && maxRatio > 4;
+                  return (
+                    <div
+                      key={g.dose_level}
+                      className={`text-[10px] ${isWidest ? "text-foreground" : "text-muted-foreground"}`}
+                    >
+                      <span>{getDoseLabel(g.dose_level, doseGroups)}</span>
+                      <span className="font-mono ml-1">(n={g.n}):</span>
+                      <span className="font-mono ml-1">
+                        {g.cv_pct != null ? `CV ${g.cv_pct.toFixed(1)}%` : "CV n/a"}
+                      </span>
+                      <span className="font-mono ml-1">
+                        window {g.window_lo.toFixed(0)}-{g.window_hi.toFixed(0)}{finding.unit ? ` ${finding.unit}` : ""}
+                      </span>
+                      {isWidest && (
+                        <span className="ml-1 text-muted-foreground/60">&larr; widest window</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        {maxRatio > 4 && (
+          <p className="text-[10px] text-muted-foreground/60 italic">
+            Wide detection window on this endpoint limits outlier detection.
+            The system requires |z| &gt; 3.5 to flag an outlier -- values between{" "}
+            {widestGroup.window_lo.toFixed(0)} and {widestGroup.window_hi.toFixed(0)}{" "}
+            are indistinguishable from normal group variation.
+          </p>
+        )}
       </div>
     );
   }
@@ -279,7 +372,9 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
           <tr className="border-b text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Subject</th>
             <th className="py-0.5 text-right font-medium w-10 cursor-help" title="Biological outlier flag. Checkmark for |z| > 3.5 (continuous), 'sole' for sole finding, 'non-resp' for non-responder (incidence).">Bio</th>
-            <th className="py-0.5 text-right font-medium w-8 cursor-help" title="Leave-one-out sensitivity. Checkmark indicates this subject's removal changes the effect size by >20%.">LOO</th>
+            <th className="py-0.5 text-right font-medium w-8 cursor-help" title={looSmallN ? `N=${minLooN}: at this sample size, LOO has low detection power. An adequate LOO value may reflect insufficient degrees of freedom rather than genuine stability. Interpret with caution.` : "Leave-one-out sensitivity. Checkmark indicates this subject's removal changes the effect size by >20%."}>
+              LOO{looSmallN && <span className="text-amber-500 ml-0.5">*</span>}
+            </th>
             {!isIncidence && (
               <th className="py-0.5 text-right font-medium cursor-help" title="Biological deviation from dose group (robust |z-score|). Higher values indicate the animal is more extreme relative to its groupmates.">Bio dev.</th>
             )}
@@ -469,6 +564,40 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
           )}
         </div>
       )}
+
+      {/* HCD Reference section */}
+      <div className="mt-3">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+          HCD reference
+        </div>
+        {hcdRef ? (
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            <div className="flex gap-2">
+              <span>Source: <span className="font-mono">{hcdRef.source_type}</span></span>
+              {hcdRef.confidence && (
+                <span className="text-muted-foreground/60">{hcdRef.confidence}</span>
+              )}
+            </div>
+            <div className="flex gap-3 font-mono">
+              {hcdRef.isLognormal && hcdRef.geom_mean != null ? (
+                <span>geom. mean = {hcdRef.geom_mean.toFixed(2)}</span>
+              ) : hcdRef.mean != null ? (
+                <span>mean = {hcdRef.mean.toFixed(2)}</span>
+              ) : null}
+              {hcdRef.sd != null && <span>SD = {hcdRef.sd.toFixed(2)}</span>}
+              {hcdRef.n != null && <span>n = {hcdRef.n}</span>}
+            </div>
+            <div className="font-mono">
+              range [{hcdRef.lower.toFixed(2)}, {hcdRef.upper.toFixed(2)}]
+              {hcdRef.unit && <span className="text-muted-foreground/60 ml-1">{hcdRef.unit}</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-muted-foreground/60">
+            No HCD available for this endpoint. Upload reference data in Study details &gt; Historical control data.
+          </div>
+        )}
+      </div>
 
       {/* Section C: Apply Button + read-only cross-endpoint disclosure */}
       {pendingCount > 0 && (

@@ -1,0 +1,67 @@
+topic: detection-power-visualization
+title: "Detection Power Visualization -- Strip Plot Bands + Context-Aware Empty State"
+started: 2026-04-09
+phase: build-in-progress
+current_step: build.2
+
+plan_review_r2:
+  verdict: CONDITIONAL (0 same-round FLAWED)
+  all_r1_resolved: true (4 FLAWED RESOLVED, 6 CONDITIONAL RESOLVED, 1 SOUND-with-caveat N/A)
+  new_issues: 4 (1 FLAWED: stale AC refs in test strategy, 3 CONDITIONAL: data gaps stale text, hasLoo dead guard, duplicate reuse row)
+  all_incorporated: true
+  doc: docs/_internal/research/peer-reviews/detection-power-visualization-synthesis-review-r2.md
+
+plan_review_r1:
+  verdict: CONDITIONAL
+  flawed: 4 (F1 duplicate AC#8, F5 CV vs robust scale, F7 badge label ambiguity, F8 masking tooltip)
+  conditional: 6
+  sound: 7
+  must_fix: 4 (all FLAWED)
+  should_fix: 6 (all CONDITIONAL)
+  doc: docs/_internal/research/peer-reviews/detection-power-visualization-synthesis-review.md
+  all_incorporated: true
+
+probe:
+  result: ALL_SAFE
+  breaks: 0
+  science_flags: 0
+  propagates: 1 (detection_metadata field optionality -> made optional on TS type)
+  safe: all subsystems traced
+  implementation_pitfalls:
+    - "FindingsContextPanel guard at line 2028 must be updated atomically with branch removal (badgeLabel undefined risk)"
+    - "Tooltip at line 2063 must be removed (info relocated to OutliersPane)"
+    - "CenterDistribution.tsx won't show bands (intentional -- context panel is detail view)"
+
+architect_gate:
+  verdict: PASS (2 required fixes applied)
+  fixes: 2 (hasSmallN threshold mismatch -> separate looSmallN with LOO_SMALL_N_THRESHOLD, endpoint key missing specimen segment -> corrected)
+  science_flags: 0
+  advisory: 3 (getSexColor rgba, anyFrag+anySmallN tooltip preserved, inline component extraction threshold)
+  doc: docs/_internal/research/peer-reviews/detection-power-visualization-architect-review.md
+research_doc: docs/_internal/research/outlier-sentinel-animal-identification.md
+research_status: validated (parent cycle outlier-sentinel-animal-identification, complete+built)
+synthesis_doc: docs/_internal/incoming/detection-power-visualization-synthesis.md
+synthesis_status: validated
+
+implementation_context:
+  prior_cycles:
+    - "outlier-detection-metadata: COMPLETE (ec043a9c). Backend detection_metadata in sentinel JSON -- window_lo, window_hi, cv_pct, n, scale per group per endpoint. This spec consumes that data."
+    - "outliers-pane-unified: BLUEPRINT-COMPLETE. OutliersPane.tsx exists (unified bio+LOO table). Empty state at lines 259-264 is the target."
+    - "loo-outlier-viz: COMPLETE+BUILT. LOO influential animal viz in distribution charts. StripPlotChart.tsx already has influentialSubjects prop."
+    - "exclusion-preview-fix: COMPLETE (4137f75f). LOO-day filter, dose-group scoping corrected."
+  design_constraints:
+    - "No new API calls. detection_metadata is part of existing sentinel JSON."
+    - "Sex colors from getSexColor() at 6% opacity. No new hex values."
+    - "StripPlotChart.tsx: SVG <rect> for bands, behind dots (lower z-order), clipped to plot area."
+    - "OutliersPane.tsx: empty state block at lines 259-264 replaced with structured detection sensitivity context."
+    - "FindingsContextPanel.tsx: remove anySmallN-only badge path (lines 2045-2073). Keep anyFrag paths."
+    - "OutliersPane.tsx: add amber * to LOO column header when hasSmallN."
+    - "Frontend-only changes. No backend modifications."
+  no_failed_approaches: true
+  no_bug_patterns: true
+  target_files:
+    - frontend/src/components/analysis/panes/StripPlotChart.tsx
+    - frontend/src/components/analysis/panes/DistributionPane.tsx
+    - frontend/src/components/analysis/panes/OutliersPane.tsx
+    - frontend/src/components/analysis/panes/FindingsContextPanel.tsx
+    - frontend/src/types/analysis-views.ts
