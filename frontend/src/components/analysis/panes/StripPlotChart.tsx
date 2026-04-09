@@ -724,11 +724,23 @@ function InterleavedPanel({
               width={plotWidth} height={Math.abs(bandY2 - bandY1)}
               fill="rgba(0,0,0,0.03)"
             />
+            {/* Band edges — thin solid lines at upper/lower bounds */}
+            <line
+              x1={effectiveLeftMargin} y1={bandY1}
+              x2={width - PLOT_RIGHT} y2={bandY1}
+              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
+            />
+            <line
+              x1={effectiveLeftMargin} y1={bandY2}
+              x2={width - PLOT_RIGHT} y2={bandY2}
+              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
+            />
+            {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
             {centerVal != null && (
               <line
                 x1={effectiveLeftMargin} y1={yScale(centerVal)}
                 x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                stroke="rgba(0,0,0,0.15)" strokeWidth={1} strokeDasharray="4,3"
+                stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
               />
             )}
             <text
@@ -1074,11 +1086,23 @@ function SexPanel({
               width={plotWidth} height={Math.abs(bandY2 - bandY1)}
               fill="rgba(0,0,0,0.03)"
             />
+            {/* Band edges — thin solid lines at upper/lower bounds */}
+            <line
+              x1={leftMargin} y1={bandY1}
+              x2={width - PLOT_RIGHT} y2={bandY1}
+              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
+            />
+            <line
+              x1={leftMargin} y1={bandY2}
+              x2={width - PLOT_RIGHT} y2={bandY2}
+              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
+            />
+            {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
             {centerVal != null && (
               <line
                 x1={leftMargin} y1={yScale(centerVal)}
                 x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                stroke="rgba(0,0,0,0.15)" strokeWidth={1} strokeDasharray="4,3"
+                stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
               />
             )}
             <text
