@@ -1,14 +1,12 @@
 /**
- * LOO Sensitivity Info Pane -- context panel component.
+ * Outliers Pane — unified biological outlier + LOO-fragile subject table.
  *
- * Shows: (A) influential subjects table with cross-day aggregation (Days/Worst columns),
- *        (B) before/after impact preview,
+ * Shows: (A) unified subject table with Bio/LOO/|z|/Instab/Conc/Days/What-if columns,
+ *        (B) before/after impact preview (unchanged from Phase 1),
  *        (C) apply button with honest global label + read-only cross-endpoint disclosure.
  *
- * Renders only when the selected finding has LOO-fragile subjects (ratio < LOO_THRESHOLD).
- * See docs/_internal/architecture/loo-display-scoping.md for field semantics and scoping
- * decisions — in particular why this pane iterates `loo_per_subject` directly instead of
- * going through `useInfluentialSubjectsMap`.
+ * Always renders when a continuous or incidence finding is selected.
+ * Empty state message when no notable subjects exist.
  */
 import { useMemo, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -17,31 +15,26 @@ import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useExclusionPreview } from "@/hooks/useExclusionPreview";
 import type { ExclusionGroupResult } from "@/hooks/useExclusionPreview";
+import { useSubjectSentinel } from "@/hooks/useSubjectSentinel";
+import { useAnimalInfluence } from "@/hooks/useAnimalInfluence";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { getDoseLabel } from "@/lib/dose-label-utils";
 import { shortId } from "@/lib/chart-utils";
-import { LOO_THRESHOLD } from "@/lib/loo-constants";
+import { mergeOutlierSubjects } from "@/lib/outlier-merge";
+import type { MergedOutlierSubject } from "@/lib/outlier-merge";
 
-interface LooSensitivityPaneProps {
+interface OutliersPaneProps {
   finding: UnifiedFinding;
   allFindings: UnifiedFinding[];
   doseGroups?: DoseGroup[];
-}
-
-interface InfluentialSubject {
-  usubjid: string;
-  doseLevel: number;
-  sex: string;
-  /** Days where this subject had ratio < LOO_THRESHOLD, sorted ascending, deduplicated. */
-  days: number[];
-  /** Min ratio across all contributing days (always defined — subject enters list only after one hit). */
-  worstRatio: number;
 }
 
 interface OtherEndpointExclusion {
   endpointLabel: string;
   subjects: Array<{ usubjid: string; sex: string; doseLevel: number }>;
 }
+
+const DEFAULT_SHOW_COUNT = 10;
 
 /** Renders |g|, gLower, N rows for one dose group in the impact preview table. */
 function ImpactGroupRows({
@@ -88,7 +81,67 @@ function ImpactGroupRows({
   );
 }
 
-export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSensitivityPaneProps) {
+// ── Bio column display ─────────────────────────────────────────
+
+function BioCell({ subject }: { subject: MergedOutlierSubject }) {
+  if (subject.bioType === "sole") {
+    return <span className="text-[9px] text-muted-foreground">sole</span>;
+  }
+  if (subject.bioType === "non-resp") {
+    return <span className="text-[9px] text-muted-foreground">non-resp</span>;
+  }
+  if (subject.bioType === "outlier") {
+    return <span className="text-[10px] text-muted-foreground">{"\u2713"}</span>;
+  }
+  return <span className="text-muted-foreground/40">--</span>;
+}
+
+// ── LOO column display ─────────────────────────────────────────
+
+function LooCell({ subject }: { subject: MergedOutlierSubject }) {
+  if (subject.looTautological) {
+    return (
+      <span
+        className="text-muted-foreground/40 cursor-help"
+        title="LOO is tautological for sole findings -- removing the only affected animal always collapses the finding"
+      >
+        --
+      </span>
+    );
+  }
+  if (subject.isLoo) {
+    return <span className="text-[10px] text-muted-foreground">{"\u2713"}</span>;
+  }
+  return <span className="text-muted-foreground/40">--</span>;
+}
+
+// ── Concordance display ────────────────────────────────────────
+
+function ConcCell({ poc }: { poc: Record<string, number> | null }) {
+  if (!poc) return <span className="text-[10px] text-muted-foreground/40">none</span>;
+
+  const entries = Object.entries(poc)
+    .filter(([, count]) => count >= 2)
+    .sort(([, a], [, b]) => b - a);
+
+  if (entries.length === 0) return <span className="text-[10px] text-muted-foreground/40">none</span>;
+
+  const [topOrgan, topCount] = entries[0];
+  const display =
+    entries.length === 1
+      ? `${topOrgan}=${topCount}`
+      : `${topOrgan}=${topCount} +${entries.length - 1}`;
+
+  const tooltip = entries.map(([organ, count]) => `${organ}: ${count} domains`).join("\n");
+
+  return (
+    <span className="text-[10px] text-muted-foreground cursor-help" title={tooltip}>
+      {display}
+    </span>
+  );
+}
+
+export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneProps) {
   const { studyId } = useParams<{ studyId: string }>();
   const queryClient = useQueryClient();
   const {
@@ -102,56 +155,25 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
 
   const endpointLabel = finding.endpoint_label ?? finding.finding;
 
-  // ==========================================================================
-  // Hooks — ALL declared before the early return (Rules of Hooks compliance).
-  // ==========================================================================
+  // ── Data hooks ─────────────────────────────────────────────────
+  const { data: sentinelData } = useSubjectSentinel(studyId);
+  const { data: influenceData } = useAnimalInfluence(studyId);
 
-  // Aggregate fragile subjects across all findings for this endpoint (cross-day).
-  // Source unchanged: direct iteration over `loo_per_subject`. Shape extended:
-  // one row per UNIQUE subject with days[] and worstRatio.
-  const influentialSubjects = useMemo<InfluentialSubject[]>(() => {
-    const subjectsByUsubjid = new Map<string, InfluentialSubject>();
+  // ── Merged subject list ────────────────────────────────────────
+  const mergedSubjects = useMemo(
+    () =>
+      mergeOutlierSubjects(finding, allFindings, sentinelData, influenceData),
+    [finding, allFindings, sentinelData, influenceData],
+  );
 
-    for (const f of allFindings) {
-      const ep = f.endpoint_label ?? f.finding;
-      if (ep !== endpointLabel || f.domain !== finding.domain) continue;
-      if (f.day == null) continue; // defensive — per-day LOO requires a day
+  // ── Truncation state ───────────────────────────────────────────
+  const [showAll, setShowAll] = useState(false);
+  const displayedSubjects = showAll
+    ? mergedSubjects
+    : mergedSubjects.slice(0, DEFAULT_SHOW_COUNT);
+  const isTruncated = mergedSubjects.length > DEFAULT_SHOW_COUNT && !showAll;
 
-      const perSubject = f.loo_per_subject;
-      if (!perSubject) continue;
-
-      for (const [usubjid, entry] of Object.entries(perSubject)) {
-        if (entry.ratio >= LOO_THRESHOLD) continue; // fragility filter
-
-        const existing = subjectsByUsubjid.get(usubjid);
-        if (existing) {
-          if (!existing.days.includes(f.day)) existing.days.push(f.day);
-          if (entry.ratio < existing.worstRatio) existing.worstRatio = entry.ratio;
-        } else {
-          subjectsByUsubjid.set(usubjid, {
-            usubjid,
-            doseLevel: entry.dose_level,
-            sex: f.sex ?? "",
-            days: [f.day],
-            worstRatio: entry.ratio,
-          });
-        }
-      }
-    }
-
-    // Sort each subject's days ascending for display.
-    for (const s of subjectsByUsubjid.values()) s.days.sort((a, b) => a - b);
-
-    // Row order: doseLevel asc -> days.length desc -> worstRatio asc.
-    return [...subjectsByUsubjid.values()].sort(
-      (a, b) =>
-        a.doseLevel - b.doseLevel ||
-        b.days.length - a.days.length ||
-        a.worstRatio - b.worstRatio,
-    );
-  }, [allFindings, endpointLabel, finding.domain]);
-
-  // Pending exclusions for THIS endpoint only (existing behavior)
+  // ── Exclusion state (unchanged from Phase 1) ───────────────────
   const excludedIds = useMemo(() => {
     const set = pendingExclusions.get(endpointLabel);
     return set && set.size > 0 ? set : new Set<string>();
@@ -168,38 +190,40 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
     queryClient.invalidateQueries({ queryKey: ["findings", studyId] });
   }, [studyId, applyExclusions, queryClient]);
 
-  // Impact preview: backend-computed, day-scoped per dose group
-  const { data: preview, isError: previewError } = useExclusionPreview(studyId, endpointLabel, finding.domain, excludedIds);
+  // Impact preview
+  const { data: preview, isError: previewError } = useExclusionPreview(
+    studyId,
+    endpointLabel,
+    finding.domain,
+    excludedIds,
+  );
 
-  // Anti-conservative control exclusion warning — fires when a control subject
-  // is excluded AND any dose group shows increased effect size after exclusion.
+  // Anti-conservative control exclusion warning
   const hasAntiConservativeWarning = useMemo(() => {
     if (!preview?.groups?.length) return false;
-    const anyControlExcluded = influentialSubjects.some(
-      s => s.doseLevel === 0 && excludedIds.has(s.usubjid),
+    const anyControlExcluded = mergedSubjects.some(
+      (s) => s.doseLevel === 0 && s.isLoo && excludedIds.has(s.usubjid),
     );
     if (!anyControlExcluded) return false;
-    return preview.groups.some(g => g.after?.g != null && g.after.g > g.before.g);
-  }, [preview, influentialSubjects, excludedIds]);
+    return preview.groups.some((g) => g.after?.g != null && g.after.g > g.before.g);
+  }, [preview, mergedSubjects, excludedIds]);
 
   // Excessive exclusion check
   const excessiveWarning = useMemo(() => {
     if (excludedIds.size === 0 || !doseGroups) return null;
     for (const dg of doseGroups) {
       if (dg.n_total === 0) continue;
-      const excluded = influentialSubjects.filter(
-        s => s.doseLevel === dg.dose_level && excludedIds.has(s.usubjid),
+      const excluded = mergedSubjects.filter(
+        (s) => s.doseLevel === dg.dose_level && excludedIds.has(s.usubjid),
       ).length;
       if (excluded > 0 && excluded / dg.n_total > 0.2) {
         return `More than ${excluded} of ${dg.n_total} animals excluded from ${dg.label}. Consider study-level exclusion.`;
       }
     }
     return null;
-  }, [excludedIds, doseGroups, influentialSubjects]);
+  }, [excludedIds, doseGroups, mergedSubjects]);
 
-  // Cross-endpoint pending exclusions (disclosure data) — NEW in Feature 5.
-  // Surfaces the fact that Apply commits globally, even though the pane is per-endpoint.
-  // See architecture/loo-display-scoping.md "Apply button mislocation" for deferred rationale.
+  // Cross-endpoint pending exclusions (disclosure)
   const otherEndpointExclusions = useMemo<OtherEndpointExclusion[]>(() => {
     const out: OtherEndpointExclusion[] = [];
     for (const [otherEp, ids] of pendingExclusions) {
@@ -207,10 +231,6 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
       if (ids.size === 0) continue;
       const subjects: Array<{ usubjid: string; sex: string; doseLevel: number }> = [];
       for (const usubjid of ids) {
-        // Metadata lookup from the FULL findings list (allFindings is unfiltered — see
-        // FindingsContextPanel.tsx:2461 where it is passed as findingsData?.findings ?? []).
-        // Fall back to bare usubjid for the edge case where a subject no longer appears
-        // in any finding (e.g., post-regeneration cleanup).
         let meta: { sex: string; doseLevel: number } | null = null;
         for (const f of allFindings) {
           if ((f.endpoint_label ?? f.finding) !== otherEp) continue;
@@ -231,18 +251,20 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
     return out;
   }, [pendingExclusions, endpointLabel, allFindings]);
 
-  // Disclosure open/closed state
   const [disclosureOpen, setDisclosureOpen] = useState(false);
+  const hasSmallN = doseGroups?.some((dg) => dg.n_total > 0 && dg.n_total <= 5) ?? false;
+  const isIncidence = finding.data_type === "incidence";
 
-  // Non-rodent small-N check (pure derivation, but kept above early return with the rest)
-  const hasSmallN = doseGroups?.some(dg => dg.n_total > 0 && dg.n_total <= 5) ?? false;
+  // ── Empty state ────────────────────────────────────────────────
+  if (mergedSubjects.length === 0) {
+    return (
+      <div className="text-xs text-muted-foreground text-center py-3">
+        No biological outliers or LOO-influential subjects for this endpoint.
+      </div>
+    );
+  }
 
-  // ==========================================================================
-  // Early return AFTER all hooks.
-  // ==========================================================================
-  if (influentialSubjects.length === 0) return null;
-
-  const fmt = (v: number | null, dp: number = 2) => v != null ? v.toFixed(dp) : "--";
+  const fmt = (v: number | null, dp: number = 2) => (v != null ? v.toFixed(dp) : "--");
   const fmtDelta = (before: number | null, after: number | null, dp: number = 2) => {
     if (before == null || after == null) return "";
     const d = after - before;
@@ -251,61 +273,112 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
 
   return (
     <div>
-      {/* Section A: Influential Subjects Table */}
+      {/* Section A: Unified Subject Table */}
       <table className="w-full text-[11px]">
         <thead>
           <tr className="border-b text-[10px] text-muted-foreground">
             <th className="py-0.5 text-left font-medium">Subject</th>
-            <th className="py-0.5 text-left font-medium">Type</th>
-            <th className="py-0.5 text-left font-medium cursor-help" title="Timepoints where this subject is influential. If only early days appear, the effect is stable at later timepoints.">Days</th>
-            <th className="py-0.5 text-right font-medium cursor-help" title="Lowest % of effect size (|g|) retained after removing this subject, across all timepoints">Retained effect</th>
-            <th className="py-0.5 text-center font-medium w-8">Excl</th>
+            <th className="py-0.5 text-right font-medium w-10 cursor-help" title="Biological outlier flag. Checkmark for |z| > 3.5 (continuous), 'sole' for sole finding, 'non-resp' for non-responder (incidence).">Bio</th>
+            <th className="py-0.5 text-right font-medium w-8 cursor-help" title="Leave-one-out sensitivity. Checkmark indicates this subject's removal changes the effect size by >20%.">LOO</th>
+            {!isIncidence && (
+              <th className="py-0.5 text-right font-medium cursor-help" title="Biological deviation from dose group (robust |z-score|). Higher values indicate the animal is more extreme relative to its groupmates.">Bio dev.</th>
+            )}
+            {!isIncidence && (
+              <th className="py-0.5 text-right font-medium cursor-help" title="Lowest % of effect size (|g|) retained after removing this subject, across timepoints where it is LOO-influential.">Retained effect</th>
+            )}
+            <th className="py-0.5 text-right font-medium w-14 cursor-help" title="Pattern of concordance -- how many domains show correlated findings for this animal in the same organ system. Higher counts suggest a systemic effect rather than an isolated measurement.">POC</th>
+            {!isIncidence && (
+              <th className="py-0.5 text-right font-medium cursor-help" title="Timepoints where this subject is LOO-influential">Days</th>
+            )}
+            <th className="py-0.5 text-right font-medium w-8 cursor-help" title="What-if exclusion preview (LOO-fragile only)">Excl.</th>
           </tr>
         </thead>
         <tbody>
-          {influentialSubjects.map((s) => {
+          {displayedSubjects.map((s) => {
             const color = getDoseGroupColor(s.doseLevel);
             const checked = isExcluded(endpointLabel, s.usubjid);
             const dayLabels = s.days.map((d) => `D${d}`);
             const daysDisplay =
-              s.days.length <= 3
-                ? dayLabels.join(" ")
-                : `${dayLabels[0]} ${dayLabels[1]} +${s.days.length - 2}`;
+              s.days.length === 0
+                ? null
+                : s.days.length <= 3
+                  ? dayLabels.join(" ")
+                  : `${dayLabels[0]} ${dayLabels[1]} +${s.days.length - 2}`;
             const daysTitle = s.days.length > 3 ? dayLabels.join(", ") : undefined;
+
             return (
               <tr key={s.usubjid} className="border-b border-border/30">
+                {/* Subject */}
                 <td className="py-0.5">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-[3px] h-3 rounded-sm shrink-0" style={{ backgroundColor: color }} />
+                    <div
+                      className="w-[3px] h-3 rounded-sm shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
                     <span className="font-mono text-[10px]">{shortId(s.usubjid)}</span>
                     <span className="text-muted-foreground text-[9px]">{s.sex}</span>
                   </div>
                 </td>
-                <td className="py-0.5 text-left">
-                  <span
-                    className="text-[10px] text-muted-foreground cursor-help"
-                    title="Subjects whose removal changes effect size by >20%"
-                  >
-                    LOO sig.
-                  </span>
+                {/* Bio */}
+                <td className="py-0.5 text-right">
+                  <BioCell subject={s} />
                 </td>
-                <td className="py-0.5 text-left">
-                  <span className="text-[10px] text-muted-foreground" title={daysTitle}>
-                    {daysDisplay}
-                  </span>
+                {/* LOO */}
+                <td className="py-0.5 text-right">
+                  <LooCell subject={s} />
                 </td>
-                <td className="py-0.5 text-right font-mono">
-                  <span className={s.worstRatio < 0.5 ? "text-foreground font-medium" : "text-muted-foreground"}>
-                    {(s.worstRatio * 100).toFixed(0)}%
-                  </span>
+                {/* Bio dev. */}
+                {!isIncidence && (
+                  <td className="py-0.5 text-right font-mono">
+                    {s.zScore != null ? (
+                      <span className={Math.abs(s.zScore) > 3.5 ? "text-foreground font-medium" : "text-muted-foreground/40"}>
+                        {Math.abs(s.zScore).toFixed(1)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/40">--</span>
+                    )}
+                  </td>
+                )}
+                {/* Retained effect */}
+                {!isIncidence && (
+                  <td className="py-0.5 text-right font-mono">
+                    {s.worstRatio != null ? (
+                      <span className={s.worstRatio < 0.5 ? "text-foreground font-medium" : "text-muted-foreground"}>
+                        {(s.worstRatio * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/40">--</span>
+                    )}
+                  </td>
+                )}
+                {/* POC */}
+                <td className="py-0.5 text-right">
+                  <ConcCell poc={s.poc} />
                 </td>
-                <td className="py-0.5 text-center">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => handleToggle(s.usubjid)}
-                    className="w-3 h-3 cursor-pointer"
-                  />
+                {/* Days */}
+                {!isIncidence && (
+                  <td className="py-0.5 text-right">
+                    {daysDisplay ? (
+                      <span className="text-[10px] text-muted-foreground" title={daysTitle}>
+                        {daysDisplay}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/40">--</span>
+                    )}
+                  </td>
+                )}
+                {/* What-if checkbox */}
+                <td className="py-0.5 text-right">
+                  {s.isLoo ? (
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => handleToggle(s.usubjid)}
+                      className="w-3 h-3 cursor-pointer"
+                    />
+                  ) : (
+                    <span className="text-muted-foreground/40">--</span>
+                  )}
                 </td>
               </tr>
             );
@@ -313,13 +386,24 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
         </tbody>
       </table>
 
-      {hasSmallN && influentialSubjects.length >= 3 && (
+      {/* Truncation link */}
+      {isTruncated && (
+        <button
+          type="button"
+          className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground mt-1"
+          onClick={() => setShowAll(true)}
+        >
+          Show all {mergedSubjects.length} subjects
+        </button>
+      )}
+
+      {hasSmallN && mergedSubjects.filter((s) => s.isLoo).length >= 3 && (
         <p className="text-[9px] text-muted-foreground/60 mt-1 italic">
           At small group sizes (N&lt;=5), LOO sensitivity is expected to be high for all animals.
         </p>
       )}
 
-      {/* Section B: Impact Preview Table — per dose group */}
+      {/* Section B: Impact Preview Table -- per dose group (unchanged from Phase 1) */}
       {excludedIds.size > 0 && (
         <div className="mt-3">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
@@ -385,7 +469,6 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
           )}
         </div>
       )}
-
 
       {/* Section C: Apply Button + read-only cross-endpoint disclosure */}
       {pendingCount > 0 && (
