@@ -91,6 +91,7 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 ## Commit & Review
 
 - **Before committing:** Run every item in `docs/_internal/checklists/COMMIT-CHECKLIST.md`.
+- **Doc regeneration is not optional.** Every commit must run the 3 doc generators (coverage-facts, scientific-logic, validation docs) and stage any changed output. Run unconditionally — not "if engine files changed." If a generator fails, the code broke a doc contract; fix before committing. See checklist item 6 for commands.
 - **After implementing from `docs/_internal/incoming/` spec:** Run `docs/_internal/checklists/POST-IMPLEMENTATION-REVIEW.md` automatically before presenting work as done.
 - **Coverage trailer on commits.** When a commit advances a coverage axis, add a `Coverage:` trailer to the commit message body. Format: `Coverage: <axis>/<detail>` using the 10 canonical tags from `docs/_internal/help/wiki_sendex_coverage.md`. Multiple axes separated by comma. Optional `Layer:` trailer (data, research, plumbing, implementation, bug-fix). Example:
   ```
