@@ -102,6 +102,10 @@ def _match_finding_to_term(finding: dict, term: dict) -> bool:
     if term_domain and f_domain != term_domain:
         return False
 
+    # requireNeoplastic gate: only match isNeoplastic findings
+    if term.get("requireNeoplastic") and not finding.get("isNeoplastic"):
+        return False
+
     # Direction check
     term_dir = term.get("direction", "any")
     if term_dir != "any":

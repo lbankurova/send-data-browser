@@ -1,7 +1,7 @@
 topic: cynomolgus-organ-weight-hcd
 started: 2026-04-08T10:00:00Z
-phase: blueprint-complete
-current_step: build.2
+phase: complete
+current_step: complete
 completed:
   research.1: 2026-04-08T10:30:00Z
   research.2: 2026-04-08T11:00:00Z
@@ -13,43 +13,11 @@ completed:
   research.7b: 2026-04-08T12:50:00Z
   blueprint.0: 2026-04-08T19:35:00Z
   build.1: 2026-04-08T20:00:00Z
+  build.2: 2026-04-08T21:00:00Z
+  build.3: 2026-04-08T21:05:00Z
 checkpoints:
   research.1:
     output: "docs/_internal/research/cynomolgus-organ-weight-hcd.md"
-  research.2:
-    output: "docs/_internal/research/peer-reviews/cynomolgus-organ-weight-hcd-review.md"
-  research.4:
-    output: "docs/_internal/research/peer-reviews/cynomolgus-organ-weight-hcd-review-r2.md"
-  research.7b:
-    gaps_persisted:
-      registry: 8
-      todo: 4
-  blueprint.0:
-    implementation_context:
-      failed_approaches: 0
-      template: "dog-organ-weight-hcd (d151c842) -- exact ETL+routing pattern"
-      key_constraints:
-        - "hcd_database.py:query_by_age() exists -- reuse for NHP"
-        - "organ_thresholds.py:_resolve_species_category() maps NHP to 'other' -- needs 'nhp' branch"
-        - "hcd.py:assess_a3() has dog branch via _is_dog_species() -- need parallel _is_nhp_species()"
-        - "NHP needs bracket-based age matching, not nearest-midpoint like dog"
-        - "No SD inflation for Amato colony data (unlike dog single-study Choi data)"
-        - "Tiered thresholds (A/B/C) -- more complex than dog uniform thresholds"
-      cross_topic_interactions:
-        - "brain-concordance-bw-mediation: organ-weight-normalization.ts is read-only consumer"
-        - "evidence-quality-tier-unification: A-3 score consumption unchanged"
-      bug_patterns: "none (no .lattice/bug-patterns.md)"
-      guardrail_notes: "classification.py:_assess_om_two_gate() is domain-critical -- NHP thresholds feed into this"
-  build.1:
-    phases_completed: 4/4
-    deviations: 4 (all justified)
-    deferred: 1 (peripubertal data gap)
-    files_changed:
-      - "shared/organ-weight-thresholds.json"
-      - "backend/services/analysis/organ_thresholds.py"
-      - "backend/services/analysis/classification.py"
-      - "backend/services/analysis/hcd.py"
-      - "backend/services/analysis/findings_om.py"
-      - "backend/etl/hcd_cynomolgus_etl.py"
-      - "backend/data/hcd.db"
-      - "frontend/tests/hcd-phase2.test.ts"
+  build.2:
+    commit: "66215844"
+    review: "PASS -- architect PASS, decision audit 3 findings all fixed, 29 NHP tests"

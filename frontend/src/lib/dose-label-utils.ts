@@ -41,6 +41,15 @@ export function shortDoseLabel(doseLabel: string, doseGroups?: DoseGroup[]): str
   return doseLabel.length > 12 ? doseLabel.slice(0, 10) + "\u2026" : doseLabel;
 }
 
+/** Ultra-short dose label: "C" for control, numeric value for treated.
+ *  Used in compact contexts (chart axis labels, matrix column headers). */
+export function doseAbbrev(dg: DoseGroup): string {
+  if (dg.is_control) return "C";
+  if (dg.abbreviation) return dg.abbreviation;
+  if (dg.dose_value != null) return String(dg.dose_value);
+  return shortDoseLabel(dg.label, [dg]);
+}
+
 /** Get the display color for a dose group, using backend-computed positional color.
  *  Falls back to legacy level-based color.
  */

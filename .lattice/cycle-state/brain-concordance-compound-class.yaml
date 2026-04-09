@@ -1,0 +1,33 @@
+topic: brain-concordance-compound-class
+started: 2026-04-04
+phase: research-complete
+current_step: build.0
+parent: brain-weight-sex-concordance-calibration
+completed:
+  research.1:
+    completed: 2026-04-04
+    key_decisions:
+      - "Blocking: worker lacks compound class"
+      - "Depends on Proposal 1 (band split)"
+      - "Only ChE inhibitors + endocrine disruptors warrant overrides"
+      - "Override JSON in same file"
+    output: "docs/_internal/research/brain-concordance-compound-class.md"
+  research.2:
+    completed: 2026-04-04
+    key_decisions:
+      - "R1: 1 FLAWED (divergence contradiction), 5 CONDITIONAL, 2 SOUND"
+    output: "docs/_internal/research/peer-reviews/brain-concordance-compound-class-review.md"
+  research.3:
+    completed: 2026-04-04
+    key_decisions:
+      - "F1 fixed: values consistent at 0.3, semantics clarified. CNS-active dropped."
+    output: "docs/_internal/research/brain-concordance-compound-class.md (updated)"
+  research.4:
+    completed: 2026-04-04
+    key_decisions:
+      - "R2: all R1 RESOLVED, 3 new low CONDITIONAL. VALIDATED."
+    output: "docs/_internal/research/peer-reviews/brain-concordance-compound-class-review-r2.md"
+  research.5:
+    completed: 2026-04-04
+    key_decisions:
+      - "All SOUND/CONDITIONAL -- VALIDATED"

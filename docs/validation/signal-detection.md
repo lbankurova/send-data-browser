@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `595be500` (2026-04-07)
-**Generated:** 2026-04-07T18:50:50.281Z
+**Engine:** commit `5fb3f287` (2026-04-09)
+**Generated:** 2026-04-09T13:30:20.038Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -96,8 +96,8 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.079 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
 | 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
 | 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
-| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.050 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
-| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.051 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
+| 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.049 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
+| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
 | 7 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10) |
 | 8 | Regional LN hyperplasia | MI | any | equivocal | -- | 0.266 | **DETECTED** | Lymphoid hyperplasia and granulocyte infiltration. Both vaccines. Enlarged right inguinal LN in M (SENDVACC99). (report p.10) |
@@ -311,7 +311,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 ---
 
-## PointCross (synthetic) -- Signals: 13/13
+## PointCross (synthetic) -- Signals: 12/13
 
 **Source:** nSDRG Section 6.2, 13 engineered signals
 
@@ -331,7 +331,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | 10 | Liver weights increased | OM | any | tr_adverse | 2.26 | <0.001 | **DETECTED** |  |
 | 11 | Liver macroscopic findings | MA | any | equivocal | -- | 0.033 | **DETECTED** | F: 5/10 (p=0.033). M: 4/10 (p=0.087, equivocal). See classification-verdicts.md S2. |
 | 12 | Liver microscopic findings | MI | any | tr_adverse | -- | 0.239 | **DETECTED** | Hypertrophy, M+F |
-| 13 | Liver tumors | TF | any | tr_adverse | -- | 0.239 | **DETECTED** | Adenoma + carcinoma |
+| 13 | Liver tumors | TF | any | -- | -- | -- | **MISSED** | Adenoma + carcinoma |
 
 ### Design
 

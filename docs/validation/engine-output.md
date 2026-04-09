@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `595be500` (2026-04-07)
-**Generated:** 2026-04-07T18:50:48.796Z
+**Engine:** commit `5fb3f287` (2026-04-09)
+**Generated:** 2026-04-09T13:30:18.848Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -117,10 +117,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| hematologic | 0.839 | 0.988 | 54 | 34 | LB, MA, MI, OM | -- | -- |
-| hepatic | 0.628 | 0.968 | 24 | 11 | LB, OM | -- | -- |
-| general | 0.492 | 0.988 | 63 | 15 | BW, CL, FW, LB, MA, MI, OM | -- | -- |
-| cardiovascular | 0.428 | 0.880 | 8 | 6 | OM, VS | -- | -- |
+| hematologic | 0.839 | 0.988 | 54 | 23 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.628 | 0.968 | 24 | 7 | LB, OM | -- | -- |
+| general | 0.492 | 0.988 | 63 | 6 | BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.428 | 0.880 | 8 | 2 | OM, VS | -- | -- |
 | renal | 0.369 | 0.882 | 14 | 2 | LB, MI, OM | -- | -- |
 
 ### Provenance
@@ -239,10 +239,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| general | 0.802 | 0.980 | 63 | 38 | BG, BW, CL, FW, IS, LB, MA, MI, OM | -- | -- |
-| hepatic | 0.764 | 0.926 | 27 | 15 | LB, MI, OM | -- | -- |
-| hematologic | 0.613 | 1.000 | 75 | 27 | LB, MA, MI, OM | -- | -- |
-| cardiovascular | 0.516 | 0.788 | 10 | 4 | MI, OM, VS | -- | -- |
+| general | 0.802 | 0.980 | 63 | 17 | BG, BW, CL, FW, IS, LB, MA, MI, OM | -- | -- |
+| hepatic | 0.764 | 0.926 | 27 | 10 | LB, MI, OM | -- | -- |
+| hematologic | 0.613 | 1.000 | 75 | 23 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.516 | 0.788 | 10 | 2 | MI, OM, VS | -- | -- |
 | renal | 0.490 | 0.781 | 20 | 1 | LB, MI, OM | -- | -- |
 
 ### Provenance
@@ -516,10 +516,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| hematologic | 0.982 | 0.860 | 23 | 25 | LB, MI, OM | -- | -- |
+| hematologic | 0.982 | 0.860 | 23 | 11 | LB, MI, OM | -- | -- |
 | general | 0.809 | 0.750 | 24 | 2 | BG, BW, CL, LB, MI, OM | -- | -- |
-| hepatic | 0.793 | 0.750 | 14 | 7 | LB, MI, OM | -- | -- |
-| renal | 0.645 | 0.834 | 10 | 3 | LB, MI, OM | -- | -- |
+| hepatic | 0.793 | 0.750 | 14 | 4 | LB, MI, OM | -- | -- |
+| renal | 0.645 | 0.834 | 10 | 2 | LB, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -661,11 +661,11 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| hepatic | 0.749 | 1.000 | 35 | 12 | LB, MA, MI, OM | positive | 1.00 |
-| hematologic | 0.672 | 0.940 | 57 | 24 | LB, MA, MI, OM | -- | -- |
-| general | 0.650 | 1.000 | 170 | 115 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
+| hepatic | 0.749 | 1.000 | 35 | 10 | LB, MA, MI, OM | positive | 1.00 |
+| hematologic | 0.672 | 0.940 | 57 | 17 | LB, MA, MI, OM | -- | -- |
+| general | 0.650 | 1.000 | 170 | 34 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
 | neurological | 0.631 | 0.940 | 5 | 1 | MA, OM | positive | 1.00 |
-| renal | 0.502 | 0.940 | 36 | 12 | LB, MA, MI, OM | positive | 1.00 |
+| renal | 0.502 | 0.940 | 36 | 11 | LB, MA, MI, OM | positive | 1.00 |
 | cardiovascular | 0.488 | 0.792 | 8 | 4 | MI, OM | positive | 1.00 |
 
 ### Provenance
@@ -728,11 +728,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | FW | 5 | 0 | 0 | 0 | 1 | 4 |
 | LB | 161 | 27 | 1 | 0 | 38 | 95 |
 | MA | 72 | 4 | 0 | 0 | 10 | 58 |
-| MI | 101 | 5 | 0 | 3 | 37 | 56 |
+| MI | 101 | 6 | 0 | 3 | 36 | 56 |
 | OM | 20 | 11 | 1 | 0 | 4 | 4 |
-| TF | 3 | 2 | 0 | 0 | 0 | 1 |
 | VS | 2 | 0 | 1 | 0 | 0 | 1 |
-| **Total** | **418** | **78** | **5** | **3** | **94** | **238** |
+| **Total** | **415** | **77** | **5** | **3** | **93** | **237** |
 
 ### NOAEL / LOAEL
 
@@ -747,9 +746,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | cardiovascular | 0.677 | 0.940 | 12 | 3 | EG, MI, OM, VS | positive | 1.00 |
-| hematologic | 0.669 | 0.940 | 65 | 24 | LB, MA, MI, OM | -- | -- |
-| hepatic | 0.583 | 0.940 | 39 | 17 | LB, MA, MI, OM, TF | -- | -- |
-| general | 0.516 | 0.940 | 61 | 41 | BG, BW, CL, DS, FW, MA, MI, OM | -- | -- |
+| hematologic | 0.669 | 0.940 | 65 | 23 | LB, MA, MI, OM | -- | -- |
+| hepatic | 0.597 | 0.940 | 37 | 17 | LB, MA, MI, OM | -- | -- |
+| general | 0.516 | 0.940 | 61 | 15 | BG, BW, CL, DS, FW, MA, MI, OM | -- | -- |
 | renal | 0.473 | 0.940 | 32 | 9 | LB, MA, MI, OM | positive | 1.00 |
 
 ### Provenance
@@ -766,12 +765,13 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Rule | Severity | Domain | Records |
 |------|----------|--------|---------|
 | FDA-005-DS | Error | DS | 1 |
+| DC-001-MI | Warning | MI | 12 |
 | FDA-001-LB | Warning | LB | 1 |
 | FDA-003-PC | Warning | PC | 5 |
 | FDA-007-EG | Info | EG | 1 |
 | SD-004 | Info | TS | 1 |
 
-**Summary:** 1 errors, 2 warnings, 2 info
+**Summary:** 1 errors, 3 warnings, 2 info
 
 ---
 
@@ -828,10 +828,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | renal | 0.800 | 0.847 | 18 | 4 | LB, MA, OM | -- | -- |
-| hepatic | 0.750 | 0.878 | 27 | 8 | LB, MI, OM | -- | -- |
-| hematologic | 0.731 | 0.878 | 58 | 14 | LB, MA, MI, OM | -- | -- |
-| cardiovascular | 0.725 | 0.793 | 20 | 6 | EG, OM, VS | -- | -- |
-| general | 0.681 | 0.860 | 125 | 47 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| hepatic | 0.750 | 0.878 | 27 | 7 | LB, MI, OM | -- | -- |
+| hematologic | 0.731 | 0.878 | 58 | 13 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.725 | 0.793 | 20 | 4 | EG, OM, VS | -- | -- |
+| general | 0.681 | 0.860 | 125 | 39 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
 
 ### Provenance
 
@@ -912,7 +912,7 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | hematologic | 0.703 | 0.684 | 47 | 3 | LB, MI, OM | -- | -- |
 | cardiovascular | 0.652 | 0.803 | 16 | 2 | MI, OM, VS | positive | 1.00 |
 | hepatic | 0.584 | 0.777 | 30 | 3 | LB, MA, MI, OM | -- | -- |
-| general | 0.577 | 0.787 | 59 | 14 | BW, CL, LB, MA, MI, OM | -- | -- |
+| general | 0.577 | 0.787 | 59 | 12 | BW, CL, LB, MA, MI, OM | -- | -- |
 | reproductive | 0.562 | 0.813 | 10 | 1 | MI, OM | positive | 1.00 |
 | neurological | 0.487 | 0.756 | 9 | 1 | MI, OM | positive | 1.00 |
 
@@ -990,10 +990,10 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
 | cardiovascular | 0.704 | 0.798 | 7 | 1 | OM, VS | -- | -- |
-| reproductive | 0.700 | 0.908 | 9 | 6 | MI, OM | positive | 1.00 |
+| reproductive | 0.700 | 0.908 | 9 | 4 | MI, OM | positive | 1.00 |
 | hematologic | 0.527 | 0.874 | 54 | 7 | LB, MA, MI, OM | -- | -- |
 | hepatic | 0.504 | 0.925 | 34 | 4 | LB, MA, MI, OM | positive | 1.00 |
-| general | 0.475 | 0.940 | 94 | 22 | BG, BW, CL, FW, MA, MI, OM | -- | -- |
+| general | 0.475 | 0.940 | 94 | 10 | BG, BW, CL, FW, MA, MI, OM | -- | -- |
 | renal | 0.349 | 0.825 | 36 | 4 | LB, MA, MI, OM | -- | -- |
 
 ### Provenance
@@ -1070,8 +1070,8 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| general | 0.834 | 0.941 | 109 | 26 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
-| hematologic | 0.751 | 0.883 | 50 | 20 | LB, MA, MI, OM | -- | -- |
+| general | 0.834 | 0.941 | 109 | 21 | BG, BW, CL, DS, FW, LB, MA, MI, OM | -- | -- |
+| hematologic | 0.751 | 0.883 | 50 | 19 | LB, MA, MI, OM | -- | -- |
 | hepatic | 0.637 | 0.940 | 32 | 10 | LB, MA, MI, OM | positive | 1.00 |
 | cardiovascular | 0.407 | 0.620 | 10 | 3 | MI, OM | positive | 1.00 |
 | renal | 0.390 | 0.645 | 31 | 1 | LB, MA, MI, OM | -- | -- |
@@ -1152,7 +1152,7 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 | hepatic | 0.689 | 0.858 | 22 | 6 | LB, MI, OM | positive | 1.00 |
 | hematologic | 0.675 | 0.753 | 44 | 5 | LB, MA, MI, OM | -- | -- |
 | renal | 0.610 | 1.000 | 24 | 5 | LB, MA, MI, OM | -- | -- |
-| general | 0.540 | 0.922 | 64 | 16 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
+| general | 0.540 | 0.922 | 64 | 14 | BG, BW, CL, FW, LB, MA, MI, OM | -- | -- |
 | cardiovascular | 0.329 | 0.588 | 6 | 1 | MI, OM | positive | 1.00 |
 
 ### Provenance

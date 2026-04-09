@@ -143,9 +143,10 @@ _SEVERITY_GRADES = {
 def _get_severity_grade(finding: dict) -> int:
     """Extract max severity grade from finding's group_stats or text.
 
-    TF domain (tumor findings) default to grade 1 since confirmed tumors
-    represent at least minimal pathological significance, even without
-    explicit severity grading (tumors are incidence-based, not severity-graded).
+    Neoplastic findings (isNeoplastic=True, any domain) default to grade 1
+    since confirmed tumors represent at least minimal pathological significance,
+    even without explicit severity grading (tumors are incidence-based, not
+    severity-graded).
     """
     gs = finding.get("group_stats", [])
     max_sev = 0
@@ -162,8 +163,8 @@ def _get_severity_grade(finding: dict) -> int:
         if term in text:
             return grade
 
-    # TF domain tumors: minimum grade 1 (tumor exists = pathological)
-    if finding.get("domain") == "TF":
+    # Neoplastic findings: minimum grade 1 (tumor exists = pathological)
+    if finding.get("isNeoplastic"):
         return 1
 
     return 0

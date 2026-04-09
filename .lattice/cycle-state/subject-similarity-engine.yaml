@@ -1,0 +1,94 @@
+topic: subject-similarity-engine
+phase: complete
+status: validated
+
+steps:
+  research:
+    status: complete
+    doc: research/subject-similarity-engine-landscape.md
+    date: 2026-04-02
+  peer-review-r1:
+    status: complete
+    verdict: CONDITIONAL
+    findings: 6
+    doc: research/peer-reviews/subject-similarity-engine-review.md
+  incorporate-r1:
+    status: complete
+    note: All 6 findings incorporated into revised landscape
+  peer-review-r2:
+    status: complete
+    verdict: CONDITIONAL (narrowly)
+    findings: 4 new (4/6 R1 fully resolved)
+    doc: research/peer-reviews/subject-similarity-engine-review-r2.md
+  incorporate-r2:
+    status: complete
+    note: Ward->complete linkage fixed, Branch 10 reclassified, power note added
+  synthesize:
+    status: complete
+    doc: incoming/subject-similarity-engine-synthesis.md
+    date: 2026-04-03
+    plan_items: 6
+    reuse: 12
+    new: 4
+    research_gaps: 5
+    data_gaps: 3
+  synthesis-peer-review:
+    status: complete
+    verdict: CONDITIONAL
+    findings: 10 (1 FLAWED, 8 CONDITIONAL, 1 SOUND)
+    doc: research/peer-reviews/subject-similarity-engine-synthesis-review.md
+    must_fix:
+      - F1: Use log2(fold_change) for continuous composites (fold-change asymmetry)
+    should_fix:
+      - F5: Remove arbitrary ARI thresholds, use permutation-derived significance
+      - F6: Multi-cut validation (k=2..6) instead of fixed 4-cluster cut
+      - F3: Minimum shared-feature threshold for distance reliability
+  incorporate-synthesis-review:
+    status: complete
+    note: All 10 findings incorporated. F1 FLAWED fixed (log2). F3 (overlap threshold). F5+F6 (multi-cut). F7 (p90, pooled). F9 (n_init=8). Date 2026-04-05.
+  architect-gate:
+    status: complete
+    verdict: SIMPLIFY->PASS
+    fixes: 3 (Phase 2x placement, _build_om_fold_changes reuse, RG-1 label)
+    doc: research/peer-reviews/subject-similarity-engine-architect-review.md
+  probe:
+    status: complete
+    result: ALL_SAFE
+    breaks: 0
+    science_flags: 0
+    note: Pure read-only consumer, unidirectional deps, Phase 2x timing verified
+  synthesis-review-r2:
+    status: complete
+    verdict: CONDITIONAL (1 FLAWED fixed, 4 CONDITIONAL)
+    all_r1_resolved: true
+    doc: research/peer-reviews/subject-similarity-engine-synthesis-review-r2.md
+  build:
+    status: complete
+    current_step: complete
+    validated: 2026-04-05
+    commit: c0b2ee89
+  review:
+    status: complete
+    verdict: PASS
+    architect: SIMPLIFY->PASS (3 items fixed)
+    decision_audit: PASS (2 silent drops fixed, 1 insufficient rationale resolved)
+    spec_trace: 33 PASS, 5 accepted deviations
+    fixes_applied: 8 (decomposition invariant, pseudocount scope, OM zeros, permutation perf, n_low_overlap, log2 consolidation, dead variable, boundary best-k)
+  spec-refresh:
+    status: complete
+    specs_checked: 6
+    specs_updated: 1 (synthesis schema example: hepatic_lb -> hepatic_continuous)
+    note: KNN not in build scope -- distance matrix available for frontend computation
+
+decisions:
+  - Ward linkage invalid on Gower -> complete linkage (R2 finding 3)
+  - Branch 10 normalization resolved via consuming pipeline outputs
+  - TK satellites excluded, recovery/early-death included
+  - N<15 suppresses MDS/clustering
+  - Equal feature weights for v1 (agnostic default, not conservative)
+  - scikit-learn new dependency required
+
+dependencies:
+  - scikit-learn pip package (installed)
+  - raw_subject_values in-memory access during generation
+  - subject_noael_overlay.json (for bw_terminal_pct)

@@ -1,0 +1,41 @@
+topic: vehicle-pk-interaction-bcs
+title: "Vehicle-PK Interaction / BCS Class"
+started: 2026-04-05T01:20:00Z
+phase: research-complete
+current_step: build.0
+parent: cross-study-phase-1-aggregation-backend
+priority: P2
+checkpoints:
+  research.1:
+    completed: 2026-04-05T01:40:00Z
+    key_decisions:
+      - "Vehicle PK-risk lookup table (P1) + margin caveat (P1)"
+      - "BCS inference from vehicle is circular -- downgraded to weak heuristic"
+      - "Parenteral routes included (Cremophor EL, DMSO, polysorbate 80)"
+      - "logP threshold >3 not >2"
+    output: "docs/_internal/research/vehicle-pk-interaction-bcs.md"
+  research.2:
+    completed: 2026-04-05T02:00:00Z
+    key_decisions:
+      - "R1: 1 FLAWED (BCS inference circularity), 9 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/vehicle-pk-interaction-bcs-review.md"
+  research.3:
+    completed: 2026-04-05T02:10:00Z
+    key_decisions:
+      - "BCS inference from vehicle downgraded to weak heuristic"
+      - "Parenteral routes expanded"
+      - "PBPK/IVIVC evaluated as alternatives"
+      - "AUC ranges calibrated by BCS subtype"
+  research.4:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions:
+      - "R2: All 10 R1 RESOLVED, 1 CONDITIONAL (NF3 Frel<1), 4 MINOR"
+    output: "docs/_internal/research/peer-reviews/vehicle-pk-interaction-bcs-review-r2.md"
+  research.5:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions: ["VALIDATED -- ACCEPT"]
+  research.7:
+    completed: 2026-04-05T02:30:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 3 PROPAGATES, 1 SCIENCE-FLAG (OV BCS annotation cascade)"
+      - "logP >2 in deep-research is stale -- corrected to >3"

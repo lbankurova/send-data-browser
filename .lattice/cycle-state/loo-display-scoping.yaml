@@ -1,0 +1,98 @@
+topic: loo-display-scoping
+phase: complete
+current_step: complete
+
+science_flag_resolution:
+  resolved: 2026-04-06T23:15:00
+  decisions:
+    chart_vs_pane: |
+      Tighten chart to filter brown dots to loo_per_subject[loo_influential_subject].ratio < 0.8.
+      Pane keeps its existing loo_per_subject < 0.8 source. Feature 3 reduces to "add Days/Worst
+      columns as enrichment over the existing source" — no hook swap, no semantic change.
+    recovery_mode: |
+      In recovery mode, pass day: undefined to the hook (endpoint-union of recovery-era influentials).
+      No computed recovery day. Day stepper behavior is pre-existing and out of scope.
+    apply_button: |
+      Keep button in pane with honest global labeling (pendingCount). ADD read-only expandable
+      disclosure showing which subjects are pending on which OTHER endpoints, so the global
+      scope of the action is transparent. List is read-only — modifying other endpoints'
+      exclusions requires navigating to them.
+    test_coverage: |
+      Add at least one Vitest behavioral test covering BUG-001 scenario: pending exclusion
+      on endpoint X, user viewing endpoint Y's LOO pane — button label reflects global count,
+      disclosure shows X's subjects.
+    bundling: |
+      BUG-001 stays bundled with hook reorder and Days/Worst columns. Hook reorder is
+      cohesion glue.
+created: 2026-04-06T22:00:00
+research_source:
+  type: distillation_plus_conversation
+  files:
+    - docs/_internal/research/distillations/bw-loo-influential-density-answer.md  # 2026-04-03 distillation
+    - in-conversation-decision-2026-04-06  # this conversation
+  note: |
+    Bypassed /lattice:research-cycle by user instruction. Research equivalent:
+    1. 2026-04-03 distillation already laid out the day-scoping case for chart.
+    2. /lattice:distill run in this conversation surfaced contradictory state (BUG-28 marked "by design" without rationale in commit 3772265, contradicting the distillation in the same commit).
+    3. User decided in conversation to re-litigate: chart day-scoped, info pane endpoint-scoped with new "Days" column.
+
+scope:
+  description: |
+    Reconcile LOO influential subject display semantics across the chart and the
+    info pane. Chart becomes day-scoped (matches the time slice being shown).
+    Info pane stays endpoint-scoped (cross-day visibility for "consistent influencer"
+    analysis) and gains a "Days" column listing the days each subject was the LOO
+    driver. Bundles BUG-001 fix (Apply button uses global pendingCount instead of
+    endpoint-local excludedIds.size).
+
+  files_in_scope:
+    code:
+      - frontend/src/hooks/useInfluentialSubjects.ts
+      - frontend/src/components/analysis/findings/CenterDistribution.tsx
+      - frontend/src/components/analysis/panes/LooSensitivityPane.tsx
+      # DistributionPane.tsx removed from scope (architect Cut 1) — dead code, zero importers
+    docs:
+      - docs/_internal/architecture/loo-display-scoping.md  # NEW
+      - docs/_internal/TODO.md  # BUG-28 reopen-then-resolve, BUG-25 verify dissolves
+      - docs/_internal/research/distillations/bw-loo-influential-density-answer.md  # resolution note
+      - docs/_internal/BUG-SWEEP.md  # mark BUG-001, BUG-002 fixed
+
+bundled_bugs:
+  - id: BUG-001
+    file: frontend/src/components/analysis/panes/LooSensitivityPane.tsx
+    lines: [316, 323]
+    fix: swap pendingCount -> excludedIds.size
+  - id: BUG-002
+    file: frontend/src/components/analysis/panes/LooSensitivityPane.tsx
+    lines: [53, 80]
+    fix: replace inline loo_per_subject filter with loo_influential_subject aggregation; add Days/Worst columns
+  - id: BUG-28  # historical, in TODO.md
+    status: re-opening then resolving via this cycle
+  - id: BUG-25  # historical, in TODO.md
+    status: verify dissolves post-fix; close if so
+
+user_decided:
+  recovery_mode_day_scoping: yes
+  worst_column_missing_ratio: render "—" not finding-level fallback
+  subject_dot_tier_indicator: skip (too noisy)
+
+cross_topic:
+  loo_influence_metric_redesign:
+    status: completed 2026-04-06 (commit 5c1404c8)
+    interaction: |
+      Backend metric change (mean_instability replaces pct_destabilising). Pure
+      backend, no frontend overlap. Confirmed no conflict — this cycle is purely
+      frontend display semantics. The shipped metric still uses loo_influential_subject
+      and loo_per_subject as the underlying display fields.
+
+step_log:
+  - step: blueprint.0
+    status: done
+    timestamp: 2026-04-06T22:00:00
+    notes: |
+      Implementation knowledge load complete. Read decisions log (no relevant FAILED
+      entries; no prior attempts at LOO display scoping work). Read code-quality-guardrails:
+      LooSensitivityPane.tsx is NOT in domain-critical modules list (display component);
+      useInfluentialSubjectsMap is the canonical reuse pattern; complexity budget for
+      hooks is 300 lines, file is currently 44 lines; pane file is 329 lines, well
+      under 800-line component budget. No bug-patterns.md file exists.

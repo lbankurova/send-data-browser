@@ -1,0 +1,53 @@
+topic: mi-tf-neoplasm-deduplication
+started: 2026-04-08T01:00:00Z
+phase: complete
+current_step: complete
+completed:
+  research.1: 2026-04-08T01:00:00Z
+  blueprint.0: 2026-04-08T03:00:00Z
+  blueprint.1: 2026-04-08T03:15:00Z
+  blueprint.2: 2026-04-08T03:30:00Z
+  blueprint.3: 2026-04-08T03:45:00Z
+  blueprint.4: 2026-04-08T04:00:00Z
+  blueprint.5: 2026-04-08T04:15:00Z
+  blueprint.6: 2026-04-08T04:30:00Z
+  blueprint.7: 2026-04-08T04:45:00Z
+checkpoints:
+  research.1:
+    completed: 2026-04-08T01:00:00Z
+    output: "docs/_internal/research/mi-tf-neoplasm-deduplication.md"
+  blueprint.0:
+    completed: 2026-04-08T03:00:00Z
+    decisions_log_entries: 297
+    failed_approaches: 0
+    probe_correction: "Research cycle dismissed probe SF-1 as fabricated -- VERIFIED it is real"
+  blueprint.1:
+    completed: 2026-04-08T03:15:00Z
+    synthesis_path: "docs/_internal/incoming/mi-tf-neoplasm-deduplication-synthesis.md"
+    features: 7
+    mandatory_sections: "6/6"
+    net_loc_estimate: "120-160"
+  blueprint.2:
+    completed: 2026-04-08T03:30:00Z
+    architect_verdict: "SIMPLIFY -> PASS (2 fixes: suffix exclusion constant, R20 expression tag). 1 SCIENCE-FLAG (B-6 grade-1 floor) accepted by user."
+    review_path: "docs/_internal/research/peer-reviews/mi-tf-neoplasm-deduplication-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-08T03:45:00Z
+    probe_verdict: "AUTO-ACCEPT (0 NEW BREAKS, 0 NEW SCIENCE-FLAGS)"
+  blueprint.4:
+    completed: 2026-04-08T04:00:00Z
+    r1_review_path: "docs/_internal/research/peer-reviews/mi-tf-neoplasm-deduplication-synthesis-review.md"
+    r1_findings: "1 FLAWED (F2 tumor_summary downstream), 5 CONDITIONAL, 4 SOUND"
+  blueprint.5:
+    completed: 2026-04-08T04:15:00Z
+    r1_incorporated: "F2 FLAWED: added call-site analysis + variable rename. F1: insertion point clarified. F3: StudySummaryView documented. F5: exclusion list fixed. F7: AC-2.1 corrected to 3 (verified). F10: behavior=None propagation documented."
+  blueprint.6:
+    completed: 2026-04-08T04:30:00Z
+    r2_review_path: "docs/_internal/research/peer-reviews/mi-tf-neoplasm-deduplication-synthesis-review-r2.md"
+    r2_findings: "10/10 R1 RESOLVED. 1 CONDITIONAL (N2 matching data shape), 1 SOUND. 0 FLAWED."
+    plan_validated: true
+  blueprint.7:
+    completed: 2026-04-08T04:45:00Z
+    gaps_persisted: true
+    registry_updated: true
+    todo_entries: "GAP-NEO-1 (no held-out study), GAP-NEO-2 (TumorFinding UNCERTAIN)"

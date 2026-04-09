@@ -1,0 +1,81 @@
+topic: evidence-quality-tier-unification
+started: 2026-04-05T10:00:00Z
+phase: complete
+current_step: complete
+committed: 2026-04-06T16:40:00Z
+commit: fa87297b
+completed:
+  research.1: 2026-04-05T10:15:00Z
+  research.2: 2026-04-05T10:30:00Z
+  research.3: 2026-04-05T10:45:00Z
+  research.4: 2026-04-05T11:00:00Z
+  research.5: 2026-04-05T11:15:00Z
+  research.6: 2026-04-05T11:20:00Z
+  research.7: 2026-04-05T11:25:00Z
+  research.7b: 2026-04-05T11:30:00Z
+  blueprint.0: 2026-04-05T19:10:00Z
+checkpoints:
+  research.1:
+    completed: 2026-04-05T10:15:00Z
+    key_decisions:
+      - "Read-only synthesis grade, not score modification"
+      - "Originally worst-of-three with concordance"
+    output: "docs/_internal/research/evidence-quality-tier-unification.md"
+  research.2:
+    completed: 2026-04-05T10:30:00Z
+    key_decisions:
+      - "R1: 2 FLAWED + 6 CONDITIONAL"
+      - "Concordance misclassified as quality dimension (FLAWED)"
+      - "Worst-of-three downgrades sex-dimorphic findings (FLAWED)"
+    output: "docs/_internal/research/peer-reviews/evidence-quality-tier-unification-review.md"
+  research.3:
+    completed: 2026-04-05T10:45:00Z
+    key_decisions:
+      - "Concordance reclassified to contextual annotation"
+      - "Grade now worst-of-TWO (convergence, corroboration)"
+      - "Signal-weighted concordance, inclusive denominator"
+      - "Single-dimension grade capped at moderate"
+    output: "docs/_internal/research/evidence-quality-tier-unification.md (revised)"
+  research.4:
+    completed: 2026-04-05T11:00:00Z
+    key_decisions:
+      - "R2: 1 FLAWED (examined_normal != positive), 3 CONDITIONAL, 1 SOUND"
+      - "All R1 findings resolved or partially resolved"
+    output: "docs/_internal/research/peer-reviews/evidence-quality-tier-unification-review-r2.md"
+  research.5:
+    completed: 2026-04-05T11:15:00Z
+    key_decisions:
+      - "R2 validated -- no same-FLAWED-both-rounds"
+      - "NF2 fix applied (examined_normal grade demotion)"
+  research.6:
+    completed: 2026-04-05T11:20:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS"
+      - "REGISTRY entry updated"
+  research.7b:
+    completed: 2026-04-05T11:30:00Z
+    key_decisions:
+      - "3 new gaps persisted to TODO.md (GAP-224/225/226)"
+      - "REGISTRY updated with R1+R2 findings and open questions"
+  blueprint.0:
+    completed: 2026-04-05T19:10:00Z
+    key_decisions:
+      - "No FAILED approaches in decisions.log relevant to this topic"
+      - "No bug-patterns.md file exists"
+      - "histopath-sensitivity-by-organ SHIPPED (commit 0fd8d250): three-state mi_status now LIVE on target_organ_summary"
+      - "brain-weight-sex-concordance-calibration SHIPPED: sex concordance bands live -- coexists with quality annotation"
+      - "view_dataframes.py is domain-critical (code-quality-guardrails.md)"
+      - "Integration point: build_target_organ_summary() lines 241-378, after OM-MI discount (line 355)"
+      - "Findings are per-sex: ep_key = domain_testcode_sex. Concordance requires cross-sex matching"
+      - "direction field live on group_stats and findings (domain_stats.py)"
+      - "convergence_count and n_domains already on output rows"
+      - "mi_status already on output rows (positive/examined_normal/lb_corroborated/not_examined/null)"
+      - "No evidence_quality field exists anywhere in backend"
+    implementation_context:
+      integration_point: "view_dataframes.py:build_target_organ_summary() -- add grade computation after line 355 (OM-MI discount)"
+      concordance_design: "Cross-sex matching needed: findings are per sex (ep_key includes sex). Must group by domain+test_code, compare directions across M/F"
+      existing_fields: "convergence_count, mi_status, om_mi_discount already on rows. ep_signals available during organ loop."
+      cross_topic_overlap: "histopath-sensitivity-by-organ shipped the mi_status field this feature reads. No conflict -- pure consumer."
+      no_score_modification: "Grade is read-only. Must NOT modify evidence_score, signal scores, or any downstream scoring."
+      frontend_scope: "Minimal: quality badge in target organ table + tooltip. No WoE pane integration (future)."
+    output: "state checkpoint -- implementation context captured"

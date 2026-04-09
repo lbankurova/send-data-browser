@@ -1,6 +1,9 @@
 topic: findings-enrichment-none-safety
-phase: blueprint-complete
-current_step: build.0
+phase: complete
+current_step: complete
+shipped: 2026-04-07T01:55:00Z
+parent_commit: 3fdbbe60
+submodule_commit: 6432a34
 entered_at: 2026-04-07T00:45:00Z
 
 origin:

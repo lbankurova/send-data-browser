@@ -1,0 +1,189 @@
+topic: inter-pathologist-severity-uncertainty
+title: "Inter-Pathologist Severity Uncertainty Band"
+started: 2026-04-04T23:50:00Z
+phase: complete
+current_step: complete
+parent: cross-study-phase-1-aggregation-backend
+priority: P1
+checkpoints:
+  research.1:
+    completed: 2026-04-05T00:10:00Z
+    key_decisions:
+      - "Agreement-zone highlighting (+-1 grade) as primary display recommendation"
+      - "Inferred illustrative confusion matrix from published kappa fragments"
+      - "Within-study comparisons exempt (same pathologist)"
+    output: "docs/_internal/research/inter-pathologist-severity-uncertainty.md"
+  research.2:
+    completed: 2026-04-05T00:20:00Z
+    key_decisions:
+      - "R1: 2 FLAWED (kappa conflation, P_o formula), 11 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-review.md"
+  research.3:
+    completed: 2026-04-05T00:40:00Z
+    key_decisions:
+      - "F2 FLAWED: kappa table restructured by metric type"
+      - "F8 FLAWED: appendix formula rewritten"
+      - "F9: grade-0/grade-1 boundary section added"
+      - "F13: three-tier CRO model for Proposal 3"
+  research.4:
+    completed: 2026-04-05T00:50:00Z
+    key_decisions:
+      - "R2: All 13 R1 RESOLVED, 4 new CONDITIONAL (non-blocking)"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-review-r2.md"
+  research.5:
+    completed: 2026-04-05T01:00:00Z
+    key_decisions:
+      - "VALIDATED -- all SOUND/CONDITIONAL, no FLAWED"
+  research.6:
+    completed: 2026-04-05T01:10:00Z
+    key_decisions:
+      - "Corpus coherent -- refines existing docs, no contradictions"
+  research.7:
+    completed: 2026-04-05T01:15:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 1 SCIENCE-FLAG (S16 cross-study NOAEL), 8 PROPAGATES"
+      - "SCIENCE-FLAG is expected consequence of research -- cross-study NOAEL caveat"
+  blueprint.0:
+    completed: 2026-04-06T22:00:00Z
+    key_decisions:
+      - "No FAILED approaches in decisions.log relevant to this topic"
+      - "No bug-patterns.md file exists"
+      - "cross-study Phase 1 backend SHIPPED commit 3b99558d -- cross_study_aggregation.py is the integration target"
+      - "evidence-quality-tier-unification SHIPPED commit fa87297b -- adjacent quality annotation, no conflict"
+      - "No frontend cross-study UI exists -- this build is backend + annotation infrastructure only"
+      - "build_concordance_matrix() and build_findings_matrix() already expose severity_grade_5pt; this build adds pairwise band metadata"
+      - "Annotation infrastructure (routers/annotations.py) supports per-study schemas -- add pathologist-source schema"
+      - "severity_grade_5pt field is read-only -- the band is metadata layered on top, not a transformation of the field"
+    implementation_context:
+      integration_points:
+        - "cross_study_aggregation.py:build_concordance_matrix() -- add per-cell pairwise severity_band_classification"
+        - "cross_study_aggregation.py:build_findings_matrix() -- add per-finding pairwise severity_band classification per study pair"
+        - "cross_study_aggregation.py:StudyContext -- add pathologist_name, cro_name fields loaded from annotation"
+        - "cross_study_aggregation.py:_load_study_data_cached() -- read pathologist-source.json annotation"
+        - "routers/annotations.py:VALID_SCHEMA_TYPES -- add 'pathologist-source'"
+        - "routers/cross_study.py:get_safety_margins() -- add cross-study NOAEL severity caveat to response when adjacent-grade adversity boundary detected"
+      science_flags_inherited:
+        - "S16 cross-study NOAEL: surfaces band when adversity threshold falls at +-1 grade boundary -- expected mechanism, not a defect"
+      r2_conditional_carryover:
+        - "N1 (kappa verification footnote): documentation only, no code impact"
+        - "N2 (3-constraint characterization): documentation only"
+        - "N3 (prevalence-aware diagnostic concordance flag): defer to Section 3.6 follow-up research, not blocking"
+        - "N4 (scale heterogeneity false positives): only widen band when both studies have evidence of different max grades"
+      out_of_scope:
+        - "Frontend visualization (no cross-study UI exists yet -- separate cycle when UI is built)"
+        - "Diagnostic concordance for grade-0/grade-1 boundary (Section 3.6 -- interim flag only, full treatment is separate research)"
+        - "Finding-type-specific bands (Proposal 4 -- deferred, no calibration data)"
+        - "Within-study comparisons (exempt -- same pathologist)"
+  build.1:
+    completed: 2026-04-07T01:09:42Z
+    key_decisions:
+      - "implement: 6/6 features shipped, 6 deviations all justified, 0 deferred"
+      - "47 tests passing initially (later expanded to 53 during review)"
+      - "GAP-244 logged: severity_grade_5pt nullability discovered, root cause identified by parallel agent (findings_pipeline.py:270 None-iteration), enriched into shared TODO"
+  build.2:
+    completed: 2026-04-07T01:39:49Z
+    verdict: REVIEW-PASS
+    key_decisions:
+      - "Architect gate: PASS (from blueprint.2 PASS-WITH-SCIENCE-FLAG-RESOLVED, no new logic)"
+      - "Decision audit: 13/13 MERIT-SOUND, 0 effort-biased, 0 unprompted-deferrals, 0 silent-drops"
+      - "Requirement trace: 37/37 ACs covered after adding 6 tests during review"
+      - "Spec-internal inconsistency documented: AC-15 says 'route to n_exact' but Feature 1 AC-4 establishes same_pathologist -> within_study; Feature 1 is authoritative"
+      - "n_compared semantic resolved correctly: only counts findings with severity data in BOTH studies (AC-19), classification counters track all bands (AC-20a)"
+      - "Mechanical: backend tests 158/159 PASS (1 skip), frontend build PASS, pre-commit hooks PASS"
+      - "53 tests in test_cross_study_aggregation.py, 0 regressions in adjacent suites"
+      - "39 pre-existing test_findings_invariants.py failures verified unrelated"
+    main_commit: c6c6fa21
+    submodule_commit: a4c324d
+    files_changed: 5
+  build.3:
+    completed: 2026-04-07T01:45:00Z
+    key_decisions:
+      - "Spec refresh: 0 downstream specs updated. Only cross-study-analysis-view.md has a conceptual mention of inter-pathologist uncertainty (line 199), fully consistent with shipped behavior. No field-name conflicts."
+  blueprint.7:
+    completed: 2026-04-07T00:30:00Z
+    verdict: BLUEPRINT-COMPLETE
+    key_decisions:
+      - "REGISTRY.md entry updated: status blueprint-complete, 6 features documented, 4 open questions persisted"
+      - "GAP-243 added to TODO.md: HED-adjusted cross-study severity band comparison (P2 follow-up)"
+      - "Prevalence-aware diagnostic concordance, non-rodent calibration, finding-type-specific bands remain in REGISTRY open questions (not new TODO items -- research gaps)"
+      - "6 auto-decisions logged across blueprint.0-6"
+      - "No user escalations required beyond one SCIENCE-FLAG resolution (Option B LOAEL-driver)"
+    summary: "Blueprint validated. 6 features, ~400 LOC production + ~250 LOC tests, 37 ACs, no domain-critical module changes, fully backward-compatible additive API shape."
+  blueprint.6:
+    completed: 2026-04-07T00:15:00Z
+    verdict: R2-VALIDATED
+    key_decisions:
+      - "13/13 R1 findings RESOLVED, 0 FLAWED, 5 CONDITIONAL (N1-N4, N6), 2 SOUND-with-notes (N5, N7)"
+      - "No new FLAWED on previously-SOUND areas -- no bikeshedding"
+      - "No same FLAWED across both rounds -- no genuine disagreement"
+      - "N3 was material (Combined-sex NOAEL fallback missing from code-as-shown)"
+      - "All 5 CONDITIONAL findings incorporated: merge-loop scope (N1), pair-key sign convention (N2), Combined-sex fallback (N3), LOAEL dose semantic (N4), Feature 2/3 consistency invariant (N6)"
+      - "Tie-break-by-max rationale documented (N7)"
+      - "Performance section updated for per-finding group_stats walks (N5)"
+      - "HED-adjusted comparison added to Research Gaps as P2 follow-up"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-synthesis-review-r2.md"
+  blueprint.5:
+    completed: 2026-04-06T23:30:00Z
+    verdict: R1-INCORPORATED
+    key_decisions:
+      - "F1 FLAWED fixed structurally: Feature 2 rewrote to severity_band_summary roll-up, no band on organ aggregate severity_max"
+      - "F13 fixed: has_grade1_any_dose boolean for diagnostic concordance gate, not max-only"
+      - "F2 fixed: modal severity (argmax of counts, tie-break by max) replaces max-of-counts"
+      - "F10 fixed: sex-keyed rows in Feature 3 and sex-aware key in Feature 5 (canonical_testcd, organ_system, sex)"
+      - "F8 fixed: severity_bands hoisted from per_study to row-level, keyed by canonical pair string"
+      - "F3 fixed: scale_heterogeneity removed from auto-detection, requires explicit grading_scale annotation on both studies"
+      - "F4 fixed: same_cro/different_cro emit identical band width, only tooltip differs (with disclaimer)"
+      - "F5 fixed: Proposal 2 scope distributed across Feature 3 (generic) and Feature 5 (NOAEL wedge), explicitly documented"
+      - "F7 fixed: nanosecond mtime + test-only _clear_study_data_cache() helper"
+      - "F9 fixed: negative test ACs for ValueError on invalid (grade, present) states"
+      - "F11 fixed: noael_severity_caveats output grouped by (canonical_testcd, organ_system, sex) with inner observations"
+      - "F12 fixed: test module correctly marked NEW (~250 LOC added to complexity budget)"
+      - "F6 fixed: AC numbering unified (AC-1 through AC-37)"
+  blueprint.4:
+    completed: 2026-04-06T22:45:00Z
+    verdict: R1-AUTO-ACCEPT
+    key_decisions:
+      - "R1: 1 FLAWED + 12 CONDITIONAL + 0 SOUND across 7 dimensions"
+      - "F1 FLAWED substantive (organ-aggregate band structurally invalid per research Section 5.3)"
+      - "F2, F13 scientifically material (severity statistic semantics)"
+      - "F10 correctness-critical for non-rodent studies"
+      - "Others auditability / ergonomics / documentation"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-synthesis-review.md"
+  blueprint.3:
+    completed: 2026-04-06T22:45:00Z
+    verdict: PROBE-CLEAN
+    key_decisions:
+      - "0 BREAKS, 6 PROPAGATES, 0 SCIENCE-FLAGS"
+      - "S10 Signal Scoring / S16 NOAEL read-only verified -- no circular dependency"
+      - "S15 Organ Analytics / S23 Signals Panel decoupled (evidence_quality_grade vs severity_bands on disjoint objects)"
+      - "Benign name collision: severity_bands config key in finding-nature.ts is a different namespace"
+      - "Annotation router auto-generates file routing from slug -- single-line enum add suffices"
+      - "Cache coherence: lru_cache accepts tuple keys natively, cold-cache transition is single regen"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-probe.md"
+  blueprint.2:
+    completed: 2026-04-06T22:30:00Z
+    verdict: PASS-WITH-SCIENCE-FLAG-RESOLVED
+    key_decisions:
+      - "Architect verified all 5 integration points match code (concordance/findings builders, annotation schema, StudyContext)"
+      - "REQUIRED fix applied: test_cross_study_aggregation.py marked as NEW (does not exist yet)"
+      - "SCIENCE-FLAG resolved via user choice Option B (LOAEL-driver semantics)"
+      - "Feature 5 rewritten to use noael_derivation.adverse_findings_at_loael + group_stats lookup"
+      - "3 advisories incorporated: cache invalidation (annotation mtime in cache key), symmetric payload doc note, None+present contract"
+      - "No view_dataframes.py changes -- reuses existing IMP-10 LOAEL-driver output"
+    output: "docs/_internal/research/peer-reviews/inter-pathologist-severity-uncertainty-architect-review.md"
+  blueprint.1:
+    completed: 2026-04-06T22:15:00Z
+    key_decisions:
+      - "6 features: severity_band module, concordance augmentation, findings augmentation, pathologist-source annotation, NOAEL caveat helper, field contracts"
+      - "Backend-only -- no frontend cross-study UI exists yet"
+      - "No new abstractions -- pure function module + dataclass extension + 1 schema enum"
+      - "All R2 CONDITIONAL findings (N1-N4) addressed: N1/N2 doc-only, N3 conservative limit, N4 positive-evidence requirement"
+      - "Per-cell pairwise band metadata (not aggregate) -- consumers get all study pairs without recomputation"
+    output: "docs/_internal/incoming/inter-pathologist-severity-uncertainty-synthesis.md"
+    mandatory_sections:
+      build_plan: 6 features
+      reuse_inventory: 11 rows
+      simplicity_rationale: complete with merit decision
+      test_strategy: 13 rows
+      research_gaps: 6 entries
+      data_gaps: 5 entries

@@ -1,8 +1,8 @@
 topic: outlier-sentinel-animal-identification
 title: "Outlier & Sentinel Animal Identification -- 4-Tier Method Stack"
 started: 2026-04-05
-phase: build-complete
-current_step: review
+phase: complete
+current_step: done
 synthesis_doc: docs/_internal/incoming/outlier-sentinel-animal-identification-synthesis.md
 synthesis_status: validated
 plan_review_r2:

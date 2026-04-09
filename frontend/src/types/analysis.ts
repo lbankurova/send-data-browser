@@ -124,10 +124,16 @@ export interface UnifiedFinding {
   separate_group_stats?: GroupStat[];
   separate_pairwise?: PairwiseResult[];
   separate_direction?: "up" | "down" | "none" | null;
-  /** Tumor behavior classification (TF domain only). */
+  /** Tumor behavior classification (TF and MI neoplastic findings). */
   behavior?: "BENIGN" | "MALIGNANT" | "UNCERTAIN";
-  /** True for all TF (tumor) domain findings — categorically different from non-neoplastic. */
+  /** True for neoplastic findings regardless of domain (MI enriched or TF). */
   isNeoplastic?: boolean;
+  /** Cell type extracted from morphology (e.g. "hepatocellular", "smooth_muscle"). */
+  cell_type?: string;
+  /** Death relationship from TF domain (merged into MI after TF suppression). */
+  tfdthrel?: string | null;
+  /** Detection method day from TF domain (merged into MI after TF suppression). */
+  tfdetect?: number | string | null;
   /** Williams' test results (OM domain only). */
   williams?: WilliamsTestResult | null;
   /** Normalization decision metadata (OM domain only). */

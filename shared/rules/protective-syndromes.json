@@ -298,19 +298,20 @@
       "minDomains": 1,
       "requiredLogic": {
         "type": "compound",
-        "expression": "any(TF_NEOPLASTIC_DOWN)"
+        "expression": "any(MI_NEOPLASTIC_DOWN)"
       },
       "terms": [
         {
-          "tag": "TF_NEOPLASTIC_DOWN",
-          "domain": "TF",
+          "tag": "MI_NEOPLASTIC_DOWN",
+          "domain": "MI",
+          "requireNeoplastic": true,
           "specimenTerms": {
             "finding": ["carcinoma", "sarcoma", "lymphoma", "leukemia", "adenoma", "fibroma", "benign", "malignant"]
           },
           "clinicalClass": "Neoplastic",
           "direction": "down",
           "role": "required",
-          "notes": "Any TF entry with clinical_class Neoplastic or seed-doc tumor allowlist"
+          "notes": "Any MI neoplastic entry (isNeoplastic=true) with declining incidence"
         },
         {
           "tag": "PRENEOPLASTIC_DOWN",

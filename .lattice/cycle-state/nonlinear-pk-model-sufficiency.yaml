@@ -1,0 +1,44 @@
+topic: nonlinear-pk-model-sufficiency
+title: "Non-Linear PK Model Sufficiency"
+started: 2026-04-04T23:50:00Z
+phase: research-complete
+current_step: build.0
+parent: cross-study-phase-1-aggregation-backend
+priority: P1
+checkpoints:
+  research.1:
+    completed: 2026-04-05T00:10:00Z
+    key_decisions:
+      - "TMDD infeasible from SEND PP data"
+      - "Power model is max complexity for 3-4 dose groups"
+      - "Measured AUC (Feature 1C) solves most cases"
+      - "Anti-proposal: do NOT implement TMDD/Emax/piecewise"
+    output: "docs/_internal/research/nonlinear-pk-model-sufficiency.md"
+  research.2:
+    completed: 2026-04-05T00:20:00Z
+    key_decisions:
+      - "R1: 1 FLAWED (corrected_margin contradiction), 9 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/nonlinear-pk-model-sufficiency-review.md"
+  research.3:
+    completed: 2026-04-05T00:40:00Z
+    key_decisions:
+      - "F7 FLAWED: corrected_margin replaced with uncertainty-bounded range"
+      - "F3: R-squared thresholds replaced with N-conditional CI"
+      - "F5: residual problem range widened to 5-15%"
+  research.4:
+    completed: 2026-04-05T00:50:00Z
+    key_decisions:
+      - "R2: All 10 R1 RESOLVED, 2 new CONDITIONAL (non-blocking)"
+    output: "docs/_internal/research/peer-reviews/nonlinear-pk-model-sufficiency-review-r2.md"
+  research.5:
+    completed: 2026-04-05T01:00:00Z
+    key_decisions:
+      - "VALIDATED -- all SOUND/CONDITIONAL, no FLAWED"
+  research.6:
+    completed: 2026-04-05T01:10:00Z
+    key_decisions:
+      - "Corpus coherent -- consistent with Phase 1 synthesis"
+  research.7:
+    completed: 2026-04-05T01:15:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 3 PROPAGATES, 1 STALE (S22 dormant)"

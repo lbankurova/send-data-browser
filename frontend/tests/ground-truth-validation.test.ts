@@ -109,19 +109,21 @@ describe('Ground Truth Validation', () => {
     })
 
     it('detects liver tumors with correct finding_class', () => {
-      const tf = findings.filter(f =>
-        f.domain === 'TF' && /liver|hepato/i.test(f.specimen ?? f.finding ?? '')
+      // After MI/TF neoplasm deduplication, tumors are MI neoplastic findings
+      const neo = findings.filter(f =>
+        f.isNeoplastic && /liver|hepato/i.test(f.specimen ?? f.finding ?? '')
       )
-      const trAdverse = tf.filter(f => f.finding_class === 'tr_adverse')
+      const trAdverse = neo.filter(f => f.finding_class === 'tr_adverse')
       expect(trAdverse.length).toBeGreaterThan(0)
     })
 
     it('tumor findings have severity=adverse and treatment_related=true', () => {
-      const tf = findings.filter(f =>
-        f.domain === 'TF' && f.finding_class === 'tr_adverse'
+      // After MI/TF neoplasm deduplication, tumors are MI neoplastic findings
+      const neo = findings.filter(f =>
+        f.isNeoplastic && f.finding_class === 'tr_adverse'
       )
-      expect(tf.length).toBeGreaterThan(0)
-      for (const t of tf) {
+      expect(neo.length).toBeGreaterThan(0)
+      for (const t of neo) {
         expect(t.severity).toBe('adverse')
         expect(t.treatment_related).toBe(true)
       }

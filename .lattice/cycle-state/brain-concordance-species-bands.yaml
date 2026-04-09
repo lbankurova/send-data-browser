@@ -1,0 +1,32 @@
+topic: brain-concordance-species-bands
+started: 2026-04-04
+phase: research-complete
+current_step: build.0
+parent: brain-weight-sex-concordance-calibration
+completed:
+  research.1:
+    completed: 2026-04-04
+    key_decisions:
+      - "Species available but never passed to concordance (defaults to rat)"
+      - "Sparse JSON: dog + monkey + rabbit for BRAIN_WEIGHT only"
+      - "Three-tier fallback: species > rat > default"
+    output: "docs/_internal/research/brain-concordance-species-bands.md"
+  research.2:
+    completed: 2026-04-04
+    key_decisions:
+      - "R1: 1 FLAWED (rabbit), 4 CONDITIONAL, 2 SOUND"
+    output: "docs/_internal/research/peer-reviews/brain-concordance-species-bands-review.md"
+  research.3:
+    completed: 2026-04-04
+    key_decisions:
+      - "Rabbit entry added mirroring dog. Proposal 1 hard prerequisite. Keys changed to BRAIN_WEIGHT."
+    output: "docs/_internal/research/brain-concordance-species-bands.md (updated)"
+  research.4:
+    completed: 2026-04-04
+    key_decisions:
+      - "R2: all R1 RESOLVED, 2 new low CONDITIONAL. VALIDATED."
+    output: "docs/_internal/research/peer-reviews/brain-concordance-species-bands-review-r2.md"
+  research.5:
+    completed: 2026-04-04
+    key_decisions:
+      - "All SOUND/CONDITIONAL -- VALIDATED"

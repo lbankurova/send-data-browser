@@ -73,11 +73,11 @@ def build_tumor_summary(findings: list[dict], study: StudyInfo) -> dict:
         findings: All enriched findings from compute_all_findings().
         study: StudyInfo for reading PM domain.
     """
-    # Separate TF and MI findings
-    tf_findings = [f for f in findings if f.get("domain") == "TF"]
-    mi_findings = [f for f in findings if f.get("domain") == "MI"]
+    # Separate neoplastic and MI-precursor findings (MI-first: isNeoplastic flag)
+    neoplastic_findings = [f for f in findings if f.get("isNeoplastic")]
+    mi_precursor_findings = [f for f in findings if f.get("domain") == "MI" and not f.get("isNeoplastic")]
 
-    if not tf_findings:
+    if not neoplastic_findings:
         return {
             "has_tumors": False,
             "total_tumor_animals": 0,
@@ -88,11 +88,11 @@ def build_tumor_summary(findings: list[dict], study: StudyInfo) -> dict:
             "palpable_masses": _parse_pm(study),
         }
 
-    # Build per-organ+morphology summaries from TF findings
+    # Build per-organ+morphology summaries from neoplastic findings
     summaries = []
     all_tumor_animals: set[str] = set()
 
-    for f in tf_findings:
+    for f in neoplastic_findings:
         organ = f.get("specimen", "")
         morphology = f.get("finding", "")
         behavior = f.get("behavior", "UNCERTAIN")
@@ -131,10 +131,10 @@ def build_tumor_summary(findings: list[dict], study: StudyInfo) -> dict:
             all_tumor_animals = set(tf_df["USUBJID"].unique())
 
     # Combined analyses: benign + malignant from same cell type in same organ
-    combined_analyses = _compute_combined_analyses(tf_findings)
+    combined_analyses = _compute_combined_analyses(neoplastic_findings)
 
-    # Progression detection: cross-reference TF tumors with MI precursors
-    progression_sequences = _detect_progressions(tf_findings, mi_findings)
+    # Progression detection: cross-reference neoplastic findings with MI precursors
+    progression_sequences = _detect_progressions(neoplastic_findings, mi_precursor_findings)
 
     return {
         "has_tumors": True,
@@ -147,7 +147,7 @@ def build_tumor_summary(findings: list[dict], study: StudyInfo) -> dict:
     }
 
 
-def _compute_combined_analyses(tf_findings: list[dict]) -> list[dict]:
+def _compute_combined_analyses(neoplastic_findings: list[dict]) -> list[dict]:
     """Combine benign + malignant from same cell type in same organ.
 
     Rule: only combine when cell types match. Never combine different
@@ -155,7 +155,7 @@ def _compute_combined_analyses(tf_findings: list[dict]) -> list[dict]:
     """
     # Group by (organ, cell_type, sex)
     groups: dict[tuple[str, str, str], list[dict]] = {}
-    for f in tf_findings:
+    for f in neoplastic_findings:
         organ = f.get("specimen", "")
         cell_type = f.get("cell_type", "unclassified")
         sex = f.get("sex", "")
@@ -221,13 +221,13 @@ def _compute_combined_analyses(tf_findings: list[dict]) -> list[dict]:
 
 
 def _detect_progressions(
-    tf_findings: list[dict],
-    mi_findings: list[dict],
+    neoplastic_findings: list[dict],
+    mi_precursor_findings: list[dict],
 ) -> list[dict]:
-    """Detect proliferative progression sequences by cross-referencing TF and MI."""
-    # Collect organs with TF tumors
-    tf_organs: dict[str, dict[str, list[str]]] = {}  # organ → {cell_type → [stages]}
-    for f in tf_findings:
+    """Detect proliferative progression sequences by cross-referencing neoplastic and MI."""
+    # Collect organs with neoplastic tumors
+    tf_organs: dict[str, dict[str, list[str]]] = {}  # organ -> {cell_type -> [stages]}
+    for f in neoplastic_findings:
         organ = f.get("specimen", "").upper()
         cell_type = f.get("cell_type", "unclassified")
         morphology = f.get("finding", "")
@@ -235,9 +235,9 @@ def _detect_progressions(
         tf_organs.setdefault(organ, {}).setdefault(cell_type, []).extend(stages)
 
     # Collect MI precursors per organ
-    mi_stages_by_organ: dict[str, list[str]] = {}  # organ → [stages]
-    mi_precursors_by_organ: dict[str, list[dict]] = {}  # organ → [finding details]
-    for f in mi_findings:
+    mi_stages_by_organ: dict[str, list[str]] = {}  # organ -> [stages]
+    mi_precursors_by_organ: dict[str, list[dict]] = {}  # organ -> [finding details]
+    for f in mi_precursor_findings:
         organ = f.get("specimen", "").upper()
         finding_text = f.get("finding", "")
         stages = _match_stage(finding_text, MI_PRECURSOR_TERMS)

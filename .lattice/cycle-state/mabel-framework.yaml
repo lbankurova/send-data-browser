@@ -1,0 +1,41 @@
+topic: mabel-framework
+title: "MABEL Framework Integration"
+started: 2026-04-05T01:20:00Z
+phase: research-complete
+current_step: build.0
+parent: cross-study-phase-1-aggregation-backend
+priority: P2
+checkpoints:
+  research.1:
+    completed: 2026-04-05T01:40:00Z
+    key_decisions:
+      - "MABEL core data never in SEND -- contextual validation, not computation"
+      - "Extend margin-config annotation with MABEL fields"
+      - "MABEL candidacy advisory for high-risk biologic classes"
+      - "Gene therapy excluded (ICH S12 framework)"
+      - "ED10/ED20 replaces Dunnett's for PD-marker approximation"
+    output: "docs/_internal/research/mabel-framework-integration.md"
+  research.2:
+    completed: 2026-04-05T02:00:00Z
+    key_decisions:
+      - "R1: 2 FLAWED (compound class false negatives, gap ratio color), 5 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/mabel-framework-integration-review.md"
+  research.3:
+    completed: 2026-04-05T02:10:00Z
+    key_decisions:
+      - "MABEL classes expanded 4->13, gene therapy removed"
+      - "Traffic-light replaced with neutral log-scale"
+      - "Non-immunological triggers added"
+      - "TGN1412 narrative corrected"
+  research.4:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions:
+      - "R2: All 8 R1 RESOLVED, 3 CONDITIONAL"
+    output: "docs/_internal/research/peer-reviews/mabel-framework-integration-review-r2.md"
+  research.5:
+    completed: 2026-04-05T02:20:00Z
+    key_decisions: ["VALIDATED -- ACCEPT"]
+  research.7:
+    completed: 2026-04-05T02:30:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 4 PROPAGATES, 1 STALE, 0 SCIENCE-FLAG"

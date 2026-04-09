@@ -1,0 +1,79 @@
+topic: tumor-evaluation
+started: 2026-04-08T10:00:00Z
+phase: blueprint
+phase: blueprint-complete
+current_step: build.0
+completed: {}
+checkpoints:
+  research.1:
+    completed: 2026-04-08T10:00:00Z
+    key_decisions:
+      - "Pre-existing research doc treated as Step 1 output"
+    output: "docs/_internal/research/tumor-evaluation.md"
+  research.2:
+    completed: 2026-04-08T10:30:00Z
+    key_decisions:
+      - "R1: 8 CONDITIONAL, 0 FLAWED — all auto-accepted"
+    output: "docs/_internal/research/peer-reviews/tumor-evaluation-review.md"
+  research.3:
+    completed: 2026-04-08T10:45:00Z
+    key_decisions:
+      - "All 8 CONDITIONAL findings incorporated"
+      - "Added SEND v4.0 three-tier fallback, HCD min sample size, softened completeness claim"
+    output: "docs/_internal/research/tumor-evaluation.md (updated)"
+  research.4:
+    completed: 2026-04-08T11:00:00Z
+    key_decisions:
+      - "R2: 3 CONDITIONAL + 4 LOW, 0 FLAWED"
+      - "All R1 findings RESOLVED"
+      - "New: N1 dose scoring, N2 suffix exceptions, FM6 TK satellite"
+    output: "docs/_internal/research/peer-reviews/tumor-evaluation-review-r2.md"
+  research.5:
+    completed: 2026-04-08T11:00:00Z
+    key_decisions:
+      - "All CONDITIONAL — research validated"
+  research.6:
+    completed: 2026-04-08T11:10:00Z
+    key_decisions:
+      - "Corpus coherence: no contradictions across 5 overlapping files"
+      - "mi-tf-neoplasm-deduplication.md and tumor_summary.py align with research"
+  research.7:
+    completed: 2026-04-08T11:15:00Z
+    key_decisions:
+      - "Probe: 5 PROPAGATES (S01, S06, S07, S14, S21), 0 BREAKS"
+      - "Tumor evaluation extends subsystems without modifying existing behavior"
+    propagates:
+      - "S01: TF domain parsing, SEND v4.0 migration"
+      - "S06: liver/thyroid tumor progression awareness"
+      - "S07: tumor-specific confidence dimensions (HCD, Haseman)"
+      - "S14: adenoma-carcinoma progression chains extend existing B-6"
+      - "S21: tumor HCD with poly-3 adjusted rates, strain-specific tables"
+  research.7b:
+    completed: 2026-04-08T11:20:00Z
+    key_decisions:
+      - "Gaps verified: RG-4 through RG-9 in REGISTRY (mi-tf-neoplasm-deduplication stream)"
+      - "DATA-GAP-TUMOR-01 through -06 in TODO.md"
+    gap_counts:
+      registry: 6
+      todo: 6
+  blueprint.0:
+    completed: 2026-04-08T22:00:00Z
+    decisions_log_entries: 327
+    failed_approaches: 0
+    key_findings:
+      - "mi-tf-neoplasm-deduplication fully implemented: MI enrichment, TF suppression, B-6 isNeoplastic, tumor_summary MI-first, R20 update"
+      - "trend_test_incidence() uses equally-spaced integer scores (range(k)), not actual doses -- R2 N1 applies"
+      - "No poly-3 or Peto implementation exists anywhere in codebase"
+      - "HCD module (hcd.py) is organ-weight/continuous only, no tumor incidence HCD"
+      - "Combined analysis exists in tumor_summary.py but only as secondary output, not as standard three-parallel-analyses workflow"
+      - "cynomolgus-organ-weight-hcd also touches classification.py and HCD -- sequencing matters"
+    cross_topic_interactions:
+      - "mi-tf-neoplasm-deduplication (complete): MI is now primary neoplastic source, TF suppressed"
+      - "cynomolgus-organ-weight-hcd (in progress): touches classification.py and HCD system"
+      - "protective-syndrome-engine (in progress): R20 already updated for MI_NEOPLASTIC_DOWN"
+    registry_gaps_relevant:
+      - "RG-1: Peto analysis (tfdthrel preserved, not consumed)"
+      - "RG-5: Poly-3 variance estimator choice"
+      - "RG-7: Suffix exception list (14+ malignant -oma terms)"
+      - "RG-8: TK satellite exclusion from poly-3"
+      - "RG-9: C-A dose scoring convention"

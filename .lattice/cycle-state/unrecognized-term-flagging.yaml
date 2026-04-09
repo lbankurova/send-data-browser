@@ -1,8 +1,8 @@
 topic: unrecognized-term-flagging
 title: "Unrecognized Term Flagging"
 started: 2026-04-05T01:20:00Z
-phase: build
-current_step: build.3
+phase: complete
+current_step: complete
 parent: cross-study-phase-1-aggregation-backend
 priority: P2
 checkpoints:

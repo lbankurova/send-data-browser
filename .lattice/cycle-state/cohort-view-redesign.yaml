@@ -1,0 +1,14 @@
+topic: cohort-view-redesign
+title: "Cohort View Redesign — Ship 1"
+started: 2026-04-05T14:30:00Z
+phase: building
+current_step: build.1
+
+spec: incoming/cohort-view-redesign-synthesis.md
+entry: path-based
+
+notes:
+  - Phase 1 NOAEL overlay already shipped (noael_overlay.py)
+  - Phase 6 similarity scatter UNBLOCKED (subject_similarity.json shipped c0b2ee89)
+  - subject_correlations.json still needs building (Phase 1 remainder)
+  - 8 phases total, mostly frontend UI work

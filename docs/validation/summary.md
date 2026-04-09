@@ -1,7 +1,7 @@
 # Validation Summary
 
-**Engine:** commit `595be500` (2026-04-07)
-**Generated:** 2026-04-07T18:50:51.888Z
+**Engine:** commit `5fb3f287` (2026-04-09)
+**Generated:** 2026-04-09T13:30:21.183Z
 
 | Study | Origin | Signals | Design | Assertions | Notes |
 |-------|--------|---------|--------|------------|-------|
@@ -16,19 +16,20 @@
 | instem | synthetic | -- | 5/5 | 3/3 |  |
 | Nimble | synthetic | -- | 5/5 | 2/2 |  |
 | PDS | synthetic | -- | 5/5 | 3/3 |  |
-| PointCross | synthetic | 13/13 | 7/7 | 1/1 |  |
+| PointCross | synthetic | 12/13 | 7/7 | 1/1 | MISSED |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | real | -- | 5/5 | 1/1 |  |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | real | -- | 5/5 | 2/2 |  |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | real | -- | 4/5 | 3/3 | MISMATCH |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | real | -- | 5/5 | 2/2 |  |
 
-**Totals:** 48/49 signals detected, 83/84 design matched, 29/29 assertions passed
+**Totals:** 47/49 signals detected, 83/84 design matched, 29/29 assertions passed
 
 ## Missed Signals
 
 | Study | Signal | Domain | Note |
 |-------|--------|--------|------|
 | CBER-POC-Pilot-Study5 | Heart rate increase (all doses) | CV | All doses, 10-24h postdose, <30% above control. Not dose-dependent (may be baroreceptor reflex). Example 16h: vehicle 60.9, 20mg 73.9 (+21%), 50mg 70.8 (+16%), 150mg 78.2 (+28%). Engine classifies not_treatment_related — known gap (non-monotonic HR increase can't be statistically attributed). (report) |
+| PointCross | Liver tumors | TF | Adenoma + carcinoma |
 
 ## Design Mismatches
 

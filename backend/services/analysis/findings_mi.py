@@ -17,10 +17,66 @@ from services.analysis.supp_qualifiers import (
 from services.analysis.day_utils import mode_day
 from services.analysis.pl_utils import read_xpt_as_polars, subjects_to_polars
 from services.analysis.organ_thresholds import _SPECIMEN_TO_CONFIG_KEY
+from services.analysis.findings_tf import _extract_cell_type
 
 log = logging.getLogger(__name__)
 
 SEVERITY_SCORES = {"MINIMAL": 1, "MILD": 2, "MODERATE": 3, "MARKED": 4, "SEVERE": 5}
+
+# MIRESCAT values that indicate neoplastic findings
+_NEOPLASTIC_RESCAT = {"BENIGN", "MALIGNANT", "UNDETERMINED"}
+
+# Explicit neoplasm morphology terms (NCI C88025 cross-referenced with CELL_TYPE_MAP)
+_NEOPLASM_TERMS = frozenset({
+    "ADENOMA", "CARCINOMA", "SARCOMA", "LYMPHOMA", "MELANOMA",
+    "MESOTHELIOMA", "BLASTOMA", "PAPILLOMA", "FIBROMA", "LIPOMA",
+    "HEMANGIOMA", "LEIOMYOMA", "SCHWANNOMA", "GLIOMA", "THYMOMA",
+    "PHEOCHROMOCYTOMA", "TERATOMA", "SEMINOMA", "GRANULOSA CELL TUMOR",
+    "INTERSTITIAL CELL TUMOR", "MAST CELL TUMOR", "HISTIOCYTIC SARCOMA",
+    "PLASMACYTOMA", "HEMANGIOPERICYTOMA", "ASTROCYTOMA", "NEPHROBLASTOMA",
+})
+
+# Terms ending in -OMA that are NOT neoplastic
+_NEOPLASM_EXCLUSIONS = frozenset({
+    "GRANULOMA", "XANTHOMA", "HAMARTOMA", "HEMATOMA", "ATHEROMA", "CHLOROMA",
+})
+
+# Suffix patterns for catch-all neoplasm detection
+_NEOPLASM_SUFFIXES = ("OMA", "SARCOMA", "CARCINOMA")
+
+
+def _classify_mi_neoplasm(mistresc: str, mirescat: str | None) -> tuple[bool, str | None]:
+    """Classify an MI finding as neoplastic and determine behavior.
+
+    Returns (is_neoplastic, behavior) where behavior is BENIGN/MALIGNANT/UNCERTAIN/None.
+    None behavior means non-neoplastic.
+    """
+    # Primary: MIRESCAT column
+    if mirescat:
+        rc = mirescat.strip().upper()
+        if rc in _NEOPLASTIC_RESCAT:
+            behavior = "UNCERTAIN" if rc == "UNDETERMINED" else rc
+            return True, behavior
+        # NON-NEOPLASTIC or other values -> not neoplastic
+        if rc:
+            return False, None
+
+    # Fallback: text matching on MISTRESC
+    upper = mistresc.upper().strip()
+
+    # Explicit term list
+    for term in _NEOPLASM_TERMS:
+        if term in upper:
+            return True, None  # neoplastic but behavior unknown
+
+    # Suffix catch-all: any word ending in -OMA/-SARCOMA/-CARCINOMA
+    words = upper.replace(",", " ").split()
+    for word in words:
+        if any(word.endswith(sfx) for sfx in _NEOPLASM_SUFFIXES):
+            if word not in _NEOPLASM_EXCLUSIONS:
+                return True, None
+
+    return False, None
 _N_OF_M = re.compile(r"^(\d+)\s+OF\s+(\d+)$", re.IGNORECASE)
 
 
@@ -94,6 +150,7 @@ def compute_mi_findings(
     spec_col = "MISPEC" if "MISPEC" in mi_df.columns else None
     finding_col = "MISTRESC" if "MISTRESC" in mi_df.columns else None
     severity_col = "MISEV" if "MISEV" in mi_df.columns else None
+    rescat_col = "MIRESCAT" if "MIRESCAT" in mi_df.columns else None
 
     if spec_col is None or finding_col is None:
         return ([], mi_tissue_inventory)
@@ -133,6 +190,15 @@ def compute_mi_findings(
         finding_str = str(finding_str).strip()
         if not finding_str or finding_str.upper() in NORMAL_TERMS:
             continue
+
+        # Neoplasm classification: use first non-empty MIRESCAT from the group
+        grp_rescat = None
+        if rescat_col and rescat_col in grp.columns:
+            rescat_vals = grp[rescat_col].dropna().unique()
+            non_empty = [str(v).strip() for v in rescat_vals if str(v).strip()]
+            if non_empty:
+                grp_rescat = non_empty[0]
+        is_neoplastic, behavior = _classify_mi_neoplasm(finding_str, grp_rescat)
 
         group_stats = []
         control_affected = 0
@@ -251,7 +317,7 @@ def compute_mi_findings(
                     for _, r in pairs.iterrows()
                 ]
 
-        findings.append({
+        entry = {
             "domain": "MI",
             "test_code": f"{specimen}_{finding_str}",
             "test_name": finding_str,
@@ -273,6 +339,11 @@ def compute_mi_findings(
             "modifier_profile": modifier_profile,
             "_relrec_seq": relrec_seqs,
             "_relrec_subject_seqs": relrec_subject_seqs,
-        })
+        }
+        if is_neoplastic:
+            entry["isNeoplastic"] = True
+            entry["behavior"] = behavior
+            entry["cell_type"] = _extract_cell_type(finding_str)
+        findings.append(entry)
 
     return (findings, mi_tissue_inventory)

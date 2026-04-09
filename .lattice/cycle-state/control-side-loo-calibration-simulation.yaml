@@ -1,0 +1,34 @@
+topic: control-side-loo-calibration-simulation
+started: 2026-04-03T21:00:00
+phase: research-complete
+current_step: build.0
+completed:
+  research.1:
+    completed: 2026-04-03T21:30:00
+    output: "docs/_internal/research/control-side-loo-calibration-simulation.md"
+  research.2:
+    completed: 2026-04-03T22:15:00
+    output: "docs/_internal/research/peer-reviews/control-side-loo-calibration-simulation-review.md"
+  research.3:
+    completed: 2026-04-03T22:30:00
+    key_decisions: ["All R1 findings accepted, FLAWED corrected"]
+  research.4:
+    completed: 2026-04-03T23:00:00
+    output: "docs/_internal/research/peer-reviews/control-side-loo-calibration-simulation-review-r2.md"
+  research.5:
+    completed: 2026-04-03T23:30:00
+    key_decisions: ["R2 CONDITIONAL (0 FLAWED, 3 CONDITIONAL, 2 SOUND) -- validated"]
+  research.6:
+    completed: 2026-04-03T23:40:00
+    key_decisions: ["Research summary produced", "R2 framing fixes noted as non-blocking"]
+  research.7:
+    completed: 2026-04-03T23:45:00
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 3 PROPAGATES, 1 STALE"
+      - "Masking at N<10 is a known limitation, not a system break"
+      - "HCD reliability needs database size spec (PROPAGATES)"
+      - "Min-ratio -> median is Phase 2 (STALE)"
+    output: "probe results logged to decisions.log"
+notes:
+  - "INCIDENT: Research doc truncated by Write error (mode:overwrite instead of mode:append). R1+R2 reviews reference full content. Needs regeneration."
+checkpoints: {}

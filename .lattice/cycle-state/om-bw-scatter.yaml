@@ -1,7 +1,7 @@
 topic: om-bw-scatter
 title: Bivariate organ-weight-vs-body-weight scatter mode for OM distribution chart
-phase: build-complete
-current_step: ship.0
+phase: complete
+current_step: complete
 started: 2026-04-03
 completed: 2026-04-04
 research_doc: null  # Research embedded in GAP-139 (TODO.md:1329) + Kluxen 2019

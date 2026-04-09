@@ -1,0 +1,68 @@
+topic: unrecognized-term-flagging-phases-b-e
+title: "Unrecognized Term Flagging -- Phases D+E (rescoped from B-E)"
+started: 2026-04-06T23:00:00Z
+phase: blueprint
+current_step: blueprint.0-PAUSED-PENDING-ETRANSAFE
+parent: unrecognized-term-flagging
+depends_on:
+  - unrecognized-term-flagging (Phase A -- COMPLETE, commit 3fdbbe60)
+  - etransafe-send-snomed-integration (MUST COMPLETE BUILD-CYCLE before this resumes)
+research_doc: docs/_internal/research/unrecognized-term-flagging.md
+research_status: validated
+original_scope:
+  - "Phase B: Base concept extraction for MI/MA"
+  - "Phase C: Curated synonym dictionary"
+  - "Phase D: Suggestion engine + curation workflow"
+  - "Phase E: Cross-study term collision detection"
+rescoped_scope:
+  decision: "2026-04-07 (user, Option 1) -- run etransafe build-cycle first, then this cycle resumes covering D+E only"
+  phases_b_c_subsumed_by: "etransafe-send-snomed-integration Proposals 1 (dictionary), 2 (qualifier parser), 'Phase E' (level-3 pipeline wiring)"
+  phases_d_e_remain_here:
+    - "Phase D: Suggestion engine (token + edit-distance candidate scoring against shipped dictionary) + admin API endpoints + frontend curation dashboard + frequency-based promotion"
+    - "Phase E: Cross-study pairwise term collision detection with organ pre-filter + inverted token index + result cache"
+priority: P2-P3
+resume_conditions:
+  - "etransafe-send-snomed-integration build-cycle COMPLETED"
+  - "shared/config/mi-synonym-dictionary.json (or renamed final path) exists with seed mappings"
+  - "extract_base_concept / qualifier parser shipped in send_knowledge.py"
+  - "Level-3 synonym resolution wired into _enrich_finding at findings_pipeline.py (historical line 224)"
+  - "Unrecognized terms after level-3 are logged by Phase A report (existing infra) -- this is the input to Phase D suggestion engine"
+resume_step: blueprint.0 (re-run Step 0 with post-eTRANSAFE state, then proceed to blueprint.1 synthesize on D+E only)
+blocker_gate:
+  flagged_by: user
+  flag_text: "+blocked on real INHAND-aligned MI/MA/CL vocabulary"
+  resolution: "Option 1 selected 2026-04-07: run etransafe-send-snomed-integration build-cycle first, rescope this cycle to D+E only"
+  reality_check:
+    - "Phase B needs NONNEO base concepts (~100 canonical terms) -- NO file exists in repo"
+    - "Phase C IS the curated dictionary -- schema is specified but 0 entries exist"
+    - "Phase D requires Phase C dictionary as substrate -- blocked transitively"
+    - "Phase E requires Phase D infrastructure -- blocked transitively"
+    - "Repo search: find -iname '*inhand*' '*nonneo*' '*synonym-dict*' -> 0 hits"
+    - "shared/config/ holds ops configs (organ-aliases, test-code-aliases) but NO synonym dictionary"
+  scope_collision_with_etransafe:
+    - "eTRANSAFE research Proposal 1 (three-source synonym dictionary) IS the vocabulary acquisition work"
+    - "eTRANSAFE research Proposal 2 (qualifier parser) == UTF Phase B (extract_base_concept)"
+    - "eTRANSAFE research Proposal 3 (CL pattern matcher) == UTF Phase C CL normalization"
+    - "eTRANSAFE research 'Phase E: Integration' == UTF Phase C level-3 wiring into _enrich_finding at findings_pipeline.py:224"
+    - "Proceeding with UTF Phases B/C here would duplicate ~40-70% of eTRANSAFE build work (CLAUDE.md rule 6 violation)"
+checkpoints:
+  blueprint.0:
+    completed: 2026-04-07T01:05:00Z
+    key_decisions:
+      - "Decisions log scan: no failed approaches on this topic. Prior deferral at cross-study-phase-0 (line 15): 'MI/MA synonym resolution -> Phase 2' -- this cycle IS Phase 2."
+      - "Phase A (unrecognized-term-flagging) shipped 2026-04-07 -- provides recognition fields + per-study report + unrecognized terms log. Data plumbing for Phase B/C/D is in place."
+      - "eTRANSAFE research is VALIDATED (phase: research-complete, current_step: build.0) but build-cycle has NOT been run. Its 6 proposals substantially overlap with UTF Phases B-C."
+      - "Code quality guardrails: send_knowledge.py still 300 LOC post Phase A, findings_pipeline.py ~680 LOC (tracked hotspot). classification.py is domain-critical and must not be touched by recognition logic."
+      - "No bug-patterns.md exists. No prior failures relevant to this topic."
+      - "BLOCKER: vocabulary assets required by Phases B-C do not exist in repo and are not produced by any current build pipeline. eTRANSAFE build-cycle is the designated producer."
+      - "STOP at Step 0 -- present resolution options to user before synthesizing."
+    output: ".lattice/cycle-state/unrecognized-term-flagging-phases-b-e.yaml#blueprint_0"
+  blueprint.0-resolution:
+    completed: 2026-04-07T01:10:00Z
+    key_decisions:
+      - "User chose Option 1: run etransafe build-cycle first, rescope this cycle to D+E only"
+      - "Phases B and C dissolved into eTRANSAFE scope (no duplication risk)"
+      - "This cycle PAUSED at blueprint.0 pending eTRANSAFE build completion"
+      - "On resume: re-run Step 0 with post-eTRANSAFE state (new vocabulary path, new shipped contracts), then Step 1 synthesize on D+E only"
+      - "Next user action: /lattice:build-cycle etransafe-send-snomed-integration"
+    output: "this cycle paused -- no synthesis file yet"
