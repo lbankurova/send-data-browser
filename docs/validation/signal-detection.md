@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `63af82c0` (2026-04-09)
-**Generated:** 2026-04-09T16:20:46.106Z
+**Engine:** commit `62ae1098` (2026-04-09)
+**Generated:** 2026-04-09T21:04:43.055Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -320,7 +320,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | Body weight decreased | BW | any | tr_adverse | -3.38 | <0.001 | **DETECTED** |  |
-| 2 | Body weight gain decreased | BG | any | tr_adverse | -2.66 | <0.001 | **DETECTED** |  |
+| 2 | Body weight gain decreased | BG | any | tr_non_adverse | -0.43 | 0.366 | **DETECTED** |  |
 | 3 | AST increased | LB | any | tr_adverse | 1.73 | <0.001 | **DETECTED** |  |
 | 4 | ALT increased | LB | any | tr_adverse | 1.09 | 0.007 | **DETECTED** |  |
 | 5 | ALP increased | LB | any | tr_adverse | 1.59 | 0.002 | **DETECTED** |  |

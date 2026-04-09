@@ -1,0 +1,51 @@
+topic: outlier-detection-metadata
+title: "Outlier Detection Metadata -- Detection Window Parameters in Sentinel JSON"
+started: 2026-04-09
+phase: blueprint-complete
+current_step: build.0
+research_doc: docs/_internal/research/outlier-sentinel-animal-identification.md
+research_status: validated (parent cycle outlier-sentinel-animal-identification, complete+built)
+synthesis_doc: docs/_internal/incoming/outlier-detection-metadata-spec.md
+synthesis_status: validated
+
+implementation_context:
+  prior_cycles:
+    - "outlier-sentinel-animal-identification: COMPLETE+BUILT. subject_sentinel.py (650 LOC), qn_scale, LOGNORMAL_ENDPOINTS, all exist."
+    - "outliers-pane-unified: BLUEPRINT-COMPLETE. Frontend consumer, no conflict with backend-only change."
+    - "loo-outlier-viz: BUILT. LOO viz in distribution charts."
+  design_constraints:
+    - "Sentinel = annotation-only at S01/S02 layer. MUST NOT modify S10 signal score."
+    - "Generator module budget: 500 LOC (currently 650, Essential -- monitor only)."
+    - "No new dependencies. Uses only values already computed during sentinel generation."
+    - "Backend-only change: no frontend modifications in this spec."
+  no_failed_approaches: true
+  no_bug_patterns: true
+  loc_impact: "+40-60 LOC to subject_sentinel.py (650 -> ~710)"
+
+architect_gate:
+  verdict: PASS
+  science_flags: 0
+  advisory: 4 (cv_pct null guard, scale semantics, endpoint key sex-stratification, concordance naming)
+  doc: docs/_internal/research/peer-reviews/outlier-detection-metadata-architect-review.md
+
+probe:
+  result: ALL_SAFE
+  breaks: 0
+  science_flags: 0
+  propagates: 2 (SubjectSentinelData TS type for Part 2, architecture doc update)
+  safe: all consumers traced
+
+plan_review_r1:
+  verdict: CONDITIONAL
+  flawed: 1 (F1: median log-space contradiction)
+  conditional: 5
+  sound: 3
+  must_fix: 1 (F1)
+  should_fix: 5 (F2 cv_pct, F3 TS type, F4 zero-dispersion, F7 criterion 3, F8 rounding)
+  doc: docs/_internal/research/peer-reviews/outlier-detection-metadata-synthesis-review.md
+
+plan_review_r2:
+  verdict: SOUND (1 minor CONDITIONAL)
+  all_r1_resolved: true (6 RESOLVED, 3 N/A)
+  new_issues: 1 (NF1: n source for lognormal -- incorporated)
+  doc: docs/_internal/research/peer-reviews/outlier-detection-metadata-synthesis-review-r2.md

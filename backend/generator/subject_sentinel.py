@@ -138,6 +138,9 @@ def build_subject_sentinel(
         elif f.get("domain") == "OM":
             _track_abs_om_significance(f, abs_om_sig)
 
+    # Detection metadata accumulator (per-endpoint detection window parameters)
+    detection_meta: dict[str, dict] = {}
+
     # Pass 2: Process all continuous endpoints
     for f in findings:
         domain = f.get("domain", "")
@@ -166,7 +169,7 @@ def build_subject_sentinel(
             rsv, group_stats, subj_meta, endpoint_key, domain,
             test_code, specimen, organ_system, is_lognormal,
             all_dose_levels, bw_sig_dose, abs_om_sig,
-            z_data,
+            z_data, sex, detection_meta,
         )
 
     # ── Layer D: Incidence influence ─────────────────────────────
@@ -293,6 +296,7 @@ def build_subject_sentinel(
         "stress_heuristic_mode": stress_heuristic_mode,
         "animals": animals,
         "endpoint_details": endpoint_details_out,
+        "detection_metadata": detection_meta,
     }
 
 
@@ -354,6 +358,8 @@ def _process_continuous_endpoint(
     bw_sig_dose: set[int],
     abs_om_sig: set[tuple[str, int]],
     z_data: dict[str, dict[str, dict]],
+    sex: str = "",
+    detection_meta: dict | None = None,
 ) -> None:
     """Process a continuous endpoint: compute robust z-scores and Hamada residuals."""
     # Build group-level stats lookup
@@ -369,10 +375,12 @@ def _process_continuous_endpoint(
     # Compute Qn/MAD scale per group
     scale_map: dict[int, float] = {}
     median_map: dict[int, float] = {}
+    group_n: dict[int, int] = {}
     for dl, uid_vals in dl_values.items():
         vals = [v for _, v in uid_vals]
         if is_lognormal:
             vals = [math.log(v) for v in vals if v > 0]
+        group_n[dl] = len(vals)
         if len(vals) < 2:
             scale_map[dl] = 0.0
             median_map[dl] = vals[0] if vals else 0.0
@@ -388,6 +396,62 @@ def _process_continuous_endpoint(
             m = len(deviations)
             mad = deviations[m // 2] if m % 2 == 1 else (deviations[m // 2 - 1] + deviations[m // 2]) / 2
             scale_map[dl] = mad * 1.4826  # consistency factor for Gaussian
+
+    # ── Detection metadata: persist detection window parameters ───
+    if detection_meta is not None:
+        endpoint_name = _make_endpoint_name(domain, test_code, specimen)
+        groups_meta: list[dict] = []
+        for dl in sorted(scale_map.keys()):
+            n = group_n.get(dl, 0)
+            if n < 2:
+                continue
+            scale = scale_map[dl]
+            med = median_map[dl]  # log-space for lognormal, original for others
+            median_orig = round(math.exp(med), 1) if is_lognormal else round(med, 1)
+
+            # Parametric CV from group_stats (complementary to robust scale)
+            gs_entry = gs_map.get(dl)
+            cv_pct = None
+            if gs_entry:
+                mean_val, sd_val = gs_entry[0], gs_entry[1]
+                if mean_val and sd_val is not None and mean_val != 0:
+                    cv_pct = round(abs(sd_val / mean_val) * 100, 1)
+
+            # Detection windows in original units
+            if scale == 0:
+                w_lo = w_hi = median_orig
+                w_lo_c = w_hi_c = median_orig
+            elif is_lognormal:
+                w_lo = round(math.exp(med - OUTLIER_Z_THRESHOLD * scale), 1)
+                w_hi = round(math.exp(med + OUTLIER_Z_THRESHOLD * scale), 1)
+                w_lo_c = round(math.exp(med - CONCORDANCE_Z_THRESHOLD * scale), 1)
+                w_hi_c = round(math.exp(med + CONCORDANCE_Z_THRESHOLD * scale), 1)
+            else:
+                w_lo = round(med - OUTLIER_Z_THRESHOLD * scale, 1)
+                w_hi = round(med + OUTLIER_Z_THRESHOLD * scale, 1)
+                w_lo_c = round(med - CONCORDANCE_Z_THRESHOLD * scale, 1)
+                w_hi_c = round(med + CONCORDANCE_Z_THRESHOLD * scale, 1)
+
+            groups_meta.append({
+                "dose_level": dl,
+                "n": n,
+                "median": median_orig,
+                "scale": round(scale, 4),
+                "cv_pct": cv_pct,
+                "window_lo": w_lo,
+                "window_hi": w_hi,
+                "window_lo_concordance": w_lo_c,
+                "window_hi_concordance": w_hi_c,
+            })
+
+        if groups_meta:
+            detection_meta[endpoint_key] = {
+                "endpoint_name": endpoint_name,
+                "domain": domain,
+                "sex": sex,
+                "log_transformed": is_lognormal,
+                "groups": groups_meta,
+            }
 
     # Compute Hamada residuals -- pre-computed for endpoint detail tooltip display.
     # NOT used in outlier/concordance flag decisions (spec §Feature 1b).
