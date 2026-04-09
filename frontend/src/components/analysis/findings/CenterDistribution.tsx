@@ -331,6 +331,18 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             <span>Detection window</span>
           </div>
         )}
+        {!activeScatter && hcdBySex && (
+          <div
+            className="flex items-center gap-1 text-[9px] text-muted-foreground cursor-help"
+            title="Historical control data reference range. Dashed line = population center (mean or geometric mean). Band = reference interval (mean+/-2SD or P2.5/P97.5 for lognormal). Density curve in left margin shows population shape."
+          >
+            <svg width="16" height="8" className="shrink-0">
+              <rect x="0" y="1" width="16" height="6" fill="rgba(0,0,0,0.06)" rx={1} />
+              <line x1="0" y1="4" x2="16" y2="4" stroke="rgba(0,0,0,0.3)" strokeWidth={1} strokeDasharray="2,1.5" />
+            </svg>
+            <span>HCD reference</span>
+          </div>
+        )}
         {activeScatter && (
           <div className="ml-auto flex flex-wrap gap-1">
             {doseGroupsForChart.map((dg) => {
