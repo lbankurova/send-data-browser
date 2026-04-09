@@ -2180,8 +2180,13 @@ export function FindingsContextPanel() {
       {/* Context-dependent panes: Verdict + Evidence need useFindingContext */}
       {contextReady ? (
         <>
-          {/* Verdict — always visible, not in CollapsiblePane */}
-          <div className="border-b px-4 py-3">
+          {/* Summary */}
+          <CollapsiblePane
+            title="Summary"
+            defaultOpen
+            sessionKey="pcc.ep.summary"
+            expandAll={expandGen}
+          >
             <VerdictPane
               finding={selectedFinding}
               siblingFinding={hasSibling && siblingContext ? findingsData?.findings.find(f => f.id === siblingContext.finding_id) : undefined}
@@ -2274,7 +2279,44 @@ export function FindingsContextPanel() {
                 </div>
               );
             })()}
-          </div>
+          </CollapsiblePane>
+
+          {/* Time course */}
+          {selectedFinding && (selectedFinding.data_type === "continuous" || selectedFinding.domain === "CL") && (
+            <TimeCoursePane
+              finding={selectedFinding}
+              doseGroups={findingsData?.dose_groups}
+              expandAll={expandGen}
+              collapseAll={collapseGen}
+            />
+          )}
+
+          {/* Outliers — LOO-fragile endpoints */}
+          {(() => {
+            const ep = selectedFinding.endpoint_label ?? selectedFinding.finding;
+            const allForEp = (findingsData?.findings ?? []).filter(
+              f => (f.endpoint_label ?? f.finding) === ep && f.domain === selectedFinding.domain,
+            );
+            const hasFragile = allForEp.some(f =>
+              f.loo_per_subject && Object.values(f.loo_per_subject).some(r => r.ratio < 0.8),
+            );
+            if (!hasFragile) return null;
+            return (
+              <CollapsiblePane
+                title="Outliers"
+                defaultOpen={false}
+                sessionKey="pcc.ep.outliers"
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+              >
+                <LooSensitivityPane
+                  finding={selectedFinding}
+                  allFindings={findingsData?.findings ?? []}
+                  doseGroups={findingsData?.dose_groups}
+                />
+              </CollapsiblePane>
+            );
+          })()}
 
           {/* NOAEL pane — endpoint-level NOAEL with per-sex ECI decomposition */}
           {noael && !notEvaluated && (() => {
@@ -2426,7 +2468,7 @@ export function FindingsContextPanel() {
           {selectedFinding?._confidence && (
             <CollapsiblePane
               title="Evidence confidence"
-              defaultOpen={selectedFinding._confidence.grade === "LOW"}
+              defaultOpen={false}
               sessionKey="pcc.ep.grade-confidence"
               expandAll={expandGen}
               collapseAll={collapseGen}
@@ -2438,32 +2480,6 @@ export function FindingsContextPanel() {
             </CollapsiblePane>
           )}
 
-          {/* LOO Sensitivity — collapsible info pane for LOO-fragile endpoints */}
-          {(() => {
-            const ep = selectedFinding.endpoint_label ?? selectedFinding.finding;
-            const allForEp = (findingsData?.findings ?? []).filter(
-              f => (f.endpoint_label ?? f.finding) === ep && f.domain === selectedFinding.domain,
-            );
-            const hasFragile = allForEp.some(f =>
-              f.loo_per_subject && Object.values(f.loo_per_subject).some(r => r.ratio < 0.8),
-            );
-            if (!hasFragile) return null;
-            return (
-              <CollapsiblePane
-                title="LOO sensitivity"
-                defaultOpen
-                sessionKey="pcc.ep.loo-sensitivity"
-                expandAll={expandGen}
-                collapseAll={collapseGen}
-              >
-                <LooSensitivityPane
-                  finding={selectedFinding}
-                  allFindings={findingsData?.findings ?? []}
-                  doseGroups={findingsData?.dose_groups}
-                />
-              </CollapsiblePane>
-            );
-          })()}
 
         </>
       ) : (
@@ -2475,15 +2491,6 @@ export function FindingsContextPanel() {
 
       {/* Independent panes — render immediately, have their own data hooks */}
 
-      {/* Time course */}
-      {selectedFinding && (selectedFinding.data_type === "continuous" || selectedFinding.domain === "CL") && (
-        <TimeCoursePane
-          finding={selectedFinding}
-          doseGroups={findingsData?.dose_groups}
-          expandAll={expandGen}
-          collapseAll={collapseGen}
-        />
-      )}
 
       {/* Distribution — moved to center panel DoseResponseChartPanel */}
 
