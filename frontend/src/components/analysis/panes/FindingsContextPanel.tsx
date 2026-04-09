@@ -11,7 +11,7 @@ import { useCollapseAll } from "@/hooks/useCollapseAll";
 import { usePaneHistory } from "@/hooks/usePaneHistory";
 import type { ToxFinding } from "@/types/annotations";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { LooSensitivityPane } from "./LooSensitivityPane";
+import { OutliersPane } from "./OutliersPane";
 import { LOO_THRESHOLD, LOO_SMALL_N_THRESHOLD } from "@/lib/loo-constants";
 import { ContextPanelHeader } from "./ContextPanelHeader";
 import { VerdictPane } from "./VerdictPane";
@@ -20,6 +20,9 @@ import { ContextPane } from "./ContextPane";
 import { OrganContextPanel } from "./OrganContextPanel";
 import { SyndromeContextPanel } from "./SyndromeContextPanel";
 import { TimeCoursePane } from "./TimeCoursePane";
+import { FoodConsumptionPane, FoodConsumptionHeaderRight } from "./FoodConsumptionPane";
+import { useFoodConsumptionSummary } from "@/hooks/useFoodConsumptionSummary";
+import type { FoodConsumptionContext } from "@/lib/syndrome-interpretation-types";
 // DistributionPane moved to center panel (CenterDistribution in DoseResponseChartPanel)
 import { EndpointSyndromePane } from "./EndpointSyndromePane";
 import { PatternOverrideDropdown } from "./PatternOverrideDropdown";
@@ -1684,6 +1687,7 @@ export function FindingsContextPanel() {
   const { data: recoveryCompData } = useRecoveryComparison(studyId);
   const { effectSize } = useStatMethods(studyId);
   const normalization = useOrganWeightNormalization(studyId, true, effectSize);
+  const { data: foodConsumptionSummary } = useFoodConsumptionSummary(studyId);
 
   // Rule results + signal summary for CausalityWorksheet & InsightsList
   const { data: ruleResultsData } = useRuleResults(studyId);
@@ -2291,32 +2295,55 @@ export function FindingsContextPanel() {
             />
           )}
 
-          {/* Outliers — LOO-fragile endpoints */}
-          {(() => {
-            const ep = selectedFinding.endpoint_label ?? selectedFinding.finding;
-            const allForEp = (findingsData?.findings ?? []).filter(
-              f => (f.endpoint_label ?? f.finding) === ep && f.domain === selectedFinding.domain,
-            );
-            const hasFragile = allForEp.some(f =>
-              f.loo_per_subject && Object.values(f.loo_per_subject).some(r => r.ratio < 0.8),
-            );
-            if (!hasFragile) return null;
+          {/* Food consumption — BW/FW endpoint mechanistic context */}
+          {(selectedFinding.domain === "BW" || selectedFinding.domain === "FW") && foodConsumptionSummary?.available && foodConsumptionSummary.overall_assessment && (() => {
+            const oa = foodConsumptionSummary.overall_assessment;
+            const assessment: FoodConsumptionContext["bwFwAssessment"] =
+              oa.assessment === "primary_weight_loss" || oa.assessment === "secondary_to_food" || oa.assessment === "malabsorption"
+                ? oa.assessment
+                : "not_applicable";
+            if (assessment === "not_applicable") return null;
+            const ctx: FoodConsumptionContext = {
+              available: true,
+              bwFwAssessment: assessment,
+              foodEfficiencyReduced: oa.fe_reduced,
+              temporalOnset: (oa.temporal_onset === "bw_first" || oa.temporal_onset === "fw_first" || oa.temporal_onset === "simultaneous" || oa.temporal_onset === "unknown")
+                ? oa.temporal_onset
+                : "unknown",
+              fwNarrative: oa.narrative,
+            };
             return (
               <CollapsiblePane
-                title="Outliers"
+                title="Food consumption"
                 defaultOpen={false}
-                sessionKey="pcc.ep.outliers"
+                sessionKey="pcc.ep.food-consumption"
+                headerRight={<FoodConsumptionHeaderRight assessment={assessment} />}
                 expandAll={expandGen}
                 collapseAll={collapseGen}
               >
-                <LooSensitivityPane
-                  finding={selectedFinding}
-                  allFindings={findingsData?.findings ?? []}
+                <FoodConsumptionPane
+                  context={ctx}
+                  rawData={foodConsumptionSummary}
                   doseGroups={findingsData?.dose_groups}
                 />
               </CollapsiblePane>
             );
           })()}
+
+          {/* Outliers — bio outliers + LOO-fragile subjects */}
+          <CollapsiblePane
+            title="Outliers"
+            defaultOpen={false}
+            sessionKey="pcc.ep.outliers"
+            expandAll={expandGen}
+            collapseAll={collapseGen}
+          >
+            <OutliersPane
+              finding={selectedFinding}
+              allFindings={findingsData?.findings ?? []}
+              doseGroups={findingsData?.dose_groups}
+            />
+          </CollapsiblePane>
 
           {/* NOAEL pane — endpoint-level NOAEL with per-sex ECI decomposition */}
           {noael && !notEvaluated && (() => {
