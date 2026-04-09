@@ -569,102 +569,125 @@ class ExclusionPreviewRequest(BaseModel):
 
 
 @router.post("/studies/{study_id}/exclusion-preview")
-async def exclusion_preview(study_id: str, body: ExclusionPreviewRequest):
-    """Compute before/after Hedges' g across all timepoints for an exclusion set.
+def exclusion_preview(study_id: str, body: ExclusionPreviewRequest):
+    """Day-scoped, per-dose-group exclusion impact preview.
 
-    Picks the worst-case day (largest |g| delta or gLower drop) and returns
-    before/after metrics. Only considers findings where at least one excluded
-    subject actually appears in the raw data (sex scoping). Runs server-side
-    so all timepoints are available.
+    Returns one entry per affected dose group, each at the worst-case
+    LOO-flagged day for that group.  Only evaluates days where at least
+    one excluded subject has ratio < DESTABILISING_LOO_THRESHOLD.
     """
     from routers.analyses import _load_unified_findings
     from services.analysis.statistics import compute_effect_size, compute_g_lower
+    from generator.animal_influence import DESTABILISING_LOO_THRESHOLD
 
     data = _load_unified_findings(study_id)
     findings = data.get("findings", [])
     excluded_set = set(body.excluded_subjects)
 
-    # Collect all findings matching endpoint/domain (one per day x sex x dose)
-    matching = [
+    # Step 1: candidate findings -- matching endpoint/domain with rsv + loo data
+    candidates = [
         f for f in findings
         if (f.get("endpoint_label") or f.get("finding")) == body.endpoint_label
         and f.get("domain") == body.domain
         and f.get("raw_subject_values") is not None
+        and f.get("loo_per_subject") is not None
     ]
 
-    if not matching:
-        raise HTTPException(status_code=404, detail="No findings with subject data for this endpoint")
+    if not candidates:
+        return {"groups": []}
 
-    best_impact = 0.0
-    best_result = None
+    # Per-finding results, keyed by treated dose_level
+    # Each value: list of {dose_level, day, impact, result_dict}
+    group_results: dict[int, list] = {}
 
-    for f in matching:
+    for f in candidates:
+        loo = f.get("loo_per_subject", {})
         rsv = f.get("raw_subject_values")
         if not rsv or len(rsv) < 2:
             continue
 
-        # Sex scoping: skip findings where none of the excluded subjects
-        # appear in any dose group. This prevents selecting a day/sex
-        # where the exclusion has zero effect (subjects are in the other sex).
-        all_uids = set()
-        for dose_dict in rsv:
-            all_uids.update(dose_dict.keys())
-        if not excluded_set & all_uids:
+        # Step 2: LOO-day filter -- any excluded subject LOO-flagged on this finding?
+        any_flagged = False
+        for uid in excluded_set:
+            entry = loo.get(uid)
+            if entry and entry.get("ratio", 1.0) < DESTABILISING_LOO_THRESHOLD:
+                any_flagged = True
+                break
+        if not any_flagged:
             continue
 
+        # Step 3a: determine the pairwise comparison (single treated group).
+        # loo_per_subject originates from a single pairwise (the max-g_lower
+        # comparison), so exactly one non-zero dose_level exists.
+        treated_levels = {
+            e.get("dose_level") for e in loo.values() if e.get("dose_level", 0) != 0
+        }
+        if len(treated_levels) != 1:
+            continue
+        treated_idx = next(iter(treated_levels))
+        if treated_idx < 1 or treated_idx >= len(rsv):
+            continue
+
+        ctrl_dict = rsv[0]
+        treated_dict = rsv[treated_idx]
         day = f.get("day")
 
-        # rsv[0] = control dict {usubjid: value}, rsv[1:] = treated groups
-        ctrl_dict = rsv[0]
-        for treated_dict in rsv[1:]:
-            # Before: all subjects
-            ctrl_vals = np.array(list(ctrl_dict.values()), dtype=float)
-            treat_vals = np.array(list(treated_dict.values()), dtype=float)
-            before_g = compute_effect_size(ctrl_vals, treat_vals)
-            if before_g is None:
-                continue
+        # Step 3b: before
+        ctrl_vals = np.array(list(ctrl_dict.values()), dtype=float)
+        treat_vals = np.array(list(treated_dict.values()), dtype=float)
+        before_g = compute_effect_size(ctrl_vals, treat_vals)
+        if before_g is None:
+            continue
 
-            # After: exclude specified subjects from both groups
-            ctrl_filtered = np.array(
-                [v for uid, v in ctrl_dict.items() if uid not in excluded_set],
-                dtype=float,
-            )
-            treat_filtered = np.array(
-                [v for uid, v in treated_dict.items() if uid not in excluded_set],
-                dtype=float,
-            )
-            after_g = compute_effect_size(ctrl_filtered, treat_filtered)
+        # Step 3c: after -- remove ALL excluded subjects from both groups
+        ctrl_filtered = np.array(
+            [v for uid, v in ctrl_dict.items() if uid not in excluded_set],
+            dtype=float,
+        )
+        treat_filtered = np.array(
+            [v for uid, v in treated_dict.items() if uid not in excluded_set],
+            dtype=float,
+        )
+        after_g = compute_effect_size(ctrl_filtered, treat_filtered)
 
-            before_gl = compute_g_lower(before_g, len(ctrl_vals), len(treat_vals))
-            after_gl = (
-                compute_g_lower(after_g, len(ctrl_filtered), len(treat_filtered))
-                if after_g is not None else None
-            )
+        before_gl = compute_g_lower(before_g, len(ctrl_vals), len(treat_vals))
+        after_gl = (
+            compute_g_lower(after_g, len(ctrl_filtered), len(treat_filtered))
+            if after_g is not None else None
+        )
 
-            # Select worst-case day: largest |g| delta or largest gLower drop
-            g_delta = abs(abs(before_g) - (abs(after_g) if after_g is not None else 0.0))
-            gl_drop = (before_gl or 0.0) - (after_gl or 0.0)
-            impact = max(g_delta, gl_drop)
+        # Step 3d: impact score
+        g_delta = abs(abs(before_g) - (abs(after_g) if after_g is not None else 0.0))
+        gl_drop = (before_gl or 0.0) - (after_gl or 0.0)
+        impact = max(g_delta, gl_drop)
 
-            if impact > best_impact:
-                best_impact = impact
-                best_result = {
-                    "day": day,
-                    "before": {
-                        "g": round(abs(before_g), 4),
-                        "g_lower": round(before_gl, 4) if before_gl is not None else None,
-                        "n_ctrl": int(len(ctrl_vals)),
-                        "n_treated": int(len(treat_vals)),
-                    },
-                    "after": {
-                        "g": round(abs(after_g), 4) if after_g is not None else None,
-                        "g_lower": round(after_gl, 4) if after_gl is not None else None,
-                        "n_ctrl": int(len(ctrl_filtered)),
-                        "n_treated": int(len(treat_filtered)),
-                    },
-                }
+        entry = {
+            "dose_level": treated_idx,
+            "day": day,
+            "impact": impact,
+            "result": {
+                "dose_level": treated_idx,
+                "day": day,
+                "before": {
+                    "g": round(abs(before_g), 4),
+                    "g_lower": round(before_gl, 4) if before_gl is not None else None,
+                    "n_ctrl": int(len(ctrl_vals)),
+                    "n_treated": int(len(treat_vals)),
+                },
+                "after": {
+                    "g": round(abs(after_g), 4) if after_g is not None else None,
+                    "g_lower": round(after_gl, 4) if after_gl is not None else None,
+                    "n_ctrl": int(len(ctrl_filtered)),
+                    "n_treated": int(len(treat_filtered)),
+                },
+            },
+        }
+        group_results.setdefault(treated_idx, []).append(entry)
 
-    if best_result is None:
-        return {"day": None, "before": None, "after": None}
+    # Step 4: pick worst day per dose group
+    groups = []
+    for dose_level in sorted(group_results):
+        best = max(group_results[dose_level], key=lambda e: e["impact"])
+        groups.append(best["result"])
 
-    return best_result
+    return {"groups": groups}

@@ -16,7 +16,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import { useAnimalExclusion } from "@/contexts/AnimalExclusionContext";
 import { useExclusionPreview } from "@/hooks/useExclusionPreview";
+import type { ExclusionGroupResult } from "@/hooks/useExclusionPreview";
 import { getDoseGroupColor } from "@/lib/severity-colors";
+import { getDoseLabel } from "@/lib/dose-label-utils";
 import { shortId } from "@/lib/chart-utils";
 import { LOO_THRESHOLD } from "@/lib/loo-constants";
 
@@ -39,6 +41,51 @@ interface InfluentialSubject {
 interface OtherEndpointExclusion {
   endpointLabel: string;
   subjects: Array<{ usubjid: string; sex: string; doseLevel: number }>;
+}
+
+/** Renders |g|, gLower, N rows for one dose group in the impact preview table. */
+function ImpactGroupRows({
+  grp,
+  doseLabel,
+  showGroupHeader,
+  fmt,
+  fmtDelta,
+}: {
+  grp: ExclusionGroupResult;
+  doseLabel: string;
+  showGroupHeader: boolean;
+  fmt: (v: number | null, dp?: number) => string;
+  fmtDelta: (before: number | null, after: number | null, dp?: number) => string;
+}) {
+  return (
+    <>
+      {showGroupHeader && (
+        <tr className="border-b border-border/30">
+          <td colSpan={4} className="pt-1.5 pb-0.5 text-[10px] font-medium text-muted-foreground">
+            {doseLabel} &middot; D{grp.day}
+          </td>
+        </tr>
+      )}
+      <tr className="border-b border-border/30">
+        <td className="py-0.5 text-muted-foreground">|g|</td>
+        <td className="py-0.5 text-right font-mono">{fmt(grp.before.g)}</td>
+        <td className="py-0.5 text-right font-mono">{fmt(grp.after.g)}</td>
+        <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(grp.before.g, grp.after.g)}</td>
+      </tr>
+      <tr className="border-b border-border/30">
+        <td className="py-0.5 text-muted-foreground">gLower</td>
+        <td className="py-0.5 text-right font-mono">{fmt(grp.before.g_lower)}</td>
+        <td className="py-0.5 text-right font-mono">{fmt(grp.after.g_lower)}</td>
+        <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(grp.before.g_lower, grp.after.g_lower)}</td>
+      </tr>
+      <tr className="border-b border-border/30">
+        <td className="py-0.5 text-muted-foreground">N (ctrl / treated)</td>
+        <td className="py-0.5 text-right font-mono">{grp.before.n_ctrl}/{grp.before.n_treated}</td>
+        <td className="py-0.5 text-right font-mono">{grp.after.n_ctrl}/{grp.after.n_treated}</td>
+        <td className="py-0.5"></td>
+      </tr>
+    </>
+  );
 }
 
 export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSensitivityPaneProps) {
@@ -121,16 +168,18 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
     queryClient.invalidateQueries({ queryKey: ["findings", studyId] });
   }, [studyId, applyExclusions, queryClient]);
 
-  // Impact preview: backend-computed across all timepoints
-  const { data: preview } = useExclusionPreview(studyId, endpointLabel, finding.domain, excludedIds);
+  // Impact preview: backend-computed, day-scoped per dose group
+  const { data: preview, isError: previewError } = useExclusionPreview(studyId, endpointLabel, finding.domain, excludedIds);
 
-  // Anti-conservative control exclusion warning
+  // Anti-conservative control exclusion warning — fires when a control subject
+  // is excluded AND any dose group shows increased effect size after exclusion.
   const hasAntiConservativeWarning = useMemo(() => {
-    if (!preview?.before || !preview?.after) return false;
+    if (!preview?.groups?.length) return false;
     const anyControlExcluded = influentialSubjects.some(
       s => s.doseLevel === 0 && excludedIds.has(s.usubjid),
     );
-    return anyControlExcluded && preview.after.g != null && preview.after.g > preview.before.g;
+    if (!anyControlExcluded) return false;
+    return preview.groups.some(g => g.after?.g != null && g.after.g > g.before.g);
   }, [preview, influentialSubjects, excludedIds]);
 
   // Excessive exclusion check
@@ -270,11 +319,13 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
         </p>
       )}
 
-      {/* Section B: Impact Preview Table */}
+      {/* Section B: Impact Preview Table — per dose group */}
       {excludedIds.size > 0 && (
         <div className="mt-3">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            Impact preview{preview?.day != null ? ` on D${preview.day}` : ""}
+            {preview?.groups?.length === 1 && preview.groups[0].day != null
+              ? `Impact preview on D${preview.groups[0].day}`
+              : "Impact preview"}
           </div>
           <table className="w-full text-[11px]">
             <thead>
@@ -286,46 +337,40 @@ export function LooSensitivityPane({ finding, allFindings, doseGroups }: LooSens
               </tr>
             </thead>
             <tbody>
-              {preview?.before && preview.after ? (
+              {preview?.groups?.length ? (
                 <>
+                  {preview.groups.map((grp) => (
+                    <ImpactGroupRows
+                      key={grp.dose_level}
+                      grp={grp}
+                      doseLabel={getDoseLabel(grp.dose_level, doseGroups)}
+                      showGroupHeader={preview.groups.length > 1}
+                      fmt={fmt}
+                      fmtDelta={fmtDelta}
+                    />
+                  ))}
                   <tr className="border-b border-border/30">
-                    <td className="py-0.5 text-muted-foreground">|g|</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.before.g)}</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.after.g)}</td>
-                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(preview.before.g, preview.after.g)}</td>
+                    <td className="py-0.5 text-muted-foreground/40 italic">Trend p</td>
+                    <td className="py-0.5" colSpan={3}>
+                      <span className="text-muted-foreground/40 italic text-[10px]">updates on apply</span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border/30">
-                    <td className="py-0.5 text-muted-foreground">gLower</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.before.g_lower)}</td>
-                    <td className="py-0.5 text-right font-mono">{fmt(preview.after.g_lower)}</td>
-                    <td className="py-0.5 text-right font-mono text-muted-foreground">{fmtDelta(preview.before.g_lower, preview.after.g_lower)}</td>
-                  </tr>
-                  <tr className="border-b border-border/30">
-                    <td className="py-0.5 text-muted-foreground">N (ctrl / treated)</td>
-                    <td className="py-0.5 text-right font-mono">{preview.before.n_ctrl}/{preview.before.n_treated}</td>
-                    <td className="py-0.5 text-right font-mono">{preview.after.n_ctrl}/{preview.after.n_treated}</td>
-                    <td className="py-0.5"></td>
+                    <td className="py-0.5 text-muted-foreground/40 italic">NOAEL</td>
+                    <td className="py-0.5" colSpan={3}>
+                      <span className="text-muted-foreground/40 italic text-[10px]">updates on apply</span>
+                    </td>
                   </tr>
                 </>
               ) : (
                 <tr className="border-b border-border/30">
                   <td className="py-0.5 text-muted-foreground/40 italic" colSpan={4}>
-                    Computing...
+                    {!preview && !previewError
+                      ? "Computing..."
+                      : "Preview unavailable -- apply exclusion to see full reanalysis"}
                   </td>
                 </tr>
               )}
-              <tr className="border-b border-border/30">
-                <td className="py-0.5 text-muted-foreground/40 italic">Trend p</td>
-                <td className="py-0.5" colSpan={3}>
-                  <span className="text-muted-foreground/40 italic text-[10px]">updates on apply</span>
-                </td>
-              </tr>
-              <tr className="border-b border-border/30">
-                <td className="py-0.5 text-muted-foreground/40 italic">NOAEL</td>
-                <td className="py-0.5" colSpan={3}>
-                  <span className="text-muted-foreground/40 italic text-[10px]">updates on apply</span>
-                </td>
-              </tr>
             </tbody>
           </table>
 

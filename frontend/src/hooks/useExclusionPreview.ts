@@ -1,19 +1,24 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
-export interface ExclusionPreviewResult {
+export interface ExclusionGroupResult {
+  dose_level: number;
   day: number | null;
   before: {
     g: number;
     g_lower: number | null;
     n_ctrl: number;
     n_treated: number;
-  } | null;
+  };
   after: {
     g: number | null;
     g_lower: number | null;
     n_ctrl: number;
     n_treated: number;
-  } | null;
+  };
+}
+
+export interface ExclusionPreviewResult {
+  groups: ExclusionGroupResult[];
 }
 
 async function fetchExclusionPreview(
@@ -38,9 +43,9 @@ async function fetchExclusionPreview(
 /**
  * Fetch backend-computed exclusion impact preview.
  *
- * Recomputes Hedges' g and gLower across ALL timepoints after removing
- * the specified subjects, returning the worst-case day. Replaces the
- * client-side computeExclusionPreview which was scoped to one timepoint.
+ * Returns per-dose-group before/after Hedges' g at the worst-case
+ * LOO-flagged day for each group. Backend handles day selection and
+ * dose-group scoping via the LOO-day filter.
  */
 export function useExclusionPreview(
   studyId: string | undefined,
