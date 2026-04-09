@@ -279,26 +279,19 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     return map;
   }, [subjects, sexes, doseGroups]);
 
-  // Global value domain across all sexes (includes HCD bounds when present)
+  // Global value domain across all sexes — data-driven only.
+  // HCD band renders within this domain (clipped if it extends beyond).
+  // Do NOT extend domain for HCD — the strip plot focuses on study data.
   const [vMin, vMax] = useMemo(() => {
     let lo = Infinity, hi = -Infinity;
     for (const s of subjects) {
       if (s.value < lo) lo = s.value;
       if (s.value > hi) hi = s.value;
     }
-    // Extend domain to include HCD reference bounds
-    if (hcdBySex) {
-      for (const ref of Object.values(hcdBySex)) {
-        if (ref) {
-          if (ref.lower < lo) lo = ref.lower;
-          if (ref.upper > hi) hi = ref.upper;
-        }
-      }
-    }
     if (!isFinite(lo)) return [0, 1];
     const pad = (hi - lo) * 0.08 || 0.5;
     return [lo - pad, hi + pad];
-  }, [subjects, hcdBySex]);
+  }, [subjects]);
 
   const yTicks = useMemo(() => computeNiceTicks(vMin, vMax), [vMin, vMax]);
 
@@ -724,17 +717,6 @@ function InterleavedPanel({
               width={plotWidth} height={Math.abs(bandY2 - bandY1)}
               fill="rgba(0,0,0,0.03)"
             />
-            {/* Band edges — thin solid lines at upper/lower bounds */}
-            <line
-              x1={effectiveLeftMargin} y1={bandY1}
-              x2={width - PLOT_RIGHT} y2={bandY1}
-              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
-            />
-            <line
-              x1={effectiveLeftMargin} y1={bandY2}
-              x2={width - PLOT_RIGHT} y2={bandY2}
-              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
-            />
             {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
             {centerVal != null && (
               <line
@@ -1085,17 +1067,6 @@ function SexPanel({
               x={leftMargin} y={Math.min(bandY1, bandY2)}
               width={plotWidth} height={Math.abs(bandY2 - bandY1)}
               fill="rgba(0,0,0,0.03)"
-            />
-            {/* Band edges — thin solid lines at upper/lower bounds */}
-            <line
-              x1={leftMargin} y1={bandY1}
-              x2={width - PLOT_RIGHT} y2={bandY1}
-              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
-            />
-            <line
-              x1={leftMargin} y1={bandY2}
-              x2={width - PLOT_RIGHT} y2={bandY2}
-              stroke="rgba(0,0,0,0.12)" strokeWidth={0.5}
             />
             {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
             {centerVal != null && (
