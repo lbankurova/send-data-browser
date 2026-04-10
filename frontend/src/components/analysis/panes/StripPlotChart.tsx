@@ -279,21 +279,30 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     return map;
   }, [subjects, sexes, doseGroups]);
 
-  // Global value domain across all sexes — data-driven only.
-  // HCD band renders within this domain (clipped if it extends beyond).
-  // Do NOT extend domain for HCD — the strip plot focuses on study data.
-  const [vMin, vMax] = useMemo(() => {
+  // Global value domain — axis starts/ends at tick values (same approach as ECharts).
+  // Compute ticks from raw data range, then use first/last tick as vMin/vMax.
+  const { vMin, vMax, yTicks } = useMemo(() => {
     let lo = Infinity, hi = -Infinity;
     for (const s of subjects) {
       if (s.value < lo) lo = s.value;
       if (s.value > hi) hi = s.value;
     }
-    if (!isFinite(lo)) return [0, 1];
-    const pad = (hi - lo) * 0.08 || 0.5;
-    return [lo - pad, hi + pad];
+    if (!isFinite(lo)) return { vMin: 0, vMax: 1, yTicks: [0, 1] };
+    // Compute ticks, then ensure first tick <= data min and last tick >= data max.
+    // This mirrors ECharts behavior: axis always starts/ends at tick values that
+    // fully contain the data.
+    const ticks = computeNiceTicks(lo, hi, 7);
+    if (ticks.length >= 2) {
+      const step = ticks[1] - ticks[0];
+      // Extend downward if first tick is above data min
+      if (ticks[0] > lo) ticks.unshift(ticks[0] - step);
+      // Extend upward if last tick is below data max
+      if (ticks[ticks.length - 1] < hi) ticks.push(ticks[ticks.length - 1] + step);
+    }
+    const tickMin = ticks.length > 0 ? ticks[0] : lo;
+    const tickMax = ticks.length > 0 ? ticks[ticks.length - 1] : hi;
+    return { vMin: tickMin, vMax: tickMax, yTicks: ticks };
   }, [subjects]);
-
-  const yTicks = useMemo(() => computeNiceTicks(vMin, vMax, 7), [vMin, vMax]);
 
   const svgHeight = PLOT_TOP + PLOT_HEIGHT + PLOT_BOTTOM;
   const isSingleSex = sexes.length === 1;
@@ -703,13 +712,10 @@ function InterleavedPanel({
         </text>
       ))}
 
-      {/* HCD reference band + mean line — clipped to plot area */}
+      {/* HCD reference bands + mean lines — per-sex, clipped to plot area */}
       {hasHcd && (() => {
-        const ref = hcdBySex && (Object.values(hcdBySex).find(Boolean) as HcdReference | undefined);
-        if (!ref) return null;
-        const bandY1 = yScale(ref.upper);
-        const bandY2 = yScale(ref.lower);
-        const centerVal = ref.isLognormal && ref.geom_mean != null ? ref.geom_mean : ref.mean;
+        const refs = hcdBySex ? (Object.entries(hcdBySex).filter(([, r]) => !!r) as [string, HcdReference][]) : [];
+        if (refs.length === 0) return null;
         return (
           <g>
             <defs>
@@ -718,21 +724,31 @@ function InterleavedPanel({
               </clipPath>
             </defs>
             <g clipPath="url(#hcd-clip-interleaved)">
-              <rect
-                x={effectiveLeftMargin} y={Math.min(bandY1, bandY2)}
-                width={plotWidth} height={Math.abs(bandY2 - bandY1)}
-                fill="rgba(0,0,0,0.03)"
-              />
-              {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
-              {centerVal != null && (
-                <line
-                  x1={effectiveLeftMargin} y1={yScale(centerVal)}
-                  x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                  stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
-                />
-              )}
+              {refs.map(([sex, ref]) => {
+                const bandY1 = yScale(ref.upper);
+                const bandY2 = yScale(ref.lower);
+                const centerVal = ref.isLognormal && ref.geom_mean != null ? ref.geom_mean : ref.mean;
+                const color = getSexColor(sex);
+                return (
+                  <g key={sex}>
+                    <rect
+                      x={effectiveLeftMargin} y={Math.min(bandY1, bandY2)}
+                      width={plotWidth} height={Math.abs(bandY2 - bandY1)}
+                      fill={color} fillOpacity={0.06}
+                    />
+                    {/* Center line — longer dash than grid (6,3 vs 2,2) */}
+                    {centerVal != null && (
+                      <line
+                        x1={effectiveLeftMargin} y1={yScale(centerVal)}
+                        x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
+                        stroke={color} strokeOpacity={0.35} strokeWidth={0.75} strokeDasharray="6,3"
+                      />
+                    )}
+                  </g>
+                );
+              })}
               <text
-                x={width - PLOT_RIGHT - 1} y={Math.max(Math.min(bandY1, bandY2), PLOT_TOP) + 8}
+                x={width - PLOT_RIGHT - 1} y={PLOT_TOP + 8}
                 textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
               >
                 HCD
