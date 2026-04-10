@@ -21,7 +21,7 @@ from the preclinical toxicology community.
 
 SENDEX structures the analytical workflow around the common tasks: detect
 treatment-related effects → characterize dose-response → assess causality →
-evaluate reversibility → determine NOAEL. At each step SENDEX pre-computes
+determine NOAEL → evaluate reversibility. At each step SENDEX pre-computes
 statistics (Dunnett's, Williams', Fisher's exact, ANCOVA, trend tests), flags
 cross-domain syndromes (47 rules across 10 organ-focused and 23 cross-organ
 chain patterns), scores signals against ECETOC assessment tiers, and puts the
@@ -64,9 +64,9 @@ with severity tiers, so partial or legacy datasets can still be explored.
 
 | Category | Domains |
 |----------|---------|
-| Special Purpose | DM, DS, TS, TA, TE, TX, SE |
+| Special Purpose | CO, DM, DS, SC, SE, TA, TE, TS, TX |
 | Interventions | EX |
-| Findings | BG, BW, CL, CO, DD, EG, FW, LB, MA, MI, OM, PC, PP, SC, TF, VS |
+| Findings | BG, BW, CL, DD, EG, FW, LB, MA, MI, OM, PC, PP, TF, VS |
 | Supplemental | SUPPMA, SUPPMI |
 | Relationships | RELREC |
 
@@ -77,16 +77,16 @@ with severity tiers, so partial or legacy datasets can still be explored.
 | Rat | Full (15) | 2 (baseline species) | SD, F344, Wistar Han (16 organs, 59-190+ studies) | He 2017 + NTP IAD (77 tests) | Yes |
 | Dog | Full (15) | 9 | Choi 2011 (15 organs, 950 animals) | Choi 2011 (30 tests) | Yes (gold-standard QTc) |
 | Monkey | Full (15) | 8 | Amato 2022 (7 organs, 4047 animals) | Kim 2016 (64 tests) | Yes (Fridericia QTc) |
-| Mouse | Full (15) | — (mapped to rat) | B6C3F1, C57BL/6, CD-1 | NTP IAD (22-60 tests) | Yes |
+| Mouse | Full (15) | — (proxied from rat) | B6C3F1, C57BL/6, CD-1 | NTP IAD (22-60 tests) | Yes |
 | Rabbit | Partial | 11 | — | Ozkan 2012 (25 tests, low confidence) | — |
 | Guinea Pig | Partial | 11 | — | — | — |
 | Minipig | Partial | — | — | — | — |
 | Hamster | Partial | — | — | — | — |
 
 Rat has the deepest support: strain-specific historical control data,
-FDA-qualified biomarker panels (REM-11), and human non-relevance mechanism
-detection (PPARa agonism, alpha-2u-globulin nephropathy, TSH-mediated thyroid
-tumors).
+FDA/EMA-qualified renal biomarker panels (KIM-1, clusterin, NGAL), and human
+non-relevance mechanism detection (PPARa agonism, male rat alpha-2u-globulin
+nephropathy, TSH-mediated thyroid tumors).
 
 ### Compound class profiles
 
@@ -100,7 +100,7 @@ adverse classification within severity thresholds.
 | Gene therapy | 6 (AAV, lentiviral, LNP-mRNA, 3 gene editing) |
 | Vaccine | 2 (adjuvanted, non-adjuvanted) |
 | Oligonucleotide | 1 (ASO/siRNA/shRNA/aptamer) |
-| Small molecule | No profiles needed |
+| Small molecule | Not profiled. Too diverse for class-level expected effects; drug-specific annotation planned. |
 
 ## Quick start
 
@@ -122,6 +122,9 @@ npm run dev                               # http://localhost:5173
 
 14 validation studies ship with the repo (4 real-world submissions, 10 CDISC
 synthetic) covering rat, dog, NHP, rabbit, and safety pharmacology designs.
+Ground truth is established per study via YAML reference cards
+(`docs/validation/references/`) with expert-annotated expected signals and
+design decisions.
 
 ## Stack
 

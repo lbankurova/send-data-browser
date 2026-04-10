@@ -3,7 +3,7 @@
 ## Pipeline
 
 The generator entry point (`backend/generator/generate.py`) orchestrates the
-full pipeline, producing 29 JSON files per study to
+full pipeline, producing 28 JSON files per study to
 `backend/generated/{study_id}/`. Three stages:
 
 1. **Domain extraction** — 15 domain-specific findings modules in
@@ -11,7 +11,7 @@ full pipeline, producing 29 JSON files per study to
    parse raw SEND domains and compute per-endpoint statistics
 2. **Orchestration** — `findings_pipeline.py` merges domains, computes fold
    change, applies classification labels, runs confidence scoring
-3. **View assembly** — 18 generator modules reshape findings into view-specific
+3. **View assembly** — 17 generator modules reshape findings into view-specific
    JSON; `generate.py` orchestrates the full output set
 
 ### Generated output (per study)
@@ -22,7 +22,7 @@ full pipeline, producing 29 JSON files per study to
 | `study_metadata_enriched.json` | Design interpretation, dose groups, species, provenance |
 | `study_mortality.json` | Deaths, cause categorization, mortality LOAEL |
 | `noael_summary.json` | NOAEL/LOAEL per sex, driving findings, confidence |
-| `recovery_verdicts.json` | Per-finding recovery verdicts (5 categories) |
+| `recovery_verdicts.json` | Per-finding recovery verdicts |
 | `subject_sentinel.json` | Per-animal outlier z-scores, Hamada residuals, POC/COC, detection metadata |
 | `subject_similarity.json` | Gower MDS coordinates, clustering, ARI |
 | `animal_influence.json` | LOO influence per animal per endpoint |
@@ -40,7 +40,7 @@ full pipeline, producing 29 JSON files per study to
 | `tumor_summary.json` | TF domain tumor classification and progression |
 | `pk_integration.json` | Cmax, AUC, Tmax from PC/PP domains |
 | `cross_animal_flags.json` | Tissue battery completeness, tumor linkage |
-| `provenance_messages.json` | Prov-001 to Prov-011 interpretation decisions |
+| `provenance_messages.json` | Prov-001 to Prov-010 interpretation decisions |
 | `study_signal_summary.json` | Study-level signal aggregation |
 | `adverse_effect_summary.json` | Adverse effect classification summary |
 | `lesion_severity_summary.json` | MI severity distribution per organ |
@@ -54,7 +54,7 @@ full pipeline, producing 29 JSON files per study to
 
 | Method | Module | Purpose |
 |---|---|---|
-| Dunnett's test | `statistics.py` | Pairwise dose-vs-control comparisons (FWER-controlled) |
+| Dunnett's test | `statistics.py` | Many-to-one dose-vs-control comparisons (FWER-controlled) |
 | Williams' test | `williams.py` | Monotone dose-response detection via isotonic regression (PAVA) |
 | Welch's t-test | `statistics.py` | Pairwise comparison with unequal variance |
 | Mann-Whitney U | `statistics.py` | Non-parametric group comparison |
@@ -91,18 +91,12 @@ full pipeline, producing 29 JSON files per study to
 
 ## Classification engine
 
-`classification.py` — effect size grading, fold change categorization,
-dose-response characterization, treatment-relatedness determination.
-
-`adaptive_trees.py` — decision trees implementing ECETOC assessment tiers for
-adversity determination.
-
-`progression_chains.py` — cross-organ progression chain detection (e.g.,
-hepatocellular hypertrophy -> necrosis -> enzyme elevation).
-
-`compound_class.py` — 30 compound profiles across 9 modalities. Expected
-pharmacological findings gated from adverse classification within severity
-thresholds.
+| Module | Purpose |
+|--------|---------|
+| `classification.py` | Effect size grading, fold change categorization, dose-response characterization, treatment-relatedness |
+| `adaptive_trees.py` | ECETOC assessment tier decision trees for adversity determination |
+| `progression_chains.py` | Cross-organ progression chains (e.g., hepatocellular hypertrophy -> necrosis -> enzyme elevation) |
+| `compound_class.py` | 30 compound profiles across 9 modalities; gates expected pharmacological findings from adverse classification |
 
 ## Confidence scoring
 
@@ -122,8 +116,7 @@ thresholds.
 
 ## Historical control database
 
-SQLite database built from multiple published sources via 8 ETL modules in
-`backend/etl/`:
+SQLite database built from published sources via 8 ETL modules (`backend/etl/`):
 
 | Source | Species | Data |
 |--------|---------|------|
@@ -136,9 +129,8 @@ SQLite database built from multiple published sources via 8 ETL modules in
 | Inotiv | Rat (Wistar Han) | Organ weights (16 organs, 190+ studies) |
 | ViCoG | Rat (Wistar Han) | Lab reference intervals |
 
-Queried at analysis time by `hcd.py` and `hcd_database.py` to contextualize
-findings against historical ranges. Supports user-uploaded
-HCD via annotation JSON with priority chain (user > system > none).
+Queried at analysis time by `hcd.py` and `hcd_database.py`. Supports
+user-uploaded HCD via annotation JSON with priority chain (user > system > none).
 
 ## Subject analysis pipeline
 
@@ -157,13 +149,15 @@ Four generator modules produce per-animal analytics:
 |--------|---------|
 | `incidence_recovery.py` | Effect-size comparison between terminal and recovery cohorts |
 | `onset_recovery.py` | Subject-level onset day and recovery timing |
-| `recovery-classification.ts` (frontend) | 6 recovery categories + confidence model |
+| `recovery-classification.ts` (frontend) | 8 recovery classifications (expected reversibility, incomplete recovery, assessment limited by duration, delayed onset, delayed onset possible, incidental recovery signal, likely spontaneous, inconclusive) with confidence model |
 | `recovery-duration-table.ts` (frontend) | 56 histo types + 61 continuous endpoints, species/severity-modulated durations across 14 organ systems |
-| `recovery-verdict.ts` (frontend) | 5-verdict per-finding recovery determination |
+| `recovery-verdict.ts` (frontend) | Per-finding recovery verdict (resolved, partially reversed, persistent, worsened, insufficient data) from terminal-vs-recovery effect size comparison |
 
 ## Syndrome detection
 
-Two engines at different abstraction levels (intentionally separate):
+Two engines at different abstraction levels (intentionally separate — histopath
+syndromes operate on organ/lesion rows, cross-domain syndromes on endpoint
+summaries spanning multiple domains):
 
 | Module | Scope |
 |---|---|
@@ -177,7 +171,7 @@ term matching for physiological differences.
 
 ## Frontend intelligence engines
 
-78 modules in `frontend/src/lib/`. Key categories:
+79 modules in `frontend/src/lib/`. Key categories:
 
 **Scoring and characterization**
 
@@ -221,13 +215,13 @@ term matching for physiological differences.
 Dual-engine architecture:
 
 - **CDISC CORE** — 400+ standard conformance rules, version-aware (SENDIG 3.0 / 3.1)
-- **Custom rules** — 12 check modules in `backend/validation/checks/`:
+- **Custom rules** — 11 check modules in `backend/validation/checks/`:
   completeness, controlled terminology, data integrity, data types, domain
   completeness, FDA data quality (FDA-001 to FDA-007), referential integrity,
   required variables, study design (SD-001 to SD-007), timing, variable format
 
-Both engines feed a unified triage UI. Each flagged record renders with inline
-evidence showing the source data, rule logic, and suggested resolution.
+Both engines feed a unified triage UI with per-record inline evidence.
 
-14 validation studies (4 real-world, 10 synthetic) ship with the repo. Current
-scores: 47/49 signals detected, 83/84 design checks matched.
+14 validation studies (4 real-world, 10 synthetic) ship with the repo. Ground
+truth established via YAML reference cards (`docs/validation/references/`).
+Current scores: 47/49 signals detected, 83/84 design checks matched.
