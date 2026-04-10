@@ -479,11 +479,14 @@ class HcdSqliteDB:
             if row:
                 return self._lb_row_to_dict(row, conn)
 
-        # Fall back to any strain for this species
+        # Fall back to any strain for this species.
+        # Require mean IS NOT NULL — entries without mean come from different
+        # pipelines (e.g. percentile-only) and often have incompatible units.
         row = conn.execute(
             """SELECT * FROM hcd_lb_aggregates
                WHERE species = ? AND sex = ?
                AND test_code = ? AND duration_category = ?
+               AND mean IS NOT NULL
                ORDER BY
                    CASE confidence
                        WHEN 'HIGH' THEN 1

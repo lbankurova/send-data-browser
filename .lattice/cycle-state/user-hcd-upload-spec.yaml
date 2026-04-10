@@ -2,8 +2,8 @@ topic: user-hcd-upload-spec
 title: "User HCD Upload and Graceful Degradation"
 started: 2026-04-09
 phase: blueprint
-current_step: build.2
-phase: implementing
+current_step: build.3
+phase: complete
 
 plan_review_r2:
   verdict: CONDITIONAL (0 FLAWED)

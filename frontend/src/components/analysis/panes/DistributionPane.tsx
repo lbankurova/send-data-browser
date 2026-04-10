@@ -443,13 +443,13 @@ export function DistributionPane({
               {hcdBySex && mode === "terminal" && (
                 <div
                   className="flex items-center gap-1 text-[9px] text-muted-foreground cursor-help"
-                  title="Historical control data reference range. Dashed line = population center. Band = reference interval. Density curve in left margin shows population shape."
+                  title="Left margin: historical control distribution per sex. Shows where control-animal values typically fall for this endpoint, strain, and study duration."
                 >
-                  <svg width="16" height="8" className="shrink-0">
-                    <rect x="0" y="1" width="16" height="6" fill="rgba(0,0,0,0.06)" rx={1} />
-                    <line x1="0" y1="4" x2="16" y2="4" stroke="rgba(0,0,0,0.3)" strokeWidth={1} strokeDasharray="2,1.5" />
+                  <svg width="16" height="10" viewBox="0 0 16 10" className="shrink-0">
+                    <path d="M15,1 C13,1 11,3 10,5 C9,7 8,9 6,9 L15,9 Z" fill="#ec4899" opacity={0.35} />
+                    <path d="M15,0 C12,0 9,2 8,5 C7,8 5,10 2,10 L15,10 Z" fill="#0891b2" opacity={0.3} />
                   </svg>
-                  <span>HCD reference</span>
+                  <span>HCD distribution</span>
                 </div>
               )}
             </div>

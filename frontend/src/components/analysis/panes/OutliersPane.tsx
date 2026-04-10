@@ -169,15 +169,19 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
     [finding, allFindings, sentinelData, influenceData],
   );
 
-  // ── HCD reference for this endpoint ────────────────────────────
-  const hcdRef = useMemo(() => {
+  // ── HCD references for this endpoint (both sexes) ──────────────
+  const hcdRefs = useMemo(() => {
     if (!hcdData?.references) return null;
     const tc = finding.test_code?.toUpperCase();
     if (!tc) return null;
-    const sex = finding.sex?.toUpperCase();
-    if (!sex) return null;
-    return hcdData.references[`${tc}:${sex}`] ?? null;
-  }, [hcdData, finding.test_code, finding.sex]);
+    // Filter out entries without usable central tendency + dispersion
+    const usable = (r: typeof hcdData.references[string] | null) =>
+      r && (r.mean != null || r.sd != null) ? r : null;
+    const f = usable(hcdData.references[`${tc}:F`] ?? null);
+    const m = usable(hcdData.references[`${tc}:M`] ?? null);
+    if (!f && !m) return null;
+    return { F: f, M: m };
+  }, [hcdData, finding.test_code]);
 
   // ── Truncation state ───────────────────────────────────────────
   const [showAll, setShowAll] = useState(false);
@@ -565,32 +569,67 @@ export function OutliersPane({ finding, allFindings, doseGroups }: OutliersPaneP
         </div>
       )}
 
-      {/* HCD Reference section */}
+      {/* HCD Reference section — both sexes */}
       <div className="mt-3">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
           HCD reference
         </div>
-        {hcdRef ? (
-          <div className="text-[10px] text-muted-foreground space-y-0.5">
-            <div className="flex gap-2">
-              <span>Source: <span className="font-mono">{hcdRef.source_type}</span></span>
-              {hcdRef.confidence && (
-                <span className="text-muted-foreground/60">{hcdRef.confidence}</span>
-              )}
-            </div>
-            <div className="flex gap-3 font-mono">
-              {hcdRef.isLognormal && hcdRef.geom_mean != null ? (
-                <span>geom. mean = {hcdRef.geom_mean.toFixed(2)}</span>
-              ) : hcdRef.mean != null ? (
-                <span>mean = {hcdRef.mean.toFixed(2)}</span>
-              ) : null}
-              {hcdRef.sd != null && <span>SD = {hcdRef.sd.toFixed(2)}</span>}
-              {hcdRef.n != null && <span>n = {hcdRef.n}</span>}
-            </div>
-            <div className="font-mono">
-              range [{hcdRef.lower.toFixed(2)}, {hcdRef.upper.toFixed(2)}]
-              {hcdRef.unit && <span className="text-muted-foreground/60 ml-1">{hcdRef.unit}</span>}
-            </div>
+        {hcdRefs ? (
+          <div className="text-[10px] text-muted-foreground space-y-1">
+            {(["F", "M"] as const).map((sex) => {
+              const ref = hcdRefs[sex];
+              if (!ref) return null;
+              return (
+                <div key={sex} className="space-y-0.5">
+                  <div className="flex gap-2 items-baseline">
+                    <span className="font-semibold">{sex}</span>
+                    <span className="font-mono">
+                      {ref.isLognormal && ref.geom_mean != null
+                        ? `mean = ${ref.geom_mean.toFixed(2)}`
+                        : ref.mean != null ? `mean = ${ref.mean.toFixed(2)}` : ""}
+                    </span>
+                    {ref.sd != null && <span className="font-mono">SD = {ref.sd.toFixed(2)}</span>}
+                    {ref.n != null && <span className="font-mono">n = {ref.n}</span>}
+                  </div>
+                  {ref.lower != null && ref.upper != null && (
+                    <div className="font-mono pl-4">
+                      range [{ref.lower.toFixed(2)}, {ref.upper.toFixed(2)}]
+                      {ref.unit && <span className="text-muted-foreground/60 ml-1">{ref.unit}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {(() => {
+              const src = hcdRefs.F ?? hcdRefs.M;
+              if (!src) return null;
+              return (
+                <div className="flex gap-2 text-muted-foreground/60">
+                  <span
+                    className="cursor-help"
+                    title={src.source_type === "user"
+                      ? "User-uploaded historical control data specific to your lab and study conditions."
+                      : "System HCD derived from public databases (NTP DTT, IAD). Matched by species, strain, and study duration."}
+                  >
+                    Source: <span className="font-mono">{src.source_type}</span>
+                  </span>
+                  {src.confidence && (
+                    <span
+                      className="cursor-help"
+                      title={
+                        src.confidence === "HIGH"
+                          ? "HIGH confidence: large sample size (n > 100), exact strain match, matching study duration."
+                          : src.confidence === "MODERATE"
+                            ? "MODERATE confidence: smaller sample (n = 20-100) or strain alias match."
+                            : "LOW confidence: limited data, cross-strain extrapolation, or duration mismatch."
+                      }
+                    >
+                      {src.confidence}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="text-[10px] text-muted-foreground/60">

@@ -626,24 +626,15 @@ function InterleavedPanel({
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="xMinYMin meet"
     >
-      {/* HCD marginal density — in left margin area */}
+      {/* HCD marginal density — in left margin area, per-sex to match per-sex bands */}
       {hasHcd && (() => {
-        // Interleaved mode density: combined if F/M similar (<20% mean diff), side-by-side if different
         const refs = hcdBySex ? Object.values(hcdBySex).filter(Boolean) as HcdReference[] : [];
         if (refs.length === 0) return null;
         const maxW = HCD_DENSITY_WIDTH - 2;
-
-        // Check if F and M differ substantially (>20% mean difference)
-        const meanF = refs.find((r) => r.sex === "F")?.mean ?? refs.find((r) => r.sex === "F")?.geom_mean;
-        const meanM = refs.find((r) => r.sex === "M")?.mean ?? refs.find((r) => r.sex === "M")?.geom_mean;
-        const useSideBySide = refs.length === 2 && meanF != null && meanM != null && meanF > 0 && meanM > 0
-          && Math.abs(meanF - meanM) / Math.max(meanF, meanM) > 0.2;
-
-        // Density grows leftward: right edge anchored at effectiveLeftMargin, peak extends left
         const anchorX = effectiveLeftMargin;
 
-        if (useSideBySide) {
-          // Two half-width densities side by side (stacked left from anchor)
+        if (refs.length >= 2) {
+          // Per-sex densities side by side (matches per-sex HCD bands)
           const halfW = maxW / 2;
           return (
             <g>
@@ -670,7 +661,7 @@ function InterleavedPanel({
           );
         }
 
-        // Combined single density from first available ref
+        // Single sex — full-width density
         const ref = refs[0];
         const { points: density, zerosExcluded } = computeHcdDensity(ref);
         if (density.length === 0) return null;
@@ -679,7 +670,7 @@ function InterleavedPanel({
             <path
               d={density.map((p, i) => `${i === 0 ? "M" : "L"}${anchorX - p.density * maxW},${yScale(p.y)}`).join(" ")
                 + density.map((_, i) => `L${anchorX},${yScale(density[density.length - 1 - i].y)}`).join(" ") + "Z"}
-              fill="rgba(0,0,0,0.15)" stroke="none"
+              fill={getSexColor(ref.sex)} fillOpacity={0.2} stroke="none"
             />
             {zerosExcluded > 0 && (
               <text x={anchorX - maxW} y={PLOT_TOP + 6} className="text-[7px]" fill="var(--muted-foreground)" opacity={0.5}>
@@ -711,52 +702,6 @@ function InterleavedPanel({
           {t % 1 === 0 ? t : t.toFixed(1)}
         </text>
       ))}
-
-      {/* HCD reference bands + mean lines — per-sex, clipped to plot area */}
-      {hasHcd && (() => {
-        const refs = hcdBySex ? (Object.entries(hcdBySex).filter(([, r]) => !!r) as [string, HcdReference][]) : [];
-        if (refs.length === 0) return null;
-        return (
-          <g>
-            <defs>
-              <clipPath id="hcd-clip-interleaved">
-                <rect x={effectiveLeftMargin} y={PLOT_TOP} width={plotWidth} height={plotHeight} />
-              </clipPath>
-            </defs>
-            <g clipPath="url(#hcd-clip-interleaved)">
-              {refs.map(([sex, ref]) => {
-                const bandY1 = yScale(ref.upper);
-                const bandY2 = yScale(ref.lower);
-                const centerVal = ref.isLognormal && ref.geom_mean != null ? ref.geom_mean : ref.mean;
-                const color = getSexColor(sex);
-                return (
-                  <g key={sex}>
-                    <rect
-                      x={effectiveLeftMargin} y={Math.min(bandY1, bandY2)}
-                      width={plotWidth} height={Math.abs(bandY2 - bandY1)}
-                      fill={color} fillOpacity={0.06}
-                    />
-                    {/* Center line — longer dash than grid (6,3 vs 2,2) */}
-                    {centerVal != null && (
-                      <line
-                        x1={effectiveLeftMargin} y1={yScale(centerVal)}
-                        x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                        stroke={color} strokeOpacity={0.35} strokeWidth={0.75} strokeDasharray="6,3"
-                      />
-                    )}
-                  </g>
-                );
-              })}
-              <text
-                x={width - PLOT_RIGHT - 1} y={PLOT_TOP + 8}
-                textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
-              >
-                HCD
-              </text>
-            </g>
-          </g>
-        );
-      })()}
 
       {/* Clip path for detection window bands */}
       <defs>
@@ -1075,43 +1020,6 @@ function SexPanel({
                 ({zerosExcluded} zeros excl.)
               </text>
             )}
-          </g>
-        );
-      })()}
-
-      {/* HCD reference band + mean line — clipped to plot area */}
-      {hasHcd && (() => {
-        const bandY1 = yScale(hcdRef.upper);
-        const bandY2 = yScale(hcdRef.lower);
-        const centerVal = hcdRef.isLognormal && hcdRef.geom_mean != null ? hcdRef.geom_mean : hcdRef.mean;
-        return (
-          <g>
-            <defs>
-              <clipPath id={`hcd-clip-${sex}`}>
-                <rect x={leftMargin} y={PLOT_TOP} width={plotWidth} height={PLOT_HEIGHT} />
-              </clipPath>
-            </defs>
-            <g clipPath={`url(#hcd-clip-${sex})`}>
-              <rect
-                x={leftMargin} y={Math.min(bandY1, bandY2)}
-                width={plotWidth} height={Math.abs(bandY2 - bandY1)}
-                fill="rgba(0,0,0,0.03)"
-              />
-              {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
-              {centerVal != null && (
-                <line
-                  x1={leftMargin} y1={yScale(centerVal)}
-                  x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                  stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
-                />
-              )}
-              <text
-                x={width - PLOT_RIGHT - 1} y={Math.max(Math.min(bandY1, bandY2), PLOT_TOP) + 8}
-                textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
-              >
-                HCD
-              </text>
-            </g>
           </g>
         );
       })()}
