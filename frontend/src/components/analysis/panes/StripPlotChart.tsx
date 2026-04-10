@@ -703,7 +703,7 @@ function InterleavedPanel({
         </text>
       ))}
 
-      {/* HCD reference band + mean line — behind detection windows and dots */}
+      {/* HCD reference band + mean line — clipped to plot area */}
       {hasHcd && (() => {
         const ref = hcdBySex && (Object.values(hcdBySex).find(Boolean) as HcdReference | undefined);
         if (!ref) return null;
@@ -712,25 +712,32 @@ function InterleavedPanel({
         const centerVal = ref.isLognormal && ref.geom_mean != null ? ref.geom_mean : ref.mean;
         return (
           <g>
-            <rect
-              x={effectiveLeftMargin} y={Math.min(bandY1, bandY2)}
-              width={plotWidth} height={Math.abs(bandY2 - bandY1)}
-              fill="rgba(0,0,0,0.03)"
-            />
-            {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
-            {centerVal != null && (
-              <line
-                x1={effectiveLeftMargin} y1={yScale(centerVal)}
-                x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
+            <defs>
+              <clipPath id="hcd-clip-interleaved">
+                <rect x={effectiveLeftMargin} y={PLOT_TOP} width={plotWidth} height={plotHeight} />
+              </clipPath>
+            </defs>
+            <g clipPath="url(#hcd-clip-interleaved)">
+              <rect
+                x={effectiveLeftMargin} y={Math.min(bandY1, bandY2)}
+                width={plotWidth} height={Math.abs(bandY2 - bandY1)}
+                fill="rgba(0,0,0,0.03)"
               />
-            )}
-            <text
-              x={width - PLOT_RIGHT - 1} y={Math.min(bandY1, bandY2) + 8}
-              textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
-            >
-              HCD
-            </text>
+              {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
+              {centerVal != null && (
+                <line
+                  x1={effectiveLeftMargin} y1={yScale(centerVal)}
+                  x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
+                  stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
+                />
+              )}
+              <text
+                x={width - PLOT_RIGHT - 1} y={Math.max(Math.min(bandY1, bandY2), PLOT_TOP) + 8}
+                textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
+              >
+                HCD
+              </text>
+            </g>
           </g>
         );
       })()}
@@ -1056,32 +1063,39 @@ function SexPanel({
         );
       })()}
 
-      {/* HCD reference band + mean line */}
+      {/* HCD reference band + mean line — clipped to plot area */}
       {hasHcd && (() => {
         const bandY1 = yScale(hcdRef.upper);
         const bandY2 = yScale(hcdRef.lower);
         const centerVal = hcdRef.isLognormal && hcdRef.geom_mean != null ? hcdRef.geom_mean : hcdRef.mean;
         return (
           <g>
-            <rect
-              x={leftMargin} y={Math.min(bandY1, bandY2)}
-              width={plotWidth} height={Math.abs(bandY2 - bandY1)}
-              fill="rgba(0,0,0,0.03)"
-            />
-            {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
-            {centerVal != null && (
-              <line
-                x1={leftMargin} y1={yScale(centerVal)}
-                x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
-                stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
+            <defs>
+              <clipPath id={`hcd-clip-${sex}`}>
+                <rect x={leftMargin} y={PLOT_TOP} width={plotWidth} height={PLOT_HEIGHT} />
+              </clipPath>
+            </defs>
+            <g clipPath={`url(#hcd-clip-${sex})`}>
+              <rect
+                x={leftMargin} y={Math.min(bandY1, bandY2)}
+                width={plotWidth} height={Math.abs(bandY2 - bandY1)}
+                fill="rgba(0,0,0,0.03)"
               />
-            )}
-            <text
-              x={width - PLOT_RIGHT - 1} y={Math.min(bandY1, bandY2) + 8}
-              textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
-            >
-              HCD
-            </text>
+              {/* Center line — longer dash than grid (6,3 vs 2,2), darker */}
+              {centerVal != null && (
+                <line
+                  x1={leftMargin} y1={yScale(centerVal)}
+                  x2={width - PLOT_RIGHT} y2={yScale(centerVal)}
+                  stroke="rgba(0,0,0,0.25)" strokeWidth={0.75} strokeDasharray="6,3"
+                />
+              )}
+              <text
+                x={width - PLOT_RIGHT - 1} y={Math.max(Math.min(bandY1, bandY2), PLOT_TOP) + 8}
+                textAnchor="end" className="text-[8px]" fill="var(--muted-foreground)" opacity={0.5}
+              >
+                HCD
+              </text>
+            </g>
           </g>
         );
       })()}
