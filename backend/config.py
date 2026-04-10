@@ -12,8 +12,8 @@ SKIP_FOLDERS = {
     "SENDIG3.1.1excel",
 }
 
-# Empty = serve all discovered studies; populate to restrict (e.g. {"PointCross"})
-ALLOWED_STUDIES: set[str] = set()
+# Empty = serve all discovered studies; comma-separated env var to restrict (e.g. "PointCross,PDS")
+ALLOWED_STUDIES: set[str] = set(filter(None, os.environ.get("ALLOWED_STUDIES", "").split(",")))
 
 HCD_DB_PATH = Path(__file__).parent / "data" / "hcd.db"
 ETL_DATA_DIR = Path(__file__).parent / "etl" / "data"
