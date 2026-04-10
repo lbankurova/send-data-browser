@@ -93,14 +93,16 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Before committing:** Run every item in `docs/_internal/checklists/COMMIT-CHECKLIST.md`.
 - **Doc regeneration is not optional.** Every commit must run the 3 doc generators (coverage-facts, scientific-logic, validation docs) and stage any changed output. Run unconditionally — not "if engine files changed." If a generator fails, the code broke a doc contract; fix before committing. See checklist item 6 for commands.
 - **After implementing from `docs/_internal/incoming/` spec:** Run `docs/_internal/checklists/POST-IMPLEMENTATION-REVIEW.md` automatically before presenting work as done.
-- **Coverage trailer on commits.** When a commit advances a coverage axis, add a `Coverage:` trailer to the commit message body. Format: `Coverage: <axis>/<detail>` using the 10 canonical tags from `docs/_internal/help/wiki_sendex_coverage.md`. Multiple axes separated by comma. Optional `Layer:` trailer (data, research, plumbing, implementation, bug-fix). Example:
+- **Topic trailer on commits (mandatory for topic work).** Every commit that advances a topic MUST carry a `Topic:` trailer. This is how the executor knows what state the world is in — `lattice status` and `lattice coherence` grep for these. A commit without `Topic:` is invisible to the autopilot and coherence engine.
   ```
-  feat: add dog ALP steroid-induced isoform interpretation
+  feat: continuous HCD percentile in D4 confidence dimension
 
-  Coverage: species/dog, interpretation engine
+  Topic: hcd-informed-z-scoring
+  Phase: complete
+  Coverage: HCD/LB, interpretation engine
   Layer: implementation
   ```
-  This makes coverage impact grep-able (`git log --grep="Coverage: species/dog"`). `/lattice:daily-update` auto-extracts the trailer for tagging. Not every commit needs a trailer — only those that meaningfully advance a coverage axis.
+  `Topic:` = links commit to cycle state (mandatory for all topic work). `Phase:` = explicit phase completion — `research-complete`, `blueprint-complete`, `complete` (recommended; if absent, inferred from commit type). `Coverage:` = coverage axis tag using the 10 canonical tags from `docs/_internal/help/wiki_sendex_coverage.md` (optional). `Layer:` = data, research, plumbing, implementation, bug-fix (optional).
 
 ## Architecture Gotchas
 
@@ -124,10 +126,10 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 - **Data label casing — two-tier.** Organ system names: `titleCase()`. All other data labels: raw values (preserves abbreviations).
 - **Sex ordering — alphabetical, always.** F precedes M in every axis.
 - **Color discipline.** Position > Grouping > Typography > Color. ≤10% saturated pixels at rest. One saturated color family per column. Only conclusions "shout."
-- **Reserved color palette — no reuse.** Certain colors are reserved for specific semantic roles and must not be used (or approximated within ~30 hue degrees) for other purposes. Reserved: dose groups (`#6b7280` gray, `#3b82f6` blue, `#84cc16` lime, `#f59e0b` amber, `#8b5cf6` purple, `#ef4444` red — positionally mapped, red=always highest dose), sex (`#0891b2` cyan-M, `#ec4899` pink-F), severity grades (`#B8C8D8` steel blue, `#C8A878` tan, `#C07040` burnt orange, `#A82818` deep red, `#701010` maroon), conclusion tiers (`#dc2626` red-adverse, `#d97706` amber-warning). Before introducing a new color, check `severity-colors.ts` for conflicts.
+- **Reserved color palette — no reuse.** Certain colors are reserved for specific semantic roles and must not be used (or approximated within ~30 hue degrees) for other purposes. Reserved: dose groups (`#6b7280` gray, `#3b82f6` blue, `#84cc16` lime, `#f59e0b` amber, `#8b5cf6` purple, `#ef4444` red — positionally mapped, red=always highest dose), sex (`#0891b2` cyan-M, `#ec4899` pink-F), severity grades (`#C8D4E0` ice blue, `#8EA4BC` steel blue, `#607888` slate, `#8B3538` muted red, `#581C1C` dark red), binary affected (`#D8D5D0` warm tan), conclusion tiers (`#dc2626` red-adverse, `#d97706` amber-warning). Before introducing a new color, check `severity-colors.ts` for conflicts.
 - **Information hierarchy.** Six categories (Decision, Finding, Qualifier, Caveat, Evidence, Context) — never mix in one visual unit. Emphasis tiers: 1 (colored at rest) = conclusions, 2 (visible, muted) = labels, 3 (on interaction) = evidence.
 - **No decision red repetition per row.** `#DC2626` at most once per table row.
-- **Severity grades use cool-to-hot palette.** 5-step ramp (steel blue → tan → burnt orange → red → maroon), always-on. `getSeverityGradeColor()` / `SEVERITY_GRADE_PALETTE` / `UNGRADED_FILL` in `severity-colors.ts`. Minimal harmonizes with app cool chrome; severity escalates warm. For stacked incidence bars, severity matrix cells, severity legends.
+- **Severity grades use cool-earth diverging palette.** 5-step ramp (ice blue → steel blue → slate → muted red → dark red), always-on. `getSeverityGradeColor()` in `severity-colors.ts`. Grades 1-3 harmonize with app cool chrome; grades 4-5 shift warm for alarm. Binary affected fill (`BINARY_AFFECTED_FILL`, warm tan `#D8D5D0`) is distinct from the cool severity ramp. For stacked incidence bars, severity matrix cells, severity legends.
 - **Signal-score heatmaps use neutral grayscale heat.** 5-step gray ramp, always-on. `getNeutralHeatColor()` in `severity-colors.ts`. For signal score, correlation, and non-severity heatmaps.
 - **The system computes what it can.** Show computed results, not raw data for users to derive.
 - **Dose group display — two components.** `DoseHeader` for column headers, `DoseLabel` for row/cell values (both in `components/ui/DoseLabel.tsx`). Never render raw dose group strings.

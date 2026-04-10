@@ -18,6 +18,11 @@
             "type": "command",
             "command": "bash -c 'staged=$(git diff --cached --name-only 2>/dev/null); if echo \"$staged\" | grep -qE \"(classification|findings_|derive-summaries|cross-domain-syndromes|syndrome-interpretation|findings-rail-engine|recovery-classification|finding-nature|protective-signal|lab-clinical-catalog)\"; then if ! echo \"$staged\" | grep -qE \"\\.(test|spec)\\.\"; then echo \"PIPELINE MODULE CHANGED WITHOUT TESTS. Staged pipeline files:\"; echo \"$staged\" | grep -E \"(classification|findings_|derive-summaries|cross-domain-syndromes|syndrome-interpretation|findings-rail-engine|recovery-classification|finding-nature|protective-signal|lab-clinical-catalog)\"; echo \"\"; echo \"Commit checklist requires: write the failing test FIRST for these modules.\"; echo \"Stage a test file, or use git commit with --no-verify if you have a reason.\"; exit 1; fi; fi'",
             "_comment": "Pipeline test-first. BLOCKS if pipeline modules staged without test files."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'MSG=$(echo \"$CLAUDE_TOOL_INPUT\" 2>/dev/null); if echo \"$MSG\" | grep -qE \"^(feat|fix):\" 2>/dev/null; then if ! echo \"$MSG\" | grep -q \"Topic:\" 2>/dev/null; then echo \"REMINDER: This looks like topic work (feat:/fix:) but has no Topic: trailer.\"; echo \"Add to commit message body:\"; echo \"  Topic: <topic-name>\"; echo \"  Phase: <phase>  (optional: research-complete, blueprint-complete, complete)\"; echo \"\"; echo \"Without Topic:, the autopilot and coherence engine cannot track this work.\"; echo \"If this is NOT topic work (framework, docs, CI), ignore this reminder.\"; fi; fi'",
+            "_comment": "Topic trailer reminder. WARNS (non-blocking) when feat/fix commits lack a Topic: trailer."
           }
         ]
       }
@@ -52,8 +57,13 @@
           },
           {
             "type": "command",
-            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"\\.tsx$\"; then cd C:/pg/pcc/frontend && npm run build 2>&1 | tail -20; fi'",
-            "_comment": "TSX build check. Advisory -- runs npm run build after .tsx file edits to catch TypeScript errors early."
+            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"frontend/src/.*\\.tsx?$\"; then cd C:/pg/pcc/frontend && npm run build 2>&1 | tail -20; fi'",
+            "_comment": "TS/TSX build check. Advisory -- runs npm run build after .ts/.tsx edits under frontend/src/ to catch TypeScript errors early."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=$(echo \"$CLAUDE_TOOL_INPUT\" | grep -oP '\"file_path\"\\s*:\\s*\"\\K[^\"]+' 2>/dev/null || true); if echo \"$FILE\" | grep -qE \"backend/.*\\.py$\"; then C:/pg/pcc/backend/venv/Scripts/python.exe -c \"import py_compile; py_compile.compile(r'\"'\"'\"$FILE\"'\"'\"', doraise=True)\" 2>&1 | tail -10; fi'",
+            "_comment": "Python syntax check. Advisory -- catches syntax errors in backend .py files immediately after edit."
           }
         ]
       }

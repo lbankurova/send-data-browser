@@ -1,0 +1,44 @@
+# Retroactive Topic/Phase annotations for commits before trailer convention.
+# Format: HASH<tab>TOPIC<tab>PHASE
+# Generated 2026-04-10 from manual review of last 2 weeks.
+# The executor's reconciliation reads this file as a supplement to git --grep="Topic:".
+863c273f	-	-
+25ca5293	hcd-informed-z-scoring	build
+84202715	hcd-informed-z-scoring	build
+1bf37528	hcd-informed-z-scoring	build
+3dbfa75e	hcd-informed-z-scoring	build
+c73a4c52	hcd-informed-z-scoring	build
+cdfec02a	hcd-informed-z-scoring	build
+3cf8dfc1	hcd-informed-z-scoring	build
+59e6e8da	-	-
+67f3dc18	user-hcd-upload-spec	complete
+95c03ee7	user-hcd-upload-spec	complete
+81745afd	detection-power-visualization	complete
+428c6508	-	-
+ec043a9c	outlier-detection-metadata	complete
+62ae1098	outliers-pane-unified	complete
+3197d112	-	-
+3402aad3	exclusion-preview-fix	complete
+63af82c0	mi-tf-neoplasm-deduplication	build
+c0e9fac5	-	-
+5fb3f287	exclusion-preview-fix	build
+78173a90	findings-invariant-audit	complete
+66215844	cynomolgus-organ-weight-hcd	complete
+4b2450fb	-	-
+8da58da4	hcd-population	complete
+e2218d1a	findings-stacked-severity-chart	complete
+75db7246	hcd-population	complete
+a0ce00fb	-	-
+466fd011	hcd-population	build
+84b9d612	findings-stacked-severity-chart	build
+0436d83f	agent-driven-frontend-ux	complete
+d56cda11	protective-syndrome-engine	complete
+98f25531	findings-stacked-severity-chart	build
+5801f5e6	-	-
+b0b1d388	protective-syndrome-engine	build
+595be500	cross-study-terminology-coverage	complete
+6c54b6c3	-	-
+9a2b83e6	unrecognized-term-flagging	build
+48b3f141	loo-display-scoping	complete
+1492bcd3	loo-display-scoping	build
+3fdbbe60	-	-
