@@ -293,7 +293,7 @@ export function StripPlotChart({ subjects, unit, sexes, doseGroups, onSubjectCli
     return [lo - pad, hi + pad];
   }, [subjects]);
 
-  const yTicks = useMemo(() => computeNiceTicks(vMin, vMax), [vMin, vMax]);
+  const yTicks = useMemo(() => computeNiceTicks(vMin, vMax, 7), [vMin, vMax]);
 
   const svgHeight = PLOT_TOP + PLOT_HEIGHT + PLOT_BOTTOM;
   const isSingleSex = sexes.length === 1;
