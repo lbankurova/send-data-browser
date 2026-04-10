@@ -144,25 +144,25 @@ export function getDirectionColor(_direction: string | null): string {
   return "text-muted-foreground";
 }
 
-// ─── Severity Grade Palette (cool-to-hot) ────────────────────────────────
-// Cool-to-hot diverging scale: steel blue → tan → burnt orange → red → maroon.
-// Minimal harmonizes with the app's cool chrome; severity escalates into warm/hot.
+// ─── Severity Grade Palette (cool earth) ─────────────────────────────────
+// Diverging cool-to-warm: steel blue → slate → muted red → dark red.
+// Grades 1-3 harmonize with app's cool chrome; grades 4-5 shift warm for alarm.
 // Use for severity-specific contexts: stacked bars, severity matrix, legends.
 // Signal-score / correlation heatmaps should use getNeutralHeatColor() instead.
 
 /** Binary-domain findings (MA/TF/CL) — affected/present, no severity concept.
- *  Steel blue: distinct from severity ramp, harmonizes with app chrome. */
-export const BINARY_AFFECTED_FILL = "#B8C8D8";
+ *  Warm tan: distinct from the cool severity ramp, reads as "present" not "graded". */
+export const BINARY_AFFECTED_FILL = "#D8D5D0";
 
 /** Severity grade to { bg, text } — integer grades 1-5.
  *  Use for severity matrix cells, stacked incidence bars, severity legends.
  *  Grade 0 / absent returns transparent bg. */
 export function getSeverityGradeColor(grade: number): { bg: string; text: string } {
-  if (grade >= 5) return { bg: "#701010", text: "white" };
-  if (grade >= 4) return { bg: "#A82818", text: "white" };
-  if (grade >= 3) return { bg: "#C07040", text: "white" };
-  if (grade >= 2) return { bg: "#C8A878", text: "var(--foreground)" };
-  if (grade >= 1) return { bg: "#D8D5D0", text: "var(--foreground)" };
+  if (grade >= 5) return { bg: "#581C1C", text: "white" };
+  if (grade >= 4) return { bg: "#8B3538", text: "white" };
+  if (grade >= 3) return { bg: "#607888", text: "white" };
+  if (grade >= 2) return { bg: "#8EA4BC", text: "var(--foreground)" };
+  if (grade >= 1) return { bg: "#C8D4E0", text: "var(--foreground)" };
   return { bg: "transparent", text: "var(--muted-foreground)" };
 }
 

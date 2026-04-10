@@ -488,7 +488,7 @@ function CellRenderer({ cell, cellW = "w-16", cellH = "h-6", cellText = "text-[1
     );
   }
 
-  // Graded -- warm severity palette by mean severity
+  // Graded -- cool-earth severity palette by mean severity
   const heat = getSeverityGradeColor(cell.avgSeverity ?? 0);
   const isOutlier = cell.maxSeverity >= 3 && cell.avgSeverity != null && (cell.maxSeverity - cell.avgSeverity) >= 2;
   return (

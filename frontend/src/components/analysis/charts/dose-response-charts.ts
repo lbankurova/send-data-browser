@@ -1339,7 +1339,7 @@ export function buildDoseResponseBarOption(
 // ─── 8. Stacked Severity Bar Chart ──────────────────────────
 
 const GRADE_LABELS = ["Minimal", "Mild", "Moderate", "Marked", "Severe"];
-// 5-step warm severity palette via getSeverityGradeColor()
+// 5-step cool-earth severity palette via getSeverityGradeColor()
 const GRADE_COLORS = [1, 2, 3, 4, 5].map((g) => getSeverityGradeColor(g).bg);
 
 /**
