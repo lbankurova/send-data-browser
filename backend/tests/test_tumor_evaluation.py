@@ -220,6 +220,96 @@ class TestPoly3Test:
         p3 = poly3_test(animals, 90)
         assert p3["trend_p"] is None
 
+    def test_peddada_vs_naive_divergence(self):
+        """Peddada method diverges from naive binomial when N is small with early deaths.
+
+        With early deaths, poly-3 adjusts effective N downward. The Wald Z-test
+        uses V_i = pi*(1-pi)/sum(w) which differs from naive V = pi*(1-pi)/N
+        when sum(w) != N.
+        """
+        # Control: 20 animals, 1 tumor, all terminal
+        # Treated: 20 animals, 5 tumors, but 10 die early at day 30/100
+        animals = []
+        for i in range(20):
+            animals.append({"dose_level": 0, "has_tumor": i < 1, "disposition_day": 100, "is_terminal": True})
+        for i in range(10):
+            animals.append({"dose_level": 1, "has_tumor": i < 5, "disposition_day": 100, "is_terminal": True})
+        for i in range(10):
+            animals.append({"dose_level": 1, "has_tumor": False, "disposition_day": 30, "is_terminal": False})
+
+        p3 = poly3_test(animals, 100)
+        ca = trend_test_incidence([1, 5], [20, 20])
+
+        # Poly-3 effective N for treated < 20 (early deaths get w=(30/100)^3=0.027)
+        assert p3["effective_n"]["1"] < 20.0
+        # Poly-3 adjusted rate > naive rate (same numerator, smaller denominator)
+        assert p3["adjusted_rates"]["1"] > 5 / 20
+        # P-values should differ (poly-3 accounts for survival bias)
+        assert p3["trend_p"] != ca["p_value"]
+        # Pairwise p should also be present and valid
+        assert p3["pairwise_p"]["1"] is not None
+        assert 0 < p3["pairwise_p"]["1"] < 1
+
+
+# ── Feature 3: Combined count deduplication ──────────────────────────
+
+
+class TestCombinedDeduplication:
+
+    def test_one_animal_both_behaviors_combined_count_1(self):
+        """AC-3.6: Animal with both adenoma and carcinoma -> combined count = 1."""
+        from generator.tumor_summary import _build_animal_tumor_index, _run_analysis
+
+        # Build a minimal animal tumor index: one animal has both BENIGN and MALIGNANT
+        # for (LIVER, hepatocellular, M)
+        animal_index = {
+            "SUBJ-001": {
+                ("LIVER", "hepatocellular", "M"): {"BENIGN", "MALIGNANT"},
+            },
+            "SUBJ-002": {
+                ("LIVER", "hepatocellular", "M"): {"BENIGN"},
+            },
+        }
+
+        # Create findings that mimic the two-behavior scenario
+        findings = [
+            {
+                "specimen": "LIVER", "finding": "ADENOMA", "behavior": "BENIGN",
+                "cell_type": "hepatocellular", "sex": "M",
+                "group_stats": [
+                    {"dose_level": 0, "n": 10, "affected": 0},
+                    {"dose_level": 1, "n": 10, "affected": 2},
+                ],
+            },
+            {
+                "specimen": "LIVER", "finding": "CARCINOMA", "behavior": "MALIGNANT",
+                "cell_type": "hepatocellular", "sex": "M",
+                "group_stats": [
+                    {"dose_level": 0, "n": 10, "affected": 0},
+                    {"dose_level": 1, "n": 10, "affected": 1},
+                ],
+            },
+        ]
+
+        # Survival data with dose_level for SUBJ-001 and SUBJ-002
+        survival = [
+            {"USUBJID": "SUBJ-001", "dose_level": 1, "disposition_day": 90, "is_terminal": True, "sex": "M"},
+            {"USUBJID": "SUBJ-002", "dose_level": 1, "disposition_day": 90, "is_terminal": True, "sex": "M"},
+        ]
+
+        # Run combined analysis (behavior_filter=None)
+        result = _run_analysis(
+            None, findings, animal_index, "LIVER", "hepatocellular", "M",
+            survival, 90, None, morphology_hint="ADENOMA",
+        )
+
+        # SUBJ-001 has both behaviors -> should count as 1 in combined, not 2
+        # SUBJ-002 has only BENIGN -> counts as 1
+        # Total combined for dose_level=1 should be 2, not 3
+        dl1 = [d for d in result["by_dose"] if d["dose_level"] == 1]
+        assert len(dl1) == 1
+        assert dl1[0]["affected"] == 2, f"Expected 2 (deduplicated), got {dl1[0]['affected']}"
+
 
 # ── Feature 4: Haseman dual-threshold ────────────────────────────────
 

@@ -17,7 +17,7 @@ from services.xpt_processor import read_xpt
 from services.analysis.findings_tf import _extract_cell_type
 from services.analysis.statistics import trend_test_incidence, poly3_test
 from services.analysis.hcd import assess_tumor_hcd, get_strain, get_study_duration_days
-from services.analysis.mortality import get_early_death_subjects, SCHEDULED_DISPOSITIONS
+from services.analysis.mortality import _parse_ds_dispositions, SCHEDULED_DISPOSITIONS
 
 log = logging.getLogger(__name__)
 
@@ -221,10 +221,22 @@ def _build_animal_tumor_index(
     """
     # index: USUBJID -> {(organ_upper, cell_type, sex): set of behaviors}
     index: dict[str, dict[tuple[str, str, str], set[str]]] = {}
+    # DM sex map shared between MI and TF domain parsing
+    sex_map: dict[str, str] = {}
 
     def _add(usubjid: str, organ: str, cell_type: str, sex: str, behavior: str) -> None:
         key = (organ.upper(), cell_type, sex.upper())
         index.setdefault(usubjid, {}).setdefault(key, set()).add(behavior)
+
+    # Read DM for sex mapping (shared across MI + TF)
+    if "dm" in study.xpt_files:
+        try:
+            dm_df, _ = read_xpt(study.xpt_files["dm"])
+            dm_df.columns = [c.upper() for c in dm_df.columns]
+            for _, row in dm_df.iterrows():
+                sex_map[str(row.get("USUBJID", ""))] = str(row.get("SEX", "")).upper()
+        except Exception:
+            pass
 
     # MI domain
     if "mi" in study.xpt_files:
@@ -232,16 +244,6 @@ def _build_animal_tumor_index(
             from services.analysis.findings_mi import _classify_mi_neoplasm
             mi_df, _ = read_xpt(study.xpt_files["mi"])
             mi_df.columns = [c.upper() for c in mi_df.columns]
-            # Need DM merge for sex — try reading DM
-            sex_map: dict[str, str] = {}
-            if "dm" in study.xpt_files:
-                try:
-                    dm_df, _ = read_xpt(study.xpt_files["dm"])
-                    dm_df.columns = [c.upper() for c in dm_df.columns]
-                    for _, row in dm_df.iterrows():
-                        sex_map[str(row.get("USUBJID", ""))] = str(row.get("SEX", "")).upper()
-                except Exception:
-                    pass
 
             for _, row in mi_df.iterrows():
                 mistresc = str(row.get("MISTRESC", row.get("MIORRES", "")))
@@ -269,7 +271,7 @@ def _build_animal_tumor_index(
                 organ = str(row.get("TFSPEC", row.get("TFORRES", "")))
                 morphology = str(row.get("TFSTRESC", row.get("TFORRES", "")))
                 cell_type = _extract_cell_type(morphology)
-                sex = sex_map.get(usubjid, "") if "sex_map" in dir() else ""
+                sex = sex_map.get(usubjid, "")
                 rescat = str(row.get("TFRESCAT", "")).strip().upper()
                 if rescat in ("BENIGN", "MALIGNANT"):
                     beh = rescat
@@ -290,69 +292,46 @@ def _get_survival_data(
 ) -> tuple[list[dict], int | None]:
     """Get per-animal survival data for poly-3 from DS domain.
 
+    Reuses mortality._parse_ds_dispositions() for DS parsing, then filters
+    to main-study animals and classifies terminal vs early death.
+
     Returns (animal_records, study_duration) where each record has
-    {USUBJID, dose_level, disposition_day, is_terminal, is_satellite, sex}.
+    {USUBJID, dose_level, disposition_day, is_terminal, sex}.
     """
-    if "ds" not in study.xpt_files:
-        return [], None
     if subjects is None:
         return [], None
 
     try:
-        ds_df, _ = read_xpt(study.xpt_files["ds"])
-        ds_df.columns = [c.upper() for c in ds_df.columns]
+        ds_records = _parse_ds_dispositions(study, subjects)
     except Exception:
         return [], None
 
-    # Build subject lookup: USUBJID -> {dose_level, is_satellite, is_recovery, sex}
-    subj_info: dict[str, dict] = {}
-    for _, row in subjects.iterrows():
-        uid = str(row.get("USUBJID", ""))
-        subj_info[uid] = {
-            "dose_level": int(row.get("dose_level", -1)),
-            "is_satellite": bool(row.get("is_satellite", False)),
-            "is_recovery": bool(row.get("is_recovery", False)),
-            "sex": str(row.get("SEX", "")).upper(),
-        }
+    if not ds_records:
+        return [], None
 
     records = []
     max_terminal_day = 0
 
-    for _, row in ds_df.iterrows():
-        uid = str(row.get("USUBJID", ""))
-        if uid not in subj_info:
-            continue
-        si = subj_info[uid]
+    for r in ds_records:
         # Skip satellites and recovery animals
-        if si["is_satellite"] or si["is_recovery"]:
+        if r["is_satellite"] or r["is_recovery"]:
             continue
-        if si["dose_level"] < 0:
+        if r["dose_level"] < 0:
             continue
-
-        dsdecod = str(row.get("DSDECOD", "")).strip().upper()
-        # Get study day
-        ds_day = None
-        for col in ("DSSTDY", "DSDY", "VISITDY"):
-            val = row.get(col)
-            if val is not None and str(val).strip():
-                try:
-                    ds_day = int(float(str(val)))
-                    break
-                except (ValueError, TypeError):
-                    continue
+        ds_day = r["ds_study_day"]
         if ds_day is None:
             continue
 
-        is_terminal = dsdecod in SCHEDULED_DISPOSITIONS
+        is_terminal = r["dsdecod"] in SCHEDULED_DISPOSITIONS
         if is_terminal and ds_day > max_terminal_day:
             max_terminal_day = ds_day
 
         records.append({
-            "USUBJID": uid,
-            "dose_level": si["dose_level"],
+            "USUBJID": r["USUBJID"],
+            "dose_level": r["dose_level"],
             "disposition_day": ds_day,
             "is_terminal": is_terminal,
-            "sex": si["sex"],
+            "sex": r["SEX"],
         })
 
     study_duration = max_terminal_day if max_terminal_day > 0 else None
@@ -537,6 +516,8 @@ def _run_analysis(
         "trend_p_one_sided": trend_p_one_sided,
         "trend_direction": trend_direction,
         "poly3_trend_p": poly3_trend_p,
+        "poly3_pairwise_p": poly3_result["pairwise_p"] if poly3_result else None,
+        "poly3_adjusted_rates": poly3_result["adjusted_rates"] if poly3_result else None,
         "haseman_threshold": haseman_threshold,
         "haseman_class": haseman_class,
         "meets_haseman": meets_haseman,
@@ -548,7 +529,7 @@ def _empty_analysis(behavior_filter: str | None) -> dict:
     return {
         "count": 0, "by_dose": [],
         "trend_p": None, "trend_p_one_sided": None, "trend_direction": "none",
-        "poly3_trend_p": None,
+        "poly3_trend_p": None, "poly3_pairwise_p": None, "poly3_adjusted_rates": None,
         "haseman_threshold": 0.01, "haseman_class": "unknown", "meets_haseman": None,
     }
 

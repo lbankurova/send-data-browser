@@ -196,6 +196,8 @@ export interface TumorAnalysis {
   trend_p_one_sided: number | null;
   trend_direction: string;
   poly3_trend_p: number | null;
+  poly3_pairwise_p: Record<string, number | null> | null;
+  poly3_adjusted_rates: Record<string, number> | null;
   haseman_threshold: number;
   haseman_class: string;
   meets_haseman: boolean | null;
