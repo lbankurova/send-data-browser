@@ -1,0 +1,139 @@
+topic: hcd-informed-z-scoring
+started: 2026-04-09T22:00:00
+phase: build
+current_step: build.0
+completed:
+  research.1: 2026-04-09T22:30:00
+  research.2: 2026-04-09T23:30:00
+  research.3: 2026-04-09T23:45:00
+  research.4: 2026-04-09T23:55:00
+  research.5: 2026-04-10T00:00:00
+  research.6: 2026-04-10T00:05:00
+  research.7: 2026-04-10T00:10:00
+  research.7b: 2026-04-10T00:10:00
+  blueprint.0: 2026-04-10T01:00:00
+  blueprint.1: 2026-04-10T01:05:00
+  blueprint.2: 2026-04-10T01:15:00
+  blueprint.3: 2026-04-10T01:20:00
+  blueprint.4: 2026-04-10T01:25:00
+  blueprint.5: 2026-04-10T01:30:00
+  blueprint.6: 2026-04-10T01:35:00
+  blueprint.7: 2026-04-10T01:40:00
+synthesis_doc: docs/_internal/incoming/hcd-informed-z-scoring-synthesis.md
+research_doc: docs/_internal/research/hcd-informed-z-scoring.md
+reviews:
+  research_r1: docs/_internal/research/peer-reviews/hcd-informed-z-scoring-review.md
+  research_r2: docs/_internal/research/peer-reviews/hcd-informed-z-scoring-review-r2.md
+  architect: docs/_internal/research/peer-reviews/hcd-informed-z-scoring-architect-review.md
+  synthesis_r1: docs/_internal/research/peer-reviews/hcd-informed-z-scoring-synthesis-review.md
+  synthesis_r2: docs/_internal/research/peer-reviews/hcd-informed-z-scoring-synthesis-review-r2.md
+checkpoints:
+  research.1:
+    completed: 2026-04-09T22:30:00
+    key_decisions:
+      - "4 proposals: percentile D4, variance borrowing, sentinel HCD z, control quality diagnostic"
+      - "Percentile D4 is immediate/low-risk; variance borrowing requires Monte Carlo validation"
+    output: "docs/_internal/research/hcd-informed-z-scoring.md"
+  research.2:
+    completed: 2026-04-09T23:30:00
+    key_decisions:
+      - "R1: 12 findings (3 FLAWED, 7 CONDITIONAL, 2 SOUND)"
+      - "FLAWED: shrinkage formula wrong scale, gate underpowered, n_hcd cap ad hoc"
+      - "AH1 (uncertainty reporting) is a strong alternative to shrinkage"
+    output: "docs/_internal/research/peer-reviews/hcd-informed-z-scoring-review.md"
+  research.3:
+    completed: 2026-04-09T23:45:00
+    key_decisions:
+      - "All 12 R1 findings accepted and incorporated"
+      - "Switched to percentile-based D4 (distribution-free)"
+      - "Switched to MAP prior / power prior framework for variance borrowing"
+      - "Uncertainty reporting elevated as potentially superior to shrinkage"
+    output: "docs/_internal/research/hcd-informed-z-scoring.md (revised)"
+  research.4:
+    completed: 2026-04-09T23:55:00
+    key_decisions:
+      - "R2: 12/12 R1 RESOLVED, 8 new (1 FLAWED NF5: OM BW confounding, 7 CONDITIONAL)"
+      - "Proposal 2 upgraded from R1-FLAWED to R2-CONDITIONAL"
+      - "10 novel sources (no overlap with R1)"
+      - "OM deployment deferred to LB+BW only until BW adjustment resolved"
+    output: "docs/_internal/research/peer-reviews/hcd-informed-z-scoring-review-r2.md"
+  research.5:
+    completed: 2026-04-10T00:00:00
+    key_decisions:
+      - "Validated -- no persistent FLAWED, no bikeshedding"
+      - "R2 NF5 (OM BW confounding) is new valid issue, not re-raised R1 finding"
+  research.6:
+    completed: 2026-04-10T00:05:00
+    key_decisions:
+      - "Corpus coherent -- existing docs already identify binary A-3/D4 as limitation"
+      - "phuse report recommends Bayesian HCD borrowing -- aligns with research direction"
+  research.7:
+    completed: 2026-04-10T00:10:00
+    key_decisions:
+      - "Probe: 0 BREAKS, 2 SCIENCE-FLAGS (S02/S10 -- Proposal 2 only, already gated)"
+      - "2 PROPAGATES (S21, S07), 1 STALE (S24 OM/BW interaction)"
+      - "All invariants SAFE"
+  research.7b:
+    completed: 2026-04-10T00:10:00
+    key_decisions:
+      - "REGISTRY updated to research-complete"
+      - "GAPs 254-257 persisted in TODO.md"
+      - "GAP-257 (OM BW confounding) blocks Proposal 1 OM deployment"
+  blueprint.0:
+    completed: 2026-04-10T01:00:00
+    key_decisions:
+      - "0 FAILED entries in decisions log"
+      - "assess_a3/a3_lb/a3_bw already return percentile_rank"
+      - "_score_d4_hcd is 8 lines, grows to ~30"
+      - "OM blocked by GAP-257"
+  blueprint.1:
+    completed: 2026-04-10T01:05:00
+    key_decisions:
+      - "Scope: Proposal 1 only (continuous percentile D4)"
+      - "5 features: D4 tier scoring, percentile propagation, OM exclusion, tests+validation, docs"
+      - "~80 net LOC (25 source + 60 test)"
+      - "OM excluded, direction-aware, no continuous D4, no +2 tier"
+  blueprint.2:
+    completed: 2026-04-10T01:15:00
+    key_decisions:
+      - "Architect: SCIENCE-FLAG (p=1.5 contradiction, p=25.0 boundary)"
+      - "Fix 1: suppression applies to ALL non-adverse percentiles including extreme"
+      - "Fix 2: p=25.0 -> -1 (within normal)"
+      - "Re-gate: PASS"
+  blueprint.3:
+    completed: 2026-04-10T01:20:00
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGS, 2 PROPAGATES (S07 confidence grades, validation docs)"
+  blueprint.4:
+    completed: 2026-04-10T01:25:00
+    key_decisions:
+      - "R1: 12 findings, 0 FLAWED, 6 CONDITIONAL, 6 SOUND"
+      - "All CONDITIONAL accepted: defensive checks, grade shift criteria, test cases"
+  blueprint.5:
+    completed: 2026-04-10T01:30:00
+    key_decisions:
+      - "All 6 CONDITIONAL incorporated"
+      - "Test count: 12->17"
+      - "Feature 4b added (grade shift validation with hard gate)"
+  blueprint.6:
+    completed: 2026-04-10T01:35:00
+    key_decisions:
+      - "R2: 7 findings, 0 FLAWED, 4 CONDITIONAL, 3 SOUND"
+      - "All R1 findings RESOLVED"
+      - "NF1 (logic order), NF2 (hard gate), NF3 (citation), NF5 (direction coverage) incorporated"
+  blueprint.7:
+    completed: 2026-04-10T01:40:00
+    key_decisions:
+      - "All gaps verified in REGISTRY.md and TODO.md"
+      - "GAP-254/255/256/257 persisted"
+      - "Build plan validated and complete"
+  build.1:
+    completed: 2026-04-15T17:00:00
+    key_decisions:
+      - "Direction field uses 'up'/'down' not 'increase'/'decrease' -- fixed in implementation"
+      - "11 direction-aware suppressions now fire correctly"
+      - "Signal scores: 0 changes (regression invariant holds)"
+      - "Grade changes: 17/190 = 8.9% (hard gate PASS, limit 30%)"
+      - "Upgrades dominate (15:2) -- expected, corrects GAP-236 (binary underscoring skewed endpoints)"
+      - "29/29 unit tests pass, 16 studies regenerated, all 3 doc generators pass"
+    output: "backend/services/analysis/confidence.py, backend/tests/test_d4_hcd_scoring.py"

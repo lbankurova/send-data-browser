@@ -129,12 +129,58 @@ def _score_d3_concordance(f: dict) -> dict:
 def _score_d4_hcd(f: dict) -> dict:
     hcd = f.get("_hcd_assessment")
     if not hcd or hcd.get("result") == "no_hcd":
-        return _dim("D4", "Historical controls", None, "No HCD data — skipped")
-    result = hcd["result"]
+        return _dim("D4", "Historical controls", None, "No HCD data -- skipped")
+
+    # Gate 1: OM domain excluded from percentile scoring (BW confounding,
+    # Bailey et al. 2004 r=0.51). Use binary until BW-adjusted percentiles
+    # are implemented (GAP-257).
+    domain = f.get("domain")
+    if domain == "OM" or domain is None:
+        return _d4_binary(hcd, "(BW-unadjusted -- binary)" if domain == "OM" else "")
+
+    # Gate 2: percentile_rank must be available
+    pct = hcd.get("percentile_rank")
+    if pct is None:
+        return _d4_binary(hcd)
+
+    # Gate 3: direction-aware suppression -- a percentile in the non-adverse
+    # direction does not support the finding's adverse interpretation.
+    # Direction field uses "up"/"down" (classification pipeline output).
+    direction = f.get("direction")
+    if direction in ("increase", "up") and pct < 25:
+        return _dim("D4", "Historical controls", 0,
+                     f"HCD p={pct:.1f}% -- non-adverse direction for '{direction}' finding")
+    if direction in ("decrease", "down") and pct > 75:
+        return _dim("D4", "Historical controls", 0,
+                     f"HCD p={pct:.1f}% -- non-adverse direction for '{direction}' finding")
+
+    # Percentile tier mapping (distribution-free, calibrated R1-F4/F5)
+    if pct < 2.5 or pct > 97.5:
+        tier_label = "extreme"
+        score = +1
+    elif pct < 10 or pct > 90:
+        tier_label = "unusual"
+        score = +1
+    elif pct < 25 or pct > 75:
+        tier_label = "marginal"
+        score = 0
+    else:  # 25 <= pct <= 75
+        tier_label = "within normal"
+        score = -1
+
+    return _dim("D4", "Historical controls", score,
+                f"HCD p={pct:.1f}% ({tier_label})")
+
+
+def _d4_binary(hcd: dict, suffix: str = "") -> dict:
+    """Binary within/outside HCD fallback for D4 scoring."""
+    result = hcd.get("result", "within_hcd")
+    detail = hcd.get("detail", "")
+    if suffix:
+        detail = f"{detail} {suffix}" if detail else suffix
     if result == "outside_hcd":
-        return _dim("D4", "Historical controls", +1, f"Outside HCD range — {hcd.get('detail', '')}")
-    # within_hcd
-    return _dim("D4", "Historical controls", -1, f"Within HCD range — {hcd.get('detail', '')}")
+        return _dim("D4", "Historical controls", +1, f"Outside HCD range -- {detail}")
+    return _dim("D4", "Historical controls", -1, f"Within HCD range -- {detail}")
 
 
 # ---------------------------------------------------------------------------
