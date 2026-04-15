@@ -1,8 +1,8 @@
 topic: tumor-evaluation
 started: 2026-04-08T10:00:00Z
 phase: blueprint
-phase: blueprint-complete
-current_step: build.0
+phase: complete
+current_step: complete
 completed: {}
 checkpoints:
   research.1:

@@ -108,6 +108,7 @@ def generate(study_id: str):
     _dose_groups = dose_context.dose_groups
     mortality = None
     early_death_subjects = None
+    _strain = None
     try:
         from services.analysis.hcd import get_study_duration_days, get_strain
         _strain = get_strain(study)
@@ -203,7 +204,7 @@ def generate(study_id: str):
     _tick("1cde_start")
     print("Phases 1c-1e: Subject context, tumor summary, food consumption (parallel)...")
     with ThreadPoolExecutor(max_workers=3) as pool:
-        fut_tumor = pool.submit(build_tumor_summary, findings, study)
+        fut_tumor = pool.submit(build_tumor_summary, findings, study, subjects=_subjects, strain=_strain)
         fut_food = pool.submit(
             build_food_consumption_summary_with_subjects,
             findings, study, early_death_subjects=early_death_subjects,

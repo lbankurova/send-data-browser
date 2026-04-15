@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "sources": [
+    "Kumar et al. 2023 Toxicol Pathol (Labcorp SD HCD, ~1800 animals)",
+    "Dinse et al. 2010 Toxicol Pathol 38:765-775 (NTP F344/B6C3F1)",
+    "Brix et al. 2005 Toxicol Pathol 33:477-483 (NTP)",
+    "Haseman et al. 1998 Toxicol Pathol 26:428-441 (NTP F344)",
+    "Morse et al. 2025 Int J Toxicol (Charles River SD + WH)",
+    "Nolte et al. 2010 RITA Wistar"
+  ],
+  "strains": {
+    "SPRAGUE-DAWLEY": {
+      "aliases": ["SD", "CRL:CD(SD)", "HSD:SPRAGUE DAWLEY"],
+      "rates": {
+        "M": {
+          "PITUITARY_ADENOMA": {"rate": 0.564, "n": 900, "source": "Kumar 2023"},
+          "THYROID_C_CELL_ADENOMA": {"rate": 0.109, "n": 900, "source": "Kumar 2023"},
+          "ADRENAL_PHEOCHROMOCYTOMA": {"rate": 0.089, "n": 900, "source": "Kumar 2023"},
+          "LEYDIG_CELL_TUMOR": {"rate": 0.04, "n": 900, "source": "Kumar 2023"}
+        },
+        "F": {
+          "PITUITARY_ADENOMA": {"rate": 0.771, "n": 900, "source": "Kumar 2023"},
+          "MAMMARY_FIBROADENOMA": {"rate": 0.50, "n": 900, "source": "Kumar 2023"},
+          "MAMMARY_CARCINOMA": {"rate": 0.175, "n": 900, "source": "Kumar 2023"},
+          "THYROID_C_CELL_ADENOMA": {"rate": 0.085, "n": 900, "source": "Kumar 2023"}
+        }
+      }
+    },
+    "WISTAR HAN": {
+      "aliases": ["WH", "CRL:WI(HAN)", "RCCHAN:WIST", "HSD:WISTAR HAN"],
+      "rates": {
+        "M": {
+          "PITUITARY_ADENOMA": {"rate": 0.407, "n": 600, "source": "Morse 2025"},
+          "THYROID_C_CELL_ADENOMA": {"rate": 0.08, "n": 600, "source": "estimated"},
+          "LEYDIG_CELL_TUMOR": {"rate": 0.15, "n": 600, "source": "Nolte 2010 median"}
+        },
+        "F": {
+          "PITUITARY_ADENOMA": {"rate": 0.586, "n": 600, "source": "Morse 2025"},
+          "MAMMARY_FIBROADENOMA": {"rate": 0.16, "n": 600, "source": "Morse 2025"},
+          "THYMOMA": {"rate": 0.08, "n": 600, "source": "Morse 2025"}
+        }
+      }
+    },
+    "F344": {
+      "aliases": ["FISCHER 344", "F344/N", "CDF"],
+      "rates": {
+        "M": {
+          "LEYDIG_CELL_TUMOR": {"rate": 0.90, "n": 5000, "source": "NTP 2009"},
+          "MONONUCLEAR_CELL_LEUKEMIA": {"rate": 0.38, "n": 5000, "source": "NTP 2009"},
+          "PITUITARY_ADENOMA": {"rate": 0.40, "n": 5000, "source": "Haseman 1998"},
+          "THYROID_C_CELL_ADENOMA": {"rate": 0.24, "n": 5000, "source": "NTP 2009"}
+        },
+        "F": {
+          "MONONUCLEAR_CELL_LEUKEMIA": {"rate": 0.21, "n": 5000, "source": "NTP 2009"},
+          "PITUITARY_ADENOMA": {"rate": 0.55, "n": 5000, "source": "Haseman 1998"},
+          "THYROID_C_CELL_ADENOMA": {"rate": 0.17, "n": 5000, "source": "NTP 2009"}
+        }
+      }
+    }
+  }
+}

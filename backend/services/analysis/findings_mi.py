@@ -44,6 +44,15 @@ _NEOPLASM_EXCLUSIONS = frozenset({
 # Suffix patterns for catch-all neoplasm detection
 _NEOPLASM_SUFFIXES = ("OMA", "SARCOMA", "CARCINOMA")
 
+# Terms ending in -oma that are always MALIGNANT despite -oma suffix convention
+# (which normally implies benign). THYMOMA excluded -- behavior ranges benign to
+# malignant per WHO classification. MESOTHELIOMA excluded -- can be benign.
+_MALIGNANT_OMA_TERMS = frozenset({
+    "LYMPHOMA", "MELANOMA", "GLIOMA", "HEPATOBLASTOMA",
+    "SEMINOMA", "MYELOMA", "PLASMACYTOMA", "RETINOBLASTOMA",
+    "NEPHROBLASTOMA", "NEUROBLASTOMA",
+})
+
 
 def _classify_mi_neoplasm(mistresc: str, mirescat: str | None) -> tuple[bool, str | None]:
     """Classify an MI finding as neoplastic and determine behavior.
@@ -63,20 +72,37 @@ def _classify_mi_neoplasm(mistresc: str, mirescat: str | None) -> tuple[bool, st
 
     # Fallback: text matching on MISTRESC
     upper = mistresc.upper().strip()
+    is_neo = False
 
     # Explicit term list
     for term in _NEOPLASM_TERMS:
         if term in upper:
-            return True, None  # neoplastic but behavior unknown
+            is_neo = True
+            break
 
     # Suffix catch-all: any word ending in -OMA/-SARCOMA/-CARCINOMA
-    words = upper.replace(",", " ").split()
-    for word in words:
-        if any(word.endswith(sfx) for sfx in _NEOPLASM_SUFFIXES):
-            if word not in _NEOPLASM_EXCLUSIONS:
-                return True, None
+    if not is_neo:
+        words = upper.replace(",", " ").split()
+        for word in words:
+            if any(word.endswith(sfx) for sfx in _NEOPLASM_SUFFIXES):
+                if word not in _NEOPLASM_EXCLUSIONS:
+                    is_neo = True
+                    break
 
-    return False, None
+    if not is_neo:
+        return False, None
+
+    # Infer behavior from morphology text when MIRESCAT is absent
+    behavior: str | None = None
+    if any(term in upper for term in _MALIGNANT_OMA_TERMS):
+        behavior = "MALIGNANT"
+    elif upper.endswith("CARCINOMA") or "CARCINOMA" in upper:
+        behavior = "MALIGNANT"
+    elif upper.endswith("SARCOMA") or "SARCOMA" in upper:
+        behavior = "MALIGNANT"
+    elif upper.endswith("BLASTOMA") or "BLASTOMA" in upper:
+        behavior = "MALIGNANT"
+    return True, behavior
 _N_OF_M = re.compile(r"^(\d+)\s+OF\s+(\d+)$", re.IGNORECASE)
 
 

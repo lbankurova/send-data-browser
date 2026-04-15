@@ -551,10 +551,10 @@ class TestTumorSummary:
                 violations.append(f"  summaries[{i}]: behavior={b!r}")
         assert not violations, f"BFIELD-56 behavior violations:\n" + "\n".join(violations)
 
-    def test_combined_analyses_array(self, data):
-        """BFIELD-57: combined_analyses is array, never null."""
-        v = data.get("combined_analyses")
-        assert isinstance(v, list), f"BFIELD-57: combined_analyses is {type(v).__name__}"
+    def test_parallel_analyses_array(self, data):
+        """BFIELD-57: parallel_analyses is array, never null."""
+        v = data.get("parallel_analyses")
+        assert isinstance(v, list), f"BFIELD-57: parallel_analyses is {type(v).__name__}"
 
     def test_progression_sequences_array(self, data):
         """BFIELD-58: progression_sequences is array, never null."""

@@ -1099,3 +1099,149 @@ def get_hcd_references(study, study_id: str) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Tumor HCD — strain-specific background tumor incidence rates
+# ---------------------------------------------------------------------------
+
+_TUMOR_HCD_PATH = SHARED_DIR / "config" / "hcd-tumor-rates.json"
+_TUMOR_HCD: dict | None = None
+
+# Translate (organ, morphology) from SEND data to HCD key.
+# Organ is normalized (GLAND stripped), morphology is first comma-token or full.
+_ORGAN_MORPHOLOGY_TO_HCD_KEY: dict[tuple[str, str], str] = {
+    ("PITUITARY", "ADENOMA"): "PITUITARY_ADENOMA",
+    ("PITUITARY", "CARCINOMA"): "PITUITARY_ADENOMA",  # combined
+    ("THYROID", "C-CELL ADENOMA"): "THYROID_C_CELL_ADENOMA",
+    ("THYROID", "C CELL ADENOMA"): "THYROID_C_CELL_ADENOMA",
+    ("THYROID", "FOLLICULAR ADENOMA"): "THYROID_FOLLICULAR_ADENOMA",
+    ("THYROID", "FOLLICULAR CARCINOMA"): "THYROID_FOLLICULAR_ADENOMA",
+    ("ADRENAL", "PHEOCHROMOCYTOMA"): "ADRENAL_PHEOCHROMOCYTOMA",
+    ("ADRENAL", "PHEOCHROMOCYTOMA BENIGN"): "ADRENAL_PHEOCHROMOCYTOMA",
+    ("ADRENAL", "PHEOCHROMOCYTOMA MALIGNANT"): "ADRENAL_PHEOCHROMOCYTOMA",
+    ("TESTIS", "INTERSTITIAL CELL TUMOR"): "LEYDIG_CELL_TUMOR",
+    ("TESTIS", "LEYDIG CELL TUMOR"): "LEYDIG_CELL_TUMOR",
+    ("TESTIS", "INTERSTITIAL CELL ADENOMA"): "LEYDIG_CELL_TUMOR",
+    ("MAMMARY", "FIBROADENOMA"): "MAMMARY_FIBROADENOMA",
+    ("MAMMARY", "CARCINOMA"): "MAMMARY_CARCINOMA",
+    ("MAMMARY", "ADENOCARCINOMA"): "MAMMARY_CARCINOMA",
+    ("LIVER", "HEPATOCELLULAR ADENOMA"): "HEPATOCELLULAR_ADENOMA",
+    ("LIVER", "HEPATOCELLULAR CARCINOMA"): "HEPATOCELLULAR_CARCINOMA",
+    ("LIVER", "ADENOMA"): "HEPATOCELLULAR_ADENOMA",
+    ("LIVER", "CARCINOMA"): "HEPATOCELLULAR_CARCINOMA",
+    ("SPLEEN", "MONONUCLEAR CELL LEUKEMIA"): "MONONUCLEAR_CELL_LEUKEMIA",
+    ("THYMUS", "THYMOMA"): "THYMOMA",
+}
+
+# Strain aliases for tumor HCD (reuses the same pattern as HcdRangeDB)
+_TUMOR_STRAIN_ALIASES: dict[str, str] = {}
+
+
+def _load_tumor_hcd() -> dict:
+    """Lazy-load tumor HCD seed data."""
+    global _TUMOR_HCD, _TUMOR_STRAIN_ALIASES
+    if _TUMOR_HCD is not None:
+        return _TUMOR_HCD
+    try:
+        with open(_TUMOR_HCD_PATH) as f:
+            data = json.load(f)
+        _TUMOR_HCD = data
+        # Build strain alias index
+        for strain_key, strain_data in data.get("strains", {}).items():
+            _TUMOR_STRAIN_ALIASES[strain_key.strip().upper()] = strain_key
+            for alias in strain_data.get("aliases", []):
+                _TUMOR_STRAIN_ALIASES[alias.strip().upper()] = strain_key
+    except Exception as e:
+        log.warning("Failed to load tumor HCD rates: %s", e)
+        _TUMOR_HCD = {"strains": {}}
+    return _TUMOR_HCD
+
+
+def _normalize_organ(organ: str) -> str:
+    """Normalize organ name for HCD key lookup: strip GLAND suffix/prefix."""
+    o = organ.strip().upper()
+    # "GLAND, THYROID" -> "THYROID"
+    if o.startswith("GLAND,"):
+        o = o[6:].strip()
+    # "PITUITARY GLAND" -> "PITUITARY"
+    if o.endswith(" GLAND"):
+        o = o[:-6].strip()
+    return o
+
+
+def _normalize_morphology(morph: str) -> list[str]:
+    """Return candidate morphology keys for HCD lookup.
+
+    Tries: first comma-token, full string, with behavior suffixes stripped.
+    """
+    m = morph.strip().upper()
+    candidates = []
+    # Strip behavior suffixes
+    for sfx in (", BENIGN", ", MALIGNANT", ", UNDETERMINED"):
+        if m.endswith(sfx):
+            m = m[: -len(sfx)].strip()
+            break
+    # First comma-token
+    if "," in m:
+        first_token = m.split(",")[0].strip()
+        candidates.append(first_token)
+    # Full string
+    candidates.append(m)
+    return candidates
+
+
+def assess_tumor_hcd(
+    organ: str,
+    morphology: str,
+    strain: str | None,
+    sex: str,
+) -> dict:
+    """Look up background tumor incidence rate for HCD-informed Haseman classification.
+
+    Returns {background_rate, n, source, is_rare} or all-None if no match.
+    """
+    data = _load_tumor_hcd()
+    result = {"background_rate": None, "n": None, "source": None, "is_rare": None}
+
+    if not strain:
+        return result
+
+    # Resolve strain
+    canonical = _TUMOR_STRAIN_ALIASES.get(strain.strip().upper())
+    if not canonical:
+        return result
+
+    strain_data = data.get("strains", {}).get(canonical)
+    if not strain_data:
+        return result
+
+    sex_key = sex.strip().upper()
+    rates = strain_data.get("rates", {}).get(sex_key)
+    if not rates:
+        return result
+
+    # Normalize organ and morphology, try lookup
+    norm_organ = _normalize_organ(organ)
+    morph_candidates = _normalize_morphology(morphology)
+
+    hcd_key = None
+    for mc in morph_candidates:
+        hcd_key = _ORGAN_MORPHOLOGY_TO_HCD_KEY.get((norm_organ, mc))
+        if hcd_key:
+            break
+
+    if not hcd_key:
+        return result
+
+    entry = rates.get(hcd_key)
+    if not entry:
+        return result
+
+    rate = entry["rate"]
+    return {
+        "background_rate": rate,
+        "n": entry.get("n"),
+        "source": entry.get("source"),
+        "is_rare": rate < 0.01,
+    }
+
+

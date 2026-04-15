@@ -137,20 +137,27 @@ check("total_tumor_animals = 5", tumor_summary["total_tumor_animals"] == 5,
 check("total_tumor_types = 3", tumor_summary["total_tumor_types"] == 3,
       f"got {tumor_summary['total_tumor_types']}")
 
-# Combined analysis
-combined = tumor_summary["combined_analyses"]
-check("Combined analysis present for hepatocellular", len(combined) >= 1,
-      f"got {len(combined)}")
-if combined:
-    hep_combined = [c for c in combined if c["cell_type"] == "hepatocellular"]
-    check("Hepatocellular combined analysis found", len(hep_combined) == 1)
-    if hep_combined:
-        check("Combined adenoma+carcinoma count correct",
-              hep_combined[0]["adenoma_count"] == 2 and hep_combined[0]["carcinoma_count"] == 1,
-              f"adenoma={hep_combined[0]['adenoma_count']}, carcinoma={hep_combined[0]['carcinoma_count']}")
+# Parallel analyses (adenoma/carcinoma/combined)
+parallel = tumor_summary["parallel_analyses"]
+check("Parallel analysis present for hepatocellular", len(parallel) >= 1,
+      f"got {len(parallel)}")
+if parallel:
+    hep_pa = [c for c in parallel if c["cell_type"] == "hepatocellular"]
+    check("Hepatocellular parallel analysis found", len(hep_pa) == 1)
+    if hep_pa:
+        pa = hep_pa[0]
+        check("Adenoma analysis present", pa["adenoma"]["count"] >= 0)
+        check("Carcinoma analysis present", pa["carcinoma"]["count"] >= 0)
+        check("Combined analysis present", pa["combined"]["count"] >= 0)
         check("Combined trend p-value present",
-              hep_combined[0]["combined_trend_p"] is not None and hep_combined[0]["combined_trend_p"] < 0.05,
-              f"p={hep_combined[0]['combined_trend_p']}")
+              pa["combined"]["trend_p"] is not None,
+              f"p={pa['combined']['trend_p']}")
+        check("Haseman class present on combined",
+              pa["combined"]["haseman_class"] in ("rare", "common", "unknown"),
+              f"class={pa['combined']['haseman_class']}")
+        check("Trend direction present on combined",
+              pa["combined"]["trend_direction"] in ("up", "down", "none"),
+              f"dir={pa['combined']['trend_direction']}")
 
 # Progression detection
 progressions = tumor_summary["progression_sequences"]

@@ -7,7 +7,7 @@ const EMPTY_TUMOR_SUMMARY: TumorSummary = {
   total_tumor_animals: 0,
   total_tumor_types: 0,
   summaries: [],
-  combined_analyses: [],
+  parallel_analyses: [],
   progression_sequences: [],
   palpable_masses: [],
 };

@@ -179,16 +179,24 @@ def trend_test(groups: list[np.ndarray]) -> dict:
     return {"statistic": float(Z), "p_value": float(p_val)}
 
 
-def trend_test_incidence(counts: list[int], totals: list[int]) -> dict:
+def trend_test_incidence(
+    counts: list[int] | list[float],
+    totals: list[int] | list[float],
+    dose_scores: list[float] | None = None,
+) -> dict:
     """Cochran-Armitage-like trend test for incidence data.
     Uses a chi-square trend approximation.
     counts = incidence per dose group, totals = n per dose group.
+    dose_scores = optional actual dose values (default: equally-spaced integers).
+    Accepts float totals for poly-3 adjusted denominators.
     """
     k = len(counts)
     if k < 2 or sum(totals) == 0:
         return {"statistic": None, "p_value": None}
 
-    scores = list(range(k))  # dose levels as scores
+    scores = list(dose_scores) if dose_scores is not None else list(range(k))
+    if len(scores) != k:
+        return {"statistic": None, "p_value": None}
     n = sum(totals)
     p_bar = sum(counts) / n
 
@@ -208,6 +216,103 @@ def trend_test_incidence(counts: list[int], totals: list[int]) -> dict:
     z = num / np.sqrt(denom_sq)
     p_val = 2 * (1 - stats.norm.cdf(abs(z)))
     return {"statistic": float(z), "p_value": float(p_val)}
+
+
+def poly3_test(
+    animal_data: list[dict],
+    study_duration: int,
+    k: int = 3,
+    dose_scores: list[float] | None = None,
+) -> dict:
+    """Poly-3 survival-adjusted tumor incidence test (Peddada et al. 2005).
+
+    Each animal_data record: {dose_level: int, has_tumor: bool,
+    disposition_day: int, is_terminal: bool}.
+    study_duration: terminal sacrifice day (T).
+    k: polynomial degree (default 3 per NTP convention).
+    dose_scores: optional actual dose values for C-A trend test.
+
+    Returns dict with trend_p, pairwise_p, adjusted_rates, effective_n.
+    """
+    if not animal_data or study_duration <= 0:
+        return {
+            "method": "poly3_peddada", "k": k,
+            "trend_p": None, "trend_statistic": None,
+            "pairwise_p": {}, "adjusted_rates": {}, "effective_n": {},
+        }
+
+    # Group animals by dose level
+    groups: dict[int, list[dict]] = {}
+    for a in animal_data:
+        dl = a["dose_level"]
+        groups.setdefault(dl, []).append(a)
+
+    dose_levels = sorted(groups.keys())
+    if len(dose_levels) < 2:
+        return {
+            "method": "poly3_peddada", "k": k,
+            "trend_p": None, "trend_statistic": None,
+            "pairwise_p": {}, "adjusted_rates": {}, "effective_n": {},
+        }
+
+    # Compute poly-3 weights and adjusted rates per group
+    adjusted_rates: dict[int, float] = {}
+    effective_n: dict[int, float] = {}
+    tumor_counts: dict[int, int] = {}
+
+    for dl in dose_levels:
+        animals = groups[dl]
+        sum_w = 0.0
+        sum_y = 0
+        for a in animals:
+            if a["has_tumor"] or a["is_terminal"]:
+                w = 1.0
+            else:
+                t = max(a["disposition_day"], 1)
+                w = (t / study_duration) ** k
+            sum_w += w
+            if a["has_tumor"]:
+                sum_y += 1
+        effective_n[dl] = sum_w
+        tumor_counts[dl] = sum_y
+        adjusted_rates[dl] = sum_y / sum_w if sum_w > 0 else 0.0
+
+    # Trend test: weighted C-A with poly-3 adjusted denominators
+    counts_list = [tumor_counts[dl] for dl in dose_levels]
+    totals_list = [effective_n[dl] for dl in dose_levels]
+    trend_result = trend_test_incidence(counts_list, totals_list, dose_scores=dose_scores)
+
+    # Pairwise Wald Z-tests: each treated group vs control
+    control_dl = dose_levels[0]
+    pi_c = adjusted_rates[control_dl]
+    n_c = effective_n[control_dl]
+    pairwise_p: dict[int, float | None] = {}
+
+    for dl in dose_levels[1:]:
+        pi_t = adjusted_rates[dl]
+        n_t = effective_n[dl]
+        # Boundary guard: identical zero or full incidence
+        if (pi_c == 0 and pi_t == 0) or (pi_c == 1.0 and pi_t == 1.0):
+            pairwise_p[dl] = None
+            continue
+        v_c = pi_c * (1 - pi_c) / n_c if n_c > 0 else 0
+        v_t = pi_t * (1 - pi_t) / n_t if n_t > 0 else 0
+        denom = np.sqrt(v_c + v_t)
+        if denom <= 0:
+            pairwise_p[dl] = None
+            continue
+        z_pw = (pi_t - pi_c) / denom
+        pairwise_p[dl] = float(2 * (1 - stats.norm.cdf(abs(z_pw))))
+
+    return {
+        "method": "poly3_peddada",
+        "k": k,
+        "trend_p": trend_result["p_value"],
+        "trend_statistic": trend_result["statistic"],
+        "pairwise_p": {str(dl): p for dl, p in pairwise_p.items()},
+        "adjusted_rates": {str(dl): round(r, 6) for dl, r in adjusted_rates.items()},
+        "effective_n": {str(dl): round(n, 4) for dl, n in effective_n.items()},
+    }
 
 
 def compute_effect_size(group1: list | np.ndarray, group2: list | np.ndarray) -> float | None:

@@ -189,6 +189,18 @@ export function fetchAssayValidation(studyId: string): Promise<AssayValidation> 
   return fetchJson(`/studies/${encodeURIComponent(studyId)}/analysis/assay-validation`);
 }
 
+export interface TumorAnalysis {
+  count: number;
+  by_dose: { dose_level: number; n: number; affected: number; incidence: number }[];
+  trend_p: number | null;
+  trend_p_one_sided: number | null;
+  trend_direction: string;
+  poly3_trend_p: number | null;
+  haseman_threshold: number;
+  haseman_class: string;
+  meets_haseman: boolean | null;
+}
+
 export interface TumorSummary {
   has_tumors: boolean;
   total_tumor_animals: number;
@@ -203,14 +215,15 @@ export interface TumorSummary {
     by_dose: { dose_level: number; n: number; affected: number; incidence: number }[];
     trend_p: number | null;
   }[];
-  combined_analyses: {
+  parallel_analyses: {
     organ: string;
     cell_type: string;
     sex: string;
-    adenoma_count: number;
-    carcinoma_count: number;
-    combined_by_dose: { dose_level: number; n: number; affected: number; incidence: number }[];
-    combined_trend_p: number | null;
+    adenoma: TumorAnalysis;
+    carcinoma: TumorAnalysis;
+    combined: TumorAnalysis;
+    discordance: string | null;
+    discordance_interpretation: string | null;
   }[];
   progression_sequences: {
     organ: string;
