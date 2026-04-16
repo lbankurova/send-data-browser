@@ -1,0 +1,49 @@
+# E2E Testing Gate — SENDEX (pcc)
+#
+# Used by: lattice e2e run, lattice e2e classify
+# Integrated into build-cycle (between implement and review)
+# and bug-fix-cycle (between write-test and stress-gate).
+
+e2e:
+  testability:
+    e2e_testable:
+      - "frontend/src/**/*.ts"
+      - "frontend/src/**/*.tsx"
+      - "backend/**/*.py"
+      - "backend/generator/**/*.py"
+      - "shared/**/*.yaml"
+      - "shared/**/*.json"
+    code_review_only:
+      - "docs/**"
+      - "*.md"
+      - ".lattice/**"
+      - ".claude/**"
+      - "scripts/**"
+      - "workflows/**"
+      - "commands/**"
+      - "agents/**"
+
+  suites:
+    - name: frontend-build
+      command: "cd C:/pg/pcc/frontend && npm run build"
+      comparison: exit_code
+      timeout: 60000
+
+    - name: frontend-tests
+      command: "cd C:/pg/pcc/frontend && npm test"
+      comparison: exit_code
+      timeout: 120000
+
+    - name: python-syntax
+      command: "cd C:/pg/pcc && find backend -name '*.py' -exec C:/pg/pcc/backend/venv/Scripts/python.exe -c \"import py_compile; py_compile.compile('{}', doraise=True)\" \\;"
+      comparison: exit_code
+      timeout: 30000
+
+  # No global setup/teardown needed — suites are self-contained.
+  # (Validation ratchet is a separate mechanism, not duplicated here.)
+
+  timeouts:
+    per_suite: 120000
+    total: 300000
+
+  base_branch: master
