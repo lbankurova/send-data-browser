@@ -3,6 +3,7 @@ import {
   fetchStudyPreferences,
   renameStudy,
   updateStudyOrder,
+  updateTestArticleOverride,
 } from "@/lib/api";
 
 export function useStudyPreferences() {
@@ -33,6 +34,22 @@ export function useUpdateStudyOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (order: string[]) => updateStudyOrder(order),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["study-preferences"] });
+    },
+  });
+}
+
+export function useUpdateTestArticleOverride() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      studyId,
+      testArticle,
+    }: {
+      studyId: string;
+      testArticle: string | null;
+    }) => updateTestArticleOverride(studyId, testArticle),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["study-preferences"] });
     },

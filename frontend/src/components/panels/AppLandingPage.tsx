@@ -1,23 +1,38 @@
 import { useCallback, useRef, useState, useMemo, useEffect } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, MoreVertical, ChevronRight, Upload, Loader2, GripVertical, Pencil } from "lucide-react";
+import {
+  FlaskConical, MoreVertical, ChevronRight, Upload, Loader2, GripVertical, Pencil,
+  Columns3, ArrowUp, ArrowDown, Filter as FilterIcon, X, Star, Eye, EyeOff, Search, Trash2,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStudies } from "@/hooks/useStudies";
 import { useStudyPortfolio } from "@/hooks/useStudyPortfolio";
 import { useProjects } from "@/hooks/useProjects";
 import type { Project } from "@/hooks/useProjects";
-import { useStudyPreferences, useRenameStudy, useUpdateStudyOrder } from "@/hooks/useStudyPreferences";
+import { useStudyPreferences, useRenameStudy, useUpdateStudyOrder, useUpdateTestArticleOverride } from "@/hooks/useStudyPreferences";
+import { useSessionState } from "@/hooks/useSessionState";
 import { cn } from "@/lib/utils";
 import { useSelection } from "@/contexts/SelectionContext";
 import { generateStudyReport } from "@/lib/report-generator";
 import { importStudy, deleteStudy } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import type { StudySummary } from "@/types";
 import { getPipelineStageColor } from "@/lib/severity-colors";
 import { noael } from "@/lib/study-accessors";
 import type { StudyMetadata } from "@/hooks/useStudyPortfolio";
 import { routeStudyTypeWithQuality } from "@/lib/study-type-registry";
+import {
+  isFilterActive,
+  describeFilter,
+  matchesFilter,
+  compareValues,
+  type ColType,
+  type ColumnFilter,
+} from "./studies-table-helpers";
 
 
 type DisplayStudy = StudySummary & {
@@ -32,6 +47,527 @@ type DisplayStudy = StudySummary & {
 /** Display label for a study: display_name if set, otherwise study_id */
 function studyLabel(s: DisplayStudy): string {
   return s.display_name || s.study_id;
+}
+
+/* ── Studies-table column system ────────────────────────────────── */
+
+type CellCtx = {
+  project: Project | undefined;
+  /** User-provided override for the Test article column. */
+  testArticleOverride: string | undefined;
+};
+
+interface StudyColumn {
+  key: string;
+  label: string;
+  type: ColType;
+  /** Visible by default. */
+  default: boolean;
+  align?: "left" | "right";
+  /** Raw value used for sort + filter + default render. */
+  value: (s: DisplayStudy, ctx: CellCtx) => string | number | null;
+  /** Optional custom cell renderer. */
+  render?: (s: DisplayStudy, ctx: CellCtx) => ReactNode;
+}
+
+function joinList(v: string[] | null | undefined): string | null {
+  if (!v || v.length === 0) return null;
+  return v.join(", ");
+}
+
+function fmtBool(v: boolean | null | undefined): string | null {
+  if (v == null) return null;
+  return v ? "Yes" : "No";
+}
+
+const STUDY_COLUMNS: StudyColumn[] = [
+  {
+    key: "protocol", label: "Protocol", type: "text", default: true,
+    value: (s) => (s.protocol && s.protocol !== "NOT AVAILABLE" ? s.protocol : null),
+  },
+  {
+    key: "test_article", label: "Test article", type: "category", default: true,
+    // Priority: user override > portfolio metadata TS.TRT > program compound (same value, different source).
+    value: (s, { project, testArticleOverride }) =>
+      testArticleOverride ?? s.portfolio_metadata?.test_article ?? project?.compound ?? null,
+    // render is provided inline by the row to wire the edit handler
+  },
+  {
+    key: "species", label: "Species", type: "category", default: true,
+    value: (s) => s.species,
+  },
+  {
+    key: "subjects", label: "Subj", type: "number", default: true, align: "right",
+    value: (s) => s.subjects ?? null,
+  },
+  {
+    key: "duration_weeks", label: "Dur", type: "number", default: true,
+    value: (s) => s.duration_weeks ?? null,
+    render: (s) => s.duration_weeks ? <span className="text-muted-foreground">{s.duration_weeks}w</span> : <span className="text-muted-foreground">—</span>,
+  },
+  {
+    key: "study_type", label: "Type", type: "category", default: true,
+    value: (s) => {
+      if (!s.study_type) return null;
+      const r = routeStudyTypeWithQuality(s.study_type);
+      return r.config.display_name;
+    },
+    render: (s) => {
+      if (!s.study_type) return <span className="text-muted-foreground">—</span>;
+      const r = routeStudyTypeWithQuality(s.study_type);
+      return (
+        <span title={r.match === "fallback" ? `Unrecognized SSTYP: "${s.study_type}"` : s.study_type ?? undefined}>
+          {r.config.display_name}
+          {r.match === "fallback" && (
+            <span className="ml-1 rounded bg-amber-100 px-0.5 text-[9px] font-medium text-amber-700">fallback</span>
+          )}
+        </span>
+      );
+    },
+  },
+  {
+    key: "start_date", label: "Start", type: "date", default: true,
+    value: (s) => s.start_date?.slice(0, 10) ?? null,
+    render: (s) => <span className="tabular-nums text-muted-foreground">{s.start_date?.slice(0, 10) ?? "—"}</span>,
+  },
+  {
+    key: "end_date", label: "End", type: "date", default: true,
+    value: (s) => s.end_date?.slice(0, 10) ?? null,
+    render: (s) => <span className="tabular-nums text-muted-foreground">{s.end_date?.slice(0, 10) ?? "—"}</span>,
+  },
+  {
+    key: "noael_value", label: "NOAEL", type: "text", default: true, align: "right",
+    value: (s) => s.noael_value ?? null,
+    render: (s) => <span className="tabular-nums">{s.noael_value ?? "—"}</span>,
+  },
+  {
+    key: "status", label: "Validation", type: "category", default: true,
+    value: (s) => s.status ?? null,
+    render: (s) => (
+      <span className="relative pl-3 text-muted-foreground">
+        {s.status === "Complete" && (
+          <span
+            className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
+            style={{ background: "#16a34a" }}
+          />
+        )}
+        {s.status}
+      </span>
+    ),
+  },
+  {
+    // Moved to end — least load-bearing metadata after validation status.
+    key: "pipeline_stage", label: "Stage", type: "category", default: true,
+    value: (s) => s.pipeline_stage ?? null,
+    render: (s) => s.pipeline_stage ? (
+      <span style={{ color: getPipelineStageColor(s.pipeline_stage) }}>
+        {s.pipeline_stage.charAt(0).toUpperCase() + s.pipeline_stage.slice(1).replace(/_/g, " ")}
+      </span>
+    ) : <span className="text-muted-foreground">—</span>,
+  },
+  // Optional columns from study + portfolio metadata
+  { key: "title", label: "Title", type: "text", default: false, value: (s) => s.portfolio_metadata?.title ?? null },
+  { key: "strain", label: "Strain", type: "category", default: false, value: (s) => s.portfolio_metadata?.strain ?? null },
+  { key: "route", label: "Route", type: "category", default: false, value: (s) => s.portfolio_metadata?.route ?? null },
+  { key: "recovery_weeks", label: "Recovery (w)", type: "number", default: false, value: (s) => s.portfolio_metadata?.recovery_weeks ?? null },
+  { key: "dose_unit", label: "Dose unit", type: "category", default: false, value: (s) => s.portfolio_metadata?.dose_unit ?? null },
+  {
+    key: "doses", label: "Doses", type: "text", default: false,
+    value: (s) => s.portfolio_metadata?.doses ? s.portfolio_metadata.doses.join(" / ") : null,
+  },
+  { key: "domain_count", label: "Domains", type: "number", default: false, align: "right", value: (s) => s.domain_count ?? null },
+  { key: "submission_date", label: "Submitted", type: "date", default: false, value: (s) => s.portfolio_metadata?.submission_date ?? null },
+  { key: "has_xpt", label: "Has XPT", type: "category", default: false, value: (s) => fmtBool(s.portfolio_metadata?.has_xpt) },
+  { key: "has_define", label: "Has define.xml", type: "category", default: false, value: (s) => fmtBool(s.portfolio_metadata?.has_define) },
+  { key: "has_nsdrg", label: "Has nSDRG", type: "category", default: false, value: (s) => fmtBool(s.portfolio_metadata?.has_nsdrg) },
+  {
+    key: "target_organs_reported", label: "Target organs (reported)", type: "text", default: false,
+    value: (s) => joinList(s.portfolio_metadata?.target_organs_reported),
+  },
+  {
+    key: "target_organs_derived", label: "Target organs (derived)", type: "text", default: false,
+    value: (s) => joinList(s.portfolio_metadata?.target_organs_derived),
+  },
+];
+
+const COLUMN_BY_KEY = new Map(STUDY_COLUMNS.map((c) => [c.key, c]));
+const DEFAULT_VISIBLE: string[] = STUDY_COLUMNS.filter((c) => c.default).map((c) => c.key);
+const DEFAULT_ORDER: string[] = STUDY_COLUMNS.map((c) => c.key);
+
+interface SortState { key: string; dir: "asc" | "desc" }
+
+type FilterMap = Record<string, ColumnFilter>;
+
+interface SavedView {
+  visible: string[];
+  order: string[];
+  sort: SortState | null;
+  filters: FilterMap;
+}
+
+/** Bump when STUDY_COLUMNS keys change — invalidates stale visible/order in sessionStorage. */
+const STUDY_COLUMNS_SCHEMA = 3;
+
+/* ── Column visibility / ordering popover ─────────────────────── */
+
+function ColumnsMenu({
+  visible,
+  order,
+  onChangeVisible,
+  onResetOrder,
+}: {
+  visible: ReadonlySet<string>;
+  order: string[];
+  onChangeVisible: (next: Set<string>) => void;
+  onResetOrder: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const orderedCols = order.map((k) => COLUMN_BY_KEY.get(k)).filter((c): c is StudyColumn => !!c);
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? orderedCols.filter((c) => c.label.toLowerCase().includes(q) || c.key.toLowerCase().includes(q))
+    : orderedCols;
+
+  const toggle = (key: string) => {
+    const next = new Set(visible);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    onChangeVisible(next);
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded border border-border/50 px-2 py-1 text-[11px] transition-colors hover:bg-accent",
+            visible.size < STUDY_COLUMNS.length && "text-primary border-primary/40"
+          )}
+          title="Show / hide columns"
+        >
+          <Columns3 className="h-3 w-3" />
+          Columns
+          {visible.size < STUDY_COLUMNS.length && (
+            <span className="text-muted-foreground">({visible.size}/{STUDY_COLUMNS.length})</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 p-0">
+        <div className="border-b px-3 py-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search columns..."
+              className="h-7 w-full rounded border bg-background pl-6 pr-2 text-xs outline-none focus:border-ring"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-b px-3 py-1.5">
+          <span className="text-[11px] text-muted-foreground">{visible.size} of {STUDY_COLUMNS.length} visible</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onChangeVisible(new Set(STUDY_COLUMNS.map((c) => c.key)))}
+              className="rounded p-1 text-muted-foreground hover:bg-accent"
+              title="Show all"
+            >
+              <Eye className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => onChangeVisible(new Set())}
+              className="rounded p-1 text-muted-foreground hover:bg-accent"
+              title="Hide all"
+            >
+              <EyeOff className="h-3 w-3" />
+            </button>
+            <button
+              onClick={onResetOrder}
+              className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent"
+              title="Reset to default order"
+            >
+              Reset order
+            </button>
+          </div>
+        </div>
+        <div className="max-h-72 overflow-y-auto py-1">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-4 text-center text-xs text-muted-foreground">No columns match "{search}"</div>
+          ) : (
+            filtered.map((col) => (
+              <label key={col.key} className="flex cursor-pointer items-center gap-2 px-3 py-1 hover:bg-accent">
+                <Checkbox
+                  checked={visible.has(col.key)}
+                  onCheckedChange={() => toggle(col.key)}
+                />
+                <span className="truncate text-xs">{col.label}</span>
+                <span className="ml-auto text-[9px] uppercase tracking-wider text-muted-foreground/60">{col.type}</span>
+              </label>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ── Per-column filter popover ────────────────────────────────── */
+
+function FilterPopover({
+  col,
+  filter,
+  distinctValues,
+  onChange,
+  onClear,
+}: {
+  col: StudyColumn;
+  filter: ColumnFilter | undefined;
+  distinctValues: string[];
+  onChange: (f: ColumnFilter) => void;
+  onClear: () => void;
+}) {
+  const active = isFilterActive(filter);
+  const [search, setSearch] = useState("");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "rounded p-0.5 transition-colors",
+            active ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"
+          )}
+          title={active ? `Active filter — ${describeFilter(col, filter!)}` : `Filter ${col.label}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <FilterIcon className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-0">
+        <div className="flex items-center justify-between border-b px-3 py-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{col.label}</span>
+          <button
+            onClick={onClear}
+            disabled={!active}
+            className="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent disabled:opacity-40"
+          >
+            Clear
+          </button>
+        </div>
+        <div className="p-3">
+          {col.type === "category" && (
+            <CategoryFilterUI
+              filter={(filter?.kind === "category" ? filter : undefined) ?? { kind: "category", values: [] }}
+              distinctValues={distinctValues}
+              search={search}
+              onSearch={setSearch}
+              onChange={onChange}
+            />
+          )}
+          {col.type === "text" && (
+            <input
+              autoFocus
+              value={filter?.kind === "text" ? filter.query : ""}
+              onChange={(e) => onChange({ kind: "text", query: e.target.value })}
+              placeholder="Contains..."
+              className="w-full rounded border bg-background px-2 py-1 text-xs outline-none focus:border-ring"
+            />
+          )}
+          {col.type === "number" && (
+            <NumberFilterUI
+              filter={(filter?.kind === "number" ? filter : undefined) ?? { kind: "number", min: null, max: null }}
+              onChange={onChange}
+            />
+          )}
+          {col.type === "date" && (
+            <DateFilterUI
+              filter={(filter?.kind === "date" ? filter : undefined) ?? { kind: "date", from: null, to: null }}
+              onChange={onChange}
+            />
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function CategoryFilterUI({
+  filter, distinctValues, search, onSearch, onChange,
+}: {
+  filter: Extract<ColumnFilter, { kind: "category" }>;
+  distinctValues: string[];
+  search: string;
+  onSearch: (s: string) => void;
+  onChange: (f: ColumnFilter) => void;
+}) {
+  const q = search.trim().toLowerCase();
+  const shown = q ? distinctValues.filter((v) => v.toLowerCase().includes(q)) : distinctValues;
+  const sel = new Set(filter.values);
+  const toggle = (v: string) => {
+    const next = new Set(sel);
+    if (next.has(v)) next.delete(v); else next.add(v);
+    onChange({ kind: "category", values: [...next] });
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      <input
+        autoFocus
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder="Search values..."
+        className="w-full rounded border bg-background px-2 py-1 text-xs outline-none focus:border-ring"
+      />
+      <div className="flex items-center justify-between text-[10px]">
+        <button
+          className="text-primary hover:underline disabled:text-muted-foreground/50"
+          disabled={sel.size === distinctValues.length}
+          onClick={() => onChange({ kind: "category", values: [...distinctValues] })}
+        >
+          Select all
+        </button>
+        <button
+          className="text-primary hover:underline disabled:text-muted-foreground/50"
+          disabled={sel.size === 0}
+          onClick={() => onChange({ kind: "category", values: [] })}
+        >
+          Clear
+        </button>
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        {shown.length === 0 ? (
+          <div className="py-2 text-center text-[11px] text-muted-foreground">No matches</div>
+        ) : shown.map((v) => (
+          <label key={v} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-accent">
+            <Checkbox checked={sel.has(v)} onCheckedChange={() => toggle(v)} />
+            <span className="truncate text-xs">{v}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NumberFilterUI({
+  filter, onChange,
+}: {
+  filter: Extract<ColumnFilter, { kind: "number" }>;
+  onChange: (f: ColumnFilter) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="number"
+        value={filter.min ?? ""}
+        onChange={(e) => onChange({ ...filter, min: e.target.value === "" ? null : Number(e.target.value) })}
+        placeholder="min"
+        className="w-20 rounded border bg-background px-1.5 py-1 text-xs outline-none focus:border-ring"
+      />
+      <span className="text-[10px] text-muted-foreground">to</span>
+      <input
+        type="number"
+        value={filter.max ?? ""}
+        onChange={(e) => onChange({ ...filter, max: e.target.value === "" ? null : Number(e.target.value) })}
+        placeholder="max"
+        className="w-20 rounded border bg-background px-1.5 py-1 text-xs outline-none focus:border-ring"
+      />
+    </div>
+  );
+}
+
+function DateFilterUI({
+  filter, onChange,
+}: {
+  filter: Extract<ColumnFilter, { kind: "date" }>;
+  onChange: (f: ColumnFilter) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        From
+        <input
+          type="date"
+          value={filter.from ?? ""}
+          onChange={(e) => onChange({ ...filter, from: e.target.value || null })}
+          className="flex-1 rounded border bg-background px-1.5 py-1 text-xs outline-none focus:border-ring"
+        />
+      </label>
+      <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        To
+        <input
+          type="date"
+          value={filter.to ?? ""}
+          onChange={(e) => onChange({ ...filter, to: e.target.value || null })}
+          className="flex-1 rounded border bg-background px-1.5 py-1 text-xs outline-none focus:border-ring"
+        />
+      </label>
+    </div>
+  );
+}
+
+/* ── Saved presets menu ───────────────────────────────────────── */
+
+function PresetsMenu({
+  presets,
+  onApply,
+  onSaveCurrent,
+  onDelete,
+}: {
+  presets: Record<string, SavedView>;
+  onApply: (name: string) => void;
+  onSaveCurrent: (name: string) => void;
+  onDelete: (name: string) => void;
+}) {
+  const names = Object.keys(presets).sort();
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className="inline-flex items-center gap-1.5 rounded border border-border/50 px-2 py-1 text-[11px] hover:bg-accent"
+          title="Saved presets (columns + sort + filters)"
+        >
+          <Star className="h-3 w-3" />
+          Presets
+          {names.length > 0 && <span className="text-muted-foreground">({names.length})</span>}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-60 p-0">
+        <div className="border-b px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Saved presets
+        </div>
+        <div className="max-h-60 overflow-y-auto py-1">
+          {names.length === 0 ? (
+            <div className="px-3 py-3 text-center text-[11px] text-muted-foreground">No saved presets yet</div>
+          ) : names.map((name) => (
+            <div key={name} className="flex items-center gap-1 px-2 py-0.5 hover:bg-accent">
+              <button
+                onClick={() => onApply(name)}
+                className="flex-1 truncate text-left text-xs"
+                title={`Apply "${name}"`}
+              >
+                {name}
+              </button>
+              <button
+                onClick={() => onDelete(name)}
+                className="rounded p-1 text-muted-foreground/60 hover:text-red-600"
+                title={`Delete "${name}"`}
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="border-t px-2 py-1.5">
+          <button
+            onClick={() => {
+              const name = window.prompt("Save current layout as:")?.trim();
+              if (name) onSaveCurrent(name);
+            }}
+            className="w-full rounded px-2 py-1 text-left text-xs text-primary hover:bg-accent"
+          >
+            + Save current as...
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function StudyContextMenu({
@@ -458,10 +994,10 @@ export function AppLandingPage() {
   const { data: prefs } = useStudyPreferences();
   const renameMutation = useRenameStudy();
   const orderMutation = useUpdateStudyOrder();
+  const testArticleMutation = useUpdateTestArticleOverride();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { selectedStudyId, selectStudy, selectProject } = useSelection();
-  const [projectFilter, setProjectFilter] = useState<string>("");
+  const { selectedStudyId, selectedProjectId, selectStudy, selectProject } = useSelection();
   const [viewMode, setViewMode] = useState<"studies" | "portfolio">("studies");
 
   // Rename state
@@ -469,9 +1005,87 @@ export function AppLandingPage() {
   const [renameValue, setRenameValue] = useState("");
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  // Drag-and-drop reorder state
+  // Drag-and-drop reorder state (rows)
   const [dragStudyId, setDragStudyId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  // Column controls — visible set, order, sort, filters, saved presets, test-article overrides
+  const [visibleCols, setVisibleCols] = useSessionState<string[]>("alp.studies.cols.visible", DEFAULT_VISIBLE);
+  const [colOrder, setColOrder] = useSessionState<string[]>("alp.studies.cols.order", DEFAULT_ORDER);
+  const [sortState, setSortState] = useSessionState<SortState | null>("alp.studies.sort", null);
+  const [filters, setFilters] = useSessionState<FilterMap>("alp.studies.filters", {});
+  const [savedPresets, setSavedPresets] = useSessionState<Record<string, SavedView>>("alp.studies.presets", {});
+  // Test-article overrides are persisted to StudyPreferences on the backend.
+  const testArticleOverrides = prefs?.test_article_overrides ?? {};
+  const [colsSchemaStamp, setColsSchemaStamp] = useSessionState<number>("alp.studies.cols.schema", 0);
+  const [nameQuery, setNameQuery] = useSessionState<string>("alp.studies.nameQuery", "");
+
+  // Column drag state
+  const [dragColKey, setDragColKey] = useState<string | null>(null);
+  const [dropColKey, setDropColKey] = useState<string | null>(null);
+
+  // Test article inline-edit state
+  const [editingTestArticle, setEditingTestArticle] = useState<string | null>(null);
+  const [testArticleInputValue, setTestArticleInputValue] = useState("");
+  const testArticleInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (editingTestArticle && testArticleInputRef.current) {
+      testArticleInputRef.current.focus();
+      testArticleInputRef.current.select();
+    }
+  }, [editingTestArticle]);
+
+  // Test article right-click context menu
+  const [testArticleCtxMenu, setTestArticleCtxMenu] = useState<{ studyId: string; x: number; y: number } | null>(null);
+
+  const visibleSet = useMemo(() => new Set(visibleCols), [visibleCols]);
+
+  // Repair column state if the registry changed since session was saved.
+  // Keys are tightly coupled to the STUDY_COLUMNS registry, so on a schema bump we
+  // reset visible/order to defaults. Filters, sort, and presets are left alone
+  // (their invalid keys will be pruned lazily at lookup time).
+  useEffect(() => {
+    if (colsSchemaStamp !== STUDY_COLUMNS_SCHEMA) {
+      setVisibleCols(DEFAULT_VISIBLE);
+      setColOrder(DEFAULT_ORDER);
+      setColsSchemaStamp(STUDY_COLUMNS_SCHEMA);
+      return;
+    }
+    // Same schema: still defend against hand-edited sessionStorage by pruning unknowns
+    // and appending any never-seen registry keys at the end.
+    const known = new Set(STUDY_COLUMNS.map((c) => c.key));
+    const filteredOrder = colOrder.filter((k) => known.has(k));
+    const missing = STUDY_COLUMNS.map((c) => c.key).filter((k) => !filteredOrder.includes(k));
+    if (filteredOrder.length !== colOrder.length || missing.length > 0) {
+      setColOrder([...filteredOrder, ...missing]);
+    }
+    const visibleFixed = visibleCols.filter((k) => known.has(k));
+    if (visibleFixed.length !== visibleCols.length) {
+      setVisibleCols(visibleFixed);
+    }
+    // run once on mount — schema repair only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const visibleOrderedCols = useMemo(
+    () => colOrder.map((k) => COLUMN_BY_KEY.get(k)).filter((c): c is StudyColumn => !!c && visibleSet.has(c.key)),
+    [colOrder, visibleSet]
+  );
+
+  // Project lookup for compound resolution
+  const projectsById = useMemo(() => {
+    const m = new Map<string, Project>();
+    for (const p of projects ?? []) m.set(p.id, p);
+    return m;
+  }, [projects]);
+
+  const cellCtxFor = useCallback(
+    (s: DisplayStudy): CellCtx => ({
+      project: s.portfolio_metadata?.project ? projectsById.get(s.portfolio_metadata.project) : undefined,
+      testArticleOverride: testArticleOverrides[s.study_id],
+    }),
+    [projectsById, testArticleOverrides]
+  );
 
   // Focus rename input when it appears
   useEffect(() => {
@@ -523,32 +1137,28 @@ export function AppLandingPage() {
 
     const pm = portfolioById.get(s.study_id);
 
+    const n = pm ? noael(pm) : null;
     return {
       ...s,
       validation: "Not Run",
       pipeline_stage: pm?.pipeline_stage,
       duration_weeks: pm?.duration_weeks ?? durationWeeks,
-      noael_value: undefined,
+      noael_value: n ? `${n.dose} ${n.unit}` : undefined,
       portfolio_metadata: pm,
     };
   });
 
-  const allStudiesUnfiltered: DisplayStudy[] = [...realStudies];
-
-  // Filter by program if selected, then apply custom order
+  // Apply custom row order from user preferences.
   const allStudies: DisplayStudy[] = useMemo(() => {
-    const filtered = projectFilter
-      ? allStudiesUnfiltered.filter((s) => s.portfolio_metadata?.project === projectFilter)
-      : allStudiesUnfiltered;
     const order = prefs?.order;
-    if (!order || order.length === 0) return filtered;
+    if (!order || order.length === 0) return realStudies;
     const orderIndex = new Map(order.map((id, i) => [id, i]));
-    return [...filtered].sort((a, b) => {
+    return [...realStudies].sort((a, b) => {
       const ai = orderIndex.get(a.study_id) ?? Infinity;
       const bi = orderIndex.get(b.study_id) ?? Infinity;
       return ai - bi;
     });
-  }, [allStudiesUnfiltered, projectFilter, prefs?.order]);
+  }, [realStudies, prefs?.order]);
 
   const handleDrop = useCallback(
     (targetStudyId: string) => {
@@ -635,6 +1245,169 @@ export function AppLandingPage() {
     setDeleteTarget(null);
   }, [deleteTarget, queryClient]);
 
+  /* ── filter / sort pipeline ─────────────────────────────────── */
+
+  const displayedStudies: DisplayStudy[] = useMemo(() => {
+    // Name search — matches display_name or study_id (studyLabel resolves this).
+    const q = nameQuery.trim().toLowerCase();
+    const nameFiltered = q === "" ? allStudies : allStudies.filter(
+      (s) => studyLabel(s).toLowerCase().includes(q)
+    );
+
+    // Apply column filters
+    const activeFilterEntries = Object.entries(filters).filter(([, f]) => isFilterActive(f));
+    const filtered = activeFilterEntries.length === 0 ? nameFiltered : nameFiltered.filter((s) => {
+      for (const [key, f] of activeFilterEntries) {
+        const col = COLUMN_BY_KEY.get(key);
+        if (!col) continue;
+        const v = col.value(s, cellCtxFor(s));
+        if (!matchesFilter(col, v, f)) return false;
+      }
+      return true;
+    });
+
+    // Apply sort if active. When inactive, preserve the upstream order (drag-reordered).
+    if (!sortState) return filtered;
+    const col = COLUMN_BY_KEY.get(sortState.key);
+    if (!col) return filtered;
+    const dir = sortState.dir;
+    return [...filtered].sort((a, b) =>
+      compareValues(col.value(a, cellCtxFor(a)), col.value(b, cellCtxFor(b)), dir)
+    );
+  }, [allStudies, filters, sortState, cellCtxFor, nameQuery]);
+
+  // Distinct values per category column (drives multi-select filter)
+  const distinctValuesByCol = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const col of STUDY_COLUMNS) {
+      if (col.type !== "category") continue;
+      const seen = new Set<string>();
+      for (const s of allStudies) {
+        const v = col.value(s, cellCtxFor(s));
+        if (v != null && v !== "") seen.add(String(v));
+      }
+      out[col.key] = [...seen].sort((a, b) => a.localeCompare(b));
+    }
+    return out;
+  }, [allStudies, cellCtxFor]);
+
+  /* ── column drag-to-reorder ─────────────────────────────────── */
+
+  const handleColDrop = useCallback((targetKey: string) => {
+    if (!dragColKey || dragColKey === targetKey) {
+      setDragColKey(null);
+      setDropColKey(null);
+      return;
+    }
+    const next = [...colOrder];
+    const fromIdx = next.indexOf(dragColKey);
+    const toIdx = next.indexOf(targetKey);
+    if (fromIdx === -1 || toIdx === -1) return;
+    next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, dragColKey);
+    setColOrder(next);
+    setDragColKey(null);
+    setDropColKey(null);
+  }, [dragColKey, colOrder, setColOrder]);
+
+  /* ── sort cycle ─────────────────────────────────────────────── */
+
+  const cycleSort = useCallback((key: string) => {
+    setSortState((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;  // off
+    });
+  }, [setSortState]);
+
+  /* ── filter handlers ────────────────────────────────────────── */
+
+  const setColFilter = useCallback((key: string, f: ColumnFilter) => {
+    setFilters((prev) => ({ ...prev, [key]: f }));
+  }, [setFilters]);
+
+  const clearColFilter = useCallback((key: string) => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, [setFilters]);
+
+  const clearAllFilters = useCallback(() => setFilters({}), [setFilters]);
+
+  /* ── saved presets ──────────────────────────────────────────── */
+
+  const handleSavePreset = useCallback((name: string) => {
+    const preset: SavedView = {
+      visible: visibleCols,
+      order: colOrder,
+      sort: sortState,
+      filters,
+    };
+    setSavedPresets((prev) => ({ ...prev, [name]: preset }));
+  }, [visibleCols, colOrder, sortState, filters, setSavedPresets]);
+
+  const handleApplyPreset = useCallback((name: string) => {
+    const v = savedPresets[name];
+    if (!v) return;
+    setVisibleCols(v.visible);
+    setColOrder(v.order);
+    setSortState(v.sort);
+    setFilters(v.filters);
+  }, [savedPresets, setVisibleCols, setColOrder, setSortState, setFilters]);
+
+  const handleDeletePreset = useCallback((name: string) => {
+    setSavedPresets((prev) => {
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }, [setSavedPresets]);
+
+  const handleResetColOrder = useCallback(() => setColOrder(DEFAULT_ORDER), [setColOrder]);
+
+  /* ── test article override ──────────────────────────────────── */
+
+  const startEditTestArticle = useCallback((studyId: string) => {
+    setTestArticleCtxMenu(null);
+    setEditingTestArticle(studyId);
+    const study = allStudies.find((s) => s.study_id === studyId);
+    const existing = study ? (testArticleOverrides[studyId]
+      ?? study.portfolio_metadata?.test_article
+      ?? (study.portfolio_metadata?.project ? projectsById.get(study.portfolio_metadata.project)?.compound : null)
+      ?? "") : "";
+    setTestArticleInputValue(existing);
+  }, [allStudies, projectsById, testArticleOverrides]);
+
+  const commitTestArticle = useCallback(() => {
+    if (!editingTestArticle) return;
+    const trimmed = testArticleInputValue.trim();
+    testArticleMutation.mutate({
+      studyId: editingTestArticle,
+      testArticle: trimmed || null,
+    });
+    setEditingTestArticle(null);
+  }, [editingTestArticle, testArticleInputValue, testArticleMutation]);
+
+  const cancelTestArticle = useCallback(() => setEditingTestArticle(null), []);
+
+  const resetTestArticleOverride = useCallback((studyId: string) => {
+    testArticleMutation.mutate({ studyId, testArticle: null });
+    setTestArticleCtxMenu(null);
+  }, [testArticleMutation]);
+
+  /* ── filter pills (active filters summary) ──────────────────── */
+  const activeFilterPills = useMemo(() => {
+    return Object.entries(filters)
+      .filter(([, f]) => isFilterActive(f))
+      .map(([key, f]) => {
+        const col = COLUMN_BY_KEY.get(key);
+        return col ? { key, label: describeFilter(col, f) } : null;
+      })
+      .filter((x): x is { key: string; label: string } => !!x);
+  }, [filters]);
+
   return (
     <div className="h-full overflow-y-auto">
       {/* Hero */}
@@ -658,12 +1431,10 @@ export function AppLandingPage() {
               <li>Validate SEND compliance</li>
             </ul>
             <a
-              href="#"
+              href="/learn-more.html"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-2 inline-block pl-4 text-xs text-primary hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                alert("Documentation is not available in this prototype.");
-              }}
             >
               Learn more &#x2197;
             </a>
@@ -679,13 +1450,23 @@ export function AppLandingPage() {
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {viewMode === "studies" ? `Studies (${allStudies.length})` : `Programs (${(projects ?? []).length})`}
+              {viewMode === "studies"
+                ? (displayedStudies.length === allStudies.length
+                    ? `Studies (${allStudies.length})`
+                    : `Studies (${displayedStudies.length} of ${allStudies.length})`)
+                : `Programs (${(projects ?? []).length})`}
             </h2>
 
             {/* View mode toggle */}
             <div className="flex rounded-md border border-border bg-muted/30 p-0.5">
               <button
-                onClick={() => { setViewMode("studies"); selectProject(null); }}
+                onClick={() => {
+                  // Preserve selectedProjectId when switching FROM portfolio
+                  // so the program-member row tint carries over into Studies.
+                  // Only clear when already in Studies (explicit "clear selection").
+                  if (viewMode === "studies") selectProject(null);
+                  setViewMode("studies");
+                }}
                 className={cn(
                   "rounded px-2.5 py-0.5 text-[10px] font-medium transition-colors",
                   viewMode === "studies"
@@ -707,49 +1488,100 @@ export function AppLandingPage() {
                 Portfolio
               </button>
             </div>
+
+            {viewMode === "studies" && (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={nameQuery}
+                  onChange={(e) => setNameQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Escape") setNameQuery(""); }}
+                  placeholder="Search studies..."
+                  className="h-7 w-48 rounded border bg-background pl-6 pr-6 text-xs outline-none focus:border-ring"
+                />
+                {nameQuery && (
+                  <button
+                    onClick={() => setNameQuery("")}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Clear search"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Program Filter */}
-          {projects && projects.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Program:</span>
-              <select
-                value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value)}
-                className="rounded border border-border bg-background px-2 py-1 text-xs"
-              >
-                <option value="">All programs</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.compound})
-                  </option>
-                ))}
-              </select>
+          {viewMode === "studies" && (
+            <div className="flex items-center gap-3">
+              <PresetsMenu
+                presets={savedPresets}
+                onApply={handleApplyPreset}
+                onSaveCurrent={handleSavePreset}
+                onDelete={handleDeletePreset}
+              />
+              <ColumnsMenu
+                visible={visibleSet}
+                order={colOrder}
+                onChangeVisible={(next) => setVisibleCols([...next])}
+                onResetOrder={handleResetColOrder}
+              />
             </div>
           )}
         </div>
+
+        {/* Active filter pills */}
+        {viewMode === "studies" && activeFilterPills.length > 0 && (
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Filters:</span>
+            {activeFilterPills.map((p) => (
+              <span
+                key={p.key}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] text-primary"
+              >
+                {p.label}
+                <button
+                  onClick={() => clearColFilter(p.key)}
+                  className="rounded-full p-0.5 hover:bg-primary/20"
+                  title="Remove filter"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={clearAllFilters}
+              className="text-[10px] text-muted-foreground hover:underline"
+            >
+              Clear all
+            </button>
+            <span className="ml-auto text-[10px] text-muted-foreground">
+              {displayedStudies.length} of {allStudies.length}
+            </span>
+          </div>
+        )}
 
         {viewMode === "portfolio" ? (
           <ProgramList
             studies={portfolioStudies ?? []}
             projects={projects ?? []}
-            selectedProjectId={projectFilter}
+            selectedProjectId={selectedProjectId ?? ""}
             onProjectClick={(id) => {
-              const next = id === projectFilter ? "" : id;
-              setProjectFilter(next);
-              if (next) {
-                selectProject(next);
-                selectStudy(null);
-              } else {
-                selectProject(null);
-                selectStudy(null);
-              }
+              const isToggleOff = selectedProjectId === id;
+              selectStudy(null);
+              selectProject(isToggleOff ? null : id);
             }}
             onViewStudies={(id) => {
-              setProjectFilter(id);
               setViewMode("studies");
               selectProject(id);
               selectStudy(null);
+              // Program == test_article grouping. Apply a test_article filter matching the
+              // program's compound so switching to Studies shows only its members — the
+              // same outcome the old Program picker provided, using our real filter system.
+              const p = projects?.find((x) => x.id === id);
+              if (p?.compound) {
+                setColFilter("test_article", { kind: "category", values: [p.compound] });
+              }
             }}
           />
         ) : isLoading ? (
@@ -765,29 +1597,80 @@ export function AppLandingPage() {
                   <th className="w-5 px-0 py-1"></th>
                   <th className="w-8 px-1.5 py-1"></th>
                   <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Study</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Protocol</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Species</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Stage</th>
-                  <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Subj</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Dur</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Start</th>
-                  <th className="px-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">End</th>
-                  <th className="px-1.5 py-1 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">NOAEL</th>
-                  <th className="pl-4 pr-1.5 py-1 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  {visibleOrderedCols.map((col) => {
+                    const isSorted = sortState?.key === col.key;
+                    const isDropTarget = dropColKey === col.key && dragColKey !== col.key;
+                    return (
+                      <th
+                        key={col.key}
+                        title="Drag to reorder"
+                        className={cn(
+                          "px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground select-none cursor-grab active:cursor-grabbing",
+                          col.align === "right" ? "text-right" : "text-left",
+                          isDropTarget && "border-l-2 border-l-primary"
+                        )}
+                        draggable
+                        onDragStart={(e) => {
+                          setDragColKey(col.key);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragOver={(e) => {
+                          if (!dragColKey) return;
+                          e.preventDefault();
+                          setDropColKey(col.key);
+                        }}
+                        onDragLeave={() => {
+                          if (dropColKey === col.key) setDropColKey(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleColDrop(col.key);
+                        }}
+                        onDragEnd={() => {
+                          setDragColKey(null);
+                          setDropColKey(null);
+                        }}
+                      >
+                        <span className={cn("inline-flex items-center gap-1", col.align === "right" && "justify-end")}>
+                          <button
+                            onClick={() => cycleSort(col.key)}
+                            className="inline-flex items-center gap-0.5 hover:text-foreground"
+                            title={`Sort by ${col.label}`}
+                          >
+                            {col.label}
+                            {isSorted && (sortState!.dir === "asc"
+                              ? <ArrowUp className="h-2.5 w-2.5" />
+                              : <ArrowDown className="h-2.5 w-2.5" />)}
+                          </button>
+                          <FilterPopover
+                            col={col}
+                            filter={filters[col.key]}
+                            distinctValues={distinctValuesByCol[col.key] ?? []}
+                            onChange={(f) => setColFilter(col.key, f)}
+                            onClear={() => clearColFilter(col.key)}
+                          />
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {allStudies.map((study) => {
+                {displayedStudies.map((study) => {
                   const isSelected = selectedStudyId === study.study_id;
+                  const isInSelectedProgram = !!selectedProjectId
+                    && study.portfolio_metadata?.project === selectedProjectId
+                    && !isSelected;
                   const isRenaming = renamingStudyId === study.study_id;
                   const isDragOver = dropTargetId === study.study_id && dragStudyId !== study.study_id;
+                  const ctx = cellCtxFor(study);
                   return (
                     <tr
                       key={study.study_id}
                       className={cn(
                         "cursor-pointer border-b last:border-b-0 transition-colors hover:bg-accent/50",
                         isSelected && "bg-accent font-medium",
+                        isInSelectedProgram && "bg-primary/5",
                         isDragOver && "border-t-2 border-t-primary"
                       )}
                       onClick={() => handleClick(study)}
@@ -852,60 +1735,76 @@ export function AppLandingPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-1.5 py-px text-muted-foreground">
-                        {study.protocol && study.protocol !== "NOT AVAILABLE"
-                          ? study.protocol
-                          : "—"}
-                      </td>
-                      <td className="px-1.5 py-px text-muted-foreground">
-                        {study.species ?? "—"}
-                      </td>
-                      <td className="px-1.5 py-px">
-                        {study.pipeline_stage ? (
-                          <span style={{ color: getPipelineStageColor(study.pipeline_stage) }}>
-                            {study.pipeline_stage.charAt(0).toUpperCase() + study.pipeline_stage.slice(1).replace(/_/g, ' ')}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-1.5 py-px text-right tabular-nums text-muted-foreground">
-                        {study.subjects ?? "—"}
-                      </td>
-                      <td className="px-1.5 py-px text-muted-foreground">
-                        {study.duration_weeks ? `${study.duration_weeks}w` : "—"}
-                      </td>
-                      <td className="px-1.5 py-px text-muted-foreground">
-                        {study.study_type ? (() => {
-                          const r = routeStudyTypeWithQuality(study.study_type);
+                      {visibleOrderedCols.map((col) => {
+                        const isTestArticle = col.key === "test_article";
+                        const isEditingThisCell = isTestArticle && editingTestArticle === study.study_id;
+                        const align = col.align === "right" ? "text-right" : "text-left";
+                        const cellClass = cn("px-1.5 py-px", align, !col.render && "text-muted-foreground");
+                        if (isEditingThisCell) {
                           return (
-                            <span title={r.match === "fallback" ? `Unrecognized SSTYP: "${study.study_type}"` : study.study_type ?? undefined}>
-                              {r.config.display_name}
-                              {r.match === "fallback" && (
-                                <span className="ml-1 rounded bg-amber-100 px-0.5 text-[9px] font-medium text-amber-700">fallback</span>
-                              )}
-                            </span>
+                            <td key={col.key} className={cellClass} onClick={(e) => e.stopPropagation()}>
+                              <input
+                                ref={testArticleInputRef}
+                                value={testArticleInputValue}
+                                onChange={(e) => setTestArticleInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitTestArticle();
+                                  if (e.key === "Escape") cancelTestArticle();
+                                }}
+                                onBlur={commitTestArticle}
+                                placeholder="test article"
+                                className="w-full rounded border border-primary bg-background px-1 py-0 text-[11px] text-foreground outline-none"
+                              />
+                            </td>
                           );
-                        })() : "—"}
-                      </td>
-                      <td className="px-1.5 py-px tabular-nums text-muted-foreground">
-                        {study.start_date ?? "—"}
-                      </td>
-                      <td className="px-1.5 py-px tabular-nums text-muted-foreground">
-                        {study.end_date ?? "—"}
-                      </td>
-                      <td className="px-1.5 py-px text-right tabular-nums">
-                        {study.noael_value ?? "—"}
-                      </td>
-                      <td className="relative pl-4 pr-1.5 py-px text-muted-foreground">
-                        {study.status === "Complete" && (
-                          <span
-                            className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full"
-                            style={{ background: "#16a34a" }}
-                          />
-                        )}
-                        {study.status}
-                      </td>
+                        }
+                        if (isTestArticle) {
+                          const v = col.value(study, ctx);
+                          const overridden = !!ctx.testArticleOverride;
+                          return (
+                            <td
+                              key={col.key}
+                              className={cn(cellClass, "group/testart")}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setTestArticleCtxMenu({ studyId: study.study_id, x: e.clientX, y: e.clientY });
+                              }}
+                            >
+                              {v == null ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); startEditTestArticle(study.study_id); }}
+                                  className="text-[10px] italic text-muted-foreground/60 hover:text-primary"
+                                  title="Click to add a test article (or right-click for more options)"
+                                >
+                                  + add test article
+                                </button>
+                              ) : (
+                                <span className={cn(overridden && "italic", "inline-flex items-center gap-1")}>
+                                  {v}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); startEditTestArticle(study.study_id); }}
+                                    className="opacity-0 group-hover/testart:opacity-100 text-muted-foreground/60 hover:text-primary"
+                                    title={overridden ? "Edit override (right-click to reset)" : "Override test article for this study"}
+                                  >
+                                    <Pencil className="h-2.5 w-2.5" />
+                                  </button>
+                                </span>
+                              )}
+                            </td>
+                          );
+                        }
+                        return (
+                          <td key={col.key} className={cellClass}>
+                            {col.render
+                              ? col.render(study, ctx)
+                              : (() => {
+                                  const v = col.value(study, ctx);
+                                  return v == null || v === "" ? "—" : String(v);
+                                })()}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
@@ -962,6 +1861,36 @@ export function AppLandingPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+
+      {/* Test article right-click menu */}
+      {testArticleCtxMenu && (() => {
+        const hasOverride = !!testArticleOverrides[testArticleCtxMenu.studyId];
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setTestArticleCtxMenu(null)} />
+            <div
+              className="fixed z-50 min-w-[180px] rounded-md border bg-popover py-1 shadow-lg"
+              style={{ left: testArticleCtxMenu.x, top: testArticleCtxMenu.y }}
+            >
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-accent"
+                onClick={() => startEditTestArticle(testArticleCtxMenu.studyId)}
+              >
+                <Pencil className="h-3 w-3 text-muted-foreground" />
+                {hasOverride ? "Edit test article..." : "Add test article..."}
+              </button>
+              {hasOverride && (
+                <button
+                  className="flex w-full items-center px-3 py-1.5 text-left text-sm hover:bg-accent"
+                  onClick={() => resetTestArticleOverride(testArticleCtxMenu.studyId)}
+                >
+                  Reset to metadata default
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

@@ -21,5 +21,6 @@
     "CJUGSEND00",
     "CJ16050-xptonly",
     "CBER-POC-Pilot-Study5"
-  ]
+  ],
+  "test_article_overrides": {}
 }

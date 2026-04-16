@@ -58,6 +58,7 @@ export async function importStudy(
 export interface StudyPreferences {
   display_names: Record<string, string>;
   order: string[];
+  test_article_overrides: Record<string, string>;
 }
 
 export function fetchStudyPreferences(): Promise<StudyPreferences> {
@@ -94,6 +95,25 @@ export async function updateStudyOrder(
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(body.detail || `Reorder failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateTestArticleOverride(
+  studyId: string,
+  testArticle: string | null
+): Promise<{ study_id: string; test_article: string | null }> {
+  const res = await fetch(
+    `${API_BASE}/studies/${encodeURIComponent(studyId)}/test-article`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ test_article: testArticle }),
+    }
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(body.detail || `Test article update failed: ${res.status}`);
   }
   return res.json();
 }

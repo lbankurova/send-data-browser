@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-04-16T21:21:16Z",
+  "verdict": "pass",
+  "summary": "Studies table controls — post-spike review: NOAEL wiring, ISO date truncation, toggle guard, helper tests (30), backend-persisted test article overrides, GAP-ALP-02 promoted P1",
+  "checks_run": 0,
+  "checks_passed": 0,
+  "staged_files": "",
+  "head_at_review": "5aa7956e",
+  "written_by": "write-review-gate.sh"
+}

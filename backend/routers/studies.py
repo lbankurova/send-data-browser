@@ -28,8 +28,13 @@ _full_metadata: dict[str, StudyMetadata] = {}
 def _load_prefs() -> dict:
     if PREFS_PATH.exists():
         with open(PREFS_PATH) as f:
-            return json.load(f)
-    return {"display_names": {}, "order": []}
+            prefs = json.load(f)
+    else:
+        prefs = {}
+    prefs.setdefault("display_names", {})
+    prefs.setdefault("order", [])
+    prefs.setdefault("test_article_overrides", {})
+    return prefs
 
 
 def _save_prefs(prefs: dict):
@@ -107,6 +112,10 @@ class OrderRequest(BaseModel):
     order: list[str]
 
 
+class TestArticleOverrideRequest(BaseModel):
+    test_article: str | None = None
+
+
 @router.get("/studies/preferences")
 def get_preferences():
     return _load_prefs()
@@ -129,6 +138,20 @@ def update_study_order(body: OrderRequest):
     prefs["order"] = body.order
     _save_prefs(prefs)
     return {"order": body.order}
+
+
+@router.put("/studies/{study_id}/test-article")
+def set_test_article_override(study_id: str, body: TestArticleOverrideRequest):
+    """Persist a per-study Test article override. Empty/None clears the override."""
+    prefs = _load_prefs()
+    overrides = prefs.setdefault("test_article_overrides", {})
+    trimmed = (body.test_article or "").strip()
+    if trimmed:
+        overrides[study_id] = trimmed
+    else:
+        overrides.pop(study_id, None)
+    _save_prefs(prefs)
+    return {"study_id": study_id, "test_article": trimmed or None}
 
 
 @router.get("/studies/{study_id}/metadata")
