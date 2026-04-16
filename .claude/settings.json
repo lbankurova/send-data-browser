@@ -23,6 +23,11 @@
             "type": "command",
             "command": "bash -c 'MSG=$(echo \"$CLAUDE_TOOL_INPUT\" 2>/dev/null); if echo \"$MSG\" | grep -qE \"^(feat|fix):\" 2>/dev/null; then if ! echo \"$MSG\" | grep -q \"Topic:\" 2>/dev/null; then echo \"REMINDER: This looks like topic work (feat:/fix:) but has no Topic: trailer.\"; echo \"Add to commit message body:\"; echo \"  Topic: <topic-name>\"; echo \"  Phase: <phase>  (optional: research-complete, blueprint-complete, complete)\"; echo \"\"; echo \"Without Topic:, the autopilot and coherence engine cannot track this work.\"; echo \"If this is NOT topic work (framework, docs, CI), ignore this reminder.\"; fi; fi'",
             "_comment": "Topic trailer reminder. WARNS (non-blocking) when feat/fix commits lack a Topic: trailer."
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'GATE=\".lattice/review-gate.json\"; if [ ! -f \"$GATE\" ]; then echo \"BLOCKED: /lattice:review was not run.\"; echo \"\"; echo \"Every commit requires a review gate. No exceptions.\"; echo \"This is the #1 process failure -- agents skip the review, skip doc generators,\"; echo \"skip checklist items, and present work as done.\"; echo \"\"; echo \"REQUIRED before committing:\"; echo \"  1. Run /lattice:review (writes the gate file when all checks pass)\"; echo \"  -- OR for trivial fixes (docs-only, typo, comment) --\"; echo \"  2. Run: bash scripts/write-review-gate.sh pass \\\"trivial fix\\\"\"; echo \"\"; echo \"The review runs: build, tests, doc generators, MANIFEST update, TODO update,\"; echo \"spec archival, requirement trace, architect review, and decision audit.\"; echo \"Skipping it means skipping ALL of those.\"; exit 1; fi; GATE_TIME=$(stat -c %Y \"$GATE\" 2>/dev/null || stat -f %m \"$GATE\" 2>/dev/null || echo 0); NOW=$(date +%s); GATE_AGE=$((NOW - GATE_TIME)); if [ \"$GATE_AGE\" -gt 1800 ]; then echo \"BLOCKED: Review gate is stale (${GATE_AGE}s old, max 1800s).\"; echo \"Re-run /lattice:review before committing.\"; exit 1; fi'",
+            "_comment": "Review gate enforcement. BLOCKS ALL commits without a fresh review gate file. No file-count threshold -- every commit goes through review."
           }
         ]
       }
@@ -42,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT\" | grep -q \"Co-Authored-By\"; then echo \"BLOCKED: CLAUDE.md rule 5 -- never add Claude as co-author.\"; exit 1; fi'",
+            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT\" | grep -q \"Co-Authored-By\"; then echo \"BLOCKED: CLAUDE.md: No co-author -- never add Claude as co-author.\"; exit 1; fi'",
             "_comment": "Co-author block. BLOCKS writes containing Co-Authored-By."
           },
           {
