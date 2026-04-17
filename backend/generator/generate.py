@@ -31,6 +31,7 @@ from generator.noael_overlay import build_subject_noael_overlay
 from generator.animal_influence import build_animal_influence
 from generator.subject_sentinel import build_subject_sentinel
 from generator.subject_similarity import build_subject_similarity
+from generator.subject_correlations import build_subject_correlations
 from generator.protective_syndromes import build_protective_syndromes
 from services.analysis.override_reader import get_last_dosing_day_override, load_animal_exclusions
 from services.analysis.phase_filter import compute_last_dosing_day
@@ -575,6 +576,17 @@ def generate(study_id: str):
         n_bw = sum(1 for s in noael_overlay["subjects"].values() if s.get("bw_terminal_pct") is not None)
         n_lb = sum(1 for s in noael_overlay["subjects"].values() if s.get("lb_max_fold") is not None)
         print(f"  NOAEL overlay: {n_determining} determining, {n_bw} BW, {n_lb} LB signals")
+
+        # Subject correlations (needs raw_subject_values)
+        print("  Computing subject correlations...")
+        try:
+            correlations = build_subject_correlations(findings)
+            _write_json(out_dir / "subject_correlations.json", correlations)
+            n_corr = correlations["meta"]["n_significant_pairs"]
+            n_ep = correlations["meta"]["n_endpoints_analyzed"]
+            print(f"  Correlations: {n_corr} significant pairs from {n_ep} endpoints")
+        except Exception as e:
+            print(f"  WARNING: Subject correlations failed: {e}")
 
         # Phase 2x: Subject similarity (needs noael_overlay + raw_subject_values)
         print("Phase 2x: Computing subject similarity...")

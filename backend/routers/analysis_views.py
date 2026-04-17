@@ -67,6 +67,7 @@ VALID_VIEW_NAMES = {
     "animal-influence",
     "subject-similarity",
     "subject-sentinel",
+    "subject-correlations",
 }
 
 # The 10 view names that the parameterized pipeline produces

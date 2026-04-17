@@ -15,6 +15,7 @@ import type {
   AnimalInfluenceData,
   SubjectSentinelData,
   SubjectSimilarityData,
+  SubjectCorrelationsData,
   HcdReferencesData,
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
@@ -451,6 +452,16 @@ export function fetchSubjectSimilarity(
 ): Promise<SubjectSimilarityData> {
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/subject-similarity`,
+  );
+}
+
+// ── Subject correlations ────────────────────────────────────
+
+export function fetchSubjectCorrelations(
+  studyId: string,
+): Promise<SubjectCorrelationsData> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/subject-correlations`,
   );
 }
 

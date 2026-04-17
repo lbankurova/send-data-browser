@@ -678,3 +678,26 @@ export interface HcdReferencesData {
   duration_status: "known" | "unknown";
   references: Record<string, HcdReference>;
 }
+
+// ── Subject Correlations ────────────────────────────────────
+
+export interface SubjectCorrelationPair {
+  ep_a: string;
+  ep_b: string;
+  sex: string;
+  rho: number;
+  p: number;
+  n: number;
+}
+
+export interface SubjectCorrelationsData {
+  pairs: SubjectCorrelationPair[];
+  meta: {
+    n_endpoints_analyzed: number;
+    n_pairs_tested: number;
+    n_significant_pairs: number;
+    min_overlap: number;
+    min_rho: number;
+    max_p: number;
+  };
+}
