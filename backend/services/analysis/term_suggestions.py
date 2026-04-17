@@ -78,10 +78,27 @@ class PromotionSignal:
 
 
 def _string_similarity(a: str, b: str) -> float:
-    """SequenceMatcher.ratio() with short-term min-len gate (AC-1.2)."""
+    """SequenceMatcher.ratio() with short-term min-len gate (AC-1.2).
+
+    Computed on both raw and sorted-token-join forms; the max is returned
+    so word-order swaps ("HEPATOCELULAR HYPERTROPHY" vs "HYPERTROPHY,
+    HEPATOCELLULAR") still score high on near-typos. Same underlying API
+    (SequenceMatcher.ratio) — just evaluated on two complementary
+    representations of the same pair (Advisory 2 single-API constraint
+    preserved — one API, two inputs).
+    """
     if len(a) < _MIN_LEN_FOR_STRING_SIMILARITY or len(b) < _MIN_LEN_FOR_STRING_SIMILARITY:
         return 0.0
-    return SequenceMatcher(None, a.upper(), b.upper()).ratio()
+    a_upper = a.upper()
+    b_upper = b.upper()
+    raw_ratio = SequenceMatcher(None, a_upper, b_upper).ratio()
+    # Sorted-token form collapses word-order differences.
+    a_sorted = " ".join(sorted(tokenize_term(a_upper)))
+    b_sorted = " ".join(sorted(tokenize_term(b_upper)))
+    sorted_ratio = (
+        SequenceMatcher(None, a_sorted, b_sorted).ratio() if a_sorted and b_sorted else 0.0
+    )
+    return max(raw_ratio, sorted_ratio)
 
 
 def _token_jaccard(a_tokens: list[str], b_tokens: list[str]) -> float:
