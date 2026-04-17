@@ -101,15 +101,44 @@ def _string_similarity(a: str, b: str) -> float:
     return max(raw_ratio, sorted_ratio)
 
 
+_FUZZY_TOKEN_EQUIV_THRESHOLD = 0.85
+
+
 def _token_jaccard(a_tokens: list[str], b_tokens: list[str]) -> float:
+    """Fuzzy Jaccard over token sets.
+
+    Two tokens count as equal when either exact or SequenceMatcher ratio
+    >= 0.85 (typo tolerance — "HEPATOCELULAR" matches "HEPATOCELLULAR").
+    This is the base-concept + edit-distance rescue path referenced in
+    AC-1.3. Short tokens (< 4 chars either side) require exact match.
+    """
     if not a_tokens and not b_tokens:
         return 0.0
     sa, sb = set(a_tokens), set(b_tokens)
     if not sa or not sb:
         return 0.0
-    inter = sa & sb
-    union = sa | sb
-    return len(inter) / len(union)
+    # Exact intersection first
+    matched_in_b: set[str] = set()
+    inter = 0
+    for ta in sa:
+        if ta in sb:
+            inter += 1
+            matched_in_b.add(ta)
+            continue
+        # Fuzzy fallback for tokens >=4 chars
+        if len(ta) < 4:
+            continue
+        for tb in sb - matched_in_b:
+            if len(tb) < 4:
+                continue
+            if SequenceMatcher(None, ta, tb).ratio() >= _FUZZY_TOKEN_EQUIV_THRESHOLD:
+                inter += 1
+                matched_in_b.add(tb)
+                break
+    union = len(sa) + len(sb) - inter
+    if union == 0:
+        return 0.0
+    return inter / union
 
 
 def _organ_context_bonus(
