@@ -411,7 +411,7 @@ export function TimeCoursePane({
   // Loading state
   if ((isContinuous && isLoading) || (isCL && clLoading)) {
     return (
-      <CollapsiblePane title="Time course" defaultOpen expandAll={expandAll} collapseAll={collapseAll}>
+      <CollapsiblePane title="Time course" defaultOpen={false} sessionKey="pcc.ep.timecourse" expandAll={expandAll} collapseAll={collapseAll}>
         <Skeleton className="h-40 w-full" />
       </CollapsiblePane>
     );
@@ -421,7 +421,7 @@ export function TimeCoursePane({
   if (isCL) {
     if (clError || !clData || clData.timecourse.length < 2) return null;
     return (
-      <CollapsiblePane title="Time course" defaultOpen expandAll={expandAll} collapseAll={collapseAll}>
+      <CollapsiblePane title="Time course" defaultOpen={false} sessionKey="pcc.ep.timecourse" expandAll={expandAll} collapseAll={collapseAll}>
         <div className="space-y-1.5">
           <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>Observation count over time</span>
@@ -578,7 +578,8 @@ function TimeCourseContent({
   return (
     <CollapsiblePane
       title="Time course"
-      defaultOpen
+      defaultOpen={false}
+      sessionKey="pcc.ep.timecourse"
       expandAll={expandAll}
       collapseAll={collapseAll}
     >
