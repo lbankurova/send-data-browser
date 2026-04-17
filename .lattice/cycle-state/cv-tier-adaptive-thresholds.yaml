@@ -1,7 +1,7 @@
 topic: cv-tier-adaptive-thresholds
 started: 2026-04-09T22:00:00
-phase: build-in-progress
-current_step: build.2
+phase: complete
+current_step: build.4
 revision: 1
 completed:
   research.0: { completed: 2026-04-09T22:15:00 }

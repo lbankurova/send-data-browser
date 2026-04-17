@@ -1,7 +1,7 @@
 topic: oncology-std10-severe-toxicity-definition
 started: 2026-04-05T10:00:00
-phase: research-complete
-current_step: research.complete
+phase: blueprint
+current_step: blueprint.2
 completed:
   research.1:
     completed: 2026-04-05T10:00:00
@@ -26,8 +26,8 @@ completed:
   research.7:
     completed: 2026-04-05T12:00:00
     key_decisions:
-      - "Probe: 1 SCIENCE-FLAG (S03 organ-lesion dictionary requires pathologist expertise)"
-      - "Probe: 1 BREAKS (pk_integration.py needs tier-aware variant)"
+      - "Probe: 1 SCIENCE-FLAG RESOLVED (S03 organ-lesion dictionary -- literature-derived from STP/ESTP/ACVP consensus, not de novo curation)"
+      - "Probe: pk_integration.py needs tier-aware variant -- planned implementation work for build phase"
       - "Probe: 2 PROPAGATES (S01, mortality.py)"
       - "Probe: 3 SAFE (S16, S20, OV)"
   research.7b:
@@ -36,4 +36,30 @@ completed:
       - "REGISTRY updated with probe findings and R1+R2 review refs"
       - "GAP-197 already in TODO.md (updated to RESEARCHED status)"
       - "All gaps persisted"
-checkpoints: {}
+checkpoints:
+  blueprint.0:
+    completed: 2026-04-17T10:05:00Z
+    key_decisions:
+      - "0 FAILED approaches relevant in decisions.log (380+ entries scanned)"
+      - "pk_integration.py domain-critical (code-quality-guardrails.md). Current STD10: mortality-only, lines 490-613, ~120 LOC"
+      - "P3 cleanup: _compute_accumulation() is speculative stub (delete or implement)"
+      - "P2 cleanup: pk_integration.py re-reads TS domain instead of using subject_context.get_ts_metadata()"
+      - "cross-study-phase-0 fixed stale KM_TABLE (loaded from km-factors.json now)"
+      - "cross-study-phase-1 resolved prior SCIENCE-FLAG: mortality-only (LD10) accepted as regulatory standard with method label"
+      - "No bug-patterns.md exists"
+      - "Existing infrastructure: DEATH_TERMS in findings_ds.py, MISEV in onset_recovery/syndromes/cross_animal_flags, BW% in domain_stats/cross_animal_flags"
+      - "SEND domain data already loaded by pipeline: MI(MISEV), BW(BWSTRESN), CL(CLSTRESC), DS(DSDECOD), MA, LB"
+  blueprint.1:
+    completed: 2026-04-17T10:15:00Z
+    key_decisions:
+      - "Synthesis written to docs/_internal/incoming/oncology-std10-severe-toxicity-definition-synthesis.md"
+      - "5 features: F1 MI adversity dictionary, F2 Tier 2 classification, F3 three-tier output, F4 Clopper-Pearson CI, F5 CL term list"
+      - "BMD deferred to separate cycle (needs library evaluation)"
+      - "Tier 3 LB markers deferred (straightforward extension after Tier 2 validates)"
+      - "~200 LOC new code in pk_integration.py + 2 JSON configs + 1 knowledge doc"
+      - "All 6 mandatory sections present with content"
+    output: "docs/_internal/incoming/oncology-std10-severe-toxicity-definition-synthesis.md"
+flag_resolutions:
+  - "2026-04-17: SF S03 (organ-lesion dictionary) RESOLVED by human -- literature-derived from STP/ESTP/ACVP consensus"
+  - "2026-04-17: SF S01 (GAP-197 labeling) RESOLVED by human -- three-tier method labels eliminate ambiguity"
+  - "2026-04-17: pk_integration.py tier-aware variant acknowledged as planned build-phase work"

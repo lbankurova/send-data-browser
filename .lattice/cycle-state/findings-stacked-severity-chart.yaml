@@ -1,6 +1,6 @@
 topic: findings-stacked-severity-chart
-phase: build
-current_step: build.3
+phase: complete
+current_step: complete
 entry_mode: path-based
 spec_path: docs/_internal/incoming/archive/findings-stacked-severity-chart.md
 started_at: 2026-04-07T00:12:05Z

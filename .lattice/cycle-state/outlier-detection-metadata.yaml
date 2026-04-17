@@ -1,8 +1,9 @@
 topic: outlier-detection-metadata
 title: "Outlier Detection Metadata -- Detection Window Parameters in Sentinel JSON"
 started: 2026-04-09
-phase: blueprint-complete
-current_step: build.0
+phase: complete
+current_step: complete
+commit: ec043a9c
 research_doc: docs/_internal/research/outlier-sentinel-animal-identification.md
 research_status: validated (parent cycle outlier-sentinel-animal-identification, complete+built)
 synthesis_doc: docs/_internal/incoming/outlier-detection-metadata-spec.md

@@ -1,0 +1,14 @@
+topic: exclusion-preview-fix
+phase: blueprint
+phase: complete
+current_step: complete
+r1_findings: F4(FLAWED fixed), F3/F5/F7/F9/F10(CONDITIONAL incorporated), F1/F2/F6/F8(SOUND)
+synthesis: docs/_internal/incoming/exclusion-preview-fix.md
+started: 2026-04-09T14:30:00
+spec: docs/_internal/incoming/exclusion-preview-fix.md
+implementation_context:
+  prior_cycle: loo-exclusion-override (494512a8) — guardrails, warnings, localStorage preserved
+  threshold_constant: DESTABILISING_LOO_THRESHOLD in animal_influence.py — import, don't hardcode
+  routing: analysis_views.py APIRouter prefix="/api" with full decorator paths
+  reuse: compute_effect_size, compute_g_lower from statistics.py; _load_unified_findings from analyses.py
+  no_failed_approaches: true

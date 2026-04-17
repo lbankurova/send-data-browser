@@ -1,0 +1,58 @@
+topic: outliers-pane-unified
+title: "Unified Outliers Pane -- Bio + LOO + Incidence in one table"
+started: 2026-04-09
+phase: complete
+current_step: complete
+commit: 62ae1098
+research_doc: docs/_internal/research/outlier-sentinel-animal-identification.md
+research_status: validated (parent cycle outlier-sentinel-animal-identification, complete+built)
+synthesis_doc: docs/_internal/incoming/outliers-pane-unified.md
+synthesis_status: validated
+
+implementation_context:
+  prior_cycles:
+    - "outlier-sentinel-animal-identification: COMPLETE+BUILT. SubjectSentinelData types, useSubjectSentinel hook, subject_sentinel.py generator all exist."
+    - "loo-outlier-viz: COMPLETE+BUILT. LOO influential animal viz in distribution charts."
+    - "exclusion-preview-fix: BLUEPRINT-COMPLETE, awaiting build. Phase 1 prerequisite -- fixes LOO-day filter + dose-group scoping."
+  design_constraints:
+    - "Sentinel = annotation-only at S01/S02 layer. MUST NOT modify S10 signal score."
+    - "LOO owns score modification for fragility. No double-penalization."
+    - "Hooks: 300 LOC budget. Components: 800 LOC budget."
+    - "Local useState for state (not context extensions)."
+    - "Frontend-only change: no backend modifications in this spec."
+  prerequisite: "exclusion-preview-fix must be built first (Phase 1). This spec (Phase 2) builds on corrected Section B."
+  no_failed_approaches: true
+  no_bug_patterns: true
+
+architect_gate:
+  verdict: SIMPLIFY->APPLIED
+  fixes: 4 (useSubjectSentinel exists, animals Array not Record, no endpoint_type field, title already Outliers)
+  science_flags: 0
+  advisory: 1 (empirical endpoint-name match test)
+  doc: docs/_internal/research/peer-reviews/outliers-pane-unified-architect-review.md
+
+probe:
+  result: ALL_SAFE
+  breaks: 0
+  science_flags: 0
+  propagates: 3 (stale comments, stale architecture doc, eliminated threshold inconsistency)
+  safe: 25
+  invariants: X1-X10 all SAFE
+
+plan_review_r1:
+  verdict: CONDITIONAL
+  flawed: "1 (F1: endpoint name join key divergence)"
+  conditional: 7
+  sound: 2
+  must_fix: "3 (F1 endpoint match, F2 sex-scoping, F8 unit tests)"
+  should_fix: "4 (F3 z fallback, F5 constant, F6 alarm_score nulls, F7 type inference)"
+  doc: docs/_internal/research/peer-reviews/outliers-pane-unified-synthesis-review.md
+
+plan_review_r2:
+  verdict: "CONDITIONAL (0 FLAWED)"
+  all_r1_resolved: "true (8 RESOLVED, 2 N/A)"
+  new_issues: "5 (2 CONDITIONAL incorporated, 3 SOUND)"
+  doc: docs/_internal/research/peer-reviews/outliers-pane-unified-synthesis-review-r2.md
+  cross_topic_interactions:
+    - "exclusion-preview-fix: LooSensitivityPane.tsx modified in Phase 1 -- this spec renames it to OutliersPane.tsx and extends it"
+    - "animal-influence-explorer: useAnimalInfluence hook already cached, reused here for bio_z_raw and instability"

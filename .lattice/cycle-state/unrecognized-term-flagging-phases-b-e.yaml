@@ -1,68 +1,127 @@
 topic: unrecognized-term-flagging-phases-b-e
 title: "Unrecognized Term Flagging -- Phases D+E (rescoped from B-E)"
 started: 2026-04-06T23:00:00Z
-phase: blueprint
-current_step: blueprint.0-PAUSED-PENDING-ETRANSAFE
+phase: build
+current_step: build.1
+revision: 10
 parent: unrecognized-term-flagging
 depends_on:
   - unrecognized-term-flagging (Phase A -- COMPLETE, commit 3fdbbe60)
-  - etransafe-send-snomed-integration (MUST COMPLETE BUILD-CYCLE before this resumes)
+  - etransafe-send-snomed-integration (Phase B+C -- COMPLETE, commit 9a2b83e6)
 research_doc: docs/_internal/research/unrecognized-term-flagging.md
 research_status: validated
-original_scope:
-  - "Phase B: Base concept extraction for MI/MA"
-  - "Phase C: Curated synonym dictionary"
-  - "Phase D: Suggestion engine + curation workflow"
-  - "Phase E: Cross-study term collision detection"
+synthesis_doc: docs/_internal/incoming/unrecognized-term-flagging-phases-b-e-synthesis.md
+synthesis_status: validated
+reviews:
+  - "docs/_internal/research/peer-reviews/unrecognized-term-flagging-phases-b-e-architect-review.md (architect PASS-WITH-NOTES, 4 advisories auto-applied)"
+  - "docs/_internal/research/peer-reviews/unrecognized-term-flagging-phases-b-e-probe.md (see probe section below for resolved counts)"
+  - "docs/_internal/research/peer-reviews/unrecognized-term-flagging-phases-b-e-synthesis-review.md (plan R1 ACCEPT-WITH-REVISIONS; 3F+9C all incorporated)"
+  - "docs/_internal/research/peer-reviews/unrecognized-term-flagging-phases-b-e-synthesis-review-r2.md (plan R2 REVISE resolved to VALIDATED after 4 patches; 11/12 R1 items RESOLVED; N1 corrected; N2/N3 CONDITIONAL; N4 SOUND-with-note)"
+priority: P2-P3
+unblocked: 2026-04-16
+unblocked_reason: "eTRANSAFE build-cycle COMPLETE. All resume conditions verified."
 rescoped_scope:
   decision: "2026-04-07 (user, Option 1) -- run etransafe build-cycle first, then this cycle resumes covering D+E only"
-  phases_b_c_subsumed_by: "etransafe-send-snomed-integration Proposals 1 (dictionary), 2 (qualifier parser), 'Phase E' (level-3 pipeline wiring)"
+  phases_b_c_subsumed_by: "etransafe-send-snomed-integration Proposals 1, 2, 'Phase E'"
   phases_d_e_remain_here:
-    - "Phase D: Suggestion engine (token + edit-distance candidate scoring against shipped dictionary) + admin API endpoints + frontend curation dashboard + frequency-based promotion"
-    - "Phase E: Cross-study pairwise term collision detection with organ pre-filter + inverted token index + result cache"
-priority: P2-P3
-resume_conditions:
-  - "etransafe-send-snomed-integration build-cycle COMPLETED"
-  - "shared/config/mi-synonym-dictionary.json (or renamed final path) exists with seed mappings"
-  - "extract_base_concept / qualifier parser shipped in send_knowledge.py"
-  - "Level-3 synonym resolution wired into _enrich_finding at findings_pipeline.py (historical line 224)"
-  - "Unrecognized terms after level-3 are logged by Phase A report (existing infra) -- this is the input to Phase D suggestion engine"
-resume_step: blueprint.0 (re-run Step 0 with post-eTRANSAFE state, then proceed to blueprint.1 synthesize on D+E only)
-blocker_gate:
-  flagged_by: user
-  flag_text: "+blocked on real INHAND-aligned MI/MA/CL vocabulary"
-  resolution: "Option 1 selected 2026-04-07: run etransafe-send-snomed-integration build-cycle first, rescope this cycle to D+E only"
-  reality_check:
-    - "Phase B needs NONNEO base concepts (~100 canonical terms) -- NO file exists in repo"
-    - "Phase C IS the curated dictionary -- schema is specified but 0 entries exist"
-    - "Phase D requires Phase C dictionary as substrate -- blocked transitively"
-    - "Phase E requires Phase D infrastructure -- blocked transitively"
-    - "Repo search: find -iname '*inhand*' '*nonneo*' '*synonym-dict*' -> 0 hits"
-    - "shared/config/ holds ops configs (organ-aliases, test-code-aliases) but NO synonym dictionary"
-  scope_collision_with_etransafe:
-    - "eTRANSAFE research Proposal 1 (three-source synonym dictionary) IS the vocabulary acquisition work"
-    - "eTRANSAFE research Proposal 2 (qualifier parser) == UTF Phase B (extract_base_concept)"
-    - "eTRANSAFE research Proposal 3 (CL pattern matcher) == UTF Phase C CL normalization"
-    - "eTRANSAFE research 'Phase E: Integration' == UTF Phase C level-3 wiring into _enrich_finding at findings_pipeline.py:224"
-    - "Proceeding with UTF Phases B/C here would duplicate ~40-70% of eTRANSAFE build work (CLAUDE.md rule 6 violation)"
+    - "Phase D: Suggestion engine + admin API + curation dashboard + frequency promotion with Fisher/chi-square+BH-FDR homonym guard"
+    - "Phase E: Cross-study collision detection with organ pre-filter + inverted token index + result cache + lazy eval"
+validated_features:
+  - "Feature 1: Suggestion engine (term_suggestions.py NEW) with organ-scope confidence gate"
+  - "Feature 2: Admin API router (admin_terms.py NEW) with X-Admin-Token gate + rate-limit + log redaction + CORS + atomic admin-overlay writes"
+  - "Feature 3: Frequency-based promotion + homonym guard (in term_suggestions.py) with Fisher/chi-square + BH-FDR"
+  - "Feature 4: Frontend curation dashboard (/admin/curation route) reusing existing design components"
+  - "Feature 5: Cross-study collision detection (term_collisions.py NEW) with all four research Phase E bounding strategies"
+  - "Feature 6: GET /api/xstudy/term-collisions endpoint + frontend integration"
+  - "Feature 7: Documentation updates (term-recognition.md, field contracts, system manifest, TODO resolution)"
+  - "(R1 F3 added) term_tokenization.py NEW standalone module hosting public tokenize_term"
+architect_gate:
+  verdict: PASS-WITH-NOTES
+  advisories_auto_applied: 4
+probe:
+  verdict: AUTO-PROBE-ACCEPT
+  probe_verdict: "12 PROPAGATES (all intended beneficiaries of synonym resolution), 10/10 invariants SAFE, 0 code-level failures, 0 unresolved analytical flags"
+  note: "Initial probe flagged 1 build-plan gap (rebuild-script vs admin-overlay file collision) auto-fixed by pinning admin-overlay file + AC-2.5a/2.5b. One low-severity procedural flag (admin mapping correctness) RESOLVED by persistence as GAP-D-WATCH-1 + RG-D-PROBE-1 post-ship review protocol (same pattern as etransafe GAP-C-1)."
+  touches_subsystems: [S01]
+  fix_applied: "Admin-overlay file shared/config/finding-synonyms-admin.json with load-time merge"
+r1:
+  verdict: ACCEPT-WITH-REVISIONS
+  findings: "3 FLAWED (F1/F2/F4), 9 CONDITIONAL (F3/F5-F12)"
+  all_incorporated: true
+r2:
+  verdict: VALIDATED
+  r1_resolution: "11 RESOLVED, 1 RESOLVED-AFTER-PATCH (F7 fix was factually wrong; R2 N1 corrected)"
+  same_flawed_both_rounds: false
+  bikeshed_detected: false
+gaps_persisted:
+  registry:
+    - "RG-D-PROBE-1: retrospective collision vs curated mapping comparison"
+    - "RG-D-PROBE-2: _dict_stale_studies.json regen-orchestrator path (tracks GAP-D-2)"
+    - "RG-D-PLAN-1: empirical accuracy of token+edit-distance ranking"
+    - "RG-D-PLAN-2: user acceptance rate telemetry"
+    - "RG-D-PLAN-3: threshold calibration at 50+ studies"
+    - "RG-E-PLAN-1: collision detection precision"
+  todo:
+    - "GAP-D-WATCH-1: admin mapping correctness review loop"
+    - "GAP-D-2: regen orchestrator path"
+    - "GAP-D-PLAN-1: CRO sponsor metadata coverage survey"
+    - "GAP-D-PLAN-2: homonym-guard subject-level aggregation"
+  resolved_on_ship:
+    - "GAP-C-2: dictionary maintenance cadence"
+    - "GAP-C-4: dictionary version diff tooling"
 checkpoints:
   blueprint.0:
     completed: 2026-04-07T01:05:00Z
-    key_decisions:
-      - "Decisions log scan: no failed approaches on this topic. Prior deferral at cross-study-phase-0 (line 15): 'MI/MA synonym resolution -> Phase 2' -- this cycle IS Phase 2."
-      - "Phase A (unrecognized-term-flagging) shipped 2026-04-07 -- provides recognition fields + per-study report + unrecognized terms log. Data plumbing for Phase B/C/D is in place."
-      - "eTRANSAFE research is VALIDATED (phase: research-complete, current_step: build.0) but build-cycle has NOT been run. Its 6 proposals substantially overlap with UTF Phases B-C."
-      - "Code quality guardrails: send_knowledge.py still 300 LOC post Phase A, findings_pipeline.py ~680 LOC (tracked hotspot). classification.py is domain-critical and must not be touched by recognition logic."
-      - "No bug-patterns.md exists. No prior failures relevant to this topic."
-      - "BLOCKER: vocabulary assets required by Phases B-C do not exist in repo and are not produced by any current build pipeline. eTRANSAFE build-cycle is the designated producer."
-      - "STOP at Step 0 -- present resolution options to user before synthesizing."
-    output: ".lattice/cycle-state/unrecognized-term-flagging-phases-b-e.yaml#blueprint_0"
+    key_decisions: ["Blocker gate: vocabulary not in repo -- STOP for user decision"]
   blueprint.0-resolution:
     completed: 2026-04-07T01:10:00Z
+    key_decisions: ["User chose Option 1: run etransafe first, rescope this cycle to D+E only"]
+  blueprint.0-resumed:
+    completed: 2026-04-16T21:00:00Z
     key_decisions:
-      - "User chose Option 1: run etransafe build-cycle first, rescope this cycle to D+E only"
-      - "Phases B and C dissolved into eTRANSAFE scope (no duplication risk)"
-      - "This cycle PAUSED at blueprint.0 pending eTRANSAFE build completion"
-      - "On resume: re-run Step 0 with post-eTRANSAFE state (new vocabulary path, new shipped contracts), then Step 1 synthesize on D+E only"
-      - "Next user action: /lattice:build-cycle etransafe-send-snomed-integration"
-    output: "this cycle paused -- no synthesis file yet"
+      - "Resume conditions verified. Phase B+C shipped via eTRANSAFE."
+      - "send_knowledge.py 1068 LOC OVER 500 budget -- Phase D MUST use new helpers"
+      - "No failed approaches relevant; domain-critical modules out of scope"
+  blueprint.1:
+    completed: 2026-04-16T17:11:00Z
+    output: "docs/_internal/incoming/unrecognized-term-flagging-phases-b-e-synthesis.md (601 lines, 7 features)"
+  blueprint.2:
+    completed: 2026-04-16T17:20:00Z
+    verdict: PASS-WITH-NOTES
+    advisories_applied: 4
+  blueprint.3:
+    completed: 2026-04-16T17:35:00Z
+    verdict: AUTO-PROBE-ACCEPT-WITH-FIX
+    fix: "Admin-overlay file (Option B) pinned to Feature 2; AC-2.5a/2.5b added"
+  blueprint.4:
+    completed: 2026-04-16T17:40:00Z
+    verdict: AUTO-ACCEPT-R1
+    findings: "3F+9C, all accepted"
+  blueprint.5:
+    completed: 2026-04-16T17:50:00Z
+    key_changes:
+      - "Feature 3 homonym guard: Fisher/chi-square + BH-FDR + N-min gate"
+      - "Feature 2 GET organ_system derivation pinned + id hash"
+      - "term_tokenization.py extracted (R1 F3)"
+      - "CollisionCache single-strategy + explicit clear-on-PUT"
+      - "Stacked-PUT staleness gate (X-Force-Sequential)"
+      - "Threshold Python formula + effective_threshold field"
+      - "AC-2.12/2.12a PUT latency"
+      - "§11 security hardened"
+      - "AC-5.8/6.3a qualifier-divergence opt-in"
+      - "Merge-semantics table"
+      - "AC-7.5 grep-assertion test for level==4 leak"
+  blueprint.6:
+    completed: 2026-04-16T18:05:00Z
+    verdict: VALIDATED
+    r2_patches:
+      - "N1: organ_recognition_level enum corrected to {1,2,6,None} with sub-tier in organ_norm_tier"
+      - "N2: AC-2.5a trailing contradiction with merge table removed"
+      - "N3: GET aggregation switched normalize_organ -> assess_organ_recognition"
+      - "N4: AC-1.7 drift widened 5% -> 10% with baseline-rollforward flag"
+  blueprint.7:
+    completed: 2026-04-16T18:10:00Z
+    key_decisions:
+      - "Gap persistence: 6 RG entries + 4 TODO entries written"
+      - "Synthesis: 742 lines, 7 features validated"
+next: "/lattice:build-cycle unrecognized-term-flagging-phases-b-e"

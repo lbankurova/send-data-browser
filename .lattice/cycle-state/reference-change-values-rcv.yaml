@@ -1,0 +1,80 @@
+topic: reference-change-values-rcv
+started: 2026-04-09T20:00:00Z
+phase: research-complete
+current_step: build.0
+completed:
+  research.1: 2026-04-09T20:15:00Z
+  research.2: 2026-04-09T20:25:00Z
+  research.3: 2026-04-09T20:35:00Z
+  research.4: 2026-04-09T21:30:00Z
+  research.5: 2026-04-09T21:35:00Z
+checkpoints:
+  research.1:
+    completed: 2026-04-09T20:15:00Z
+    key_decisions:
+      - "Log-transformed RCV for high-CVI analytes (enzymes, triglycerides); symmetric for low-CVI"
+      - "Annotation-only in sentinel, not direct S10 score modification"
+      - "Conservative fallback (population CV) for rats pending BV data mining"
+      - "Phase 1 targets dog/NHP with published BV; Phase 2 adds rat conservative; Phase 3 mines HCD"
+      - "z_rcv continuous score primary; binary flag for filtering/concordance counting"
+      - "Control-animal age drift correction for long-duration rat studies"
+    constraints:
+      - "RCV must not modify S10 signal scores -- sentinel annotation only (sentinel architecture invariant)"
+      - "Dog BV data published (Bourges-Abella, Ruaux, Selin, Tamamoto) -- rat is genuine gap (RG-1)"
+      - "CVA uncertainty is negligible for high-CVI analytes where RCV matters most"
+      - "Requires per-animal baseline-terminal extraction -- new processing path parallel to group stats"
+    output: "docs/_internal/research/reference-change-values-rcv.md"
+    next_needs: "peer review needs the doc path only -- no context"
+  research.2:
+    completed: 2026-04-09T20:25:00Z
+    key_decisions:
+      - "R1: 4 FLAWED + 8 CONDITIONAL -- all accepted for incorporation"
+    output: "docs/_internal/research/peer-reviews/reference-change-values-rcv-review.md"
+  research.3:
+    completed: 2026-04-09T20:35:00Z
+    key_decisions:
+      - "F1: Hematology source corrected to Bourges-Abella 2015 (not Ruaux 2012)"
+      - "F2: II thresholds corrected to standard 0.6/1.4 (from 0.7/1.67)"
+      - "F4: Zero baseline handling added -- min_baseline per analyte, LLOQ suppression"
+      - "F8+F9: Bayesian BV and mixed-effects model sections added as alternative frameworks"
+      - "F10: Control correction respecified to distribution-based, minimum N>=5"
+      - "F12: Binomial concordance table added -- k>=2 required at any N<=10"
+      - "Added 4 new sections: 7.0 (zero baselines), 7a.1-7a.4 (alternatives)"
+      - "6 missing references added (Bourges-Abella, Petersen, Roraas, Braga, Klersy, Campora)"
+    output: "docs/_internal/research/reference-change-values-rcv.md (updated)"
+    next_needs: "R2 peer review -- fresh agent, input is doc path + R1 review path"
+  research.4:
+    completed: 2026-04-09T21:30:00Z
+    key_decisions:
+      - "R2: 1 FLAWED (NF1: empirical RCV mean-centering) + 7 CONDITIONAL"
+      - "All 12 R1 findings confirmed RESOLVED"
+    output: "docs/_internal/research/peer-reviews/reference-change-values-rcv-review-r2.md"
+  research.5:
+    completed: 2026-04-09T21:35:00Z
+    key_decisions:
+      - "VALIDATED with fixes: NF1 FLAWED is new (not persistent R1). Proceed autonomously."
+      - "NF1 fixed: empirical RCV formula corrected with mean-centering"
+      - "NF2 fixed: log-transformed z_rcv formula added to Section 1.4"
+      - "NF3 fixed: CVI harmonized to 27% throughout"
+      - "NF6 fixed: posterior probability -> p-value terminology"
+      - "NF4-NF5,NF7-NF8: logged as gaps (RG-9,RG-10,RG-11,GAP-259,GAP-260,GAP-261)"
+    output: "docs/_internal/research/reference-change-values-rcv.md (final)"
+    next_needs: "Step 6: summary + corpus coherence"
+  research.6:
+    completed: 2026-04-16T10:00:00Z
+    key_decisions:
+      - "Corpus coherence: 0 contradictions across 6 corpus files (outlier-sentinel, cv-tier, control-side-loo, scoring-engine, system-manifest, REGISTRY)"
+      - "RCV annotation-only invariant consistent with X1-X10"
+    output: "informational -- no file output"
+  research.7:
+    completed: 2026-04-16T10:05:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAG, 2 PROPAGATES, 0 STALE"
+      - "PROPAGATES: S07->S16 (RCV concordance modifies confidence -> NOAEL weighting)"
+      - "PROPAGATES: S01->Sentinel (new per-animal fields in subject_sentinel.json)"
+    output: "informational -- no file output"
+  research.7b:
+    completed: 2026-04-16T10:10:00Z
+    key_decisions:
+      - "All gaps persisted: REGISTRY (RG-1,RG-9,RG-10,RG-11), TODO (GAP-259,GAP-260,GAP-261,GAP-228)"
+    output: "state checkpoint"

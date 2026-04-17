@@ -8,7 +8,16 @@ spec: incoming/cohort-view-redesign-synthesis.md
 entry: path-based
 
 notes:
-  - Phase 1 NOAEL overlay already shipped (noael_overlay.py)
+  - Phase 1 COMPLETE (noael_overlay.py + subject_correlations.py)
   - Phase 6 similarity scatter UNBLOCKED (subject_similarity.json shipped c0b2ee89)
-  - subject_correlations.json still needs building (Phase 1 remainder)
   - 8 phases total, mostly frontend UI work
+
+checkpoints:
+  phase_1b:
+    completed: 2026-04-16T10:30:00Z
+    key_decisions:
+      - "subject_correlations.py: pairwise Spearman rho across subjects per endpoint pair"
+      - "446 significant pairs for PointCross (|rho|>=0.5, p<0.05, N>=8)"
+      - "API wired via VALID_VIEW_NAMES wildcard route"
+      - "Frontend: SubjectCorrelationsData type, fetchSubjectCorrelations, useSubjectCorrelations hook"
+    output: "backend/generator/subject_correlations.py, backend/generated/*/subject_correlations.json"

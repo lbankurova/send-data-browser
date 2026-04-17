@@ -1,84 +1,101 @@
 topic: cl-decomposition-pattern-census
-started: 2026-04-07T23:55:00Z
-phase: blueprint-complete
-current_step: build.0
+started: 2026-04-07T23:55:00.000Z
+phase: complete
+current_step: complete
 completed:
-  research.1: 2026-04-07T23:55:00Z
-  research.2: 2026-04-07T23:58:00Z
-  research.3: 2026-04-08T00:02:00Z
-  research.4: 2026-04-08T00:05:00Z
-  research.5: 2026-04-08T00:08:00Z
-  research.6: 2026-04-08T00:10:00Z
-  research.7: 2026-04-08T00:12:00Z
-  research.7b: 2026-04-08T00:14:00Z
-  research.complete: 2026-04-08T00:14:00Z
+  research.1: 2026-04-07T23:55:00.000Z
+  research.2: 2026-04-07T23:58:00.000Z
+  research.3: 2026-04-08T00:02:00.000Z
+  research.4: 2026-04-08T00:05:00.000Z
+  research.5: 2026-04-08T00:08:00.000Z
+  research.6: 2026-04-08T00:10:00.000Z
+  research.7: 2026-04-08T00:12:00.000Z
+  research.7b: 2026-04-08T00:14:00.000Z
+  research.complete: 2026-04-08T00:14:00.000Z
 checkpoints:
   research.1:
-    completed: 2026-04-07T23:55:00Z
+    completed: 2026-04-07T23:55:00.000Z
     key_decisions:
-      - "Self-canonical strategy dominates -- ~137 SC + 18 aliases reach 97.4%"
-      - "extract_base_concept() NOT extended to CL"
-      - "5 distinct comma patterns identified"
-    output: "docs/_internal/research/cl-decomposition-pattern-census.md"
+      - Self-canonical strategy dominates -- ~137 SC + 18 aliases reach 97.4%
+      - extract_base_concept() NOT extended to CL
+      - 5 distinct comma patterns identified
+    output: docs/_internal/research/cl-decomposition-pattern-census.md
   research.2:
-    completed: 2026-04-07T23:58:00Z
+    completed: 2026-04-07T23:58:00.000Z
     key_decisions:
-      - "R1: 1 FLAWED (Material vs Vomitus), 7 CONDITIONAL"
-    output: "docs/_internal/research/peer-reviews/cl-decomposition-pattern-census-review.md"
+      - 'R1: 1 FLAWED (Material vs Vomitus), 7 CONDITIONAL'
+    output: docs/_internal/research/peer-reviews/cl-decomposition-pattern-census-review.md
   research.3:
-    completed: 2026-04-08T00:02:00Z
+    completed: 2026-04-08T00:02:00.000Z
     key_decisions:
-      - "F3 FLAWED resolved: Material (general) and Vomitus (GI) are distinct"
-      - "Case dedup: 180->175 unique terms"
-      - "CLCAT guard added for colon decomposition"
-    output: "docs/_internal/research/cl-decomposition-pattern-census.md (updated)"
+      - 'F3 FLAWED resolved: Material (general) and Vomitus (GI) are distinct'
+      - 'Case dedup: 180->175 unique terms'
+      - CLCAT guard added for colon decomposition
+    output: docs/_internal/research/cl-decomposition-pattern-census.md (updated)
   research.4:
-    completed: 2026-04-08T00:05:00Z
+    completed: 2026-04-08T00:05:00.000Z
     key_decisions:
-      - "R2: 8/8 R1 RESOLVED, 4 new CONDITIONAL (N1 CLCAT guard, N2 count, N3 Adnexa, N4 schema)"
-    output: "docs/_internal/research/peer-reviews/cl-decomposition-pattern-census-review-r2.md"
+      - 'R2: 8/8 R1 RESOLVED, 4 new CONDITIONAL (N1 CLCAT guard, N2 count, N3 Adnexa, N4 schema)'
+    output: docs/_internal/research/peer-reviews/cl-decomposition-pattern-census-review-r2.md
   research.5:
-    completed: 2026-04-08T00:08:00Z
+    completed: 2026-04-08T00:08:00.000Z
     key_decisions:
-      - "All SOUND/CONDITIONAL in R2 -- validated autonomously"
-      - "4 new CONDITIONAL auto-incorporated"
+      - All SOUND/CONDITIONAL in R2 -- validated autonomously
+      - 4 new CONDITIONAL auto-incorporated
   research.6:
-    completed: 2026-04-08T00:10:00Z
+    completed: 2026-04-08T00:10:00.000Z
     key_decisions:
-      - "Supersedes cross-study-terminology-coverage CL 50-55% estimate"
-      - "No contradictions with unrecognized-term-flagging.md"
+      - Supersedes cross-study-terminology-coverage CL 50-55% estimate
+      - No contradictions with unrecognized-term-flagging.md
   research.7:
-    completed: 2026-04-08T00:12:00Z
+    completed: 2026-04-08T00:12:00.000Z
     key_decisions:
-      - "0 BREAKS, 0 SCIENCE-FLAGs, 2 PROPAGATES, 23 SAFE"
-      - "X1-X10 invariants all SAFE"
+      - 0 BREAKS, 0 SCIENCE-FLAGs, 2 PROPAGATES, 23 SAFE
+      - X1-X10 invariants all SAFE
   research.7b:
-    completed: 2026-04-08T00:14:00Z
+    completed: 2026-04-08T00:14:00.000Z
     key_decisions:
-      - "GAP-TCV-3 resolved in TODO.md"
-      - "GAP-CL-1 created for ophthalmic hierarchy"
-      - "RG-2 resolved in REGISTRY (cross-study-terminology-coverage)"
-      - "New REGISTRY stream cl-decomposition-pattern-census added"
+      - GAP-TCV-3 resolved in TODO.md
+      - GAP-CL-1 created for ophthalmic hierarchy
+      - RG-2 resolved in REGISTRY (cross-study-terminology-coverage)
+      - New REGISTRY stream cl-decomposition-pattern-census added
     gaps_persisted:
-      registry: 1  # cl-decomposition-pattern-census stream with 2 open RGs
-      todo: 1  # GAP-CL-1 ophthalmic hierarchy
+      registry: 1
+      todo: 1
   blueprint.0:
-    completed: 2026-04-08T00:20:00Z
+    completed: 2026-04-08T00:20:00.000Z
     key_decisions:
-      - "No FAILED approaches in decisions log relevant to CL terminology"
-      - "Phase A (661e65a3) + Phase B+C (9a2b83e6) + cross-study-terminology (595be500) shipped -- CL at 33.2%, excluded pending this census"
-      - "CL entries in finding-synonyms.json (schema: canonical, ncit_code, aliases, base_concept, qualifier, source). No decomposition (qualifier=null)."
-      - "build_synonym_dictionary.py ingests CLOBS.tsv + sendigR + eTRANSAFE. New CL self-canonicals need new source file."
-      - "No _CLCAT_VALUES constant -- colon-compound guard needs creation"
-      - "findings_pipeline.py ~680 LOC (CL wiring done, no changes needed). send_knowledge.py ~1056 LOC (dict loading handles CL)."
-      - "Domain-critical modules (classification.py, confidence.py) untouched. Pure additive metadata."
-      - "GAP-TCV-3 resolved by this cycle. cross-study-terminology-coverage shipped."
+      - No FAILED approaches in decisions log relevant to CL terminology
+      - Phase A (661e65a3) + Phase B+C (9a2b83e6) + cross-study-terminology (595be500) shipped -- CL at 33.2%, excluded pending this census
+      - 'CL entries in finding-synonyms.json (schema: canonical, ncit_code, aliases, base_concept, qualifier, source). No decomposition (qualifier=null).'
+      - build_synonym_dictionary.py ingests CLOBS.tsv + sendigR + eTRANSAFE. New CL self-canonicals need new source file.
+      - No _CLCAT_VALUES constant -- colon-compound guard needs creation
+      - findings_pipeline.py ~680 LOC (CL wiring done, no changes needed). send_knowledge.py ~1056 LOC (dict loading handles CL).
+      - Domain-critical modules (classification.py, confidence.py) untouched. Pure additive metadata.
+      - GAP-TCV-3 resolved by this cycle. cross-study-terminology-coverage shipped.
     implementation_context:
-      failed_approaches: "none"
-      bug_patterns: "none (no bug-patterns.md)"
-      domain_critical: "classification.py, confidence.py untouched. Recognition is pure additive metadata."
-      hotspots: "findings_pipeline.py 680 LOC (no changes needed), send_knowledge.py 1056 LOC (dict loading already handles CL)"
+      failed_approaches: none
+      bug_patterns: none (no bug-patterns.md)
+      domain_critical: classification.py, confidence.py untouched. Recognition is pure additive metadata.
+      hotspots: findings_pipeline.py 680 LOC (no changes needed), send_knowledge.py 1056 LOC (dict loading already handles CL)
       cross_topic:
-        - "GAP-TCV-3 from cross-study-terminology-coverage resolved by this cycle"
-        - "unrecognized-term-flagging-phases-b-e paused, independent"
-        - "cross-study-phase-1-aggregation-backend consumer reads canonical_testcd -- CL improvements immediately visible"
+        - GAP-TCV-3 from cross-study-terminology-coverage resolved by this cycle
+        - unrecognized-term-flagging-phases-b-e paused, independent
+        - cross-study-phase-1-aggregation-backend consumer reads canonical_testcd -- CL improvements immediately visible
+  build.1:
+    completed: '2026-04-10T20:51:45.306Z'
+    node: implement
+    status: completed
+  build.2:
+    completed: '2026-04-10T20:51:54.677Z'
+    node: review
+    status: completed
+  build.3:
+    completed: '2026-04-10T20:52:06.036Z'
+    node: spec-refresh
+    status: completed
+  complete:
+    completed: '2026-04-10T20:52:06.081Z'
+    node: complete
+    status: completed
+revision: 4
