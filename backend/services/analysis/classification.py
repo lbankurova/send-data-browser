@@ -172,13 +172,71 @@ _MODERATE_CV_SPECIMENS = {
 }
 
 
+def _cv_to_tier_with_hysteresis(cv: float, population_cv: float | None = None) -> int:
+    """Assign tier from CV with hysteresis bands at boundaries (R1-F7).
+
+    Clear zones: <8% -> T1, 12-18% -> T2, >22% -> T3.
+    Hysteresis zones: 8-12% and 18-22% use population CV to break tie,
+    defaulting to higher tier (wider equiv band = conservative) when uncertain.
+    """
+    if cv < 8:
+        return 1
+    if cv > 22:
+        return 3
+    if 12 <= cv <= 18:
+        return 2
+    # Hysteresis zone 8-12%: T1 or T2
+    if 8 <= cv < 12:
+        if population_cv is not None:
+            return 1 if population_cv < 10 else 2
+        return 2  # conservative default when uncertain
+    # Hysteresis zone 18-22%: T2 or T3 (R2-NEW1: default to T3 = conservative)
+    if population_cv is not None:
+        return 2 if population_cv < 20 else 3
+    return 3
+
+
 def _equivalence_tier(test_code: str, specimen: str | None = None,
-                      domain: str | None = None) -> int:
+                      domain: str | None = None, species: str | None = None,
+                      computed_cv: float | None = None,
+                      n_control: int | None = None) -> int:
     """Determine CV% tier for equivalence band width.
+
+    Tier assignment cascade (F3: species-aware equivalence):
+      1. If computed_cv available and n_control >= 5: data-driven tier
+      2. Else if population CV exists: population-driven tier
+      3. Else: hardcoded tier sets (current behavior)
 
     For OM domain, uses specimen (organ) instead of test_code since all OM
     findings share test_code='WEIGHT'.
     """
+    # Try data-driven tier first (requires sufficient N for reliability)
+    pop_cv_entry = None
+    pop_cv_value = None
+    if species:
+        from services.analysis.send_knowledge import get_population_cv
+        # Determine strain from species (simplified — full strain comes from study metadata)
+        strain_map = {"RAT": "SD", "DOG": "BEAGLE", "NHP": "CYNOMOLGUS"}
+        s_upper = (species or "").upper()
+        strain = None
+        for token, s_strain in strain_map.items():
+            if token in s_upper:
+                strain = s_strain
+                break
+        pop_cv_entry = get_population_cv(species, strain, domain, test_code, specimen,
+                                          sex=None)  # sex-neutral lookup (fallback to M)
+        if pop_cv_entry:
+            pop_cv_value = pop_cv_entry.get("cv_pct")
+
+    # Cascade 1: data-driven CV from this study's control group
+    if computed_cv is not None and n_control is not None and n_control >= 5:
+        return _cv_to_tier_with_hysteresis(computed_cv, pop_cv_value)
+
+    # Cascade 2: population CV reference
+    if pop_cv_value is not None:
+        return _cv_to_tier_with_hysteresis(pop_cv_value)
+
+    # Cascade 3: hardcoded tier sets (backward compatible)
     # OM domain: tier by specimen (organ), not test_code
     if domain == "OM" and specimen:
         spec_upper = specimen.upper()
@@ -188,7 +246,7 @@ def _equivalence_tier(test_code: str, specimen: str | None = None,
         for mod in _MODERATE_CV_SPECIMENS:
             if mod in spec_upper:
                 return 2
-        # Brain, heart → Tier 1
+        # Brain, heart -> Tier 1
         return 1
 
     tc = (test_code or "").upper()
@@ -202,9 +260,13 @@ def _equivalence_tier(test_code: str, specimen: str | None = None,
 
 
 def _equivalence_fraction(test_code: str, specimen: str | None = None,
-                          domain: str | None = None) -> float:
+                          domain: str | None = None, species: str | None = None,
+                          computed_cv: float | None = None,
+                          n_control: int | None = None) -> float:
     """Get equivalence band fraction for the given endpoint."""
-    return _TIER_FRACTIONS[_equivalence_tier(test_code, specimen, domain)]
+    return _TIER_FRACTIONS[_equivalence_tier(test_code, specimen, domain,
+                                             species=species, computed_cv=computed_cv,
+                                             n_control=n_control)]
 
 
 _MIN_INCIDENCE_TOLERANCE = 0.02  # floor at 2pp, matching client-side
@@ -310,6 +372,9 @@ def classify_dose_response(
     test_code: str | None = None,
     specimen: str | None = None,
     domain: str | None = None,
+    species: str | None = None,
+    computed_cv: float | None = None,
+    n_control: int | None = None,
 ) -> dict:
     """Classify dose-response pattern using equivalence-band noise tolerance.
 
@@ -321,6 +386,9 @@ def classify_dose_response(
       Tier 1 (CV < 10%): 0.5 SD — BW, brain, heart, RBC, total protein
       Tier 2 (CV 10-20%): 0.5 SD — liver, kidney, ALT, AST, glucose
       Tier 3 (CV > 20%): 0.75 SD — spleen, thymus, WBC, triglycerides
+
+    When species and computed_cv are provided, data-driven tier assignment
+    takes precedence over hardcoded sets (F3: species-aware equivalence).
 
     Returns dict with:
       pattern: one of 'monotonic_increase', 'monotonic_decrease',
@@ -338,7 +406,9 @@ def classify_dose_response(
             return {"pattern": "insufficient_data", "confidence": None, "onset_dose_level": None}
 
         pooled = max(_pooled_sd(group_stats), _MIN_POOLED_SD)
-        frac = _equivalence_fraction(test_code or "", specimen, domain)
+        frac = _equivalence_fraction(test_code or "", specimen, domain,
+                                     species=species, computed_cv=computed_cv,
+                                     n_control=n_control)
         band = frac * pooled
 
         # Build step sequence: control → dose1 → dose2 → ...

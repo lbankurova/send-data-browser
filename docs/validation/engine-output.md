@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `b3aaede1` (2026-04-15)
-**Generated:** 2026-04-15T20:51:56.300Z
+**Engine:** commit `aa22afd9` (2026-04-16)
+**Generated:** 2026-04-16T21:44:02.741Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -720,18 +720,18 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Domain | Total | tr_adverse | tr_non_adverse | tr_adaptive | equivocal | not_treatment_related |
 |--------|-------| --- | --- | --- | --- | --- |
-| BG | 9 | 2 | 1 | 0 | 0 | 6 |
+| BG | 9 | 2 | 0 | 0 | 1 | 6 |
 | BW | 29 | 26 | 0 | 0 | 0 | 3 |
 | CL | 9 | 1 | 0 | 0 | 3 | 5 |
 | DS | 1 | 0 | 0 | 0 | 0 | 1 |
-| EG | 6 | 0 | 1 | 0 | 1 | 4 |
+| EG | 6 | 0 | 0 | 0 | 1 | 5 |
 | FW | 5 | 0 | 0 | 0 | 1 | 4 |
-| LB | 161 | 27 | 1 | 0 | 38 | 95 |
+| LB | 161 | 27 | 0 | 0 | 38 | 96 |
 | MA | 72 | 4 | 0 | 0 | 10 | 58 |
 | MI | 101 | 6 | 0 | 3 | 36 | 56 |
 | OM | 20 | 11 | 1 | 0 | 4 | 4 |
 | VS | 2 | 0 | 1 | 0 | 0 | 1 |
-| **Total** | **415** | **77** | **5** | **3** | **93** | **237** |
+| **Total** | **415** | **77** | **2** | **3** | **94** | **239** |
 
 ### NOAEL / LOAEL
 
@@ -745,9 +745,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Organ System | Score | Max Signal | N EP | N Sig | Domains | MI Status | OM-MI |
 |-------------|-------|-----------|------|-------|---------|-----------|-------|
-| cardiovascular | 0.677 | 0.940 | 12 | 3 | EG, MI, OM, VS | positive | 1.00 |
-| hematologic | 0.669 | 0.940 | 65 | 23 | LB, MA, MI, OM | -- | -- |
-| hepatic | 0.597 | 0.940 | 37 | 17 | LB, MA, MI, OM | -- | -- |
+| hematologic | 0.664 | 0.940 | 65 | 23 | LB, MA, MI, OM | -- | -- |
+| cardiovascular | 0.659 | 0.940 | 12 | 3 | EG, MI, OM, VS | positive | 1.00 |
+| hepatic | 0.595 | 0.940 | 37 | 17 | LB, MA, MI, OM | -- | -- |
 | general | 0.516 | 0.940 | 61 | 15 | BG, BW, CL, DS, FW, MA, MI, OM | -- | -- |
 | renal | 0.473 | 0.940 | 32 | 9 | LB, MA, MI, OM | positive | 1.00 |
 

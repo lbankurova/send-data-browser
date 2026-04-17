@@ -212,6 +212,78 @@ def _enrich_finding(
     # Baked into generated JSON, consumed by frontend LooSensitivityPane.
     f["loo_per_subject"] = _max_el_loo_per_subject
 
+    # Control group CV% (F2: data-driven CV for species-aware tier assignment).
+    # Computed on original scale (sd/mean * 100) for ALL endpoints including
+    # lognormal (R1-F3: no scale mixing with population CV reference table).
+    if f.get("data_type") == "continuous" and not f.get("compound_id"):
+        ctrl_gs = next((gs for gs in f.get("group_stats", []) if gs.get("dose_level", -1) == 0), None)
+        if ctrl_gs and ctrl_gs.get("mean") and ctrl_gs["mean"] != 0 and ctrl_gs.get("sd") is not None:
+            f["control_cv_pct"] = round(abs(ctrl_gs["sd"] / ctrl_gs["mean"]) * 100, 1)
+            f["n_control"] = ctrl_gs.get("n")
+        else:
+            f["control_cv_pct"] = None
+            f["n_control"] = ctrl_gs.get("n") if ctrl_gs else None
+    else:
+        f["control_cv_pct"] = None
+        f["n_control"] = None
+    f["cv_scale"] = "original"
+
+    # Detection power annotation (F4: pMDD per pairwise comparison).
+    # Computes MDD as % of control mean using Bonferroni-corrected t with
+    # Dunnett pooled df. Annotation-only — does not affect scoring or NOAEL.
+    f["detection_mdd_pct"] = None
+    f["detection_mdd_pct_median"] = None
+    f["detection_mdd_driven_by"] = None
+    f["detection_underpowered"] = None
+    if f.get("data_type") == "continuous" and f.get("control_cv_pct") is not None:
+        from services.analysis.statistics import compute_pmdd
+        group_stats = f.get("group_stats", [])
+        ctrl_gs = next((gs for gs in group_stats if gs.get("dose_level", -1) == 0), None)
+        treated_gs = [gs for gs in group_stats if gs.get("dose_level", 0) > 0]
+        if ctrl_gs and ctrl_gs.get("sd") is not None and ctrl_gs.get("mean") and treated_gs:
+            n_total = sum(gs.get("n", 0) for gs in group_stats)
+            k_groups = len(group_stats)
+            pmdd_values = []
+            max_pmdd = None
+            max_pmdd_dl = None
+            for tgs in treated_gs:
+                n_t = tgs.get("n", 0)
+                pmdd = compute_pmdd(
+                    ctrl_gs["sd"], ctrl_gs["mean"],
+                    ctrl_gs.get("n", 0), n_t, k_groups, n_total,
+                )
+                if pmdd is not None:
+                    pmdd_values.append(pmdd)
+                    if max_pmdd is None or pmdd > max_pmdd:
+                        max_pmdd = pmdd
+                        max_pmdd_dl = tgs.get("dose_level")
+            if pmdd_values:
+                import statistics as _stat
+                f["detection_mdd_pct"] = max_pmdd
+                f["detection_mdd_pct_median"] = round(_stat.median(pmdd_values), 1)
+                if max_pmdd_dl is not None:
+                    n_at_max = next((gs.get("n", 0) for gs in treated_gs if gs.get("dose_level") == max_pmdd_dl), None)
+                    f["detection_mdd_driven_by"] = f"dose level {max_pmdd_dl}, N={n_at_max}"
+
+                # Underpowered flag: compare max pMDD against meaningful threshold
+                threshold_pct = None
+                domain = f.get("domain", "")
+                if domain == "OM":
+                    from services.analysis.organ_thresholds import get_organ_threshold
+                    ot = get_organ_threshold(f.get("specimen", ""), f.get("_study_species"))
+                    if ot and ot.get("adverse_floor_pct") is not None:
+                        threshold_pct = ot["adverse_floor_pct"]
+                    if ot and ot.get("threshold_provisional"):
+                        f["threshold_provisional"] = True
+                elif domain in ("LB", "BW"):
+                    # Use fold-change threshold from lab-clinical-rules (R2-NEW3)
+                    from services.analysis.send_knowledge import get_lab_fold_threshold
+                    fold = get_lab_fold_threshold(f.get("test_code", ""))
+                    if fold is not None:
+                        threshold_pct = (fold - 1) * 100  # e.g. 2-fold = 100%
+                if threshold_pct is not None and max_pmdd is not None and max_pmdd > threshold_pct:
+                    f["detection_underpowered"] = True
+
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
     dr_result = classify_dose_response(
@@ -220,6 +292,9 @@ def _enrich_finding(
         test_code=f.get("test_code"),
         specimen=f.get("specimen"),
         domain=f.get("domain"),
+        species=f.get("_study_species"),
+        computed_cv=f.get("control_cv_pct"),
+        n_control=f.get("n_control"),
     )
     f["dose_response_pattern"] = dr_result["pattern"]
     f["pattern_confidence"] = dr_result.get("confidence")
@@ -515,6 +590,83 @@ def _stash_pre_exclusion_stats(findings: list[dict]) -> list[dict]:
 # Orchestrator
 # ---------------------------------------------------------------------------
 
+# Organ systems with mechanistically specific concordance for Track 2 criterion B
+# (R1-F5 fix). Broad systems like hematologic/general excluded because directional
+# concordance within them does not imply mechanistic relatedness.
+_CONCORDANCE_ORGAN_SYSTEMS = frozenset({
+    "hepatic", "renal", "thyroid", "adrenal", "cardiac", "gastric",
+})
+
+
+def _annotate_track2(findings: list[dict]) -> None:
+    """Annotate findings that fail gLower 0.3 gate but meet secondary evidence criteria.
+
+    Track 2 criterion A: magnitude + pattern (gLower > 0.10 AND magnitude > threshold
+      AND dose_response_pattern not flat/insufficient)
+    Track 2 criterion B: cross-domain concordance (gLower > 0.10 AND 2+ concordant
+      findings in same organ system with same direction)
+
+    Modifies findings in-place (annotation-only).
+    """
+    from services.analysis.organ_thresholds import get_organ_threshold
+    from services.analysis.send_knowledge import get_lab_fold_threshold
+
+    # Build organ_system concordance index for criterion B
+    for f in findings:
+        if f.get("treatment_related") or f.get("max_effect_lower") is None:
+            continue
+        mel = f["max_effect_lower"]
+        if mel >= 0.3 or mel <= 0.10:
+            continue  # Not in Track 2 range (0.10 < gLower < 0.30)
+
+        # Track 2 criterion A: magnitude + pattern
+        pattern = f.get("dose_response_pattern", "")
+        if pattern not in ("flat", "insufficient_data"):
+            domain = f.get("domain", "")
+            threshold_pct = None
+            if domain == "OM":
+                ot = get_organ_threshold(f.get("specimen", ""), f.get("_study_species"))
+                if ot and ot.get("adverse_floor_pct") is not None:
+                    threshold_pct = ot["adverse_floor_pct"]
+            elif domain in ("LB", "BW"):
+                fold = get_lab_fold_threshold(f.get("test_code", ""))
+                if fold is not None:
+                    threshold_pct = (fold - 1) * 100
+
+            if threshold_pct is not None:
+                # Use max_fold_change (captures peak across all doses, not just highest)
+                mfc = f.get("max_fold_change")
+                pct_change = abs(mfc - 1) * 100 if mfc is not None else None
+                if pct_change is not None and pct_change > threshold_pct:
+                    f["gate_suppressed_notable"] = True
+                    f["gate_suppressed_reason"] = "magnitude_and_pattern"
+                    continue
+
+        # Track 2 criterion B: cross-domain concordance (restricted organ systems)
+        organ_sys = (f.get("organ_system") or "").lower()
+        direction = f.get("direction")
+        if organ_sys not in _CONCORDANCE_ORGAN_SYSTEMS or not direction or direction == "none":
+            continue
+        concordant_count = 0
+        for other in findings:
+            if other is f:
+                continue
+            if (other.get("organ_system") or "").lower() != organ_sys:
+                continue
+            if other.get("direction") != direction:
+                continue
+            other_p = other.get("min_p_adj")
+            other_inc = None
+            if other.get("data_type") == "incidence":
+                tgs = [gs for gs in other.get("group_stats", []) if gs.get("dose_level", 0) > 0]
+                other_inc = max((gs.get("affected", 0) for gs in tgs), default=0)
+            if (other_p is not None and other_p < 0.10) or (other_inc is not None and other_inc >= 2):
+                concordant_count += 1
+        if concordant_count >= 2:
+            f["gate_suppressed_notable"] = True
+            f["gate_suppressed_reason"] = "cross_domain_concordance"
+
+
 def process_findings(
     base_findings: list[dict],
     scheduled_map: dict[tuple, dict] | None = None,
@@ -558,6 +710,12 @@ def process_findings(
         has_concurrent_control: Whether the study has a concurrent control group.
             When False, adversity classification is suppressed (RC-7).
     """
+    # Stamp study-level metadata on findings so _enrich_finding() can use them
+    # for species-aware tier assignment (F3) and detection power (F4).
+    if species:
+        for f in base_findings:
+            f["_study_species"] = species
+
     if scheduled_map is not None:
         base_findings = attach_scheduled_stats(
             base_findings, scheduled_map, n_excluded,
@@ -652,6 +810,16 @@ def process_findings(
     enriched = compute_all_confidence(
         enriched, expected_profile=expected_profile, study_meta=study_meta,
     )
+    # F6: Track 2 gLower transparency annotations.
+    # Findings that fail the gLower 0.3 gate (treatment_related=False) but meet
+    # secondary evidence criteria are annotated as "suppressed but notable."
+    # INVARIANT X3: gate_suppressed_notable is annotation-only. Do NOT condition
+    # scoring on this field.
+    _annotate_track2(enriched)
+    assert not any(
+        f.get("gate_suppressed_notable") and f.get("treatment_related")
+        for f in enriched
+    ), "Track 2 invariant violated: gate_suppressed_notable and treatment_related are mutually exclusive"
     return enriched
 
 

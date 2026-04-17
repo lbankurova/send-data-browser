@@ -1,0 +1,126 @@
+topic: cv-tier-adaptive-thresholds
+started: 2026-04-09T22:00:00
+phase: build-in-progress
+current_step: build.2
+revision: 1
+completed:
+  research.0: { completed: 2026-04-09T22:15:00 }
+  research.1: { completed: 2026-04-09T23:00:00 }
+  research.2: { completed: 2026-04-09T23:15:00, peer_review: R1, findings: "3F+9C+2S" }
+  research.3: { completed: 2026-04-09T23:30:00, action: "all 14 findings incorporated" }
+  research.4: { completed: 2026-04-09T23:40:00, peer_review: R2, findings: "12 RESOLVED + 3C new" }
+  research.5: { completed: 2026-04-09T23:45:00, verdict: "VALIDATED" }
+  research.6: { completed: 2026-04-09T23:50:00, distill: "coherent (no contradictions)" }
+  research.7: { completed: 2026-04-09T23:55:00, probe: "3 BREAKS, 3 SCIENCE-FLAG, 5 PROPAGATES, 14 SAFE" }
+  research.7b: { completed: 2026-04-09T23:58:00, gaps_persisted: "3 data gaps (CV-01/02/03) to TODO, REGISTRY entry added" }
+blueprint_started: 2026-04-10T01:00:00
+checkpoints:
+  blueprint.0:
+    completed: 2026-04-10T01:00:00
+    implementation_context:
+      decisions_log:
+        failed_approaches: 0
+        relevant_patterns:
+          - "cynomolgus-organ-weight-hcd: BREAK in _assess_om_two_gate with null thresholds -- P8 must add null guards when generating new thresholds"
+          - "detection-power-visualization: ALREADY SHIPS strip plot bands + context-aware OutliersPane empty state (ec043a9c + ongoing build). P2/P6 must NOT duplicate."
+          - "hcd-informed-z-scoring: research-complete, uses same MAP prior/CV-of-CVs gate concept as P1 shrinkage. Shared infrastructure."
+          - "reference-change-values-rcv: research step 4 (incomplete). P5 BV/RCV overlaps -- defer full RCV engine to that cycle."
+          - "exclusion-preview-fix: loo_per_subject is single-pairwise SCIENCE-FLAG resolved"
+      bug_patterns: "No .lattice/bug-patterns.md exists"
+      guardrails:
+        domain_critical:
+          - "classification.py: classify_dose_response() -- 3-tier CV equivalence. P1/P3 modify this."
+          - "confidence.py: _score_d6_tier2_equivocal() -- Tier 2 penalty. P3 changes D6 from binary to continuous."
+          - "subject_sentinel.py: 4 scientific layers. P6 adds sensitivity annotations."
+          - "statistics.py: dunnett_pairwise() -- P2 adds pMDD computation here."
+        complexity_budget:
+          - "classification.py ~1500 LOC (threshold 500) -- already over budget, P1/P3 add ~50 lines"
+          - "subject_sentinel.py ~650 LOC (threshold 500) -- already tracked, P6 adds ~20 lines"
+      cross_topic_interactions:
+        - topic: hcd-informed-z-scoring
+          overlap: "P1 shrinkage formula + CV-of-CVs gate identical to HCD Proposal 2 SD shrinkage"
+          resolution: "Share population-cv-reference.json (P4). Shrinkage implementation is one module consumed by both."
+        - topic: reference-change-values-rcv
+          overlap: "P5 BV/RCV computation -- same CVI lookup table, same predose extraction"
+          resolution: "This cycle creates CVI lookup table (P4 extension) and predose extraction infrastructure. RCV computation engine deferred to RCV cycle."
+        - topic: detection-power-visualization
+          overlap: "P2 detection bands already shipped on strip plots. P6 OutliersPane empty state already shipped."
+          resolution: "This cycle adds backend pMDD computation + per-endpoint warning threshold (P2 backend). P6 is DONE -- mark as shipped."
+        - topic: outlier-detection-metadata
+          overlap: "detection_metadata with cv_pct, window bounds already in sentinel JSON"
+          resolution: "P1/P2 build on this. No conflict."
+  final:
+    key_decisions:
+      - "8 proposals validated: P1 data-driven CV, P2 detection power, P3 continuous equiv (calibration), P4 population CV table, P5 BV/RCV dog/NHP, P6 sentinel sensitivity, P7 gLower transparency track, P8 per-organ OM calibration"
+      - "RCV formula uses midpoint scaler + explicit CVA (R1 F1 fix)"
+      - "Continuous equiv requires empirical calibration before implementation (R1 F2 fix)"
+      - "gLower gate preserved; Track 2 is annotation-only transparency (R1 F4 fix)"
+      - "Shrinkage has CV-of-CVs reliability gate (R1 F3 fix)"
+      - "pMDD uses Dunnett-adjusted critical values, per-endpoint warning threshold (R1 F8 fix)"
+      - "Rat CVI blocked -- no public repeated-measures data"
+    output: "docs/_internal/research/cv-tier-adaptive-thresholds.md"
+  blueprint.2:
+    completed: 2026-04-16T11:00:00Z
+    verdict: "SIMPLIFY -> applied"
+    required_fixes:
+      - "R1: LOGNORMAL_ENDPOINTS consolidated to biomarker-catalog.json distribution field"
+      - "R2: Track 2 concordance exact field names specified (min_p_adj, organ_system, direction)"
+    advisory_applied:
+      - "A1: species threading to D6 via finding record (specified in spec)"
+    science_flags:
+      - "RESOLVED 2026-04-16: pMDD uses Dunnett pooled df (n_total - k_groups) for consistency with actual test. User decision: 'conservative = safe' framing is a trap; bias in either direction is the problem; accurate = safe."
+    output: "docs/_internal/incoming/cv-tier-adaptive-thresholds-synthesis.md (updated)"
+  blueprint.3:
+    completed: 2026-04-16T14:00:00Z
+    probe_verdict: "9 PROPAGATES (expected dog/NHP cascade S03->S16), 16 SAFE, 0 BREAKS, 0 SCIENCE-FLAG"
+    invariants: "All 10 invariants SAFE. X3 (gLower gate) explicitly guarded by F6 annotation-only design."
+    action: "AUTO-PROCEED -- all propagation expected and mitigated by Phase B scientist sign-off"
+  blueprint.4:
+    completed: 2026-04-16T14:30:00Z
+    plan_review: R1
+    findings: "3S+8C+1F"
+    action: "All 9 non-SOUND findings auto-accepted and incorporated"
+  blueprint.5:
+    completed: 2026-04-16T15:00:00Z
+    incorporated:
+      - "R1-F1: pMDD median + dose-group attribution"
+      - "R1-F2: ALP CV acceptance criteria fixed (20-25% -> 10-17%)"
+      - "R1-F3: original-scale CV for all endpoints, no scale mixing"
+      - "R1-F5: Track 2 criterion B restricted to mechanistically specific organ systems"
+      - "R1-F7: hysteresis bands at tier boundaries (2% each side)"
+      - "R1-F9: n_total/k_groups from group_stats directly"
+      - "R1-F10: runtime assertion for Track 2 invariant"
+      - "R1-F11: coverage target restated (rat+dog 80%, NHP grade C)"
+      - "R1-F12: data-driven tiers override hardcoded even for rat"
+  blueprint.6:
+    completed: 2026-04-16T15:30:00Z
+    plan_review: R2
+    findings: "9 RESOLVED, 3 new CONDITIONAL"
+    action: "All 3 new CONDITIONALs auto-accepted and incorporated (hysteresis default, pMDD paradigm note, fold-change conversion)"
+    verdict: "BUILD PLAN VALIDATED"
+  blueprint.7:
+    completed: 2026-04-16T16:00:00Z
+    gaps_verified:
+      registry: "cv-tier-adaptive-thresholds entry updated to blueprint-complete. All 6 open questions present."
+      todo: "DATA-GAP-CV-01 (rat CVI), DATA-GAP-CV-02 (population CV table), DATA-GAP-CV-03 (continuous equiv calibration) all present."
+    output: "docs/_internal/incoming/cv-tier-adaptive-thresholds-synthesis.md (final, validated)"
+  build.2:
+    completed: 2026-04-16T18:00:00Z
+    implement: "phases 4/4 (A data foundation, B classification upgrade, C annotations, D frontend)"
+    deviations: 2
+    deviation_notes:
+      - "subject_correlations piggyback (generate.py, analysis-views.ts, analysis-view-api.ts, analysis_views.py) -- separate feature"
+      - "TimeCoursePane defaultOpen change -- unrelated UX tweak"
+    output: "7 features implemented: population CV table (136 entries), control_cv_pct, species-aware equiv tier, pMDD detection power, OM threshold metadata, Track 2 gLower annotations, frontend pMDD display"
+  build.3:
+    completed: 2026-04-17T12:00:00Z
+    review: "post-impl"
+    findings: "39 PASS, 4 PARTIAL, 2 FAIL -- all fixed"
+    fixes_applied:
+      - "FAIL-1: threshold_provisional now stored on finding when OM threshold is derived"
+      - "FAIL-2: text-[10px] added to underpowered div (design system compliance)"
+      - "PARTIAL-1: TG alias added to biomarker-catalog.json for LOGNORMAL_ENDPOINTS"
+      - "PARTIAL-2: Track 2 criterion A magnitude uses max_fold_change (captures non-monotonic peaks)"
+    accepted_deviations:
+      - "F7 label 'Detection sensitivity: MDD X%' instead of spec's 'MDD: X%' -- more descriptive, kept"
+      - "F7 gate_suppressed reason rendered as human-readable text, not raw field value -- better UX"

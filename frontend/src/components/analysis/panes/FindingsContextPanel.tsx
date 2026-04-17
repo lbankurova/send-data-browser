@@ -319,6 +319,24 @@ function StatisticalEvidenceContent({ finding, doseGroups }: { finding: UnifiedF
       {!worstSigPairwise && (!bestEffectSize || bestEffectSize.g === 0) && nonSigDoses.length === 0 && (
         <div>No significant pairwise comparisons.</div>
       )}
+      {finding.detection_mdd_pct != null && (
+        <div>
+          Detection sensitivity: MDD {finding.detection_mdd_pct.toFixed(1)}%
+          {finding.detection_mdd_pct_median != null &&
+            Math.abs(finding.detection_mdd_pct - finding.detection_mdd_pct_median) > 5 &&
+            finding.detection_mdd_driven_by && (
+              <span> (worst: {finding.detection_mdd_driven_by})</span>
+            )}
+        </div>
+      )}
+      {finding.detection_underpowered && (
+        <div className="text-[10px] italic">Underpowered: MDD exceeds meaningful threshold.</div>
+      )}
+      {finding.gate_suppressed_notable && (
+        <div className="italic">
+          Below statistical gate — notable based on {finding.gate_suppressed_reason === "magnitude_and_pattern" ? "magnitude and pattern" : "cross-domain concordance"}.
+        </div>
+      )}
     </div>
   );
 }

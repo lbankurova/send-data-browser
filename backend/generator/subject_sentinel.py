@@ -23,7 +23,7 @@ from typing import Any
 
 from generator.animal_influence import iter_subject_values
 from generator.organ_map import get_organ_system
-from services.analysis.send_knowledge import BIOMARKER_MAP
+from services.analysis.send_knowledge import BIOMARKER_MAP, LOGNORMAL_ENDPOINTS
 from services.analysis.statistics import qn_scale, hamada_studentized_residuals
 
 
@@ -33,13 +33,6 @@ OUTLIER_Z_THRESHOLD = 3.5       # |z| above this -> outlier flag (Iglewicz & Hoa
 CONCORDANCE_Z_THRESHOLD = 2.0   # |z| above this -> concordance evidence
 POC_DOMAIN_THRESHOLD = 2        # domains required per organ for POC
 COC_ORGAN_THRESHOLD = 2         # organ systems required for COC >= 2
-
-# Right-skewed endpoints requiring log-transform before z-scoring.
-# Well-established in tox literature (Hubert & Van der Veeken 2008).
-# TODO(catalog): migrate to biomarker-catalog.json distribution field when catalog gains distribution annotations.
-LOGNORMAL_ENDPOINTS: frozenset[str] = frozenset({
-    "ALT", "AST", "ALP", "GGT", "TBIL", "BILI", "TG", "TRIG",
-})
 
 # Immunomodulatory compound class profile IDs -- stress heuristic annotates
 # rather than flags for these (pharmacologically expected HPA/immune changes).

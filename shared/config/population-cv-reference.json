@@ -1,0 +1,317 @@
+{
+  "_schema": {
+    "cv_pct": "Published coefficient of variation (%)",
+    "n": "Sample size from source study",
+    "source": "Citation key",
+    "grade": "A (population N>100, multiple sources), B (single source N>30), C (estimated/extrapolated)",
+    "scale": "original or log (scale on which CV was estimated)",
+    "cvi_pct": "Within-individual biological variation (when available)",
+    "cvg_pct": "Between-individual biological variation (when available)",
+    "ioi": "Index of Individuality = CVI/CVG (when available)",
+    "cva_pct": "Analytical variation (when available)"
+  },
+  "DOG": {
+    "BEAGLE": {
+      "LB": {
+        "ALT": {
+          "M": { "cv_pct": 25, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 28, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "AST": {
+          "M": { "cv_pct": 18, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 20, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "ALP": {
+          "M": { "cv_pct": 30, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 35, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "GGT": {
+          "M": { "cv_pct": 22, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 25, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "TBIL": {
+          "M": { "cv_pct": 35, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 38, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "CHOL": {
+          "M": { "cv_pct": 18, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 20, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "TRIG": {
+          "M": { "cv_pct": 40, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 45, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "GLUC": {
+          "M": { "cv_pct": 12, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 14, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "TP": {
+          "M": { "cv_pct": 5, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 6, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "ALB": {
+          "M": { "cv_pct": 7, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 8, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "CREAT": {
+          "M": { "cv_pct": 10, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 12, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "BUN": {
+          "M": { "cv_pct": 15, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 100, "source": "Tamamoto2024", "grade": "B", "scale": "original" }
+        },
+        "RBC": {
+          "M": { "cv_pct": 4.8, "cvi_pct": 6.0, "cvg_pct": 4.8, "ioi": 1.3, "cva_pct": 1.8, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 5.2, "cvi_pct": 6.5, "cvg_pct": 5.2, "ioi": 1.3, "cva_pct": 1.8, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "HGB": {
+          "M": { "cv_pct": 4.5, "cvi_pct": 5.5, "cvg_pct": 4.5, "ioi": 1.2, "cva_pct": 1.5, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 5.0, "cvi_pct": 6.0, "cvg_pct": 5.0, "ioi": 1.2, "cva_pct": 1.5, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "HCT": {
+          "M": { "cv_pct": 4.2, "cvi_pct": 5.0, "cvg_pct": 4.2, "ioi": 1.2, "cva_pct": 1.2, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 4.8, "cvi_pct": 5.5, "cvg_pct": 4.8, "ioi": 1.1, "cva_pct": 1.2, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "WBC": {
+          "M": { "cv_pct": 22, "cvi_pct": 15, "cvg_pct": 22, "ioi": 0.7, "cva_pct": 3.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 25, "cvi_pct": 17, "cvg_pct": 25, "ioi": 0.7, "cva_pct": 3.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "PLAT": {
+          "M": { "cv_pct": 12, "cvi_pct": 10, "cvg_pct": 12, "ioi": 0.8, "cva_pct": 4.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 14, "cvi_pct": 11, "cvg_pct": 14, "ioi": 0.8, "cva_pct": 4.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "MCV": {
+          "M": { "cv_pct": 3.5, "cvi_pct": 3.0, "cvg_pct": 3.5, "ioi": 0.9, "cva_pct": 1.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 3.8, "cvi_pct": 3.2, "cvg_pct": 3.8, "ioi": 0.8, "cva_pct": 1.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "MCH": {
+          "M": { "cv_pct": 3.8, "cvi_pct": 3.5, "cvg_pct": 3.8, "ioi": 0.9, "cva_pct": 1.2, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 4.0, "cvi_pct": 3.6, "cvg_pct": 4.0, "ioi": 0.9, "cva_pct": 1.2, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        },
+        "MCHC": {
+          "M": { "cv_pct": 2.5, "cvi_pct": 2.0, "cvg_pct": 2.5, "ioi": 0.8, "cva_pct": 1.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 2.8, "cvi_pct": 2.2, "cvg_pct": 2.8, "ioi": 0.8, "cva_pct": 1.0, "n": 55, "source": "BourgesAbella2015", "grade": "B", "scale": "original" }
+        }
+      },
+      "OM": {
+        "LIVER": {
+          "M": { "cv_pct": 15, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 21, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "KIDNEY": {
+          "M": { "cv_pct": 12, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "HEART": {
+          "M": { "cv_pct": 10, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 13, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "BRAIN": {
+          "M": { "cv_pct": 5, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 6, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "SPLEEN": {
+          "M": { "cv_pct": 25, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 28, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "THYMUS": {
+          "M": { "cv_pct": 30, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 35, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "ADRENAL": {
+          "M": { "cv_pct": 18, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 22, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "TESTES": {
+          "M": { "cv_pct": 12, "n": 118, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "OVARIES": {
+          "F": { "cv_pct": 25, "n": 119, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "THYROID": {
+          "M": { "cv_pct": 20, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 22, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "LUNG": {
+          "M": { "cv_pct": 10, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 12, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "EPIDIDYMIDES": {
+          "M": { "cv_pct": 10, "n": 118, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "PROSTATE": {
+          "M": { "cv_pct": 22, "n": 118, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "UTERUS": {
+          "F": { "cv_pct": 35, "n": 119, "source": "Choi2011", "grade": "A", "scale": "original" }
+        },
+        "PITUITARY": {
+          "M": { "cv_pct": 15, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 237, "source": "Choi2011", "grade": "A", "scale": "original" }
+        }
+      }
+    }
+  },
+  "RAT": {
+    "SD": {
+      "LB": {
+        "ALT": {
+          "M": { "cv_pct": 22, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 25, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "AST": {
+          "M": { "cv_pct": 18, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 20, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "ALP": {
+          "M": { "cv_pct": 15, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "GGT": {
+          "M": { "cv_pct": 25, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 28, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "TBIL": {
+          "M": { "cv_pct": 30, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 35, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "TP": {
+          "M": { "cv_pct": 5, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 6, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "ALB": {
+          "M": { "cv_pct": 6, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 7, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "GLUC": {
+          "M": { "cv_pct": 12, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 14, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "CREAT": {
+          "M": { "cv_pct": 10, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 12, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "CHOL": {
+          "M": { "cv_pct": 15, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "BUN": {
+          "M": { "cv_pct": 12, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 15, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "RBC": {
+          "M": { "cv_pct": 5, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 6, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "HGB": {
+          "M": { "cv_pct": 4, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 5, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "HCT": {
+          "M": { "cv_pct": 4, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 5, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "WBC": {
+          "M": { "cv_pct": 25, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 28, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        },
+        "PLAT": {
+          "M": { "cv_pct": 12, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" },
+          "F": { "cv_pct": 14, "n": 300, "source": "Kellner2025_ViCoG", "grade": "B", "scale": "original" }
+        }
+      },
+      "OM": {
+        "LIVER": {
+          "M": { "cv_pct": 8, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 10, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "KIDNEY": {
+          "M": { "cv_pct": 8, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 9, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "HEART": {
+          "M": { "cv_pct": 6, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 7, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "BRAIN": {
+          "M": { "cv_pct": 3, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 4, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "SPLEEN": {
+          "M": { "cv_pct": 22, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 25, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "THYMUS": {
+          "M": { "cv_pct": 28, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 30, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "ADRENAL": {
+          "M": { "cv_pct": 15, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 18, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "TESTES": {
+          "M": { "cv_pct": 8, "n": 250, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "OVARIES": {
+          "F": { "cv_pct": 22, "n": 250, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "THYROID": {
+          "M": { "cv_pct": 18, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 20, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "LUNG": {
+          "M": { "cv_pct": 8, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 10, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "EPIDIDYMIDES": {
+          "M": { "cv_pct": 8, "n": 250, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "PROSTATE": {
+          "M": { "cv_pct": 20, "n": 250, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "UTERUS": {
+          "F": { "cv_pct": 30, "n": 250, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        },
+        "PITUITARY": {
+          "M": { "cv_pct": 12, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" },
+          "F": { "cv_pct": 15, "n": 500, "source": "Marxfeld2019", "grade": "A", "scale": "original" }
+        }
+      }
+    }
+  },
+  "NHP": {
+    "CYNOMOLGUS": {
+      "OM": {
+        "LIVER": {
+          "M": { "cv_pct": 25, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 30, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "KIDNEY": {
+          "M": { "cv_pct": 20, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 25, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "HEART": {
+          "M": { "cv_pct": 18, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 22, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "BRAIN": {
+          "M": { "cv_pct": 8, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 10, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "SPLEEN": {
+          "M": { "cv_pct": 30, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 35, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "ADRENAL": {
+          "M": { "cv_pct": 25, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 30, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        },
+        "THYMUS": {
+          "M": { "cv_pct": 35, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" },
+          "F": { "cv_pct": 40, "n": 50, "source": "estimated_within_study", "grade": "C", "scale": "original" }
+        }
+      }
+    }
+  }
+}

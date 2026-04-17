@@ -8,11 +8,13 @@
     "special_flags": "Optional array: organ-specific caveats the engine should annotate",
     "cross_organ_link": "Optional: mechanistic link to another organ's findings",
     "species_specific": "True when thresholds vary by species. _resolve_value() handles dict lookup.",
-    "cv_reference": "Documentation only -- published CVs justifying the threshold choices. Not consumed by code."
+    "cv_reference": "Documentation only -- published CVs justifying the threshold choices. Not consumed by code.",
+    "threshold_source": "regulatory (JMPR/EFSA anchor), calibrated (empirically from known CV-threshold pairs), or derived (provisional, median multiplier). Per-species dict when species_specific=true."
   },
 
   "LIVER": {
     "species_specific": true,
+    "threshold_source": {"rat": "regulatory", "mouse": "regulatory", "dog": "calibrated", "nhp": "derived", "other": "regulatory"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "nhp": 25, "other": 5},
     "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 25, "nhp": 30, "other": 10},
     "strong_adverse_pct": {"rat": 25, "mouse": 25, "dog": 40, "nhp": 50, "other": 25},
@@ -34,6 +36,7 @@
 
   "KIDNEY": {
     "species_specific": true,
+    "threshold_source": {"rat": "regulatory", "mouse": "regulatory", "dog": "calibrated", "nhp": "derived", "other": "regulatory"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "nhp": 20, "other": 5},
     "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "nhp": 25, "other": 10},
     "strong_adverse_pct": {"rat": 25, "mouse": 25, "dog": 22, "nhp": 40, "other": 25},
@@ -50,6 +53,7 @@
 
   "HEART": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 3, "mouse": 3, "dog": 12, "nhp": 20, "other": 3},
     "adverse_floor_pct": {"rat": 8, "mouse": 8, "dog": 12, "nhp": 25, "other": 8},
     "strong_adverse_pct": {"rat": 15, "mouse": 15, "dog": 15, "nhp": 40, "other": 15},
@@ -62,6 +66,7 @@
 
   "BRAIN": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 0, "mouse": 0, "dog": 5, "nhp": 15, "other": 0},
     "adverse_floor_pct": {"rat": 0, "mouse": 0, "dog": 5, "nhp": 15, "other": 0},
     "strong_adverse_pct": {"rat": 5, "mouse": 5, "dog": 5, "nhp": 25, "other": 5},
@@ -74,6 +79,7 @@
 
   "ADRENAL": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 8, "dog": 20, "nhp": 20, "other": 5},
     "adverse_floor_pct": {"rat": 15, "mouse": 25, "dog": 20, "nhp": 25, "other": 15},
     "strong_adverse_pct": {"rat": 30, "mouse": 40, "dog": 30, "nhp": 40, "other": 30},
@@ -87,6 +93,7 @@
 
   "THYROID": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "nhp": 20, "other": 5},
     "adverse_floor_pct": {"rat": 15, "mouse": 15, "dog": 15, "nhp": 25, "other": 15},
     "strong_adverse_pct": {"rat": 30, "mouse": 30, "dog": 25, "nhp": 40, "other": 30},
@@ -100,6 +107,7 @@
 
   "SPLEEN": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 8, "mouse": 8, "dog": 20, "nhp": null, "other": 8},
     "adverse_floor_pct": {"rat": 20, "mouse": 20, "dog": 20, "nhp": null, "other": 20},
     "strong_adverse_pct": {"rat": 40, "mouse": 40, "dog": 30, "nhp": null, "other": 40},
@@ -113,6 +121,7 @@
 
   "THYMUS": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 8, "mouse": 8, "dog": 20, "nhp": null, "other": 8},
     "adverse_floor_pct": {"rat": 20, "mouse": 20, "dog": 20, "nhp": null, "other": 20},
     "strong_adverse_pct": {"rat": 40, "mouse": 40, "dog": 30, "nhp": null, "other": 40},
@@ -127,6 +136,7 @@
 
   "TESTES": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
     "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "other": 10},
     "strong_adverse_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
@@ -139,6 +149,7 @@
 
   "EPIDIDYMIDES": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 15, "other": 5},
     "adverse_floor_pct": {"rat": 10, "mouse": 10, "dog": 15, "other": 10},
     "strong_adverse_pct": {"rat": 20, "mouse": 20, "dog": 20, "other": 20},
@@ -150,6 +161,7 @@
   },
 
   "OVARIES": {
+    "threshold_source": "calibrated",
     "variation_ceiling_pct": 10,
     "adverse_floor_pct": 20,
     "strong_adverse_pct": 35,
@@ -157,6 +169,7 @@
   },
 
   "UTERUS": {
+    "threshold_source": "calibrated",
     "variation_ceiling_pct": 15,
     "adverse_floor_pct": 25,
     "strong_adverse_pct": 40,
@@ -165,6 +178,7 @@
 
   "LUNGS": {
     "species_specific": true,
+    "threshold_source": {"rat": "calibrated", "mouse": "calibrated", "dog": "calibrated", "nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"rat": 5, "mouse": 5, "dog": 5, "nhp": null, "other": 5},
     "adverse_floor_pct": {"rat": 15, "mouse": 15, "dog": 15, "nhp": null, "other": 15},
     "strong_adverse_pct": {"rat": 30, "mouse": 30, "dog": 30, "nhp": null, "other": 30},
@@ -174,6 +188,7 @@
 
   "PANCREAS": {
     "species_specific": true,
+    "threshold_source": {"nhp": "derived", "other": "calibrated"},
     "variation_ceiling_pct": {"nhp": null, "other": 10},
     "adverse_floor_pct": {"nhp": null, "other": 15},
     "strong_adverse_pct": {"nhp": null, "other": 30},

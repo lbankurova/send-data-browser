@@ -236,7 +236,10 @@ def _score_d6_tier2_equivocal(f: dict) -> dict:
     test_code = f.get("test_code", "")
     specimen = f.get("specimen")
     domain = f.get("domain", "")
-    tier = _equivalence_tier(test_code, specimen, domain)
+    tier = _equivalence_tier(test_code, specimen, domain,
+                             species=f.get("_study_species"),
+                             computed_cv=f.get("control_cv_pct"),
+                             n_control=f.get("n_control"))
 
     if tier != 2:
         return _dim("D6", "Tier 2 equivocal zone", None,

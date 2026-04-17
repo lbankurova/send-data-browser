@@ -8,7 +8,11 @@ import json
 from pathlib import Path
 
 _CATALOG_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "config" / "biomarker-catalog.json"
+_LAB_RULES_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "rules" / "lab-clinical-rules.json"
 _CATALOG: dict | None = None
+
+_POP_CV_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "config" / "population-cv-reference.json"
+_POP_CV: dict | None = None
 
 
 def _load_catalog() -> dict:
@@ -17,6 +21,82 @@ def _load_catalog() -> dict:
         with open(_CATALOG_PATH) as f:
             _CATALOG = json.load(f)
     return _CATALOG
+
+
+def _load_population_cv() -> dict:
+    global _POP_CV
+    if _POP_CV is None:
+        with open(_POP_CV_PATH) as f:
+            _POP_CV = json.load(f)
+    return _POP_CV
+
+
+def get_population_cv(
+    species: str | None,
+    strain: str | None,
+    domain: str | None,
+    test_code: str | None,
+    specimen: str | None,
+    sex: str | None,
+) -> dict | None:
+    """Look up published population CV for a (species, strain, domain, test_code/specimen, sex).
+
+    For OM domain, uses specimen as the key (all OM test_codes are "WEIGHT").
+    For LB domain, uses test_code.
+    Returns the full entry dict (cv_pct, n, source, grade, scale, ...) or None.
+    """
+    data = _load_population_cv()
+    species_key = (species or "").upper().replace("CYNOMOLGUS MONKEY", "CYNOMOLGUS")
+    # Map common species names to top-level keys
+    species_map = {
+        "RAT": "RAT", "DOG": "DOG", "NHP": "NHP",
+        "CYNOMOLGUS": "NHP", "BEAGLE": "DOG",
+    }
+    for token in species_key.split():
+        if token in species_map:
+            species_key = species_map[token]
+            break
+    else:
+        # Try the whole string
+        species_key = species_map.get(species_key, species_key)
+
+    species_data = data.get(species_key)
+    if not species_data:
+        return None
+
+    # Resolve strain
+    strain_key = (strain or "").upper()
+    strain_map = {"SPRAGUE-DAWLEY": "SD", "SPRAGUE DAWLEY": "SD", "SD": "SD",
+                  "BEAGLE": "BEAGLE", "CYNOMOLGUS": "CYNOMOLGUS"}
+    strain_key = strain_map.get(strain_key, strain_key)
+    strain_data = species_data.get(strain_key)
+    if not strain_data:
+        # Try first available strain as fallback
+        strains = [k for k in species_data if k != "_schema"]
+        if strains:
+            strain_data = species_data[strains[0]]
+        else:
+            return None
+
+    domain_key = (domain or "").upper()
+    domain_data = strain_data.get(domain_key)
+    if not domain_data:
+        return None
+
+    # OM uses specimen, LB uses test_code
+    if domain_key == "OM":
+        lookup_key = (specimen or "").upper()
+    else:
+        lookup_key = (test_code or "").upper()
+
+    entry = domain_data.get(lookup_key)
+    if not entry:
+        return None
+
+    sex_key = (sex or "").upper()
+    if sex_key not in ("M", "F"):
+        sex_key = "M"  # default fallback
+    return entry.get(sex_key)
 
 # ─── Domain effect-type registry (SLA-19, SLA-17) ─────────────────────────
 # Declares the effect-size semantics for each SEND domain.
@@ -77,6 +157,48 @@ def effect_size_label(finding: dict) -> str:
     return "Hedges' g"
 
 
+# ── Lab-clinical fold-change thresholds (F4 pMDD / F6 Track 2) ──────────
+_LAB_FOLD_THRESHOLDS: dict[str, float] | None = None
+
+
+def _load_lab_fold_thresholds() -> dict[str, float]:
+    """Extract minimum fold-change threshold per canonical test code from lab rules.
+
+    Parses lab-clinical-rules.json conditions for fold_above and fold_between types.
+    Returns {TEST_CODE: fold_value} with the smallest fold threshold per code.
+    """
+    global _LAB_FOLD_THRESHOLDS
+    if _LAB_FOLD_THRESHOLDS is not None:
+        return _LAB_FOLD_THRESHOLDS
+    result: dict[str, float] = {}
+    try:
+        with open(_LAB_RULES_PATH) as f:
+            rules_data = json.load(f)
+        for rule in rules_data.get("rules", []):
+            for cond in rule.get("conditions", []):
+                tc = cond.get("canonical", "").upper()
+                if not tc:
+                    continue
+                if cond.get("type") == "fold_above":
+                    fold = cond.get("threshold", 0)
+                    if tc not in result or fold < result[tc]:
+                        result[tc] = float(fold)
+                elif cond.get("type") == "fold_between":
+                    fold = cond.get("gte", 0)
+                    if tc not in result or fold < result[tc]:
+                        result[tc] = float(fold)
+    except Exception:
+        pass
+    _LAB_FOLD_THRESHOLDS = result
+    return result
+
+
+def get_lab_fold_threshold(test_code: str) -> float | None:
+    """Return the fold-change threshold for a CP test code, or None if no rule exists."""
+    thresholds = _load_lab_fold_thresholds()
+    return thresholds.get((test_code or "").upper())
+
+
 def get_direction_of_concern(finding: dict) -> str | None:
     """Return the expected toxicological direction of concern for a finding.
 
@@ -96,6 +218,12 @@ def get_direction_of_concern(finding: dict) -> str | None:
 
 # LBTESTCD → biomarker metadata (loaded from shared/config/biomarker-catalog.json)
 BIOMARKER_MAP: dict[str, dict] = _load_catalog()["biomarkers"]
+
+# Right-skewed endpoints requiring log-transform before z-scoring.
+# Single source of truth: loaded from biomarker-catalog.json "distribution" field.
+LOGNORMAL_ENDPOINTS: frozenset[str] = frozenset(
+    k for k, v in BIOMARKER_MAP.items() if v.get("distribution") == "lognormal"
+)
 
 # ── Legacy inline data removed — now loaded from JSON ──
 # The following entries were previously hardcoded here:

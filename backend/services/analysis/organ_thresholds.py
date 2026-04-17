@@ -138,6 +138,17 @@ def get_organ_threshold(specimen: str, species: str | None = None) -> dict | Non
         "config_key": config_key,
     }
 
+    # Threshold source metadata (F5: OM threshold calibration)
+    ts_raw = organ_cfg.get("threshold_source")
+    if isinstance(ts_raw, dict):
+        cat = _resolve_species_category(species)
+        result["threshold_source"] = ts_raw.get(cat, ts_raw.get("other", "calibrated"))
+    elif ts_raw:
+        result["threshold_source"] = ts_raw
+    else:
+        result["threshold_source"] = "calibrated"
+    result["threshold_provisional"] = result["threshold_source"] == "derived"
+
     # Pass through optional blocks unchanged
     if "adaptive_requires" in organ_cfg:
         result["adaptive_requires"] = organ_cfg["adaptive_requires"]

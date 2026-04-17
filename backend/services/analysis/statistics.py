@@ -315,6 +315,33 @@ def poly3_test(
     }
 
 
+def compute_pmdd(control_sd: float, control_mean: float,
+                 n_control: int, n_treated: int, k_groups: int,
+                 n_total: int,
+                 alpha: float = 0.05) -> float | None:
+    """pMDD using Bonferroni-corrected t with Dunnett pooled df.
+
+    Uses pooled error df (n_total - k_groups) to match the actual
+    scipy.stats.dunnett() test that produced the p-values on this finding.
+    Bonferroni-corrected t is a conservative Dunnett approximation (slightly
+    larger critical value, producing slightly larger pMDD).
+
+    # Paradigm: control SD for noise, pooled df to match Dunnett test. See R2-NEW2 in synthesis.
+
+    Returns pMDD as percentage of control mean, or None if inputs are degenerate.
+    """
+    import math
+    if control_mean == 0 or n_control < 2 or n_treated < 2 or k_groups < 2:
+        return None
+    df = n_total - k_groups  # pooled error df, matching Dunnett
+    if df < 1:
+        return None
+    # Bonferroni-corrected t as conservative Dunnett approximation
+    t_crit = float(stats.t.ppf(1 - alpha / (2 * (k_groups - 1)), df))
+    se = control_sd * math.sqrt(1 / n_control + 1 / n_treated)
+    return round(t_crit * se / abs(control_mean) * 100, 1)
+
+
 def compute_effect_size(group1: list | np.ndarray, group2: list | np.ndarray) -> float | None:
     """Hedges' g effect size (bias-corrected Cohen's d for small samples).
 

@@ -219,6 +219,24 @@ export interface UnifiedFinding {
   compound_id?: string;
   /** Phase A: trend test was suppressed for unpartitioned multi-compound findings. */
   _multi_compound_suppressed?: boolean;
+  /** F2: Control group CV% (original scale). */
+  control_cv_pct?: number | null;
+  /** F2: Scale on which CV was computed. */
+  cv_scale?: string;
+  /** F4: Maximum pMDD across pairwise comparisons (% of control mean). */
+  detection_mdd_pct?: number | null;
+  /** F4: Median pMDD across pairwise comparisons. */
+  detection_mdd_pct_median?: number | null;
+  /** F4: Dose level driving the maximum pMDD. */
+  detection_mdd_driven_by?: string | null;
+  /** F4: True when pMDD exceeds the meaningful threshold for this endpoint. */
+  detection_underpowered?: boolean;
+  /** F6: True when finding fails gLower gate but meets Track 2 evidence criteria. */
+  gate_suppressed_notable?: boolean;
+  /** F6: Reason for Track 2 annotation. */
+  gate_suppressed_reason?: string;
+  /** F5: True when OM threshold is derived/provisional (less reliable). */
+  threshold_provisional?: boolean;
 }
 
 export interface ConfidenceDimension {
