@@ -1,7 +1,7 @@
 topic: oncology-std10-severe-toxicity-definition
 started: 2026-04-05T10:00:00
 phase: blueprint
-current_step: blueprint.2
+current_step: blueprint.3
 completed:
   research.1:
     completed: 2026-04-05T10:00:00
@@ -59,6 +59,17 @@ checkpoints:
       - "~200 LOC new code in pk_integration.py + 2 JSON configs + 1 knowledge doc"
       - "All 6 mandatory sections present with content"
     output: "docs/_internal/incoming/oncology-std10-severe-toxicity-definition-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-17T10:30:00Z
+    key_decisions:
+      - "Architect: SIMPLIFY (2 REQUIRED, 4 RECOMMENDED, 2 SCIENCE-FLAG)"
+      - "REQUIRED 1: existing adversity-dictionary.json overlap -- Option B chosen (separate concern, renamed to std10-mi-severity-thresholds.json)"
+      - "REQUIRED 2: LOC count corrected (1587 actual, not ~620)"
+      - "All RECOMMENDED auto-applied: _schema removed, tier_divergence.note removed, P3 note corrected, TS metadata note corrected"
+      - "SF1 (organ regen tiers): already resolved by user -- not re-raised"
+      - "SF2 (NHP BW thresholds): mitigated with explicit uncertainty annotation"
+      - "Re-gate: PASS"
+    output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-architect-review.md"
 flag_resolutions:
   - "2026-04-17: SF S03 (organ-lesion dictionary) RESOLVED by human -- literature-derived from STP/ESTP/ACVP consensus"
   - "2026-04-17: SF S01 (GAP-197 labeling) RESOLVED by human -- three-tier method labels eliminate ambiguity"
