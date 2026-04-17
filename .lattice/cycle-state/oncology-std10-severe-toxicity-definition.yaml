@@ -1,7 +1,7 @@
 topic: oncology-std10-severe-toxicity-definition
 started: 2026-04-05T10:00:00
 phase: blueprint
-current_step: blueprint.3
+current_step: blueprint.4
 completed:
   research.1:
     completed: 2026-04-05T10:00:00
@@ -70,6 +70,14 @@ checkpoints:
       - "SF2 (NHP BW thresholds): mitigated with explicit uncertainty annotation"
       - "Re-gate: PASS"
     output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-17T10:40:00Z
+    key_decisions:
+      - "Probe: 0 BREAKS, 2 PROPAGATES"
+      - "PROPAGATES: cross_study_aggregation.py:build_safety_margin_table() needs update for tiered output"
+      - "PROPAGATES: frontend pk_integration rendering needs UI for tiered margins (if displayed)"
+      - "Pipeline ordering verified: mortality runs before pk_integration, XPT domains accessible"
+      - "No hard schema dependencies on old field names (graceful degradation via .get())"
 flag_resolutions:
   - "2026-04-17: SF S03 (organ-lesion dictionary) RESOLVED by human -- literature-derived from STP/ESTP/ACVP consensus"
   - "2026-04-17: SF S01 (GAP-197 labeling) RESOLVED by human -- three-tier method labels eliminate ambiguity"
