@@ -362,6 +362,11 @@ _ORGAN_GROUP_CANONICALS: frozenset[str] | None = None
 # Same lazy-cache pattern as _TEST_CODE_DATA / _ORGAN_DATA so that test fixtures
 # can monkeypatch via _reset_dictionary_caches_for_tests.
 _FINDING_SYNONYMS_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "config" / "finding-synonyms.json"
+# Admin-curated overlay (Phase D). Separate file so the base dictionary
+# regenerator (scripts/build_synonym_dictionary.py) never touches admin
+# entries. Load-time merge below is additive; bidirectional validation
+# at the PUT handler prevents alias-reassign cases from ever reaching disk.
+_FINDING_SYNONYMS_ADMIN_PATH = Path(__file__).parent.parent.parent.parent / "shared" / "config" / "finding-synonyms-admin.json"
 _FINDING_SYNONYMS_DATA: dict | None = None
 # Per-domain alias reverse maps: {domain: {alias_upper: canonical_upper}}.
 _FINDING_REVERSE_MAP: dict[str, dict[str, str]] | None = None
@@ -701,10 +706,19 @@ _FINDING_DICTIONARY_DOMAINS: frozenset[str] = frozenset({"MI", "MA", "CL"})
 def _load_finding_synonyms_data() -> dict:
     """Lazy-load and cache the full finding-synonyms.json data dict.
 
-    Falls back to a minimal stub if the file is missing -- this preserves
-    test isolation when fixtures monkeypatch _FINDING_SYNONYMS_DATA directly
-    and is also the graceful no-dictionary fallback for early-cycle CI runs
-    that have not yet built the dictionary.
+    Merges the admin overlay (finding-synonyms-admin.json) if present
+    (Phase D AC-2.5a/b). The overlay is purely additive under the
+    merge-semantics table:
+      - new canonical (not in base) -> added;
+      - new alias on existing canonical -> appended to aliases list;
+      - ncit_code/source conflicts -> base wins (INFO log on mismatch);
+      - alias-reassign cases are rejected at PUT step 1 and never
+        enter the overlay, so the merge never sees that case.
+
+    Falls back to a minimal stub if the base file is missing -- this
+    preserves test isolation when fixtures monkeypatch
+    _FINDING_SYNONYMS_DATA directly and is also the graceful
+    no-dictionary fallback for early-cycle CI runs.
     """
     global _FINDING_SYNONYMS_DATA
     if _FINDING_SYNONYMS_DATA is not None:
@@ -720,8 +734,97 @@ def _load_finding_synonyms_data() -> dict:
         }
         return _FINDING_SYNONYMS_DATA
     with open(_FINDING_SYNONYMS_PATH, encoding="utf-8") as f:
-        _FINDING_SYNONYMS_DATA = json.load(f)
+        base = json.load(f)
+    # Apply admin overlay if present.
+    if _FINDING_SYNONYMS_ADMIN_PATH.exists():
+        try:
+            with open(_FINDING_SYNONYMS_ADMIN_PATH, encoding="utf-8") as f:
+                overlay = json.load(f)
+            base = _merge_admin_overlay(base, overlay)
+        except (OSError, json.JSONDecodeError):
+            # Overlay corruption must not break the base dictionary load.
+            pass
+    _FINDING_SYNONYMS_DATA = base
     return _FINDING_SYNONYMS_DATA
+
+
+def _merge_admin_overlay(base: dict, overlay: dict) -> dict:
+    """Merge an admin overlay dict onto the base dict (additive).
+
+    Pure function: returns a new dict. Does not mutate either input.
+    See docs/_internal/incoming/unrecognized-term-flagging-phases-b-e-synthesis.md
+    Feature 2 merge-semantics table for the four cases.
+    """
+    import copy
+
+    merged = copy.deepcopy(base)
+    merged_domains = merged.setdefault("domains", {})
+    overlay_domains = (overlay.get("domains") or {})
+    for domain, payload in overlay_domains.items():
+        if domain not in _FINDING_DICTIONARY_DOMAINS:
+            continue
+        target = merged_domains.setdefault(domain, {"entries": {}})
+        target_entries = target.setdefault("entries", {})
+        src_entries = (payload.get("entries") or {})
+        for canonical, entry in src_entries.items():
+            canonical_upper = str(canonical).upper()
+            if canonical_upper in target_entries:
+                # Case 2 / 4: additive aliases; base wins on ncit/source conflicts.
+                existing = target_entries[canonical_upper]
+                base_aliases = list(existing.get("aliases") or [])
+                overlay_aliases = list(entry.get("aliases") or [])
+                # Dedup, case-insensitive; preserve base order first, then
+                # append overlay aliases that aren't already present.
+                merged_aliases = list(base_aliases)
+                seen = {a.upper() for a in base_aliases}
+                for a in overlay_aliases:
+                    if a.upper() not in seen and a.upper() != canonical_upper:
+                        merged_aliases.append(a)
+                        seen.add(a.upper())
+                existing["aliases"] = merged_aliases
+                # Surface admin metadata on the merged entry for audit trails.
+                for meta_key in ("added_by", "added_date", "source_justification"):
+                    if meta_key in entry and meta_key not in existing:
+                        existing[meta_key] = entry[meta_key]
+            else:
+                # Case 1: brand-new canonical from admin.
+                target_entries[canonical_upper] = {
+                    "canonical": canonical_upper,
+                    "aliases": list(entry.get("aliases") or []),
+                    "ncit_code": entry.get("ncit_code"),
+                    "source": list(entry.get("source") or ["admin"]),
+                    "base_concept": canonical_upper,
+                    "qualifier": entry.get("qualifier"),
+                    "organ_scope": entry.get("organ_scope"),
+                    "added_by": entry.get("added_by"),
+                    "added_date": entry.get("added_date"),
+                    "source_justification": entry.get("source_justification"),
+                }
+    # Version: use the higher of the two for audit. Simple lexical max works
+    # because both files use semver strings like "0.1.0".
+    base_version = base.get("version", "unknown")
+    overlay_version = overlay.get("version", "0.0.0")
+    if isinstance(base_version, str) and isinstance(overlay_version, str):
+        merged["version"] = (
+            overlay_version if overlay_version > base_version else base_version
+        )
+    return merged
+
+
+def _reset_finding_synonyms_caches() -> None:
+    """Production-facing cache reset for admin PUT flow (Advisory 3).
+
+    Zeros the five finding-synonyms caches so the next
+    assess_finding_recognition call re-reads the base + overlay files.
+    The test-only _reset_dictionary_caches_for_tests delegates to this.
+    """
+    global _FINDING_SYNONYMS_DATA, _FINDING_REVERSE_MAP
+    global _FINDING_CANONICAL_SOURCES, _FINDING_QUALIFIERS, _FINDING_SEVERITY_MODIFIERS
+    _FINDING_SYNONYMS_DATA = None
+    _FINDING_REVERSE_MAP = None
+    _FINDING_CANONICAL_SOURCES = None
+    _FINDING_QUALIFIERS = None
+    _FINDING_SEVERITY_MODIFIERS = None
 
 
 def _load_finding_reverse_maps() -> dict[str, dict[str, str]]:
@@ -968,11 +1071,9 @@ def _reset_dictionary_caches_for_tests() -> None:
     _ORGAN_DATA = None
     _ORGAN_REVERSE_MAP = None
     _ORGAN_GROUP_CANONICALS = None
-    _FINDING_SYNONYMS_DATA = None
-    _FINDING_REVERSE_MAP = None
-    _FINDING_CANONICAL_SOURCES = None
-    _FINDING_QUALIFIERS = None
-    _FINDING_SEVERITY_MODIFIERS = None
+    # Delegate to the production reset helper so the behavior stays in sync
+    # (Advisory 3 "wrap, don't duplicate").
+    _reset_finding_synonyms_caches()
 
 
 # ─── Recognition report builder ─────────────────────────────────────────────

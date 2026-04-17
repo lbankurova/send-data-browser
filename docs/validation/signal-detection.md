@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `1c3478ee` (2026-04-17)
-**Generated:** 2026-04-17T20:30:44.204Z
+**Engine:** commit `d567969c` (2026-04-17)
+**Generated:** 2026-04-17T20:32:00.829Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 

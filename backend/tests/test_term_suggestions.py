@@ -415,20 +415,24 @@ def test_ac_3_3a_insufficient_data_sentinel(pinned_dict):
 
 
 def test_ac_3_3b_bh_fdr_across_response():
-    """AC-3.3b: BH-FDR: 5 truly divergent + 3 borderline -> only 5 survive q=0.05."""
-    # Build a 100-item list with p-values: 5 truly low (< 0.01), 3 borderline
-    # (~0.04), 92 large (~0.9). BH at q=0.05 should keep only the 5.
-    p_values: list[float | None] = []
-    truly_divergent = [0.001, 0.002, 0.003, 0.005, 0.008]
+    """AC-3.3b: BH-FDR keeps truly-small p-values below q, borderline above.
+
+    For m=20 candidates at q=0.05, BH rejects index i when
+    p_(i) <= i*q/m = i*0.0025. Construct 5 truly small (<1e-3) and 3
+    borderline (~0.04): after adjustment, only the 5 small pass q=0.05.
+    """
+    truly_divergent = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
     borderline = [0.035, 0.04, 0.045]
-    p_values.extend(truly_divergent)
-    p_values.extend(borderline)
-    p_values.extend([0.9] * 92)
+    p_values: list[float | None] = list(truly_divergent) + list(borderline) + [0.9] * 12
     adj = apply_bh_fdr(p_values, q=0.05)
     # The 5 truly divergent stay below 0.05 after adjustment
-    assert all(a is not None and a < 0.05 for a in adj[:5])
+    assert all(a is not None and a < 0.05 for a in adj[:5]), adj[:5]
     # The 3 borderline get pushed above 0.05
-    assert all(a is not None and a > 0.05 for a in adj[5:8])
+    assert all(a is not None and a > 0.05 for a in adj[5:8]), adj[5:8]
+    # None entries preserved through adjustment
+    mixed = [0.01, None, 0.03]
+    adj2 = apply_bh_fdr(mixed, q=0.05)
+    assert adj2[1] is None
 
 
 def test_ac_3_4_structural_pre_check(pinned_dict):
