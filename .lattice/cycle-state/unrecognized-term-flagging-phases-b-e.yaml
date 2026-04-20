@@ -2,8 +2,8 @@ topic: unrecognized-term-flagging-phases-b-e
 title: "Unrecognized Term Flagging -- Phases D+E (rescoped from B-E)"
 started: 2026-04-06T23:00:00Z
 phase: build
-current_step: build.1
-revision: 10
+current_step: build.2
+revision: 11
 parent: unrecognized-term-flagging
 depends_on:
   - unrecognized-term-flagging (Phase A -- COMPLETE, commit 3fdbbe60)

@@ -27,6 +27,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, status
 
+from services.analysis import term_collisions
 from services.analysis.send_knowledge import (
     _FINDING_DICTIONARY_DOMAINS,
     _FINDING_SYNONYMS_ADMIN_PATH,
@@ -587,14 +588,11 @@ async def put_synonym_mapping(
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"admin overlay write failed: {e}")
 
-    # Cache invalidation (R1 F4 belt-and-braces).
+    # Cache invalidation (R1 F4 belt-and-braces). Both caches MUST clear —
+    # a silent failure here would leak stale collision/synonym data into
+    # the open session (AC-5.5b).
     _reset_finding_synonyms_caches()
-    try:
-        from services.analysis import term_collisions as _tc
-
-        _tc.collision_cache.clear()
-    except Exception:
-        pass  # collision cache is best-effort — missing module not fatal
+    term_collisions.collision_cache.clear()
 
     # Affected-study flagging.
     affected = _affected_studies(alias, domain)

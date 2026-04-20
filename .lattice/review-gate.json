@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-04-16T21:21:16Z",
-  "verdict": "pass",
-  "summary": "Studies table controls — post-spike review: NOAEL wiring, ISO date truncation, toggle guard, helper tests (30), backend-persisted test article overrides, GAP-ALP-02 promoted P1",
+  "timestamp": "2026-04-20T21:43:15Z",
+  "verdict": "pass-with-deviations",
+  "summary": "unrecognized-term-flagging-phases-b-e: AC-5.8 formula fix, AC-6.6 cache invalidation, AC-4.2 organ filter, AC-4.3 409 retry, AC-4.6 PaneTable+CollapsiblePane, AC-5.5b real PUT wiring; deferred: AC-4.7 perf test, AC-6.4 xstudy view relocation (no xstudy view exists)",
   "checks_run": 0,
   "checks_passed": 0,
   "staged_files": "",
-  "head_at_review": "5aa7956e",
+  "head_at_review": "8836e3ff",
   "written_by": "write-review-gate.sh"
 }

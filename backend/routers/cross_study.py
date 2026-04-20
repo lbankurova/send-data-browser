@@ -5,6 +5,7 @@ services/analysis/cross_study_aggregation.py.
 """
 
 import logging
+import time
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -17,6 +18,8 @@ from services.analysis.cross_study_aggregation import (
     build_recovery_summary,
     build_cross_study_dr,
 )
+from services.analysis.term_collisions import detect_collisions
+from services.analysis.send_knowledge import get_dictionary_versions
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +98,59 @@ async def get_recovery_summary(
                 "note": f"Only {len(studies)} of {len(sids)} studies found in generated data"}
 
     return build_recovery_summary(studies)
+
+
+@router.get("/term-collisions")
+async def get_term_collisions(
+    study_ids: str = Query(..., description="Comma-separated study IDs (>=2)"),
+    organs: Optional[str] = Query(None, description="Comma-separated organ filter"),
+    min_confidence: float = Query(0.7, ge=0.0, le=1.0),
+    include_qualifier_divergence: int = Query(0),
+):
+    """Cross-study MI/MA/CL term collision detection (Phase E Feature 6)."""
+    sids = [s.strip() for s in study_ids.split(",") if s.strip()]
+    if len(sids) < 2:
+        raise HTTPException(status_code=400, detail="at least 2 study IDs required")
+    studies = load_multiple_studies(sids)
+    if len(studies) < 2:
+        return {
+            "studies": [], "organs_scanned": [], "dictionary_version": None,
+            "collisions": [], "computed_in_ms": 0,
+            "note": f"Only {len(studies)} of {len(sids)} studies found",
+        }
+    organ_list = [o.strip() for o in organs.split(",") if o.strip()] if organs else None
+    t0 = time.perf_counter()
+    reports = detect_collisions(
+        studies,
+        organs=organ_list,
+        min_confidence=min_confidence,
+        include_qualifier_divergence=bool(include_qualifier_divergence),
+    )
+    elapsed_ms = int((time.perf_counter() - t0) * 1000)
+    dict_version = get_dictionary_versions().get("finding_synonyms", "unknown")
+    return {
+        "studies": [s.study_id for s in studies],
+        "organs_scanned": organ_list or sorted(
+            {r.organ for r in reports if r.organ is not None}
+        ),
+        "dictionary_version": dict_version,
+        "collisions": [
+            {
+                "study_a": r.study_a,
+                "study_b": r.study_b,
+                "organ": r.organ,
+                "domain": r.domain,
+                "term_a": r.term_a,
+                "term_b": r.term_b,
+                "token_jaccard": r.token_jaccard,
+                "string_similarity": r.string_similarity,
+                "confidence": r.confidence,
+                "report_kind": r.report_kind,
+            }
+            for r in reports
+        ],
+        "computed_in_ms": elapsed_ms,
+    }
 
 
 @router.get("/dose-response/{canonical_id:path}")

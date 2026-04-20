@@ -569,6 +569,7 @@ def test_ac_2_13_stacked_put_requires_force_sequential(admin_env, monkeypatch, t
     with pytest.raises(HTTPException) as exc:
         _run(admin_terms.put_synonym_mapping(
             request=r, x_admin_token=_GOOD_TOKEN, x_confirm_impact="1",
+            x_force_sequential=None,
         ))
     assert exc.value.status_code == 409
     assert exc.value.detail["error"] == "stacked_put_staleness"
@@ -586,3 +587,47 @@ def test_ac_2_13_stacked_put_requires_force_sequential(admin_env, monkeypatch, t
     ))
     assert result["status"] == "accepted"
     assert result["staleness_warning"]
+
+
+# ─── AC-5.5b PUT handler clears collision cache ────────────────────────────
+
+
+def test_ac_5_5b_put_handler_clears_collision_cache(admin_env, monkeypatch, tmp_path):
+    """Spec AC-5.5b: invoke the Feature 2 PUT mutation step 4 handler and
+    assert `collision_cache.size() == 0` immediately afterwards. Guards
+    against a regression where the cache-clear wiring silently fails
+    (previously wrapped in try/except).
+    """
+    from services.analysis import term_collisions
+
+    # Pre-populate the collision cache so we can see it go to zero.
+    term_collisions.collision_cache.put(
+        ("sentinel-key",), [term_collisions.CollisionReport(
+            study_a="A", study_b="B", organ="LIVER", domain="MI",
+            term_a="X", term_b="Y", token_jaccard=1.0,
+            string_similarity=1.0, confidence=0.9, report_kind="collision",
+        )],
+    )
+    assert term_collisions.collision_cache.size() >= 1
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    monkeypatch.setattr(admin_terms, "_GENERATED_ROOT", empty)
+    monkeypatch.setattr(sk, "_load_finding_synonyms_data",
+                        lambda: _fake_dict_with([("", "HYPERTROPHY")]))
+    monkeypatch.setattr(admin_terms, "_load_finding_synonyms_data",
+                        sk._load_finding_synonyms_data)
+
+    r = _req(
+        headers={"X-Admin-Token": _GOOD_TOKEN},
+        body={"domain": "MI", "alias": "HYPRTROPHY", "canonical": "HYPERTROPHY",
+              "added_by": "admin", "source_justification": "typo"},
+    )
+    result = _run(admin_terms.put_synonym_mapping(
+        request=r, x_admin_token=_GOOD_TOKEN,
+        x_confirm_impact=None, x_force_sequential=None,
+    ))
+    assert result["status"] == "accepted"
+    # The spec-mandated side effect: collision cache must be empty
+    # immediately after the handler returns.
+    assert term_collisions.collision_cache.size() == 0

@@ -13,6 +13,7 @@ const FindingsViewWrapper = lazy(() => import("@/components/analysis/findings/Fi
 // Lazy-loaded analysis views (code-split into separate chunks)
 const ValidationViewWrapper = lazy(() => import("@/components/analysis/ValidationViewWrapper").then(m => ({ default: m.ValidationViewWrapper })));
 const CohortViewWrapper = lazy(() => import("@/components/analysis/CohortViewWrapper").then(m => ({ default: m.CohortViewWrapper })));
+const CurationDashboard = lazy(() => import("@/components/admin/CurationDashboard").then(m => ({ default: m.CurationDashboard })));
 
 
 function ViewLoading() {
@@ -124,6 +125,10 @@ const router = createBrowserRouter([
       {
         path: "/studies/:studyId/analyses/:analysisType",
         element: <PlaceholderAnalysisView />,
+      },
+      {
+        path: "/admin/curation",
+        element: <LazyRoute><CurationDashboard /></LazyRoute>,
       },
     ],
   },
