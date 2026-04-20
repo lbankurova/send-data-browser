@@ -1,4 +1,5 @@
 {
+  "_comment": "ECETOC flat adversity tiers for classification.py. For organ-aware STD10 severity thresholds, see std10-mi-severity-thresholds.json (different schema, different consumer).",
   "always_adverse": [
     "necrosis",
     "fibrosis",

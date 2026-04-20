@@ -1,0 +1,156 @@
+{
+  "_comment": "STD10 organ-aware MI severity thresholds for oncology severe toxicity classification. Separate concern from adversity-dictionary.json (ECETOC flat tiers). Schema documented in docs/_internal/knowledge/mi-adversity-dictionary.md.",
+  "organ_regen_tiers": {
+    "low": ["BRAIN", "SPINAL CORD", "HEART", "PERIPHERAL NERVE", "RETINA"],
+    "moderate": ["KIDNEY", "LUNG", "ADRENAL GLAND"],
+    "high": ["LIVER", "BONE MARROW", "GASTROINTESTINAL", "SKIN", "LYMPH NODE", "SPLEEN", "THYMUS"]
+  },
+  "glomerular_override_terms": ["glomerulosclerosis", "glomerulonephritis"],
+  "categories": [
+    {
+      "category": "necrosis_degeneration",
+      "terms": ["necrosis", "degeneration", "infarction"],
+      "adversity": "adverse",
+      "source": "Palazzi 2016",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3
+    },
+    {
+      "category": "neuronal_retinal_degeneration",
+      "terms": ["neuronal degeneration", "retinal degeneration", "axonal"],
+      "adversity": "adverse",
+      "source": "Kerlin 2016",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": null,
+      "misev_threshold_high_regen": null
+    },
+    {
+      "category": "myocardial_necrosis",
+      "terms": ["myocardial necrosis", "cardiac degeneration"],
+      "adversity": "adverse",
+      "source": "Kerlin 2016",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": null,
+      "misev_threshold_high_regen": null
+    },
+    {
+      "category": "fibrosis_sclerosis",
+      "terms": ["fibrosis", "glomerulosclerosis"],
+      "adversity": "adverse",
+      "source": "Palazzi 2016",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3
+    },
+    {
+      "category": "atrophy",
+      "terms": ["atrophy"],
+      "adversity": "adverse_at_moderate_plus",
+      "source": "Gopinath & Mowat 2019",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": 2,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3
+    },
+    {
+      "category": "hemorrhage",
+      "terms": ["hemorrhage"],
+      "adversity": "context_dependent",
+      "source": "Hall 2012",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 4,
+      "organ_override": {
+        "BRAIN": {"misev_threshold": null, "note": "Any hemorrhage in brain is severe"}
+      }
+    },
+    {
+      "category": "vacuolation",
+      "terms": ["vacuolation"],
+      "adversity": "context_dependent",
+      "source": "Gopinath & Mowat 2019",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": 3,
+      "misev_threshold_moderate_regen": 4,
+      "misev_threshold_high_regen": 4,
+      "note": "Flag phospholipidosis when vacuolation in liver/spleen/lymph node"
+    },
+    {
+      "category": "cpn_exacerbation",
+      "terms": ["chronic progressive nephropathy"],
+      "adversity": "adverse_at_moderate_plus",
+      "source": "Hall 2012",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3,
+      "organ_constraint": ["KIDNEY"]
+    },
+    {
+      "category": "bone_marrow_depletion",
+      "terms": ["hematopoietic cell depletion"],
+      "adversity": "adverse_at_higher_sev",
+      "source": "Kerlin 2016",
+      "std10_tier": 2,
+      "misev_threshold_low_regen": 3,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3,
+      "note": "Stronger with LB corroboration (CBC changes)"
+    },
+    {
+      "category": "lymphoid_apoptosis",
+      "terms": ["apoptosis", "decreased cellularity"],
+      "adversity": "adverse_at_higher_sev",
+      "source": "Kerlin 2016",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": 3,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3,
+      "organ_constraint": ["LYMPH NODE", "SPLEEN", "THYMUS"]
+    },
+    {
+      "category": "chronic_inflammation",
+      "terms": ["chronic inflammation", "granuloma"],
+      "adversity": "adverse",
+      "source": "Palazzi 2016",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": 3,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3
+    },
+    {
+      "category": "squamous_metaplasia",
+      "terms": ["squamous metaplasia"],
+      "adversity": "adverse_at_diffuse_moderate_plus",
+      "source": "Gopinath & Mowat 2019",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": 3,
+      "misev_threshold_moderate_regen": 3,
+      "misev_threshold_high_regen": 3
+    },
+    {
+      "category": "mineralization",
+      "terms": ["mineralization"],
+      "adversity": "context_dependent",
+      "source": "Hall 2012",
+      "std10_tier": 3,
+      "misev_threshold_low_regen": null,
+      "misev_threshold_moderate_regen": null,
+      "misev_threshold_high_regen": null,
+      "note": "Context-dependent; threshold varies by tissue and incidence pattern"
+    }
+  ],
+  "excluded_categories": [
+    {"category": "hypertrophy", "terms": ["hypertrophy", "hepatocellular hypertrophy"], "reason": "Non-adverse/Adaptive (Gopinath & Mowat 2019)"},
+    {"category": "hyperplasia", "terms": ["hyperplasia"], "reason": "Non-adverse (Palazzi 2016)"},
+    {"category": "pigmentation", "terms": ["pigment"], "reason": "Non-adverse"},
+    {"category": "proliferative", "terms": ["adenoma", "carcinoma"], "reason": "Tumor evaluation, not STD10 scope"},
+    {"category": "adaptive", "terms": ["basophilia", "enzyme induction", "glycogen"], "reason": "Non-adverse/Adaptive"}
+  ]
+}

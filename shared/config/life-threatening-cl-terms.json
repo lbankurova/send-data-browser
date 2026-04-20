@@ -1,0 +1,29 @@
+{
+  "_comment": "Life-threatening clinical sign terms for STD10 Tier 2 classification. Used by pk_integration.py for CL domain matching. Matching: substring, case-insensitive.",
+  "unqualified": [
+    "convulsion",
+    "seizure",
+    "prostration",
+    "coma",
+    "labored breathing",
+    "respiratory distress",
+    "severe dehydration",
+    "hypothermia",
+    "cyanosis",
+    "recumbency",
+    "tonic-clonic",
+    "paralysis",
+    "opisthotonus"
+  ],
+  "severity_dependent": [
+    "tremor",
+    "dyspnea"
+  ],
+  "severity_dependent_exclude": [
+    "fine",
+    "slight",
+    "transient",
+    "intermittent",
+    "mild"
+  ]
+}

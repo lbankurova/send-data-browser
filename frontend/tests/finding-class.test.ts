@@ -107,9 +107,12 @@ const VALID_CLASSES = new Set([
 
 describe("adversity-dictionary.json", () => {
   const dict = JSON.parse(fs.readFileSync(DICT_PATH, "utf-8"));
+  // Filter out metadata keys (e.g. _comment) for tier-level checks
+  const tierKeys = Object.keys(dict).filter(k => !k.startsWith("_")).sort();
+  const tierEntries = Object.entries(dict).filter(([k]) => !k.startsWith("_"));
 
   test("has three tiers", () => {
-    expect(Object.keys(dict).sort()).toEqual([
+    expect(tierKeys).toEqual([
       "always_adverse",
       "context_dependent",
       "likely_adverse",
@@ -117,7 +120,7 @@ describe("adversity-dictionary.json", () => {
   });
 
   test("each tier is a non-empty string array", () => {
-    for (const [tier, terms] of Object.entries(dict)) {
+    for (const [tier, terms] of tierEntries) {
       expect(Array.isArray(terms), `${tier} is not an array`).toBe(true);
       expect((terms as string[]).length, `${tier} is empty`).toBeGreaterThan(0);
       for (const t of terms as string[]) {
@@ -129,7 +132,7 @@ describe("adversity-dictionary.json", () => {
 
   test("all terms are lowercase", () => {
     const violations: string[] = [];
-    for (const [tier, terms] of Object.entries(dict)) {
+    for (const [tier, terms] of tierEntries) {
       for (const t of terms as string[]) {
         if (t !== t.toLowerCase()) {
           violations.push(`${tier}: "${t}" should be "${t.toLowerCase()}"`);

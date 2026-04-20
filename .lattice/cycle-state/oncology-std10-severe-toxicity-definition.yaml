@@ -1,7 +1,8 @@
 topic: oncology-std10-severe-toxicity-definition
 started: 2026-04-05T10:00:00
-phase: blueprint
-current_step: blueprint.4
+phase: build
+current_step: build.2
+revision: 1
 completed:
   research.1:
     completed: 2026-04-05T10:00:00
@@ -62,7 +63,7 @@ checkpoints:
   blueprint.2:
     completed: 2026-04-17T10:30:00Z
     key_decisions:
-      - "Architect: SIMPLIFY (2 REQUIRED, 4 RECOMMENDED, 2 SCIENCE-FLAG)"
+      - "Architect: SIMPLIFY (2 REQUIRED, 4 RECOMMENDED, 2 SF RESOLVED)"
       - "REQUIRED 1: existing adversity-dictionary.json overlap -- Option B chosen (separate concern, renamed to std10-mi-severity-thresholds.json)"
       - "REQUIRED 2: LOC count corrected (1587 actual, not ~620)"
       - "All RECOMMENDED auto-applied: _schema removed, tier_divergence.note removed, P3 note corrected, TS metadata note corrected"
@@ -78,6 +79,35 @@ checkpoints:
       - "PROPAGATES: frontend pk_integration rendering needs UI for tiered margins (if displayed)"
       - "Pipeline ordering verified: mortality runs before pk_integration, XPT domains accessible"
       - "No hard schema dependencies on old field names (graceful degradation via .get())"
+  blueprint.4:
+    completed: 2026-04-17T10:50:00Z
+    key_decisions:
+      - "Plan R1: 10 findings, 0 FLAWED, 9 CONDITIONAL, 1 SOUND"
+      - "All CONDITIONAL auto-accepted"
+      - "Key findings: F1 CL tremor/dyspnea false positives, F2 kidney compartment split, F3 BW 7-day window ambiguity, F4 Tier 3 underspecified, F5 HNSTD zero-tolerance strict, F7 divergence threshold arbitrary, F10 backward compat breaking change"
+    output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-17T11:00:00Z
+    key_decisions:
+      - "9 CONDITIONAL incorporated: CL tremor/dyspnea negative filter, kidney glomerular override, BW window tolerance spec, Tier 3 removed from schema, HNSTD fragility annotation, bilateral de-dup documented, divergence threshold configurable, test fallback strategy, backward compat audit requirement"
+      - "0 findings rejected"
+  blueprint.6:
+    completed: 2026-04-17T11:10:00Z
+    key_decisions:
+      - "Plan R2: all 10 R1 findings RESOLVED, 4 new CONDITIONAL (NF1-NF4), 0 FLAWED"
+      - "NF1 (header process hygiene): noted, will update header after completion"
+      - "NF2 (NHP threshold derivation): document in knowledge file as expert-derived estimate"
+      - "NF3 (MA fallback asymmetry): add caveat annotation when MA fallback path triggered"
+      - "NF4 (NHP BW 6% rate sensitivity): cross-check against NHP data; consider using rat 10% default with annotation"
+      - "No findings persisting across both rounds -- build plan VALIDATED"
+    output: "docs/_internal/research/peer-reviews/oncology-std10-severe-toxicity-definition-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-17T11:15:00Z
+    key_decisions:
+      - "GAP-197 updated to BLUEPRINT-COMPLETE in TODO.md"
+      - "REGISTRY.md already has research entry with probe findings"
+      - "R2 NF2-NF4 noted as implementation-time refinements, not new research gaps"
+      - "Build plan validated and ready for implementation"
 flag_resolutions:
   - "2026-04-17: SF S03 (organ-lesion dictionary) RESOLVED by human -- literature-derived from STP/ESTP/ACVP consensus"
   - "2026-04-17: SF S01 (GAP-197 labeling) RESOLVED by human -- three-tier method labels eliminate ambiguity"

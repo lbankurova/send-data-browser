@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from generator.subject_syndromes import SEVERITY_MAP
 from services.study_discovery import StudyInfo
 from services.xpt_processor import read_xpt
 
@@ -22,6 +23,8 @@ log = logging.getLogger(__name__)
 
 ANNOTATIONS_DIR = Path(__file__).resolve().parent.parent / "annotations"
 _KM_FACTORS_PATH = Path(__file__).resolve().parent.parent.parent / "shared" / "config" / "km-factors.json"
+_STD10_THRESHOLDS_PATH = Path(__file__).resolve().parent.parent.parent / "shared" / "config" / "std10-mi-severity-thresholds.json"
+_CL_TERMS_PATH = Path(__file__).resolve().parent.parent.parent / "shared" / "config" / "life-threatening-cl-terms.json"
 
 # JSON key -> SEND DM SPECIES values (explicit mapping, not algorithmic)
 _JSON_KEY_TO_SEND = {
@@ -81,6 +84,50 @@ def _load_km_table() -> dict:
     _KM_TABLE_CACHE = table
     return _KM_TABLE_CACHE
 
+
+_STD10_CONFIG_CACHE: dict | None = None
+_CL_TERMS_CACHE: dict | None = None
+
+
+def _load_std10_config() -> dict:
+    """Load STD10 MI severity thresholds. Lazy-loaded, module-level cache."""
+    global _STD10_CONFIG_CACHE
+    if _STD10_CONFIG_CACHE is not None:
+        return _STD10_CONFIG_CACHE
+    with open(_STD10_THRESHOLDS_PATH) as fh:
+        _STD10_CONFIG_CACHE = json.load(fh)
+    return _STD10_CONFIG_CACHE
+
+
+def _load_cl_terms() -> dict:
+    """Load life-threatening CL terms. Lazy-loaded, module-level cache."""
+    global _CL_TERMS_CACHE
+    if _CL_TERMS_CACHE is not None:
+        return _CL_TERMS_CACHE
+    with open(_CL_TERMS_PATH) as fh:
+        _CL_TERMS_CACHE = json.load(fh)
+    return _CL_TERMS_CACHE
+
+
+# MISEV text -> numeric grade (canonical source: subject_syndromes.SEVERITY_MAP)
+_MISEV_MAP = SEVERITY_MAP
+
+# BW severity thresholds by species
+_BW_THRESHOLDS: dict[str, dict] = {
+    "RAT":    {"rate_pct": 10.0, "cumulative_pct": 20.0},
+    "MOUSE":  {"rate_pct": 10.0, "cumulative_pct": 20.0},
+    "DOG":    {"rate_pct": 10.0, "cumulative_pct": 20.0},
+    "MONKEY": {"rate_pct": 6.0,  "cumulative_pct": 12.0},
+    "_default": {"rate_pct": 10.0, "cumulative_pct": 20.0},
+}
+# SEND aliases for species
+_BW_SPECIES_ALIASES: dict[str, str] = {
+    "CYNOMOLGUS": "MONKEY", "CYNOMOLGUS MONKEY": "MONKEY",
+    "MINIPIG": "DOG", "MINI PIG": "DOG", "GOTTINGEN MINIPIG": "DOG",
+}
+
+# MA severe structural terms (fallback when MASEV not available)
+_MA_SEVERE_TERMS = {"mass", "necrosis", "perforation"}
 
 
 # Primary PK parameters to extract (in priority order for display)
@@ -486,15 +533,497 @@ def _compute_adc_margins(by_dose_group: list[dict], noael_dose_level: int | None
     return results
 
 
-def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
-                             dose_groups: list[dict] | None) -> dict:
-    """Compute oncology margin using STD10 from mortality data (Feature 1B).
+# ─── Clopper-Pearson CI ──────────────────────────────────────
 
-    Method: 1/10 STD10 (severely toxic dose in 10% of animals), derived from
-    mortality counts (deaths + moribund sacrifices). Falls back to HNSTD/1/6
-    when no mortality at any dose. Based on ICH S9 Q&A 2018 Q3.1.
+
+def _clopper_pearson_ci(k: int, n: int, alpha: float = 0.05) -> tuple[float, float]:
+    """Exact binomial (Clopper-Pearson) confidence interval.
+
+    Returns (lower, upper) as proportions in [0, 1].
     """
-    # Load mortality data
+    from scipy.stats import beta as beta_dist
+    if n == 0:
+        return (0.0, 1.0)
+    if k == 0:
+        lo = 0.0
+    else:
+        lo = beta_dist.ppf(alpha / 2, k, n - k + 1)
+    if k == n:
+        hi = 1.0
+    else:
+        hi = beta_dist.ppf(1 - alpha / 2, k + 1, n - k)
+    return (float(lo), float(hi))
+
+
+# ─── STD10 Tier 2 classification ─────────────────────────────
+
+
+def _get_organ_regen_tier(organ: str, config: dict) -> str:
+    """Determine organ regenerative capacity tier (low/moderate/high).
+
+    Falls back to 'high' (most conservative -- highest threshold).
+    """
+    organ_upper = organ.upper().strip()
+    for tier, organs in config["organ_regen_tiers"].items():
+        if organ_upper in organs:
+            return tier
+        # Partial match for composite organ names (e.g. "BONE MARROW, FEMUR")
+        for org in organs:
+            if org in organ_upper or organ_upper.startswith(org):
+                return tier
+    return "high"
+
+
+def _check_mi_severe(study: StudyInfo, config: dict, max_tier: int = 2) -> dict[str, list[str]]:
+    """Check MI domain for severe findings per the adversity dictionary.
+
+    Only categories with std10_tier <= max_tier are evaluated.
+    Returns {USUBJID: [reason, ...]} for subjects meeting MI criteria.
+    Bilateral organs: classify on most severe finding across sides.
+    """
+    mi_df = _read_domain(study, "mi")
+    if mi_df is None or mi_df.empty:
+        return {}
+
+    glomerular_terms = [t.lower() for t in config.get("glomerular_override_terms", [])]
+    result: dict[str, list[str]] = {}
+
+    for _, row in mi_df.iterrows():
+        term = str(row.get("MISTRESC", "")).strip().lower()
+        sev_str = str(row.get("MISEV", "")).strip().upper()
+        organ = str(row.get("MISPEC", row.get("MILOC", ""))).strip()
+        usubjid = str(row.get("USUBJID", ""))
+
+        if not term or not usubjid:
+            continue
+
+        sev_grade = _MISEV_MAP.get(sev_str, 0)
+
+        for cat in config["categories"]:
+            # Only include categories at or below the requested tier
+            cat_tier = cat.get("std10_tier")
+            if cat_tier is None or cat_tier > max_tier:
+                continue
+
+            # Check if finding term matches any category term (substring)
+            matched = any(ct in term for ct in cat["terms"])
+            if not matched:
+                continue
+
+            # Check organ constraint if present
+            organ_constraint = cat.get("organ_constraint")
+            if organ_constraint:
+                organ_upper = organ.upper()
+                if not any(oc in organ_upper for oc in organ_constraint):
+                    continue
+
+            # Determine regen tier for this organ
+            regen_tier = _get_organ_regen_tier(organ, config)
+
+            # Glomerular override: kidney glomerular lesions use low-regen threshold
+            if regen_tier == "moderate" and any(gt in term for gt in glomerular_terms):
+                regen_tier = "low"
+
+            # Check organ-specific override
+            organ_override = cat.get("organ_override", {}).get(organ.upper())
+            if organ_override:
+                threshold = organ_override.get("misev_threshold")
+            else:
+                threshold_key = f"misev_threshold_{regen_tier}_regen"
+                threshold = cat.get(threshold_key)
+
+            # null threshold = any severity triggers
+            if threshold is None:
+                reason = f"MI: {term} in {organ} (any severity, {cat['category']})"
+                result.setdefault(usubjid, []).append(reason)
+            elif sev_grade >= threshold:
+                reason = f"MI: {term} in {organ} (sev {sev_str}>={threshold}, {cat['category']})"
+                result.setdefault(usubjid, []).append(reason)
+
+    return result
+
+
+def _check_bw_severe(
+    study: StudyInfo, species: str,
+) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """Check BW domain for severe body weight loss.
+
+    Sustained loss (classifies as severe):
+      Rate: >threshold% loss in a 5-10 day interval, CONFIRMED by a subsequent
+      measurement (within 14 days) still at or below the pre-drop weight.
+      This filters single-timepoint fluctuations (fasting, handling stress,
+      scale precision). NC3Rs 10%/week is a humane endpoint threshold designed
+      for real-time welfare monitoring; retrospective classification requires
+      confirmation that the loss trajectory is sustained, not transient.
+      Cumulative: >=threshold% loss from baseline (inherently sustained).
+
+    Acute BW event (flag for review, not auto-severe):
+      >15% normalized loss in a single interval with no full recovery at the
+      next measurement. Flagged as an acute event for toxicologist review --
+      may represent genuine acute toxicity or measurement artifact.
+
+    Returns (severe_subjects, acute_events) as two dicts of {USUBJID: [reason]}.
+    Only severe_subjects contribute to the Tier 2 severity numerator.
+    """
+    empty: tuple[dict[str, list[str]], dict[str, list[str]]] = ({}, {})
+    bw_df = _read_domain(study, "bw")
+    if bw_df is None or bw_df.empty:
+        return empty
+
+    if "BWSTRESN" not in bw_df.columns:
+        return empty
+
+    # Coerce to numeric (some studies have string-typed numeric columns)
+    bw_df = bw_df.copy()
+    bw_df["BWSTRESN"] = pd.to_numeric(bw_df["BWSTRESN"], errors="coerce")
+
+    day_col = "BWDY" if "BWDY" in bw_df.columns else ("VISITDY" if "VISITDY" in bw_df.columns else None)
+    if day_col is None:
+        return empty
+    bw_df[day_col] = pd.to_numeric(bw_df[day_col], errors="coerce")
+
+    # Species-aware thresholds
+    sp = species.upper().strip() if species else ""
+    sp = _BW_SPECIES_ALIASES.get(sp, sp)
+    thresholds = _BW_THRESHOLDS.get(sp, _BW_THRESHOLDS["_default"])
+    rate_threshold = thresholds["rate_pct"]
+    cum_threshold = thresholds["cumulative_pct"]
+
+    severe: dict[str, list[str]] = {}
+    acute_events: dict[str, list[str]] = {}
+
+    for usubjid, subj_df in bw_df.groupby("USUBJID"):
+        subj_sorted = subj_df.dropna(subset=["BWSTRESN", day_col]).sort_values(day_col)
+        if subj_sorted.empty:
+            continue
+
+        days = subj_sorted[day_col].values
+        weights = subj_sorted["BWSTRESN"].values
+        baseline = weights[0]
+        if baseline <= 0:
+            continue
+
+        uid = str(usubjid)
+
+        # Cumulative check: >=threshold% loss from baseline
+        for w in weights:
+            loss_pct = ((baseline - w) / baseline) * 100
+            if loss_pct >= cum_threshold:
+                reason = f"BW: {loss_pct:.1f}% cumulative loss (>={cum_threshold}%)"
+                severe.setdefault(uid, []).append(reason)
+                break
+
+        # Rate check: sustained loss (confirmed across consecutive intervals)
+        # Skip if <3 measurements (can't confirm)
+        if len(weights) < 3:
+            continue
+
+        sustained_found = False
+        acute_found = False
+
+        for i in range(len(weights) - 1):
+            if sustained_found:
+                break
+            for j in range(i + 1, len(weights)):
+                gap_ij = days[j] - days[i]
+                if gap_ij < 5 or gap_ij > 10:
+                    continue
+                if weights[i] <= 0:
+                    continue
+                loss_pct = ((weights[i] - weights[j]) / weights[i]) * 100
+                norm_loss = loss_pct * (7.0 / gap_ij)
+                if norm_loss <= rate_threshold:
+                    continue
+
+                # >threshold% loss found. Confirm sustained: any measurement
+                # within 14 days after j still at or below pre-drop weight.
+                confirmed = False
+                for k in range(j + 1, len(weights)):
+                    gap_jk = days[k] - days[j]
+                    if gap_jk <= 0:
+                        continue
+                    if gap_jk > 14:
+                        break
+                    if weights[k] <= weights[i]:
+                        confirmed = True
+                        break
+
+                if confirmed:
+                    reason = (
+                        f"BW: {norm_loss:.1f}%/week sustained loss "
+                        f"(>{rate_threshold}%, confirmed)"
+                    )
+                    severe.setdefault(uid, []).append(reason)
+                    sustained_found = True
+                    break
+
+                # Not sustained. Check acute event: >15% with no full recovery.
+                if norm_loss > 15.0 and not acute_found:
+                    no_full_recovery = False
+                    for k in range(j + 1, len(weights)):
+                        gap_jk = days[k] - days[j]
+                        if gap_jk <= 0:
+                            continue
+                        if gap_jk > 10:
+                            break
+                        if weights[k] < weights[i]:
+                            no_full_recovery = True
+                            break
+                    if no_full_recovery:
+                        reason = (
+                            f"BW: {norm_loss:.1f}%/week acute event "
+                            f"(no full recovery)"
+                        )
+                        acute_events.setdefault(uid, []).append(reason)
+                        acute_found = True
+
+                break  # one rate evaluation per starting index
+
+    return severe, acute_events
+
+
+def _check_cl_severe(study: StudyInfo) -> dict[str, list[str]]:
+    """Check CL domain for life-threatening clinical signs.
+
+    Two-tier matching:
+    - unqualified: substring match triggers
+    - severity_dependent: triggers only if no exclude modifiers present
+
+    Returns {USUBJID: [reason, ...]}.
+    """
+    cl_df = _read_domain(study, "cl")
+    if cl_df is None or cl_df.empty:
+        return {}
+
+    if "CLSTRESC" not in cl_df.columns:
+        return {}
+
+    terms_config = _load_cl_terms()
+    unqualified = terms_config["unqualified"]
+    sev_dependent = terms_config["severity_dependent"]
+    sev_exclude = terms_config["severity_dependent_exclude"]
+
+    result: dict[str, list[str]] = {}
+
+    for _, row in cl_df.iterrows():
+        term = str(row.get("CLSTRESC", "")).strip().lower()
+        usubjid = str(row.get("USUBJID", ""))
+        if not term or not usubjid:
+            continue
+
+        # Unqualified: any substring match
+        for ut in unqualified:
+            if ut in term:
+                reason = f"CL: {term} (matches '{ut}')"
+                result.setdefault(usubjid, []).append(reason)
+                break
+        else:
+            # Severity-dependent: match only if no exclude modifiers
+            for st in sev_dependent:
+                if st in term:
+                    has_exclude = any(ex in term for ex in sev_exclude)
+                    if not has_exclude:
+                        reason = f"CL: {term} (severity-dependent '{st}', no mild modifier)"
+                        result.setdefault(usubjid, []).append(reason)
+                    break
+
+    return result
+
+
+def _check_ma_severe(study: StudyInfo) -> dict[str, list[str]]:
+    """Check MA domain for severe macroscopic findings.
+
+    When MASEV populated: MASEV >= 4 + structural terms.
+    Fallback: MASTRESC matches severe terms (mass, necrosis, perforation).
+
+    Returns {USUBJID: [reason, ...]}.
+    """
+    ma_df = _read_domain(study, "ma")
+    if ma_df is None or ma_df.empty:
+        return {}
+
+    has_masev = "MASEV" in ma_df.columns
+    has_mastresc = "MASTRESC" in ma_df.columns
+
+    if not has_masev and not has_mastresc:
+        return {}
+
+    result: dict[str, list[str]] = {}
+
+    for _, row in ma_df.iterrows():
+        usubjid = str(row.get("USUBJID", ""))
+        if not usubjid:
+            continue
+
+        if has_masev:
+            masev_str = str(row.get("MASEV", "")).strip().upper()
+            masev_grade = _MISEV_MAP.get(masev_str, 0)
+            if masev_grade >= 4:
+                term = str(row.get("MASTRESC", "")).strip().lower()
+                # Spec: MASEV >= 4 + structural abnormality terms (conjunction)
+                if any(st in term for st in _MA_SEVERE_TERMS):
+                    reason = f"MA: {term} (MASEV={masev_str})"
+                    result.setdefault(usubjid, []).append(reason)
+        elif has_mastresc:
+            term = str(row.get("MASTRESC", "")).strip().lower()
+            if any(st in term for st in _MA_SEVERE_TERMS):
+                reason = f"MA: {term} (matches severe term, no MASEV)"
+                result.setdefault(usubjid, []).append(reason)
+
+    return result
+
+
+def _classify_severe_toxicity_tier2(
+    study: StudyInfo,
+    species: str | None,
+    subject_ctx: list[dict],
+) -> dict:
+    """Classify subjects as severely toxic at Tier 2 (expanded criteria).
+
+    Aggregates MI, BW, CL, MA, and DS (mortality) domains.
+    Each subject counted at most once regardless of how many criteria are met.
+
+    Returns per-dose-group severity data with per-sex breakdown.
+    """
+    config = _load_std10_config()
+
+    # Build subject lookup: USUBJID -> {dose, sex, dose_value, is_control}
+    subj_info: dict[str, dict] = {}
+    for s in subject_ctx:
+        uid = s.get("USUBJID", "")
+        if not uid:
+            continue
+        subj_info[uid] = {
+            "dose_order": s.get("DOSE_GROUP_ORDER", 0),
+            "dose_value": s.get("DOSE", 0.0),
+            "sex": s.get("SEX", ""),
+            "is_control": s.get("IS_CONTROL", False),
+            "is_tk": s.get("IS_TK", False),
+        }
+
+    # Collect severe subjects from each domain
+    mi_severe = _check_mi_severe(study, config)
+    bw_severe, bw_acute_events = _check_bw_severe(study, species or "")
+    cl_severe = _check_cl_severe(study)
+    ma_severe = _check_ma_severe(study)
+
+    # Load mortality for DS domain (Tier 1 baseline)
+    gen_dir = Path(__file__).resolve().parent.parent / "generated" / study.study_id
+    mortality_path = gen_dir / "study_mortality.json"
+    ds_severe: dict[str, list[str]] = {}
+    if mortality_path.exists():
+        try:
+            with open(mortality_path) as f:
+                mort_data = json.load(f)
+            # early_death_subjects: {USUBJID: disposition} dict
+            eds = mort_data.get("early_death_subjects", {})
+            if isinstance(eds, dict):
+                for uid, disposition in eds.items():
+                    if uid:
+                        ds_severe[uid] = [f"DS: {disposition}"]
+        except Exception:
+            pass
+
+    # Merge all domains into unified subject-level classification
+    all_severe: dict[str, list[str]] = {}
+    for domain_results in [mi_severe, bw_severe, cl_severe, ma_severe, ds_severe]:
+        for uid, reasons in domain_results.items():
+            all_severe.setdefault(uid, []).extend(reasons)
+
+    # Build per-dose-group severity data (excluding controls and TK subjects)
+    dose_groups_seen: dict[int, dict] = {}  # dose_order -> {dose_value, M_n, F_n, M_severe, F_severe, subjects}
+    for uid, info in subj_info.items():
+        if info["is_control"] or info["is_tk"]:
+            continue
+        order = info["dose_order"]
+        if order not in dose_groups_seen:
+            dose_groups_seen[order] = {
+                "dose_value": info["dose_value"],
+                "M_n": 0, "F_n": 0,
+                "M_severe": 0, "F_severe": 0,
+                "subjects": [],
+            }
+        dg = dose_groups_seen[order]
+        sex = info["sex"].upper()
+        if sex == "M":
+            dg["M_n"] += 1
+        elif sex == "F":
+            dg["F_n"] += 1
+
+        if uid in all_severe:
+            if sex == "M":
+                dg["M_severe"] += 1
+            elif sex == "F":
+                dg["F_severe"] += 1
+            dg["subjects"].append({
+                "usubjid": uid,
+                "sex": sex,
+                "criteria": all_severe[uid],
+            })
+
+    # Build output
+    severity_data: list[dict] = []
+    for order in sorted(dose_groups_seen.keys()):
+        dg = dose_groups_seen[order]
+        m_n, f_n = dg["M_n"], dg["F_n"]
+        m_sev, f_sev = dg["M_severe"], dg["F_severe"]
+        total_n = m_n + f_n
+        total_sev = m_sev + f_sev
+        rate = total_sev / total_n if total_n > 0 else 0.0
+        m_rate = m_sev / m_n if m_n > 0 else 0.0
+        f_rate = f_sev / f_n if f_n > 0 else 0.0
+
+        ci_lo, ci_hi = _clopper_pearson_ci(total_sev, total_n)
+        m_ci = _clopper_pearson_ci(m_sev, m_n)
+        f_ci = _clopper_pearson_ci(f_sev, f_n)
+
+        severity_data.append({
+            "dose_level": order,
+            "dose_value": dg["dose_value"],
+            "n": total_n,
+            "severe_count": total_sev,
+            "rate": round(rate, 4),
+            "ci_95": [round(ci_lo, 4), round(ci_hi, 4)],
+            "per_sex": {
+                "M": {"n": m_n, "severe": m_sev, "rate": round(m_rate, 4),
+                       "ci_95": [round(m_ci[0], 4), round(m_ci[1], 4)]},
+                "F": {"n": f_n, "severe": f_sev, "rate": round(f_rate, 4),
+                       "ci_95": [round(f_ci[0], 4), round(f_ci[1], 4)]},
+            },
+            "subjects": dg["subjects"],
+        })
+
+    # Domain contributions summary
+    domain_counts = {
+        "MI": len(mi_severe),
+        "BW": len(bw_severe),
+        "CL": len(cl_severe),
+        "MA": len(ma_severe),
+        "DS": len(ds_severe),
+    }
+
+    # Count severe subjects among treated only (exclude controls + TK)
+    treated_uids = {uid for uid, info in subj_info.items()
+                    if not info["is_control"] and not info["is_tk"]}
+    total_severe_treated = sum(1 for uid in all_severe if uid in treated_uids)
+
+    # Acute BW events: flagged for review, not counted in severity numerator
+    acute_count = sum(1 for uid in bw_acute_events if uid in treated_uids)
+
+    return {
+        "severity_data": severity_data,
+        "domain_contributions": domain_counts,
+        "total_severe_subjects": total_severe_treated,
+        "bw_acute_events": acute_count,
+    }
+
+
+def _compute_mortality_tier(study: StudyInfo) -> dict:
+    """Compute Tier 1 (mortality-only) STD10/HNSTD.
+
+    Preserved from original _compute_oncology_margin for backward compat.
+    Returns the mortality tier dict with method "oncology_s9_mortality".
+    """
     gen_dir = Path(__file__).resolve().parent.parent / "generated" / study.study_id
     mortality_path = gen_dir / "study_mortality.json"
     if not mortality_path.exists():
@@ -513,20 +1042,39 @@ def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
         return {"available": False, "method": "oncology_s9_mortality",
                 "note": "No per-dose mortality data"}
 
-    # Load subject_context for group N
+    # Load subject_context for group N and sex lookup
     ctx_path = gen_dir / "subject_context.json"
     group_n: dict[int, int] = {}
+    sex_lookup: dict[str, str] = {}  # USUBJID -> SEX
+    group_n_by_sex: dict[str, dict[int, int]] = {"M": {}, "F": {}}
     if ctx_path.exists():
         try:
             with open(ctx_path) as f:
                 ctx = json.load(f)
-            for dg in ctx.get("dose_groups", []):
-                group_n[dg["dose_level"]] = dg.get("n_total", 0)
+            if isinstance(ctx, list):
+                # subject_context.json is a flat list of subject dicts
+                from collections import Counter
+                non_tk = [s for s in ctx if not s.get("IS_TK", False)]
+                order_counts = Counter(s.get("DOSE_GROUP_ORDER", 0) for s in non_tk)
+                group_n = dict(order_counts)
+                # Build sex lookup and per-sex group N
+                for s in non_tk:
+                    uid = s.get("USUBJID", "")
+                    sex = s.get("SEX", "")
+                    if uid:
+                        sex_lookup[uid] = sex
+                    if sex in ("M", "F"):
+                        order = s.get("DOSE_GROUP_ORDER", 0)
+                        group_n_by_sex[sex][order] = group_n_by_sex[sex].get(order, 0) + 1
+            elif isinstance(ctx, dict):
+                for dg in ctx.get("dose_groups", []):
+                    group_n[dg["dose_level"]] = dg.get("n_total", 0)
         except Exception:
             pass
 
     # Compute mortality rate per dose
     dose_mortality: list[dict] = []
+    sex_dose_deaths: dict[str, dict[int, list]] = {"M": {}, "F": {}}
     any_mortality = False
     for dg in by_dose:
         level = dg["dose_level"]
@@ -546,10 +1094,32 @@ def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
             "n": n,
             "rate": rate,
         })
+        # Track deaths by sex for per_sex breakdown
+        dead_subjects = dg.get("subjects", [])
+        for sex in ("M", "F"):
+            sex_deaths = [uid for uid in dead_subjects if sex_lookup.get(uid) == sex]
+            sex_dose_deaths[sex][level] = sex_deaths
+
+    # Build per-sex mortality data
+    per_sex: dict[str, dict] = {}
+    for sex in ("M", "F"):
+        sex_mort: list[dict] = []
+        for dm in dose_mortality:
+            level = dm["dose_level"]
+            n_sex = group_n_by_sex[sex].get(level, 0)
+            deaths_sex = len(sex_dose_deaths[sex].get(level, []))
+            rate_sex = deaths_sex / n_sex if n_sex > 0 else 0.0
+            sex_mort.append({
+                "dose_level": level,
+                "dose_value": dm["dose_value"],
+                "deaths": deaths_sex,
+                "n": n_sex,
+                "rate": rate_sex,
+            })
+        per_sex[sex] = {"mortality_data": sex_mort}
 
     if not any_mortality:
         # Fallback: HNSTD / 6 (highest non-severely toxic dose)
-        # HNSTD = highest tested dose when no mortality
         if dose_mortality:
             hnstd = max(dm["dose_value"] for dm in dose_mortality)
             mrsd = round(hnstd / 6, 4) if hnstd > 0 else None
@@ -560,46 +1130,32 @@ def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
                 "mrsd_mg_kg": mrsd,
                 "safety_factor": 6,
                 "note": "No mortality at any dose; using HNSTD/6 per ICH S9 Q&A",
+                "per_sex": per_sex,
             }
         return {"available": False, "method": "oncology_s9_mortality",
                 "note": "No treated dose groups with mortality data"}
 
     # Linear interpolation to find STD10 (dose at 10% mortality)
+    # Reuses _interpolate_std10 with mortality-specific caveats
     dose_mortality.sort(key=lambda x: x["dose_value"])
-    std10 = None
-    caveats = []
+    caveats: list[str] = []
 
-    # Check: mortality >10% at lowest dose
-    if dose_mortality[0]["rate"] >= 0.10:
-        std10 = dose_mortality[0]["dose_value"]
+    std10 = _interpolate_std10(dose_mortality)
+
+    # Derive caveats from the interpolation result and input data
+    if std10 is not None and dose_mortality[0]["rate"] >= 0.10:
         caveats.append("STD10 at or below lowest tested dose")
-    else:
-        # Find bracketing doses
-        for i in range(len(dose_mortality) - 1):
-            low = dose_mortality[i]
-            high = dose_mortality[i + 1]
-            if low["rate"] < 0.10 <= high["rate"]:
-                # Linear interpolation
-                if high["rate"] != low["rate"]:
-                    frac = (0.10 - low["rate"]) / (high["rate"] - low["rate"])
-                    std10 = low["dose_value"] + frac * (high["dose_value"] - low["dose_value"])
-                else:
-                    std10 = low["dose_value"]
-                break
+    elif std10 is not None and all(dm["rate"] < 0.10 for dm in dose_mortality):
+        caveats.append("Mortality present but <10% at all doses; using highest dose as conservative STD10")
 
-        if std10 is None and dose_mortality[-1]["rate"] > 0:
-            # Mortality exists but never reaches 10%
-            std10 = dose_mortality[-1]["dose_value"]
-            caveats.append("Mortality present but <10% at all doses; using highest dose as conservative STD10")
-
-    # Check sparse data
     groups_with_deaths = sum(1 for dm in dose_mortality if dm["deaths"] > 0)
     if groups_with_deaths < 3:
         caveats.append(f"Sparse mortality data ({groups_with_deaths} groups with deaths)")
 
     if std10 is None:
         return {"available": False, "method": "oncology_s9_mortality",
-                "note": "Could not estimate STD10", "caveats": caveats}
+                "note": "Could not estimate STD10", "caveats": caveats,
+                "per_sex": per_sex}
 
     mrsd = round(std10 / 10, 4)
     return {
@@ -609,7 +1165,252 @@ def _compute_oncology_margin(study: StudyInfo, noael_dose_value: float | None,
         "mrsd_mg_kg": mrsd,
         "safety_factor": 10,
         "mortality_data": dose_mortality,
+        "per_sex": per_sex,
         "caveats": caveats if caveats else None,
+    }
+
+
+def _interpolate_std10(severity_data: list[dict]) -> float | None:
+    """Linear interpolation to find STD10 from expanded severity rates."""
+    if not severity_data:
+        return None
+    sorted_data = sorted(severity_data, key=lambda x: x["dose_value"])
+    if sorted_data[0]["rate"] >= 0.10:
+        return sorted_data[0]["dose_value"]
+    for i in range(len(sorted_data) - 1):
+        low = sorted_data[i]
+        high = sorted_data[i + 1]
+        if low["rate"] < 0.10 <= high["rate"]:
+            if high["rate"] != low["rate"]:
+                frac = (0.10 - low["rate"]) / (high["rate"] - low["rate"])
+                return low["dose_value"] + frac * (high["dose_value"] - low["dose_value"])
+            return low["dose_value"]
+    if sorted_data[-1]["rate"] > 0:
+        return sorted_data[-1]["dose_value"]
+    return None
+
+
+def _compute_expanded_tier(
+    study: StudyInfo,
+    species: str | None,
+    subject_ctx: list[dict],
+    is_rodent: bool,
+) -> dict:
+    """Compute Tier 2 (expanded severity) STD10 or HNSTD.
+
+    For rodent: interpolates STD10 from expanded severity rates.
+    For non-rodent (N<6): outputs HNSTD with CI and fragility annotation.
+    """
+    tier2 = _classify_severe_toxicity_tier2(study, species, subject_ctx)
+    severity_data = tier2["severity_data"]
+
+    if not severity_data:
+        return {
+            "available": False,
+            "method": "oncology_s9_expanded",
+            "note": "No treated dose groups for expanded classification",
+        }
+
+    # Per-sex STD10: compute for each sex independently
+    per_sex: dict[str, dict] = {}
+    primary_sex = None
+    primary_std10 = None
+
+    for sex_label in ["M", "F"]:
+        sex_data = []
+        for sd in severity_data:
+            ps = sd["per_sex"].get(sex_label, {})
+            if ps.get("n", 0) > 0:
+                sex_data.append({
+                    "dose_value": sd["dose_value"],
+                    "rate": ps["rate"],
+                    "n": ps["n"],
+                    "severe": ps["severe"],
+                    "ci_95": ps["ci_95"],
+                })
+        if not sex_data:
+            continue
+
+        if is_rodent:
+            sex_std10 = _interpolate_std10(sex_data)
+            sex_mrsd = round(sex_std10 / 10, 4) if sex_std10 else None
+            per_sex[sex_label] = {
+                "std10_mg_kg": round(sex_std10, 4) if sex_std10 else None,
+                "mrsd_mg_kg": sex_mrsd,
+                "severity_data": sex_data,
+            }
+            if sex_std10 is not None:
+                if primary_std10 is None or sex_std10 < primary_std10:
+                    primary_std10 = sex_std10
+                    primary_sex = sex_label
+        else:
+            # Non-rodent: HNSTD = highest dose where 0 subjects meet Tier 2
+            sorted_data = sorted(sex_data, key=lambda x: x["dose_value"])
+            hnstd = None
+            for sd in reversed(sorted_data):
+                if sd["severe"] == 0:
+                    hnstd = sd["dose_value"]
+                    break
+            sex_mrsd = round(hnstd / 6, 4) if hnstd and hnstd > 0 else None
+            fragility = None
+            if any(sd["n"] < 6 for sd in sorted_data):
+                max_n = max(sd["n"] for sd in sorted_data)
+                fragility = (
+                    f"N={max_n}/group: single borderline finding "
+                    f"shifts HNSTD by one dose level"
+                )
+            per_sex[sex_label] = {
+                "hnstd_mg_kg": hnstd,
+                "mrsd_mg_kg": sex_mrsd,
+                "severity_data": sex_data,
+                "fragility": fragility,
+            }
+            if hnstd is not None:
+                if primary_std10 is None or hnstd < primary_std10:
+                    primary_std10 = hnstd
+                    primary_sex = sex_label
+
+    # Combined (both sexes) computation
+    if is_rodent:
+        combined_std10 = _interpolate_std10(severity_data)
+        combined_mrsd = round(combined_std10 / 10, 4) if combined_std10 else None
+        method = "oncology_s9_expanded"
+        result = {
+            "available": combined_std10 is not None,
+            "method": method,
+            "std10_mg_kg": round(combined_std10, 4) if combined_std10 else None,
+            "mrsd_mg_kg": combined_mrsd,
+            "severity_data": severity_data,
+            "per_sex": per_sex,
+            "primary_sex": primary_sex,
+            "domain_contributions": tier2["domain_contributions"],
+        }
+    else:
+        # Non-rodent HNSTD
+        sorted_all = sorted(severity_data, key=lambda x: x["dose_value"])
+        hnstd = None
+        for sd in reversed(sorted_all):
+            if sd["severe_count"] == 0:
+                hnstd = sd["dose_value"]
+                break
+        combined_mrsd = round(hnstd / 6, 4) if hnstd and hnstd > 0 else None
+        method = "oncology_hnstd_expanded"
+
+        caveats_list = []
+        # Species-specific BW threshold uncertainty
+        sp = (species or "").upper().strip()
+        raw_sp = sp
+        sp = _BW_SPECIES_ALIASES.get(sp, sp)
+        if sp == "MONKEY":
+            caveats_list.append(
+                "NHP BW threshold: proportional from NC3Rs rat, "
+                "not independently validated"
+            )
+        elif raw_sp != sp:
+            # Species was aliased (e.g. MINIPIG -> DOG)
+            caveats_list.append(
+                f"{raw_sp} BW threshold: aliased to {sp} thresholds, "
+                f"no species-specific validation"
+            )
+        # Fragility for small groups
+        if any(sd["n"] < 6 for sd in sorted_all):
+            max_n = max(sd["n"] for sd in sorted_all) if sorted_all else 0
+            caveats_list.append(
+                f"N={max_n}/group: single borderline finding "
+                f"shifts HNSTD by one dose level"
+            )
+
+        result = {
+            "available": hnstd is not None,
+            "method": method,
+            "hnstd_mg_kg": hnstd,
+            "mrsd_mg_kg": combined_mrsd,
+            "safety_factor": 6,
+            "severity_data": severity_data,
+            "per_sex": per_sex,
+            "primary_sex": primary_sex,
+            "domain_contributions": tier2["domain_contributions"],
+            "caveats": caveats_list if caveats_list else None,
+        }
+
+    return result
+
+
+def _compute_oncology_margin(study: StudyInfo) -> dict:
+    """Compute tiered oncology margin: Tier 1 (mortality) + Tier 2 (expanded severity).
+
+    Three-tier output per ICH S9 severe toxicity definition.
+    Tier 3 (inclusive) deferred until LB organ failure markers are defined.
+    """
+    # Species detection
+    species = _get_species(study)
+    sp_upper = (species or "").upper().strip()
+    is_rodent = sp_upper in {"RAT", "MOUSE", "HAMSTER", "GUINEA PIG"}
+
+    # Tier 1: mortality-only (existing logic, preserved)
+    mortality_tier = _compute_mortality_tier(study)
+
+    # Load subject context for Tier 2
+    gen_dir = Path(__file__).resolve().parent.parent / "generated" / study.study_id
+    ctx_path = gen_dir / "subject_context.json"
+    subject_ctx: list[dict] = []
+    if ctx_path.exists():
+        try:
+            with open(ctx_path) as f:
+                subject_ctx = json.load(f)
+            if not isinstance(subject_ctx, list):
+                subject_ctx = []
+        except Exception:
+            subject_ctx = []
+
+    # Tier 2: expanded severity classification
+    expanded_tier = _compute_expanded_tier(study, species, subject_ctx, is_rodent)
+
+    # Tier divergence alert
+    tier_divergence: dict | None = None
+    mort_std10 = mortality_tier.get("std10_mg_kg")
+    exp_std10 = expanded_tier.get("std10_mg_kg") or expanded_tier.get("hnstd_mg_kg")
+    alert_threshold = 2.0
+    if mort_std10 and exp_std10 and exp_std10 > 0:
+        fold = round(mort_std10 / exp_std10, 2)
+        tier_divergence = {
+            "mortality_vs_expanded_fold": fold,
+            "alert": fold > alert_threshold,
+            "alert_threshold": alert_threshold,
+        }
+
+    # Collect caveats
+    caveats: list[str] = []
+    if mortality_tier.get("caveats"):
+        caveats.extend(mortality_tier["caveats"])
+    if expanded_tier.get("caveats"):
+        caveats.extend(expanded_tier["caveats"])
+
+    # Compound class caveat: cytotoxic/antineoplastic BM/GI context
+    try:
+        from services.analysis.compound_class import infer_compound_class
+        cc_info = infer_compound_class(study)
+        cc = cc_info.get("compound_class", "")
+        oncology_classes = {"oncology", "antineoplastic", "cytotoxic"}
+        if cc in oncology_classes or any(cc.startswith(p) for p in oncology_classes):
+            caveats.append(
+                "Cytotoxic compound: BM/GI findings at lower MISEV grades "
+                "may have different adversity context"
+            )
+    except Exception:
+        pass
+
+    return {
+        "available": mortality_tier.get("available", False) or expanded_tier.get("available", False),
+        "method": "oncology_s9_tiered",
+        "tiers": {
+            "mortality": mortality_tier,
+            "expanded": expanded_tier,
+        },
+        "tier_divergence": tier_divergence,
+        "caveats": caveats if caveats else None,
+        "species": species,
+        "is_rodent": is_rodent,
     }
 
 
@@ -688,7 +1489,7 @@ def _compute_safety_margin_v2(
     adc_analytes = None
 
     if margin_method == "oncology_s9_mortality":
-        oncology = _compute_oncology_margin(study, noael_dose_value, by_dose_group)
+        oncology = _compute_oncology_margin(study)
     elif margin_method == "gene_therapy_vgkg":
         dose_unit = None
         if by_dose_group:
