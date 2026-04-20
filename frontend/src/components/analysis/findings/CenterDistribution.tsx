@@ -276,6 +276,13 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   }
 
   const hasInfluential = !!influentialSubjects && influentialSubjects.size > 0;
+  const hasControlSideInfluential = useMemo(() => {
+    if (!influentialSubjects) return false;
+    for (const info of influentialSubjects.values()) {
+      if (info.isControlSide) return true;
+    }
+    return false;
+  }, [influentialSubjects]);
 
   return (
     <div className="flex h-full flex-col">
@@ -314,8 +321,16 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
             type="button"
             className={`flex items-center gap-1 text-[9px] transition-opacity ${looIsolated ? "text-foreground font-medium opacity-100" : "text-muted-foreground opacity-100"}`}
             onClick={() => setLooIsolated((v) => !v)}
+            title={hasControlSideInfluential ? "Treated-side (amber) and control-side (gray, ring = affected dose group) fragile subjects" : "LOO-fragile subjects"}
           >
-            <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="2.5" fill="#92400e" /></svg>
+            {hasControlSideInfluential ? (
+              <svg width="16" height="8" className="shrink-0">
+                <circle cx="4" cy="4" r="2.5" fill="#92400e" />
+                <circle cx="12" cy="4" r="2.5" fill="#6b7280" stroke="#9ca3af" strokeWidth={1.2} />
+              </svg>
+            ) : (
+              <svg width="8" height="8" className="shrink-0"><circle cx="4" cy="4" r="2.5" fill="#92400e" /></svg>
+            )}
             <span>LOO influential</span>
           </button>
         )}

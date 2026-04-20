@@ -12,19 +12,29 @@ export type InfluentialSubjectsMap = ReadonlyMap<string, InfluentialSubjectInfo>
  * Scoping:
  * - `opts.day`: when provided (number), filter findings to those matching `f.day === opts.day`.
  *   When undefined/null, no day filter — endpoint-scoped union across all days.
- * - Fragility filter: a subject is included only if their ratio in `loo_per_subject` is
- *   strictly less than `LOO_THRESHOLD (0.8)`. The hook iterates ALL keys in `loo_per_subject`
- *   (matching the LooSensitivityPane semantic) — NOT just `loo_influential_subject` (which
- *   is the per-finding worst pointer). This unifies chart and pane on which subjects are
- *   considered "fragile": both surfaces show the same set, just scoped differently
- *   (chart by day, pane by endpoint).
+ * - Fragility filter: a subject is included only if their ratio is strictly less than
+ *   `LOO_THRESHOLD (0.8)` in at least one pairwise comparison.
  *
- * Why iterate `loo_per_subject` and not `loo_influential_subject`:
- *   The pointer `loo_influential_subject` points to the single "worst" subject in the
- *   pairwise dict. When two subjects share the minimum ratio (both 0.0, e.g.), only one
- *   wins the tiebreaker — the other is structurally invisible to a `loo_influential_subject`-
- *   based filter even though they're equally fragile. The pane iterates `loo_per_subject`
- *   keys directly and shows both. The chart now matches.
+ * Per-pairwise attribution (BUG-25 fix):
+ *   A control animal can be fragile in multiple pairwise comparisons (e.g. fragile vs low
+ *   dose AND vs mid dose) with different ratios per pairwise. The hook scans every
+ *   `f.pairwise[*].loo_per_subject` and, per subject, keeps the record from the pairwise
+ *   with the SMALLEST ratio -- the comparison where the animal most destabilizes the signal.
+ *   For control subjects (their own `dose_level === 0`), the marker stroke color is the
+ *   pairwise's `dose_level` (the treated group that comparison targets). For treated
+ *   subjects, the stroke color is their own `dose_level`.
+ *
+ * Previously the hook read the finding-level `f.loo_per_subject` (which aggregates across
+ * pairwise via a single "driving" pairwise pointer) and computed one `affectedTreatedDoseLevel`
+ * per finding as `argmax(g_lower) over pairwise`. That attribution was wrong in two ways:
+ * (a) the max-g_lower pairwise is not necessarily the one where a given control animal is
+ * most fragile; (b) animals fragile in non-driving pairwise were invisible.
+ *
+ * Fallback: when `f.pairwise[*].loo_per_subject` is unpopulated (some legacy or
+ * incidence-adjacent findings), the hook still consumes the finding-level
+ * `f.loo_per_subject` as a last resort, attributing control subjects to the
+ * `argmax(g_lower)` pairwise. This preserves display for findings that pre-date
+ * per-pairwise LOO persistence.
  */
 export function useInfluentialSubjectsMap(
   finding: { endpoint_label?: string | null; finding?: string | null; domain: string },
@@ -35,40 +45,66 @@ export function useInfluentialSubjectsMap(
   const day = opts?.day;
   return useMemo(() => {
     if (!findings) return undefined;
-    const map = new Map<string, InfluentialSubjectInfo>();
+    // Track best (min-ratio) record per subject across all matching findings + pairwise.
+    const best = new Map<string, { doseLevel: number; isControlSide: boolean; ratio: number }>();
     const ep = finding.endpoint_label ?? finding.finding;
+
+    const consider = (usubjid: string, ratio: number, doseLevel: number, isCtrl: boolean): void => {
+      if (ratio >= LOO_THRESHOLD) return;
+      const prior = best.get(usubjid);
+      if (prior && prior.ratio <= ratio) return;
+      best.set(usubjid, { doseLevel, isControlSide: isCtrl, ratio });
+    };
+
     for (const f of findings) {
       if ((f.endpoint_label ?? f.finding) !== ep) continue;
       if (f.domain !== finding.domain) continue;
       if (day != null && f.day !== day) continue;
-      const perSubject = f.loo_per_subject;
-      if (!perSubject) continue;
-      // For control-side subjects (their own dose_level is 0), the affected treated group's
-      // dose level is computed once per finding from f.pairwise[]: the dose level of the
-      // pairwise with the maximum g_lower drives the marker color. This preserves the
-      // existing color-coding contract (control-side LOO markers show the affected dose).
-      let affectedTreatedDoseLevel = 0;
+
+      let sawPairwiseData = false;
       if (f.pairwise) {
-        let maxGl = 0;
         for (const pw of f.pairwise) {
-          const gl = pw.g_lower ?? 0;
-          if (gl > maxGl) {
-            maxGl = gl;
-            affectedTreatedDoseLevel = pw.dose_level;
+          const pwLoo = pw.loo_per_subject;
+          if (!pwLoo) continue;
+          sawPairwiseData = true;
+          for (const [usubjid, entry] of Object.entries(pwLoo)) {
+            const isCtrl = entry.dose_level === 0;
+            // Control-side: color stroke by the treated dose this pairwise compares to.
+            // Treated-side: color stroke by the subject's own dose level.
+            const doseLevel = isCtrl ? pw.dose_level : entry.dose_level;
+            consider(usubjid, entry.ratio, doseLevel, isCtrl);
           }
         }
       }
-      for (const [usubjid, entry] of Object.entries(perSubject)) {
-        if (entry.ratio == null || entry.ratio >= LOO_THRESHOLD) continue;
-        if (map.has(usubjid)) continue;
-        const isCtrl = entry.dose_level === 0;
-        // Treated subjects: use their own dose level (entry.dose_level).
-        // Control subjects: use the affected treated dose level so the marker stroke
-        // colors to the dose group whose signal depends on them.
-        const doseLevel = isCtrl ? affectedTreatedDoseLevel : entry.dose_level;
-        map.set(usubjid, { doseLevel, isControlSide: isCtrl });
+
+      // Fallback path: finding-level loo_per_subject when pairwise data is unavailable.
+      // Attribution here matches the legacy heuristic (argmax g_lower for control side).
+      if (!sawPairwiseData && f.loo_per_subject) {
+        let argmaxDoseLevel = 0;
+        let maxGl = 0;
+        if (f.pairwise) {
+          for (const pw of f.pairwise) {
+            const gl = pw.g_lower ?? 0;
+            if (gl > maxGl) {
+              maxGl = gl;
+              argmaxDoseLevel = pw.dose_level;
+            }
+          }
+        }
+        for (const [usubjid, entry] of Object.entries(f.loo_per_subject)) {
+          if (entry.ratio == null) continue;
+          const isCtrl = entry.dose_level === 0;
+          const doseLevel = isCtrl ? argmaxDoseLevel : entry.dose_level;
+          consider(usubjid, entry.ratio, doseLevel, isCtrl);
+        }
       }
     }
-    return map.size > 0 ? map : undefined;
+
+    if (best.size === 0) return undefined;
+    const map = new Map<string, InfluentialSubjectInfo>();
+    for (const [usubjid, rec] of best) {
+      map.set(usubjid, { doseLevel: rec.doseLevel, isControlSide: rec.isControlSide });
+    }
+    return map;
   }, [findings, finding.endpoint_label, finding.finding, finding.domain, day]);
 }
