@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-04-22T22:10:03Z",
+  "timestamp": "2026-04-22T23:07:05Z",
   "verdict": "pass",
-  "summary": "species-magnitude-thresholds-dog-nhp Phase A + F11 backend shipped; byte-equal OM parity; 295 test checks pass; Phase B/C/D/E/G deferred with merit rationale",
+  "summary": "Phase B gate ceremony unwound -- approved-toxicology-reviewers.yml + validate-fct-signoff.sh + YAML front-matter contract documented as future scaffolding not built; fct-migration-diff.md is the reviewer-facing artifact; pre-production single-decision-maker reality reflected in spec §9 + architecture doc + fixture doc + TODO",
   "checks_run": 0,
   "checks_passed": 0,
   "staged_files": "",
-  "head_at_review": "dd3d33f2",
+  "head_at_review": "42782166",
   "written_by": "write-review-gate.sh"
 }
