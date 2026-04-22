@@ -55,6 +55,15 @@ class HcdSqliteDB:
                 self._conn.close()
                 self._conn = None
                 return None
+            # Phase-1 MI/MA schema migration (idempotent). Applies additive
+            # columns (year_min, year_max, severity_scale_version, ...) when
+            # they are missing on an older hcd.db. Safe to call on every open.
+            if "hcd_mi_incidence" in tables:
+                try:
+                    from etl.hcd_mi_seed import ensure_phase1_schema
+                    ensure_phase1_schema(self._conn)
+                except Exception as exc:
+                    log.warning("Phase-1 hcd_mi_incidence migration skipped: %s", exc)
             return self._conn
         except Exception as e:
             log.warning("Failed to open HCD SQLite: %s", e)
@@ -753,12 +762,14 @@ class HcdSqliteDB:
     ) -> dict | None:
         """Look up MI/MA HCD background incidence.
 
-        Tries progressively relaxed matching:
-        1. Exact match on all fields including duration_category
-        2. NULL duration_category entries (serve as fallback)
-        3. Drop strain specificity (species-only)
+        Phase-1 tier cascade (F1 + F6: tier-4 substring fallback DISABLED):
+        1. Exact match on all fields including duration_category (match_tier=1, high)
+        2. NULL duration_category entries as fallback (match_tier=2, medium)
+        3. Any duration for this strain (match_tier=3, low)
 
-        Returns dict with incidence stats or None.
+        Returns dict with incidence stats + `match_tier` + `match_confidence`,
+        or None. Tier-4 substring fallback was removed in Phase-1 to enforce
+        the crosswalk-driven match discipline (AC-F6-3).
         """
         conn = self._get_conn()
         if conn is None:
@@ -786,7 +797,7 @@ class HcdSqliteDB:
                  organ_upper, finding_lower, duration_category),
             ).fetchone()
             if row:
-                return self._mi_row_to_dict(row)
+                return self._mi_row_to_dict(row, match_tier=1, match_confidence="high")
 
         # Tier 2: NULL duration (fallback entries)
         row = conn.execute(
@@ -799,7 +810,7 @@ class HcdSqliteDB:
              organ_upper, finding_lower),
         ).fetchone()
         if row:
-            return self._mi_row_to_dict(row)
+            return self._mi_row_to_dict(row, match_tier=2, match_confidence="medium")
 
         # Tier 3: any duration for this strain
         row = conn.execute(
@@ -811,26 +822,32 @@ class HcdSqliteDB:
              organ_upper, finding_lower),
         ).fetchone()
         if row:
-            return self._mi_row_to_dict(row)
+            return self._mi_row_to_dict(row, match_tier=3, match_confidence="low")
 
-        # Tier 4: substring match on finding (for partial terminology alignment)
-        rows = conn.execute(
-            """SELECT * FROM hcd_mi_incidence
-               WHERE species = ? AND strain = ? AND sex = ?
-               AND organ = ?
-               AND (LOWER(finding) LIKE ? OR ? LIKE '%' || LOWER(finding) || '%')
-               ORDER BY confidence ASC LIMIT 1""",
-            (species.upper(), strain.upper(), sex_upper,
-             organ_upper, f"%{finding_lower}%", finding_lower),
-        ).fetchone()
-        if rows:
-            return self._mi_row_to_dict(rows)
-
+        # Tier 4 substring match: DISABLED in Phase-1 (AC-F6-3).
+        # Re-enabled only when Phase-2 full INHAND harmonization provides
+        # unambiguous substring semantics.
         return None
 
     @staticmethod
-    def _mi_row_to_dict(row: sqlite3.Row) -> dict:
-        """Convert a sqlite3.Row from hcd_mi_incidence to a dict."""
+    def _mi_row_to_dict(
+        row: sqlite3.Row,
+        *,
+        match_tier: int | None = None,
+        match_confidence: str | None = None,
+    ) -> dict:
+        """Convert a sqlite3.Row from hcd_mi_incidence to a dict.
+
+        Phase-1 Schema additions (F1): year_min, year_max,
+        severity_scale_version, terminology_version, severity_distribution.
+        Missing columns on older DBs surface as None (sqlite3.Row.keys()
+        check).
+        """
+        keys = set(row.keys())
+
+        def _opt(name: str):
+            return row[name] if name in keys else None
+
         return {
             "species": row["species"],
             "strain": row["strain"],
@@ -848,6 +865,15 @@ class HcdSqliteDB:
             "duration_category": row["duration_category"],
             "source": row["source"],
             "confidence": row["confidence"],
+            # Phase-1 additive columns (F1)
+            "year_min": _opt("year_min"),
+            "year_max": _opt("year_max"),
+            "severity_scale_version": _opt("severity_scale_version"),
+            "terminology_version": _opt("terminology_version"),
+            "severity_distribution": _opt("severity_distribution"),
+            # Match-tier audit (F1)
+            "match_tier": match_tier,
+            "match_confidence": match_confidence,
         }
 
     # ------------------------------------------------------------------

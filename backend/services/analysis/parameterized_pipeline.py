@@ -38,6 +38,85 @@ from generator.scores_and_rules import evaluate_rules
 log = logging.getLogger(__name__)
 
 
+def _build_study_context(
+    study: StudyInfo,
+    *,
+    species: str | None,
+    settings: AnalysisSettings | None = None,
+) -> dict:
+    """Assemble the F9 study_context dict passed to apply_clinical_layer.
+
+    Missing fields degrade gracefully (crosswalk misses + explicit-null
+    hcd_evidence records). `enable_alpha_cell_scaling` reads from the caller-
+    supplied AnalysisSettings (spec F5): Phase-1 default False; Phase-2
+    per-study activation flips this flag plus satisfies the three gates.
+    """
+    alpha_on = False
+    if settings is not None:
+        alpha_on = bool(getattr(settings, "enable_alpha_cell_scaling", False))
+    ctx: dict = {
+        "species": species,
+        "enable_alpha_cell_scaling": alpha_on,
+    }
+    try:
+        from services.analysis.hcd import (
+            get_strain, get_study_duration_days,
+        )
+        ctx["strain"] = get_strain(study)
+        days = get_study_duration_days(study)
+        ctx["duration_category"] = _duration_category_for(days)
+    except Exception:
+        log.debug("study_context strain/duration unavailable", exc_info=True)
+    try:
+        ctx["study_start_year"] = _resolve_study_start_year(study)
+    except Exception:
+        log.debug("study_context study_start_year unavailable", exc_info=True)
+    return ctx
+
+
+def _duration_category_for(days: int | None) -> str | None:
+    """Map days -> duration_category bucket used in hcd_mi_incidence schema."""
+    if days is None:
+        return None
+    if days <= 35:
+        return "28-day"
+    if days <= 120:
+        return "90-day"
+    if days <= 370:
+        return "chronic"
+    return "carcinogenicity"
+
+
+def _resolve_study_start_year(study: StudyInfo) -> int | None:
+    """Best-effort STSTDTC (study start date) -> year.
+
+    Reads TS.TSVAL where TSPARMCD == 'STSTDTC'. Returns None when unavailable
+    (AC-F1-6: downstream hcd_evidence.drift_flag == None in that case).
+    """
+    if "ts" not in getattr(study, "xpt_files", {}):
+        return None
+    try:
+        from services.xpt_processor import read_xpt
+        ts_df, _ = read_xpt(study.xpt_files["ts"])
+        ts_df.columns = [c.upper() for c in ts_df.columns]
+        rows = ts_df[ts_df["TSPARMCD"].str.upper() == "STSTDTC"]
+        if rows.empty:
+            return None
+        val = str(rows.iloc[0].get("TSVAL", "")).strip()
+        if not val:
+            return None
+        # ISO-8601 date or year; take first 4 digit chars as year.
+        for i in range(len(val) - 3):
+            chunk = val[i:i + 4]
+            if chunk.isdigit():
+                year = int(chunk)
+                if 1900 <= year <= 2100:
+                    return year
+    except Exception:
+        return None
+    return None
+
+
 class ParameterizedAnalysisPipeline:
     """Runs the full analysis pipeline with configurable settings.
 
@@ -121,8 +200,15 @@ class ParameterizedAnalysisPipeline:
             compound_partitions=compound_partitions,
             classification_framework=clf_framework,
         )
+        # F9: build study_context for HCD wiring (strain, species,
+        # study_start_year, duration_category). Alpha flag reads from
+        # AnalysisSettings; Phase-1 default is OFF per spec F5 contract.
+        study_context = _build_study_context(
+            self.study, species=_species, settings=settings,
+        )
         rules = evaluate_rules(findings, target_organs, noael, dose_groups,
-                               protective_syndromes=protective_syndromes)
+                               protective_syndromes=protective_syndromes,
+                               study_context=study_context)
 
         # 4. Build unified_findings response (IDs + correlations + summary)
         for f in findings:

@@ -12,6 +12,12 @@ import json
 import logging
 from pathlib import Path
 
+from services.analysis.hcd_evidence import (
+    RELIABILITY_N_THRESHOLD,
+    build_hcd_evidence,
+    empty_hcd_evidence,
+)
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -90,6 +96,7 @@ def match_catalog(params: dict) -> dict | None:
 def compute_clinical_confidence(
     params: dict,
     match: dict,
+    hcd_evidence: dict | None = None,
 ) -> str:
     """Compute clinical confidence: High / Medium / Low.
 
@@ -97,6 +104,10 @@ def compute_clinical_confidence(
     - n_affected vs threshold
     - dose-response pattern quality
     - clinical class weight
+    - γ-primary HCD contribution (F2) when `hcd_evidence` is supplied; the
+      integer `confidence_contribution` is added to the existing score before
+      thresholding. When `hcd_evidence is None` (AC-F2-1 flag-OFF / no HCD),
+      scoring matches pre-change behavior byte-equal.
     """
     n_affected = params.get("n_affected", 0)
     min_n = match.get("min_n_affected", 1)
@@ -129,6 +140,10 @@ def compute_clinical_confidence(
     p_value = params.get("p_value")
     if p_value is not None and p_value < 0.01:
         score += 1
+
+    # γ-primary HCD contribution (F2). Signed integer, pre-capped upstream.
+    if hcd_evidence is not None:
+        score += int(hcd_evidence.get("confidence_contribution", 0) or 0)
 
     if score >= 6:
         return "High"
@@ -244,20 +259,51 @@ def _check_protective_exclusion(
 # Main entry point — post-pass on rule results
 # ---------------------------------------------------------------------------
 
-def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict]:
+def apply_clinical_layer(
+    results: list[dict],
+    findings: list[dict],
+    *,
+    study_context: dict | None = None,
+) -> list[dict]:
     """Annotate rule results with clinical catalog metadata.
 
     Modifies results in-place:
     1. Adds clinical_class, catalog_id, clinical_confidence to matched findings
-    2. Promotes severity for sentinel/high-concern findings meeting thresholds
-    3. Suppresses R18/R19 for findings matching protective exclusions
-    4. Un-dampens R10 for sentinel findings
+    2. Attaches hcd_evidence record (F1/F9) -- null-safe: always present when a
+       catalog match fires, even when no HCD row matches (AC-F9-2).
+    3. Promotes severity for sentinel/high-concern findings meeting thresholds
+    4. Suppresses R18/R19 for findings matching protective exclusions
+    5. Un-dampens R10 for sentinel findings
+    6. α-cell machinery (F5) runs when `enable_alpha_cell_scaling` flag is on
+       AND the catalog rule has alpha_eligible==True AND the cell passes the
+       background/reliability/finding-class gate.
+
+    Args:
+        study_context: optional {species, strain, study_start_year,
+            duration_category, enable_alpha_cell_scaling}. Missing fields
+            default to None / False; wiring falls back to the existing
+            finding_class-only gate when context is unavailable.
     """
-    # Build a lookup from finding identity to finding data (for group_stats)
-    finding_lookup: dict[str, dict] = {}
-    for f in findings:
-        key = f"{f.get('domain')}_{f.get('test_code')}_{f.get('sex')}"
-        finding_lookup[key] = f
+    ctx = study_context or {}
+    species = ctx.get("species")
+    strain = ctx.get("strain")
+    study_start_year = ctx.get("study_start_year")
+    duration_category = ctx.get("duration_category")
+    enable_alpha = bool(ctx.get("enable_alpha_cell_scaling", False))
+
+    # Lazy HCD imports -- avoid circular dependency when HCD DB is absent.
+    hcd_db = None
+    resolve_finding_term = None
+    if species and strain:
+        try:
+            from services.analysis.hcd_database import get_sqlite_db
+            from services.analysis.hcd_crosswalk import (
+                resolve_finding_term as _resolve_term,
+            )
+            hcd_db = get_sqlite_db()
+            resolve_finding_term = _resolve_term
+        except Exception as exc:  # pragma: no cover -- defensive
+            logger.warning("HCD wiring unavailable: %s", exc)
 
     for result in results:
         params = result.get("params", {})
@@ -303,9 +349,44 @@ def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict
         params["clinical_class"] = catalog_match["clinical_class"]
         params["catalog_id"] = catalog_match["id"]
 
-        # Compute confidence
+        # --- Build hcd_evidence record (F1/F9) ---
+        # Null-safe: always present when a catalog match fires. AC-F9-2 flags
+        # absence as a defect.
+        hcd_evidence = _build_hcd_evidence_for_result(
+            result=result,
+            catalog_match=catalog_match,
+            hcd_db=hcd_db,
+            resolve_finding_term=resolve_finding_term,
+            species=species,
+            strain=strain,
+            study_start_year=study_start_year,
+            duration_category=duration_category,
+        )
+
+        # F3 defensive invariant -- set BEFORE α runs, since the floor-flag
+        # guards against future consumers that might read clinical_confidence.
+        hcd_evidence["noael_floor_applied"] = bool(
+            catalog_match.get("clinical_class") in ("Sentinel", "HighConcern")
+        )
+
+        # --- α-cell machinery (F5, flag-gated) ---
+        _apply_alpha_cell_scaling(
+            catalog_match=catalog_match,
+            params=params,
+            hcd_evidence=hcd_evidence,
+            enable_alpha=enable_alpha,
+        )
+
+        params["hcd_evidence"] = hcd_evidence
+
+        # Compute confidence (γ-primary contribution enters here)
         params["clinical_confidence"] = compute_clinical_confidence(
-            params, catalog_match
+            params, catalog_match, hcd_evidence=hcd_evidence,
+        )
+        # Pre-γ audit value (display-layer; helps UI show "HCD pushed
+        # Medium->High" context).
+        params["clinical_confidence_pre_gamma"] = compute_clinical_confidence(
+            params, catalog_match, hcd_evidence=None,
         )
 
         # --- Severity promotion ---
@@ -313,7 +394,21 @@ def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict
         min_n = catalog_match.get("min_n_affected", 1)
         elevate_to = catalog_match.get("elevate_to")
 
-        if elevate_to and n_affected >= min_n:
+        # α may have raised the effective threshold (alpha_scaled_threshold);
+        # honor it when present. Otherwise fall back to catalog min_n.
+        effective_min_n = min_n
+        if hcd_evidence.get("alpha_applies") and hcd_evidence.get("alpha_scaled_threshold"):
+            effective_min_n = int(hcd_evidence["alpha_scaled_threshold"])
+
+        promote_ok = n_affected >= effective_min_n
+        # AC-F5-3: tr_adverse floor -- α cannot suppress promotion when
+        # finding_class == "tr_adverse" (noael_floor_applied is True for
+        # Sentinel/HighConcern; ModerateConcern with tr_adverse still promotes
+        # because catalog-firing preserves the scientific floor).
+        if params.get("finding_class") == "tr_adverse":
+            promote_ok = n_affected >= min_n  # ignore α scaling
+
+        if elevate_to and promote_ok:
             # Promote info → warning for sentinel/high-concern findings
             if result["severity"] == "info" and \
                catalog_match["clinical_class"] in ("Sentinel", "HighConcern"):
@@ -333,3 +428,146 @@ def apply_clinical_layer(results: list[dict], findings: list[dict]) -> list[dict
                 )
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# HCD wiring helpers (F9)
+# ---------------------------------------------------------------------------
+
+def _build_hcd_evidence_for_result(
+    *,
+    result: dict,
+    catalog_match: dict,
+    hcd_db,
+    resolve_finding_term,
+    species: str | None,
+    strain: str | None,
+    study_start_year: int | None,
+    duration_category: str | None,
+) -> dict:
+    """Query HCD for one catalog-matched result and build its hcd_evidence record.
+
+    Returns an explicit empty record (all-null inner fields) when HCD is
+    unavailable, when the crosswalk misses, or when the DB query returns
+    nothing (AC-F9-2).
+    """
+    if hcd_db is None or resolve_finding_term is None:
+        return empty_hcd_evidence()
+
+    params = result.get("params") or {}
+    specimen = (params.get("specimen") or "").upper()
+    sex = params.get("sex") or ""
+    catalog_id = catalog_match.get("id")
+
+    # Crosswalk: (catalog_id, organ, strain) -> canonical HCD finding term.
+    # On miss -> explicit no-HCD record, not a silent substring fallback.
+    canonical_term = resolve_finding_term(
+        catalog_id=catalog_id, organ=specimen, strain=strain,
+    )
+    if canonical_term is None:
+        return empty_hcd_evidence()
+
+    try:
+        hcd_row = hcd_db.query_mi_incidence(
+            species=species or "", strain=strain or "", sex=sex,
+            organ=specimen, finding=canonical_term,
+            duration_category=duration_category,
+        )
+    except Exception as exc:
+        logger.warning("query_mi_incidence failed: %s", exc)
+        hcd_row = None
+
+    # Counts for γ inputs
+    observed_n_affected = int(params.get("n_affected") or 0)
+    observed_n_total = _resolve_observed_total(result, params)
+
+    # Direction for hcd_discordant_protective (N-1 tag)
+    direction = params.get("direction") or "none"
+
+    # Control incidence percent for the N-1 tag
+    ctrl_pct = _parse_ctrl_pct(params.get("ctrl_pct"))
+
+    return build_hcd_evidence(
+        hcd_row,
+        observed_n_affected=observed_n_affected,
+        observed_n_total=observed_n_total,
+        catalog_id=catalog_id,
+        study_start_year=study_start_year,
+        direction=direction,
+        ctrl_pct=ctrl_pct,
+    )
+
+
+def _resolve_observed_total(result: dict, params: dict) -> int:
+    """Best-effort extraction of the treated-group cell N."""
+    n = params.get("n_total")
+    if isinstance(n, int) and n > 0:
+        return n
+    # Fallback: pull from group_stats on the parent finding if present.
+    # Rule results carry param snapshots; we avoid crossing back to findings
+    # here to keep this path pure. n_affected is a safe lower bound.
+    n_aff = int(params.get("n_affected") or 0)
+    return max(n_aff, 1)
+
+
+def _parse_ctrl_pct(raw) -> float | None:
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# α-cell scaling (F5) -- flag-gated, Phase-1 OFF.
+# ---------------------------------------------------------------------------
+
+_ALPHA_HIGH_BG_THRESHOLD = 0.25  # 25% (provisional, RG-MIMA-10 calibration)
+_ALPHA_SCALING_COEF = 0.5         # provisional coefficient
+
+
+def _apply_alpha_cell_scaling(
+    *,
+    catalog_match: dict,
+    params: dict,
+    hcd_evidence: dict,
+    enable_alpha: bool,
+) -> None:
+    """Mutate hcd_evidence with α-cell audit fields when the gate passes.
+
+    AC-F5-1: flag OFF -> dead code path; no mutation. AC-F5-2: flag ON +
+    catalog alpha_eligible + HCD bg >= 25% + N>=100 + non-tr_adverse ->
+    alpha_applies, alpha_scaled_threshold, reason populated.
+    """
+    if not enable_alpha:
+        return
+    if not catalog_match.get("alpha_eligible"):
+        return
+    bg = hcd_evidence.get("background_rate")
+    n_animals = hcd_evidence.get("background_n_animals")
+    if bg is None or n_animals is None:
+        return
+    if bg <= _ALPHA_HIGH_BG_THRESHOLD:
+        return
+    if n_animals < RELIABILITY_N_THRESHOLD:
+        return
+    # AC-F5-3: α cannot override tr_adverse -- floor holds.
+    if params.get("finding_class") == "tr_adverse":
+        return
+
+    import math
+    min_n = int(catalog_match.get("min_n_affected") or 1)
+    n_treated = _resolve_observed_total({"params": params}, params)
+    # F5 α scaling: effective_min_n = ceil(min_n + 0.5 * N_treated * background_rate)
+    scaled = int(math.ceil(min_n + _ALPHA_SCALING_COEF * n_treated * bg))
+
+    n_affected = int(params.get("n_affected") or 0)
+    source = hcd_evidence.get("source") or "unknown"
+    if n_affected < scaled:
+        hcd_evidence["alpha_applies"] = True
+        hcd_evidence["alpha_scaled_threshold"] = scaled
+        hcd_evidence["reason"] = (
+            f"alpha-scaled: min_n raised from {min_n} to {scaled} due to "
+            f"{bg * 100:.0f}% HCD background ({source}, N={n_animals})"
+        )

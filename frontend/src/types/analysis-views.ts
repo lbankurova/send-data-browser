@@ -95,11 +95,58 @@ export interface RuleParams {
   clinical_class?: "Sentinel" | "HighConcern" | "ModerateConcern" | "ContextDependent";
   catalog_id?: string;
   clinical_confidence?: "Low" | "Medium" | "High";
+  clinical_confidence_pre_gamma?: "Low" | "Medium" | "High"; // F9: pre-γ audit
   protective_excluded?: boolean;
   exclusion_id?: string;
 
+  // F1: HCD evidence record (hcd-mi-ma-s08-wiring).
+  //
+  // Runtime contract (spec R2 N7, AC-F9-2): when `catalog_id` is set AND
+  // `domain` is MI/MA, `hcd_evidence` MUST be present. Inner values may be
+  // null to encode explicit "no HCD" (crosswalk miss / species not covered /
+  // cell-N too low). Silent absence on a catalog-matched MI/MA finding is a
+  // backend defect -- `test_hcd_s08_wiring_end_to_end.py` enforces this at
+  // generation time.
+  //
+  // TypeScript type optionality reflects the UNION shape of rule params
+  // across all rule IDs. Non-MI/MA rule results do not carry `hcd_evidence`
+  // by design. UI consumers that reach for the field on an MI/MA
+  // catalog-matched finding MUST substitute `empty_hcd_evidence()` on miss
+  // rather than silently suppress the UI -- AC-F10-3 requires the explicit-
+  // miss state to render.
+  hcd_evidence?: HcdEvidence;
+
   // Organ-scoped
   organ_system?: string;
+}
+
+export interface HcdEvidenceContributionComponents {
+  gt_95th_percentile: 0 | 1;
+  gt_99th_percentile: 0 | 2;
+  below_5th_down_direction: 0 | -1;
+  ultra_rare_any_occurrence: 0 | 1;
+  tier_cap_applied: boolean;
+  hcd_discordant_protective: 0 | -1;
+}
+
+export interface HcdEvidence {
+  background_rate: number | null;
+  background_n_animals: number | null;
+  background_n_studies: number | null;
+  source: string | null;
+  year_range: [number, number] | null;
+  match_tier: 1 | 2 | 3 | null;
+  match_confidence: "high" | "medium" | "low" | null;
+  percentile_of_observed: number | null;
+  fisher_p_vs_hcd: number | null;
+  drift_flag: boolean | null;
+  confidence_contribution: number;
+  contribution_components: HcdEvidenceContributionComponents;
+  alpha_applies: boolean;
+  reason: string | null;
+  alpha_scaled_threshold: number | null;
+  noael_floor_applied: boolean;
+  cell_n_below_reliability_threshold: boolean;
 }
 
 export interface RuleResult {

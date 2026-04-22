@@ -251,6 +251,13 @@ class AnalysisSettings:
     incidence_trend: Literal["cochran-armitage", "logistic-slope"] = "cochran-armitage"
     organ_weight_method: Literal["recommended", "absolute", "ratio-bw", "ratio-brain"] = "recommended"
 
+    # Phase-1 HCD wiring (hcd-mi-ma-s08-wiring F5): α-cell Phase-2 machinery.
+    # Default OFF. Phase-2 flip requires (1) DATA-GAP-MIMA-16 corpus coverage
+    # >=5 studies each C14/C15, (2) regression pass on validation suite,
+    # (3) "alpha-cell active" UI chip wired (RG-MIMA-24). Never enable via
+    # query param alone -- must be per-study config decision.
+    enable_alpha_cell_scaling: bool = False
+
     def settings_hash(self, scoring: "ScoringParams | None" = None) -> str:
         """Deterministic hash for cache keying. Uses sorted JSON -> SHA256.
 

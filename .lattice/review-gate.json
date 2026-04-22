@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-04-22T23:07:05Z",
+  "timestamp": "2026-04-22T23:21:35Z",
   "verdict": "pass",
-  "summary": "Phase B gate ceremony unwound -- approved-toxicology-reviewers.yml + validate-fct-signoff.sh + YAML front-matter contract documented as future scaffolding not built; fct-migration-diff.md is the reviewer-facing artifact; pre-production single-decision-maker reality reflected in spec §9 + architecture doc + fixture doc + TODO",
+  "summary": "hcd-mi-ma-s08-wiring Phase-1: 9/11 features shipped (F7/F8 data-gap blocked); 54 tests; 3 SILENT-DROPs fixed in review; empirical AC-F1-1/F9-2/F5-1 verified on PointCross.",
   "checks_run": 0,
   "checks_passed": 0,
   "staged_files": "",
-  "head_at_review": "42782166",
+  "head_at_review": "5c3abc8d",
   "written_by": "write-review-gate.sh"
 }

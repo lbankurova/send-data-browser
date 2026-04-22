@@ -178,8 +178,15 @@ def evaluate_rules(
     noael_summary: list[dict],
     dose_groups: list[dict],
     protective_syndromes: dict | None = None,
+    study_context: dict | None = None,
 ) -> list[dict]:
-    """Evaluate all rules against findings and return structured results."""
+    """Evaluate all rules against findings and return structured results.
+
+    Args:
+        study_context: passthrough to `apply_clinical_layer` for F9 HCD wiring.
+            Supported keys: species, strain, study_start_year,
+            duration_category, enable_alpha_cell_scaling.
+    """
     results = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
 
@@ -322,7 +329,7 @@ def evaluate_rules(
         results.extend(_emit_protective_rule_results(protective_syndromes))
 
     results = _apply_suppressions(results)
-    results = apply_clinical_layer(results, findings)
+    results = apply_clinical_layer(results, findings, study_context=study_context)
     return results
 
 

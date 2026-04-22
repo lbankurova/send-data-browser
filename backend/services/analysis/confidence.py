@@ -32,6 +32,33 @@ log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# NOAEL floor — defensive display-layer invariant (F3, hcd-mi-ma-s08-wiring)
+#
+# This field is a display-layer invariant. The active NOAEL gate in
+# `view_dataframes.py:_is_loael_driving` uses `finding_class == 'tr_adverse'`
+# exclusively. The lint rule at scripts/lint-noael-floor-coread.sh prevents
+# future consumers of clinical_confidence/hcd_evidence in NOAEL-gate code
+# from omitting co-consultation of this field.
+#
+# @invariant noael-floor-coread-required
+# See docs/_internal/architecture/s08-hcd-wiring.md for the convention.
+# ---------------------------------------------------------------------------
+
+
+def extract_noael_floor_applied(params: dict | None) -> bool:
+    """Read `noael_floor_applied` from a rule-result's params.hcd_evidence.
+
+    Returns False when the field is missing or hcd_evidence is absent. This
+    is a display-layer mirror helper; callers that reach for the flag on a
+    rule result use this to avoid re-deriving clinical-class membership.
+    """
+    if not params:
+        return False
+    hcd = params.get("hcd_evidence") or {}
+    return bool(hcd.get("noael_floor_applied", False))
+
+
+# ---------------------------------------------------------------------------
 # Data structures (plain dicts for JSON serialisation)
 # ---------------------------------------------------------------------------
 

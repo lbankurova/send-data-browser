@@ -1,0 +1,11 @@
+{
+  "$comment": "Phase-1 drift-sensitive catalog IDs. Citations: Hard 2013 (tubular basophilia/CPN), Dinse 2010 (cardiomyopathy drift), Thomas 2007 (thyroid C-cell drift). Extending the list is a future cycle.",
+  "version": "phase1-2026-04-21",
+  "catalog_ids": ["C07", "C12", "C15"],
+  "rationale": {
+    "C07": "Myocardial necrosis -- aged-SD cardiomyopathy drift (Dinse 2010).",
+    "C12": "Tubular basophilia -- chronic progressive nephropathy drift (Hard 2013).",
+    "C15": "Thyroid follicular hypertrophy -- aged C-cell drift (Thomas 2007)."
+  },
+  "drift_year_window": 10
+}

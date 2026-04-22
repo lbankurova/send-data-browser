@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "hcd-crosswalk-phase1",
+  "title": "HCD Phase-1 Crosswalk",
+  "description": "Maps SEND histopathology findings to canonical HCD-source terms for the 15 clinical catalog rules. Phase-1 narrow scope (45 +/- 10 rows). R1-F8 coverage trade-off: tier-4 substring fallback is disabled in Phase-1; crosswalk misses return None explicitly.",
+  "type": "object",
+  "required": ["version", "rows"],
+  "properties": {
+    "version": {"type": "string"},
+    "notes": {"type": "string"},
+    "rows": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/row"},
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "row": {
+      "type": "object",
+      "required": [
+        "catalog_id", "catalog_term", "source", "source_term",
+        "strain_applicability", "organ_applicability", "confidence"
+      ],
+      "properties": {
+        "catalog_id": {
+          "type": "string",
+          "pattern": "^C(0[1-9]|1[0-5])$"
+        },
+        "catalog_term": {"type": "string"},
+        "source": {
+          "type": "string",
+          "enum": [
+            "NTP_IAD", "CRL_Giknis_Clifford",
+            "Envigo_RccHan_WIST", "Chamanza_2010", "Chandra_2010",
+            "Drevon_Gaillot_2006", "Kaspareit_1999", "Kaspareit_2007",
+            "seed"
+          ]
+        },
+        "source_term": {"type": "string"},
+        "strain_applicability": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "organ_applicability": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "inhand_anchor": {"type": "string"},
+        "notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

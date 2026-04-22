@@ -113,6 +113,7 @@
       "specimens": ["LIVER"],
       "findings": ["HEPATOCELLULAR HYPERTROPHY", "CENTRILOBULAR HYPERTROPHY", "HYPERTROPHY"],
       "min_n_affected": 3, "min_severity": 2,
+      "alpha_eligible": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
     },
     {
@@ -121,6 +122,7 @@
       "specimens": ["THYROID"],
       "findings": ["FOLLICULAR HYPERTROPHY", "FOLLICULAR HYPERPLASIA"],
       "min_n_affected": 3, "min_severity": 2,
+      "alpha_eligible": true,
       "applies_to_study_types": ["REPEAT_DOSE_*", "ACUTE", "DOSE_RANGE_FINDER"]
     }
   ],

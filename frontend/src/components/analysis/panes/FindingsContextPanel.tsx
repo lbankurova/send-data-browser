@@ -71,6 +71,8 @@ import { getRelevantTests } from "@/lib/organ-test-mapping";
 import type { RecoveryAssessment } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { GradeConfidencePane, GradeConfidenceBadge } from "./GradeConfidencePane";
+import { HcdEvidencePane, HcdChip } from "./HcdEvidencePane";
+import type { HcdEvidence } from "@/types/analysis-views";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
 
@@ -271,6 +273,95 @@ const DIMENSION_TOOLTIPS: Record<string, string> = {
 };
 
 // ─── Dimension Expanded Content Renderers ───────────────────
+
+/**
+ * F10: Locate the `hcd_evidence` record for the currently selected finding by
+ * scanning rule results for a catalog-matched row whose specimen/finding/sex
+ * matches. Catalog rules S08 attach hcd_evidence to `params.hcd_evidence`;
+ * this helper threads it into the HcdEvidencePane.
+ */
+function resolveHcdEvidenceForFinding(
+  ruleResults: Array<{ params?: unknown }>,
+  finding: UnifiedFinding,
+): HcdEvidence | null {
+  if (!ruleResults?.length) return null;
+  const specimen = (finding.specimen ?? "").toUpperCase();
+  const findingStr = (finding.finding ?? "").toUpperCase();
+  const sex = finding.sex ?? "";
+  for (const r of ruleResults) {
+    const params = (r.params ?? {}) as {
+      hcd_evidence?: HcdEvidence;
+      specimen?: string;
+      finding?: string;
+      sex?: string;
+    };
+    if (!params.hcd_evidence) continue;
+    if ((params.sex ?? "") !== sex) continue;
+    if ((params.specimen ?? "").toUpperCase() !== specimen) continue;
+    if ((params.finding ?? "").toUpperCase() !== findingStr) continue;
+    return params.hcd_evidence;
+  }
+  return null;
+}
+
+/** Returns true when a rule result has a catalog_id that matches the selected
+ *  finding's specimen/finding/sex identity. Used to decide whether the HCD
+ *  pane should render the explicit-miss state (AC-F10-3). */
+function catalogMatchedForFinding(
+  ruleResults: Array<{ params?: unknown }>,
+  finding: UnifiedFinding,
+): boolean {
+  if (!ruleResults?.length) return false;
+  const specimen = (finding.specimen ?? "").toUpperCase();
+  const findingStr = (finding.finding ?? "").toUpperCase();
+  const sex = finding.sex ?? "";
+  for (const r of ruleResults) {
+    const params = (r.params ?? {}) as {
+      catalog_id?: string;
+      specimen?: string;
+      finding?: string;
+      sex?: string;
+    };
+    if (!params.catalog_id) continue;
+    if ((params.sex ?? "") !== sex) continue;
+    if ((params.specimen ?? "").toUpperCase() !== specimen) continue;
+    if ((params.finding ?? "").toUpperCase() !== findingStr) continue;
+    return true;
+  }
+  return false;
+}
+
+/** Client-side empty hcd_evidence record (mirror of backend empty_hcd_evidence()).
+ *  Used only for the explicit-miss state when catalog-matched but no HCD record
+ *  could be located. AC-F10-3. */
+function emptyHcdEvidenceClient(): HcdEvidence {
+  return {
+    background_rate: null,
+    background_n_animals: null,
+    background_n_studies: null,
+    source: null,
+    year_range: null,
+    match_tier: null,
+    match_confidence: null,
+    percentile_of_observed: null,
+    fisher_p_vs_hcd: null,
+    drift_flag: null,
+    confidence_contribution: 0,
+    contribution_components: {
+      gt_95th_percentile: 0,
+      gt_99th_percentile: 0,
+      below_5th_down_direction: 0,
+      ultra_rare_any_occurrence: 0,
+      tier_cap_applied: false,
+      hcd_discordant_protective: 0,
+    },
+    alpha_applies: false,
+    reason: null,
+    alpha_scaled_threshold: null,
+    noael_floor_applied: false,
+    cell_n_below_reliability_threshold: false,
+  };
+}
 
 function doseLabel(level: number, doseGroups?: DoseGroup[]): string {
   const dg = doseGroups?.find((g) => g.dose_level === level);
@@ -2492,6 +2583,33 @@ export function FindingsContextPanel() {
               <GradeConfidencePane confidence={selectedFinding._confidence} />
             </CollapsiblePane>
           )}
+
+          {/* F10: HCD evidence — attached to MI/MA catalog-matched rule results.
+              AC-F10-3: when catalog-matched but no record located, render the
+              explicit-miss state (not silently suppress the pane). */}
+          {(() => {
+            if (!selectedFinding) return null;
+            const domain = selectedFinding.domain;
+            if (domain !== "MI" && domain !== "MA") return null;
+            // Show HCD pane when the finding has catalog metadata anywhere in
+            // rule_results OR when hcd_evidence can be resolved directly.
+            const hcdEvidence = resolveHcdEvidenceForFinding(ruleResults, selectedFinding);
+            const hasCatalogMatch = catalogMatchedForFinding(ruleResults, selectedFinding);
+            if (!hcdEvidence && !hasCatalogMatch) return null;
+            const effectiveEvidence = hcdEvidence ?? emptyHcdEvidenceClient();
+            return (
+              <CollapsiblePane
+                title="Historical control (HCD)"
+                defaultOpen={false}
+                sessionKey="pcc.ep.hcd-evidence"
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+                badge={<HcdChip evidence={effectiveEvidence} />}
+              >
+                <HcdEvidencePane evidence={effectiveEvidence} />
+              </CollapsiblePane>
+            );
+          })()}
 
 
         </>

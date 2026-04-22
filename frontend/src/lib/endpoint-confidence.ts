@@ -126,6 +126,36 @@ export interface WeightedNOAELResult {
   rationale: string[];
 }
 
+// ─── NOAEL floor — defensive display-layer invariant (F3, hcd-mi-ma-s08-wiring) ──
+//
+// This field is a display-layer invariant. The active NOAEL gate in
+// `view_dataframes.py:_is_loael_driving` uses `finding_class === 'tr_adverse'`
+// exclusively. The lint rule at scripts/lint-noael-floor-coread.sh prevents
+// future consumers of clinical_confidence/hcd_evidence in NOAEL-gate code
+// from omitting co-consultation of this field.
+//
+// @invariant noael-floor-coread-required
+// See docs/_internal/architecture/s08-hcd-wiring.md for the convention.
+
+export interface HcdEvidenceLite {
+  // Narrow type -- UI does not need the full record to render the floor chip.
+  noael_floor_applied?: boolean;
+}
+
+/**
+ * Read `noael_floor_applied` from a rule-result's params.hcd_evidence. UI
+ * consumers (context pane, NOAEL narrative) use this to surface the floor
+ * state without re-deriving clinical-class membership.
+ */
+export function extractNoaelFloorApplied(
+  params: { hcd_evidence?: HcdEvidenceLite | null } | null | undefined,
+): boolean {
+  if (!params) return false;
+  const hcd = params.hcd_evidence;
+  if (!hcd) return false;
+  return Boolean(hcd.noael_floor_applied);
+}
+
 // ─── Constants ───────────────────────────────────────────────
 
 const THRESHOLD_PATTERNS = new Set([

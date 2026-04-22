@@ -58,12 +58,48 @@ CREATE TABLE IF NOT EXISTS hcd_mi_incidence (
     duration_category TEXT,
     source TEXT NOT NULL,
     confidence TEXT NOT NULL DEFAULT 'MODERATE',
-    notes TEXT
+    notes TEXT,
+    -- Phase-1 additive columns (hcd-mi-ma-s08-wiring F1, 2026-04-21). All nullable.
+    year_min INTEGER,
+    year_max INTEGER,
+    severity_scale_version TEXT,
+    terminology_version TEXT,
+    severity_distribution TEXT  -- JSON
 );
 
 CREATE INDEX IF NOT EXISTS idx_mi_incidence_lookup
     ON hcd_mi_incidence(species, strain, sex, organ, finding);
 """
+
+# Phase-1 additive columns required on existing DBs. Order-stable for AC-F1-4
+# (reversible: drop these columns and the 84-row seed restores byte-equal).
+_PHASE1_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("year_min", "INTEGER"),
+    ("year_max", "INTEGER"),
+    ("severity_scale_version", "TEXT"),
+    ("terminology_version", "TEXT"),
+    ("severity_distribution", "TEXT"),
+)
+
+
+def ensure_phase1_schema(conn: sqlite3.Connection) -> None:
+    """Idempotently add Phase-1 additive columns to hcd_mi_incidence.
+
+    Safe to call repeatedly. No-op when columns already exist. Used by the
+    build step AND by consumers that open an older hcd.db in-place so the
+    migration is applied opportunistically.
+    """
+    try:
+        existing = {r[1] for r in conn.execute("PRAGMA table_info(hcd_mi_incidence)")}
+    except sqlite3.OperationalError:
+        # Table doesn't exist yet -- CREATE TABLE will include the columns.
+        return
+    if not existing:
+        return
+    for col, dtype in _PHASE1_COLUMNS:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE hcd_mi_incidence ADD COLUMN {col} {dtype}")
+    conn.commit()
 
 # ---------------------------------------------------------------------------
 # Seed data: Charles River Crl:CD(SD) published HCD

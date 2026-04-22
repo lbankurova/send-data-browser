@@ -1,0 +1,126 @@
+topic: hcd-mi-ma-s08-wiring
+started: 2026-04-20T20:00:00Z
+phase: build-in-progress
+current_step: build.3
+revision: 16
+completed:
+  research.1.landscape:
+    completed: 2026-04-20T20:15:00Z
+  research.1.deep_dives:
+    completed: 2026-04-20T21:30:00Z
+    branches_deep_dived: [B10, B6, B1, B4, B2, B3]
+  research.2.r1_review:
+    completed: 2026-04-20T22:00:00Z
+    findings: 14
+    flawed: 2
+    conditional: 9
+    sound: 3
+    verdict: CONDITIONAL
+  research.3.incorporation:
+    completed: 2026-04-20T22:15:00Z
+  research.4.r2_review:
+    completed: 2026-04-20T22:40:00Z
+    new_findings: 8
+    flawed: 2
+    conditional: 5
+    sound: 1
+    verdict: CONDITIONAL
+  research.5.evaluate:
+    completed: 2026-04-20T22:45:00Z
+  research.6.distill_audit:
+    completed: 2026-04-20T23:10:00Z
+    blocking_contradictions: 0
+    advisory_items: 3  # one fixed inline (C14/C15 tier), two non-blocking
+  research.7.probe:
+    completed: 2026-04-20T23:12:00Z
+    breaks: 0
+    science_flag: 2
+    propagates: 8
+    stale: 2
+    safe: 13
+  research.7.science_flag_resolution:
+    completed: 2026-04-21T09:00:00Z
+    resolutions:
+      SF-1:
+        status: resolved
+        decision: "Phase-1/Phase-2 feature-flag split. Phase-1 ships alpha machinery feature-flagged OFF; Phase-2 activation per-study gated by regression + DATA-GAP-MIMA-16 corpus coverage + 'alpha-cell active' UI indicator"
+      SF-2:
+        status: resolved
+        decision: "Atomic landing. Schema field noael_floor_applied MUST ship with S16 enforcement in same PR. Static-analysis gate on blueprint blocks any reader outside confidence.py / endpoint-confidence.ts before atomic landing."
+    stale_resolutions:
+      S06_precedence: "S06 x alpha-cell documented as orthogonal mechanisms. S06 produces finding_class (before S08); alpha gates catalog-tier elevation inside S08. Fallback when tr_adverse + alpha-suppression: NOAEL floor rule makes catalog tier authoritative."
+  research.7b.gap_persistence:
+    completed: 2026-04-21T09:05:00Z
+    registry_entries: 22   # RG-MIMA-1 through RG-MIMA-22
+    todo_entries: 17       # DATA-GAP-MIMA-01 through -16 + PROCESS-GAP-MIMA-1
+    design_gap: 1          # DESIGN-GAP-MIMA-12 (B10 keystone decision) — resolved
+  research.completed:
+    completed: 2026-04-21T09:05:00Z
+checkpoints:
+  research.completed:
+    completed: 2026-04-21T09:05:00Z
+    key_decisions:
+      - "B10 keystone: gamma-primary + gamma HCD-discordant tag + beta-adjunct display + rule-typed alpha (narrow, non-Sentinel + high-bg + adaptive only) + NOAEL floor rule"
+      - "Phase-1 (0-12mo): gamma-universal. Alpha-cell machinery flag-gated OFF."
+      - "Phase-2 (flag-activation per-study): regression + corpus coverage >=5 studies each C14/C15 + HCD>=25% + UI indicator"
+      - "S16 NOAEL floor rule enforcement MUST ship atomically with hcd_evidence schema (no feature flag on schema)"
+      - "S06 x alpha orthogonal mechanisms; NOAEL floor handles tr_adverse + alpha-suppression edge case"
+      - "B1 primary data source: NTP DTT IAD Histopathology (public domain, near-term)"
+      - "B4 non-rodent near-term: Chamanza 2010 + Chandra 2010 extraction"
+      - "B6 Phase-1: narrow ~45-row crosswalk; Phase-2: full INHAND harmonization"
+      - "Consortium-dependent (18-36mo): minipig, rabbit, MA, non-rodent grade distributions"
+    next_needs: "Blueprint-cycle / lattice:blueprint-cycle hcd-mi-ma-s08-wiring"
+  blueprint.0:
+    completed: 2026-04-21T10:00:00Z
+    summary: "Implementation context loaded. Surfaces: clinical_catalog.py (335 LOC), hcd_database.py:744 query_mi_incidence (0 callers), confidence.py:997 compute_confidence, endpoint-confidence.ts (1090 LOC). C14/C15 are ModerateConcern with min_n_affected=3. Precedents: tumor-evaluation Haseman, cynomolgus-OM origin stratification, hcd-informed-z-scoring Bayesian. 0 FAILED relevant."
+  blueprint.1:
+    completed: 2026-04-21T10:15:00Z
+    synthesis_path: "docs/_internal/incoming/hcd-mi-ma-s08-wiring-synthesis.md"
+    features: 11
+    sections_verified: ["Build Plan", "Reuse Inventory", "Simplicity Rationale", "Test Strategy", "Research Gaps", "Data Gaps"]
+    probe_sf_addressed: "SF-1 (alpha feature-flagged OFF via F5) + SF-2 (NOAEL floor atomic F3)"
+    phase2_explicitly_deferred: true
+  blueprint.2:
+    completed: 2026-04-21T10:50:00Z
+    architect_r1_verdict: "SCIENCE-FLAG with conditional PASS (1 SF + 4 SIMPLIFY + 1 reuse clarification + 1 advisory SF)"
+    sf1_resolution: "(A) with active consumption-site lint guard (scripts/lint-noael-floor-coread.sh, AST-based, narrow to view_dataframes.py NOAEL gates). AC-F3-2 is a meta-test fixture."
+    sf2_resolution: "auto-applied (AC-F2-6 Low->Medium, AC-F2-7 tier-cap interaction)"
+    simplify_applied: ["alpha_eligible collapsed into clinical-catalog-rules.json", "fisher_test_type dropped from hcd_evidence", "AC-F2-1 byte-equal narrowed", "AC-F3-3 AST-based lint (not grep-global)", "normalize_organ reuse corrected to send_knowledge (v1 proposed hcd.py._normalize_organ promotion; re-gate pointed out send_knowledge.normalize_organ already public+more capable)"]
+    architect_regate_verdict: "CONDITIONAL PASS with SIMPLIFY 5 INCOMPLETE -> corrected in-place; no third re-gate needed"
+    framework_followup_persisted: "PROCESS-GAP-LATTICE-01 in TODO.md (mechanical @invariant check at blueprint-cycle Step 2)"
+  blueprint.3:
+    completed: 2026-04-21T11:10:00Z
+    probe_path: "docs/_internal/research/peer-reviews/hcd-mi-ma-s08-wiring-build-plan-probe.md"
+    verdict_counts: {breaks: 1, science_flag: 0, propagates: 7, stale: 2, safe: 13}
+    invariants: "X1-X10 all PASS (X4 now unconditional vs prior probe)"
+    breaks_resolution: "Option 4 merit-driven: adopt SMT alpha_applies/reason names, drop rule_modulation_design as derivable/decorative, keep alpha_scaled_threshold numeric value, keep alpha_eligible in catalog rules JSON (different namespace)"
+    minor_notes_resolved: [".pre-commit-config.yaml reference changed to .git/hooks/pre-commit", "$schema dangling pointer in clinical-catalog-rules.json noted as pre-existing, non-blocking"]
+  blueprint.4_5:
+    completed: 2026-04-21T11:45:00Z
+    r1_review_path: "docs/_internal/research/peer-reviews/hcd-mi-ma-s08-wiring-synthesis-review.md"
+    findings: {flawed: 1, conditional: 8, sound: 1}
+    verdict: "CONDITIONAL"
+    dimensions_covered: 12
+    all_actionable_incorporated: true
+    f1_schema_invariants_pinned: 4
+    f4_decorative_fields_dropped: ["vendor_colony", "route", "vehicle", "diet", "age_at_necropsy_days_median", "structured_variance_warning"]
+    f7_blocker_reclassified: "DATA-GAP-MIMA-17 promoted from persisted to F7 merge blocker (SHA256 manifest + pinned release required)"
+    f9_rule_table_restructured: "added subchronic bg tier + chronic caveat; RG-MIMA-9 flagged as Phase-2 alpha activation blocker for chronic regime"
+    synthesis_doc_lines: 523
+  blueprint.6:
+    completed: 2026-04-21T12:30:00Z
+    r2_review_path: "docs/_internal/research/peer-reviews/hcd-mi-ma-s08-wiring-synthesis-review-r2.md"
+    r1_adjudication: {resolved: 5, partially_resolved: 3, resolved_as_noted: 2, unresolved: 0}
+    r2_new_findings: {flawed: 2, conditional: 5, sound: 0}
+    stop_triggers: {new_flawed_on_prev_sound: false, same_flawed_both_rounds: false}
+    verdict: "CONDITIONAL — all 7 new findings incorporated inline; no STOP trigger (new FLAWED were defects in R1 incorporation, not persistent issues)"
+    dimensions_covered: 10
+    synthesis_doc_lines: 571
+    all_r1_partially_resolved_now_resolved: true
+    build_plan_validated: true
+  blueprint.7:
+    completed: 2026-04-21T12:45:00Z
+    registry_entries_new: ["RG-MIMA-23 (B9 A-3 extension)", "RG-MIMA-24 (alpha-cell Phase-2 operational)", "RG-MIMA-25 (crosswalk validation corpus)"]
+    todo_entries_new: ["DATA-GAP-MIMA-17 (NTP IAD provenance — BLOCKS F7)", "DATA-GAP-MIMA-18 (Chamanza/Chandra sign-off — BLOCKS F8)", "DATA-GAP-MIMA-19 (crosswalk sign-off — BLOCKS F6)"]
+    registry_updated: "hcd-mi-ma-s08-wiring stream status updated to blueprint-complete with artifact paths"
+    phase_next: "build-cycle"
