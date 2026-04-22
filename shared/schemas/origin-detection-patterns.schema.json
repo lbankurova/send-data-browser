@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sendex/shared/schemas/origin-detection-patterns.schema.json",
+  "title": "NHP Origin Detection Patterns",
+  "description": "Sponsor-extensible regex + country-token registry for F11 NHP origin discovery (species-magnitude-thresholds-dog-nhp).",
+  "type": "object",
+  "required": [
+    "_schema_version",
+    "tsparmcd_regex",
+    "suppdm_qnam_regex",
+    "tsval_country_tokens",
+    "country_canonical"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "_schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "_comment": { "type": "string" },
+    "tsparmcd_regex": { "$ref": "#/$defs/regex_block" },
+    "suppdm_qnam_regex": { "$ref": "#/$defs/regex_block" },
+    "tsval_country_tokens": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^[A-Z][A-Z\\-]+$" }
+    },
+    "country_canonical": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Token-to-canonical-country mapping. Both keys and values must be UPPER-case. Used to normalise captured origin_value so match logic is country-level, not token-level."
+    },
+    "_hcd_reference_origin": {
+      "type": "string",
+      "description": "Canonical country name of the HCD reference colony; origin_match is resolved against this."
+    }
+  },
+  "$defs": {
+    "regex_block": {
+      "type": "object",
+      "required": ["pattern"],
+      "properties": {
+        "pattern": { "type": "string" },
+        "flags": { "type": "string" },
+        "_note": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -163,7 +163,7 @@ def _tree_liver(finding: dict, index, species: str | None) -> TreeResult | None:
 
     path.append("N1:no_adverse_indicators")
 
-    # N2: LB panel check from organ-weight-thresholds.json
+    # N2: LB panel check from field-consensus-thresholds.json (FCT registry, migrated from organ-weight-thresholds.json)
     threshold = get_organ_threshold("LIVER", species)
     if not threshold or "adaptive_requires" not in threshold:
         path.append("N2:no_panel_config")

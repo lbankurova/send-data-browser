@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sendex/shared/schemas/field-consensus-thresholds.schema.json",
+  "title": "Field-Consensus Threshold (FCT) Registry",
+  "description": "Per-(domain, endpoint, species, direction, sex) native-scale severity bands with provenance, coverage, and source references. Replaces scattered hardcoded severity literals; authoritative source for classify_severity, confidence (D6/D4), and rule emission (R10/R11). Migrated in-place from shared/organ-weight-thresholds.json (M1).",
+  "type": "object",
+  "required": ["_schema_version", "entries"],
+  "additionalProperties": true,
+  "properties": {
+    "_schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "_schema": {
+      "type": "object",
+      "description": "Key-by-key docstring for human review. Mirrors organ-weight-thresholds._schema idiom."
+    },
+    "_comment": { "type": "string" },
+    "entries": {
+      "type": "object",
+      "description": "Keyed by '<DOMAIN>.<endpoint_or_test_code>.<direction>' where direction ∈ {up, down, both}.",
+      "patternProperties": {
+        "^[A-Z]{2,4}\\.[A-Z0-9_]+\\.(up|down|both)$": { "$ref": "#/$defs/entry" }
+      },
+      "additionalProperties": false
+    },
+    "joint_rules": {
+      "type": "object",
+      "description": "Multi-endpoint rule bundles (e.g., Hy's Law, CRS Grade-2). Each rule references live syndrome-engine rule IDs for bidirectional integrity.",
+      "additionalProperties": { "$ref": "#/$defs/joint_rule" }
+    }
+  },
+  "$defs": {
+    "species": {
+      "type": "string",
+      "enum": ["rat", "mouse", "dog", "nhp", "rabbit", "minipig", "guineapig", "other"]
+    },
+    "coverage": {
+      "type": "string",
+      "enum": [
+        "full",
+        "partial",
+        "none",
+        "catalog_driven",
+        "n-sufficient",
+        "n-marginal",
+        "n-insufficient"
+      ],
+      "description": "full = all in-scope species have bands; partial = some bands missing; none = no numeric bands (classifier emits provisional); catalog_driven = incidence catalog-sentinel; n-* = P4 small-N qualifier inheritance."
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "regulatory",
+        "best_practice",
+        "industry_survey",
+        "bv_derived",
+        "extrapolated",
+        "stopping_criterion_used_as_proxy",
+        "catalog_rule"
+      ],
+      "description": "Hierarchy (most- to least-authoritative): regulatory > best_practice > industry_survey > bv_derived > extrapolated > stopping_criterion_used_as_proxy. catalog_rule is incidence-specific (AC-F2-7)."
+    },
+    "threshold_reliability": {
+      "type": "string",
+      "enum": ["high", "moderate", "low", "speculative"]
+    },
+    "units": {
+      "type": "string",
+      "enum": ["pct_change", "fold", "absolute", "sd"]
+    },
+    "source_ref": {
+      "type": "object",
+      "required": ["type", "citation"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "regulatory",
+            "published",
+            "industry_survey",
+            "expert_consensus",
+            "internal_derivation",
+            "cv_anchor"
+          ]
+        },
+        "citation": { "type": "string" },
+        "url": { "type": "string" },
+        "doi": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "species_bands": {
+      "type": "object",
+      "required": ["units"],
+      "properties": {
+        "variation_ceiling": { "type": ["number", "null"] },
+        "concern_floor": { "type": ["number", "null"] },
+        "adverse_floor": { "type": ["number", "null"] },
+        "strong_adverse_floor": { "type": ["number", "null"] },
+        "units": { "$ref": "#/$defs/units" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "notes": { "type": "string" },
+        "any_significant": {
+          "type": "boolean",
+          "description": "When true, any statistically significant change is treated as meaningful (rodent brain/testes pattern)."
+        },
+        "cv_reference": {
+          "type": "object",
+          "description": "Documentation-only: published CVs justifying the threshold choices. Not consumed by severity classifier."
+        }
+      },
+      "additionalProperties": true
+    },
+    "entry": {
+      "type": "object",
+      "required": ["species_specific", "bands", "coverage", "provenance"],
+      "properties": {
+        "species_specific": { "type": "boolean" },
+        "sex_specific": { "type": "boolean" },
+        "bands": {
+          "type": "object",
+          "description": "When species_specific=false, use key 'any'; otherwise key by species enum.",
+          "additionalProperties": { "$ref": "#/$defs/species_bands" }
+        },
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "provenance": {
+          "$ref": "#/$defs/provenance",
+          "description": "Entry-level provenance represents the LOWEST (most-extrapolated) species-band provenance — honest-uncertainty default. Per-band provenance, when present, overrides for species resolution."
+        },
+        "threshold_reliability": { "$ref": "#/$defs/threshold_reliability" },
+        "source_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/source_ref" }
+        },
+        "notes": { "type": "string" },
+        "nhp_tier": {
+          "type": "string",
+          "enum": ["A_quantitative", "B_semiquantitative", "C_qualitative"],
+          "description": "NHP-specific tier: C_qualitative means no numeric bands for NHP (spleen, thymus, lungs, pancreas per Amato 2022)."
+        },
+        "adaptive_requires": {
+          "type": "object",
+          "description": "Optional block: conditions required to claim 'adaptive' for this endpoint (preserved from organ-weight-thresholds)."
+        },
+        "adaptive_ceiling_pct": {
+          "type": "object",
+          "description": "Optional per-species adaptive-band ceiling (preserved from organ-weight-thresholds)."
+        },
+        "special_flags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Endpoint-specific caveats the engine should annotate (e.g., alpha2u_globulin_male_rat)."
+        },
+        "cross_organ_link": { "type": "string" },
+        "dog_adaptive_notes": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "joint_rule": {
+      "type": "object",
+      "required": ["conditions", "combinator", "verdict", "syndrome_rule_ref", "provenance"],
+      "properties": {
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["endpoint", "threshold"],
+            "properties": {
+              "endpoint": { "type": "string" },
+              "direction": { "type": "string", "enum": ["up", "down", "both"] },
+              "threshold": {
+                "description": "Either a numeric threshold with units, or a reference to a band level in an FCT entry.",
+                "oneOf": [
+                  { "type": "number" },
+                  { "type": "string" }
+                ]
+              },
+              "units": { "$ref": "#/$defs/units" }
+            }
+          }
+        },
+        "combinator": { "type": "string", "enum": ["AND", "OR"] },
+        "verdict": { "type": "string" },
+        "syndrome_rule_ref": {
+          "type": "string",
+          "description": "Must resolve against live syndrome-engine rule IDs at load time (bidirectional integrity per AC-F2-1)."
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "source_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/source_ref" }
+        },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

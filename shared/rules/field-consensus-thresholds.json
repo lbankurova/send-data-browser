@@ -1,0 +1,353 @@
+{
+  "$schema": "../schemas/field-consensus-thresholds.schema.json",
+  "_schema_version": "1.0.0",
+  "_comment": "Field-Consensus Threshold (FCT) registry. Migrated in-place from shared/organ-weight-thresholds.json (species-magnitude-thresholds-dog-nhp Phase A, M1: no legacy versioning). OM content is byte-equivalent to the pre-migration JSON. Severity classification reads this registry as single source of truth for per-(domain, endpoint, species, direction, sex) native-scale bands. Phase B (upcoming) migrates LB/BW/classify_severity call sites.",
+  "_schema": {
+    "_schema_version": "Semver of this registry schema.",
+    "entries": "Keyed by '<DOMAIN>.<endpoint_or_test_code>.<direction>'. DOMAIN is the SEND 2-char code (OM, LB, BW, VS, CV, MI, etc.). direction ∈ {up, down, both} — 'both' when severity depends on magnitude of change irrespective of sign (e.g., OM liver hypertrophy OR atrophy can be adverse).",
+    "entries.<key>.species_specific": "True when thresholds vary by species. When false, use bands['any'].",
+    "entries.<key>.bands": "Per-species (or 'any' when not species_specific) band thresholds. variation_ceiling = noise ceiling (below = trivial), concern_floor = mild-effect floor (optional; null for OM — migrated 3-tier data has no concern tier), adverse_floor = biologically meaningful floor, strong_adverse_floor = clearly adverse regardless of context.",
+    "entries.<key>.bands.<species>.any_significant": "When true, any statistically significant change is treated as adverse regardless of magnitude (rodent brain/testes pattern). Numeric bands may still be present as documentation.",
+    "entries.<key>.coverage": "full = all in-scope species have non-null bands; partial = some species missing/null; none = no numeric bands (classifier emits 'provisional' verdict).",
+    "entries.<key>.provenance": "Entry-level provenance is the LOWEST (most-extrapolated) species-band provenance — honest-uncertainty default. Individual band provenance, when present, overrides for species-resolved lookup.",
+    "entries.<key>.threshold_reliability": "Summary tier: high = published regulatory + industry validation; moderate = industry survey or single-source regulatory; low = extrapolated across species; speculative = proxy / stopping criterion.",
+    "joint_rules": "Multi-endpoint bundles (e.g., Hy's Law L01, CRS Grade-2). Each carries provenance and a syndrome_rule_ref that must resolve against the live syndrome engine at load time (bidirectional integrity — AC-F2-1).",
+    "cv_reference": "Documentation only — published CVs justifying the threshold choices. Not consumed by the severity classifier."
+  },
+
+  "entries": {
+    "OM.LIVER.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
+        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 25, "concern_floor": null, "adverse_floor": 30, "strong_adverse_floor": 50, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "regulatory",       "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)" },
+        { "type": "published",        "citation": "Hall AJ et al. 2012. Liver hypertrophy: a review of adaptive (adverse and non-adverse) changes — conclusions from the 3rd International ESTP Expert Workshop. Toxicol Pathol 40(7):971-994." },
+        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle dog historical control organ-weight CV data." }
+      ],
+      "notes": "Liver is the most-studied organ for adaptive vs adverse distinction. Hall 2012 defined the LB panel gate. Dog thresholds wider due to higher CVs (Choi 2011: M=15%, F=21%).",
+      "dog_adaptive_notes": "ALP elevation without bilirubin elevation should not preclude adaptive classification in dogs (C-ALP confound). ALT is the primary liver injury discriminator.",
+      "adaptive_ceiling_pct": { "dog": 25 },
+      "adaptive_requires": {
+        "lb_panel": ["ALT", "AST", "ALP", "GGT", "BILI", "CHOL", "BILEAC", "TP", "ALB"],
+        "min_clean": 5,
+        "critical_clean": ["ALT", "AST"],
+        "max_fold_for_clean": 5.0,
+        "max_severity_for_adaptive": 2
+      },
+      "cv_reference": {
+        "rat_m": 8, "rat_f": 10,
+        "beagle_m": 15, "beagle_f": 21
+      }
+    },
+
+    "OM.KIDNEY.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
+        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 22, "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "regulatory",       "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)" },
+        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle CV data." }
+      ],
+      "notes": "Kidney weight changes >=10% are concerning. Male rat a2u-globulin nephropathy is not human-relevant. Dog uses single wider female-driven threshold (Choi 2011: M CV=12%, F CV=18%); 15% ceiling is conservative for males but defensible.",
+      "special_flags": ["alpha2u_globulin_male_rat", "CPN_F344_rat"],
+      "cv_reference": {
+        "rat_m": 8, "rat_f": 9,
+        "beagle_m": 12, "beagle_f": 18
+      }
+    },
+
+    "OM.HEART.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 12, "concern_floor": null, "adverse_floor": 12, "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle heart CV data (M=10%, F=13%)." }
+      ],
+      "notes": "Heart has low normal variation (CV ~5-8% rodent). Dog heart CV is higher (Choi 2011: M=10%, F=13%).",
+      "cv_reference": {
+        "rat_m": 6, "rat_f": 7,
+        "beagle_m": 10, "beagle_f": 13
+      }
+    },
+
+    "OM.BRAIN.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true },
+        "mouse": { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true },
+        "dog":   { "variation_ceiling": 5, "concern_floor": null, "adverse_floor": 5, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 15,"concern_floor": null, "adverse_floor": 15,"strong_adverse_floor": 25, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog brain CV ~5%." }
+      ],
+      "notes": "Brain weight is tightly regulated. Rat/mouse: any statistically significant change is biologically meaningful (any_significant policy). Dog brain CV ~5% (Choi 2011), so dog uses 5% floor instead of any_significant.",
+      "cv_reference": {
+        "rat_m": 3, "rat_f": 3,
+        "beagle_m": 5, "beagle_f": 5
+      }
+    },
+
+    "OM.ADRENAL.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog adrenal CV ~20%." }
+      ],
+      "notes": "Adrenal weight is highly variable, especially in mice and dogs. Species-specific thresholds prevent false positives. Dog adrenal CV ~20% (Choi 2011).",
+      "cross_organ_link": "stress_axis",
+      "cv_reference": {
+        "rat_m": 10, "rat_f": 12,
+        "beagle_m": 18, "beagle_f": 22
+      }
+    },
+
+    "OM.THYROID.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "full",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "published",       "citation": "Capen CC 1997. Mechanistic data and risk assessment of selected toxic endpoints of the thyroid gland. Toxicol Pathol 25(1):39-48." },
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog thyroid CV ~15%." }
+      ],
+      "notes": "Thyroid weight changes often secondary to liver enzyme induction (liver-thyroid axis). Capen 1997. Dog thyroid CV ~15% (Choi 2011).",
+      "cross_organ_link": "liver_thyroid_axis",
+      "cv_reference": {
+        "rat_m": 10, "rat_f": 12,
+        "beagle_m": 15, "beagle_f": 16
+      }
+    },
+
+    "OM.SPLEEN.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "nhp_tier": "C_qualitative",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog spleen CV ~20%." },
+        { "type": "published",       "citation": "Amato DV et al. 2022. Historical control data for nonhuman primate organ weights — spleen Tier C qualitative." }
+      ],
+      "notes": "Spleen weight is naturally variable. Large changes may indicate immune response or stress. Dog spleen CV ~20% (Choi 2011). NHP: Amato 2022 Tier C qualitative — no numeric FCT, classifier emits provisional verdict.",
+      "cv_reference": {
+        "rat_m": 15, "rat_f": 15,
+        "beagle_m": 18, "beagle_f": 22
+      }
+    },
+
+    "OM.THYMUS.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "nhp_tier": "C_qualitative",
+      "cross_organ_link": "stress_axis",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog thymus CV ~25%." },
+        { "type": "published",       "citation": "Amato DV et al. 2022. NHP thymus Tier C qualitative." }
+      ],
+      "notes": "Thymus weight is age-sensitive and stress-responsive. Involution is normal in older animals. Dog thymus CV ~25% (Choi 2011). NHP: qualitative only.",
+      "cv_reference": {
+        "rat_m": 18, "rat_f": 18,
+        "beagle_m": 22, "beagle_f": 28
+      }
+    },
+
+    "OM.TESTES.both": {
+      "species_specific": true,
+      "sex_specific": true,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "industry_survey",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog testes CV ~15%." }
+      ],
+      "notes": "Testes weight is tightly regulated in rodents. Dog testes CV ~15% (Choi 2011). Changes >=15% are concerning for reproductive toxicity. NHP entry absent pending species calibration (GAP-SMT-07).",
+      "cv_reference": {
+        "rat_m": 7,
+        "beagle_m": 15
+      }
+    },
+
+    "OM.EPIDIDYMIDES.both": {
+      "species_specific": true,
+      "sex_specific": true,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "industry_survey",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog epididymis CV ~12%." }
+      ],
+      "notes": "Epididymal weight changes often parallel testicular effects. Dog epididymis CV ~12% (Choi 2011).",
+      "cv_reference": {
+        "rat_m": 6,
+        "beagle_m": 12
+      }
+    },
+
+    "OM.OVARIES.both": {
+      "species_specific": false,
+      "sex_specific": true,
+      "bands": {
+        "any": { "variation_ceiling": 10, "concern_floor": null, "adverse_floor": 20, "strong_adverse_floor": 35, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "industry_survey",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Historical ovarian weight CV surveys (estrous cycle stage variability)." }
+      ],
+      "notes": "Ovarian weight is highly variable due to estrous cycle stage. Higher thresholds prevent false positives. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
+    },
+
+    "OM.UTERUS.both": {
+      "species_specific": false,
+      "sex_specific": true,
+      "bands": {
+        "any": { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "industry_survey",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        { "type": "industry_survey", "citation": "Historical uterine weight CV surveys (most variable organ weight)." }
+      ],
+      "notes": "Uterine weight is the most variable organ weight due to estrous cycle. Very high thresholds required. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
+    },
+
+    "OM.LUNGS.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
+        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
+        "dog":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
+        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "nhp_tier": "C_qualitative",
+      "source_refs": [
+        { "type": "published", "citation": "Amato DV et al. 2022. NHP lungs Tier C qualitative (perfusion/inflation variability)." }
+      ],
+      "notes": "Lung weight changes may indicate edema, inflammation, or fibrosis. Residual blood can confound. NHP: perfusion/inflation variability makes quantitative screening unreliable."
+    },
+
+    "OM.PANCREAS.both": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
+        "other": { "variation_ceiling": 10,  "concern_floor": null,"adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "low",
+      "nhp_tier": "C_qualitative",
+      "source_refs": [
+        { "type": "published", "citation": "Amato DV et al. 2022. NHP pancreas Tier C qualitative (colony CV ~27-30%)." }
+      ],
+      "notes": "High variability organ (colony CV ~27-30% for NHP). Not always weighed in NHP tox studies. NHP: qualitative only."
+    }
+  },
+
+  "joint_rules": {
+    "hys_law": {
+      "_comment": "Hy's Law: concurrent ALT + TBILI elevation is a strong signal of DILI. Maps to the L03 rule in shared/rules/lab-clinical-rules.json; the FCT registry carries the regulatory provenance + source refs, the LB rule engine evaluates the per-animal condition.",
+      "conditions": [
+        { "endpoint": "ALT",   "direction": "up", "threshold": "adverse_floor", "units": "fold" },
+        { "endpoint": "TBILI", "direction": "up", "threshold": "adverse_floor", "units": "fold" }
+      ],
+      "combinator": "AND",
+      "verdict": "adverse",
+      "syndrome_rule_ref": "L03",
+      "provenance": "regulatory",
+      "source_refs": [
+        { "type": "regulatory", "citation": "FDA Guidance for Industry: Drug-Induced Liver Injury -- Premarketing Clinical Evaluation (2009)." },
+        { "type": "published",  "citation": "CIOMS Working Group. Drug-Induced Liver Injury (DILI) (2020)." }
+      ]
+    }
+  }
+}

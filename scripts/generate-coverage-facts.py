@@ -859,16 +859,26 @@ def build_coverage_manifest() -> dict:
         overrides = so_data.get("overrides", so_data)
         species_with_overrides = {k for k in overrides if not k.startswith("_") and overrides[k]}
 
-    # Organ weight thresholds
-    ot_file = SHARED / "organ-weight-thresholds.json"
+    # Organ weight thresholds -- migrated to FCT registry (species-magnitude-thresholds-dog-nhp Phase A).
+    # The FCT registry groups per-species bands under entries[*].bands[*].
+    ot_file = SHARED / "rules" / "field-consensus-thresholds.json"
     species_with_thresholds: set[str] = set()
     if ot_file.exists():
         ot_data = json.loads(ot_file.read_text(encoding="utf-8"))
-        for organ_key, organ_val in ot_data.items():
-            if isinstance(organ_val, dict):
-                for field_key, field_val in organ_val.items():
-                    if isinstance(field_val, dict):
-                        species_with_thresholds.update(field_val.keys())
+        for entry_key, entry in (ot_data.get("entries") or {}).items():
+            if not entry_key.startswith("OM."):
+                continue
+            bands = entry.get("bands") if isinstance(entry, dict) else None
+            if isinstance(bands, dict):
+                for species_key, band in bands.items():
+                    if species_key in {"any", "other"}:
+                        continue
+                    # Only count species whose band has at least one populated threshold.
+                    if isinstance(band, dict) and any(
+                        band.get(k) is not None
+                        for k in ("variation_ceiling", "concern_floor", "adverse_floor", "strong_adverse_floor")
+                    ):
+                        species_with_thresholds.add(species_key)
 
     # Validation studies by species
     val_dir = ROOT / "docs" / "validation" / "references"

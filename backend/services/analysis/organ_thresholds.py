@@ -1,11 +1,17 @@
-"""Organ-specific weight change thresholds — lazy-loaded from shared JSON.
+"""Organ-specific weight change thresholds — routed through the FCT registry.
 
-Provides per-organ percentage thresholds for the two-gate OM classification:
-- variation_ceiling_pct: below = trivially small (noise)
-- adverse_floor_pct: at or above = biologically meaningful
-- strong_adverse_pct: clearly adverse regardless of context
+Phase A of species-magnitude-thresholds-dog-nhp: `organ-weight-thresholds.json`
+is absorbed into `shared/rules/field-consensus-thresholds.json` (the FCT
+registry, strict superset) per M1 (no legacy versioning). This module preserves
+its public contract — `get_organ_threshold(specimen, species)` still returns
+the same dict shape so existing consumers (`_assess_om_two_gate`, adaptive
+trees, OM-MI corroboration, NOAEL engine) are unchanged.
 
-Species-specific values (e.g. adrenal) are resolved via _resolve_species_category().
+Internally, threshold resolution now routes through `fct_registry.get_fct(...)`;
+FCT becomes the single source of truth for OM severity bands. Provenance is
+mapped back onto the legacy `threshold_source` ∈ {regulatory, calibrated,
+derived} vocabulary for backward compatibility; the richer 7-value provenance
+tag is available via `get_organ_fct_bands()` for Phase B consumers.
 """
 
 from __future__ import annotations
@@ -14,18 +20,15 @@ import json
 import logging
 
 from config import SHARED_DIR
+from services.analysis import fct_registry
+from services.analysis.fct_registry import FctBands, resolve_species_category
 
 log = logging.getLogger(__name__)
-
-_JSON_PATH = SHARED_DIR / "organ-weight-thresholds.json"
-
-# Lazy-loaded singleton
-_DATA: dict | None = None
 
 # Default fallback when organ not in config
 _DEFAULT_ADVERSE_FLOOR = 15
 
-# Map SEND specimen names → JSON config keys.
+# Map SEND specimen names → FCT endpoint keys (OM domain).
 # SEND uses both "GLAND, ADRENAL" and "ADRENAL GLAND" formats depending on study.
 _SPECIMEN_TO_CONFIG_KEY: dict[str, str] = {
     # Adrenal
@@ -72,92 +75,96 @@ _SPECIMEN_TO_CONFIG_KEY: dict[str, str] = {
 }
 
 
-def _load() -> dict:
-    global _DATA
-    if _DATA is not None:
-        return _DATA
-    try:
-        with open(_JSON_PATH) as f:
-            _DATA = json.load(f)
-    except Exception as e:
-        log.warning("Failed to load organ-weight-thresholds from %s: %s", _JSON_PATH, e)
-        _DATA = {}
-    return _DATA
+# Provenance → legacy threshold_source vocabulary. Kept for backward-compat
+# with the `threshold_provisional = (source == "derived")` downstream check
+# in the OM classifier and the `confidence.py` D-factor cascade.
+_PROVENANCE_TO_LEGACY_SOURCE: dict[str, str] = {
+    "regulatory": "regulatory",
+    "best_practice": "calibrated",
+    "industry_survey": "calibrated",
+    "bv_derived": "calibrated",
+    "extrapolated": "derived",
+    "stopping_criterion_used_as_proxy": "derived",
+    "catalog_rule": "calibrated",
+}
 
 
-def _resolve_species_category(species: str | None) -> str:
-    """Map species string to category key used in species-specific threshold dicts."""
-    if not species:
-        return "rat"  # conservative default
-    s = species.strip().upper()
-    if "RAT" in s:
-        return "rat"
-    if "MOUSE" in s or "MICE" in s:
-        return "mouse"
-    if "DOG" in s or "BEAGLE" in s or "MONGREL" in s or "CANINE" in s:
-        return "dog"
-    if "MONKEY" in s or "MACAQUE" in s or "CYNOMOLGUS" in s or "NHP" in s:
-        return "nhp"
-    return "other"
+def _legacy_source(provenance: str) -> str:
+    return _PROVENANCE_TO_LEGACY_SOURCE.get(provenance, "calibrated")
 
 
-def _resolve_value(val, species: str | None) -> float | None:
-    """Resolve a threshold value that may be a plain number or species-specific dict."""
-    if val is None:
+def resolve_specimen_key(specimen: str | None) -> str | None:
+    """Map a SEND specimen name to its FCT endpoint key (OM domain), or None."""
+    if not specimen:
         return None
-    if isinstance(val, dict):
-        cat = _resolve_species_category(species)
-        resolved = val.get(cat, val.get("other"))
-        return float(resolved) if resolved is not None else None
-    return float(val)
+    return _SPECIMEN_TO_CONFIG_KEY.get(specimen.strip().upper())
+
+
+# Re-export for callers that historically reached into this module.
+_resolve_species_category = resolve_species_category
+
+
+def get_organ_fct_bands(specimen: str, species: str | None = None) -> FctBands | None:
+    """Return the raw FCT bands for an OM specimen — Phase B consumers that
+    need the full uncertainty-first payload (coverage, provenance, entry_ref)
+    should read this directly rather than `get_organ_threshold`.
+    """
+    config_key = resolve_specimen_key(specimen)
+    if not config_key:
+        return None
+    fct = fct_registry.get_fct("OM", config_key, species=species, direction="both")
+    if fct.entry_ref is None:
+        return None
+    return fct
 
 
 def get_organ_threshold(specimen: str, species: str | None = None) -> dict | None:
     """Return resolved organ threshold config, or None if organ not in config.
 
-    All numeric values are resolved (species-specific dicts → scalars).
-    Returns dict with keys: variation_ceiling_pct, adverse_floor_pct, strong_adverse_pct,
-    plus optional: adaptive_requires, special_flags, cross_organ_link.
+    Backward-compatible return shape: keys `variation_ceiling_pct`,
+    `adverse_floor_pct`, `strong_adverse_pct`, `config_key`,
+    `threshold_source` ∈ {regulatory, calibrated, derived},
+    `threshold_provisional`, plus optional `adaptive_requires`, `special_flags`,
+    `cross_organ_link`, `nhp_tier`, `adaptive_ceiling_pct`.
     """
-    data = _load()
-    if not specimen:
-        return None
-
-    config_key = _SPECIMEN_TO_CONFIG_KEY.get(specimen.strip().upper())
+    config_key = resolve_specimen_key(specimen)
     if not config_key:
         return None
 
-    organ_cfg = data.get(config_key)
-    if not organ_cfg:
+    fct = fct_registry.get_fct("OM", config_key, species=species, direction="both")
+    if fct.entry_ref is None:
+        # Entry not present in registry.
         return None
 
-    result = {
-        "variation_ceiling_pct": _resolve_value(organ_cfg.get("variation_ceiling_pct"), species),
-        "adverse_floor_pct": _resolve_value(organ_cfg.get("adverse_floor_pct"), species),
-        "strong_adverse_pct": _resolve_value(organ_cfg.get("strong_adverse_pct"), species),
+    raw = fct.raw_entry or {}
+    legacy_source = _legacy_source(fct.provenance)
+
+    result: dict = {
+        "variation_ceiling_pct": fct.variation_ceiling,
+        "adverse_floor_pct": fct.adverse_floor,
+        "strong_adverse_pct": fct.strong_adverse_floor,
         "config_key": config_key,
+        "threshold_source": legacy_source,
+        "threshold_provisional": legacy_source == "derived",
     }
 
-    # Threshold source metadata (F5: OM threshold calibration)
-    ts_raw = organ_cfg.get("threshold_source")
-    if isinstance(ts_raw, dict):
-        cat = _resolve_species_category(species)
-        result["threshold_source"] = ts_raw.get(cat, ts_raw.get("other", "calibrated"))
-    elif ts_raw:
-        result["threshold_source"] = ts_raw
-    else:
-        result["threshold_source"] = "calibrated"
-    result["threshold_provisional"] = result["threshold_source"] == "derived"
+    # Pass through optional entry-level blocks unchanged.
+    for key in ("adaptive_requires", "special_flags", "cross_organ_link", "nhp_tier"):
+        if key in raw:
+            result[key] = raw[key]
 
-    # Pass through optional blocks unchanged
-    if "adaptive_requires" in organ_cfg:
-        result["adaptive_requires"] = organ_cfg["adaptive_requires"]
-    if "special_flags" in organ_cfg:
-        result["special_flags"] = organ_cfg["special_flags"]
-    if "cross_organ_link" in organ_cfg:
-        result["cross_organ_link"] = organ_cfg["cross_organ_link"]
-    if "nhp_tier" in organ_cfg:
-        result["nhp_tier"] = organ_cfg["nhp_tier"]
+    # adaptive_ceiling_pct: resolve per-species (existing behavior).
+    adaptive_ceiling = raw.get("adaptive_ceiling_pct")
+    if isinstance(adaptive_ceiling, dict):
+        category = resolve_species_category(species)
+        resolved = adaptive_ceiling.get(category, adaptive_ceiling.get("other"))
+        if resolved is not None:
+            result["adaptive_ceiling_pct"] = float(resolved)
+    elif adaptive_ceiling is not None:
+        try:
+            result["adaptive_ceiling_pct"] = float(adaptive_ceiling)
+        except (TypeError, ValueError):
+            pass
 
     return result
 
@@ -194,7 +201,7 @@ def get_om_mi_discount(organ_config_key: str, species: str | None) -> float:
     Returns a multiplier (0.5-1.0). Falls back to 0.75 for unmapped organs.
     """
     data = _load_om_mi_discounts()
-    species_cat = _resolve_species_category(species)
+    species_cat = resolve_species_category(species)
     species_table = data.get(species_cat, data.get("rat", {}))
     if isinstance(species_table, dict) and "_meta" not in species_table:
         entry = species_table.get(organ_config_key)

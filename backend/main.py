@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     _required_shared = [
         "syndrome-definitions.json",
         "progression-chains.yaml",
-        "organ-weight-thresholds.json",
+        "rules/field-consensus-thresholds.json",
         "hcd-reference-ranges.json",
         "adversity-dictionary.json",
     ]
@@ -64,6 +64,29 @@ async def lifespan(app: FastAPI):
         print(f"[FATAL] Missing shared files in {SHARED_DIR}: {missing}")
         raise SystemExit(1)
     print(f"[DIAG] All {len(_required_shared)} shared files verified")
+
+    # Eagerly load the FCT registry so integrity violations (unresolved
+    # syndrome_rule_ref, invalid provenance, malformed bands, schema drift)
+    # halt the pipeline at startup rather than on the first request
+    # (AC-F2-1, AC-F2-4).
+    try:
+        from services.analysis import fct_registry
+        fct_registry.load()
+        print(f"[DIAG] FCT registry loaded: {len(fct_registry.iter_entries())} entries, "
+              f"{len(fct_registry.iter_joint_rules())} joint rules")
+    except Exception as e:
+        print(f"[FATAL] FCT registry load failed: {e}")
+        raise
+
+    # Eagerly load origin-detection patterns (AC-F11-2 load-time integrity).
+    # Sponsor-edited config with invalid regex or wrong types fails here.
+    try:
+        from services.analysis import origin_detection
+        origin_detection._load_patterns()
+        print("[DIAG] Origin-detection patterns loaded")
+    except Exception as e:
+        print(f"[FATAL] Origin-detection patterns load failed: {e}")
+        raise
 
     # Eagerly import the analysis pipeline to surface import errors at startup
     try:

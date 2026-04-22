@@ -27,7 +27,7 @@ ENV OPENBLAS_NUM_THREADS=1
 RUN echo "=== Shared files check ===" && \
     ls /shared/syndrome-definitions.json && \
     ls /shared/progression-chains.yaml && \
-    ls /shared/organ-weight-thresholds.json && \
+    ls /shared/rules/field-consensus-thresholds.json && \
     ls /shared/hcd-reference-ranges.json && \
     ls /shared/adversity-dictionary.json && \
     echo "All shared files present."

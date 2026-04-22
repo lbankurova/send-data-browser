@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/origin-detection-patterns.schema.json",
+  "_schema_version": "1.0.0",
+  "_comment": "NHP colony-origin discovery patterns for SEND TS/SUPPDM/TSVAL. Sponsor-extensible — add new TSPARMCD/QNAM codes or country tokens without code changes. F11 of species-magnitude-thresholds-dog-nhp.",
+
+  "tsparmcd_regex": {
+    "pattern": "\\b(ORIGIN(?!ATOR)|SPCSOURCE|ANSOURCE|ANIMAL_?SOURCE|ANORIGIN|CYNO_ORIGIN|ORIGIN_COUNTRY)\\b",
+    "flags": "IGNORECASE",
+    "_note": "Curated allowlist + (?!ORIGINATOR) negative-lookahead to exclude the CRO/study-originator case. Bare (ORIGIN|SOURCE) substring match is rejected as it also captures FUNDINGSOURCE, DATASOURCE, SOURCEDATA, SOURCEORG, RESOURCES — all non-animal-origin semantics."
+  },
+
+  "suppdm_qnam_regex": {
+    "pattern": "\\b(ORIGIN(?!ATOR)|SPCSOURCE|ANSOURCE|ANIMAL_?SOURCE|ANORIGIN|CYNO_ORIGIN|ORIGIN_COUNTRY)\\b",
+    "flags": "IGNORECASE",
+    "_note": "Same pattern as tsparmcd_regex — SUPPDM.QNAM carries the same sponsor codes as TS.TSPARMCD."
+  },
+
+  "tsval_country_tokens": [
+    "MAURITIUS",
+    "MAURITIAN",
+    "VIETNAM",
+    "VIETNAMESE",
+    "CHINA",
+    "CHINESE",
+    "MAINLAND",
+    "CAMBODIA",
+    "CAMBODIAN",
+    "INDONESIA",
+    "INDONESIANS",
+    "INDONESIAN",
+    "PHILIPPINES",
+    "FILIPINO",
+    "SUMATRA",
+    "JAVA"
+  ],
+  "_tsval_note": "Applied ONLY after TSPARMCD and SUPPDM paths fail. Token match is word-boundary and case-insensitive. Only GEOGRAPHIC tokens belong here -- breeding-method tokens (PURPOSE-BRED, WILD-CAUGHT, etc.) are deliberately excluded: they describe husbandry, not origin, and inclusion would emit origin_captured=true with origin_match=unknown, producing a misleading 'HCD match uncertainty elevated' banner for studies that actually carry no geographic information. Honest-uncertainty principle: no geography found -> origin_captured=false -> neutral banner.",
+
+  "country_canonical": {
+    "MAURITIUS": "MAURITIUS",
+    "MAURITIAN": "MAURITIUS",
+    "VIETNAM": "VIETNAM",
+    "VIETNAMESE": "VIETNAM",
+    "CHINA": "CHINA",
+    "CHINESE": "CHINA",
+    "MAINLAND": "CHINA",
+    "CAMBODIA": "CAMBODIA",
+    "CAMBODIAN": "CAMBODIA",
+    "INDONESIA": "INDONESIA",
+    "INDONESIAN": "INDONESIA",
+    "PHILIPPINES": "PHILIPPINES",
+    "FILIPINO": "PHILIPPINES",
+    "SUMATRA": "INDONESIA",
+    "JAVA": "INDONESIA"
+  },
+
+  "_hcd_reference_origin": "MAURITIUS",
+  "_hcd_reference_note": "HCD reference origin for the Amato 2022 NHP colony is Mauritius. origin_match = 'same' when captured origin canonicalises to MAURITIUS; 'different' for any other captured country; 'unknown' when multiple conflicting sources match or origin is ambiguous."
+}

@@ -1,0 +1,123 @@
+topic: species-magnitude-thresholds-dog-nhp
+started: 2026-04-20T12:00:00Z
+phase: build
+current_step: build.3
+revision: 16
+completed:
+  research.0-corpus-load: 2026-04-20T12:30:00Z
+  research.1-landscape: 2026-04-20T12:45:00Z
+  research.1-deep-B4: 2026-04-20T21:55:00Z
+  research.2-peer-review-r1: 2026-04-20T22:00:00Z
+  research.3-incorporate-r1: 2026-04-20T22:05:00Z
+  research.4-peer-review-r2: 2026-04-20T22:15:00Z
+  research.5-evaluate-r2: 2026-04-20T22:20:00Z
+  research.5-incorporate-r2: 2026-04-20T22:25:00Z
+  research.6-distill: 2026-04-20T22:30:00Z
+  research.7-probe: 2026-04-20T22:35:00Z
+  research.7b-persist-gaps: 2026-04-20T22:40:00Z
+  research.complete: 2026-04-21T00:00:00Z
+  blueprint.0-impl-context: 2026-04-21T15:00:00Z
+  blueprint.1-synthesize: 2026-04-21T15:10:00Z
+  blueprint.2-architect: 2026-04-21T15:25:00Z
+  blueprint.3-probe: 2026-04-21T15:50:00Z
+  blueprint.4-peer-review-r1: 2026-04-21T16:15:00Z
+  blueprint.5-incorporate-r1: 2026-04-21T16:30:00Z
+  blueprint.6-peer-review-r2: 2026-04-21T16:45:00Z
+  blueprint.6b-incorporate-r2: 2026-04-21T16:55:00Z
+  blueprint.7-complete: 2026-04-21T17:05:00Z
+checkpoint_blueprint_complete:
+  completed: 2026-04-21T17:05:00Z
+  synthesis: "docs/_internal/incoming/species-magnitude-thresholds-dog-nhp-synthesis.md"
+  reviews:
+    architect: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-architect-review.md"
+    probe: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-probe.md"
+    r1: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-synthesis-review.md"
+    r2: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-synthesis-review-r2.md"
+  features: 12   # F1, F2, F3, F3b, F4, F5, F6, F7, F8, F9, F10, F11
+  auto_decisions: 7   # Step 0 impl-context, Step 1 synthesize, Step 2 architect PASS-WITH-NOTES (advisories applied), Step 3 probe widen (BREAKS resolved via F3b additive), Step 4 R1 accept, Step 5 R1 incorporate, Step 6 R2 accept + incorporate
+  new_science_flag: SF-5
+  new_gaps_persisted:
+    todo: [GAP-SMT-BP-04, GAP-SMT-BP-05, GAP-SMT-BP-06, GAP-SMT-BP-07]
+    registry: [RG-SMT-BP-01, RG-SMT-BP-02, RG-SMT-BP-03]
+  next_action: "/lattice:build-cycle species-magnitude-thresholds-dog-nhp"
+checkpoints:
+  research.complete:
+    completed: 2026-04-21T00:00:00Z
+    user_accepted_science_flags: [SF-1, SF-2, SF-3, SF-4]
+    blueprint_amendments:
+      - "M1 (no legacy versioning): migrate in place, delete dead effect_size.* keys in same PR as P1 rewire"
+      - "M2 (SF-4 folded): NOAEL shift treated as part of main cascade, not held separately"
+      - "M3 (co-authorship pipeline): formal expert elicitation tied to P5 methodology paper; runs PARALLEL to blueprint, not on critical path"
+      - "M4 (public-dataset fixture augmentation): at least one public-dataset regression fixture for the most-shifted endpoints before regression review counts"
+      - "M5 (coverage-gap as honest uncertainty): no silent g-fallback; FCT registry ships coverage field propagated to finding payload + UI; provisional verdict is legitimate classifier output"
+      - "THROUGH-LINE (uncertainty-first payload convention): FCT establishes the pattern P5 documents; BW classifier, S08 alpha, B5 origin inherit by reference; cross-topic consistency check in architect review"
+      - "Schema enforcement: coverage + fallback_used are REQUIRED payload fields on every severity/confidence verdict (not just documented)"
+    output: "docs/_internal/research/species-magnitude-thresholds-dog-nhp.md"
+    next_action: "/lattice:blueprint-cycle species-magnitude-thresholds-dog-nhp"
+  blueprint.0:
+    completed: 2026-04-21T15:00:00Z
+    decisions_log_scan:
+      total_lines: 470
+      failed_relevant: 0
+    bug_patterns: "no .lattice/bug-patterns.md file"
+    guardrails:
+      domain_critical_touched:
+        - "classification.py classify_severity (at ~1500 LOC, over 500 budget) -- P1 rewire target"
+        - "classification.py _TIER_FRACTIONS (severity bands) -- P2 literal audit"
+        - "confidence.py _score_d6_tier2_equivocal + D4 clinical-boost (0.75/1.0 hardcoded) -- P2 rewire target"
+        - "scores_and_rules.py R10 (line 236) R11 (line 249) -- P2 rewire target"
+        - "analysis_settings.py ScoringParams.large_effect/moderate_effect -- P2 unify with shared-config"
+        - "endpoint-confidence.ts:698 (0.5 hardcoded) -- P2"
+        - "findings-rail-engine.ts:197 -- P2"
+        - "view_dataframes.py _build_noael_for_groups -- downstream of S03 SCIENCE-FLAG (SF-4)"
+      reuse_patterns:
+        - "cv-tier-adaptive-thresholds (2828e0eb): P4 small-N Track 2 gLower annotations SHIPPED -- inherit, don't rebuild"
+        - "cynomolgus-organ-weight-hcd (66215844): _resolve_species_category NHP branch + species-aware classifier addition template"
+        - "mi-tf-neoplasm-deduplication: field contracts + types + 12-study regen template"
+        - "etransafe-send-snomed-integration: dispatcher tuple-widening + coverage-as-payload-field + corpus-regression"
+        - "organ-weight-thresholds.json: proof-of-concept FCT for OM shipped; P3 FCT schema MUST be compatible or migration target"
+    cross_topic_interactions:
+      - topic: hcd-mi-ma-s08-wiring
+        status: "blueprint (same WIP window)"
+        relation: "established 'uncertainty-first payload' convention pre-shipping; atomic schema+enforcement discipline (SF-2 NOAEL floor); static-analysis gate on blueprint; FCT registry inherits pattern"
+        blueprint_impact: "cross-topic architect-review invariant -- FCT payload shape must match BW/S08/B5 payload shape"
+      - topic: study-design-override-surfaces
+        status: "blueprint (same WIP window)"
+        relation: "X7 override cascade invariant; ScoringParams unification (P2) must rebuild severity via FCT on override edit"
+        blueprint_impact: "GAP-SMT-06 hard gate; settings-hash must include FCT content fingerprint"
+      - topic: brain-concordance-species-bands
+        status: "unshipped prereq (BRAIN_WEIGHT/BRAIN_ENZYME split)"
+        relation: "no FCT scope collision but brain bands would consume FCT if both land together"
+        blueprint_impact: "FCT schema must accommodate brain-weight entry shape when brain bands ship"
+      - topic: cv-tier-adaptive-thresholds
+        status: "shipped 2026-04-17"
+        relation: "P4 Track 2 gLower annotation inherits shipped surface; population-cv-reference.json owned here"
+        blueprint_impact: "P4 is annotation-wiring + schema docs; no new annotation logic"
+      - topic: hcd-informed-z-scoring
+        status: "not on critical path"
+        relation: "shared MAP prior on CVs; FCT coverage field can piggyback on this signal if needed"
+        blueprint_impact: "none for this cycle"
+    open_gaps_referenced:
+      science_flags: [GAP-SMT-02, GAP-SMT-03, GAP-SMT-04, GAP-SMT-05]
+      tech_debt: [GAP-SMT-01]
+      invariant: [GAP-SMT-06]
+      deferred_research: [GAP-SMT-07, GAP-SMT-08, DATA-GAP-SMT-01, DATA-GAP-SMT-02]
+      stale: [STALE-SMT-01]
+    synthesize_inputs_pointer:
+      research: "docs/_internal/research/species-magnitude-thresholds-dog-nhp.md"
+      review_r1: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-review.md"
+      review_r2: "docs/_internal/research/peer-reviews/species-magnitude-thresholds-dog-nhp-review-r2.md"
+      registry_entry: "docs/_internal/research/REGISTRY.md#species-magnitude-thresholds-dog-nhp"
+      todo_gaps: "docs/_internal/TODO.md (GAP-SMT-01..08, DATA-GAP-SMT-01/02, STALE-SMT-01)"
+user_decisions:
+  "2026-04-20T21:45:00Z":
+    branch_selected: B4
+    b5_disposition: "keep as lightweight flag addendum in same doc"
+    b3_disposition: "time with BW classifier rework"
+    b1_b2_disposition: "loose couple -- heme gaps captured during B1 deep dive"
+    framing: "option 1 directionally, B4 potentially entangled with B3+B1"
+  "2026-04-21T00:00:00Z":
+    option_selected: "Option 1 with 5 modifiers + uncertainty-first payload convention"
+    caveat: "M3 co-authorship pipeline runs PARALLEL to blueprint (not on critical path) -- otherwise FCT blocks on academic calendar"
+    convention_name: "uncertainty-first payload"
+    scope: "FCT migration establishes the pattern; BW classifier / S08 alpha / B5 origin inherit by reference"

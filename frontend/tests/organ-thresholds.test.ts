@@ -3,7 +3,7 @@
  * two-gate OM classification, and adaptive decision trees.
  *
  * Validates:
- * 1. organ-weight-thresholds.json schema and content
+ * 1. FCT registry (field-consensus-thresholds.json, migrated from organ-weight-thresholds.json) schema and content
  * 2. _assessment_detail on OM findings (two-gate logic)
  * 3. _tree_result on MI findings (adaptive trees)
  * 4. Two-gate classification consistency rules
@@ -16,7 +16,7 @@ import * as path from "path";
 
 const ROOT = path.resolve(__dirname, "../..");
 const UNIFIED_PATH = path.join(ROOT, "backend/generated/PointCross/unified_findings.json");
-const THRESHOLD_PATH = path.join(ROOT, "shared/organ-weight-thresholds.json");
+const THRESHOLD_PATH = path.join(ROOT, "shared/rules/field-consensus-thresholds.json");
 
 // ─── Guards ─────────────────────────────────────────────────
 
@@ -68,85 +68,119 @@ const findings: Finding[] = hasGenerated
   ? JSON.parse(fs.readFileSync(UNIFIED_PATH, "utf-8")).findings
   : [];
 
-const thresholds = hasThresholds
-  ? JSON.parse(fs.readFileSync(THRESHOLD_PATH, "utf-8"))
+interface FctBand {
+  variation_ceiling: number | null;
+  concern_floor: number | null;
+  adverse_floor: number | null;
+  strong_adverse_floor: number | null;
+  units: string;
+  provenance?: string;
+  any_significant?: boolean;
+}
+
+interface FctEntry {
+  species_specific: boolean;
+  sex_specific?: boolean;
+  bands: Record<string, FctBand>;
+  coverage: string;
+  provenance: string;
+  threshold_reliability?: string;
+  nhp_tier?: string;
+  special_flags?: string[];
+  cross_organ_link?: string;
+  adaptive_requires?: {
+    lb_panel: string[];
+    critical_clean: string[];
+    min_clean: number;
+    max_fold_for_clean: number;
+    max_severity_for_adaptive: number;
+  };
+  adaptive_ceiling_pct?: Record<string, number>;
+}
+
+interface FctRegistry {
+  entries?: Record<string, FctEntry>;
+}
+
+const registry: FctRegistry = hasThresholds
+  ? (JSON.parse(fs.readFileSync(THRESHOLD_PATH, "utf-8")) as FctRegistry)
   : {};
+const entries: Record<string, FctEntry> = registry.entries ?? {};
 
-// ─── 1. organ-weight-thresholds.json schema ─────────────────
+function omEntry(organ: string): FctEntry | undefined {
+  return entries[`OM.${organ}.both`];
+}
+function bandFor(entry: FctEntry | undefined, species: string): FctBand | undefined {
+  if (!entry || !entry.bands) return undefined;
+  if (entry.species_specific === false) return entry.bands.any;
+  return entry.bands[species] ?? entry.bands.other;
+}
 
-describe("organ-weight-thresholds.json", () => {
+// ─── 1. field-consensus-thresholds.json (FCT registry) schema ───────────────
+
+describe("field-consensus-thresholds.json (FCT registry)", () => {
   const EXPECTED_ORGANS = [
     "LIVER", "KIDNEY", "HEART", "BRAIN", "ADRENAL", "THYROID",
     "SPLEEN", "THYMUS", "TESTES", "EPIDIDYMIDES", "OVARIES", "UTERUS", "LUNGS",
   ];
-  const REQUIRED_FIELDS = ["variation_ceiling_pct", "adverse_floor_pct", "strong_adverse_pct"];
 
-  test.skipIf(!hasThresholds)("has all 13 expected organs", () => {
-    const organs = Object.keys(thresholds).filter(k => !k.startsWith("_"));
+  test.skipIf(!hasThresholds)("has an OM entry for each of the 13 expected organs", () => {
     for (const organ of EXPECTED_ORGANS) {
-      expect(organs, `missing organ: ${organ}`).toContain(organ);
+      expect(omEntry(organ), `missing OM.${organ}.both entry`).toBeDefined();
     }
   });
 
-  test.skipIf(!hasThresholds)("each organ has required threshold fields", () => {
+  test.skipIf(!hasThresholds)("each OM entry has bands + coverage + provenance", () => {
     const violations: string[] = [];
     for (const organ of EXPECTED_ORGANS) {
-      const cfg = thresholds[organ];
-      if (!cfg) continue;
-      for (const field of REQUIRED_FIELDS) {
-        const val = cfg[field];
-        if (val === undefined || val === null) {
-          violations.push(`${organ}.${field} missing`);
-        }
-      }
+      const entry = omEntry(organ);
+      if (!entry) continue;
+      if (!entry.bands) violations.push(`${organ}: missing bands`);
+      if (!entry.coverage) violations.push(`${organ}: missing coverage`);
+      if (!entry.provenance) violations.push(`${organ}: missing provenance`);
     }
     expect(violations).toEqual([]);
   });
 
-  test.skipIf(!hasThresholds)("threshold ordering: ceiling < floor < strong", () => {
+  test.skipIf(!hasThresholds)("threshold ordering: ceiling <= floor <= strong (rat)", () => {
     const violations: string[] = [];
     for (const organ of EXPECTED_ORGANS) {
-      const cfg = thresholds[organ];
-      if (!cfg) continue;
-      // Resolve species-specific values (use rat as default)
-      const resolve = (v: number | Record<string, number>) =>
-        typeof v === "number" ? v : v.rat ?? v.other;
-      const ceiling = resolve(cfg.variation_ceiling_pct);
-      const floor = resolve(cfg.adverse_floor_pct);
-      const strong = resolve(cfg.strong_adverse_pct);
+      const entry = omEntry(organ);
+      if (!entry) continue;
+      const band = bandFor(entry, "rat");
+      if (!band) continue;
+      const ceiling = band.variation_ceiling;
+      const floor = band.adverse_floor;
+      const strong = band.strong_adverse_floor;
+      if (ceiling == null || floor == null || strong == null) continue;
       if (ceiling > floor) violations.push(`${organ}: ceiling(${ceiling}) > floor(${floor})`);
       if (floor > strong) violations.push(`${organ}: floor(${floor}) > strong(${strong})`);
     }
     expect(violations).toEqual([]);
   });
 
-  test.skipIf(!hasThresholds)("ADRENAL has species-specific values", () => {
-    const adrenal = thresholds.ADRENAL;
+  test.skipIf(!hasThresholds)("ADRENAL has species-specific bands", () => {
+    const adrenal = omEntry("ADRENAL");
     expect(adrenal).toBeDefined();
-    expect(typeof adrenal.adverse_floor_pct).toBe("object");
-    expect(adrenal.adverse_floor_pct.rat).toBeDefined();
-    expect(adrenal.adverse_floor_pct.mouse).toBeDefined();
-    expect(adrenal.adverse_floor_pct.mouse).toBeGreaterThan(adrenal.adverse_floor_pct.rat);
+    expect(adrenal.species_specific).toBe(true);
+    expect(adrenal.bands.rat).toBeDefined();
+    expect(adrenal.bands.mouse).toBeDefined();
+    expect(adrenal.bands.mouse.adverse_floor).toBeGreaterThan(adrenal.bands.rat.adverse_floor);
   });
 
-  test.skipIf(!hasThresholds)("BRAIN has zero ceiling for rat/mouse (any_significant policy)", () => {
-    // BRAIN uses species-specific thresholds: zero for rat/mouse (any_significant),
-    // non-zero for dog (brain weight is less variable in large breeds)
-    const ceil = thresholds.BRAIN.variation_ceiling_pct;
-    const floor = thresholds.BRAIN.adverse_floor_pct;
-    if (typeof ceil === "number") {
-      expect(ceil).toBe(0);
-      expect(floor).toBe(0);
-    } else {
-      expect(ceil.rat).toBe(0);
-      expect(ceil.mouse).toBe(0);
-      expect(floor.rat).toBe(0);
-      expect(floor.mouse).toBe(0);
-    }
+  test.skipIf(!hasThresholds)("BRAIN has any_significant policy for rat/mouse (ceiling=0)", () => {
+    const brain = omEntry("BRAIN");
+    expect(brain).toBeDefined();
+    expect(brain.bands.rat.variation_ceiling).toBe(0);
+    expect(brain.bands.mouse.variation_ceiling).toBe(0);
+    expect(brain.bands.rat.any_significant).toBe(true);
+    expect(brain.bands.mouse.any_significant).toBe(true);
+    // Dog brain CV ~5% → 5% floor (not any_significant)
+    expect(brain.bands.dog.variation_ceiling).toBe(5);
   });
 
   test.skipIf(!hasThresholds)("LIVER has adaptive_requires block with LB panel", () => {
-    const liver = thresholds.LIVER;
+    const liver = omEntry("LIVER");
     expect(liver.adaptive_requires).toBeDefined();
     expect(liver.adaptive_requires.lb_panel).toBeDefined();
     expect(liver.adaptive_requires.lb_panel.length).toBeGreaterThanOrEqual(5);
@@ -155,9 +189,22 @@ describe("organ-weight-thresholds.json", () => {
   });
 
   test.skipIf(!hasThresholds)("KIDNEY has special_flags for alpha2u and CPN", () => {
-    const kidney = thresholds.KIDNEY;
+    const kidney = omEntry("KIDNEY");
     expect(kidney.special_flags).toBeDefined();
     expect(kidney.special_flags).toContain("alpha2u_globulin_male_rat");
+  });
+
+  test.skipIf(!hasThresholds)("NHP spleen/thymus/lungs/pancreas have Tier C qualitative + null bands", () => {
+    for (const organ of ["SPLEEN", "THYMUS", "LUNGS", "PANCREAS"]) {
+      const entry = omEntry(organ);
+      if (!entry) continue;
+      expect(entry.nhp_tier, `${organ}: expected nhp_tier = C_qualitative`).toBe("C_qualitative");
+      const nhp = entry.bands.nhp;
+      if (nhp) {
+        expect(nhp.variation_ceiling).toBeNull();
+        expect(nhp.adverse_floor).toBeNull();
+      }
+    }
   });
 });
 

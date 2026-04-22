@@ -332,16 +332,59 @@ def generate(study_id: str):
                 "Dose escalation design -- period and dose effects are confounded. "
                 "Treatment effects may include cumulative or carryover components."
             )
-        # NHP standing caveat: Amato 2022 colony reference may not match
-        # Mauritius-origin study populations (per cynomolgus-organ-weight-hcd spec BP-4)
+        # NHP origin detection (F11 — species-magnitude-thresholds-dog-nhp).
+        # Replaces the pre-F11 blanket Mauritius caveat with an origin-aware
+        # one: detect origin from TS/SUPPDM/TSVAL; emit origin_captured /
+        # origin_value / origin_match / detection_source /
+        # origin_detection_conflict to study_metadata. Downstream UI banner
+        # is conditional on origin_captured and origin_match.
         _study_species = context_result["study_metadata"].get("species", "")
         if _study_species and any(
             t in _study_species.upper() for t in ("MONKEY", "MACAQUE", "CYNOMOLGUS", "NHP")
         ):
-            context_result["study_metadata"]["nhp_hcd_caveat"] = (
-                "Reference data from research colony (Amato 2022); "
-                "may not match Mauritius-origin study populations"
-            )
+            from services.analysis.origin_detection import detect_origin
+            from services.xpt_processor import read_xpt
+            _ts_rows: list[dict] = []
+            _suppdm_rows: list[dict] = []
+            try:
+                if "ts" in study.xpt_files:
+                    _ts_df, _ = read_xpt(study.xpt_files["ts"])
+                    _ts_df.columns = [c.upper() for c in _ts_df.columns]
+                    _ts_rows = _ts_df.to_dict(orient="records")
+            except Exception as _e:  # noqa: BLE001 -- detection never blocks analysis
+                print(f"  1c: TS read for origin detection failed: {_e}")
+            try:
+                if "suppdm" in study.xpt_files:
+                    _sd_df, _ = read_xpt(study.xpt_files["suppdm"])
+                    _sd_df.columns = [c.upper() for c in _sd_df.columns]
+                    _suppdm_rows = _sd_df.to_dict(orient="records")
+            except Exception as _e:  # noqa: BLE001
+                print(f"  1c: SUPPDM read for origin detection failed: {_e}")
+
+            _origin = detect_origin(_ts_rows, _suppdm_rows)
+            context_result["study_metadata"]["nhp_origin"] = _origin.to_payload()
+
+            # AC-F11-5: banner never gates; conditional text only.
+            if not _origin.origin_captured:
+                context_result["study_metadata"]["nhp_hcd_caveat"] = (
+                    "Origin not captured in SEND; HCD match assumes "
+                    "colony-representative ranges (Amato 2022)"
+                )
+            elif _origin.origin_match == "different":
+                context_result["study_metadata"]["nhp_hcd_caveat"] = (
+                    f"Study origin '{_origin.origin_value}' differs from HCD "
+                    f"reference colony (Mauritius, Amato 2022); apply HCD "
+                    f"comparisons with caution"
+                )
+            elif _origin.origin_match == "unknown":
+                context_result["study_metadata"]["nhp_hcd_caveat"] = (
+                    f"Study origin captured with conflicting sources "
+                    f"({_origin.detection_source}); HCD match uncertainty "
+                    f"elevated"
+                )
+            else:
+                # origin_match == "same" -> no caveat (HCD reference applies)
+                context_result["study_metadata"]["nhp_hcd_caveat"] = None
 
         # Phase A (unrecognized-term-flagging): record the dictionary versions
         # that were loaded for THIS regeneration. Canonical source for the
