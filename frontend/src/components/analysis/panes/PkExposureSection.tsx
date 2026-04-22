@@ -1,8 +1,10 @@
 /**
  * PkExposureSection — Study-level PK exposure visualization.
  *
- * Left:  Concentration-time chart (log Y, hours X, 95% CI bands, LLOQ line)
- * Right: PK parameters table + dose proportionality chart (tabbed)
+ * Top:    Concentration-time chart (log Y, hours X, 95% CI bands, LLOQ line)
+ * Bottom: Tabbed section with [Parameters | Dose proportionality] tabs on top.
+ *         Parameters tab: PK parameter table + optional dose-proportionality
+ *         + safety-margin flags.
  */
 import { useCallback, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { PkIntegration } from "@/types/analysis-views";
@@ -10,8 +12,6 @@ import type { DoseGroup } from "@/types/index";
 import { getDoseGroupColor } from "@/lib/severity-colors";
 import { ci95Half } from "@/lib/stats-utils";
 import { shortDoseLabel } from "@/lib/dose-label-utils";
-import { useResizePanel } from "@/hooks/useResizePanel";
-import { PanelResizeHandle } from "@/components/ui/PanelResizeHandle";
 
 interface Props {
   pkData: PkIntegration;
@@ -19,17 +19,12 @@ interface Props {
 }
 
 export function PkExposureSection({ pkData, doseGroups }: Props) {
-  const PK_WIDTH_KEY = "pcc.pk.chartWidth";
-  const chartResize = useResizePanel(400, { min: 200, max: 800, direction: "left", storageKey: PK_WIDTH_KEY });
-  let hasStoredWidth = false;
-  try { hasStoredWidth = sessionStorage.getItem(PK_WIDTH_KEY) !== null; } catch { /* ignore */ }
-
   const allGroups = pkData.by_dose_group ?? [];
   if (allGroups.length === 0) return null;
 
   const [selectedDoses, setSelectedDoses] = useState<number[]>([]);
   const [showMarginBand, setShowMarginBand] = useState(true);
-  const [rightTab, setRightTab] = useState<"params" | "dp">("params");
+  const [detailTab, setDetailTab] = useState<"params" | "dp">("params");
 
   const aucKey = useMemo(() => {
     for (const k of ["AUCLST", "AUCTAU", "AUCIFO"]) {
@@ -49,7 +44,7 @@ export function PkExposureSection({ pkData, doseGroups }: Props) {
   const hasNonLinear = dp && dp.assessment !== "linear" && dp.assessment !== "insufficient_data";
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-baseline gap-3 text-[10px] text-muted-foreground">
         {pkData.analyte && <span>Analyte: <span className="font-medium text-foreground">{pkData.analyte}</span></span>}
@@ -60,53 +55,51 @@ export function PkExposureSection({ pkData, doseGroups }: Props) {
         )}
       </div>
 
-      {/* Left: chart | Right: table + verdict */}
-      <div className="flex min-h-0">
-        <div ref={chartResize.targetRef} className="shrink-0 min-w-0 overflow-hidden" style={hasStoredWidth ? { width: chartResize.width } : { flex: '55 0 0%' }}>
-          <ConcentrationTimeChart
-            groups={groups}
-            allGroups={allGroups}
-            lloq={pkData.lloq ?? null}
-            noaelDoseLevel={showMarginBand ? pkData.noael_exposure?.dose_level : undefined}
-            loaelDoseLevel={showMarginBand ? pkData.loael_exposure?.dose_level : undefined}
-            selectedDoses={selectedDoses}
-            setSelectedDoses={setSelectedDoses}
-            doseGroups={doseGroups}
-            hasMarginData={hasMarginData}
-            showMarginBand={showMarginBand}
-            setShowMarginBand={setShowMarginBand}
-          />
+      {/* Top: Plasma concentration chart (full width) */}
+      <div>
+        <ConcentrationTimeChart
+          groups={groups}
+          allGroups={allGroups}
+          lloq={pkData.lloq ?? null}
+          noaelDoseLevel={showMarginBand ? pkData.noael_exposure?.dose_level : undefined}
+          loaelDoseLevel={showMarginBand ? pkData.loael_exposure?.dose_level : undefined}
+          selectedDoses={selectedDoses}
+          setSelectedDoses={setSelectedDoses}
+          doseGroups={doseGroups}
+          hasMarginData={hasMarginData}
+          showMarginBand={showMarginBand}
+          setShowMarginBand={setShowMarginBand}
+        />
+      </div>
+
+      {/* Bottom: tabbed detail section — tabs on TOP for shorter cursor travel */}
+      <div className="flex flex-col">
+        <div className="flex shrink-0 items-stretch border-b border-border">
+          {([["params", "Parameters"], ["dp", "Dose proportionality"]] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setDetailTab(key)}
+              className={`px-3 py-1 text-xs transition-colors ${
+                detailTab === key
+                  ? "border-b-2 border-primary -mb-px font-semibold text-foreground"
+                  : "border-b-2 border-transparent -mb-px font-medium text-muted-foreground hover:text-foreground/70"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <PanelResizeHandle onPointerDown={chartResize.onPointerDown} />
-        <div className="min-w-0 pl-2 flex flex-col" style={hasStoredWidth ? { flex: '1 1 0%' } : { flex: '45 0 0%' }}>
-          <div className="flex-1 min-h-0 overflow-auto">
-            {rightTab === "params" ? (
-              <div className="space-y-2">
-                <PkParameterTable groups={groups} doseGroups={doseGroups} allGroups={allGroups} aucKey={aucKey} />
-                {hasNonLinear && dp && <DoseProportionalityBadge dp={dp} />}
-                <SafetyMarginFlag pkData={pkData} allGroups={allGroups} />
-              </div>
-            ) : (
-              <DoseProportionalityChart allGroups={allGroups} aucKey={aucKey} doseGroups={doseGroups} />
-            )}
-          </div>
-          {/* Tab bar — bottom, matching findings chart pattern */}
-          <div className="relative flex shrink-0 items-stretch border-t border-border bg-muted/40">
-            {([["params", "Parameters"], ["dp", "Dose proportionality"]] as const).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setRightTab(key)}
-                className={`px-3 py-1 text-xs transition-colors ${
-                  rightTab === key
-                    ? "-mt-px border-x border-b border-border bg-background font-semibold text-foreground"
-                    : "font-medium text-muted-foreground hover:text-foreground/70"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="pt-2">
+          {detailTab === "params" ? (
+            <div className="space-y-2">
+              <PkParameterTable groups={groups} doseGroups={doseGroups} allGroups={allGroups} aucKey={aucKey} />
+              {hasNonLinear && dp && <DoseProportionalityBadge dp={dp} />}
+              <SafetyMarginFlag pkData={pkData} allGroups={allGroups} />
+            </div>
+          ) : (
+            <DoseProportionalityChart allGroups={allGroups} aucKey={aucKey} doseGroups={doseGroups} />
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchCompoundProfile } from "@/lib/api";
 import { saveAnnotation, deleteAnnotation } from "@/lib/annotations-api";
-import type { CompoundProfileResponse } from "@/types/compound-profile";
+import type { CompoundProfileResponse, CompoundIdentity } from "@/types/compound-profile";
 
 export function useCompoundProfile(studyId: string | undefined) {
   return useQuery<CompoundProfileResponse>({
@@ -26,6 +26,7 @@ export function useSaveCompoundProfile(studyId: string | undefined) {
       justification?: string;
       note?: string;
       reviewDate: string;
+      compound_identity?: CompoundIdentity[];
     }) =>
       saveAnnotation(studyId!, "compound-profile", "study", data),
     onSuccess: () => {

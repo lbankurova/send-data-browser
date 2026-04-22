@@ -82,6 +82,18 @@ export interface ProfileSummary {
   base_profiles?: string[];
 }
 
+/**
+ * Optional compound identity record — for small-molecule studies only (pre-Datagrok).
+ * Strings-only storage: no validation, no rendering, no physchem. Post-Datagrok
+ * the stored SMILES lights up structure rendering + similarity + physchem.
+ * See `.lattice/spike-study-details-ux.md` decision 6 and TODO.md GAP-268.
+ */
+export interface CompoundIdentity {
+  id?: string;
+  smiles?: string;
+  smarts?: string;
+}
+
 export interface SmeConfirmedProfile {
   compound_class: string;
   original_compound_class?: string;
@@ -94,6 +106,8 @@ export interface SmeConfirmedProfile {
   note?: string;
   pathologist?: string;
   reviewDate?: string;
+  /** List shape from day 1 — single-compound studies have one element, multi-compound studies have N. */
+  compound_identity?: CompoundIdentity[];
 }
 
 export interface CompoundProfileResponse {

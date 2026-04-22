@@ -80,6 +80,8 @@ cd C:/pg/pcc/frontend && npm test         # Vitest
 
 16. **Verify empirical claims against actual data.** When a spec, plan, or criterion makes a numeric claim about data ("count drops to 2", "shows N rows"), verify against `backend/generated/{study}/unified_findings.json` at spec-write, implementation, and review gates. Mirror-pattern tests do NOT satisfy this — use fixture tests against real generated output. Don't infer from code — read the output.
 
+17. **Spec value audit before build.** Any spec entering `docs/_internal/incoming/` that proposes more than one feature / UI surface / override must pass `docs/_internal/checklists/SPEC-VALUE-AUDIT.md` before architect review signs off. The audit catches categorical "we infer N things, each needs a UI" reasoning — the spec author must document per-feature frequency, current workaround, and downstream impact rather than categorical justification. Reviewers produce PASS / SCOPE REDUCTION REQUIRED / EVIDENCE GAP. Failure mode: spec ships featuritis that nobody catches until collision review during an unrelated spike (precedent: `study-design-override-surfaces-scope-challenge.md`, 2026-04-21).
+
 ## Architecture Gotchas
 
 **`analysis_views.py` routing:** Must use `APIRouter(prefix="/api")` with full paths in decorators (not path params in the router prefix — FastAPI/Starlette doesn't route those correctly).
@@ -108,8 +110,10 @@ Rules not in this file are enforced by hooks, rules files, or skill prompts:
 | UI casing conventions | `docs/_internal/reference/ui-casing-conventions.md` | Reference |
 | Interactivity requirements | `docs/_internal/reference/interactivity-rule.md` | Reference |
 | Commit checklist (11 items) | `docs/_internal/checklists/COMMIT-CHECKLIST.md` | Review gate hook blocks commits |
+| Spec value audit (rule 17) | `docs/_internal/checklists/SPEC-VALUE-AUDIT.md` | Architect-review / peer-review skill prompt |
 | Post-implementation review | `docs/_internal/checklists/POST-IMPLEMENTATION-REVIEW.md` | Review gate hook blocks commits |
 | Doc regeneration | Pre-commit hook + `/lattice:review` | Hook blocks if stale |
 | Topic trailers | PreToolUse hook | Hook warns on missing Topic: |
 | Pipeline test-first | PreToolUse hook | Hook blocks without tests |
 | Empirical claim detail + example | `/lattice:implement`, `/lattice:review` | Skill prompt |
+| Token conformance (raw hex / arbitrary Tailwind / inline px) | `scripts/audit-tokens.sh` | Pre-commit hook Step 4e (advisory — see GAP-264) |

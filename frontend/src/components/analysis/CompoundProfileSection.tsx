@@ -10,16 +10,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useCompoundProfile, useSaveCompoundProfile, useResetCompoundProfile } from "@/hooks/useCompoundProfile";
 import { OverridePill } from "@/components/ui/OverridePill";
-import { Loader2, FlaskConical, Info } from "lucide-react";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Loader2, FlaskConical, Info, Plus, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { ExpectedFinding } from "@/types/compound-profile";
+import type { ExpectedFinding, CompoundIdentity } from "@/types/compound-profile";
 
 // ── Display name mapping for inferred compound classes ──────────────────
 
@@ -125,10 +118,18 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
   const saveMutation = useSaveCompoundProfile(studyId);
   const resetMutation = useResetCompoundProfile(studyId);
 
-  // Selected profile ID (for the dropdown) — AUTO_DETECT means "use inferred"
+  // Selected profile ID — AUTO_DETECT means "use inferred"
   const [selectedProfileId, setSelectedProfileId] = useState<string>(AUTO_DETECT);
   // Checked expected findings (key -> boolean)
   const [checkedFindings, setCheckedFindings] = useState<Record<string, boolean>>({});
+  // Override UX — click "Override..." to reveal a compact autocomplete input.
+  // Replaces the 29-row Select dropdown per spike decision 7.
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideInput, setOverrideInput] = useState("");
+  // Compound identity strings (SMILES / SMARTS / sponsor ID) — small molecules only, decision 6.
+  // List shape from day 1 to avoid painful multi-compound retrofit later (GAP-268).
+  const [identityList, setIdentityList] = useState<CompoundIdentity[]>([]);
+  const [identityDirty, setIdentityDirty] = useState(false);
 
   // Initialize from API response
   useEffect(() => {
@@ -145,6 +146,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
         }
         setCheckedFindings(defaults);
       }
+      setIdentityList(profile.sme_confirmed.compound_identity ?? [{}]);
     } else {
       setSelectedProfileId(AUTO_DETECT);
       if (profile.active_profile) {
@@ -154,7 +156,9 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
         }
         setCheckedFindings(defaults);
       }
+      setIdentityList([{}]);
     }
+    setIdentityDirty(false);
   }, [profile]);
 
   // The profile to display findings from
@@ -172,19 +176,14 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
 
   const isOverridden = !!profile?.sme_confirmed;
 
-  // When profile dropdown changes
-  const handleProfileChange = (value: string) => {
-    setSelectedProfileId(value);
+  // Apply class override — only fires when input resolves to a catalog profile.
+  const handleApplyOverride = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    setOverrideOpen(false);
+    setOverrideInput("");
 
-    if (value === AUTO_DETECT) {
-      // Reset to auto-detected
-      resetMutation.mutate();
-      return;
-    }
-
-    // Auto-save on selection (with metadata)
     const findings: Record<string, boolean> = {};
-    if (profile?.active_profile && profile.active_profile.profile_id === value) {
+    if (profile?.active_profile && profile.active_profile.profile_id === profileId) {
       for (const f of profile.active_profile.expected_findings) {
         findings[f.key] = true;
       }
@@ -192,12 +191,30 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
     setCheckedFindings(findings);
 
     saveMutation.mutate({
-      compound_class: value,
+      compound_class: profileId,
       original_compound_class: profile?.inference.compound_class ?? "small_molecule",
       confirmed_by_sme: true,
       expected_findings: findings,
       reviewDate: new Date().toISOString(),
+      compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
     });
+  };
+
+  // Save compound identity alone (small molecules: no class override needed).
+  const handleSaveIdentity = () => {
+    if (!profile) return;
+    const cleaned = identityList.filter(i => i.id || i.smiles || i.smarts);
+    const currentClass = profile.sme_confirmed?.compound_class ?? profile.inference.compound_class;
+    saveMutation.mutate({
+      compound_class: currentClass,
+      original_compound_class: profile.sme_confirmed?.original_compound_class ?? profile.inference.compound_class,
+      confirmed_by_sme: profile.sme_confirmed?.confirmed_by_sme ?? false,
+      expected_findings: checkedFindings,
+      note: profile.sme_confirmed?.note,
+      reviewDate: new Date().toISOString(),
+      compound_identity: cleaned,
+    });
+    setIdentityDirty(false);
   };
 
   const handleToggleFinding = (key: string) => {
@@ -214,6 +231,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       expected_findings: updated,
       note: profile?.sme_confirmed?.note,
       reviewDate: new Date().toISOString(),
+      compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
     });
   };
 
@@ -226,6 +244,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       expected_findings: checkedFindings,
       note: text,
       reviewDate: profile.sme_confirmed.reviewDate ?? new Date().toISOString(),
+      compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
     });
   };
 
@@ -310,43 +329,41 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
         </div>
       )}
 
-      {/* Profile selector */}
+      {/* Compact class override — replaces the 29-row Select (spike decision 7).
+           Inference-first: most studies need no interaction. Override opens on
+           demand; user types their compound class, autocomplete filters the
+           catalog, free-text shows a fallback message. */}
       {available_profiles.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedProfileId}
-            onValueChange={handleProfileChange}
-          >
-            <SelectTrigger className="h-7 w-fit min-w-[180px] text-xs">
-              <SelectValue placeholder="Select profile..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={AUTO_DETECT} className="text-xs">
-                Auto-detect{activeProfile && selectedProfileId === AUTO_DETECT
-                  ? ` (${activeProfile.display_name})`
-                  : !isSmallMoleculeDefault ? ` (${classDisplayName(inference.compound_class)})` : ""}
-              </SelectItem>
-              {available_profiles.map((p) => (
-                <SelectItem key={p.profile_id} value={p.profile_id} className="text-xs">
-                  {p.display_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* Reset link — visible when overridden */}
-          {isOverridden && (
-            <button
-              className="text-[11px] text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                setSelectedProfileId(AUTO_DETECT);
-                resetMutation.mutate();
-              }}
-              disabled={resetMutation.isPending}
-            >
-              Reset to auto
-            </button>
-          )}
-        </div>
+        <OverrideControl
+          availableProfiles={available_profiles}
+          isOverridden={isOverridden}
+          overrideOpen={overrideOpen}
+          setOverrideOpen={setOverrideOpen}
+          overrideInput={overrideInput}
+          setOverrideInput={setOverrideInput}
+          onApply={handleApplyOverride}
+          onReset={() => {
+            setSelectedProfileId(AUTO_DETECT);
+            resetMutation.mutate();
+          }}
+          resetPending={resetMutation.isPending}
+        />
+      )}
+
+      {/* Compound identity (small molecules only, spike decision 6).
+           Strings-only storage — structure rendering / physchem / similarity
+           light up post-Datagrok (GAP-268). */}
+      {inference.compound_class === "small_molecule" && (
+        <CompoundIdentityEditor
+          items={identityList}
+          onChange={(items) => {
+            setIdentityList(items);
+            setIdentityDirty(true);
+          }}
+          onSave={handleSaveIdentity}
+          dirty={identityDirty}
+          saving={saveMutation.isPending}
+        />
       )}
 
       {/* Expected findings checklist */}
@@ -374,6 +391,236 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
           Profile data will load after page refresh.
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Class override control ─────────────────────────────────────────────────
+
+function OverrideControl({
+  availableProfiles,
+  isOverridden,
+  overrideOpen,
+  setOverrideOpen,
+  overrideInput,
+  setOverrideInput,
+  onApply,
+  onReset,
+  resetPending,
+}: {
+  availableProfiles: import("@/types/compound-profile").ProfileSummary[];
+  isOverridden: boolean;
+  overrideOpen: boolean;
+  setOverrideOpen: (v: boolean) => void;
+  overrideInput: string;
+  setOverrideInput: (v: string) => void;
+  onApply: (profileId: string) => void;
+  onReset: () => void;
+  resetPending: boolean;
+}) {
+  // Fuzzy match: typed text anywhere in display_name OR profile_id.
+  const matches = useMemo(() => {
+    const q = overrideInput.trim().toLowerCase();
+    if (!q) return [] as typeof availableProfiles;
+    return availableProfiles
+      .filter(p => p.display_name.toLowerCase().includes(q) || p.profile_id.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [availableProfiles, overrideInput]);
+
+  const exactMatch = useMemo(
+    () => availableProfiles.find(
+      p => p.display_name.toLowerCase() === overrideInput.trim().toLowerCase(),
+    ) ?? null,
+    [availableProfiles, overrideInput],
+  );
+
+  const hasInput = overrideInput.trim().length > 0;
+  const canApply = exactMatch != null;
+
+  if (!overrideOpen) {
+    return (
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="text-[11px] text-primary hover:underline"
+          onClick={() => setOverrideOpen(true)}
+        >
+          Override class&hellip;
+        </button>
+        {isOverridden && (
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+            onClick={onReset}
+            disabled={resetPending}
+          >
+            Reset to auto
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded border border-border/60 bg-muted/10 p-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Override class
+      </div>
+      <input
+        type="text"
+        value={overrideInput}
+        onChange={(e) => setOverrideInput(e.target.value)}
+        placeholder="Type class (e.g., anti-IL-6 mAb, ADC MMAE, LNP mRNA)"
+        className="w-full rounded border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+        autoFocus
+      />
+      {hasInput && matches.length > 0 && (
+        <ul className="max-h-40 overflow-y-auto rounded border border-border/40 bg-background">
+          {matches.map((p) => (
+            <li key={p.profile_id}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-[11px] hover:bg-accent/40"
+                onClick={() => onApply(p.profile_id)}
+              >
+                <span>{p.display_name}</span>
+                <span className="text-[10px] text-muted-foreground">{p.modality}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {hasInput && matches.length === 0 && (
+        <div className="rounded border border-amber-200 bg-amber-50/50 px-2 py-1.5 text-[10px] leading-snug text-amber-700">
+          No catalog match for &ldquo;{overrideInput}&rdquo;. Findings would be scored on their own
+          evidence; no class-specific expected-effect filtering would apply. Pick a closer
+          catalog entry if your compound matches one; otherwise leave the inferred class.
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={!canApply}
+          onClick={() => exactMatch && onApply(exactMatch.profile_id)}
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          className="text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            setOverrideOpen(false);
+            setOverrideInput("");
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Compound identity editor (small molecules, strings-only) ───────────────
+
+function CompoundIdentityEditor({
+  items,
+  onChange,
+  onSave,
+  dirty,
+  saving,
+}: {
+  items: CompoundIdentity[];
+  onChange: (items: CompoundIdentity[]) => void;
+  onSave: () => void;
+  dirty: boolean;
+  saving: boolean;
+}) {
+  const update = (i: number, patch: Partial<CompoundIdentity>) => {
+    const next = items.map((item, idx) => (idx === i ? { ...item, ...patch } : item));
+    onChange(next);
+  };
+  const addRow = () => onChange([...items, {}]);
+  const removeRow = (i: number) => onChange(items.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-1 rounded border border-border/60 bg-muted/10 p-2">
+      <div className="flex items-center justify-between">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Compound identity
+        </div>
+        <div className="text-[9px] text-muted-foreground/70">
+          strings only &middot; structure / physchem post-Datagrok
+        </div>
+      </div>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div key={i} className="space-y-0.5 rounded border border-border/40 bg-background p-1.5">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-medium text-muted-foreground">
+                Compound {items.length > 1 ? i + 1 : ""}
+              </div>
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => removeRow(i)}
+                  title="Remove compound"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <IdentityField label="ID" placeholder="e.g., CAS 22204-53-1" value={item.id ?? ""} onChange={(v) => update(i, { id: v })} />
+            <IdentityField label="SMILES" placeholder="e.g., CC(c1ccc2cc(OC)ccc2c1)C(=O)O" value={item.smiles ?? ""} onChange={(v) => update(i, { smiles: v })} mono />
+            <IdentityField label="SMARTS" placeholder="optional substructure pattern" value={item.smarts ?? ""} onChange={(v) => update(i, { smarts: v })} mono />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+          onClick={addRow}
+        >
+          <Plus className="h-3 w-3" /> Add compound
+        </button>
+        <button
+          type="button"
+          className="rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={!dirty || saving}
+          onClick={onSave}
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function IdentityField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  mono,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label className="w-14 shrink-0 text-[10px] text-muted-foreground">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full rounded border bg-background px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary ${mono ? "font-mono" : ""}`}
+      />
     </div>
   );
 }

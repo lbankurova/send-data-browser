@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from "react";
 import { useSessionState, isOneOf } from "./useSessionState";
 
-type StudySummaryTab = "details" | "rules";
-const isStudySummaryTab = isOneOf(["details", "rules"] as const);
+type StudySummaryTab = "details" | "rules" | "hcd";
+const isStudySummaryTab = isOneOf(["details", "rules", "hcd"] as const);
 
 const TAB_CHANGE_EVENT = "pcc:studySummaryTabChange";
 const SESSION_KEY = "pcc.studySummary.tab";

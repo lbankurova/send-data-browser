@@ -7,7 +7,6 @@ import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
 import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { useControlComparison } from "@/hooks/useControlComparison";
-import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHcdReferences } from "@/hooks/useHcdReferences";
 import { uploadHcdUser, deleteHcdUser } from "@/lib/analysis-view-api";
@@ -68,80 +67,6 @@ function SettingsSelect({
   );
 }
 
-interface StudyNote {
-  text: string;
-  lastEdited?: string;
-}
-
-
-type DoseGroupWithRecovery = import("@/types/analysis").DoseGroup & { recovery_n?: number };
-
-// ── Dose Groups Display ─────────────────────────────────────
-
-function DoseGroupsSection({ doseGroups }: { doseGroups: import("@/types/analysis").DoseGroup[] }) {
-  // Sort: controls first (by dose_level ascending), then treatments (by dose_level ascending)
-  const sorted = [...doseGroups].sort((a, b) => {
-    if (a.is_control && !b.is_control) return -1;
-    if (!a.is_control && b.is_control) return 1;
-    return a.dose_level - b.dose_level;
-  });
-  const sharedUnit = sorted[0]?.shared_unit;
-
-  return (
-    <div className="space-y-0.5">
-      {sharedUnit && (
-        <div className="pb-1 text-[10px] text-muted-foreground">
-          Unit: {sharedUnit}
-        </div>
-      )}
-      <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
-        <thead>
-          <tr className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <th className="w-5 py-0.5" />
-            <th className="py-0.5 text-left" style={{ width: "45%" }}>Label</th>
-            <th className="py-0.5 text-right" style={{ width: "25%" }}>Dose</th>
-            <th className="py-0.5 text-right" style={{ width: "15%" }}>N</th>
-            <th className="py-0.5 text-right" style={{ width: "15%" }}>Rec</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((dg) => {
-            const doseDisplay = dg.dose_value != null && dg.dose_value > 0
-              ? `${dg.dose_value}${!sharedUnit && dg.dose_unit ? ` ${dg.dose_unit}` : ""}`
-              : dg.is_control ? "\u2014" : "\u2014";
-            const recN = "recovery_n" in dg ? (dg as DoseGroupWithRecovery).recovery_n : undefined;
-            return (
-              <tr
-                key={dg.armcd}
-                className="border-t border-border-subtle hover:bg-hover-bg"
-                title={dg.label}
-              >
-                <td className="py-1">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: dg.display_color ?? "#6b7280" }}
-                  />
-                </td>
-                <td className="truncate py-1 font-medium" title={dg.label}>
-                  {dg.short_label ?? dg.label}
-                </td>
-                <td className="py-1 text-right font-mono tabular-nums text-muted-foreground">
-                  {doseDisplay}
-                </td>
-                <td className="py-1 text-right font-mono tabular-nums">
-                  {dg.n_total}
-                </td>
-                <td className="py-1 text-right font-mono tabular-nums text-muted-foreground">
-                  {recN ? recN : "\u2014"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 // ── Vehicle Effect Comparison ────────────────────────────────
 
@@ -215,13 +140,6 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
   const { data: controlComparison } = useControlComparison(studyId);
-  // Study notes via annotation API
-  const { data: studyNotes } = useAnnotations<StudyNote>(studyId, "study-notes");
-  const saveNote = useSaveAnnotation<StudyNote>(studyId, "study-notes");
-  const currentNote = studyNotes?.["study-note"]?.text ?? "";
-  const lastEdited = studyNotes?.["study-note"]?.lastEdited;
-  const [noteText, setNoteText] = useState<string | null>(null);
-  const displayNote = noteText ?? currentNote;
 
   // Analysis settings via centralized StudySettingsContext
   const { settings, updateSetting } = useStudySettings();
@@ -325,12 +243,9 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
       </div>
 
       <div className="flex-1 overflow-auto">
-      {/* ── Dose groups ──────────────────────────────────── */}
-      {meta.dose_groups && meta.dose_groups.length > 0 && (
-        <CollapsiblePane title="Dose groups" defaultOpen={false} sessionKey="pcc.studySettings.doseGroups" expandAll={expandGen} collapseAll={collapseGen}>
-          <DoseGroupsSection doseGroups={meta.dose_groups} />
-        </CollapsiblePane>
-      )}
+      {/* Dose groups pane removed — info duplicates StudyTimeline in the Study
+          design section of the main view. Previously in this Settings panel
+          as read-only reference. */}
 
       {/* ── Compound profile ─────────────────────────────── */}
       <CollapsiblePane title="Compound profile" defaultOpen={false} sessionKey="pcc.studySettings.compoundProfile" expandAll={expandGen} collapseAll={collapseGen}>
@@ -650,51 +565,22 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 {Object.keys(hcdData.references).length} reference{Object.keys(hcdData.references).length !== 1 ? "s" : ""} available
                 {userHcdCount > 0 && <span className="ml-1">({userHcdCount} user-uploaded)</span>}
               </div>
+              {Object.keys(hcdData.references).length > 0 && (
+                <button
+                  type="button"
+                  className="mt-1 text-[11px] text-primary hover:underline"
+                  onClick={() => window.dispatchEvent(new CustomEvent("pcc:openHcdTab"))}
+                >
+                  View HCD reference &rarr;
+                </button>
+              )}
             </div>
           )}
         </div>
       </CollapsiblePane>
 
-      {/* ── Study notes ─────────────────────────────────── */}
-      <CollapsiblePane
-        title="Study notes"
-        headerRight={currentNote ? "1 note" : "none"}
-        defaultOpen={false}
-        sessionKey="pcc.studySettings.studyNotes"
-        expandAll={expandGen}
-        collapseAll={collapseGen}
-      >
-        <textarea
-          className="w-full rounded border bg-background px-2 py-1.5 text-xs leading-snug placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
-          rows={4}
-          placeholder="Add study-level notes..."
-          value={displayNote}
-          onChange={(e) => setNoteText(e.target.value)}
-        />
-        <div className="mt-1 flex items-center justify-between">
-          <button
-            className="rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            disabled={displayNote === currentNote || saveNote.isPending}
-            onClick={() => {
-              saveNote.mutate({
-                entityKey: "study-note",
-                data: {
-                  text: displayNote,
-                  lastEdited: new Date().toISOString(),
-                },
-              });
-              setNoteText(null);
-            }}
-          >
-            {saveNote.isPending ? "Saving..." : "Save"}
-          </button>
-          {lastEdited && (
-            <span className="text-[10px] text-muted-foreground/60">
-              Last edited: {new Date(lastEdited).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-      </CollapsiblePane>
+      {/* Study notes pane removed — user notes now live in the Study details
+          view's Notes section (single source of truth). */}
       </div>
     </div>
   );

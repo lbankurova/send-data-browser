@@ -40,7 +40,7 @@ def _load_profiles() -> dict[str, dict]:
 
     for path in _PROFILES_DIR.glob("*.json"):
         try:
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 profile = json.load(f)
             pid = profile.get("profile_id")
             if pid:
@@ -145,7 +145,7 @@ def _read_sme_annotation(study_id: str) -> dict | None:
         return None
     try:
         import json as _json
-        with open(ann_path, "r") as f:
+        with open(ann_path, "r", encoding="utf-8") as f:
             data = _json.load(f)
         return data.get("study")
     except Exception:
