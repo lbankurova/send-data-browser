@@ -197,6 +197,30 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       expected_findings: findings,
       reviewDate: new Date().toISOString(),
       compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
+      // Clear any prior freetext — user has picked a catalog profile now.
+      compound_class_freetext: undefined,
+    });
+  };
+
+  // Apply a free-text class label with no catalog match. No expected-effect
+  // filtering applies (the catalog is authoritative); but the scientist's
+  // knowledge of the compound class is preserved on the annotation.
+  const handleApplyFreetext = (freetext: string) => {
+    if (!profile) return;
+    const cleaned = freetext.trim();
+    if (!cleaned) return;
+    setOverrideOpen(false);
+    setOverrideInput("");
+
+    saveMutation.mutate({
+      compound_class: profile.sme_confirmed?.compound_class ?? profile.inference.compound_class,
+      original_compound_class: profile.sme_confirmed?.original_compound_class ?? profile.inference.compound_class,
+      confirmed_by_sme: profile.sme_confirmed?.confirmed_by_sme ?? false,
+      expected_findings: checkedFindings,
+      note: profile.sme_confirmed?.note,
+      reviewDate: new Date().toISOString(),
+      compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
+      compound_class_freetext: cleaned,
     });
   };
 
@@ -213,6 +237,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       note: profile.sme_confirmed?.note,
       reviewDate: new Date().toISOString(),
       compound_identity: cleaned,
+      compound_class_freetext: profile.sme_confirmed?.compound_class_freetext,
     });
     setIdentityDirty(false);
   };
@@ -232,6 +257,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       note: profile?.sme_confirmed?.note,
       reviewDate: new Date().toISOString(),
       compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
+      compound_class_freetext: profile?.sme_confirmed?.compound_class_freetext,
     });
   };
 
@@ -245,6 +271,7 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
       note: text,
       reviewDate: profile.sme_confirmed.reviewDate ?? new Date().toISOString(),
       compound_identity: identityList.filter(i => i.id || i.smiles || i.smarts),
+      compound_class_freetext: profile.sme_confirmed.compound_class_freetext,
     });
   };
 
@@ -333,22 +360,22 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
            Inference-first: most studies need no interaction. Override opens on
            demand; user types their compound class, autocomplete filters the
            catalog, free-text shows a fallback message. */}
-      {available_profiles.length > 0 && (
-        <OverrideControl
-          availableProfiles={available_profiles}
-          isOverridden={isOverridden}
-          overrideOpen={overrideOpen}
-          setOverrideOpen={setOverrideOpen}
-          overrideInput={overrideInput}
-          setOverrideInput={setOverrideInput}
-          onApply={handleApplyOverride}
-          onReset={() => {
-            setSelectedProfileId(AUTO_DETECT);
-            resetMutation.mutate();
-          }}
-          resetPending={resetMutation.isPending}
-        />
-      )}
+      <OverrideControl
+        availableProfiles={available_profiles}
+        isOverridden={isOverridden}
+        freetextLabel={sme_confirmed?.compound_class_freetext}
+        overrideOpen={overrideOpen}
+        setOverrideOpen={setOverrideOpen}
+        overrideInput={overrideInput}
+        setOverrideInput={setOverrideInput}
+        onApply={handleApplyOverride}
+        onApplyFreetext={handleApplyFreetext}
+        onReset={() => {
+          setSelectedProfileId(AUTO_DETECT);
+          resetMutation.mutate();
+        }}
+        resetPending={resetMutation.isPending}
+      />
 
       {/* Compound identity (small molecules only, spike decision 6).
            Strings-only storage — structure rendering / physchem / similarity
@@ -400,21 +427,26 @@ export function CompoundProfileSection({ studyId }: { studyId: string }) {
 function OverrideControl({
   availableProfiles,
   isOverridden,
+  freetextLabel,
   overrideOpen,
   setOverrideOpen,
   overrideInput,
   setOverrideInput,
   onApply,
+  onApplyFreetext,
   onReset,
   resetPending,
 }: {
   availableProfiles: import("@/types/compound-profile").ProfileSummary[];
   isOverridden: boolean;
+  /** Active free-text class label (set when user applied a non-catalog class). */
+  freetextLabel?: string;
   overrideOpen: boolean;
   setOverrideOpen: (v: boolean) => void;
   overrideInput: string;
   setOverrideInput: (v: string) => void;
   onApply: (profileId: string) => void;
+  onApplyFreetext: (label: string) => void;
   onReset: () => void;
   resetPending: boolean;
 }) {
@@ -435,7 +467,8 @@ function OverrideControl({
   );
 
   const hasInput = overrideInput.trim().length > 0;
-  const canApply = exactMatch != null;
+  const canApplyCatalog = exactMatch != null;
+  const canApplyFreetext = hasInput && !canApplyCatalog;
 
   if (!overrideOpen) {
     return (
@@ -447,7 +480,15 @@ function OverrideControl({
         >
           Override class&hellip;
         </button>
-        {isOverridden && (
+        {freetextLabel && (
+          <span
+            className="text-[11px] text-muted-foreground"
+            title="User-entered class label (no catalog match)"
+          >
+            User class: <span className="font-medium text-foreground">{freetextLabel}</span>
+          </span>
+        )}
+        {(isOverridden || freetextLabel) && (
           <button
             type="button"
             className="text-[11px] text-muted-foreground hover:text-foreground"
@@ -492,17 +533,24 @@ function OverrideControl({
       )}
       {hasInput && matches.length === 0 && (
         <div className="rounded border border-amber-200 bg-amber-50/50 px-2 py-1.5 text-[10px] leading-snug text-amber-700">
-          No catalog match for &ldquo;{overrideInput}&rdquo;. Findings would be scored on their own
-          evidence; no class-specific expected-effect filtering would apply. Pick a closer
-          catalog entry if your compound matches one; otherwise leave the inferred class.
+          No catalog match for &ldquo;{overrideInput}&rdquo;. Findings will be scored on their own
+          evidence; no class-specific expected-effect filtering will apply. Applying saves this
+          label as the user-declared class — pick a closer catalog entry if one fits your compound.
         </div>
       )}
       <div className="flex items-center gap-2">
         <button
           type="button"
           className="rounded bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-          disabled={!canApply}
-          onClick={() => exactMatch && onApply(exactMatch.profile_id)}
+          disabled={!canApplyCatalog && !canApplyFreetext}
+          onClick={() => {
+            if (canApplyCatalog && exactMatch) {
+              onApply(exactMatch.profile_id);
+            } else if (canApplyFreetext) {
+              onApplyFreetext(overrideInput.trim());
+            }
+          }}
+          title={canApplyFreetext ? "Save as user-declared class (no catalog match)" : undefined}
         >
           Apply
         </button>
@@ -545,20 +593,15 @@ function CompoundIdentityEditor({
 
   return (
     <div className="space-y-1 rounded border border-border/60 bg-muted/10 p-2">
-      <div className="flex items-center justify-between">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Compound identity
-        </div>
-        <div className="text-[9px] text-muted-foreground/70">
-          strings only &middot; structure / physchem post-Datagrok
-        </div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Compound identity <span className="font-normal normal-case tracking-normal text-muted-foreground/70">&mdash; strings only &middot; structure / physchem post-Datagrok</span>
       </div>
       <div className="space-y-2">
         {items.map((item, i) => (
           <div key={i} className="space-y-0.5 rounded border border-border/40 bg-background p-1.5">
             <div className="flex items-center justify-between">
               <div className="text-[10px] font-medium text-muted-foreground">
-                Compound {items.length > 1 ? i + 1 : ""}
+                Compound {i + 1}
               </div>
               {items.length > 1 && (
                 <button

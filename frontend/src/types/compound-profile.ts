@@ -108,6 +108,14 @@ export interface SmeConfirmedProfile {
   reviewDate?: string;
   /** List shape from day 1 — single-compound studies have one element, multi-compound studies have N. */
   compound_identity?: CompoundIdentity[];
+  /**
+   * Free-text class label the user entered when no catalog match was found.
+   * Persisted so the scientist's knowledge isn't lost; no expected-effect filtering
+   * applies (the catalog is authoritative for that). Mutually exclusive in intent
+   * with a catalog `compound_class`: when this is set, `compound_class` typically
+   * stays at the inferred value.
+   */
+  compound_class_freetext?: string;
 }
 
 export interface CompoundProfileResponse {

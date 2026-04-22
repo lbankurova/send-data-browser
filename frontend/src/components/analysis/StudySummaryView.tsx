@@ -82,17 +82,6 @@ export function StudySummaryView() {
     if (tab === "hcd") setHcdTabOpen(true);
   }, [tab]);
 
-  // Cross-component event listener — the Settings panel's HCD pane dispatches
-  // this event when its "View HCD reference" link is clicked.
-  useEffect(() => {
-    const open = () => {
-      setHcdTabOpen(true);
-      setTab("hcd");
-    };
-    window.addEventListener("pcc:openHcdTab", open);
-    return () => window.removeEventListener("pcc:openHcdTab", open);
-  }, [setTab]);
-
   // Initialize ScheduledOnlyContext from mortality data (matches FindingsView pattern)
   const { setEarlyDeathSubjects } = useScheduledOnly();
   useEffect(() => {
@@ -877,7 +866,7 @@ function DetailsTab({
       label: "Notes",
       count: studyLevelNotes.length > 0 ? studyLevelNotes.length : null,
     },
-    { key: "domains", label: "Domains", count: domainRows.length },
+    { key: "domains", label: `Domains (${domainRows.length})` },
     ...(hasPkExposure ? [{ key: "pk-exposure" as const, label: "PK Exposure" }] : []),
     { key: "data-quality", label: "Data quality" },
   ];
@@ -886,7 +875,7 @@ function DetailsTab({
   const noaelSection = (
     <div className="space-y-2 p-4 text-xs">
       {!noaelLabel && !loaelLabel && targetOrganCount === 0 && (
-        <div className="text-muted-foreground">No NOAEL / LOAEL determination available for this study.</div>
+        <div className="text-muted-foreground">No NOAEL / LOAEL determination available</div>
       )}
       {(noaelLabel || targetOrganCount > 0) && (
         <div className="flex items-baseline gap-1.5">
@@ -958,7 +947,7 @@ function DetailsTab({
           excludedSubjects={excludedSubjects}
         />
       ) : (
-        <div className="text-xs text-muted-foreground">Timeline unavailable — dose groups or duration not resolved.</div>
+        <div className="text-xs text-muted-foreground">Timeline unavailable — dose groups or duration not resolved</div>
       )}
     </div>
   );

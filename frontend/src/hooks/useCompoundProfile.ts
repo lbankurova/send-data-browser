@@ -27,6 +27,7 @@ export function useSaveCompoundProfile(studyId: string | undefined) {
       note?: string;
       reviewDate: string;
       compound_identity?: CompoundIdentity[];
+      compound_class_freetext?: string;
     }) =>
       saveAnnotation(studyId!, "compound-profile", "study", data),
     onSuccess: () => {

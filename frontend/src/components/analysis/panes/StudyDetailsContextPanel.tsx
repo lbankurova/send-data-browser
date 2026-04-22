@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { AlertTriangle, Upload, Trash2 } from "lucide-react";
 import { useStudyMetadata } from "@/hooks/useStudyMetadata";
+import { useStudySummaryTab } from "@/hooks/useStudySummaryTab";
 import { useOrganWeightNormalization } from "@/hooks/useOrganWeightNormalization";
 import { getTierSeverityLabel, buildNormalizationRationale, getBrainTier } from "@/lib/organ-weight-normalization";
 import { useNormalizationOverrides } from "@/hooks/useNormalizationOverrides";
@@ -140,6 +141,10 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
   const { data: meta, isLoading: metaLoading } = useStudyMetadata(studyId);
   const { data: mortalityData } = useStudyMortality(studyId);
   const { data: controlComparison } = useControlComparison(studyId);
+  // Cross-tree tab sync — canonical channel for switching the study-summary
+  // tab from outside the view. Replaces an earlier bespoke `pcc:openHcdTab`
+  // event that duplicated this infrastructure.
+  const [, setStudySummaryTab] = useStudySummaryTab();
 
   // Analysis settings via centralized StudySettingsContext
   const { settings, updateSetting } = useStudySettings();
@@ -569,7 +574,7 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
                 <button
                   type="button"
                   className="mt-1 text-[11px] text-primary hover:underline"
-                  onClick={() => window.dispatchEvent(new CustomEvent("pcc:openHcdTab"))}
+                  onClick={() => setStudySummaryTab("hcd")}
                 >
                   View HCD reference &rarr;
                 </button>

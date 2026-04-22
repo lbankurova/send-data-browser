@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useHcdReferences } from "@/hooks/useHcdReferences";
+import { useStudySignalSummary } from "@/hooks/useStudySignalSummary";
 import type { HcdReference } from "@/types/analysis-views";
 
 type SortKey = "test_code" | "sex" | "n" | "source" | "confidence";
@@ -35,6 +36,9 @@ function sourceLabel(src: string): string {
 
 export function HcdReferenceTab({ studyId }: { studyId: string }) {
   const { data, isLoading, error } = useHcdReferences(studyId);
+  // Study signal summary is already fetched elsewhere in the view (5-min cache
+  // via React Query), so this is a cache hit in practice.
+  const { data: signalData } = useStudySignalSummary(studyId);
   const [sortKey, setSortKey] = useState<SortKey>("test_code");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -42,6 +46,36 @@ export function HcdReferenceTab({ studyId }: { studyId: string }) {
     if (!data?.references) return [];
     return Object.values(data.references);
   }, [data]);
+
+  // Missing-coverage analysis: study endpoints (LB/BW — the HCD-relevant
+  // domains) that have no matching HCD reference. Helps scientists judge
+  // when a confidence downgrade is due to absent reference data vs. weak
+  // effect size. Computed as set difference on test_code × sex pairs.
+  const missingCoverage = useMemo(() => {
+    if (!signalData || !data?.references) return [] as Array<{ test_code: string; sex: string; endpoint_label: string; domain: string }>;
+    const refKeys = new Set(Object.keys(data.references));
+    const seen = new Set<string>();
+    const missing: Array<{ test_code: string; sex: string; endpoint_label: string; domain: string }> = [];
+    for (const row of signalData) {
+      const domain = row.domain?.toUpperCase();
+      if (domain !== "LB" && domain !== "BW") continue;
+      if (!row.test_code) continue;
+      const tc = row.test_code.toUpperCase();
+      const sex = row.sex;
+      const key = `${tc}:${sex}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!refKeys.has(key)) {
+        missing.push({
+          test_code: tc,
+          sex,
+          endpoint_label: row.endpoint_label ?? tc,
+          domain,
+        });
+      }
+    }
+    return missing.sort((a, b) => a.test_code.localeCompare(b.test_code) || a.sex.localeCompare(b.sex));
+  }, [signalData, data?.references]);
 
   const sortedRows = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -187,6 +221,33 @@ export function HcdReferenceTab({ studyId }: { studyId: string }) {
               );
             })}
           </dl>
+        </section>
+      )}
+
+      {/* Missing coverage — study LB/BW endpoints with no HCD match */}
+      {missingCoverage.length > 0 && (
+        <section className="space-y-1 border-t pt-3 pb-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Missing coverage ({missingCoverage.length})
+          </div>
+          <div className="text-[11px] text-muted-foreground leading-snug">
+            Study endpoints with no matching historical control reference. Findings
+            on these endpoints are scored on effect size alone; HCD-based
+            percentile scoring is unavailable.
+          </div>
+          <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
+            {missingCoverage.slice(0, 40).map(m => (
+              <li key={`${m.test_code}:${m.sex}`} className="flex items-baseline gap-1">
+                <span className="font-mono text-foreground">{m.test_code}</span>
+                <span className="text-muted-foreground">({m.sex}, {m.domain})</span>
+              </li>
+            ))}
+            {missingCoverage.length > 40 && (
+              <li className="text-muted-foreground/70">
+                +{missingCoverage.length - 40} more
+              </li>
+            )}
+          </ul>
         </section>
       )}
 
