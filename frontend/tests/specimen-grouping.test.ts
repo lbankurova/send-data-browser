@@ -99,7 +99,7 @@ describe("specimen grouping mode", () => {
   });
 
   it("buildEndpointToGroupIndex maps specimen endpoints only", () => {
-    const index = buildEndpointToGroupIndex(ALL_ENDPOINTS as any, "specimen");
+    const index = buildEndpointToGroupIndex(ALL_ENDPOINTS, "specimen");
 
     expect(index.get("LIVER — HYPERTROPHY")).toBe("LIVER");
     expect(index.get("LIVER — MASS")).toBe("LIVER");
@@ -111,7 +111,7 @@ describe("specimen grouping mode", () => {
 
   it("filterEndpoints with groupFilter filters by specimen key", () => {
     const filters: RailFilters = { ...EMPTY_RAIL_FILTERS, groupFilter: new Set(["LIVER"]) };
-    const result = filterEndpoints(ALL_ENDPOINTS as any, filters, "specimen");
+    const result = filterEndpoints(ALL_ENDPOINTS, filters, "specimen");
 
     expect(result).toHaveLength(2);
     expect(result.every((e) => e.specimen === "LIVER")).toBe(true);

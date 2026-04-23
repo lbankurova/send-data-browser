@@ -669,6 +669,7 @@ const KEYWORD_ORGAN_MAP: [string, string][] = [
   ["MUSCLE", "musculoskeletal"], ["FEMUR", "musculoskeletal"], ["STERNUM", "musculoskeletal"],
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure mapping helper consumed by HistopathologyView; archived module, no HMR cost in practice.
 export function specimenToOrganSystem(specimen: string): string {
   const upper = specimen.toUpperCase().trim();
   if (SPECIMEN_ORGAN_MAP[upper]) return SPECIMEN_ORGAN_MAP[upper];

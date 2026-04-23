@@ -27,7 +27,7 @@ const hasDb = fs.existsSync(HCD_DB_PATH);
 
 // ─── SQLite helper (uses Python subprocess via temp file) ───
 
-function sqliteQuery(sql: string): any[] {
+function sqliteQuery(sql: string): Record<string, unknown>[] {
   const tmpScript = path.join(ROOT, "frontend", "_hcd_query_tmp.py");
   const pyCode = [
     "import sqlite3, json",
@@ -49,7 +49,7 @@ function sqliteQuery(sql: string): any[] {
   }
 }
 
-function sqliteScalar(sql: string): any {
+function sqliteScalar(sql: string): unknown {
   const rows = sqliteQuery(sql);
   if (rows.length === 0) return undefined;
   const keys = Object.keys(rows[0]);

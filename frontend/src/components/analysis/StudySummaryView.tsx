@@ -310,6 +310,7 @@ export interface TfTypeSummary {
   bySpecimen: Map<string, Map<string, number>>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (session-regressions-2026-02-24.test.ts).
 export function buildTfTypeSummary(rows: Record<string, unknown>[]): TfTypeSummary {
   const bySpecimen = new Map<string, Map<string, number>>();
   const uniqueTypes = new Set<string>();

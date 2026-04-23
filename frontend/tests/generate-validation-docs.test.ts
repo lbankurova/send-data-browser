@@ -606,7 +606,7 @@ function checkDesign(card: ReferenceCard, doseGroups: DoseGroup[], recoveryGroup
     // Recovery can be encoded two ways:
     // 1. Separate is_recovery=true groups (recoveryGroups)
     // 2. recovery_n > 0 fields on main dose groups
-    const recoveryOnMain = doseGroups.filter((g: DoseGroup) => (g as any).recovery_n > 0);
+    const recoveryOnMain = doseGroups.filter((g) => (g.recovery_n ?? 0) > 0);
     const hasRecovery = recoveryGroups.length > 0 || recoveryOnMain.length > 0;
     const recoveryCount = recoveryGroups.length > 0 ? recoveryGroups.length : recoveryOnMain.length;
     checks.push({

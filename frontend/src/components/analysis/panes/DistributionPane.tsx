@@ -56,6 +56,7 @@ type DistMode = "terminal" | "peak" | "recovery" | "scatter_bw";
  * Returns null when there are fewer than 2 shared timepoints or no
  * control/high-dose subjects.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (peak-effect-day.test.ts).
 export function findPeakEffectDay(
   subjects: TimecourseSubject[],
 ): { day: number; controlMean: number } | null {

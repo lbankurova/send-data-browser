@@ -1218,6 +1218,7 @@ function RailFiltersSection({
 
 /** Highest normalization tier across dose groups for organs in this card.
  *  Matches OM endpoint specimens against NormalizationContext.organ (both SEND specimen names). */
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (syndrome-normalization.test.ts).
 export function computeOrganNormSummary(
   endpoints: EndpointWithSignal[],
   contexts: NormalizationContext[],

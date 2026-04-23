@@ -49,6 +49,7 @@ export interface ChartRow {
   isEdge: "insufficient_n" | "no_concurrent_control" | null;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (recovery-continuous.test.ts).
 export function buildChartRows(
   rows: RecoveryRow[],
   doseGroups: DoseGroup[] | undefined,
@@ -144,6 +145,7 @@ function formatPCompact(p: number): string {
 }
 
 /** Exported for RecoveryPane verdict descriptions. */
+// eslint-disable-next-line react-refresh/only-export-components -- Pure formatter exported for unit tests (recovery-continuous.test.ts).
 export function formatVerdictDesc(
   terminalG: number | null,
   recoveryG: number | null,
@@ -173,6 +175,7 @@ export function formatVerdictDesc(
   return ratio ? `${dir}\u2009${ratio}\u00d7 (${gTrajectory}${pStr})` : `${dir} (${gTrajectory}${pStr})`;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (recovery-continuous.test.ts).
 export function connectorStyle(p: number | null): { opacity: number; width: number } {
   if (p == null) return { opacity: 0.7, width: 0.5 };
   if (p < 0.05) return { opacity: 1.0, width: 1.5 };
@@ -181,6 +184,7 @@ export function connectorStyle(p: number | null): { opacity: number; width: numb
 }
 
 /** Re-exported for tests. */
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (recovery-continuous.test.ts).
 export function hasPeakQualifier(row: RecoveryRow): boolean {
   return (
     row.peak_effect != null &&

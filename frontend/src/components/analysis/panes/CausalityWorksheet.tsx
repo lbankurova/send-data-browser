@@ -64,6 +64,7 @@ const EXPERT_CRITERIA = [
 
 type Level = 0 | 1 | 2 | 3 | 4 | 5;
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (causality-consistency.test.ts).
 export function computeBiologicalGradient(ep: CausalitySummary): { level: Level; evidence: string } {
   const pattern = ep.dose_response_pattern ?? "";
   let base = 1;
@@ -85,6 +86,7 @@ export function computeBiologicalGradient(ep: CausalitySummary): { level: Level;
 // continuous-domain magnitude evidence that Cohen's d provides.
 const CATEGORICAL_MAX_STRENGTH_LEVEL = 3 as const;
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (causality-consistency.test.ts).
 export function computeStrength(ep: CausalitySummary, esSymbol = "g"): { level: Level; evidence: string } {
   const d = ep.max_effect_size != null ? Math.abs(ep.max_effect_size) : 0;
   const isContinuous = ep.data_type === "continuous";
@@ -106,6 +108,7 @@ export function computeStrength(ep: CausalitySummary, esSymbol = "g"): { level: 
   return { level, evidence: `${metricLabel} = ${d.toFixed(2)}${pText}` };
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (causality-consistency.test.ts).
 export function computeConsistency(
   ep: CausalitySummary,
   perSexSummaries?: Record<string, CausalitySummary>,

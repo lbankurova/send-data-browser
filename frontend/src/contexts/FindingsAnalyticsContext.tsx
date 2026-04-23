@@ -77,10 +77,12 @@ export function FindingsAnalyticsProvider({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useFindingsAnalytics(): FindingsAnalytics {
   return useContext(FindingsAnalyticsContext);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useFindingsAnalyticsResult(): FindingsAnalyticsResult {
   return useContext(FindingsAnalyticsResultContext);
 }

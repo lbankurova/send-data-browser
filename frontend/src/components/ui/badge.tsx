@@ -45,4 +45,5 @@ function Badge({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shadcn/ui pattern: variants config co-located with component.
 export { Badge, badgeVariants }

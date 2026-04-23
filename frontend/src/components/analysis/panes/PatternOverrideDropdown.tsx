@@ -10,7 +10,8 @@ import {
 } from "@/hooks/usePatternOverrideActions";
 import type { PreviewResult } from "@/hooks/usePatternOverrideActions";
 
-// Re-export for consumers that import from this file
+// Re-export for tests (pattern-override.test.ts) and downstream consumers
+// eslint-disable-next-line react-refresh/only-export-components -- Backward-compat re-export of pure helper consumed by unit tests.
 export { patternToOverrideKey } from "@/hooks/usePatternOverrideActions";
 
 interface Props {

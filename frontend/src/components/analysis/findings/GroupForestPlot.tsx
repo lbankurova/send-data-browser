@@ -33,7 +33,7 @@ export const WHISKER_WIDTH = 200;
 export const WHISKER_HEIGHT = 20;
 export const WHISKER_PAD = 12;
 
-export function toX(v: number, axisMin: number, axisMax: number): number {
+function toX(v: number, axisMin: number, axisMax: number): number {
   const range = axisMax - axisMin;
   if (range === 0) return WHISKER_PAD;
   return WHISKER_PAD + ((v - axisMin) / range) * (WHISKER_WIDTH - 2 * WHISKER_PAD);
@@ -198,6 +198,7 @@ function rawEffectSize(ep: EndpointSummary): number {
 }
 
 /** Signed sigmoid: preserves sign, compresses magnitude. */
+// eslint-disable-next-line react-refresh/only-export-components -- Pure math helper consumed by SubjectProfilePanel; co-located with whisker components.
 export function signedSigmoid(x: number): number {
   return x >= 0 ? sigmoidTransform(x) : -sigmoidTransform(-x);
 }

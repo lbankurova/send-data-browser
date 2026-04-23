@@ -4,20 +4,54 @@ import path from 'path'
 
 const GENERATED = path.resolve(__dirname, '../../backend/generated')
 
-function loadJson(study: string, file: string) {
+interface Finding {
+  domain?: string
+  finding_class?: string
+  severity?: string
+  treatment_related?: boolean
+  test_name?: string
+  finding?: string
+  organ_system?: string
+  sex?: string
+}
+
+interface NoaelEntry {
+  sex?: string
+  noael_dose_level?: number | null
+  loael_dose_level?: number | null
+  noael_label?: string
+  noael_derivation?: { method?: string }
+}
+
+interface DoseGroup {
+  is_control?: boolean
+  dose_level?: number
+}
+
+interface TargetOrgan {
+  target_organ_flag?: boolean
+  organ_system?: string
+}
+
+interface ProvenanceMessage {
+  rule_id?: string
+  message?: string
+}
+
+function loadJson(study: string, file: string): unknown {
   const p = path.join(GENERATED, study, file)
   if (!fs.existsSync(p)) return null
   return JSON.parse(fs.readFileSync(p, 'utf-8'))
 }
 
 /** unified_findings.json is {findings: [...], dose_groups: [...], ...} */
-function loadFindings(study: string): any[] {
-  const data = loadJson(study, 'unified_findings.json')
+function loadFindings(study: string): Finding[] {
+  const data = loadJson(study, 'unified_findings.json') as { findings?: Finding[] } | null
   return data?.findings ?? []
 }
 
-function loadDoseGroups(study: string): any[] {
-  const data = loadJson(study, 'unified_findings.json')
+function loadDoseGroups(study: string): DoseGroup[] {
+  const data = loadJson(study, 'unified_findings.json') as { dose_groups?: DoseGroup[] } | null
   return data?.dose_groups ?? []
 }
 
@@ -25,9 +59,9 @@ describe('Ground Truth Validation', () => {
 
   describe('PointCross — Engineered Signal Detection', () => {
     const findings = loadFindings('PointCross')
-    const noael: any[] = loadJson('PointCross', 'noael_summary.json') ?? []
+    const noael = (loadJson('PointCross', 'noael_summary.json') as NoaelEntry[] | null) ?? []
     const doseGroups = loadDoseGroups('PointCross')
-    const targetOrgans: any[] = loadJson('PointCross', 'target_organ_summary.json') ?? []
+    const targetOrgans = (loadJson('PointCross', 'target_organ_summary.json') as TargetOrgan[] | null) ?? []
 
     function hasAdverseOrTrAdverse(testPattern: RegExp, domain?: string) {
       return findings.some(f => {
@@ -130,30 +164,30 @@ describe('Ground Truth Validation', () => {
     })
 
     it('NOAEL not established (LOAEL at lowest active dose)', () => {
-      const combined = noael.find((n: any) => n.sex === 'Combined')
+      const combined = noael.find((n) => n.sex === 'Combined')
       expect(combined).toBeDefined()
       // LOAEL at dose_level 1 (lowest active dose) -> NOAEL "not established"
       // because vehicle is not a testable dose (EPA IRIS, OECD, Kale 2022)
-      expect(combined.noael_dose_level).toBeNull()
+      expect(combined!.noael_dose_level).toBeNull()
     })
 
     it('LOAEL at first treatment group', () => {
-      const combined = noael.find((n: any) => n.sex === 'Combined')
+      const combined = noael.find((n) => n.sex === 'Combined')
       expect(combined).toBeDefined()
-      expect(combined.loael_dose_level).toBeDefined()
-      expect(combined.loael_dose_level).toBeLessThanOrEqual(1)
+      expect(combined!.loael_dose_level).toBeDefined()
+      expect(combined!.loael_dose_level).toBeLessThanOrEqual(1)
     })
 
     it('correctly identifies control group', () => {
-      const control = doseGroups.find((g: any) => g.is_control)
+      const control = doseGroups.find((g) => g.is_control)
       expect(control).toBeDefined()
-      expect(control.dose_level).toBe(0)
+      expect(control!.dose_level).toBe(0)
     })
 
     it('flags hepatic and hematologic as target organs', () => {
       const targetNames = targetOrgans
-        .filter((t: any) => t.target_organ_flag)
-        .map((t: any) => t.organ_system?.toLowerCase())
+        .filter((t) => t.target_organ_flag)
+        .map((t) => t.organ_system?.toLowerCase())
       expect(targetNames).toContain('hepatic')
       expect(targetNames).toContain('hematologic')
     })
@@ -161,19 +195,19 @@ describe('Ground Truth Validation', () => {
 
   describe('No-Control Studies — NOAEL Guard', () => {
     it('Study3 (no vehicle control): NOAEL = Not established', () => {
-      const noael = loadJson('CBER-POC-Pilot-Study3-Gene-Therapy', 'noael_summary.json')
+      const noael = loadJson('CBER-POC-Pilot-Study3-Gene-Therapy', 'noael_summary.json') as NoaelEntry[] | null
       if (!noael) return
-      const combined = noael.find((n: any) => n.sex === 'Combined')
+      const combined = noael.find((n) => n.sex === 'Combined')
       expect(combined).toBeDefined()
-      expect(combined.noael_dose_level).toBeNull()
-      expect(combined.noael_label).toBe('Not established')
+      expect(combined!.noael_dose_level).toBeNull()
+      expect(combined!.noael_label).toBe('Not established')
     })
 
     it('Study3: no_concurrent_control derivation method', () => {
-      const noael = loadJson('CBER-POC-Pilot-Study3-Gene-Therapy', 'noael_summary.json')
+      const noael = loadJson('CBER-POC-Pilot-Study3-Gene-Therapy', 'noael_summary.json') as NoaelEntry[] | null
       if (!noael) return
-      const combined = noael.find((n: any) => n.sex === 'Combined')
-      expect(combined.noael_derivation?.method).toBe('no_concurrent_control')
+      const combined = noael.find((n) => n.sex === 'Combined')
+      expect(combined!.noael_derivation?.method).toBe('no_concurrent_control')
     })
   })
 
@@ -181,7 +215,7 @@ describe('Ground Truth Validation', () => {
     it('Study2: detects CRP elevation as treatment-related', () => {
       const findings = loadFindings('CBER-POC-Pilot-Study2-Vaccine_xpt')
       if (!findings.length) return
-      const crp = findings.filter((f: any) =>
+      const crp = findings.filter((f) =>
         /c.reactive|crp/i.test(f.test_name ?? '') && f.finding_class === 'tr_adverse'
       )
       expect(crp.length).toBeGreaterThan(0)
@@ -190,7 +224,7 @@ describe('Ground Truth Validation', () => {
     it('Study2: detects fibrinogen elevation as treatment-related', () => {
       const findings = loadFindings('CBER-POC-Pilot-Study2-Vaccine_xpt')
       if (!findings.length) return
-      const fib = findings.filter((f: any) =>
+      const fib = findings.filter((f) =>
         /fibrinogen/i.test(f.test_name ?? '') && f.finding_class === 'tr_adverse'
       )
       expect(fib.length).toBeGreaterThan(0)
@@ -199,7 +233,7 @@ describe('Ground Truth Validation', () => {
     it('Study4: detects CRP elevation as treatment-related', () => {
       const findings = loadFindings('CBER-POC-Pilot-Study4-Vaccine')
       if (!findings.length) return
-      const crp = findings.filter((f: any) =>
+      const crp = findings.filter((f) =>
         /c.reactive|crp/i.test(f.test_name ?? '') && f.finding_class === 'tr_adverse'
       )
       expect(crp.length).toBeGreaterThan(0)
@@ -208,7 +242,7 @@ describe('Ground Truth Validation', () => {
     it('Study4: detects fibrinogen elevation as treatment-related', () => {
       const findings = loadFindings('CBER-POC-Pilot-Study4-Vaccine')
       if (!findings.length) return
-      const fib = findings.filter((f: any) =>
+      const fib = findings.filter((f) =>
         /fibrinogen/i.test(f.test_name ?? '') && f.finding_class === 'tr_adverse'
       )
       expect(fib.length).toBeGreaterThan(0)
@@ -217,16 +251,16 @@ describe('Ground Truth Validation', () => {
     it('Study4: has concurrent control detected', () => {
       const groups = loadDoseGroups('CBER-POC-Pilot-Study4-Vaccine')
       if (!groups.length) return
-      const control = groups.find((g: any) => g.is_control)
+      const control = groups.find((g) => g.is_control)
       expect(control).toBeDefined()
     })
   })
 
   describe('Empty XPT Handling', () => {
     it('Study5: 0-byte XPT excluded, provenance warning generated', () => {
-      const prov = loadJson('CBER-POC-Pilot-Study5', 'provenance_messages.json')
+      const prov = loadJson('CBER-POC-Pilot-Study5', 'provenance_messages.json') as ProvenanceMessage[] | null
       if (!prov) return
-      const emptyWarning = prov.find((p: any) =>
+      const emptyWarning = prov.find((p) =>
         p.rule_id === 'Prov-011' || /0-byte|empty/i.test(p.message ?? '')
       )
       expect(emptyWarning).toBeDefined()
@@ -237,7 +271,7 @@ describe('Ground Truth Validation', () => {
     it('Study1 (single-arm, no control): no adverse findings', () => {
       const findings = loadFindings('CBER-POC-Pilot-Study1-Vaccine_xpt_only')
       if (!findings.length) return
-      const adverse = findings.filter((f: any) => f.severity === 'adverse')
+      const adverse = findings.filter((f) => f.severity === 'adverse')
       expect(adverse.length).toBe(0)
     })
   })

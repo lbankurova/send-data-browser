@@ -71,6 +71,7 @@ import { RecalculatingBanner } from "@/components/ui/RecalculatingBanner";
 import { HistopathHypothesesTab } from "@/components/analysis/HistopathologyHypothesesTab";
 
 // Re-export helpers for backward compatibility (consumers should import from @/lib/histopathology-helpers directly)
+/* eslint-disable react-refresh/only-export-components -- Backward-compat re-exports of pure helpers; archived view, no HMR cost in practice. */
 export {
   getNeutralHeatColor,
   deriveSpecimenSummaries,
@@ -79,6 +80,7 @@ export {
   deriveSpecimenConclusion,
   deriveSpecimenReviewStatus,
 } from "@/lib/histopathology-helpers";
+/* eslint-enable react-refresh/only-export-components */
 export type {
   HistopathSelection,
   SpecimenSummary,

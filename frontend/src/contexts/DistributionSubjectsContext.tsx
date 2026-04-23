@@ -59,6 +59,7 @@ export function DistributionSubjectsProvider({ children }: { children: ReactNode
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useDistributionSubjects(): DistributionSubjectsContextValue {
   return useContext(DistributionSubjectsContext);
 }

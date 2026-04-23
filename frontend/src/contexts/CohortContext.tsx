@@ -112,6 +112,7 @@ export interface CohortContextValue {
 
 const CohortCtx = createContext<CohortContextValue | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useCohort(): CohortContextValue {
   const ctx = useContext(CohortCtx);
   if (!ctx) throw new Error("useCohort must be used within CohortProvider");
@@ -119,6 +120,7 @@ export function useCohort(): CohortContextValue {
 }
 
 /** Lightweight check — returns null when not on cohort route. */
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useCohortMaybe(): CohortContextValue | null {
   return useContext(CohortCtx);
 }

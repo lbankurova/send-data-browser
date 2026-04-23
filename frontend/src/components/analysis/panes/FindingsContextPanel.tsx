@@ -1146,6 +1146,7 @@ export interface WoeStrengthResult {
 
 const STRENGTH_TIERS = ["insufficient", "weak", "moderate", "strong"] as const;
 
+// eslint-disable-next-line react-refresh/only-export-components -- Pure helper exported for unit tests (woe-strength.test.ts).
 export function computeWoeStrength(input: WoeStrengthInput): WoeStrengthResult {
   // Core triad
   const coreFactors: string[] = [];

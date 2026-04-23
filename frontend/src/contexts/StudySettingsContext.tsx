@@ -46,6 +46,7 @@ export interface StudySettingsContextValue {
 
 // ── Context ──────────────────────────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components -- Settings defaults co-located with the Provider that consumes them; not a fast-refresh hazard in practice.
 export const SETTINGS_DEFAULTS: StudySettings = {
   scheduledOnly: false,
   recoveryPooling: "pool",
@@ -193,6 +194,7 @@ export function StudySettingsProvider({ children }: { children: ReactNode }) {
 
 // ── Hook ─────────────────────────────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components -- Co-located hook with Provider is the canonical React Context pattern; HMR penalty accepted.
 export function useStudySettings(): StudySettingsContextValue {
   return useContext(StudySettingsContext);
 }

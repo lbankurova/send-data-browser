@@ -13,14 +13,38 @@ import path from "path";
 
 const GENERATED = path.resolve(__dirname, "../../backend/generated");
 
-function loadJson(study: string, file: string) {
+interface ConfidenceDim {
+  dimension: string;
+  score: number | null;
+  rationale?: string;
+}
+
+interface FindingConfidence {
+  dimensions?: ConfidenceDim[];
+  grade_sum?: number;
+  grade?: string;
+}
+
+interface Finding {
+  domain?: string;
+  severity?: string;
+  finding_class?: string;
+  test_name?: string;
+  finding?: string;
+  specimen?: string;
+  _confidence?: FindingConfidence;
+  _pharmacological_candidate?: boolean;
+  group_stats?: unknown[];
+}
+
+function loadJson(study: string, file: string): unknown {
   const p = path.join(GENERATED, study, file);
   if (!fs.existsSync(p)) return null;
   return JSON.parse(fs.readFileSync(p, "utf-8"));
 }
 
-function loadFindings(study: string): any[] {
-  const data = loadJson(study, "unified_findings.json");
+function loadFindings(study: string): Finding[] {
+  const data = loadJson(study, "unified_findings.json") as { findings?: Finding[] } | null;
   return data?.findings ?? [];
 }
 
@@ -34,14 +58,14 @@ describe("Pharmacological Classification", () => {
 
     it("all findings have _confidence with D1-D9 dimensions", () => {
       const withConf = findings.filter(
-        (f: any) => f._confidence?.dimensions?.length > 0,
+        (f) => f._confidence?.dimensions?.length > 0,
       );
       // At least 50% of findings should have confidence scoring
       expect(withConf.length).toBeGreaterThan(findings.length * 0.3);
 
       for (const f of withConf) {
         const dimNames = f._confidence.dimensions.map(
-          (d: any) => d.dimension,
+          (d: ConfidenceDim) => d.dimension,
         );
         expect(dimNames).toContain("D1");
         expect(dimNames).toContain("D2");
@@ -52,11 +76,11 @@ describe("Pharmacological Classification", () => {
 
     it("D9 = null (skipped) for ALL findings — no compound profile active", () => {
       const withConf = findings.filter(
-        (f: any) => f._confidence?.dimensions?.length > 0,
+        (f) => f._confidence?.dimensions?.length > 0,
       );
       for (const f of withConf) {
         const d9 = f._confidence.dimensions.find(
-          (d: any) => d.dimension === "D9",
+          (d: ConfidenceDim) => d.dimension === "D9",
         );
         expect(d9).toBeTruthy();
         expect(d9.score).toBeNull();
@@ -67,7 +91,7 @@ describe("Pharmacological Classification", () => {
 
     it("no findings have _pharmacological_candidate flag", () => {
       const flagged = findings.filter(
-        (f: any) => f._pharmacological_candidate === true,
+        (f) => f._pharmacological_candidate === true,
       );
       expect(flagged).toHaveLength(0);
     });
@@ -76,7 +100,7 @@ describe("Pharmacological Classification", () => {
       // BW decreased
       expect(
         findings.some(
-          (f: any) =>
+          (f) =>
             f.domain === "BW" &&
             f.severity === "adverse" &&
             f.finding_class === "tr_adverse",
@@ -86,7 +110,7 @@ describe("Pharmacological Classification", () => {
       // ALT increased
       expect(
         findings.some(
-          (f: any) =>
+          (f) =>
             /alt|alanine/i.test(f.test_name ?? "") &&
             f.domain === "LB" &&
             f.finding_class === "tr_adverse",
@@ -96,7 +120,7 @@ describe("Pharmacological Classification", () => {
       // AST increased
       expect(
         findings.some(
-          (f: any) =>
+          (f) =>
             /ast|aspartate/i.test(f.test_name ?? "") &&
             f.domain === "LB" &&
             f.finding_class === "tr_adverse",
@@ -106,7 +130,7 @@ describe("Pharmacological Classification", () => {
       // Liver hypertrophy (MI)
       expect(
         findings.some(
-          (f: any) =>
+          (f) =>
             f.domain === "MI" &&
             /hypertrophy/i.test(f.finding ?? "") &&
             f.finding_class === "tr_adverse",
@@ -116,7 +140,7 @@ describe("Pharmacological Classification", () => {
       // Liver weight (OM)
       expect(
         findings.some(
-          (f: any) =>
+          (f) =>
             f.domain === "OM" &&
             /liver/i.test(f.specimen ?? "") &&
             f.finding_class === "tr_adverse",
@@ -130,7 +154,7 @@ describe("Pharmacological Classification", () => {
 
     it("grade_sum is a valid number for scored findings", () => {
       const scored = findings.filter(
-        (f: any) =>
+        (f) =>
           f._confidence?.grade_sum !== undefined &&
           f._confidence?.grade_sum !== null,
       );
@@ -143,7 +167,7 @@ describe("Pharmacological Classification", () => {
     });
 
     it("grade is HIGH, MODERATE, or LOW", () => {
-      const scored = findings.filter((f: any) => f._confidence?.grade);
+      const scored = findings.filter((f) => f._confidence?.grade);
       for (const f of scored) {
         expect(["HIGH", "MODERATE", "LOW"]).toContain(f._confidence.grade);
       }
@@ -151,7 +175,7 @@ describe("Pharmacological Classification", () => {
 
     it("grade thresholds are correct (sum >= 2 = HIGH, >= 0 = MODERATE, < 0 = LOW)", () => {
       const scored = findings.filter(
-        (f: any) =>
+        (f) =>
           f._confidence?.grade_sum !== undefined &&
           f._confidence?.grade !== undefined,
       );
@@ -169,7 +193,7 @@ describe("Pharmacological Classification", () => {
 
     it("D8 scores present for findings with group_stats", () => {
       const withGroups = findings.filter(
-        (f: any) =>
+        (f) =>
           f.group_stats?.length >= 2 && f._confidence?.dimensions?.length > 0,
       );
       expect(withGroups.length).toBeGreaterThan(0);
@@ -177,7 +201,7 @@ describe("Pharmacological Classification", () => {
       let scored = 0;
       for (const f of withGroups) {
         const d8 = f._confidence.dimensions.find(
-          (d: any) => d.dimension === "D8",
+          (d: ConfidenceDim) => d.dimension === "D8",
         );
         expect(d8).toBeTruthy();
         if (d8.score !== null) scored++;
@@ -187,9 +211,9 @@ describe("Pharmacological Classification", () => {
 
       // PointCross has N=10-20/group — majority of D8 scores should be >= 0
       const d8Scores = withGroups
-        .map((f: any) => f._confidence.dimensions.find((d: any) => d.dimension === "D8"))
-        .filter((d: any) => d?.score !== null)
-        .map((d: any) => d.score);
+        .map((f) => f._confidence.dimensions.find((d: ConfidenceDim) => d.dimension === "D8"))
+        .filter((d: ConfidenceDim) => d?.score !== null)
+        .map((d: ConfidenceDim) => d.score);
       const adequate = d8Scores.filter((s: number) => s >= 0).length;
       expect(adequate / d8Scores.length).toBeGreaterThan(0.5);
     });
@@ -220,7 +244,7 @@ describe("Pharmacological Classification", () => {
 
       // MI_injection_site should have structured threshold
       const injSite = profile.expected_findings.find(
-        (f: any) => f.key === "MI_injection_site",
+        (f) => f.key === "MI_injection_site",
       );
       expect(injSite).toBeTruthy();
       expect(injSite.severity_threshold).toBeTypeOf("object");
