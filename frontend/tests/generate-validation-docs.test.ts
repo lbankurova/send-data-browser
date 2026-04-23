@@ -12,7 +12,8 @@
  */
 import { describe, test, expect } from "vitest";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "fs";
-import { resolve, basename } from "path";
+import { resolve } from "path";
+import { execSync } from "child_process";
 import yaml from "js-yaml";
 
 // ─── Paths ──────────────────────────────────────────────────
@@ -218,7 +219,6 @@ function findStudyDir(studyId: string): string | null {
 
 function getGitHash(): string {
   try {
-    const { execSync } = require("child_process");
     return execSync("git rev-parse --short HEAD", { cwd: resolve(__dirname, "../..") })
       .toString()
       .trim();
@@ -229,7 +229,7 @@ function getGitHash(): string {
 
 // ─── Engine Output (Layer 1) ────────────────────────────────
 
-function generateEngineOutput(cards: ReferenceCard[]): string {
+function generateEngineOutput(_cards: ReferenceCard[]): string {
   const lines: string[] = [];
   const commitHash = getGitHash();
   const now = new Date().toISOString().replace(/T.*/, "");
@@ -517,7 +517,7 @@ function checkAssertion(
       };
     }
     case "multi_compound_detected": {
-      const prov = loadJson<ProvenanceMsg[]>(findStudyDir(meta?.treatment ?? "") ?? "", "provenance_messages.json");
+      loadJson<ProvenanceMsg[]>(findStudyDir(meta?.treatment ?? "") ?? "", "provenance_messages.json");
       // Check dose groups for multi-compound indicators
       return {
         assertion,

@@ -240,7 +240,7 @@ describe("Context panel — full interaction sequences", () => {
 
   it("click subject → click endpoint → context switches from subject to route", () => {
     // 1. User clicks subject
-    let viewState = applySetSelectedSubject(EMPTY_STATE, "SUBJ-003");
+    const viewState = applySetSelectedSubject(EMPTY_STATE, "SUBJ-003");
     expect(resolveContextPanel(viewState, "findings")).toBe("subject");
 
     // 2. User clicks endpoint in findings rail (goes through FindingSelectionContext)
@@ -251,7 +251,7 @@ describe("Context panel — full interaction sequences", () => {
 
   it("click subject → click organ group → context switches from subject to route", () => {
     // 1. User clicks subject
-    let viewState = applySetSelectedSubject(EMPTY_STATE, "SUBJ-003");
+    const viewState = applySetSelectedSubject(EMPTY_STATE, "SUBJ-003");
     expect(resolveContextPanel(viewState, "findings")).toBe("subject");
 
     // 2. User clicks organ header in findings rail

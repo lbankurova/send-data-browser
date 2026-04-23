@@ -144,11 +144,6 @@ const SCHEDULED_PAIRWISE: PairwiseResult[] = [
   { dose_level: 2, p_value: 0.008, p_value_adj: 0.016, statistic: 3.1, effect_size: 1.6 },
 ];
 
-const EARLY_DEATH_SUBJECTS: Record<string, string> = {
-  "SUBJ-001": "DOSING ACCIDENT",      // accidental — should be included by default
-  "SUBJ-003": "MORIBUND SACRIFICE",   // TR — should be excluded by default
-};
-
 // Only SUBJ-003 is treatment-related; SUBJ-001 is accidental
 const TR_EARLY_DEATH_IDS = new Set(["SUBJ-003"]);
 

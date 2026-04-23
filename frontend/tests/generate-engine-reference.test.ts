@@ -21,8 +21,6 @@ import {
 import type {
   SyndromeDefinition,
   SyndromeTermMatch,
-  DirectionalGateConfig,
-  MagnitudeFloor,
 } from "@/lib/cross-domain-syndromes";
 import {
   DISCRIMINATOR_REGISTRY,
@@ -32,18 +30,9 @@ import {
   STAT_SIG_THRESHOLDS,
   DOSE_RESPONSE_THRESHOLDS,
 } from "@/lib/syndrome-interpretation";
-import type {
-  SyndromeDiscriminators,
-} from "@/lib/syndrome-interpretation";
 
 import { writeFileSync } from "fs";
 import { resolve } from "path";
-
-// ─── Helpers ─────────────────────────────────────────────────
-
-function pad(s: string, n: number): string {
-  return s.length >= n ? s : s + " ".repeat(n - s.length);
-}
 
 function fmtDirection(d: "up" | "down" | "any"): string {
   if (d === "up") return "\u2191";

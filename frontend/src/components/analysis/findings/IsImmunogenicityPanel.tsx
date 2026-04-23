@@ -392,9 +392,9 @@ function GmtAtPeakBars({
   lloq: number | null;
 }) {
   const peakTp = timeCourse.find(tp => tp.day === peakDay);
-  if (!peakTp) return null;
 
   const barData = useMemo(() => {
+    if (!peakTp) return [];
     return doseGroups.map(dg => {
       const g = peakTp.groups.find(gg => gg.dose_level === dg.dose_level && !gg.is_recovery);
       return {
@@ -405,6 +405,8 @@ function GmtAtPeakBars({
       };
     });
   }, [doseGroups, peakTp, lloq]);
+
+  if (!peakTp) return null;
 
   // Log scale bar width
   const maxLog = Math.max(...barData.map(d => d.gmt != null && d.gmt > 0 ? Math.log10(d.gmt) : 0));

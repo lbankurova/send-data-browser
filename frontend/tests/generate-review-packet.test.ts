@@ -17,10 +17,6 @@ import {
   getSyndromeDefinition,
   getTermDisplayLabel,
 } from "@/lib/cross-domain-syndromes";
-import type {
-  CrossDomainSyndrome,
-  TermReportEntry,
-} from "@/lib/cross-domain-syndromes";
 import { SYNDROME_DEFINITIONS } from "@/lib/cross-domain-syndrome-data";
 import {
   interpretSyndrome,
@@ -31,8 +27,6 @@ import {
   DOSE_RESPONSE_THRESHOLDS,
 } from "@/lib/syndrome-interpretation";
 import type {
-  SyndromeInterpretation,
-  TreatmentRelatednessScore,
   FoodConsumptionSummaryResponse,
   StudyContext,
 } from "@/lib/syndrome-interpretation";

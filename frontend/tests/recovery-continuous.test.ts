@@ -9,7 +9,6 @@
 import { describe, test, expect } from "vitest";
 import {
   classifyContinuousRecovery,
-  formatPctRecovered,
 } from "@/lib/recovery-verdict";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import {
@@ -18,7 +17,6 @@ import {
   formatVerdictDesc,
   connectorStyle,
 } from "@/components/analysis/panes/RecoveryDumbbellChart";
-import type { ChartRow } from "@/components/analysis/panes/RecoveryDumbbellChart";
 
 // ── Factory ──────────────────────────────────────────────
 
@@ -77,10 +75,9 @@ describe("classifyContinuousRecovery", () => {
   });
 
   test("pct ≥ 80 → reversed", () => {
-    // terminal=2.0, recovery=0.3 → pct = (2.0-0.3)/2.0 * 100 = 85%
-    const v = classifyContinuousRecovery(2.0, 0.3);
-    // |recovery| < 0.5, pct >= 80 → resolved actually
-    // Use recovery = 0.6 to stay above 0.5 threshold
+    // |recovery| < 0.5 with pct >= 80 classifies as resolved, so use
+    // recovery = 0.6 to stay above the 0.5 threshold and hit the reversed bucket.
+    // terminal=4.0, recovery=0.6 → pct = (4.0-0.6)/4.0 * 100 = 85%
     const v2 = classifyContinuousRecovery(4.0, 0.6);
     // pct = (4.0-0.6)/4.0 * 100 = 85%
     expect(v2.verdict).toBe("reversed");

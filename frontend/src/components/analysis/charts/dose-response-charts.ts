@@ -1456,15 +1456,6 @@ export function buildStackedSeverityBarOption(
           html += `<div style="font-size:10px;font-weight:600;color:${sexColor};margin-top:4px">${sexLabel}</div>`;
 
           const sexIdx = sexes.indexOf(sex);
-          // Compute total n for this dose × sex from the raw counts
-          let totalN = 0;
-          for (let g = 0; g < 5; g++) {
-            const item = items[sexIdx * 5 + g];
-            const pct = item?.value ?? 0;
-            // Reverse the percentage to get count (pct = count/total)
-            // We'll show the percentage and the raw fraction
-            if (pct > 0) totalN += 1; // approximate — real count shown below
-          }
 
           for (let g = 0; g < 5; g++) {
             const gradeLabel = GRADE_LABELS[g];

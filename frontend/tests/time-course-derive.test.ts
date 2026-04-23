@@ -7,7 +7,7 @@ import type { TimecourseResponse } from "@/types/timecourse";
  * plus 1 recovery day (93). Two dose levels: 0 (control) and 1 (treated).
  */
 function makeFixture(overrides?: Partial<TimecourseResponse>): TimecourseResponse {
-  const groups = (day: number) => [
+  const groups = (_day: number) => [
     { sex: "M", dose_level: 0, dose_label: "Vehicle", mean: 100, sd: 10, n: 10 },
     { sex: "M", dose_level: 1, dose_label: "Low",     mean: 90,  sd: 12, n: 10 },
   ];

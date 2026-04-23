@@ -465,7 +465,7 @@ describe("computeNOAELContribution (§12.4)", () => {
     // Actually integrateConfidence would give moderate. But for this TC we're testing
     // computeNOAELContribution directly with a given IntegratedConfidence.
     // Spec says HIGH + trend only (1 caveat) = 0.7 contributing
-    const intConf: IntegratedConfidence = {
+    const _intConf: IntegratedConfidence = {
       statistical: "high", biological: "high", doseResponse: "high", trendValidity: "moderate",
       trendConcordance: "high", integrated: "moderate", limitingFactors: ["Trend test validity"],
     };

@@ -10,7 +10,6 @@ import type { LesionSeverityRow } from "@/types/analysis-views";
 import {
   interpretSyndrome,
   evaluateDiscriminator,
-  assessCertainty,
   assessSyndromeRecovery,
   assessClinicalObservationSupport,
   assembleStudyDesignNotes,
@@ -21,7 +20,6 @@ import {
   assessTumorContext,
   assessFoodConsumptionContext,
   SYNDROME_SOC_MAP,
-  normalizeSpecies,
   lookupSOCLRPlus,
   assignTranslationalTier,
   assessTranslationalConfidence,
@@ -35,7 +33,7 @@ import type {
   SyndromeDiscriminators,
 } from "@/lib/syndrome-interpretation";
 import type { FoodConsumptionSummaryResponse } from "@/lib/syndrome-interpretation";
-import type { StudyMortality, DeathRecord } from "@/types/mortality";
+import type { StudyMortality } from "@/types/mortality";
 import fixture from "./fixtures/pointcross-findings.json";
 
 // ─── Setup from golden dataset ─────────────────────────────

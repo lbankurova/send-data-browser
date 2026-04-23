@@ -418,7 +418,7 @@ describe("Phase 4: tiered liver enzyme certainty cap", () => {
   };
 
   // Properly typed discriminators — SDH found in allEndpoints → supports → mechanism_confirmed
-  const confirmingDiscriminators: SyndromeDiscriminators = {
+  const _confirmingDiscriminators: SyndromeDiscriminators = {
     syndromeId: "XS01",
     differential: "cholestatic vs hepatocellular",
     findings: [{

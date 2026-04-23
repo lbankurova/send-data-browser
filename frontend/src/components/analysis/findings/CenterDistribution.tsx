@@ -254,6 +254,14 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
     [setSelectedSubject],
   );
 
+  const hasControlSideInfluential = useMemo(() => {
+    if (!influentialSubjects) return false;
+    for (const info of influentialSubjects.values()) {
+      if (info.isControlSide) return true;
+    }
+    return false;
+  }, [influentialSubjects]);
+
   if (!isVisible) return null;
 
   if (isLoading) {
@@ -276,13 +284,6 @@ export function CenterDistribution({ finding, selectedDay, isRecoveryMode }: Cen
   }
 
   const hasInfluential = !!influentialSubjects && influentialSubjects.size > 0;
-  const hasControlSideInfluential = useMemo(() => {
-    if (!influentialSubjects) return false;
-    for (const info of influentialSubjects.values()) {
-      if (info.isControlSide) return true;
-    }
-    return false;
-  }, [influentialSubjects]);
 
   return (
     <div className="flex h-full flex-col">

@@ -186,7 +186,7 @@ function compactify(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
 
 /** Post-process effect size chart: strip 0.5 lines, thin bars, drop control. */
 function compactifyEffectSize(opt: EChartsOption, points: MergedPoint[]): EChartsOption {
-  let o = compactify(opt, points.filter((p) => (p.dose_level as number) > 0));
+  const o = compactify(opt, points.filter((p) => (p.dose_level as number) > 0));
 
   // Drop control from x-axis data and series data
   const treatedLabels = points.filter((p) => (p.dose_level as number) > 0).map((p) => String(p.dose_label));

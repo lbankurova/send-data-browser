@@ -32,7 +32,6 @@ import {
 import type {
   SyndromeInterpretation,
   TreatmentRelatednessScore,
-  ClinicalObservationSupport,
   FoodConsumptionSummaryResponse,
   StudyContext,
 } from "@/lib/syndrome-interpretation";

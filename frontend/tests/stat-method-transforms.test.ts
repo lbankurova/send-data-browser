@@ -6,7 +6,7 @@ import {
   hasWelchPValues,
 } from "@/lib/stat-method-transforms";
 import type { EffectSizeMethod } from "@/lib/stat-method-transforms";
-import type { UnifiedFinding, PairwiseResult, GroupStat } from "@/types/analysis";
+import type { UnifiedFinding, PairwiseResult } from "@/types/analysis";
 
 // ── Standalone re-implementations of deleted transforms ──────
 // Phase 2b moved these to the backend. Tests keep standalone copies

@@ -7,12 +7,6 @@ import fixture from "./fixtures/pointcross-findings.json";
 const rows = fixture as AdverseEffectSummaryRow[];
 const summaries = deriveEndpointSummaries(rows);
 
-const KNOWN_ORGANS = new Set([
-  "hematologic", "hepatic", "renal", "electrolyte", "metabolic",
-  "general", "musculoskeletal", "nervous", "respiratory", "cardiovascular",
-  "gastrointestinal", "dermal", "lymphoid", "urogenital", "endocrine", "ocular",
-]);
-
 const VALID_DIRECTIONS = new Set(["up", "down", null, undefined]);
 const VALID_PATTERNS = new Set([
   "monotonic_increase", "monotonic_decrease",

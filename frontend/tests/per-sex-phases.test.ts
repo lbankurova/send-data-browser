@@ -11,7 +11,6 @@ import { detectCrossDomainSyndromes, getSyndromeTermReport } from "@/lib/cross-d
 import { classifyFindingPatternWithSex, classifyPattern } from "@/lib/pattern-classification";
 import type { DoseGroupData } from "@/lib/pattern-classification";
 import { computeEndpointSignal } from "@/lib/findings-rail-engine";
-import { resolveCanonical } from "@/lib/lab-clinical-catalog";
 import type { AdverseEffectSummaryRow, LesionSeverityRow } from "@/types/analysis-views";
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import type { UnifiedFinding, DoseGroup } from "@/types/analysis";

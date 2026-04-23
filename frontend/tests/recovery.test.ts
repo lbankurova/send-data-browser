@@ -27,16 +27,13 @@ import type {
 import type { SubjectHistopathEntry } from "@/types/timecourse";
 import {
   classifyRecovery,
-  CLASSIFICATION_LABELS,
 } from "@/lib/recovery-classification";
 import type {
   RecoveryContext,
-  RecoveryClassificationType,
 } from "@/lib/recovery-classification";
 import {
   discriminateAnomaly,
   isPrecursorOf,
-  PRECURSOR_MAP,
   DELAYED_ONSET_PROPENSITY,
 } from "@/lib/anomaly-discrimination";
 import {
@@ -49,7 +46,6 @@ import {
   lookupContinuousRecovery,
   computeUncertaintyBands,
 } from "@/lib/recovery-duration-table";
-import type { LookupConfidence } from "@/lib/recovery-duration-table";
 
 // ─── Test helpers ────────────────────────────────────────
 

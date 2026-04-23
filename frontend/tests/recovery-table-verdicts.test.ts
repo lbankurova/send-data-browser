@@ -10,7 +10,6 @@ import {
   buildFindingVerdictMap,
   VERDICT_PRIORITY,
 } from "@/lib/recovery-table-verdicts";
-import type { FindingVerdictInfo } from "@/lib/recovery-table-verdicts";
 import type { UnifiedFinding } from "@/types/analysis";
 import type { RecoveryComparisonResponse } from "@/lib/temporal-api";
 import type { RecoveryOverrideAnnotation } from "@/hooks/useRecoveryOverrideActions";

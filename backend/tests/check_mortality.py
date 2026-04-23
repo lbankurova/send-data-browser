@@ -1,7 +1,7 @@
 """Backend integration tests for DD/DS mortality pipeline.
 
 Tests against PointCross XPT data, cross-checked with domain ground truth.
-Run: cd backend && python tests/test_mortality.py
+Run: cd backend && python tests/check_mortality.py
 
 PointCross ground truth (from XPT):
   DS domain: 150 records -- 108 TERMINAL SACRIFICE, 39 RECOVERY SACRIFICE, 3 MORIBUND SACRIFICE

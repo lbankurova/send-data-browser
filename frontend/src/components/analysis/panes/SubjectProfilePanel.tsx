@@ -417,7 +417,7 @@ function BWSparkline({ measurements, studyId, sex, doseLevel }: {
 
   // Collect Y values from subject + visible group CI bounds (clipped to terminal sacrifice)
   const subjectValues = sorted.map((m) => m.value);
-  let allYValues = [...subjectValues];
+  const allYValues = [...subjectValues];
   if (groupSeries) {
     for (const dl of doseLevels) {
       if (hidden.has(`group-${dl}`)) continue;

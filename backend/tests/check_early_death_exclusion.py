@@ -1,7 +1,10 @@
 """Backend integration tests for early death exclusion — dual-pass terminal stats.
 
 Tests against PointCross XPT data.
-Run: cd backend && python tests/test_early_death_exclusion.py
+Run: cd backend && python tests/check_early_death_exclusion.py
+
+Renamed from test_* to check_* so pytest does not try to collect this
+standalone script (module-level sys.exit breaks pytest collection).
 
 PointCross early-death ground truth (from DS domain):
   108 TERMINAL SACRIFICE + 39 RECOVERY SACRIFICE + 3 MORIBUND SACRIFICE = 150 records

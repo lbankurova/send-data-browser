@@ -1,7 +1,7 @@
 """Backend integration tests for PK integration (PC + PP + DM).
 
 Tests against PointCross XPT data, cross-checked with domain ground truth.
-Run: cd backend && python tests/test_pk_integration.py
+Run: cd backend && python tests/check_pk_integration.py
 
 PointCross ground truth (from XPT):
   PC.xpt: 150 rows, 30 TK satellite subjects, 5 timepoints each

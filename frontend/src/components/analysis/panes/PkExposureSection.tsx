@@ -20,7 +20,6 @@ interface Props {
 
 export function PkExposureSection({ pkData, doseGroups }: Props) {
   const allGroups = pkData.by_dose_group ?? [];
-  if (allGroups.length === 0) return null;
 
   const [selectedDoses, setSelectedDoses] = useState<number[]>([]);
   const [showMarginBand, setShowMarginBand] = useState(true);
@@ -32,6 +31,8 @@ export function PkExposureSection({ pkData, doseGroups }: Props) {
     }
     return null;
   }, [allGroups]);
+
+  if (allGroups.length === 0) return null;
 
   const hasDoseFilter = selectedDoses.length > 0;
   const groups = hasDoseFilter
@@ -811,7 +812,7 @@ function DoseProportionalityChart({
 
     const foldMin = Math.min(...allFolds.filter(v => v > 0));
     const foldMax = Math.max(...allFolds);
-    let yLogMin = Math.floor(Math.log10(foldMin));
+    const yLogMin = Math.floor(Math.log10(foldMin));
     let yLogMax = Math.ceil(Math.log10(foldMax * 1.5));
     if (yLogMax - yLogMin < 1) yLogMax = yLogMin + 1;
 

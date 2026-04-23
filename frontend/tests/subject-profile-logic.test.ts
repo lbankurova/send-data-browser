@@ -82,7 +82,7 @@ const mkFinding = (
 
 describe("classifyFindings — COD detection", () => {
   const malignantCarcinoma = mkFinding("LIVER", "HEPATOCELLULAR CARCINOMA", null, "MALIGNANT");
-  const benignAdenoma = mkFinding("LIVER", "HEPATOCELLULAR ADENOMA", null, "BENIGN");
+  const _benignAdenoma = mkFinding("LIVER", "HEPATOCELLULAR ADENOMA", null, "BENIGN");
   const markedInflammation = mkFinding("ESOPHAGUS", "INFLAMMATION", "MARKED");
   const mildInflammation = mkFinding("PROSTATE", "INFLAMMATION", "MILD");
   const normalLiver = mkFinding("LIVER", "NORMAL");

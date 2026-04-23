@@ -16,14 +16,11 @@
  */
 import { describe, test, expect } from "vitest";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
-import type { EndpointSummary } from "@/lib/derive-summaries";
 import {
   detectCrossDomainSyndromes,
   getSyndromeTermReport,
-  getSyndromeDefinition,
 } from "@/lib/cross-domain-syndromes";
 import type {
-  CrossDomainSyndrome,
   SyndromeTermReport,
   TermReportEntry,
 } from "@/lib/cross-domain-syndromes";
@@ -33,8 +30,6 @@ import {
 } from "@/lib/syndrome-interpretation";
 import type {
   ClinicalObservation,
-  ClinicalObservationSupport,
-  FoodConsumptionSummaryResponse,
 } from "@/lib/syndrome-interpretation";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
 
@@ -44,12 +39,6 @@ import fixture from "./fixtures/pointcross-findings.json";
 
 const endpoints = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
 const syndromes = detectCrossDomainSyndromes(endpoints);
-const byId = new Map(syndromes.map((s) => [s.id, s]));
-
-const noClSupport: ClinicalObservationSupport = {
-  correlatingObservations: [],
-  assessment: "no_cl_data",
-};
 
 // ─── Helpers ─────────────────────────────────────────────────
 

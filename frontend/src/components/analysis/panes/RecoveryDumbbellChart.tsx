@@ -318,6 +318,15 @@ export function RecoveryDumbbellChart({
     [onDoseClick],
   );
 
+  const hasPeak = useMemo(() => {
+    for (const s of sexes) {
+      for (const cr of chartRowsBySex[s] ?? []) {
+        if (!cr.isEdge && hasPeakQualifier(cr.row)) return true;
+      }
+    }
+    return false;
+  }, [chartRowsBySex, sexes]);
+
   if (sexes.length === 0 || allDoseLevels.length === 0) return null;
 
   const tDay = terminalDay ?? rows[0]?.terminal_day;
@@ -342,11 +351,6 @@ export function RecoveryDumbbellChart({
   };
 
   const allChartRows = sexes.flatMap(s => chartRowsBySex[s] ?? []);
-
-  const hasPeak = useMemo(
-    () => allChartRows.some((cr) => !cr.isEdge && hasPeakQualifier(cr.row)),
-    [allChartRows],
-  );
 
   return (
     <div className="flex flex-col gap-2">
