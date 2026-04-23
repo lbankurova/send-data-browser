@@ -64,8 +64,10 @@ class TestScoringParamsDefaults:
     def test_key_thresholds(self):
         p = ScoringParams()
         assert p.p_value_significance == 0.05
-        assert p.large_effect == 1.0
-        assert p.moderate_effect == 0.5
+        # large_effect / moderate_effect removed in species-magnitude-thresholds-dog-nhp
+        # Phase B (AC-F1-3); FCT registry replaces the scalar via per-endpoint bands.
+        assert not hasattr(p, "large_effect")
+        assert not hasattr(p, "moderate_effect")
         assert p.target_organ_evidence == 0.3
         assert p.target_organ_n_significant == 1
 
@@ -134,7 +136,12 @@ class TestLoadScoringParams:
         assert p.inc_w_pvalue == 0.50
         assert p.inc_w_severity == 0.05
         assert p.p_value_significance == 0.01
-        assert p.large_effect == 2.0
+        # largeEffect/moderateEffect removed in species-magnitude-thresholds-dog-nhp
+        # Phase B (AC-F1-3); FCT registry is single source of truth for native-scale
+        # magnitude. Annotation-layer keys remain tolerated at read-time (backward
+        # compat) but are silently ignored.
+        assert not hasattr(p, "large_effect")
+        assert not hasattr(p, "moderate_effect")
         assert p.target_organ_evidence == 0.5
         assert p.target_organ_n_significant == 2
         assert p.penalty_single_endpoint == 0.30  # abs() applied
@@ -256,19 +263,32 @@ class TestNoaelConfidence:
         score = _compute_noael_confidence("M", [], [], 1, n_adverse_at_loael=1, params=custom)
         assert score == 1.0
 
-    def test_custom_large_effect_threshold(self):
-        """Raising large_effect threshold means fewer findings trigger the penalty."""
-        finding = {"data_type": "continuous", "max_effect_size": 1.5, "min_p_adj": 0.10}
+    def test_large_effect_verdict_triggers_penalty(self):
+        """Phase B F1 (AC-F1-3): NOAEL-penalty 'large effect' path consumes
+        `verdict in {adverse, strong_adverse}` from the FCT payload when
+        present; falls back to |g| >= 1.0 when absent."""
+        # verdict='adverse' + p>=0.05 -> penalty fires
+        fct_finding = {"data_type": "continuous", "max_effect_size": 0.8,
+                       "min_p_adj": 0.10, "verdict": "adverse"}
+        fct_score = _compute_noael_confidence(
+            "M", [fct_finding], [fct_finding], 1, n_adverse_at_loael=2,
+        )
 
-        # Default threshold (1.0): |1.5| >= 1.0 AND p >= 0.05 → penalty applies
-        default_score = _compute_noael_confidence("M", [finding], [finding], 1, n_adverse_at_loael=2)
+        # Legacy fallback: no verdict field + |g|=1.5 + p>=0.05 -> penalty fires
+        legacy_finding = {"data_type": "continuous", "max_effect_size": 1.5,
+                          "min_p_adj": 0.10}
+        legacy_score = _compute_noael_confidence(
+            "M", [legacy_finding], [legacy_finding], 1, n_adverse_at_loael=2,
+        )
+        assert fct_score == legacy_score  # both trigger the penalty
 
-        # Custom threshold (2.0): |1.5| < 2.0 → penalty does NOT apply
-        custom = ScoringParams()
-        custom.large_effect = 2.0
-        custom_score = _compute_noael_confidence("M", [finding], [finding], 1, n_adverse_at_loael=2, params=custom)
-
-        assert custom_score > default_score
+        # verdict='variation' (small) + |g|<1.0 -> penalty does NOT fire
+        clean_finding = {"data_type": "continuous", "max_effect_size": 0.3,
+                         "min_p_adj": 0.10, "verdict": "variation"}
+        clean_score = _compute_noael_confidence(
+            "M", [clean_finding], [clean_finding], 1, n_adverse_at_loael=2,
+        )
+        assert clean_score > fct_score
 
     def test_score_never_below_zero(self):
         custom = ScoringParams()

@@ -647,6 +647,12 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
                 "max_fold_change": finding.get("max_fold_change"),
                 "max_incidence": finding.get("max_incidence"),
                 "is_derived": finding.get("is_derived", False),
+                # Phase B FCT payload propagation (species-magnitude-thresholds
+                # -dog-nhp AC-F4-2). Frontend D4 clinical-boost reads per-row
+                # fct_reliance from the summary rather than from unified_findings.
+                "verdict": finding.get("verdict"),
+                "coverage": finding.get("coverage"),
+                "fct_reliance": finding.get("fct_reliance"),
             }
             _propagate_scheduled_fields(row, finding)
             rows.append(row)
@@ -761,6 +767,15 @@ def _build_noel_for_groups(
                                 n_effects_at_loel += 1
                                 effect_domains.add(f.get("domain", ""))
 
+        # F6 AC-F6-5 parity: emit n_provisional_excluded on NOEL rows too
+        # so every NOAEL/NOEL group payload carries the transparency counter.
+        n_provisional_excluded = sum(
+            1 for f in sex_findings
+            if f.get("verdict") == "provisional"
+            and f.get("data_type", "continuous") == "continuous"
+            and not f.get("is_derived")
+        )
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noel_level,
@@ -789,6 +804,7 @@ def _build_noel_for_groups(
             "scheduled_noael_dose_value": None,
             "scheduled_loael_dose_level": None,
             "scheduled_noael_differs": False,
+            "n_provisional_excluded": n_provisional_excluded,
         })
 
     return rows
@@ -807,6 +823,21 @@ def _build_noael_for_groups(
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
     dose_unit_map = {dg["dose_level"]: dg.get("dose_unit") for dg in dose_groups}
+
+    # AC-F6-5 parity across ALL NOAEL row paths (main, ctrl_mort_suppress,
+    # no_concurrent_control, single-dose). Every row must carry
+    # n_provisional_excluded so consumers see a consistent payload shape.
+    def _count_provisional(sex_filter: str) -> int:
+        sex_findings = [
+            f for f in findings
+            if sex_filter == "Combined" or f.get("sex") == sex_filter
+        ]
+        return sum(
+            1 for f in sex_findings
+            if f.get("verdict") == "provisional"
+            and f.get("data_type", "continuous") == "continuous"
+            and not f.get("is_derived")
+        )
 
     # If control mortality qualification says suppress, NOAEL is indeterminate
     ctrl_mort_suppress = (
@@ -843,6 +874,7 @@ def _build_noael_for_groups(
                 "scheduled_noael_dose_value": None,
                 "scheduled_loael_dose_level": None,
                 "scheduled_noael_differs": False,
+                "n_provisional_excluded": _count_provisional(sex_filter),
             })
         return rows
 
@@ -877,6 +909,7 @@ def _build_noael_for_groups(
                 "scheduled_noael_dose_value": None,
                 "scheduled_loael_dose_level": None,
                 "scheduled_noael_differs": False,
+                "n_provisional_excluded": _count_provisional(sex_filter),
             })
         return rows
 
@@ -1057,6 +1090,23 @@ def _build_noael_for_groups(
         if is_single_dose and loael_level is None and not adverse_dose_levels:
             loael_label_val = "Not determined (single dose level)"
 
+        # F6 AC-F6-5: count endpoints that carry verdict='provisional' (no FCT
+        # calibration for this species/endpoint combination).
+        # Under Phase B's additive design the `severity` field is preserved
+        # from the legacy |g|-ladder in classify_severity() and is NOT rewritten
+        # from verdict. De facto exclusion of these findings from NOAEL MIN
+        # aggregation happens via finding_class=not_treatment_related, which
+        # ECETOC A-factor scoring produces when no computable effect size is
+        # available (the usual co-condition with verdict=provisional). The
+        # count is surfaced for UI transparency; do not assume the count
+        # drives a severity-based exclusion path.
+        n_provisional_excluded = sum(
+            1 for f in sex_findings
+            if f.get("verdict") == "provisional"
+            and f.get("data_type", "continuous") == "continuous"
+            and not f.get("is_derived")
+        )
+
         rows.append({
             "sex": sex_filter,
             "noael_dose_level": noael_level,
@@ -1076,6 +1126,9 @@ def _build_noael_for_groups(
             "scheduled_noael_dose_value": dose_value_map.get(scheduled_noael_level) if scheduled_noael_level is not None else None,
             "scheduled_loael_dose_level": scheduled_loael_level,
             "scheduled_noael_differs": scheduled_noael_differs,
+            # Phase B (F6 AC-F6-5): count of continuous endpoints excluded
+            # from NOAEL aggregation due to 'provisional' FCT verdict.
+            "n_provisional_excluded": n_provisional_excluded,
         })
 
     return rows
@@ -1129,15 +1182,30 @@ def _compute_noael_confidence(
     score -= params.penalty_pathology_disagreement
 
     # Penalty: large effect size but not statistically significant (SLA-14)
-    # Only applies to continuous data types — MI severity ≥ 1.0 for ALL graded
+    # Only applies to continuous data types -- MI severity >= 1.0 for ALL graded
     # findings, so the threshold is meaningless for incidence/ordinal.
-    large_effect_threshold = params.large_effect
+    #
+    # F1 rewire (species-magnitude-thresholds-dog-nhp Phase B): "large effect"
+    # consumes the FCT-derived `verdict` (adverse / strong_adverse) when
+    # available -- the single source of truth for native-scale magnitude via
+    # the FCT registry (AC-F1-3). Legacy fallback to |g| >= 1.0 applies when
+    # `verdict` is absent (pre-Phase-B data) or when no FCT entry exists for
+    # the endpoint (verdict='provisional').
     for f in sex_findings:
         if f.get("data_type") != "continuous":
             continue
-        es = f.get("max_effect_size")
         p = f.get("min_p_adj")
-        if es is not None and abs(es) >= large_effect_threshold and (p is None or p >= 0.05):
+        verdict = f.get("verdict")
+        is_large_effect = False
+        if verdict in ("adverse", "strong_adverse"):
+            is_large_effect = True
+        else:
+            # Legacy fallback: |g| >= 1.0 (pre-FCT behavior preserved when the
+            # FCT path returns 'provisional' or when verdict is absent).
+            es = f.get("max_effect_size")
+            if es is not None and abs(es) >= 1.0:
+                is_large_effect = True
+        if is_large_effect and (p is None or p >= 0.05):
             score -= params.penalty_large_effect_non_sig
             break
 

@@ -1,8 +1,8 @@
 topic: species-magnitude-thresholds-dog-nhp
 started: 2026-04-20T12:00:00Z
-phase: build
-current_step: build.3
-revision: 16
+phase: complete
+current_step: complete
+revision: 17
 completed:
   research.0-corpus-load: 2026-04-20T12:30:00Z
   research.1-landscape: 2026-04-20T12:45:00Z

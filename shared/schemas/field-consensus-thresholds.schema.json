@@ -44,9 +44,10 @@
         "catalog_driven",
         "n-sufficient",
         "n-marginal",
-        "n-insufficient"
+        "n-insufficient",
+        "stat-unavailable"
       ],
-      "description": "full = all in-scope species have bands; partial = some bands missing; none = no numeric bands (classifier emits provisional); catalog_driven = incidence catalog-sentinel; n-* = P4 small-N qualifier inheritance."
+      "description": "full = all in-scope species have bands; partial = some bands missing; none = no numeric bands (classifier emits provisional); catalog_driven = incidence catalog-sentinel; n-* = P4 small-N qualifier inheritance; stat-unavailable = registry bands exist for species but classifier could not compute magnitude (e.g., empty group_stats, missing sex stratum) -- semantically distinct from n-* which is about CI reliability at small but present N."
     },
     "provenance": {
       "type": "string",

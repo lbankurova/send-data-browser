@@ -722,8 +722,36 @@ function deriveStatisticalConfidence(ep: EndpointSummary): ConfidenceLevel {
     return "low";
   }
 
-  // Continuous: existing Cohen's d thresholds — correct
+  // Continuous D4 clinical-boost path.
+  //
+  // F4 rewire (species-magnitude-thresholds-dog-nhp Phase B, AC-F4-2): when
+  // the backend shipped an FCT reliance block with populated bands, the
+  // moderate-grade boost consumes the FCT `concern_floor` / `adverse_floor`
+  // as the native-scale moderate/high anchors. The |g|-ladder remains the
+  // fallback for endpoints without an FCT entry (coverage='none' sends us
+  // down the legacy path).
   const g = ep.maxEffectSize != null ? Math.abs(ep.maxEffectSize) : 0;
+  const fct = ep.fctReliance;
+  const bandsUsed = fct?.bands_used ?? null;
+  const verdict = ep.verdict;
+
+  if (fct && fct.coverage !== "none" && bandsUsed) {
+    // Verdict-driven boost: a backend-emitted verdict of strong_adverse /
+    // adverse / concern anchors the frontend assessment; p-value still
+    // gates HIGH vs MODERATE to preserve the statistical-strength axis.
+    if (p != null && p < 0.01 && informativePattern
+        && (verdict === "strong_adverse" || verdict === "adverse")) {
+      return "high";
+    }
+    if (p != null && p < 0.05
+        && (verdict === "strong_adverse" || verdict === "adverse" || verdict === "concern")) {
+      return "moderate";
+    }
+    // No verdict boost AND no legacy-g signal -> low.
+    return "low";
+  }
+
+  // Legacy continuous path (no FCT entry resolved for this endpoint).
   if (p != null && p < 0.01 && g >= 0.8 && informativePattern) return "high";
   if (p != null && p < 0.05 && g >= 0.5) return "moderate";
   return "low";

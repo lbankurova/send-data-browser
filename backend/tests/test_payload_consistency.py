@@ -36,6 +36,7 @@ SPEC_COVERAGE = {
     "full", "partial", "none",
     "catalog_driven",
     "n-sufficient", "n-marginal", "n-insufficient",
+    "stat-unavailable",
 }
 SPEC_PROVENANCE = {
     "regulatory", "best_practice", "industry_survey",
@@ -279,6 +280,106 @@ else:
     check("field-contracts-index.md exists", False,
           f"not found at {contracts_index}")
 
+
+# ---------------------------------------------------------------------------
+# (h) Phase B content emission — classifier payload carries the fields.
+# Mirrors AC-F2-8 content-side; runs only when a regen fixture exists.
+# Looks at the PointCross unified_findings.json.
+# ---------------------------------------------------------------------------
+print("\n=== (h) Phase B payload content emission ===")
+
+fixture_path = _BACKEND / "generated" / "PointCross" / "unified_findings.json"
+if fixture_path.exists():
+    with open(fixture_path, encoding="utf-8") as f:
+        unified = json.load(f)
+    findings = unified.get("findings", []) or []
+    check(
+        "PointCross has findings",
+        len(findings) > 0,
+        f"got {len(findings)}",
+    )
+
+    missing_verdict = [f for f in findings if "verdict" not in f]
+    check(
+        "every finding emits `verdict`",
+        not missing_verdict,
+        f"{len(missing_verdict)} findings missing `verdict`",
+    )
+
+    bad_verdict = [
+        f for f in findings
+        if f.get("verdict") is not None and f["verdict"] not in {
+            "variation", "concern", "adverse", "strong_adverse", "provisional",
+        }
+    ]
+    check(
+        "every `verdict` comes from 5-value spec enum",
+        not bad_verdict,
+        f"bad: {[f.get('verdict') for f in bad_verdict[:5]]}",
+    )
+
+    missing_fct_reliance = [f for f in findings if "fct_reliance" not in f]
+    check(
+        "every finding emits `fct_reliance`",
+        not missing_fct_reliance,
+        f"{len(missing_fct_reliance)} missing",
+    )
+
+    missing_coverage = [f for f in findings if "coverage" not in f]
+    check(
+        "every finding emits top-level `coverage`",
+        not missing_coverage,
+        f"{len(missing_coverage)} missing",
+    )
+
+    bad_coverage = [
+        f for f in findings
+        if f.get("coverage") not in SPEC_COVERAGE
+    ]
+    check(
+        "every `coverage` comes from spec enum",
+        not bad_coverage,
+        f"bad: {[f.get('coverage') for f in bad_coverage[:5]]}",
+    )
+
+    missing_fallback = [f for f in findings if "fallback_used" not in f]
+    check(
+        "every finding emits `fallback_used`",
+        not missing_fallback,
+        f"{len(missing_fallback)} missing",
+    )
+
+    bad_fallback_type = [
+        f for f in findings if not isinstance(f.get("fallback_used"), bool)
+    ]
+    check(
+        "`fallback_used` is always a boolean",
+        not bad_fallback_type,
+        f"{len(bad_fallback_type)} non-bool",
+    )
+
+    # AC-F3b-2: verdict -> severity mapping is COMMITTED as a constant but not
+    # auto-applied to rewrite `severity`. For the Phase B transition window,
+    # `severity` continues to flow through classify_severity (legacy |g|-ladder
+    # for continuous; incidence-specific logic for MI/MA/CL). The verdict is a
+    # parallel metadata field. This block asserts the mapping CONSTANT is loaded
+    # correctly from the shared JSON and matches the in-code python dict.
+    from services.analysis.classification import _VERDICT_TO_SEVERITY
+    mapping_path = _BACKEND.parent / "shared" / "rules" / "verdict-severity-mapping.json"
+    check(
+        "verdict-severity-mapping.json exists",
+        mapping_path.exists(),
+    )
+    if mapping_path.exists():
+        with open(mapping_path, encoding="utf-8") as fh:
+            json_mapping = json.load(fh).get("mapping", {})
+        check(
+            "shared JSON mapping == backend _VERDICT_TO_SEVERITY",
+            json_mapping == _VERDICT_TO_SEVERITY,
+            f"json: {json_mapping}, py: {_VERDICT_TO_SEVERITY}",
+        )
+else:
+    print(f"  SKIP  fixture not regenerated at {fixture_path}; run generator to enable section (h)")
 
 # ---------------------------------------------------------------------------
 print("\n" + "=" * 50)

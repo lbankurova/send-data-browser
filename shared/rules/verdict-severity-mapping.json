@@ -1,0 +1,24 @@
+{
+  "_schema_version": "1.0.0",
+  "_comment": "species-magnitude-thresholds-dog-nhp Phase B (AC-F3b-2). Authoritative 5->4 mapping from FCT verdict to legacy severity vocabulary. Do NOT edit without a Phase B-scale migration (would cascade to 30+ consumers of `severity`).",
+  "mapping": {
+    "strong_adverse": "adverse",
+    "adverse": "adverse",
+    "concern": "warning",
+    "variation": "normal",
+    "provisional": "not_assessed"
+  },
+  "allowed_verdicts": [
+    "variation",
+    "concern",
+    "adverse",
+    "strong_adverse",
+    "provisional"
+  ],
+  "allowed_severities": [
+    "normal",
+    "warning",
+    "adverse",
+    "not_assessed"
+  ]
+}

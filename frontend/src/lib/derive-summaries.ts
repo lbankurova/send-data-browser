@@ -131,6 +131,27 @@ export interface EndpointSummary {
   isPharmacologicalCandidate?: boolean;
   /** D9 rationale string from the confidence dimension (for tooltip display). */
   pharmacologicalRationale?: string;
+  /**
+   * FCT reliance payload (species-magnitude-thresholds-dog-nhp Phase B).
+   * Shipped per-finding by the backend classifier; propagated to the
+   * endpoint summary when all underlying findings share the same bands.
+   * Consumed by D4 clinical-boost (AC-F4-2) and the FCT pane (F9).
+   */
+  fctReliance?: {
+    coverage: "full" | "partial" | "none" | "catalog_driven" | "n-sufficient" | "n-marginal" | "n-insufficient";
+    fallback_used: boolean;
+    provenance: string;
+    bands_used: {
+      variation_ceiling: number | null;
+      concern_floor: number | null;
+      adverse_floor: number | null;
+      strong_adverse_floor: number | null;
+      units: string;
+      any_significant: boolean;
+    } | null;
+  };
+  /** FCT verdict (5-value) from the backend classifier. */
+  verdict?: "variation" | "concern" | "adverse" | "strong_adverse" | "provisional";
 }
 
 export interface OrganCoherence {
@@ -311,6 +332,14 @@ export function mapFindingsToRows(findings: UnifiedFinding[]): AdverseEffectSumm
         return tags.length > 0 ? tags.join(", ") : null;
       })(),
       compound_id: f.compound_id ?? undefined,
+      // Phase B FCT payload propagation (species-magnitude-thresholds-dog-nhp
+      // AC-F4-2): threading verdict/coverage/fct_reliance from UnifiedFinding
+      // into the summary row so deriveEndpointSummaries() receives them
+      // regardless of whether rows originated from the backend-generated
+      // adverse_effect_summary.json or from this in-frontend mapping path.
+      verdict: (f as UnifiedFinding & { verdict?: AdverseEffectSummaryRow["verdict"] }).verdict ?? null,
+      coverage: (f as UnifiedFinding & { coverage?: AdverseEffectSummaryRow["coverage"] }).coverage ?? null,
+      fct_reliance: (f as UnifiedFinding & { fct_reliance?: AdverseEffectSummaryRow["fct_reliance"] }).fct_reliance ?? null,
     };
   });
 }
@@ -391,6 +420,9 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     directionSex?: string;
     qualifierTags: string | null;
     compound_id?: string;
+    /** Phase B FCT payload propagation (first non-null per endpoint). */
+    fctReliance?: EndpointSummary["fctReliance"];
+    verdict?: EndpointSummary["verdict"];
   }>();
 
   // Per-sex aggregation: label → sex → accumulator
@@ -491,6 +523,23 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
     if ((row as { n_excluded?: number }).n_excluded != null && (row as { n_excluded?: number }).n_excluded! > 0) {
       entry.hasEarlyDeathExclusion = true;
     }
+
+    // Phase B FCT payload: propagate per-row fct_reliance/verdict up to
+    // the endpoint aggregate. All rows for a given (endpoint, domain)
+    // share the same FCT entry (same domain+endpoint+species resolution),
+    // so first non-null wins. Verdict uses a worst-severity ladder like
+    // worstSeverity below.
+    if (row.fct_reliance && !entry.fctReliance) {
+      entry.fctReliance = row.fct_reliance as EndpointSummary["fctReliance"];
+    }
+    if (row.verdict) {
+      const rank: Record<string, number> = {
+        strong_adverse: 5, adverse: 4, concern: 3, variation: 2, provisional: 1,
+      };
+      const cur = entry.verdict ? rank[entry.verdict] ?? 0 : 0;
+      const next = rank[row.verdict] ?? 0;
+      if (next > cur) entry.verdict = row.verdict;
+    }
     if (row.severity === "adverse") entry.worstSeverity = "adverse";
     else if (row.severity === "warning" && entry.worstSeverity !== "adverse") entry.worstSeverity = "warning";
     if (row.treatment_related) entry.tr = true;
@@ -575,6 +624,8 @@ export function deriveEndpointSummaries(rows: AdverseEffectSummaryRow[]): Endpoi
       qualifierTags: entry.qualifierTags,
       ...(allDomains.length > 1 ? { domains: allDomains.sort() } : {}),
       ...(entry.compound_id ? { compound_id: entry.compound_id } : {}),
+      ...(entry.fctReliance ? { fctReliance: entry.fctReliance } : {}),
+      ...(entry.verdict ? { verdict: entry.verdict } : {}),
     };
 
     // REM-05: Derive control and worst-treated group stats (continuous endpoints only)

@@ -189,7 +189,12 @@ export function classifyEndpointConfidence(ep: EndpointSummary): EndpointConfide
       level = 1;
     }
   } else {
-    // Continuous: existing Cohen's d thresholds
+    // Continuous: existing Cohen's d thresholds.
+    // The 0.5 / 0.8 literals here are signal-rail tier cutoffs (SignalTier
+    // enum), NOT severity bands. The FCT registry governs severity; this
+    // function governs how prominently the rail surfaces a finding. Kept
+    // unchanged under Phase B additive design (species-magnitude-thresholds
+    // -dog-nhp, 2026-04-22).
     if (p !== null && p < 0.01 && effect >= 0.8 && informativePattern) {
       level = 2;
     } else if (

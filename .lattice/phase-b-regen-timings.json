@@ -1,0 +1,62 @@
+{
+  "CBER-POC-Pilot-Study1-Vaccine_xpt_only": {
+    "rc": 0,
+    "elapsed_s": 7.1
+  },
+  "CBER-POC-Pilot-Study2-Vaccine_xpt": {
+    "rc": 0,
+    "elapsed_s": 78.0
+  },
+  "CBER-POC-Pilot-Study3-Gene-Therapy": {
+    "rc": 0,
+    "elapsed_s": 14.4
+  },
+  "CBER-POC-Pilot-Study4-Vaccine": {
+    "rc": 0,
+    "elapsed_s": 58.0
+  },
+  "CBER-POC-Pilot-Study5": {
+    "rc": 0,
+    "elapsed_s": 7.1
+  },
+  "CJ16050-xptonly": {
+    "rc": 0,
+    "elapsed_s": 13.5
+  },
+  "CJUGSEND00": {
+    "rc": 0,
+    "elapsed_s": 5.4
+  },
+  "FFU-Contribution-to-FDA": {
+    "rc": 0,
+    "elapsed_s": 91.5
+  },
+  "Nimble": {
+    "rc": 0,
+    "elapsed_s": 24.1
+  },
+  "PDS": {
+    "rc": 0,
+    "elapsed_s": 106.7
+  },
+  "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt": {
+    "rc": 0,
+    "elapsed_s": 74.2
+  },
+  "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt": {
+    "rc": 0,
+    "elapsed_s": 51.2
+  },
+  "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt": {
+    "rc": 0,
+    "elapsed_s": 60.3
+  },
+  "TOXSCI-24-0062--96298 1 month rat- Compound A xpt": {
+    "rc": 0,
+    "elapsed_s": 174.1
+  },
+  "instem": {
+    "rc": 0,
+    "elapsed_s": 48.9
+  }
+}

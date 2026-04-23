@@ -294,6 +294,27 @@ export interface AdverseEffectSummaryRow {
   qualifier_tags?: string | null;
   /** Compound identity for multi-compound studies. */
   compound_id?: string;
+  /**
+   * Phase B FCT payload propagation (species-magnitude-thresholds-dog-nhp).
+   * Per-finding FCT verdict (5-value) and reliance block shipped so the
+   * frontend D4 clinical-boost (endpoint-confidence.ts) can consume the
+   * backend-computed bands without recomputing.
+   */
+  verdict?: "variation" | "concern" | "adverse" | "strong_adverse" | "provisional" | null;
+  coverage?: "full" | "partial" | "none" | "catalog_driven" | "n-sufficient" | "n-marginal" | "n-insufficient" | null;
+  fct_reliance?: {
+    coverage: string;
+    fallback_used: boolean;
+    provenance: string;
+    bands_used: {
+      variation_ceiling: number | null;
+      concern_floor: number | null;
+      adverse_floor: number | null;
+      strong_adverse_floor: number | null;
+      units: string;
+      any_significant: boolean;
+    } | null;
+  } | null;
 }
 
 // --- Dose-Response (View 2) ---

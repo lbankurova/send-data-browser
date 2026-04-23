@@ -16,8 +16,317 @@ import math
 
 from services.analysis.adversity_dictionary import lookup_intrinsic_adversity
 from services.analysis.organ_thresholds import get_organ_threshold, get_default_om_threshold
+from services.analysis import fct_registry
 
 log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# FCT verdict vocabulary + legacy severity mapping
+# (species-magnitude-thresholds-dog-nhp Phase B, AC-F3b-2)
+# ---------------------------------------------------------------------------
+#
+# `verdict` (5-value) is the FCT-layer classification: it consumes the FCT
+# registry's native-scale bands when available, or emits `provisional` when
+# no bands exist for the (domain, endpoint, species, direction) tuple.
+#
+# `severity` (3-value + not_assessed) is the legacy vocabulary consumed by
+# 30+ existing consumers (filter-engine, cohort-engine, derive-summaries,
+# R04/R12/R13 emission, etc). We preserve it byte-parity via classify_severity
+# and expose the verdict as a parallel metadata field. The mapping table is
+# canonical and committed at `shared/rules/verdict-severity-mapping.json`.
+
+_VERDICT_TO_SEVERITY: dict[str, str] = {
+    "strong_adverse": "adverse",
+    "adverse": "adverse",
+    "concern": "warning",
+    "variation": "normal",
+    "provisional": "not_assessed",
+}
+
+ALLOWED_VERDICTS: frozenset[str] = frozenset(_VERDICT_TO_SEVERITY.keys())
+
+
+def verdict_to_legacy_severity(verdict: str | None) -> str | None:
+    """Map a 5-value FCT verdict to the 3-value + not_assessed legacy severity.
+
+    Returns None when verdict is None (caller decides fallback behavior —
+    typically keep the legacy classify_severity output).
+    """
+    if verdict is None:
+        return None
+    return _VERDICT_TO_SEVERITY.get(verdict)
+
+
+def _derive_endpoint_key(finding: dict) -> tuple[str, str] | None:
+    """Derive (domain, endpoint_key) for FCT lookup from a finding dict.
+
+    Returns None when the finding has no usable domain/endpoint identity.
+    For OM, endpoint is the resolved specimen config key (LIVER, KIDNEY, ...).
+    For LB / BW / other continuous domains, endpoint is the SEND test code.
+    """
+    domain = finding.get("domain")
+    if not domain:
+        return None
+    if domain == "OM":
+        from services.analysis.organ_thresholds import resolve_specimen_key
+        endpoint = resolve_specimen_key(finding.get("specimen"))
+        if endpoint is None:
+            return None
+        return (domain, endpoint)
+    # Non-OM continuous: use test_code as the endpoint key.
+    test_code = (finding.get("test_code") or "").strip().upper()
+    if not test_code:
+        return None
+    return (domain, test_code)
+
+
+def _compute_pct_change_simple(finding: dict) -> float | None:
+    """Lightweight percent-change estimator for the verdict path.
+
+    Mirrors `_compute_pct_change` (defined later in this module) but lives
+    earlier so it can be used by the verdict-computation helper. Falls back to
+    absolute group means when ANCOVA-adjusted means are unavailable.
+    Returns signed pct.
+    """
+    ancova = finding.get("ancova")
+    if ancova and isinstance(ancova, dict):
+        adj_means = ancova.get("adjusted_means")
+        if adj_means and isinstance(adj_means, dict):
+            values = list(adj_means.values())
+            if len(values) >= 2:
+                ctrl = values[0]
+                high = values[-1]
+                if ctrl is not None and high is not None and abs(ctrl) > 1e-10:
+                    return ((high - ctrl) / abs(ctrl)) * 100
+    gs = finding.get("group_stats", [])
+    if len(gs) < 2:
+        return None
+    ctrl_mean = gs[0].get("mean")
+    high_mean = gs[-1].get("mean")
+    if ctrl_mean is None or high_mean is None or abs(ctrl_mean) < 1e-10:
+        return None
+    return ((high_mean - ctrl_mean) / abs(ctrl_mean)) * 100
+
+
+def _verdict_from_bands(native_magnitude: float, bands) -> str:
+    """Classify a native-scale magnitude (already abs() applied) against FCT
+    bands. `bands` is an FctBands dataclass; caller ensures at least one
+    threshold field is populated.
+    """
+    strong = bands.strong_adverse_floor
+    adverse = bands.adverse_floor
+    concern = bands.concern_floor
+    variation = bands.variation_ceiling
+    if strong is not None and native_magnitude >= strong:
+        return "strong_adverse"
+    if adverse is not None and native_magnitude >= adverse:
+        return "adverse"
+    if concern is not None and native_magnitude >= concern:
+        return "concern"
+    # No concern band populated (common for OM -- only ceiling/adverse/strong):
+    # treat below-adverse values as 'variation' if above the variation ceiling,
+    # else 'variation'. The legacy OM 3-tier (ceiling/floor/strong) ladder has
+    # no "concern" band by design; the FCT migration keeps that shape.
+    if variation is not None and native_magnitude < variation:
+        return "variation"
+    # Between variation_ceiling and adverse_floor: sub-adverse mild effect.
+    return "concern"
+
+
+def compute_fct_payload(finding: dict, species: str | None) -> dict:
+    """Compute the FCT reliance block + verdict for a finding.
+
+    Returns a dict with keys: verdict, coverage, fallback_used, provenance,
+    entry_ref, fct_reliance (nested). This helper is pure (no side effects);
+    `findings_pipeline` attaches the result to each continuous finding after
+    `classify_severity`.
+
+    Verdict path:
+      * Non-continuous (incidence, CL, DS): verdict = "provisional" with
+        coverage="catalog_driven" placeholders (Phase B spec AC-F2-7).
+        Catalog-driven findings do not participate in the FCT severity ladder.
+      * Continuous with populated FCT bands (OM today, future LB/BW): verdict
+        derived from native-scale pct_change vs bands.
+      * Continuous with no FCT entry OR unpopulated bands: verdict derived
+        from the legacy |g|-ladder (|d|>=1.0 -> adverse; 0.5<=|d|<1.0 ->
+        concern; else variation) so that the verdict field is informative
+        even for non-OM endpoints pending their own FCT migration. Coverage
+        remains "none" and fallback_used remains True to advertise the gap.
+    """
+    data_type = finding.get("data_type", "continuous")
+    domain = finding.get("domain", "")
+
+    # Incidence / catalog-driven path (AC-F2-7 sentinel).
+    if data_type != "continuous" or domain in ("CL", "DS"):
+        return {
+            "verdict": "provisional",
+            "coverage": "catalog_driven",
+            "fallback_used": False,
+            "provenance": "catalog_rule",
+            "entry_ref": f"clinical_catalog:{domain}" if domain else None,
+            "fct_reliance": {
+                "coverage": "catalog_driven",
+                "fallback_used": False,
+                "provenance": "catalog_rule",
+                "bands_used": None,
+            },
+        }
+
+    # Continuous path — resolve (domain, endpoint) and look up FCT bands.
+    key = _derive_endpoint_key(finding)
+    direction = finding.get("direction") or "both"
+    if direction not in ("up", "down", "both"):
+        direction = "both"
+    bands = None
+    if key is not None:
+        try:
+            bands = fct_registry.get_fct(
+                key[0], key[1], species=species, direction=direction,
+            )
+        except Exception as e:  # noqa: BLE001 -- never crash classifier on registry glitch
+            log.warning("FCT lookup failed for %s.%s (%s): %s", key[0], key[1], species, e)
+            bands = None
+
+    # Legacy-|g| fallback verdict computation (used when no FCT entry).
+    from services.analysis.send_knowledge import get_effect_size as _get_es
+    max_d = _get_es(finding)
+    abs_d = abs(max_d) if max_d is not None else None
+
+    if bands is None or bands.entry_ref is None:
+        # No FCT entry for this (domain, endpoint, direction). Emit
+        # 'provisional' coverage but still compute a verdict from |g| so
+        # downstream consumers (R10/R11, NOAEL penalty) retain informative
+        # behavior pending per-domain FCT population.
+        if abs_d is not None and abs_d >= 1.0:
+            legacy_verdict = "adverse"
+        elif abs_d is not None and abs_d >= 0.5:
+            legacy_verdict = "concern"
+        elif abs_d is not None:
+            legacy_verdict = "variation"
+        else:
+            legacy_verdict = "provisional"
+        return {
+            "verdict": legacy_verdict,
+            "coverage": "none",
+            "fallback_used": True,
+            "provenance": "extrapolated",
+            "entry_ref": None,
+            "fct_reliance": {
+                "coverage": "none",
+                "fallback_used": True,
+                "provenance": "extrapolated",
+                "bands_used": None,
+            },
+        }
+
+    # FCT entry exists -- populated-band path.
+    has_any_band = any(
+        b is not None for b in (
+            bands.variation_ceiling,
+            bands.concern_floor,
+            bands.adverse_floor,
+            bands.strong_adverse_floor,
+        )
+    )
+    if not has_any_band:
+        # Registry entry present but no bands for this species (e.g., NHP
+        # spleen Tier C qualitative). Emit provisional verdict per M5.
+        return {
+            "verdict": "provisional",
+            "coverage": bands.coverage,
+            "fallback_used": bands.fallback_used,
+            "provenance": bands.provenance,
+            "entry_ref": bands.entry_ref,
+            "fct_reliance": {
+                "coverage": bands.coverage,
+                "fallback_used": bands.fallback_used,
+                "provenance": bands.provenance,
+                "bands_used": None,
+            },
+        }
+
+    # Native-scale magnitude (percent change) — default units for FCT is
+    # pct_change; fold/absolute/sd are reserved for future per-endpoint
+    # entries. OM migrated content is 100% pct_change.
+    pct = _compute_pct_change_simple(finding)
+    magnitude = abs(pct) if pct is not None else None
+
+    if magnitude is None:
+        # Cannot compute native-scale change -- fall back to the legacy |g|
+        # ladder for verdict but still advertise FCT entry presence so the
+        # reliance block reflects the registry entry.
+        if abs_d is not None and abs_d >= 1.0:
+            legacy_verdict = "adverse"
+        elif abs_d is not None and abs_d >= 0.5:
+            legacy_verdict = "concern"
+        elif abs_d is not None:
+            legacy_verdict = "variation"
+        else:
+            legacy_verdict = "provisional"
+        # Contract invariant: verdict='provisional' must not pair with
+        # coverage='full'/'partial'. When statistics are absent (native
+        # magnitude AND |g| both unavailable -- e.g., missing sex stratum
+        # where n_male=0, or empty group_stats), override coverage to
+        # 'stat-unavailable' so downstream consumers can distinguish this
+        # epistemic state from the pre-existing 'n-insufficient' (small-N
+        # CI transparency per P4) and 'none' (no registry entry) states.
+        # Reading 'stat-unavailable' means: registry has populated bands
+        # for this species, but the classifier could not compute any
+        # magnitude for this finding.
+        if legacy_verdict == "provisional":
+            coverage_out = "stat-unavailable"
+            fallback_used_out = True
+        else:
+            coverage_out = bands.coverage
+            fallback_used_out = bands.fallback_used
+        return {
+            "verdict": legacy_verdict,
+            "coverage": coverage_out,
+            "fallback_used": fallback_used_out,
+            "provenance": bands.provenance,
+            "entry_ref": bands.entry_ref,
+            "fct_reliance": {
+                "coverage": coverage_out,
+                "fallback_used": fallback_used_out,
+                "provenance": bands.provenance,
+                "bands_used": _bands_payload(bands),
+            },
+        }
+
+    # `any_significant` bypass: rodent brain / testes pattern -- any
+    # statistically significant change is adverse regardless of magnitude.
+    min_p = finding.get("min_p_adj")
+    if bands.any_significant and min_p is not None and min_p < 0.05:
+        verdict = "adverse"
+    else:
+        verdict = _verdict_from_bands(magnitude, bands)
+
+    return {
+        "verdict": verdict,
+        "coverage": bands.coverage,
+        "fallback_used": bands.fallback_used,
+        "provenance": bands.provenance,
+        "entry_ref": bands.entry_ref,
+        "fct_reliance": {
+            "coverage": bands.coverage,
+            "fallback_used": bands.fallback_used,
+            "provenance": bands.provenance,
+            "bands_used": _bands_payload(bands),
+        },
+    }
+
+
+def _bands_payload(bands) -> dict:
+    """Serialize FctBands thresholds for the payload (no metadata keys)."""
+    return {
+        "variation_ceiling": bands.variation_ceiling,
+        "concern_floor": bands.concern_floor,
+        "adverse_floor": bands.adverse_floor,
+        "strong_adverse_floor": bands.strong_adverse_floor,
+        "units": bands.units,
+        "any_significant": bands.any_significant,
+    }
 
 
 def classify_severity(
@@ -30,6 +339,15 @@ def classify_severity(
     - grade-ge-2-or-dose-dep: default. p < 0.05 AND |d| >= 0.5, or trend-driven.
     - grade-ge-1: any significant pairwise → adverse (no effect size gate).
     - grade-ge-2: p < 0.05 AND |d| >= 0.5 → adverse (no trend consideration).
+
+    Phase B additive-design note (species-magnitude-thresholds-dog-nhp, 2026-04-22):
+    The 0.5 / 0.8 / 1.0 literals below are the preserved legacy |g|-ladder
+    that continues to drive the legacy `severity` field. FCT-calibrated
+    native-scale classification lives in `compute_fct_payload()`, which
+    writes the new 5-value `verdict` field alongside severity. These
+    literals are NOT severity-band-replacement targets (AC-F1-1 revised
+    text) because the additive design keeps the |g|-ladder path alive for
+    LB / BW / other continuous domains that have no FCT bands yet.
     """
     from services.analysis.send_knowledge import get_effect_size as _get_es
     min_p = finding.get("min_p_adj")

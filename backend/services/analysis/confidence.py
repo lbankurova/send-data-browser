@@ -255,10 +255,18 @@ def _score_d5_cross_sex(f: dict, sibling: dict | None) -> dict:
 def _score_d6_tier2_equivocal(f: dict) -> dict:
     """Downgrade when a Tier 2 endpoint's max step falls in the equivocal zone.
 
-    Tier 2 endpoints use a 0.5 SD equivalence band.  Steps in the 0.75-1.0 SD
-    range are genuine but marginal — too large to call flat, too small to call
-    with confidence.  Flagging this as a confidence downgrade surfaces
+    Tier 2 endpoints use a 0.5 SD equivalence band. Steps in the 0.75-1.0 SD
+    range are genuine but marginal -- too large to call flat, too small to call
+    with confidence. Flagging this as a confidence downgrade surfaces
     uncertainty without changing the pattern classification itself.
+
+    F4 rewire (species-magnitude-thresholds-dog-nhp Phase B): when the finding
+    carries a populated FCT band set (OM today, future LB/BW), the equivocal
+    zone is derived from the FCT bands on the native scale:
+      equivocal := concern_floor <= |pct_change| < adverse_floor
+    Falls back to the legacy 0.75-1.0 SD proxy when no FCT entry exists or
+    the bands do not expose a concern_floor (OM today uses a 3-tier ladder
+    with no concern band; falls through to legacy SD logic).
     """
     test_code = f.get("test_code", "")
     specimen = f.get("specimen")
@@ -270,28 +278,51 @@ def _score_d6_tier2_equivocal(f: dict) -> dict:
 
     if tier != 2:
         return _dim("D6", "Tier 2 equivocal zone", None,
-                     f"Tier {tier} — not applicable")
+                     f"Tier {tier} -- not applicable")
 
-    # Compute max step size in pooled-SD units from group_stats
-    group_stats = f.get("group_stats", [])
     data_type = f.get("data_type", "continuous")
-    if data_type != "continuous" or len(group_stats) < 2:
+    if data_type != "continuous":
         return _dim("D6", "Tier 2 equivocal zone", None,
-                     "Not continuous or insufficient groups — skipped")
+                     "Not continuous -- skipped")
+
+    # --- FCT-derived native-scale path (F4) ---
+    fct_reliance = f.get("fct_reliance") or {}
+    bands_used = fct_reliance.get("bands_used") if isinstance(fct_reliance, dict) else None
+    if bands_used and bands_used.get("concern_floor") is not None \
+            and bands_used.get("adverse_floor") is not None:
+        from services.analysis.classification import _compute_pct_change_simple
+        pct = _compute_pct_change_simple(f)
+        if pct is not None:
+            magnitude = abs(pct)
+            cf = float(bands_used["concern_floor"])
+            af = float(bands_used["adverse_floor"])
+            if cf <= magnitude < af:
+                return _dim("D6", "Tier 2 equivocal zone", -1,
+                             f"Magnitude {magnitude:.1f}% in FCT equivocal zone "
+                             f"(concern={cf:.1f}%, adverse={af:.1f}%)")
+            return _dim("D6", "Tier 2 equivocal zone", 0,
+                         f"Magnitude {magnitude:.1f}% outside FCT equivocal zone")
+        # Magnitude unavailable -- fall through to legacy SD proxy.
+
+    # --- Legacy SD proxy path (unchanged for endpoints without FCT) ---
+    group_stats = f.get("group_stats", [])
+    if len(group_stats) < 2:
+        return _dim("D6", "Tier 2 equivocal zone", None,
+                     "Insufficient groups -- skipped")
 
     means = [g.get("mean") for g in group_stats]
     if any(m is None for m in means):
         return _dim("D6", "Tier 2 equivocal zone", None,
-                     "Missing means — skipped")
+                     "Missing means -- skipped")
 
     sds = [g["sd"] for g in group_stats if g.get("sd") is not None and g["sd"] > 0]
     if not sds:
         return _dim("D6", "Tier 2 equivocal zone", None,
-                     "No SD data — skipped")
+                     "No SD data -- skipped")
     pooled_sd = math.sqrt(sum(s ** 2 for s in sds) / len(sds))
     if pooled_sd <= 0:
         return _dim("D6", "Tier 2 equivocal zone", None,
-                     "Pooled SD is zero — skipped")
+                     "Pooled SD is zero -- skipped")
 
     # Max consecutive step in SD units
     max_step_sd = max(
@@ -304,7 +335,7 @@ def _score_d6_tier2_equivocal(f: dict) -> dict:
                      f"Max step {max_step_sd:.2f} SD in equivocal zone (0.75-1.0 SD)")
 
     return _dim("D6", "Tier 2 equivocal zone", 0,
-                 f"Max step {max_step_sd:.2f} SD — outside equivocal zone")
+                 f"Max step {max_step_sd:.2f} SD -- outside equivocal zone")
 
 
 # ---------------------------------------------------------------------------

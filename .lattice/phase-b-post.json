@@ -1,0 +1,327 @@
+{
+  "CBER-POC-Pilot-Study1-Vaccine_xpt_only": {
+    "by_class": {
+      "not_assessed": 135
+    },
+    "by_severity": {
+      "not_assessed": 135
+    },
+    "by_verdict": {
+      "provisional": 135
+    },
+    "om_slim_hash": "d751713988987e9331980363e24189ce",
+    "total": 135
+  },
+  "CBER-POC-Pilot-Study2-Vaccine_xpt": {
+    "by_class": {
+      "equivocal": 162,
+      "not_treatment_related": 267,
+      "tr_adverse": 42,
+      "tr_non_adverse": 19
+    },
+    "by_severity": {
+      "adverse": 79,
+      "normal": 388,
+      "warning": 23
+    },
+    "by_verdict": {
+      "adverse": 79,
+      "concern": 105,
+      "provisional": 98,
+      "strong_adverse": 30,
+      "variation": 178
+    },
+    "om_slim_hash": "1854da78a21354a6b240a92a07a81c6b",
+    "total": 490
+  },
+  "CBER-POC-Pilot-Study3-Gene-Therapy": {
+    "by_class": {
+      "not_assessed": 593
+    },
+    "by_severity": {
+      "not_assessed": 593
+    },
+    "by_verdict": {
+      "adverse": 106,
+      "concern": 180,
+      "provisional": 35,
+      "variation": 272
+    },
+    "om_slim_hash": "d751713988987e9331980363e24189ce",
+    "total": 593
+  },
+  "CBER-POC-Pilot-Study4-Vaccine": {
+    "by_class": {
+      "equivocal": 274,
+      "not_treatment_related": 380,
+      "tr_adverse": 63,
+      "tr_non_adverse": 30
+    },
+    "by_severity": {
+      "adverse": 123,
+      "normal": 555,
+      "warning": 69
+    },
+    "by_verdict": {
+      "adverse": 133,
+      "concern": 255,
+      "provisional": 145,
+      "strong_adverse": 1,
+      "variation": 213
+    },
+    "om_slim_hash": "885110ad75007178523f4f119c337b17",
+    "total": 747
+  },
+  "CBER-POC-Pilot-Study5": {
+    "by_class": {
+      "equivocal": 13,
+      "not_treatment_related": 26,
+      "treatment_related": 12,
+      "treatment_related_concerning": 1
+    },
+    "by_severity": {
+      "adverse": 11,
+      "normal": 36,
+      "warning": 5
+    },
+    "by_verdict": {
+      "adverse": 11,
+      "concern": 11,
+      "provisional": 12,
+      "variation": 18
+    },
+    "om_slim_hash": "d751713988987e9331980363e24189ce",
+    "total": 52
+  },
+  "CJ16050-xptonly": {
+    "by_class": {
+      "tr_adverse": 5
+    },
+    "by_severity": {
+      "adverse": 5
+    },
+    "by_verdict": {
+      "adverse": 3,
+      "provisional": 2
+    },
+    "om_slim_hash": "d751713988987e9331980363e24189ce",
+    "total": 5
+  },
+  "CJUGSEND00": {
+    "by_class": {
+      "equivocal": 5,
+      "not_treatment_related": 24,
+      "treatment_related": 2
+    },
+    "by_severity": {
+      "adverse": 2,
+      "normal": 27,
+      "warning": 2
+    },
+    "by_verdict": {
+      "adverse": 4,
+      "concern": 17,
+      "provisional": 1,
+      "variation": 9
+    },
+    "om_slim_hash": "d751713988987e9331980363e24189ce",
+    "total": 31
+  },
+  "FFU-Contribution-to-FDA": {
+    "by_class": {
+      "equivocal": 292,
+      "not_treatment_related": 306,
+      "tr_adverse": 136,
+      "tr_non_adverse": 77
+    },
+    "by_severity": {
+      "adverse": 65,
+      "normal": 572,
+      "warning": 174
+    },
+    "by_verdict": {
+      "adverse": 212,
+      "concern": 212,
+      "provisional": 115,
+      "strong_adverse": 4,
+      "variation": 268
+    },
+    "om_slim_hash": "ce1adbd66d1703ab9eb104c3c1e91d1e",
+    "total": 811
+  },
+  "Nimble": {
+    "by_class": {
+      "equivocal": 12,
+      "not_treatment_related": 34,
+      "tr_adverse": 6
+    },
+    "by_severity": {
+      "adverse": 3,
+      "normal": 41,
+      "warning": 8
+    },
+    "by_verdict": {
+      "concern": 1,
+      "provisional": 42,
+      "variation": 9
+    },
+    "om_slim_hash": "5d8dfaff33e05b2753f186d0f29b80e2",
+    "total": 52
+  },
+  "PDS": {
+    "by_class": {
+      "equivocal": 186,
+      "not_treatment_related": 349,
+      "tr_adverse": 150,
+      "tr_non_adverse": 4
+    },
+    "by_severity": {
+      "adverse": 200,
+      "normal": 424,
+      "warning": 65
+    },
+    "by_verdict": {
+      "adverse": 206,
+      "concern": 145,
+      "provisional": 257,
+      "strong_adverse": 6,
+      "variation": 75
+    },
+    "om_slim_hash": "674a68dadbd83a925ea96fe563195633",
+    "total": 689
+  },
+  "PointCross": {
+    "by_class": {
+      "equivocal": 94,
+      "not_treatment_related": 239,
+      "tr_adaptive": 3,
+      "tr_adverse": 77,
+      "tr_non_adverse": 2
+    },
+    "by_severity": {
+      "adverse": 112,
+      "normal": 280,
+      "warning": 23
+    },
+    "by_verdict": {
+      "adverse": 84,
+      "concern": 30,
+      "provisional": 265,
+      "strong_adverse": 6,
+      "variation": 30
+    },
+    "om_slim_hash": "69d81d9d7b62418bafb4e182645c8070",
+    "total": 415
+  },
+  "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt": {
+    "by_class": {
+      "equivocal": 253,
+      "not_treatment_related": 406,
+      "tr_adverse": 102,
+      "tr_non_adverse": 101
+    },
+    "by_severity": {
+      "adverse": 109,
+      "normal": 623,
+      "warning": 130
+    },
+    "by_verdict": {
+      "adverse": 155,
+      "concern": 167,
+      "provisional": 396,
+      "strong_adverse": 24,
+      "variation": 120
+    },
+    "om_slim_hash": "30196b184d64c05ff5b8f7b4673c054d",
+    "total": 862
+  },
+  "TOXSCI-24-0062--43066 1 month dog- Compound A-xpt": {
+    "by_class": {
+      "equivocal": 168,
+      "not_treatment_related": 217,
+      "tr_adverse": 40,
+      "tr_non_adverse": 11
+    },
+    "by_severity": {
+      "adverse": 37,
+      "normal": 308,
+      "warning": 91
+    },
+    "by_verdict": {
+      "adverse": 98,
+      "concern": 123,
+      "provisional": 105,
+      "strong_adverse": 14,
+      "variation": 96
+    },
+    "om_slim_hash": "883d742742ae4773eba6d7ea144601bc",
+    "total": 436
+  },
+  "TOXSCI-24-0062--87497 1 month rat- Compound B-xpt": {
+    "by_class": {
+      "equivocal": 87,
+      "not_treatment_related": 211,
+      "tr_adaptive": 1,
+      "tr_adverse": 39,
+      "tr_non_adverse": 5
+    },
+    "by_severity": {
+      "adverse": 64,
+      "normal": 225,
+      "warning": 54
+    },
+    "by_verdict": {
+      "adverse": 56,
+      "concern": 83,
+      "provisional": 148,
+      "strong_adverse": 5,
+      "variation": 51
+    },
+    "om_slim_hash": "b4c832577389d073fe6ed3b1b147ccd3",
+    "total": 343
+  },
+  "TOXSCI-24-0062--96298 1 month rat- Compound A xpt": {
+    "by_class": {
+      "equivocal": 161,
+      "not_treatment_related": 289,
+      "tr_adverse": 31,
+      "tr_non_adverse": 10
+    },
+    "by_severity": {
+      "adverse": 64,
+      "normal": 389,
+      "warning": 38
+    },
+    "by_verdict": {
+      "adverse": 77,
+      "concern": 148,
+      "provisional": 135,
+      "strong_adverse": 4,
+      "variation": 127
+    },
+    "om_slim_hash": "0a7139bf3265e43b57c037f6ba0eb571",
+    "total": 491
+  },
+  "instem": {
+    "by_class": {
+      "equivocal": 125,
+      "not_treatment_related": 147,
+      "tr_adverse": 34,
+      "tr_non_adverse": 11
+    },
+    "by_severity": {
+      "adverse": 55,
+      "normal": 220,
+      "warning": 42
+    },
+    "by_verdict": {
+      "adverse": 69,
+      "concern": 90,
+      "provisional": 82,
+      "strong_adverse": 2,
+      "variation": 74
+    },
+    "om_slim_hash": "5f5e0b98f30381d0a1ce4e3b24ffe527",
+    "total": 317
+  }
+}

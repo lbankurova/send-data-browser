@@ -1,7 +1,7 @@
 # Signal Detection
 
-**Engine:** commit `d567969c` (2026-04-17)
-**Generated:** 2026-04-17T20:32:00.829Z
+**Engine:** commit `7fbb7d63` (2026-04-23)
+**Generated:** 2026-04-23T12:45:55.784Z
 
 Compares engine output against reference cards in `docs/validation/references/`. Signals are known injected/documented effects — MISSED = bug.
 
@@ -39,7 +39,7 @@ Compares engine output against reference cards in `docs/validation/references/`.
 
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
-| 1 | CRP elevation | LB | any | equivocal | 0.54 | 0.220 | **DETECTED** | Day 2: M 65.5x, F 11.7x control. Day 30: M 33.5x, F 8.1x. Report: not adverse. (report p.12) |
+| 1 | CRP elevation | LB | any | tr_adverse | 2.19 | <0.001 | **DETECTED** | Day 2: M 65.5x, F 11.7x control. Day 30: M 33.5x, F 8.1x. Report: not adverse. (report p.12) |
 | 2 | Fibrinogen elevation | LB | any | tr_adverse | 4.89 | <0.001 | **DETECTED** | Day 3: M 1.97x (p<0.001), F 2.00x (p<0.001). Day 31: M 1.75x (p<0.01), F 1.65x (p<0.05). Report: not adverse. (report p.12) |
 | 3 | Monocyte elevation | LB | any | equivocal | 1.11 | 0.034 | **DETECTED** | Day 3: M 2.7x (p<0.05), F 3.0x (p<0.01). Day 31: F only 2.1x (p<0.001). M borderline. (report p.11) |
 | 4 | Globulin elevation | LB | any | tr_adverse | -3.00 | <0.001 | **DETECTED** | Day 3: M 1.3x (p<0.001), F 1.2x (p<0.001). Day 31: similar. (report p.11) |
@@ -94,10 +94,10 @@ Compares engine output against reference cards in `docs/validation/references/`.
 | # | Signal | Domain | Sex | Class | Effect Size | p | Verdict | Note |
 |---|--------|--------|-----|-------|-------------|---|---------|------|
 | 1 | CRP elevation | LB | any | equivocal | 1.06 | 0.079 | **DETECTED** | Both vaccines induced increase. Considered non-adverse, reversible. (report p.10) |
-| 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.026 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
+| 2 | Fibrinogen elevation | LB | any | tr_adverse | 2.06 | 0.025 | **DETECTED** | Both vaccines. Considered non-adverse, reversible, pharmacology-related. (report p.10) |
 | 3 | A/G ratio decrease | LB | any | equivocal | -1.00 | 0.114 | **DETECTED** | Both vaccines. (report p.10) |
 | 4 | Body weight loss (transient) | BW | any | tr_adverse | -1.57 | 0.050 | **DETECTED** | Transient minimal BW loss after 1st (F) and 2nd (both sexes) injections. Did not impact terminal BW. Associated with lower food consumption. (report p.10) |
-| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.051 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
+| 5 | Food consumption decrease (transient) | FW | any | equivocal | -0.87 | 0.050 | **DETECTED** | Minimally lower, same periods as BW loss. (report p.10) |
 | 6 | Spleen weight increase | OM | any | tr_adverse | 1.85 | 0.005 | **DETECTED** | Both vaccines. Absolute and relative (to body and brain). Partial recovery in M, complete in F. (report p.10) |
 | 7 | Spleen hyperplasia | MI | any | equivocal | -- | 0.002 | **DETECTED** | Lymphoid hyperplasia. Both vaccines. Correlated with weight increase. (report p.10) |
 | 8 | Regional LN hyperplasia | MI | any | equivocal | -- | 0.266 | **DETECTED** | Lymphoid hyperplasia and granulocyte infiltration. Both vaccines. Enlarged right inguinal LN in M (SENDVACC99). (report p.10) |

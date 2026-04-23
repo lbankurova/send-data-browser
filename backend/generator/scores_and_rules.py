@@ -232,18 +232,44 @@ def evaluate_rules(
         elif pattern == "non_monotonic":
             results.append(_emit(RULES[6], ctx, finding))
 
-        # R10-R11: Effect magnitude (continuous domains only — Hedges' g thresholds)
-        # For MI, max_effect_size is avg_severity (1-5) not Hedges' g — skip magnitude rules.
-        # For MA/CL/TF/DS, max_effect_size is None — already skipped.
+        # R10-R11: Effect magnitude (continuous domains only -- Hedges' g fallback).
+        # For MI, max_effect_size is avg_severity (1-5) not Hedges' g -- skip magnitude rules.
+        # For MA/CL/TF/DS, max_effect_size is None -- already skipped.
+        #
+        # F5 rewire (species-magnitude-thresholds-dog-nhp Phase B): R10 fires
+        # when the FCT verdict is adverse/strong_adverse; R11 when verdict is
+        # concern. When no FCT entry exists for the endpoint (verdict=
+        # 'provisional' with coverage='none'), fall back to the legacy |g|
+        # gates (|g|>=1.0 R10; |g|>=0.5 R11) so non-OM behavior is preserved
+        # pending per-domain FCT population. Rule payload threads the
+        # uncertainty-first fields (coverage/fallback_used/provenance/
+        # entry_ref) regardless of which path fired.
         from services.analysis.send_knowledge import get_effect_size as _get_es
         es = _get_es(finding)
         if es is not None:
             gs_r10 = finding.get("group_stats", [])
             n_aff = sum(g.get("affected", 0) for g in gs_r10 if g.get("dose_level", 0) > 0)
-            if abs(es) >= 1.0:
-                extra = {"effect_size": es, "n_affected": n_aff}
+            verdict = finding.get("verdict")
+            coverage = finding.get("coverage") or "none"
+            fct_fires_r10 = verdict in ("adverse", "strong_adverse") and coverage != "none"
+            fct_fires_r11 = verdict == "concern" and coverage != "none"
+            fct_reliance_extra = {
+                "fct_coverage": coverage,
+                "fct_fallback_used": finding.get("fallback_used"),
+                "fct_provenance": finding.get("provenance"),
+                "fct_entry_ref": finding.get("entry_ref"),
+                "fct_verdict": verdict,
+            }
+
+            fires_r10 = fct_fires_r10 or (not fct_fires_r10 and coverage == "none" and abs(es) >= 1.0)
+            fires_r11 = (not fires_r10) and (
+                fct_fires_r11 or (coverage == "none" and 0.5 <= abs(es) < 1.0)
+            )
+
+            if fires_r10:
+                extra = {"effect_size": es, "n_affected": n_aff, **fct_reliance_extra}
                 if n_aff <= 1:
-                    # Dampen: single-animal finding — mathematically correct but
+                    # Dampen: single-animal finding -- mathematically correct but
                     # statistically meaningless, so downgrade to info severity
                     dampened_rule = {**RULES[9], "severity": "info"}
                     extra["dampened"] = True
@@ -253,9 +279,10 @@ def evaluate_rules(
                 else:
                     results.append(_emit(RULES[9], {**ctx, "effect_size": es}, finding,
                                          params=extra))
-            elif abs(es) >= 0.5:
+            elif fires_r11:
+                r11_params = {"effect_size": es, "n_affected": n_aff, **fct_reliance_extra}
                 results.append(_emit(RULES[10], {**ctx, "effect_size": es}, finding,
-                                     params={"effect_size": es, "n_affected": n_aff}))
+                                     params=r11_params))
 
         # R12-R13: Histopathology — incidence increase / severity increase
         if finding.get("domain") in ("MI", "MA", "CL"):

@@ -13,14 +13,8 @@
   },
 
   "effect_size": {
-    "_comment": "Cohen's d / Hedges' g boundaries for severity and dose-response classification",
-    "large": 1.0,
-    "moderate": 0.5,
+    "_comment": "Numerical-stability constants + sole live effect-size floor. Per-species severity bands moved to shared/rules/field-consensus-thresholds.json (FCT registry, species-magnitude-thresholds-dog-nhp Phase B). Dead keys (large, moderate, equivocal_zone_*, equivalence_band_tier*) removed atomically.",
     "pairwise_min_for_strong": 0.8,
-    "equivalence_band_tier1_2": 0.5,
-    "equivalence_band_tier3": 0.75,
-    "equivocal_zone_lower": 0.75,
-    "equivocal_zone_upper": 1.0,
     "min_pooled_sd": 0.001,
     "min_incidence_tolerance": 0.02
   },
@@ -89,8 +83,6 @@
   },
 
   "rule_thresholds": {
-    "_comment": "Thresholds used by the 19 canonical scoring rules",
-    "r10_large_effect": 1.0,
-    "r11_moderate_effect": 0.5
+    "_comment": "R10/R11 thresholds moved to shared/rules/field-consensus-thresholds.json (FCT registry, species-magnitude-thresholds-dog-nhp Phase B). Emission now fires via per-endpoint FCT adverse_floor/concern_floor when a registry entry exists, falling back to Cohen's |g| gates when none."
   }
 }

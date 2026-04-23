@@ -286,6 +286,18 @@ def _enrich_finding(
 
     # Classification
     f["severity"] = classify_severity(f, threshold=threshold)
+    # FCT verdict + uncertainty-first payload (species-magnitude-thresholds-dog-nhp
+    # Phase B, F3/F3b). Every classified finding carries verdict/coverage/
+    # fallback_used/provenance/entry_ref/fct_reliance as schema-enforced fields
+    # regardless of whether a populated FCT band was resolved.
+    from services.analysis.classification import compute_fct_payload as _compute_fct
+    _fct = _compute_fct(f, f.get("_study_species"))
+    f["verdict"] = _fct["verdict"]
+    f["coverage"] = _fct["coverage"]
+    f["fallback_used"] = _fct["fallback_used"]
+    f["provenance"] = _fct["provenance"]
+    f["entry_ref"] = _fct["entry_ref"]
+    f["fct_reliance"] = _fct["fct_reliance"]
     dr_result = classify_dose_response(
         f.get("group_stats", []),
         f.get("data_type", "continuous"),
@@ -856,6 +868,21 @@ def _assess_all_findings(
             f["_no_control_suppressed"] = True
             f["severity"] = "not_assessed"
             f["treatment_related"] = False
+            # Phase B (AC-F3b-1): every classified finding carries the FCT
+            # uncertainty-first payload even when adversity classification
+            # is suppressed. The verdict is 'provisional' (no reference
+            # for classification) with a distinct reliance block.
+            f.setdefault("verdict", "provisional")
+            f.setdefault("coverage", "none")
+            f.setdefault("fallback_used", True)
+            f.setdefault("provenance", "extrapolated")
+            f.setdefault("entry_ref", None)
+            f.setdefault("fct_reliance", {
+                "coverage": "none",
+                "fallback_used": True,
+                "provenance": "extrapolated",
+                "bands_used": None,
+            })
         log.info(
             "No concurrent control -- adversity classification suppressed for %d findings. "
             "Descriptive statistics retained.",

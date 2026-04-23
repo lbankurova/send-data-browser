@@ -71,6 +71,7 @@ ALLOWED_COVERAGE = frozenset({
     "n-sufficient",
     "n-marginal",
     "n-insufficient",
+    "stat-unavailable",
 })
 
 ALLOWED_UNITS = frozenset({"pct_change", "fold", "absolute", "sd"})

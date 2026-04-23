@@ -81,6 +81,23 @@ NOAEL_METHOD_ENUM = {
 }
 NOAEL_STATUS_ENUM = {"established", "at_control"}
 
+# Phase B (species-magnitude-thresholds-dog-nhp): FCT payload vocabularies.
+# Mirrors fct_registry.ALLOWED_* frozensets. Test fails if the frozenset
+# drifts from this spec-declared enum.
+VERDICT_ENUM = {"variation", "concern", "adverse", "strong_adverse", "provisional"}
+COVERAGE_ENUM = {
+    "full", "partial", "none",
+    "catalog_driven",
+    "n-sufficient", "n-marginal", "n-insufficient",
+    "stat-unavailable",
+}
+PROVENANCE_ENUM = {
+    "regulatory", "best_practice", "industry_survey",
+    "bv_derived", "extrapolated",
+    "stopping_criterion_used_as_proxy",
+    "catalog_rule",
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -827,3 +844,102 @@ class TestBfield134CrossFileConsistency:
                         f"does NOT emit level 4 (R1 F8 collapse). Reserved "
                         f"for Phase D."
                     )
+
+
+# ===========================================================================
+# 11. unified_findings.json FCT payload -- Phase B (species-magnitude-thresholds-dog-nhp)
+# BFIELD-181..185 -- verdict / fct_reliance / coverage / fallback_used / provenance
+# ===========================================================================
+
+
+class TestUnifiedFindingsFctPayload:
+    """AC-F3b-3: new BFIELD contract tests asserting verdict membership +
+    fct_reliance presence + coverage / fallback_used / provenance enum
+    alignment on every classified finding. Phase B payload contract gate.
+    """
+
+    @pytest.fixture(scope="class")
+    def findings(self, study_name):
+        data = _load_json(study_name, "unified_findings.json")
+        return data.get("findings", []) if isinstance(data, dict) else []
+
+    def test_is_list(self, findings):
+        assert isinstance(findings, list)
+
+    def test_verdict_membership(self, findings):
+        """BFIELD-181: every classified finding has verdict in VERDICT_ENUM.
+        Findings produced pre-Phase-B carry verdict=None and are exempted
+        (legacy output, regen will fix)."""
+        violations = []
+        for r in findings:
+            v = r.get("verdict")
+            if v is None:
+                continue  # legacy output, skip
+            if v not in VERDICT_ENUM:
+                violations.append(f"  {_rid(r)}: verdict={v!r}")
+        msg = "BFIELD-181 violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+    def test_fct_reliance_present(self, findings):
+        """BFIELD-182: every finding with verdict carries an fct_reliance dict."""
+        violations = []
+        for r in findings:
+            if r.get("verdict") is None:
+                continue
+            fr = r.get("fct_reliance")
+            if not isinstance(fr, dict):
+                violations.append(f"  {_rid(r)}: fct_reliance={fr!r}")
+                continue
+            for key in ("coverage", "fallback_used", "provenance"):
+                if key not in fr:
+                    violations.append(f"  {_rid(r)}: fct_reliance missing {key!r}")
+        msg = "BFIELD-182 violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+    def test_coverage_enum(self, findings):
+        """BFIELD-183: coverage in COVERAGE_ENUM on every classified finding."""
+        violations = []
+        for r in findings:
+            if r.get("verdict") is None:
+                continue
+            cov = r.get("coverage")
+            if cov not in COVERAGE_ENUM:
+                violations.append(f"  {_rid(r)}: coverage={cov!r}")
+        msg = "BFIELD-183 violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+    def test_fallback_used_boolean(self, findings):
+        """BFIELD-184: fallback_used is boolean (polarity: true = default substituted)."""
+        violations = []
+        for r in findings:
+            if r.get("verdict") is None:
+                continue
+            fb = r.get("fallback_used")
+            if not isinstance(fb, bool):
+                violations.append(f"  {_rid(r)}: fallback_used={fb!r}")
+        msg = "BFIELD-184 violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+    def test_provenance_enum(self, findings):
+        """BFIELD-185: provenance in PROVENANCE_ENUM on every classified finding."""
+        violations = []
+        for r in findings:
+            if r.get("verdict") is None:
+                continue
+            prov = r.get("provenance")
+            if prov not in PROVENANCE_ENUM:
+                violations.append(f"  {_rid(r)}: provenance={prov!r}")
+        msg = "BFIELD-185 violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+    def test_no_provisional_with_populated_coverage(self, findings):
+        """Phase B contract invariant: verdict='provisional' must NOT pair with
+        coverage in {'full','partial'}. Provisional signals 'no classification
+        available'; coverage='full' would signal 'bands fully cover this species'.
+        Combining both violates the contract the Nimble bug surfaced."""
+        violations = []
+        for r in findings:
+            if r.get("verdict") == "provisional" and r.get("coverage") in ("full", "partial"):
+                violations.append(f"  {_rid(r)}: verdict=provisional, coverage={r.get('coverage')!r}")
+        msg = "verdict/coverage contract violations:\n" + "\n".join(violations)
+        assert not violations, msg

@@ -65,9 +65,12 @@ class ScoringParams:
     )
 
     # Key thresholds
+    # `large_effect` / `moderate_effect` scalars removed in species-magnitude-thresholds-dog-nhp
+    # Phase B (AC-F1-3). Single source of truth for native-scale magnitude is
+    # the FCT registry (shared/rules/field-consensus-thresholds.json); NOAEL
+    # penalty logic in view_dataframes.py now consumes `verdict in {adverse,
+    # strong_adverse}` from the per-finding FCT payload.
     p_value_significance: float = 0.05
-    large_effect: float = 1.0
-    moderate_effect: float = 0.5
     target_organ_evidence: float = 0.3
     target_organ_n_significant: int = 1
 
@@ -171,11 +174,14 @@ def load_scoring_params(study_id: str) -> ScoringParams:
                     pass
         params.pattern_scores = merged
 
-    # Scalar thresholds
+    # Scalar thresholds (F1 Phase B: largeEffect/moderateEffect keys tolerated
+    # at read-time for backward-compat with existing annotation files but
+    # silently ignored -- the FCT registry is single source of truth for
+    # native-scale magnitude bands.)
+    _ = entry.pop("largeEffect", None)
+    _ = entry.pop("moderateEffect", None)
     for json_key, attr in [
         ("pValueSignificance", "p_value_significance"),
-        ("largeEffect", "large_effect"),
-        ("moderateEffect", "moderate_effect"),
         ("targetOrganEvidence", "target_organ_evidence"),
         ("targetOrganSignificant", "target_organ_n_significant"),
     ]:
