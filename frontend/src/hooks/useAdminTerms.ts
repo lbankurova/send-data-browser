@@ -16,7 +16,10 @@ export function useAdminTerms(filters: AdminFilters = {}, enabled = true) {
     queryKey: [...KEY, filters],
     queryFn: () => fetchUnrecognizedTerms(filters),
     enabled,
-    staleTime: 2 * 60 * 1000,
+    // User-mutable + persisted to IndexedDB: must always background-refetch on
+    // mount so cross-session edits (synonym accept/reject) override the
+    // hydrated snapshot.
+    staleTime: 0,
     retry: false,
   });
 }

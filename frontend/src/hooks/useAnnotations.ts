@@ -6,7 +6,9 @@ export function useAnnotations<T>(studyId: string | undefined, schemaType: strin
     queryKey: ["annotations", studyId, schemaType],
     queryFn: () => fetchAnnotations<T>(studyId!, schemaType),
     enabled: !!studyId,
-    staleTime: 5 * 60 * 1000,
+    // User-mutable + persisted to IndexedDB: must always background-refetch on
+    // mount so cross-session edits override the hydrated snapshot.
+    staleTime: 0,
   });
 }
 

@@ -117,7 +117,7 @@ function StudyBranch({
     <>
       {/* Study root node — click = Study Summary, chevron = toggle */}
       <TreeNode
-        label={`Study: ${displayName || studyId}`}
+        label={displayName || studyId}
         depth={1}
         isExpanded={isExpanded}
         isActive={isStudyActive}

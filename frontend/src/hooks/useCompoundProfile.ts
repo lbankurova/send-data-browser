@@ -8,7 +8,9 @@ export function useCompoundProfile(studyId: string | undefined) {
     queryKey: ["compound-profile", studyId],
     queryFn: () => fetchCompoundProfile(studyId!),
     enabled: !!studyId,
-    staleTime: 30 * 60 * 1000,
+    // User-mutable + persisted to IndexedDB: must always background-refetch on
+    // mount so cross-session edits override the hydrated snapshot.
+    staleTime: 0,
   });
 }
 

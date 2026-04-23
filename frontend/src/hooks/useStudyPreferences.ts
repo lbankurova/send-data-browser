@@ -10,6 +10,9 @@ export function useStudyPreferences() {
   return useQuery({
     queryKey: ["study-preferences"],
     queryFn: fetchStudyPreferences,
+    // Same reason as useStudies: hydrated prefs from IndexedDB may be a stale
+    // snapshot from a prior session. Always background-refetch on mount.
+    staleTime: 0,
   });
 }
 
