@@ -588,21 +588,32 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 # actual incidence.  Control groups (dose_level 0) are by
                 # definition not treatment-related, and groups with no
                 # affected subjects have nothing to classify.
+                #
+                # Exception (GAP-271 Phase 2 review-pass SCIENCE-FLAG): when
+                # the parent finding was suppressed (severity == "not_assessed",
+                # i.e., no_concurrent_control study), every row inherits that
+                # state -- including zero-incidence rows. Otherwise zero-incidence
+                # rows would render as "normal" and a regulatory reviewer could
+                # mis-read them as "assessed-as-non-adverse" instead of
+                # "could not assess at all". The data-level descriptive state
+                # (incidence == 0) is preserved in `affected` and `severity_status`;
+                # `severity` is the adversity outcome, which IS suppressed
+                # uniformly across all rows of a no-control finding.
                 "severity": (
-                    finding.get("severity", "normal")
-                    if affected > 0 and gs["dose_level"] > 0
-                    else "normal"
+                    "not_assessed"
+                    if finding.get("severity") == "not_assessed"
+                    else (
+                        finding.get("severity", "normal")
+                        if affected > 0 and gs["dose_level"] > 0
+                        else "normal"
+                    )
                 ),
                 # GAP-271 Phase 2: BFIELD-92 invariant -- every row with
                 # severity == "not_assessed" must carry a documented reason.
                 # Null for assessed rows (severity in {adverse, warning, normal}).
                 "not_assessed_reason": (
                     finding.get("not_assessed_reason")
-                    if (
-                        finding.get("severity") == "not_assessed"
-                        and affected > 0
-                        and gs["dose_level"] > 0
-                    )
+                    if finding.get("severity") == "not_assessed"
                     else None
                 ),
             }
