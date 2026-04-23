@@ -867,6 +867,11 @@ def _assess_all_findings(
             f["finding_class"] = "not_assessed"
             f["_no_control_suppressed"] = True
             f["severity"] = "not_assessed"
+            # GAP-271 Phase 2: documented reason for the not_assessed severity.
+            # Authoritative source for the BFIELD-92 invariant. Future emission
+            # paths (failed QC, insufficient data) should add new allowed values
+            # to ALLOWED_NOT_ASSESSED_REASONS rather than reusing this constant.
+            f["not_assessed_reason"] = "no_concurrent_control"
             f["treatment_related"] = False
             # Phase B (AC-F3b-1): every classified finding carries the FCT
             # uncertainty-first payload even when adversity classification

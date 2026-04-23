@@ -593,6 +593,18 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                     if affected > 0 and gs["dose_level"] > 0
                     else "normal"
                 ),
+                # GAP-271 Phase 2: BFIELD-92 invariant -- every row with
+                # severity == "not_assessed" must carry a documented reason.
+                # Null for assessed rows (severity in {adverse, warning, normal}).
+                "not_assessed_reason": (
+                    finding.get("not_assessed_reason")
+                    if (
+                        finding.get("severity") == "not_assessed"
+                        and affected > 0
+                        and gs["dose_level"] > 0
+                    )
+                    else None
+                ),
             }
 
             # Propagate SUPP modifier fields

@@ -57,8 +57,19 @@ def _load_json(study: str, filename: str):
 # Enum sets (from api-field-contracts.md)
 # ---------------------------------------------------------------------------
 
-SEVERITY_ENUM = {"adverse", "warning", "normal"}
+# Phase B (species-magnitude-thresholds-dog-nhp) widened the runtime severity
+# vocabulary to 4 values; this test enum is now aligned with the canonical
+# allowlist in shared/rules/verdict-severity-mapping.json. The 4th value
+# (`not_assessed`) is emitted when adversity classification is suppressed
+# (currently only no_concurrent_control studies; see BFIELD-92).
+SEVERITY_ENUM = {"adverse", "warning", "normal", "not_assessed"}
 SEVERITY_NO_NORMAL = {"adverse", "warning"}
+
+# GAP-271 Phase 2: every row carrying severity == "not_assessed" must declare
+# why. Allowlist is intentionally narrow today; broaden by adding new emission
+# paths to ALLOWED_NOT_ASSESSED_REASONS as new suppression sources land
+# (e.g., failed QC, insufficient data, study-type-inappropriate).
+ALLOWED_NOT_ASSESSED_REASONS = {"no_concurrent_control"}
 DR_PATTERN_ENUM = {
     "monotonic_increase", "monotonic_decrease",
     "threshold_increase", "threshold_decrease",
@@ -136,7 +147,10 @@ class TestStudySignalSummary:
         assert not violations, f"BFIELD-01 violations:\n" + "\n".join(violations)
 
     def test_severity_enum(self, rows):
-        """BFIELD-02: severity in {adverse, warning, normal}, never null."""
+        """BFIELD-02: severity in {adverse, warning, normal, not_assessed}, never null.
+        study_signal_summary returns [] for no_concurrent_control studies (the only
+        path that emits not_assessed today), so this enum is widened defensively
+        rather than because a current code path produces not_assessed rows here."""
         violations = [
             f"  {_rid(r)}: severity={r.get('severity')!r}"
             for r in rows if r.get("severity") not in SEVERITY_ENUM
@@ -347,12 +361,34 @@ class TestLesionSeveritySummary:
         assert not violations, f"BFIELD-20 consistency violations:\n" + "\n".join(violations)
 
     def test_severity_enum(self, rows):
-        """BFIELD-21: severity in {adverse, warning, normal}, never null."""
+        """BFIELD-21: severity in {adverse, warning, normal, not_assessed}, never null."""
         violations = [
             f"  {_rid(r)}: severity={r.get('severity')!r}"
             for r in rows if r.get("severity") not in SEVERITY_ENUM
         ]
         assert not violations, f"BFIELD-21 violations:\n" + "\n".join(violations)
+
+    def test_not_assessed_reason_invariant(self, rows):
+        """BFIELD-92: every row with severity == 'not_assessed' must carry a
+        documented not_assessed_reason in the allowed set; rows with any other
+        severity must have not_assessed_reason null/absent."""
+        violations = []
+        for r in rows:
+            sev = r.get("severity")
+            reason = r.get("not_assessed_reason")
+            if sev == "not_assessed":
+                if reason is None:
+                    violations.append(f"  {_rid(r)}: severity=not_assessed but not_assessed_reason is null")
+                elif reason not in ALLOWED_NOT_ASSESSED_REASONS:
+                    violations.append(
+                        f"  {_rid(r)}: severity=not_assessed but reason={reason!r} not in {ALLOWED_NOT_ASSESSED_REASONS}"
+                    )
+            else:
+                if reason is not None:
+                    violations.append(
+                        f"  {_rid(r)}: severity={sev!r} but not_assessed_reason={reason!r} (must be null when severity != not_assessed)"
+                    )
+        assert not violations, f"BFIELD-92 violations:\n" + "\n".join(violations)
 
 
 # ===========================================================================
