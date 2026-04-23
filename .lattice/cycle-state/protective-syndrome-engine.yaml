@@ -1,9 +1,10 @@
 topic: protective-syndrome-engine
 started: 2026-04-06T00:00:00Z
-phase: blueprint
-phase: blueprint-complete
 phase: complete
 current_step: complete
+shipped:
+  - "b0b1d388: feat: protective syndrome engine R18-R25 -- detection, PEX expansion, validation"
+  - "d56cda11: fix: protective syndrome engine -- PEX/inference gate bugs blocking R18 on real data"
 checkpoints_blueprint_6:
   r2_review_path: docs/_internal/research/peer-reviews/protective-syndrome-engine-synthesis-review-r2.md
   r2_findings: "0 FLAWED, 3 CONDITIONAL, 1 SOUND"

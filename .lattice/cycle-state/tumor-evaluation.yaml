@@ -1,8 +1,11 @@
 topic: tumor-evaluation
 started: 2026-04-08T10:00:00Z
-phase: blueprint
 phase: complete
 current_step: complete
+shipped:
+  - "b3aaede1: feat: tumor evaluation -- poly-3, parallel analyses, Haseman, HCD"
+  - "c501c5b0: docs: tumor-evaluation post-build docs + generated output"
+  - "7b6d23cf: fix: post-implementation review fixes for tumor-evaluation"
 completed: {}
 checkpoints:
   research.1:

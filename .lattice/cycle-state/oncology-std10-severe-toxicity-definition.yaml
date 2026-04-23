@@ -1,8 +1,10 @@
 topic: oncology-std10-severe-toxicity-definition
 started: 2026-04-05T10:00:00
-phase: build
-current_step: build.2
+phase: complete
+current_step: complete
 revision: 1
+shipped:
+  - "11efa6d9: feat: STD10 tiered severe toxicity classification (ICH S9)"
 completed:
   research.1:
     completed: 2026-04-05T10:00:00
