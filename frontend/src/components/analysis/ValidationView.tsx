@@ -58,7 +58,7 @@ export interface RuleDetail {
 // ── Data mapping helpers ──────────────────────────────────────────────
 
 /** Map API record (snake_case) to frontend AffectedRecord (camelCase) */
-// eslint-disable-next-line react-refresh/only-export-components -- Pure data-mapping helper co-located with the view that originated it; consumed by ValidationContextPanel.
+// eslint-disable-next-line react-refresh/only-export-components -- ValidationView + ValidationContextPanel form a single logical view module (the panel is the satellite that renders details for rows selected in the view). Internal export within that module pair, not a cross-module boundary.
 export function mapApiRecord(rec: AffectedRecordData): AffectedRecord {
   return {
     issue_id: rec.issue_id,
@@ -79,7 +79,7 @@ export function mapApiRecord(rec: AffectedRecordData): AffectedRecord {
 }
 
 /** Extract RuleDetail from API rule result */
-// eslint-disable-next-line react-refresh/only-export-components -- Pure data-mapping helper co-located with the view that originated it; consumed by ValidationContextPanel.
+// eslint-disable-next-line react-refresh/only-export-components -- ValidationView + ValidationContextPanel form a single logical view module (the panel is the satellite that renders details for rows selected in the view). Internal export within that module pair, not a cross-module boundary.
 export function extractRuleDetail(rule: ValidationRuleResult): RuleDetail {
   return {
     standard: rule.standard,
@@ -99,7 +99,7 @@ const SEVERITY_BORDER_COLORS: Record<string, string> = {
 
 // ── Fix & Review status badges ─────────────────────────────────────────
 
-// eslint-disable-next-line react-refresh/only-export-components -- Status badge style table co-located with the view; consumed by ValidationContextPanel.
+// eslint-disable-next-line react-refresh/only-export-components -- ValidationView + ValidationContextPanel form a single logical view module; status style table is shared within that module pair, not a cross-module boundary.
 export const FIX_STATUS_STYLES: Record<string, string> = {
   "Not fixed": "bg-gray-100 text-gray-600 border-gray-200",
   "Auto-fixed": "bg-gray-100 text-gray-600 border-gray-200",
@@ -108,7 +108,7 @@ export const FIX_STATUS_STYLES: Record<string, string> = {
   "Flagged": "bg-gray-100 text-gray-600 border-gray-200",
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- Status badge style table co-located with the view; consumed by ValidationContextPanel.
+// eslint-disable-next-line react-refresh/only-export-components -- ValidationView + ValidationContextPanel form a single logical view module; status style table is shared within that module pair, not a cross-module boundary.
 export const REVIEW_STATUS_STYLES: Record<string, string> = {
   "Not reviewed": "bg-gray-100 text-gray-600 border-gray-200",
   "Reviewed": "bg-gray-100 text-gray-600 border-gray-200",
