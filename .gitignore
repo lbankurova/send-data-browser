@@ -52,3 +52,6 @@ INTEGRATION_TEST_RESULTS.md
 # Windows artifacts
 nul
 .lattice/commit.lock/
+
+# Migration-diff snapshots (transient; ~40 MB per set, captured for one-shot diff generation)
+.lattice/fct-lb-bw-pre-append-snapshots/

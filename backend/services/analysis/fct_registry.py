@@ -29,7 +29,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable
 
@@ -694,6 +694,26 @@ def get_fct(
         cross_organ_link=entry.get("cross_organ_link"),
         notes=entry.get("notes"),
         raw_entry=entry,
+    )
+
+
+def transform_bands_for_down_fold(bands: FctBands) -> FctBands:
+    """Return a copy of `bands` with fold-ratio floors converted to
+    distance-from-1.0 so the ascending ladder in `_verdict_from_bands`
+    fires correctly for decrease findings. Source bands preserve the
+    literature-native fold values (0.95/0.90/0.85/0.75 for TP.down); the
+    classifier compares magnitude `abs(1.0 - fold_ratio)` against the
+    transformed distances (0.05/0.10/0.15/0.25). Original `bands` are
+    retained on the payload via `raw_entry` so UI consumers see fold.
+    """
+    def _d(v: float | None) -> float | None:
+        return None if v is None else abs(1.0 - v)
+    return replace(
+        bands,
+        variation_ceiling=_d(bands.variation_ceiling),
+        concern_floor=_d(bands.concern_floor),
+        adverse_floor=_d(bands.adverse_floor),
+        strong_adverse_floor=_d(bands.strong_adverse_floor),
     )
 
 

@@ -246,11 +246,43 @@ def compute_fct_payload(finding: dict, species: str | None) -> dict:
             },
         }
 
-    # Native-scale magnitude (percent change) — default units for FCT is
-    # pct_change; fold/absolute/sd are reserved for future per-endpoint
-    # entries. OM migrated content is 100% pct_change.
+    # Native-scale magnitude conversion. OM entries use pct_change; LB / BW
+    # entries use fold. For down-fold bands, transform fold-ratio floors
+    # (0.75 strong_adverse) to distance-from-1.0 (0.25) so the ascending
+    # ladder in `_verdict_from_bands` fires correctly (F5 unit conversion).
     pct = _compute_pct_change_simple(finding)
-    magnitude = abs(pct) if pct is not None else None
+    classifier_bands = bands
+    if bands.units == "fold":
+        if pct is None:
+            magnitude = None
+        else:
+            fold_ratio = 1.0 + (pct / 100.0)
+            if direction == "down":
+                if fold_ratio >= 1.0:
+                    # Sign mismatch: entry is direction=down but pct indicates an
+                    # increase (or no change). Upstream direction resolution has
+                    # classified this as a decrease; trust the direction but
+                    # emit magnitude=0 so the ladder fires 'variation' rather
+                    # than fabricating a distance from the wrong sign.
+                    log.warning(
+                        "FCT sign-mismatch: direction='down' but pct=%.4f >= 0 "
+                        "(fold_ratio=%.4f) for entry_ref=%s; emitting magnitude=0",
+                        pct, fold_ratio, bands.entry_ref,
+                    )
+                    magnitude = 0.0
+                else:
+                    magnitude = 1.0 - fold_ratio
+                classifier_bands = fct_registry.transform_bands_for_down_fold(bands)
+            else:
+                magnitude = fold_ratio
+    elif bands.units == "pct_change":
+        magnitude = abs(pct) if pct is not None else None
+    else:
+        raise NotImplementedError(
+            f"FCT units {bands.units!r} not supported at classification "
+            f"(entry_ref={bands.entry_ref!r}); only 'pct_change' and 'fold' "
+            "are currently implemented (AC-F5-5)."
+        )
 
     if magnitude is None:
         # Cannot compute native-scale change -- fall back to the legacy |g|
@@ -300,7 +332,7 @@ def compute_fct_payload(finding: dict, species: str | None) -> dict:
     if bands.any_significant and min_p is not None and min_p < 0.05:
         verdict = "adverse"
     else:
-        verdict = _verdict_from_bands(magnitude, bands)
+        verdict = _verdict_from_bands(magnitude, classifier_bands)
 
     return {
         "verdict": verdict,

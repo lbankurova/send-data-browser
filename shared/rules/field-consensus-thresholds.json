@@ -14,196 +14,540 @@
     "joint_rules": "Multi-endpoint bundles (e.g., Hy's Law L01, CRS Grade-2). Each carries provenance and a syndrome_rule_ref that must resolve against the live syndrome engine at load time (bidirectional integrity — AC-F2-1).",
     "cv_reference": "Documentation only — published CVs justifying the threshold choices. Not consumed by the severity classifier."
   },
-
+  "_lb_hematology_sex_rationale": "AC-F2-7: All LB hematology entries ship sex_specific: false. This reflects the SEND analysis convention of sex-matched control comparisons -- fold change normalizes out first-order baseline sex differences (e.g., male rats have higher baseline ALT than females, but male-treated vs male-control normalizes out baseline). CV-based band calibration (Bourges-Abella 2015 dog hematology) is pooled across sex; if pooled-source CVs mask sex-specific variance components, the band tightness may be marginally off for one sex. Tracked as RG-FCT-LB-BW-16; fold-change-over-sex-matched-control is the first-order mitigant. AC-F4-5 sex-balance column provides the empirical check.",
   "entries": {
     "OM.LIVER.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
-        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 25, "concern_floor": null, "adverse_floor": 30, "strong_adverse_floor": 50, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 25,
+          "concern_floor": null,
+          "adverse_floor": 30,
+          "strong_adverse_floor": 50,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "regulatory",       "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)" },
-        { "type": "published",        "citation": "Hall AJ et al. 2012. Liver hypertrophy: a review of adaptive (adverse and non-adverse) changes — conclusions from the 3rd International ESTP Expert Workshop. Toxicol Pathol 40(7):971-994." },
-        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle dog historical control organ-weight CV data." }
+        {
+          "type": "regulatory",
+          "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)"
+        },
+        {
+          "type": "published",
+          "citation": "Hall AJ et al. 2012. Liver hypertrophy: a review of adaptive (adverse and non-adverse) changes — conclusions from the 3rd International ESTP Expert Workshop. Toxicol Pathol 40(7):971-994."
+        },
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Beagle dog historical control organ-weight CV data."
+        }
       ],
       "notes": "Liver is the most-studied organ for adaptive vs adverse distinction. Hall 2012 defined the LB panel gate. Dog thresholds wider due to higher CVs (Choi 2011: M=15%, F=21%).",
       "dog_adaptive_notes": "ALP elevation without bilirubin elevation should not preclude adaptive classification in dogs (C-ALP confound). ALT is the primary liver injury discriminator.",
-      "adaptive_ceiling_pct": { "dog": 25 },
+      "adaptive_ceiling_pct": {
+        "dog": 25
+      },
       "adaptive_requires": {
-        "lb_panel": ["ALT", "AST", "ALP", "GGT", "BILI", "CHOL", "BILEAC", "TP", "ALB"],
+        "lb_panel": [
+          "ALT",
+          "AST",
+          "ALP",
+          "GGT",
+          "BILI",
+          "CHOL",
+          "BILEAC",
+          "TP",
+          "ALB"
+        ],
         "min_clean": 5,
-        "critical_clean": ["ALT", "AST"],
+        "critical_clean": [
+          "ALT",
+          "AST"
+        ],
         "max_fold_for_clean": 5.0,
         "max_severity_for_adaptive": 2
       },
       "cv_reference": {
-        "rat_m": 8, "rat_f": 10,
-        "beagle_m": 15, "beagle_f": 21
+        "rat_m": 8,
+        "rat_f": 10,
+        "beagle_m": 15,
+        "beagle_f": 21
       }
     },
-
     "OM.KIDNEY.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" },
-        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 22, "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "regulatory" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 22,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "regulatory",       "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)" },
-        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle CV data." }
+        {
+          "type": "regulatory",
+          "citation": "JMPR/EFSA threshold of toxicological concern (historical practice)"
+        },
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Beagle CV data."
+        }
       ],
       "notes": "Kidney weight changes >=10% are concerning. Male rat a2u-globulin nephropathy is not human-relevant. Dog uses single wider female-driven threshold (Choi 2011: M CV=12%, F CV=18%); 15% ceiling is conservative for males but defensible.",
-      "special_flags": ["alpha2u_globulin_male_rat", "CPN_F344_rat"],
+      "special_flags": [
+        "alpha2u_globulin_male_rat",
+        "CPN_F344_rat"
+      ],
       "cv_reference": {
-        "rat_m": 8, "rat_f": 9,
-        "beagle_m": 12, "beagle_f": 18
+        "rat_m": 8,
+        "rat_f": 9,
+        "beagle_m": 12,
+        "beagle_f": 18
       }
     },
-
     "OM.HEART.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 12, "concern_floor": null, "adverse_floor": 12, "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 3,  "concern_floor": null, "adverse_floor": 8,  "strong_adverse_floor": 15, "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 3,
+          "concern_floor": null,
+          "adverse_floor": 8,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 3,
+          "concern_floor": null,
+          "adverse_floor": 8,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 12,
+          "concern_floor": null,
+          "adverse_floor": 12,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 3,
+          "concern_floor": null,
+          "adverse_floor": 8,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey",  "citation": "Choi T et al. 2011. Beagle heart CV data (M=10%, F=13%)." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Beagle heart CV data (M=10%, F=13%)."
+        }
       ],
       "notes": "Heart has low normal variation (CV ~5-8% rodent). Dog heart CV is higher (Choi 2011: M=10%, F=13%).",
       "cv_reference": {
-        "rat_m": 6, "rat_f": 7,
-        "beagle_m": 10, "beagle_f": 13
+        "rat_m": 6,
+        "rat_f": 7,
+        "beagle_m": 10,
+        "beagle_f": 13
       }
     },
-
     "OM.BRAIN.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true },
-        "mouse": { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true },
-        "dog":   { "variation_ceiling": 5, "concern_floor": null, "adverse_floor": 5, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 15,"concern_floor": null, "adverse_floor": 15,"strong_adverse_floor": 25, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 0, "concern_floor": null, "adverse_floor": 0, "strong_adverse_floor": 5,  "units": "pct_change", "provenance": "industry_survey", "any_significant": true }
+        "rat": {
+          "variation_ceiling": 0,
+          "concern_floor": null,
+          "adverse_floor": 0,
+          "strong_adverse_floor": 5,
+          "units": "pct_change",
+          "provenance": "industry_survey",
+          "any_significant": true
+        },
+        "mouse": {
+          "variation_ceiling": 0,
+          "concern_floor": null,
+          "adverse_floor": 0,
+          "strong_adverse_floor": 5,
+          "units": "pct_change",
+          "provenance": "industry_survey",
+          "any_significant": true
+        },
+        "dog": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 5,
+          "strong_adverse_floor": 5,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 0,
+          "concern_floor": null,
+          "adverse_floor": 0,
+          "strong_adverse_floor": 5,
+          "units": "pct_change",
+          "provenance": "industry_survey",
+          "any_significant": true
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog brain CV ~5%." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog brain CV ~5%."
+        }
       ],
       "notes": "Brain weight is tightly regulated. Rat/mouse: any statistically significant change is biologically meaningful (any_significant policy). Dog brain CV ~5% (Choi 2011), so dog uses 5% floor instead of any_significant.",
       "cv_reference": {
-        "rat_m": 3, "rat_f": 3,
-        "beagle_m": 5, "beagle_f": 5
+        "rat_m": 3,
+        "rat_f": 3,
+        "beagle_m": 5,
+        "beagle_f": 5
       }
     },
-
     "OM.ADRENAL.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog adrenal CV ~20%." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog adrenal CV ~20%."
+        }
       ],
       "notes": "Adrenal weight is highly variable, especially in mice and dogs. Species-specific thresholds prevent false positives. Dog adrenal CV ~20% (Choi 2011).",
       "cross_organ_link": "stress_axis",
       "cv_reference": {
-        "rat_m": 10, "rat_f": 12,
-        "beagle_m": 18, "beagle_f": 22
+        "rat_m": 10,
+        "rat_f": 12,
+        "beagle_m": 18,
+        "beagle_f": 22
       }
     },
-
     "OM.THYROID.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 25, "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 30, "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 25,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "full",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "published",       "citation": "Capen CC 1997. Mechanistic data and risk assessment of selected toxic endpoints of the thyroid gland. Toxicol Pathol 25(1):39-48." },
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog thyroid CV ~15%." }
+        {
+          "type": "published",
+          "citation": "Capen CC 1997. Mechanistic data and risk assessment of selected toxic endpoints of the thyroid gland. Toxicol Pathol 25(1):39-48."
+        },
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog thyroid CV ~15%."
+        }
       ],
       "notes": "Thyroid weight changes often secondary to liver enzyme induction (liver-thyroid axis). Capen 1997. Dog thyroid CV ~15% (Choi 2011).",
       "cross_organ_link": "liver_thyroid_axis",
       "cv_reference": {
-        "rat_m": 10, "rat_f": 12,
-        "beagle_m": 15, "beagle_f": 16
+        "rat_m": 10,
+        "rat_f": 12,
+        "beagle_m": 15,
+        "beagle_f": 16
       }
     },
-
     "OM.SPLEEN.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": null,
+          "concern_floor": null,
+          "adverse_floor": null,
+          "strong_adverse_floor": null,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "nhp_tier": "C_qualitative",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog spleen CV ~20%." },
-        { "type": "published",       "citation": "Amato DV et al. 2022. Historical control data for nonhuman primate organ weights — spleen Tier C qualitative." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog spleen CV ~20%."
+        },
+        {
+          "type": "published",
+          "citation": "Amato DV et al. 2022. Historical control data for nonhuman primate organ weights — spleen Tier C qualitative."
+        }
       ],
       "notes": "Spleen weight is naturally variable. Large changes may indicate immune response or stress. Dog spleen CV ~20% (Choi 2011). NHP: Amato 2022 Tier C qualitative — no numeric FCT, classifier emits provisional verdict.",
       "cv_reference": {
-        "rat_m": 15, "rat_f": 15,
-        "beagle_m": 18, "beagle_f": 22
+        "rat_m": 15,
+        "rat_f": 15,
+        "beagle_m": 18,
+        "beagle_f": 22
       }
     },
-
     "OM.THYMUS.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 20, "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 8,  "concern_floor": null, "adverse_floor": 20,   "strong_adverse_floor": 40,   "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 20,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": null,
+          "concern_floor": null,
+          "adverse_floor": null,
+          "strong_adverse_floor": null,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 8,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "extrapolated",
@@ -211,30 +555,68 @@
       "nhp_tier": "C_qualitative",
       "cross_organ_link": "stress_axis",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog thymus CV ~25%." },
-        { "type": "published",       "citation": "Amato DV et al. 2022. NHP thymus Tier C qualitative." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog thymus CV ~25%."
+        },
+        {
+          "type": "published",
+          "citation": "Amato DV et al. 2022. NHP thymus Tier C qualitative."
+        }
       ],
       "notes": "Thymus weight is age-sensitive and stress-responsive. Involution is normal in older animals. Dog thymus CV ~25% (Choi 2011). NHP: qualitative only.",
       "cv_reference": {
-        "rat_m": 18, "rat_f": 18,
-        "beagle_m": 22, "beagle_f": 28
+        "rat_m": 18,
+        "rat_f": 18,
+        "beagle_m": 22,
+        "beagle_f": 28
       }
     },
-
     "OM.TESTES.both": {
       "species_specific": true,
       "sex_specific": true,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "industry_survey",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog testes CV ~15%." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog testes CV ~15%."
+        }
       ],
       "notes": "Testes weight is tightly regulated in rodents. Dog testes CV ~15% (Choi 2011). Changes >=15% are concerning for reproductive toxicity. NHP entry absent pending species calibration (GAP-SMT-07).",
       "cv_reference": {
@@ -242,21 +624,51 @@
         "beagle_m": 15
       }
     },
-
     "OM.EPIDIDYMIDES.both": {
       "species_specific": true,
       "sex_specific": true,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 15, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 10, "strong_adverse_floor": 20, "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 20,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "industry_survey",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Choi T et al. 2011. Dog epididymis CV ~12%." }
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Dog epididymis CV ~12%."
+        }
       ],
       "notes": "Epididymal weight changes often parallel testicular effects. Dog epididymis CV ~12% (Choi 2011).",
       "cv_reference": {
@@ -264,89 +676,1696 @@
         "beagle_m": 12
       }
     },
-
     "OM.OVARIES.both": {
       "species_specific": false,
       "sex_specific": true,
       "bands": {
-        "any": { "variation_ceiling": 10, "concern_floor": null, "adverse_floor": 20, "strong_adverse_floor": 35, "units": "pct_change", "provenance": "industry_survey" }
+        "any": {
+          "variation_ceiling": 10,
+          "concern_floor": null,
+          "adverse_floor": 20,
+          "strong_adverse_floor": 35,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "industry_survey",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Historical ovarian weight CV surveys (estrous cycle stage variability)." }
+        {
+          "type": "industry_survey",
+          "citation": "Historical ovarian weight CV surveys (estrous cycle stage variability)."
+        }
       ],
       "notes": "Ovarian weight is highly variable due to estrous cycle stage. Higher thresholds prevent false positives. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
     },
-
     "OM.UTERUS.both": {
       "species_specific": false,
       "sex_specific": true,
       "bands": {
-        "any": { "variation_ceiling": 15, "concern_floor": null, "adverse_floor": 25, "strong_adverse_floor": 40, "units": "pct_change", "provenance": "industry_survey" }
+        "any": {
+          "variation_ceiling": 15,
+          "concern_floor": null,
+          "adverse_floor": 25,
+          "strong_adverse_floor": 40,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "industry_survey",
       "threshold_reliability": "moderate",
       "source_refs": [
-        { "type": "industry_survey", "citation": "Historical uterine weight CV surveys (most variable organ weight)." }
+        {
+          "type": "industry_survey",
+          "citation": "Historical uterine weight CV surveys (most variable organ weight)."
+        }
       ],
       "notes": "Uterine weight is the most variable organ weight due to estrous cycle. Very high thresholds required. No dog-specific threshold -- ANCOVA-only for dogs (CV >60%)."
     },
-
     "OM.LUNGS.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "rat":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
-        "mouse": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
-        "dog":   { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" },
-        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 5,  "concern_floor": null, "adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" }
+        "rat": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "mouse": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "dog": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": null,
+          "concern_floor": null,
+          "adverse_floor": null,
+          "strong_adverse_floor": null,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 5,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "extrapolated",
       "threshold_reliability": "moderate",
       "nhp_tier": "C_qualitative",
       "source_refs": [
-        { "type": "published", "citation": "Amato DV et al. 2022. NHP lungs Tier C qualitative (perfusion/inflation variability)." }
+        {
+          "type": "published",
+          "citation": "Amato DV et al. 2022. NHP lungs Tier C qualitative (perfusion/inflation variability)."
+        }
       ],
       "notes": "Lung weight changes may indicate edema, inflammation, or fibrosis. Residual blood can confound. NHP: perfusion/inflation variability makes quantitative screening unreliable."
     },
-
     "OM.PANCREAS.both": {
       "species_specific": true,
       "sex_specific": false,
       "bands": {
-        "nhp":   { "variation_ceiling": null,"concern_floor": null,"adverse_floor": null, "strong_adverse_floor": null, "units": "pct_change", "provenance": "extrapolated" },
-        "other": { "variation_ceiling": 10,  "concern_floor": null,"adverse_floor": 15,   "strong_adverse_floor": 30,   "units": "pct_change", "provenance": "industry_survey" }
+        "nhp": {
+          "variation_ceiling": null,
+          "concern_floor": null,
+          "adverse_floor": null,
+          "strong_adverse_floor": null,
+          "units": "pct_change",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 10,
+          "concern_floor": null,
+          "adverse_floor": 15,
+          "strong_adverse_floor": 30,
+          "units": "pct_change",
+          "provenance": "industry_survey"
+        }
       },
       "coverage": "partial",
       "provenance": "extrapolated",
       "threshold_reliability": "low",
       "nhp_tier": "C_qualitative",
       "source_refs": [
-        { "type": "published", "citation": "Amato DV et al. 2022. NHP pancreas Tier C qualitative (colony CV ~27-30%)." }
+        {
+          "type": "published",
+          "citation": "Amato DV et al. 2022. NHP pancreas Tier C qualitative (colony CV ~27-30%)."
+        }
       ],
       "notes": "High variability organ (colony CV ~27-30% for NHP). Not always weighed in NHP tox studies. NHP: qualitative only."
+    },
+    "LB.ALT.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 1.8,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "nhp": {
+          "variation_ceiling": 2.0,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "high",
+      "source_refs": [
+        {
+          "type": "regulatory",
+          "citation": "FDA Guidance for Industry: Drug-Induced Liver Injury -- Premarketing Clinical Evaluation (2009)."
+        },
+        {
+          "type": "regulatory",
+          "citation": "CIOMS Working Group. Drug-Induced Liver Injury (DILI) (2020)."
+        },
+        {
+          "type": "published",
+          "citation": "Hall AJ et al. 2012. Liver hypertrophy review (ESTP Expert Workshop). Toxicol Pathol 40(7):971-994."
+        }
+      ],
+      "notes": "adverse_floor: 3.0x is FDA 2009 DILI Guidance Grade 3 monitoring threshold for isolated hepatocellular injury, NOT Hy's Law. Hy's Law is a JOINT rule (ALT >= 3x ULN AND TBILI >= 2x ULN AND no alternative explanation) and is deferred to a future joint_rules cycle -- see RG-FCT-LB-BW-08. Downstream reviewers at AC-F4-7 sign-off MUST NOT interpret an isolated ALT finding with verdict: adverse as 'Hy's Law positive' -- Hy's Law requires the joint condition. NHP bands carry a ketamine-anesthesia confound -- blood collected 5-15 min post-injection shows transient elevation; control-matched sampling timing mitigates. NHP band reliability is extrapolated from dog pending a published NHP ALT CV study (RG-FCT-LB-BW-01).",
+      "special_flags": []
+    },
+    "LB.AST.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 1.8,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "nhp": {
+          "variation_ceiling": 2.0,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "high",
+      "source_refs": [
+        {
+          "type": "regulatory",
+          "citation": "FDA 2009 DILI Guidance -- Hy's Law co-criterion."
+        },
+        {
+          "type": "published",
+          "citation": "Hall AJ et al. 2012. Liver hypertrophy review (ESTP). Toxicol Pathol 40(7):971-994."
+        }
+      ],
+      "notes": "AST is less liver-specific than ALT -- also elevated by muscle (skeletal + cardiac) and RBC injury. AST muscle-origin is NOT distinguishable without CK (creatine kinase) -- see RG-FCT-LB-BW-11. Reviewers at sign-off cross-check CK for AST-isolated findings (AST-up with ALT normal); AST-up + CK-up + ALT normal suggests muscle/cardiac origin rather than hepatic. Paired AST + ALT elevation is the hepatic signal. Ketamine confound applies to NHP per ALT entry."
+    },
+    "LB.TBILI.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        },
+        "nhp": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "regulatory"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "high",
+      "source_refs": [
+        {
+          "type": "regulatory",
+          "citation": "FDA 2009 DILI Guidance -- Hy's Law bilirubin co-criterion (2x ULN)."
+        }
+      ],
+      "notes": "adverse_floor: 2.0x is FDA 2009 DILI adverse threshold for isolated direct hyperbilirubinemia, NOT Hy's Law. See RG-FCT-LB-BW-08 for joint-rule deferral. Paired ALT >= 3x + TBILI >= 2x is Hy's Law (the L03 syndrome rule in the registry); univariate TBILI elevation alone is less specific."
+    },
+    "LB.ALP.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Hall AJ et al. 2012. ESTP Expert Workshop -- cholestasis criteria."
+        }
+      ],
+      "special_flags": [
+        "c_alp_isoenzyme_dog"
+      ],
+      "notes": "Dog bands intentionally NOT widened for C-ALP isoenzyme (R1 Finding 3 correction -- research doc internal inconsistency between sec 2.1 text and sec 7.1 JSON resolved in favor of sec 2.1 uniform 1.5/2.0/3.0/5.0). When dog ALP-up co-occurs with TBILI normal AND GGT normal, the finding is likely steroid hepatopathy / enzyme induction, NOT cholestasis -- joint-rule discrimination deferred to RG-FCT-LB-BW-09. Reviewers at sign-off cross-reference LB.TBILI.up and LB.GGT.up verdicts for C-ALP rule-out before treating dog ALP-up as cholestatic. Transport stress / corticosteroids can induce C-ALP isoenzyme elevation > 5x without pathology in dogs (can reach > 100x)."
+    },
+    "LB.GGT.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Hall AJ et al. 2012. ESTP -- cholestasis / bile duct injury."
+        }
+      ],
+      "notes": "Supporting cholestasis marker. Dog GGT higher sensitivity than rodent. NHP extrapolated from dog, ketamine timing confound applies."
+    },
+    "LB.BUN.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- BUN >= 1.5-2.0x baseline warrants renal investigation."
+        }
+      ],
+      "notes": "BUN is non-specific for renal function -- 2x BUN is often prerenal (dehydration, protein catabolism, GI bleed) rather than renal tubular/glomerular injury. Isolated BUN-up with normal CREAT and concurrent Na/Cl/HCT deviation suggests prerenal rule-in. Joint-rule discrimination (BUN-up without CREAT-up -> downgrade to variation) deferred -- see RG-FCT-LB-BW-18. Paired with CREAT for renal evaluation; prerenal (dehydration) must be ruled out via hematocrit / electrolyte context."
+    },
+    "LB.CREAT.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- BUN/CREAT paired renal evaluation; CREAT >= 1.5-2.0x baseline warrants renal investigation."
+        }
+      ],
+      "notes": "CREAT is more specific for glomerular filtration than BUN. Prerenal (dehydration) must be ruled out via hematocrit / electrolyte context. Dog and NHP have higher sensitivity than rodent. Paired with BUN for renal evaluation (AC-F1-6 completion -- mirrors LB.BUN.up source family)."
+    },
+    "LB.CHOL.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- enzyme induction / metabolic stress signal."
+        }
+      ],
+      "notes": "Hypercholesterolemia as enzyme induction / metabolic stress signal. NHP is NHP-specific biology (diet-sensitive, stress-sensitive); reliability low."
+    },
+    "LB.CHOL.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- severe hepatic synthetic failure signal."
+        }
+      ],
+      "notes": "Severe hepatic synthetic failure signal; 50% decrease = adverse, 70% = strong_adverse. fold values are ratio vs baseline: 0.50 means treatment is 50% of control."
+    },
+    "LB.GLUC.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 1.2,
+          "concern_floor": 1.5,
+          "adverse_floor": 2.0,
+          "strong_adverse_floor": 3.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- hyperglycemia / diabetogenic signal."
+        }
+      ],
+      "notes": "Hyperglycemia / diabetogenic signal. Fasting state critical for interpretation -- non-fasted samples show post-prandial variability masking drug effects. NHP extrapolated; stress/diet effects raise baseline variability."
+    },
+    "LB.GLUC.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- hypoglycemia / insulin excess / severe hepatic failure signal."
+        }
+      ],
+      "notes": "Hypoglycemia -- may reflect insulin excess, severe hepatic failure, or sampling artifact (delayed glycolysis in unseparated plasma). Sampling artifact must be ruled out before adverse classification."
+    },
+    "LB.TP.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- hepatic synthetic reserve / protein-loss indicators."
+        }
+      ],
+      "notes": "Globulin vs albumin decomposition NOT distinguishable from TP alone -- see RG-FCT-LB-BW-14 for globulin/A:G ratio. Concurrent LB.ALB.down suggests protein-loss (enteropathy) or hepatic synthetic failure; isolated LB.TP.down with normal ALB suggests globulin loss / immunodeficiency / protein-loss enteropathy-selective. 15% decrease = adverse, 25% = strong_adverse."
+    },
+    "LB.ALB.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "mouse": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "dog": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        },
+        "nhp": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "extrapolated"
+        },
+        "other": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "published",
+          "citation": "Published tox-pathology consensus -- hepatic synthetic reserve; ALB has half-life ~14-20 days."
+        }
+      ],
+      "notes": "ALB is a sensitive but slow marker of hepatic synthetic reserve (half-life 14-20 days in most species). 15% decrease = adverse (clinically meaningful), 25% = strong_adverse (severe). Often concurrent with LB.TP.down; isolated LB.ALB.down with normal TP suggests selective albumin loss (nephrotic syndrome / protein-loss enteropathy)."
+    },
+    "LB.WBC.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015. Biological variation of hematological variables in healthy Beagle dogs, n=55 (Grade B). Vet Clin Pathol."
+        }
+      ],
+      "notes": "Inflammation / stress leukogram signal. Stress-leukogram vs immunotox discrimination: pair with LB.EOS.down (stress) or isolated WBC-up with left shift (infection). Stress-leukogram as a joint_rule deferred -- see RG-FCT-LB-BW-08 (sibling of Hy's Law deferral). Reviewers cross-check EOS, LYM, NEUT patterns at sign-off."
+    },
+    "LB.WBC.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.85,
+          "concern_floor": 0.7,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015. Dog hematology biological variation, n=55 Beagles."
+        }
+      ],
+      "notes": "Bone-marrow suppression signal; 50% decrease = adverse, 70% = strong_adverse (severe leukopenia with infection risk)."
+    },
+    "LB.RBC.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015. Dog hematology biological variation."
+        }
+      ],
+      "notes": "Anemia signal; 15% decrease = adverse. Proportional to HGB and HCT (three-way correlated). Morphology classification (microcytic / macrocytic / hypochromic) requires MCV/MCH/MCHC bands -- RG-FCT-LB-BW-10."
+    },
+    "LB.HGB.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Hemoglobin; proportional to RBC. Primary anemia magnitude marker."
+    },
+    "LB.HCT.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.95,
+          "concern_floor": 0.9,
+          "adverse_floor": 0.85,
+          "strong_adverse_floor": 0.75,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Hematocrit; proportional to RBC. Dehydration can elevate HCT so HCT-down is a pure dilutional-or-marrow-loss signal; HCT-up direction (pre-analytical confound) is not captured here by design."
+    },
+    "LB.PLT.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.25,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.25,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.25,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.25,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.25,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Thrombocytopenia signal; 50% decrease = adverse, 75% = strong_adverse. PLT variability is the highest of the standard hematology panel (wider variation_ceiling 0.80). DIC detection requires fibrinogen + PT/APTT -- see RG-FCT-LB-BW-15 for coagulation panel."
+    },
+    "LB.RETIC.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 1.5,
+          "concern_floor": 2.0,
+          "adverse_floor": 3.0,
+          "strong_adverse_floor": 5.0,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Reticulocyte elevation = regenerative response (hemolytic anemia or blood loss). Paired with RBC-down to discriminate regenerative from non-regenerative anemia."
+    },
+    "LB.RETIC.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.7,
+          "concern_floor": 0.5,
+          "adverse_floor": 0.3,
+          "strong_adverse_floor": 0.15,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.7,
+          "concern_floor": 0.5,
+          "adverse_floor": 0.3,
+          "strong_adverse_floor": 0.15,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.7,
+          "concern_floor": 0.5,
+          "adverse_floor": 0.3,
+          "strong_adverse_floor": 0.15,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.7,
+          "concern_floor": 0.5,
+          "adverse_floor": 0.3,
+          "strong_adverse_floor": 0.15,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.7,
+          "concern_floor": 0.5,
+          "adverse_floor": 0.3,
+          "strong_adverse_floor": 0.15,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Reticulocyte depression = myelosuppression / non-regenerative response. Paired with RBC-down: RETIC-down + RBC-down = aplastic / non-regenerative anemia (more severe)."
+    },
+    "LB.NEUT.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Inflammation signal. Left shift (band neutrophils) indicates bacterial infection; absent from univariate band but flagged for reviewer cross-check."
+    },
+    "LB.LYM.up": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 1.3,
+          "concern_floor": 1.5,
+          "adverse_floor": 1.8,
+          "strong_adverse_floor": 2.5,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Antigenic stimulation signal. NHP CD4:CD8 inversion detection (drug-induced immunotox) requires immunophenotyping (CD4/CD8/CD20/CD16) not captured in univariate LYM -- out of FCT scope, belongs to future immunotoxicity subsystem."
+    },
+    "LB.LYM.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.8,
+          "concern_floor": 0.6,
+          "adverse_floor": 0.5,
+          "strong_adverse_floor": 0.3,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015."
+        }
+      ],
+      "notes": "Immunotox / stress / corticosteroid signal. Stress-leukogram pattern (WBC-up + NEUT-up + LYM-down + EOS-down) documented via cross-endpoint pattern; stress-leukogram as a joint_rule deferred -- RG-FCT-LB-BW-08."
+    },
+    "BW.BW.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 3,
+          "concern_floor": 5,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "mouse": {
+          "variation_ceiling": 2,
+          "concern_floor": 4,
+          "adverse_floor": 8,
+          "strong_adverse_floor": 12,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "dog": {
+          "variation_ceiling": 4,
+          "concern_floor": 5,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        },
+        "nhp": {
+          "variation_ceiling": 5,
+          "concern_floor": 4,
+          "adverse_floor": 6,
+          "strong_adverse_floor": 12,
+          "units": "pct_change",
+          "provenance": "stopping_criterion_used_as_proxy",
+          "notes": "NHP band reliability at the band level is 'low' / stopping_criterion_used_as_proxy -- 6%/week is a safety cutoff, not an anchor-based MID. STP Sellers 2007 proposal; future anchor-based elicitation (parent cycle F10 P5) may refine. Group-housing social-hierarchy effects and small group size (n=3-5) reduce power."
+        },
+        "other": {
+          "variation_ceiling": 3,
+          "concern_floor": 5,
+          "adverse_floor": 10,
+          "strong_adverse_floor": 15,
+          "units": "pct_change",
+          "provenance": "regulatory"
+        }
+      },
+      "coverage": "full",
+      "provenance": "stopping_criterion_used_as_proxy",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "regulatory",
+          "citation": "OECD TG 407 (28-day) / TG 408 (90-day oral toxicity -- rodent)."
+        },
+        {
+          "type": "industry_survey",
+          "citation": "Chapman K et al. 2013. Multi-company BW-loss threshold survey."
+        },
+        {
+          "type": "industry_survey",
+          "citation": "Choi T et al. 2011. Beagle historical control CVs (BW)."
+        },
+        {
+          "type": "published",
+          "citation": "STP Sellers 2007. NHP 6%/week stopping criterion proposal."
+        }
+      ],
+      "notes": "NHP stopping criterion = 6% loss per week per STP Sellers 2007; rat/dog/mouse/other stopping criteria (20/20/15/20% respectively) are oversight-policy cutoffs, NOT classifier thresholds -- documented here, not consumed by _verdict_from_bands (no schema version bump per F3-3). Regulatory consensus: >= 10% sustained BW loss adverse in rat / mouse / dog (OECD TG 407/408, Chapman 2013 multi-company). Bands apply to gain inhibition (absence of expected gain) as well as absolute loss in juvenile animals (rats <4 wk, mice <6 wk, NHP age 2-4 y still growing). Dog: 10% loss sustained over 2-3 weeks is the regulatory threshold; pipeline should check duration, not point-in-time (the 4-band ladder does not encode duration -- reviewer sign-off weighs single-timepoint vs sustained). Entry-level threshold_reliability: 'moderate' (not 'high') per M5 honest-uncertainty default (weakest species band governs) -- rat/mouse/dog are regulatory-anchored, NHP is stopping-criterion-proxied; the entry-level tier reflects the NHP band."
+    },
+    "LB.EOS.down": {
+      "species_specific": true,
+      "sex_specific": false,
+      "bands": {
+        "rat": {
+          "variation_ceiling": 0.5,
+          "concern_floor": 0.3,
+          "adverse_floor": 0.2,
+          "strong_adverse_floor": 0.1,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Rat/mouse bands extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3). Rodent within-subject CV is typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller). Rodent bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "mouse": {
+          "variation_ceiling": 0.5,
+          "concern_floor": 0.3,
+          "adverse_floor": 0.2,
+          "strong_adverse_floor": 0.1,
+          "units": "fold",
+          "provenance": "best_practice",
+          "notes": "Mouse band extrapolated from Bourges-Abella 2015 dog CVs (research sec 3.3); rodent within-subject CV typically higher than dog (~1.5-2x for WBC/EOS/LYM; RBC CV differences smaller); bands may systematically over-call variation/concern tiers for rodent-typical variability. Honest-uncertainty caveat: provenance: best_practice reflects the extrapolation, not independent rodent-specific empirical calibration -- see RG-FCT-LB-BW-20."
+        },
+        "dog": {
+          "variation_ceiling": 0.5,
+          "concern_floor": 0.3,
+          "adverse_floor": 0.2,
+          "strong_adverse_floor": 0.1,
+          "units": "fold",
+          "provenance": "industry_survey"
+        },
+        "nhp": {
+          "variation_ceiling": 0.5,
+          "concern_floor": 0.3,
+          "adverse_floor": 0.2,
+          "strong_adverse_floor": 0.1,
+          "units": "fold",
+          "provenance": "extrapolated",
+          "notes": "NHP dog-extrapolated; ketamine-anesthesia 5-15 min post-injection sampling artifact (transient WBC/LYM shift, less impact on RBC/HGB/HCT/PLT) + n=3-5 power floor."
+        },
+        "other": {
+          "variation_ceiling": 0.5,
+          "concern_floor": 0.3,
+          "adverse_floor": 0.2,
+          "strong_adverse_floor": 0.1,
+          "units": "fold",
+          "provenance": "best_practice"
+        }
+      },
+      "coverage": "partial",
+      "provenance": "extrapolated",
+      "threshold_reliability": "moderate",
+      "source_refs": [
+        {
+          "type": "industry_survey",
+          "citation": "Bourges-Abella N et al. 2015. Dog EOS sensitivity reflected in looser variation_ceiling 0.50 (eosinophil counts fluctuate more than lymphocytes or neutrophils in dog baseline)."
+        }
+      ],
+      "notes": "Dog-specific stress-leukogram discriminator -- paired with WBC-up + NEUT-up + LYM-down, confirms stress response rather than immunotox. Isolated EOS-down without companion stress-leukogram pattern is less specific. Stress-leukogram joint_rule deferred -- RG-FCT-LB-BW-08."
     }
   },
-
   "joint_rules": {
     "hys_law": {
       "_comment": "Hy's Law: concurrent ALT + TBILI elevation is a strong signal of DILI. Maps to the L03 rule in shared/rules/lab-clinical-rules.json; the FCT registry carries the regulatory provenance + source refs, the LB rule engine evaluates the per-animal condition.",
       "conditions": [
-        { "endpoint": "ALT",   "direction": "up", "threshold": "adverse_floor", "units": "fold" },
-        { "endpoint": "TBILI", "direction": "up", "threshold": "adverse_floor", "units": "fold" }
+        {
+          "endpoint": "ALT",
+          "direction": "up",
+          "threshold": "adverse_floor",
+          "units": "fold"
+        },
+        {
+          "endpoint": "TBILI",
+          "direction": "up",
+          "threshold": "adverse_floor",
+          "units": "fold"
+        }
       ],
       "combinator": "AND",
       "verdict": "adverse",
       "syndrome_rule_ref": "L03",
       "provenance": "regulatory",
       "source_refs": [
-        { "type": "regulatory", "citation": "FDA Guidance for Industry: Drug-Induced Liver Injury -- Premarketing Clinical Evaluation (2009)." },
-        { "type": "published",  "citation": "CIOMS Working Group. Drug-Induced Liver Injury (DILI) (2020)." }
+        {
+          "type": "regulatory",
+          "citation": "FDA Guidance for Industry: Drug-Induced Liver Injury -- Premarketing Clinical Evaluation (2009)."
+        },
+        {
+          "type": "published",
+          "citation": "CIOMS Working Group. Drug-Induced Liver Injury (DILI) (2020)."
+        }
       ]
     }
   }

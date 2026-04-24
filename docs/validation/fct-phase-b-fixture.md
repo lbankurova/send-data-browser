@@ -146,3 +146,20 @@ Updating this document requires:
 - Sourcing an NHP study → replace §3.1 with the new study's characterisation; update §4 to describe NHP exercise in the diff artifact.
 - Deciding to pursue consortium access → update §3.2 row status.
 - Project reaching regulatory-submission scale → reinstate the formal machinery described in `architecture/fct-registry.md` § "Phase B sign-off gate" as future scaffolding, with named reviewer allowlist and hook-enforced front-matter contract.
+
+---
+
+## 6. LB + BW band coverage status (fct-lb-bw-band-values cycle, 2026-04-23)
+
+Dog ALT fixture consumption transitions — documented here so future readers can trace the handoff from Phase A (shipped registry infrastructure, no LB/BW bands) to the fct-lb-bw-band-values cycle (populated LB chem + LB hem + BW per-species bands):
+
+| Entry | Pre-append state (Phase A) | Post-append state (fct-lb-bw-band-values) |
+|---|---|---|
+| `LB.ALT.up` | `coverage: "none"`, `fallback_used: true`, `provenance: "extrapolated"`, verdict derived from legacy \|g\|-ladder | `coverage: "partial"`, `fallback_used: false`, species-resolved provenance (dog: `regulatory`, nhp: `extrapolated`), verdict from 1.5/2.0/3.0/5.0 fold bands (dog: 1.8 ceiling) |
+| `LB.AST.up`, `LB.TBILI.up`, `LB.ALP.up`, `LB.GGT.up`, `LB.BUN.up`, `LB.CREAT.up`, `LB.CHOL.{up,down}`, `LB.GLUC.{up,down}`, `LB.TP.down`, `LB.ALB.down` | Same as above | Populated per research §2 / §7 |
+| 12 LB hematology entries (`LB.WBC.{up,down}`, `LB.RBC.down`, `LB.HGB.down`, `LB.HCT.down`, `LB.PLT.down`, `LB.RETIC.{up,down}`, `LB.NEUT.up`, `LB.LYM.{up,down}`, `LB.EOS.down`) | Same as above | Populated per research §3.1 (Bourges-Abella 2015 dog primary; rat/mouse best_practice extrapolated; NHP extrapolated with ketamine + small-n flags) |
+| `BW.BODYWEIGHT.down` | Missing entry (no bands) | 5-species bands per research §4 (OECD TG 407/408 regulatory for rat/mouse/dog/other; NHP stopping_criterion_used_as_proxy 6%/week) |
+
+**Fixture-selection rationale update:** the dog ALT fixture (TOXSCI-35449 `|g|=1.71` finding) now consumes populated FCT bands (dog adverse_floor 3.0x) rather than falling through to the legacy |g|-ladder. The 29.5% pct_change OM LIVER finding remains covered by the Phase A OM entries (unchanged). Post-append diff doc at `fct-migration-diff-lb-bw.md` documents the verdict transitions per study.
+
+**Sign-off path:** see `fct-migration-signoff.md` sibling doc. Sign-off gates parent cycle's Phase B rewire of `classify_severity`, D6/D4, R10/R11, and NOAEL cascade.

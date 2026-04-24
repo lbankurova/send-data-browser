@@ -1,0 +1,92 @@
+topic: fct-lb-bw-band-values
+started: 2026-04-22T00:00:00Z
+phase: build
+current_step: build.2
+revision: 10
+completed:
+  blueprint.0.impl_context:
+    completed: 2026-04-23T09:22:00Z
+    failed_precedents_scanned: 510
+    failed_relevant: 0
+    checkpoint: .lattice/cycle-state/fct-lb-bw-band-values-step0-impl-context.md
+    scope_locked: "4 features: F1 (13 LB chem) + F2 (12 LB hem) + F3 (BW per-species) + F4 (validation diff + sign-off); registry content only, no call-site rewire"
+  blueprint.1.synthesize:
+    completed: 2026-04-23T09:35:00Z
+    synthesis_doc: docs/_internal/incoming/fct-lb-bw-band-values-synthesis.md
+    line_count: 293
+    features: 4
+    mandatory_sections_present: 6
+    reuse_inventory_rows: 10
+    simplicity_rationale_rows: 4
+    test_strategy_rows: 10
+    research_gaps: 7
+    data_gaps: 4
+    hard_gates: "legacy severity byte-parity + NOAEL byte-parity + scientist sign-off on verdict diff"
+  blueprint.2.architect_gate:
+    completed: 2026-04-23T09:45:00Z
+    review: docs/_internal/research/peer-reviews/fct-lb-bw-band-values-architect-review.md
+    verdict: SCIENCE-FLAG
+    flags: 2
+    minor_advisories: 3
+    user_decision_date: 2026-04-23
+    user_decision: "SCIENCE-FLAG 1 -> Option B (add unit-conversion code); SCIENCE-FLAG 2 -> accept (flip entry-level threshold_reliability to moderate + NHP caveat in notes). All 3 MINORs auto-applied."
+    incorporation_outcome: "Synthesis grew to 369 lines, 5 features (added F5 unit-conversion patch with AC-F5-1..6). Added Keystone 1.9 (scope boundary amendment). AC-F1-4 revised to permit classification.py change. AC-F3-2 revised for reliability. AC-F4-5 revised to name NHP studies. AC-F1-6 revised for LB.CREAT.up gap. Test Strategy + AC-F1-1 clarify verify script scope. Added Plan Review Notes section 11."
+  blueprint.3.probe:
+    completed: 2026-04-23T10:10:00Z
+    report: .lattice/cycle-state/fct-lb-bw-band-values-step3-probe.md
+    safe: 8
+    propagates: 7
+    science_flag: 1
+    stale: 1
+    breaks: 0
+    user_decision_date: 2026-04-23
+    user_decision: "AC-F4-2 scoped to dose level only; noael_confidence shift documented + scientist-signed-off (directional correctness only); magnitude recalibration routed to DATA-GAP-FCT-LB-BW-05 with concrete trigger (10 studies OR methodology paper OR scientist escalation). Added AC-F4-7 scope statement, gating_mechanism column in diff doc, new §12 Intentional Cascade Inventory. Meta-pattern feedback saved to memory (feedback_blueprint_cascade_inventory.md) — 3rd cycle in a row with same shape."
+    synthesis_final_line_count: 423
+  blueprint.4.peer_review_r1:
+    completed: 2026-04-23T10:30:00Z
+    review: docs/_internal/research/peer-reviews/fct-lb-bw-band-values-synthesis-review.md
+    verdict: CONDITIONAL
+    flawed: 2
+    conditional: 10
+    sound: 0
+    insufficient: 0
+    dimensions_exercised: 4
+    gate_passed: true
+  blueprint.5.incorporate_r1:
+    completed: 2026-04-23T10:45:00Z
+    findings_incorporated: 12
+    findings_rejected: 0
+    band_value_changes: 1  # dog ALP tightened from research §7.1 JSON to §2.1 text
+    new_research_gaps: 13  # RG-FCT-LB-BW-08..20
+    ac_additions: 2  # AC-F2-4 rodent caveat, AC-F2-7 sex-specific rationale
+    yaml_schema_additions: 2  # per_endpoint_decisions.magnitude_concern, approval.reviewers (list)
+    scope_statement_expansions: 3  # direction-vs-magnitude, coverage vocabulary, NHP sub-tiering
+    synthesis_line_count_post_r1: 491
+  blueprint.6.peer_review_r2:
+    completed: 2026-04-23T11:15:00Z
+    review: docs/_internal/research/peer-reviews/fct-lb-bw-band-values-synthesis-review-r2.md
+    r1_resolution: "12/12 RESOLVED (no scientific regressions)"
+    r2_flawed: 1  # R2-1 editing duplicate AC-F2-4/5 orphans
+    r2_conditional: 2  # R2-2 YAML schema split, R2-4 scalar style
+    r2_sound: 1  # R2-3 line 59 phrasing
+    bikeshedding: false
+    verdict: CONDITIONAL
+    all_r2_resolved: true
+    resolution_summary: "R2-1 orphan AC lines deleted; R2-2 YAML schema consolidated in F4 block 3 with reviewers:list[str] + magnitude_concern:Optional[str] + scope_statement:str; R2-3 line 59 'Hy's Law pairing' phrasing updated to cite FDA 2009 DILI + RG-08/09; R2-4 literal-block-scalar serialization guidance added."
+    synthesis_final_line_count: 501
+  blueprint.7.complete:
+    completed: 2026-04-23T11:45:00Z
+    research_gaps_persisted: 20  # RG-FCT-LB-BW-01..20 appended to REGISTRY.md under new stream entry
+    data_gaps_persisted: 5  # DATA-GAP-FCT-LB-BW-01..05 appended to TODO.md
+    registry_stream_entry: docs/_internal/research/REGISTRY.md # new fct-lb-bw-band-values stream added
+    auto_decisions: 8  # dedup+lock, impl-context, synthesize, architect-SCIENCE-FLAG (user), probe-SCIENCE-FLAG (user), R1 incorporate, R2 accept, complete
+parent_topic: species-magnitude-thresholds-dog-nhp
+research_artifact: docs/_internal/research/fct-lb-bw-band-values.md
+notes: |
+  Spawned during Phase B review of species-magnitude-thresholds-dog-nhp (2026-04-22).
+  Research synthesis completed: 11 LB chemistry entries + 10 LB hematology entries +
+  BW.BODYWEIGHT.down per-species calibration; §7 JSON fragments ready; §8 integration
+  plan defines build scope. Directly resolves GAP-SMT-02 (SCIENCE-FLAG) per-endpoint
+  FCT values. User selected blueprint-cycle entry on 2026-04-23; research phase marked
+  complete based on the embedded synthesis quality and the parent cycle's peer-review
+  lineage.
