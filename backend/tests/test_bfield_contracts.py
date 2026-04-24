@@ -284,7 +284,7 @@ class TestAdverseEffectSummary:
         assert isinstance(rows, list)
 
     def test_severity_no_normal(self, rows):
-        """BFIELD-27: severity in {adverse, warning} — never 'normal' (filtered out)."""
+        """BFIELD-27 severity in {adverse, warning} only -- normal and not_assessed both filtered out."""  # triangle-audit:exempt -- BFIELD-27 is intentionally a 2-value subset; SEVERITY_NO_NORMAL constant enforces it.
         violations = [
             f"  {_rid(r)}: severity={r.get('severity')!r}"
             for r in rows if r.get("severity") not in SEVERITY_NO_NORMAL
@@ -978,4 +978,91 @@ class TestUnifiedFindingsFctPayload:
             if r.get("verdict") == "provisional" and r.get("coverage") in ("full", "partial"):
                 violations.append(f"  {_rid(r)}: verdict=provisional, coverage={r.get('coverage')!r}")
         msg = "verdict/coverage contract violations:\n" + "\n".join(violations)
+        assert not violations, msg
+
+
+# ---------------------------------------------------------------------------
+# Source-level contract invariant: no bare "threshold" pattern checks in runtime consumers
+# ---------------------------------------------------------------------------
+
+class TestSourceInvariants:
+    """Grep-style invariants over backend runtime source code.
+
+    Catches contract-drift regressions that produce no runtime error but
+    silently dead-branch consumer logic (e.g., pattern vocabulary rename).
+    """
+
+    # Files where bare "threshold" is legitimate by design:
+    #   - override_reader.py: user-facing override vocabulary (bare "threshold"
+    #     is mapped to threshold_increase/_decrease by _resolve_override)
+    #   - analysis_settings.py: DEFAULT_PATTERN_SCORES retains bare "threshold"
+    #     key for defense-in-depth if a future emitter ever uses it
+    #   - confidence.py: _NEUTRAL_PATTERNS set includes every spelling
+    #     historical or current (defense-in-depth)
+    _ALLOWED_BARE_THRESHOLD_FILES = {
+        "override_reader.py",
+        "analysis_settings.py",
+        "confidence.py",
+    }
+
+    # Scan roots: runtime consumer code only. Tests and annotations excluded.
+    _SCAN_ROOTS = ("generator", "services", "routers", "models")
+
+    def test_no_bare_threshold_pattern_check_in_runtime_consumers(self):
+        """Runtime consumers must not branch on pattern == "threshold".
+
+        The dose_response_pattern enum uses threshold_increase/threshold_decrease.
+        Bare "threshold" is a user-override input that override_reader translates
+        to qualified forms before writing to findings. Runtime consumers that
+        check `pattern == "threshold"` are dead code and cause silent regressions
+        (R06 never fired, R13 partially dead, dose_response_flag wrong, narrative
+        insight missing, clinical scoring biased low — all observed 2026-04-23).
+
+        See docs/_internal/knowledge/contract-triangles.md "dose_response_pattern
+        enum" for the live site registry.
+        """
+        import re
+        backend_root = Path(__file__).resolve().parent.parent
+        # Matches `== "threshold"`, `== 'threshold'`, `"threshold"` or
+        # `'threshold'` appearing inside an `in (...)` tuple/list. Intentionally
+        # conservative: catches the two observed drift patterns, doesn't try to
+        # parse all Python.
+        bare_eq = re.compile(r"""==\s*["']threshold["']""")
+        bare_in_tuple = re.compile(
+            r"""in\s*[\(\[][^)\]]*["']threshold["'][^)\]]*[\)\]]"""
+        )
+
+        violations: list[str] = []
+        for root_name in self._SCAN_ROOTS:
+            root = backend_root / root_name
+            if not root.is_dir():
+                continue
+            for py_file in root.rglob("*.py"):
+                if py_file.name in self._ALLOWED_BARE_THRESHOLD_FILES:
+                    continue
+                text = py_file.read_text(encoding="utf-8")
+                for lineno, line in enumerate(text.splitlines(), start=1):
+                    # Skip comments and docstrings (rough — startswith-only).
+                    stripped = line.lstrip()
+                    if stripped.startswith("#"):
+                        continue
+                    if bare_eq.search(line) or bare_in_tuple.search(line):
+                        # Ignore if the match is part of threshold_increase /
+                        # threshold_decrease (same prefix).
+                        # Drop those qualified forms from the line and re-check.
+                        scrub = line.replace("threshold_increase", "").replace(
+                            "threshold_decrease", ""
+                        )
+                        if bare_eq.search(scrub) or bare_in_tuple.search(scrub):
+                            rel = py_file.relative_to(backend_root)
+                            violations.append(f"  {rel}:{lineno}: {line.strip()}")
+
+        msg = (
+            "Runtime consumer(s) branch on bare pattern == \"threshold\". "
+            "The dose_response_pattern enum uses threshold_increase/threshold_decrease; "
+            "bare \"threshold\" never reaches consumers. Update the branch to include "
+            "both qualified variants. Allow-list in this test covers legitimate uses "
+            "(override input, defense-in-depth sets).\n"
+            + "\n".join(violations)
+        )
         assert not violations, msg

@@ -217,7 +217,8 @@ def build_study_signal_summary(
                 "dose_response_pattern": finding.get("dose_response_pattern", ""),
                 "statistical_flag": p_value is not None and p_value < 0.05,
                 "dose_response_flag": finding.get("dose_response_pattern", "") in (
-                    "monotonic_increase", "monotonic_decrease", "threshold"
+                    "monotonic_increase", "monotonic_decrease",
+                    "threshold_increase", "threshold_decrease",
                 ),
                 "mean": gs.get("mean"),
                 "n": gs.get("n", 0),
@@ -610,7 +611,7 @@ def build_lesion_severity_summary(findings: list[dict], dose_groups: list[dict])
                 ),
                 # GAP-271 Phase 2: BFIELD-92 invariant -- every row with
                 # severity == "not_assessed" must carry a documented reason.
-                # Null for assessed rows (severity in {adverse, warning, normal}).
+                # Null for assessed rows (severity in {adverse, warning, normal}).  # triangle-audit:exempt -- comment correctly enumerates the 3 assessed values; not_assessed is the suppressed 4th and is the WHEN-non-null branch.
                 "not_assessed_reason": (
                     finding.get("not_assessed_reason")
                     if finding.get("severity") == "not_assessed"

@@ -263,7 +263,7 @@ class ParameterizedAnalysisPipeline:
 
 def _build_summary(findings: list[dict], dose_groups: list[dict]) -> dict:
     """Build unified_findings summary from enriched findings."""
-    severity_counts = {"adverse": 0, "warning": 0, "normal": 0}
+    severity_counts = {"adverse": 0, "warning": 0, "normal": 0}  # triangle-audit:exempt -- bucket initialization; not_assessed counted dynamically via .get() if encountered.
     target_organs = set()
     domains_with_findings = set()
     treatment_related_count = 0

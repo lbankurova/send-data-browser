@@ -83,7 +83,7 @@ def _build_treatment_summary(finding: dict, all_findings: list[dict]) -> dict:
     treatment_related = finding.get("treatment_related", False)
 
     # Count by severity across all findings
-    severity_counts = {"adverse": 0, "warning": 0, "normal": 0}
+    severity_counts = {"adverse": 0, "warning": 0, "normal": 0}  # triangle-audit:exempt -- bucket initialization; not_assessed counted dynamically via .get() if encountered.
     target_organs = set()
     for f in all_findings:
         sev = f.get("severity", "normal")

@@ -1,0 +1,95 @@
+  TRIANGLE '`severity` enum (4-value)': subset straggler at backend/tests/test_findings_invariants.py:766
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    valid_severities = {"normal", "warning", "adverse"}
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/field-contracts.md:233
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    **Type:** `"adverse" | "warning" | "normal"`
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/field-contracts.md:241
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    - Worst-case aggregation across all rows for this endpoint: `adverse > warning > normal`.
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/scoring-engine-model.md:21
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    [Step 3] Severity classification ── adverse / warning / normal
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/scoring-engine-model.md:97
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    - **What:** Assign adverse / warning / normal per endpoint
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/scoring-engine-model.md:100
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    - **Outputs:** `worstSeverity` (adverse | warning | normal)
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/scoring-engine-model.md:202
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    severityWeight = 3 (adverse) | 1 (warning/normal)
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/knowledge/system-manifest.md:19
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    | S03 | Severity Classification | adverse / warning / normal per endpoint; ECETOC B-factor | `classification.py` | -- |
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/architecture/data-pipeline.md:176
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    | GET | `/api/studies/{id}/analyses/adverse-effects/summary` | -- | Summary counts (total findings, adverse, warning, normal, treatment_rela
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/architecture/data-pipeline.md:1023
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    **Filter:** `severity != "normal"` (includes both `"adverse"` and `"warning"`)
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at docs/_internal/architecture/information-architecture.md:367
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    | `GET /api/studies/{id}/analyses/adverse-effects/summary` | Summary counts (adverse, warning, normal) | Findings |
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/types/cohort.ts:94
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    worstSeverity: "adverse" | "warning" | "normal";
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/cohort-engine.ts:297
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    const organMap = new Map<string, { worst: "adverse" | "warning" | "normal"; count: number }>();
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/cross-domain-syndromes.ts:375
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    const SEVERITY_RANK: Record<string, number> = { adverse: 2, warning: 1, normal: 0 };
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/findings-rail-engine.ts:421
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    severity: ReadonlySet<string> | null;  // subset of {"adverse","warning","normal"} or null (all)
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/histopathology-helpers.ts:112
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    findingSeverity: Map<string, "adverse" | "warning" | "normal">;
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/histopathology-helpers.ts:139
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    // Track worst severity per finding (adverse > warning > normal)
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/histopathology-helpers.ts:285
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    severity: "adverse" | "warning" | "normal";
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/recovery-classification.ts:44
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    signalClass: "adverse" | "warning" | "normal";
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/components/analysis/FindingsFilterBar.tsx:20
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    const SEVERITIES = ["adverse", "warning", "normal"];
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/components/analysis/charts/findings-charts.ts:352
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    const sevLabel = meta.worstSeverity === "adverse" ? "adverse" : meta.worstSeverity === "warning" ? "warning" : "normal";
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/components/analysis/findings/FindingsRail.tsx:830
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    strength: thick = strong, thin = weak. Red = adverse, amber = warning, invisible = normal.
+
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/components/analysis/findings/FindingsTableFilterPanel.tsx:284
+    present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
+    line:    values={["adverse", "warning", "normal"]}
+
+  TRIANGLE '`dose_response_pattern` enum': subset straggler at docs/_internal/architecture/pattern-classification-and-override.md:9
+    present: ['flat', 'monotonic_decrease', 'monotonic_increase', 'non_monotonic', 'threshold_decrease', 'threshold_increase']  missing: ['insufficient_data']
+    line:    The generator classifies each finding's dose-response pattern using pooled SD equivalence bands. Patterns: `flat`, `monotonic_increase`, `mo

@@ -365,7 +365,7 @@ def classify_severity(
     finding: dict,
     threshold: str = "grade-ge-2-or-dose-dep",
 ) -> str:
-    """Classify a finding as 'adverse', 'warning', or 'normal'.
+    """Classify a finding as 'adverse', 'warning', or 'normal'.  # triangle-audit:exempt -- classify_severity() returns 3 assessed values; the 4th value 'not_assessed' is set elsewhere by _classify_findings_no_control_path.
 
     Threshold modes (continuous endpoints only — incidence is unchanged):
     - grade-ge-2-or-dose-dep: default. p < 0.05 AND |d| >= 0.5, or trend-driven.
