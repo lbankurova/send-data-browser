@@ -1,0 +1,11 @@
+# Raw PDF text dumps — large, derivable, regenerable via fitz from the source PDFs
+.chamanza_raw.txt
+.maita_raw.txt
+
+# Pass-2 diff reports — derivable, transient during extraction cycle
+.chamanza_pass2_diff.txt
+.maita_pass2_diff.txt
+
+# Python bytecode
+__pycache__/
+*.pyc

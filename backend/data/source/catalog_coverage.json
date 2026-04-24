@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "generated": "2026-04-24",
+  "description": "Per-species MI/MA HCD catalog coverage state. Written by DATA-GAP-MIMA-18 extraction. Updated by ETL scripts at load time (row_count_actual backfilled via SELECT COUNT(*) FROM hcd_mi_incidence WHERE species = ?).",
+  "coverage": {
+    "CYNO": {
+      "strain": "MACACA_FASCICULARIS",
+      "sources": ["chamanza_2010"],
+      "known_partial": false,
+      "row_count_target": 60,
+      "row_count_actual": null,
+      "notes": "Full cyno MI coverage from Chamanza 2010 (570 animals, 60 studies 2003-2009, Charles River Edinburgh). Tables 2-7 cover cardiovascular/respiratory/digestive/urogenital/endocrine/hematopoietic/skin/MSK/nervous systems."
+    },
+    "BEAGLE": {
+      "strain": "BEAGLE",
+      "sources": ["maita_1977"],
+      "known_partial": true,
+      "missing": "DATA-GAP-MIMA-21 (Chandra 2010 or equivalent Beagle HCD source) -- original spec citation unverifiable",
+      "row_count_target": 60,
+      "row_count_actual": null,
+      "notes": "Partial Beagle MI coverage from Maita 1977 (420 animals, Sankyo Japan, pre-INHAND-1977 terminology, paper-aggregate denominator without sex stratification). 5 organs covered (liver, thyroid, spleen, pituitary, prostate); major gaps: kidney, heart, lung, lymphoid, MSK, nervous. Sato 2012 available but is a photomicrograph atlas with no quantitative incidence tables -- not emittable without fabrication."
+    }
+  }
+}

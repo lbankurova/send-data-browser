@@ -1,0 +1,119 @@
+page_0idx,table,organ,finding,male_count,female_count,total_count,total_pct,range_min,range_max
+2,TABLE 2,LUNG,inflammatory cell infiltration,28,27,55,9.6,0,100
+2,TABLE 2,LUNG,interstitial inflammation,22,14,36,6.3,0,37.5
+2,TABLE 2,LUNG,alveolar macrophage accumulation,16,16,32,5.6,0,40
+2,TABLE 2,LUNG,pigment deposits,16,10,26,4.6,0,100
+2,TABLE 2,LUNG,focal pleural fibrosis/pleuritis,16,9,25,4.4,0,50
+2,TABLE 2,LUNG,foreign body granuloma,8,9,17,3.0,0,37.5
+2,TABLE 2,LUNG,hyperplasia of BALT,7,10,17,3.0,0,37.5
+2,TABLE 2,LUNG,bronchiolitis,5,8,13,2.3,0,12.5
+2,TABLE 2,LUNG,emboli,7,5,12,2.1,0,12.5
+2,TABLE 2,LUNG,vasculitis/vascular degeneration,5,4,9,1.6,0,40
+2,TABLE 2,HEART,inflammatory cell foci,67,80,147,25.8,0,100
+2,TABLE 2,HEART,focal myocarditis,22,14,36,6.3,0,66.7
+2,TABLE 2,HEART,myocardial degeneration/fibrosis,19,13,32,5.6,0,66.7
+2,TABLE 2,HEART,karyomegaly,8,8,16,2.8,0,50
+2,TABLE 2,HEART,mucinous change,6,7,13,2.3,0,20
+2,TABLE 2,HEART,endocardiosis,6,4,10,1.8,0,12.5
+2,TABLE 2,HEART,coronary intimal thickening,5,5,10,1.8,0,25
+2,TABLE 2,HEART,arteritis/periarteritis,3,4,7,1.2,0,25
+2,TABLE 2,HEART,mineralization,,3,3,0.5,0,12.5
+2,TABLE 2,HEART,squamous/epithelial cysts or plaques,1,2,3,0.5,0,12.5
+2,TABLE 2,AORTA,mucinous change,7,8,15,2.6,0,40
+2,TABLE 2,AORTA,intimal thickening/degeneration,4,5,9,1.6,0,12.5
+2,TABLE 2,AORTA,mineralization,3,2,5,0.9,0,12.5
+2,TABLE 3,LIVER,inflammatory cell foci,166,180,346,60.7,0,100
+2,TABLE 3,LIVER,diffuse hepatocyte vacuolation/lipidosis,18,17,35,6.1,0,60
+2,TABLE 3,LIVER,tension lipidosis/focal lipidosis,7,26,33,5.8,0,50
+2,TABLE 3,LIVER,glycogen vacuolation,14,18,32,5.6,0,100
+2,TABLE 3,LIVER,focal necrosis/single cell necrosis,11,11,22,3.9,0,37.5
+2,TABLE 3,LIVER,subcapsular hemorrhage/fibrosis,11,9,20,3.5,0,37.5
+2,TABLE 3,LIVER,bile duct hyperplasia/periportal fibrosis,7,4,11,1.9,0,20
+2,TABLE 3,LIVER,pigment,5,6,11,1.9,0,50
+2,TABLE 3,LIVER,ectopic adrenal gland,0,2,2,0.4,0,12.5
+2,TABLE 3,GALL BLADDER,inflammatory cell infiltrations,5,4,9,1.6,0,20
+2,TABLE 3,EXOCRINE PANCREAS,inflammatory cell infiltrations,19,17,36,6.3,0,66.7
+2,TABLE 3,EXOCRINE PANCREAS,acinar cell atrophy/duct cell hyperplasia,9,4,13,2.3,0,12.5
+2,TABLE 3,EXOCRINE PANCREAS,acinar cell degranulation,4,4,8,1.4,0,50
+2,TABLE 3,EXOCRINE PANCREAS,accessory spleen,5,2,7,1.2,0,12.5
+2,TABLE 3,SUBMAXILLARY SALIVARY GLAND,inflammatory cell infiltrations,50,71,121,21.2,0,100
+2,TABLE 3,SUBMAXILLARY SALIVARY GLAND,inflammation,7,4,11,1.9,0,40
+2,TABLE 3,PAROTID SALIVARY GLAND,inflammatory cell infiltration,30,46,76,13.3,0,100
+2,TABLE 3,PAROTID SALIVARY GLAND,inflammation,14,18,32,5.6,0,50
+2,TABLE 3,PAROTID SALIVARY GLAND,mineralized duct contents,8,6,14,2.5,0,50
+3,TABLE 4,STOMACH,gastritis,35,35,70,12.3,0,100
+3,TABLE 4,STOMACH,inflammatory cell infiltration,36,33,69,12.1,0,100
+3,TABLE 4,STOMACH,lymphoid hyperplasia,10,6,16,2.8,0,50
+3,TABLE 4,STOMACH,parasitic granuloma,8,7,15,2.6,0,75
+3,TABLE 4,STOMACH,focal muscle atrophy/degeneration,6,6,12,2.1,0,12.5
+3,TABLE 4,STOMACH,gastric infarction/necrosis,1,2,3,0.5,,
+3,TABLE 4,SMALL INTESTINE,inflammatory cell infiltration,9,6,15,2.6,0,37.5
+3,TABLE 4,SMALL INTESTINE,"pigmented macrophage, lamina propria",11,4,15,2.6,0,50
+3,TABLE 4,SMALL INTESTINE,inflammation,5,2,7,1.2,0,12.5
+3,TABLE 4,SMALL INTESTINE,lacteal ectasia/edema,5,2,7,1.2,0,37.5
+3,TABLE 4,SMALL INTESTINE,diffuse goblet cell hyperplasia,3,4,7,1.2,0,66.7
+3,TABLE 4,SMALL INTESTINE,diverticulum/glandular herniation,3,2,5,0.9,0,12.5
+3,TABLE 4,LARGE INTESTINE,balantidium in the lumen,68,46,114,20.0,0,100
+3,TABLE 4,LARGE INTESTINE,inflammatory cell infiltrations,16,16,32,5.6,0,50
+3,TABLE 4,LARGE INTESTINE,"syncytial cells, GALT",9,11,20,3.5,0,75
+3,TABLE 4,LARGE INTESTINE,inflammation/colitis,8,4,12,2.1,0,37.5
+3,TABLE 4,LARGE INTESTINE,vasculitis/perivasculitis,5,6,11,1.9,0,37.5
+3,TABLE 4,LARGE INTESTINE,glandular microherniation,4,4,8,1.4,0,33.3
+3,TABLE 4,LARGE INTESTINE,parasitic granuloma/fibrosis/mineralization,2,3,5,0.9,0,12.5
+3,TABLE 4,ESOPHAGUS,inflammatory cell infiltrations,11,8,19,3.3,0,60
+3,TABLE 4,ESOPHAGUS,focal muscle atrophy/degeneration,8,9,17,3.0,0,14.2
+3,TABLE 4,TONGUE,inflammation/subepithelial myositis,15,7,22,3.9,0,50
+3,TABLE 4,TONGUE,inflammatory cell foci,9,3,12,2.1,0,37.5
+3,TABLE 5,KIDNEY,inflammatory cell infiltrations,87,77,164,28.8,0,100
+3,TABLE 5,KIDNEY,interstitial nephritis,27,29,56,9.8,0,100
+3,TABLE 5,KIDNEY,mineral deposits/mineralization,6,9,15,2.6,0,37.5
+3,TABLE 5,KIDNEY,glomerulonephritis/sclerosis,6,5,11,1.9,0,37.5
+3,TABLE 5,KIDNEY,tubular degeneration/regeneration,5,4,9,1.6,,
+3,TABLE 5,URINARY BLADDER,inflammatory cell foci,12,15,27,4.7,0,66.7
+3,TABLE 5,URINARY BLADDER,"focal mineralization, adventitial remnants",6,0,6,1.2,0,12.5
+3,TABLE 5,URINARY BLADDER,cystitis/eosinophilic cystitis,3,3,6,1.2,0,12.5
+3,TABLE 5,TESTIS,"hypoplasia, seminiferous tubules",4,,4,1.4,0,40
+3,TABLE 5,TESTIS,inflammatory cell foci,1,,1,0.4,,
+3,TABLE 5,EPIDIDYMIS,inflammatory cell foci/inflammation,6,,6,2.1,0,33.3
+3,TABLE 5,EPIDIDYMIS,arteritis/periarteritis,5,,5,1.8,0,16.6
+3,TABLE 5,PROSTATE,inflammatory cell infiltrates,9,,9,3.2,0,66.7
+3,TABLE 5,OVARY,cysts (follicular/paraovarian/rete ovarii),,25,25,8.8,0,66.7
+3,TABLE 5,OVARY,mineralized atretic follicles,,20,20,7.0,0,66.7
+3,TABLE 5,THYROID GLAND,ectopic thymus,31,33,64,11.2,0,83.3
+3,TABLE 5,THYROID GLAND,cysts/ultimobranchial cysts,22,13,35,6.1,0,100
+3,TABLE 5,THYROID GLAND,dilated/cystic follicles,13,5,18,3.2,0,100
+3,TABLE 5,THYROID GLAND,lymphocytic thyroiditis,1,3,4,0.7,0,16.6
+3,TABLE 5,ADRENAL GLAND,mineralization,5,3,8,1.4,0,50
+3,TABLE 5,ADRENAL GLAND,cortical cell vacuolation,2,6,8,1.4,0,40
+3,TABLE 5,ADRENAL GLAND,pigment,2,3,5,0.9,0,16.6
+3,TABLE 5,ADRENAL GLAND,adrenohepatic fusion/adhesion,2,3,5,0.9,0,37.5
+3,TABLE 5,PARATHYROID GLAND,ectopic thymus,10,6,16,2.8,0,20
+3,TABLE 5,PARATHYROID GLAND,congenital cysts,10,5,15,2.6,0,20
+3,TABLE 5,PITUITARY,inflammatory cell foci,4,2,6,1.1,0,33.3
+3,TABLE 5,PITUITARY,cysts,6,0,6,1.1,0,40
+3,TABLE 5,PITUITARY,focal anterior pituitary cell hypertrophy,2,4,6,1.1,0,12.5
+4,TABLE 6,MESENTERIC LYMPH NODE,sinus histiocytosis,8,3,11,1.9,0,50
+4,TABLE 6,MESENTERIC LYMPH NODE,eosinophil infiltration,3,4,7,1.2,0,20
+4,TABLE 6,MESENTERIC LYMPH NODE,lymphangiectasia,2,2,4,0.7,0,37.5
+4,TABLE 6,SUBMANDIBULAR LYMPH NODE,pigmented macrophages,6,2,8,1.4,0,50
+4,TABLE 6,SUBMANDIBULAR LYMPH NODE,granulocytic infiltrates,3,3,6,1.1,0,20
+4,TABLE 6,THYMUS,atrophy,4,6,10,1.8,0,66.7
+4,TABLE 6,THYMUS,cystic tubular hyperplasia,3,6,9,1.6,0,16.6
+4,TABLE 6,THYMUS,myoid cells/muscle tissue,0,2,2,0.4,,
+4,TABLE 6,SPLEEN,focal lymphoid follicular hyperplasia,18,16,34,6.0,0,50
+4,TABLE 6,SPLEEN,capsular fibrosis,6,3,9,1.6,0,50
+4,TABLE 6,SPLEEN,hyalinized germinal centers,5,3,8,1.4,0,37.5
+4,TABLE 7,SKIN,dermatitis,14,17,31,5.4,0,100
+4,TABLE 7,SKIN,hair follicular atrophy,5,7,12,2.1,0,50
+4,TABLE 7,SKIN,"epidermal hyperplasia, penile",4,0,4,1.4,0,50
+4,TABLE 7,BRAIN,"inflammatory cell foci, meningeal",7,7,14,2.5,0,50
+4,TABLE 7,BRAIN,pigment,7,5,12,2.1,0,50
+4,TABLE 7,BRAIN,"perivasculitis, meningeal",6,4,10,1.8,0,100
+4,TABLE 7,BRAIN,perivascular cuffs,4,5,9,1.6,0,100
+4,TABLE 7,BRAIN,"mineralization, thalamus",5,4,9,1.6,0,50
+4,TABLE 7,BRAIN,focal gliosis/glial scar,2,3,5,0.9,0,40
+4,TABLE 7,SPINAL CORD,"perivasculitis, meningeal",8,5,13,2.3,0,50
+4,TABLE 7,SCIATIC NERVE,"inflammation, perineural",1,3,4,0.7,0,33.3
+4,TABLE 7,SCIATIC NERVE,perivasculitis,1,2,3,0.5,0,33.3
+4,TABLE 7,SKELETAL MUSCLE,inflammatory cell infiltrates,4,3,7,1.2,0,25
+4,TABLE 7,SKELETAL MUSCLE,histiocyte infiltration/vaccine granuloma,3,3,6,1.1,0,33.3

@@ -1,0 +1,12 @@
+page_0idx,organ,finding,pct,sex_basis,anchor_phrase
+0,liver,fine granular gallstones,87.5,total,fine granular gallstones (87.5%)
+0,liver,granulomas,59.9,total,granulomas (59.9%)
+0,liver,intranuclear hyaline inclusions,52.6,total,intranuclear hyaline inclusions (52.6%)
+0,liver,lipofuscin deposition,50.0,total,lipofuscin deposition (50%)
+0,liver,eosinophilic inclusions in cytoplasm of hepatocytes,3.7,total,eosinophilic inclusions (3.7%)
+0,liver,parenchymal necrosis at the base of the ligaments,7.3,total,parenchymal necrosis at the base (7.3%)
+0,thyroid gland,hyperplasia of follicular epithelial cells,46.3,total,hyperplasia of follicular epithelial (46.3%)
+0,spleen,gandy-gamna like bodies of the splenic capsule,43.1,total,Gandy-Gamna like bodies of (43.1%)
+0,hypophysis,small cysts in the anterior lobe,35.1,total,small cysts in the anterior lobe (35.1%)
+0,prostate,prostatitis,13.7,males_only,prostatitis (13.7%)
+0,"liver, kidney, lung, other organs",lesions due to migration of toxocara canis larvae,33.1,total,Toxocara canis larvae... from 33.1%

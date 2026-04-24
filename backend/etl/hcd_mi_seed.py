@@ -63,6 +63,11 @@ CREATE TABLE IF NOT EXISTS hcd_mi_incidence (
     year_min INTEGER,
     year_max INTEGER,
     severity_scale_version TEXT,
+    -- terminology_version: advisory/audit label naming the nomenclature era of the
+    -- source paper. Vocabulary (per docs/_internal/knowledge/contract-triangles.md):
+    -- {inhand_pre_2024, inhand_various, pre_inhand_1977, unknown}. Free TEXT — no
+    -- CHECK constraint (per-source ETL enforces narrow value). See
+    -- etl.hcd_mi_seed.TERMINOLOGY_VERSION_ALLOWED for the canonical frozenset.
     terminology_version TEXT,
     severity_distribution TEXT  -- JSON
 );
@@ -100,6 +105,92 @@ def ensure_phase1_schema(conn: sqlite3.Connection) -> None:
         if col not in existing:
             conn.execute(f"ALTER TABLE hcd_mi_incidence ADD COLUMN {col} {dtype}")
     conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Shared ETL helpers (used by source-specific ETLs: hcd_mi_chamanza, hcd_mi_maita)
+# ---------------------------------------------------------------------------
+
+# DB column order for inserts from curated CSVs. Matches _MI_SCHEMA above.
+# Provenance columns (source_page, source_table, source_row_label, extraction_pass,
+# flags) live in the CSV only and are stripped at insert time.
+MI_DB_COLUMNS: tuple[str, ...] = (
+    "species", "strain", "sex", "organ", "finding", "severity",
+    "n_studies", "n_animals", "n_affected",
+    "mean_incidence_pct", "sd_incidence_pct", "min_incidence_pct", "max_incidence_pct",
+    "duration_category", "source", "confidence", "notes",
+    "year_min", "year_max", "severity_scale_version", "terminology_version",
+    "severity_distribution",
+)
+
+# Allowed values for terminology_version (contract-triangle declaration site).
+# See docs/_internal/knowledge/contract-triangles.md. Per-ETL defensive assertions
+# in source-specific build() scripts enforce the narrow value expected from each
+# source; this set is the union of all accepted values across all sources.
+TERMINOLOGY_VERSION_ALLOWED: frozenset[str] = frozenset({
+    "inhand_pre_2024",   # Chamanza 2010 (pre-non-rodent INHAND monograph)
+    "inhand_various",    # Reserved for future multi-source aggregations
+    "pre_inhand_1977",   # Maita 1977 (pre-INHAND period altogether)
+    "unknown",           # Fallback when source does not state a terminology era
+})
+
+
+def mi_csv_value_to_db(col: str, v: str):
+    """Convert a CSV string value to the corresponding DB type.
+
+    Empty string -> None (NULL). Integer columns cast to int; float columns
+    cast to float; others pass through as str. Used by per-source ETLs to
+    load hcd_mi_incidence rows from curated CSVs.
+    """
+    if v == "" or v is None:
+        return None
+    if col in ("n_studies", "n_animals", "n_affected", "year_min", "year_max"):
+        return int(v)
+    if col in ("mean_incidence_pct", "sd_incidence_pct", "min_incidence_pct", "max_incidence_pct"):
+        return float(v)
+    return v
+
+
+def update_mi_catalog_coverage(
+    db_path: Path,
+    coverage_json_path: Path,
+    species_tag: str,
+) -> None:
+    """Read catalog_coverage.json, backfill row_count_actual for species_tag, write back.
+
+    Also writes the full coverage JSON into etl_metadata under key 'mi_catalog_coverage'
+    per datagap-mima-18-extraction-protocol §Catalog-coverage metadata — this is the
+    bridge for frontend/engine consumers to read coverage state via the standard DB
+    query path, not only from the on-disk JSON.
+    """
+    import json
+    log = logging.getLogger(__name__)
+    if not coverage_json_path.exists():
+        log.warning(
+            "catalog_coverage.json not found at %s; skipping coverage update",
+            coverage_json_path,
+        )
+        return
+    data = json.loads(coverage_json_path.read_text(encoding="utf-8"))
+    conn = sqlite3.connect(str(db_path))
+    try:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM hcd_mi_incidence WHERE species = ?",
+            (species_tag,),
+        ).fetchone()[0]
+        if species_tag in data.get("coverage", {}):
+            data["coverage"][species_tag]["row_count_actual"] = count
+        coverage_json_path.write_text(
+            json.dumps(data, indent=2) + "\n", encoding="utf-8"
+        )
+        # Also persist into etl_metadata for DB-side consumers.
+        conn.execute(
+            "INSERT OR REPLACE INTO etl_metadata (key, value) VALUES (?, ?)",
+            ("mi_catalog_coverage", json.dumps(data)),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 # ---------------------------------------------------------------------------
 # Seed data: Charles River Crl:CD(SD) published HCD
