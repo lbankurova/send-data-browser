@@ -33,7 +33,7 @@ def _low_score_params() -> dict:
     n_affected=1 < min_n=3 -> +0; threshold pattern -> +1; HighConcern -> +1;
     no significance boost. Total 2.
     """
-    return {"n_affected": 1, "dose_response_pattern": "threshold", "p_value": 0.2}
+    return {"n_affected": 1, "dose_response_pattern": "threshold_increase", "p_value": 0.2}
 
 
 def _match_high_concern() -> dict:
@@ -136,7 +136,7 @@ def test_tier_1_uncapped_promotes_score_4_to_high():
 # ---------------------------------------------------------------------------
 
 def test_explicit_none_equals_default_none():
-    params = {"n_affected": 2, "dose_response_pattern": "threshold", "p_value": None}
+    params = {"n_affected": 2, "dose_response_pattern": "threshold_increase", "p_value": None}
     match = _match_moderate()
     assert (
         compute_clinical_confidence(params, match)

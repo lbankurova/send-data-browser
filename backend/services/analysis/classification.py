@@ -1062,7 +1062,7 @@ def assess_finding(finding: dict, a3_score: float = 0.0, effect_threshold: float
             or (min_p_adj is not None and min_p_adj < 0.05)
         )
         if tr_score >= 1.0 and has_stat_evidence:
-            if pattern in ("monotonic_increase", "monotonic_decrease", "threshold",
+            if pattern in ("monotonic_increase", "monotonic_decrease",
                            "threshold_increase", "threshold_decrease"):
                 return "tr_adverse"
             return "equivocal"

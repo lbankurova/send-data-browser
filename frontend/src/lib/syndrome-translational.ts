@@ -429,7 +429,7 @@ export function interpretSyndrome(
     );
   } else {
     // No discriminators defined for this syndrome — still apply caps
-    let cert: SyndromeCertainty = syndrome.requiredMet ? "mechanism_uncertain" : "pattern_only";
+    const cert: SyndromeCertainty = syndrome.requiredMet ? "mechanism_uncertain" : "pattern_only";
     let rat = syndrome.requiredMet
       ? "Required findings met. No discriminating evidence defined for this syndrome."
       : "Syndrome detected through supporting evidence only.";

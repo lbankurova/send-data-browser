@@ -335,10 +335,19 @@ function RuleRow({
           )}
           {rule.thresholdRefs.length > 0 && (
             <div className="text-[11px] text-muted-foreground">
-              <span className="font-medium">Thresholds:</span>{" "}
-              {rule.thresholdRefs
-                .map((ref) => THRESHOLDS.find((t) => t.key === ref)?.name ?? ref)
-                .join(", ")}
+              <span className="font-medium">Thresholds:</span>
+              <ul className="mt-0.5 space-y-0.5 pl-2">
+                {rule.thresholdRefs.map((ref) => {
+                  const t = THRESHOLDS.find((th) => th.key === ref);
+                  if (!t) return <li key={ref} className="font-mono">{ref}</li>;
+                  return (
+                    <li key={ref}>
+                      <span>{t.name}</span>{" "}
+                      <span className="font-mono">&mdash; {t.value}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>

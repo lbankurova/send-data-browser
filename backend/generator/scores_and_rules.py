@@ -227,7 +227,7 @@ def evaluate_rules(
         if pattern in ("monotonic_increase", "monotonic_decrease"):
             results.append(_emit(RULES[4], {**ctx, "pattern": pattern}, finding,
                                  params={"pattern": pattern}))
-        elif pattern == "threshold":
+        elif pattern in ("threshold_increase", "threshold_decrease"):
             results.append(_emit(RULES[5], ctx, finding))
         elif pattern == "non_monotonic":
             results.append(_emit(RULES[6], ctx, finding))
@@ -288,7 +288,7 @@ def evaluate_rules(
         if finding.get("domain") in ("MI", "MA", "CL"):
             if finding.get("direction") == "up" and finding.get("severity") != "normal":
                 results.append(_emit(RULES[11], ctx, finding))
-            if finding.get("dose_response_pattern") in ("monotonic_increase", "threshold"):
+            if finding.get("dose_response_pattern") in ("monotonic_increase", "threshold_increase"):
                 if finding.get("avg_severity") is not None:
                     results.append(_emit(RULES[12], ctx, finding))
 

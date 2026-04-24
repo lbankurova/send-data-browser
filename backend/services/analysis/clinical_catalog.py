@@ -127,7 +127,7 @@ def compute_clinical_confidence(
     # Dose-response pattern contribution
     if pattern in ("monotonic_increase", "monotonic_decrease"):
         score += 2
-    elif pattern == "threshold":
+    elif pattern in ("threshold_increase", "threshold_decrease"):
         score += 1
 
     # Clinical class weight

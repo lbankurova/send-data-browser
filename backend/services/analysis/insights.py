@@ -331,14 +331,14 @@ def dose_response_insights(
             "text": f"Monotonic {dir_word}: consistent across all dose levels, supporting treatment relationship",
             "level": "warning",
         })
-    elif pattern == "threshold":
+    elif pattern in ("threshold_increase", "threshold_decrease"):
         # Find threshold onset dose
         sig_doses = _get_significant_doses(finding, dose_groups)
         onset = sig_doses[0] if sig_doses else "a treated dose"
         group_stats = finding.get("group_stats", [])
         low = _fmt_dose(dose_groups, group_stats[1]["dose_level"]) if len(group_stats) > 1 else "low dose"
         insights.append({
-            "text": f"Threshold effect: no significant effect at {low}, onset at {onset}",
+            "text": f"Threshold {dir_word}: no significant effect at {low}, onset at {onset}",
             "level": "info",
         })
     elif pattern == "non_monotonic":

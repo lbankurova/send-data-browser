@@ -62,7 +62,7 @@ export const RULE_CATALOG: RuleDef[] = [
   {
     id: "R06", name: "Threshold pattern", scope: "endpoint", severity: "info",
     condition: "threshold_pattern",
-    conditionHuman: 'pattern == "threshold"',
+    conditionHuman: 'pattern in ("threshold_increase", "threshold_decrease")',
     template: "{endpoint_label}: threshold pattern in {sex}.",
     thresholdRefs: [],
   },
@@ -111,7 +111,7 @@ export const RULE_CATALOG: RuleDef[] = [
   {
     id: "R13", name: "Severity grade increase", scope: "endpoint", severity: "info",
     condition: "severity_grade_increase",
-    conditionHuman: 'domain in ("MI","MA","CL") AND pattern in ("monotonic_increase","threshold") AND avg_severity is not null',
+    conditionHuman: 'domain in ("MI","MA","CL") AND pattern in ("monotonic_increase","threshold_increase") AND avg_severity is not null',
     template: "{finding} in {specimen}: dose-dependent severity increase.",
     thresholdRefs: [],
   },
