@@ -300,5 +300,22 @@
 
 **Cumulative session totals (4 batches):** 6 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2), 0 failed, 2 deferred (GAP-218, GAP-308). Topic queue still requires user direction.
 
-**Operational note (NOT a blocker):** GAP-LB-IAD-2 unlocks future ingest of ~3.7K rows but the existing `backend/data/hcd.db` does not contain them — running `hcd_lb_iad_etl.py` against `etl/data/202602_Clinical_Chemistry_IAD.xlsx` + the other 3 IAD files would refresh the database. Skipped from this batch since database regeneration falls outside the strain-map fix's scope and would re-roll all aggregates. User can pick a moment to run the ETL.
+**Operational note (NOT a blocker):** GAP-LB-IAD-2 unlocks future ingest of ~3.7K rows but the existing `backend/data/hcd.db` does not contain them — running `hcd_lb_iad_etl.py` against `etl/data/202602_Clinical_Chemistry_IAD.xlsx` + the other 3 IAD files would refresh the database. Skipped from this batch since database regeneration falls outside the strain-map fix's scope and would re-roll all aggregates. User can pick a moment to run the ETL. Tracked as TODO `OPS-LB-IAD-RERUN` (autopilot: needs-user) — see TODO.md (uncommitted in submodule WIP).
+
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 5)
+
+**Advanced this batch:** 1 — GAP-322 (commit `1370c103`).
+**Investigated and dispositioned without code change:** 2 — GAP-303, GAP-329.
+
+- **GAP-322** (score 2, UI/Polish): added `cursor-help` + `title` tooltip to both percentage spans in `CorrelatingEvidenceInline` (FindingsContextPanel.tsx). Tooltip text: "Highest incidence across treated dose groups for this finding (max % affected, controls excluded)". P2 reviewers no longer have to guess the percentage's semantics.
+
+- **GAP-303** investigated (score 7, "Mortality settings rail renders no body content"): static analysis shows `MortalityInfoPane` IS mounted via `StudyDetailsContextPanel.tsx:519` and the code path renders body content when `has_mortality=true`. Bug-repro requires running the dev server with PointCross study and clicking the rail Mortality button — root cause not identifiable from static read. Item should be revisited with a Playwright screenshot session + console-log inspection.
+
+- **GAP-329** dispositioned as **already implemented** (score 3, "OUTLIERS pane column header tooltips"): `OutliersPane.tsx:378-392` already has `cursor-help` + `title` on every column header (Bio / LOO / Bio dev. / Retained effect / POC / Days / Excl.). The audit author missed them on hover. Note: code's tooltip for "POC" reads "Pattern of concordance" — the audit's suggested wording ("Point of concern") was a misread; current text is more accurate. **Recommend:** mark TODO entry resolved with no code change.
+
+**Side-effect on this commit:** the pre-commit hook auto-staged a queued `knowledge-graph` promotion (dogfood → canonical at `docs/_internal/knowledge/knowledge-graph.md`, audit script `scripts/audit-knowledge-graph.py`, decisions.log entry, domain-knowledge-map row, submodule pointer bump) that was waiting in the working tree. All pre-commit checks passed; the change is coherent infrastructure but worth noting it was bundled into the GAP-322 commit rather than a separate commit.
+
+**Cumulative session totals (5 batches):** 7 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322), 0 failed, 4 dispositioned-without-code-change (GAP-218 deferred, GAP-308 deferred, GAP-303 needs-repro, GAP-329 already-implemented).
 
