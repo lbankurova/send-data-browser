@@ -168,13 +168,23 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   const hasMortality = mortality?.has_mortality && allDeaths.length > 0;
   const unit = mortality?.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
 
-  // Summary reflects current inclusion state
+  // Summary reflects current inclusion state.
+  // GAP-307: this surface counts mortality.deaths + mortality.accidentals
+  // ("mortality events" — broader than the Findings rail's unscheduled-deaths-only
+  // count). Label kept as "deaths" for now to match the legacy text in screenshots
+  // / documentation; the breakdown below the chip and the unscheduled-only label on
+  // the Findings rail disambiguates the count semantics.
+  const accidentalCount = mortality?.accidentals?.length ?? 0;
   const includedCount = allDeaths.filter(d => !excludedSubjects.has(d.USUBJID)).length;
   const excludedCount = allDeaths.length - includedCount;
+  const breakdown =
+    accidentalCount > 0
+      ? ` (${allDeaths.length - accidentalCount} unscheduled, ${accidentalCount} accidental)`
+      : "";
   const summary = hasMortality
     ? excludedCount > 0
-      ? `${allDeaths.length} deaths \u00b7 ${includedCount} included \u00b7 ${excludedCount} excluded`
-      : `${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}`
+      ? `${allDeaths.length} deaths${breakdown} \u00b7 ${includedCount} included \u00b7 ${excludedCount} excluded`
+      : `${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}${breakdown}`
     : undefined;
 
   if (!hasMortality) {

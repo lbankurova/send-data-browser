@@ -867,10 +867,10 @@ function SignalSummarySection({ stats, mortalityData, grouping, hasSyndromes, on
               type="button"
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setDeathDropdownOpen(!deathDropdownOpen)}
-              title={`${mainDeaths.length} main arm, ${recovDeaths.length} recovery arm`}
+              title={`${mainDeaths.length} unscheduled (main arm), ${recovDeaths.length} unscheduled (recovery arm). Accidental deaths counted separately in Study Summary > Mortality.`}
             >
               <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" />
-              <span>{totalDeaths} death{totalDeaths !== 1 ? "s" : ""}</span>
+              <span>{totalDeaths} unscheduled death{totalDeaths !== 1 ? "s" : ""}</span>
               <ChevronDown className={cn("h-3 w-3 transition-transform", deathDropdownOpen && "rotate-180")} />
             </button>
 
