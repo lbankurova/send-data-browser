@@ -384,6 +384,21 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 11)
+
+**Advanced this batch:** 1 — GAP-275 (commit `044fde3f`).
+**Investigated and dispositioned without code change:** 1 — GAP-336.
+
+- **GAP-275** (score 4, UI/Polish): HCD reference tab now (a) shows bucket boundaries on hover ("90-day = 43-180 days", from `backend/services/analysis/hcd.py:_days_to_category`), (b) relabels "Duration match: known/unknown" to the more explicit "matched bucket / no bucket match" with a tooltip explaining the consequence on filtering. Did NOT add the study-actual-duration derivation ("13 weeks = 91 days") the TODO mentioned as the longer-form fix — that requires backend extension (duration_days_actual + duration_match enum), tracked as follow-up.
+
+- **GAP-336** dispositioned (score 3, "PK non-monotonic alert text truncated mid-sentence"): static analysis shows no truncation directive in `DoseProportionalityBadge` (PkExposureSection.tsx:999-1015) or its parents; backend `pk_integration.py:_describe_dose_proportionality` produces full multi-sentence text. Bug not reproducible from static read — needs Playwright repro to identify root cause (same disposition as GAP-303). Punt.
+
+**Cumulative session totals (11 batches):** 14 items advanced, 0 failed, 5 dispositioned-without-code-change (added GAP-336), 1 build fix.
+
+**Note on this iteration:** The user reverted my earlier `formatEndpointNoaelLabel` build-fix in `noael-narrative.ts` (and updated `FindingsContextPanel.tsx` to remove the dangling import) while autopilot was running. The build is clean again post-revert. No autopilot action needed; flagging here for traceability since my prior batch-8 escalation entry references the build fix that no longer exists in the tree.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
