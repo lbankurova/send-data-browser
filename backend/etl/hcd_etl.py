@@ -90,6 +90,16 @@ NTP_STRAIN_MAP: dict[str, str] = {
     # Long-Evans rats — DTT IAD: "Long Evans"
     "LONG-EVANS": "LONG-EVANS",
     "LONG EVANS": "LONG-EVANS",
+    # Hartley guinea pigs (GAP-LB-IAD-2) — DTT IAD: "Hartley guinea pig" (1,678 LB rows).
+    # Used in dermal sensitization studies; previously dropped at strain-normalize.
+    "HARTLEY GUINEA PIG": "HARTLEY",
+    "HARTLEY": "HARTLEY",
+    "CRL:HA": "HARTLEY",
+    # Syrian golden hamsters (GAP-LB-IAD-2) — DTT IAD: "Syrian golden hamster" (2,067 LB rows).
+    "SYRIAN GOLDEN HAMSTER": "SYRIAN GOLDEN",
+    "SYRIAN GOLDEN": "SYRIAN GOLDEN",
+    "GOLDEN SYRIAN": "SYRIAN GOLDEN",
+    "MESOCRICETUS AURATUS": "SYRIAN GOLDEN",
 }
 
 # ---------------------------------------------------------------------------
