@@ -343,3 +343,66 @@
 
 **Cumulative session totals (7 batches):** 9 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298, GAP-298b), 0 failed, 4 dispositioned-without-code-change.
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 8)
+
+**Advanced this batch:** 1 — GAP-300 (commit `62bf2584`).
+**Build fix shipped en-route:** `b4f88904` — added missing `formatEndpointNoaelLabel` export.
+**No escalations.**
+
+- **GAP-300** (score 4, UI/Validation): added amber warning chip in `ToxFindingForm` ("Adverse call without rationale — regulatory output expects a justification") when `treatmentRelated === "Yes"` AND `adversity === "Adverse"` AND comment empty AND no override (override case is covered by the existing override hint). Soft validation: SAVE remains enabled. Sets up downstream report-generation to flag adverse calls with missing rationales.
+
+- **Build fix** (`b4f88904`, en-route to GAP-300): GAP-322's commit `1370c103` had bundled in a doc-regen WIP that added `import { formatEndpointNoaelLabel } from "@/lib/noael-narrative"` to `FindingsContextPanel.tsx`, but the function was never exported. tsc's incremental build cache let the broken import through at the time. A clean rebuild caught it. Added the function with semantics consistent with the call sites (below-lowest → "below range" / "below tested range"; tiered with dose value → "X mg/kg"; none/missing → em-dash / "Not established"). Accepts `undefined` tier to match `ep?.noaelTier` call shape.
+
+**Lesson:** trust the pre-commit hook's "Build passed" only when no `.tsbuildinfo` cache is in play. Worth tracking as a Lattice-tooling improvement: pre-commit hook could `rm -rf node_modules/.tmp/*.tsbuildinfo` before running `tsc -b` to force a clean check on any commit that touches `.ts/.tsx`. Low priority follow-up.
+
+**Cumulative session totals (8 batches):** 10 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298, GAP-298b, GAP-300), 0 failed, 4 dispositioned-without-code-change, 1 build fix.
+
+---
+
+## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
+
+**Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
+
+**Trigger:** During review of the display-consistency fix (header / body line / sex-table all on the analytics-derived NOAEL), data verification on PointCross BW exposed that the analytics path itself produces a scientifically indefensible NOAEL. The display-consistency fix would have made the wrong answer unanimous across three sites.
+
+**Defect (`derive-summaries.ts:836-902` — `computeNoaelForFindings`):**
+- Aggregates LOAEL across ALL findings for a given `endpoint_label`. For multi-timepoint endpoints (BW, FW, CL, LB), this groups 14-29 daily findings under one label and picks the lowest dose where ANY single timepoint clears `g_lower > EFFECT_RELEVANCE_THRESHOLD (0.3)`.
+- No significance gate (`p_value_adj` not required to back the effect-size hit).
+- No direction-consistency check across timepoints.
+- No "sustained across consecutive timepoints" requirement (user notes this WAS a continuous-data requirement that did not get wired).
+
+**Empirical evidence (PointCross BW, 29 findings, all `endpoint_label='Body Weight'`):**
+
+| Sex | Day-finding | g_lower | effect_size | p_adj | Significant? |
+|-----|-------------|---------|-------------|-------|--------------|
+| M | one timepoint | 0.3073 | -0.63 | 0.250 | NS |
+| M | another timepoint | 0.3687 | +0.78 | 0.172 | NS |
+| F | a third timepoint | 0.4254 | -0.75 | 0.104 | NS |
+
+Three non-significant single-timepoint hits with sign-flipping effects (-0.63 / +0.78 / -0.75) drive the algorithm to LOAEL=level 1 (2 mg/kg) → NOAEL=below-tested-range. Toxicologically, PointCross BW NOAEL ≈ 20 mg/kg (level 2). The OLD p-value-only path (currently in `FindingsContextPanel.tsx:1903`) produces 20 mg/kg.
+
+**Precedent (same bug class, already fixed elsewhere):**
+
+- `docs/_internal/architecture/loo-display-scoping.md` 2026-04-09 changelog: "no day scoping — was iterating all timepoints and picking worst-case across the entire time course, producing g=8.43 from irrelevant day/dose combinations." Fix: per-day scoping + fragility filter.
+- `docs/_internal/architecture/loo-display-scoping.md` 2026-04-07 post-ship correction: a "consistent" fix shipped, was empirically wrong on PointCross BW, fixture test added against real `unified_findings.json` to prevent recurrence. Same bug class. Same study.
+
+**Why review missed it initially:**
+- Decision auditor flagged a SCIENCE-FLAG (originally framed as scheduled-only toggle behavior change). Review rebutted on plumbing grounds (toggle does flow through via API round-trip, empirically verified). The rebuttal was correct on plumbing but missed the deeper question: *is the algorithm producing a defensible NOAEL on this study?* No "would a tox reviewer agree?" check was applied.
+- All 16/18 four-dimension trace items passed because they only verify spec-vs-code, not code-vs-reality.
+- Mirror tests passed; build passed; consistency check passed. Spec's "BW PointCross reads `below tested range`" claim was technically correct (the algorithm does produce that) but the spec author treated it as the desired outcome rather than the bug.
+
+**Cross-impact (related defects user flagged):**
+- Onset doses disagree with NOAEL conclusions on the same endpoint — same algorithmic family. Onset uses one threshold/grouping; NOAEL another; both aggregate across timepoints differently.
+
+**Decision needed (user direction):**
+1. **Algorithm gate** for `computeNoaelForFindings`: which combination of (a) `g_lower > 0.3`, (b) `p_value_adj < 0.05`, (c) consistent direction across timepoints, (d) ≥2 consecutive timepoints, (e) per-day scoping, should constitute a LOAEL? Continuous endpoints vs incidence endpoints likely need different gates.
+2. **Multi-timepoint aggregation policy**: keep flat aggregation across all findings under one `endpoint_label`, OR collapse to per-day findings, OR require sustained effect, OR something else.
+3. **Onset-vs-NOAEL coherence**: separate scope, but the same input/grouping question. Should both share a single "LOAEL-detection" predicate?
+4. **Display-consistency fix disposition**: revert (done) and re-spec after algorithm decision; OR ship a temporary fix that aligns all three sites on the OLD p-value-only path (defensible numbers today, displays will need rework after algorithm update).
+
+**Spec status:** `docs/_internal/incoming/noael-pane-display-consistency-fix.md` exists in submodule (untracked) — needs deletion or rewrite after algorithm direction is set.
+
+**Reviewer note:** This escalation is the result of doing the data-vs-spec audit the protocol requires. The decision auditor's original SCIENCE-FLAG was directionally right; the rebuttal was on the wrong axis. Lesson: when a decision-auditor flags science, run the algorithm against real data with a "is this the toxicologically defensible answer?" lens — not just "does the plumbing produce what the spec asks for?".
+
