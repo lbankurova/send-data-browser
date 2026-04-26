@@ -156,6 +156,13 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
           </p>
         )}
 
+        {/* Adverse-call rationale warning (GAP-300) — soft validation; doesn't block save */}
+        {!hasOverride && treatmentRelated === "Yes" && adversity === "Adverse" && !comment.trim() && (
+          <p className="text-[11px] text-amber-700">
+            Adverse call without rationale — regulatory output expects a justification.
+          </p>
+        )}
+
         {/* Comment */}
         <div>
           <label className="mb-0.5 block font-medium text-muted-foreground">
