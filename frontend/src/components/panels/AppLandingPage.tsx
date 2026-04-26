@@ -612,12 +612,20 @@ export function AppLandingPage() {
     const pm = portfolioById.get(s.study_id);
 
     const n = pm ? noael(pm) : null;
+    let noaelDisplay: string | undefined;
+    if (n) {
+      noaelDisplay = `${n.dose} ${n.unit}`;
+    } else if (s.noael_dose_value != null && s.noael_dose_unit) {
+      noaelDisplay = `${s.noael_dose_value} ${s.noael_dose_unit}`;
+    } else if (s.noael_label) {
+      noaelDisplay = s.noael_label === "Not established" ? "Not est." : s.noael_label;
+    }
     return {
       ...s,
       validation: "Not Run",
       pipeline_stage: pm?.pipeline_stage,
       duration_weeks: pm?.duration_weeks ?? durationWeeks,
-      noael_value: n ? `${n.dose} ${n.unit}` : undefined,
+      noael_value: noaelDisplay,
       portfolio_metadata: pm,
     };
   });

@@ -11,6 +11,9 @@ export interface StudySummary {
   start_date: string | null;
   end_date: string | null;
   status: string;
+  noael_label?: string | null;
+  noael_dose_value?: number | null;
+  noael_dose_unit?: string | null;
 }
 
 export interface DoseGroup {

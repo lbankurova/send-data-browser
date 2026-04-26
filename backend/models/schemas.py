@@ -14,6 +14,12 @@ class StudySummary(BaseModel):
     start_date: str | None = None
     end_date: str | None = None
     status: str = "Complete"
+    # Engine-derived NOAEL summary (Combined sex). Populated from
+    # generated/{study_id}/noael_summary.json so portfolio triage tables can
+    # render the headline answer without opening each study.
+    noael_label: str | None = None
+    noael_dose_value: float | None = None
+    noael_dose_unit: str | None = None
 
 
 class DoseGroupSchema(BaseModel):

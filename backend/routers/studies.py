@@ -17,7 +17,34 @@ from services.xpt_processor import (
 router = APIRouter(prefix="/api")
 
 SCENARIOS_DIR = Path(__file__).parent.parent / "scenarios"
+GENERATED_DIR = Path(__file__).parent.parent / "generated"
 PREFS_PATH = Path(__file__).parent.parent / "data" / "study_preferences.json"
+
+
+def _read_noael_summary(study_id: str) -> tuple[str | None, float | None, str | None]:
+    """Read engine-derived NOAEL for the Combined sex from per-study output.
+
+    Returns ``(label, dose_value, dose_unit)``. All None when no output exists
+    or the file is unreadable. Used by ``list_studies`` to surface the headline
+    answer in the portfolio triage table (GAP-277).
+    """
+    path = GENERATED_DIR / study_id / "noael_summary.json"
+    if not path.exists():
+        return None, None, None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            entries = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None, None, None
+    if not isinstance(entries, list):
+        return None, None, None
+    combined = next((e for e in entries if isinstance(e, dict) and e.get("sex") == "Combined"), None)
+    if combined is None:
+        return None, None, None
+    label = combined.get("noael_label")
+    dose_value = combined.get("noael_dose_value")
+    dose_unit = combined.get("noael_dose_unit")
+    return label, dose_value, dose_unit
 
 # Populated at startup
 _studies: dict[str, StudyInfo] = {}
@@ -88,6 +115,7 @@ def list_studies():
                 subjects = int(float(full.subjects))
             except (ValueError, TypeError):
                 pass
+        noael_label, noael_dose_value, noael_dose_unit = _read_noael_summary(study_id)
         results.append(StudySummary(
             study_id=study.study_id,
             name=study.name,
@@ -100,6 +128,9 @@ def list_studies():
             subjects=subjects,
             start_date=full.start_date if full else None,
             end_date=full.end_date if full else None,
+            noael_label=noael_label,
+            noael_dose_value=noael_dose_value,
+            noael_dose_unit=noael_dose_unit,
         ))
     return results
 
