@@ -292,7 +292,11 @@ class HcdSqliteDB:
     ) -> float | None:
         """Rank a value against the matched HCD distribution (0-100).
 
-        Returns the percentage of historical control values below the given value.
+        Returns the percentage of historical control values below the given value,
+        or None if fewer than 10 matching records exist. Harmonized with
+        ``percentile_rank_lb`` (GAP-LB-IAD-3): at n<10 the empirical percentile
+        has only a few discriminating levels (n=3 -> 0/33/67/100) which is too
+        coarse to be informative for continuous values.
         """
         conn = self._get_conn()
         if conn is None:
@@ -307,7 +311,7 @@ class HcdSqliteDB:
             (strain, sex_upper, duration_category, organ_upper),
         ).fetchone()[0]
 
-        if total < 3:
+        if total < 10:
             return None
 
         below = conn.execute(
@@ -677,7 +681,10 @@ class HcdSqliteDB:
         """Rank a BW value against the matched HCD distribution (0-100).
 
         Returns None if no individual records exist (e.g., non-rodent
-        aggregate-only entries).
+        aggregate-only entries) or fewer than 10 matching rows. Harmonized
+        with ``percentile_rank_lb`` and ``percentile_rank`` (GAP-LB-IAD-3):
+        at n<10 the empirical percentile has only a few discriminating levels
+        (n=3 -> 0/33/67/100) which is too coarse to be informative.
         """
         conn = self._get_conn()
         if conn is None:
@@ -696,7 +703,7 @@ class HcdSqliteDB:
             (strain, sex_upper, duration_category),
         ).fetchone()[0]
 
-        if total < 3:
+        if total < 10:
             return None
 
         below = conn.execute(
