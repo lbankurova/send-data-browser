@@ -330,3 +330,16 @@
 
 **Cumulative session totals (6 batches):** 8 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298), 0 failed, 4 dispositioned-without-code-change.
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 7)
+
+**Advanced this batch:** 1 — GAP-298b (commit `fc51cc8b`).
+**No escalations.**
+
+- **GAP-298b** (sibling of GAP-298, same root cause): GAP-298 fix triggered an audit of all annotation types for the same `pathologist`/`reviewDate` vs `reviewedBy`/`reviewedDate` drift. Two more sites surfaced: `ValidationIssueForm.tsx` (header OverridePill + footer "Reviewed by" line), `ValidationContextPanel.tsx` (validation-rule disposition footer). Updated `ValidationIssue` type to mirror `ValidationRecordReview`/`ToxFinding` pattern (new names primary, deprecated fallbacks); both sites read with `??` fallback. `ValidationRecordForm` already had the fallback shape (no change). `PathologyReview` already on new names (no change).
+
+**Drift audit complete:** all 4 reviewable annotation types now consistent — `ValidationIssue`, `ValidationRecordReview`, `ToxFinding`, `PathologyReview` all use `pathologist`/`reviewDate` primary with deprecated fallbacks where needed. Older persisted records (`backend/annotations/*/tox_findings.json` etc.) continue to render via the `??` fallback.
+
+**Cumulative session totals (7 batches):** 9 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298, GAP-298b), 0 failed, 4 dispositioned-without-code-change.
+
