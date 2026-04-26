@@ -319,3 +319,14 @@
 
 **Cumulative session totals (5 batches):** 7 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322), 0 failed, 4 dispositioned-without-code-change (GAP-218 deferred, GAP-308 deferred, GAP-303 needs-repro, GAP-329 already-implemented).
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 6)
+
+**Advanced this batch:** 1 — GAP-298 (commit `2ba2133b`).
+**No escalations.**
+
+- **GAP-298** (score 4, UI/Annotations): Tox Assessment form now correctly renders "Reviewed by ${user} on ${date}" footer post-save. Root cause was contract drift: `backend/routers/annotations.py:128-129` writes `pathologist`/`reviewDate` but `ToxFinding` TS type (`frontend/src/types/annotations.ts:25-34`) and `ToxFindingForm` only read `reviewedBy`/`reviewedDate`. Updated type to mirror `ValidationRecordReview` pattern (new names primary, deprecated fallbacks). Form + OverridePill `headerRight` accept either via `??`. Older persisted records (e.g., `backend/annotations/PointCross/tox_findings.json` carrying `reviewedBy`/`reviewedDate` from before the rename) continue to render. 2051 frontend tests pass.
+
+**Cumulative session totals (6 batches):** 8 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298), 0 failed, 4 dispositioned-without-code-change.
+
