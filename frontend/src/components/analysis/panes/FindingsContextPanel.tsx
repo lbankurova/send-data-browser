@@ -63,7 +63,7 @@ import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import { resolveOnsetDose, resolveEffectivePattern } from "@/lib/onset-dose";
 import { mapFindingsToRows } from "@/lib/derive-summaries";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
-import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
+import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS, HCD_STATUS_TOOLTIPS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
 import { deriveRecoveryAssessmentsSexAware } from "@/lib/recovery-assessment";
 import { classifyFindingNature } from "@/lib/finding-nature";
@@ -1043,12 +1043,15 @@ function PeerComparisonInline({ row }: {
               <span className="text-[10px] text-muted-foreground/60">mean {meanPct}%, n={hcd.n_studies}</span>
             </td>
             <td className="py-1 text-right">
-              <span className={cn(
-                "text-[10px]",
-                status === "above_range" ? "font-medium text-foreground"
-                  : status === "at_upper" ? "text-muted-foreground"
-                  : "text-muted-foreground/60",
-              )}>
+              <span
+                className={cn(
+                  "cursor-help text-[10px]",
+                  status === "above_range" ? "font-medium text-foreground"
+                    : status === "at_upper" ? "text-muted-foreground"
+                    : "text-muted-foreground/60",
+                )}
+                title={HCD_STATUS_TOOLTIPS[status]}
+              >
                 {status === "above_range" && "\u25B2 "}
                 {status === "at_upper" && "\u26A0 "}
                 {HCD_STATUS_LABELS[status]}
@@ -1634,12 +1637,15 @@ function SpecimenContextPanelInline({ studyId, specimen, activeFindings, analyti
                       )}
                     </td>
                     <td className="py-1 text-right">
-                      <span className={cn(
-                        "text-[10px]",
-                        row.status === "above_range" ? "font-medium text-foreground"
-                          : row.status === "at_upper" ? "text-muted-foreground"
-                          : "text-muted-foreground/60",
-                      )}>
+                      <span
+                        className={cn(
+                          "cursor-help text-[10px]",
+                          row.status === "above_range" ? "font-medium text-foreground"
+                            : row.status === "at_upper" ? "text-muted-foreground"
+                            : "text-muted-foreground/60",
+                        )}
+                        title={HCD_STATUS_TOOLTIPS[row.status]}
+                      >
                         {row.status === "above_range" && "\u25B2 "}
                         {HCD_STATUS_LABELS[row.status]}
                       </span>

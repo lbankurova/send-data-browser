@@ -430,6 +430,20 @@ export const HCD_STATUS_LABELS: Record<HCDStatus, string> = {
   no_data: "No data",
 };
 
+/**
+ * Per-status interpretive hover text for the PEER COMPARISON pane (GAP-316).
+ * Reviewers see only the bare label otherwise; the implication ("study controls
+ * are healthier than typical -- treatment-related signal more reliable") is
+ * non-obvious for the below-range case in particular.
+ */
+export const HCD_STATUS_TOOLTIPS: Record<HCDStatus, string> = {
+  above_range: "Study control incidence is higher than the historical control range -- baseline noise is elevated; treatment-related signal must clear a higher bar to be meaningful.",
+  at_upper: "Study control incidence is at the upper end of the historical range (>1 SD above mean) -- borderline; check whether the population skews older or healthier than the HCD reference.",
+  within_range: "Study control incidence falls inside the historical mean +/- 1 SD -- baseline behaves as expected.",
+  below_range: "Study control incidence is below the historical control range -- the study controls are healthier than typical; treatment-related signal is more reliable than usual.",
+  no_data: "No matched historical control data for this finding/strain combination.",
+};
+
 export const HCD_STATUS_SORT: Record<HCDStatus, number> = {
   above_range: 0,
   at_upper: 1,
