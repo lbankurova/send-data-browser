@@ -446,6 +446,17 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 16)
+
+**Advanced this batch:** 1 — GAP-313 (commit `d36c8404`).
+**No escalations.**
+
+- **GAP-313** (score 5, UI/Engine): root cause traced — `computeConfidenceBreakdown` (rule-definitions.ts:370) inferred penalties from `n_adverse_at_loael` and ignored the backend's explicit `noael_derivation.method = "no_concurrent_control"` + `confidence_penalties: ["no_concurrent_control"]` markers. For the gene-therapy / no-control case the function tumbled into showing `Single endpoint -0.20` and `Large effect non-sig -0.20` (bogus — no LOAEL exists) with a hidden `Math.max(.., 0)` floor making the displayed total (0.00) look mathematically inconsistent with the rows. Fix: detect the no-concurrent-control case and short-circuit to a single explicit row `No concurrent control · -base · "Confidence suppressed: no comparator available (BFIELD-21)."`; all other inferred penalties zeroed and labeled "Not evaluated (no LOAEL)." With-control studies unchanged. `ConfidenceBreakdown` interface gained `noConcurrentControlPenalty` + `noConcurrentControlDetail`. NoaelDeterminationPane renders the new row first when non-zero. 2051 frontend tests pass.
+
+**Cumulative session totals (16 batches):** 19 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
