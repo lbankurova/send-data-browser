@@ -399,6 +399,19 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 12)
+
+**Advanced this batch:** 1 — GAP-326 (commit `a47ee865`).
+**No escalations.**
+
+- **GAP-326** (score 3, UI/Validation): Analysis Methods rail now has inline rationale text beneath the Pairwise test and Trend test dropdowns, matching the pattern already used by Multiplicity, Incidence pairwise/trend, Effect size, and Recovery pooling. Rationales: Dunnett (default, built-in FWER) / Williams' step-down (more power under monotonicity) / Steel (planned); Jonckheere-Terpstra (distribution-free ordered) / Williams parametric (more power under variance homogeneity) / Cuzick (planned).
+
+**Side-effect on this commit:** the pre-commit hook auto-staged 3 infrastructure files that were untracked in the working tree (CLAUDE.md addition, `hooks/pre-commit`, `scripts/write-review-gate.sh`). These are coherent infrastructure files referenced by prior commits — the hook source-of-truth and the review-gate writer script. Bundling them here is fine but worth noting (same pattern as batch 5's knowledge-graph promotion).
+
+**Cumulative session totals (12 batches):** 15 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix (since reverted).
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
