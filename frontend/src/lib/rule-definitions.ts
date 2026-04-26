@@ -354,6 +354,11 @@ export function computeEvidenceScoreBreakdown(organ: {
 
 export interface ConfidenceBreakdown {
   base: number;
+  /** Explicit no-concurrent-control suppression (BFIELD-21 / GAP-313).
+   *  Non-zero means the row's confidence was set to 0 because no comparator
+   *  was available; all other inferred penalties become moot. */
+  noConcurrentControlPenalty: number;
+  noConcurrentControlDetail: string;
   singleEndpointPenalty: number;
   singleEndpointDetail: string;
   sexInconsistencyPenalty: number;
@@ -375,6 +380,7 @@ export function computeConfidenceBreakdown(
     noael_confidence: number;
     n_adverse_at_loael: number;
     noael_derivation?: {
+      method?: string;
       confidence_penalties?: string[];
       loo_fragile?: boolean;
       loo_min_stability?: number | null;
@@ -390,6 +396,37 @@ export function computeConfidenceBreakdown(
   // Infer which penalties applied based on the stored confidence
   const base = 1.0;
   const derivation = row.noael_derivation;
+
+  // GAP-313: explicit no-concurrent-control suppression. When the backend
+  // sets noael_derivation.method = "no_concurrent_control" or includes the
+  // matching string in confidence_penalties, confidence drops to 0 and ALL
+  // other inferred penalties (single endpoint, large effect non-sig, etc.)
+  // become moot — there's no comparator to evaluate them against. Surface
+  // it as a dedicated breakdown row instead of inferring nonsense penalties
+  // from n_adverse_at_loael=0.
+  const isNoControl =
+    derivation?.method === "no_concurrent_control" ||
+    derivation?.confidence_penalties?.includes("no_concurrent_control") === true;
+
+  if (isNoControl) {
+    return {
+      base,
+      noConcurrentControlPenalty: -base,
+      noConcurrentControlDetail: "Confidence suppressed: no comparator available (BFIELD-21).",
+      singleEndpointPenalty: 0,
+      singleEndpointDetail: "Not evaluated (no LOAEL).",
+      sexInconsistencyPenalty: 0,
+      sexInconsistencyDetail: "Not evaluated (no LOAEL).",
+      pathologyPenalty: 0,
+      pathologyDetail: "Reserved",
+      largeEffectPenalty: 0,
+      largeEffectDetail: "Not evaluated (no LOAEL).",
+      fragileNoaelPenalty: 0,
+      fragileNoaelDetail: "Not evaluated (no LOAEL).",
+      total: row.noael_confidence,
+    };
+  }
+
   let remaining = base - row.noael_confidence;
 
   // Penalty 1: single endpoint
@@ -442,6 +479,8 @@ export function computeConfidenceBreakdown(
 
   return {
     base,
+    noConcurrentControlPenalty: 0,
+    noConcurrentControlDetail: "Not triggered",
     singleEndpointPenalty,
     singleEndpointDetail: isSingleEndpoint
       ? `${row.n_adverse_at_loael} adverse at LOAEL`

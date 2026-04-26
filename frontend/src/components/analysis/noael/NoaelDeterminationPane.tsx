@@ -122,6 +122,9 @@ export function NoaelDeterminationPane({ aeData, expandAll, collapseAll }: Props
                 <span>Base</span>
                 <span>{confidenceBreakdown.base.toFixed(2)}</span>
               </div>
+              {confidenceBreakdown.noConcurrentControlPenalty !== 0 && (
+                <PenaltyRow label="No concurrent control" value={confidenceBreakdown.noConcurrentControlPenalty} detail={confidenceBreakdown.noConcurrentControlDetail} />
+              )}
               {confidenceBreakdown.singleEndpointPenalty !== 0 && (
                 <PenaltyRow label="Single endpoint" value={confidenceBreakdown.singleEndpointPenalty} detail={confidenceBreakdown.singleEndpointDetail} />
               )}
