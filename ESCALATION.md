@@ -361,6 +361,17 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 9)
+
+**Advanced this batch:** 1 — GAP-301 (commit `a624b2fc`).
+**No escalations.**
+
+- **GAP-301** (score 3, UI/Annotations): Tox Assessment form now has a `Delete` button next to `SAVE` (visible only when an annotation exists). Wires to the existing `useDeleteAnnotation` hook + DELETE `/api/studies/{id}/annotations/tox-findings/{key}` endpoint; backend already records an `action: delete` audit entry. `window.confirm` soft-prompt before deletion. Save/Delete buttons disable each other while in flight.
+
+**Cumulative session totals (9 batches):** 11 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2, GAP-322, GAP-298, GAP-298b, GAP-300, GAP-301), 0 failed, 4 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
