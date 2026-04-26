@@ -37,7 +37,13 @@ send/*
 docs/scientific-logic.md
 
 # ── Development tooling (not public) ──
-.claude/
+# .claude/ is per-user except for project conventions: settings.json (shared
+# permissions/hooks) and rules/*.md (declared "loaded every session" in
+# CLAUDE.md, so must travel with the repo for the load chain to work on
+# fresh clones and for other agents).
+.claude/*
+!.claude/settings.json
+!.claude/rules/
 .planning/
 .continue-here.md
 CLAUDE.md
