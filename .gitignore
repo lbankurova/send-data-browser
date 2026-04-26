@@ -52,6 +52,9 @@ CLAUDE.md
 AUDIT_*.md
 INTEGRATION_TEST_RESULTS.md
 
+# Generated scan reports (per-run output; baselines in scripts/data/ remain tracked)
+scripts/data/discovery-report.md
+
 # Slack update state (local only)
 .slack-update.json
 
