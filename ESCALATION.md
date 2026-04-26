@@ -278,3 +278,14 @@
 
 **Loop continues:** next iteration will look further down the score list (TODO ready items below score 15) for safer mechanical work. The TODO queue's higher scores increasingly carry science-bearing semantics that exceed autopilot's mechanical envelope.
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 3)
+
+**Advanced this batch:** 1 — GAP-277 (commit `f7c2496b`).
+**No escalations.**
+
+- **GAP-277** (score 7, Frontend/Backend): wired the engine-derived NOAEL conclusion onto the portfolio studies table. Backend `StudySummary` gained `noael_label` / `noael_dose_value` / `noael_dose_unit` (Combined sex), populated by reading `generated/{study_id}/noael_summary.json` per study at list-time. Frontend `AppLandingPage` cascades through reported NOAEL → derived numeric → engine label so the cell renders the headline answer (`Not est.`, `< 2 mg/kg`, or numeric value) without opening each study.
+
+**Cumulative session totals (3 batches):** 5 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277), 0 failed, 2 deferred (GAP-218, GAP-308). Topic queue still requires user direction on the 4-option list.
+
