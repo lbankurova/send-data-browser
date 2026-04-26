@@ -139,6 +139,17 @@ export function HcdReferenceTab({ studyId }: { studyId: string }) {
   const totalRefs = rows.length;
   const durationStatus = data.duration_status;
   const durationOk = durationStatus === "known";
+  // GAP-275: bucket boundaries from backend hcd.py:_days_to_category — surface in tooltip
+  // so the user sees "90-day" maps to 43-180 days rather than guessing the bucket semantics.
+  const bucketBoundaries: Record<string, string> = {
+    "28-day": "<= 42 days",
+    "90-day": "43-180 days",
+    "chronic": "181-364 days",
+    "carcinogenicity": ">= 365 days",
+  };
+  const bucketTooltip = data.duration_category
+    ? bucketBoundaries[data.duration_category] ?? "duration bucket"
+    : undefined;
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 text-xs">
@@ -158,14 +169,27 @@ export function HcdReferenceTab({ studyId }: { studyId: string }) {
           )}
           {data.duration_category && (
             <span>
-              Duration bucket: <span className="font-mono text-foreground">{data.duration_category}</span>
+              Duration bucket:{" "}
+              <span
+                className="cursor-help font-mono text-foreground"
+                title={bucketTooltip ? `${data.duration_category} = ${bucketTooltip}` : undefined}
+              >
+                {data.duration_category}
+              </span>
             </span>
           )}
           {durationStatus && (
             <span>
               Duration match:{" "}
-              <span className={durationOk ? "text-foreground" : "text-amber-700"}>
-                {durationStatus}
+              <span
+                className={`cursor-help ${durationOk ? "text-foreground" : "text-amber-700"}`}
+                title={
+                  durationOk
+                    ? "Study duration falls inside a known HCD reference bucket; references below are filtered to that bucket."
+                    : "Study duration could not be matched to any HCD reference bucket; references below are unfiltered or unavailable."
+                }
+              >
+                {durationOk ? "matched bucket" : "no bucket match"}
               </span>
             </span>
           )}
