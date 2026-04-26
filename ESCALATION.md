@@ -258,3 +258,23 @@
 
 **Loop continues:** next `/loop` iteration can pull more TODO items. Topic queue still requires user direction (the 4-option list above remains open).
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 2)
+
+**Advanced this batch:** 1 — GAP-LB-IAD-3 (commit `90a046a7`).
+**Deferred (assessed but not safe for autopilot):** 2 — GAP-218, GAP-308.
+
+**Item advanced:**
+- **GAP-LB-IAD-3** (score 15, Engine/HCD): harmonized OM `percentile_rank` and BW `bw_percentile_rank` minimum-n threshold from 3 to 10, matching LB `percentile_rank_lb`. At n<10 the empirical percentile collapses to 0/33/67/100 quantization which is too coarse to be informative for continuous values. 86 HCD tests pass; both call sites (`hcd.py:642`, `hcd.py:910`) already guard on `None`.
+
+**Items assessed and DEFERRED with rationale:**
+
+- **GAP-218** (score 18, Frontend/Tech Debt) — Species normalizer consolidation across 3 functions (`normalizeSpecies` in `syndrome-translational.ts`, `resolveSpeciesKey` in `species-overrides.ts`, inline mapping in `organ-weight-normalization.ts`). Per the TODO entry the three functions emit **different output keys** (`"monkey"` vs `"cynomolgus"`). Choosing a canonical key set is a behavioral choice that touches science-bearing lookup paths — caller-side audit required to ensure each consumer's downstream species-routing is preserved. Per CLAUDE.md rule 14 (science-preservation gate), this is essential complexity, not a mechanical refactor. **Recommend:** open as a small spike (`/lattice:spike gap-218-species-normalizer`) so the canonical-key decision and per-caller adaptation can ship together with explicit test coverage.
+
+- **GAP-308** (score 3, Frontend/Polish) — "Group 4,200 mg/kg" malformed legend label. Tracked the source: the dose `label` field is set from SEND XPT GRPLBL/SETLBL strings (`backend/services/analysis/dose_groups.py:_resolve_label`), so the malformation is **sponsor-provided data** — sponsor used `Group 4,200 mg/kg PCDRUG` (no space after comma) which makes "4,200" look like 4200. Display-side normalization (regex inject space after `Group N,`) is possible but: (a) decision needed about scope (only subject panel? all label sites?), (b) risk of false positives for sponsor labels that legitimately use "4,200" as a thousands-separated value (none observed but not impossible), (c) the canonical fix is a backend `_resolve_label` post-processor with normalization rules. **Recommend:** open as a focused 30-min spike rather than autopilot batch.
+
+**TODO.md update:** `docs/_internal` submodule remains in the user's WIP-dirty state from prior sessions; my GAP-LB-IAD-3 strikethrough is in the working tree but not committed (same reason as batch 1).
+
+**Loop continues:** next iteration will look further down the score list (TODO ready items below score 15) for safer mechanical work. The TODO queue's higher scores increasingly carry science-bearing semantics that exceed autopilot's mechanical envelope.
+
