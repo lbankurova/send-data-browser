@@ -224,6 +224,12 @@ export function PathologyReviewForm({ studyId, finding, defaultOpen = false }: P
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Optional notes..."
               />
+              {/* GAP-324: peer reviewer / PWG roles strengthen audit trail with a note. Original pathologist may concur silently. */}
+              {(reviewerRole === "peer" || reviewerRole === "pwg_chair" || reviewerRole === "pwg_member") && !comment.trim() && (
+                <p className="mt-1 text-[11px] text-amber-700">
+                  Peer / PWG agreement without a note is regulatorily thin — consider adding a one-line confirmation.
+                </p>
+              )}
             </div>
           </>
         )}
