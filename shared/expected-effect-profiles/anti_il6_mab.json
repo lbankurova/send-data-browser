@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_il6_mab",
-  "display_name": "Anti-IL-6/IL-6R mAb (tocilizumab class)",
+  "display_name": "Anti-IL-6/IL-6R mAb (tocilizumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"

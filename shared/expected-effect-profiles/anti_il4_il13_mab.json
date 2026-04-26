@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_il4_il13_mab",
-  "display_name": "Anti-IL-4/IL-13 mAb (dupilumab class)",
+  "display_name": "Anti-IL-4/IL-13 mAb (dupilumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"

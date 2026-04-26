@@ -1,6 +1,6 @@
 {
   "profile_id": "recombinant_gcsf",
-  "display_name": "Recombinant G-CSF (filgrastim class)",
+  "display_name": "Recombinant G-CSF (filgrastim)",
   "modality": "recombinant_protein",
   "base_profiles": [
     "general_mab"

@@ -1,6 +1,6 @@
 {
   "profile_id": "fc_fusion_ctla4",
-  "display_name": "Fc-fusion protein (CTLA4-Ig, abatacept class)",
+  "display_name": "Fc-fusion protein (CTLA4-Ig, abatacept)",
   "modality": "fc_fusion",
   "base_profiles": ["general_mab"],
   "cross_reactivity_required": true,

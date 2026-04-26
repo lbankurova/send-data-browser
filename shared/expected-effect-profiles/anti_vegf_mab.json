@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_vegf_mab",
-  "display_name": "Anti-VEGF mAb (bevacizumab class)",
+  "display_name": "Anti-VEGF mAb (bevacizumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"

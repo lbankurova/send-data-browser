@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_il1_mab",
-  "display_name": "Anti-IL-1 mAb (canakinumab class)",
+  "display_name": "Anti-IL-1 mAb (canakinumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"

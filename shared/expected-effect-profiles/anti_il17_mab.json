@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_il17_mab",
-  "display_name": "Anti-IL-17 mAb (secukinumab class)",
+  "display_name": "Anti-IL-17 mAb (secukinumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"

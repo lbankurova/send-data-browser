@@ -1,6 +1,6 @@
 {
   "profile_id": "anti_tnf_mab",
-  "display_name": "Anti-TNF mAb (adalimumab class)",
+  "display_name": "Anti-TNF mAb (adalimumab)",
   "modality": "monoclonal_antibody",
   "base_profiles": [
     "general_mab"
