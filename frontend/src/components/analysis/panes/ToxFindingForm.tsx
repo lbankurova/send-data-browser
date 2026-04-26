@@ -95,8 +95,11 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
         <OverridePill
           isOverridden={hasOverride}
           note={existing?.comment}
-          user={existing?.reviewedBy}
-          timestamp={existing?.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : undefined}
+          user={existing?.pathologist ?? existing?.reviewedBy}
+          timestamp={(() => {
+            const ts = existing?.reviewDate ?? existing?.reviewedDate;
+            return ts ? new Date(ts).toLocaleDateString() : undefined;
+          })()}
           onSaveNote={(text) => setComment(text)}
           placeholder="Reason for overriding system suggestion"
           popoverSide="left"
@@ -176,11 +179,11 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
           {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
         </button>
 
-        {/* Footer */}
-        {existing?.reviewedBy && (
+        {/* Footer — accepts new (pathologist/reviewDate) or deprecated (reviewedBy/reviewedDate) field names */}
+        {(existing?.pathologist || existing?.reviewedBy) && (
           <p className="text-[11px] text-muted-foreground">
-            Reviewed by {existing.reviewedBy} on{" "}
-            {new Date(existing.reviewedDate).toLocaleDateString()}
+            Reviewed by {existing.pathologist ?? existing.reviewedBy} on{" "}
+            {new Date(existing.reviewDate ?? existing.reviewedDate ?? "").toLocaleDateString()}
           </p>
         )}
 

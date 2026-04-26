@@ -26,8 +26,12 @@ export interface ToxFinding {
   treatmentRelated: "Yes" | "No" | "Equivocal" | "Not Evaluated";
   adversity: "Adverse" | "Non-Adverse/Adaptive" | "Not Determined";
   comment: string;
-  reviewedBy: string;
-  reviewedDate: string;
+  pathologist: string;
+  reviewDate: string;
+  /** @deprecated Use pathologist (kept for older persisted records) */
+  reviewedBy?: string;
+  /** @deprecated Use reviewDate (kept for older persisted records) */
+  reviewedDate?: string;
   /** System-suggested value at time of expert review (for audit trail) */
   systemSuggestedTreatment?: "Yes" | "No" | null;
   systemSuggestedAdversity?: "Adverse" | "Non-Adverse/Adaptive" | null;
