@@ -4,8 +4,12 @@ export interface ValidationIssue {
   resolution: "" | "Fixed in source" | "Auto-fixed" | "Documented exception" | "Not applicable";
   disposition: "" | "Accept all" | "Needs fix" | "Partial fix" | "Not applicable";
   comment: string;
-  reviewedBy: string;
-  reviewedDate: string;
+  pathologist: string;
+  reviewDate: string;
+  /** @deprecated Use pathologist (kept for older persisted records) */
+  reviewedBy?: string;
+  /** @deprecated Use reviewDate (kept for older persisted records) */
+  reviewedDate?: string;
 }
 
 export interface ValidationRecordReview {

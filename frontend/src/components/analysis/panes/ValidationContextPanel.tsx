@@ -1489,10 +1489,13 @@ function InlineReviewSection({
           {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
         </button>
 
-        {existing?.reviewedBy && (
+        {(existing?.pathologist || existing?.reviewedBy) && (
           <p className="text-[11px] text-muted-foreground">
-            Reviewed by {existing.reviewedBy} on{" "}
-            {existing.reviewedDate ? new Date(existing.reviewedDate).toLocaleDateString() : "unknown date"}
+            Reviewed by {existing.pathologist ?? existing.reviewedBy} on{" "}
+            {(() => {
+              const ts = existing.reviewDate ?? existing.reviewedDate;
+              return ts ? new Date(ts).toLocaleDateString() : "unknown date";
+            })()}
           </p>
         )}
       </div>
