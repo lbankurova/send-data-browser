@@ -565,9 +565,18 @@ export function ValidationView({ studyId, onSelectionChange, viewSelection }: Pr
 
 // ── Catalog stats bar (always visible at top of center panel) ────────────
 
+function formatAgoMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)}h ago`;
+  return `${Math.round(minutes / 1440)}d ago`;
+}
+
 function CatalogStatsBar({ stats }: {
   stats: { total: number; enabled: number; triggered: number; lastRun: { ago: number; elapsed: number | undefined } | null };
 }) {
+  // GAP-340: flag runs older than 24h so P4 doesn't miss the units (e.g.,
+  // "5446m ago" reads as fresh-ish but is actually ~3.8 days).
+  const isStale = (stats.lastRun?.ago ?? 0) > 1440;
   return (
     <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-1.5">
       <span className="text-[11px] text-muted-foreground">
@@ -575,9 +584,10 @@ function CatalogStatsBar({ stats }: {
         {stats.triggered} triggered
       </span>
       {stats.lastRun && (
-        <span className="text-[11px] text-muted-foreground">
-          Last run: {stats.lastRun.ago}m ago
+        <span className={`text-[11px] ${isStale ? "text-amber-700" : "text-muted-foreground"}`}>
+          Last run: {formatAgoMinutes(stats.lastRun.ago)}
           {stats.lastRun.elapsed != null && ` (${stats.lastRun.elapsed}s)`}
+          {isStale && " \u2014 re-run recommended"}
         </span>
       )}
     </div>
