@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CollapsiblePane } from "./CollapsiblePane";
-import { useAnnotations, useSaveAnnotation } from "@/hooks/useAnnotations";
+import { useAnnotations, useSaveAnnotation, useDeleteAnnotation } from "@/hooks/useAnnotations";
 import { OverridePill } from "@/components/ui/OverridePill";
 import type { ToxFinding, ToxSystemSuggestion } from "@/types/annotations";
 
@@ -27,6 +27,7 @@ interface Props {
 export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, systemSuggestion, pharmacologicalContext }: Props) {
   const { data: annotations } = useAnnotations<ToxFinding>(studyId, "tox-findings");
   const { mutate: save, isPending, isSuccess, reset } = useSaveAnnotation<ToxFinding>(studyId, "tox-findings");
+  const { mutate: deleteAnn, isPending: isDeleting } = useDeleteAnnotation(studyId, "tox-findings");
 
   // Auto-reset success flash after 2s
   useEffect(() => {
@@ -86,6 +87,12 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
     treatmentRelated !== (existing?.treatmentRelated ?? "Not Evaluated") ||
     adversity !== (existing?.adversity ?? "Not Determined") ||
     comment !== (existing?.comment ?? "");
+
+  const handleDelete = () => {
+    if (!existing) return;
+    if (!window.confirm("Delete this Tox Assessment annotation? The audit log will record the deletion.")) return;
+    deleteAnn(endpointLabel);
+  };
 
   return (
     <CollapsiblePane
@@ -177,14 +184,26 @@ export function ToxFindingForm({ studyId, endpointLabel, defaultOpen = false, sy
           />
         </div>
 
-        {/* Save */}
-        <button
-          className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
-          onClick={handleSave}
-          disabled={!dirty || isPending || isSuccess}
-        >
-          {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
-        </button>
+        {/* Save + Delete (GAP-301) — Delete only visible when an annotation exists. */}
+        <div className="flex items-center gap-2">
+          <button
+            className={`rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${isSuccess ? "bg-primary/80 text-primary-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+            onClick={handleSave}
+            disabled={!dirty || isPending || isSuccess || isDeleting}
+          >
+            {isPending ? "SAVING..." : isSuccess ? "SAVED" : "SAVE"}
+          </button>
+          {existing && (
+            <button
+              className="rounded px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
+              onClick={handleDelete}
+              disabled={isPending || isDeleting}
+              title="Delete this annotation. Audit log records the deletion."
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
+          )}
+        </div>
 
         {/* Footer — accepts new (pathologist/reviewDate) or deprecated (reviewedBy/reviewedDate) field names */}
         {(existing?.pathologist || existing?.reviewedBy) && (
