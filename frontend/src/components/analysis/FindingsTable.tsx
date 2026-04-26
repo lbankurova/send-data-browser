@@ -145,6 +145,20 @@ const SparklineCell = memo(function SparklineCell({
   );
 });
 
+function renderLooCell(v: number, isCtrl: boolean, n: number | null) {
+  const smallN = n != null && n < LOO_SMALL_N_THRESHOLD;
+  const pct = `${(v * 100).toFixed(0)}%`;
+  const qualifier = isCtrl ? "ctrl" : null;
+  const nTag = smallN ? `N=${n}` : null;
+  const suffix = [qualifier, nTag].filter(Boolean).join(", ");
+  const title = smallN
+    ? `LOO stability ${pct}${isCtrl ? " (control-side dominant)" : ""} -- N=${n}: LOO has low detection power at this sample size. Prefer HCD context for outlier assessment.`
+    : isCtrl
+      ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
+      : "Leave-one-out stability: fraction of effect surviving worst single-animal removal.";
+  return <span className={`font-mono ${v < LOO_THRESHOLD ? "text-foreground font-medium" : "text-muted-foreground"}`} title={title}>{pct}{suffix ? ` (${suffix})` : ""}</span>;
+}
+
 interface FindingsTableProps {
   findings: UnifiedFinding[];
   doseGroups: DoseGroup[];
@@ -770,21 +784,9 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           const f = info.row.original;
-          const isCtrl = f.loo_control_fragile === true;
           const treatedStats = f.group_stats.filter(g => g.dose_level > 0);
           const minN = treatedStats.length > 0 ? Math.min(...treatedStats.map(g => g.n)) : null;
-          const smallN = minN != null && minN < LOO_SMALL_N_THRESHOLD;
-          const pct = `${(v * 100).toFixed(0)}%`;
-          const qualifier = isCtrl ? "ctrl" : null;
-          const nTag = smallN ? `N=${minN}` : null;
-          const suffix = [qualifier, nTag].filter(Boolean).join(", ");
-          return <span className={`font-mono ${v < LOO_THRESHOLD ? "text-foreground font-medium" : "text-muted-foreground"}`} title={
-            smallN
-              ? `LOO stability ${pct}${isCtrl ? " (control-side dominant)" : ""} -- N=${minN}: LOO has low detection power at this sample size. Prefer HCD context for outlier assessment.`
-              : isCtrl
-                ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
-                : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
-          }>{pct}{suffix ? ` (${suffix})` : ""}</span>;
+          return renderLooCell(v, f.loo_control_fragile === true, minN);
         },
       }),
       col.accessor("severity", {
@@ -1052,19 +1054,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           if (r.dose_level === 0) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
           const v = info.getValue();
           if (v == null) return <span className="text-muted-foreground/40">{"\u2014"}</span>;
-          const isCtrl = r.loo_control_fragile === true;
-          const smallN = r.n < LOO_SMALL_N_THRESHOLD;
-          const pct = `${(v * 100).toFixed(0)}%`;
-          const qualifier = isCtrl ? "ctrl" : null;
-          const nTag = smallN ? `N=${r.n}` : null;
-          const suffix = [qualifier, nTag].filter(Boolean).join(", ");
-          return <span className={`font-mono ${v < LOO_THRESHOLD ? "text-foreground font-medium" : "text-muted-foreground"}`} title={
-            smallN
-              ? `LOO stability ${pct}${isCtrl ? " (control-side dominant)" : ""} -- N=${r.n}: LOO has low detection power at this sample size. Prefer HCD context for outlier assessment.`
-              : isCtrl
-                ? "Control-side fragile: removing one control animal substantially changes the effect. Signal may not be treatment-related."
-                : "Leave-one-out stability: fraction of effect surviving worst single-animal removal."
-          }>{pct}{suffix ? ` (${suffix})` : ""}</span>;
+          return renderLooCell(v, r.loo_control_fragile === true, r.n);
         },
       }),
       // Endpoint-level columns (trend_p, pattern, severity) omitted from

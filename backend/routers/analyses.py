@@ -71,7 +71,7 @@ def _load_unified_findings_cached(study_id: str, _mtime_ns: int) -> dict:
     file is regenerated. LRU(8) keeps the last few studies warm.
     """
     path = GENERATED_DIR / study_id / "unified_findings.json"
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 

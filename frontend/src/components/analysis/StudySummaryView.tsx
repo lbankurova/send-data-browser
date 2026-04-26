@@ -215,6 +215,12 @@ function formatDuration(iso: string): string {
   return iso;
 }
 
+function formatWeeksLabel(weeks: number): string {
+  if (weeks < 1) return `${Math.round(weeks * 7)}d`;
+  if (Number.isInteger(weeks)) return `${weeks}wk`;
+  return `${weeks.toFixed(1)}wk`;
+}
+
 
 /** Full SEND domain name map for display. */
 const DOMAIN_LABELS: Record<string, string> = {
@@ -796,7 +802,7 @@ function DetailsTab({
   // Profile block derivations
   const speciesStrain = [meta.strain, meta.species?.toLowerCase()].filter(Boolean).join(" ");
   const durationLabel = studyCtx?.dosingDurationWeeks
-    ? `${studyCtx.dosingDurationWeeks}wk`
+    ? formatWeeksLabel(studyCtx.dosingDurationWeeks)
     : meta.dosing_duration
       ? formatDuration(meta.dosing_duration).replace(" weeks", "wk").replace(" days", "d")
       : null;

@@ -134,7 +134,7 @@ def load_scoring_params(study_id: str) -> ScoringParams:
         return ScoringParams()
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError):
         log.warning("Failed to read threshold config for %s, using defaults", study_id)

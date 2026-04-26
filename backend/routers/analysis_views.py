@@ -166,7 +166,7 @@ def _load_mortality(study_id: str) -> dict | None:
     path = GENERATED_DIR / study_id / "study_mortality.json"
     if not path.exists():
         return None
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -176,7 +176,7 @@ def _load_from_disk_cached(file_path: str, _mtime_ns: int):
 
     Keyed on (path, mtime) so cache auto-invalidates when the file changes.
     """
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -384,7 +384,7 @@ async def get_static_chart(study_id: str, chart_name: str):
     if not file_path.exists():
         raise HTTPException(status_code=404, detail=f"Chart not found: {chart_name}")
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
 

@@ -83,7 +83,7 @@ def _append_audit_entry(study_id: str, schema_type: str, entity_key: str,
     log_path = _get_audit_log_path(study_id)
     entries: list = []
     if log_path.exists():
-        with open(log_path, "r") as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             entries = json.load(f)
 
     entries.append({
@@ -106,7 +106,7 @@ async def get_annotations(study_id: str, schema_type: str):
     file_path = _get_file_path(study_id, schema_type)
     if not file_path.exists():
         return {}
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -118,7 +118,7 @@ async def save_annotation(study_id: str, schema_type: str, entity_key: str, payl
     # Read existing
     data: dict = {}
     if file_path.exists():
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
     old_annotation = data.get(entity_key)
@@ -188,7 +188,7 @@ async def delete_annotation(study_id: str, schema_type: str, entity_key: str):
     if not file_path.exists():
         return {"deleted": False}
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     old_annotation = data.pop(entity_key, None)
@@ -215,7 +215,7 @@ async def get_audit_log(
     log_path = _get_audit_log_path(study_id)
     if not log_path.exists():
         return []
-    with open(log_path, "r") as f:
+    with open(log_path, "r", encoding="utf-8") as f:
         entries = json.load(f)
 
     # Filter
@@ -399,7 +399,7 @@ async def delete_hcd_user(study_id: str):
     file_path = ANNOTATIONS_DIR / study_id / "hcd_user.json"
     if not file_path.exists():
         return {"deleted": False}
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         old_data = json.load(f)
     file_path.unlink()
     _append_audit_entry(study_id, "hcd-user", "_bulk", "delete", "User",
@@ -435,7 +435,7 @@ def _append_program_audit_entry(program_key: str, schema_type: str, entity_key: 
     log_path = _get_program_audit_log_path(program_key)
     entries: list = []
     if log_path.exists():
-        with open(log_path, "r") as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             entries = json.load(f)
 
     entries.append({
@@ -458,7 +458,7 @@ async def get_program_annotations(program_key: str, schema_type: str):
     file_path = _get_program_file_path(program_key, schema_type)
     if not file_path.exists():
         return {}
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -470,7 +470,7 @@ async def save_program_annotation(program_key: str, schema_type: str,
 
     data: dict = {}
     if file_path.exists():
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
     old_annotation = data.get(entity_key)
@@ -503,7 +503,7 @@ async def delete_program_annotation(program_key: str, schema_type: str, entity_k
     if not file_path.exists():
         return {"deleted": False}
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     old_annotation = data.pop(entity_key, None)

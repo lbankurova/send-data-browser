@@ -37,7 +37,7 @@ def read_cache(study_id: str, settings_hash: str, view_name: str) -> dict | None
     if not path.exists():
         return None
     try:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, ValueError):
         log.warning("Corrupt cache file %s, treating as miss", path)

@@ -46,7 +46,7 @@ def _load_sme_annotation(study_id: str) -> dict | None:
     if not ann_path.exists():
         return None
     try:
-        with open(ann_path, "r") as f:
+        with open(ann_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         # The annotation store is keyed by entity_key; compound profile uses "study"
         return data.get("study")

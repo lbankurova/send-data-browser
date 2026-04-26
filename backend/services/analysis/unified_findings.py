@@ -98,7 +98,7 @@ def compute_adverse_effects(study: StudyInfo) -> dict:
     # Check cache
     cp = _cache_path(study.study_id)
     if _is_cache_valid(study):
-        with open(cp, "r") as f:
+        with open(cp, "r", encoding="utf-8") as f:
             return json.load(f)
 
     # Compute
