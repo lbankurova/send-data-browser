@@ -425,6 +425,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={(v) => updateSetting("pairwiseTest", v as "dunnett" | "williams" | "steel")}
           />
         </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
+          {pairwiseTest === "dunnett"
+            ? "Dunnett: many-to-one pairwise comparisons with built-in FWER control. Recommended default for normally distributed data."
+            : pairwiseTest === "williams"
+              ? "Williams\u2019 step-down: assumes monotonic dose-response; more power than Dunnett when monotonicity holds."
+              : "Steel: nonparametric many-to-one (planned)."}
+        </div>
         <SettingsRow label="Multiplicity">
           <SettingsSelect
             value={multiplicity}
@@ -481,6 +488,13 @@ export function StudyDetailsContextPanel({ studyId }: { studyId: string }) {
             onChange={(v) => updateSetting("trendTest", v as "jonckheere" | "cuzick" | "williams-trend")}
           />
         </SettingsRow>
+        <div className="mb-0.5 pl-[7.75rem] text-[11px] leading-snug text-muted-foreground">
+          {trendTest === "jonckheere"
+            ? "Jonckheere-Terpstra: distribution-free ordered alternative; preferred for ordinal dose + continuous response."
+            : trendTest === "williams-trend"
+              ? "Williams (parametric): more power when within-group variances are comparable; assumes monotonic dose-response."
+              : "Cuzick: nonparametric trend (planned)."}
+        </div>
         <SettingsRow label="Incidence trend">
           <SettingsSelect
             value={incidenceTrend}
