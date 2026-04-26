@@ -30,30 +30,50 @@ echo ""
 # --- Step -1: Commit-lock acquisition (BLOCKS on concurrent commits) ---
 # Universal commit serialization. The first pre-commit to enter holds
 # `.lattice/commit.lock/`; concurrent commits queue (--poll, 30s interval,
-# 10min max) or block. This prevents the conflation pattern where two
-# commit cycles overlap and one snapshots the other's pre-staged files
-# (commit a47ee865 was the third occurrence in a single session). The lock
-# is held through the entire pre-commit run and released on EXIT via trap
-# -- including failure paths and signals.
+# 10min max) or block. Lock is released on EXIT via trap.
+#
+# Outer-held lock (LATTICE_LOCK_HOLDER): when an enclosing workflow
+# (autopilot, /lattice:review, manual scripted commit) acquires the lock
+# BEFORE running `git add` -- the correct discipline -- it sets
+# LATTICE_LOCK_HOLDER=<holder-name> in the environment. This pre-commit
+# checks the lock metadata; if the holder matches LATTICE_LOCK_HOLDER, we
+# DO NOT re-acquire and DO NOT release on exit. The outer workflow owns
+# the lock lifecycle. This avoids the deadlock where the outer workflow
+# holds the lock and the pre-commit blocks waiting to acquire it.
 LOCK_SCRIPT="$REPO_ROOT/scripts/acquire-lock.sh"
 RELEASE_SCRIPT="$REPO_ROOT/scripts/release-lock.sh"
+LOCK_DIR="$REPO_ROOT/.lattice/commit.lock"
 LOCK_HELD_BY_HOOK=0
+LOCK_OUTER_OWNED=0
 if [ -x "$LOCK_SCRIPT" ] && [ -x "$RELEASE_SCRIPT" ]; then
     echo "--- Step -1: Commit lock ---"
-    HOLDER="pre-commit-pid-$$"
-    if (cd "$REPO_ROOT" && bash "$LOCK_SCRIPT" "$HOLDER" --poll); then
-        LOCK_HELD_BY_HOOK=1
-        # Release on ANY exit path (success, failure, signal).
-        trap '[ "$LOCK_HELD_BY_HOOK" = "1" ] && (cd "$REPO_ROOT" && bash "$RELEASE_SCRIPT" >/dev/null 2>&1 || true)' EXIT INT TERM
-        echo ""
-    else
-        echo ""
-        echo "  COMMIT BLOCKED: could not acquire commit lock after polling."
-        echo "  Another commit is in progress and exceeded the poll-wait window."
-        echo "  Resolve: wait for the other commit to finish, or check"
-        echo "  .lattice/commit.lock/meta to identify the holder. If stale,"
-        echo "  delete .lattice/commit.lock/ manually and retry."
-        exit 1
+    if [ -n "${LATTICE_LOCK_HOLDER:-}" ] && [ -f "$LOCK_DIR/meta" ]; then
+        HELD_BY=$(grep -E "^holder:" "$LOCK_DIR/meta" | sed 's/holder:[[:space:]]*//')
+        if [ "$HELD_BY" = "$LATTICE_LOCK_HOLDER" ]; then
+            LOCK_OUTER_OWNED=1
+            echo "  Lock held by outer workflow: $LATTICE_LOCK_HOLDER (skipping re-acquire)"
+            echo ""
+        fi
+    fi
+    if [ "$LOCK_OUTER_OWNED" = "0" ]; then
+        HOLDER="pre-commit-pid-$$"
+        if (cd "$REPO_ROOT" && bash "$LOCK_SCRIPT" "$HOLDER" --poll); then
+            LOCK_HELD_BY_HOOK=1
+            trap '[ "$LOCK_HELD_BY_HOOK" = "1" ] && (cd "$REPO_ROOT" && bash "$RELEASE_SCRIPT" >/dev/null 2>&1 || true)' EXIT INT TERM
+            echo ""
+        else
+            echo ""
+            echo "  COMMIT BLOCKED: could not acquire commit lock after polling."
+            echo "  Another commit is in progress and exceeded the poll-wait window."
+            echo "  Resolve: wait for the other commit to finish, or check"
+            echo "  .lattice/commit.lock/meta to identify the holder. If stale,"
+            echo "  delete .lattice/commit.lock/ manually and retry."
+            echo ""
+            echo "  If your workflow already acquired the lock externally, set"
+            echo "  LATTICE_LOCK_HOLDER=<your-holder-name> matching the metadata"
+            echo "  to skip re-acquisition in this hook."
+            exit 1
+        fi
     fi
 else
     echo "--- Step -1: Commit lock (SKIPPED: scripts/acquire-lock.sh not found) ---"
