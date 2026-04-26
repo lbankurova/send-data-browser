@@ -435,6 +435,17 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 15)
+
+**Advanced this batch:** 1 — GAP-307 (commit `0f06ff52`).
+**No escalations.**
+
+- **GAP-307** (score 4, UI/Bug): root-cause traced — Findings rail's "{N} deaths" counts `mortality.deaths` only (unscheduled main + recovery), while Study Summary's "{N} deaths · X included · Y excluded" counts `mortality.deaths + mortality.accidentals` (broader "mortality events"). Both correct given their scope; labels were ambiguous. Fixes: Findings rail relabels to "{N} unscheduled deaths" with a tooltip pointing to Study Summary for accidentals; Study Summary chip appends " (X unscheduled, Y accidental)" breakdown when accidentals exist. No count semantics change — display only.
+
+**Cumulative session totals (15 batches):** 18 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
