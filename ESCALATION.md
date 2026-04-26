@@ -423,6 +423,18 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 14)
+
+**Advanced this batch:** 1 — GAP-316 (commit `c27e1e18`).
+**No escalations.**
+**Process change adopted:** new autopilot version requires explicit `scripts/acquire-lock.sh` / `scripts/release-lock.sh` around each commit window with `LATTICE_LOCK_HOLDER` env var. Followed for this batch — commit was clean (only the 2 files I staged, no bundling).
+
+- **GAP-316** (score 3, UI/Polish): added per-status interpretive hover tooltips on the PEER COMPARISON HCD status labels. Centralized in `mock-historical-controls.ts` as `HCD_STATUS_TOOLTIPS` (5 statuses: above_range / at_upper / within_range / below_range / no_data); applied at both render sites (single-finding pane + multi-row table) as `cursor-help` + `title`. The "Below range" tooltip explicitly tells the reviewer "study controls healthier than typical — treatment-related signal more reliable" so P2 doesn't have to derive that.
+
+**Cumulative session totals (14 batches):** 17 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
