@@ -62,6 +62,7 @@ import { useTargetOrganSummary } from "@/hooks/useTargetOrganSummary";
 import { buildSignalsPanelData } from "@/lib/signals-panel-engine";
 import { resolveOnsetDose, resolveEffectivePattern } from "@/lib/onset-dose";
 import { mapFindingsToRows } from "@/lib/derive-summaries";
+import { formatEndpointNoaelLabel } from "@/lib/noael-narrative";
 import { isPairedOrgan, specimenHasLaterality, aggregateSubjectLaterality, aggregateFindingLaterality, lateralitySummary } from "@/lib/laterality";
 import { getHistoricalControl, classifyVsHCD, HCD_STATUS_LABELS } from "@/lib/mock-historical-controls";
 import type { HCDStatus, HistoricalControlData } from "@/lib/mock-historical-controls";
@@ -825,12 +826,8 @@ function SexComparisonPane({
   const patLabel = (s: SexEndpointSummary) =>
     s.pattern ? getPatternLabelDirectional(s.pattern) : "\u2014";
 
-  const noaelLabel = (n: EndpointNoael | undefined) => {
-    if (!n) return "\u2014";
-    if (n.doseValue != null) return `${n.doseValue} ${n.doseUnit ?? "mg/kg"}`;
-    if (n.tier === "below-lowest") return "< lowest";
-    return "\u2014";
-  };
+  const noaelLabel = (n: EndpointNoael | undefined) =>
+    n ? formatEndpointNoaelLabel(n.tier, n.doseValue, n.doseUnit, "short") : "\u2014";
 
   // sexes[0] = "F", sexes[1] = "M" (alphabetical). Name by column index to
   // avoid the old m/f naming that inverted the sexes and invited future bugs.
@@ -1088,7 +1085,10 @@ function CorrelatingEvidenceInline({ evidence }: {
                 <span className="mr-1 text-[10px] font-semibold text-muted-foreground">{info.domain}</span>
                 {name}
               </span>
-              <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+              <span
+                className="shrink-0 cursor-help font-mono text-[10px] text-muted-foreground"
+                title="Highest incidence across treated dose groups for this finding (max % affected, controls excluded)"
+              >
                 {Math.round(info.maxIncidence * 100)}%
               </span>
             </div>
@@ -1105,7 +1105,10 @@ function CorrelatingEvidenceInline({ evidence }: {
             {evidence.crossOrgan.map(([specimen, info]) => (
               <div key={specimen} className="text-xs">
                 <span className="text-muted-foreground">{specimen}</span>
-                <span className="text-[10px] text-muted-foreground"> {"\u00B7"} {Math.round(info.maxIncidence * 100)}% incidence</span>
+                <span
+                  className="cursor-help text-[10px] text-muted-foreground"
+                  title="Highest incidence across treated dose groups for this finding (max % affected, controls excluded)"
+                > {"\u00B7"} {Math.round(info.maxIncidence * 100)}% incidence</span>
               </div>
             ))}
           </div>
@@ -2445,9 +2448,14 @@ export function FindingsContextPanel() {
               }
               return "F+M";
             })();
-            const noaelDose = noael.dose_value != null
-              ? `${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
-              : "below tested range";
+            // Prefer the analytics-derived combined NOAEL (effect-size-first algorithm,
+            // same source as body and SexComparisonPane). Fall back to the activeStatistics-
+            // derived `noael` only when ep is missing — keeps header/body/table aligned.
+            const noaelDose = ep
+              ? formatEndpointNoaelLabel(ep.noaelTier, ep.noaelDoseValue, ep.noaelDoseUnit, "long")
+              : noael.dose_value != null
+                ? `${noael.dose_value} ${noael.dose_unit ?? "mg/kg"}`
+                : "below tested range";
             const noaelTitle = `NOAEL: ${noaelDose} (${sexAnnotation})`;
             const eciPerSex = ep?.eciPerSex;
             const sibFinding = hasSibling && siblingContext

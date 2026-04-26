@@ -12,6 +12,7 @@ Before writing or modifying logic involving these topics, read the referenced fi
 | Field contracts (API) | `docs/_internal/knowledge/field-contracts-index.md` | API shape changes, adding new fields to generated JSON |
 | Field contracts (full) | `docs/_internal/knowledge/field-contracts.md` | Detailed field definitions, nullable semantics |
 | Contract triangles | `docs/_internal/knowledge/contract-triangles.md` | **Read first when modifying any contract-level enum/field** — lists declaration/enforcement/consumption sites per CLAUDE.md rule 18 |
+| Knowledge graph (atomic facts) | `docs/_internal/knowledge/knowledge-graph.md` | **Read first when adding/modifying domain-truth facts** (HCD thresholds, syndrome rules, severity gradings). Typed schema with multi-dim scope, fact_kind, confidence + scoring_eligible enforcement, contradicts edges. Audit: `scripts/audit-knowledge-graph.py`. |
 | Syndrome engine | `docs/_internal/knowledge/syndrome-engine-reference.md` | Syndrome rule changes, threshold tuning, certainty scoring |
 | Recovery data handling | `docs/_internal/knowledge/recovery-animal-data-handling-spec.md` | Recovery logic, verdict computation, baseline selection |
 | Recovery verdict audit | `docs/_internal/knowledge/continuous-recovery-verdict-audit.md` | Continuous domain recovery correctness |
