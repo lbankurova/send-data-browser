@@ -412,6 +412,17 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 13)
+
+**Advanced this batch:** 1 — GAP-309 (commit `2e9bb7da`).
+**No escalations.**
+
+- **GAP-309** (score 2, UI/Polish): dropped redundant " class)" suffix from `display_name` across 8 expected-effect-profile JSONs (anti-IL-17, anti-IL-1, anti-IL-4/IL-13, anti-IL-6, anti-TNF, anti-VEGF mAbs + Fc-fusion CTLA4 + recombinant G-CSF). Autocomplete now reads "Anti-IL-17 mAb (secukinumab)" instead of "Anti-IL-17 mAb (secukinumab class)". Persisted annotations unaffected — `compound_class` stores `profile_id` (e.g. `anti_il17_mab`), not `display_name`.
+
+**Cumulative session totals (13 batches):** 16 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
