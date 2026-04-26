@@ -372,6 +372,18 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 10)
+
+**Advanced this batch:** 2 — GAP-340 (commit `4488795a`), GAP-324 (commit `a8a39b8c`).
+**No escalations.**
+
+- **GAP-340** (score 3, UI/Polish): Validation header "Last run" badge now formats human time units (`Nm` < 60min, `Nh` < 24h, else `Nd`) and turns amber + "— re-run recommended" when stale (> 24h). Prevents P4 from misreading "5446m ago" as fresh.
+- **GAP-324** (score 3, UI/Validation): added amber soft-warning under the Pathology Review Notes textarea on the Agreed step when reviewer role is `peer` / `pwg_chair` / `pwg_member` AND comment is empty. SAVE remains enabled — strengthens audit trail without blocking. Original pathologist's silent Agreed remains valid.
+
+**Cumulative session totals (10 batches):** 13 items advanced, 0 failed, 4 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
