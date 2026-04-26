@@ -1,6 +1,5 @@
 import type { NoaelSummaryRow, AdverseEffectSummaryRow } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
-import type { NoaelTier } from "@/lib/derive-summaries";
 import { formatDoseShortLabel } from "@/lib/severity-colors";
 
 /** Structured NOAEL narrative for display in banner and context panel. */
@@ -39,33 +38,6 @@ export function formatNoaelDisplay(row: NoaelSummaryRow): string {
     return `Not established (< ${lowest})`;
   }
   return "Not established";
-}
-
-/**
- * Per-endpoint NOAEL label for context-panel headers and sex-comparison
- * tables (FindingsContextPanel). The endpoint-level NOAEL has only tier +
- * dose value (no derivation method), so the rendering is simpler than
- * the study-level ``formatNoaelDisplay``:
- *   - ``below-lowest`` → "below range" (short) / "below tested range" (long)
- *   - tiered with a dose value → ``"<value> <unit>"``
- *   - missing tier or no dose → em dash (short) / "Not established" (long)
- */
-export function formatEndpointNoaelLabel(
-  tier: NoaelTier | undefined,
-  doseValue: number | null | undefined,
-  doseUnit: string | null | undefined,
-  mode: "short" | "long",
-): string {
-  if (tier === "below-lowest") {
-    return mode === "short" ? "below range" : "below tested range";
-  }
-  if (tier === undefined || tier === "none") {
-    return mode === "short" ? "\u2014" : "Not established";
-  }
-  if (doseValue != null) {
-    return `${doseValue} ${doseUnit ?? "mg/kg"}`;
-  }
-  return mode === "short" ? "\u2014" : "Not established";
 }
 
 /**
