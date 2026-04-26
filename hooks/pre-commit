@@ -27,6 +27,40 @@ echo "  Pre-commit hook: running checks..."
 echo "========================================"
 echo ""
 
+# --- Step -1: Commit-lock acquisition (BLOCKS on concurrent commits) ---
+# Universal commit serialization. The first pre-commit to enter holds
+# `.lattice/commit.lock/`; concurrent commits queue (--poll, 30s interval,
+# 10min max) or block. This prevents the conflation pattern where two
+# commit cycles overlap and one snapshots the other's pre-staged files
+# (commit a47ee865 was the third occurrence in a single session). The lock
+# is held through the entire pre-commit run and released on EXIT via trap
+# -- including failure paths and signals.
+LOCK_SCRIPT="$REPO_ROOT/scripts/acquire-lock.sh"
+RELEASE_SCRIPT="$REPO_ROOT/scripts/release-lock.sh"
+LOCK_HELD_BY_HOOK=0
+if [ -x "$LOCK_SCRIPT" ] && [ -x "$RELEASE_SCRIPT" ]; then
+    echo "--- Step -1: Commit lock ---"
+    HOLDER="pre-commit-pid-$$"
+    if (cd "$REPO_ROOT" && bash "$LOCK_SCRIPT" "$HOLDER" --poll); then
+        LOCK_HELD_BY_HOOK=1
+        # Release on ANY exit path (success, failure, signal).
+        trap '[ "$LOCK_HELD_BY_HOOK" = "1" ] && (cd "$REPO_ROOT" && bash "$RELEASE_SCRIPT" >/dev/null 2>&1 || true)' EXIT INT TERM
+        echo ""
+    else
+        echo ""
+        echo "  COMMIT BLOCKED: could not acquire commit lock after polling."
+        echo "  Another commit is in progress and exceeded the poll-wait window."
+        echo "  Resolve: wait for the other commit to finish, or check"
+        echo "  .lattice/commit.lock/meta to identify the holder. If stale,"
+        echo "  delete .lattice/commit.lock/ manually and retry."
+        exit 1
+    fi
+else
+    echo "--- Step -1: Commit lock (SKIPPED: scripts/acquire-lock.sh not found) ---"
+    echo "  Concurrent commits are NOT serialized in this repo."
+    echo ""
+fi
+
 # --- Step 0: Review gate check (BLOCKS if review not run) ---
 # /lattice:review writes .lattice/review-gate.json when it passes.
 # This check BLOCKS commits if the gate file is missing or stale.
