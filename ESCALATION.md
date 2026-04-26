@@ -289,3 +289,16 @@
 
 **Cumulative session totals (3 batches):** 5 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277), 0 failed, 2 deferred (GAP-218, GAP-308). Topic queue still requires user direction on the 4-option list.
 
+---
+
+## Escalation — 2026-04-26 (autopilot --source todo, batch 4)
+
+**Advanced this batch:** 1 — GAP-LB-IAD-2 (commit `5eecd170`).
+**No escalations.**
+
+- **GAP-LB-IAD-2** (score 12, ETL/HCD): added 7 strain aliases to `NTP_STRAIN_MAP` covering Hartley guinea pig (1,678 LB rows in NTP DTT IAD) and Syrian golden hamster (2,067 rows). Source values verified by inspecting `etl/data/202602_*_IAD.xlsx` directly; downstream queries unblock once `hcd_lb_iad_etl` is re-run. 119 HCD/strain tests pass.
+
+**Cumulative session totals (4 batches):** 6 items advanced (GAP-269, GAP-188b, GAP-314, GAP-LB-IAD-3, GAP-277, GAP-LB-IAD-2), 0 failed, 2 deferred (GAP-218, GAP-308). Topic queue still requires user direction.
+
+**Operational note (NOT a blocker):** GAP-LB-IAD-2 unlocks future ingest of ~3.7K rows but the existing `backend/data/hcd.db` does not contain them — running `hcd_lb_iad_etl.py` against `etl/data/202602_Clinical_Chemistry_IAD.xlsx` + the other 3 IAD files would refresh the database. Skipped from this batch since database regeneration falls outside the strain-map fix's scope and would re-roll all aggregates. User can pick a moment to run the ETL.
+
