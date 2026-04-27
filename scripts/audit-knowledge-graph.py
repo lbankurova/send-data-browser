@@ -64,10 +64,18 @@ VALID_ENCODINGS = {
     "arithmetic_mean_sem",
     "arithmetic_range_cited",
     "log_normal_by_bw_class",
+    "scalar_policy_parameter",  # Extension 9: named scalar policy parameter (NOAEL gate cut-lines)
 }
 
-# fact_kinds that MAY omit the encoding field (rule-centric value structure)
-ENCODING_EXEMPT_KINDS = {"disable_marker", "relevance_exclusion"}
+# fact_kinds that MAY omit the encoding field (rule-centric / cite-centric value structure).
+# disable_marker per Extension 1; relevance_exclusion per Extension 8;
+# gate_criterion + regulatory_expectation per Extension 9.
+ENCODING_EXEMPT_KINDS = {
+    "disable_marker",
+    "relevance_exclusion",
+    "gate_criterion",
+    "regulatory_expectation",
+}
 
 VALID_SEX = {"M", "F", "both", "n/a"}
 
