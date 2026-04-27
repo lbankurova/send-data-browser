@@ -468,6 +468,21 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 18)
+
+**Advanced this batch:** 1 — GAP-337 (commit `2a99a200`).
+**Investigated and dispositioned without code change:** 1 — GAP-335.
+
+- **GAP-337** (score 3, UI/Polish): Dose proportionality tab now renders the same `DoseProportionalityBadge` ("sub-proportional", "supralinear", or "non-monotonic" with full interpretation text) that the Parameters tab already showed. Previously P5 had to flip back to the Parameters tab to learn what the slopes (e.g., "Cmax 0.13") meant. Display only — no engine change.
+
+- **GAP-335** dispositioned (score 2, "Safety margin button disabled tooltip"): static analysis shows `PkExposureSection.tsx:332-337` already has the right tooltips ("No NOAEL established" / "No LOAEL established" depending on which is missing). The TODO's premise (missing human Cmax/AUC input from NOAEL Safety Margin Calculator) doesn't match the actual disable cause — the button is disabled when `pkData.noael_exposure` or `pkData.loael_exposure` is null, which is a NOAEL/LOAEL determination state, not a human-Cmax-input state. Existing tooltips correctly explain why button is disabled.
+
+**Cumulative session totals (18 batches):** 21 items advanced, 0 failed, 6 dispositioned-without-code-change (added GAP-335), 1 build fix.
+
+**Queue assessment:** the clear-mechanical autopilot-ready queue is now functionally drained. Remaining `ready` items at score 5+ either (a) require dev-server / Playwright repro to identify the actual bug (GAP-303, GAP-336), (b) involve cross-surface UI engineering with prop drilling decisions (GAP-202 animal influence HCD, GAP-319 severity bar drill-in, GAP-320 row click navigation, GAP-321 LAB CORRELATES routing), (c) require external paper verification (GAP-195), (d) need design or research direction (GAP-262 mouse syndrome profile, GAP-296 syndrome recovery rollup), or (e) are research items that need a real lattice research-cycle (GAP-190, GAP-254, GAP-260). Lower-score items (GAP-330 column rename, GAP-334 axis overflow, GAP-338 PCDRUGC tooltip without TS/TX integration) are marginal and benefit from design taste calls. **Recommend pausing autopilot and triaging this list with the user**, rather than continuing to chip at increasingly low-value items.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
