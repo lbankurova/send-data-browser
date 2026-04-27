@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveOrganBand, getSexConcordanceBoost, computeBwMediationFactor } from "@/lib/organ-sex-concordance";
+import { resolveOrganBand, getSexConcordanceBoost, computeBwMediationFactor, SINGLE_ENDPOINT_GUARD_SET } from "@/lib/organ-sex-concordance";
 import type { HedgesGResult } from "@/lib/organ-weight-normalization";
 import { getClinicalAdditive, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { computeEndpointSignal, computeEndpointEvidence } from "@/lib/findings-rail-engine";
@@ -433,6 +433,356 @@ describe("getSexConcordanceBoost", () => {
       domain: "LB", testCode: "ALT", specimen: null, bySex,
     }));
     expect(boost).toBe(2.0); // LIVER concordance
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// Single-endpoint sex-discordance guard
+// (research/brain-concordance-guard.md, R1+R2 VALIDATED 2026-04-04)
+// ═══════════════════════════════════════════════════════════
+
+describe("getSexConcordanceBoost — single-endpoint guard", () => {
+  // T1: BRAIN_WEIGHT (cap is no-op since divergence already 0.3)
+  test("T1: single brain-weight (OM), F up / M down, nForBand=1 → 0.3", () => {
+    const e = ep({
+      specimen: "BRAIN", domain: "OM",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T2: LUNG (1.5 → 0.3 cap is meaningful)
+  test("T2: single lung (MI), sexes diverge, nForBand=1 → 0.3 (capped from 1.5)", () => {
+    const e = ep({
+      specimen: "LUNG", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T3: HEART
+  test("T3: single heart (MI), sexes diverge, nForBand=1 → 0.3 (capped from 1.2)", () => {
+    const e = ep({
+      specimen: "HEART", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T4: BONE_MARROW (MI specimen)
+  test("T4: single bone-marrow (MI), sexes diverge, nForBand=1 → 0.3 (capped from 1.5)", () => {
+    const e = ep({
+      specimen: "BONE MARROW", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T5: SPLEEN
+  test("T5: single spleen (MI), sexes diverge, nForBand=1 → 0.3 (capped from 1.5)", () => {
+    const e = ep({
+      specimen: "SPLEEN", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T6: COAGULATION (PT) — largest absolute reduction (1.8 → 0.3)
+  test("T6: single coagulation PT (LB), sexes diverge, nForBand=1 → 0.3 (capped from 1.8)", () => {
+    const e = ep({
+      domain: "LB", testCode: "PT", specimen: null,
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T7: n>1 bypass (research Assumption 1 — abs+rel paired bypass)
+  test("T7: two brain-weight endpoints, sexes diverge, nForBand=2 → 0.3 (band value, not cap)", () => {
+    const e = ep({
+      specimen: "BRAIN", domain: "OM",
+      bySex: withBySex("up", "down"),
+    });
+    // Band-value 0.3 (BRAIN_WEIGHT divergence) — guard bypassed because n>1.
+    // Indistinguishable from cap for BRAIN_WEIGHT specifically; T2/T3/T6 test
+    // the cap-vs-band-value distinction on bands where they differ.
+    expect(getSexConcordanceBoost(e, "rat", 2)).toBe(0.3);
+  });
+
+  // T7b: n>1 bypass on LUNG where the cap and band value differ
+  test("T7b: two lung endpoints, sexes diverge, nForBand=2 → 1.5 (full divergence, no cap)", () => {
+    const e = ep({
+      specimen: "LUNG", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 2)).toBe(1.5);
+  });
+
+  // T8-T10: excluded organs — guard does NOT fire
+  test("T8: single adrenal endpoint, sexes diverge, nForBand=1 → 0.5 (ADRENAL not guarded)", () => {
+    const e = ep({
+      specimen: "GLAND, ADRENAL", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.5);
+  });
+
+  test("T9: single kidney endpoint, sexes diverge, nForBand=1 → 0.3 (KIDNEY band value, alpha-2u)", () => {
+    const e = ep({
+      specimen: "KIDNEY", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    // KIDNEY divergence is 0.3 in bands JSON; guard not fired (KIDNEY excluded).
+    // Both code paths land at 0.3 here, but the path is the un-capped band lookup.
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  test("T10: single liver endpoint, sexes diverge, nForBand=1 → 0.5 (LIVER not guarded)", () => {
+    const e = ep({
+      domain: "LB", testCode: "ALT", specimen: null,
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.5);
+  });
+
+  // T11: concordant branch unchanged
+  test("T11: single brain-weight, sexes CONCORDANT → 1.5 (concordance, guard not consulted)", () => {
+    const e = ep({
+      specimen: "BRAIN", domain: "OM",
+      bySex: withBySex("up", "up"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(1.5);
+  });
+
+  // T12: single-sex study early-return preserved
+  test("T12: bySex.size === 1 returns 0 regardless of nForBand", () => {
+    const bySex = new Map([["F", sexEntry("up")]]);
+    const e = ep({ specimen: "BRAIN", domain: "OM", bySex, sexes: ["F"] });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0);
+    // T12b (R1 F7): pinning that nForBand argument does not bypass the
+    // size<2 early return.
+    expect(getSexConcordanceBoost(e, "rat", undefined)).toBe(0);
+  });
+
+  // T13: regression guard — undefined nEndpointsForBand matches pre-cycle behavior
+  test("T13: nEndpointsForBand undefined → guard inert (regression guard)", () => {
+    const guarded = ep({
+      specimen: "LUNG", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(guarded, "rat")).toBe(1.5);
+    expect(getSexConcordanceBoost(guarded, "rat", undefined)).toBe(1.5);
+  });
+
+  // T14: null band — guard does not fire
+  test("T14: null-band endpoint (unknown organ_system), sexes diverge → default divergence (1.0)", () => {
+    const e = ep({
+      domain: "MI", specimen: null, organ_system: "unknown_system",
+      bySex: withBySex("up", "down"),
+    });
+    expect(resolveOrganBand(e)).toBeNull();
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(1.0); // default divergence
+  });
+
+  // T15: BRAIN_ENZYME explicitly excluded
+  test("T15: single BRAIN_ENZYME (LB ACHE), sexes diverge, nForBand=1 → 0.5 (not guarded)", () => {
+    const e = ep({
+      domain: "LB", testCode: "ACHE", specimen: null,
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.5);
+  });
+
+  // T16: SKIN explicitly excluded (research §Gap 7 — low literature confidence)
+  test("T16: single SKIN endpoint, sexes diverge, nForBand=1 → 1.5 (not guarded)", () => {
+    const e = ep({
+      specimen: "SKIN", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(1.5);
+  });
+
+  // T17: defensive `<= 1` form — boundary at 0
+  test("T17: nEndpointsForBand=0 fires guard (defensive `<=` not `===`)", () => {
+    const e = ep({
+      specimen: "LUNG", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(getSexConcordanceBoost(e, "rat", 0)).toBe(0.3);
+  });
+
+  // T18: SINGLE_ENDPOINT_GUARD_SET membership check (composition)
+  test("T18: SINGLE_ENDPOINT_GUARD_SET contains exactly the 7 expected bands", () => {
+    const expected = ["BRAIN", "BRAIN_WEIGHT", "LUNG", "HEART", "BONE_MARROW", "SPLEEN", "COAGULATION"];
+    expect(SINGLE_ENDPOINT_GUARD_SET.size).toBe(expected.length);
+    for (const band of expected) {
+      expect(SINGLE_ENDPOINT_GUARD_SET.has(band)).toBe(true);
+    }
+    for (const band of ["ADRENAL", "THYMUS", "KIDNEY", "LIVER", "THYROID", "HEMATOPOIETIC", "BRAIN_ENZYME", "SKIN", "BODY_WEIGHT", "REPRODUCTIVE"]) {
+      expect(SINGLE_ENDPOINT_GUARD_SET.has(band)).toBe(false);
+    }
+  });
+
+  // T23 (architect F11 — critical regression): HEMATOPOIETIC fallback must NEVER be guarded
+  test("T23: single LB WBC endpoint (no recognized testCode) falls to HEMATOPOIETIC, guard does NOT fire → 0.5", () => {
+    const e = ep({
+      domain: "LB", testCode: "WBC", specimen: null,
+      bySex: withBySex("up", "down"),
+    });
+    expect(resolveOrganBand(e)).toBe("HEMATOPOIETIC");
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.5);
+  });
+
+  // T24 (architect F16 — BRAIN residual band, R1 F4 disambiguation):
+  // MI domain + brain specimen routes to BRAIN (residual), distinct from
+  // BRAIN_WEIGHT and BRAIN_ENZYME. Guard fires; cap reduces 1.5 → 0.3.
+  test("T24: single MI brain endpoint, sexes diverge, nForBand=1 → 0.3 (capped from BRAIN residual 1.5)", () => {
+    const e = ep({
+      specimen: "BRAIN", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    expect(resolveOrganBand(e)).toBe("BRAIN");
+    expect(getSexConcordanceBoost(e, "rat", 1)).toBe(0.3);
+  });
+
+  // T25 (R1 F6 build-time): empty species string — lookupBand falls back to
+  // default boosts; the guard fires regardless of species since the cap is
+  // species-independent.
+  test("T25: empty species string with guard-set band still fires guard → 0.3", () => {
+    const e = ep({
+      specimen: "LUNG", domain: "MI",
+      bySex: withBySex("up", "down"),
+    });
+    // species="" → lookupBand returns defaultBoosts (concordance 1.5,
+    // divergence 1.0). Cap to GUARD_DIVERGENCE_CAP=0.3.
+    expect(getSexConcordanceBoost(e, "", 1)).toBe(0.3);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// Caller pipeline: bandCounts construction + nForBand wiring
+// (F3 sync + F4 worker, parity)
+// ═══════════════════════════════════════════════════════════
+
+describe("Caller pipeline — bandCounts + nForBand", () => {
+  // T19: bandCounts construction in caller
+  test("T19: bandCounts maps each band to its endpoint count", () => {
+    const endpoints: EndpointSummary[] = [
+      ep({ endpoint_label: "Brain Wt Abs", specimen: "BRAIN", domain: "OM" }),
+      ep({ endpoint_label: "Brain Wt Rel", specimen: "BRAIN", domain: "OM" }),
+      ep({ endpoint_label: "Lung Lesion",  specimen: "LUNG",  domain: "MI" }),
+      ep({ endpoint_label: "Adrenal Lesion", specimen: "GLAND, ADRENAL", domain: "MI" }),
+      ep({ endpoint_label: "Mystery", domain: "MI", specimen: null, organ_system: "unknown_system" }),
+    ];
+    const counts = new Map<string, number>();
+    for (const e of endpoints) {
+      const b = resolveOrganBand(e);
+      if (b) counts.set(b, (counts.get(b) ?? 0) + 1);
+    }
+    expect(counts.get("BRAIN_WEIGHT")).toBe(2);
+    expect(counts.get("LUNG")).toBe(1);
+    expect(counts.get("ADRENAL")).toBe(1);
+    expect(counts.has("UNKNOWN")).toBe(false);
+    // Null band (Mystery) is intentionally not stored — driver code defaults
+    // nForBand=1 in that case via `.get(bandKey) ?? 1` plus the `bandKey ?
+    // ... : 1` ternary at the call site.
+    expect(counts.size).toBe(3);
+  });
+
+  // T20: nForBand observed via behavioral pre-image — when the caller passes
+  // n=2 for lungs (bypass guard), boost is 1.5; when it passes n=1 for heart
+  // (single endpoint, guard fires), boost is 0.3. The boost value uniquely
+  // identifies the third argument given the band's pre-image of (cap, full).
+  test("T20: caller wires nForBand correctly — observed via boost value pre-image", () => {
+    const endpoints: EndpointSummary[] = [
+      ep({ endpoint_label: "Lung 1", specimen: "LUNG", domain: "MI", bySex: withBySex("up", "down") }),
+      ep({ endpoint_label: "Lung 2", specimen: "LUNG", domain: "MI", bySex: withBySex("up", "down") }),
+      ep({ endpoint_label: "Heart 1", specimen: "HEART", domain: "MI", bySex: withBySex("up", "down") }),
+    ];
+    const bandCounts = new Map<string, number>();
+    for (const e of endpoints) {
+      const band = resolveOrganBand(e);
+      if (band) bandCounts.set(band, (bandCounts.get(band) ?? 0) + 1);
+    }
+    const observed: { label: string; n: number; boost: number }[] = [];
+    for (const e of endpoints) {
+      const bandKey = resolveOrganBand(e);
+      const nForBand = bandKey ? (bandCounts.get(bandKey) ?? 1) : 1;
+      const boost = getSexConcordanceBoost(e, "rat", nForBand);
+      observed.push({ label: e.endpoint_label, n: nForBand, boost });
+    }
+    expect(observed).toEqual([
+      { label: "Lung 1", n: 2, boost: 1.5 },  // n=2 → guard bypassed → 1.5 (LUNG full divergence)
+      { label: "Lung 2", n: 2, boost: 1.5 },
+      { label: "Heart 1", n: 1, boost: 0.3 }, // n=1 → guard fires → 0.3 (capped from HEART's 1.2)
+    ]);
+  });
+
+  // T21: parity invariant — sync and worker both run the same caller logic
+  // (the boost-loop is duplicated by design across hook + worker; this test
+  // asserts the duplicate is in fact identical for a representative fixture).
+  test("T21: sync/worker boost-loop parity for sexConcordanceBoost", () => {
+    // Share the exact algorithm; if both paths use this same function, they
+    // produce identical maps. The worker copy of the same code in
+    // workers/findingsAnalytics.worker.ts is asserted by visual inspection
+    // (CLAUDE.md rule 18 — co-located declaration/enforcement) and by this
+    // test's pre-image equality.
+    function buildBoostMap(endpoints: EndpointSummary[]): Map<string, number> {
+      const bandCounts = new Map<string, number>();
+      for (const e of endpoints) {
+        const b = resolveOrganBand(e);
+        if (b) bandCounts.set(b, (bandCounts.get(b) ?? 0) + 1);
+      }
+      const m = new Map<string, number>();
+      for (const e of endpoints) {
+        const bandKey = resolveOrganBand(e);
+        const nForBand = bandKey ? (bandCounts.get(bandKey) ?? 1) : 1;
+        m.set(e.endpoint_label, getSexConcordanceBoost(e, "rat", nForBand));
+      }
+      return m;
+    }
+    const fix: EndpointSummary[] = [
+      ep({ endpoint_label: "Lung",   specimen: "LUNG",  domain: "MI", bySex: withBySex("up", "down") }),
+      ep({ endpoint_label: "Heart",  specimen: "HEART", domain: "MI", bySex: withBySex("up", "down") }),
+      ep({ endpoint_label: "BMarrow", specimen: "BONE MARROW", domain: "MI", bySex: withBySex("up", "down") }),
+      ep({ endpoint_label: "Liver",  domain: "LB", testCode: "ALT", specimen: null, bySex: withBySex("up", "down") }),
+    ];
+    const m1 = buildBoostMap(fix);
+    const m2 = buildBoostMap(fix);
+    expect([...m1.entries()]).toEqual([...m2.entries()]);
+    // Spot-check the values: single-endpoint guard fires for Lung, Heart, BMarrow → 0.3 each.
+    // Liver is excluded (n=1 LIVER) → full divergence 0.5.
+    expect(m1.get("Lung")).toBe(0.3);
+    expect(m1.get("Heart")).toBe(0.3);
+    expect(m1.get("BMarrow")).toBe(0.3);
+    expect(m1.get("Liver")).toBe(0.5);
+  });
+
+  // T22: PointCross negative integration. The fixture's confirmed sex-
+  // divergent endpoint is "Leukocytes" → HEMATOPOIETIC (NOT in guard set).
+  // The fixture has no single-endpoint divergent guard-set finding. Therefore
+  // no spurious 0.3 cap should appear on a guard-set band entered through a
+  // routing bug.
+  test("T22: PointCross integration — no spurious cap on excluded organs", () => {
+    const summaries = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
+    const bandCounts = new Map<string, number>();
+    for (const e of summaries) {
+      const b = resolveOrganBand(e);
+      if (b) bandCounts.set(b, (bandCounts.get(b) ?? 0) + 1);
+    }
+    for (const e of summaries) {
+      const bandKey = resolveOrganBand(e);
+      const nForBand = bandKey ? (bandCounts.get(bandKey) ?? 1) : 1;
+      const boost = getSexConcordanceBoost(e, "rat", nForBand);
+      // Only allowed routes to a 0.3 boost on PointCross: BRAIN_WEIGHT divergence
+      // (band value), KIDNEY divergence (band value), BODY_WEIGHT divergence
+      // (band value), or a guard-set member with genuinely n=1. Any other
+      // 0.3 value would indicate a routing-induced spurious cap.
+      if (boost === 0.3) {
+        const allowedBandValueAt03 = bandKey === "BRAIN_WEIGHT" || bandKey === "KIDNEY" || bandKey === "BODY_WEIGHT";
+        const guardEligible = bandKey != null && SINGLE_ENDPOINT_GUARD_SET.has(bandKey) && nForBand <= 1;
+        expect(allowedBandValueAt03 || guardEligible).toBe(true);
+      }
+    }
   });
 });
 

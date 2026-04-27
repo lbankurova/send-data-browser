@@ -1,7 +1,8 @@
 topic: brain-concordance-guard
 started: 2026-04-04
-phase: research-complete
-current_step: build.0
+phase: build
+current_step: build.1
+revision: 1
 parent: brain-weight-sex-concordance-calibration
 completed:
   research.1:
@@ -31,3 +32,43 @@ completed:
     completed: 2026-04-04
     key_decisions:
       - "All SOUND/CONDITIONAL -- VALIDATED"
+  blueprint.0:
+    completed: 2026-04-26
+    key_decisions:
+      - "Implementation context loaded -- 0 FAILED relevant decisions; parent SHIPPED; sister bw-mediation blueprint-complete (boost-loop co-location)"
+    output: "decisions.log line 538"
+  blueprint.1:
+    completed: 2026-04-26
+    key_decisions:
+      - "5 features, 22 tests, 8 reuse rows, 0 data gaps, 0 new research gaps. Net add ~30 LOC. Cross-topic merge safe."
+    output: "docs/_internal/incoming/brain-concordance-guard-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-26
+    key_decisions:
+      - "Architect PASS with 2 auto-applied test additions (T23 HEMATOPOIETIC fallback, T24 BRAIN residual) + 1 advisory (T22 PointCross empirical verification)."
+    output: "docs/_internal/research/peer-reviews/brain-concordance-guard-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-26
+    key_decisions:
+      - "Probe: 0 BREAKS, 0 SCIENCE-FLAGs, 2 PROPAGATES (S10/S16 intended). Cross-topic contention dispositioned."
+    output: ".lattice/cycle-state/brain-concordance-guard-step3-probe.md"
+  blueprint.4:
+    completed: 2026-04-26
+    key_decisions:
+      - "R1 plan review: 13 findings (3 FLAWED, 9 CONDITIONAL, 1 SOUND)."
+    output: "docs/_internal/research/peer-reviews/brain-concordance-guard-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-26
+    key_decisions:
+      - "Incorporated R1: 7 FIXED inline + 5 NOTED build-time micro-actions + 1 SOUND. Test count 24 -> 26 at build."
+    output: "docs/_internal/incoming/brain-concordance-guard-synthesis.md (updated)"
+  blueprint.6:
+    completed: 2026-04-26
+    key_decisions:
+      - "R2: 11/13 RESOLVED, 2 PARTIAL (build-time T25, T12b), 5 new CONDITIONAL Low (editorial). Verdict: BUILD PLAN VALIDATED."
+    output: "docs/_internal/research/peer-reviews/brain-concordance-guard-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-26
+    key_decisions:
+      - "Build plan VALIDATED. 6 conditions documented for build agent. POST-SHIP REFRESH 2026-04-27 added re sister bw-mediation ship (informational, no plan change)."
+    output: "decisions.log line 543"

@@ -168,6 +168,17 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
   // 6. Signal scoring
   // Proposal 5: build strain key once per study for BW-mediation lookups.
   const speciesStrainKey = buildSpeciesStrainKey(species, strain);
+
+  // Pre-compute endpoint count per resolved organ band for the single-endpoint
+  // sex-discordance guard. Parity with computeAnalyticsSync (sister hook): the
+  // boost loop must produce identical sexConcordanceBoost values across both
+  // execution contexts.
+  const bandCounts = new Map<string, number>();
+  for (const ep of endpoints) {
+    const band = resolveOrganBand(ep);
+    if (band) bandCounts.set(band, (bandCounts.get(band) ?? 0) + 1);
+  }
+
   const boostMap = new Map<string, SignalBoosts>();
   for (const ep of endpoints) {
     let synBoost = 0;
@@ -187,7 +198,9 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
         clinMult = Math.max(clinMult, getClinicalMultiplier(match.severity));
       }
     }
-    const sexConc = getSexConcordanceBoost(ep, species);
+    const bandKey = resolveOrganBand(ep);
+    const nForBand = bandKey ? (bandCounts.get(bandKey) ?? 1) : 1;
+    const sexConc = getSexConcordanceBoost(ep, species, nForBand);
     const conf = classifyEndpointConfidence(ep);
     const confMult = getConfidenceMultiplier(conf);
     // Proposal 5: BW-mediation discount on brain-weight (OM) endpoints only.

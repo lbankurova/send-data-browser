@@ -145,10 +145,60 @@ function refineBrain(band: string, domain: string | undefined): string {
 }
 
 /**
+ * Organs where single-endpoint sex divergence lacks a well-characterized
+ * biological mechanism. When a study has only one endpoint resolving to one of
+ * these bands AND sexes show opposite directions, the divergence boost is
+ * capped at GUARD_DIVERGENCE_CAP (0.3) to prevent uncorroborated single-
+ * measurement amplification. See research/brain-concordance-guard.md.
+ *
+ * Maintenance rule (research §Phase 1, R2 N1 maintenance gap): new organs
+ * default to NOT guarded -- do not suppress signals without literature review.
+ * To add an organ, document a low-functional-dimorphism rationale in the
+ * research doc Phase 1.
+ *
+ * Excluded by design: ADRENAL (HPA dimorphism), THYMUS (sex-differential
+ * involution), KIDNEY (alpha-2u male-specific pathology), LIVER (CYP
+ * dimorphism), THYROID (enzyme-induction sex susceptibility), HEMATOPOIETIC
+ * (peripheral blood sex differences), BRAIN_ENZYME (cholinesterase has high
+ * sex dimorphism).
+ *
+ * BRAIN_WEIGHT and BRAIN are both included: BRAIN_WEIGHT covers OM brain
+ * weight (post-split, parent shipped 2026-04-04); BRAIN covers MI/CL/MA brain
+ * residual endpoints. Defense-in-depth -- BRAIN_WEIGHT divergence is already
+ * 0.3 from the band JSON, so the cap is redundant for that band but harmless
+ * (min(0.3, 0.3) === 0.3).
+ *
+ * Set is typed ReadonlySet<string> for membership-check ergonomics (band is
+ * `string | null` at the call site). Construction uses `new Set<OrganBandKey>`
+ * so member names are validated against the union at definition time -- this
+ * avoids an unsafe cast at the call site while keeping typo-safety here.
+ */
+export const SINGLE_ENDPOINT_GUARD_SET: ReadonlySet<string> = new Set<OrganBandKey>([
+  "BRAIN", "BRAIN_WEIGHT",
+  "LUNG", "HEART",
+  "BONE_MARROW", "SPLEEN",
+  "COAGULATION",
+]);
+
+const GUARD_DIVERGENCE_CAP = 0.3;
+
+/**
  * Compute the sex concordance/divergence boost for an endpoint.
  * Returns 0 for single-sex endpoints or sex-exclusive organs (REPRODUCTIVE).
+ *
+ * @param nEndpointsForBand  optional count of endpoints in the same resolved
+ *                           organ band across the study. When provided and
+ *                           <= 1, sexes diverge, and the band is in
+ *                           {@link SINGLE_ENDPOINT_GUARD_SET}, the divergence
+ *                           boost is capped at GUARD_DIVERGENCE_CAP (0.3).
+ *                           When undefined (existing callers), the guard is
+ *                           inert and behavior matches pre-guard semantics.
  */
-export function getSexConcordanceBoost(ep: EndpointSummary, species = "rat"): number {
+export function getSexConcordanceBoost(
+  ep: EndpointSummary,
+  species = "rat",
+  nEndpointsForBand?: number,
+): number {
   if (!ep.bySex || ep.bySex.size < 2) return 0;
 
   const band = resolveOrganBand(ep);
@@ -161,7 +211,24 @@ export function getSexConcordanceBoost(ep: EndpointSummary, species = "rat"): nu
   // Reuse existing sexesDisagree() from lab-clinical-catalog (CLAUDE.md rule 6)
   const isDivergent = sexesDisagree(ep);
 
-  return isDivergent ? boosts.divergence : boosts.concordance;
+  if (isDivergent) {
+    // Single-endpoint guard (research/brain-concordance-guard.md): when only
+    // one endpoint resolves to this organ band AND the band is in the low-
+    // functional-dimorphism set, cap the divergence boost. Null bands are not
+    // in the guard set, so the .has(band) check never fires regardless of
+    // count -- the explicit null check is defense-in-depth.
+    if (
+      nEndpointsForBand !== undefined &&
+      nEndpointsForBand <= 1 &&
+      band !== null &&
+      SINGLE_ENDPOINT_GUARD_SET.has(band)
+    ) {
+      return Math.min(boosts.divergence, GUARD_DIVERGENCE_CAP);
+    }
+    return boosts.divergence;
+  }
+
+  return boosts.concordance;
 }
 
 // ─── Internal helpers ─────────────────────────────────────
