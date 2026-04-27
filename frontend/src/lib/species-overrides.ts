@@ -55,7 +55,17 @@ function resolveSpeciesKey(species: string): string | null {
   if (lower.includes("dog") || lower.includes("beagle")) return "dog";
   if (lower.includes("cyno") || lower.includes("macaq") || lower.includes("monkey") || lower.includes("primate") || lower.includes("nhp")) return "cynomolgus";
   if (lower.includes("guinea") || lower.includes("cavy") || lower.includes("hartley") || lower.includes("dunkin")) return "guinea pig";
-  if (lower.includes("mouse") || lower.includes("mice")) return "rat"; // mouse uses rat baseline
+  // Mouse strain coverage (GAP-262): match common strain identifiers BEFORE the
+  // generic "mouse" fall-through so B6C3F1 / CD-1 / C57BL/6 / BALB/c are picked
+  // up by the dedicated mouse override profile rather than rat-proxied.
+  if (
+    lower.includes("mouse") ||
+    lower.includes("mice") ||
+    lower.includes("b6c3f1") ||
+    lower.includes("cd-1") || lower.includes("cd1") || lower.includes("crl:cd") ||
+    lower.includes("c57bl") || lower.includes("c57") ||
+    lower.includes("balb")
+  ) return "mouse";
 
   return null;
 }

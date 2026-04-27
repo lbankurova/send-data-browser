@@ -10,6 +10,63 @@
         "flags": ["CORT = corticosterone in rats (not cortisol); verify assay specificity."]
       }
     },
+    "mouse": {
+      "_notes": "Mouse-specific overrides per GAP-262. Rat-proxied interpretation silently misclassifies findings driven by mouse-specific spontaneous backgrounds (B6C3F1 hepatocellular adenoma, lymphoma, Harderian gland tumors), strain-specific cardiomyopathy (CD-1), and earlier thymic involution. Strain-distinguished overrides (B6C3F1 vs CD-1 vs C57BL/6) listed inside each syndrome entry where the strain matters; defaults apply otherwise. Sources: Maronpot et al. 1999 NTP B6C3F1 atlas; Frith et al. NTP mouse pathology; Eustis et al. 1990 IARC mouse atlas; Greaves Histopathology of Preclinical Toxicity Studies (4th ed) chapters 11-13. Cross-references KG facts NOAEL-FACT-021 (Harderian gland species-restriction) and the existing `relevance_exclusion` corpus.",
+      "XS01": {
+        "termOverrides": [
+          { "tag": "ALT", "confidenceModifier": -1, "flag": "Mouse ALT baseline is highly strain-dependent (B6C3F1 ALT ranges 30-90 U/L vs rat 30-50). Fold-change interpretation requires concurrent control comparison rather than absolute thresholds." }
+        ],
+        "flags": [
+          "B6C3F1 carries 30-50% spontaneous hepatocellular adenoma incidence at 2-year terminal sacrifice (Maronpot 1999, Frith NTP atlas) — XS01 hepatocellular-injury interpretation in chronic studies must reconcile against age-matched control incidence, not absolute treatment-group counts.",
+          "Mouse spontaneous Kupffer-cell pigmentation (hemosiderin) is common in B6C3F1 and is non-adverse — do not boost XS01 certainty on pigment-only findings without concurrent enzyme elevation.",
+          "GLDH/SDH liver-specificity holds in mouse as in rat; ALT muscle-origin contribution is comparable across rodents."
+        ]
+      },
+      "XS04": {
+        "flags": [
+          "Mouse baseline reticulocyte percentage is ~3-7% (higher than rat ~2-4%, much higher than dog/primate <1%). Adjust regenerative-response thresholds: a 2x reticulocyte fold-change in mice may not be biologically meaningful.",
+          "Mouse RBC volume (MCV) is smaller than rat (~50 fL vs ~55 fL); evaluate anemia by Hgb/HCT trend, not MCV crossing rat-derived thresholds."
+        ]
+      },
+      "XS05": {
+        "flags": [
+          "Same reticulocyte-baseline caveat as XS04. Mouse hematopoietic responsiveness is brisk — a sustained Hgb depression with appropriate reticulocytosis is the adversity signal, not reticulocyte rise alone."
+        ]
+      },
+      "XS07": {
+        "flags": [
+          "Mouse thymic involution begins earlier (~6-8 weeks of age) than rat (~10-12 weeks). In sub-chronic studies starting at 6-8 wk, control thymus already shows physiological involution — concurrent control comparison is required to distinguish treatment-induced thymic atrophy from age-physiology.",
+          "Mouse N:L ratio is lymphocyte-predominant baseline (lower N:L than rat). Stress-induced relative neutrophilia + lymphopenia may not cross rat-derived absolute thresholds; evaluate as fold-change vs concurrent control."
+        ]
+      },
+      "XS08": {
+        "flags": [
+          "Mouse glucocorticoid is corticosterone (same as rat, not cortisol); CORT assay specificity check applies. Restraint-induced corticosterone surge is documented in mice — sample-time confounder."
+        ]
+      },
+      "XS09": {
+        "flags": [
+          "Mouse food consumption is highly strain-dependent (CD-1 vs C57BL/6 vs B6C3F1 differ in baseline FW by 15-30%). XS09 wasting interpretation requires within-strain concurrent control comparison; cross-strain proxying is unsafe."
+        ]
+      },
+      "XS10": {
+        "translationalWeightModifier": -1,
+        "flags": [
+          "CD-1 mice carry strain-specific predisposition to spontaneous cardiomyopathy (left-ventricular myocardial degeneration; Greaves ch.13) at 12-24 month sacrifice. XS10 cardiovascular-syndrome interpretation in CD-1 chronic studies must reconcile against historical-control cardiomyopathy incidence (~5-15%) before attributing findings to treatment.",
+          "Mouse cardiac repolarization is Ito-driven (similar to rat), making mouse XS10 less translatable to human IKr-driven QT risk than dog/cyno/rabbit. Reduce translational weight."
+        ]
+      },
+      "XC02": {
+        "flags": [
+          "B6C3F1 carries elevated spontaneous lymphoma incidence (10-25% at 2-year terminal in NTP studies). XC02 (bone-marrow lymphoma signal) interpretation in chronic mouse studies must verify against age-matched control rates."
+        ]
+      },
+      "XC04a": {
+        "flags": [
+          "B6C3F1 carries elevated spontaneous thyroid follicular adenoma (~5-15% at 2 years; Maronpot 1999). Distinguish treatment-induced thyroid hyperplasia from background incidence using concurrent + historical control comparison."
+        ]
+      }
+    },
     "rabbit": {
       "_notes": "Herbivore with unique physiology: ALT not liver-specific, GGT predominantly renal, cortisol primary glucocorticoid, baseline reticulocytosis 1-4%, N:L ratio ~1:1, calcium excretion via kidneys.",
       "XS01": {
