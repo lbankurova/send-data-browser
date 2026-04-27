@@ -144,3 +144,22 @@ def is_direction_canonical_adverse(endpoint_class: str | None, observed_directio
     if observed_direction not in ("up", "down"):
         return False
     return primary == observed_direction
+
+
+def direction_exceptions(endpoint_class: str | None) -> list[dict[str, Any]]:
+    """Return the ``direction_exceptions`` clause for an endpoint class.
+
+    Each exception is a dict with ``name``, ``primary_direction_suppressed``,
+    ``all_of`` (list of predicate keys), ``reclassify_to``, ``rationale``, and
+    ``citations``. Empty list when the class has no exceptions or is unknown.
+    Predicate evaluation is the caller's responsibility (see
+    ``view_dataframes._is_loael_driving_woe`` at C7 application — DATA-GAP-
+    NOAEL-ALG-02 follow-up). The registry only declares the exception cases.
+    """
+    if not endpoint_class:
+        return []
+    entry = _load_direction_registry().get(endpoint_class)
+    if not entry:
+        return []
+    exc = entry.get("direction_exceptions") or {}
+    return list(exc.get("exceptions") or [])

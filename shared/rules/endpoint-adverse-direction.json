@@ -5,7 +5,7 @@
     "backend/services/analysis/endpoint_adverse_direction.py (lookup helpers)",
     "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
   ],
-  "_status": "draft - awaiting toxicologist sign-off per DATA-GAP-NOAEL-ALG-02; entries to be expanded as C7 corroboration matching predicate (RG-NOAEL-ALG-14) is implemented",
+  "_status": "content-complete pending toxicologist sign-off per DATA-GAP-NOAEL-ALG-02. All endpoint classes from research RG-NOAEL-ALG-02 are populated: BW (down primary, up via FW/CL/OM/4 compound classes), FW (down primary with palatability_rebound exception, up via BW/2 compound classes), OM (up primary with corroboration via MA/MI), CL_incidence (up only), DS_incidence (up only), LB_per_analyte (defers to per-analyte registry). C7 corroboration matching predicate (RG-NOAEL-ALG-14) and direction_exceptions predicate evaluation are separate downstream-consumer follow-ups.",
   "endpoint_classes": {
     "BW": {
       "endpoint_label_patterns": [
@@ -49,6 +49,27 @@
           {"trigger": "BW_up_same_dose_sex", "rationale": "Concurrent BW-up corroborates hyperphagia."},
           {"trigger": "compound_class:antipsychotic", "rationale": "Hyperphagia is a recognized class effect of atypical antipsychotics."},
           {"trigger": "compound_class:glucocorticoid", "rationale": "Hyperphagia accompanies glucocorticoid-induced metabolic perturbation."}
+        ]
+      },
+      "direction_exceptions": {
+        "_comment": "Cases where the primary adverse direction is suspended despite an observation matching it. Each exception is a named pattern with a predicate (consumed by view_dataframes._is_loael_driving_woe at C7 evaluation; predicate implementation is a separate follow-up per RG-NOAEL-ALG-14). When all 'all_of' conditions hold, the FW-down hit is reclassified per 'reclassify_to'.",
+        "exceptions": [
+          {
+            "name": "palatability_rebound",
+            "primary_direction_suppressed": "down",
+            "all_of": [
+              "FW_down_at_early_timepoint",
+              "FW_recovers_to_baseline_or_above_at_later_timepoint",
+              "no_concurrent_BW_down_at_terminal",
+              "no_corroborating_CL_signs_GI_emesis_diarrhea"
+            ],
+            "reclassify_to": "non_adverse_palatability",
+            "rationale": "Transient FW-down at early study days that recovers without sustained BW impact and without supporting CL signs reflects palatability adaptation, not toxicity. Per Kale 2022 §'Body weight' + ICH M3(R2) interpretive guidance: palatability-driven feed reductions are a known confounder of the FW-down adversity signal in the first 1-2 weeks of repeat-dose studies.",
+            "citations": [
+              {"source": "Kale VP, et al. Body weight in toxicologic pathology. Toxicologic Pathology. 2022 [synthesis-cited]", "evidence_class": "regulatory-tox-review"},
+              {"source": "ICH M3(R2). Nonclinical Safety Studies for the Conduct of Human Clinical Trials and Marketing Authorization for Pharmaceuticals. 2009.", "evidence_class": "regulatory-guidance"}
+            ]
+          }
         ]
       }
     },
