@@ -2,6 +2,16 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/design-mode-gate.sh",
+            "_comment": "Design-mode preamble gate. BLOCKS Write/Edit on frontend/{src,e2e/mockups}/*.tsx|html|ts when .lattice/design-mode.lock has preamble:pending. Cooperates with scripts/design-session.sh state machine. See commands/lattice/design.md Step 0."
+          }
+        ]
+      },
+      {
         "matcher": "Bash(git commit*)",
         "hooks": [
           {
