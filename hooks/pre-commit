@@ -147,6 +147,73 @@ else
     exit 1
 fi
 
+# --- Step 0c: Algorithmic peer-review attestation (F3 -- BLOCKS) ---
+# When staged files match .lattice/algorithm-paths.txt (or the same default
+# regex used by write-review-gate.sh's LATTICE_ALGORITHM_CHECK enforcement),
+# the gate MUST carry at least one attestation with kind=peer-review.
+# Per spec §5.3 acceptance criterion 1: 100% of algorithmic-path commits
+# have a peer-review verdict in decisions.log -- this is the mechanical
+# enforcement of that criterion. The skill-side wiring lives in
+# commands/lattice/review.md (Agent D) and commands/lattice/peer-review.md
+# (Algorithmic-Tightening Requirements section); the attestation itself is
+# composed via scripts/append-attestation.sh peer-review BEFORE
+# write-review-gate.sh runs.
+
+ALGO_PATHS_FILE="$REPO_ROOT/.lattice/algorithm-paths.txt"
+ALGO_REGEX_PRECOMMIT=""
+if [ -f "$ALGO_PATHS_FILE" ]; then
+    while IFS= read -r aline; do
+        [ -z "$aline" ] && continue
+        [ "${aline:0:1}" = "#" ] && continue
+        afrag=$(echo "$aline" | sed 's|/|\\/|g; s|\*\*|.*|g; s|\*|[^/]*|g')
+        if [ -z "$ALGO_REGEX_PRECOMMIT" ]; then
+            ALGO_REGEX_PRECOMMIT="$afrag"
+        else
+            ALGO_REGEX_PRECOMMIT="$ALGO_REGEX_PRECOMMIT|$afrag"
+        fi
+    done < "$ALGO_PATHS_FILE"
+else
+    ALGO_REGEX_PRECOMMIT='derive-summaries\.ts|endpoint-confidence\.ts|findings-rail-engine\.ts|cross-domain-syndromes\.ts|syndrome-rules\.ts|backend/services/analysis/.*\.py'
+fi
+
+STAGED_ALGO=$(echo "$STAGED_FILES" | grep -cE "$ALGO_REGEX_PRECOMMIT" || true)
+if [ "$STAGED_ALGO" -gt 0 ] && [ -f "$GATE_FILE" ]; then
+    echo "--- Step 0c: Algorithmic peer-review attestation (F3) ---"
+    if python "$REPO_ROOT/scripts/check-attestation-kind.py" --gate "$GATE_FILE" --kind peer-review --min 1 2>&1 | sed 's/^/  /'; then
+        echo ""
+    else
+        echo ""
+        echo "  COMMIT BLOCKED: $STAGED_ALGO algorithmic-paths file(s) staged but no kind=peer-review attestation in the gate."
+        echo ""
+        echo "  Per CLAUDE.md rule 19 + spec §5.3: every commit touching algorithmic"
+        echo "  code requires a blind scientific peer-review verdict (SOUND /"
+        echo "  CONDITIONAL / FLAWED / INSUFFICIENT) recorded as a SIMPLIFY-1"
+        echo "  attestation in .lattice/review-gate.json."
+        echo ""
+        echo "  Resolve:"
+        echo "    1. Run /lattice:peer-review on the algorithmic change. The skill"
+        echo "       follows the Algorithmic-Tightening Requirements section in"
+        echo "       commands/lattice/peer-review.md (mandatory query-knowledge.py"
+        echo "       invocation, mandatory citation, blocking semantics for"
+        echo "       CONDITIONAL/FLAWED)."
+        echo "    2. Compose the verdict as an attestation:"
+        echo "       bash scripts/append-attestation.sh peer-review \\"
+        echo "         '<changed-file-summary>' SOUND \\"
+        echo "         '<one-line summary citing query-knowledge fact and verdict reason>'"
+        echo "    3. Re-run bash scripts/write-review-gate.sh \"pass\" \"...\" so the"
+        echo "       gate captures the attestation."
+        echo "    4. Re-attempt the commit."
+        echo ""
+        echo "  /lattice:review Step 1 Agent D launches peer-review automatically"
+        echo "  on algorithmic-paths commits and persists the attestation. If the"
+        echo "  full review skill ran, this check is satisfied without manual steps."
+        exit 1
+    else
+        echo "$F3_RESULT" | sed 's/^/  /'
+        echo ""
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
