@@ -438,17 +438,23 @@ def compute_noael_diffs(pre_rows: list[dict], post_rows: list[dict]) -> tuple[li
 
 
 def collect_dog_alt_detail(pre_findings: list[dict], post_findings: list[dict]) -> list[dict]:
-    """Match pre/post findings by (test_code, sex, direction) for ALT."""
-    pre_by_key: dict[tuple, dict] = {}
+    """Match pre/post ALT-LB findings by finding_id.
+
+    (sex, direction) is not unique within a study -- multiple dose-group
+    findings share the same (sex, direction) tuple, so keying on it
+    collapsed entries and produced spurious pre/post mismatches in sec 9.
+    """
+    pre_by_id: dict[str, dict] = {}
     for r in pre_findings:
         if r.get("test_code") == "ALT" and r.get("domain") == "LB":
-            key = (r.get("sex"), r.get("direction"))
-            pre_by_key[key] = r
+            fid = r.get("finding_id") or r.get("id")
+            if fid:
+                pre_by_id[fid] = r
     rows: list[dict] = []
     for r in post_findings:
         if r.get("test_code") == "ALT" and r.get("domain") == "LB":
-            key = (r.get("sex"), r.get("direction"))
-            pre = pre_by_key.get(key, {})
+            fid = r.get("finding_id") or r.get("id")
+            pre = pre_by_id.get(fid, {}) if fid else {}
             fr = r.get("fct_reliance") or {}
             rows.append({
                 "test_code": "ALT",

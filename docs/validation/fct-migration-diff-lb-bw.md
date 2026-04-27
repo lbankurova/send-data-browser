@@ -437,19 +437,19 @@ Post-F1 populated-band path: dog ALT findings consume LB.ALT.up bands (1.8 / 2.0
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | None | provisional | provisional | none | extrapolated |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | None | provisional | provisional | none | extrapolated |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | down | variation | variation | none | extrapolated |
-| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | up | concern | variation | full | regulatory |
+| TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | up | adverse | variation | full | regulatory |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | None | provisional | provisional | none | extrapolated |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | up | concern | variation | full | regulatory |
 | TOXSCI-24-0062--35449 1 month dog- Compound B-xpt | ALT | none | provisional | provisional | none | extrapolated |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | up | variation | variation | full | regulatory |
-| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | up | adverse | variation | full | regulatory |
+| TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | up | concern | variation | full | regulatory |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | up | variation | variation | full | regulatory |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | up | adverse | variation | full | regulatory |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | down | adverse | adverse | none | extrapolated |
 | TOXSCI-24-0062--43066 1 month dog- Compound A-xpt | ALT | down | adverse | adverse | none | extrapolated |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | ALT | down | concern | concern | none | extrapolated |
 | TOXSCI-24-0062--87497 1 month rat- Compound B-xpt | ALT | up | variation | variation | full | regulatory |
-| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | ALT | down | adverse | variation | none | extrapolated |
+| TOXSCI-24-0062--96298 1 month rat- Compound A xpt | ALT | down | variation | variation | none | extrapolated |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | ALT | down | concern | concern | none | extrapolated |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | ALT | up | concern | variation | full | regulatory |
 | TOXSCI-24-0062--96298 1 month rat- Compound A xpt | ALT | down | adverse | adverse | none | extrapolated |

@@ -30,22 +30,13 @@ scope_statement: |
   as `moderate` because mammalian-conserved, ALT/AST/WBC/LYM as `low` because
   ketamine-confounded) awaits RG-FCT-LB-BW-01 empirical data.
 
-per_endpoint_decisions:
-  - study: "TOXSCI-24-0062--96298 1 month rat- Compound A xpt"
-    endpoint: "LB.ALT.down"
-    finding_id: "fdfe96cff3c0"
-    pre_verdict: "adverse"
-    post_verdict: "variation"
-    decision: "flag"
-    rationale: |
-      ALT.down has no FCT band in registry (corpus §7.1 covers ALT.up only).
-      Two sibling ALT.down rows in same study preserve legacy verdict
-      correctly (adverse->adverse, concern->concern). This row diverges
-      with coverage:none, effect_size null, fold null. Verdict resolution
-      under coverage:none path appears to differ from legacy |g|-ladder
-      output. Out of scope for band-correctness review (no band involved);
-      route to follow-up cycle to investigate verdict-resolution fallback
-      under coverage:none.
+per_endpoint_decisions: []
+# A previously-recorded TOXSCI-96298 ALT.down "anomaly" was a diff-script
+# alignment bug, not an engine anomaly. `collect_dog_alt_detail` keyed
+# pre findings by (sex, direction) which collapsed multi-dose findings
+# sharing the same key. Pre/post verdicts are byte-equal for all ALT.down
+# rows. Diff script fixed in scripts/compute-fct-lb-bw-migration-diff.py
+# (key includes finding_id) and diff doc regenerated.
 # Schema (populate only for direction shifts the dev wants to flag):
 #   - study: str            # e.g., "TOXSCI-24-0062--35449 1 month dog- Compound B-xpt"
 #     endpoint: str         # e.g., "LB.ALT.up"
