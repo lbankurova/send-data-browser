@@ -1,0 +1,93 @@
+{
+  "profile_id": "antipsychotic",
+  "display_name": "Atypical antipsychotic / metabolic-syndrome inducer",
+  "modality": "small_molecule",
+  "base_profiles": [],
+  "cross_reactivity_required": false,
+  "source": "Kale VP et al. 2022 Toxicologic Pathology; Allison DB et al. 1999 Am J Psychiatry; Newcomer JW 2005 CNS Drugs; Reynolds GP & Kirk SL 2010 Pharmacol Ther",
+  "description": "Expected findings for atypical antipsychotics (olanzapine, clozapine, risperidone, quetiapine). Class effects driven by dopaminergic + serotonergic + histaminergic + muscarinic receptor blockade in CNS, plus peripheral receptor binding. Metabolic syndrome (BW gain + dyslipidemia + impaired glucose tolerance) is regulatorily adverse despite the ostensibly desired CNS pharmacology (cross-references compound-class-flags.json:antipsychotic).",
+  "expected_findings": [
+    {
+      "key": "BW_up",
+      "domain": "BW",
+      "test_codes": ["BW", "BODYWEIGHT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Body-weight gain from metabolic syndrome induction",
+      "typical_magnitude": "5-20% above control at HD",
+      "severity_threshold": "Sustained gain with concurrent dyslipidemia = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Histamine H1 + serotonin 5-HT2C + muscarinic M3 antagonism drive hyperphagia and altered glucose homeostasis. Comprehensive meta-analysis in Allison 1999 documented across all atypical antipsychotics."
+    },
+    {
+      "key": "FW_up",
+      "domain": "FW",
+      "test_codes": ["FW", "FOOD_CONSUMPTION", "FEED_CONSUMPTION"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hyperphagia from H1/5-HT2C antagonism",
+      "typical_magnitude": "10-25% above control at HD",
+      "severity_threshold": null,
+      "species_applicability": ["RAT", "MOUSE"],
+      "rationale": "Histamine H1 antagonism in hypothalamic centers + 5-HT2C antagonism increases appetite. Cross-references C7 corroboration trigger BW_up_same_dose_sex via compound_class:antipsychotic in endpoint-adverse-direction.json."
+    },
+    {
+      "key": "LB_glucose_up",
+      "domain": "LB",
+      "test_codes": ["GLUC", "GLUCOSE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Impaired glucose tolerance / hyperglycemia",
+      "typical_magnitude": "5-20% above control",
+      "severity_threshold": "Persistent fasting glucose elevation = adverse (diabetogenic)",
+      "species_applicability": ["RAT", "DOG"],
+      "rationale": "Olanzapine and clozapine carry FDA black-box warnings for hyperglycemia / new-onset diabetes (Newcomer 2005). Mechanism includes direct beta-cell effect + insulin resistance from adipose accumulation."
+    },
+    {
+      "key": "LB_triglycerides_up",
+      "domain": "LB",
+      "test_codes": ["TRIG", "TRIGLYCERIDES"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hypertriglyceridemia",
+      "typical_magnitude": "20-50% above control at HD",
+      "severity_threshold": "Persistent elevation >50% = adverse",
+      "species_applicability": ["RAT", "DOG"],
+      "rationale": "Class effect documented across atypical antipsychotics (Reynolds & Kirk 2010); olanzapine and clozapine show strongest signal."
+    },
+    {
+      "key": "LB_cholesterol_up",
+      "domain": "LB",
+      "test_codes": ["CHOL", "CHOLESTEROL"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hypercholesterolemia (elevated total cholesterol; LDL up)",
+      "typical_magnitude": "10-25% above control",
+      "severity_threshold": "Sustained elevation = adverse",
+      "species_applicability": ["RAT", "DOG"],
+      "rationale": "Component of metabolic syndrome induction; pairs with triglyceride elevation."
+    },
+    {
+      "key": "CL_sedation",
+      "domain": "CL",
+      "test_codes": ["SEDATION", "DECREASED_ACTIVITY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Sedation from H1 antagonism + central D2 blockade",
+      "severity_threshold": "Profound or persistent sedation interfering with feeding/grooming = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Expected on-target CNS effect; severity scales with dose."
+    },
+    {
+      "key": "CL_salivation",
+      "domain": "CL",
+      "test_codes": ["SALIVATION", "PTYALISM"],
+      "direction": "up",
+      "layer": "secondary_pharmacology",
+      "description": "Hypersalivation (clozapine-class)",
+      "species_applicability": ["RAT", "DOG"],
+      "rationale": "Muscarinic M4 partial agonism + alpha-adrenergic effects drive salivation; particularly prominent for clozapine and olanzapine."
+    }
+  ],
+  "default_reversibility": "expected_reversible"
+}

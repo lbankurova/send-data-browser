@@ -1,0 +1,96 @@
+{
+  "profile_id": "ppar_gamma_agonist",
+  "display_name": "PPAR-gamma agonist (thiazolidinedione)",
+  "modality": "small_molecule",
+  "base_profiles": [],
+  "cross_reactivity_required": false,
+  "source": "Kale VP et al. 2022 Toxicologic Pathology; Cusi K et al. 2010 NEJM; Nesto RW et al. 2003 Circulation; Edvardsson U et al. 1999 J Lipid Res; Faiola B et al. 2008 Toxicol Pathol",
+  "description": "Expected findings for PPAR-gamma agonists (rosiglitazone, pioglitazone, troglitazone). Class effects driven by transcriptional activation of PPAR-gamma in adipocytes, hepatocytes, and macrophages: adipogenesis, fluid retention, hemodilution, hepatocellular hypertrophy. BW-up at high dose is regulatorily adverse despite opposing the canonical BW-down adversity direction (cross-references compound-class-flags.json:ppar_gamma_agonist).",
+  "expected_findings": [
+    {
+      "key": "BW_up",
+      "domain": "BW",
+      "test_codes": ["BW", "BODYWEIGHT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Body-weight gain via fluid retention + adipogenesis",
+      "typical_magnitude": "5-15% above control at HD",
+      "severity_threshold": "Sustained gain >10% with edema = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "PPAR-gamma activation in adipocytes drives adipogenesis; activation in renal collecting duct epithelial cells (ENaC) drives fluid retention. Both mechanisms increase body mass independently. Documented in Kale 2022 Toxicologic Pathology body-weight section."
+    },
+    {
+      "key": "LB_glucose_down",
+      "domain": "LB",
+      "test_codes": ["GLUC", "GLUCOSE"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Decreased blood glucose (intended pharmacology)",
+      "typical_magnitude": "10-30% below baseline / control",
+      "severity_threshold": null,
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Improved insulin sensitivity is the intended pharmacological effect; glucose reduction is on-target."
+    },
+    {
+      "key": "LB_hemoglobin_down",
+      "domain": "LB",
+      "test_codes": ["HGB", "HCT", "RBC"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Dilutional anemia from plasma volume expansion",
+      "typical_magnitude": "5-10% below control",
+      "severity_threshold": "HGB drop >15% with concurrent edema = secondary-pharmacology adverse",
+      "species_applicability": ["RAT", "DOG", "MONKEY"],
+      "rationale": "Plasma volume expansion (fluid retention) dilutes RBC mass without true erythroid suppression. Distinguishable from primary anemia by reticulocyte count (preserved or increased)."
+    },
+    {
+      "key": "OM_liver_up",
+      "domain": "OM",
+      "organs": ["LIVER"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hepatomegaly from hepatocellular hypertrophy + peroxisome proliferation (rodent-specific)",
+      "typical_magnitude": "10-25% above control at HD",
+      "severity_threshold": null,
+      "species_applicability": ["RAT", "MOUSE"],
+      "rationale": "Rodent peroxisome proliferation is a class effect of PPAR-alpha and partial PPAR-gamma agonists. NOT human-relevant per IARC peroxisome-proliferator MOA framework — reference KG fact NOAEL-FACT-018 (not-relevant-rodent-peroxisome). Non-rodent species do not show this finding."
+    },
+    {
+      "key": "MI_hepatocellular_hypertrophy",
+      "domain": "MI",
+      "organs": ["LIVER"],
+      "findings": ["HYPERTROPHY", "HEPATOCELLULAR HYPERTROPHY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Centrilobular or panlobular hepatocellular hypertrophy",
+      "severity_threshold": "Grade 2+ with concurrent ALT/AST elevation = potentially adverse",
+      "species_applicability": ["RAT", "MOUSE"],
+      "rationale": "Histopathologic correlate of OM_liver_up. Rodent-specific; reference KG fact NOAEL-FACT-018."
+    },
+    {
+      "key": "CL_edema",
+      "domain": "CL",
+      "test_codes": ["EDEMA", "PERIPHERAL_EDEMA"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Peripheral edema from PPAR-gamma-mediated fluid retention",
+      "typical_magnitude": "Dose-dependent",
+      "severity_threshold": "Persistent or generalized edema = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Documented class effect (Nesto 2003 Circulation). Cross-references C7 corroboration trigger CL_fluid_retention_same_dose_sex in endpoint-adverse-direction.json:BW."
+    },
+    {
+      "key": "MA_heart_up",
+      "domain": "MA",
+      "organs": ["HEART"],
+      "findings": ["ENLARGED", "HYPERTROPHY", "DILATATION"],
+      "direction": "up",
+      "layer": "secondary_pharmacology",
+      "description": "Cardiac enlargement secondary to volume overload",
+      "severity_threshold": "Grade 2+ = adverse",
+      "species_applicability": ["RAT", "DOG", "MONKEY"],
+      "rationale": "Volume overload from fluid retention drives cardiac remodeling. Documented in Nesto 2003 (CHF risk) and rosiglitazone label warnings."
+    }
+  ],
+  "default_reversibility": "expected_reversible"
+}

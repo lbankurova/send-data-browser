@@ -1,0 +1,149 @@
+{
+  "profile_id": "glucocorticoid",
+  "display_name": "Glucocorticoid",
+  "modality": "small_molecule",
+  "base_profiles": [],
+  "cross_reactivity_required": false,
+  "source": "Schacke H, Docke WD, Asadullah K. 2002 Pharmacol Ther; Kale VP et al. 2022 Toxicologic Pathology; Greaves P. Histopathology of Preclinical Toxicity Studies (4th ed) ch.11; Boumpas DT et al. 1993 Ann Intern Med",
+  "description": "Expected findings for glucocorticoids (dexamethasone, prednisone, prednisolone, hydrocortisone, methylprednisolone). Class effects driven by glucocorticoid-receptor (GR) activation: HPA-axis suppression, lymphocyte apoptosis, hepatic gluconeogenesis induction, fluid retention. The profile is unusually broad because GR is expressed in essentially every nucleated cell. BW-up at HD is regulatorily adverse despite being the canonical fluid-retention pharmacology (cross-references compound-class-flags.json:glucocorticoid).",
+  "expected_findings": [
+    {
+      "key": "BW_up",
+      "domain": "BW",
+      "test_codes": ["BW", "BODYWEIGHT"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Body-weight gain from fluid retention + fat redistribution",
+      "typical_magnitude": "5-15% above control",
+      "severity_threshold": "Sustained gain with edema or Cushingoid features = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "GR activation in renal mineralocorticoid-receptor-shared aldosterone-cleared pathway drives sodium + water retention; truncal fat redistribution is a downstream metabolic effect. Schacke 2002 review."
+    },
+    {
+      "key": "FW_up",
+      "domain": "FW",
+      "test_codes": ["FW", "FOOD_CONSUMPTION"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hyperphagia accompanies metabolic perturbation",
+      "species_applicability": ["RAT", "MOUSE"],
+      "rationale": "Hyperphagia is a recognized component of glucocorticoid-induced metabolic syndrome (Boumpas 1993)."
+    },
+    {
+      "key": "LB_glucose_up",
+      "domain": "LB",
+      "test_codes": ["GLUC", "GLUCOSE"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Hyperglycemia from gluconeogenesis induction",
+      "typical_magnitude": "10-30% above control",
+      "severity_threshold": "Persistent elevation = adverse (steroid-induced diabetes)",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "GR-driven transcription of PEPCK, G6Pase, and other gluconeogenic enzymes; insulin resistance via IRS-1 phosphorylation."
+    },
+    {
+      "key": "LB_neutrophilia",
+      "domain": "LB",
+      "test_codes": ["NEUT", "NEUTROPHIL", "WBC"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Neutrophilia from demargination",
+      "typical_magnitude": "1.5-2x baseline",
+      "severity_threshold": null,
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Glucocorticoids inhibit neutrophil egress from circulation and reduce adhesion-molecule expression, releasing the marginated pool. Predictable acute-on-chronic finding."
+    },
+    {
+      "key": "LB_lymphopenia",
+      "domain": "LB",
+      "test_codes": ["LYMPH", "LYMPHOCYTE"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Lymphopenia from apoptosis + redistribution",
+      "typical_magnitude": "30-70% below baseline at HD",
+      "severity_threshold": "Severe lymphopenia (>80% drop) = adverse for chronic dosing",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "GR-driven thymocyte apoptosis + redistribution to lymphoid tissues. Concurrent eosinopenia. Greaves ch.11."
+    },
+    {
+      "key": "LB_eosinopenia",
+      "domain": "LB",
+      "test_codes": ["EOS", "EOSINOPHIL"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Eosinopenia from redistribution + apoptosis",
+      "typical_magnitude": "Eosinophils approach zero",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Profound eosinopenia is a sensitive biomarker of glucocorticoid action."
+    },
+    {
+      "key": "OM_thymus_down",
+      "domain": "OM",
+      "organs": ["THYMUS"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Thymic atrophy",
+      "typical_magnitude": "30-70% absolute weight reduction at HD",
+      "severity_threshold": "Severe atrophy with concurrent immunosuppression-related findings = adverse",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Thymocyte apoptosis is the canonical glucocorticoid signature. Cross-references C7 corroboration trigger MI_atrophy_same_organ_same_dose_sex."
+    },
+    {
+      "key": "OM_adrenal_down",
+      "domain": "OM",
+      "organs": ["ADRENAL", "ADRENAL GLAND"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Adrenal cortical atrophy from HPA-axis suppression",
+      "typical_magnitude": "10-30% below control",
+      "severity_threshold": "Severe atrophy = adverse (HPA suppression sequela)",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Exogenous glucocorticoid suppresses ACTH, leading to cortical atrophy (zona fasciculata + reticularis preserve zona glomerulosa)."
+    },
+    {
+      "key": "OM_spleen_down",
+      "domain": "OM",
+      "organs": ["SPLEEN"],
+      "direction": "down",
+      "layer": "target",
+      "description": "Splenic lymphoid depletion",
+      "typical_magnitude": "10-25% below control",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Lymphoid depletion accompanies thymic atrophy."
+    },
+    {
+      "key": "MI_thymic_atrophy",
+      "domain": "MI",
+      "organs": ["THYMUS"],
+      "findings": ["ATROPHY", "LYMPHOCYTE DEPLETION", "APOPTOSIS"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Thymic cortical lymphocyte apoptosis + depletion",
+      "severity_threshold": "Grade 3+ = adverse for chronic dosing",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Histopathologic correlate of OM_thymus_down."
+    },
+    {
+      "key": "MI_adrenal_atrophy",
+      "domain": "MI",
+      "organs": ["ADRENAL", "ADRENAL GLAND"],
+      "findings": ["ATROPHY", "CORTICAL ATROPHY"],
+      "direction": "up",
+      "layer": "target",
+      "description": "Adrenal cortical atrophy (zona fasciculata + reticularis)",
+      "species_applicability": ["RAT", "MOUSE", "DOG", "MONKEY"],
+      "rationale": "Histopathologic correlate of OM_adrenal_down. Reverses on washout."
+    },
+    {
+      "key": "CL_polyuria_polydipsia",
+      "domain": "CL",
+      "test_codes": ["POLYURIA", "POLYDIPSIA"],
+      "direction": "up",
+      "layer": "secondary_pharmacology",
+      "description": "Polyuria + polydipsia (PU/PD)",
+      "species_applicability": ["DOG", "RAT"],
+      "rationale": "Glucocorticoid-induced antidiuretic-hormone antagonism + osmotic diuresis from hyperglycemia."
+    }
+  ],
+  "default_reversibility": "expected_reversible"
+}
