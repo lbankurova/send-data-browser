@@ -108,7 +108,15 @@ export interface StrainProfile {
   brainCv: [number, number];
   /** Expected brain weight range (g) */
   brainWtG: [number, number];
-  /** Species-calibrated brain tier thresholds: [potentiallyAffectedFloor, affectedFloor] */
+  /**
+   * Species-calibrated brain tier thresholds: [potentiallyAffectedFloor, affectedFloor].
+   * Re-tuning these values affects BOTH organ-weight tier classification AND the
+   * BW-mediation gate — the two consumers share the underlying biological scale
+   * (species-specific brain-weight CV). See `contract-triangles.md#brainTierThresholds`.
+   *
+   * @see getBrainTier (this file) — organ-weight tier classification
+   * @see computeBwMediationFactor (organ-sex-concordance.ts) — BW-mediation discount gate
+   */
   brainTierThresholds: [number, number];
 }
 
@@ -258,8 +266,16 @@ export function getOrganCorrelationCategory(omtestcd: string): OrganCorrelationC
   return ORGAN_CATEGORIES[omtestcd.toUpperCase()] ?? OrganCorrelationCategory.MODERATE_BW;
 }
 
-/** Default brain tier thresholds (rodent) for unknown species */
-const DEFAULT_BRAIN_TIER_THRESHOLDS: [number, number] = [0.5, 1.0];
+/**
+ * Default brain tier thresholds (rodent) for unknown species.
+ * Consumed by both `getBrainTier` (this file) and `computeBwMediationFactor`
+ * (`organ-sex-concordance.ts`) — drift between the two would silently change
+ * BW-mediation gating. See `contract-triangles.md#brainTierThresholds`.
+ *
+ * @see getBrainTier
+ * @see computeBwMediationFactor
+ */
+export const DEFAULT_BRAIN_TIER_THRESHOLDS: [number, number] = [0.5, 1.0];
 
 export type BrainTierLabel = "unaffected" | "potentially affected" | "affected";
 

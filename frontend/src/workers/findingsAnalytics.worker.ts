@@ -15,10 +15,11 @@ import type { CrossDomainSyndrome } from "@/lib/cross-domain-syndrome-types";
 import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
 import { computeGLower, computeGUpper } from "@/lib/g-lower";
 import type { LabClinicalMatch } from "@/lib/lab-clinical-catalog";
-import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
-import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
+import { getSexConcordanceBoost, computeBwMediationFactor, resolveOrganBand } from "@/lib/organ-sex-concordance";
+import { buildSpeciesStrainKey } from "@/lib/organ-weight-normalization";
+import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier, type SignalBoosts } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
-import type { NormalizationContext } from "@/lib/organ-weight-normalization";
+import type { NormalizationContext, HedgesGResult } from "@/lib/organ-weight-normalization";
 import type { UnifiedFinding, DoseGroup, EndpointLoaelAggregated } from "@/types/analysis";
 
 export interface AnalyticsWorkerInput {
@@ -27,6 +28,13 @@ export interface AnalyticsWorkerInput {
   hasEstrousData: boolean;
   normContexts: NormalizationContext[] | undefined;
   species: string;
+  /** Proposal 5: raw species/strain strings from study metadata, used to derive
+   *  the SPECIES_STRAIN_PROFILES lookup key for BW-mediation gating (R1 F1). */
+  strain: string | null;
+  /** Proposal 5: per-dose-group worst-case BW Hedges' g from
+   *  `useOrganWeightNormalization.state.bwGByGroup`. Map is structured-cloneable.
+   *  Used by the dose-coupling guard inside `computeBwMediationFactor`. */
+  bwGByGroup: Map<string, HedgesGResult> | null;
   /** Path C / AC-F1-10: backend F2 aggregation summary; frontend echoes. */
   endpointLoaelSummary?: Record<string, EndpointLoaelAggregated> | null;
 }
@@ -43,7 +51,7 @@ export interface AnalyticsWorkerOutput {
 }
 
 function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
-  const { findings, doseGroups, hasEstrousData, normContexts, species, endpointLoaelSummary } = input;
+  const { findings, doseGroups, hasEstrousData, normContexts, species, strain, bwGByGroup, endpointLoaelSummary } = input;
 
   if (!findings.length) {
     return {
@@ -158,7 +166,9 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
   }
 
   // 6. Signal scoring
-  const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; clinicalMultiplier: number; sexConcordanceBoost: number; confidenceMultiplier: number }>();
+  // Proposal 5: build strain key once per study for BW-mediation lookups.
+  const speciesStrainKey = buildSpeciesStrainKey(species, strain);
+  const boostMap = new Map<string, SignalBoosts>();
   for (const ep of endpoints) {
     let synBoost = 0;
     for (const syn of syndromes) {
@@ -180,8 +190,13 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
     const sexConc = getSexConcordanceBoost(ep, species);
     const conf = classifyEndpointConfidence(ep);
     const confMult = getConfidenceMultiplier(conf);
-    if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1) {
-      boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalMultiplier: clinMult, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult });
+    // Proposal 5: BW-mediation discount on brain-weight (OM) endpoints only.
+    let bwMediationFactor = 1.0;
+    if (ep.domain === "OM" && resolveOrganBand(ep) === "BRAIN_WEIGHT") {
+      bwMediationFactor = computeBwMediationFactor(ep, endpoints, speciesStrainKey, bwGByGroup ?? undefined).factor;
+    }
+    if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1 || bwMediationFactor !== 1.0) {
+      boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalMultiplier: clinMult, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult, bwMediationFactor });
     }
   }
   const scored = withSignalScores(endpoints, boostMap);

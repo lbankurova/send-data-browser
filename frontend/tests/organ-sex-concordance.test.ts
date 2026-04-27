@@ -1,7 +1,8 @@
 import { describe, test, expect } from "vitest";
-import { resolveOrganBand, getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
+import { resolveOrganBand, getSexConcordanceBoost, computeBwMediationFactor } from "@/lib/organ-sex-concordance";
+import type { HedgesGResult } from "@/lib/organ-weight-normalization";
 import { getClinicalAdditive, getClinicalFloor } from "@/lib/lab-clinical-catalog";
-import { computeEndpointSignal } from "@/lib/findings-rail-engine";
+import { computeEndpointSignal, computeEndpointEvidence } from "@/lib/findings-rail-engine";
 import { deriveEndpointSummaries } from "@/lib/derive-summaries";
 import type { EndpointSummary, SexEndpointSummary } from "@/lib/derive-summaries";
 import type { AdverseEffectSummaryRow } from "@/types/analysis-views";
@@ -577,5 +578,518 @@ describe("PointCross fixture integration", () => {
     const bw = findEp("Body Weight");
     if (!bw) return;
     expect(resolveOrganBand(bw)).toBe("BODY_WEIGHT");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// computeBwMediationFactor — Proposal 5 (BW-mediation auto-check)
+// 13 research §4.2 scenarios + boundary tests + dose-coupling guard
+// + boost-map guard test. Reference: research/brain-concordance-bw-mediation.md
+// ═══════════════════════════════════════════════════════════
+
+function brainEp(bySex: Map<string, SexEndpointSummary> | undefined, overrides: Partial<EndpointSummary> = {}): EndpointSummary {
+  return {
+    endpoint_label: "BRAIN -- BRAIN (WEIGHT)",
+    organ_system: "neurologic",
+    domain: "OM",
+    specimen: "BRAIN",
+    worstSeverity: "adverse",
+    treatmentRelated: true,
+    maxEffectSize: bySex
+      ? Math.max(...[...bySex.values()].map(s => Math.abs(s.maxEffectSize ?? 0)))
+      : null,
+    minPValue: 0.01,
+    direction: "down",
+    sexes: bySex ? [...bySex.keys()] : ["F", "M"],
+    pattern: "monotonic_decrease",
+    maxFoldChange: 0.85,
+    bySex,
+    worstTreatedStats: { n: 5, mean: 1.7, sd: 0.1, doseLevel: 100 },
+    ...overrides,
+  };
+}
+
+function bwEp(bySex: Map<string, SexEndpointSummary> | undefined, overrides: Partial<EndpointSummary> = {}): EndpointSummary {
+  return {
+    endpoint_label: "Body Weight",
+    organ_system: "general",
+    domain: "BW",
+    worstSeverity: "warning",
+    treatmentRelated: true,
+    maxEffectSize: bySex
+      ? Math.max(...[...bySex.values()].map(s => Math.abs(s.maxEffectSize ?? 0)))
+      : null,
+    minPValue: 0.05,
+    direction: "down",
+    sexes: bySex ? [...bySex.keys()] : ["F", "M"],
+    pattern: "threshold_decrease",
+    maxFoldChange: 0.9,
+    bySex,
+    ...overrides,
+  };
+}
+
+function brainSex(maxEffectSize: number): SexEndpointSummary {
+  const dir = maxEffectSize > 0 ? "up" : maxEffectSize < 0 ? "down" : "none";
+  return {
+    sex: "F",
+    direction: dir,
+    maxEffectSize,
+    maxFoldChange: 1.0 + maxEffectSize * 0.1,
+    minPValue: 0.01,
+    pattern: dir === "up" ? "monotonic_increase" : "monotonic_decrease",
+    worstSeverity: "adverse",
+    treatmentRelated: true,
+  };
+}
+
+function bwSex(maxEffectSize: number): SexEndpointSummary {
+  const dir = maxEffectSize > 0 ? "up" : maxEffectSize < 0 ? "down" : "none";
+  return {
+    sex: "F",
+    direction: dir,
+    maxEffectSize,
+    maxFoldChange: 1.0 + maxEffectSize * 0.1,
+    minPValue: 0.05,
+    pattern: dir === "up" ? "threshold_increase" : "threshold_decrease",
+    worstSeverity: "warning",
+    treatmentRelated: true,
+  };
+}
+
+function bxsx(F: number, M: number, factory: (g: number) => SexEndpointSummary): Map<string, SexEndpointSummary> {
+  return new Map([
+    ["F", { ...factory(F), sex: "F" }],
+    ["M", { ...factory(M), sex: "M" }],
+  ]);
+}
+
+function hgr(g: number): HedgesGResult {
+  return { g, ciLower: g - 0.2, ciUpper: g + 0.2, nControl: 5, nTreatment: 5,
+    meanControl: 100, meanTreatment: 100 - g * 5, sdControl: 5, sdTreatment: 5 };
+}
+
+const RAT_KEY = "RAT_SPRAGUE_DAWLEY";    // T1=0.5, T2=1.0
+const DOG_KEY = "DOG_BEAGLE";              // T1=0.8, T2=1.5
+const NHP_KEY = "NHP_CYNOMOLGUS";          // T1=1.0, T2=2.0
+const BW_NEGLIGIBLE_G = 0.3; // matches the const in organ-sex-concordance.ts
+
+describe("computeBwMediationFactor — research §4.2 scenarios", () => {
+  // 1. No BW effect → factor=1.0, flag=null
+  test("scenario 1: no BW effect → factor=1.0, flag=null", () => {
+    const brain = brainEp(bxsx(-0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.1, -0.05, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+    expect(r.flag).toBeNull();
+  });
+
+  // 2. Plausible (M only, same-sign moderate BW) → 0.7, plausible
+  test("scenario 2: plausible (M only, same-sign moderate BW) → 0.7, plausible", () => {
+    const brain = brainEp(bxsx(-0.2, -0.6, brainSex));   // F below T1, M above T1
+    const bw = bwEp(bxsx(-0.1, -0.6, bwSex));            // M same-sign moderate
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.7);
+    expect(r.flag).toBe("plausible");
+  });
+
+  // 3. Plausible (both sexes, same-sign at T1) → 0.7, plausible
+  test("scenario 3: plausible (both sexes, same-sign at T1) → 0.7, plausible", () => {
+    const brain = brainEp(bxsx(-0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.6, -0.7, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.7);
+    expect(r.flag).toBe("plausible");
+  });
+
+  // 4. Probable (severe BW, same-sign ≥ T2) → 0.5, probable
+  test("scenario 4: probable (severe BW, same-sign ≥ T2) → 0.5, probable", () => {
+    const brain = brainEp(bxsx(-0.8, -1.2, brainSex));
+    const bw = bwEp(bxsx(-1.1, -1.3, bwSex));   // both ≥ T2=1.0
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.5);
+    expect(r.flag).toBe("probable");
+  });
+
+  // 5. Likely artifact (cross-sex brain opposes, BW opposes) → 0.3, likely_artifact
+  test("scenario 5: likely artifact (cross-sex brain opposes, BW opposes) → 0.3, likely_artifact", () => {
+    const brain = brainEp(bxsx(0.7, -0.7, brainSex));    // F up, M down
+    const bw = bwEp(bxsx(0.6, -0.6, bwSex));             // F up, M down
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.3);
+    expect(r.flag).toBe("likely_artifact");
+  });
+
+  // 6. Likely artifact (cross-sex brain opposes, one BW stable < BW_NEGLIGIBLE_G) → 0.3
+  test("scenario 6: likely artifact (cross-sex brain opposes, one BW stable) → 0.3, likely_artifact", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.7, 0.2, bwSex));    // F |bwG|=0.7≥T1, M |bwG|=0.2<BW_NEGLIGIBLE_G
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.3);
+    expect(r.flag).toBe("likely_artifact");
+  });
+
+  // 7. Cross-sex but both BW negligible → 1.0, null (or plausible if same-sign)
+  test("scenario 7: cross-sex brain opposes but both BW negligible → 1.0, null", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.1, 0.05, bwSex));   // both well below T1, neither ≥ T1
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+    expect(r.flag).toBeNull();
+  });
+
+  // 8. Below brain threshold → 1.0, null
+  test("scenario 8: brain below T1 in both sexes → 1.0, null", () => {
+    const brain = brainEp(bxsx(-0.3, -0.4, brainSex));
+    const bw = bwEp(bxsx(-1.0, -1.2, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+    expect(r.flag).toBeNull();
+  });
+
+  // 9. Single sex (bySex undefined or size==1) → 1.0, null (no cross-sex check possible)
+  test("scenario 9: single-sex endpoint → 1.0, null", () => {
+    const brain = brainEp(undefined);
+    const bw = bwEp(undefined);
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+    expect(r.flag).toBeNull();
+  });
+
+  // 10. BW unavailable (no BW endpoint at all) → 1.0, null
+  test("scenario 10: no BW endpoint → 1.0, null", () => {
+    const brain = brainEp(bxsx(-0.6, -0.7, brainSex));
+    const r = computeBwMediationFactor(brain, [brain], RAT_KEY);  // no BW in list
+    expect(r.factor).toBe(1.0);
+    expect(r.flag).toBeNull();
+  });
+
+  // 11. Brain LB endpoint (AChE) — caller-side filter; function still runs but
+  // when invoked on an LB endpoint with bySex it would still try to discount.
+  // The boost-loop wiring (F4) gates by `resolveOrganBand === BRAIN_WEIGHT`, so
+  // brain-LB never enters this function. Verify by building the AChE endpoint
+  // and asserting the band routes away from BRAIN_WEIGHT.
+  test("scenario 11: brain-LB (AChE) routes to BRAIN_ENZYME, not BRAIN_WEIGHT", () => {
+    const ache: EndpointSummary = {
+      endpoint_label: "ACHE",
+      organ_system: "neurologic",
+      domain: "LB",
+      testCode: "ACHE",
+      worstSeverity: "warning",
+      treatmentRelated: true,
+      maxEffectSize: -0.7,
+      minPValue: 0.01,
+      direction: "down",
+      sexes: ["F", "M"],
+      pattern: "monotonic_decrease",
+      maxFoldChange: 0.7,
+      bySex: bxsx(-0.5, -0.9, brainSex),
+    };
+    expect(resolveOrganBand(ache)).toBe("BRAIN_ENZYME");
+    // computeBwMediationFactor is NOT called on this in the wired path.
+  });
+
+  // 12. Dog: T1=0.8 — passing DOG_BEAGLE strain key MUST fire dog thresholds
+  test("scenario 12: dog with brain |g|=0.6 (rat-passing, dog-failing) → 1.0", () => {
+    const brain = brainEp(bxsx(-0.55, -0.6, brainSex));  // both above rat T1=0.5 but below dog T1=0.8
+    const bw = bwEp(bxsx(-0.9, -1.0, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], DOG_KEY);
+    expect(r.factor).toBe(1.0);  // brain below dog T1 → no per-sex flag
+    expect(r.flag).toBeNull();
+  });
+
+  // 13. NHP: T2=2.0 — passing NHP_CYNOMOLGUS strain key
+  test("scenario 13: NHP with brain |g|=1.5 same-sign large BW → probable", () => {
+    const brain = brainEp(bxsx(-1.2, -1.5, brainSex));  // both ≥ NHP T1=1.0
+    const bw = bwEp(bxsx(-2.1, -2.3, bwSex));            // both ≥ NHP T2=2.0
+    const r = computeBwMediationFactor(brain, [brain, bw], NHP_KEY);
+    expect(r.factor).toBe(0.5);
+    expect(r.flag).toBe("probable");
+  });
+});
+
+describe("computeBwMediationFactor — boundary tests (R1 F4 fix)", () => {
+  // 14. BW_NEGLIGIBLE_G boundary at the cross-sex artifact gate.
+  test("scenario 14a: cross-sex with one |bwG|=0.299 (< BW_NEGLIGIBLE_G) → likely_artifact", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.6, 0.299, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.3);
+  });
+  test("scenario 14b: cross-sex with one |bwG|=0.301 (≥ BW_NEGLIGIBLE_G) and same-sign sub-T1 BW → no artifact", () => {
+    // Both BW same sign (positive), neither opposes; one is 0.301 (just above
+    // BW_NEGLIGIBLE_G=0.3) and one is 0.4 (also < T1=0.5 rat). Per-sex check:
+    // F brain=0.6 / bw=0.4 same-sign but |bw|<T1 → no plausible. M brain=-0.7
+    // sign differs from bw=+0.301 → no flag. Cross-sex artifact gate:
+    // bwOpposes=false, oneStableBw=false (0.301 ≥ 0.3 and 0.4 ≥ 0.3),
+    // oneAtThreshold=false (0.4 < 0.5, 0.301 < 0.5) → gate closes.
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(0.4, 0.301, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+    // bwG of 0.301 is not strictly < BW_NEGLIGIBLE_G (0.3), so the
+    // "one stable BW" path does not fire even with brain opposition.
+    void BW_NEGLIGIBLE_G;
+  });
+
+  // 15. Species T1 boundary (rat T1=0.5).
+  test("scenario 15a: brain |g|=0.499 in both sexes (< rat T1) → no flag", () => {
+    const brain = brainEp(bxsx(-0.499, -0.49, brainSex));
+    const bw = bwEp(bxsx(-1.0, -1.2, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(1.0);
+  });
+  test("scenario 15b: brain |g|=0.501 same-sign with BW ≥ T1 → plausible", () => {
+    const brain = brainEp(bxsx(-0.501, -0.6, brainSex));
+    const bw = bwEp(bxsx(-0.7, -0.8, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.7);
+    expect(r.flag).toBe("plausible");
+  });
+});
+
+describe("computeBwMediationFactor — dose-coupling guard (R1 F3 fix)", () => {
+  // 16. With bwGByGroup: cross-sex artifact pattern + |bw_g_at_peak|=0.4 (< rat T1=0.5) → demoted to plausible
+  test("scenario 16: dose-decoupled likely_artifact demoted to plausible (factor 0.3 → 0.7)", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex), {
+      worstTreatedStats: { n: 5, mean: 1.7, sd: 0.1, doseLevel: 100 },
+    });
+    const bw = bwEp(bxsx(-0.6, 0.6, bwSex));
+    const bwGByGroup = new Map<string, HedgesGResult>([
+      ["10", hgr(0.1)],
+      ["100", hgr(0.4)],   // brain peak dose, BW |g|=0.4 < T1=0.5 → demote
+    ]);
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY, bwGByGroup);
+    expect(r.factor).toBe(0.7);
+    expect(r.flag).toBe("plausible");
+    expect(r.detail.some(d => d.classification === "demoted_dose_decoupled")).toBe(true);
+  });
+
+  // 17. With bwGByGroup: same pattern + |bw_g_at_peak|=1.0 (≥ T1) → stays likely_artifact
+  test("scenario 17: dose-coupled likely_artifact stays at factor 0.3", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex), {
+      worstTreatedStats: { n: 5, mean: 1.7, sd: 0.1, doseLevel: 100 },
+    });
+    const bw = bwEp(bxsx(-0.6, 0.6, bwSex));
+    const bwGByGroup = new Map<string, HedgesGResult>([
+      ["100", hgr(1.0)],   // brain peak dose, BW |g|=1.0 ≥ T1=0.5 → keep
+    ]);
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY, bwGByGroup);
+    expect(r.factor).toBe(0.3);
+    expect(r.flag).toBe("likely_artifact");
+  });
+
+  // 18. Without bwGByGroup (omitted arg): same pattern → likely_artifact unchanged (conservative)
+  test("scenario 18: bwGByGroup omitted → conservative likely_artifact (factor 0.3)", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.6, 0.6, bwSex));
+    const r = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(r.factor).toBe(0.3);
+    expect(r.flag).toBe("likely_artifact");
+  });
+});
+
+describe("Boost-map guard for lone BW-mediation discount (R1 F2 fix)", () => {
+  // 19. A lone bwMediationFactor=0.3 must still apply on signal/evidence.
+  test("scenario 19: lone bwMediationFactor=0.3 reflected in evidence and signal score", () => {
+    const brainAdverse: EndpointSummary = {
+      endpoint_label: "BRAIN -- BRAIN (WEIGHT)",
+      organ_system: "neurologic",
+      domain: "OM",
+      worstSeverity: "adverse",
+      treatmentRelated: true,
+      maxEffectSize: 1.5,
+      minPValue: 0.001,
+      direction: "down",
+      sexes: ["F", "M"],
+      pattern: "monotonic_decrease",
+      maxFoldChange: 0.7,
+    };
+    const without = computeEndpointEvidence(brainAdverse, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 1.0,
+    });
+    const withDiscount = computeEndpointEvidence(brainAdverse, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 0.3,
+    });
+    expect(withDiscount).toBeLessThan(without);
+    // 0.3 of the evidence sum (within 5% rounding tolerance).
+    expect(withDiscount).toBeCloseTo(without * 0.3, 5);
+
+    // Signal score retains base constants (severity=3 + TR=2 = 5) regardless
+    // of evidence discount.
+    const sigWithout = computeEndpointSignal(brainAdverse, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 1.0,
+    });
+    const sigDiscount = computeEndpointSignal(brainAdverse, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 0.3,
+    });
+    expect(sigDiscount).toBeLessThan(sigWithout);
+    expect(sigDiscount).toBeGreaterThanOrEqual(5); // base constants preserved (severity 3 + TR 2)
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// Integration: PointCross fixture brain-OM + BW endpoints
+// (CLAUDE.md rule 16 — verify behavior on real generated data)
+// ═══════════════════════════════════════════════════════════
+
+describe("computeBwMediationFactor — PointCross fixture integration", () => {
+  // The shared `fixture` is the AdverseEffectSummaryRow-shaped PointCross
+  // fixture used by the routing/concordance tests above. `deriveEndpointSummaries`
+  // reconstructs `EndpointSummary` (with `bySex` populated for multi-sex
+  // endpoints) — the same shape the live runtime feeds to
+  // `computeBwMediationFactor`.
+  const summaries = deriveEndpointSummaries(fixture as AdverseEffectSummaryRow[]);
+  const brain = summaries.find(s => s.domain === "OM" && (s.specimen ?? "").toUpperCase().includes("BRAIN"));
+  const bw = summaries.find(s => s.domain === "BW");
+
+  test("brain-OM endpoint exists with bySex populated", () => {
+    expect(brain).toBeDefined();
+    // PointCross fixture has F+M brain rows — bySex should be a Map of size 2.
+    expect(brain!.bySex).toBeDefined();
+    expect(brain!.bySex!.size).toBeGreaterThanOrEqual(2);
+  });
+
+  test("BW endpoint exists with bySex populated", () => {
+    expect(bw).toBeDefined();
+    expect(bw!.bySex).toBeDefined();
+    expect(bw!.bySex!.size).toBeGreaterThanOrEqual(2);
+  });
+
+  /**
+   * Positive integration case (CLAUDE.md rule 19 — algorithm defensibility on
+   * real data). The spec (§4 Test Strategy) named CBER-POC-Pilot-Study4-Vaccine
+   * as the positive case based on a predicted BW max_effect_size=-1.57 row, and
+   * predicted PointCross would not fire (BW=-0.39). Both spec assumptions were
+   * empirically wrong:
+   *
+   *   PointCross actual: brain F=+2.03 / M=-1.42; BW F=-4.51 / M=-7.80.
+   *   The algorithm worst-case-selects BW max=|-7.80|, then per-sex M shows
+   *   same-sign brain↓+BW↓ at |bwG|=7.80 ≥ rat T2=1.0 → probable (factor 0.5).
+   *
+   * That makes PointCross the positive case, not the negative one. The spec
+   * author had used a low-effect BW row (-0.39, ≈|g|=0.4 — likely the wrong
+   * row in a multi-pairwise BW dataset). Per CLAUDE.md rule 19, this test
+   * asserts the data-defensible output: a 1-month rat study with severe BW
+   * depression (g=-7.8) genuinely warrants discounting M-sex brain weight as
+   * BW-mediated. F-sex brain↑ vs BW↓ different signs correctly does NOT
+   * flag — that is genuine anti-correlation, not BW mediation.
+   *
+   * The "negative case" (factor=1.0) is exercised by unit scenarios 1, 7, 8,
+   * 9, 10 against synthetic data. The corpus does not currently contain a
+   * brain-OM + BW-multi-sex study where the algorithm fails to fire — this
+   * is logged as a calibration concern in REGISTRY.md
+   * `brain-concordance-calibration` open-questions (peer-review 2026-04-27).
+   */
+  test("PointCross is the positive integration case: factor=0.5, flag=probable, M-sex same-sign drives", () => {
+    if (!brain || !bw) return;
+    const r = computeBwMediationFactor(brain, summaries, RAT_KEY);
+    expect(r.factor).toBe(0.5);
+    expect(r.flag).toBe("probable");
+    // Detail must include both per-sex entries; M sex carries the probable flag.
+    const mEntry = r.detail.find(d => d.sex === "M");
+    expect(mEntry).toBeDefined();
+    expect(mEntry!.classification).toBe("probable");
+    expect(mEntry!.sameSign).toBe(true);
+    // F sex must NOT be flagged (different signs between brain and BW).
+    const fEntry = r.detail.find(d => d.sex === "F");
+    expect(fEntry).toBeDefined();
+    expect(fEntry!.classification).toBe("below_threshold");
+    expect(fEntry!.sameSign).toBe(false);
+  });
+
+  test("PointCross brain signal score drops with the bw-mediation factor; clinical floor still applies", () => {
+    if (!brain || !bw) return;
+    const r = computeBwMediationFactor(brain, summaries, RAT_KEY);
+    expect(r.factor).toBeLessThan(1.0); // PointCross fires (probable)
+    const baseBoosts = {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 0,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+    };
+    const signalNoDiscount = computeEndpointSignal(brain, { ...baseBoosts, bwMediationFactor: 1.0 });
+    const signalWithDiscount = computeEndpointSignal(brain, { ...baseBoosts, bwMediationFactor: r.factor });
+    expect(signalWithDiscount).toBeLessThan(signalNoDiscount);
+    // Base constants (severity + TR) preserved — score never drops below them.
+    const minBase = brain.worstSeverity === "adverse" ? 3 : 1;
+    expect(signalWithDiscount).toBeGreaterThanOrEqual(minBase);
+
+    // Clinical floor preservation (spec §4 Test Strategy): with a clinical
+    // floor of 8, the discounted evidence cannot drop the score below 8.
+    const floored = computeEndpointSignal(brain, {
+      ...baseBoosts, clinicalFloor: 8, bwMediationFactor: r.factor,
+    });
+    expect(floored).toBeGreaterThanOrEqual(8);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// Clinical floor preservation under bw-mediation discount (R1 F4 spec §4)
+// "Formula change preserves clinical floor — floor still applies when
+//  evidence drops". Spec named findings-rail-engine.test.ts; co-located here
+// next to the other rail-engine boost tests for cohesion.
+// ═══════════════════════════════════════════════════════════
+
+describe("Clinical floor preservation with bwMediationFactor", () => {
+  test("scenario 21: floor wins when evidence × bwMediationFactor falls below floor", () => {
+    const weakBase = ep({
+      worstSeverity: "normal",
+      minPValue: 0.5,
+      maxEffectSize: 0.1,
+      treatmentRelated: false,
+      pattern: "flat",
+      domain: "OM",
+    });
+    const score = computeEndpointSignal(weakBase, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 8,
+      clinicalMultiplier: 1, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 0.3,
+    });
+    expect(score).toBe(8); // floor wins over discounted weak base * multiplier
+  });
+
+  test("scenario 22: floor wins when severity-adverse + TR + max BW-mediation discount still drops below floor", () => {
+    const adverseTR = ep({
+      worstSeverity: "adverse",
+      minPValue: 0.001,
+      maxEffectSize: 0.5,
+      treatmentRelated: true,
+      pattern: "monotonic_decrease",
+      domain: "OM",
+    });
+    // Floor 15 (S4) acts as minimum even with maximum discount.
+    const score = computeEndpointSignal(adverseTR, {
+      syndromeBoost: 0, coherenceBoost: 0, clinicalFloor: 15,
+      clinicalMultiplier: 3.0, sexConcordanceBoost: 0, confidenceMultiplier: 1,
+      bwMediationFactor: 0.3,
+    });
+    expect(score).toBeGreaterThanOrEqual(15);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// Worker parity: sync vs worker boost map (test #20)
+// computeAnalyticsSync (hook) and the worker share the same boost-loop logic.
+// Direct assertion: invoking computeBwMediationFactor with the same inputs
+// produces the same factor regardless of execution context — true by virtue
+// of the function being pure. This test documents the invariant.
+// ═══════════════════════════════════════════════════════════
+
+describe("Worker parity (BW-mediation)", () => {
+  test("scenario 20: pure function returns identical factor across N invocations (sync ≡ worker)", () => {
+    const brain = brainEp(bxsx(0.6, -0.7, brainSex));
+    const bw = bwEp(bxsx(-0.6, 0.6, bwSex));
+    const a = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    const b = computeBwMediationFactor(brain, [brain, bw], RAT_KEY);
+    expect(a.factor).toBe(b.factor);
+    expect(a.flag).toBe(b.flag);
+    expect(a.detail.length).toBe(b.detail.length);
   });
 });

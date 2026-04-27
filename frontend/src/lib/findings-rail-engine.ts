@@ -43,6 +43,10 @@ export interface SignalBoosts {
   clinicalMultiplier: number; // R3: evidence multiplier (S4=3.0, S3=2.0, S2=1.4, S1=1.0)
   sexConcordanceBoost: number; // GAP-123: organ-specific concordance/divergence boost
   confidenceMultiplier: number; // HIGH=1.0, MODERATE=0.7, LOW=0.4
+  // Proposal 5: BW-mediation evidence multiplier for brain-weight (OM) findings.
+  // 1.0 = no discount; 0.7 plausible / 0.5 probable / 0.3 likely_artifact.
+  // See computeBwMediationFactor (organ-sex-concordance.ts).
+  bwMediationFactor: number;
 }
 
 const PATTERN_WEIGHTS: Record<string, number> = {
@@ -116,7 +120,10 @@ export function computeEndpointSignal(ep: EndpointSummary, boosts?: SignalBoosts
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;
   const sexConc = boosts?.sexConcordanceBoost ?? 0;
-  const evidence = statistical + patternWeight + synBoost + cohBoost + sexConc;
+  // Proposal 5: BW-mediation discount on the evidence sum (brain-weight only).
+  // Defaults to 1.0 when not flagged; never inflates.
+  const bwMed = boosts?.bwMediationFactor ?? 1.0;
+  const evidence = (statistical + patternWeight + synBoost + cohBoost + sexConc) * bwMed;
 
   // ── Clinical multiplier (R3: amplifies evidence, not constants) ──
   const clinMult = boosts?.clinicalMultiplier ?? 1.0;
@@ -154,7 +161,9 @@ export function computeEndpointEvidence(ep: EndpointSummary, boosts?: SignalBoos
   const synBoost = boosts?.syndromeBoost ?? 0;
   const cohBoost = boosts?.coherenceBoost ?? 0;
   const sexConc = boosts?.sexConcordanceBoost ?? 0;
-  return statistical + patternWeight + synBoost + cohBoost + sexConc;
+  // Proposal 5: mirror computeEndpointSignal — same evidence sum, same multiplier.
+  const bwMed = boosts?.bwMediationFactor ?? 1.0;
+  return (statistical + patternWeight + synBoost + cohBoost + sexConc) * bwMed;
 }
 
 // ─── Endpoint confidence classification ──────────────────────

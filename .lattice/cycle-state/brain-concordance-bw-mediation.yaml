@@ -1,8 +1,9 @@
 topic: brain-concordance-bw-mediation
 started: 2026-04-04
-phase: research-complete
-current_step: build.0
+phase: build
+current_step: build.2
 parent: brain-weight-sex-concordance-calibration
+revision: 4
 completed:
   research.1:
     completed: 2026-04-04
@@ -31,3 +32,52 @@ completed:
     completed: 2026-04-04
     key_decisions:
       - "All SOUND/CONDITIONAL -- VALIDATED"
+  blueprint.0:
+    completed: 2026-04-26
+    key_decisions:
+      - "Implementation context loaded: 0 FAILED relevant, parent SHIPPED 2026-04-04"
+      - "Probe-validated invariant (P5 bwMediationFactor <=1.0)"
+      - "No merge risk with sister topics (P3+P4 separate AnalyticsWorkerInput surface)"
+    output: ".lattice/decisions.log entry 529"
+  blueprint.1:
+    completed: 2026-04-26
+    key_decisions:
+      - "6 features F1-F6: computeBwMediationFactor, bwMediationFactor field, evidence multiplier (sync+worker), unit+integration tests, methods.md regen"
+      - "No new files, no new abstractions, no backend changes"
+    output: "docs/_internal/incoming/brain-concordance-bw-mediation-synthesis.md"
+  blueprint.2:
+    completed: 2026-04-26
+    key_decisions:
+      - "Architect SIMPLIFY auto-applied (export DEFAULT_BRAIN_TIER_THRESHOLDS, worst-case BW selection inside fn)"
+      - "Re-gate PASS"
+    output: "docs/_internal/research/peer-reviews/brain-concordance-bw-mediation-architect-review.md"
+  blueprint.3:
+    completed: 2026-04-26
+    key_decisions:
+      - "Probe: 0 BREAKS, 1 SCIENCE-FLAG (S10 intended), 4 PROPAGATES (S15/S16/S17/S23 desired corrections)"
+      - "SCIENCE-FLAG auto-resolves with 9 literature citations"
+    output: ".lattice/decisions.log entry 533"
+  blueprint.4:
+    completed: 2026-04-26
+    key_decisions:
+      - "R1: 4 FLAWED + 4 CONDITIONAL across 7 dimensions, all accepted"
+    output: "docs/_internal/research/peer-reviews/brain-concordance-bw-mediation-synthesis-review.md"
+  blueprint.5:
+    completed: 2026-04-26
+    key_decisions:
+      - "All 8 R1 findings incorporated. Test count 13->20 unit + 2 integration."
+      - "Key fixes: speciesStrainKey signature, boost-map guard, dose-coupling guard via bwGByGroup, BW_NEGLIGIBLE_G named const, test path correction, JSDoc cross-refs, methods 4-part disclosure"
+    output: "docs/_internal/incoming/brain-concordance-bw-mediation-synthesis.md (updated)"
+  blueprint.6:
+    completed: 2026-04-26
+    key_decisions:
+      - "R2: 6/8 RESOLVED, 2 PARTIAL (F1, F5)"
+      - "N1 FACTUAL_DISPUTE auto-resolved (AnalyticsWorkerInput + computeAnalyticsSync extension explicit in F4)"
+      - "BUILD PLAN VALIDATED"
+    output: "docs/_internal/research/peer-reviews/brain-concordance-bw-mediation-synthesis-review-r2.md"
+  blueprint.7:
+    completed: 2026-04-27
+    key_decisions:
+      - "Gap persistence verified: GAP-219 (calibration) + GAP-221 (threshold coupling) in TODO.md; testes/heart extension added to REGISTRY.md brain-divergence-calibration parent stream"
+      - "Data Gaps: None (Section 6 confirmed)"
+      - "Cycle complete -- ready for /lattice:build-cycle"

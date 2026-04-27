@@ -1,12 +1,20 @@
 {
-  "timestamp": "2026-04-27T11:40:59Z",
+  "timestamp": "2026-04-27T13:11:57Z",
   "verdict": "pass",
-  "summary": "post-cycle: hcd-between-study-heterogeneity phase=complete state finalization",
+  "summary": "brain-concordance-bw-mediation: F1-F6 shipped (computeBwMediationFactor + bwMediationFactor field + evidence multiplier sync+worker + 28 tests). 3 review issues addressed: sex-code filter hardening, PointCross integration test asserts data-defensible factor=0.5 probable, clinical-floor preservation tests added. Spec archived. Build PASS, 157 tests PASS, triangle audit PASS.",
   "checks_run": 0,
   "checks_passed": 0,
   "algorithm_check": "not-applicable",
-  "attestations": [],
+  "attestations": [
+    {
+      "kind": "peer-review",
+      "ref": "frontend/src/lib/organ-sex-concordance.ts::computeBwMediationFactor (R1 hardening: sex-code filter; corpus-discount-fires gap logged)",
+      "verdict": "CONDITIONAL",
+      "rationale": "Algorithm peer review SOUND on fundamentals (rat/dog/NHP brainTierThresholds defensible per Sprengell 2021/Bailey 2004/Crofton 2024); 3 calibration concerns logged in REGISTRY brain-concordance-calibration: BW_NEGLIGIBLE_G fixed not species-calibrated, NHP T2=2.0 loose, no corpus negative-case study yet",
+      "agent_id": "peer-review-brain-concordance-bw-mediation-2026-04-27"
+    }
+  ],
   "staged_files": "",
-  "head_at_review": "661537a4",
+  "head_at_review": "79d1e15f",
   "written_by": "write-review-gate.sh"
 }

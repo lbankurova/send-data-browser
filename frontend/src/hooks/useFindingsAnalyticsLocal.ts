@@ -27,8 +27,9 @@ import { attachEndpointConfidence } from "@/lib/endpoint-confidence";
 import { detectCrossDomainSyndromes } from "@/lib/cross-domain-syndromes";
 import { evaluateLabRules, getClinicalFloor, getClinicalMultiplier, EFFECT_SIZE_CONFIDENCE_LEVEL } from "@/lib/lab-clinical-catalog";
 import { computeGLower, computeGUpper } from "@/lib/g-lower";
-import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
-import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
+import { getSexConcordanceBoost, computeBwMediationFactor, resolveOrganBand } from "@/lib/organ-sex-concordance";
+import { buildSpeciesStrainKey, type HedgesGResult } from "@/lib/organ-weight-normalization";
+import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier, type SignalBoosts } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import { normalizeSpecies } from "@/lib/syndrome-translational";
 
@@ -88,6 +89,12 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
     };
   }, [workerSupported]);
 
+  // Proposal 5 (BW-mediation): both pipelines need raw strain + per-group BW
+  // Hedges' g for the brain-weight discount logic. `bwGByGroup` lives on the
+  // hook's state object, not the top-level return.
+  const strain = studyMeta?.strain ?? null;
+  const bwGByGroup = normalization.state?.bwGByGroup ?? null;
+
   // Post data to worker when inputs change
   useEffect(() => {
     if (!workerRef.current || !activeFindings.length) return;
@@ -97,10 +104,12 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       hasEstrousData: studyMeta?.has_estrous_data ?? false,
       normContexts,
       species,
+      strain,
+      bwGByGroup,
       endpointLoaelSummary: data?.endpoint_loael_summary ?? null,
     };
     workerRef.current.postMessage(input);
-  }, [activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species]);
+  }, [activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species, strain, bwGByGroup]);
 
   // ── Sync fallback (used when worker not available) ──
   const syncAnalytics = useMemo(() => {
@@ -112,9 +121,11 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       studyMeta?.has_estrous_data ?? false,
       normContexts,
       species,
+      strain,
+      bwGByGroup,
       data?.endpoint_loael_summary ?? null,
     );
-  }, [useWorker, activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species]);
+  }, [useWorker, activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species, strain, bwGByGroup]);
 
   // ── Merge worker result into analytics shape ──
   const analytics = useMemo((): FindingsAnalytics => {
@@ -164,6 +175,8 @@ function computeAnalyticsSync(
   hasEstrousData: boolean,
   normContexts: import("@/lib/organ-weight-normalization").NormalizationContext[] | undefined,
   species: string,
+  strain: string | null,
+  bwGByGroup: Map<string, HedgesGResult> | null,
   endpointLoaelSummary?: Record<string, import("@/types/analysis").EndpointLoaelAggregated> | null,
 ): FindingsAnalytics {
   const rows = mapFindingsToRows(findings);
@@ -267,7 +280,9 @@ function computeAnalyticsSync(
     }
   }
 
-  const boostMap = new Map<string, { syndromeBoost: number; coherenceBoost: number; clinicalFloor: number; clinicalMultiplier: number; sexConcordanceBoost: number; confidenceMultiplier: number }>();
+  // Proposal 5: build strain key once per study for BW-mediation lookups.
+  const speciesStrainKey = buildSpeciesStrainKey(species, strain);
+  const boostMap = new Map<string, SignalBoosts>();
   for (const ep of endpoints) {
     let synBoost = 0;
     for (const syn of syndromes) {
@@ -289,8 +304,13 @@ function computeAnalyticsSync(
     const sexConc = getSexConcordanceBoost(ep, species);
     const conf = classifyEndpointConfidence(ep);
     const confMult = getConfidenceMultiplier(conf);
-    if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1) {
-      boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalMultiplier: clinMult, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult });
+    // Proposal 5: BW-mediation discount on brain-weight (OM) endpoints only.
+    let bwMediationFactor = 1.0;
+    if (ep.domain === "OM" && resolveOrganBand(ep) === "BRAIN_WEIGHT") {
+      bwMediationFactor = computeBwMediationFactor(ep, endpoints, speciesStrainKey, bwGByGroup ?? undefined).factor;
+    }
+    if (cohBoost > 0 || synBoost > 0 || floor > 0 || clinMult > 1 || sexConc !== 0 || confMult !== 1 || bwMediationFactor !== 1.0) {
+      boostMap.set(ep.endpoint_label, { syndromeBoost: synBoost, coherenceBoost: cohBoost, clinicalFloor: floor, clinicalMultiplier: clinMult, sexConcordanceBoost: sexConc, confidenceMultiplier: confMult, bwMediationFactor });
     }
   }
   const scored = withSignalScores(endpoints, boostMap);

@@ -11,6 +11,11 @@
 
 import type { EndpointSummary } from "@/lib/derive-summaries";
 import { sexesDisagree } from "@/lib/lab-clinical-catalog";
+import {
+  SPECIES_STRAIN_PROFILES,
+  DEFAULT_BRAIN_TIER_THRESHOLDS,
+  type HedgesGResult,
+} from "@/lib/organ-weight-normalization";
 import bandsData from "../../../shared/organ-sex-concordance-bands.json";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -167,4 +172,215 @@ function lookupBand(band: string | null, species: string): BandBoosts | null {
     return speciesData[band] ?? null; // null for REPRODUCTIVE
   }
   return defaultBoosts;
+}
+
+// ─── BW-mediation auto-check (Proposal 5) ─────────────────
+
+export type BwMediationFlag = "plausible" | "probable" | "likely_artifact";
+
+export interface BwMediationDetail {
+  sex: string;
+  brainG: number | null;
+  bwG: number | null;
+  sameSign: boolean | null;
+  classification: BwMediationFlag | "below_threshold" | "no_bw_data" | "demoted_dose_decoupled";
+}
+
+/**
+ * Threshold below which a sex's BW Hedges' g is considered "stable" for the
+ * cross-sex artifact check. Expert-judgment value, NOT calibrated against
+ * a study corpus. See `research/brain-concordance-bw-mediation.md` §2.3 step 4
+ * and TODO.md GAP-219 (calibration follow-up).
+ */
+const BW_NEGLIGIBLE_G = 0.3;
+
+/**
+ * Discount factors per BW-mediation classification. Provisional values from
+ * research §2.4 — empirical calibration tracked at REGISTRY.md
+ * `brain-concordance-calibration` stream and TODO.md GAP-219.
+ */
+const FACTOR_BY_FLAG: Record<BwMediationFlag, number> = {
+  plausible: 0.7,
+  probable: 0.5,
+  likely_artifact: 0.3,
+};
+
+const FLAG_RANK: Record<BwMediationFlag, number> = {
+  plausible: 1,
+  probable: 2,
+  likely_artifact: 3,
+};
+
+/**
+ * Detect when a brain weight finding is body-weight-mediated and return a
+ * frontend-only signal-evidence discount factor. Pure function: no side effects,
+ * no I/O.
+ *
+ * # Algorithm (research/brain-concordance-bw-mediation.md §2.3)
+ *
+ * 1. Locate the worst-case BW endpoint by `|maxEffectSize|`. None / no `bySex`
+ *    → no discount.
+ * 2. Look up `[T1, T2]` from `SPECIES_STRAIN_PROFILES[speciesStrainKey].brainTierThresholds`
+ *    (fallback `DEFAULT_BRAIN_TIER_THRESHOLDS`).
+ * 3. Per-sex same-sign check: if `|brainG| ≥ T1` AND `sign(brainG) === sign(bwG)`,
+ *    classify `plausible` (`|bwG| ≥ T1`) or `probable` (`|bwG| ≥ T2`).
+ * 4. Cross-sex artifact check (when `bySex.size ≥ 2`): brain directions oppose
+ *    AND (BW directions oppose OR one sex `|bwG| < BW_NEGLIGIBLE_G`) AND at least
+ *    one sex has `|bwG| ≥ T1` → `likely_artifact` candidate.
+ * 5. Dose-coupling guard (when `bwGByGroup` provided): if the brain endpoint's
+ *    peak-effect dose group has `|bw_g| < T1`, demote `likely_artifact` →
+ *    `plausible` (factor 0.3 → 0.7). Without the guard the classification
+ *    stands as research-spec — the conservative behavior (research §1.3:
+ *    endpoint-level worst case is more likely to flag than miss).
+ * 6. Return the worst (most-discounting) factor across all sex/cross-sex
+ *    classifications: `likely_artifact: 0.3, probable: 0.5, plausible: 0.7,
+ *    none: 1.0`.
+ *
+ * # Methods note (regenerated to docs/methods.md by `/regen-science`)
+ *
+ * **BW-mediation auto-check.** For brain-weight (OM) findings in multi-sex
+ * studies, the rail signal score discounts evidence by a factor reflecting
+ * how strongly body-weight changes mediate the apparent brain effect.
+ * Species-calibrated brain Hedges' g thresholds (rat `[0.5, 1.0]`,
+ * dog `[0.8, 1.5]`, NHP `[1.0, 2.0]`) gate per-sex same-sign and cross-sex
+ * artifact patterns. Citations: Sprengell 2021 (brain sparing 11–40% BW),
+ * Bailey 2004 (brain–BW correlation), Crofton 2024 (DNT brain-vs-BW).
+ * Rationale for species-calibrated (not fixed) thresholds: research §2.5.
+ *
+ * **Calibration is provisional.** The 0.7/0.5/0.3 discount factors and the
+ * `BW_NEGLIGIBLE_G = 0.3` cross-sex stability threshold are expert-judgment
+ * starting points and have not been calibrated against an empirical study
+ * corpus. See open validation stream `brain-concordance-calibration`
+ * (REGISTRY.md) and TODO.md GAP-219 for status.
+ *
+ * **Application conditions.** Only `BRAIN_WEIGHT` band (OM domain), only
+ * multi-sex studies (the cross-sex check requires `bySex` ≥ 2). No impact on
+ * severity/TR classification — the discount applies to the rail's evidence
+ * sum only.
+ *
+ * @param brainEp        the brain-weight endpoint under evaluation.
+ * @param endpoints      all endpoints in the study (used to locate the worst
+ *                       BW endpoint).
+ * @param speciesStrainKey  built via `buildSpeciesStrainKey(species, strain)` from
+ *                          `organ-weight-normalization.ts`. Format:
+ *                          "RAT_SPRAGUE_DAWLEY", "DOG_BEAGLE", "NHP_CYNOMOLGUS".
+ *                          NOT the lowercase species name returned by
+ *                          `normalizeSpecies` — passing "rat" silently misses
+ *                          the lookup and falls back to defaults for every
+ *                          species, disabling dog/NHP calibration.
+ * @param bwGByGroup    (optional) per-dose-group worst-case BW Hedges' g from
+ *                      `useOrganWeightNormalization.state.bwGByGroup`. When
+ *                      provided, the cross-sex `likely_artifact` flag is
+ *                      additionally required to be dose-coupled (the brain
+ *                      endpoint's peak-effect dose group must also show a
+ *                      study-level BW perturbation `≥ T1`). Guards against
+ *                      the dose-decoupled false positive (research R1 F3).
+ *                      `bwGByGroup` is study-level (NOT per-sex) — keys are
+ *                      `String(doseLevel)` per `organ-weight-normalization.ts`.
+ *
+ * @see DEFAULT_BRAIN_TIER_THRESHOLDS
+ * @see SPECIES_STRAIN_PROFILES
+ * @see contract-triangles.md#brainTierThresholds
+ */
+export function computeBwMediationFactor(
+  brainEp: EndpointSummary,
+  endpoints: EndpointSummary[],
+  speciesStrainKey: string,
+  bwGByGroup?: Map<string, HedgesGResult>,
+): { factor: number; flag: BwMediationFlag | null; detail: BwMediationDetail[] } {
+  // 1. Locate worst-case BW endpoint by |maxEffectSize|.
+  let bwEp: EndpointSummary | null = null;
+  let bwAbs = 0;
+  for (const ep of endpoints) {
+    if (ep.domain !== "BW") continue;
+    const m = ep.maxEffectSize == null ? 0 : Math.abs(ep.maxEffectSize);
+    if (m > bwAbs) {
+      bwAbs = m;
+      bwEp = ep;
+    }
+  }
+  if (!bwEp || !bwEp.bySex || bwEp.bySex.size === 0 || !brainEp.bySex || brainEp.bySex.size === 0) {
+    return { factor: 1.0, flag: null, detail: [] };
+  }
+
+  // 2. Species-calibrated thresholds.
+  const profile = SPECIES_STRAIN_PROFILES[speciesStrainKey];
+  const [T1, T2] = profile?.brainTierThresholds ?? DEFAULT_BRAIN_TIER_THRESHOLDS;
+
+  // 3. Per-sex same-sign classification.
+  const detail: BwMediationDetail[] = [];
+  let worstFlag: BwMediationFlag | null = null;
+  const setFlag = (f: BwMediationFlag) => {
+    if (worstFlag == null || FLAG_RANK[f] > FLAG_RANK[worstFlag]) worstFlag = f;
+  };
+
+  for (const [sex, brainSex] of brainEp.bySex) {
+    const bwSex = bwEp.bySex.get(sex);
+    const brainG = brainSex.maxEffectSize;
+    const bwG = bwSex?.maxEffectSize ?? null;
+    if (brainG == null || bwG == null) {
+      detail.push({ sex, brainG, bwG, sameSign: null, classification: "no_bw_data" });
+      continue;
+    }
+    const sameSign = Math.sign(brainG) === Math.sign(bwG);
+    if (Math.abs(brainG) < T1) {
+      detail.push({ sex, brainG, bwG, sameSign, classification: "below_threshold" });
+      continue;
+    }
+    if (sameSign && Math.abs(bwG) >= T2) {
+      detail.push({ sex, brainG, bwG, sameSign, classification: "probable" });
+      setFlag("probable");
+    } else if (sameSign && Math.abs(bwG) >= T1) {
+      detail.push({ sex, brainG, bwG, sameSign, classification: "plausible" });
+      setFlag("plausible");
+    } else {
+      detail.push({ sex, brainG, bwG, sameSign, classification: "below_threshold" });
+    }
+  }
+
+  // 4. Cross-sex artifact check (≥2 sexes).
+  // Filter to known sex codes M/F to guard against any future "Combined"
+  // pseudo-sex entry from derive-summaries (peer-review hardening 2026-04-27).
+  if (brainEp.bySex.size >= 2) {
+    const brainBySex: { sex: string; g: number; bwG: number | null }[] = [];
+    for (const [sex, brainSex] of brainEp.bySex) {
+      if (sex !== "M" && sex !== "F") continue;
+      const bwSex = bwEp.bySex.get(sex);
+      if (brainSex.maxEffectSize == null) continue;
+      brainBySex.push({ sex, g: brainSex.maxEffectSize, bwG: bwSex?.maxEffectSize ?? null });
+    }
+    if (brainBySex.length >= 2) {
+      const signs = new Set(brainBySex.map(s => Math.sign(s.g)));
+      const brainOpposes = signs.has(1) && signs.has(-1);
+      const bwsKnown = brainBySex.filter(s => s.bwG != null) as { sex: string; g: number; bwG: number }[];
+      const bwSigns = new Set(bwsKnown.map(s => Math.sign(s.bwG)));
+      const bwOppose = bwSigns.has(1) && bwSigns.has(-1);
+      const oneStableBw = bwsKnown.some(s => Math.abs(s.bwG) < BW_NEGLIGIBLE_G);
+      const oneAtThreshold = bwsKnown.some(s => Math.abs(s.bwG) >= T1);
+      if (brainOpposes && (bwOppose || oneStableBw) && oneAtThreshold) {
+        // 5. Dose-coupling guard: demote when the brain endpoint's peak-effect
+        // dose group is not BW-coupled at the study level.
+        let demoted = false;
+        if (bwGByGroup && bwGByGroup.size > 0 && brainEp.worstTreatedStats?.doseLevel != null) {
+          const key = String(brainEp.worstTreatedStats.doseLevel);
+          const peakBw = bwGByGroup.get(key);
+          if (peakBw != null && Math.abs(peakBw.g) < T1) demoted = true;
+        }
+        const flag: BwMediationFlag = demoted ? "plausible" : "likely_artifact";
+        for (const s of brainBySex) {
+          detail.push({
+            sex: s.sex,
+            brainG: s.g,
+            bwG: s.bwG,
+            sameSign: null,
+            classification: demoted ? "demoted_dose_decoupled" : "likely_artifact",
+          });
+        }
+        setFlag(flag);
+      }
+    }
+  }
+
+  if (worstFlag == null) return { factor: 1.0, flag: null, detail };
+  return { factor: FACTOR_BY_FLAG[worstFlag], flag: worstFlag, detail };
 }

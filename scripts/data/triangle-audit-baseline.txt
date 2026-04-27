@@ -54,7 +54,7 @@
     present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
     line:    const SEVERITY_RANK: Record<string, number> = { adverse: 2, warning: 1, normal: 0 };
 
-  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/findings-rail-engine.ts:421
+  TRIANGLE '`severity` enum (4-value)': subset straggler at frontend/src/lib/findings-rail-engine.ts:430
     present: ['adverse', 'normal', 'warning']  missing: ['not_assessed']
     line:    severity: ReadonlySet<string> | null;  // subset of {"adverse","warning","normal"} or null (all)
 
