@@ -1,0 +1,297 @@
+# SENDEX — Full Reference for AI Consumers
+
+> Deep index of SENDEX public documentation. Inlined method IDs and section
+> outlines so an agent can locate and cite specifics without scanning every
+> file.
+
+SENDEX (SEND Explorer) analyzes pre-clinical regulatory study data in
+CDISC SENDIG 3.1 format. XPT inputs → Python generator pipeline →
+React/TypeScript viewer. Output is structured JSON under
+`backend/generated/<study>/`. Every method, threshold, and rule below
+is auto-generated from live code and stays in sync with the engine.
+
+## Table of contents
+
+1. Methods registry — stable IDs (STAT, METH, CLASS, DATA)
+2. Scientific logic — syndromes (XS01-XS10, XC01-XC12) and behavior (B.1-B.6)
+3. Validation — suite design, study cards, signal detection
+4. Conventions, constraints, and pitfalls
+
+---
+
+## 1. Methods registry ([methods.md](methods.md))
+
+Organized by category. Each ID is the stable reference used in specs
+(via frontmatter `methods:` fields) and in backend/frontend code comments.
+
+### Statistical tests (STAT-*)
+
+| ID | Name |
+|----|------|
+| STAT-01 | Welch's t-test (two-tailed, unequal variance) |
+| STAT-02 | Mann-Whitney U |
+| STAT-03 | Boschloo's exact test (2x2) — default; Fisher's exact as override |
+| STAT-04 | Jonckheere-Terpstra trend test |
+| STAT-05 | Cochran-Armitage trend test |
+| STAT-06 | One-way ANOVA F-test |
+| STAT-07 | Dunnett's test |
+| STAT-08 | Kruskal-Wallis H-test |
+| STAT-09 | Spearman rank correlation |
+| STAT-10 | Bonferroni correction |
+| STAT-11 | Binomial SE tolerance |
+| STAT-12 | Hedges' g effect size (bias-corrected) |
+| STAT-12b | Cohen's d effect size (uncorrected) |
+| STAT-12c | Glass's Δ effect size (control SD only) |
+| STAT-13 | Welch pairwise (raw p-values for Bonferroni) |
+| STAT-14 | Williams' step-down test (pairwise) |
+| STAT-14b | Williams' trend test |
+| STAT-15 | ANCOVA (analysis of covariance) |
+
+### Methods (METH-*)
+
+| ID | Name |
+|----|------|
+| METH-01 | Dual-pass early-death exclusion |
+| METH-02 | BW percent change from baseline |
+| METH-03 | Relative organ weight (organ-to-body ratio) |
+| METH-03a | Organ weight normalization auto-selection (Phase 1) |
+| METH-04 | MI severity score mapping |
+| METH-05 | Incidence normalization |
+| METH-06 | Tissue/biomarker organ-system resolution |
+| METH-07 | Tumor morphology to cell type |
+| METH-08 | SETCD to dose-level mapping (TK satellite) |
+| METH-08a | TK satellite detection and statistical exclusion |
+| METH-09 | ISO 8601 duration parsing |
+| METH-10 | BQL handling (LLOQ/2 imputation) |
+| METH-11 | TK survivorship cross-reference |
+| METH-12 | Rule suppression (deduplication) |
+| METH-13 | Direction determination |
+| METH-14 | Cross-domain syndrome detection (XS01–XS10, XC01a–XC12c) |
+| METH-15 | Compound expression evaluator |
+| METH-16 | Endpoint synonym resolution |
+| METH-17 | Endpoint aggregation (multi-row dedup) |
+| METH-18 | Organ coherence derivation (evidence_score composition) |
+| METH-19 | Histopathology proxy matching |
+| METH-20 | Sex-divergence projection |
+| METH-21 | MedDRA dictionary key building |
+| METH-22 | Discriminator evaluation (two-pass) |
+| METH-23 | Finding term normalization |
+| METH-24 | Stress confound detection (REM-10) |
+| METH-25 | Adaptive response pattern (REM-16) |
+| METH-26 | Species-specific preferred biomarkers (REM-11) |
+| METH-27 | Treatment-relatedness reasoning trace (REM-17) |
+| METH-28 | Histopathologic severity grade extraction (REM-21) |
+| METH-29 | Data sufficiency gate (REM-15 + REM-20) |
+| METH-30 | Magnitude floor per endpoint class (REM-27) |
+| METH-31 | Certainty upgrade evidence (v0.3.0 PATCH-04) |
+| METH-32 | Food consumption per-sex key stats derivation |
+| METH-38 | Cross-organ chain detection |
+
+### Classifications (CLASS-*)
+
+| ID | Name |
+|----|------|
+| CLASS-01 | Severity classification |
+| CLASS-02 | Dose-response pattern (continuous) |
+| CLASS-03 | Dose-response pattern (incidence/histopath) |
+| CLASS-04 | Pattern confidence scoring |
+| CLASS-05 | Treatment-relatedness determination |
+| CLASS-06 | NOAEL/LOAEL derivation (backend) |
+| CLASS-07 | Endpoint NOAEL derivation (frontend, pairwise) |
+| CLASS-08 | Target organ flagging |
+| CLASS-09 | Cross-domain syndrome confidence |
+| CLASS-10 | Recovery verdict |
+| CLASS-10b | Recovery verdict (continuous endpoints) |
+| CLASS-11 | Protective signal classification |
+| CLASS-12 | Syndrome certainty assessment |
+| CLASS-13 | Adversity assessment (ECETOC B-factors) |
+| CLASS-14 | Overall severity cascade |
+| CLASS-15 | Lab rule severity grading (L01–L31) |
+| CLASS-16 | Endpoint confidence (findings rail) |
+| CLASS-17 | Dose-proportionality (log-log PK) |
+| CLASS-18 | Rule engine (R01–R19) |
+| CLASS-19 | Finding nature classification |
+| CLASS-20 | Recovery classification (interpretive layer) |
+| CLASS-21 | Organ proportionality index (OPI) classification |
+| CLASS-22 | Non-monotonic detection |
+| CLASS-23 | Trend test validity |
+| CLASS-24 | Normalization confidence ceiling |
+| CLASS-25 | Integrated endpoint confidence |
+| CLASS-26 | NOAEL contribution weight |
+| CLASS-27 | Weighted NOAEL derivation |
+
+### Data handling (DATA-*)
+
+| ID | Name |
+|----|------|
+| DATA-01 | Recovery-animal treatment-period pooling |
+| DATA-02 | Time-course y-axis transformations |
+
+---
+
+## 2. Scientific logic ([scientific-logic.md](scientific-logic.md))
+
+Auto-generated review doc showing the full pipeline applied to
+PointCross (RAT, Sprague-Dawley, oral gavage, 13-week subchronic).
+61 endpoint summaries → 10 detected syndromes.
+
+### Syndromes — cross-domain (XS01–XS10)
+
+| ID | Syndrome |
+|----|----------|
+| XS01 | Hepatocellular injury |
+| XS02 | Hepatobiliary / cholestatic |
+| XS03 | Nephrotoxicity |
+| XS04 | Myelosuppression |
+| XS05 | Hemolytic anemia |
+| XS06 | Phospholipidosis |
+| XS07 | Immunotoxicity |
+| XS08 | Stress response |
+| XS09 | Target organ wasting |
+| XS10 | Cardiovascular |
+
+### Syndromes — organ-specific (XC01–XC12)
+
+| ID | Syndrome |
+|----|----------|
+| XC01a/b/c | BM myeloid / erythroid / megakaryocyte suppression |
+| XC02 | Hemolytic anemia multi-organ |
+| XC03a/b | Thyroid FCHH — enzyme induction / direct |
+| XC04a/b/c | Adrenal cortical hypertrophy (stress) / atrophy (HPA suppression) / vacuolation (steroidogenesis block) |
+| XC05 | Adrenal medullary effects |
+| XC06a/b/c | Testicular germ cell toxicity / Leydig cell / male accessory sex organ atrophy |
+| XC07a | Ovarian follicular effects |
+| XC08a/b | Uterine atrophy / hyperplasia |
+| XC09 | CNS neuronal degeneration |
+| XC10 | PNS axonal degeneration |
+| XC11a/b | Dermal / injection-site effects |
+| XC12a/b/c | Retinal / lens / corneal effects |
+
+### Interpretive behavior (B.1–B.6)
+
+| Section | Topic |
+|---------|-------|
+| B.1 | Certainty assessment |
+| B.2 | Treatment-relatedness (ECETOC A-factors) |
+| B.3 | Adversity assessment (ECETOC B-factors) |
+| B.4 | Severity cascade |
+| B.5 | Translational confidence |
+| B.6 | Statistical methods (REM-06) |
+
+---
+
+## 3. Validation ([validation/](validation/))
+
+Two-layer validation suite:
+
+- **Engine output** — per-study facts read directly from generated JSON. No verdicts, no human input.
+- **Signal detection** — binary DETECTED or MISSED verdicts against reference cards. Design assertions use MATCH or MISMATCH.
+
+Most studies are **synthetic datasets** with known, deliberately injected signals.
+
+### Key files
+
+- [summary.md](validation/summary.md): Dashboard table — per-study signal score, design match, assertion outcomes
+- [engine-output.md](validation/engine-output.md): Per-study facts (design, dose groups, classification counts, NOAEL/LOAEL, target organs, provenance)
+- [signal-detection.md](validation/signal-detection.md): Per-signal DETECTED/MISSED verdicts with effect sizes
+- [README.md](validation/README.md): Suite design and study sources
+
+### Reference cards ([validation/references/](validation/references/))
+
+One YAML per study, encoding injected signals and expected design. Every claim traces to nSDRG, study report, or define.pdf.
+
+Current coverage:
+- CBER-POC-Pilot-Study1 through Study5 (synthetic vaccine / gene-therapy)
+- CJ16050-xptonly (synthetic rat)
+- CJUGSEND00 (synthetic)
+- FFU-Contribution-to-FDA (real)
+- instem, Nimble, PDS (synthetic)
+- PointCross (synthetic rat — the reference study for scientific-logic.md)
+- TOXSCI-35449 dog Compound B (real)
+- TOXSCI-43066 dog Compound A (real)
+- TOXSCI-87497 rat Compound B (real)
+- TOXSCI-96298 rat Compound A (real)
+
+---
+
+## 4. Conventions, constraints, and pitfalls
+
+### Small-N preclinical
+
+SENDEX targets **non-rodent N=3–5** as well as rodent N=10. Advice
+assuming N>30 or parametric-normality defaults is wrong for this
+domain. The engine prefers robust / non-parametric methods.
+
+The only load-bearing normality assumption is tracked as GAP-236 (HCD
+reference ranges use `mean ± 2*sd` which understates the upper tail
+for log-normal endpoints like ALT, AST, creatinine, bilirubin, GGT).
+
+### SEND domain codes
+
+Standard per CDISC SENDIG 3.1:
+
+- DM — demographics
+- EX — exposure
+- LB — laboratory test results
+- BW — body weights
+- MI — microscopic findings (histopathology)
+- MA — macroscopic findings
+- CL — clinical observations
+- OM — organ measurements
+- TK — toxicokinetics
+- TS — trial summary
+- PC — pharmacokinetic concentrations
+- FW — food / water consumption
+- BG — body-gain / growth-related
+- VS — vital signs
+- TF — tumor findings
+
+### Dose groups
+
+Labeled by ascending dose level; control is dose 0. High dose = last
+index. TK satellite animals handled separately (METH-08, METH-08a).
+
+### Primary regulatory outputs
+
+- **Target organ identification** — organs with convergent evidence across domains (MI, OM, LB)
+- **Dose-response patterns** — continuous (CLASS-02) and incidence (CLASS-03)
+- **NOAEL / LOAEL** — backend derivation (CLASS-06) + frontend pairwise view (CLASS-07)
+- **Reversibility verdicts** — recovery (CLASS-10 / CLASS-10b / CLASS-20)
+- **Treatment-relatedness** — with reasoning trace (CLASS-05, METH-27)
+
+### Statistical conservatism
+
+- Pre-specified test assignment (not data-adaptive)
+- Robust effect sizes (Hedges' g, MAD-based z-scores)
+- Bonferroni correction for multi-comparisons (STAT-10)
+- Williams' step-down as trend alternative (STAT-14)
+- LOO (leave-one-out) stability for fragile NOAELs
+
+### Species coverage
+
+Rat, dog, rabbit, NHP (cynomolgus), guinea pig. Mouse coverage is
+partial — see GAP-262 (dedicated mouse syndrome override profile).
+
+### Key fields in generated JSON
+
+- `unified_findings.json` — canonical finding list per study
+- `noael_summary.json` — NOAEL/LOAEL derivation
+- `target_organ_summary.json` — target organs with evidence scoring
+- `group_stats[]` on each finding — per-dose statistics
+- `pairwise[]` on each finding — pairwise vs control
+- `group_stats[].severity_grade_counts` — histopathology severity bins
+
+See `docs/_internal/knowledge/field-contracts-index.md` (private) for
+full field definitions.
+
+---
+
+## Regeneration
+
+- `docs/methods.md` — regenerated from code annotations by the methods-generator
+- `docs/scientific-logic.md` — regenerated via `/regen-science` against a fixed reference study (PointCross)
+- `docs/validation/*.md` — regenerated via `/regen-validation`
+
+This file (`llms-full.txt`) is currently curated, not auto-generated.
+Regeneration cadence: update when method IDs, syndrome IDs, or
+validation study coverage change. Tracked as follow-up to GAP-265.

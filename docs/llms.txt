@@ -1,0 +1,47 @@
+# SENDEX
+
+> SENDEX (SEND Explorer) is a web application for exploring pre-clinical
+> regulatory study data in SEND format (FDA SENDIG 3.1). The analysis
+> engine auto-generates every insight that can be auto-generated from
+> XPT study files; the UI is built for scientists doing daily analytical
+> work at small N (non-rodent, N=3-5) where honest uncertainty
+> communication matters more than hidden-complexity defaults.
+
+The stack: XPT inputs → Python/FastAPI generator pipeline → React/TypeScript
+viewer. Output is structured JSON per study under `backend/generated/<study>/`.
+
+Every numeric threshold, test method, and scoring rule documented here is
+auto-generated from the live code and regenerated on engine change.
+
+## Methods
+
+- [methods.md](methods.md): Analytical methods registry. Every statistical test (STAT-*), classification algorithm (CLASS-*), and scoring formula in the engine, with rationale, alternatives considered, and implementation locations. Spec-unaware — methods are referenced by stable IDs (e.g. STAT-01 Welch's t-test).
+
+## Scientific logic
+
+- [scientific-logic.md](scientific-logic.md): Auto-generated review doc showing the full pipeline applied to the PointCross reference study (rat, 13-week subchronic, 61 endpoint summaries → 10 detected syndromes). Every definition, threshold, and worked example reflects current code. Includes reviewer questions for scientific validation.
+
+## Validation
+
+- [validation/README.md](validation/README.md): Validation-suite design — two layers (engine output facts vs signal-detection verdicts against reference cards).
+- [validation/summary.md](validation/summary.md): Current per-study dashboard — signal detection, design match, assertion outcomes.
+- [validation/engine-output.md](validation/engine-output.md): Per-study facts read from generated JSON (study design, dose groups, finding classification counts, NOAEL/LOAEL, target organs).
+- [validation/signal-detection.md](validation/signal-detection.md): Binary DETECTED/MISSED verdicts per injected/documented signal, with effect sizes.
+- [validation/references/](validation/references/): One YAML reference card per study encoding ground truth (injected signals, expected design). Source citations trace to nSDRG, study report, or define.pdf.
+
+## Optional
+
+- [img/](img/): Application screenshots (histopathology panel, syndrome panel, main view).
+
+## Conventions for AI consumers
+
+- SENDEX targets **small-N preclinical studies**. Avoid advice that assumes N>30 or parametric-normality defaults.
+- **SEND domain codes** (DM, EX, LB, BW, MI, MA, CL, OM, TK, TS, etc.) are standard per CDISC SENDIG 3.1.
+- **Dose groups** are labeled by ascending dose level; control is dose 0.
+- **Target organ identification**, **dose-response patterns**, **NOAEL/LOAEL**, and **reversibility verdicts** are the primary regulatory outputs.
+- The engine prefers **robust/non-parametric methods**; the one load-bearing normality assumption is tracked as GAP-236.
+
+## Not included
+
+Private architecture, specs, research, and backlog live under `docs/_internal/`
+and are not part of the public docs surface.
