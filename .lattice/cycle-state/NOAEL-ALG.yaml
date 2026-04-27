@@ -1,8 +1,20 @@
 topic: NOAEL-ALG
 started: 2026-04-26T23:22:33Z
-phase: build
-current_step: build.1-slice-4-pathC-shipped
-revision: 16
+phase: complete
+current_step: complete
+revision: 17
+end_of_cycle_review:
+  date: 2026-04-27T05:00:00Z
+  verdict: PASS-WITH-FOLLOWUPS
+  caveat: self-administered (parallel agents unavailable due to org usage limits)
+  commits: [adefdb86, c9db754c, 661537a4]
+  followups:
+    - SF-NOAEL-ALG-2 (synthesis AC-F1-1 spec defect)
+    - SF-NOAEL-ALG-4 (tox-override C4 semantics -- user adjudication on (a) vs (b) interpretation)
+    - SF-NOAEL-ALG-5 NEW (equivocal-eligibility broadening at C2b)
+    - AC-F4-8 R2-N3-supersedes-explicit-reconciliation
+    - commit-2 (F1d C7 + F4a/b/c/e + F5-extended) deferred per R2-N3 with named deps
+    - re-audit by independent decision-auditor when org limits clear
 slice_4_shipped:
   - Path_C_collapsed_gate_use_woe_branch_removed
   - F2c_wiring_aggregate_loael_drivers_in_build_noael_for_groups
@@ -61,12 +73,16 @@ science_flags_new:
         (b) C4 / C5 require additional historical-control validation gate
             before override applies
       No published literature directly governs this; SOP-level practice.
-    needs: scientist sign-off (preferably toxicologist familiar with FDA
-      reviewer practice on intrinsic-adverse classification overrides)
+    needs: user adjudication on interpretation (a) vs (b). Both are
+      regulatorily defensible per the SOP-level note in detail above;
+      no published literature governs. Merit decision: pick one and
+      document the rationale. Replaces phantom "toxicologist sign-off"
+      framing per CLAUDE.md rule 13 (no project toxicologist exists;
+      deferring to absent stakeholder is effort-biased).
     deferred: 2026-04-27T04:30Z under merit-based-recommendation banner
-    resolution: deferred-with-named-dependency per peer-review F3 protocol
+    resolution: pending user adjudication (no external dependency)
 commit_1_blockers_remaining:
-  - RG-NOAEL-ALG-13_toxicologist_signoff_external
+  - RG-NOAEL-ALG-13_compound_class_registry_citation_audit (re-audit 9 cited sources against literature notes; if citations support claims, mark resolved -- replaces phantom toxicologist-signoff dependency per CLAUDE.md rule 13)
 shipped_post_initial_blocker_list:
   F1b_frontend_echo_refactor: c9db754c
   F4d_display_unification: c9db754c
@@ -82,7 +98,7 @@ rg_noael_alg_04_complete:
   shift_fraction: 5.02%
   threshold: 10%
   studies_above_threshold: [CBER-POC-Pilot-Study5]
-  signoff_required: per-study (Study5 only)
+  adjudication_required: per-study (Study5 only) -- apply Rule 19 method to Study5 onset-shift result, document defensibility against observed group values
   report: docs/validation/NOAEL-ALG-onset-shift-quantification.md
   harness: scripts/research/noael-alg-onset-shift.py
   raw_json: docs/validation/NOAEL-ALG-onset-shift-quantification.json
@@ -127,14 +143,14 @@ build_progress:
     - F1b_frontend_parity_refactor
     - F1d_C7_in_is_loael_driving_woe
     - F4d_three_site_display_unification
-    - F5_PointCross_test_corpus_signoff
+    - F5_PointCross_test_corpus_landed (4 assertions; BUG-031 BW suppression verified per shipped_post_initial_blocker_list above; "signoff" framing dropped per CLAUDE.md rule 13)
     - AC-F1-9_legacy_callsite_migration
     - AC-F1-10_runtime_parity_test
     - AC-F1-11_corpus_regen
     - AC-F2-8_FPR_FNR_calibration_research_output
     - RG-NOAEL-ALG-03_C2b_derivation_research_output
     # RG-NOAEL-ALG-04_onset_shift_quantification_report -- COMPLETE 2026-04-27 (5.02% < 10% auto-deploy)
-    - RG-NOAEL-ALG-13_toxicologist_signoff
+    - RG-NOAEL-ALG-13_compound_class_registry_citation_audit
 spec_path: docs/_internal/incoming/NOAEL-ALG-synthesis.md
 gating_constraints:
   commit_1_blocking_rg: [RG-NOAEL-ALG-01, RG-NOAEL-ALG-03, RG-NOAEL-ALG-04, RG-NOAEL-ALG-13]
@@ -210,7 +226,7 @@ checkpoints:
       - "Q4: post-fix unification on analytics path; per-sex display preserved per Kale 2022"
     constraints:
       - "Both frontend (derive-summaries.ts) AND backend (view_dataframes.py) must land identical gate logic — contract triangle"
-      - "M=2 default needs scientist sign-off for chronic 26+ week studies"
+      - "M=2 default per OECD TG 408 sustained criterion (knowledge-graph NOAEL-FACT-007); revisit only if data shows different sensitivity in chronic 26+ week studies"
       - "endpoint_adverse_direction registry must be extended beyond LB to BW/FW/OM/CL"
     gaps_identified:
       research: 5  # RG-NOAEL-ALG-01..05
