@@ -457,6 +457,17 @@
 
 ---
 
+## Escalation — 2026-04-26 (autopilot --source todo, batch 17)
+
+**Advanced this batch:** 1 — GAP-293 (commit `9dc2c894`).
+**No escalations.**
+
+- **GAP-293** (score 5, UI/Recovery): aggregate recovery verdict ("M: Persistent" rolled across dose groups) now surfaces the dose that drove the worst case in the cell tooltip ("Worst-case across dose groups (driven by 2 mg/kg). Right-click to override."). `FindingVerdictInfo` gained `worstDoseLevel`; `computeContinuousVerdict` + `computeIncidenceVerdict` track it. `RecoveryOverrideDropdown` takes optional `doseGroups` prop and looks up the dose label via `shortDoseLabel`. Display only — no aggregation change. 2051 frontend tests pass.
+
+**Cumulative session totals (17 batches):** 20 items advanced, 0 failed, 5 dispositioned-without-code-change, 1 build fix.
+
+---
+
 ## Escalation — 2026-04-26 (NOAEL algorithm — kitchen-sink LOAEL on multi-timepoint endpoints)
 
 **Status:** SCIENCE-FLAG — `noael-pane-display-consistency-fix.md` review BLOCKED, fix reverted, no commit.
