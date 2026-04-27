@@ -545,6 +545,44 @@ if [ "$IS_BUG_FIX" -eq 1 ]; then
             exit 1
         fi
         echo "  PASS: $BUG_ID retrospective complete (all 5 fields present)."
+
+        # --- Step 5b: Retro-action attestation (F7 -- BLOCKS) ---
+        # Per spec §9: every retro's "Lattice change" item must be either
+        # (a) implemented in this commit, (b) filed to TODO.md, or (c) filed
+        # to ESCALATION.md. The disposition is recorded as a SIMPLIFY-1
+        # retro-action attestation per bullet (ref-prefix=BUG-XXX).
+        # /ops:bug-stress Question 5 disposition section walks through the
+        # composition path; check-attestation-kind.py verifies it here.
+        if [ -f "$REPO_ROOT/scripts/check-attestation-kind.py" ] && [ -f "$GATE_FILE" ]; then
+            if ! python "$REPO_ROOT/scripts/check-attestation-kind.py" \
+                --gate "$GATE_FILE" \
+                --kind retro-action \
+                --ref-prefix "$BUG_ID" \
+                --min 1 --quiet 2>/dev/null; then
+                echo "  COMMIT BLOCKED: $BUG_ID retrospective has all 5 fields, but no kind=retro-action attestation with ref-prefix=$BUG_ID was found in the gate."
+                echo ""
+                echo "  Per spec §9 (F7 retro action-item tracking): every Lattice-change"
+                echo "  bullet from Question 5 must be dispositioned into one of"
+                echo "  (a) implemented-this-commit, (b) filed-to-todo, (c) filed-to-escalation,"
+                echo "  or (d) not-applicable -- and recorded as a retro-action attestation."
+                echo ""
+                echo "  For each Lattice-change bullet, run:"
+                echo '    bash scripts/append-attestation.sh \'
+                echo "      retro-action \\"
+                echo "      \"$BUG_ID#5.<bullet-N>\" \\"
+                echo "      \"<implemented-this-commit | filed-to-todo | filed-to-escalation | not-applicable>\" \\"
+                echo "      \"<one-line summary identifying bullet AND disposition target>\""
+                echo ""
+                echo "  Then re-run write-review-gate.sh and re-commit."
+                echo ""
+                echo "  Why: rule 20 produces retro action items but nothing previously"
+                echo "  enforced their tracking. Past retros had bullets that were quietly"
+                echo "  dropped. F7 makes the drop an explicit decision rather than implicit"
+                echo "  silence."
+                exit 1
+            fi
+            echo "  PASS: $BUG_ID retro-action attestation(s) present (F7)."
+        fi
         echo ""
     fi
 fi
