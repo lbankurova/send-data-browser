@@ -93,6 +93,52 @@ function MortalityQualification({ q }: { q: import("@/types/mortality").Mortalit
 }
 
 
+// ── Header chip cluster ──────────────────────────────────────
+
+/**
+ * Closed-pane status chips. Renders four count axes (total + unscheduled +
+ * accidental + included).
+ *
+ * Wrapped in `flex flex-wrap items-center gap-x-1.5` so the cluster wraps as
+ * a group when the rail is narrow. The Micro-tier styling
+ * (`text-[10px] font-normal normal-case tracking-normal`) explicitly resets
+ * the inherited title-bar font-semibold/uppercase/tracking-wider classes
+ * from `CollapsiblePane`. Without this reset, long count strings render as
+ * cramped ALL CAPS and wrap mid-text. Audit context:
+ * `.lattice/design-preamble-noael-mortality-header.md`.
+ *
+ * Per CLAUDE.md rule 21 (algorithm-as-advisor, not gate), NOAEL-suppressed
+ * state is NOT surfaced as a header badge -- the in-pane qualification flag
+ * (rendered by `MortalityQualification`) is the advisory; the toxicologist
+ * retains authority over the determination.
+ */
+function MortalityHeaderChips({
+  total,
+  unscheduled,
+  accidental,
+  included,
+}: {
+  total: number;
+  unscheduled: number;
+  accidental: number;
+  included: number;
+}) {
+  // Chip text for the count word -- singular when total === 1.
+  const deathsLabel = total === 1 ? "death" : "deaths";
+  return (
+    <span className="ml-auto flex flex-wrap items-center justify-end gap-x-1.5 gap-y-0 text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+      <span className="tabular-nums">{total} {deathsLabel}</span>
+      <span aria-hidden>·</span>
+      <span className="tabular-nums" title="Unscheduled (non-accidental) deaths">{unscheduled} unscheduled</span>
+      <span aria-hidden>·</span>
+      <span className="tabular-nums" title="Accidental deaths">{accidental} accidental</span>
+      <span aria-hidden>·</span>
+      <span className="tabular-nums" title="Subjects included in terminal-period statistics">{included} included</span>
+    </span>
+  );
+}
+
+
 // ── Main Component ───────────────────────────────────────────
 
 /** Mortality info pane — top-level CollapsiblePane with per-subject table. */
@@ -168,24 +214,19 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
   const hasMortality = mortality?.has_mortality && allDeaths.length > 0;
   const unit = mortality?.mortality_loael_label?.match(/\d[\d.]*\s*(mg\/kg|mg|µg\/kg|µg|g\/kg|g)/)?.[1] ?? "";
 
-  // Summary reflects current inclusion state.
   // GAP-307: this surface counts mortality.deaths + mortality.accidentals
-  // ("mortality events" — broader than the Findings rail's unscheduled-deaths-only
-  // count). Label kept as "deaths" for now to match the legacy text in screenshots
-  // / documentation; the breakdown below the chip and the unscheduled-only label on
-  // the Findings rail disambiguates the count semantics.
+  // (broader than the Findings rail's unscheduled-deaths-only count). The
+  // chip cluster below splits the total into unscheduled / accidental so
+  // the count semantics are explicit.
+  //
+  // Five count axes render as Micro-tier chips beside the pane title --
+  // explicitly resetting the title-bar's font-semibold/uppercase/tracking-wider
+  // so long count strings (Nimble: 26 deaths) don't render as cramped ALL CAPS
+  // that wraps mid-sentence.
+  // See `.lattice/design-preamble-noael-mortality-header.md` for the audit.
   const accidentalCount = mortality?.accidentals?.length ?? 0;
+  const unscheduledCount = allDeaths.length - accidentalCount;
   const includedCount = allDeaths.filter(d => !excludedSubjects.has(d.USUBJID)).length;
-  const excludedCount = allDeaths.length - includedCount;
-  const breakdown =
-    accidentalCount > 0
-      ? ` (${allDeaths.length - accidentalCount} unscheduled, ${accidentalCount} accidental)`
-      : "";
-  const summary = hasMortality
-    ? excludedCount > 0
-      ? `${allDeaths.length} deaths${breakdown} \u00b7 ${includedCount} included \u00b7 ${excludedCount} excluded`
-      : `${allDeaths.length} death${allDeaths.length !== 1 ? "s" : ""}${breakdown}`
-    : undefined;
 
   if (!hasMortality) {
     return (
@@ -195,8 +236,17 @@ export function MortalityInfoPane({ mortality, expandAll, collapseAll }: { morta
     );
   }
 
+  const headerChips = (
+    <MortalityHeaderChips
+      total={allDeaths.length}
+      unscheduled={unscheduledCount}
+      accidental={accidentalCount}
+      included={includedCount}
+    />
+  );
+
   return (
-    <CollapsiblePane title="Mortality" defaultOpen={false} sessionKey="pcc.studySettings.mortality" headerRight={summary} expandAll={expandAll} collapseAll={collapseAll}>
+    <CollapsiblePane title="Mortality" defaultOpen={false} sessionKey="pcc.studySettings.mortality" headerRight={headerChips} expandAll={expandAll} collapseAll={collapseAll}>
       {/* Qualification summary (Phase B) */}
       {mortality?.qualification && <MortalityQualification q={mortality.qualification} />}
 
