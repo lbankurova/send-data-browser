@@ -22,6 +22,20 @@ behaviors mandated by the architect-gate verdicts:
    fields (name, species_scope, mechanism_basis, supporting_citations,
    regulatory_context); `name` is unique across all relevance_exclusion facts;
    `supporting_citations` is non-empty; `confidence != cited_unverified`.
+7. **relevance_exclusion citation resolution** (Extension 8 follow-up, spike
+   `noael-alg-crossref-mirror`) — every entry in `supporting_citations` is
+   classified by form and verified to resolve at the named site, without
+   network access:
+     - `research/literature/<slug>.md` -> file exists under
+       `docs/_internal/`; if YAML frontmatter declares `status: rejected`, defect.
+     - `doi:<doi>` / `pmid:<pmid>` -> cache key present in
+       `scripts/data/citations-cache.json`; cache miss is a defect (no network
+       fallback at audit time).
+     - `display_only:<source>` -> non-empty source string after the prefix.
+     - Any other shape: warning (advisory). DOI/PMID/display_only forms are
+       not yet adopted in the registry; the audit accepts the literature-note
+       path form as the load-bearing case and surfaces unrecognized shapes
+       without failing CI.
 
 The script does NOT lint scientific accuracy — it only enforces typed-schema
 invariants. Domain accuracy is the architect-gate's job.
@@ -50,6 +64,9 @@ ROOT = Path(__file__).resolve().parent.parent
 GRAPH_PATH = ROOT / "docs/_internal/knowledge/knowledge-graph.md"
 SQLITE_PATH = ROOT / "docs/_internal/research/hcd/hcd_seed.sqlite"
 LITERATURE_DIR = ROOT / "docs/_internal/research/literature"
+INTERNAL_DOCS_ROOT = ROOT / "docs/_internal"
+CITATIONS_CACHE_PATH = ROOT / "scripts/data/citations-cache.json"
+LITERATURE_PATH_PREFIX = "research/literature/"
 
 SCORING_ELIGIBLE = {
     "regulated_standard": True,
@@ -240,10 +257,10 @@ def check_cited_unverified_backlog(facts: list[Fact]) -> list[Defect]:
                 defects.append(Defect("warning", f.fact_id, "cited_unverified_backlog",
                                       f"cited_unverified fact has no parseable literature-note path in derives_from: {d_str!r}"))
                 continue
-            note_path = ROOT / "docs/_internal" / m.group(1)
-            if not note_path.exists():
+            note_path = _resolve_literature_note_path(m.group(1))
+            if note_path is None:
                 defects.append(Defect("error", f.fact_id, "cited_unverified_backlog",
-                                      f"cited_unverified fact references non-existent literature note: {note_path}"))
+                                      f"cited_unverified fact references non-existent literature note: {INTERNAL_DOCS_ROOT / m.group(1)}"))
                 continue
             note_text = note_path.read_text(encoding="utf-8")
             if "status: cited-not-read" not in note_text:
@@ -323,6 +340,121 @@ def check_relevance_exclusion_fields(facts: list[Fact]) -> list[Defect]:
     return defects
 
 
+_CACHE_SENTINEL: dict[str, Any] | None = None
+_CACHE_LOADED = False
+
+
+def _load_citations_cache() -> dict[str, Any] | None:
+    """Lazy-load the resolver cache. Returns None if absent. Audit must remain
+    offline-safe — never imports the resolver, never calls the network."""
+    global _CACHE_SENTINEL, _CACHE_LOADED
+    if _CACHE_LOADED:
+        return _CACHE_SENTINEL
+    _CACHE_LOADED = True
+    if CITATIONS_CACHE_PATH.exists():
+        try:
+            import json
+            _CACHE_SENTINEL = json.loads(CITATIONS_CACHE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            _CACHE_SENTINEL = None
+    return _CACHE_SENTINEL
+
+
+def _resolve_literature_note_path(rel_path: str) -> Path | None:
+    """Resolve a 'research/literature/<slug>.md' rel path against INTERNAL_DOCS_ROOT.
+    Returns the Path if the file exists, None otherwise. Shared by
+    `_check_literature_path` (relevance_exclusion citations) and
+    `check_cited_unverified_backlog` (cited_unverified facts)."""
+    target = INTERNAL_DOCS_ROOT / rel_path
+    return target if target.exists() else None
+
+
+def _classify_citation(s: str) -> tuple[str, str]:
+    """Returns (form, payload). Forms: 'path' | 'doi' | 'pmid' | 'display_only' | 'unknown'.
+    Payload is the form-specific value (relative path / doi string / pmid digits / display source)."""
+    if not isinstance(s, str):
+        return ("unknown", "")
+    raw = s.strip()
+    if raw.startswith(LITERATURE_PATH_PREFIX) and raw.endswith(".md"):
+        return ("path", raw)
+    if raw.lower().startswith("doi:"):
+        return ("doi", raw[4:].strip())
+    if raw.lower().startswith("pmid:"):
+        return ("pmid", raw[5:].strip())
+    if raw.lower().startswith("display_only:"):
+        return ("display_only", raw[len("display_only:"):].strip())
+    return ("unknown", raw)
+
+
+def _check_literature_path(rel_path: str) -> str | None:
+    """Verify literature-note exists and is not rejected. Returns error string or None."""
+    target = _resolve_literature_note_path(rel_path)
+    if target is None:
+        return f"literature-note path does not exist: {rel_path}"
+    # Best-effort frontmatter parse for status field; absence is not a defect at this revision.
+    try:
+        text = target.read_text(encoding="utf-8")
+    except Exception as e:
+        return f"literature-note unreadable ({rel_path}): {type(e).__name__}"
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end > 0:
+            try:
+                fm = yaml.safe_load(text[3:end]) or {}
+            except Exception:
+                fm = {}
+            if isinstance(fm, dict) and fm.get("status") == "rejected":
+                return f"literature-note status=rejected: {rel_path}"
+    return None
+
+
+def check_relevance_exclusion_citations(facts: list[Fact]) -> list[Defect]:
+    """Extension 8 follow-up: each citation in supporting_citations resolves at
+    the named site (path exists / cache key present / display source given).
+    Audit is offline-safe — DOI/PMID forms require a pre-populated cache hit;
+    network fallback is intentionally NOT wired here. See module docstring §7."""
+    defects: list[Defect] = []
+    cache = _load_citations_cache()
+    for f in facts:
+        if f.yaml_data.get("fact_kind") != "relevance_exclusion":
+            continue
+        value = f.yaml_data.get("value") or {}
+        if not isinstance(value, dict):
+            continue
+        citations = value.get("supporting_citations")
+        if not isinstance(citations, list):
+            continue
+        for idx, c in enumerate(citations):
+            form, payload = _classify_citation(c)
+            if form == "path":
+                err = _check_literature_path(payload)
+                if err:
+                    defects.append(Defect("error", f.fact_id, "relevance_exclusion_citations",
+                                          f"supporting_citations[{idx}]: {err}"))
+            elif form in ("doi", "pmid"):
+                if not payload:
+                    defects.append(Defect("error", f.fact_id, "relevance_exclusion_citations",
+                                          f"supporting_citations[{idx}]: empty {form} token"))
+                    continue
+                # Cache-key format mirrors resolve_citations.py:resolve_doi (line 110)
+                # and resolve_pmid (line 153). Keep the two sites in sync — silent
+                # divergence (e.g., DOI normalization change) would systematically
+                # produce false cache misses here with no other detection path.
+                key = f"doi:{payload.lower()}" if form == "doi" else f"pmid:{payload}"
+                if cache is None or key not in cache:
+                    detail = "cache file missing" if cache is None else f"key not in cache: {key}"
+                    defects.append(Defect("error", f.fact_id, "relevance_exclusion_citations",
+                                          f"supporting_citations[{idx}]: {form} unresolved ({detail}); run resolver to populate cache"))
+            elif form == "display_only":
+                if not payload:
+                    defects.append(Defect("error", f.fact_id, "relevance_exclusion_citations",
+                                          f"supporting_citations[{idx}]: display_only requires non-empty source after prefix"))
+            else:
+                defects.append(Defect("warning", f.fact_id, "relevance_exclusion_citations",
+                                      f"supporting_citations[{idx}]: unrecognized citation form (got {c!r}); expected '{LITERATURE_PATH_PREFIX}*.md', 'doi:*', 'pmid:*', or 'display_only:*'"))
+    return defects
+
+
 def check_encoding_present(facts: list[Fact]) -> list[Defect]:
     """encoding field is mandatory for non-disable_marker facts and must be in the enum."""
     defects: list[Defect] = []
@@ -358,6 +490,7 @@ CHECKS = [
     ("structural-pointer",       check_structural_pointer),
     ("cited-unverified-backlog", check_cited_unverified_backlog),
     ("relevance-exclusion-fields", check_relevance_exclusion_fields),
+    ("relevance-exclusion-citations", check_relevance_exclusion_citations),
 ]
 
 
