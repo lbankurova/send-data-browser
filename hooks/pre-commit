@@ -214,6 +214,58 @@ if [ "$STAGED_ALGO" -gt 0 ] && [ -f "$GATE_FILE" ]; then
     fi
 fi
 
+# --- Step 0d: Bug-pattern propagation attestation (F6 -- BLOCKS) ---
+# Per spec §8: when staged files match a registered pattern's applies_to glob,
+# the gate MUST carry a kind=bug-pattern attestation referencing that pattern.
+# scripts/audit-bug-patterns.py --staged-check enumerates which patterns fire
+# for the current staged set; we then call check-attestation-kind.py once per
+# firing pattern to require the attestation.
+
+if [ -f "$REPO_ROOT/scripts/audit-bug-patterns.py" ] \
+    && [ -f "$REPO_ROOT/docs/_internal/knowledge/bug-patterns.md" ] \
+    && [ -f "$REPO_ROOT/scripts/check-attestation-kind.py" ] \
+    && [ -f "$GATE_FILE" ]; then
+    F6_RESULT=$(python "$REPO_ROOT/scripts/audit-bug-patterns.py" --staged-check 2>/dev/null || true)
+    if [ -n "$F6_RESULT" ]; then
+        echo "--- Step 0d: Bug-pattern propagation attestation (F6) ---"
+        F6_BLOCKED=0
+        # Parse output: each line is "<pattern>\t<count>\t<files,...>"
+        while IFS=$'\t' read -r PATTERN_NAME PATTERN_COUNT PATTERN_FILES; do
+            [ -z "$PATTERN_NAME" ] && continue
+            if ! python "$REPO_ROOT/scripts/check-attestation-kind.py" \
+                --gate "$GATE_FILE" \
+                --kind bug-pattern \
+                --ref "$PATTERN_NAME" \
+                --min 1 --quiet 2>/dev/null; then
+                if [ "$F6_BLOCKED" = "0" ]; then
+                    echo "  COMMIT BLOCKED: staged files match registered bug pattern(s) without bug-pattern attestation."
+                    echo ""
+                    echo "  For each fired pattern, /ops:bug-stress Step 3 (pattern search)"
+                    echo "  must produce one of these attestations:"
+                    echo ""
+                fi
+                F6_BLOCKED=1
+                echo "    Pattern: $PATTERN_NAME"
+                echo "    Staged matches ($PATTERN_COUNT): $PATTERN_FILES"
+                echo "    Compose:"
+                echo "      bash scripts/append-attestation.sh bug-pattern \\"
+                echo "        $PATTERN_NAME \\"
+                echo "        '<verified-not-applicable | applies-to-fixed-here | applies-to-no-instance>' \\"
+                echo "        '<one-line evidence: which staged file the pattern affects, and how this commit handles it>'"
+                echo ""
+            else
+                echo "  PASS: $PATTERN_NAME (matches $PATTERN_COUNT file(s); attestation present)"
+            fi
+        done <<< "$F6_RESULT"
+        if [ "$F6_BLOCKED" = "1" ]; then
+            echo "  See docs/_internal/knowledge/bug-patterns.md for each pattern's"
+            echo "  root_cause + representative_instances + prevention guidance."
+            exit 1
+        fi
+        echo ""
+    fi
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
