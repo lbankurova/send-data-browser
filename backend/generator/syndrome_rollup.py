@@ -324,15 +324,17 @@ def build_syndrome_rollup(
         if combined is None and noael_summary:
             combined = noael_summary[0]
         if combined is not None:
-            # Try to extract LOAEL dose value from the label (the dose_value field is null
-            # in the schema we observed; the dose value is encoded in loael_label as
-            # "Group N,X mg/kg ..."). Prefer an explicit field if present.
-            loael_dose_value = combined.get("loael_dose_value")
-            if loael_dose_value is None:
-                loael_dose_value = _parse_dose_from_label(combined.get("loael_label"))
+            # GAP-360: loael_dose_value is now populated by all noael_summary
+            # row builders in view_dataframes.py (NOEL framework, ctrl_mort_suppress,
+            # no_concurrent_control, main path). The previous regex fallback
+            # (_parse_dose_from_label) had a latent European-decimal-comma
+            # ambiguity ("Group 1,5 mg/kg") and is no longer needed.
+            raw_loael_dose_value = combined.get("loael_dose_value")
+            if raw_loael_dose_value is None:
+                loael_dose_value = None
             else:
                 try:
-                    loael_dose_value = float(loael_dose_value)
+                    loael_dose_value = float(raw_loael_dose_value)
                 except (TypeError, ValueError):
                     loael_dose_value = None
             mortality_cap_dose_value = combined.get("mortality_cap_dose_value")
@@ -542,27 +544,3 @@ def _cell_label(dose: float | None, phase: str) -> str:
     return f"{dose_str}:{phase}"
 
 
-def _parse_dose_from_label(label: str | None) -> float | None:
-    """Best-effort dose extraction from a label like 'Group 2,2 mg/kg PCDRUG'.
-
-    The noael_summary entries we observe carry loael_label but not loael_dose_value
-    on PointCross; this fallback parses the numeric portion. Returns None on failure.
-    """
-    if not label:
-        return None
-    import re
-    # Match patterns like "Group 2,2 mg/kg" -> 2; "Group 4, 4200 mg/kg" -> 4200.
-    m = re.search(r",\s*([\d.]+)\s*(?:mg|ug|g)/kg", str(label))
-    if m:
-        try:
-            return float(m.group(1))
-        except ValueError:
-            return None
-    # Fallback: any number followed by mg/kg
-    m = re.search(r"([\d.]+)\s*(?:mg|ug|g)/kg", str(label))
-    if m:
-        try:
-            return float(m.group(1))
-        except ValueError:
-            return None
-    return None
