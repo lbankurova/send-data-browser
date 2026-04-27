@@ -45,58 +45,43 @@ from services.analysis.send_knowledge import ORGAN_SYSTEM_MAP
 #   - XS08 Stress / XS09 Wasting: not organ-localized; default `general`.
 # ----------------------------------------------------------------------
 
-CROSS_DOMAIN_SYNDROME_ORGAN: dict[str, list[str]] = {
-    # XS series (10 base syndromes)
-    "XS01": ["hepatic"],
-    "XS02": ["hepatic"],
-    "XS03": ["renal"],
-    "XS04": ["hematologic"],
-    "XS05": ["hematologic"],
-    "XS06": ["hepatic"],
-    # XS07 Immunotoxicity: canonical SOC is "immune system disorders"
-    # (docs/_internal/knowledge/syndrome-engine-reference.md:790), but
-    # target_organ_summary's organ_system vocabulary has no `immune`
-    # bucket -- routing XS07 there would orphan the syndrome on the
-    # synthesis page. Until an `immune` bucket is added system-wide
-    # (target_organ_summary + organ_map + frontend), placing XS07 in
-    # `general` matches where target_organ_summary already files
-    # immune-domain findings (XS07's WBC/LYM-driven LB evidence + thymus
-    # corroboration). See TODO follow-up "Immune system as first-class
-    # organ_system bucket".
-    "XS07": ["general"],
-    "XS08": ["general"],
-    "XS09": ["general"],
-    "XS10": ["cardiovascular"],
-    # XC bone marrow
-    "XC01a": ["hematologic"],
-    "XC01b": ["hematologic"],
-    "XC01c": ["hematologic"],
-    "XC02":  ["hematologic"],
-    # XC thyroid / adrenal / endocrine
-    "XC03a": ["endocrine"],
-    "XC03b": ["endocrine"],
-    "XC04a": ["endocrine"],
-    "XC04b": ["endocrine"],
-    "XC04c": ["endocrine"],
-    "XC05":  ["endocrine"],
-    # XC reproductive
-    "XC06a": ["reproductive"],
-    "XC06b": ["reproductive"],
-    "XC06c": ["reproductive"],
-    "XC07a": ["reproductive"],
-    "XC08a": ["reproductive"],
-    "XC08b": ["reproductive"],
-    # XC neurological
-    "XC09":  ["neurological"],
-    "XC10":  ["neurological"],
-    # XC dermal / injection
-    "XC11a": ["integumentary"],
-    "XC11b": ["integumentary"],
-    # XC ocular
-    "XC12a": ["ocular"],
-    "XC12b": ["ocular"],
-    "XC12c": ["ocular"],
-}
+def _build_cross_domain_organ_map() -> dict[str, list[str]]:
+    # GAP-359: derive cross-domain syndrome -> organ_system mapping from the
+    # single source of truth (shared/syndrome-definitions.json). Previously
+    # this was a 33-entry hardcoded dict in this file, which silently drifted
+    # whenever a syndrome was added/removed/reclassified in the JSON.
+    #
+    # XS07 Immunotoxicity policy note (preserved): canonical SOC is "immune
+    # system disorders" but target_organ_summary's organ_system vocabulary has
+    # no `immune` bucket. Routing XS07 there would orphan the syndrome on the
+    # synthesis page. The JSON entry maps XS07 -> "general" to match where
+    # target_organ_summary already files immune-domain findings (WBC/LYM-driven
+    # LB evidence + thymus corroboration). When an `immune` bucket is added
+    # system-wide (target_organ_summary + organ_map + frontend), update the
+    # JSON entry; nothing in this module needs to change.
+    defs_path = Path(__file__).parent.parent.parent / "shared" / "syndrome-definitions.json"
+    out: dict[str, list[str]] = {}
+    try:
+        with defs_path.open() as f:
+            defs = json.load(f)
+        for s in defs.get("syndromes", []):
+            sid = str(s.get("id") or "")
+            if not sid:
+                continue
+            organ = s.get("organ_system")
+            if isinstance(organ, str) and organ:
+                out[sid] = [organ]
+            elif isinstance(organ, list) and organ:
+                # Allow a syndrome to declare multiple organ systems if needed.
+                out[sid] = [str(x) for x in organ if x]
+            else:
+                out[sid] = ["general"]
+    except (OSError, json.JSONDecodeError):
+        pass
+    return out
+
+
+CROSS_DOMAIN_SYNDROME_ORGAN: dict[str, list[str]] = _build_cross_domain_organ_map()
 
 
 def _build_histopath_organ_map() -> dict[str, list[str]]:
