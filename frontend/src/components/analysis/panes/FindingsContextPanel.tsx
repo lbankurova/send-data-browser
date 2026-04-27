@@ -72,6 +72,7 @@ import type { RecoveryAssessment } from "@/lib/recovery-assessment";
 import { getEffectSizeSymbol } from "@/lib/stat-method-transforms";
 import { GradeConfidencePane, GradeConfidenceBadge } from "./GradeConfidencePane";
 import { HcdEvidencePane, HcdChip } from "./HcdEvidencePane";
+import { HeterogeneityCard } from "./HeterogeneityCard";
 import type { HcdEvidence } from "@/types/analysis-views";
 
 // ─── Williams' Step-Down Table (shared sub-component) ───────
@@ -360,6 +361,7 @@ function emptyHcdEvidenceClient(): HcdEvidence {
     alpha_scaled_threshold: null,
     noael_floor_applied: false,
     cell_n_below_reliability_threshold: false,
+    heterogeneity: null,
   };
 }
 
@@ -2620,6 +2622,30 @@ export function FindingsContextPanel() {
                 badge={<HcdChip evidence={effectiveEvidence} />}
               >
                 <HcdEvidencePane evidence={effectiveEvidence} />
+              </CollapsiblePane>
+            );
+          })()}
+
+          {/* F-CARD: between-study heterogeneity (cycle: hcd-between-study-
+              heterogeneity). Sibling to HcdEvidencePane. AC-CARD-2: null
+              heterogeneity renders the neutral placeholder, not absent. */}
+          {selectedFinding && (() => {
+            const domain = selectedFinding.domain;
+            if (domain !== "MI" && domain !== "MA") return null;
+            const hcdEvidence = resolveHcdEvidenceForFinding(ruleResults, selectedFinding);
+            const hasCatalogMatch = catalogMatchedForFinding(ruleResults, selectedFinding);
+            if (!hcdEvidence && !hasCatalogMatch) return null;
+            const effectiveEvidence = hcdEvidence ?? emptyHcdEvidenceClient();
+            const heterogeneity = effectiveEvidence.heterogeneity ?? null;
+            return (
+              <CollapsiblePane
+                title="Between-study heterogeneity"
+                defaultOpen={false}
+                sessionKey="pcc.ep.heterogeneity"
+                expandAll={expandGen}
+                collapseAll={collapseGen}
+              >
+                <HeterogeneityCard heterogeneity={heterogeneity} />
               </CollapsiblePane>
             );
           })()}

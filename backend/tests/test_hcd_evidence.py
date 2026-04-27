@@ -43,8 +43,11 @@ def test_empty_record_has_every_field_explicit_null():
         "confidence_contribution", "contribution_components",
         "alpha_applies", "reason", "alpha_scaled_threshold",
         "noael_floor_applied", "cell_n_below_reliability_threshold",
+        # F-CARD (hcd-between-study-heterogeneity): nested heterogeneity payload.
+        "heterogeneity",
     }
     assert set(rec.keys()) == required
+    assert rec["heterogeneity"] is None  # AC-CARD-2 placeholder default
     assert rec["confidence_contribution"] == 0
     assert rec["alpha_applies"] is False
     assert rec["noael_floor_applied"] is False

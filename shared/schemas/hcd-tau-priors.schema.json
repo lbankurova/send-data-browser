@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "hcd-tau-priors",
+  "title": "HCD tau-prior lookup table (F-RODENT)",
+  "description": "F-RODENT tau-prior infrastructure (cycle: hcd-between-study-heterogeneity). Validates the lookup table consumed by lookup_tau_prior(). Every entry is either WARN_PLACEHOLDER (sensitivity_required must be true; numerical scale not yet calibrated) OR carries a non-empty provenance block (source/method/date/reviewer) per AC-RODENT-1 / AC-RODENT-5.",
+  "type": "object",
+  "required": ["schema_version", "scale_units", "rodent", "non_rodent_default"],
+  "properties": {
+    "_doc": {"type": "string"},
+    "schema_version": {"type": "string"},
+    "scale_units": {"type": "string", "enum": ["log-SD"]},
+    "rodent": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/strain_table"}
+    },
+    "rodent_named_exceptions": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/prior_entry"}
+    },
+    "non_rodent_default": {"$ref": "#/$defs/prior_entry"},
+    "non_rodent_named_exceptions": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/prior_entry"}
+    }
+  },
+  "$defs": {
+    "strain_table": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/prior_entry"}
+    },
+    "prior_entry": {
+      "type": "object",
+      "required": ["prior", "scale"],
+      "properties": {
+        "prior": {"type": "string", "enum": ["half_normal", "half_cauchy"]},
+        "scale": {"type": "number", "exclusiveMinimum": 0},
+        "warn": {"type": "string", "enum": ["WARN_PLACEHOLDER"]},
+        "sensitivity_required": {"type": "boolean"},
+        "rationale": {"type": "string"},
+        "source": {"type": "string"},
+        "provenance": {"$ref": "#/$defs/provenance_block"}
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "comment": "AC-RODENT-1: WARN_PLACEHOLDER entries must have sensitivity_required=true.",
+          "if": {"properties": {"warn": {"const": "WARN_PLACEHOLDER"}}, "required": ["warn"]},
+          "then": {"required": ["sensitivity_required"], "properties": {"sensitivity_required": {"const": true}}}
+        },
+        {
+          "comment": "AC-RODENT-1 / AC-RODENT-5: calibrated entries (no warn) must carry a provenance block.",
+          "if": {"not": {"required": ["warn"]}},
+          "then": {"required": ["provenance"]}
+        }
+      ]
+    },
+    "provenance_block": {
+      "type": "object",
+      "required": ["source", "method", "date", "reviewer"],
+      "properties": {
+        "source": {"type": "string"},
+        "method": {"type": "string"},
+        "date": {"type": "string"},
+        "reviewer": {"type": "string"},
+        "notes": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

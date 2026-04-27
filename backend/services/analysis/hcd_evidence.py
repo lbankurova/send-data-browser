@@ -83,6 +83,30 @@ def _empty_components() -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# Heterogeneity payload (F-CARD, hcd-between-study-heterogeneity cycle)
+# ---------------------------------------------------------------------------
+
+# Closed vocabularies for INV-5/6/7 enforcement.
+_HETEROGENEITY_TIERS = {"single_source", "small_k", "borrow_eligible"}
+_HETEROGENEITY_PI_METHODS = {"hksj", "reml_wald"}
+_HETEROGENEITY_TAU_ESTIMATORS = {"PM", "REML", "DL"}
+_HETEROGENEITY_PRIOR_FAMILIES = {"half_normal", "half_cauchy"}
+_HETEROGENEITY_SEPARABILITY = {"not_separable", "lab_only", "lab_era", "full"}
+ESS_DEFINITION_TOKEN = "neuenschwander_2020"
+
+
+def empty_heterogeneity_record() -> None:
+    """Heterogeneity payload defaults to None.
+
+    AC-CARD-2: `null` heterogeneity -> neutral placeholder rendered by F-CARD.
+    Production HCD does not yet populate per-study breakdowns (DATA-GAP-HCD-HET-02
+    distillation deliverable); the field is always present on emit but value
+    is None until strata data is available.
+    """
+    return None
+
+
 def empty_hcd_evidence() -> dict:
     """Explicit 'no HCD' record -- every field present, all null/zero/false.
 
@@ -107,6 +131,10 @@ def empty_hcd_evidence() -> dict:
         "alpha_scaled_threshold": None,
         "noael_floor_applied": False,
         "cell_n_below_reliability_threshold": False,
+        # F-CARD (hcd-between-study-heterogeneity): payload nested under one
+        # key per AC-CARD architect-gate hardening #2 (schema bloat). Default
+        # None per AC-CARD-2 (neutral placeholder render).
+        "heterogeneity": empty_heterogeneity_record(),
     }
 
 
@@ -439,10 +467,152 @@ def build_hcd_evidence(
         # catalog matching (F3).
         "noael_floor_applied": False,
         "cell_n_below_reliability_threshold": cell_n_below,
+        # F-CARD: heterogeneity record. Production callers do not have
+        # per-study HCD breakdowns yet (DATA-GAP-HCD-HET-02); upstream
+        # callers may populate via build_heterogeneity_record(strata, ...)
+        # when fixtures or future per-study tables are available.
+        "heterogeneity": empty_heterogeneity_record(),
     }
 
     validate_hcd_evidence(record)
     return record
+
+
+# ---------------------------------------------------------------------------
+# Heterogeneity record builder (F-CARD)
+# ---------------------------------------------------------------------------
+
+def build_heterogeneity_record(
+    strata: list,
+    *,
+    current_study_id: str | None,
+    species: str,
+    strain: str | None,
+    endpoint_class: str,
+    endpoint_id: str | None = None,
+    estimator: str = "PM",
+) -> dict | None:
+    """Build the heterogeneity payload from a list of Stratum rows.
+
+    Returns None when strata is empty (AC-CARD-2 placeholder render). Returns
+    a populated dict otherwise. Single-source case (k_eff <= 1) hides
+    tau/PI/ESS rows but keeps tier + tier_reason (AC-CARD-3).
+
+    All numbers come from `heterogeneity` module primitives. This function
+    composes them into the payload — no math here.
+    """
+    from services.analysis.heterogeneity import (
+        K_EFF_BORROW_MIN,
+        assess_decomposition_separability,
+        compute_k_eff,
+        ess_neuenschwander_2020,
+        lookup_tau_prior,
+        prediction_interval,
+        prior_contribution_fraction,
+        tau_squared_dl,
+        tau_squared_pm,
+        tau_squared_reml,
+        warn_if_placeholder,
+    )
+
+    if not strata:
+        return empty_heterogeneity_record()
+
+    k_res = compute_k_eff(strata, current_study_id)
+
+    # Filter out the current study for downstream LOO computations.
+    strata_loo = [s for s in strata if s.study_id != current_study_id]
+
+    # tau-prior lookup (F-RODENT). Always populated when k_eff >= 1.
+    prior_record = lookup_tau_prior(species, strain, endpoint_class, endpoint_id)
+    placeholder_fired = warn_if_placeholder(prior_record)
+
+    tier_reason = k_res.tier_reason
+    if placeholder_fired:
+        tier_reason = f"{tier_reason}; using placeholder tau-prior"
+
+    if k_res.tier == "single_source":
+        # Hide tau/PI/ESS rows; tier + reason still surface.
+        return {
+            "k_raw": k_res.k_raw,
+            "k_eff": k_res.k_eff,
+            "self_excluded": k_res.self_excluded,
+            "tier": k_res.tier,
+            "tier_reason": tier_reason,
+            "tau": None,
+            "tau_estimator": None,
+            "pi_lower": None,
+            "pi_upper": None,
+            "pi_method": None,
+            "ess": None,
+            "ess_definition": None,
+            "prior_contribution_pct": None,
+            "prior_family": prior_record.get("prior"),
+            "prior_scale": prior_record.get("scale"),
+            "decomposition": None,
+        }
+
+    y = [s.log_sd for s in strata_loo]
+    v = [s.sampling_var for s in strata_loo]
+
+    if estimator == "PM":
+        tau2 = tau_squared_pm(y, v)
+    elif estimator == "REML":
+        tau2 = tau_squared_reml(y, v)
+    elif estimator == "DL":
+        tau2 = tau_squared_dl(y, v)
+    else:
+        raise ValueError(f"unknown estimator={estimator!r}")
+    tau = float(tau2 ** 0.5)
+
+    pi_lo, pi_hi, pi_method = prediction_interval(y, v, tau2)
+
+    # AC-EST-6: at k=2 (post-LOO), HKSJ df = k-1 = 1 -> Cauchy quantiles.
+    # Inject the literal "k=2 high uncertainty" token into tier_reason so the
+    # F-CARD amber-chip detector (HeterogeneityCard.tsx::isHighUncertaintyK2)
+    # can fire. Without this, the chip is dead code (caught by post-impl review
+    # 2026-04-27). Note: tier_reason backend token is "k=2 high uncertainty"
+    # (the spec's literal); the user-facing chip strengthens to "interval not
+    # interpretable" per peer-review change D2 (HeterogeneityCard.tsx).
+    if k_res.k_eff == 2:
+        tier_reason = f"{tier_reason}; k=2 high uncertainty"
+
+    ess = ess_neuenschwander_2020(v, tau2)
+
+    pcf, _ = prior_contribution_fraction(
+        y, v,
+        prior_scale=float(prior_record["scale"]),
+        prior_family=prior_record.get("prior", "half_normal"),
+        tau2_post=tau2,
+        k_eff=k_res.k_eff,
+    )
+
+    sep = assess_decomposition_separability(strata_loo, k_res.k_eff)
+    decomposition = {
+        "lab": None,
+        "era": None,
+        "substrain": None,
+        "separability": sep,
+    }
+
+    return {
+        "k_raw": k_res.k_raw,
+        "k_eff": k_res.k_eff,
+        "self_excluded": k_res.self_excluded,
+        "tier": k_res.tier,
+        "tier_reason": tier_reason,
+        "tau": tau,
+        "tau_estimator": estimator,
+        "pi_lower": pi_lo,
+        "pi_upper": pi_hi,
+        "pi_method": pi_method,
+        "ess": ess,
+        "ess_definition": ESS_DEFINITION_TOKEN,
+        "prior_contribution_pct": float(pcf * 100.0),
+        "prior_family": prior_record.get("prior"),
+        "prior_scale": prior_record.get("scale"),
+        "decomposition": decomposition,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -501,13 +671,70 @@ def validate_hcd_evidence(record: dict) -> None:
                 "INV-2 violated: tier_cap_applied=True but no cap was required"
             )
 
+    # ---- INV-5..7 (heterogeneity payload, F-CARD) -------------------------
+    if "heterogeneity" not in record:
+        raise HcdEvidenceInvariantError(
+            "INV-5 violated: hcd_evidence missing required `heterogeneity` key "
+            "(may be None per AC-CARD-2 placeholder render)"
+        )
+    het = record.get("heterogeneity")
+    if het is not None:
+        # INV-5: closed vocabularies on tier / pi_method / tau_estimator /
+        # decomposition.separability / prior_family.
+        tier = het.get("tier")
+        if tier is not None and tier not in _HETEROGENEITY_TIERS:
+            raise HcdEvidenceInvariantError(
+                f"INV-5 violated: heterogeneity.tier={tier!r} not in {_HETEROGENEITY_TIERS}"
+            )
+        pi_method = het.get("pi_method")
+        if pi_method is not None and pi_method not in _HETEROGENEITY_PI_METHODS:
+            raise HcdEvidenceInvariantError(
+                f"INV-5 violated: heterogeneity.pi_method={pi_method!r} not in {_HETEROGENEITY_PI_METHODS}"
+            )
+        tau_est = het.get("tau_estimator")
+        if tau_est is not None and tau_est not in _HETEROGENEITY_TAU_ESTIMATORS:
+            raise HcdEvidenceInvariantError(
+                f"INV-5 violated: heterogeneity.tau_estimator={tau_est!r} not in {_HETEROGENEITY_TAU_ESTIMATORS}"
+            )
+        decomposition = het.get("decomposition")
+        if decomposition is not None:
+            sep = decomposition.get("separability")
+            if sep is not None and sep not in _HETEROGENEITY_SEPARABILITY:
+                raise HcdEvidenceInvariantError(
+                    f"INV-5 violated: heterogeneity.decomposition.separability={sep!r} not in {_HETEROGENEITY_SEPARABILITY}"
+                )
+
+        # INV-6: ess_definition == "neuenschwander_2020" iff ess non-null.
+        ess = het.get("ess")
+        ess_def = het.get("ess_definition")
+        if (ess is None) != (ess_def is None):
+            raise HcdEvidenceInvariantError(
+                f"INV-6 violated: ess and ess_definition must be both null or both set "
+                f"(got ess={ess!r}, ess_definition={ess_def!r})"
+            )
+        if ess is not None and ess_def != ESS_DEFINITION_TOKEN:
+            raise HcdEvidenceInvariantError(
+                f"INV-6 violated: ess_definition must be {ESS_DEFINITION_TOKEN!r} when ess set "
+                f"(got {ess_def!r})"
+            )
+
+        # INV-7: prior_family closed vocab.
+        prior_family = het.get("prior_family")
+        if prior_family is not None and prior_family not in _HETEROGENEITY_PRIOR_FAMILIES:
+            raise HcdEvidenceInvariantError(
+                f"INV-7 violated: heterogeneity.prior_family={prior_family!r} not in {_HETEROGENEITY_PRIOR_FAMILIES}"
+            )
+
 
 __all__ = [
+    "ESS_DEFINITION_TOKEN",
     "RELIABILITY_N_THRESHOLD",
     "HcdEvidenceInvariantError",
     "build_hcd_evidence",
+    "build_heterogeneity_record",
     "compute_drift_flag",
     "compute_fisher_p",
     "empty_hcd_evidence",
+    "empty_heterogeneity_record",
     "validate_hcd_evidence",
 ]

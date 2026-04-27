@@ -1,0 +1,60 @@
+topic: hcd-between-study-heterogeneity
+started: 2026-04-26T20:10:00Z
+phase: build-in-progress
+current_step: build.2
+revision: 14
+completed:
+  research.1: 2026-04-26T20:30:00Z
+  research.2: 2026-04-27T01:00:00Z
+  research.3: 2026-04-27T01:30:00Z
+  research.4: 2026-04-27T02:00:00Z
+  research.5: 2026-04-27T02:05:00Z
+  research.6: 2026-04-27T02:10:00Z
+  research.7: 2026-04-27T02:15:00Z
+  research.7b: 2026-04-27T02:15:00Z
+  blueprint.0: 2026-04-27T02:25:00Z
+  blueprint.1: 2026-04-27T02:50:00Z
+  blueprint.2: 2026-04-27T03:00:00Z
+  blueprint.3: 2026-04-27T03:10:00Z
+  blueprint.4: 2026-04-27T03:25:00Z
+  blueprint.5: 2026-04-27T03:50:00Z
+  blueprint.6: 2026-04-27T04:00:00Z
+  blueprint.7: 2026-04-27T04:05:00Z
+checkpoints:
+  blueprint.6:
+    completed: 2026-04-27T04:00:00Z
+    review: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-synthesis-review-r2.md"
+    verdict: "VALIDATED (per Step 6 table: all CONDITIONAL/SOUND, no FLAWED)"
+    r1_resolution: "RESOLVED:8 PARTIAL:3 NOT-RESOLVED:0 OVER-CORRECTED:0"
+    new_findings: 5
+    new_breakdown: "FLAWED:0 CONDITIONAL:5"
+    novel_sources: 8
+    persisted:
+      registry: "RG-HCD-HET-23..27 (5 new)"
+      todo: "DATA-GAP-HCD-HET-11 (F-PCONT MC algo + half-Cauchy), -12 (F-EST k=2 PI clamp)"
+    r2_partial_findings:
+      - "F-PCONT MC algorithm under-specified + half-Cauchy ratio undefined"
+      - "F-EST k=2 PI half-width unbounded under t_1 (Cauchy quantiles)"
+      - "Decomposition separability code retains hard-coded k cliff despite df-annotated labels"
+    r2_new_findings:
+      - "NF-A1 F-PCONT MC algo + half-Cauchy variance-ratio undefined"
+      - "NF-A2 F-EST k=2 PI half-width unbounded under t_1"
+      - "NF-A3 Decomposition separability code retains hard-coded k cliff"
+      - "NF-B1 AC-CARD-8 non-bypassable lacks enforcement mechanism"
+      - "NF-B2 tier=borrow_eligible has no operational consumer (residual from F-DYNTRIG scope-out)"
+    note: "These flow as build-cycle synthesis inputs (already persisted to REGISTRY/TODO)"
+  blueprint.7:
+    completed: 2026-04-27T04:05:00Z
+    gaps_persisted:
+      registry: 27  # RG-HCD-HET-01..27
+      todo: 12      # DATA-GAP-HCD-HET-01..12
+final_outputs:
+  research_doc: "docs/_internal/research/hcd-between-study-heterogeneity.md"
+  research_review_r1: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-review.md"
+  research_review_r2: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-review-r2.md"
+  synthesis: "docs/_internal/incoming/hcd-between-study-heterogeneity-synthesis.md"
+  architect_review: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-architect-review.md"
+  plan_review_r1: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-synthesis-review.md"
+  plan_review_r2: "docs/_internal/research/peer-reviews/hcd-between-study-heterogeneity-synthesis-review-r2.md"
+next: "/lattice:build-cycle hcd-between-study-heterogeneity"
+source: GAP-254 (TODO.md, autopilot batch 18 punted)

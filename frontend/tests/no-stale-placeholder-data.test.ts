@@ -42,6 +42,7 @@ const ALLOWLIST = new Set<string>([
   "useStudySignalSummary.ts",   // study-level signal summary
   "useTargetOrganSummary.ts",   // study-level organ summary
   "useExclusionPreview.ts",     // exclusion preview keyed by study+endpoint, shape stable
+  "useSyndromeRollup.ts",       // study-level syndrome rollup (keyed by studyId only; shape stable)
 ]);
 
 describe("no-stale-placeholder-data", () => {

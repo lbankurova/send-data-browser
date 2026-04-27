@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "hcd-evidence",
+  "title": "HCD Evidence Record (MI/MA Phase-1 + heterogeneity F-CARD)",
+  "description": "Schema for `hcd_evidence` record under rule.params (built by backend/services/analysis/hcd_evidence.py). Heterogeneity sub-schema explicitly does NOT set additionalProperties:false per AC-CARD-11 -- this is the merge contract for the next cycle (Proposal 2 ADDS borrow_active/borrow_method/borrowed_sd without redefining existing fields). Note: backwards-compat does NOT enforce additionalProperties:false on the top-level record either; new fields may be appended.",
+  "type": "object",
+  "required": [
+    "background_rate", "background_n_animals", "background_n_studies",
+    "source", "year_range", "match_tier", "match_confidence",
+    "percentile_of_observed", "fisher_p_vs_hcd", "drift_flag",
+    "confidence_contribution", "contribution_components",
+    "alpha_applies", "reason", "alpha_scaled_threshold",
+    "noael_floor_applied", "cell_n_below_reliability_threshold",
+    "heterogeneity"
+  ],
+  "properties": {
+    "background_rate": {"type": ["number", "null"]},
+    "background_n_animals": {"type": ["integer", "null"]},
+    "background_n_studies": {"type": ["integer", "null"]},
+    "source": {"type": ["string", "null"]},
+    "year_range": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2}
+      ]
+    },
+    "match_tier": {"type": ["integer", "null"], "enum": [1, 2, 3, null]},
+    "match_confidence": {"type": ["string", "null"], "enum": ["high", "medium", "low", null]},
+    "percentile_of_observed": {"type": ["number", "null"]},
+    "fisher_p_vs_hcd": {"type": ["number", "null"]},
+    "drift_flag": {"type": ["boolean", "null"]},
+    "confidence_contribution": {"type": "integer"},
+    "contribution_components": {
+      "type": "object",
+      "required": [
+        "gt_95th_percentile", "gt_99th_percentile",
+        "below_5th_down_direction", "ultra_rare_any_occurrence",
+        "tier_cap_applied", "hcd_discordant_protective"
+      ]
+    },
+    "alpha_applies": {"type": "boolean"},
+    "reason": {"type": ["string", "null"]},
+    "alpha_scaled_threshold": {"type": ["number", "null"]},
+    "noael_floor_applied": {"type": "boolean"},
+    "cell_n_below_reliability_threshold": {"type": "boolean"},
+    "heterogeneity": {
+      "_comment": "SCHEMA-ADDITIVITY: this sub-schema deliberately omits `additionalProperties: false` per AC-CARD-11 to keep the merge contract open for Proposal 2 (borrow_active/borrow_method/borrowed_sd). Tests assert this property in test_heterogeneity_schema_is_additive.",
+      "anyOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/heterogeneity_record"}
+      ]
+    }
+  },
+  "$defs": {
+    "heterogeneity_record": {
+      "type": "object",
+      "properties": {
+        "k_raw": {"type": ["integer", "null"]},
+        "k_eff": {"type": ["integer", "null"]},
+        "self_excluded": {"type": "boolean"},
+        "tier": {"type": ["string", "null"], "enum": ["single_source", "small_k", "borrow_eligible", null]},
+        "tier_reason": {"type": ["string", "null"]},
+        "tau": {"type": ["number", "null"]},
+        "tau_estimator": {"type": ["string", "null"], "enum": ["PM", "REML", "DL", null]},
+        "pi_lower": {"type": ["number", "null"]},
+        "pi_upper": {"type": ["number", "null"]},
+        "pi_method": {"type": ["string", "null"], "enum": ["hksj", "reml_wald", null]},
+        "ess": {"type": ["number", "null"]},
+        "ess_definition": {"type": ["string", "null"], "enum": ["neuenschwander_2020", null]},
+        "prior_contribution_pct": {"type": ["number", "null"]},
+        "prior_family": {"type": ["string", "null"], "enum": ["half_normal", "half_cauchy", null]},
+        "prior_scale": {"type": ["number", "null"]},
+        "decomposition": {
+          "anyOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "properties": {
+                "lab": {"type": ["number", "null"]},
+                "era": {"type": ["number", "null"]},
+                "substrain": {"type": ["number", "null"]},
+                "separability": {"type": ["string", "null"], "enum": ["not_separable", "lab_only", "lab_era", "full", null]}
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

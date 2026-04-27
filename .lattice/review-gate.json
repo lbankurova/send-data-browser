@@ -1,10 +1,12 @@
 {
-  "timestamp": "2026-04-23T12:56:02Z",
+  "timestamp": "2026-04-27T04:05:08Z",
   "verdict": "pass",
-  "summary": "Phase B review round 3 -- all blocking items resolved: stat-unavailable coverage token, verdict-severity-mapping test, n_provisional_excluded across NOEL + ctrl-mort-suppress + no-concurrent-control paths, mapFindingsToRows FCT propagation, pre/post NOAEL table durable in diff artifact, AC-F6-1 revised for pre-production scope; all tests pass",
+  "summary": "hcd-between-study-heterogeneity build cycle: methodology+diagnostics layer (F-EST/F-PIK/F-PCONT/F-RODENT-infra/F-CARD); peer-review verdict PASS-WITH-CHANGES, all 7 framing changes applied; AC-EST-1/2/3 + AC-EST-6 + AC-PIK-3 fixes from post-impl review; zero analytical output change verified",
   "checks_run": 0,
   "checks_passed": 0,
+  "algorithm_check": "not-applicable",
+  "attestations": [],
   "staged_files": "",
-  "head_at_review": "7fbb7d63",
+  "head_at_review": "728415eb",
   "written_by": "write-review-gate.sh"
 }

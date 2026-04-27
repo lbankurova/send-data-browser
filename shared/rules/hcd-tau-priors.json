@@ -1,0 +1,41 @@
+{
+  "_doc": "F-RODENT infrastructure-only (cycle: hcd-between-study-heterogeneity). All rodent strain entries are WARN_PLACEHOLDER per AC-RODENT-3 -- numerical priors are deferred to the calibration distillation (DATA-GAP-HCD-HET-02 / AC-RODENT-5). Non-rodent default is the broad max-conservative half-normal with sensitivity_required=true. Schema: shared/schemas/hcd-tau-priors.schema.json.",
+  "schema_version": "1.0",
+  "scale_units": "log-SD",
+  "rodent": {
+    "F344": {
+      "OM":          {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_stable":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_labile":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "hematology":  {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"}
+    },
+    "B6C3F1": {
+      "OM":          {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_stable":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_labile":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "hematology":  {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"}
+    },
+    "Han_Wistar": {
+      "OM":          {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_stable":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_labile":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "hematology":  {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"}
+    },
+    "SD_rat": {
+      "OM":          {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_stable":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "LB_labile":   {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"},
+      "hematology":  {"prior": "half_normal", "scale": 0.50, "warn": "WARN_PLACEHOLDER", "sensitivity_required": true, "source": "placeholder"}
+    }
+  },
+  "rodent_named_exceptions": {},
+  "non_rodent_default": {
+    "prior": "half_normal",
+    "scale": 0.50,
+    "warn": "WARN_PLACEHOLDER",
+    "sensitivity_required": true,
+    "source": "non_rodent_default",
+    "rationale": "max-conservative half-normal default; replace via calibration distillation per AC-RODENT-5"
+  },
+  "non_rodent_named_exceptions": {}
+}

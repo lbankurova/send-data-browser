@@ -147,6 +147,51 @@ export interface HcdEvidence {
   alpha_scaled_threshold: number | null;
   noael_floor_applied: boolean;
   cell_n_below_reliability_threshold: boolean;
+  // F-CARD: between-study heterogeneity payload
+  // (cycle: hcd-between-study-heterogeneity).
+  // Always present on emit (per AC-CARD-2: null = neutral placeholder render).
+  // Optional in TS to keep older fixtures compatible during the rollout.
+  heterogeneity?: HeterogeneityRecord | null;
+}
+
+/** Decomposition separability outcome (F-CARD AC-CARD-9).
+ * Replaces the prior k=10 cliff with a rank/df identifiability check. */
+export type HeterogeneitySeparability =
+  | "not_separable"
+  | "lab_only"
+  | "lab_era"
+  | "full";
+
+export interface HeterogeneityDecomposition {
+  lab: number | null;
+  era: number | null;
+  substrain: number | null;
+  separability: HeterogeneitySeparability | null;
+}
+
+/** F-CARD payload (sole consumer this cycle: HeterogeneityCard.tsx).
+ *
+ * Schema-additivity contract (AC-CARD-11): the JSON schema deliberately omits
+ * `additionalProperties: false` inside this record so the next cycle (Proposal 2)
+ * can ADD `borrow_active` / `borrow_method` / `borrowed_sd` without breaking
+ * backwards compatibility. */
+export interface HeterogeneityRecord {
+  k_raw: number | null;
+  k_eff: number | null;
+  self_excluded: boolean;
+  tier: "single_source" | "small_k" | "borrow_eligible" | null;
+  tier_reason: string | null;
+  tau: number | null;                 // log-SD scale
+  tau_estimator: "PM" | "REML" | "DL" | null;
+  pi_lower: number | null;            // response scale
+  pi_upper: number | null;
+  pi_method: "hksj" | "reml_wald" | null;
+  ess: number | null;                 // Neuenschwander 2020 PC-ESS
+  ess_definition: "neuenschwander_2020" | null;
+  prior_contribution_pct: number | null;  // 0-100; F-PCONT continuous
+  prior_family: "half_normal" | "half_cauchy" | null;
+  prior_scale: number | null;
+  decomposition: HeterogeneityDecomposition | null;
 }
 
 export interface RuleResult {
