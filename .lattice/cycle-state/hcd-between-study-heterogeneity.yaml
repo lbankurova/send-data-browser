@@ -1,8 +1,22 @@
 topic: hcd-between-study-heterogeneity
 started: 2026-04-26T20:10:00Z
-phase: build-in-progress
-current_step: build.2
-revision: 14
+phase: complete
+current_step: complete
+revision: 15
+build:
+  commit: 13469e5b
+  files_changed: 19
+  insertions: 3069
+  cleared_gates:
+    - DATA-GAP-HCD-HET-04
+    - GAP-HCD-HET-CARD-REVIEW (AC-CARD-8 scientist-review gate)
+  deferred_with_dependency:
+    - DATA-GAP-HCD-HET-02 (calibration distillation)
+    - GAP-HCD-HET-AC-PCONT-RIGOR
+    - GAP-HCD-HET-DECOMP-DF
+  new_gaps:
+    - DATA-GAP-HCD-HET-13 (engine non-determinism)
+  peer_review_verdict: PASS-WITH-CHANGES (7 framing changes applied: A1/A2/B1/C1/D1/D2/W1)
 completed:
   research.1: 2026-04-26T20:30:00Z
   research.2: 2026-04-27T01:00:00Z
