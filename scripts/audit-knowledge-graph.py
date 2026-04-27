@@ -2,8 +2,8 @@
 """
 audit-knowledge-graph.py — lint the typed knowledge-graph registry.
 
-Parses `docs/_internal/knowledge/knowledge-graph.md` and runs the five required
-audit behaviors per the architect-gate verdict (2026-04-26):
+Parses `docs/_internal/knowledge/knowledge-graph.md` and runs the audit
+behaviors mandated by the architect-gate verdicts:
 
 1. **scoring_eligible enforcement** — list every fact with its confidence and
    scoring_eligible status; flag any inconsistency with the policy table.
@@ -17,6 +17,11 @@ audit behaviors per the architect-gate verdict (2026-04-26):
 5. **sex:both pairing constraint** — `sex: both` is valid ONLY when paired with
    fact_kind=disable_marker OR confidence=cited_unverified. Anything else is a
    defect.
+6. **relevance_exclusion field completeness** (Extension 8, 2026-04-27) — every
+   `fact_kind: relevance_exclusion` declares the five required value-block
+   fields (name, species_scope, mechanism_basis, supporting_citations,
+   regulatory_context); `name` is unique across all relevance_exclusion facts;
+   `supporting_citations` is non-empty; `confidence != cited_unverified`.
 
 The script does NOT lint scientific accuracy — it only enforces typed-schema
 invariants. Domain accuracy is the architect-gate's job.
@@ -62,9 +67,18 @@ VALID_ENCODINGS = {
 }
 
 # fact_kinds that MAY omit the encoding field (rule-centric value structure)
-ENCODING_EXEMPT_KINDS = {"disable_marker"}
+ENCODING_EXEMPT_KINDS = {"disable_marker", "relevance_exclusion"}
 
 VALID_SEX = {"M", "F", "both", "n/a"}
+
+# Required fields on the value-block of relevance_exclusion facts (Extension 8).
+RELEVANCE_EXCLUSION_REQUIRED_FIELDS = (
+    "name",
+    "species_scope",
+    "mechanism_basis",
+    "supporting_citations",
+    "regulatory_context",
+)
 
 
 @dataclass
@@ -89,13 +103,16 @@ class Defect:
 def parse_facts(path: Path) -> list[Fact]:
     """Extract YAML fact blocks from the knowledge-graph markdown file.
 
-    Each fact is a fenced ```yaml block following a `## HCD-FACT-...` heading.
+    Each fact is a fenced ```yaml block following a `## <PREFIX>-FACT-...` heading.
+    Prefix is any uppercase domain identifier (HCD, NOAEL, METH, ...) so the
+    registry can host multiple typed fact families per typed-knowledge-graph-spec
+    §11 ("the schema is intended to govern future typed registries beyond HCD").
+    Aligned with the query-knowledge.py FACT_HEADING_RE.
     """
     text = path.read_text(encoding="utf-8")
     facts: list[Fact] = []
-    # Match: ## HCD-FACT-<id> followed (with content between) by a ```yaml block
     pattern = re.compile(
-        r"^## (HCD-FACT-[\w]+)\s*\n(?:.*?\n)*?```yaml\n(.*?)\n```",
+        r"^## ([A-Z][A-Z0-9]*-FACT-[\w]+)\s*\n(?:.*?\n)*?```yaml\n(.*?)\n```",
         re.MULTILINE | re.DOTALL,
     )
     for m in pattern.finditer(text):
@@ -250,6 +267,54 @@ def check_sex_both_pairing(facts: list[Fact]) -> list[Defect]:
     return defects
 
 
+def check_relevance_exclusion_fields(facts: list[Fact]) -> list[Defect]:
+    """Extension 8: relevance_exclusion facts must declare the five required
+    value-block fields (name, species_scope, mechanism_basis, supporting_citations,
+    regulatory_context); `name` must be unique; supporting_citations non-empty;
+    confidence != cited_unverified.
+
+    Per typed-knowledge-graph-spec Extension 8: an exclusion class IS a scoring
+    decision (it suppresses findings from human-relevant NOAEL aggregation), so
+    it cannot be backed by an unread secondary citation — same merit reasoning
+    as Extension 6's cited_unverified scoring_eligible: N policy.
+    """
+    defects: list[Defect] = []
+    seen_names: dict[str, str] = {}  # name -> first fact_id that declared it
+    for f in facts:
+        if f.yaml_data.get("fact_kind") != "relevance_exclusion":
+            continue
+        value = f.yaml_data.get("value") or {}
+        if not isinstance(value, dict):
+            defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                  "value field is not a structured object"))
+            continue
+        for field_name in RELEVANCE_EXCLUSION_REQUIRED_FIELDS:
+            if field_name not in value or value[field_name] in (None, "", []):
+                defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                      f"missing or empty required field: value.{field_name}"))
+        species_scope = value.get("species_scope")
+        if species_scope is not None and not isinstance(species_scope, list):
+            defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                  f"value.species_scope must be a list, got {type(species_scope).__name__}"))
+        citations = value.get("supporting_citations")
+        if citations is not None and not isinstance(citations, list):
+            defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                  f"value.supporting_citations must be a list, got {type(citations).__name__}"))
+        name = value.get("name")
+        if isinstance(name, str) and name:
+            prior = seen_names.get(name)
+            if prior is not None:
+                defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                      f"duplicate value.name {name!r}; already declared by {prior}"))
+            else:
+                seen_names[name] = f.fact_id
+        conf = f.yaml_data.get("confidence")
+        if conf == "cited_unverified":
+            defects.append(Defect("error", f.fact_id, "relevance_exclusion_fields",
+                                  "relevance_exclusion cannot be cited_unverified -- exclusion class IS a scoring decision; primary source must be directly read"))
+    return defects
+
+
 def check_encoding_present(facts: list[Fact]) -> list[Defect]:
     """encoding field is mandatory for non-disable_marker facts and must be in the enum."""
     defects: list[Defect] = []
@@ -278,12 +343,13 @@ def check_encoding_present(facts: list[Fact]) -> list[Defect]:
 # =============================================================================
 
 CHECKS = [
-    ("encoding-enum",          check_encoding_present),
-    ("scoring-eligible",       check_scoring_eligible),
-    ("contradicts-symmetry",   check_contradicts_symmetry),
-    ("sex-both-pairing",       check_sex_both_pairing),
-    ("structural-pointer",     check_structural_pointer),
+    ("encoding-enum",            check_encoding_present),
+    ("scoring-eligible",         check_scoring_eligible),
+    ("contradicts-symmetry",     check_contradicts_symmetry),
+    ("sex-both-pairing",         check_sex_both_pairing),
+    ("structural-pointer",       check_structural_pointer),
     ("cited-unverified-backlog", check_cited_unverified_backlog),
+    ("relevance-exclusion-fields", check_relevance_exclusion_fields),
 ]
 
 
