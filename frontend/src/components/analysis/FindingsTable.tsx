@@ -851,7 +851,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const f = info.row.original;
           const vi = verdictMap.get(f.id);
           if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
-          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} doseGroups={doseGroups} />;
         },
       }),
     ],
@@ -1068,7 +1068,7 @@ export function FindingsTable({ findings, doseGroups, signalScores, excludedEndp
           const f = info.row.original.original;
           const vi = verdictMap.get(f.id);
           if (!vi) return <span className="text-muted-foreground">{"\u2014"}</span>;
-          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} />;
+          return <RecoveryOverrideDropdown finding={f} verdictInfo={vi} doseGroups={doseGroups} />;
         },
       }),
     ],

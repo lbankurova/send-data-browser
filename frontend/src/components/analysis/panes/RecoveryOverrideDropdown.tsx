@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { OverridePill } from "@/components/ui/OverridePill";
 import { getVerdictLabel } from "@/lib/recovery-labels";
-import type { UnifiedFinding } from "@/types/analysis";
+import { shortDoseLabel } from "@/lib/dose-label-utils";
+import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
 import type { FindingVerdictInfo } from "@/lib/recovery-table-verdicts";
 import {
   useRecoveryOverrideActions,
@@ -13,16 +14,26 @@ import {
 interface Props {
   finding: UnifiedFinding;
   verdictInfo: FindingVerdictInfo;
+  /** Dose groups for the study; used to label the worst-case driving dose (GAP-293). Optional for backward compat. */
+  doseGroups?: DoseGroup[];
 }
 
-export function RecoveryOverrideDropdown({ finding, verdictInfo }: Props) {
+export function RecoveryOverrideDropdown({ finding, verdictInfo, doseGroups }: Props) {
   const { studyId } = useParams<{ studyId: string }>();
   const actions = useRecoveryOverrideActions(studyId);
   const [open, setOpen] = useState(false);
 
-  const { verdict: autoVerdict, isOverridden, effectiveVerdict, dataType, lowConfidence } = verdictInfo;
+  const { verdict: autoVerdict, isOverridden, effectiveVerdict, dataType, lowConfidence, worstDoseLevel } = verdictInfo;
   const label = getVerdictLabel(effectiveVerdict);
   const displayLabel = lowConfidence && !isOverridden ? `${label} *` : label;
+  // GAP-293: surface the dose that drove the worst-case aggregate verdict.
+  const driverDoseLabel: string | null = worstDoseLevel != null
+    ? (() => {
+        const dg = doseGroups?.find((g) => g.dose_level === worstDoseLevel);
+        if (dg?.label) return shortDoseLabel(dg.label, doseGroups);
+        return `dose level ${worstDoseLevel}`;
+      })()
+    : null;
 
   function handleSelect(value: string) {
     setOpen(false);
@@ -45,9 +56,17 @@ export function RecoveryOverrideDropdown({ finding, verdictInfo }: Props) {
           "flex-1 text-right py-0.5 cursor-context-menu text-muted-foreground",
           isOverridden && "italic",
         )}
-        title={lowConfidence && !isOverridden
-          ? `Low confidence: n < 5 in recovery group. Right-click to override`
-          : isOverridden ? `Override: ${label} (auto: ${getVerdictLabel(autoVerdict)})` : "Right-click to override"}
+        title={(() => {
+          if (lowConfidence && !isOverridden) {
+            return `Low confidence: n < 5 in recovery group. Right-click to override`;
+          }
+          if (isOverridden) {
+            return `Override: ${label} (auto: ${getVerdictLabel(autoVerdict)})`;
+          }
+          // GAP-293: aggregate verdict picks worst-across-doses; surface the driving dose.
+          const drivenBy = driverDoseLabel ? ` (driven by ${driverDoseLabel})` : "";
+          return `Worst-case across dose groups${drivenBy}. Right-click to override.`;
+        })()}
       >
         {displayLabel}
       </span>

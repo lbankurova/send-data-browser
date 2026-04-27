@@ -28,6 +28,8 @@ export interface FindingVerdictInfo {
   dataType: "continuous" | "incidence";
   /** True when the worst-case verdict came from a low-confidence comparison (n < 5). */
   lowConfidence?: boolean;
+  /** Dose level whose verdict was promoted to the worst-case (GAP-293 — surfaces "driven by {dose}"). */
+  worstDoseLevel?: number | null;
 }
 
 // ── Verdict priority (same as RecoveryPane) ──────────────────
@@ -61,13 +63,17 @@ export function buildFindingVerdictMap(
   for (const finding of findings) {
     let worstVerdict: string | null = null;
     let lowConfidence = false;
+    let worstDoseLevel: number | null = null;
 
     if (finding.data_type === "continuous") {
       const r = computeContinuousVerdict(finding, recoveryData);
       worstVerdict = r.verdict;
       lowConfidence = r.lowConfidence;
+      worstDoseLevel = r.worstDoseLevel;
     } else {
-      worstVerdict = computeIncidenceVerdict(finding, recoveryData);
+      const r = computeIncidenceVerdict(finding, recoveryData);
+      worstVerdict = r.verdict;
+      worstDoseLevel = r.worstDoseLevel;
     }
 
     if (worstVerdict == null) continue;
@@ -83,6 +89,7 @@ export function buildFindingVerdictMap(
       effectiveVerdict,
       dataType: finding.data_type === "continuous" ? "continuous" : "incidence",
       lowConfidence,
+      worstDoseLevel,
     });
   }
 
@@ -94,7 +101,7 @@ export function buildFindingVerdictMap(
 function computeContinuousVerdict(
   finding: UnifiedFinding,
   recoveryData: RecoveryComparisonResponse,
-): { verdict: string | null; lowConfidence: boolean } {
+): { verdict: string | null; lowConfidence: boolean; worstDoseLevel: number | null } {
   // Match rows by test_code, or by specimen for OM domain
   const matched = recoveryData.rows.filter((r) => {
     if (finding.specimen) {
@@ -119,6 +126,7 @@ function computeContinuousVerdict(
   // Skip rows with insufficient_n or no_concurrent_control, then classify
   let worstVerdict: string | null = null;
   let worstLowConf = false;
+  let worstDoseLevel: number | null = null;
 
   for (const r of terminalRows) {
     if (r.insufficient_n || r.no_concurrent_control) continue;
@@ -133,10 +141,11 @@ function computeContinuousVerdict(
     if (worstVerdict == null || verdictPriority(verdict) > verdictPriority(worstVerdict)) {
       worstVerdict = verdict;
       worstLowConf = confidence === "low";
+      worstDoseLevel = r.dose_level;
     }
   }
 
-  return { verdict: worstVerdict, lowConfidence: worstLowConf };
+  return { verdict: worstVerdict, lowConfidence: worstLowConf, worstDoseLevel };
 }
 
 // ── Incidence verdict computation ────────────────────────────
@@ -144,9 +153,9 @@ function computeContinuousVerdict(
 function computeIncidenceVerdict(
   finding: UnifiedFinding,
   recoveryData: RecoveryComparisonResponse,
-): string | null {
+): { verdict: string | null; worstDoseLevel: number | null } {
   const incidenceRows = recoveryData.incidence_rows;
-  if (!incidenceRows?.length) return null;
+  if (!incidenceRows?.length) return { verdict: null, worstDoseLevel: null };
 
   const matched = incidenceRows.filter((r) => {
     if (r.domain !== finding.domain) return false;
@@ -160,13 +169,15 @@ function computeIncidenceVerdict(
   });
 
   let worstVerdict: string | null = null;
+  let worstDoseLevel: number | null = null;
 
   for (const r of matched) {
     if (r.verdict == null) continue;
     if (worstVerdict == null || verdictPriority(r.verdict) > verdictPriority(worstVerdict)) {
       worstVerdict = r.verdict;
+      worstDoseLevel = r.dose_level;
     }
   }
 
-  return worstVerdict;
+  return { verdict: worstVerdict, worstDoseLevel };
 }
