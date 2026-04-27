@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "study_id": "_example",
+  "captured_at": "2026-04-27T00:00:00Z",
+  "captured_against_commit": "0000000",
+  "captured_from": "backend/tests/approval-baselines/_example/_example_synthetic_findings.json",
+  "captured_by": "scripts/capture-approval-baseline.py (FORMAT EXEMPLAR -- not a real capture)",
+
+  "scientific": {
+    "summary_counts": {
+      "total_findings": 4,
+      "total_adverse": 2,
+      "total_warning": 1,
+      "total_normal": 1,
+      "total_treatment_related": 3
+    },
+
+    "noael_per_endpoint_sex": {
+      "LB.ALT.SERUM.M": {
+        "tier": "low",
+        "value": "20",
+        "loael": "80"
+      },
+      "LB.ALT.SERUM.F": {
+        "tier": "high",
+        "value": "320",
+        "loael": null
+      },
+      "BW...M": {
+        "tier": "insufficient_evidence",
+        "value": null,
+        "loael": null
+      }
+    },
+
+    "adverse_classification": {
+      "LB.ALT.SERUM.M.29": {
+        "verdict": "adverse",
+        "treatment_related": true,
+        "severity": "moderate"
+      },
+      "LB.ALT.SERUM.F.29": {
+        "verdict": "nonadverse",
+        "treatment_related": false,
+        "severity": null
+      },
+      "MI.HEPATIC_DEGEN.LIVER.M.29": {
+        "verdict": "adverse",
+        "treatment_related": true,
+        "severity": "moderate"
+      },
+      "BW...M.29": {
+        "verdict": "warning",
+        "treatment_related": true,
+        "severity": "minimal"
+      }
+    },
+
+    "target_organs": [
+      "kidney",
+      "liver"
+    ],
+
+    "syndrome_detections": [
+      {
+        "syndrome_id": "XS01",
+        "certainty": "confirmed",
+        "evidence_count": 4,
+        "species_required": null
+      },
+      {
+        "syndrome_id": "XS04",
+        "certainty": "likely",
+        "evidence_count": 2,
+        "species_required": "rat"
+      }
+    ],
+
+    "signal_scores": {
+      "LB.ALT.SERUM.M.29": 0.82,
+      "LB.ALT.SERUM.F.29": 0.15,
+      "MI.HEPATIC_DEGEN.LIVER.M.29": 0.91,
+      "BW...M.29": 0.34
+    },
+
+    "effect_sizes": {
+      "LB.ALT.SERUM.M.29": 1.42,
+      "LB.ALT.SERUM.F.29": 0.21,
+      "MI.HEPATIC_DEGEN.LIVER.M.29": null,
+      "BW...M.29": -0.55
+    },
+
+    "p_value_adjustments": {
+      "LB.ALT.SERUM.M.29": 0.001,
+      "LB.ALT.SERUM.F.29": 0.34,
+      "MI.HEPATIC_DEGEN.LIVER.M.29": null,
+      "BW...M.29": 0.08
+    },
+
+    "eci_dimensions": {
+      "LB.ALT.SERUM.M.29": {
+        "D1": 0.9, "D2": 0.85, "D3": 0.8, "D4": 0.7, "D5": 0.75,
+        "D6": 0.6, "D7": 0.5, "D8": 0.4, "D9": 0.3
+      },
+      "LB.ALT.SERUM.F.29": {
+        "D1": 0.2, "D2": 0.15, "D3": 0.1, "D4": null, "D5": 0.0,
+        "D6": 0.0, "D7": 0.0, "D8": 0.0, "D9": 0.0
+      }
+    }
+  },
+
+  "presentation": {
+    "labels": {
+      "LB.ALT.SERUM.M.29.short": "ALT M d29",
+      "LB.ALT.SERUM.M.29.long": "Alanine Aminotransferase (Male, Day 29)",
+      "noael.LB.ALT.SERUM.M.formatted": "20 mg/kg"
+    },
+    "format_strings": {
+      "p_value.LB.ALT.SERUM.M.29": "p < 0.001",
+      "effect_size.LB.ALT.SERUM.M.29": "g = 1.42 (large)"
+    },
+    "bundle_artifacts": {
+      "frontend.dist.bytes_total": 2103040,
+      "frontend.dist.chunk_count": 18
+    }
+  }
+}
