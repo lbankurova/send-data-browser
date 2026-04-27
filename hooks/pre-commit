@@ -104,6 +104,35 @@ if [ -f "$GATE_FILE" ]; then
     fi
 
     echo "--- Review gate: PASS (age: ${GATE_AGE}s) ---"
+    # Surface attestations recorded in the gate (SIMPLIFY-1 unified format).
+    # Validation already happened at write-review-gate.sh time; this is purely
+    # informational so the committer can see what F3/F6/F7 etc. attached.
+    if command -v python > /dev/null 2>&1; then
+        export _GATE_FILE_DISPLAY="$GATE_FILE"
+        ATTESTATION_DISPLAY=$(PYTHONIOENCODING=utf-8 python << 'PYEOF'
+import json, os, sys
+try:
+    with open(os.environ["_GATE_FILE_DISPLAY"], "r", encoding="utf-8") as fh:
+        gate = json.load(fh)
+except Exception:
+    sys.exit(0)
+attestations = gate.get("attestations") or []
+if not isinstance(attestations, list) or not attestations:
+    sys.exit(0)
+print("  Attestations on this gate (%d):" % len(attestations))
+for entry in attestations:
+    if not isinstance(entry, dict):
+        continue
+    print("    - kind=%s ref=%s verdict=%s" % (
+        entry.get("kind"), entry.get("ref"), entry.get("verdict"),
+    ))
+PYEOF
+        )
+        unset _GATE_FILE_DISPLAY
+        if [ -n "$ATTESTATION_DISPLAY" ]; then
+            echo "$ATTESTATION_DISPLAY"
+        fi
+    fi
     echo ""
 else
     echo "========================================"
