@@ -95,6 +95,17 @@ class ScoringParams:
     # NOAEL gate mode: "statistical" (p<0.05 only) or "woe" (multi-criteria)
     noael_gate: Literal["statistical", "woe"] = "statistical"
 
+    # Multi-timepoint aggregation policy (F2). M = number of consecutive
+    # firing timepoints required for p2_sustained_consecutive (LB-multi / FW
+    # with N_timepoints>=3). Default 2 per peer review R2-F2.
+    sustained_M: int = 2
+
+    # m1_tightened_c2b effect threshold at small N (F2). Used by LB/FW with
+    # N_timepoints<=2 and inherently single-timepoint domains at small N to
+    # compensate for low temporal corroboration. Default 0.40 vs the
+    # baseline effect_relevance_threshold (0.30) per synthesis F2a.
+    c2b_tightened_threshold_smallN: float = 0.40
+
     # NOAEL confidence penalties (positive values, subtracted from 1.0)
     penalty_single_endpoint: float = 0.20
     penalty_sex_inconsistency: float = 0.20

@@ -30,6 +30,7 @@ from generator.view_dataframes import (
     build_organ_evidence_detail,
     build_lesion_severity_summary,
     build_adverse_effect_summary,
+    build_endpoint_loael_summary,
     build_noael_summary,
     build_finding_dose_trends,
 )
@@ -229,6 +230,16 @@ class ParameterizedAnalysisPipeline:
             for f in findings
         ]
 
+        # F1a / AC-F1-10 top-level emission: per-(endpoint_label, sex)
+        # aggregation summary the frontend `computeNoaelForFindings` echoes.
+        # Computed in a second pass (no caching across noael+endpoint summary)
+        # to keep the dispatch loop in `_build_noael_for_groups` testable in
+        # isolation; the per-study cost is small (~30-90 endpoints × 3 sexes).
+        endpoint_loael_summary = build_endpoint_loael_summary(
+            findings, dose_groups, params=scoring,
+            compound_partitions=compound_partitions,
+        )
+
         unified = {
             "study_id": self.study.study_id,
             "dose_groups": dose_groups,
@@ -239,6 +250,7 @@ class ParameterizedAnalysisPipeline:
             "page_size": len(stripped),
             "total_pages": 1,
             "summary": summary,
+            "endpoint_loael_summary": endpoint_loael_summary,
         }
 
         # Sanitize all views — NaN/Inf from scipy can slip through when

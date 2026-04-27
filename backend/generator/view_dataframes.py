@@ -94,14 +94,30 @@ def _is_loael_driving_woe(
     d = abs(pw.get("effect_size") or 0)
     fc = finding.get("finding_class")
 
+    # Hard tox-override gate: when a toxicologist explicitly classifies a
+    # finding as not_treatment_related (typically via the override pipeline at
+    # services/analysis/override_reader.py), human judgment must trump every
+    # WoE criterion below. Without this early-return, C2b's no-fc-gate path
+    # would re-fire on the same finding's raw pairwise effect, defeating the
+    # override. CLAUDE.md rule 19: regulatory reviewer expects override
+    # semantics to be uniform across the gate.
+    if fc == "not_treatment_related":
+        return False
+
     # C1: Effect relevance — gLower > threshold (sample-size-invariant).
     # Incidence: falls to p-value (h_lower excluded, degenerate at small N).
     if _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous")) and fc == "tr_adverse":
         return True
 
-    # C2a: Trend + adverse classification
-    if finding.get("trend_p") is not None and finding["trend_p"] < 0.05 and fc == "tr_adverse":
-        return True
+    # NOTE on C2a: the original WoE specification listed C2a as a separate
+    # criterion (`trend_p < 0.05 AND fc == "tr_adverse"`). Peer review of
+    # NOAEL-ALG Path C (`docs/_internal/research/peer-reviews/NOAEL-ALG-path-c-backend-review.md`,
+    # Finding A5) showed the original was dose-level-independent and produced
+    # indefensible LOAEL on near-zero-effect doses. Gating it on per-dose
+    # `_dose_exceeds_effect_threshold` made it a strict subset of C1 — i.e.,
+    # any time C2a's preconditions hold, C1 has already returned True on the
+    # same line. C2a was therefore removed as unreachable. The trend pathway
+    # is preserved at C2b (large effect + trend with direction match).
 
     # C2b: Large effect + trend (threshold adapts to N per peer review)
     d_threshold = 1.5 if n_per_group <= 5 else 1.0
@@ -684,6 +700,67 @@ def build_adverse_effect_summary(findings: list[dict], dose_groups: list[dict]) 
     return rows
 
 
+def build_endpoint_loael_summary(
+    findings: list[dict],
+    dose_groups: list[dict],
+    params: ScoringParams | None = None,
+    compound_partitions: dict | None = None,
+) -> dict[str, dict]:
+    """F1a top-level emission per AC-F1-10 / F-S4 Option 1.
+
+    Returns a dict keyed by ``f"{endpoint_label}__{sex}"`` mapping to the
+    per-(endpoint, sex) aggregation summary the frontend echoes (F1b parity
+    refactor):
+
+    .. code-block:: python
+
+        {
+          "endpoint_label": str,
+          "sex": "M" | "F" | "Combined",
+          "endpoint_class": str,            # F2b classification
+          "n_timepoints": int,
+          "by_dose_level": {
+            <dose_level>: {
+              "fired": bool,
+              "suspended": bool,
+              "suspended_reason": str | None,
+              "policy": str,                # one of 5 F2 policies
+              "fired_timepoints": list[int],
+              "firing_timepoint_position": str,  # interim / terminal / both / n/a
+            },
+            ...
+          },
+        }
+
+    Implementation reuses ``_build_noael_for_groups`` via the
+    ``aggregation_out`` parameter so the F2 dispatch loop runs once.
+    Multi-compound studies merge per-compound summaries with
+    ``f"{compound_id}::{label}"`` prefix where compound_id is set.
+    """
+    if params is None:
+        params = ScoringParams()
+    out: dict[str, dict] = {}
+    if compound_partitions:
+        for comp_id, partition in compound_partitions.items():
+            comp_findings = [f for f in findings if f.get("compound_id") == comp_id]
+            comp_dgs = partition.get("dose_groups", dose_groups)
+            comp_out: dict[str, dict] = {}
+            _build_noael_for_groups(
+                comp_findings, comp_dgs, mortality=None, params=params,
+                has_concurrent_control=True,
+                is_single_dose=partition.get("is_single_dose", False),
+                aggregation_out=comp_out,
+            )
+            for k, v in comp_out.items():
+                out[f"{comp_id}::{k}"] = v
+        return out
+    _build_noael_for_groups(
+        findings, dose_groups, mortality=None, params=params,
+        has_concurrent_control=True, aggregation_out=out,
+    )
+    return out
+
+
 def build_noael_summary(
     findings: list[dict],
     dose_groups: list[dict],
@@ -841,8 +918,17 @@ def _build_noael_for_groups(
     params: ScoringParams | None = None,
     has_concurrent_control: bool = True,
     is_single_dose: bool = False,
+    aggregation_out: dict | None = None,
 ) -> list[dict]:
-    """Internal: build NOAEL for a single compound's dose groups."""
+    """Internal: build NOAEL for a single compound's dose groups.
+
+    When *aggregation_out* is provided, the F2 per-(endpoint_label, sex,
+    dose_level) decisions are appended into that dict keyed by
+    ``f"{endpoint_label}__{sex}"``. Used by ``build_endpoint_loael_summary``
+    to share the dispatch loop instead of recomputing.
+    """
+    if params is None:
+        params = ScoringParams()
     rows = []
     dose_label_map = {dg["dose_level"]: dg["label"] for dg in dose_groups}
     dose_value_map = {dg["dose_level"]: dg.get("dose_value") for dg in dose_groups}
@@ -937,37 +1023,81 @@ def _build_noael_for_groups(
             })
         return rows
 
+    # F2 multi-timepoint aggregation dispatch — collapsed gate per NOAEL-ALG
+    # synthesis Path C (single WoE gate; legacy `_is_loael_driving` retained
+    # for backward-compat external callers but no longer used in production).
+    # Per-finding C1-C5 happens inside `_is_loael_driving_woe`; per-endpoint
+    # aggregation policy (P3 terminal-primary, P2 sustained, M1 tightened-C2b,
+    # cumulative incidence, single-timepoint) decides whether a dose drives
+    # LOAEL for each (endpoint_label, sex) group.
+    from collections import defaultdict as _defaultdict
+    from services.analysis.noael_aggregation import (
+        aggregate_loael_drivers as _aggregate_loael_drivers,
+        classify_endpoint as _classify_endpoint,
+    )
+
+    treated_dose_levels = sorted({
+        dg["dose_level"] for dg in dose_groups if not dg.get("is_control")
+    })
+
     for sex_filter in ["M", "F", "Combined"]:
         sex_findings = [
             f for f in findings
             if sex_filter == "Combined" or f.get("sex") == sex_filter
         ]
 
-        # Find lowest dose with adverse effect (using ECETOC finding_class).
-        # Derived endpoints (ratios/indices) are excluded — their NOAEL can be
-        # artifactually lower than source components due to ratio mathematics.
-        adverse_dose_levels = set()
-        use_woe = params.noael_gate == "woe"
-        # Estimate N per group for WoE gate threshold adaptation
+        # Estimate N per group (smallest treated cohort drives gate calibration).
         _n_per_group = min(
             (dg.get("n_total", 99) for dg in dose_groups if not dg.get("is_control")),
             default=10,
         )
+
+        # Group findings by endpoint_label for per-endpoint aggregation. Drop
+        # derived endpoints (ratio mathematics can produce artifactually low
+        # NOAEL) and descriptive-only protective rows (do not feed NOAEL).
+        by_endpoint: dict[str, list[dict]] = _defaultdict(list)
         for f in sex_findings:
             if f.get("is_derived"):
                 continue
-            # Descriptive-only protective results do not feed NOAEL
             if f.get("evidence_tier") == "descriptive_only":
                 continue
-            if use_woe:
-                for pw in f.get("pairwise", []):
-                    if _is_loael_driving_woe(f, pw["dose_level"], _n_per_group, params.effect_relevance_threshold):
-                        adverse_dose_levels.add(pw["dose_level"])
-            else:
-                if _is_loael_driving(f):
-                    for pw in f.get("pairwise", []):
-                        if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
-                            adverse_dose_levels.add(pw["dose_level"])
+            label = f.get("endpoint_label") or f.get("finding") or "unknown"
+            by_endpoint[label].append(f)
+
+        # Per-(endpoint, dose_level) aggregation decisions for trace + F1a emission.
+        aggregation_decisions: dict[tuple[str, int], dict] = {}
+        adverse_dose_levels: set[int] = set()
+        for label, ep_findings in by_endpoint.items():
+            n_timepoints = len(ep_findings)
+            endpoint_class = _classify_endpoint(ep_findings[0], n_timepoints)
+            for dose_level in treated_dose_levels:
+                decision = _aggregate_loael_drivers(
+                    ep_findings, dose_level, endpoint_class,
+                    _n_per_group, params,
+                )
+                aggregation_decisions[(label, dose_level)] = decision
+                if decision.get("fired") and not decision.get("suspended"):
+                    adverse_dose_levels.add(dose_level)
+            # Share decisions with build_endpoint_loael_summary if requested.
+            if aggregation_out is not None:
+                key = f"{label}__{sex_filter}"
+                aggregation_out[key] = {
+                    "endpoint_label": label,
+                    "sex": sex_filter,
+                    "endpoint_class": endpoint_class,
+                    "n_timepoints": n_timepoints,
+                    "by_dose_level": {
+                        dl: {
+                            "fired": aggregation_decisions[(label, dl)].get("fired", False),
+                            "suspended": aggregation_decisions[(label, dl)].get("suspended", False),
+                            "suspended_reason": aggregation_decisions[(label, dl)].get("suspended_reason"),
+                            "policy": aggregation_decisions[(label, dl)].get("policy"),
+                            "fired_timepoints": aggregation_decisions[(label, dl)].get("fired_timepoints", []),
+                            "firing_timepoint_position": aggregation_decisions[(label, dl)].get("firing_timepoint_position", "n/a"),
+                        }
+                        for dl in treated_dose_levels
+                    },
+                }
 
         noael_level = None
         loael_level = None
@@ -986,7 +1116,12 @@ def _build_noael_for_groups(
                         noael_level = None
                         noael_method = "below_tested_range"
 
-        # Count adverse findings at LOAEL and collect derivation evidence (IMP-10)
+        # Count adverse findings at LOAEL and collect derivation evidence (IMP-10).
+        # AC-F1-9 (NOAEL-ALG synthesis): legacy `_is_loael_driving` migrated
+        # to `_is_loael_driving_woe` so the evidence trace matches the gate
+        # the algorithm actually used. Without this, the regulatory reviewer
+        # reading the trace sees a different picture than the algorithm did
+        # (CLAUDE.md rule 19 algorithm-defensibility violation).
         n_adverse_at_loael = 0
         adverse_domains = set()
         adverse_at_loael = []   # (IMP-10) for noael_derivation
@@ -994,24 +1129,24 @@ def _build_noael_for_groups(
             for f in sex_findings:
                 if f.get("is_derived"):
                     continue
-                if _is_loael_driving(f):
-                    for pw in f.get("pairwise", []):
-                        if pw["dose_level"] == loael_level:
-                            if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
-                                p = pw.get("p_value_adj", pw.get("p_value"))
-                                n_adverse_at_loael += 1
-                                adverse_domains.add(f.get("domain", ""))
-                                adverse_at_loael.append({
-                                    "finding": f.get("finding", f.get("test_code", "unknown")),
-                                    "specimen": f.get("specimen", f.get("organ_system", "")),
-                                    "domain": f.get("domain", ""),
-                                    "p_value": round(p, 5) if p is not None else None,
-                                    "finding_class": f.get("finding_class"),
-                                    "corroboration_status": f.get("corroboration_status"),
-                                    "loo_stability": pw.get("loo_stability"),
-                                    "loo_control_fragile": pw.get("loo_control_fragile"),
-                                    "loo_influential_subject": pw.get("loo_influential_subject"),
-                                })
+                if _is_loael_driving_woe(f, loael_level, _n_per_group, params.effect_relevance_threshold):
+                    pw = _get_pairwise_at_dose(f, loael_level)
+                    if pw is None:
+                        continue
+                    p = pw.get("p_value_adj", pw.get("p_value"))
+                    n_adverse_at_loael += 1
+                    adverse_domains.add(f.get("domain", ""))
+                    adverse_at_loael.append({
+                        "finding": f.get("finding", f.get("test_code", "unknown")),
+                        "specimen": f.get("specimen", f.get("organ_system", "")),
+                        "domain": f.get("domain", ""),
+                        "p_value": round(p, 5) if p is not None else None,
+                        "finding_class": f.get("finding_class"),
+                        "corroboration_status": f.get("corroboration_status"),
+                        "loo_stability": pw.get("loo_stability"),
+                        "loo_control_fragile": pw.get("loo_control_fragile"),
+                        "loo_influential_subject": pw.get("loo_influential_subject"),
+                    })
 
         # Compute NOAEL confidence score
         confidence = _compute_noael_confidence(
@@ -1053,6 +1188,30 @@ def _build_noael_for_groups(
         if is_single_dose and loael_level is None and not adverse_dose_levels:
             derivation_loael_label = "Not determined (single dose level)"
 
+        # F2d trace: collect aggregation-policy + sustained / transient
+        # dose-level lists + per-finding firing position from the F2 dispatch
+        # decisions, scoped to dose levels at or above the LOAEL where firings
+        # actually occurred. Lets the regulatory reviewer see WHY a dose
+        # was/wasn't classified as LOAEL — interim-only firing under M=1
+        # tightened-C2b vs sustained P2 firing carry different confidence.
+        agg_policies_used: list[str] = []
+        sustained_levels: list[int] = []
+        transient_levels: list[int] = []
+        firing_position_by_endpoint: dict[str, str] = {}
+        for (label, dl), decision in aggregation_decisions.items():
+            if not decision.get("fired") or decision.get("suspended"):
+                continue
+            policy = decision.get("policy")
+            if policy and policy not in agg_policies_used:
+                agg_policies_used.append(policy)
+            if policy == "p2_sustained_consecutive":
+                if dl not in sustained_levels:
+                    sustained_levels.append(dl)
+            else:
+                if dl not in transient_levels:
+                    transient_levels.append(dl)
+            firing_position_by_endpoint[f"{label}@{dl}"] = decision.get("firing_timepoint_position", "n/a")
+
         noael_derivation = {
             "method": method,
             "classification_method": classification_method,
@@ -1064,6 +1223,11 @@ def _build_noael_for_groups(
             "confidence_penalties": [],
             "loo_fragile": loo_fragile_noael,
             "loo_min_stability": loo_min_at_loael,
+            # F2d (NOAEL-ALG synthesis): aggregation-policy trace.
+            "aggregation_policy": ",".join(sorted(agg_policies_used)) if agg_policies_used else None,
+            "sustained_dose_levels": sorted(sustained_levels),
+            "transient_dose_levels": sorted(transient_levels),
+            "firing_timepoint_position": firing_position_by_endpoint,
         }
         if n_adverse_at_loael <= 1:
             noael_derivation["confidence_penalties"].append("single_endpoint")
@@ -1084,17 +1248,27 @@ def _build_noael_for_groups(
                     mortality_cap_applied = True
                     mortality_cap_dose_value = dose_value_map.get(capped_level)
 
-        # Scheduled-only NOAEL: repeat derivation using scheduled_pairwise
+        # Scheduled-only NOAEL: repeat derivation using scheduled_pairwise.
+        # AC-F1-9 callsite migration: the per-finding gate is the WoE gate
+        # so the scheduled-NOAEL evidence trace matches the primary loop.
+        # `_is_loael_driving_woe` reads `finding.pairwise`; we swap in the
+        # scheduled pairwise so the gate evaluates the scheduled-only data.
         scheduled_noael_level = None
         scheduled_loael_level = None
         has_scheduled_data = any("scheduled_pairwise" in f for f in sex_findings)
         if has_scheduled_data:
-            sched_adverse_levels = set()
+            sched_adverse_levels: set[int] = set()
             for f in sex_findings:
-                if _is_loael_driving(f):
-                    for pw in f.get("scheduled_pairwise", f.get("pairwise", [])):
-                        if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
-                            sched_adverse_levels.add(pw["dose_level"])
+                sched_pw = f.get("scheduled_pairwise")
+                if not sched_pw:
+                    continue
+                sched_finding = {**f, "pairwise": sched_pw}
+                for pw in sched_pw:
+                    dl = pw.get("dose_level")
+                    if dl is None:
+                        continue
+                    if _is_loael_driving_woe(sched_finding, dl, _n_per_group, params.effect_relevance_threshold):
+                        sched_adverse_levels.add(dl)
             if sched_adverse_levels:
                 scheduled_loael_level = min(sched_adverse_levels)
                 if scheduled_loael_level > 0:
@@ -1185,16 +1359,27 @@ def _compute_noael_confidence(
     if n_adverse_at_loael <= 1:
         score -= params.penalty_single_endpoint
 
-    # Penalty: sex inconsistency (for M/F rows, check if opposite sex has different NOAEL)
+    # Penalty: sex inconsistency (for M/F rows, check if opposite sex has different NOAEL).
+    # AC-F1-9 callsite migration: WoE gate so opp_loael uses the same gate
+    # logic as the primary NOAEL determination — F4e fragility annotation
+    # downstream reads consistent evidence.
     if sex in ("M", "F"):
         opposite = "F" if sex == "M" else "M"
         opp_findings = [f for f in all_findings if f.get("sex") == opposite]
-        opp_adverse_levels = set()
+        opp_n_per_group = min(
+            (dg.get("n_total", 99) for dg in (dose_groups or []) if not dg.get("is_control")),
+            default=10,
+        )
+        opp_adverse_levels: set[int] = set()
         for f in opp_findings:
-            if _is_loael_driving(f):
-                for pw in f.get("pairwise", []):
-                    if _dose_exceeds_effect_threshold(pw, params.effect_relevance_threshold):
-                        opp_adverse_levels.add(pw["dose_level"])
+            if f.get("is_derived"):
+                continue
+            for pw in f.get("pairwise", []):
+                dl = pw.get("dose_level")
+                if dl is None:
+                    continue
+                if _is_loael_driving_woe(f, dl, opp_n_per_group, params.effect_relevance_threshold):
+                    opp_adverse_levels.add(dl)
         opp_loael = min(opp_adverse_levels) if opp_adverse_levels else None
         opp_noael = _prev_dose_level(dose_groups, opp_loael) if dose_groups and opp_loael is not None and opp_loael > 0 else (
             (opp_loael - 1) if opp_loael is not None and opp_loael > 0 else None
@@ -1233,14 +1418,32 @@ def _compute_noael_confidence(
             score -= params.penalty_large_effect_non_sig
             break
 
-    # Penalty: ALL adverse findings at LOAEL are uncorroborated
+    # Penalty: ALL adverse findings at LOAEL are uncorroborated.
     # Asymmetric: uncorroborated still drives LOAEL, just with lower confidence
-    # (fixed 0.15, not configurable — guard-chain logic, not a tunable threshold)
-    if n_adverse_at_loael > 0:
-        loael_findings = [
-            f for f in sex_findings
-            if _is_loael_driving(f)
-        ]
+    # (fixed 0.15, not configurable — guard-chain logic, not a tunable threshold).
+    # AC-F1-9 callsite migration: WoE gate so loael_findings membership
+    # reflects the same evidence basis as the primary loop.
+    if n_adverse_at_loael > 0 and noael_level is not None:
+        n_per_group = min(
+            (dg.get("n_total", 99) for dg in (dose_groups or []) if not dg.get("is_control")),
+            default=10,
+        )
+        loael_dose = _prev_dose_level(dose_groups, noael_level + 1) if False else None  # see below
+        # The LOAEL is the lowest dose at or above noael_level + 1 that fired
+        # in the primary loop; without re-running the F2 dispatch here we
+        # can identify candidate findings as those that fire WoE at any
+        # treated dose (matches the legacy semantics of "adverse-driving").
+        loael_findings = []
+        for f in sex_findings:
+            if f.get("is_derived"):
+                continue
+            for pw in f.get("pairwise", []):
+                dl = pw.get("dose_level")
+                if dl is None or dl <= 0:
+                    continue
+                if _is_loael_driving_woe(f, dl, n_per_group, params.effect_relevance_threshold):
+                    loael_findings.append(f)
+                    break
         if loael_findings and all(
             f.get("corroboration_status") == "uncorroborated"
             for f in loael_findings

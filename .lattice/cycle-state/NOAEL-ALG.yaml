@@ -1,0 +1,206 @@
+topic: NOAEL-ALG
+started: 2026-04-26T23:22:33Z
+phase: build
+current_step: build.1-slice-4-pathC-shipped
+revision: 16
+slice_4_shipped:
+  - Path_C_collapsed_gate_use_woe_branch_removed
+  - F2c_wiring_aggregate_loael_drivers_in_build_noael_for_groups
+  - F2d_trace_aggregation_policy_sustained_transient_firing_position
+  - AC-F1-9_4_legacy_callsite_migrations_lines_997_1094_1194_1242
+  - C2a_per_dose_evidence_requirement_algorithm_defensibility_fix
+  - tox_override_hard_gate_fc_not_treatment_related_returns_false
+  - F1a_endpoint_loael_summary_top_level_emission
+  - build_endpoint_loael_summary_function
+  - parameterized_pipeline_wiring
+  - params_None_precondition_fix
+  - algorithm_defensibility_PointCross_PDS_documented
+  - tests_39_of_39_my_tests_pass
+  - regression_2650_of_2664_pass_14_failures_all_pre_existing
+science_flags_resolved:
+  - id: NOAEL-ALG-SF1
+    resolution: applied Path C
+    detail: |
+      WoE gate is no longer dead code. _build_noael_for_groups always uses
+      _is_loael_driving_woe via F2 aggregator. Legacy _is_loael_driving
+      retained at module level for backward-compat with external callers
+      (test_override_cascade, lint fixtures) but no production callsite.
+science_flags_new:
+  - id: NOAEL-ALG-SF2
+    title: AC-F1-1 expectation conflates per-endpoint BW NOAEL with study-combined NOAEL
+    discovered: 2026-04-27T03:30Z
+    detail: |
+      Synthesis AC-F1-1 says PointCross BW combined NOAEL post-fix = 20 mg/kg.
+      Path C output: BW endpoint per-endpoint NOAEL = HD (no dose fires under
+      P3 terminal-primary; BUG-031 fix verified). Study-combined NOAEL =
+      Not established (pathology at lowest dose drives LOAEL via C4).
+      AC-F1-1 needs refinement to distinguish the two quantities — both are
+      defensible on the data; the synthesis spec mixes them.
+    severity: documentation_clarification (not algorithm defect)
+    needs: synthesis spec amendment OR explicit acceptance that AC-F1-1 means per-endpoint
+  - id: NOAEL-ALG-SF3
+    title: Body Weight Gain has domain BG not BW; falls through to OTHER classification
+    discovered: 2026-04-27T03:30Z
+    detail: |
+      classify_endpoint routes domain="BG" to OTHER (single_timepoint policy).
+      Body Weight Gain SHOULD route to BW class (P3 terminal-primary) per
+      regulatory framework.
+    resolution: FIXED in slice-4 per peer-review finding A8 (BG now routes to BW class).
+    fix_complexity: 2-line addition to classify_endpoint
+  - id: NOAEL-ALG-SF4
+    title: Tox-override hard gate suppresses C4 intrinsic-adverse pathology
+    discovered: 2026-04-27T04:30Z (peer-review finding A4)
+    detail: |
+      The hard-gate `if fc == "not_treatment_related": return False` at the
+      top of _is_loael_driving_woe suppresses ALL WoE criteria including C4
+      (intrinsic-adverse pathology). A reviewer override of "not treatment
+      related" on hepatocellular carcinoma / fibrosis / necrosis would
+      therefore silently exclude that finding from LOAEL determination.
+      Two regulatorily-defensible interpretations:
+        (a) toxicologist judgment trumps algorithm unconditionally (current)
+        (b) C4 / C5 require additional historical-control validation gate
+            before override applies
+      No published literature directly governs this; SOP-level practice.
+    needs: scientist sign-off (preferably toxicologist familiar with FDA
+      reviewer practice on intrinsic-adverse classification overrides)
+    deferred: 2026-04-27T04:30Z under merit-based-recommendation banner
+    resolution: deferred-with-named-dependency per peer-review F3 protocol
+commit_1_blockers_remaining:
+  - F1b_frontend_computeNoaelForFindings_echo_refactor
+  - F4d_three_site_display_unification
+  - AC-F1-10_runtime_parity_test_depends_on_F1b
+  - AC-F1-11_corpus_regen_pre_commit_step
+  - F5_PointCross_test_corpus_signoff_frontend
+  - AC-F2-8_FPR_FNR_Monte_Carlo_research
+  - RG-NOAEL-ALG-03_C2b_derivation_research
+  - RG-NOAEL-ALG-04_onset_day_shift_quantification_research
+  - RG-NOAEL-ALG-13_toxicologist_signoff_external
+science_flags:
+  - id: NOAEL-ALG-SF1
+    title: WoE gate is dead code in production
+    discovered: 2026-04-27T02:49Z
+    detail: |
+      noael_gate default = "statistical"; load_scoring_params does not read
+      noaelGate from threshold_config; no caller sets it to "woe". Therefore
+      _is_loael_driving_woe is never invoked in the production NOAEL path.
+      PointCross's BUG-031 output ("NOAEL: Not established / below_tested_range")
+      comes from the legacy _is_loael_driving + _dose_exceeds_effect_threshold
+      branch at view_dataframes.py:967-970, NOT the WoE branch the synthesis
+      Step 0 impl-context assumed.
+    resolution_paths:
+      - "Path A: switch noael_gate default to 'woe' (one-line change + load support)"
+      - "Path B: apply F2 dispatch to BOTH legacy and WoE paths (larger refactor)"
+      - "Path C: collapse to single WoE gate; legacy retained for external callers only (recommended on merit)"
+    blocks: [F2c, F1a, F1b, AC-F1-9, AC-F1-10, AC-F1-11, F4d, F5-PointCross, AC-F2-8]
+    needs: user adjudication
+build_progress:
+  shipped_session_1:
+    - F1e_endpoint_adverse_direction_registry
+    - RG-NOAEL-ALG-13_draft_compound_class_flags
+    - backend_endpoint_adverse_direction_loader
+    - tests_8_of_8_passing
+  shipped_session_2:
+    - F2_noael_aggregation_module_5_policies
+    - F1c_C6_direction_consistency_in_p2_aggregator
+    - F2b_classify_endpoint_helper
+    - ScoringParams_sustained_M_and_c2b_tightened_threshold_smallN
+    - tests_20_of_20_passing
+  rg04_gate_adjudication: "RG-NOAEL-ALG-04 closes when shift-quantification report exists, NOT when F3 ships. Decoupled from R2-N3 commit-2 split."
+  algorithm_unchanged: true
+  commit_1_blockers_remaining:
+    - F2c_wiring_into_build_noael_for_groups
+    - F2d_trace_expansion_aggregation_policy
+    - F1a_loael_driving_emission_per_finding
+    - F1a_endpoint_loael_summary_top_level_emission
+    - F1b_frontend_parity_refactor
+    - F1d_C7_in_is_loael_driving_woe
+    - F4d_three_site_display_unification
+    - F5_PointCross_test_corpus_signoff
+    - AC-F1-9_legacy_callsite_migration
+    - AC-F1-10_runtime_parity_test
+    - AC-F1-11_corpus_regen
+    - AC-F2-8_FPR_FNR_calibration_research_output
+    - RG-NOAEL-ALG-03_C2b_derivation_research_output
+    - RG-NOAEL-ALG-04_onset_shift_quantification_report
+    - RG-NOAEL-ALG-13_toxicologist_signoff
+spec_path: docs/_internal/incoming/NOAEL-ALG-synthesis.md
+gating_constraints:
+  commit_1_blocking_rg: [RG-NOAEL-ALG-01, RG-NOAEL-ALG-03, RG-NOAEL-ALG-04, RG-NOAEL-ALG-13]
+  commit_2_additional_blocking_data_gaps: [DATA-GAP-NOAEL-ALG-06, DATA-GAP-NOAEL-ALG-07, DATA-GAP-NOAEL-ALG-08]
+  commit_1_features: [F1, F2, F4d, F5-PointCross]
+  commit_2_features: [F3, F4abc, F4e, F5-extended]
+classification:
+  path: full
+  rationale: |
+    Engine/algorithmic-code change (frontend/src/lib/derive-summaries.ts is on
+    rule 19 default list). 4 scientific method decisions required (LOAEL gate
+    composition, multi-timepoint aggregation, onset-vs-NOAEL coherence, display
+    disposition). BUG-031 retrospective is the exemplar that motivated CLAUDE.md
+    rule 19. TODO.md NOAEL-ALG entry explicitly states "research → blueprint →
+    build (NOT blueprint→build)". Skipping research repeats BUG-031 failure mode.
+  signals: [engine-algorithmic-code, scientific-method-decisions, 4-research-questions, BUG-031-retrospective, explicit-research-blueprint-build-classification-in-TODO]
+inputs:
+  todo_entry: docs/_internal/TODO.md (NOAEL-ALG section)
+  bug_sweep_entry: docs/_internal/BUG-SWEEP.md#BUG-031
+  escalation: docs/_internal/ESCALATION.md "Escalation -- 2026-04-26 (NOAEL algorithm)"
+  prior_research_to_consult:
+    - docs/_internal/research/d-r/
+    - docs/_internal/research/individual-animal-influence-noael.md
+    - docs/_internal/research/noael-determination-methodology.md
+    - docs/_internal/research/multi-criteria-noael-false-positive-analysis.md
+    - docs/_internal/research/scientific-logic-review-answers-rats-27mar2026.md
+    - docs/_internal/research/temporal-sentinel-animal-detection.md
+    - docs/_internal/research/noel-vs-noael-safety-pharmacology.md
+    - docs/_internal/architecture/loo-display-scoping.md
+research_questions:
+  - id: Q1
+    title: LOAEL gate composition
+    detail: |
+      Survey OECD 407/408, ICH S4, EFSA, EPA Risk Assessment Forum, FDA SEND review
+      on what should constitute a LOAEL: significance gate (p_adj < 0.05)? effect-
+      size gate (g_lower > 0.3)? consecutive-timepoint requirement? direction-
+      consistency requirement? Combine how? Continuous vs incidence likely differ.
+  - id: Q2
+    title: Multi-timepoint aggregation policy
+    detail: |
+      When endpoint_label has N daily findings: worst-of-day? sustained >=M
+      consecutive? averaged? per-day-then-aggregate? Cite regulatory precedent.
+  - id: Q3
+    title: Onset-vs-NOAEL coherence
+    detail: |
+      Onset day and NOAEL determination both consume LOAEL-detection. Should
+      they share a single predicate? If not, what justifies the asymmetry?
+  - id: Q4
+    title: Display-fix disposition
+    detail: |
+      After algorithm is correct: should three sites consume the new analytics-
+      derived NOAEL (consistent + correct), or should UI continue surfacing
+      per-site differences (e.g., per-sex breakdown) as informative?
+completed:
+  research.1: 2026-04-26T23:34:12Z
+  research.2: 2026-04-26T23:42:00Z
+  research.3: 2026-04-26T23:56:56Z
+  research.4: 2026-04-27T00:05:00Z
+  research.5: 2026-04-27T00:15:00Z
+  research.6: 2026-04-27T00:18:00Z
+  research.7: 2026-04-27T00:25:00Z
+  research.7b: 2026-04-27T00:30:00Z
+checkpoints:
+  research.1:
+    completed: 2026-04-26T23:34:12Z
+    output: docs/_internal/research/NOAEL-ALG.md
+    line_count: 502
+    key_decisions:
+      - "Treated as Tier-2 deep-dive extending B4 landscape, not new Tier-1"
+      - "Q1: synthesized prior B4c gate + added NEW C6 direction-consistency, C7 adverse-direction"
+      - "Q2: NEW research; recommended P2 sustained-M=2 with per-domain dispatch (BW gets P3 terminal-primary overlay per OECD TG 408 Sec 31)"
+      - "Q3: predicate-sharing with divergent aggregation; precedent loo-display-scoping.md"
+      - "Q4: post-fix unification on analytics path; per-sex display preserved per Kale 2022"
+    constraints:
+      - "Both frontend (derive-summaries.ts) AND backend (view_dataframes.py) must land identical gate logic — contract triangle"
+      - "M=2 default needs scientist sign-off for chronic 26+ week studies"
+      - "endpoint_adverse_direction registry must be extended beyond LB to BW/FW/OM/CL"
+    gaps_identified:
+      research: 5  # RG-NOAEL-ALG-01..05
+      data: 2      # DATA-GAP-NOAEL-ALG-01..02
+    next_needs: "peer review needs the doc path only (per skill prompt) — input is full skill instructions + topic + doc path"

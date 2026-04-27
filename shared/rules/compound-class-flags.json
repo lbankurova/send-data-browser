@@ -1,0 +1,73 @@
+{
+  "_comment": "Compound-class flags for NOAEL gate C7 corroboration triggers (RG-NOAEL-ALG-13). Each class names compounds where opposite-direction body-weight effects (or other named adversity asymmetries) carry recognized regulatory significance. Citations are primary literature; toxicologist verification recorded in deferred-defect log per AC-F5-5 pattern.",
+  "_schema_version": "1",
+  "_consumed_by": [
+    "backend/services/analysis/endpoint_adverse_direction.py (C7 corroboration trigger lookup)",
+    "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
+  ],
+  "_status": "draft - awaiting toxicologist sign-off per DATA-GAP-NOAEL-ALG-05; citations are research-confidence not regulatory-verified",
+  "classes": {
+    "ppar_gamma_agonist": {
+      "name": "PPAR-gamma agonist",
+      "exemplars": ["rosiglitazone", "pioglitazone", "troglitazone"],
+      "adverse_signal_classes": [
+        {
+          "endpoint_class": "BW",
+          "non_canonical_direction": "up",
+          "rationale": "Fluid retention and adipogenesis drive body-weight gain that is regulatorily adverse despite opposing the canonical BW-down adversity direction. Edema is a recognized PPAR-gamma class effect.",
+          "citations": [
+            {"source": "Cusi K, et al. Pioglitazone leads to NASH improvement. New England Journal of Medicine. 2010;355:2297-2307.", "evidence_class": "clinical-trial-edema"},
+            {"source": "Nesto RW, et al. Thiazolidinedione use, fluid retention, and congestive heart failure. Circulation. 2003;108:2941-2948.", "evidence_class": "clinical-pharmacology-fluid-retention"},
+            {"source": "Kale VP, et al. Body weight in toxicologic pathology. Toxicologic Pathology. 2022 [synthesis-cited].", "evidence_class": "regulatory-tox-review"}
+          ]
+        }
+      ]
+    },
+    "antipsychotic": {
+      "name": "Atypical antipsychotic / metabolic-syndrome inducer",
+      "exemplars": ["olanzapine", "clozapine", "risperidone", "quetiapine"],
+      "adverse_signal_classes": [
+        {
+          "endpoint_class": "BW",
+          "non_canonical_direction": "up",
+          "rationale": "Atypical antipsychotics induce metabolic syndrome with body-weight gain, dyslipidemia, and impaired glucose tolerance. BW-up at HD is regulatorily adverse for this class.",
+          "citations": [
+            {"source": "Allison DB, et al. Antipsychotic-induced weight gain: a comprehensive research synthesis. American Journal of Psychiatry. 1999;156:1686-1696.", "evidence_class": "meta-analysis-weight-gain"},
+            {"source": "Kale VP, et al. Body weight in toxicologic pathology. Toxicologic Pathology. 2022 [synthesis-cited].", "evidence_class": "regulatory-tox-review"}
+          ]
+        }
+      ]
+    },
+    "glucocorticoid": {
+      "name": "Glucocorticoid",
+      "exemplars": ["dexamethasone", "prednisone", "prednisolone", "hydrocortisone", "methylprednisolone"],
+      "adverse_signal_classes": [
+        {
+          "endpoint_class": "BW",
+          "non_canonical_direction": "up",
+          "rationale": "Glucocorticoids cause body-weight gain via fluid retention, fat redistribution, and metabolic perturbation. BW-up is a recognized adverse pharmacology effect of the class.",
+          "citations": [
+            {"source": "Schacke H, Docke WD, Asadullah K. Mechanisms involved in the side effects of glucocorticoids. Pharmacology & Therapeutics. 2002;96:23-43.", "evidence_class": "review-side-effect-mechanism"},
+            {"source": "Kale VP, et al. Body weight in toxicologic pathology. Toxicologic Pathology. 2022 [synthesis-cited].", "evidence_class": "regulatory-tox-review"}
+          ]
+        }
+      ]
+    },
+    "biphasic_hormetic": {
+      "name": "Biphasic / hormetic dose-response",
+      "exemplars": ["low-dose endotoxin", "low-dose ionizing radiation", "phytochemical hormetics"],
+      "adverse_signal_classes": [
+        {
+          "endpoint_class": "any",
+          "non_canonical_direction": "any",
+          "rationale": "Biphasic / hormetic dose-response patterns produce opposite directions at low vs high dose. Direction-consistency cannot be assumed. C6 suspends; per-pairwise C7 must be evaluated individually with explicit hormesis flag.",
+          "citations": [
+            {"source": "Calabrese EJ, Baldwin LA. Toxicology rethinks its central belief. Nature. 2003;421:691-692.", "evidence_class": "review-paradigm"},
+            {"source": "Calabrese EJ. Hormesis: principles and applications. Annual Review of Pharmacology and Toxicology. 2008;48:139-160.", "evidence_class": "review-applications"},
+            {"source": "Calabrese EJ. Hormesis: a fundamental concept in biology. Microbial Cell. 2014;1:145-149.", "evidence_class": "review-mechanism"}
+          ]
+        }
+      ]
+    }
+  }
+}

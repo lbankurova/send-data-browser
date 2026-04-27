@@ -1,0 +1,118 @@
+{
+  "_comment": "Endpoint-class adverse-direction registry (F1e) for NOAEL gate C7 (bidirectional adverse-direction with corroboration triggers). Schema captures: (a) primary adverse direction per endpoint class, (b) bidirectional corroboration triggers when the opposite direction can also be adverse. Cross-domain triggers reference findings at the same dose level on other endpoints.",
+  "_schema_version": "1",
+  "_consumed_by": [
+    "backend/services/analysis/endpoint_adverse_direction.py (lookup helpers)",
+    "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
+  ],
+  "_status": "draft - awaiting toxicologist sign-off per DATA-GAP-NOAEL-ALG-02; entries to be expanded as C7 corroboration matching predicate (RG-NOAEL-ALG-14) is implemented",
+  "endpoint_classes": {
+    "BW": {
+      "endpoint_label_patterns": [
+        "body weight",
+        "body wt",
+        "bw",
+        "terminal body weight",
+        "body weight gain"
+      ],
+      "send_domain": "BW",
+      "primary_adverse_direction": "down",
+      "rationale": "Decreased body weight or impaired weight gain is the canonical adverse signal in repeat-dose toxicology (palatability, systemic toxicity, malabsorption).",
+      "bidirectional_corroboration": {
+        "non_primary_direction": "up",
+        "triggers": [
+          {"trigger": "FW_up_same_dose_sex", "rationale": "Hyperphagia indication — feed consumption increase corroborates BW-up as pharmacologically driven."},
+          {"trigger": "CL_fluid_retention_same_dose_sex", "rationale": "Fluid retention / edema clinical signs corroborate BW-up as fluid-driven."},
+          {"trigger": "OM_organomegaly_same_dose_sex", "rationale": "Organomegaly or fat-depot increase corroborates BW-up as adipogenic / hypertrophic."},
+          {"trigger": "compound_class:ppar_gamma_agonist", "rationale": "Per Kale 2022 / Cusi 2010 / Nesto 2003 — class effect via fluid retention + adipogenesis."},
+          {"trigger": "compound_class:antipsychotic", "rationale": "Per Allison 1999 meta-analysis / Kale 2022 — metabolic syndrome induction."},
+          {"trigger": "compound_class:glucocorticoid", "rationale": "Per Schacke 2002 / Kale 2022 — fluid retention + fat redistribution."},
+          {"trigger": "compound_class:biphasic_hormetic", "rationale": "Per Calabrese 2003/2008 — opposite-direction effects expected."}
+        ]
+      }
+    },
+    "FW": {
+      "endpoint_label_patterns": [
+        "food consumption",
+        "feed consumption",
+        "fc",
+        "fw",
+        "food intake",
+        "feed intake"
+      ],
+      "send_domain": "FW",
+      "primary_adverse_direction": "down",
+      "rationale": "Decreased food consumption is canonical adverse signal (palatability, systemic toxicity, gastrointestinal effects).",
+      "bidirectional_corroboration": {
+        "non_primary_direction": "up",
+        "triggers": [
+          {"trigger": "BW_up_same_dose_sex", "rationale": "Concurrent BW-up corroborates hyperphagia."},
+          {"trigger": "compound_class:antipsychotic", "rationale": "Hyperphagia is a recognized class effect of atypical antipsychotics."},
+          {"trigger": "compound_class:glucocorticoid", "rationale": "Hyperphagia accompanies glucocorticoid-induced metabolic perturbation."}
+        ]
+      }
+    },
+    "OM": {
+      "endpoint_label_patterns": [
+        "organ weight",
+        "absolute organ weight",
+        "relative organ weight",
+        "om"
+      ],
+      "send_domain": "OM",
+      "primary_adverse_direction": "up",
+      "rationale": "Organomegaly (organ-weight increase) is more commonly the adverse signal (hypertrophy, hyperplasia, edema, infiltrate). Atrophy (decrease) is also adverse but lower base rate at typical dose levels.",
+      "bidirectional_corroboration": {
+        "non_primary_direction": "down",
+        "triggers": [
+          {"trigger": "MA_atrophy_same_organ_same_dose_sex", "rationale": "Macroscopic atrophy at the same organ corroborates organ-weight-decrease as toxicity."},
+          {"trigger": "MI_atrophy_same_organ_same_dose_sex", "rationale": "Microscopic atrophy / depletion at the same organ corroborates organ-weight-decrease as toxicity."},
+          {"trigger": "MI_necrosis_same_organ_same_dose_sex", "rationale": "Necrosis at the same organ corroborates organ-weight-decrease via tissue loss."}
+        ]
+      }
+    },
+    "CL_incidence": {
+      "endpoint_label_patterns": [
+        "clinical observation",
+        "clinical sign",
+        "cl",
+        "in-life observation"
+      ],
+      "send_domain": "CL",
+      "primary_adverse_direction": "up",
+      "rationale": "Increased clinical-sign incidence (any direction in the underlying observation) is the adverse signal — incidence is unidirectional by construction.",
+      "bidirectional_corroboration": {
+        "non_primary_direction": null,
+        "triggers": []
+      }
+    },
+    "DS_incidence": {
+      "endpoint_label_patterns": [
+        "disposition",
+        "death",
+        "moribund",
+        "ds",
+        "found dead",
+        "euthanized"
+      ],
+      "send_domain": "DS",
+      "primary_adverse_direction": "up",
+      "rationale": "Increased mortality / morbidity is the adverse signal — incidence is unidirectional by construction.",
+      "bidirectional_corroboration": {
+        "non_primary_direction": null,
+        "triggers": []
+      }
+    },
+    "LB_per_analyte": {
+      "_comment": "Lab biomarkers — direction adversity is per-analyte and depends on the canonical biomarker. Defer to lab-clinical-catalog (frontend) and shared/rules/lab-clinical-rules.json (backend). This entry signals that LB endpoints should consult the per-analyte registry, not a single endpoint-class direction.",
+      "endpoint_label_patterns": ["lb", "lab"],
+      "send_domain": "LB",
+      "primary_adverse_direction": "per-analyte",
+      "rationale": "Lab analytes vary: ALT/AST up = adverse; albumin down = adverse; WBC bidirectional. The per-analyte direction is encoded in lab-clinical-rules.json + lab-clinical-catalog.ts.",
+      "bidirectional_corroboration": {
+        "non_primary_direction": null,
+        "triggers": []
+      }
+    }
+  }
+}
