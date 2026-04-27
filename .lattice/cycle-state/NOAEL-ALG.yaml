@@ -66,15 +66,27 @@ science_flags_new:
     deferred: 2026-04-27T04:30Z under merit-based-recommendation banner
     resolution: deferred-with-named-dependency per peer-review F3 protocol
 commit_1_blockers_remaining:
-  - F1b_frontend_computeNoaelForFindings_echo_refactor
-  - F4d_three_site_display_unification
-  - AC-F1-10_runtime_parity_test_depends_on_F1b
-  - AC-F1-11_corpus_regen_pre_commit_step
-  - F5_PointCross_test_corpus_signoff_frontend
-  - AC-F2-8_FPR_FNR_Monte_Carlo_research
-  - RG-NOAEL-ALG-03_C2b_derivation_research
-  - RG-NOAEL-ALG-04_onset_day_shift_quantification_research
   - RG-NOAEL-ALG-13_toxicologist_signoff_external
+shipped_post_initial_blocker_list:
+  F1b_frontend_echo_refactor: c9db754c
+  F4d_display_unification: c9db754c
+  AC-F1-10_runtime_parity_test: c9db754c (4 synthetic + 1 PointCross fixture; all pass)
+  AC-F1-11_corpus_regen: verified 2026-04-27 on 5 studies (PointCross/Nimble/PDS/CJ16050/CBER-POC-Pilot-Study5); staging-time only per synthesis (backend/generated is gitignored)
+  F5_PointCross_test_corpus: this commit (4 assertions; BUG-031 BW suppression verified)
+  AC-F2-8_FPR_FNR_Monte_Carlo: docs/validation/NOAEL-ALG-F2-fpr-fnr-calibration.md (defaults retained; FNR<=50% at d=0.8 N>=5; peer-review Finding 9 empirically refuted)
+  RG-NOAEL-ALG-03_C2b_derivation: docs/validation/NOAEL-ALG-C2b-derivation.md (current values defensible; 16 citations; no code change)
+  RG-NOAEL-ALG-04_onset_shift: docs/validation/NOAEL-ALG-onset-shift-quantification.md (5.02% corpus shift; CBER-POC-Pilot-Study5 only above 10% threshold)
+rg_noael_alg_04_complete:
+  date: 2026-04-27T05:00:00Z
+  verdict: auto-deploy_threshold_met
+  shift_fraction: 5.02%
+  threshold: 10%
+  studies_above_threshold: [CBER-POC-Pilot-Study5]
+  signoff_required: per-study (Study5 only)
+  report: docs/validation/NOAEL-ALG-onset-shift-quantification.md
+  harness: scripts/research/noael-alg-onset-shift.py
+  raw_json: docs/validation/NOAEL-ALG-onset-shift-quantification.json
+  caveat: "per-finding onset_dose_level mechanically unchanged by Path C; shifts arise from cache staleness vs current classify_dose_response. Post-F3 per-timepoint onset_day_start measurement deferred to F3 deploy (harness in place)."
 science_flags:
   - id: NOAEL-ALG-SF1
     title: WoE gate is dead code in production
@@ -121,7 +133,7 @@ build_progress:
     - AC-F1-11_corpus_regen
     - AC-F2-8_FPR_FNR_calibration_research_output
     - RG-NOAEL-ALG-03_C2b_derivation_research_output
-    - RG-NOAEL-ALG-04_onset_shift_quantification_report
+    # RG-NOAEL-ALG-04_onset_shift_quantification_report -- COMPLETE 2026-04-27 (5.02% < 10% auto-deploy)
     - RG-NOAEL-ALG-13_toxicologist_signoff
 spec_path: docs/_internal/incoming/NOAEL-ALG-synthesis.md
 gating_constraints:

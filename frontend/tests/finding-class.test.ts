@@ -404,15 +404,24 @@ describe("NOAEL derivation with finding_class", () => {
   );
 
   test.skipIf(!hasGenerated)(
-    "when classification_method is finding_class, all LOAEL findings are tr_adverse",
+    "when classification_method is finding_class, all LOAEL findings have an LOAEL-eligible class",
     () => {
+      // Path C semantics (NOAEL-ALG cycle): LOAEL-eligible finding_class
+      // values are {tr_adverse, equivocal}. Pre-Path-C the legacy gate
+      // (`_is_loael_driving`) only let tr_adverse through; under Path C,
+      // C2b (large effect + trend, no fc gate by synthesis design) can
+      // fire on `equivocal` findings to catch large-effect signals that
+      // classification was uncertain about. `not_treatment_related` is
+      // hard-gated to False; `tr_non_adverse` and `tr_adaptive` represent
+      // active negative classifications and should NOT fire LOAEL.
+      const ELIGIBLE = new Set(["tr_adverse", "equivocal"]);
       const violations: string[] = [];
       for (const row of noael) {
         if (row.noael_derivation?.classification_method !== "finding_class") continue;
         for (const af of row.noael_derivation.adverse_findings_at_loael) {
-          if (af.finding_class !== "tr_adverse") {
+          if (!ELIGIBLE.has(af.finding_class)) {
             violations.push(
-              `${row.sex}: ${af.finding} (${af.domain}) at LOAEL has finding_class="${af.finding_class}"`,
+              `${row.sex}: ${af.finding} (${af.domain}) at LOAEL has finding_class="${af.finding_class}" (must be one of ${[...ELIGIBLE].join("/")})`,
             );
           }
         }
