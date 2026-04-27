@@ -5,7 +5,7 @@
     "backend/services/analysis/endpoint_adverse_direction.py (C7 corroboration trigger lookup)",
     "backend/generator/view_dataframes.py::_is_loael_driving_woe (C7 application)"
   ],
-  "_status": "draft - awaiting toxicologist sign-off per DATA-GAP-NOAEL-ALG-05; citations are research-confidence not regulatory-verified",
+  "_status": "content-complete pending toxicologist sign-off (DATA-GAP-NOAEL-ALG-05 partially resolved 2026-04-27 commit b1f8dea2). All 4 classes (ppar_gamma_agonist, antipsychotic, glucocorticoid, biphasic_hormetic) carry primary citations. Three classes ALSO have full expected-effect profiles in shared/expected-effect-profiles/{ppar_gamma_agonist,antipsychotic,glucocorticoid}.json (biphasic_hormetic has no per-endpoint profile by design — its signature is dose-response shape, not specific organs). Citations remain research-confidence (Kale 2022, Allison 1999, Schacke 2002, Cusi 2010, Nesto 2003, Newcomer 2005, Reynolds & Kirk 2010, Boumpas 1993, Calabrese 2003/2008/2014) not regulatory-verified.",
   "classes": {
     "ppar_gamma_agonist": {
       "name": "PPAR-gamma agonist",
