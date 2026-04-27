@@ -34,6 +34,15 @@ CONCORDANCE_Z_THRESHOLD = 2.0   # |z| above this -> concordance evidence
 POC_DOMAIN_THRESHOLD = 2        # domains required per organ for POC
 COC_ORGAN_THRESHOLD = 2         # organ systems required for COC >= 2
 
+
+def _round_sig(value: float, sig: int = 3) -> float:
+    # round to `sig` significant figures so low-magnitude analytes (e.g. BASO ~0.015 K/uL)
+    # keep visible precision instead of collapsing to 0.0 under round(x, 1).
+    if value == 0 or not math.isfinite(value):
+        return value
+    digits = sig - int(math.floor(math.log10(abs(value)))) - 1
+    return round(value, digits)
+
 # Immunomodulatory compound class profile IDs -- stress heuristic annotates
 # rather than flags for these (pharmacologically expected HPA/immune changes).
 IMMUNOMOD_PROFILE_IDS: frozenset[str] = frozenset({
@@ -400,7 +409,7 @@ def _process_continuous_endpoint(
                 continue
             scale = scale_map[dl]
             med = median_map[dl]  # log-space for lognormal, original for others
-            median_orig = round(math.exp(med), 1) if is_lognormal else round(med, 1)
+            median_orig = _round_sig(math.exp(med), 3) if is_lognormal else _round_sig(med, 3)
 
             # Parametric CV from group_stats (complementary to robust scale)
             gs_entry = gs_map.get(dl)
@@ -415,15 +424,15 @@ def _process_continuous_endpoint(
                 w_lo = w_hi = median_orig
                 w_lo_c = w_hi_c = median_orig
             elif is_lognormal:
-                w_lo = round(math.exp(med - OUTLIER_Z_THRESHOLD * scale), 1)
-                w_hi = round(math.exp(med + OUTLIER_Z_THRESHOLD * scale), 1)
-                w_lo_c = round(math.exp(med - CONCORDANCE_Z_THRESHOLD * scale), 1)
-                w_hi_c = round(math.exp(med + CONCORDANCE_Z_THRESHOLD * scale), 1)
+                w_lo = _round_sig(math.exp(med - OUTLIER_Z_THRESHOLD * scale), 3)
+                w_hi = _round_sig(math.exp(med + OUTLIER_Z_THRESHOLD * scale), 3)
+                w_lo_c = _round_sig(math.exp(med - CONCORDANCE_Z_THRESHOLD * scale), 3)
+                w_hi_c = _round_sig(math.exp(med + CONCORDANCE_Z_THRESHOLD * scale), 3)
             else:
-                w_lo = round(med - OUTLIER_Z_THRESHOLD * scale, 1)
-                w_hi = round(med + OUTLIER_Z_THRESHOLD * scale, 1)
-                w_lo_c = round(med - CONCORDANCE_Z_THRESHOLD * scale, 1)
-                w_hi_c = round(med + CONCORDANCE_Z_THRESHOLD * scale, 1)
+                w_lo = _round_sig(med - OUTLIER_Z_THRESHOLD * scale, 3)
+                w_hi = _round_sig(med + OUTLIER_Z_THRESHOLD * scale, 3)
+                w_lo_c = _round_sig(med - CONCORDANCE_Z_THRESHOLD * scale, 3)
+                w_hi_c = _round_sig(med + CONCORDANCE_Z_THRESHOLD * scale, 3)
 
             groups_meta.append({
                 "dose_level": dl,
