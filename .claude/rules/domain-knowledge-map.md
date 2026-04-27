@@ -22,6 +22,8 @@ Before writing or modifying logic involving these topics, read the referenced fi
 | System manifest (Layer 0) | `docs/_internal/knowledge/system-manifest.md` | **Read first** for any cross-subsystem question. 25 subsystems, data flow, override cascades, invariants. |
 | Scoring engine model (Layer 1) | `docs/_internal/knowledge/scoring-engine-model.md` | Detailed 17-step scoring pipeline. Drill-down from system manifest S10. |
 | Code quality guardrails | `docs/_internal/knowledge/code-quality-guardrails.md` | Complexity budgets, canonical patterns, domain-critical modules |
+| Workflow-audit corpus | `docs/_internal/audits/workflow-audits/` | **Read first when redesigning any UI surface.** 24 persona × workflow walks + post-validation corrigenda. Per-surface audit READMEs document existing friction; `THEMES.md` names systemic patterns (CT-1..CT-26); `SUMMARY.md` headlines + top GAPs; `CORRIGENDA.md` records walk-time claims refuted by code. Designing without reading the relevant audit is re-discovering known friction. Required by `/lattice:design` Step 1 block 1.1 and `/lattice:ux-designer` Design Protocol. |
+| Positive design patterns | `docs/_internal/design-system/positive-patterns.md` | **Read when designing a rationale row, banner, alert, settings-rail explanation, or any surface where the engine needs to explain itself.** Catalogues 10 CT-19 gold-standard exemplars with the 4-clause structure (fact + consequence + workflow implication + action path), code locations, and adoption guidance. Companion to the negative-form `audit-checklist.md`. |
 
 ## Meta-Orchestration
 
