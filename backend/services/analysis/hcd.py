@@ -683,6 +683,7 @@ def assess_a3_lb(
     duration_days: int | None,
     *,
     control_group_mean: float | None = None,
+    value_unit: str | None = None,
 ) -> dict:
     """Assess A-3 factor for LB findings: is the treated-group mean within HCD?
 
@@ -817,14 +818,18 @@ def assess_a3_lb(
         if ntp_strain:
             pct = sqlite_db.percentile_rank_lb(
                 treated_group_mean, ntp_strain, sex, matched_code, dur_cat,
+                value_unit=value_unit,
             )
         if pct is None and canonical_strain:
             # Fallback: try the LB-resolved strain
             pct = sqlite_db.percentile_rank_lb(
                 treated_group_mean, canonical_strain, sex, matched_code, dur_cat,
+                value_unit=value_unit,
             )
         if pct is not None:
             out["percentile_rank"] = pct
+            if value_unit is not None:
+                out["percentile_unit_filter"] = value_unit.strip().upper()
 
     # Warn if this is a flagged parameter
     notes = hcd.get("notes", "")

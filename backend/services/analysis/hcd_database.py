@@ -375,6 +375,7 @@ class HcdSqliteDB:
         sex: str,
         test_code: str,
         duration_category: str,
+        value_unit: str | None = None,
     ) -> float | None:
         """Rank a lab value against the matched HCD distribution (0-100).
 
@@ -386,6 +387,17 @@ class HcdSqliteDB:
         discriminating levels (e.g. n=3 gives 0/33/67/100) which is too
         coarse to be informative for continuous lab values. n=10 gives
         10% granularity minimum. Caller guards on lb_iad_available.
+
+        Unit-harmonization guard (GAP-LB-IAD-1):
+          - If `value_unit` is provided, the SQL stratum is restricted to rows
+            whose `unit` matches (case-insensitive). Mismatched-unit studies
+            (e.g. study reports ALT in ukat/L while NTP IAD has it in U/L)
+            cannot silently produce a meaningless percentile.
+          - If `value_unit` is None, the function falls back to a stratum
+            homogeneity check: if the matched stratum contains more than one
+            distinct non-null `unit` value, the function refuses to rank
+            (returns None) rather than ranking against mixed-unit data.
+            Single-unit strata proceed as before.
         """
         conn = self._get_conn()
         if conn is None:
@@ -393,6 +405,46 @@ class HcdSqliteDB:
 
         sex_upper = sex.strip().upper()
         tc_upper = test_code.strip().upper()
+
+        if value_unit is not None:
+            unit_upper = value_unit.strip().upper()
+            total = conn.execute(
+                """SELECT COUNT(*) FROM animal_lab_values
+                   WHERE strain = ? AND sex = ? AND test_code = ?
+                   AND duration_category = ?
+                   AND UPPER(unit) = ?""",
+                (strain, sex_upper, tc_upper, duration_category, unit_upper),
+            ).fetchone()[0]
+
+            if total < 10:
+                return None
+
+            below = conn.execute(
+                """SELECT COUNT(*) FROM animal_lab_values
+                   WHERE strain = ? AND sex = ? AND test_code = ?
+                   AND duration_category = ?
+                   AND UPPER(unit) = ?
+                   AND value < ?""",
+                (strain, sex_upper, tc_upper, duration_category, unit_upper, value),
+            ).fetchone()[0]
+
+            return round(100.0 * below / total, 1)
+
+        # value_unit unknown: enforce stratum unit-homogeneity to avoid
+        # silently mixing units in the reference distribution.
+        unit_count = conn.execute(
+            """SELECT COUNT(DISTINCT UPPER(unit)) FROM animal_lab_values
+               WHERE strain = ? AND sex = ? AND test_code = ?
+               AND duration_category = ?
+               AND unit IS NOT NULL""",
+            (strain, sex_upper, tc_upper, duration_category),
+        ).fetchone()[0]
+
+        if unit_count > 1:
+            # Heterogeneous-unit stratum and no caller-supplied unit to
+            # disambiguate -- refuse to rank rather than produce a meaningless
+            # percentile across mixed units.
+            return None
 
         total = conn.execute(
             """SELECT COUNT(*) FROM animal_lab_values

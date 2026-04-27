@@ -1471,10 +1471,12 @@ def _compute_a3_for_lb(
 
     test_code = finding.get("test_code", "")
     sex = finding.get("sex", "")
+    value_unit = finding.get("unit")  # GAP-LB-IAD-1: pass LBSTRESU through to HCD percentile
 
     return assess_a3_lb(
         treated_mean, test_code, sex, species, strain, duration_days,
         control_group_mean=control_mean,
+        value_unit=value_unit,
     )
 
 
