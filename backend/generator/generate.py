@@ -26,6 +26,7 @@ from generator.food_consumption_summary import build_food_consumption_summary_wi
 from generator.pk_integration import build_pk_integration
 from generator.cross_animal_flags import build_cross_animal_flags
 from generator.subject_syndromes import build_subject_syndromes
+from generator.syndrome_rollup import build_syndrome_rollup
 from generator.onset_recovery import build_onset_days, build_recovery_verdicts
 from generator.noael_overlay import build_subject_noael_overlay
 from generator.animal_influence import build_animal_influence
@@ -703,6 +704,29 @@ def generate(study_id: str):
     with open(static_dir / "target_organ_bar.html", "w") as f:
         f.write(target_organ_html)
     print("  4: wrote static/target_organ_bar.html")
+
+    # Phase 2c: Per-study syndrome rollup (consumes subject_syndromes + noael + recovery + mortality).
+    # Pure aggregation -- no XPT re-read; safe to run sequentially after Phase 2.
+    if ctx_df is not None:
+        try:
+            ss_data = subject_syndromes  # in-memory output of Phase 1g
+            rv_data = recovery_verdicts if 'recovery_verdicts' in locals() else None
+            syndrome_rollup = build_syndrome_rollup(
+                subject_syndromes=ss_data,
+                subject_context=ctx_df.to_dict(orient="records"),
+                noael_summary=noael,
+                mortality=mortality,
+                recovery_verdicts=rv_data,
+            )
+            _write_json(out_dir / "syndrome_rollup.json", syndrome_rollup)
+            n_syn = syndrome_rollup["meta"].get("n_syndromes_detected", 0)
+            n_org = syndrome_rollup["meta"].get("n_organs_with_match", 0)
+            n_cross = len(syndrome_rollup.get("cross_organ_syndromes") or [])
+            print(f"  4b: syndrome rollup -- {n_syn} syndromes across {n_org} organs ({n_cross} cross-organ)")
+        except Exception as e:
+            print(f"  WARNING: Syndrome rollup failed: {e}")
+            import traceback
+            traceback.print_exc()
 
     n_unified = len(views["unified_findings"]["findings"])
     print(f"  5: {n_unified} findings pre-generated")

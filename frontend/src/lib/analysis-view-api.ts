@@ -20,6 +20,7 @@ import type {
 } from "@/types/analysis-views";
 import type { StudyMortality } from "@/types/mortality";
 import type { SubjectSyndromesResponse, OnsetDaysResponse, RecoveryVerdictsResponse, NoaelOverlayResponse } from "@/types/cohort";
+import type { SyndromeRollup } from "@/types/syndrome-rollup";
 
 const API_BASE = "/api";
 
@@ -62,6 +63,12 @@ export function fetchNoaelSummary(
   const qs = settingsParams ? `?${settingsParams}` : "";
   return fetchJson(
     `/studies/${encodeURIComponent(studyId)}/analysis/noael-summary${qs}`
+  );
+}
+
+export function fetchSyndromeRollup(studyId: string): Promise<SyndromeRollup> {
+  return fetchJson(
+    `/studies/${encodeURIComponent(studyId)}/analysis/syndrome-rollup`
   );
 }
 

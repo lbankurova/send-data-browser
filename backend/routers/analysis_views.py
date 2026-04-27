@@ -59,6 +59,7 @@ VALID_VIEW_NAMES = {
     "cross-animal-flags",
     "unified-findings",
     "subject-syndromes",
+    "syndrome-rollup",
     "subject-onset-days",
     "recovery-verdicts",
     "subject-noael-overlay",

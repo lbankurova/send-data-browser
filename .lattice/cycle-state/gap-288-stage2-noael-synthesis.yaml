@@ -1,0 +1,90 @@
+topic: gap-288-stage2-noael-synthesis
+started: 2026-04-27T00:00:00Z
+phase: build
+current_step: build.1-phase1-shipped
+revision: 2
+phase1_shipped:
+  files_created:
+    - backend/generator/syndrome_rollup.py
+    - frontend/src/types/syndrome-rollup.ts
+    - frontend/src/hooks/useSyndromeRollup.ts
+    - scripts/audit-syndrome-rollup.py
+    - backend/generated/PointCross/syndrome_rollup.json
+    - backend/generated/Nimble/syndrome_rollup.json
+  files_modified:
+    - backend/generator/generate.py (import + Phase 2c block)
+    - backend/routers/analysis_views.py (VALID_VIEW_NAMES += syndrome-rollup)
+    - frontend/src/lib/analysis-view-api.ts (fetchSyndromeRollup + import)
+  empirical_verification:
+    AC-DATA-4:
+      claim: "Hepatic Hepatotoxicity Classic 0/0/2/1/0; Hepatocellular Injury 0/0/0/7/0; Adaptation 0/0/0/7/7"
+      observed: "20:Main=2, 200:Main=1; 200:Main=7; 200:Main=7, 20:Rec=2 + 200:Rec=5 = 7 total recovery"
+      verdict: PASS
+  audit:
+    "scripts/audit-syndrome-rollup.py": OK=2 SKIP=17 FAIL=0 (PointCross + Nimble byte-equal)
+  spec_deviations:
+    - id: D1
+      spec_text: "Section 3.3: GET /api/{study_id}/syndrome-rollup"
+      shipped: "GET /api/studies/{study_id}/analysis/syndrome-rollup"
+      rationale: "Reuse the established analysis_views.py handler (30+ siblings) instead of a separate endpoint. CLAUDE.md rule 5."
+    - id: D2
+      spec_text: "Section 2.4: Hematologic 3 syndromes (illustrative)"
+      shipped: "Hematologic 5 syndromes on PointCross (XS04, XC01a, XC01c, lymphoid_depletion, XS07)"
+      rationale: "Spec count was author's manual estimate; rollup correctly enumerates all matches per ORGAN_SYSTEM_MAP. Spec is illustrative not committed; not an AC violation. Worth noting in Step 3 spec refresh."
+  decisions:
+    - "Reused canonical ORGAN_SYSTEM_MAP from services.analysis.send_knowledge instead of defining a local ORGAN_TO_SYSTEM dict (CLAUDE.md rule 5)."
+    - "XS07 Immunotoxicity routed to hematologic (not general) per the WBC/LYM-driven semantics + the THYMUS/LYMPH NODE -> hematologic convention in ORGAN_SYSTEM_MAP."
+    - "API endpoint reused existing /studies/{study_id}/analysis/{view_name} handler; ~10 LOC saved + consistent with sibling views."
+  open_for_phase_2:
+    - "Frontend ORGAN_SYNDROME_MAP at OrganContextPanel.tsx:46-52 covers only 5 organs / 9 syndromes. Synthesis page (Phase 2) should consume syndrome_rollup.json directly rather than extend that incomplete map."
+    - "Recovery column rendering: rollup emits per-(dose, phase) cells; Phase 2 must decide how to roll up the single 'Rec' synthesis-page column (sum across recovery doses vs. high-dose-only). For PointCross, Hepatocellular Adaptation has 20:Rec=2 + 200:Rec=5 = 7 total -- spec AC-DATA-4 implies sum semantics."
+spec_path: docs/_internal/incoming/gap-288-stage2-noael-synthesis-spec.md
+classification:
+  path: build-direct
+  rationale: |
+    Spec self-classifies as build (preamble: "no further research needed;
+    design + scope settled"). Stage 1 design artifacts complete under
+    docs/_internal/incoming/gap-288-noael-relocation/ (mockups, audit-pass-v5
+    with 0 FAIL, hierarchy/information audits, scope-distribution).
+    Spec IS the blueprint output: 11 sections, 4 build phases, component
+    contracts, 22 acceptance criteria, dependency map, risks, out-of-scope.
+    No new scientific method decisions; backend addition (syndrome_rollup.json)
+    is pure aggregation of existing per-subject data with byte-equal regen test.
+    Re-running research/blueprint would duplicate existing work — merit-driven
+    dispatch is direct to build-cycle.
+  signals:
+    - spec-self-classifies-as-build
+    - stage1-design-complete-with-mockup-and-audit-pass
+    - spec-includes-blueprint-content-component-contracts-acceptance-criteria-phasing
+    - no-new-scientific-method-decisions
+    - new-backend-output-is-pure-aggregation-not-scoring-change
+    - explicit-out-of-scope-section-bounds-the-work
+  mode: auto
+inputs:
+  spec: docs/_internal/incoming/gap-288-stage2-noael-synthesis-spec.md
+  stage1_artifacts: docs/_internal/incoming/gap-288-noael-relocation/
+  todo_entry: docs/_internal/TODO.md (GAP-288)
+  spawned_items:
+    - GAP-288a (SyndromeDoseStrip shared component — built here)
+    - GAP-288b (Findings view organ/syndrome group-by — separate cycle)
+    - GAP-288c (Syndrome view dose-progression redesign — separate cycle)
+    - GAP-355 (EvidenceQualityChain reframed — built here)
+    - GAP-357 (engine reconciliation: ocular non-target vs Corneal Effects — separate cycle)
+    - GAP-289 (Findings empty-selection state — user-deferred)
+    - GAP-278 (NoaelDeterminationView stale MANIFEST — resolved by archival in Phase 4)
+phases_planned:
+  - phase_1: Backend rollup + read path (1-2 days)
+  - phase_2: Synthesis page core (3-5 days)
+  - phase_3: Findings-context-panel teardown (1-2 days)
+  - phase_4: Routing + docs + cleanup (1 day)
+sister_topics:
+  - id: NOAEL-ALG
+    state: phase:build slice-4-shipped (commit-1 still has F1b/F4d/F5/AC-F1-10/AC-F1-11 blockers)
+    coordination: |
+      Synthesis AC-DATA-1 fixture references "PointCross NOAEL: Not established (< 2 mg/kg), LOAEL: 2 mg/kg".
+      NOAEL-ALG state file SF2 notes that post-fix BW endpoint NOAEL = HD (no dose fires) but
+      study-combined NOAEL remains "Not established" (pathology drives LOAEL via C4). When NOAEL-ALG
+      ships commit-1, the AC-DATA-1 fixture may need refreshment depending on how the per-sex /
+      combined values land.
+    impact_on_build: low — synthesis page binds to noael_summary[Combined]; refresh AC-DATA-1
+      fixture after NOAEL-ALG commit-1 lands. Phase 1 (backend rollup) is fully independent.
