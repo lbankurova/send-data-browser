@@ -97,16 +97,24 @@ export function useFindingsAnalyticsLocal(studyId: string | undefined): Findings
       hasEstrousData: studyMeta?.has_estrous_data ?? false,
       normContexts,
       species,
+      endpointLoaelSummary: data?.endpoint_loael_summary ?? null,
     };
     workerRef.current.postMessage(input);
-  }, [activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts, species]);
+  }, [activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species]);
 
   // ── Sync fallback (used when worker not available) ──
   const syncAnalytics = useMemo(() => {
     if (useWorker) return null; // worker handles it
     if (!activeFindings.length) return EMPTY_ANALYTICS;
-    return computeAnalyticsSync(activeFindings, data?.dose_groups, studyMeta?.has_estrous_data ?? false, normContexts, species);
-  }, [useWorker, activeFindings, data?.dose_groups, studyMeta?.has_estrous_data, normContexts, species]);
+    return computeAnalyticsSync(
+      activeFindings,
+      data?.dose_groups,
+      studyMeta?.has_estrous_data ?? false,
+      normContexts,
+      species,
+      data?.endpoint_loael_summary ?? null,
+    );
+  }, [useWorker, activeFindings, data?.dose_groups, data?.endpoint_loael_summary, studyMeta?.has_estrous_data, normContexts, species]);
 
   // ── Merge worker result into analytics shape ──
   const analytics = useMemo((): FindingsAnalytics => {
@@ -156,11 +164,12 @@ function computeAnalyticsSync(
   hasEstrousData: boolean,
   normContexts: import("@/lib/organ-weight-normalization").NormalizationContext[] | undefined,
   species: string,
+  endpointLoaelSummary?: Record<string, import("@/types/analysis").EndpointLoaelAggregated> | null,
 ): FindingsAnalytics {
   const rows = mapFindingsToRows(findings);
   const endpoints = deriveEndpointSummaries(rows);
   if (doseGroups) {
-    const noaelMap = computeEndpointNoaelMap(findings, doseGroups);
+    const noaelMap = computeEndpointNoaelMap(findings, doseGroups, endpointLoaelSummary);
     for (const ep of endpoints) {
       const noael = noaelMap.get(ep.endpoint_label);
       if (noael) {

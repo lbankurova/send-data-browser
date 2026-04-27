@@ -4,7 +4,7 @@
  */
 
 import type { AdverseEffectSummaryRow, DoseResponseRow } from "@/types/analysis-views";
-import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import type { UnifiedFinding, DoseGroup, EndpointLoaelAggregated } from "@/types/analysis";
 import { EFFECT_RELEVANCE_THRESHOLD } from "@/lib/lab-clinical-catalog";
 import { resolveEffectivePattern } from "@/lib/onset-dose";
 
@@ -832,18 +832,41 @@ export interface EndpointNoaelResult {
   sexDiffers: boolean;
 }
 
-/** Extract NOAEL from a set of findings (reusable for combined and per-sex). */
+/**
+ * Extract NOAEL from a set of findings (reusable for combined and per-sex).
+ *
+ * Path C / AC-F1-10 / F-S4 Option 1: when the backend provides
+ * `endpointLoaelSummary[endpointKey]`, the frontend ECHOES the backend
+ * decision rather than re-deriving from pairwise. The legacy pairwise
+ * re-derivation path remains as a backward-compat fallback for studies
+ * whose unified_findings.json was generated pre-Path-C.
+ */
 function computeNoaelForFindings(
   findings: UnifiedFinding[],
   doseLevels: number[],
   doseInfo: Map<number, { value: number | null; unit: string | null }>,
+  endpointLoaelSummary?: Record<string, EndpointLoaelAggregated> | null,
+  endpointKey?: string,
 ): EndpointNoael {
   let loaelLevel: number | null = null;
 
-  // Effect-size-first LOAEL: use g_lower / h_lower when available, fall back to p-value.
-  // Incidence endpoints: h_lower (Cohen's h CI) is excluded from decision gates because
-  // it is degenerate at preclinical N<=5 (hCiLower = 0 for all patterns). Incidence
-  // falls to p-value path. See research/cohens-h-commensurability-analysis.md.
+  // Backend-echo path (Path C). Lowest fired & non-suspended dose wins.
+  if (endpointLoaelSummary && endpointKey) {
+    const entry = endpointLoaelSummary[endpointKey];
+    if (entry) {
+      for (const [dlStr, decision] of Object.entries(entry.by_dose_level)) {
+        if (!decision || !decision.fired || decision.suspended) continue;
+        const dl = Number(dlStr);
+        if (!Number.isFinite(dl) || dl <= 0) continue;
+        if (loaelLevel === null || dl < loaelLevel) {
+          loaelLevel = dl;
+        }
+      }
+      return _resolveNoaelFromLoael(loaelLevel, findings, doseLevels, doseInfo);
+    }
+  }
+
+  // Legacy fallback: re-derive from pairwise.
   for (const f of findings) {
     const isIncidence = f.data_type === "incidence";
     for (const pw of f.pairwise) {
@@ -864,6 +887,16 @@ function computeNoaelForFindings(
     }
   }
 
+  return _resolveNoaelFromLoael(loaelLevel, findings, doseLevels, doseInfo);
+}
+
+/** LOAEL -> NOAEL tier resolution shared between echo + legacy paths. */
+function _resolveNoaelFromLoael(
+  loaelLevel: number | null,
+  findings: UnifiedFinding[],
+  doseLevels: number[],
+  doseInfo: Map<number, { value: number | null; unit: string | null }>,
+): EndpointNoael {
   if (loaelLevel === null) {
     const hasTrend = findings.some((f) => f.trend_p != null && f.trend_p < 0.05);
     if (hasTrend) {
@@ -909,6 +942,7 @@ function computeNoaelForFindings(
 export function computeEndpointNoaelMap(
   findings: UnifiedFinding[],
   doseGroups: DoseGroup[],
+  endpointLoaelSummary?: Record<string, EndpointLoaelAggregated> | null,
 ): Map<string, EndpointNoaelResult> {
   const treated = doseGroups
     .filter((g) => g.dose_level > 0)
@@ -932,8 +966,14 @@ export function computeEndpointNoaelMap(
   const result = new Map<string, EndpointNoaelResult>();
 
   for (const [label, epFindings] of byEndpoint) {
-    // Combined NOAEL (worst case across sexes)
-    const combined = computeNoaelForFindings(epFindings, doseLevels, doseInfo);
+    // Combined NOAEL — Path C echoes backend endpoint_loael_summary[`{label}__Combined`].
+    const combined = computeNoaelForFindings(
+      epFindings,
+      doseLevels,
+      doseInfo,
+      endpointLoaelSummary,
+      `${label}__Combined`,
+    );
 
     // Per-sex NOAEL
     const bySexFindings = new Map<string, UnifiedFinding[]>();
@@ -945,7 +985,16 @@ export function computeEndpointNoaelMap(
 
     const bySex = new Map<string, EndpointNoael>();
     for (const [sex, sexFindings] of bySexFindings) {
-      bySex.set(sex, computeNoaelForFindings(sexFindings, doseLevels, doseInfo));
+      bySex.set(
+        sex,
+        computeNoaelForFindings(
+          sexFindings,
+          doseLevels,
+          doseInfo,
+          endpointLoaelSummary,
+          `${label}__${sex}`,
+        ),
+      );
     }
 
     // Check if sexes differ

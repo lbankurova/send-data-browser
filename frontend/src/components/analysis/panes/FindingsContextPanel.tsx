@@ -1912,42 +1912,15 @@ export function FindingsContextPanel() {
     return context.statistics;
   }, [context?.statistics, isScheduledOnly, hasEarlyDeaths]);
 
-  // Derive finding-level NOAEL from statistics rows (highest dose where p > 0.05
-  // for all doses at and below it). Falls back to study-level NOAEL if stats unavailable.
+  // F4d (NOAEL-ALG synthesis): the per-finding NOAEL display reads from the
+  // study-level `noael_summary` row exclusively — there is no longer a
+  // per-finding p-value-only re-derivation. The OLD path (lines 1917-1948
+  // pre-Path-C) traced LOAEL = lowest dose where pairwise p<0.05 directly
+  // off statistics rows; this disagreed with the analytics-derived NOAEL
+  // and was the BUG-031 driver path. The backend's WoE / F2-aggregated
+  // gate (now consumed via endpoint_loael_summary in the analytics
+  // pipeline) is the single source of truth.
   const noael = useMemo(() => {
-    // Try finding-level first from active statistics (respects scheduled-only toggle)
-    if (activeStatistics?.rows && activeStatistics.rows.length >= 2) {
-      const rows = activeStatistics.rows; // sorted by dose_level ascending
-      // Find the LOAEL: lowest dose with p_value_adj < 0.05
-      let loaelIndex = -1;
-      for (let i = 1; i < rows.length; i++) { // skip control (index 0)
-        const p = rows[i].p_value_adj ?? rows[i].p_value;
-        if (p != null && p < 0.05) {
-          loaelIndex = i;
-          break;
-        }
-      }
-      if (loaelIndex > 1) {
-        // NOAEL = dose just below LOAEL
-        const noaelRow = rows[loaelIndex - 1];
-        return {
-          dose_value: noaelRow.dose_value,
-          dose_unit: noaelRow.dose_unit ?? activeStatistics.unit ?? "mg/kg",
-        };
-      }
-      if (loaelIndex === 1) {
-        // All treatment doses significant — NOAEL below lowest tested dose
-        return { dose_value: null, dose_unit: "mg/kg" };
-      }
-      // No significant doses — NOAEL is highest dose
-      const highest = rows[rows.length - 1];
-      return {
-        dose_value: highest.dose_value,
-        dose_unit: highest.dose_unit ?? activeStatistics.unit ?? "mg/kg",
-      };
-    }
-
-    // Fallback: study-level NOAEL
     if (!noaelRows?.length) return null;
     const sex = selectedFinding?.sex;
     const row = noaelRows.find((r) =>
@@ -1955,7 +1928,7 @@ export function FindingsContextPanel() {
     );
     if (!row) return null;
     return { dose_value: row.noael_dose_value, dose_unit: row.noael_dose_unit ?? "mg/kg" };
-  }, [activeStatistics, noaelRows, selectedFinding?.sex]);
+  }, [noaelRows, selectedFinding?.sex]);
 
   // Syndromes that include the currently selected endpoint
   const endpointSyndromes = useMemo(() => {

@@ -19,7 +19,7 @@ import { getSexConcordanceBoost } from "@/lib/organ-sex-concordance";
 import { withSignalScores, computeEndpointEvidence, classifyEndpointConfidence, getConfidenceMultiplier } from "@/lib/findings-rail-engine";
 import { hasWelchPValues as checkWelchPValues } from "@/lib/stat-method-transforms";
 import type { NormalizationContext } from "@/lib/organ-weight-normalization";
-import type { UnifiedFinding, DoseGroup } from "@/types/analysis";
+import type { UnifiedFinding, DoseGroup, EndpointLoaelAggregated } from "@/types/analysis";
 
 export interface AnalyticsWorkerInput {
   findings: UnifiedFinding[];
@@ -27,6 +27,8 @@ export interface AnalyticsWorkerInput {
   hasEstrousData: boolean;
   normContexts: NormalizationContext[] | undefined;
   species: string;
+  /** Path C / AC-F1-10: backend F2 aggregation summary; frontend echoes. */
+  endpointLoaelSummary?: Record<string, EndpointLoaelAggregated> | null;
 }
 
 export interface AnalyticsWorkerOutput {
@@ -41,7 +43,7 @@ export interface AnalyticsWorkerOutput {
 }
 
 function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
-  const { findings, doseGroups, hasEstrousData, normContexts, species } = input;
+  const { findings, doseGroups, hasEstrousData, normContexts, species, endpointLoaelSummary } = input;
 
   if (!findings.length) {
     return {
@@ -60,7 +62,7 @@ function computeAnalytics(input: AnalyticsWorkerInput): AnalyticsWorkerOutput {
   const rows = mapFindingsToRows(findings);
   const endpoints = deriveEndpointSummaries(rows);
   if (doseGroups) {
-    const noaelMap = computeEndpointNoaelMap(findings, doseGroups);
+    const noaelMap = computeEndpointNoaelMap(findings, doseGroups, endpointLoaelSummary);
     for (const ep of endpoints) {
       const noael = noaelMap.get(ep.endpoint_label);
       if (noael) {

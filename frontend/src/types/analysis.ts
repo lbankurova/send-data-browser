@@ -370,6 +370,30 @@ export interface Insight {
   level: "info" | "warning" | "critical";
 }
 
+/**
+ * Per-(endpoint_label, sex, dose_level) LOAEL decision from the backend
+ * F2 multi-timepoint aggregation pipeline. Frontend echoes this directly
+ * for per-endpoint NOAEL computation per AC-F1-10 / F-S4 Option 1 — the
+ * frontend MUST NOT re-derive (BUG-031 driver).
+ */
+export interface EndpointLoaelAggregated {
+  endpoint_label: string;
+  sex: "M" | "F" | "Combined";
+  endpoint_class: string;
+  n_timepoints: number;
+  by_dose_level: Record<
+    string,
+    {
+      fired: boolean;
+      suspended: boolean;
+      suspended_reason: string | null;
+      policy: string | null;
+      fired_timepoints: number[];
+      firing_timepoint_position: string;
+    }
+  >;
+}
+
 export interface FindingsResponse {
   study_id: string;
   dose_groups: DoseGroup[];
@@ -379,6 +403,11 @@ export interface FindingsResponse {
   page_size: number;
   total_pages: number;
   summary: AnalysisSummary;
+  /**
+   * Backend per-(endpoint, sex) LOAEL aggregation. Optional for backward-
+   * compat with cached unified_findings.json files generated pre-Path-C.
+   */
+  endpoint_loael_summary?: Record<string, EndpointLoaelAggregated> | null;
 }
 
 export interface FindingContext {
