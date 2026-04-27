@@ -40,9 +40,24 @@ class HcdRange:
     mean: float
     sd: float
     n: int
-    lower: float  # mean - 2*SD
+    lower: float  # mean - 2*SD, clipped to >= 0 (see _compute_bounds)
     upper: float  # mean + 2*SD
     source: str
+    bounds_method: str = "normal_2sd_clipped"  # provenance per GAP-236
+
+
+def _compute_bounds(mean: float, sd: float) -> tuple[float, float, bool]:
+    # GAP-236: parametric mean +/- 2*sd interval assumes the distribution is
+    # approximately Normal. For organ weights this typically holds at population
+    # level, but the lower bound can fall below zero (biologically impossible).
+    # Clip the lower bound to 0 and flag whether clipping was applied so callers
+    # can interpret "lower=0.0" as "clipped, distribution skewed" rather than
+    # "negative organ weight is plausible".
+    raw_lower = mean - 2.0 * sd
+    clipped = raw_lower < 0.0
+    lower = 0.0 if clipped else raw_lower
+    upper = mean + 2.0 * sd
+    return lower, upper, clipped
 
 
 class HcdRangeDB:
@@ -71,6 +86,7 @@ class HcdRangeDB:
                 sd = entry["sd"]
                 n = entry.get("n", 0)
 
+                lower, upper, clipped = _compute_bounds(mean, sd)
                 rng = HcdRange(
                     organ=organ,
                     sex=sex,
@@ -78,9 +94,10 @@ class HcdRangeDB:
                     mean=mean,
                     sd=sd,
                     n=n,
-                    lower=mean - 2 * sd,
-                    upper=mean + 2 * sd,
+                    lower=lower,
+                    upper=upper,
                     source=strain_key,
+                    bounds_method="normal_2sd_clipped" if clipped else "normal_2sd",
                 )
                 key = (strain_key, sex, dur, organ)
                 self._index[key] = rng
@@ -373,8 +390,11 @@ def _assess_a3_dog(
     study_count = hcd.get("study_count", 1)
     if study_count < 3 and hcd.get("sd_inflated"):
         sd = hcd["sd_inflated"]
-        hcd["lower"] = round(hcd["mean"] - 2 * sd, 6)
-        hcd["upper"] = round(hcd["mean"] + 2 * sd, 6)
+        # GAP-236: clip lower to non-negative (see _compute_bounds).
+        lower, upper, clipped = _compute_bounds(hcd["mean"], sd)
+        hcd["lower"] = round(lower, 6)
+        hcd["upper"] = round(upper, 6)
+        hcd["bounds_method"] = "normal_2sd_clipped" if clipped else "normal_2sd"
 
     within = hcd["lower"] <= treated_group_mean <= hcd["upper"]
     result_str = "within_hcd" if within else "outside_hcd"

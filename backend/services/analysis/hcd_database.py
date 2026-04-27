@@ -223,6 +223,11 @@ class HcdSqliteDB:
         if sd < 1e-10:
             return None
 
+        # GAP-236: clip lower to non-negative (organ weights are physically
+        # bounded). Empirical percentiles below are unaffected and provide a
+        # distribution-free alternative for callers willing to switch.
+        raw_lower_2sd = mean - 2.0 * sd
+        clipped = raw_lower_2sd < 0.0
         return {
             "organ": organ,
             "sex": sex,
@@ -230,8 +235,9 @@ class HcdSqliteDB:
             "mean": round(mean, 6),
             "sd": round(sd, 6),
             "n": n,
-            "lower": round(mean - 2 * sd, 6),
-            "upper": round(mean + 2 * sd, 6),
+            "lower": round(0.0 if clipped else raw_lower_2sd, 6),
+            "upper": round(mean + 2.0 * sd, 6),
+            "bounds_method": "normal_2sd_clipped" if clipped else "normal_2sd",
             "source": f"sqlite:{strain}",
             "p5": round(float(np.percentile(arr, 5)), 6),
             "p25": round(float(np.percentile(arr, 25)), 6),
