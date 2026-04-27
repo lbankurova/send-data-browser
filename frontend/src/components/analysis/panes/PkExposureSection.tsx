@@ -99,7 +99,11 @@ export function PkExposureSection({ pkData, doseGroups }: Props) {
               <SafetyMarginFlag pkData={pkData} allGroups={allGroups} />
             </div>
           ) : (
-            <DoseProportionalityChart allGroups={allGroups} aucKey={aucKey} doseGroups={doseGroups} />
+            <div className="space-y-2">
+              <DoseProportionalityChart allGroups={allGroups} aucKey={aucKey} doseGroups={doseGroups} />
+              {/* GAP-337: carry the same interpretation badge here so the dp tab is self-contained -- previously the user had to switch back to Parameters to see what the slopes mean. */}
+              {hasNonLinear && dp && <DoseProportionalityBadge dp={dp} />}
+            </div>
           )}
         </div>
       </div>
