@@ -16,7 +16,7 @@
           "non_canonical_direction": "up",
           "rationale": "Fluid retention and adipogenesis drive body-weight gain that is regulatorily adverse despite opposing the canonical BW-down adversity direction. Edema is a recognized PPAR-gamma class effect.",
           "citations": [
-            {"source": "Cusi K, et al. Pioglitazone leads to NASH improvement. New England Journal of Medicine. 2010;355:2297-2307.", "evidence_class": "clinical-trial-edema"},
+            {"source": "Belfort R, Harrison SA, Brown K, ..., Cusi K. A placebo-controlled trial of pioglitazone in subjects with nonalcoholic steatohepatitis. New England Journal of Medicine. 2006;355:2297-2307. doi:10.1056/NEJMoa060326", "evidence_class": "clinical-trial-edema"},
             {"source": "Nesto RW, et al. Thiazolidinedione use, fluid retention, and congestive heart failure. Circulation. 2003;108:2941-2948.", "evidence_class": "clinical-pharmacology-fluid-retention"},
             {"source": "Kale VP, et al. Body weight in toxicologic pathology. Toxicologic Pathology. 2022 [synthesis-cited].", "evidence_class": "regulatory-tox-review"}
           ]

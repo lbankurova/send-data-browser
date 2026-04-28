@@ -10,6 +10,38 @@
 
 ---
 
+## Escalation — 2026-04-27 (NOAEL algorithm under-firing — sibling defect to BUG-031)
+
+**SCIENCE-FLAG (CLAUDE.md rule 19):** PointCross BW NOAEL pinned to control despite overwhelming terminal-day evidence at 200 mg/kg. Algorithm is tox-indefensible on the canonical study used to motivate the NOAEL-ALG cycle.
+
+**Tracked as:** BUG-032 (`docs/_internal/BUG-SWEEP.md#BUG-032`).
+**Source analysis:** `docs/_internal/research/data-gap-noael-alg-01-pointcross-derivation.md`.
+
+**Observed (from PointCross unified_findings.json):** `endpoint_loael_summary["Body Weight__M/F/Combined"]` shows all 3 dose levels `fired: false` under `policy: p3_terminal_primary`; `summary.suggested_noael = {dose_level: 0, label: "Group 1, Control"}`. The 200 mg/kg dose presents:
+- M day-92 terminal: g = -3.13, g_lower = 2.47, p_adj = 0
+- F day-92 terminal: g = -2.97, g_lower = 2.36, p_adj ~ 1.2e-4
+- Monotonic-down across all 14-15 timepoints
+- treatment_related = True with tr_adverse on every post-dose timepoint
+- Trend p = 1.7e-5 (M) / 6.4e-4 (F)
+- Effect sizes 8-10x the conventional |g|>=0.30 cut-line
+
+**Defensible NOAEL per Rule 19 method:** 20 mg/kg (LOAEL = 200 mg/kg). Cited framework: NOAEL-FACT-006 (P3_terminal_primary), NOAEL-FACT-008 (OECD TG 408), NOAEL-FACT-011 (g_lower=0.30), NOAEL-FACT-005 (>=2-corroborating-timepoint). Combined NOAEL = 20 mg/kg.
+
+**Why this is a hard block per CLAUDE.md rule 19:** the algorithm output today does not represent the data — overwhelming consistent terminal-day evidence at 200 mg/kg fails to fire any LOAEL. Continuing forward work on the NOAEL pipeline (DATA-GAP-NOAEL-ALG-02 C7 wiring, F4a/b/c emission contract, etc.) would land on top of an already-broken pipeline and lock in the defect across more consumers.
+
+**Hypothesized root cause** (from agent analysis — needs debugger verification):
+- `backend/services/analysis/noael_aggregation.py:_dose_exceeds_effect_threshold` may not consume terminal-primary signal correctly under P3 policy
+- Day-90 vs day-92 ambiguity in M series — possible mismatch between scheduled terminal day and actual measurement day
+- Possible double-counting between treatment_related signal and trend significance
+
+**Relationship to BUG-031:** BUG-031 was over-firing (NS sign-flipping single-timepoint hits drove false LOAEL=1). BUG-032 is under-firing (overwhelming evidence fails to fire). Both are PointCross BW. **Suspected: the post-BUG-031 slice-4 tightening over-corrected.** If true, the fix is to recalibrate the firing condition rather than introduce new gates.
+
+**User decision (2026-04-27):** option (i) — launch debugger on `noael_aggregation.py` with proper bug ceremony (this entry + BUG-032 logged). DATA-GAP-NOAEL-ALG-02 C7 wiring + the 4 user adjudications it needs are paused until BUG-032 resolves.
+
+**Next action:** debugger agent dispatched on `_dose_exceeds_effect_threshold` + P3 terminal-day resolution to identify the root cause; on convergence, propose fix per CLAUDE.md bug fix protocol (rule 9).
+
+---
+
 ## Escalation — 2026-04-24 (initial tagging pass)
 
 **Context:** `scripts/tag-todo-autopilot.py` ran over `TODO.md` (279 sections) and auto-tagged 254 items. These 25 items matched no heuristic and need your classification. Add the appropriate `autopilot:` tag (and `score:` if `ready`) to each, then delete it from this list.
@@ -527,4 +559,40 @@ Three non-significant single-timepoint hits with sign-flipping effects (-0.63 / 
 **Spec status:** `docs/_internal/incoming/noael-pane-display-consistency-fix.md` exists in submodule (untracked) — needs deletion or rewrite after algorithm direction is set.
 
 **Reviewer note:** This escalation is the result of doing the data-vs-spec audit the protocol requires. The decision auditor's original SCIENCE-FLAG was directionally right; the rebuttal was on the wrong axis. Lesson: when a decision-auditor flags science, run the algorithm against real data with a "is this the toxicologically defensible answer?" lens — not just "does the plumbing produce what the spec asks for?".
+
+## Escalation — 2026-04-27 (autopilot — DATA-GAP-NOAEL-ALG-09 mis-tagged)
+
+**Advanced this batch:** 0
+**Filter:** `data-gap-noael-alg-09`
+
+### DATA-GAP-NOAEL-ALG-09: Domain-truth oracle has zero typed facts for NOAEL gate criteria
+
+- **Source:** TODO (tagged `autopilot: ready` _score: 7_) — but the tag is incorrect for the work as written.
+- **Reason it's not autopilot-mechanical:**
+  The TODO's acquisition path asks for facts with `fact_kind: gate_criterion`, `regulatory_expectation`, and `clinical_threshold`. None of those values exist in the current schema enum (`numeric_baseline | disable_marker | pharma_anchor | threshold | rule_contradiction`), and the value shapes the NOAEL gate facts need don't fit any of the four `value.encoding` variants:
+  - **F2 policy gate criteria** (P3 terminal-primary, P2 sustained, M1 tightened-C2b, etc.) are *rule-centric* (no scalar value, no distribution). Closest existing kind is `disable_marker`, but disable_marker means "suppress default behavior" — that's the wrong semantic for a positive policy gate.
+  - **Regulatory expectations** (OECD TG 408 BW evaluation, ICH S4 sub-acute treatment) cite text mandates with no numeric encoding — none of the four `value.encoding` shapes fit.
+  - **Clinical thresholds** (the C2b 0.40 / default 0.30 effect-size cut-line) are scalar policy parameters, not statistical baselines. `arithmetic_range_cited` could be hacked to encode `cited_range: [0.40, 0.40]`, but that misuses the encoding (which is for cited ranges from unread primary sources, paired with `confidence: cited_unverified`).
+  Per `typed-knowledge-graph-spec.md` §"Extending the schema": *"New `fact_kind`. Requires architect-gate. … New `value.encoding`. Requires architect-gate."* This is a contract-triangle change (declaration in spec, enforcement in `audit-knowledge-graph.py`, consumption in F3 peer-review queries) that autopilot's mechanical bucket explicitly does not cover.
+
+- **What I tried:** Read the schema spec, audit script, query script, peer-review document that filed the gap, and existing 12 HCD facts. Looked for a way to encode the requested facts under existing kinds without semantic drift. None of the three categories fits cleanly under existing kinds + encodings.
+
+- **What I need (pick one):**
+  1. **Run `/lattice:architect` on a schema-extension proposal** — propose 3 new fact_kinds + 1-2 new encodings (e.g., `policy_rule` for gate criteria, `regulatory_specification` for OECD/ICH text, `effect_size_threshold` for the 0.40 / 0.30 line). This would touch `typed-knowledge-graph-spec.md`, `audit-knowledge-graph.py`, and the registry header in `knowledge-graph.md`. Estimated scope: 6-8 hours including the gate, beyond the TODO's "5 hour curation" estimate.
+  2. **Reframe the TODO to lower-fidelity encoding under existing kinds** — accept that F3 peer-review queries (`kind=gate_criterion` etc.) will continue to return NO FACT FOUND, and instead populate facts under existing kinds (e.g., `threshold` for clinical effect-size with creative use of `arithmetic_range_cited`; embed regulatory expectations in fact body text rather than typed scope). Lower fidelity, but unblocks the F3 protocol's fallback path. Re-tag the TODO with a new acquisition path.
+  3. **Defer until F1 Phase 2** — the typed-knowledge-graph-spec already mentions deferred work. The F3 protocol's day-1 stub (NO FACT FOUND → fallback notice with explicit caveat) means peer reviews can proceed without these facts; the gap is only that future reviews will degrade to LLM judgment for NOAEL queries. Re-tag as `deferred-dg` or carry forward to a later cycle.
+
+- **Note on tagging:** Whichever path you pick, the `autopilot: ready` tag is currently misleading. Suggest re-tagging to `needs-user` until direction is set, then reverting to `ready` if path 2 (lower-fidelity) is chosen and the acquisition path is rewritten to fit existing kinds.
+
+- **Resolution 2026-04-27:** User chose **Path 1** (schema extension via `/lattice:architect`). Proceeding: drafting proposal spec → architect-gate → implement based on verdict. TODO retagged to `autopilot: in-progress` and the work is being driven from this conversation rather than the autopilot queue.
+
+## Anomaly note — 2026-04-27 (autopilot — DATA-GAP-NOAEL-ALG-07 empty-commit)
+
+**Not a decision request — informational.**
+
+While advancing DATA-GAP-NOAEL-ALG-07 through autopilot, the parent-repo commit `f78a0506` ("feat(kg-schema): add fact_kind=relevance_exclusion (Extension 8)") landed with the correct message but an empty tree — `git diff HEAD~1..HEAD` showed zero changes despite `docs/_internal` (submodule pointer) and `scripts/audit-knowledge-graph.py` being staged at hook entry per the Step 6 INITIAL_STAGED_SNAPSHOT. The follow-up commit `5311ec48` re-staged and re-committed the same two files successfully. Submodule commit `32de720` (typed-knowledge-graph-spec.md Extension 8 + knowledge-graph.md schema header + TODO.md strikethrough) landed correctly on the first attempt.
+
+Root cause not pinned. Pre-commit hook does not call `git add`, `git restore`, `git checkout`, or `git reset`. Lock was outer-held with `LATTICE_LOCK_HOLDER=autopilot-DATA-GAP-NOAEL-ALG-07`. Hook did NOT report staging-drift (Step 6 passed). Suspected: index/tree write-out anomaly when staging includes both a regular file and a submodule pointer in the same commit, possibly interacting with the pre-commit's build step modifying `frontend/.lattice/commit.lock/meta` (which appeared in the staged set on the second commit attempt). Worth investigating if the pattern recurs; for now the workaround is "verify `git show HEAD --stat` after every autopilot commit and re-stage if empty."
+
+Net state: DATA-GAP-NOAEL-ALG-07 RESOLVED across two parent commits + one submodule commit. No data lost. The empty `f78a0506` is harmless but cluttered — leave it in history (per CLAUDE.md "create new commits rather than amending"; the user's discretion to revert if undesired).
 

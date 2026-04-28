@@ -68,19 +68,35 @@ science_flags_new:
       (intrinsic-adverse pathology). A reviewer override of "not treatment
       related" on hepatocellular carcinoma / fibrosis / necrosis would
       therefore silently exclude that finding from LOAEL determination.
-      Two regulatorily-defensible interpretations:
-        (a) toxicologist judgment trumps algorithm unconditionally (current)
-        (b) C4 / C5 require additional historical-control validation gate
-            before override applies
+      Three considered interpretations:
+        (a) reviewer judgment trumps algorithm unconditionally (current code)
+        (b) C4 / C5 require additional historical-control validation GATE
+            before override applies (algorithm overrides the override)
+        (c) ADOPTED 2026-04-27 -- preserve full reviewer authority (no
+            algorithmic gate); add a UI confirmation dialog at override-time
+            that surfaces HCD context: "This finding falls within historical-
+            control range -- confirm override?" If HCD is absent for this
+            finding/species, the dialog says "no HCD coverage for this
+            finding/species -- proceeding with override". Reviewer confirms,
+            override applies. The fix locus is UI/UX (override flow), NOT
+            backend algorithm logic. C4 hard-gate stays.
+      Merit rationale for (c): algorithmic resistance to a credentialed
+      reviewer's explicit override is the system claiming epistemic authority
+      it doesn't have. The reviewer has out-of-band knowledge the algorithm
+      doesn't (animal-specific context, study conduct issues, batch-level
+      confounds). Building gates that override the override puts the algorithm
+      in a position to be wrong in exactly the cases the human is trying to
+      correct. The right move is to INFORM (give HCD context at decision time),
+      not GATE.
       No published literature directly governs this; SOP-level practice.
-    needs: user adjudication on interpretation (a) vs (b). Both are
-      regulatorily defensible per the SOP-level note in detail above;
-      no published literature governs. Merit decision: pick one and
-      document the rationale. Replaces phantom "toxicologist sign-off"
-      framing per CLAUDE.md rule 13 (no project toxicologist exists;
-      deferring to absent stakeholder is effort-biased).
-    deferred: 2026-04-27T04:30Z under merit-based-recommendation banner
-    resolution: pending user adjudication (no external dependency)
+    needs: implementation of the (c) UI confirmation flow at override-time
+      (override dropdowns / context-menu actions in FindingsTable +
+      OnsetDoseDropdown / RecoveryOverrideDropdown / PatternOverrideDropdown).
+      HCD lookup uses existing brain-concordance / hcd_evidence pathways.
+    resolution: user-adjudicated to (c) on 2026-04-27 (replaces the "(a) vs
+      (b)" framing -- both were wrong; (b) overrides the override, (a) hides
+      HCD context the reviewer needs). Backend algorithm unchanged; UI work
+      tracked separately.
 commit_1_blockers_remaining:
   - RG-NOAEL-ALG-13_compound_class_registry_citation_audit (re-audit 9 cited sources against literature notes; if citations support claims, mark resolved -- replaces phantom toxicologist-signoff dependency per CLAUDE.md rule 13)
 shipped_post_initial_blocker_list:
