@@ -1,0 +1,2841 @@
+[
+  {
+    "study": "PointCross",
+    "n_findings": 399,
+    "axis2": [
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Albumin",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Alanine Aminotransferase",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "--+",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Aspartate Aminotransferase",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Bilirubin",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Globulin",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Glucose",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Hemoglobin",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Potassium",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Protein",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Erythrocytes",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Specific Gravity",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Urea Nitrogen",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Alkaline Phosphatase",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Alanine Aminotransferase",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Activated Partial Thromboplastin Time",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Bilirubin",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Calcium",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Cholesterol",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Chloride",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Eosinophils",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Fibrinogen",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Globulin",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Monocytes",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Platelets",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Protein",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          1
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Erythrocytes",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Reticulocytes",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Sodium",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Specific Gravity",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Urea Nitrogen",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Volume",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 8,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 15,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 22,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 29,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 36,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 50,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-+-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 57,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 71,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 78,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 1,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 22,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 29,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 36,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 57,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-+-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 64,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 78,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "BRAIN \u2014 BRAIN (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "GLAND, ADRENAL \u2014 GLAND, ADRENAL (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "GLAND, THYROID \u2014 GLAND, THYROID (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "KIDNEY \u2014 KIDNEY (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "LIVER \u2014 LIVER (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "SPLEEN \u2014 SPLEEN (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "SPLEEN \u2014 SPLEEN (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "TESTIS \u2014 TESTIS (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-+-",
+        "fires_at": [
+          1,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "THYMUS \u2014 THYMUS (WEIGHT)",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "tr_non_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "THYMUS \u2014 THYMUS (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "EG",
+        "endpoint": "PR Interval, Aggregate",
+        "sex": "M",
+        "day": 90,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "EG",
+        "endpoint": "QTcB Interval, Aggregate",
+        "sex": "M",
+        "day": 90,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "EG",
+        "endpoint": "QTcB Interval, Aggregate",
+        "sex": "F",
+        "day": 90,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "VS",
+        "endpoint": "Heart Rate",
+        "sex": "F",
+        "day": 90,
+        "direction": "down",
+        "fc": "tr_non_adverse",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 57,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 85,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 92,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 29,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 29,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "FW",
+        "endpoint": "Food/Water (FC)",
+        "sex": "F",
+        "day": 92,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PointCross",
+        "domain": "FW",
+        "endpoint": "Food/Water (FC)",
+        "sex": "M",
+        "day": 92,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      }
+    ],
+    "axis3": [
+      {
+        "study": "PointCross",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "F",
+        "day": 92,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          1
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "BRAIN \u2014 BRAIN (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "KIDNEY \u2014 KIDNEY (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PointCross",
+        "domain": "OM",
+        "endpoint": "TESTIS \u2014 TESTIS (WEIGHT)",
+        "sex": "M",
+        "day": 92,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-+-",
+        "fires_at": [
+          1,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "study": "Nimble",
+    "n_findings": 52,
+    "axis2": [],
+    "axis3": []
+  },
+  {
+    "study": "PDS",
+    "n_findings": 673,
+    "axis2": [
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Protein",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Glucose",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Specific Gravity",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Bacteria",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Volume",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Spermatozoa",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Triple Phosphate Crystals",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Alanine Aminotransferase",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Albumin",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Cholesterol",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Blood Urea Nitrogen",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Creatinine",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Activated Partial Thromboplastin Time",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Free Fatty Acid",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes/Total Cells",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Reticulocytes",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_non_adverse",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Neutrophils/Total Cells",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hyperchromia",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Eosinophils/Total Cells",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hematocrit",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hemoglobin",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Platelets",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Lymphocytes/Total Cells",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Eosinophils",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Reticulocytes/Erythrocytes",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_non_adverse",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes/Total Cells",
+        "sex": "M",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Leukocytes",
+        "sex": "M",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Platelets",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Large Unstained Cells/Leukocytes",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "0+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Glucose",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Bacteria",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Spermatozoa",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Calcium",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Potassium",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Bilirubin",
+        "sex": "M",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Cholesterol",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Alanine Aminotransferase",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Triple Phosphate Crystals",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Glucose",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Specific Gravity",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Leukocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Protein",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Lymphocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Basophils",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-0+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Neutrophils",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hemoglobin",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Basophils/Total Cells",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Platelets",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes/Total Cells",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "--+",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Eosinophils",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Reticulocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hematocrit",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Reticulocytes/Erythrocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Large Unstained Cells/Leukocytes",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Bilirubin",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+-+",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Erythrocytes",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Hyperchromia",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-?+",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Lymphocytes/Total Cells",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes/Total Cells",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Monocytes",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Large Unstained Cells/Leukocytes",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Eosinophils/Total Cells",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Globulin",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Neutrophils/Total Cells",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Erythrocytes Distribution Width",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Triglycerides",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Chloride",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Protein",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Sodium",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Creatinine",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Albumin",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Alanine Aminotransferase",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Blood Urea Nitrogen",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Glucose",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Activated Partial Thromboplastin Time",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Free Fatty Acid",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Triple Phosphate Crystals",
+        "sex": "F",
+        "day": 31,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Epithelial Cells",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Bacteria",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Specific Gravity",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "pH",
+        "sex": "F",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 2,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "M",
+        "day": 3,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BW",
+        "endpoint": "Body Weight",
+        "sex": "F",
+        "day": -4,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "BRAIN \u2014 BRAIN (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "BRAIN \u2014 BRAIN (WEIGHT)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (OWBR)",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (OWBW)",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, THYROID \u2014 GLAND, THYROID (OWBW)",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (OWBR)",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "KIDNEY \u2014 KIDNEY (OWBR)",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "KIDNEY \u2014 KIDNEY (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "KIDNEY \u2014 KIDNEY (WEIGHT)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "LIVER \u2014 LIVER (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "LIVER \u2014 LIVER (WEIGHT)",
+        "sex": "F",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "LIVER \u2014 LIVER (WEIGHT)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "TESTIS \u2014 TESTIS (OWBR)",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "TESTIS \u2014 TESTIS (OWBW)",
+        "sex": "M",
+        "day": 30,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "TESTIS \u2014 TESTIS (WEIGHT)",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 26,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 12,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-+-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 10,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 17,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 24,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 29,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "+-+",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 22,
+        "direction": "down",
+        "fc": "tr_non_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 14,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 18,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 6,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 16,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 19,
+        "direction": "down",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 5,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 27,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 23,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 16,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "-++",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 10,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+-+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 11,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 28,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 29,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 26,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "--+",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 14,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 30,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 15,
+        "direction": "down",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "-++",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 25,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Percentage Body Weight Gain",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Average Body Weight Gain",
+        "sex": "M",
+        "day": 31,
+        "direction": "up",
+        "fc": "equivocal",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FC)",
+        "sex": "M",
+        "day": 8,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FC)",
+        "sex": "M",
+        "day": 29,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELBW)",
+        "sex": "M",
+        "day": 8,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELBW)",
+        "sex": "F",
+        "day": 29,
+        "direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELD)",
+        "sex": "M",
+        "day": 8,
+        "direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+--",
+        "fires_at": []
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELD)",
+        "sex": "M",
+        "day": 29,
+        "direction": "up",
+        "fc": "not_treatment_related",
+        "per_dose_signs": "++-",
+        "fires_at": []
+      }
+    ],
+    "axis3": [
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "M",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "M",
+        "day": 31,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "LB",
+        "endpoint": "Prothrombin Time",
+        "sex": "F",
+        "day": 31,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (OWBR)",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "GLAND, PITUITARY \u2014 GLAND, PITUITARY (WEIGHT)",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (OWBR)",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "HEART \u2014 HEART (WEIGHT)",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "OM",
+        "endpoint": "THYMUS \u2014 THYMUS (OWBR)",
+        "sex": "F",
+        "day": 30,
+        "endpoint_class": "OM",
+        "primary_direction": "up",
+        "finding_direction": "down",
+        "fc": "tr_adverse",
+        "per_dose_signs": "---",
+        "fires_at": [
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "M",
+        "day": 9,
+        "endpoint_class": "BW",
+        "primary_direction": "down",
+        "finding_direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+++",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "BG",
+        "endpoint": "Body Weight Gain",
+        "sex": "F",
+        "day": 31,
+        "endpoint_class": "BW",
+        "primary_direction": "down",
+        "finding_direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+++",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELBW)",
+        "sex": "F",
+        "day": 29,
+        "endpoint_class": "FW",
+        "primary_direction": "down",
+        "finding_direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "++-",
+        "fires_at": [
+          1,
+          2
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FCRELBW)",
+        "sex": "M",
+        "day": 29,
+        "endpoint_class": "FW",
+        "primary_direction": "down",
+        "finding_direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+++",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "study": "PDS",
+        "domain": "FW",
+        "endpoint": "Food/Water (FDEFF)",
+        "sex": "M",
+        "day": 29,
+        "endpoint_class": "FW",
+        "primary_direction": "down",
+        "finding_direction": "up",
+        "fc": "tr_adverse",
+        "per_dose_signs": "+++",
+        "fires_at": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  }
+]
