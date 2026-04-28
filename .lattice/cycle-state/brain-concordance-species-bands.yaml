@@ -1,7 +1,8 @@
 topic: brain-concordance-species-bands
 started: 2026-04-04
-phase: research-complete
+phase: blueprint-complete
 current_step: build.0
+revision: 1
 parent: brain-weight-sex-concordance-calibration
 completed:
   research.1:
@@ -30,3 +31,65 @@ completed:
     completed: 2026-04-04
     key_decisions:
       - "All SOUND/CONDITIONAL -- VALIDATED"
+  blueprint.1.synthesize:
+    completed: 2026-04-26
+    output: "docs/_internal/incoming/brain-concordance-species-bands-synthesis.md"
+    features: 2
+    mandatory_sections_present: 6
+    key_decisions:
+      - "Threading already shipped via parent topic -- only JSON config + lookupBand fallback need changes"
+      - "Net code add: ~21 LOC body + 5 LOC JSDoc + 4 JSON keys + 14 tests + 10 LOC contract-triangles row"
+      - "Sister merge: order-independent across guard/bw-mediation/species-bands"
+  blueprint.2.architect_gate:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/brain-concordance-species-bands-architect-review.md"
+    verdict: PASS
+    notes: "1 mandatory action (contract-triangles row) + 1 LOW advisory (null-suppression semantic) -- both incorporated"
+  blueprint.3.probe:
+    completed: 2026-04-26
+    report: ".lattice/cycle-state/brain-concordance-species-bands-step3-probe.md"
+    breaks: 0
+    science_flag: 0  # 1 documented in synthesis with 4 citations -- RESOLVED at probe time
+    propagates: 3  # S10, S15, S16 -- all intended (signal-score recalibration for non-rat)
+    safe: 3  # S20, S23, OV
+  blueprint.4.peer_review_r1:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/brain-concordance-species-bands-synthesis-review.md"
+    verdict: CONDITIONAL
+    findings: 7  # F1-F7
+    flawed: 0
+    conditional_medium: 2  # F1, F4
+    conditional_low: 4  # F2, F3, F5, F7
+    sound_with_caveat: 1  # F6
+    gate_passed: true
+  blueprint.5.incorporate_r1:
+    completed: 2026-04-26
+    findings_resolved: 6  # F1, F2, F3, F4, F5, F7
+    findings_partial: 1  # F6 (substance present in dispositions table, placement off from preamble)
+    test_count_added: 2  # Test 13 (empty species), Test 14 (explicit-null suppression)
+    synthesis_changes:
+      - "Added Empty/missing species edge case subsection in SCIENCE-FLAG check"
+      - "Added Pre-build baseline audit block with persistence file + diff workflow + sub-budget gate"
+      - "Rewrote Test 12 description for tier-1 provenance"
+      - "Corrected Net code add to ~21 LOC + 14 tests"
+  blueprint.6.peer_review_r2:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/brain-concordance-species-bands-synthesis-review-r2.md"
+    verdict: BUILD-PLAN-VALIDATED
+    r1_resolution: "6/7 RESOLVED, 1/7 PARTIAL (F6 placement)"
+    new_issues: 4  # N1, N2, N3, N4 -- all CONDITIONAL Low, editorial residuals
+    new_flawed: 0
+    bikeshedding: false
+    optional_cosmetic_edits: "N1 self-correction prose at line 260, N3 Test 14 citation in N3 disposition, N4 order-independence sentence at line 8 (substance present at line 22) -- all sub-minute, non-gating per R2 verdict"
+  blueprint.7.complete:
+    completed: 2026-04-28
+    research_gaps_persisted: 0  # synthesis explicitly: No NEW gaps from this synthesis
+    data_gaps_persisted: 0  # synthesis explicitly: None requiring new collection
+    auto_decisions: 1  # state-disk drift reconciliation (autopilot 2026-04-28)
+    notes: |
+      State-disk drift reconciled by autopilot 2026-04-28. Blueprint cycle was
+      authored 2026-04-26 (all artifacts on disk: synthesis, architect, probe,
+      R1, R2, all dated 2026-04-26) but cycle-state YAML never advanced past
+      research-complete. R2 verdict BUILD-PLAN-VALIDATED with 4 optional cosmetic
+      conditions (non-gating per R2 reviewer). No edits applied during
+      reconciliation -- synthesis is implementation-ready as-is.
