@@ -1,8 +1,9 @@
 topic: mabel-framework
 title: "MABEL Framework Integration"
 started: 2026-04-05T01:20:00Z
-phase: research-complete
+phase: blueprint-complete
 current_step: build.0
+revision: 1
 parent: cross-study-phase-1-aggregation-backend
 priority: P2
 checkpoints:
@@ -39,3 +40,53 @@ checkpoints:
     completed: 2026-04-05T02:30:00Z
     key_decisions:
       - "Probe: 0 BREAKS, 4 PROPAGATES, 1 STALE, 0 SCIENCE-FLAG"
+  blueprint.1.synthesize:
+    completed: 2026-04-26
+    output: "docs/_internal/incoming/mabel-framework-synthesis.md"
+    mandatory_sections_present: 6
+  blueprint.2.architect_gate:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/mabel-framework-architect-review.md"
+    verdict: SIMPLIFY
+    items: 2  # F5 data-pathway clarification + F2 dispatcher pattern parallel to oncology
+    plus_should_fix: 5  # contract-triangle row, F3 catch-all scope, F4 keyword ordering, test 8 completeness, test 26 multiplicity caveat
+    auto_applied: true  # per R2 review header acknowledgment "Architect review (SIMPLIFY auto-applied)"
+  blueprint.4.peer_review_r1:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/mabel-framework-synthesis-review.md"
+    findings: 10
+  blueprint.5.incorporate_r1:
+    completed: 2026-04-26
+    findings_resolved: 9  # F1-F9
+    findings_partial: 1  # F10 (cycle-close gate in place, audit not yet run)
+    key_changes:
+      - "F1+F4 ontology refactor: mabel_analysis_required:bool replaces widening regulatory_context enum"
+      - "F2 lower-governs precedence (correct EMA Rev 1 §6 implementation)"
+      - "F5 small-N gates (R2 NF1 properly addressed)"
+      - "Architect SIMPLIFY auto-applied (F5 data pathway + F2 dispatcher pattern)"
+  blueprint.6.peer_review_r2:
+    completed: 2026-04-26
+    review: "docs/_internal/research/peer-reviews/mabel-framework-synthesis-review-r2.md"
+    r1_resolution: "9/10 RESOLVED, 1/10 PARTIAL (F10 cycle-close gate)"
+    new_issues: 5  # N1-N5 all CONDITIONAL Low
+    new_flawed: 0
+    bikeshedding: false
+    verdict: BUILD-PLAN-VALIDATED
+    conditions_carried_to_build:
+      - "N1: update lines 119/250/251 to mabel_analysis_required:true (textual cleanup)"
+      - "N2: specify _select_margin_method return when both oncology_flag and mabel_flag fire (test 8)"
+      - "N3: pin 11-class (compound_name, expected_class) mapping in test 14b"
+      - "N4: validator scope decision -- test 2b (regulatory_context:'garbage' rejected) OR explicit v2 tag"
+      - "N5: F3 catch-all coverage gap explicit trade-off note"
+      - "F10: run /ops:impact safety_margin + frontend consumer audit before commit"
+  blueprint.7.complete:
+    completed: 2026-04-28
+    research_gaps_persisted: "see synthesis Section 5"
+    data_gaps_persisted: "see synthesis Section 6"
+    auto_decisions: 1  # state-disk drift reconciliation (autopilot 2026-04-28)
+    notes: |
+      State-disk drift reconciled by autopilot 2026-04-28. All blueprint
+      artifacts authored 2026-04-26 (synthesis, architect-SIMPLIFY auto-applied,
+      R1, R2 BUILD-PLAN-VALIDATED) but cycle-state YAML never advanced past
+      research-complete. R2 closed with 5 CONDITIONAL Low conditions to be
+      addressed during /lattice:build-cycle. Phase advanced to blueprint-complete.
