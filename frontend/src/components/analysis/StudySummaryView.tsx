@@ -25,6 +25,7 @@ import { useStudyMortality } from "@/hooks/useStudyMortality";
 import { usePkIntegration } from "@/hooks/usePkIntegration";
 import { fetchDomainData } from "@/lib/api";
 import { StudyTimeline } from "./charts/StudyTimeline";
+import { NoaelSynthesisSection } from "./noael/NoaelSynthesisSection";
 import { PkExposureSection } from "./panes/PkExposureSection";
 import { StudyDetailsRail, type StudyDetailsRailItem } from "./StudyDetailsRail";
 import { useResizePanel } from "@/hooks/useResizePanel";
@@ -824,15 +825,6 @@ function DetailsTab({
   // NOAEL / LOAEL from noaelData
   const combinedNoael = noaelData?.find(r => r.sex === "Combined");
   const noaelLabel = combinedNoael ? formatNoaelDisplay(combinedNoael) : null;
-  const noaelSexNote = (() => {
-    if (!noaelData) return null;
-    const mRow = noaelData.find(r => r.sex === "Male");
-    const fRow = noaelData.find(r => r.sex === "Female");
-    if (mRow && fRow && mRow.noael_dose_level !== fRow.noael_dose_level) {
-      return null; // sex-split, show Combined's value
-    }
-    return combinedNoael ? "M+F" : null;
-  })();
   const loaelLabel = combinedNoael
     ? (combinedNoael.loael_dose_level === 0
         ? "Control"
@@ -878,59 +870,12 @@ function DetailsTab({
     { key: "data-quality", label: "Data quality" },
   ];
 
-  // NOAEL / LOAEL section — absorbs PK callouts + HED/MRSD (decision 2).
-  const noaelSection = (
-    <div className="space-y-2 p-4 text-xs">
-      {!noaelLabel && !loaelLabel && targetOrganCount === 0 && (
-        <div className="text-muted-foreground">No NOAEL / LOAEL determination available</div>
-      )}
-      {(noaelLabel || targetOrganCount > 0) && (
-        <div className="flex items-baseline gap-1.5">
-          {noaelLabel && (
-            <>
-              <span className="font-semibold">NOAEL: {noaelLabel}</span>
-              {noaelSexNote && <span className="text-[11px] text-muted-foreground">({noaelSexNote})</span>}
-            </>
-          )}
-          {noaelLabel && loaelLabel && <span className="text-border">|</span>}
-          {loaelLabel && <span className="font-semibold">LOAEL: {loaelLabel}</span>}
-          {(noaelLabel || loaelLabel) &&
-            (targetOrganCount > 0 || domainsWithSignals > 0 || noaelConfidence != null) && (
-              <span className="text-border">|</span>
-            )}
-          <span className="text-[11px] font-normal text-muted-foreground">
-            {targetOrganCount > 0 && <>{targetOrganCount} target organ{targetOrganCount !== 1 ? "s" : ""}</>}
-            {targetOrganCount > 0 && domainsWithSignals > 0 && " · "}
-            {domainsWithSignals > 0 && <>{domainsWithSignals} domain{domainsWithSignals !== 1 ? "s" : ""} with signals</>}
-            {(targetOrganCount > 0 || domainsWithSignals > 0) && noaelConfidence != null && " · "}
-            {noaelConfidence != null && <>{Math.round(noaelConfidence * 100)}% confidence</>}
-          </span>
-        </div>
-      )}
-      {/* Exposure at NOAEL/LOAEL */}
-      {pkData?.available && (pkData.noael_exposure || pkData.loael_exposure) && (() => {
-        const exp = pkData.noael_exposure ?? pkData.loael_exposure;
-        const expLabel = pkData.noael_exposure ? "At NOAEL" : "At LOAEL";
-        if (!exp) return null;
-        const parts: string[] = [];
-        if (exp.cmax) parts.push(`Cmax ${exp.cmax.mean.toPrecision(3)} ${exp.cmax.unit}`);
-        if (exp.auc) parts.push(`AUC ${exp.auc.mean.toPrecision(3)} ${exp.auc.unit}`);
-        if (parts.length === 0) return null;
-        return (
-          <div className="text-[11px] text-muted-foreground">
-            <span className="font-medium">{expLabel}:</span> {parts.join(" \u00b7 ")}
-          </div>
-        );
-      })()}
-      {pkData?.hed && pkData.hed.noael_status !== "at_control" && (
-        <div className="text-[11px] text-muted-foreground">
-          <span className="font-medium">HED:</span> {pkData.hed.hed_mg_kg} mg/kg
-          {" \u00b7 "}
-          <span className="font-medium">MRSD:</span> {pkData.hed.mrsd_mg_kg} mg/kg
-        </div>
-      )}
-    </div>
-  );
+  // NOAEL / LOAEL section -- GAP-288 Stage 2 synthesis page.
+  // Replaces the inline one-line summary that previously lived here. The
+  // synthesis section pulls its own data via hooks and composes 6 regions
+  // (banner, modifier strip, cross-organ band, target organs, other organs,
+  // safety margin calc) per `docs/_internal/incoming/gap-288-stage2-noael-synthesis-spec.md`.
+  const noaelSection = <NoaelSynthesisSection studyId={studyId!} />;
 
   // Study design section — timeline + TK/recovery behavior note (decision 2).
   const studyDesignSection = (

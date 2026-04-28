@@ -183,3 +183,102 @@ button[data-rail-item][data-selected] .ev {
     rgb(0 0 0 / 0.06) 4px
   );
 }
+
+/* ── NOAEL/LOAEL synthesis page (GAP-288 Stage 2) ──
+   Per-organ tables share column widths via the .organ-tbl class. table-layout:
+   fixed honors the explicit colgroup widths so dose cells line up vertically
+   across organs even though each organ is a separate <table>. The auto-width
+   spacer column absorbs leftover width on wide displays without disturbing the
+   Syndrome -> dose -> N -> Confidence reading order. */
+table.organ-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+table.organ-tbl thead th {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: right;
+  padding: 4px 6px;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+table.organ-tbl thead th.organ-tbl-name {
+  text-align: left;
+  padding-left: 24px;
+}
+table.organ-tbl thead th.organ-tbl-summary {
+  text-align: left;
+}
+table.organ-tbl tbody td {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border);
+}
+table.organ-tbl tbody td.organ-tbl-name {
+  text-align: left;
+  padding-left: 24px;
+}
+table.organ-tbl tbody td.organ-tbl-dose {
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+table.organ-tbl tbody td.organ-tbl-n {
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+table.organ-tbl tbody td.organ-tbl-summary {
+  text-align: left;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+
+/* Column-width slots aligned across all per-organ tables (A-11 spatial anchoring).
+   Syndrome trimmed from 380 -> 320 and Confidence from 200 -> 160 so a 4-dose
+   study (Ctrl + 4 treated + Rec + N + Confidence) fits inside the ~886px center
+   region available at the 1366px laptop viewport once the right rail is mounted.
+   At 1920px+ the body cap (1280px) leaves the spacer column to absorb the
+   remainder. AC-LAYOUT-3 holds at 1366 / 1920 / 2560. */
+.col-w-name   { width: 320px; max-width: 320px; }
+.col-w-dose   { width: 56px; }
+.col-w-rec    { width: 56px; }
+.col-w-n      { width: 48px; }
+.col-w-conf   { width: 160px; }
+.col-w-spacer { width: auto; }
+
+/* Heatmap-style cell: neutral at rest, hover tint. Dose cells inside per-organ
+   tables use this class. C-22 + K-03 + OrganGroupedHeatmap convention. */
+.heat-cell {
+  background: rgba(0, 0, 0, 0.04);
+  transition: background 0.15s;
+}
+.heat-cell:hover {
+  background: rgba(8, 145, 178, 0.18);
+}
+
+/* Tier dot variants (match v5.1 mockup contract).
+   tier-critical: filled red dot for established LOAEL / adverse severity.
+   tier-notable:  filled amber dot for warning severity.
+   tier-ne:       outlined red ring for "NOAEL not established" -- spec
+                  section 2.1 banner prescribes this exact class. */
+.tier-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.tier-critical { background: #DC2626; }
+.tier-notable  { background: #D97706; }
+.tier-ne {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #DC2626;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
