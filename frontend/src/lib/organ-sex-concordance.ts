@@ -233,11 +233,31 @@ export function getSexConcordanceBoost(
 
 // ─── Internal helpers ─────────────────────────────────────
 
+// Three-tier fallback per docs/_internal/research/brain-concordance-species-bands.md:
+//   tier 1: species-specific band (e.g. dog BRAIN_WEIGHT)
+//   tier 2: rat baseline (calibrated against the largest HCD corpus)
+//   tier 3: defaultBoosts (concordance 1.5, divergence 1.0)
+// An explicit `null` value in a species-specific entry suppresses fallback
+// (returns null/0 boost) -- e.g. REPRODUCTIVE in rat. This is the documented
+// way to opt a species-organ pair out of cross-species inheritance.
+// Consumption invariant: `species` MUST be the output of normalizeSpecies()
+// from syndrome-translational.ts (e.g. "monkey" not "cynomolgus") -- other
+// normalizers map to different keys and would silently miss species entries.
 function lookupBand(band: string | null, species: string): BandBoosts | null {
+  if (!band) return defaultBoosts;
+  // Tier 1: species-specific lookup
   const speciesData = speciesBands[species] as BandsMap | undefined;
-  if (speciesData && band && band in speciesData) {
-    return speciesData[band] ?? null; // null for REPRODUCTIVE
+  if (speciesData && band in speciesData) {
+    return speciesData[band] ?? null; // explicit null suppresses fallback
   }
+  // Tier 2: rat fallback (baseline calibration)
+  if (species !== "rat") {
+    const ratData = speciesBands["rat"] as BandsMap | undefined;
+    if (ratData && band in ratData) {
+      return ratData[band] ?? null; // rat's null (e.g. REPRODUCTIVE) applies cross-species
+    }
+  }
+  // Tier 3: default
   return defaultBoosts;
 }
 

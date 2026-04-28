@@ -1,5 +1,5 @@
 {
-  "_comment": "Organ-specific sex concordance/divergence boost values for signal scoring. See docs/deep-research/Organ-specific sex concordance scoring for rat toxicology signals.md for literature basis and citations.",
+  "_comment": "Organ-specific sex concordance/divergence boost values for signal scoring. Lookup order: species-specific -> rat -> default. Species-specific keys may contain ONLY organs with calibration data; missing organs fall through to rat. Explicit null values (like REPRODUCTIVE in rat) suppress fallback and return 0 boost. See docs/_internal/research/brain-concordance-species-bands.md for non-rat calibration rationale; docs/deep-research/Organ-specific sex concordance scoring for rat toxicology signals.md for the rat baseline.",
   "rat": {
     "LIVER":         { "concordance": 2.0, "divergence": 0.5 },
     "KIDNEY":        { "concordance": 2.0, "divergence": 0.3 },
@@ -18,6 +18,15 @@
     "SKIN":          { "concordance": 1.0, "divergence": 1.5 },
     "BODY_WEIGHT":   { "concordance": 2.0, "divergence": 0.3 },
     "COAGULATION":   { "concordance": 1.0, "divergence": 1.8 }
+  },
+  "dog": {
+    "BRAIN_WEIGHT":  { "concordance": 1.5, "divergence": 0.5 }
+  },
+  "monkey": {
+    "BRAIN_WEIGHT":  { "concordance": 1.5, "divergence": 0.7 }
+  },
+  "rabbit": {
+    "BRAIN_WEIGHT":  { "concordance": 1.5, "divergence": 0.5 }
   },
   "default": { "concordance": 1.5, "divergence": 1.0 }
 }
