@@ -81,6 +81,109 @@ else
     echo ""
 fi
 
+# --- Step -0.5: Commit-intent declared-set check (BLOCKS on conflation) ---
+# Reads .lattice/commit-intent.txt and verifies the staged set matches the
+# session's declared intent. Catches the autopilot-vs-manual-staging
+# conflation pattern documented in feedback_concurrent_autopilot_staging.md
+# and four CONFLATED-COMMIT annotations in .lattice/decisions.log
+# (1370c103, 521f1d16, a47ee865, abdb31c9).
+#
+# Strict from day one: missing intent file = BLOCK. The earlier Step -1
+# commit-lock catches concurrent COMMITS, not concurrent STAGING -- the
+# index is global per repo, so files staged by a parallel session before
+# this commit ran already corrupted the staged set. This check is the
+# remaining gap.
+#
+# Exact paths only: globs would re-introduce the failure mode by making
+# unexpected files "expected by pattern". Use scripts/declare-commit-intent.sh
+# --add for genuine in-flight scope additions.
+
+INTENT_FILE="$REPO_ROOT/.lattice/commit-intent.txt"
+
+if [ ! -f "$INTENT_FILE" ]; then
+    echo "========================================"
+    echo "  COMMIT BLOCKED: No commit-intent file declared."
+    echo "========================================"
+    echo ""
+    echo "  Per the autopilot-vs-manual-staging conflation failure mode"
+    echo "  (4 documented occurrences -- see CONFLATED-COMMIT annotations in"
+    echo "  .lattice/decisions.log and feedback_concurrent_autopilot_staging.md),"
+    echo "  every commit must declare its intended file set BEFORE 'git add'."
+    echo "  Pre-commit then verifies the staged set hasn't been polluted by a"
+    echo "  concurrent session's git add."
+    echo ""
+    echo "  Resolve:"
+    echo "    bash scripts/declare-commit-intent.sh <topic> <files...>"
+    echo "    git add <files...>"
+    echo "    git commit -m '...'"
+    echo ""
+    echo "  Helpers:"
+    echo "    bash scripts/declare-commit-intent.sh --add <files...>     # extend"
+    echo "    bash scripts/declare-commit-intent.sh --show               # inspect"
+    echo "    bash scripts/declare-commit-intent.sh --clear              # reset"
+    exit 1
+fi
+
+# Parse intent file: skip blank lines + comments + KEY:VALUE headers.
+# Any other non-blank line is a declared file path.
+INTENT_PATHS=$(grep -v '^[[:space:]]*#' "$INTENT_FILE" \
+    | grep -vE '^[A-Za-z][A-Za-z0-9_-]*:' \
+    | grep -v '^[[:space:]]*$' \
+    | sort -u || true)
+STAGED_PATHS=$(echo "$STAGED_FILES" | grep -v '^[[:space:]]*$' | sort -u || true)
+
+# Set difference: staged - intent (UNEXPECTED, blocking) and intent - staged
+# (DECLARED_NOT_STAGED, advisory). bash process-substitution + comm.
+UNEXPECTED=$(comm -23 <(echo "$STAGED_PATHS") <(echo "$INTENT_PATHS") | grep -v '^[[:space:]]*$' || true)
+DECLARED_NOT_STAGED=$(comm -13 <(echo "$STAGED_PATHS") <(echo "$INTENT_PATHS") | grep -v '^[[:space:]]*$' || true)
+
+INTENT_COUNT=$(echo "$INTENT_PATHS" | grep -cv '^[[:space:]]*$' || true)
+HOLDER_LINE=$(grep -E '^Holder:' "$INTENT_FILE" 2>/dev/null | head -1 | sed 's/Holder:[[:space:]]*//')
+TOPIC_LINE=$(grep -E '^Topic:' "$INTENT_FILE" 2>/dev/null | head -1 | sed 's/Topic:[[:space:]]*//')
+
+if [ -n "$UNEXPECTED" ]; then
+    UNEXP_COUNT=$(echo "$UNEXPECTED" | grep -cv '^[[:space:]]*$' || true)
+    echo "========================================"
+    echo "  COMMIT BLOCKED: $UNEXP_COUNT staged file(s) NOT in commit intent."
+    echo "========================================"
+    echo ""
+    echo "  Intent declared by holder='${HOLDER_LINE:-<unknown>}' topic='${TOPIC_LINE:-<unknown>}':"
+    echo "$INTENT_PATHS" | sed 's/^/    /'
+    echo ""
+    echo "  Unexpected staged file(s) (likely from a concurrent session):"
+    echo "$UNEXPECTED" | sed 's/^/    /'
+    echo ""
+    echo "  This is the autopilot-vs-manual-staging conflation pattern."
+    echo "  Precedents: 1370c103, 521f1d16, a47ee865, abdb31c9 (see"
+    echo "  CONFLATED-COMMIT rows in .lattice/decisions.log)."
+    echo ""
+    echo "  Resolve options:"
+    echo "    1. The unexpected files genuinely belong here (deliberate"
+    echo "       in-flight scope addition):"
+    echo "       bash scripts/declare-commit-intent.sh --add <file1> <file2> ..."
+    echo "    2. Concurrent-session pollution -- unstage the unexpected files:"
+    echo "       git restore --staged <file1> <file2> ..."
+    echo "       (then optionally pause the concurrent session before retrying)"
+    echo ""
+    echo "  See feedback_concurrent_autopilot_staging.md for failure-mode"
+    echo "  history. Step -1 commit-lock catches concurrent COMMITS;"
+    echo "  this Step -0.5 catches concurrent STAGING."
+    exit 1
+fi
+
+if [ -n "$DECLARED_NOT_STAGED" ]; then
+    DNS_COUNT=$(echo "$DECLARED_NOT_STAGED" | grep -cv '^[[:space:]]*$' || true)
+    echo "--- Step -0.5: Commit intent (WARN: $DNS_COUNT declared-not-staged) ---"
+    echo "  Intent verified for $INTENT_COUNT path(s); these are declared but"
+    echo "  not currently staged (split-commit / partial-commit is permitted):"
+    echo "$DECLARED_NOT_STAGED" | sed 's/^/    /'
+    echo ""
+else
+    STAGED_COUNT=$(echo "$STAGED_PATHS" | grep -cv '^[[:space:]]*$' || true)
+    echo "--- Step -0.5: Commit intent verified ($STAGED_COUNT file(s); topic=${TOPIC_LINE:-<n/a>}) ---"
+    echo ""
+fi
+
 # --- Step 0: Review gate check (BLOCKS if review not run) ---
 # /lattice:review writes .lattice/review-gate.json when it passes.
 # This check BLOCKS commits if the gate file is missing or stale.

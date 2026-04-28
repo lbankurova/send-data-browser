@@ -62,5 +62,9 @@ scripts/data/discovery-report.md
 nul
 .lattice/commit.lock/
 
+# Single-shot per-session intent file (cleared by hooks/post-commit;
+# see docs/_internal/knowledge/commit-intent-protocol.md)
+.lattice/commit-intent.txt
+
 # Migration-diff snapshots (transient; ~40 MB per set, captured for one-shot diff generation)
 .lattice/fct-lb-bw-pre-append-snapshots/

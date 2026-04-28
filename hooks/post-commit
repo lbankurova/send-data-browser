@@ -1,0 +1,23 @@
+#!/bin/bash
+# Post-commit hook: clear the commit-intent file after a successful commit.
+#
+# The intent file is single-shot: each commit must re-declare its expected file
+# set. This is the cleanup half of the autopilot-vs-manual staging conflation
+# guard implemented in pre-commit Step -0.5; the pair is symmetric -- intent
+# verified at commit time, intent cleared at post-commit time.
+#
+# Failure modes this handles:
+#   - Stale intent file from a prior session would otherwise apply to the next
+#     commit (false-pass or false-block).
+#   - User declares intent, commits, then tries to commit again without
+#     re-declaring -- the second commit would silently inherit the first's
+#     intent without this cleanup.
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+INTENT_FILE="$REPO_ROOT/.lattice/commit-intent.txt"
+
+if [ -f "$INTENT_FILE" ]; then
+    rm -f "$INTENT_FILE"
+fi
