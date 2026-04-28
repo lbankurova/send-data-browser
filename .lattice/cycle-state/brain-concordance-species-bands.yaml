@@ -1,8 +1,8 @@
 topic: brain-concordance-species-bands
 started: 2026-04-04
-phase: blueprint-complete
-current_step: build.0
-revision: 1
+phase: build
+current_step: build.1-f1f2-shipped
+revision: 2
 parent: brain-weight-sex-concordance-calibration
 completed:
   research.1:
@@ -93,3 +93,15 @@ completed:
       research-complete. R2 verdict BUILD-PLAN-VALIDATED with 4 optional cosmetic
       conditions (non-gating per R2 reviewer). No edits applied during
       reconciliation -- synthesis is implementation-ready as-is.
+  build.1.f1_f2_shipped:
+    completed: 2026-04-28
+    commit: 71e5252e
+    files_changed:
+      - "frontend/src/lib/organ-sex-concordance.ts (+24 -2, lookupBand 3-tier with JSDoc)"
+      - "shared/organ-sex-concordance-bands.json (+11 -3, dog/monkey/rabbit BRAIN_WEIGHT entries + _comment update)"
+    tests_passing: 2129  # full vitest suite green post-change
+    pending:
+      - "F3 documentation update in docs/_internal/knowledge/sex-concordance-scoring.md (or wherever the canonical doc lives)"
+      - "14-test fixture set per synthesis Test Strategy (Tests 1-14)"
+      - "contract-triangles.md row for organ-sex-concordance.ts -> shared/organ-sex-concordance-bands.json -> normalizeSpecies consumption"
+      - "/lattice:review formal gate run (skipped on direct commit; CLAUDE.md commit-checklist obligations satisfied via build/test pass + synthesis-grounded change)"
