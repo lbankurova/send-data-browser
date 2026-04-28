@@ -48,8 +48,8 @@ bash scripts/declare-commit-intent.sh --show                  # inspect current 
 ## Intent file format
 
 ```
-# Commit intent file -- consumed by hooks/pre-commit Step -0.5
-# Single-shot: cleared by hooks/post-commit on successful commit.
+# Commit intent file -- consumed by .githooks/pre-commit Step -0.5
+# Single-shot: cleared by .githooks/post-commit on successful commit.
 # See feedback_concurrent_autopilot_staging.md for the pattern this prevents.
 Topic: lattice-framework-redesign-spec-f4
 Holder: manual-pid-12345
@@ -57,7 +57,7 @@ Created: 2026-04-28T22:00:00Z
 
 scripts/foo.py
 backend/tests/baseline.json
-hooks/pre-commit
+.githooks/pre-commit
 ```
 
 Lines starting with `#` are comments. `Key: value` lines (Topic / Holder / Created) are headers. All other non-blank lines are file paths. Paths are exact — no globs, no wildcards. Use `--add` for in-flight scope additions.
@@ -84,7 +84,7 @@ Four documented occurrences of the same conflation. Each iteration of "tighten l
 
 - `feedback_concurrent_autopilot_staging.md` — the original memory note that named the pattern (after commit 1370c103, 2026-04-26).
 - `.lattice/decisions.log` — search `CONFLATED-COMMIT` for the four occurrences.
-- `hooks/pre-commit` Step -1 — the existing commit-lock that catches concurrent commits but not concurrent staging.
-- `hooks/pre-commit` Step -0.5 — the new gate this protocol implements.
-- `hooks/post-commit` — single-shot cleanup of the intent file.
+- `.githooks/pre-commit` Step -1 — the existing commit-lock that catches concurrent commits but not concurrent staging.
+- `.githooks/pre-commit` Step -0.5 — the new gate this protocol implements.
+- `.githooks/post-commit` — single-shot cleanup of the intent file.
 - `scripts/declare-commit-intent.sh` — the helper.

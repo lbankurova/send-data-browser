@@ -92,8 +92,8 @@ case "$1" in
         holder="${LATTICE_LOCK_HOLDER:-manual-pid-$$}"
         timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         {
-            echo "# Commit intent file -- consumed by hooks/pre-commit Step -0.5"
-            echo "# Single-shot: cleared by hooks/post-commit on successful commit."
+            echo "# Commit intent file -- consumed by .githooks/pre-commit Step -0.5"
+            echo "# Single-shot: cleared by .githooks/post-commit on successful commit."
             echo "# See feedback_concurrent_autopilot_staging.md for the pattern this prevents."
             echo "Topic: $topic"
             echo "Holder: $holder"
