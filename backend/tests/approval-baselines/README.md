@@ -1,6 +1,12 @@
 # Approval-test baselines
 
-> **Status:** F4 format-settlement only (spec §6, §18.3). Capture for PointCross / Nimble / etc. is the next F4 phase and is **NOT** done by this commit.
+> **Status (2026-04-28):** F4 Phase 1 SHIPPED. Capture / diff / rationale parser / pre-commit wiring all live. PointCross baseline captured. Phase 2 (Nimble + PDS baselines) is the next expansion.
+>
+> Tooling:
+> - `scripts/capture-approval-baseline.py {study}` — read engine output, build the baseline dict, validate, write JSON.
+> - `scripts/diff-approval-baseline.py {study}` — diff captured baseline against current generated output. Scientific-tier diffs block unless rationale validates; presentation-tier diffs auto-log.
+> - `scripts/test-diff-approval-baseline.py` — 15-case regression suite (rationale contract + diff semantics + end-to-end).
+> - Pre-commit hook Step 0e auto-fires the diff on every algorithmic-paths commit.
 
 Captures the analytical output of a study at a specific code state, so that future commits can be compared against the baseline and any change forced through a written rationale (per CLAUDE.md rule 19 + spec §6.2 two-tier policy).
 
@@ -160,24 +166,54 @@ Unacceptable:
 
 ---
 
-## How baselines are captured (next F4 phase, NOT this commit)
+## Capture and diff workflow (Phase 1 shipped)
 
-The capture script (`scripts/capture-approval-baseline.py`, F4 Phase 1 deliverable) will:
+### Capture
 
-1. Read `backend/generated/{study}/unified_findings.json` (and any frontend-derived outputs needed — currently NOAEL is computed in `frontend/src/lib/derive-summaries.ts`, so the capture flow may need a Node-side helper).
-2. Project each field to either the scientific or presentation tier per the cut-line above.
-3. Emit a baseline.json conforming to `baseline.schema.json`.
-4. Validate the emitted file against the schema before writing.
+```bash
+# After regenerating engine output for the study:
+python scripts/capture-approval-baseline.py PointCross
+# -> backend/tests/approval-baselines/PointCross/baseline.json
+```
 
-The diff script (`scripts/diff-approval-baseline.py`, F4 Phase 1 deliverable) will:
+The capture script reads `backend/generated/{study}/unified_findings.json` plus `syndrome_rollup.json`, projects each value into the scientific or presentation tier per the cut-line, emits a schema-conforming baseline, and validates it before writing. `--regenerate` runs the engine first; `--stdout` writes JSON to stdout for piping.
 
-1. Recompute the projection against current code.
-2. Diff against `baseline.json`.
-3. For scientific-tier diffs, require `LATTICE_APPROVAL_RATIONALE` env or a `.lattice/pending-approval-rationales.tsv` file with one rationale per (study, output_id) pair.
-4. Validate rationales structurally per the contract above; reject and exit 1 on any defect.
-5. For presentation-tier diffs, log to `.lattice/approval-log.tsv`; never block.
+### Diff
 
-Wired into pre-commit via the algorithmic-paths regex (the same trigger as `LATTICE_ALGORITHM_CHECK`). Outside that regex, the diff is not triggered.
+```bash
+# Run after a code change. Compare current generated output to captured baseline:
+python scripts/diff-approval-baseline.py PointCross
+python scripts/diff-approval-baseline.py --all          # every captured study
+python scripts/diff-approval-baseline.py PointCross --staleness-check
+```
+
+When the diff finds scientific-tier changes, it requires a rationale via ONE of:
+
+1. `--rationale-file <path>` — JSON or key:value file (preferred for tests).
+2. `LATTICE_APPROVAL_RATIONALE='{...}'` — env var (one-shot, command-line scoped).
+3. `.lattice/pending-approval-rationale.json` — sticky file the pre-commit hook reads. Single-shot: consumed on accept.
+
+Required rationale fields (the F4 rationale contract per Review-3 — the parser is structural, not heuristic):
+
+| Field | Minimum | Purpose |
+|---|---|---|
+| `study` | matches baseline.study_id | Anchors the rationale to one capture |
+| `category` | 1+ char (or `"*"` for any) | Names which scientific category changed |
+| `summary_old_new` | 12+ chars | One-liner: e.g. `"BW NOAEL 20 -> 80 mg/kg"` |
+| `rationale_text` | 40+ chars, ≥4 distinct alphabetic word tokens, not in trivial-set, not duplicate-of-recent (last 5) | The actual "why" |
+
+The trivial-set (rejected): `n/a`, `na`, `none`, `idk`, `tbd`, `todo`, `fix`, `fixed`, `same as before`, `no change`, `expected`, `looks fine`, `ok`, `approved`, `see commit`, `see code`. The duplicate-of-recent check scans both `.lattice/approval-log.tsv` and approval-test rows in `.lattice/decisions.log` so the rule applies across tiers.
+
+When the rationale validates, the diff:
+- Persists one row to `.lattice/decisions.log` per scientific category that changed.
+- Auto-logs every presentation-tier diff to `.lattice/approval-log.tsv` (no block).
+- Consumes `.lattice/pending-approval-rationale.json` if that was the source.
+
+### Pre-commit wiring
+
+`hooks/pre-commit` Step 0e fires when staged paths match the algorithmic-paths regex (same trigger as F3 peer-review). For each `backend/tests/approval-baselines/{study}/baseline.json` (excluding `_example`), it runs the diff with `--staleness-check`. A `unified_findings.json` older than any staged algorithmic file produces a warning that the regen is needed for the diff to be meaningful.
+
+A scientific-tier diff without an acceptable rationale exits 1 from the diff script, which BLOCKS the commit. The hook prints remediation: write the rationale to `.lattice/pending-approval-rationale.json` and re-attempt.
 
 ---
 

@@ -1,0 +1,4506 @@
+{
+  "captured_against_commit": "eabc399d",
+  "captured_at": "2026-04-28T20:39:12Z",
+  "captured_by": "scripts/capture-approval-baseline.py",
+  "captured_from": "backend/generated/PointCross/unified_findings.json",
+  "presentation": {
+    "bundle_artifacts": {},
+    "format_strings": {},
+    "labels": {}
+  },
+  "schema_version": 1,
+  "scientific": {
+    "adverse_classification": {
+      "BG.BWGAIN..F.29": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "BG.BWGAIN..F.57": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "BG.BWGAIN..F.85": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BG.BWGAIN..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BG.BWGAIN..M.29": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "BG.BWGAIN..M.57": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BG.BWGAIN..M.85": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BG.BWGAIN..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "BG.BWGAIN..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "BW.BW..F.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BW.BW..F.15": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.22": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.29": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.36": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.43": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.50": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.57": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.64": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.71": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.78": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.8": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "BW.BW..F.85": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.1": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "BW.BW..M.15": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.22": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.29": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.36": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "BW.BW..M.43": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.50": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.57": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.64": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.71": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "BW.BW..M.78": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.8": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "BW.BW..M.85": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "BW.BW..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "BW.BW..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "CL.ALOPECIA..F.85": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.BEDDING WET..M.85": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "CL.CRUST..F.50": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.CRUST..M.1": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "CL.EXUDATE..F.50": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.EXUDATE..M.1": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.MOURIBUND..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.RED AREA..F.50": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "CL.RED AREA..M.71": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "DS.MORTALITY..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "EG.PRAG..F.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "EG.PRAG..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "EG.QTCBAG..F.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "EG.QTCBAG..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "EG.RRAG..F.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "EG.RRAG..M.90": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "FW.FC..F.29": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "FW.FC..F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "adverse"
+      },
+      "FW.FC..M.29": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "FW.FC..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "FW.FC..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.ALB..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.ALB..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALB..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALB..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.ALBGLOB..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.ALBGLOB..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALBGLOB..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALBGLOB..M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "adverse"
+      },
+      "LB.ALP..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.ALP..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALP..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALP..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.ALT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.ALT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.ALT..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.APTT..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.APTT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.APTT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.APTT..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.AST..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.AST..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.AST..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.AST..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.BASO..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.BASO..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.BASO..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.BASO..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.BILI..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.BILI..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.BILI..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.BILI..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.CA..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.CA..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CA..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CA..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.CHOL..F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.CHOL..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CHOL..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CHOL..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.CL..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.CL..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CL..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CL..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.CREAT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.CREAT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CREAT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.CREAT..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.EOS..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.EOS..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.EOS..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.EOS..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.FIBRINO..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.FIBRINO..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.FIBRINO..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.FIBRINO..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.GGT..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GGT..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GLOBUL..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.GLOBUL..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GLOBUL..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GLOBUL..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.GLUC..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.GLUC..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GLUC..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.GLUC..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.HCT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.HCT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.HCT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.HCT..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.HGB..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.HGB..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.HGB..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.HGB..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.K..F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "adverse"
+      },
+      "LB.K..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.K..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.K..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.KETONES..F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "adverse"
+      },
+      "LB.KETONES..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.LGUNSCE..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.LGUNSCE..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.LGUNSCE..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.LGUNSCE..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.LYM..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.LYM..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.LYM..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.LYM..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.MCH..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.MCH..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCH..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCH..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.MCHC..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.MCHC..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCHC..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCHC..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.MCV..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.MCV..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCV..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MCV..M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "adverse"
+      },
+      "LB.MONO..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.MONO..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MONO..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.MONO..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.NEUT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.NEUT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.NEUT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.NEUT..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PH..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.PH..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PH..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PHOS..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PHOS..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PHOS..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PHOS..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PLAT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PLAT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PLAT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PLAT..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.PROT..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.PROT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PROT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PROT..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.PT..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.PT..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PT..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.PT..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.RBC..F.92": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.RBC..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RBC..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RBC..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "variation"
+      },
+      "LB.RDW..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.RDW..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RDW..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RDW..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.RETI..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.RETI..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RETI..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.RETI..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.SODIUM..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.SODIUM..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.SODIUM..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.SODIUM..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.SPGRAV..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.SPGRAV..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.SPGRAV..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "LB.TRIG..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.TRIG..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.TRIG..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.TRIG..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "LB.UREAN..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.UREAN..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.UREAN..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.UREAN..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.VOLUME..F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.VOLUME..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.VOLUME..M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "LB.WBC..F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "LB.WBC..M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.WBC..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "LB.WBC..M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "concern"
+      },
+      "MA.BODY CAVITY, CRANIAL_CONTENTS, DARK RED.BODY CAVITY, CRANIAL.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.EPIDIDYMIS_AREA(S), DARK RED.EPIDIDYMIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.EPIDIDYMIS_SMALL.EPIDIDYMIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.ESOPHAGUS_PERFORATION.ESOPHAGUS.M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, ADRENAL_ENLARGED.GLAND, ADRENAL.M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, ADRENAL_PALE.GLAND, ADRENAL.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, COAGULATING_SMALL.GLAND, COAGULATING.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, SEMINAL VESICLE_SMALL.GLAND, SEMINAL VESICLE.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, THYROID_ENLARGED.GLAND, THYROID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, THYROID_PALE.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.GLAND, THYROID_SMALL.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.HINDLIMB_HARD THICKENING.HINDLIMB.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.HINDLIMB_HEMORRHAGE.HINDLIMB.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.HINDLIMB_SWELLING.HINDLIMB.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.KIDNEY_CYST.KIDNEY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.KIDNEY_CYST.KIDNEY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, CECUM_CONTENTS, DARK RED.LARGE INTESTINE, CECUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, CECUM_DISTENDED.LARGE INTESTINE, CECUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, CECUM_FIRM FECES.LARGE INTESTINE, CECUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, CECUM_WATERY CONTENTS.LARGE INTESTINE, CECUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, COLON_CONTENTS, DARK RED.LARGE INTESTINE, COLON.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, COLON_FIRM FECES.LARGE INTESTINE, COLON.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LARGE INTESTINE, RECTUM_FIRM FECES.LARGE INTESTINE, RECTUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_AREA(S), WHITE.LIVER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_DISCOLORATION.LIVER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_DISCOLORATION.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_ENLARGED.LIVER.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_ENLARGED.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_MASS.LIVER.M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LIVER_MISSHAPEN.LIVER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_DISCOLORATION.LUNG.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LUNG_DISCOLORED AREA.LUNG.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.LYMPH NODE, MESENTERIC_SMALL.LYMPH NODE, MESENTERIC.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_ALOPECIA.SKIN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_ALOPECIA.SKIN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_HAIR LOSS.SKIN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_MATTING.SKIN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_MATTING.SKIN.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SKIN_ROUGH FUR.SKIN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, DUODENUM_DISTENDED.SMALL INTESTINE, DUODENUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, DUODENUM_INTUSSUSCEPTION.SMALL INTESTINE, DUODENUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, ILEUM_CONTENTS, DARK RED.SMALL INTESTINE, ILEUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, ILEUM_WATERY CONTENTS.SMALL INTESTINE, ILEUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_DIVERTICULUM.SMALL INTESTINE, JEJUNUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SPLEEN_ACCESSORY.SPLEEN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SPLEEN_ADHESION.SPLEEN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SPLEEN_SMALL.SPLEEN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.SPLEEN_SMALL.SPLEEN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.STOMACH_DISTENDED.STOMACH.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.STOMACH_DISTENDED.STOMACH.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.STOMACH_YELLOW FLUID.STOMACH.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.TESTIS_SMALL.TESTIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.TESTIS_SOFT.TESTIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.THYMUS_AREA(S), DARK RED.THYMUS.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.THYMUS_SMALL.THYMUS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.URINARY BLADDER_CONTENTS, DARK RED.URINARY BLADDER.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MA.URINARY BLADDER_DISTENDED.URINARY BLADDER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.UTERUS_CLEAR FLUID.UTERUS.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MA.UTERUS_DILATATION.UTERUS.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MA.UTERUS_MASS.UTERUS.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.F.92": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.M.92": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.EPIDIDYMIS_ASPERMIA.EPIDIDYMIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.ESOPHAGUS_INFLAMMATION.ESOPHAGUS.M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.EYE_RETINAL FOLD(S).EYE.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.EYE_RETINAL FOLD(S).EYE.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.EYE_RETINAL FOLD.EYE.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.EYE_RETINAL FOLD.EYE.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.M.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, PROSTATE_INFLAMMATION.GLAND, PROSTATE.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_HYPERPLASIA.GLAND, THYROID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.HEART_INFLAMMATION.HEART.F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.HEART_INFLAMMATION.HEART.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.F.92": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.M.92": {
+        "severity": "warning",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_CAST.KIDNEY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_CAST.KIDNEY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_CYST.KIDNEY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_CYST.KIDNEY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_NECROSIS.KIDNEY.F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.KIDNEY_NECROSIS.KIDNEY.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LARYNX_INFLAMMATION.LARYNX.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LARYNX_INFLAMMATION.LARYNX.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_ADENOMA, HEPATOCELLULAR.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_HEPATOCELLULAR CARCINOMA.LIVER.M.90": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_HYPERTROPHY.LIVER.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_HYPERTROPHY.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_INFLAMMATION.LIVER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_INFLAMMATION.LIVER.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_NECROSIS.LIVER.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_NECROSIS.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_VACUOLIZATION.LIVER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LIVER_VACUOLIZATION.LIVER.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFLAMMATION.LUNG.F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_INFLAMMATION.LUNG.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.M.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_METAPLASIA.LUNG.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.LUNG_METAPLASIA.LUNG.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "provisional"
+      },
+      "MI.SMALL INTESTINE, JEJUNUM_INFLAMMATION.SMALL INTESTINE, JEJUNUM.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_ATROPHY.SPLEEN.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_ATROPHY.SPLEEN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_CONGESTION.SPLEEN.F.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_CONGESTION.SPLEEN.M.92": {
+        "severity": "warning",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.M.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.STOMACH_EDEMA.STOMACH.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.STOMACH_EDEMA.STOMACH.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.STOMACH_EROSION.STOMACH.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS_ATROPHY.TESTIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TESTIS_AZOOSPERMIA.TESTIS.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TONGUE_HEMORRHAGE.TONGUE.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TONGUE_HEMORRHAGE.TONGUE.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TRACHEA_DILATATION.TRACHEA.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TRACHEA_DILATATION.TRACHEA.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.M.30": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "MI.UTERUS_LEIOMYOMA.UTERUS.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "provisional"
+      },
+      "OM.WEIGHT.BRAIN.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.BRAIN.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.GLAND, ADRENAL.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "OM.WEIGHT.GLAND, ADRENAL.M.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "concern"
+      },
+      "OM.WEIGHT.GLAND, PITUITARY.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.GLAND, PITUITARY.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.GLAND, THYROID.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.GLAND, THYROID.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "OM.WEIGHT.HEART.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.HEART.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.KIDNEY.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.KIDNEY.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.LIVER.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "strong_adverse"
+      },
+      "OM.WEIGHT.LIVER.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.OVARY.F.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "OM.WEIGHT.SPLEEN.F.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.SPLEEN.M.92": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "OM.WEIGHT.TESTIS.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "OM.WEIGHT.THYMUS.F.92": {
+        "severity": "adverse",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "OM.WEIGHT.THYMUS.M.92": {
+        "severity": "adverse",
+        "treatment_related": true,
+        "verdict": "adverse"
+      },
+      "VS.HR..F.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "variation"
+      },
+      "VS.HR..M.90": {
+        "severity": "normal",
+        "treatment_related": false,
+        "verdict": "concern"
+      }
+    },
+    "eci_dimensions": {},
+    "effect_sizes": {
+      "BG.BWGAIN..F.29": -2.6638,
+      "BG.BWGAIN..F.57": -0.5137,
+      "BG.BWGAIN..F.85": -0.1463,
+      "BG.BWGAIN..F.92": -0.0677,
+      "BG.BWGAIN..M.29": -3.401,
+      "BG.BWGAIN..M.57": 0.4815,
+      "BG.BWGAIN..M.85": -0.4258,
+      "BG.BWGAIN..M.90": null,
+      "BG.BWGAIN..M.92": 0.6409,
+      "BW.BW..F.1": -0.2839,
+      "BW.BW..F.15": -3.7234,
+      "BW.BW..F.22": -3.0583,
+      "BW.BW..F.29": -3.0319,
+      "BW.BW..F.36": -1.9792,
+      "BW.BW..F.43": -2.7024,
+      "BW.BW..F.50": -2.8193,
+      "BW.BW..F.57": -2.3328,
+      "BW.BW..F.64": -2.0939,
+      "BW.BW..F.71": -2.3951,
+      "BW.BW..F.78": -2.2699,
+      "BW.BW..F.8": -2.8321,
+      "BW.BW..F.85": -2.5888,
+      "BW.BW..F.92": -2.9651,
+      "BW.BW..M.1": -0.3923,
+      "BW.BW..M.15": -8.4338,
+      "BW.BW..M.22": -5.5129,
+      "BW.BW..M.29": -3.9932,
+      "BW.BW..M.36": -2.3079,
+      "BW.BW..M.43": -3.3768,
+      "BW.BW..M.50": -2.4779,
+      "BW.BW..M.57": -3.1292,
+      "BW.BW..M.64": -3.8526,
+      "BW.BW..M.71": -1.1549,
+      "BW.BW..M.78": -4.3495,
+      "BW.BW..M.8": -3.3821,
+      "BW.BW..M.85": -3.6033,
+      "BW.BW..M.90": null,
+      "BW.BW..M.92": -3.1291,
+      "CL.ALOPECIA..F.85": null,
+      "CL.BEDDING WET..M.85": null,
+      "CL.CRUST..F.50": null,
+      "CL.CRUST..M.1": null,
+      "CL.EXUDATE..F.50": null,
+      "CL.EXUDATE..M.1": null,
+      "CL.MOURIBUND..M.30": null,
+      "CL.RED AREA..F.50": null,
+      "CL.RED AREA..M.71": null,
+      "DS.MORTALITY..M.30": null,
+      "EG.PRAG..F.90": 0.4729,
+      "EG.PRAG..M.90": -0.2733,
+      "EG.QTCBAG..F.90": 0.2517,
+      "EG.QTCBAG..M.90": 0.317,
+      "EG.RRAG..F.90": -0.29,
+      "EG.RRAG..M.90": -0.9742,
+      "FW.FC..F.29": -0.3656,
+      "FW.FC..F.92": 1.0506,
+      "FW.FC..M.29": 0.4051,
+      "FW.FC..M.90": null,
+      "FW.FC..M.92": -0.3402,
+      "LB.ALB..F.92": -2.4679,
+      "LB.ALB..M.30": null,
+      "LB.ALB..M.90": null,
+      "LB.ALB..M.92": 0.3988,
+      "LB.ALBGLOB..F.92": -1.6925,
+      "LB.ALBGLOB..M.30": null,
+      "LB.ALBGLOB..M.90": null,
+      "LB.ALBGLOB..M.92": 1.1881,
+      "LB.ALP..F.92": 2.8113,
+      "LB.ALP..M.30": null,
+      "LB.ALP..M.90": null,
+      "LB.ALP..M.92": 1.5908,
+      "LB.ALT..F.92": 2.1348,
+      "LB.ALT..M.30": null,
+      "LB.ALT..M.90": null,
+      "LB.ALT..M.92": 1.0852,
+      "LB.APTT..F.92": 0.6112,
+      "LB.APTT..M.30": null,
+      "LB.APTT..M.90": null,
+      "LB.APTT..M.92": -0.5659,
+      "LB.AST..F.92": 3.8167,
+      "LB.AST..M.30": null,
+      "LB.AST..M.90": null,
+      "LB.AST..M.92": 1.7327,
+      "LB.BASO..F.92": 3.5494,
+      "LB.BASO..M.30": null,
+      "LB.BASO..M.90": null,
+      "LB.BASO..M.92": -1.1715,
+      "LB.BILI..F.92": -0.4015,
+      "LB.BILI..M.30": null,
+      "LB.BILI..M.90": null,
+      "LB.BILI..M.92": -0.4868,
+      "LB.CA..F.92": -0.249,
+      "LB.CA..M.30": null,
+      "LB.CA..M.90": null,
+      "LB.CA..M.92": -0.9591,
+      "LB.CHOL..F.92": -1.1455,
+      "LB.CHOL..M.30": null,
+      "LB.CHOL..M.90": null,
+      "LB.CHOL..M.92": 1.2793,
+      "LB.CL..F.92": -0.7781,
+      "LB.CL..M.30": null,
+      "LB.CL..M.90": null,
+      "LB.CL..M.92": -0.6124,
+      "LB.CREAT..F.92": -1.299,
+      "LB.CREAT..M.30": null,
+      "LB.CREAT..M.90": null,
+      "LB.CREAT..M.92": 1.6985,
+      "LB.EOS..F.92": 1.0084,
+      "LB.EOS..M.30": null,
+      "LB.EOS..M.90": null,
+      "LB.EOS..M.92": -0.6697,
+      "LB.FIBRINO..F.92": 0.8655,
+      "LB.FIBRINO..M.30": null,
+      "LB.FIBRINO..M.90": null,
+      "LB.FIBRINO..M.92": -1.6442,
+      "LB.GGT..F.92": null,
+      "LB.GGT..M.92": null,
+      "LB.GLOBUL..F.92": 0.6707,
+      "LB.GLOBUL..M.30": null,
+      "LB.GLOBUL..M.90": null,
+      "LB.GLOBUL..M.92": -0.9419,
+      "LB.GLUC..F.92": 1.3885,
+      "LB.GLUC..M.30": null,
+      "LB.GLUC..M.90": null,
+      "LB.GLUC..M.92": -0.5608,
+      "LB.HCT..F.92": -4.4029,
+      "LB.HCT..M.30": null,
+      "LB.HCT..M.90": null,
+      "LB.HCT..M.92": -1.6981,
+      "LB.HGB..F.92": -2.531,
+      "LB.HGB..M.30": null,
+      "LB.HGB..M.90": null,
+      "LB.HGB..M.92": -1.1755,
+      "LB.K..F.92": 1.0585,
+      "LB.K..M.30": null,
+      "LB.K..M.90": null,
+      "LB.K..M.92": 0.9743,
+      "LB.KETONES..F.92": 1.4276,
+      "LB.KETONES..M.92": -0.4761,
+      "LB.LGUNSCE..F.92": 0.7479,
+      "LB.LGUNSCE..M.30": null,
+      "LB.LGUNSCE..M.90": null,
+      "LB.LGUNSCE..M.92": -1.3859,
+      "LB.LYM..F.92": 1.3504,
+      "LB.LYM..M.30": null,
+      "LB.LYM..M.90": null,
+      "LB.LYM..M.92": -1.3099,
+      "LB.MCH..F.92": -1.899,
+      "LB.MCH..M.30": null,
+      "LB.MCH..M.90": null,
+      "LB.MCH..M.92": -0.9231,
+      "LB.MCHC..F.92": 0.8474,
+      "LB.MCHC..M.30": null,
+      "LB.MCHC..M.90": null,
+      "LB.MCHC..M.92": 0.5258,
+      "LB.MCV..F.92": -1.7722,
+      "LB.MCV..M.30": null,
+      "LB.MCV..M.90": null,
+      "LB.MCV..M.92": -1.083,
+      "LB.MONO..F.92": 1.2756,
+      "LB.MONO..M.30": null,
+      "LB.MONO..M.90": null,
+      "LB.MONO..M.92": -0.9072,
+      "LB.NEUT..F.92": 1.9502,
+      "LB.NEUT..M.30": null,
+      "LB.NEUT..M.90": null,
+      "LB.NEUT..M.92": -2.3355,
+      "LB.PH..F.92": -0.9911,
+      "LB.PH..M.90": null,
+      "LB.PH..M.92": 1.0637,
+      "LB.PHOS..F.92": 1.1078,
+      "LB.PHOS..M.30": null,
+      "LB.PHOS..M.90": null,
+      "LB.PHOS..M.92": -1.8444,
+      "LB.PLAT..F.92": 1.0181,
+      "LB.PLAT..M.30": null,
+      "LB.PLAT..M.90": null,
+      "LB.PLAT..M.92": 0.5437,
+      "LB.PROT..F.92": 0.4355,
+      "LB.PROT..M.30": null,
+      "LB.PROT..M.90": null,
+      "LB.PROT..M.92": 0.3154,
+      "LB.PT..F.92": -2.8152,
+      "LB.PT..M.30": null,
+      "LB.PT..M.90": null,
+      "LB.PT..M.92": 0.5411,
+      "LB.RBC..F.92": -1.0168,
+      "LB.RBC..M.30": null,
+      "LB.RBC..M.90": null,
+      "LB.RBC..M.92": -1.359,
+      "LB.RDW..F.92": 1.4311,
+      "LB.RDW..M.30": null,
+      "LB.RDW..M.90": null,
+      "LB.RDW..M.92": 0.775,
+      "LB.RETI..F.92": 1.6875,
+      "LB.RETI..M.30": null,
+      "LB.RETI..M.90": null,
+      "LB.RETI..M.92": 0.4417,
+      "LB.SODIUM..F.92": -0.9056,
+      "LB.SODIUM..M.30": null,
+      "LB.SODIUM..M.90": null,
+      "LB.SODIUM..M.92": -1.4008,
+      "LB.SPGRAV..F.92": 0.3792,
+      "LB.SPGRAV..M.90": null,
+      "LB.SPGRAV..M.92": 0.4701,
+      "LB.TRIG..F.92": 1.0052,
+      "LB.TRIG..M.30": null,
+      "LB.TRIG..M.90": null,
+      "LB.TRIG..M.92": -1.0809,
+      "LB.UREAN..F.92": 0.7123,
+      "LB.UREAN..M.30": null,
+      "LB.UREAN..M.90": null,
+      "LB.UREAN..M.92": -0.7459,
+      "LB.VOLUME..F.92": 0.6944,
+      "LB.VOLUME..M.90": null,
+      "LB.VOLUME..M.92": -0.5658,
+      "LB.WBC..F.92": 1.6668,
+      "LB.WBC..M.30": null,
+      "LB.WBC..M.90": null,
+      "LB.WBC..M.92": -1.9839,
+      "MA.BODY CAVITY, CRANIAL_CONTENTS, DARK RED.BODY CAVITY, CRANIAL.F.92": null,
+      "MA.EPIDIDYMIS_AREA(S), DARK RED.EPIDIDYMIS.M.92": null,
+      "MA.EPIDIDYMIS_SMALL.EPIDIDYMIS.M.92": null,
+      "MA.ESOPHAGUS_PERFORATION.ESOPHAGUS.M.30": null,
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.F.92": null,
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.M.92": null,
+      "MA.GLAND, ADRENAL_ENLARGED.GLAND, ADRENAL.M.30": null,
+      "MA.GLAND, ADRENAL_PALE.GLAND, ADRENAL.M.92": null,
+      "MA.GLAND, COAGULATING_SMALL.GLAND, COAGULATING.M.92": null,
+      "MA.GLAND, SEMINAL VESICLE_SMALL.GLAND, SEMINAL VESICLE.M.92": null,
+      "MA.GLAND, THYROID_ENLARGED.GLAND, THYROID.F.92": null,
+      "MA.GLAND, THYROID_PALE.GLAND, THYROID.M.92": null,
+      "MA.GLAND, THYROID_SMALL.GLAND, THYROID.M.92": null,
+      "MA.HINDLIMB_HARD THICKENING.HINDLIMB.M.92": null,
+      "MA.HINDLIMB_HEMORRHAGE.HINDLIMB.F.92": null,
+      "MA.HINDLIMB_SWELLING.HINDLIMB.F.92": null,
+      "MA.KIDNEY_CYST.KIDNEY.F.92": null,
+      "MA.KIDNEY_CYST.KIDNEY.M.92": null,
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.F.92": null,
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.M.92": null,
+      "MA.LARGE INTESTINE, CECUM_CONTENTS, DARK RED.LARGE INTESTINE, CECUM.M.92": null,
+      "MA.LARGE INTESTINE, CECUM_DISTENDED.LARGE INTESTINE, CECUM.F.92": null,
+      "MA.LARGE INTESTINE, CECUM_FIRM FECES.LARGE INTESTINE, CECUM.M.92": null,
+      "MA.LARGE INTESTINE, CECUM_WATERY CONTENTS.LARGE INTESTINE, CECUM.F.92": null,
+      "MA.LARGE INTESTINE, COLON_CONTENTS, DARK RED.LARGE INTESTINE, COLON.F.92": null,
+      "MA.LARGE INTESTINE, COLON_FIRM FECES.LARGE INTESTINE, COLON.M.92": null,
+      "MA.LARGE INTESTINE, RECTUM_FIRM FECES.LARGE INTESTINE, RECTUM.M.92": null,
+      "MA.LIVER_AREA(S), WHITE.LIVER.F.92": null,
+      "MA.LIVER_DISCOLORATION.LIVER.F.92": null,
+      "MA.LIVER_DISCOLORATION.LIVER.M.92": null,
+      "MA.LIVER_ENLARGED.LIVER.F.92": null,
+      "MA.LIVER_ENLARGED.LIVER.M.92": null,
+      "MA.LIVER_MASS.LIVER.M.90": null,
+      "MA.LIVER_MISSHAPEN.LIVER.F.92": null,
+      "MA.LUNG_DISCOLORATION.LUNG.M.92": null,
+      "MA.LUNG_DISCOLORED AREA.LUNG.F.92": null,
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.F.92": null,
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.M.92": null,
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.F.92": null,
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.M.92": null,
+      "MA.LYMPH NODE, MESENTERIC_SMALL.LYMPH NODE, MESENTERIC.F.92": null,
+      "MA.SKIN_ALOPECIA.SKIN.F.92": null,
+      "MA.SKIN_ALOPECIA.SKIN.M.92": null,
+      "MA.SKIN_HAIR LOSS.SKIN.F.92": null,
+      "MA.SKIN_MATTING.SKIN.F.92": null,
+      "MA.SKIN_MATTING.SKIN.M.92": null,
+      "MA.SKIN_ROUGH FUR.SKIN.M.92": null,
+      "MA.SMALL INTESTINE, DUODENUM_DISTENDED.SMALL INTESTINE, DUODENUM.F.92": null,
+      "MA.SMALL INTESTINE, DUODENUM_INTUSSUSCEPTION.SMALL INTESTINE, DUODENUM.M.92": null,
+      "MA.SMALL INTESTINE, ILEUM_CONTENTS, DARK RED.SMALL INTESTINE, ILEUM.F.92": null,
+      "MA.SMALL INTESTINE, ILEUM_WATERY CONTENTS.SMALL INTESTINE, ILEUM.M.92": null,
+      "MA.SMALL INTESTINE, JEJUNUM_DIVERTICULUM.SMALL INTESTINE, JEJUNUM.F.92": null,
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.F.92": null,
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.M.92": null,
+      "MA.SPLEEN_ACCESSORY.SPLEEN.F.92": null,
+      "MA.SPLEEN_ADHESION.SPLEEN.M.92": null,
+      "MA.SPLEEN_SMALL.SPLEEN.F.92": null,
+      "MA.SPLEEN_SMALL.SPLEEN.M.92": null,
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.F.92": null,
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.M.92": null,
+      "MA.STOMACH_DISTENDED.STOMACH.F.92": null,
+      "MA.STOMACH_DISTENDED.STOMACH.M.92": null,
+      "MA.STOMACH_YELLOW FLUID.STOMACH.F.92": null,
+      "MA.TESTIS_SMALL.TESTIS.M.92": null,
+      "MA.TESTIS_SOFT.TESTIS.M.92": null,
+      "MA.THYMUS_AREA(S), DARK RED.THYMUS.F.92": null,
+      "MA.THYMUS_SMALL.THYMUS.M.92": null,
+      "MA.URINARY BLADDER_CONTENTS, DARK RED.URINARY BLADDER.F.92": null,
+      "MA.URINARY BLADDER_DISTENDED.URINARY BLADDER.F.92": null,
+      "MA.UTERUS_CLEAR FLUID.UTERUS.F.92": null,
+      "MA.UTERUS_DILATATION.UTERUS.F.92": null,
+      "MA.UTERUS_MASS.UTERUS.F.92": null,
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.F.92": null,
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.M.92": null,
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.F.92": null,
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.M.92": null,
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.F.92": null,
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.M.92": null,
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.F.92": null,
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.M.92": null,
+      "MI.EPIDIDYMIS_ASPERMIA.EPIDIDYMIS.M.92": null,
+      "MI.ESOPHAGUS_INFLAMMATION.ESOPHAGUS.M.30": null,
+      "MI.EYE_RETINAL FOLD(S).EYE.F.92": null,
+      "MI.EYE_RETINAL FOLD(S).EYE.M.92": null,
+      "MI.EYE_RETINAL FOLD.EYE.F.92": null,
+      "MI.EYE_RETINAL FOLD.EYE.M.92": null,
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.F.92": null,
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.M.92": null,
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.F.92": null,
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.M.92": null,
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.F.92": null,
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.M.92": null,
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.F.92": null,
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.M.92": null,
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.F.92": null,
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.M.92": null,
+      "MI.GLAND, PROSTATE_INFLAMMATION.GLAND, PROSTATE.M.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.F.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.M.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.F.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.M.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.F.92": null,
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.M.92": null,
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.F.92": null,
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.M.92": null,
+      "MI.GLAND, THYROID_HYPERPLASIA.GLAND, THYROID.F.92": null,
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.F.92": null,
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.M.92": null,
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.F.92": null,
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.M.92": null,
+      "MI.HEART_INFLAMMATION.HEART.F.92": null,
+      "MI.HEART_INFLAMMATION.HEART.M.92": null,
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.F.92": null,
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.M.92": null,
+      "MI.KIDNEY_CAST.KIDNEY.F.92": null,
+      "MI.KIDNEY_CAST.KIDNEY.M.92": null,
+      "MI.KIDNEY_CYST.KIDNEY.F.92": null,
+      "MI.KIDNEY_CYST.KIDNEY.M.92": null,
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.F.92": null,
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.M.92": null,
+      "MI.KIDNEY_NECROSIS.KIDNEY.F.92": null,
+      "MI.KIDNEY_NECROSIS.KIDNEY.M.92": null,
+      "MI.LARYNX_INFLAMMATION.LARYNX.F.92": null,
+      "MI.LARYNX_INFLAMMATION.LARYNX.M.92": null,
+      "MI.LIVER_ADENOMA, HEPATOCELLULAR.LIVER.M.92": null,
+      "MI.LIVER_HEPATOCELLULAR CARCINOMA.LIVER.M.90": null,
+      "MI.LIVER_HYPERTROPHY.LIVER.F.92": null,
+      "MI.LIVER_HYPERTROPHY.LIVER.M.92": null,
+      "MI.LIVER_INFLAMMATION.LIVER.F.92": null,
+      "MI.LIVER_INFLAMMATION.LIVER.M.92": null,
+      "MI.LIVER_NECROSIS.LIVER.F.92": null,
+      "MI.LIVER_NECROSIS.LIVER.M.92": null,
+      "MI.LIVER_VACUOLIZATION.LIVER.F.92": null,
+      "MI.LIVER_VACUOLIZATION.LIVER.M.92": null,
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.F.92": null,
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.M.92": null,
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.F.92": null,
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.M.92": null,
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.F.92": null,
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.M.92": null,
+      "MI.LUNG_INFLAMMATION.LUNG.F.92": null,
+      "MI.LUNG_INFLAMMATION.LUNG.M.92": null,
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.F.92": null,
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.M.92": null,
+      "MI.LUNG_METAPLASIA.LUNG.F.92": null,
+      "MI.LUNG_METAPLASIA.LUNG.M.92": null,
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.F.92": null,
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.M.92": null,
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.F.92": null,
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.M.92": null,
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.F.92": null,
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.M.92": null,
+      "MI.SMALL INTESTINE, JEJUNUM_INFLAMMATION.SMALL INTESTINE, JEJUNUM.F.92": null,
+      "MI.SPLEEN_ATROPHY.SPLEEN.F.92": null,
+      "MI.SPLEEN_ATROPHY.SPLEEN.M.92": null,
+      "MI.SPLEEN_CONGESTION.SPLEEN.F.92": null,
+      "MI.SPLEEN_CONGESTION.SPLEEN.M.92": null,
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.F.92": null,
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.M.92": null,
+      "MI.STOMACH_EDEMA.STOMACH.F.92": null,
+      "MI.STOMACH_EDEMA.STOMACH.M.92": null,
+      "MI.STOMACH_EROSION.STOMACH.M.92": null,
+      "MI.TESTIS_ATROPHY.TESTIS.M.92": null,
+      "MI.TESTIS_AZOOSPERMIA.TESTIS.M.92": null,
+      "MI.TONGUE_HEMORRHAGE.TONGUE.F.92": null,
+      "MI.TONGUE_HEMORRHAGE.TONGUE.M.92": null,
+      "MI.TRACHEA_DILATATION.TRACHEA.F.92": null,
+      "MI.TRACHEA_DILATATION.TRACHEA.M.92": null,
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.F.92": null,
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.M.92": null,
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.F.92": null,
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.M.30": null,
+      "MI.UTERUS_LEIOMYOMA.UTERUS.F.92": null,
+      "OM.WEIGHT.BRAIN.F.92": 2.0266,
+      "OM.WEIGHT.BRAIN.M.92": -1.4184,
+      "OM.WEIGHT.GLAND, ADRENAL.F.92": 0.2701,
+      "OM.WEIGHT.GLAND, ADRENAL.M.92": 0.9378,
+      "OM.WEIGHT.GLAND, PITUITARY.F.92": 1.3002,
+      "OM.WEIGHT.GLAND, PITUITARY.M.92": 1.2947,
+      "OM.WEIGHT.GLAND, THYROID.F.92": 2.1532,
+      "OM.WEIGHT.GLAND, THYROID.M.92": -0.7966,
+      "OM.WEIGHT.HEART.F.92": 1.418,
+      "OM.WEIGHT.HEART.M.92": -2.6067,
+      "OM.WEIGHT.KIDNEY.F.92": 2.6113,
+      "OM.WEIGHT.KIDNEY.M.92": -2.1281,
+      "OM.WEIGHT.LIVER.F.92": 2.2558,
+      "OM.WEIGHT.LIVER.M.92": 0.9984,
+      "OM.WEIGHT.OVARY.F.92": -0.1642,
+      "OM.WEIGHT.SPLEEN.F.92": 1.4216,
+      "OM.WEIGHT.SPLEEN.M.92": 0.2817,
+      "OM.WEIGHT.TESTIS.M.92": -1.674,
+      "OM.WEIGHT.THYMUS.F.92": -1.069,
+      "OM.WEIGHT.THYMUS.M.92": 0.9338,
+      "VS.HR..F.90": -0.4255,
+      "VS.HR..M.90": -0.5425
+    },
+    "noael_per_endpoint_sex": {
+      "BG.BWGAIN..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "BG.BWGAIN..M": {
+        "loael": "2",
+        "tier": "below_tested",
+        "value": null
+      },
+      "BW.BW..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "BW.BW..M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "CL.ALOPECIA..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.BEDDING WET..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.CRUST..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.CRUST..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.EXUDATE..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.EXUDATE..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.MOURIBUND..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.RED AREA..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "CL.RED AREA..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "DS.MORTALITY..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.PRAG..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.PRAG..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.QTCBAG..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.QTCBAG..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.RRAG..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "EG.RRAG..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "FW.FC..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "FW.FC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.ALB..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.ALB..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.ALP..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.ALP..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.ALT..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.ALT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.APTT..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.APTT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.AST..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.AST..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.BASO..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.BASO..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.BILI..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.BILI..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CA..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CA..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CHOL..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.CHOL..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CL..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CL..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.CREAT..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.CREAT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.EOS..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.EOS..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.FIBRINO..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.FIBRINO..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GGT..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GGT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GLOBUL..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GLOBUL..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GLUC..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.GLUC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.HCT..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.HCT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.HGB..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.HGB..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.K..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.K..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.KETONES..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.KETONES..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.LGUNSCE..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.LGUNSCE..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.LYM..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.LYM..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.MONO..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.MONO..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.NEUT..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.NEUT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PH..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PH..M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.PHOS..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.PHOS..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PLAT..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.PLAT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PROT..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PROT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.PT..F": {
+        "loael": "2",
+        "tier": "below_tested",
+        "value": null
+      },
+      "LB.PT..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.RBC..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.RBC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.RDW..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.RDW..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.RETI..F": {
+        "loael": "2",
+        "tier": "below_tested",
+        "value": null
+      },
+      "LB.RETI..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.SODIUM..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.SODIUM..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.SPGRAV..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.SPGRAV..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.TRIG..F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "LB.TRIG..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.UREAN..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.UREAN..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.VOLUME..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.VOLUME..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "LB.WBC..F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "LB.WBC..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.BODY CAVITY, CRANIAL_CONTENTS, DARK RED.BODY CAVITY, CRANIAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.EPIDIDYMIS_AREA(S), DARK RED.EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.EPIDIDYMIS_SMALL.EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.ESOPHAGUS_PERFORATION.ESOPHAGUS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, ADRENAL_ENLARGED.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, ADRENAL_PALE.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, COAGULATING_SMALL.GLAND, COAGULATING.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, SEMINAL VESICLE_SMALL.GLAND, SEMINAL VESICLE.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, THYROID_ENLARGED.GLAND, THYROID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, THYROID_PALE.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.GLAND, THYROID_SMALL.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.HINDLIMB_HARD THICKENING.HINDLIMB.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.HINDLIMB_HEMORRHAGE.HINDLIMB.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.HINDLIMB_SWELLING.HINDLIMB.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, CECUM_CONTENTS, DARK RED.LARGE INTESTINE, CECUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, CECUM_DISTENDED.LARGE INTESTINE, CECUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, CECUM_FIRM FECES.LARGE INTESTINE, CECUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, CECUM_WATERY CONTENTS.LARGE INTESTINE, CECUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, COLON_CONTENTS, DARK RED.LARGE INTESTINE, COLON.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, COLON_FIRM FECES.LARGE INTESTINE, COLON.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LARGE INTESTINE, RECTUM_FIRM FECES.LARGE INTESTINE, RECTUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_AREA(S), WHITE.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_DISCOLORATION.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_DISCOLORATION.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_ENLARGED.LIVER.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MA.LIVER_ENLARGED.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_MASS.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LIVER_MISSHAPEN.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LUNG_DISCOLORATION.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LUNG_DISCOLORED AREA.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.LYMPH NODE, MESENTERIC_SMALL.LYMPH NODE, MESENTERIC.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_ALOPECIA.SKIN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_ALOPECIA.SKIN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_HAIR LOSS.SKIN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_MATTING.SKIN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_MATTING.SKIN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SKIN_ROUGH FUR.SKIN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, DUODENUM_DISTENDED.SMALL INTESTINE, DUODENUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, DUODENUM_INTUSSUSCEPTION.SMALL INTESTINE, DUODENUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, ILEUM_CONTENTS, DARK RED.SMALL INTESTINE, ILEUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, ILEUM_WATERY CONTENTS.SMALL INTESTINE, ILEUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_DIVERTICULUM.SMALL INTESTINE, JEJUNUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SPLEEN_ACCESSORY.SPLEEN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SPLEEN_ADHESION.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SPLEEN_SMALL.SPLEEN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.SPLEEN_SMALL.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.STOMACH_DISTENDED.STOMACH.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.STOMACH_DISTENDED.STOMACH.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.STOMACH_YELLOW FLUID.STOMACH.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.TESTIS_SMALL.TESTIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.TESTIS_SOFT.TESTIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.THYMUS_AREA(S), DARK RED.THYMUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.THYMUS_SMALL.THYMUS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.URINARY BLADDER_CONTENTS, DARK RED.URINARY BLADDER.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MA.URINARY BLADDER_DISTENDED.URINARY BLADDER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.UTERUS_CLEAR FLUID.UTERUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.UTERUS_DILATATION.UTERUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MA.UTERUS_MASS.UTERUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.EPIDIDYMIS_ASPERMIA.EPIDIDYMIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.ESOPHAGUS_INFLAMMATION.ESOPHAGUS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.EYE_RETINAL FOLD(S).EYE.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.EYE_RETINAL FOLD(S).EYE.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.EYE_RETINAL FOLD.EYE.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.EYE_RETINAL FOLD.EYE.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, PROSTATE_INFLAMMATION.GLAND, PROSTATE.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_HYPERPLASIA.GLAND, THYROID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.HEART_INFLAMMATION.HEART.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.HEART_INFLAMMATION.HEART.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_CAST.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_CAST.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_CYST.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_CYST.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_NECROSIS.KIDNEY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.KIDNEY_NECROSIS.KIDNEY.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LARYNX_INFLAMMATION.LARYNX.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LARYNX_INFLAMMATION.LARYNX.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LIVER_ADENOMA, HEPATOCELLULAR.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LIVER_HEPATOCELLULAR CARCINOMA.LIVER.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.LIVER_HYPERTROPHY.LIVER.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.LIVER_HYPERTROPHY.LIVER.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.LIVER_INFLAMMATION.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LIVER_INFLAMMATION.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LIVER_NECROSIS.LIVER.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "MI.LIVER_NECROSIS.LIVER.M": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "MI.LIVER_VACUOLIZATION.LIVER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LIVER_VACUOLIZATION.LIVER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFLAMMATION.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_INFLAMMATION.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_METAPLASIA.LUNG.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.LUNG_METAPLASIA.LUNG.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "MI.SMALL INTESTINE, JEJUNUM_INFLAMMATION.SMALL INTESTINE, JEJUNUM.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_ATROPHY.SPLEEN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_ATROPHY.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_CONGESTION.SPLEEN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_CONGESTION.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.STOMACH_EDEMA.STOMACH.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.STOMACH_EDEMA.STOMACH.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.STOMACH_EROSION.STOMACH.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TESTIS_ATROPHY.TESTIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TESTIS_AZOOSPERMIA.TESTIS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TONGUE_HEMORRHAGE.TONGUE.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TONGUE_HEMORRHAGE.TONGUE.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TRACHEA_DILATATION.TRACHEA.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TRACHEA_DILATATION.TRACHEA.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "MI.UTERUS_LEIOMYOMA.UTERUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.BRAIN.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.BRAIN.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "OM.WEIGHT.GLAND, ADRENAL.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.GLAND, ADRENAL.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.GLAND, PITUITARY.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.GLAND, PITUITARY.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "OM.WEIGHT.GLAND, THYROID.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.GLAND, THYROID.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.HEART.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.HEART.M": {
+        "loael": "2",
+        "tier": "below_tested",
+        "value": null
+      },
+      "OM.WEIGHT.KIDNEY.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.KIDNEY.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "OM.WEIGHT.LIVER.F": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "OM.WEIGHT.LIVER.M": {
+        "loael": "200",
+        "tier": "low",
+        "value": "20"
+      },
+      "OM.WEIGHT.OVARY.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.SPLEEN.F": {
+        "loael": "20",
+        "tier": "low",
+        "value": "2"
+      },
+      "OM.WEIGHT.SPLEEN.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.TESTIS.M": {
+        "loael": "2",
+        "tier": "below_tested",
+        "value": null
+      },
+      "OM.WEIGHT.THYMUS.F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "OM.WEIGHT.THYMUS.M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "VS.HR..F": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      },
+      "VS.HR..M": {
+        "loael": null,
+        "tier": "high",
+        "value": "200"
+      }
+    },
+    "p_value_adjustments": {
+      "BG.BWGAIN..F.29": 0.0,
+      "BG.BWGAIN..F.57": 0.462353,
+      "BG.BWGAIN..F.85": 0.941122,
+      "BG.BWGAIN..F.92": 0.996688,
+      "BG.BWGAIN..M.29": 0.0,
+      "BG.BWGAIN..M.57": 0.446053,
+      "BG.BWGAIN..M.85": 0.365979,
+      "BG.BWGAIN..M.90": null,
+      "BG.BWGAIN..M.92": 0.256939,
+      "BW.BW..F.1": 0.760626,
+      "BW.BW..F.15": 0.0,
+      "BW.BW..F.22": 0.0,
+      "BW.BW..F.29": 0.0,
+      "BW.BW..F.36": 1e-06,
+      "BW.BW..F.43": 0.0,
+      "BW.BW..F.50": 0.0,
+      "BW.BW..F.57": 0.0,
+      "BW.BW..F.64": 3e-06,
+      "BW.BW..F.71": 0.0,
+      "BW.BW..F.78": 3e-06,
+      "BW.BW..F.8": 0.0,
+      "BW.BW..F.85": 0.0,
+      "BW.BW..F.92": 0.000127,
+      "BW.BW..M.1": 0.586669,
+      "BW.BW..M.15": 0.0,
+      "BW.BW..M.22": 0.0,
+      "BW.BW..M.29": 0.0,
+      "BW.BW..M.36": 2e-06,
+      "BW.BW..M.43": 0.0,
+      "BW.BW..M.50": 0.0,
+      "BW.BW..M.57": 0.0,
+      "BW.BW..M.64": 0.0,
+      "BW.BW..M.71": 0.00722,
+      "BW.BW..M.78": 0.0,
+      "BW.BW..M.8": 0.0,
+      "BW.BW..M.85": 0.0,
+      "BW.BW..M.90": null,
+      "BW.BW..M.92": 0.0,
+      "CL.ALOPECIA..F.85": 0.6918538928095253,
+      "CL.BEDDING WET..M.85": 2.615853650778519e-06,
+      "CL.CRUST..F.50": 0.10273039814190597,
+      "CL.CRUST..M.1": 0.01654078456807825,
+      "CL.EXUDATE..F.50": 0.26428001117666367,
+      "CL.EXUDATE..M.1": 0.10273039814190597,
+      "CL.MOURIBUND..M.30": 0.6918538928094833,
+      "CL.RED AREA..F.50": 0.26428001117666367,
+      "CL.RED AREA..M.71": 0.6918538928095253,
+      "DS.MORTALITY..M.30": 0.6533127604942247,
+      "EG.PRAG..F.90": 0.386803,
+      "EG.PRAG..M.90": 0.779109,
+      "EG.QTCBAG..F.90": 0.823712,
+      "EG.QTCBAG..M.90": 0.727573,
+      "EG.RRAG..F.90": 0.737669,
+      "EG.RRAG..M.90": 0.043644,
+      "FW.FC..F.29": 0.621432,
+      "FW.FC..F.92": 0.043537,
+      "FW.FC..M.29": 0.496248,
+      "FW.FC..M.90": null,
+      "FW.FC..M.92": 0.77759,
+      "LB.ALB..F.92": 2.1e-05,
+      "LB.ALB..M.30": null,
+      "LB.ALB..M.90": null,
+      "LB.ALB..M.92": 0.823277,
+      "LB.ALBGLOB..F.92": 0.000253,
+      "LB.ALBGLOB..M.30": null,
+      "LB.ALBGLOB..M.90": null,
+      "LB.ALBGLOB..M.92": 0.062498,
+      "LB.ALP..F.92": 3e-06,
+      "LB.ALP..M.30": null,
+      "LB.ALP..M.90": null,
+      "LB.ALP..M.92": 0.00218,
+      "LB.ALT..F.92": 0.000123,
+      "LB.ALT..M.30": null,
+      "LB.ALT..M.90": null,
+      "LB.ALT..M.92": 0.007379,
+      "LB.APTT..F.92": 0.265784,
+      "LB.APTT..M.30": null,
+      "LB.APTT..M.90": null,
+      "LB.APTT..M.92": 0.539161,
+      "LB.AST..F.92": 0.0,
+      "LB.AST..M.30": null,
+      "LB.AST..M.90": null,
+      "LB.AST..M.92": 7e-05,
+      "LB.BASO..F.92": 0.0,
+      "LB.BASO..M.30": null,
+      "LB.BASO..M.90": null,
+      "LB.BASO..M.92": 0.178575,
+      "LB.BILI..F.92": 0.796549,
+      "LB.BILI..M.30": null,
+      "LB.BILI..M.90": null,
+      "LB.BILI..M.92": 0.703664,
+      "LB.CA..F.92": 0.873817,
+      "LB.CA..M.30": null,
+      "LB.CA..M.90": null,
+      "LB.CA..M.92": 0.135488,
+      "LB.CHOL..F.92": 0.18378,
+      "LB.CHOL..M.30": null,
+      "LB.CHOL..M.90": null,
+      "LB.CHOL..M.92": 0.011145,
+      "LB.CL..F.92": 0.228287,
+      "LB.CL..M.30": null,
+      "LB.CL..M.90": null,
+      "LB.CL..M.92": 0.351028,
+      "LB.CREAT..F.92": 0.044575,
+      "LB.CREAT..M.30": null,
+      "LB.CREAT..M.90": null,
+      "LB.CREAT..M.92": 0.001187,
+      "LB.EOS..F.92": 0.158598,
+      "LB.EOS..M.30": null,
+      "LB.EOS..M.90": null,
+      "LB.EOS..M.92": 0.297849,
+      "LB.FIBRINO..F.92": 0.181683,
+      "LB.FIBRINO..M.30": null,
+      "LB.FIBRINO..M.90": null,
+      "LB.FIBRINO..M.92": 0.004091,
+      "LB.GGT..F.92": null,
+      "LB.GGT..M.92": null,
+      "LB.GLOBUL..F.92": 0.254186,
+      "LB.GLOBUL..M.30": null,
+      "LB.GLOBUL..M.90": null,
+      "LB.GLOBUL..M.92": 0.130152,
+      "LB.GLUC..F.92": 0.004297,
+      "LB.GLUC..M.30": null,
+      "LB.GLUC..M.90": null,
+      "LB.GLUC..M.92": 0.553748,
+      "LB.HCT..F.92": 3e-06,
+      "LB.HCT..M.30": null,
+      "LB.HCT..M.90": null,
+      "LB.HCT..M.92": 0.003131,
+      "LB.HGB..F.92": 7e-06,
+      "LB.HGB..M.30": null,
+      "LB.HGB..M.90": null,
+      "LB.HGB..M.92": 0.059282,
+      "LB.K..F.92": 0.039558,
+      "LB.K..M.30": null,
+      "LB.K..M.90": null,
+      "LB.K..M.92": 0.218176,
+      "LB.KETONES..F.92": 0.03998,
+      "LB.KETONES..M.92": 0.533631,
+      "LB.LGUNSCE..F.92": 0.348984,
+      "LB.LGUNSCE..M.30": null,
+      "LB.LGUNSCE..M.90": null,
+      "LB.LGUNSCE..M.92": 0.002719,
+      "LB.LYM..F.92": 0.004213,
+      "LB.LYM..M.30": null,
+      "LB.LYM..M.90": null,
+      "LB.LYM..M.92": 0.009556,
+      "LB.MCH..F.92": 0.002218,
+      "LB.MCH..M.30": null,
+      "LB.MCH..M.90": null,
+      "LB.MCH..M.92": 0.204584,
+      "LB.MCHC..F.92": 0.244414,
+      "LB.MCHC..M.30": null,
+      "LB.MCHC..M.90": null,
+      "LB.MCHC..M.92": 0.466136,
+      "LB.MCV..F.92": 0.000485,
+      "LB.MCV..M.30": null,
+      "LB.MCV..M.90": null,
+      "LB.MCV..M.92": 0.149343,
+      "LB.MONO..F.92": 0.071114,
+      "LB.MONO..M.30": null,
+      "LB.MONO..M.90": null,
+      "LB.MONO..M.92": 0.102297,
+      "LB.NEUT..F.92": 0.001613,
+      "LB.NEUT..M.30": null,
+      "LB.NEUT..M.90": null,
+      "LB.NEUT..M.92": 0.000342,
+      "LB.PH..F.92": 0.084445,
+      "LB.PH..M.90": null,
+      "LB.PH..M.92": 0.048007,
+      "LB.PHOS..F.92": 0.061903,
+      "LB.PHOS..M.30": null,
+      "LB.PHOS..M.90": null,
+      "LB.PHOS..M.92": 0.00049,
+      "LB.PLAT..F.92": 0.05103,
+      "LB.PLAT..M.30": null,
+      "LB.PLAT..M.90": null,
+      "LB.PLAT..M.92": 0.529553,
+      "LB.PROT..F.92": 0.320801,
+      "LB.PROT..M.30": null,
+      "LB.PROT..M.90": null,
+      "LB.PROT..M.92": 0.72395,
+      "LB.PT..F.92": 8e-06,
+      "LB.PT..M.30": null,
+      "LB.PT..M.90": null,
+      "LB.PT..M.92": 0.525954,
+      "LB.RBC..F.92": 0.188831,
+      "LB.RBC..M.30": null,
+      "LB.RBC..M.90": null,
+      "LB.RBC..M.92": 0.08112,
+      "LB.RDW..F.92": 0.002023,
+      "LB.RDW..M.30": null,
+      "LB.RDW..M.90": null,
+      "LB.RDW..M.92": 0.124341,
+      "LB.RETI..F.92": 0.004229,
+      "LB.RETI..M.30": null,
+      "LB.RETI..M.90": null,
+      "LB.RETI..M.92": 0.634035,
+      "LB.SODIUM..F.92": 0.1088,
+      "LB.SODIUM..M.30": null,
+      "LB.SODIUM..M.90": null,
+      "LB.SODIUM..M.92": 0.01582,
+      "LB.SPGRAV..F.92": 0.774146,
+      "LB.SPGRAV..M.90": null,
+      "LB.SPGRAV..M.92": 0.577701,
+      "LB.TRIG..F.92": 0.150759,
+      "LB.TRIG..M.30": null,
+      "LB.TRIG..M.90": null,
+      "LB.TRIG..M.92": 0.052657,
+      "LB.UREAN..F.92": 0.154231,
+      "LB.UREAN..M.30": null,
+      "LB.UREAN..M.90": null,
+      "LB.UREAN..M.92": 0.167234,
+      "LB.VOLUME..F.92": 0.396726,
+      "LB.VOLUME..M.90": null,
+      "LB.VOLUME..M.92": 0.583373,
+      "LB.WBC..F.92": 0.001302,
+      "LB.WBC..M.30": null,
+      "LB.WBC..M.90": null,
+      "LB.WBC..M.92": 6.3e-05,
+      "MA.BODY CAVITY, CRANIAL_CONTENTS, DARK RED.BODY CAVITY, CRANIAL.F.92": 0.6533127604942234,
+      "MA.EPIDIDYMIS_AREA(S), DARK RED.EPIDIDYMIS.M.92": 0.6533127604942234,
+      "MA.EPIDIDYMIS_SMALL.EPIDIDYMIS.M.92": 0.23937554707106307,
+      "MA.ESOPHAGUS_PERFORATION.ESOPHAGUS.M.30": 0.6533127604942247,
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.F.92": 0.6533127604942234,
+      "MA.GLAND, ADRENAL_DISCOLORATION.GLAND, ADRENAL.M.92": 0.6533127604942234,
+      "MA.GLAND, ADRENAL_ENLARGED.GLAND, ADRENAL.M.30": 0.23937554707106307,
+      "MA.GLAND, ADRENAL_PALE.GLAND, ADRENAL.M.92": 0.6533127604942234,
+      "MA.GLAND, COAGULATING_SMALL.GLAND, COAGULATING.M.92": 0.6533127604942247,
+      "MA.GLAND, SEMINAL VESICLE_SMALL.GLAND, SEMINAL VESICLE.M.92": 0.6533127604942247,
+      "MA.GLAND, THYROID_ENLARGED.GLAND, THYROID.F.92": 0.23937554707106307,
+      "MA.GLAND, THYROID_PALE.GLAND, THYROID.M.92": 0.6533127604942234,
+      "MA.GLAND, THYROID_SMALL.GLAND, THYROID.M.92": 0.6533127604942234,
+      "MA.HINDLIMB_HARD THICKENING.HINDLIMB.M.92": 0.6533127604942247,
+      "MA.HINDLIMB_HEMORRHAGE.HINDLIMB.F.92": 0.6533127604942234,
+      "MA.HINDLIMB_SWELLING.HINDLIMB.F.92": 0.6533127604942247,
+      "MA.KIDNEY_CYST.KIDNEY.F.92": 0.6533127604942234,
+      "MA.KIDNEY_CYST.KIDNEY.M.92": 0.6533127604942234,
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.F.92": 0.6533127604942234,
+      "MA.KIDNEY_DISCOLORATION.KIDNEY.M.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, CECUM_CONTENTS, DARK RED.LARGE INTESTINE, CECUM.M.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, CECUM_DISTENDED.LARGE INTESTINE, CECUM.F.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, CECUM_FIRM FECES.LARGE INTESTINE, CECUM.M.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, CECUM_WATERY CONTENTS.LARGE INTESTINE, CECUM.F.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, COLON_CONTENTS, DARK RED.LARGE INTESTINE, COLON.F.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, COLON_FIRM FECES.LARGE INTESTINE, COLON.M.92": 0.6533127604942234,
+      "MA.LARGE INTESTINE, RECTUM_FIRM FECES.LARGE INTESTINE, RECTUM.M.92": 0.6533127604942234,
+      "MA.LIVER_AREA(S), WHITE.LIVER.F.92": 0.6533127604942234,
+      "MA.LIVER_DISCOLORATION.LIVER.F.92": 0.6533127604942234,
+      "MA.LIVER_DISCOLORATION.LIVER.M.92": 0.03309541680786437,
+      "MA.LIVER_ENLARGED.LIVER.F.92": 0.012657921936661218,
+      "MA.LIVER_ENLARGED.LIVER.M.92": 0.03309541680786437,
+      "MA.LIVER_MASS.LIVER.M.90": 0.6533127604942234,
+      "MA.LIVER_MISSHAPEN.LIVER.F.92": 0.6533127604942234,
+      "MA.LUNG_DISCOLORATION.LUNG.M.92": 0.6533127604942234,
+      "MA.LUNG_DISCOLORED AREA.LUNG.F.92": 0.6533127604942234,
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.F.92": 0.6533127604942247,
+      "MA.LYMPH NODE, MESENTERIC_DISCOLORATION.LYMPH NODE, MESENTERIC.M.92": 0.6533127604942234,
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.F.92": 0.23937554707106115,
+      "MA.LYMPH NODE, MESENTERIC_ENLARGED.LYMPH NODE, MESENTERIC.M.92": 0.6533127604942234,
+      "MA.LYMPH NODE, MESENTERIC_SMALL.LYMPH NODE, MESENTERIC.F.92": 0.6533127604942234,
+      "MA.SKIN_ALOPECIA.SKIN.F.92": 0.6533127604942234,
+      "MA.SKIN_ALOPECIA.SKIN.M.92": 0.23937554707106115,
+      "MA.SKIN_HAIR LOSS.SKIN.F.92": 0.23937554707106115,
+      "MA.SKIN_MATTING.SKIN.F.92": 0.6533127604942234,
+      "MA.SKIN_MATTING.SKIN.M.92": 0.0902097642380497,
+      "MA.SKIN_ROUGH FUR.SKIN.M.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, DUODENUM_DISTENDED.SMALL INTESTINE, DUODENUM.F.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, DUODENUM_INTUSSUSCEPTION.SMALL INTESTINE, DUODENUM.M.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, ILEUM_CONTENTS, DARK RED.SMALL INTESTINE, ILEUM.F.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, ILEUM_WATERY CONTENTS.SMALL INTESTINE, ILEUM.M.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, JEJUNUM_DIVERTICULUM.SMALL INTESTINE, JEJUNUM.F.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.F.92": 0.6533127604942234,
+      "MA.SMALL INTESTINE, JEJUNUM_INTUSSUSCEPTION.SMALL INTESTINE, JEJUNUM.M.92": 0.6533127604942234,
+      "MA.SPLEEN_ACCESSORY.SPLEEN.F.92": 0.6533127604942234,
+      "MA.SPLEEN_ADHESION.SPLEEN.M.92": 0.6533127604942234,
+      "MA.SPLEEN_SMALL.SPLEEN.F.92": 0.6533127604942234,
+      "MA.SPLEEN_SMALL.SPLEEN.M.92": 0.23937554707106115,
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.F.92": 0.6533127604942234,
+      "MA.STOMACH_AREA(S), DARK RED.STOMACH.M.92": 0.6533127604942234,
+      "MA.STOMACH_DISTENDED.STOMACH.F.92": 0.6533127604942234,
+      "MA.STOMACH_DISTENDED.STOMACH.M.92": 0.0902097642380497,
+      "MA.STOMACH_YELLOW FLUID.STOMACH.F.92": 0.6533127604942234,
+      "MA.TESTIS_SMALL.TESTIS.M.92": 0.6299517824403706,
+      "MA.TESTIS_SOFT.TESTIS.M.92": 0.6533127604942247,
+      "MA.THYMUS_AREA(S), DARK RED.THYMUS.F.92": 0.23937554707106115,
+      "MA.THYMUS_SMALL.THYMUS.M.92": 0.6533127604942247,
+      "MA.URINARY BLADDER_CONTENTS, DARK RED.URINARY BLADDER.F.92": 0.003215284650999181,
+      "MA.URINARY BLADDER_DISTENDED.URINARY BLADDER.F.92": 0.6533127604942234,
+      "MA.UTERUS_CLEAR FLUID.UTERUS.F.92": 0.03309541680786437,
+      "MA.UTERUS_DILATATION.UTERUS.F.92": 0.6533127604942234,
+      "MA.UTERUS_MASS.UTERUS.F.92": 0.6533127604942234,
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.F.92": 0.0012030252777027563,
+      "MI.BONE MARROW, FEMUR_FAT VACUOLES.BONE MARROW, FEMUR.M.92": 0.0012030252777027563,
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.F.92": 0.6533127604942234,
+      "MI.BONE MARROW, FEMUR_FIBROSIS.BONE MARROW, FEMUR.M.92": 0.6533127604942234,
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.F.92": 0.6533127604942234,
+      "MI.BONE MARROW, FEMUR_HYPERPLASIA.BONE MARROW, FEMUR.M.92": 0.6533127604942234,
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.F.92": 0.6533127604942234,
+      "MI.BONE MARROW, STERNUM_HYPERPLASIA.BONE MARROW, STERNUM.M.92": 0.6533127604942234,
+      "MI.EPIDIDYMIS_ASPERMIA.EPIDIDYMIS.M.92": 0.23937554707106115,
+      "MI.ESOPHAGUS_INFLAMMATION.ESOPHAGUS.M.30": 0.6533127604942247,
+      "MI.EYE_RETINAL FOLD(S).EYE.F.92": 0.6533127604942247,
+      "MI.EYE_RETINAL FOLD(S).EYE.M.92": 0.6533127604942247,
+      "MI.EYE_RETINAL FOLD.EYE.F.92": 0.6533127604942234,
+      "MI.EYE_RETINAL FOLD.EYE.M.92": 0.6533127604942234,
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.F.92": 0.6533127604942234,
+      "MI.GLAND, ADRENAL_HEMORRHAGE.GLAND, ADRENAL.M.92": 0.6533127604942234,
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.F.92": 2.290433183733348e-05,
+      "MI.GLAND, ADRENAL_VACUOLIZATION.GLAND, ADRENAL.M.92": 2.290433183733348e-05,
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.F.92": 0.6533127604942234,
+      "MI.GLAND, HARDERIAN_DILATATION.GLAND, HARDERIAN.M.92": 0.6533127604942234,
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.F.92": 0.012657921936661218,
+      "MI.GLAND, MAMMARY_ATROPHY.GLAND, MAMMARY.M.92": 0.012657921936661218,
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.F.92": 0.6533127604942247,
+      "MI.GLAND, PITUITARY_CYST.GLAND, PITUITARY.M.92": 0.6533127604942247,
+      "MI.GLAND, PROSTATE_INFLAMMATION.GLAND, PROSTATE.M.92": 0.41754920750402547,
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.F.92": 0.6533127604942234,
+      "MI.GLAND, SALIVARY, PAROTID_CALCULUS.GLAND, SALIVARY, PAROTID.M.92": 0.6533127604942234,
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.F.92": 0.6533127604942234,
+      "MI.GLAND, SALIVARY, PAROTID_INFLAMMATION.GLAND, SALIVARY, PAROTID.M.92": 0.6533127604942234,
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.F.92": 0.23937554707106115,
+      "MI.GLAND, SALIVARY, PAROTID_METAPLASIA.GLAND, SALIVARY, PAROTID.M.92": 0.23937554707106115,
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.F.92": 0.6299517824403706,
+      "MI.GLAND, THYROID_ECTOPIC LYMPHOID TISSUE.GLAND, THYROID.M.92": 0.6299517824403706,
+      "MI.GLAND, THYROID_HYPERPLASIA.GLAND, THYROID.F.92": 0.23937554707106307,
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.F.92": 0.23937554707106115,
+      "MI.GLAND, THYROID_HYPERTROPHY.GLAND, THYROID.M.92": 0.23937554707106115,
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.F.92": 0.6533127604942234,
+      "MI.GLAND, THYROID_INFLAMMATION.GLAND, THYROID.M.92": 0.6533127604942234,
+      "MI.HEART_INFLAMMATION.HEART.F.92": 0.0902097642380497,
+      "MI.HEART_INFLAMMATION.HEART.M.92": 0.0902097642380497,
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.F.92": 0.006965032539344875,
+      "MI.KIDNEY_BASOPHILIC TUBULES.KIDNEY.M.92": 0.006965032539344875,
+      "MI.KIDNEY_CAST.KIDNEY.F.92": 0.6533127604942234,
+      "MI.KIDNEY_CAST.KIDNEY.M.92": 0.6533127604942234,
+      "MI.KIDNEY_CYST.KIDNEY.F.92": 0.6533127604942247,
+      "MI.KIDNEY_CYST.KIDNEY.M.92": 0.6299517824403706,
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.F.92": 0.23937554707106307,
+      "MI.KIDNEY_INFLAMMATION.KIDNEY.M.92": 0.23937554707106307,
+      "MI.KIDNEY_NECROSIS.KIDNEY.F.92": 0.0902097642380497,
+      "MI.KIDNEY_NECROSIS.KIDNEY.M.92": 0.0902097642380497,
+      "MI.LARYNX_INFLAMMATION.LARYNX.F.92": 0.6533127604942247,
+      "MI.LARYNX_INFLAMMATION.LARYNX.M.92": 0.6533127604942247,
+      "MI.LIVER_ADENOMA, HEPATOCELLULAR.LIVER.M.92": 0.23937554707106115,
+      "MI.LIVER_HEPATOCELLULAR CARCINOMA.LIVER.M.90": 0.6533127604942234,
+      "MI.LIVER_HYPERTROPHY.LIVER.F.92": 2.290433183733348e-05,
+      "MI.LIVER_HYPERTROPHY.LIVER.M.92": 0.003215284650999181,
+      "MI.LIVER_INFLAMMATION.LIVER.F.92": 0.23937554707106115,
+      "MI.LIVER_INFLAMMATION.LIVER.M.92": 0.23937554707106115,
+      "MI.LIVER_NECROSIS.LIVER.F.92": 0.03309541680786437,
+      "MI.LIVER_NECROSIS.LIVER.M.92": 0.03309541680786437,
+      "MI.LIVER_VACUOLIZATION.LIVER.F.92": 0.23937554707106115,
+      "MI.LIVER_VACUOLIZATION.LIVER.M.92": 0.0902097642380497,
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.F.92": 0.6533127604942234,
+      "MI.LUNG_ASPIRATION BLOOD.LUNG.M.92": 0.6533127604942234,
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.F.92": 0.23937554707106307,
+      "MI.LUNG_INFILTRATION GRANULOCYTIC.LUNG.M.92": 0.23937554707106307,
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.F.92": 0.6533127604942234,
+      "MI.LUNG_INFILTRATION MONONUCLEAR CELL.LUNG.M.92": 0.6533127604942234,
+      "MI.LUNG_INFLAMMATION.LUNG.F.92": 0.0902097642380497,
+      "MI.LUNG_INFLAMMATION.LUNG.M.92": 0.0902097642380497,
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.F.92": 0.026244568741554012,
+      "MI.LUNG_MACROPHAGES INTRA-ALVEOLAR.LUNG.M.92": 0.026244568741554012,
+      "MI.LUNG_METAPLASIA.LUNG.F.92": 0.23937554707106115,
+      "MI.LUNG_METAPLASIA.LUNG.M.92": 0.23937554707106115,
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.F.92": 0.6533127604942234,
+      "MI.MUSCLE, QUADRICEPS FEMORIS_INFLAMMATION.MUSCLE, QUADRICEPS FEMORIS.M.92": 0.6533127604942234,
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.F.92": 0.0902097642380497,
+      "MI.PANCREAS_INFLAMMATION.PANCREAS.M.92": 0.0902097642380497,
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.F.92": 0.003215284650999181,
+      "MI.PEYER'S PATCH_MINERALIZATION.PEYER'S PATCH.M.92": 0.003215284650999181,
+      "MI.SMALL INTESTINE, JEJUNUM_INFLAMMATION.SMALL INTESTINE, JEJUNUM.F.92": 0.6533127604942234,
+      "MI.SPLEEN_ATROPHY.SPLEEN.F.92": 0.6533127604942234,
+      "MI.SPLEEN_ATROPHY.SPLEEN.M.92": 0.6533127604942234,
+      "MI.SPLEEN_CONGESTION.SPLEEN.F.92": 0.08333403647712508,
+      "MI.SPLEEN_CONGESTION.SPLEEN.M.92": 0.08333403647712508,
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.F.92": 0.011817932128906262,
+      "MI.SPLEEN_PIGMENTATION.SPLEEN.M.92": 0.011817932128906262,
+      "MI.STOMACH_EDEMA.STOMACH.F.92": 0.6533127604942234,
+      "MI.STOMACH_EDEMA.STOMACH.M.92": 0.6533127604942234,
+      "MI.STOMACH_EROSION.STOMACH.M.92": 0.6533127604942234,
+      "MI.TESTIS_ATROPHY.TESTIS.M.92": 0.6533127604942234,
+      "MI.TESTIS_AZOOSPERMIA.TESTIS.M.92": 0.6533127604942234,
+      "MI.TONGUE_HEMORRHAGE.TONGUE.F.92": 0.23937554707106115,
+      "MI.TONGUE_HEMORRHAGE.TONGUE.M.92": 0.23937554707106115,
+      "MI.TRACHEA_DILATATION.TRACHEA.F.92": 0.6533127604942247,
+      "MI.TRACHEA_DILATATION.TRACHEA.M.92": 0.6533127604942247,
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.F.92": 0.23937554707106115,
+      "MI.TRACHEA_INFILTRATION MONONUCLEAR CELL.TRACHEA.M.92": 0.23937554707106115,
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.F.92": 0.6533127604942247,
+      "MI.URINARY BLADDER_INFLAMMATION.URINARY BLADDER.M.30": 0.6533127604942247,
+      "MI.UTERUS_LEIOMYOMA.UTERUS.F.92": 0.6533127604942234,
+      "OM.WEIGHT.BRAIN.F.92": 0.000413,
+      "OM.WEIGHT.BRAIN.M.92": 0.002426,
+      "OM.WEIGHT.GLAND, ADRENAL.F.92": 0.928209,
+      "OM.WEIGHT.GLAND, ADRENAL.M.92": 0.038809,
+      "OM.WEIGHT.GLAND, PITUITARY.F.92": 0.021666,
+      "OM.WEIGHT.GLAND, PITUITARY.M.92": 0.002961,
+      "OM.WEIGHT.GLAND, THYROID.F.92": 0.000278,
+      "OM.WEIGHT.GLAND, THYROID.M.92": 0.193081,
+      "OM.WEIGHT.HEART.F.92": 0.003091,
+      "OM.WEIGHT.HEART.M.92": 0.0,
+      "OM.WEIGHT.KIDNEY.F.92": 3.9e-05,
+      "OM.WEIGHT.KIDNEY.M.92": 1e-06,
+      "OM.WEIGHT.LIVER.F.92": 0.0,
+      "OM.WEIGHT.LIVER.M.92": 0.010292,
+      "OM.WEIGHT.OVARY.F.92": 0.964857,
+      "OM.WEIGHT.SPLEEN.F.92": 0.004648,
+      "OM.WEIGHT.SPLEEN.M.92": 0.767136,
+      "OM.WEIGHT.TESTIS.M.92": 0.003661,
+      "OM.WEIGHT.THYMUS.F.92": 0.046683,
+      "OM.WEIGHT.THYMUS.M.92": 0.028018,
+      "VS.HR..F.90": 0.467241,
+      "VS.HR..M.90": 0.299131
+    },
+    "signal_scores": {},
+    "summary_counts": {
+      "total_adverse": 112,
+      "total_findings": 415,
+      "total_normal": 280,
+      "total_treatment_related": 106,
+      "total_warning": 23
+    },
+    "syndrome_detections": [
+      {
+        "certainty": "likely",
+        "evidence_count": 28,
+        "species_required": null,
+        "syndrome_id": "XC01a"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 4,
+        "species_required": null,
+        "syndrome_id": "XC01c"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 4,
+        "species_required": null,
+        "syndrome_id": "XC04a"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 1,
+        "species_required": null,
+        "syndrome_id": "XC06a"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 1,
+        "species_required": null,
+        "syndrome_id": "XC06b"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 24,
+        "species_required": null,
+        "syndrome_id": "XC12c"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 7,
+        "species_required": null,
+        "syndrome_id": "XS01"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 1,
+        "species_required": null,
+        "syndrome_id": "XS03"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 31,
+        "species_required": null,
+        "syndrome_id": "XS04"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 1,
+        "species_required": null,
+        "syndrome_id": "XS07"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 4,
+        "species_required": null,
+        "syndrome_id": "adrenal_hypertrophy"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 2,
+        "species_required": null,
+        "syndrome_id": "cpn"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 14,
+        "species_required": null,
+        "syndrome_id": "hepatocellular_adaptation"
+      },
+      {
+        "certainty": "confirmed",
+        "evidence_count": 3,
+        "species_required": null,
+        "syndrome_id": "hepatotoxicity_classic"
+      },
+      {
+        "certainty": "likely",
+        "evidence_count": 2,
+        "species_required": null,
+        "syndrome_id": "lymphoid_depletion"
+      },
+      {
+        "certainty": "confirmed",
+        "evidence_count": 1,
+        "species_required": null,
+        "syndrome_id": "testicular_degeneration"
+      }
+    ],
+    "target_organs": [
+      "BONE MARROW, FEMUR",
+      "BRAIN",
+      "GLAND, ADRENAL",
+      "GLAND, PITUITARY",
+      "GLAND, THYROID",
+      "HEART",
+      "KIDNEY",
+      "LIVER",
+      "PEYER'S PATCH",
+      "SPLEEN",
+      "TESTIS",
+      "THYMUS",
+      "URINARY BLADDER",
+      "UTERUS"
+    ]
+  },
+  "study_id": "PointCross"
+}

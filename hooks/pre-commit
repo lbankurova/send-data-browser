@@ -266,6 +266,60 @@ if [ -f "$REPO_ROOT/scripts/audit-bug-patterns.py" ] \
     fi
 fi
 
+# --- Step 0e: F4 approval-test diff (BLOCKS on scientific-tier diff) ---
+# Per spec section 6: every analytical-paths commit must diff each captured
+# study baseline against the engine's current generated output. Scientific
+# tier diffs block unless a written rationale (env var or
+# .lattice/pending-approval-rationale.json) passes the F4 rationale contract
+# (Review-3: required fields, length minimums, non-trivial, not-duplicate-of-
+# recent). Presentation-tier diffs auto-log to .lattice/approval-log.tsv.
+
+if [ "$STAGED_ALGO" -gt 0 ] && [ -d "$REPO_ROOT/backend/tests/approval-baselines" ] \
+    && [ -f "$REPO_ROOT/scripts/diff-approval-baseline.py" ]; then
+    echo "--- Step 0e: F4 approval-test diff ---"
+    F4_BLOCKED=0
+    F4_RAN=0
+    for SB in "$REPO_ROOT"/backend/tests/approval-baselines/*/baseline.json; do
+        [ -f "$SB" ] || continue
+        SDIR="$(dirname "$SB")"
+        SID="$(basename "$SDIR")"
+        [ "$SID" = "_example" ] && continue
+        F4_RAN=$((F4_RAN + 1))
+        F4_OUT=$(python "$REPO_ROOT/scripts/diff-approval-baseline.py" "$SID" --staleness-check 2>&1)
+        F4_RC=$?
+        echo "$F4_OUT" | sed 's/^/  /'
+        if [ "$F4_RC" -ne 0 ]; then
+            F4_BLOCKED=1
+        fi
+    done
+    if [ "$F4_RAN" = "0" ]; then
+        echo "  (no captured baselines yet -- skipping F4 diff)"
+    fi
+    if [ "$F4_BLOCKED" = "1" ]; then
+        echo ""
+        echo "  COMMIT BLOCKED: scientific-tier diff present without acceptable rationale."
+        echo ""
+        echo "  Per spec section 6 (F4): every change to analytical output requires a"
+        echo "  written rationale. Provide via:"
+        echo "    1. Write the rationale JSON to .lattice/pending-approval-rationale.json"
+        echo "       (sticky single-shot file; consumed on accept)"
+        echo "    2. Re-attempt the commit"
+        echo ""
+        echo "  Required JSON shape (also accepts key:value lines):"
+        echo "    {\"study\": \"<study-id>\","
+        echo "     \"category\": \"noael_per_endpoint_sex\" or \"*\","
+        echo "     \"summary_old_new\": \"BW NOAEL 20 -> 80 mg/kg both sexes\","
+        echo "     \"rationale_text\": \"<>=40 chars, >=4 distinct word tokens, not trivial>\"}"
+        echo ""
+        echo "  If the diff is unintended (algorithmic change you did not author),"
+        echo "  re-capture the baseline:"
+        echo "    python scripts/capture-approval-baseline.py <study-id>"
+        echo "  -- but do this only when you have verified the new output is correct."
+        exit 1
+    fi
+    echo ""
+fi
+
 # --- Step 0b: Doc generator freshness (BLOCKS if stale) ---
 # Checks that the 3 doc generators were run after source changes.
 # Only blocks if engine/analysis files are staged (the files that
