@@ -482,6 +482,134 @@ def check_encoding_present(facts: list[Fact]) -> list[Defect]:
 # Driver
 # =============================================================================
 
+# Confidence levels that REQUIRE non-empty `derives_from`. Set per LIT-01:
+# any fact claiming external/internal evidentiary grounding must cite it.
+# `cited_unverified` is checked separately (additionally requires literature-note
+# resolution + status). `heuristic` and `extrapolation` have weaker provenance
+# semantics by definition and are exempted.
+CONFIDENCE_REQUIRES_PROVENANCE = {"regulated_standard", "internal_validated"}
+
+
+def check_provenance_gap(facts: list[Fact]) -> list[Defect]:
+    """Every regulated_standard / internal_validated fact must carry a non-empty
+    `derives_from`. The schema example shows `derives_from` populated for these
+    confidence levels; the previous audit only enforced it for cited_unverified.
+
+    LIT-01 extension (2026-04-27): close the loop on the broader provenance
+    surface so a fact can't claim "internal_validated" without an evidentiary
+    pointer.
+    """
+    defects: list[Defect] = []
+    for f in facts:
+        conf = f.yaml_data.get("confidence")
+        if conf not in CONFIDENCE_REQUIRES_PROVENANCE:
+            continue
+        derives = f.yaml_data.get("derives_from")
+        if derives is None or (isinstance(derives, list) and len(derives) == 0):
+            defects.append(Defect(
+                severity="error",
+                fact_id=f.fact_id,
+                rule="provenance-gap",
+                message=f"confidence={conf!r} requires non-empty derives_from",
+            ))
+    return defects
+
+
+def _scope_signature(fact: Fact) -> tuple | None:
+    """Reduce a fact's scope to the tuple used for contradiction grouping.
+
+    Returns None when the fact's scope is non-discriminating: `species: [any]`
+    AND `endpoints: [any]` means the fact intentionally applies broadly and
+    uses its value block (rules, conditions) as the differentiator. Two such
+    facts aren't "contradicting" -- they encode different rules under a wide
+    scope. Same applies to facts without a scope block at all.
+
+    Endpoints/species are sorted-and-frozen so list ordering doesn't split
+    the bucket. fact_kind participates in the signature so a `disable_marker`
+    fact and a `clinical_threshold` fact with overlapping scope don't false-
+    positive into the same bucket.
+
+    sex handling (architect-review fix 2026-04-27): when sex is None / absent
+    we treat it as a sentinel `"_any"` rather than dropping the fact from the
+    bucketing. Otherwise a newly-added fact missing a sex annotation would
+    silently escape the contradiction check while still colliding with
+    existing per-sex facts on (species, endpoints, fact_kind). Surface the
+    collision as a warning so the author either adds sex or declares
+    contradicts.
+    """
+    scope = fact.yaml_data.get("scope") or {}
+    if not isinstance(scope, dict):
+        return None
+    species = tuple(sorted(scope.get("species") or []))
+    sex = scope.get("sex") or "_any"
+    endpoints = tuple(sorted(scope.get("endpoints") or []))
+    fact_kind = fact.yaml_data.get("fact_kind")
+    if not (species and endpoints):
+        return None
+    # Non-discriminating scope: the fact's identity is in its value block,
+    # not its scope. Bucket would group every wide-scope fact together.
+    if species == ("any",) and endpoints == ("any",):
+        return None
+    return (species, sex, endpoints, fact_kind)
+
+
+def check_within_graph_contradictions(facts: list[Fact]) -> list[Defect]:
+    """Flag fact pairs that share scope + fact_kind but disagree on values
+    without a `contradicts` edge connecting them.
+
+    LIT-01 extension (2026-04-27): the typed-graph already enforces
+    contradicts-symmetry, but a stronger check is "two facts that look like
+    they SHOULD be sibling baselines / SHOULD be the same threshold cannot
+    silently disagree." If they intentionally disagree (e.g., per-strain
+    refinement) the fact authors must declare the contradicts edge so the
+    disagreement is visible.
+
+    Implementation: bucket facts by (species, sex, endpoints, fact_kind).
+    Within each bucket of size >=2, if any pair has differing `value` blocks
+    AND neither cites the other in `contradicts`, emit a warning.
+
+    Warning rather than error: bucket collisions are common in legitimate
+    refinements (different age windows, different study_types). The audit
+    surfaces them for human review without failing CI.
+    """
+    defects: list[Defect] = []
+    buckets: dict[tuple, list[Fact]] = {}
+    for f in facts:
+        sig = _scope_signature(f)
+        if sig is None:
+            continue
+        buckets.setdefault(sig, []).append(f)
+
+    for sig, group in buckets.items():
+        if len(group) < 2:
+            continue
+        for i in range(len(group)):
+            for j in range(i + 1, len(group)):
+                a, b = group[i], group[j]
+                # Skip if `contradicts` edge already declared (either direction).
+                a_contra = a.yaml_data.get("contradicts") or []
+                b_contra = b.yaml_data.get("contradicts") or []
+                if b.fact_id in a_contra or a.fact_id in b_contra:
+                    continue
+                # Same scope+kind, no contradicts edge, different value blocks?
+                if a.yaml_data.get("value") != b.yaml_data.get("value"):
+                    species, sex, endpoints, fact_kind = sig
+                    defects.append(Defect(
+                        severity="warning",
+                        fact_id=f"{a.fact_id} vs {b.fact_id}",
+                        rule="within-graph-contradiction",
+                        message=(
+                            f"facts share scope (species={list(species)}, sex={sex}, "
+                            f"endpoints={list(endpoints)}, fact_kind={fact_kind!r}) "
+                            f"and differ in `value` block without a contradicts edge. "
+                            f"Either reconcile, narrow scope (e.g., add age/strain), "
+                            f"or declare `contradicts: [{b.fact_id}]` (and reverse) "
+                            f"per typed-knowledge-graph-spec."
+                        ),
+                    ))
+    return defects
+
+
 CHECKS = [
     ("encoding-enum",            check_encoding_present),
     ("scoring-eligible",         check_scoring_eligible),
@@ -491,6 +619,8 @@ CHECKS = [
     ("cited-unverified-backlog", check_cited_unverified_backlog),
     ("relevance-exclusion-fields", check_relevance_exclusion_fields),
     ("relevance-exclusion-citations", check_relevance_exclusion_citations),
+    ("provenance-gap",           check_provenance_gap),
+    ("within-graph-contradiction", check_within_graph_contradictions),
 ]
 
 
