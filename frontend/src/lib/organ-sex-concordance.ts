@@ -243,7 +243,7 @@ export function getSexConcordanceBoost(
 // Consumption invariant: `species` MUST be the output of normalizeSpecies()
 // from syndrome-translational.ts (e.g. "monkey" not "cynomolgus") -- other
 // normalizers map to different keys and would silently miss species entries.
-function lookupBand(band: string | null, species: string): BandBoosts | null {
+export function lookupBand(band: string | null, species: string): BandBoosts | null {
   if (!band) return defaultBoosts;
   // Tier 1: species-specific lookup
   const speciesData = speciesBands[species] as BandsMap | undefined;

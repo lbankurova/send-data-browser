@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveOrganBand, getSexConcordanceBoost, computeBwMediationFactor, SINGLE_ENDPOINT_GUARD_SET } from "@/lib/organ-sex-concordance";
+import { resolveOrganBand, getSexConcordanceBoost, lookupBand, computeBwMediationFactor, SINGLE_ENDPOINT_GUARD_SET } from "@/lib/organ-sex-concordance";
 import type { HedgesGResult } from "@/lib/organ-weight-normalization";
 import { getClinicalAdditive, getClinicalFloor } from "@/lib/lab-clinical-catalog";
 import { computeEndpointSignal, computeEndpointEvidence } from "@/lib/findings-rail-engine";
@@ -268,6 +268,92 @@ describe("resolveOrganBand", () => {
         domain: "MI", specimen: "SPLEEN", organ_system: "hematologic",
       }))).toBe("SPLEEN");
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// lookupBand — three-tier species fallback (F1/F2 of brain-concordance-species-bands)
+//
+// Tier 1: species-specific entry (e.g. dog BRAIN_WEIGHT)
+// Tier 2: rat baseline (calibrated against the largest HCD corpus)
+// Tier 3: defaultBoosts ({concordance: 1.5, divergence: 1.0})
+// Explicit `null` in any species entry suppresses fallback (returns null).
+// ═══════════════════════════════════════════════════════════
+
+describe("lookupBand — three-tier species fallback", () => {
+  // Tier 1 — species-specific BRAIN_WEIGHT (F2 calibration)
+  test("Test 1: Dog BRAIN_WEIGHT divergent (tier 1 hit)", () => {
+    expect(lookupBand("BRAIN_WEIGHT", "dog")).toEqual({ concordance: 1.5, divergence: 0.5 });
+  });
+  test("Test 2: Monkey BRAIN_WEIGHT divergent (tier 1 hit)", () => {
+    expect(lookupBand("BRAIN_WEIGHT", "monkey")).toEqual({ concordance: 1.5, divergence: 0.7 });
+  });
+  test("Test 3: Rabbit BRAIN_WEIGHT divergent (tier 1 hit)", () => {
+    expect(lookupBand("BRAIN_WEIGHT", "rabbit")).toEqual({ concordance: 1.5, divergence: 0.5 });
+  });
+
+  // Tier 2 — rat fallback (F1 behavioral change: previously defaultBoosts)
+  test("Test 4: Dog LIVER falls to rat (was defaultBoosts before F1)", () => {
+    // CRITICAL: this is the F1 behavioral-change verification.
+    expect(lookupBand("LIVER", "dog")).toEqual({ concordance: 2.0, divergence: 0.5 });
+  });
+  test("Test 5: Dog REPRODUCTIVE falls to rat's null (suppression carries cross-species)", () => {
+    // Behavioral change: previously returned defaultBoosts; now returns null.
+    expect(lookupBand("REPRODUCTIVE", "dog")).toBeNull();
+  });
+  test("Test 6: Monkey BRAIN_ENZYME falls to rat (cholinesterase invariant)", () => {
+    // Critical sequencing guarantee for Proposal 1: BRAIN_ENZYME (cholinesterase
+    // signals) MUST NOT be suppressed by species-specific BRAIN_WEIGHT entries.
+    expect(lookupBand("BRAIN_ENZYME", "monkey")).toEqual({ concordance: 1.8, divergence: 0.5 });
+  });
+  test("Test 7: Unknown species 'hamster' + LIVER falls to rat", () => {
+    expect(lookupBand("LIVER", "hamster")).toEqual({ concordance: 2.0, divergence: 0.5 });
+  });
+
+  // Tier 3 — default fallback
+  test("Test 8: Unknown organ + dog species falls to default", () => {
+    expect(lookupBand("FAKE_ORGAN", "dog")).toEqual({ concordance: 1.5, divergence: 1.0 });
+  });
+  test("Test 9: Empty band returns default (existing behavior preserved)", () => {
+    expect(lookupBand("", "dog")).toEqual({ concordance: 1.5, divergence: 1.0 });
+  });
+  test("Test 10: Null band returns default (existing behavior preserved)", () => {
+    expect(lookupBand(null, "dog")).toEqual({ concordance: 1.5, divergence: 1.0 });
+  });
+
+  // Edge case — empty species string (initial-render condition where studyMeta is undefined)
+  test("Test 13: Empty species '' + BRAIN_WEIGHT falls to rat (R1 F1 SCIENCE-FLAG scope)", () => {
+    // tier 1 fails (speciesBands[""] undefined), tier 2 hits ("" !== "rat" so guard passes).
+    expect(lookupBand("BRAIN_WEIGHT", "")).toEqual({ concordance: 1.5, divergence: 0.3 });
+  });
+
+  // Test 14 (explicit-null suppression for synthetic non-REPRODUCTIVE entries) requires
+  // module mocking of the speciesBands JSON; the invariant is exercised end-to-end by
+  // Test 5 (rat REPRODUCTIVE null suppresses fallback for non-rat species).
+});
+
+describe("getSexConcordanceBoost — species-specific entries (F1/F2 end-to-end)", () => {
+  // Test 11: dog brain-weight divergent → 0.5 via tier 1
+  test("Test 11: dog BRAIN_WEIGHT divergent → boost = 0.5 (dog tier-1 divergence)", () => {
+    const ep_dog = ep({
+      domain: "OM",
+      specimen: "BRAIN",
+      bySex: withBySex("up", "down"),  // F-up, M-down → divergent
+    });
+    expect(getSexConcordanceBoost(ep_dog, "dog")).toBe(0.5);
+  });
+  // Test 12: monkey brain-weight concordant → 1.5 via tier 1 (NOT a fallback to rat,
+  // even though monkey concordance happens to equal rat concordance)
+  test("Test 12: monkey BRAIN_WEIGHT concordant → boost = 1.5 (monkey tier-1 concordance)", () => {
+    const ep_monkey = ep({
+      domain: "OM",
+      specimen: "BRAIN",
+      bySex: withBySex("up", "up"),  // both up → concordant
+    });
+    // Verify lookup-path provenance: assert lookupBand returns the monkey entry,
+    // not a rat-fallback that happens to equal monkey's value.
+    expect(lookupBand("BRAIN_WEIGHT", "monkey")).toEqual({ concordance: 1.5, divergence: 0.7 });
+    expect(getSexConcordanceBoost(ep_monkey, "monkey")).toBe(1.5);
   });
 });
 
