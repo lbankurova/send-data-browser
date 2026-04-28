@@ -106,7 +106,18 @@ def _is_loael_driving_woe(
 
     # C1: Effect relevance — gLower > threshold (sample-size-invariant).
     # Incidence: falls to p-value (h_lower excluded, degenerate at small N).
-    if _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous")) and fc == "tr_adverse":
+    # Per-dose direction must match the finding's overall trend direction
+    # (BUG-033 tightening 2026-04-28): a wrong-direction NS pairwise effect
+    # whose g_lower happens to clear the threshold no longer fires LOAEL at
+    # that dose. PointCross BW M day-92 dose 1 (g=+0.78 NS, finding direction
+    # =down) is the canonical exemplar surfaced by BUG-032's terminal-day
+    # selection fix. Prior to direction-match here, the gate fired on
+    # magnitude alone — defensible per Rule 19 only when sign is consistent.
+    if (
+        _dose_exceeds_effect_threshold(pw, effect_threshold, finding.get("data_type", "continuous"))
+        and fc == "tr_adverse"
+        and _effect_matches_trend_direction(finding, pw)
+    ):
         return True
 
     # NOTE on C2a: the original WoE specification listed C2a as a separate
@@ -125,14 +136,38 @@ def _is_loael_driving_woe(
         if _effect_matches_trend_direction(finding, pw):
             return True
 
-    # C3: Corroborated adverse
-    if fc == "tr_adverse" and finding.get("corroboration_status") == "corroborated":
-        return True
+    # NOTE on C3 (BUG-033 deletion 2026-04-28): C3 originally fired on
+    # `fc == "tr_adverse" AND corroboration_status == "corroborated"` —
+    # both finding-level, no per-dose check. Diagnosed by
+    # `docs/_internal/research/woe-c1-c3-dose-independence-hypothesis.md`
+    # (PointCross BW F day-92 dose 1 fired LOAEL via C3 with g_lower=0.000).
+    # Tightening C3 to require per-dose evidence + direction match makes it a
+    # strict subset of C1 (same A5 pattern as C2a). Removed as unreachable.
+    # Corroboration is consumed downstream by aggregation policies.
 
-    # C4: Intrinsically adverse (always LOAEL-driving regardless of statistics)
-    finding_term = (finding.get("finding") or "").lower().strip()
-    if fc == "tr_adverse" and finding_term in INTRINSICALLY_ADVERSE:
-        return True
+    # C4: Intrinsically adverse pathology with per-dose evidence (ECETOC B-6,
+    # ICH S1B "any dose-related increase" principle). The original C4 fired
+    # on `fc == "tr_adverse" AND finding_term in INTRINSICALLY_ADVERSE` only
+    # (finding-level), which over-fired at doses with zero pathology. The
+    # initial BUG-033 fix deleted C4 entirely as a strict subset of C1; that
+    # was wrong — three independent reviewers found 27 real pairwise instances
+    # across 5 studies (PointCross HEPATOCELLULAR CARCINOMA dose 3 1/10 p=0.65,
+    # PDS KIDNEY Necrosis dose 3 2/13 p=0.10, TOXSCI dog Necrosis 1/3 p=0.55,
+    # etc.) where C4 correctly caught sub-50%-incidence sub-significance
+    # findings that neither C1 (Fisher's exact fails at low N + low incidence)
+    # nor C5 (>=50% threshold) catches. ECETOC B-6 / ICH S1B explicitly target
+    # this class. Restored 2026-04-28 with a per-dose-incidence guard:
+    # `gs.incidence > ctrl.incidence` filters out zero-pathology doses while
+    # preserving the "regardless of statistics" principle for genuinely
+    # observed pathology. C4 is no longer a strict subset of C1+C5 (it has a
+    # non-empty zone where neither fires).
+    if fc == "tr_adverse":
+        finding_term = (finding.get("finding") or "").lower().strip()
+        if finding_term in INTRINSICALLY_ADVERSE and finding.get("data_type") == "incidence":
+            gs = _get_group_stats_at_dose(finding, dose_level)
+            ctrl = _get_group_stats_at_dose(finding, 0)
+            if gs and ctrl and gs.get("incidence", 0) > ctrl.get("incidence", 0):
+                return True
 
     # C5: High incidence histopath (>=50% treated, 0% control)
     if finding.get("data_type") == "incidence":

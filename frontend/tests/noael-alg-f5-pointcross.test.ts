@@ -60,7 +60,7 @@ const itIfFixture = hasFixture ? it : it.skip;
 
 describe("F5-PointCross — algorithm-defensibility regression", () => {
   itIfFixture(
-    "BW endpoint Combined: BUG-031 sign-flipping correctly suppressed (no firing dose under P3)",
+    "BW endpoint Combined: post-BUG-032/033 fires HD only (defensible per Rule 19)",
     () => {
       // Find the Body Weight Combined entry (domain BW; classify_endpoint
       // routes to BW class; aggregator dispatches to p3_terminal_primary).
@@ -71,13 +71,20 @@ describe("F5-PointCross — algorithm-defensibility regression", () => {
       expect(bwKey).toBeDefined();
       const bw = summary[bwKey!];
       expect(bw.endpoint_class).toBe("BW");
-      // Per the synthesis BUG-031 retrospective: the 3 NS sign-flipping
-      // single-timepoint hits should NOT drive LOAEL. P3 terminal-primary
-      // selects only the terminal pairwise; the per-week noise is filtered.
-      const anyFired = Object.values(bw.by_dose_level).some(
-        (d) => d.fired && !d.suspended,
-      );
-      expect(anyFired).toBe(false);
+      // Post-BUG-032 fix (terminal-day field-name fallback) + BUG-033 fix
+      // (C1 per-dose direction match): P3 correctly selects day-92 terminal,
+      // C1 fires only at dose 3 where g=-3.13/g_lower=2.47 with direction
+      // match, not at doses 1-2 where the per-dose effect is wrong-direction
+      // NS or sub-threshold. Defensible NOAEL = 20 mg/kg per
+      // docs/_internal/research/data-gap-noael-alg-01-pointcross-derivation.md.
+      // The pre-BUG-032/033 expectation "no firing dose under P3" was the
+      // slice-4 INVALID acceptance that masked both bugs (see
+      // .lattice/cycle-state/NOAEL-ALG.yaml SF2 revised 2026-04-28).
+      const firedDoses = Object.entries(bw.by_dose_level)
+        .filter(([, d]) => d.fired && !d.suspended)
+        .map(([k]) => k)
+        .sort();
+      expect(firedDoses).toEqual(["3"]);
     },
   );
 
@@ -130,11 +137,15 @@ describe("F5-PointCross — algorithm-defensibility regression", () => {
   );
 
   itIfFixture(
-    "C4 intrinsic-adverse pathology drives LOAEL at lowest dose (PointCross hepatocellular carcinoma)",
+    "C4 intrinsic-adverse pathology fires only at doses with non-zero per-dose incidence (post-BUG-033 guard)",
     () => {
-      // Per docs/validation/NOAEL-ALG-defensibility-pointcross.md:
-      // hepatocellular carcinoma fires C4 (intrinsic adverse) regardless
-      // of pairwise statistics; should fire at every treated dose level.
+      // Post-BUG-033 fix: C4 restored with per-dose-incidence guard
+      // (`gs.incidence > ctrl.incidence`). Preserves ECETOC B-6 / ICH S1B
+      // "any dose-related increase" while excluding genuinely-zero-pathology
+      // doses. PointCross HEPATOCELLULAR CARCINOMA fires only at HD (1/10
+      // vs 0/10 ctrl, p=0.65 NS — neither C1 nor C5 catches this; C4 does).
+      // The pre-BUG-033 expectation "fires at every treated dose level" was
+      // the finding-level over-firing the per-dose-incidence guard removes.
       const summary = fixture!.endpoint_loael_summary;
       const carcinomaKey = Object.keys(summary).find((k) =>
         k.toLowerCase().includes("hepatocellular carcinoma")
@@ -144,9 +155,9 @@ describe("F5-PointCross — algorithm-defensibility regression", () => {
       // the exact key is absent.
       if (!carcinomaKey) return;
       const carcinoma = summary[carcinomaKey];
-      const firedAtLowest = carcinoma.by_dose_level["1"]?.fired === true
-        && carcinoma.by_dose_level["1"]?.suspended === false;
-      expect(firedAtLowest).toBe(true);
+      const firedAtHD = carcinoma.by_dose_level["3"]?.fired === true
+        && carcinoma.by_dose_level["3"]?.suspended === false;
+      expect(firedAtHD).toBe(true);
     },
   );
 });

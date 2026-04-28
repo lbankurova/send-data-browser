@@ -335,7 +335,15 @@ def _wrap(policy: str, decision: dict[str, Any]) -> dict[str, Any]:
 
 
 def _safe_day_start(finding: dict) -> int:
-    val = finding.get("day_start")
+    # Three-field fallback (BUG-032 fix 2026-04-28). Lookup order is
+    # production-first: `day` is the universal production field (415/415
+    # study-wide); `day_start` is FW-specific synthetic field; `--DY` is
+    # raw SEND passthrough. Without the `day` lookup, all dispatch policies
+    # (P3/P2/M1/single_*) silently tied at day=0 on production data,
+    # breaking terminal selection.
+    val = finding.get("day")
+    if val is None:
+        val = finding.get("day_start")
     if val is None:
         val = finding.get("--DY")
     try:

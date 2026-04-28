@@ -140,6 +140,136 @@ def test_p3_excludes_recovery_period_findings():
     assert out["fired_timepoints"] == [28], "recovery findings must not be selected as terminal"
 
 
+# --- BUG-033 regression fixtures (per-dose direction tightening) ---------
+# These three fixtures are exact copies of PointCross BW day-92 pairwise
+# values (M and F sex). Pre-BUG-033-fix the M dose-1 case fired via C1
+# (g_lower=0.369 > 0.30 + fc=tr_adverse) and the F dose-1 case fired via
+# C3 (fc=tr_adverse + corroborated, ignoring per-dose g_lower=0.000).
+# Post-fix: C1 requires direction match; C3 is deleted as unreachable.
+# Source: docs/_internal/research/data-gap-noael-alg-01-pointcross-derivation.md.
+
+def test_p3_BUG033_pointcross_M_dose1_wrong_direction_does_not_fire():
+    """C1 must reject a wrong-direction NS pairwise even when g_lower clears
+    the magnitude threshold. PointCross BW M day-92 dose 1: g=+0.78 (UP),
+    g_lower=0.369, p_adj=0.17 NS. Finding direction=down (HD signal). Pre-fix
+    this fired LOAEL at the lowest dose; post-fix C1 direction-match rejects."""
+    finding = _mk_finding(
+        domain="BW", day_start=92, dose_level=1,
+        g_lower=0.369, p_value=0.171746, effect_size=0.783,
+        direction="down",
+        finding_class="tr_adverse",
+        corroboration_status="corroborated",
+        trend_p=1.7e-5,
+    )
+    out = aggregate_loael_drivers([finding], dose_level=1, endpoint_class="BW", n_per_group=10, params=ScoringParams())
+    assert out["fired"] is False, "C1 must reject wrong-direction pairwise"
+
+
+def test_p3_BUG033_pointcross_F_dose1_corroborated_zero_effect_does_not_fire():
+    """C3 deletion: finding-level corroboration with zero per-dose effect must
+    not fire. PointCross BW F day-92 dose 1: g=+0.25 (UP), g_lower=0.000,
+    p_adj=0.90 NS, corroborated=True (driven by HD's overwhelming signal).
+    Pre-fix C3 fired despite g_lower=0; post-fix C3 deleted."""
+    finding = _mk_finding(
+        domain="BW", day_start=92, dose_level=1,
+        g_lower=0.000, p_value=0.895611, effect_size=0.247,
+        direction="down",
+        finding_class="tr_adverse",
+        corroboration_status="corroborated",
+        trend_p=6.4e-4,
+    )
+    out = aggregate_loael_drivers([finding], dose_level=1, endpoint_class="BW", n_per_group=10, params=ScoringParams())
+    assert out["fired"] is False, "C3 deletion: corroborated finding-level flag alone must not fire"
+
+
+def test_p3_BUG033_pointcross_dose3_overwhelming_evidence_fires():
+    """Regression for the actually-defensible case. PointCross BW M day-92
+    dose 3: g=-3.13, g_lower=2.47, p_adj=0.0, direction match. Must fire."""
+    finding = _mk_finding(
+        domain="BW", day_start=92, dose_level=3,
+        g_lower=2.469, p_value=0.0, effect_size=-3.129,
+        direction="down",
+        finding_class="tr_adverse",
+        corroboration_status="corroborated",
+        trend_p=1.7e-5,
+    )
+    out = aggregate_loael_drivers([finding], dose_level=3, endpoint_class="BW", n_per_group=10, params=ScoringParams())
+    assert out["fired"] is True, "overwhelming consistent evidence must fire LOAEL"
+    assert out["fired_timepoints"] == [92]
+
+
+def test_p3_BUG032_day_field_fallback_fires_terminal():
+    """BUG-032 contract triangle closure: production findings emit `day`
+    (415/415 study-wide), not `day_start`. _safe_day_start's three-field
+    fallback (`day -> day_start -> --DY`) must resolve to `day` when only
+    `day` is populated. Without this test, the fallback path has no
+    enforcement and a future refactor that swaps the order silently passes."""
+    # Build findings using the production field name `day` (omitting day_start).
+    f1 = _mk_finding(domain="BW", day_start=7, dose_level=3, g_lower=0.10, effect_size=-0.2, direction="down")
+    f1.pop("day_start")
+    f1["day"] = 7
+    f2 = _mk_finding(domain="BW", day_start=92, dose_level=3, g_lower=0.50, effect_size=-1.0, direction="down")
+    f2.pop("day_start")
+    f2["day"] = 92
+    out = aggregate_loael_drivers([f1, f2], dose_level=3, endpoint_class="BW", n_per_group=10, params=ScoringParams())
+    assert out["fired"] is True, "P3 must select day-92 terminal via `day` field fallback"
+    assert out["fired_timepoints"] == [92], "terminal selection must resolve via `day` not default to 0"
+
+
+def test_C4_intrinsic_adverse_fires_on_sub_significance_per_dose_incidence():
+    """C4 restoration 2026-04-28: intrinsic-adverse pathology with non-zero
+    per-dose incidence above control fires LOAEL even when C1's p<0.05 path
+    fails (low-N studies) and C5's >=50% threshold isn't reached. ECETOC B-6
+    / ICH S1B "any dose-related increase" principle. Canonical case:
+    PDS KIDNEY Necrosis M dose 3 (2/13 vs 0/13, p_adj=0.097)."""
+    finding = {
+        "domain": "MI",
+        "day": 92,
+        "data_type": "incidence",
+        "finding": "necrosis",
+        "finding_class": "tr_adverse",
+        "direction": None,
+        "is_recovery": False,
+        "endpoint_label": "KIDNEY | Necrosis",
+        "sex": "M",
+        "pairwise": [
+            {"dose_level": 3, "g_lower": None, "p_value": 0.097, "p_value_adj": 0.097, "effect_size": 0.0},
+        ],
+        "group_stats": [
+            {"dose_level": 0, "incidence": 0.0},
+            {"dose_level": 3, "incidence": 2 / 13},
+        ],
+    }
+    out = aggregate_loael_drivers([finding], dose_level=3, endpoint_class="MI", n_per_group=13, params=ScoringParams())
+    assert out["fired"] is True, "C4 must fire on intrinsic-adverse pathology with non-zero incidence above control, even at NS p"
+
+
+def test_C4_does_not_fire_on_zero_incidence_dose():
+    """C4 restoration must NOT fire on the genuinely-zero-pathology case
+    (deletion of C4 was correct for this case; the per-dose incidence guard
+    `gs.incidence > ctrl.incidence` filters it out)."""
+    finding = {
+        "domain": "MI",
+        "day": 92,
+        "data_type": "incidence",
+        "finding": "necrosis",
+        "finding_class": "tr_adverse",
+        "direction": None,
+        "is_recovery": False,
+        "endpoint_label": "KIDNEY | Necrosis",
+        "sex": "M",
+        "pairwise": [
+            {"dose_level": 1, "g_lower": None, "p_value": 0.99, "p_value_adj": 0.99, "effect_size": 0.0},
+        ],
+        "group_stats": [
+            {"dose_level": 0, "incidence": 0.0},
+            {"dose_level": 1, "incidence": 0.0},
+        ],
+    }
+    out = aggregate_loael_drivers([finding], dose_level=1, endpoint_class="MI", n_per_group=13, params=ScoringParams())
+    assert out["fired"] is False, "C4 must not fire on doses with zero pathology"
+
+
 # --- p2_sustained_consecutive --------------------------------------------
 
 def test_p2_fires_with_M2_consecutive_adverse_direction():

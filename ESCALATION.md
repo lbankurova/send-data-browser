@@ -10,7 +10,11 @@
 
 ---
 
-## Escalation — 2026-04-27 (NOAEL algorithm under-firing — sibling defect to BUG-031)
+## Escalation -- 2026-04-27 (NOAEL algorithm under-firing -- sibling defect to BUG-031) -- RESOLVED 2026-04-28
+
+**Resolution:** Fixed in this commit. BUG-032 (terminal-day field-naming drift) and BUG-033 (WoE C1/C3/C4 per-dose-evaluation inconsistency) closed atomically. PointCross BW per-sex NOAEL = 20 mg/kg per Rule 19 derivation. Three-agent re-review (architect + decision-auditor + peer-reviewer) returned PASS / PASS / SOUND. See `BUG-SWEEP.md#BUG-032`, `BUG-SWEEP.md#BUG-033`, and `docs/_internal/research/distillations/noael-alg-woe-coherence.md` for the corpus-level analysis. Original escalation text retained below for git history; entry will be deleted on next sweep.
+
+**Tracked as:** BUG-032 (`docs/_internal/BUG-SWEEP.md#BUG-032`).
 
 **SCIENCE-FLAG (CLAUDE.md rule 19):** PointCross BW NOAEL pinned to control despite overwhelming terminal-day evidence at 200 mg/kg. Algorithm is tox-indefensible on the canonical study used to motivate the NOAEL-ALG cycle.
 

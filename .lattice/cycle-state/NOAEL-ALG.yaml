@@ -46,10 +46,22 @@ science_flags_new:
       Path C output: BW endpoint per-endpoint NOAEL = HD (no dose fires under
       P3 terminal-primary; BUG-031 fix verified). Study-combined NOAEL =
       Not established (pathology at lowest dose drives LOAEL via C4).
-      AC-F1-1 needs refinement to distinguish the two quantities — both are
+      AC-F1-1 needs refinement to distinguish the two quantities -- both are
       defensible on the data; the synthesis spec mixes them.
     severity: documentation_clarification (not algorithm defect)
     needs: synthesis spec amendment OR explicit acceptance that AC-F1-1 means per-endpoint
+    revised: 2026-04-28 -- the "BW endpoint per-endpoint NOAEL = HD (no dose
+      fires under P3 terminal-primary; BUG-031 fix verified)" claim above was
+      INVALID. BUG-032 (terminal-day field-name drift) was masking BUG-033
+      (WoE C1/C3/C4 per-dose-blind criteria). Post-bundle-fix
+      (BUG-032 + BUG-033 atomically resolved): per-endpoint BW NOAEL = 20 mg/kg
+      (M+F+Combined fire dose 3 only, defensible per Rule 19). AC-F1-1's
+      20 mg/kg expectation now MATCHES output. SF2 closes as RESOLVED. The
+      slice-4 acceptance of "no dose fires under P3" as the verified Path C
+      output is the gate that masked BUG-032/033 -- documented in
+      `docs/_internal/research/distillations/noael-alg-woe-coherence.md`
+      Section "Why this slipped past slice-4 verification" + the BUG-032/033
+      retros in BUG-SWEEP.md.
   - id: NOAEL-ALG-SF3
     title: Body Weight Gain has domain BG not BW; falls through to OTHER classification
     discovered: 2026-04-27T03:30Z

@@ -1,7 +1,7 @@
 # Engine Output
 
-**Engine:** commit `babdd789` (2026-04-27)
-**Generated:** 2026-04-27T19:01:32.655Z
+**Engine:** commit `48f93339` (2026-04-28)
+**Generated:** 2026-04-28T14:29:07.104Z
 
 Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regenerate with `/regen-validation`.
 
@@ -653,9 +653,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Low | 54 | BG, BW, CL, FW, LB, MI | 0.80 | below_tested_range |
-| F | Not established | Low | 67 | BG, BW, FW, LB, MA, MI, OM | 0.80 | below_tested_range |
-| Combined | Not established | Low | 121 | BG, BW, CL, FW, LB, MA, MI, OM | 0.80 | below_tested_range |
+| M | Not established | Low | 22 | BG, FW, LB | 0.80 | below_tested_range |
+| F | Not established | Low | 50 | BG, BW, FW, LB, OM | 0.80 | below_tested_range |
+| Combined | Not established | Low | 72 | BG, BW, FW, LB, OM | 0.80 | below_tested_range |
 
 ### Target Organs
 
@@ -737,9 +737,9 @@ Auto-generated from `backend/generated/{study}/` JSON. No manual edits — regen
 
 | Sex | NOAEL | LOAEL | N adverse | Domains | Confidence | Method |
 |-----|-------|-------|-----------|---------|------------|--------|
-| M | Not established | Group 2,2 mg/kg PCDRUG | 32 | BW, LB, MA, MI, OM | 0.80 | below_tested_range |
-| F | Not established | Group 2,2 mg/kg PCDRUG | 27 | BW, LB, MA, MI, OM | 0.80 | below_tested_range |
-| Combined | Not established | Group 2,2 mg/kg PCDRUG | 59 | BW, LB, MA, MI, OM | 0.80 | below_tested_range |
+| M | Not established | Group 2,2 mg/kg PCDRUG | 9 | BW, LB, OM | 0.80 | below_tested_range |
+| F | Not established | Group 2,2 mg/kg PCDRUG | 3 | BW, LB | 0.80 | below_tested_range |
+| Combined | Not established | Group 2,2 mg/kg PCDRUG | 12 | BW, LB, OM | 0.80 | below_tested_range |
 
 ### Target Organs
 
