@@ -3,6 +3,19 @@ started: 2026-04-22T00:00:00Z
 phase: build
 current_step: build.2
 revision: 10
+lifecycle_state: paused
+pause_reason: |
+  Zombie at build.2 with 121h+ stale checkpoint as of 2026-04-28.
+  Blueprint phases 0-7 complete; build.0/build.1 shipped registry entries +
+  F5 unit conversion in commit 2eecfc92 (2026-04-23). Build.2 stalled.
+  Pausing to remove from autopilot queue; user decides resume-and-finish
+  vs archive. Cascade SCIENCE-FLAGs to 7 dependent topics (S01/S04/S07/
+  S10/S15/S16/S20/S21/S22/S23/S40) remain visible in coherence — paused
+  state suppresses autopilot pickup but not coherence reporting. Resolve
+  by either resuming build through build.7-complete OR explicit user
+  decision to archive (which would orphan the SF dependents).
+paused_at: 2026-04-28
+paused_by: autopilot
 completed:
   blueprint.0.impl_context:
     completed: 2026-04-23T09:22:00Z
@@ -59,7 +72,7 @@ completed:
     band_value_changes: 1  # dog ALP tightened from research §7.1 JSON to §2.1 text
     new_research_gaps: 13  # RG-FCT-LB-BW-08..20
     ac_additions: 2  # AC-F2-4 rodent caveat, AC-F2-7 sex-specific rationale
-    yaml_schema_additions: 2  # per_endpoint_decisions.magnitude_concern, approval.reviewers (list)
+    yaml_schema_additions: 1  # per_endpoint_decisions.magnitude_concern; approval.reviewers retracted 2026-04-27 per CLAUDE.md rule 13 (DATA-GAP-FCT-LB-BW-04 RETRACTED)
     scope_statement_expansions: 3  # direction-vs-magnitude, coverage vocabulary, NHP sub-tiering
     synthesis_line_count_post_r1: 491
   blueprint.6.peer_review_r2:

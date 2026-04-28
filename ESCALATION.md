@@ -10,6 +10,36 @@
 
 ---
 
+## Escalation -- 2026-04-28 (autopilot batch -- zombie pause + cascade)
+
+**Advanced this batch:** 0 (zombie addressed; topic advancement deferred pending direction)
+
+### fct-lb-bw-band-values -- paused (was zombie)
+
+- **Source:** topic-cycle (build phase, 121h+ stale checkpoint)
+- **Reason:** Build.0/build.1 shipped registry entries + F5 unit conversion (commit 2eecfc92, 2026-04-23); build.2 stalled. Pause registered via `lifecycle_state: paused` in `.lattice/cycle-state/fct-lb-bw-band-values.yaml`.
+- **What I tried:** Added `lifecycle_state: paused` + `pause_reason` block. Verified autopilot.ts:217-219 honors paused state (skips from advancement queue).
+- **What I need:** Decision on **resume-and-finish** (build.2 -> build.7-complete) **vs archive** (orphans 7 dependent topics' SF cascades). The paused state suppresses autopilot pickup but does NOT clear the cascade — it remains visible in coherence and continues to block 7 dependents.
+
+### Cascade -- 7 topics blocked behind fct-lb-bw-band-values + hcd-mi-ma-s08-wiring
+
+- **Source:** coherence (157 SF/BREAKS blockers, 22 distinct cascade entries, S07/S08/S13/S16/S21/S22/S23 most contended)
+- **Blocked topics:** brain-concordance-compound-class, control-side-loo-calibration-simulation, gap-288-stage2-noael-synthesis, hcd-mi-ma-s08-wiring, nonlinear-pk-model-sufficiency, reference-change-values-rcv (and indirectly mabel-framework via S12)
+- **Reason:** fct-lb-bw-band-values has unresolved SCIENCE-FLAG annotations on S01/S04/S07 (cascade rule fires from synthesis-doc string matches, not just live SF state). hcd-mi-ma-s08-wiring has unresolved BREAKS on S06/S07/S08/S13/S16/S21/S22/S23 (`Option 4 merit-driven` resolution noted but not closed in cycle-state).
+- **What I need:** Direction on **whether to mass-resolve via /lattice:distill** across the contended subsystems (the coherence engine recommends this), or whether the cascade is real and dependents must wait.
+
+### Safe-to-advance topics (queued for next autopilot iteration once direction is given)
+
+1. brain-concordance-species-bands (research-complete; this batch's planned step (1))
+2. mabel-framework (research-complete; touches S12, also touched by paused fct-lb-bw-band-values — verify safe before advancing)
+3. vehicle-pk-interaction-bcs (research-complete, has SF:1 -- needs SF resolution path documented)
+
+### Top-scored TODO items (queued; this batch's planned step (3))
+
+- GAP-LB-IAD-4, GAP-257, GAP-258, GAP-259, GAP-218, GAP-SDO-30 (all autopilot:ready score:18); GAP-SMT-25 (score:15)
+
+---
+
 ## Escalation -- 2026-04-27 (NOAEL algorithm under-firing -- sibling defect to BUG-031) -- RESOLVED 2026-04-28
 
 **Resolution:** Fixed in this commit. BUG-032 (terminal-day field-naming drift) and BUG-033 (WoE C1/C3/C4 per-dose-evaluation inconsistency) closed atomically. PointCross BW per-sex NOAEL = 20 mg/kg per Rule 19 derivation. Three-agent re-review (architect + decision-auditor + peer-reviewer) returned PASS / PASS / SOUND. See `BUG-SWEEP.md#BUG-032`, `BUG-SWEEP.md#BUG-033`, and `docs/_internal/research/distillations/noael-alg-woe-coherence.md` for the corpus-level analysis. Original escalation text retained below for git history; entry will be deleted on next sweep.
